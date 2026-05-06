@@ -128,6 +128,7 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
 
         // Comments column
         const tdComments = document.createElement('td');
+        tdComments.className = 'td-comments';
         tdComments.dataset.commentRowId = String(row['id']);
         tr.appendChild(tdComments);
 

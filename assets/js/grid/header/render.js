@@ -45,9 +45,12 @@ export function renderThead(schema, isReadOnly, onRerender) {
     }
 
     const thComments = document.createElement('th');
-    const commLabel = document.createElement('span');
-    commLabel.className = 'th-label';
-    commLabel.textContent = 'Comments';
+    thComments.className = 'th-comments';
+    const commLabel = document.createElement('img');
+    commLabel.src = 'assets/icons/comment.png';
+    commLabel.alt = 'Comments';
+    commLabel.title = 'Comments';
+    commLabel.className = 'th-icon';
     thComments.appendChild(commLabel);
     headRow.appendChild(thComments);
 
