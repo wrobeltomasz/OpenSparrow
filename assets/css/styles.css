@@ -861,10 +861,21 @@ footer {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   width: 100%;
+  align-items: start;
 }
+
+/* Widget proportions — width (columns spanned) */
+.dash-widget[data-w="1"] { grid-column: span 1; }
+.dash-widget[data-w="2"] { grid-column: span 2; }
+.dash-widget[data-w="3"] { grid-column: span 3; }
+
+/* Widget proportions — height */
+.dash-widget[data-h="1"] { min-height: 140px; }
+.dash-widget[data-h="2"] { min-height: 280px; }
+.dash-widget[data-h="3"] { min-height: 440px; }
 
 .dash-title {
   margin: 0 0 16px 0;

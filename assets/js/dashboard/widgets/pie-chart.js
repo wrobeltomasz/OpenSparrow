@@ -39,7 +39,7 @@ function renderPieChart(widget) {
         lbl.textContent = `${row.label || 'None'} - ${val} (${percent.toFixed(1)}%)`;
 
         item.append(box, lbl);
-        applyDrillDown(item, widget.table, groupCol, row.label, widget.query?.where);
+        applyDrillDown(item, widget.table, groupCol, row.label);
         legend.appendChild(item);
     });
 

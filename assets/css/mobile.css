@@ -1,5 +1,15 @@
 @media only screen and (max-width: 768px) {
 
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dash-widget[data-w="1"],
+  .dash-widget[data-w="2"],
+  .dash-widget[data-w="3"] {
+    grid-column: span 1 !important;
+  }
+
   header {
     display: flex !important;
     flex-direction: column !important;

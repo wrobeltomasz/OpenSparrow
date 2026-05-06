@@ -1,4 +1,4 @@
-import { applyDrillDown } from '../drill-down.js';
+import { applyDrillDown, firstEqCondition } from '../drill-down.js';
 import { WidgetRegistry } from '../registry.js';
 
 function renderKPICard(widget) {
@@ -25,7 +25,8 @@ function renderKPICard(widget) {
     }
 
     wrapper.append(info, iconContainer);
-    applyDrillDown(wrapper, widget.table, null, null, widget.query?.where);
+    const fc = firstEqCondition(widget.query?.conditions);
+    applyDrillDown(wrapper, widget.table, fc?.col ?? null, fc?.val ?? null);
     return wrapper;
 }
 

@@ -122,22 +122,65 @@ export function renderDocumentation(ctx) {
             </ul>
 
             <h3 style="color: #2563eb; margin-top: 30px;">3. Dashboard Builder</h3>
-            <p>The <strong>Dashboard</strong> tab composes analytical views from your database.</p>
+            <p>The <strong>Dashboard</strong> tab composes analytical views from your database. The layout uses a fixed <strong>3-column grid</strong>; each widget occupies 1, 2, or 3 columns and a small, medium, or large height.</p>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Widget types</h4>
             <ul style="padding-left: 20px;">
-                <li><strong>Global settings:</strong> Define the menu name, icon, visibility and the main layout grid (CSS grid properties, e.g. <code>repeat(auto-fit, minmax(300px, 1fr))</code>). A live sidebar preview updates as you type so you can see the final menu entry before saving.</li>
-                <li><strong>Stat cards:</strong> Simple metric widgets showing the total row count of a selected table.</li>
-                <li><strong>KPI cards:</strong> Single aggregate numbers based on specific columns (COUNT, SUM, AVG, MIN, MAX).</li>
-                <li><strong>Bar charts:</strong> Group by X-axis column and aggregate on the Y-axis column.</li>
-                <li><strong>Data lists:</strong> Top-N lists displaying recent or filtered records directly on the dashboard.</li>
+                <li><strong>Stat Card:</strong> Colored tile showing the total row count of a selected table. Clicking navigates to the filtered table view.</li>
+                <li><strong>KPI Card:</strong> Single aggregate number (COUNT, SUM, or AVG) with an optional icon and left-border accent color.</li>
+                <li><strong>Bar Chart (Horizontal / Vertical):</strong> Groups rows by a chosen column and aggregates on another column. Each bar is clickable — clicking navigates to the table filtered by that group value.</li>
+                <li><strong>Pie Chart:</strong> Same group/aggregate model as bar charts, rendered as a conic-gradient pie with a color legend. Each slice is clickable.</li>
+                <li><strong>Data List:</strong> Top-N rows ordered by a selected column, with configurable display columns.</li>
             </ul>
 
-            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Advanced filtering (WHERE clause)</h4>
-            <p>Every widget supports a custom SQL filter that restricts the data it processes. Enter a valid PostgreSQL condition in the <strong>WHERE clause</strong> field.</p>
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Widget proportions</h4>
+            <p>Every widget has two independent size controls:</p>
             <ul style="padding-left: 20px;">
-                <li><strong>Do not include the word <code>WHERE</code></strong> — just the condition.</li>
-                <li><strong>Examples:</strong> <code>status = 'pending'</code>, <code>price &gt; 100 AND is_active = true</code>.</li>
-                <li>Use single quotes for strings, e.g. <code>role = 'admin'</code>.</li>
-                <li>Useful for targeted widgets like "Total pending orders" or "Top customers from the UK".</li>
+                <li><strong>Width</strong> — how many of the 3 grid columns the widget occupies:
+                    <ul style="padding-left: 20px; margin-top: 4px;">
+                        <li><code>1/3</code> — one column (narrow tile, good for stat/KPI cards).</li>
+                        <li><code>2/3</code> — two columns (medium, good for charts).</li>
+                        <li><code>3/3 (full)</code> — spans the entire row (good for lists and wide charts).</li>
+                    </ul>
+                </li>
+                <li><strong>Height</strong> — minimum vertical size:
+                    <ul style="padding-left: 20px; margin-top: 4px;">
+                        <li><code>Small</code> — 140 px minimum.</li>
+                        <li><code>Medium</code> — 280 px minimum.</li>
+                        <li><code>Large</code> — 440 px minimum.</li>
+                    </ul>
+                </li>
+            </ul>
+            <p>On mobile screens all widgets collapse to a single column regardless of their configured width.</p>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Filter Conditions (WHERE)</h4>
+            <p>Every widget supports structured filter conditions that restrict which rows are counted or grouped. Conditions are combined with <strong>AND</strong> or <strong>OR</strong> and applied as a SQL WHERE clause on the backend. Column names are validated against the schema; values are escaped — no raw SQL is accepted.</p>
+            <ul style="padding-left: 20px;">
+                <li>Click <strong>+ Add condition</strong> to add a row.</li>
+                <li>Each row has: <strong>column selector</strong> (from the widget's source table), <strong>operator</strong>, and a <strong>value</strong> field.</li>
+                <li>Available operators: <code>=</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>LIKE</code>, <code>ILIKE</code>, <code>IS NULL</code>, <code>IS NOT NULL</code>.</li>
+                <li>For <code>IS NULL</code> / <code>IS NOT NULL</code> no value field is shown.</li>
+                <li>From the second condition onwards a logic selector (<strong>AND</strong> / <strong>OR</strong>) appears to the left.</li>
+                <li>The first condition always starts with <em>WHERE</em>.</li>
+                <li>Example: <em>status = active</em> AND <em>amount &gt; 100</em> — counts only active records with amount above 100.</li>
+            </ul>
+            <p style="background:#f0f9ff;padding:10px 14px;border-left:3px solid #38bdf8;border-radius:4px;font-size:14px;">
+                <strong>Note:</strong> Filter conditions affect <em>data fetching only</em> (what the widget counts or groups). Drill-down navigation (clicking a stat/KPI card) uses the first <code>=</code> condition to pre-filter the linked table view.
+            </p>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Live Preview</h4>
+            <p>A <strong>Live Preview</strong> panel is displayed to the right of the widget editor. It renders the actual widget component with sample data and updates automatically as you change the type, title, color, width, height, or display columns — no save required.</p>
+            <ul style="padding-left: 20px;">
+                <li>Preview uses fixed mock data (not real database rows) so it is always fast and works without a database connection.</li>
+                <li>The preview respects the widget's color and title settings.</li>
+                <li>Click interactions inside the preview are disabled (<code>pointer-events: none</code>).</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Global settings</h4>
+            <p>The <em>Global Settings</em> sidebar item controls the dashboard menu entry and grid gap. A live sidebar preview reflects the menu name and icon immediately.</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Grid Gap (CSS):</strong> Controls the gap between widgets (e.g. <code>20px</code>, <code>1rem</code>). Defaults to <code>20px</code>.</li>
+                <li><strong>Menu Display Name / Icon / Hidden:</strong> Same controls as other sections — reflected in the live sidebar preview.</li>
             </ul>
 
             <h3 style="color: #2563eb; margin-top: 30px;">4. Calendar Module</h3>

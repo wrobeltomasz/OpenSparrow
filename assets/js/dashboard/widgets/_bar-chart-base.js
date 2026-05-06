@@ -19,7 +19,7 @@ export function renderBars(widget, orientation) {
         const el = orientation === 'horizontal'
             ? buildHorizontalBar(row, percent, widget.color)
             : buildVerticalBar(row, percent, widget.color);
-        applyDrillDown(el, widget.table, groupCol, row.label, widget.query?.where);
+        applyDrillDown(el, widget.table, groupCol, row.label);
         wrapper.appendChild(el);
     });
 

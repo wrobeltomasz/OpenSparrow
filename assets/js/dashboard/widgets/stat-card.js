@@ -1,4 +1,4 @@
-import { applyDrillDown } from '../drill-down.js';
+import { applyDrillDown, firstEqCondition } from '../drill-down.js';
 import { WidgetRegistry } from '../registry.js';
 
 function renderStatCard(widget) {
@@ -18,7 +18,8 @@ function renderStatCard(widget) {
     title.textContent = widget.title;
 
     wrapper.append(value, title);
-    applyDrillDown(wrapper, widget.table, null, null, widget.query?.where);
+    const fc = firstEqCondition(widget.query?.conditions);
+    applyDrillDown(wrapper, widget.table, fc?.col ?? null, fc?.val ?? null);
     wrapper.addEventListener('mouseenter', () => { wrapper.style.transform = 'translateY(-2px)'; });
     wrapper.addEventListener('mouseleave', () => { wrapper.style.transform = 'none'; });
     return wrapper;

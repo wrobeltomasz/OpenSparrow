@@ -1084,14 +1084,6 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
     header('Content-Type: application/json');
     $parsedData = json_decode($data, true);
     if ($parsedData !== null) {
-        // Strip raw SQL WHERE fragments from dashboard widget configs
-        if ($file === 'dashboard' && isset($parsedData['widgets']) && is_array($parsedData['widgets'])) {
-            foreach ($parsedData['widgets'] as &$w) {
-                unset($w['query']['where']);
-            }
-            unset($w);
-        }
-
         if (!is_dir(__DIR__ . '/../includes/')) {
             mkdir(__DIR__ . '/../includes/', 0777, true);
         }

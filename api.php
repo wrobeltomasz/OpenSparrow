@@ -210,6 +210,31 @@ try {
 
             $sqlWhere = '';
 
+            // Build WHERE from structured conditions (column validated against schema, values escaped)
+            $conditions = is_array($widget['query']['conditions'] ?? null) ? $widget['query']['conditions'] : [];
+            $condParts = [];
+            $allowedOps = ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'ILIKE', 'IS NULL', 'IS NOT NULL'];
+            foreach ($conditions as $cond) {
+                $col = $cond['col'] ?? '';
+                $op  = $cond['op']  ?? '=';
+                $val = (string)($cond['val'] ?? '');
+                if (!isset($tableCfg['columns'][$col])) continue;
+                if (!in_array($op, $allowedOps, true)) continue;
+                $colSql = pg_ident($col);
+                if ($op === 'IS NULL' || $op === 'IS NOT NULL') {
+                    $condParts[] = [$colSql . ' ' . $op, strtoupper($cond['logic'] ?? 'AND')];
+                } else {
+                    $condParts[] = [$colSql . ' ' . $op . " '" . pg_escape_string($conn, $val) . "'", strtoupper($cond['logic'] ?? 'AND')];
+                }
+            }
+            if (!empty($condParts)) {
+                $built = $condParts[0][0];
+                for ($i = 1; $i < count($condParts); $i++) {
+                    $built .= ' ' . $condParts[$i][1] . ' ' . $condParts[$i][0];
+                }
+                $sqlWhere = ' WHERE ' . $built;
+            }
+
             // Apply Global Date Filter if requested and target matches
             $dateFilter = $_GET['date_filter'] ?? 'all';
             $dateTarget = $_GET['date_target'] ?? 'all';

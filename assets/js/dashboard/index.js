@@ -71,13 +71,14 @@ function renderWidgets(container, config) {
         return;
     }
 
-    container.style.display = 'grid';
-    container.style.gridTemplateColumns = config.layout?.columns || 'repeat(auto-fit, minmax(280px, 1fr))';
-    container.style.gap = config.layout?.gap || '20px';
+    container.className = 'dashboard-grid';
+    if (config.layout?.gap) container.style.gap = config.layout.gap;
 
     config.widgets.forEach(widget => {
         const widgetEl = document.createElement('div');
         widgetEl.className = 'dash-widget';
+        widgetEl.dataset.w = widget.width  || 1;
+        widgetEl.dataset.h = widget.height || 1;
 
         if (widget.type !== 'kpi_card' && widget.type !== 'stat_card') {
             const title = document.createElement('h3');
