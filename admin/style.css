@@ -27,7 +27,6 @@
 
 body {
     margin: 0;
-    padding: 0;
     background-color: var(--bg);
     color: var(--text);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -75,37 +74,10 @@ body {
     gap: 10px;
 }
 
-/* Hamburger button */
-.nav-collapse-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    border-radius: var(--radius);
-    transition: background var(--transition);
-    flex-shrink: 0;
-}
-
-.nav-collapse-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.nav-collapse-btn span {
-    display: block;
-    width: 20px;
-    height: 2px;
-    background: white;
-    border-radius: 1px;
-}
-
 /* Brand logo + name */
 .brand-logo img {
     display: block;
     height: 28px;
-    width: auto;
 }
 
 .brand-name {
@@ -372,14 +344,57 @@ body {
     overflow: hidden;
 }
 
-/* ===== Item list sidebar (existing — tables/widgets list) ===== */
+/* ===== Item list sidebar (right side) ===== */
 .admin-sidebar {
     flex: 0 0 260px;
     width: 260px;
     background-color: var(--panel);
-    border-right: 1px solid var(--border);
+    border-left: 1px solid var(--border);
     padding: 20px 15px;
     overflow-y: auto;
+    overflow-x: hidden;
+    transition: width 200ms ease, flex-basis 200ms ease, padding 200ms ease;
+}
+
+.admin-sidebar.collapsed {
+    flex: 0 0 0;
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* ===== Sidebar edge collapse tabs ===== */
+.nav-edge-toggle,
+.sidebar-edge-toggle {
+    flex: 0 0 14px;
+    width: 14px;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+    transition: background var(--transition), color var(--transition);
+    position: relative;
+    z-index: 5;
+}
+
+.nav-edge-toggle {
+    border-right: 1px solid var(--border);
+}
+
+.sidebar-edge-toggle {
+    border-left: 1px solid var(--border);
+}
+
+.nav-edge-toggle:hover,
+.sidebar-edge-toggle:hover {
+    background: var(--accent-light);
+    color: var(--accent);
 }
 
 .admin-sidebar h3 {
@@ -404,7 +419,7 @@ body {
     color: var(--muted);
     font-size: 13px;
     font-weight: 500;
-    transition: all var(--transition);
+    transition: background-color var(--transition), color var(--transition);
     margin-bottom: 2px;
 }
 
@@ -413,6 +428,27 @@ body {
     background-color: var(--accent-light);
     color: var(--accent);
     font-weight: 600;
+}
+
+/* ===== Collapsible column / subtable blocks ===== */
+.block-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.block-chevron {
+    display: inline-block;
+    font-size: 11px;
+    flex-shrink: 0;
+    transition: transform var(--transition);
+}
+
+.column-block:not(.collapsed) .block-chevron {
+    transform: rotate(90deg);
+}
+
+.column-block.collapsed .block-body {
+    display: none;
 }
 
 /* ===== Main workspace area ===== */
@@ -452,14 +488,13 @@ body {
     width: 100%;
     max-width: 450px;
     padding: 10px 12px;
-    background: #fff;
+    background: var(--panel);
     border: 1px solid var(--border);
     color: var(--text);
     border-radius: var(--radius);
     font-family: inherit;
     font-size: 14px;
     transition: border-color var(--transition), box-shadow var(--transition);
-    box-sizing: border-box;
 }
 
 .form-group input[type="text"]:focus,
@@ -545,36 +580,6 @@ body {
 }
 
 .btn-remove:hover { background: #b91c1c; }
-
-/* Legacy btn-logout kept for backward-compat with JS-rendered content */
-.btn-logout {
-    background: transparent;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.3);
-    padding: 7px 14px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all var(--transition);
-}
-
-.btn-logout:hover { background: rgba(255,255,255,0.1); }
-
-/* Save button alias — referenced by app.js via id="btnSave" */
-#btnSave {
-    background: var(--ok);
-    color: white;
-    border: none;
-    padding: 7px 14px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: background var(--transition);
-}
-
-#btnSave:hover { background: #15803d; }
 
 /* ===== Data tables ===== */
 .admin-table {

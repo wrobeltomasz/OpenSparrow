@@ -104,9 +104,6 @@ if (empty($_SESSION['csrf_token'])) {
 <!-- Header -->
 <header class="admin-header">
     <div class="admin-header-left">
-        <button class="nav-collapse-btn" id="navCollapseBtn" title="Toggle sidebar" aria-label="Toggle sidebar">
-            <span></span><span></span><span></span>
-        </button>
         <a href="/" class="brand-logo">
             <img src="../assets/img/logo-blue.png" alt="Sparrow Logo">
         </a>
@@ -244,6 +241,9 @@ if (empty($_SESSION['csrf_token'])) {
         </div><!-- /nav-sections -->
     </nav><!-- /admin-nav -->
 
+    <!-- Left nav edge collapse tab -->
+    <button class="nav-edge-toggle" id="navEdgeToggle" title="Toggle navigation" aria-label="Toggle navigation">&#8249;</button>
+
     <!-- Main content area -->
     <div class="admin-main">
 
@@ -254,17 +254,22 @@ if (empty($_SESSION['csrf_token'])) {
             <span class="breadcrumb-current" id="breadcrumbCurrent">Schema</span>
         </div>
 
-        <!-- Editor area: item list sidebar + workspace -->
+        <!-- Editor area: workspace + right item list sidebar -->
         <div class="admin-content">
-            <aside class="admin-sidebar" id="sidebar">
-                <h3 id="sidebarTitle">Tables</h3>
-                <ul id="itemList"></ul>
-            </aside>
 
             <section class="admin-workspace" id="workspace">
                 <h2 style="margin-top: 0;">Select an item to edit</h2>
                 <div id="editorForm"></div>
             </section>
+
+            <!-- Right sidebar edge collapse tab -->
+            <button class="sidebar-edge-toggle" id="sidebarEdgeToggle" title="Toggle item list" aria-label="Toggle item list">&#8250;</button>
+
+            <aside class="admin-sidebar" id="sidebar">
+                <h3 id="sidebarTitle">Tables</h3>
+                <ul id="itemList"></ul>
+            </aside>
+
         </div>
 
     </div><!-- /admin-main -->
@@ -283,13 +288,27 @@ if (empty($_SESSION['csrf_token'])) {
         });
     });
 
-    // Sidebar collapse toggle
-    var navCollapseBtn = document.getElementById('navCollapseBtn');
-    var adminNav = document.getElementById('adminNav');
-    navCollapseBtn.addEventListener('click', function() {
-        adminNav.classList.toggle('collapsed');
-        document.querySelector('.admin-layout').classList.toggle('nav-collapsed');
-    });
+    // Left nav collapse — edge tab
+    var navEdgeToggle = document.getElementById('navEdgeToggle');
+    var adminNav      = document.getElementById('adminNav');
+    var adminLayout   = document.querySelector('.admin-layout');
+
+    function toggleNav() {
+        var collapsed = adminNav.classList.toggle('collapsed');
+        adminLayout.classList.toggle('nav-collapsed', collapsed);
+        navEdgeToggle.innerHTML = collapsed ? '&#8250;' : '&#8249;';
+    }
+    navEdgeToggle.addEventListener('click', toggleNav);
+
+    // Right sidebar collapse — edge tab
+    var sidebarEdgeToggle = document.getElementById('sidebarEdgeToggle');
+    var adminSidebar      = document.getElementById('sidebar');
+
+    function toggleSidebar() {
+        var collapsed = adminSidebar.classList.toggle('collapsed');
+        sidebarEdgeToggle.innerHTML = collapsed ? '&#8249;' : '&#8250;';
+    }
+    sidebarEdgeToggle.addEventListener('click', toggleSidebar);
 
     // Breadcrumb: update on tab click
     var breadcrumbLabels = {

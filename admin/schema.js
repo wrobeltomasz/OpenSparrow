@@ -382,24 +382,43 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         { value: 'concat',   label: 'Concat (text join)' },
     ];
 
+    function makeCollapsible(block) {
+        const bodyDiv = document.createElement('div');
+        bodyDiv.className = 'block-body';
+        while (block.children.length > 1) {
+            bodyDiv.appendChild(block.children[1]);
+        }
+        block.appendChild(bodyDiv);
+    }
+
     const colKeys = Object.keys(tableData.columns);
     colKeys.forEach((colName, index) => {
         const colCfg = tableData.columns[colName];
         const block = document.createElement('div');
-        block.className = 'column-block';
-        
+        block.className = 'column-block collapsed';
+
         const headerDiv = document.createElement('div');
+        headerDiv.className = 'block-header';
         headerDiv.style.display = 'flex';
-        headerDiv.style.justifyContent = 'space-between';
         headerDiv.style.alignItems = 'center';
+        headerDiv.style.gap = '8px';
         headerDiv.style.borderBottom = '1px solid #eee';
         headerDiv.style.paddingBottom = '5px';
         headerDiv.style.marginBottom = '15px';
+        headerDiv.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            block.classList.toggle('collapsed');
+        });
+
+        const chevron = document.createElement('span');
+        chevron.className = 'block-chevron';
+        chevron.textContent = '▶';
 
         const h4 = document.createElement('h4');
         h4.textContent = `Column: ${colName}`;
         h4.style.margin = '0';
         h4.style.borderBottom = 'none';
+        h4.style.flex = '1';
 
         const moveControls = document.createElement('div');
         
@@ -427,6 +446,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
         moveControls.appendChild(btnUp);
         moveControls.appendChild(btnDown);
+        headerDiv.appendChild(chevron);
         headerDiv.appendChild(h4);
         headerDiv.appendChild(moveControls);
         block.appendChild(headerDiv);
@@ -581,6 +601,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             });
             block.appendChild(btnDelVirtual);
 
+            makeCollapsible(block);
             workspaceEl.appendChild(block);
             return; // skip remaining non-virtual fields for this column
         }
@@ -719,7 +740,8 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         block.appendChild(createCheckbox('show_in_edit', 'Show in Edit Form', colCfg.show_in_edit, (val) => colCfg.show_in_edit = val, true));
         block.appendChild(createCheckbox('not_null', 'Is Required (Not Null)', colCfg.not_null, (val) => colCfg.not_null = val, false));
         block.appendChild(createCheckbox('readonly', 'Read Only', colCfg.readonly, (val) => colCfg.readonly = val, false));
-        
+
+        makeCollapsible(block);
         workspaceEl.appendChild(block);
     });
 
@@ -736,18 +758,29 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         subContainer.innerHTML = '';
         tableData.subtables.forEach((subCfg, index) => {
             const block = document.createElement('div');
-            block.className = 'column-block';
-            block.style.borderLeft = '4px solid #4CAF50'; 
+            block.className = 'column-block collapsed';
+            block.style.borderLeft = '4px solid #4CAF50';
 
             const headerDiv = document.createElement('div');
+            headerDiv.className = 'block-header';
             headerDiv.style.display = 'flex';
-            headerDiv.style.justifyContent = 'space-between';
+            headerDiv.style.alignItems = 'center';
+            headerDiv.style.gap = '8px';
             headerDiv.style.marginBottom = '15px';
-            
+            headerDiv.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                block.classList.toggle('collapsed');
+            });
+
+            const chevron = document.createElement('span');
+            chevron.className = 'block-chevron';
+            chevron.textContent = '▶';
+
             const h4 = document.createElement('h4');
             h4.textContent = `Subtable #${index + 1}`;
             h4.style.margin = '0';
-            
+            h4.style.flex = '1';
+
             const btnDel = document.createElement('button');
             btnDel.type = 'button';
             btnDel.textContent = 'Delete';
@@ -757,6 +790,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                 renderSubtables();
             };
 
+            headerDiv.appendChild(chevron);
             headerDiv.appendChild(h4);
             headerDiv.appendChild(btnDel);
             block.appendChild(headerDiv);
@@ -774,6 +808,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                 }
             }));
 
+            makeCollapsible(block);
             subContainer.appendChild(block);
         });
 
