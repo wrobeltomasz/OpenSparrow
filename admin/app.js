@@ -13,6 +13,9 @@ import { renderFilesEditor } from './files_render.js';
 import { renderBackupPage } from './backup.js';
 import { renderAuditEditor } from './audit.js';
 import { renderAddTableEditor } from './add_table.js';
+import { renderMigrationsPage } from './migrations.js';
+import { renderPerformancePage } from './performance.js';
+import { renderCronPage } from './cron.js';
 
 let currentConfig = null;
 let currentFile = 'schema';
@@ -26,7 +29,7 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['users', 'security', 'health', 'backup', 'database', 'audit', 'add_table']);
+const NON_CONFIG_TABS = new Set(['users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'performance', 'cron']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
@@ -214,7 +217,7 @@ function getColumnOptionsForTable(tableName) {
 }
 
 async function loadConfigFile(fileName) {
-    if (fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table') {
+    if (fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -296,27 +299,107 @@ function clearConfig() {
 function renderSidebar() {
     itemListEl.innerHTML = '';
     
-    if (currentFile === 'database' || currentFile === 'security' || currentFile === 'health' || currentFile === 'docs' || currentFile === 'users' || currentFile === 'backup' || currentFile === 'menu' || currentFile === 'audit' || currentFile === 'add_table') {
+    if (currentFile === 'database' || currentFile === 'security' || currentFile === 'health' || currentFile === 'docs' || currentFile === 'users' || currentFile === 'backup' || currentFile === 'menu' || currentFile === 'audit' || currentFile === 'add_table' || currentFile === 'migrations' || currentFile === 'performance' || currentFile === 'cron') {
         document.getElementById('sidebarTitle').textContent = currentFile.charAt(0).toUpperCase() + currentFile.slice(1);
         const actionDiv = document.getElementById('sidebarActions');
         if (actionDiv) actionDiv.innerHTML = ''; 
 
         const li = document.createElement('li');
         let title = "Settings";
-        if (currentFile === 'health') title = "View Diagnostics";
+        if (currentFile === 'health') {
+            const healthSections = [
+                'PHP Environment',
+                'PHP Extensions',
+                'Security Functions',
+                'Database',
+                'Filesystem',
+                'Config Files',
+            ];
+            const hdr = document.createElement('li');
+            hdr.textContent = 'Health Check';
+            hdr.style.cssText = 'font-weight:bold; border-bottom:2px solid var(--accent);';
+            itemListEl.appendChild(hdr);
+            healthSections.forEach((name, i) => {
+                const item = document.createElement('li');
+                item.textContent = name;
+                item.style.cssText = 'cursor:pointer; font-size:13px; padding:6px 8px;';
+                item.addEventListener('mouseover', () => item.style.background = 'var(--accent-light)');
+                item.addEventListener('mouseout',  () => item.style.background = '');
+                item.addEventListener('click', () => {
+                    const el = document.getElementById(`health-section-${i}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+                itemListEl.appendChild(item);
+            });
+            return;
+        }
         if (currentFile === 'docs') title = "Read Documentation";
         if (currentFile === 'users') title = "System Users";
         if (currentFile === 'backup') title = "Backup Tables";
         if (currentFile === 'menu') title = "View Preview";
         if (currentFile === 'audit') title = "Audit & Snapshots";
         if (currentFile === 'add_table') title = "Add New Table";
-        
-        li.textContent = title; 
-        li.style.fontWeight = 'bold'; 
+        if (currentFile === 'migrations') title = "Migration History";
+        if (currentFile === 'performance') {
+            const perfSections = [
+                'Missing Index Advisor',
+                'Unused Indexes',
+                'Slow Query Analyzer',
+                'Table Stats & Bloat',
+                'Database Health',
+                'Schema Warnings',
+            ];
+            const hdr = document.createElement('li');
+            hdr.textContent = 'Performance';
+            hdr.style.cssText = 'font-weight:bold; border-bottom:2px solid var(--accent);';
+            itemListEl.appendChild(hdr);
+            perfSections.forEach((name, i) => {
+                const item = document.createElement('li');
+                item.textContent = name;
+                item.style.cssText = 'cursor:pointer; font-size:13px; padding:6px 8px;';
+                item.addEventListener('mouseover', () => item.style.background = 'var(--accent-light)');
+                item.addEventListener('mouseout',  () => item.style.background = '');
+                item.addEventListener('click', () => {
+                    const el = document.getElementById(`perf-section-${i}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+                itemListEl.appendChild(item);
+            });
+            return;
+        }
+        if (currentFile === 'cron') {
+            const cronSections = [
+                'Manual Run',
+                'Run History',
+                'Notification Stats',
+                'Cron Setup',
+                'Log Cleanup',
+            ];
+            const hdr = document.createElement('li');
+            hdr.textContent = 'Cron Notifications';
+            hdr.style.cssText = 'font-weight:bold; border-bottom:2px solid var(--accent);';
+            itemListEl.appendChild(hdr);
+            cronSections.forEach((name, i) => {
+                const item = document.createElement('li');
+                item.textContent = name;
+                item.style.cssText = 'cursor:pointer; font-size:13px; padding:6px 8px;';
+                item.addEventListener('mouseover', () => item.style.background = 'var(--accent-light)');
+                item.addEventListener('mouseout',  () => item.style.background = '');
+                item.addEventListener('click', () => {
+                    const el = document.getElementById(`cron-section-${i}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+                itemListEl.appendChild(item);
+            });
+            return;
+        }
+
+        li.textContent = title;
+        li.style.fontWeight = 'bold';
         li.style.borderBottom = '2px solid var(--accent)';
         li.classList.add('active');
         itemListEl.appendChild(li);
-        return; 
+        return;
     }
 
     document.getElementById('sidebarTitle').textContent = currentFile === 'schema' ? 'Tables' : currentFile === 'dashboard' ? 'Widgets' : currentFile === 'workflows' ? 'Workflows' : currentFile === 'files' ? 'Files Config' : 'Sources';
@@ -439,7 +522,7 @@ function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar };
     
-    if (['health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
+    if (['health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'performance', 'cron'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
@@ -453,6 +536,9 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'backup') return renderBackupPage(ctx);
     if (currentFile === 'audit') return renderAuditEditor(ctx);
     if (currentFile === 'add_table') return renderAddTableEditor(ctx);
+    if (currentFile === 'migrations') return renderMigrationsPage(ctx);
+    if (currentFile === 'performance') return renderPerformancePage(ctx);
+    if (currentFile === 'cron') return renderCronPage(ctx);
     if (currentFile === 'files' && key === 'MANAGER') return renderFilesEditor(ctx);
 
     if (currentFile === 'menu') {

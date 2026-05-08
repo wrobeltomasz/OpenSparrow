@@ -116,6 +116,7 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
             Files
         </button>
         <button class="tab-btn" data-tab="tab-comments" role="tab" aria-selected="false">Comments</button>
+        <button class="tab-btn" data-tab="tab-history" role="tab" aria-selected="false">Record History</button>
     </div>
 
     <div class="tab-panel active" id="tab-details" role="tabpanel">
@@ -316,6 +317,22 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
         <div id="c-panel"></div>
     </div><!-- /tab-panel#tab-comments -->
 
+    <div class="tab-panel" id="tab-history" role="tabpanel">
+        <div id="ow-panel" class="owner-panel" style="margin-top: 20px; padding: 16px 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
+            <h3 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Record Owner</h3>
+            <div id="ow-current" style="font-size: 14px; color: #0f172a; margin-bottom: 12px;">Loading…</div>
+            <div id="ow-change" hidden style="align-items: center; gap: 10px; flex-wrap: wrap;">
+                <select id="ow-select" style="padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: #fff;"></select>
+                <button id="ow-save" type="button" class="btn-action">Change Owner</button>
+                <span id="ow-status" style="font-size: 13px;"></span>
+            </div>
+        </div>
+        <div id="ow-history" style="margin-top: 20px;">
+            <h3 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Assignment History</h3>
+            <div id="ow-history-body" style="font-size: 14px; color: #64748b;">Loading…</div>
+        </div>
+    </div><!-- /tab-panel#tab-history -->
+
 </main>
 </div>
 
@@ -427,6 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>"></script>
+<script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>"></script>
 
 </body>
 </html>

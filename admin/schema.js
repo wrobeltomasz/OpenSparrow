@@ -113,6 +113,79 @@ export async function syncSchemaTables(currentConfig, schemaName, onSuccess, onE
     }
 }
 
+function buildDefaultSortUI(tableData) {
+    if (!Array.isArray(tableData.default_sort)) tableData.default_sort = [];
+    const rules = tableData.default_sort;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'margin-bottom:15px;';
+
+    const label = document.createElement('label');
+    label.style.cssText = 'display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:600;';
+    label.textContent = 'Default Sort Order';
+    wrapper.appendChild(label);
+
+    const listEl = document.createElement('div');
+    listEl.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
+    wrapper.appendChild(listEl);
+
+    function renderRules() {
+        listEl.replaceChildren();
+        rules.forEach((rule, i) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px;';
+
+            const colInput = document.createElement('select');
+            colInput.style.cssText = 'padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px; width:160px;';
+            const blankOpt = document.createElement('option');
+            blankOpt.value = '';
+            blankOpt.textContent = '— column —';
+            colInput.appendChild(blankOpt);
+            ['id', ...Object.keys(tableData.columns || {})].forEach(col => {
+                const opt = document.createElement('option');
+                opt.value = col;
+                opt.textContent = col;
+                if (rule.column === col) opt.selected = true;
+                colInput.appendChild(opt);
+            });
+            colInput.addEventListener('change', () => { rules[i].column = colInput.value; markDirty(); });
+
+            const dirSel = document.createElement('select');
+            dirSel.style.cssText = 'padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;';
+            [['asc', 'ASC ↑'], ['desc', 'DESC ↓']].forEach(([val, lbl]) => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = lbl;
+                if ((rule.dir || 'asc') === val) opt.selected = true;
+                dirSel.appendChild(opt);
+            });
+            dirSel.addEventListener('change', () => { rules[i].dir = dirSel.value; markDirty(); });
+
+            const btnRemove = document.createElement('button');
+            btnRemove.type = 'button';
+            btnRemove.textContent = '✕';
+            btnRemove.style.cssText = 'background:#ef4444; color:#fff; border:none; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:13px;';
+            btnRemove.addEventListener('click', () => { rules.splice(i, 1); markDirty(); renderRules(); });
+
+            row.appendChild(colInput);
+            row.appendChild(dirSel);
+            row.appendChild(btnRemove);
+            listEl.appendChild(row);
+        });
+    }
+
+    renderRules();
+
+    const btnAdd = document.createElement('button');
+    btnAdd.type = 'button';
+    btnAdd.textContent = '+ Add Sort Rule';
+    btnAdd.style.cssText = 'margin-top:6px; padding:4px 10px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;';
+    btnAdd.addEventListener('click', () => { rules.push({ column: '', dir: 'asc' }); markDirty(); renderRules(); });
+    wrapper.appendChild(btnAdd);
+
+    return wrapper;
+}
+
 // Render the schema editor UI
 export function renderSchemaEditor(tableName, tableData, ctx) {
     const { workspaceEl, getTableOptions, renderEditor } = ctx;
@@ -357,6 +430,22 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         tableData.hidden = val;
         refreshPreview();
     }, false));
+
+    // Default Sort
+    workspaceEl.appendChild(buildDefaultSortUI(tableData));
+
+    // Initial Load Limit
+    workspaceEl.appendChild(createTextInput(
+        'initial_limit',
+        'Initial Load Limit (rows, 0 = unlimited)',
+        String(tableData.initial_limit ?? 0),
+        (val) => {
+            const n = parseInt(val, 10);
+            if (n > 0) tableData.initial_limit = n;
+            else delete tableData.initial_limit;
+            markDirty();
+        }
+    ));
 
     const colsTitle = document.createElement('h3');
     colsTitle.textContent = 'Columns Configuration';

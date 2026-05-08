@@ -25,6 +25,9 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         state.fkCache = new Map();
         clearPreviewCache();
         state.fullData = data.rows || [];
+        if (data.truncated) {
+            showToast(`Showing first ${state.fullData.length} records (limit set in Schema settings).`, 'info');
+        }
 
         // Pre-compute virtual column values into each row so sort/filter work transparently
         const tableCols = schema.tables[table]?.columns || {};
@@ -47,7 +50,10 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         });
         state.filteredData = state.fullData.slice();
         state.unsortedFilteredData = state.filteredData.slice();
-        state.sortState = { column: null, asc: true };
+        const firstSort = schema.tables[table]?.default_sort?.[0];
+        state.sortState = firstSort?.column
+            ? { column: firstSort.column, asc: (firstSort.dir ?? 'asc').toLowerCase() !== 'desc' }
+            : { column: null, asc: true };
         state.gridTitleEl = gridTitleEl;
         state.addRowBtn = addRowBtn;
         state.containerEl = document.getElementById('grid');

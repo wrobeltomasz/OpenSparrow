@@ -161,6 +161,14 @@ function fetch_record_json($conn, string $schemaName, string $table, int $record
     return ($row && $row[0] !== null) ? $row[0] : null;
 }
 
+// Record ownership: mark previous current row inactive, insert new current row.
+function set_record_owner($conn, string $table, int $recordId, int $ownerId, int $changedBy): void
+{
+    $t = sys_table('record_owners');
+    @pg_query_params($conn, "UPDATE $t SET is_current = false WHERE table_name = \$1 AND record_id = \$2 AND is_current = true", [$table, $recordId]);
+    @pg_query_params($conn, "INSERT INTO $t (table_name, record_id, owner_id, changed_by, is_current) VALUES (\$1, \$2, \$3, \$4, true)", [$table, $recordId, $ownerId, $changedBy]);
+}
+
 // Save a JSONB snapshot of the current record state linked to a log entry.
 function snapshot_record($conn, string $schemaName, string $table, int $recordId, int $logId): void
 {

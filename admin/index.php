@@ -212,6 +212,18 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/fact_check.png" alt="">
                         Audit &amp; Snapshots
                     </button>
+                    <button class="admin-tab" data-file="migrations">
+                        <img class="nav-item-icon" src="../assets/icons/database.png" alt="">
+                        Migrations
+                    </button>
+                    <button class="admin-tab" data-file="performance">
+                        <img class="nav-item-icon" src="../assets/icons/health_and_safety.png" alt="">
+                        Performance
+                    </button>
+                    <button class="admin-tab" data-file="cron">
+                        <img class="nav-item-icon" src="../assets/icons/manage_history.png" alt="">
+                        Cron Notifications
+                    </button>
                 </div>
             </div>
 
@@ -315,7 +327,9 @@ if (empty($_SESSION['csrf_token'])) {
         schema: 'Schema', dashboard: 'Dashboard', calendar: 'Calendar',
         files: 'Files', menu: 'Menu Preview', workflows: 'Workflows',
         database: 'Database', users: 'Users', health: 'Health Check',
-        backup: 'Backup Tables', audit: 'Audit & Snapshots', docs: 'Documentation'
+        backup: 'Backup Tables', audit: 'Audit & Snapshots', docs: 'Documentation',
+        performance: 'Performance',
+        cron: 'Cron Notifications'
     };
     var breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
     document.querySelectorAll('.admin-tab[data-file]').forEach(function(tab) {

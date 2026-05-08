@@ -34,11 +34,13 @@ if ($request->isPost()) {
     }
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
-        $newId = $records->insert($tableCfg, $data);
-        $logId = $audit->log($session->userId(), 'INSERT', $tableCfg->name, (int)$newId);
+        $newId  = $records->insert($tableCfg, $data);
+        $userId = $session->userId();
+        $logId  = $audit->log($userId, 'INSERT', $tableCfg->name, (int)$newId);
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
             snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, $logId);
         }
+        set_record_owner($GLOBALS['conn'], $tableCfg->name, (int)$newId, $userId, $userId);
         header('Location: index.php?table=' . urlencode($table));
         exit;
     } catch (\RuntimeException $e) {

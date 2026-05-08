@@ -464,13 +464,32 @@ try {
             $params[] = $filterVal;
         }
 
+        $defaultSort  = $tableCfg['default_sort'] ?? [];
+        $orderClauses = [];
+        if (is_array($defaultSort)) {
+            foreach ($defaultSort as $rule) {
+                $col = $rule['column'] ?? '';
+                $dir = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+                if ($col !== '' && (isset($tableCfg['columns'][$col]) || $col === $idCol)) {
+                    $orderClauses[] = pg_ident($col) . ' ' . $dir;
+                }
+            }
+        }
+        if (empty($orderClauses)) {
+            $orderClauses[] = pg_ident($idCol) . ' DESC';
+        }
+
+        $initialLimit = (int)($tableCfg['initial_limit'] ?? 0);
+        $limitSql     = $initialLimit > 0 ? ' LIMIT ' . $initialLimit : '';
+
         $sql = sprintf(
-            'SELECT %s FROM "%s"."%s"%s ORDER BY %s DESC',
+            'SELECT %s FROM "%s"."%s"%s ORDER BY %s%s',
             $selectSql,
             $schemaName,
             $table,
             $whereSql,
-            pg_ident($idCol)
+            implode(', ', $orderClauses),
+            $limitSql
         );
 
         $res = @pg_query_params($conn, $sql, $params);
@@ -490,12 +509,13 @@ try {
         $rows = map_fk_display($schema, $tableCfg, $rows);
 
         echo json_encode([
-            'columns' => $selectCols,
-            'rows' => $rows,
-            'table' => [
-                'name' => $table,
-                'display_name' => to_display_name($tableCfg)
-            ]
+            'columns'   => $selectCols,
+            'rows'      => $rows,
+            'truncated' => $initialLimit > 0 && count($rows) === $initialLimit,
+            'table'     => [
+                'name'         => $table,
+                'display_name' => to_display_name($tableCfg),
+            ],
         ]);
         exit;
     }
@@ -711,10 +731,12 @@ try {
             $newId = $row[$idCol] ?? null;
 
             if ($newId !== null) {
-                $logId = log_user_action($conn, (int)$_SESSION['user_id'], 'INSERT', $table, (int)$newId);
+                $userId = (int)$_SESSION['user_id'];
+                $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
                 if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
                     snapshot_record($conn, $schemaName, $table, (int) $newId, $logId);
                 }
+                set_record_owner($conn, $table, (int)$newId, $userId, $userId);
             }
 
             echo json_encode(['ok' => true, 'id' => $newId]);

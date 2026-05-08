@@ -13,8 +13,11 @@ export async function renderHealthDashboard(ctx) {
                 <span style="color:#475569; font-size:13px;">${msg}</span>
             </div>`;
 
-        const section = (title) => `
-            <h4 style="margin:24px 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8;">${title}</h4>`;
+        let _sectionIdx = 0;
+        const section = (title) => {
+            const id = `health-section-${_sectionIdx++}`;
+            return `<h4 id="${id}" style="margin:24px 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8;">${title}</h4>`;
+        };
 
         let html = `
             <h3>System Health</h3>
@@ -93,47 +96,21 @@ export async function renderHealthDashboard(ctx) {
         if (data.db_connected) {
             html += `
                 <div style="margin-top:30px; padding:20px; background:#eff6ff; border:1px dashed #3b82f6; border-radius:8px;">
-                    <h4 style="margin-top:0; color:#1d4ed8;">First Time Setup</h4>
-                    <p style="font-size:14px; color:#1e40af;">Click the button below to create core system tables (Users, Logs, Notifications) and the default admin account.</p>
-                    <button id="init-db-btn" style="background:#3b82f6; color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold; transition:background .2s;">
-                        Initialize System Tables
+                    <h4 style="margin-top:0; color:#1d4ed8;">Database Migrations</h4>
+                    <p style="font-size:14px; color:#1e40af;">Use the Migrations tab to apply pending schema changes and view migration history.</p>
+                    <button id="goto-migrations-btn" style="background:#3b82f6; color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold; transition:background .2s;">
+                        Go to Migrations
                     </button>
                 </div>`;
         }
 
         workspaceEl.innerHTML = html;
 
-        const initBtn = document.getElementById('init-db-btn');
-        if (initBtn) {
-            initBtn.addEventListener('click', async () => {
-                if (!confirm("This will execute DDL scripts to create system tables in the 'app' schema. Continue?")) return;
-
-                initBtn.disabled  = true;
-                initBtn.innerText = 'Processing...';
-
-                try {
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                    const setupRes  = await fetch('api.php?action=init_db', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken,
-                        },
-                    });
-                    const result = await setupRes.json();
-                    if (result.status === 'success') {
-                        alert('Success! System tables initialized. You can now sync them in the Schema tab.');
-                        location.reload();
-                    } else {
-                        alert('Error: ' + result.error);
-                        initBtn.disabled  = false;
-                        initBtn.innerText = 'Initialize System Tables';
-                    }
-                } catch (err) {
-                    alert('Request failed. Check console for details.');
-                    initBtn.disabled  = false;
-                    initBtn.innerText = 'Initialize System Tables';
-                }
+        const gotoBtn = document.getElementById('goto-migrations-btn');
+        if (gotoBtn) {
+            gotoBtn.addEventListener('click', () => {
+                const tab = document.querySelector('.admin-tab[data-file="migrations"]');
+                if (tab) tab.click();
             });
         }
 
