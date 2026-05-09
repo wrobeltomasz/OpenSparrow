@@ -160,16 +160,24 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     const tdActions = document.createElement('td');
 
     const editBtn = document.createElement('button');
-    editBtn.textContent = 'Edit';
-    editBtn.style.marginRight = '8px';
+    editBtn.className = 'btn-icon';
+    editBtn.title = 'Edit';
+    const editImg = document.createElement('img');
+    editImg.src = 'assets/img/edit_square.png';
+    editImg.alt = 'Edit';
+    editBtn.appendChild(editImg);
     editBtn.addEventListener('click', () => {
         window.location.href = `edit.php?table=${state.currentTable}&id=${row['id']}`;
     });
     tdActions.appendChild(editBtn);
 
     const delBtn = document.createElement('button');
-    delBtn.textContent = 'Delete';
-    delBtn.className = 'danger';
+    delBtn.className = 'btn-icon btn-icon-danger';
+    delBtn.title = 'Delete';
+    const delImg = document.createElement('img');
+    delImg.src = 'assets/img/delete.png';
+    delImg.alt = 'Delete';
+    delBtn.appendChild(delImg);
     delBtn.addEventListener('click', async () => {
         if (!confirm('Are you sure you want to delete this record? This operation cannot be undone.')) return;
         const result = await deleteRow(row['id']);

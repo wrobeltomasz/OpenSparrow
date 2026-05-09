@@ -77,10 +77,7 @@ export function renderThead(schema, isReadOnly, onRerender) {
 
     if (!isReadOnly) {
         const thActions = document.createElement('th');
-        const actLabel = document.createElement('span');
-        actLabel.className = 'th-label';
-        actLabel.textContent = 'Actions';
-        thActions.appendChild(actLabel);
+        thActions.className = 'th-actions';
         headRow.appendChild(thActions);
     }
 

@@ -685,6 +685,42 @@ thead th:last-child  { padding-right: 0.6rem; }
   display: block;
 }
 
+.th-actions {
+  width: 70px;
+  min-width: 70px;
+  max-width: 70px;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.btn-icon:hover {
+  opacity: 1;
+  background: #f1f5f9;
+}
+
+.btn-icon img {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.btn-icon-danger:hover {
+  background: #fee2e2;
+}
+
 .th-virtual-badge {
   display: inline-block;
   font-size: 12px;
