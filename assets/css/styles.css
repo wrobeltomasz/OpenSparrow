@@ -1847,6 +1847,12 @@ th.drag-over .th-label {
   padding: 0 4px;
 }
 
+/* Transparent wrapper; children join header flex row directly on desktop */
+.header-controls { display: contents; }
+
+/* Search drawer toggle — only shown on mobile (mobile.css overrides to display:flex) */
+.header-search-toggle { display: none; }
+
 /* =========================================
    NOTIFICATIONS IN HEADER
 ========================================= */

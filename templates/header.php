@@ -19,8 +19,11 @@ $cacheBust = @filemtime(__DIR__ . '/../assets/js/user-menu.js');
 ?>
 <header>
     <button id="sidebarToggle" aria-label="Toggle sidebar">&#9776;</button>
+    <button class="header-search-toggle" id="searchToggle" aria-label="Toggle search">&#128269;</button>
 
-    <?php if (!empty($headerControls)) echo $headerControls; ?>
+    <div class="header-controls">
+        <?php if (!empty($headerControls)) echo $headerControls; ?>
+    </div>
 
     <div class="header-user-menu">
         <div class="notifications-wrapper" aria-label="Notifications">

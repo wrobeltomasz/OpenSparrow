@@ -72,6 +72,7 @@ $userCaps = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>" />
     <link href="assets/css/styles.css" rel="stylesheet" />
+    <link href="assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />
     <style nonce="<?php echo $cspNonce; ?>">
         .calendar-header {
             display: flex;

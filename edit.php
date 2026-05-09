@@ -85,6 +85,7 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf->token(), ENT_QUOTES, 'UTF-8'); ?>">
     <link href="/assets/css/styles.css" rel="stylesheet">
+    <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)">
     <style>
         .tag-badge { background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #cbd5e1; margin-right: 4px; display: inline-block; }
     </style>
