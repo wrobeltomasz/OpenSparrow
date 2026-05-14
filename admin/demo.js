@@ -1,0 +1,248 @@
+const DEMOS = {
+    crm: {
+        label:       'CRM',
+        description: 'Customer Relationship Management — companies, contacts, deals, and activities.',
+        schema:      'spw_crm',
+        tables:      ['companies', 'contacts', 'deals', 'activities'],
+        color:       '#3b82f6',
+        icon:        '🤝',
+    },
+    wms: {
+        label:       'WMS',
+        description: 'Warehouse Management System — warehouses, products, stock levels, and movements.',
+        schema:      'spw_wms',
+        tables:      ['warehouses', 'products', 'stock', 'movements'],
+        color:       '#f59e0b',
+        icon:        '📦',
+    },
+    tasks: {
+        label:       'Task Management',
+        description: 'Project & task tracking — projects, tasks, and time logs.',
+        schema:      'spw_tasks',
+        tables:      ['projects', 'tasks', 'time_logs'],
+        color:       '#10b981',
+        icon:        '✅',
+    },
+};
+
+function getCsrf() {
+    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
+function apiPost(action, body) {
+    return fetch(`api.php?action=${action}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
+        body:    JSON.stringify(body),
+    }).then(r => r.json());
+}
+
+function statusMsg(container, type, text) {
+    let el = container.querySelector('.demo-status-msg');
+    if (!el) {
+        el = document.createElement('p');
+        el.className = 'demo-status-msg';
+        container.appendChild(el);
+    }
+    el.className = `demo-status-msg admin-${type === 'error' ? 'error' : 'notice'}`;
+    el.textContent = text;
+}
+
+export function renderDemoPage({ workspaceEl }) {
+    workspaceEl.innerHTML = '<p style="color:var(--muted);margin-top:0">Loading…</p>';
+    (async () => {
+        try {
+            const res = await fetch('api.php?action=demo_status');
+            const d   = await res.json();
+            if (d.installed) {
+                renderInstalled(workspaceEl, d.meta);
+            } else {
+                renderInstallForm(workspaceEl);
+            }
+        } catch (e) {
+            workspaceEl.innerHTML = `<p class="admin-error">Error: ${e.message}</p>`;
+        }
+    })();
+}
+
+function renderInstallForm(workspaceEl) {
+    workspaceEl.innerHTML = '';
+
+    const h2 = document.createElement('h2');
+    h2.style.marginTop = '0';
+    h2.textContent = 'Install Demo System';
+    workspaceEl.appendChild(h2);
+
+    const intro = document.createElement('p');
+    intro.style.color = 'var(--muted)';
+    intro.textContent = 'Choose a demo system. Installs a dedicated PostgreSQL schema, tables, and merges sample config into schema.json, dashboard.json, calendar.json, workflows.json, and views.json.';
+    workspaceEl.appendChild(intro);
+
+    const grid = document.createElement('div');
+    grid.className = 'demo-cards';
+    workspaceEl.appendChild(grid);
+
+    let selectedType = null;
+
+    const confirmSection = document.createElement('div');
+    confirmSection.className = 'demo-confirm-section';
+    confirmSection.style.display = 'none';
+
+    const warningBox = document.createElement('div');
+    warningBox.className = 'demo-warning';
+
+    const confirmLabel = document.createElement('label');
+    confirmLabel.textContent = 'Type CONFIRM to proceed:';
+    confirmLabel.style.cssText = 'display:block;font-weight:600;margin-top:16px;';
+
+    const confirmInput = document.createElement('input');
+    confirmInput.type        = 'text';
+    confirmInput.placeholder = 'CONFIRM';
+    confirmInput.className   = 'demo-confirm-input';
+
+    const installBtn = document.createElement('button');
+    installBtn.textContent = 'Install Demo';
+    installBtn.className   = 'btn-primary';
+    installBtn.style.marginTop = '12px';
+    installBtn.disabled = true;
+
+    confirmInput.addEventListener('input', () => {
+        installBtn.disabled = confirmInput.value !== 'CONFIRM';
+    });
+
+    installBtn.addEventListener('click', async () => {
+        if (!selectedType || confirmInput.value !== 'CONFIRM') return;
+        installBtn.disabled  = true;
+        installBtn.textContent = 'Installing…';
+        try {
+            const d = await apiPost('demo_install', { type: selectedType, confirm: 'CONFIRM' });
+            if (d.status === 'success') {
+                renderDemoPage({ workspaceEl });
+            } else {
+                statusMsg(confirmSection, 'error', d.error ?? 'Installation failed.');
+                installBtn.disabled  = false;
+                installBtn.textContent = 'Install Demo';
+            }
+        } catch (e) {
+            statusMsg(confirmSection, 'error', e.message);
+            installBtn.disabled  = false;
+            installBtn.textContent = 'Install Demo';
+        }
+    });
+
+    confirmSection.appendChild(warningBox);
+    confirmSection.appendChild(confirmLabel);
+    confirmSection.appendChild(confirmInput);
+    confirmSection.appendChild(installBtn);
+    workspaceEl.appendChild(confirmSection);
+
+    Object.entries(DEMOS).forEach(([key, def]) => {
+        const card = document.createElement('div');
+        card.className   = 'demo-card';
+        card.dataset.type = key;
+        card.innerHTML   = `
+            <div class="demo-card-emoji">${def.icon}</div>
+            <div class="demo-card-title">${def.label}</div>
+            <div class="demo-card-desc">${def.description}</div>
+            <div class="demo-card-meta">
+                <code class="demo-schema-badge">${def.schema}</code>
+                <span class="demo-card-tables">${def.tables.join(' · ')}</span>
+            </div>
+        `;
+        card.style.setProperty('--demo-color', def.color);
+
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.demo-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedType = key;
+            confirmInput.value   = '';
+            installBtn.disabled  = true;
+            confirmSection.style.display = '';
+            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into schema.json, dashboard.json, calendar.json, workflows.json, and views.json. Existing table keys with the same names will be overwritten.`;
+        });
+
+        grid.appendChild(card);
+    });
+}
+
+function renderInstalled(workspaceEl, meta) {
+    workspaceEl.innerHTML = '';
+    const def = DEMOS[meta.type] ?? { label: meta.type, color: '#888', icon: '🗂' };
+
+    const h2 = document.createElement('h2');
+    h2.style.marginTop = '0';
+    h2.textContent = 'Demo Installed';
+    workspaceEl.appendChild(h2);
+
+    const badge = document.createElement('div');
+    badge.className = 'demo-installed-badge';
+    badge.style.borderColor = def.color;
+    badge.innerHTML = `
+        <span class="demo-installed-emoji">${def.icon}</span>
+        <div>
+            <strong>${def.label}</strong>
+            <div class="demo-installed-meta">
+                Schema: <code>${meta.schema}</code> &nbsp;·&nbsp;
+                Installed: ${meta.installed_at ?? '—'}
+            </div>
+            <div class="demo-installed-tables">Tables: ${(meta.tables ?? []).join(', ')}</div>
+        </div>
+    `;
+    workspaceEl.appendChild(badge);
+
+    const sep = document.createElement('hr');
+    sep.style.margin = '24px 0';
+    workspaceEl.appendChild(sep);
+
+    const uninstallWrap = document.createElement('div');
+    uninstallWrap.className = 'demo-confirm-section';
+
+    const warn = document.createElement('div');
+    warn.className   = 'demo-warning demo-warning-danger';
+    warn.textContent = `Uninstalling will DROP SCHEMA ${meta.schema} CASCADE (all data lost) and remove demo entries from all JSON config files. This cannot be undone.`;
+
+    const lbl = document.createElement('label');
+    lbl.textContent = 'Type CONFIRM to uninstall:';
+    lbl.style.cssText = 'display:block;font-weight:600;margin-top:16px;';
+
+    const confirmInput = document.createElement('input');
+    confirmInput.type        = 'text';
+    confirmInput.placeholder = 'CONFIRM';
+    confirmInput.className   = 'demo-confirm-input';
+
+    const uninstallBtn = document.createElement('button');
+    uninstallBtn.textContent = 'Uninstall Demo';
+    uninstallBtn.className   = 'btn-danger';
+    uninstallBtn.style.marginTop = '12px';
+    uninstallBtn.disabled = true;
+
+    confirmInput.addEventListener('input', () => {
+        uninstallBtn.disabled = confirmInput.value !== 'CONFIRM';
+    });
+
+    uninstallBtn.addEventListener('click', async () => {
+        if (confirmInput.value !== 'CONFIRM') return;
+        uninstallBtn.disabled   = true;
+        uninstallBtn.textContent = 'Uninstalling…';
+        try {
+            const d = await apiPost('demo_uninstall', { confirm: 'CONFIRM' });
+            if (d.status === 'success') {
+                renderDemoPage({ workspaceEl });
+            } else {
+                statusMsg(uninstallWrap, 'error', d.error ?? 'Uninstall failed.');
+                uninstallBtn.disabled   = false;
+                uninstallBtn.textContent = 'Uninstall Demo';
+            }
+        } catch (e) {
+            statusMsg(uninstallWrap, 'error', e.message);
+            uninstallBtn.disabled   = false;
+            uninstallBtn.textContent = 'Uninstall Demo';
+        }
+    });
+
+    uninstallWrap.appendChild(warn);
+    uninstallWrap.appendChild(lbl);
+    uninstallWrap.appendChild(confirmInput);
+    uninstallWrap.appendChild(uninstallBtn);
+    workspaceEl.appendChild(uninstallWrap);
+}

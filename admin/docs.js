@@ -626,6 +626,74 @@ export function renderDocumentation(ctx) {
                 Both sets of changes take effect on the frontend simultaneously.
             </p>
 
+            <h3 id="doc-11b" style="color: #2563eb; margin-top: 30px;">11b. Demo Systems (Quick-Start Templates)</h3>
+            <p>
+                <strong>System → Demo Systems</strong> provides three pre-built, fully-configured demo applications. Each includes a complete PostgreSQL schema, seed data, dashboard widgets, workflows, and calendar sources — everything needed to explore OpenSparrow features in minutes.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>What gets installed:</strong>
+                    <ul style="padding-left: 20px; margin-top: 5px;">
+                        <li>New PostgreSQL schema (e.g. <code>spw_crm</code>) with demo tables.</li>
+                        <li>Realistic seed data (15+ records per table, dates relative to installation time).</li>
+                        <li>Schema configuration entries in <code>includes/schema.json</code> with foreign keys, subtables, and column descriptions.</li>
+                        <li>Dashboard widgets in <code>includes/dashboard.json</code> (stat cards, charts, lists).</li>
+                        <li>Calendar sources and workflows in <code>includes/workflows.json</code>.</li>
+                        <li>Optional SQL views for derived data (e.g. low-stock products).</li>
+                    </ul>
+                </li>
+                <li><strong>Safety:</strong> Installation and uninstallation both require typing <code>CONFIRM</code> to prevent accidental data loss.</li>
+                <li><strong>Cleanup on uninstall:</strong> The demo schema is dropped from PostgreSQL (CASCADE), and config files are removed if they contain only demo content. Non-demo configurations are preserved.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Demo 1: CRM (Customer Relationship Management)</h4>
+            <p>Manage companies, contacts, sales deals, and activity logs. Demonstrates foreign keys, subtables, and workflow steps.</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Tables:</strong> Companies (15 records), Contacts (6), Deals (6), Activities (5).</li>
+                <li><strong>Features:</strong> Company-to-contact one-to-many, deal stages with color coding (Lead, Qualified, Proposal, Negotiation, Won, Lost), activity types (Call, Email, Meeting, Task, Note).</li>
+                <li><strong>Dashboard:</strong> 3 stat cards (Companies, Contacts, Pipeline Value) + bar chart (Deals by Stage) + pie chart (Activities Status).</li>
+                <li><strong>Workflow:</strong> <em>New CRM Deal</em> — add company → select contact → create deal → log activity.</li>
+                <li><strong>Schema:</strong> <code>spw_crm</code>.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Demo 2: WMS (Warehouse Management System)</h4>
+            <p>Track inventory across warehouses, manage product stock levels, and log movements (inbound, outbound, transfers).</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Tables:</strong> Warehouses (5 records), Products (6), Stock (10), Movements (5).</li>
+                <li><strong>Features:</strong> Low-stock alerts via a filtered SQL view (<code>v_demo_wms_stock</code>), movement types with color coding (Inbound, Outbound, Transfer, Adjustment).</li>
+                <li><strong>Dashboard:</strong> 3 stat cards (Warehouses, Products, Stock Entries) + bar chart (Movements by Type) + pie chart (Stock by Category).</li>
+                <li><strong>Workflow:</strong> <em>New Stock Movement</em> — select product → set stock level → log movement.</li>
+                <li><strong>Schema:</strong> <code>spw_wms</code>.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Demo 3: Task Management</h4>
+            <p>Organize projects, assign tasks, track time spent, and manage deadlines. Demonstrates priorities, statuses, and subtables.</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Tables:</strong> Projects (5 records), Tasks (7), Time Logs (9).</li>
+                <li><strong>Features:</strong> Task priority levels (Low, Medium, High, Critical), status tracking (Todo, In Progress, Review, Done, Blocked), hourly time logging.</li>
+                <li><strong>Dashboard:</strong> 3 stat cards (Projects, Open Tasks, Total Hours) + pie chart (Task Status) + list (Overdue Tasks).</li>
+                <li><strong>Workflow:</strong> <em>New Project Setup</em> — create project → add multiple tasks → log hours per task.</li>
+                <li><strong>Schema:</strong> <code>spw_tasks</code>.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Installation & Uninstallation flow</h4>
+            <ol style="padding-left: 20px;">
+                <li>Open <strong>System → Demo Systems</strong> and select one of three demo cards (CRM, WMS, Tasks).</li>
+                <li>A panel displays the demo name, description, and target PostgreSQL schema.</li>
+                <li>Click <strong>Install Demo</strong>. A text input asks for confirmation — type <code>CONFIRM</code> and click <strong>Proceed</strong>.</li>
+                <li>On success, the schema and config files are created. The panel switches to show installed details and an <strong>Uninstall</strong> button.</li>
+                <li>To uninstall: click <strong>Uninstall Demo</strong>, type <code>CONFIRM</code>, and click <strong>Proceed</strong>. The schema is dropped and config files cleaned up.</li>
+                <li>Demo content is isolated — you can use demos alongside your own tables and configurations.</li>
+            </ol>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Data & configuration notes</h4>
+            <ul style="padding-left: 20px;">
+                <li><strong>Realistic seed data:</strong> All dates in seed records are relative to installation time (±5 days from NOW) to keep demo data fresh.</li>
+                <li><strong>Column descriptions:</strong> Every column in the schema includes a human-readable description, visible as tooltips in the data grid.</li>
+                <li><strong>Enum colors:</strong> Status fields use color-coded badges (e.g. deal stages: grey for Lead, green for Won, red for Lost).</li>
+                <li><strong>Foreign key dropdowns:</strong> All foreign keys are configured with display columns for human-readable selections (e.g. contacts show first + last name, not numeric IDs).</li>
+                <li><strong>Subtables:</strong> Parent records expand to show related children inline (e.g. a company card shows all its contacts and deals).</li>
+            </ul>
+
             <h3 id="doc-12" style="color: #2563eb; margin-top: 30px;">12. Deployment Notes</h3>
             <ul style="padding-left: 20px;">
                 <li><strong>Deny public access to <code>includes/</code>:</strong> Configure your web server so <code>database.json</code>, <code>schema.json</code> and other JSON config files cannot be fetched directly. An <code>.htaccess</code> rule blocking <code>*.json</code> is included by default.</li>

@@ -2055,3 +2055,4 @@ if ($action === 'cron_purge_log') {
     }
     exit;
 }
+require_once __DIR__ . '/api_demo.php';

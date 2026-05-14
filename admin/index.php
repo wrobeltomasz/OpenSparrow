@@ -236,6 +236,10 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
                         M2M Builder
                     </button>
+                    <button class="admin-tab" data-file="demo">
+                        <img class="nav-item-icon" src="../assets/icons/playground.png" alt="">
+                        Demo Systems
+                    </button>
                 </div>
             </div>
 
