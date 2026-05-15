@@ -48,6 +48,9 @@ export async function initWorkflows(menuListEl, containerEl, titleEl, appSchema)
 
     // Restore grid UI elements when navigating back to standard tables
     document.addEventListener("tableLoaded", () => {
+        const bar = document.getElementById('wf-step-bar');
+        if (bar) bar.remove();
+
         const gridUI = document.querySelectorAll('.actions, #filterBar, #globalSearch, #columnFilter, #addRow');
         gridUI.forEach(el => el.style.display = '');
     });
