@@ -687,3 +687,142 @@ body {
     border-radius: 50%;
     background: var(--accent);
 }
+
+/* ── Demo Systems tab ─────────────────────────────────────────────── */
+.demo-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.demo-card {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: var(--card-bg);
+    position: relative;
+}
+
+.demo-card:hover {
+    border-color: var(--demo-color, var(--accent));
+    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+}
+
+.demo-card.selected {
+    border-color: var(--demo-color, var(--accent));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--demo-color, var(--accent)) 20%, transparent);
+}
+
+.demo-card-emoji {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    line-height: 1;
+}
+
+.demo-card-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.demo-card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.demo-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.demo-schema-badge {
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.demo-card-tables {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.demo-confirm-section {
+    margin-top: 24px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    max-width: 560px;
+}
+
+.demo-warning {
+    background: #fff7ed;
+    border: 1px solid #fbbf24;
+    color: #92400e;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 4px;
+}
+
+.demo-warning-danger {
+    background: #fef2f2;
+    border-color: #f87171;
+    color: #7f1d1d;
+}
+
+.demo-confirm-input {
+    display: block;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    width: 220px;
+    background: var(--input-bg);
+    color: var(--text);
+}
+
+.demo-installed-badge {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 20px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--card-bg);
+    max-width: 480px;
+}
+
+.demo-installed-emoji {
+    font-size: 2.2rem;
+    line-height: 1;
+}
+
+.demo-installed-meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.demo-installed-tables {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.demo-status-msg {
+    margin-top: 12px;
+    font-size: 13px;
+}

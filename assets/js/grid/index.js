@@ -6,6 +6,8 @@ import { renderThead } from './header/render.js';
 import { renderTbody } from './body/render.js';
 import { loadCommentCounts } from './comments/counts.js';
 import { initPreviewPopup, clearPreviewCache } from './comments/preview-popup.js';
+import { loadM2mColumns, clearM2mStore } from './m2m/loader.js';
+import { initM2mPopup } from './m2m/popup.js';
 import { computeVirtual } from './cells/virtual-cell.js';
 
 export { getState, setFilteredData };
@@ -24,7 +26,11 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         state.currentTable = table;
         state.fkCache = new Map();
         clearPreviewCache();
+        clearM2mStore();
         state.fullData = data.rows || [];
+        if (data.truncated) {
+            showToast(`Showing first ${state.fullData.length} records (limit set in Schema settings).`, 'info');
+        }
 
         // Pre-compute virtual column values into each row so sort/filter work transparently
         const tableCols = schema.tables[table]?.columns || {};
@@ -47,7 +53,10 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         });
         state.filteredData = state.fullData.slice();
         state.unsortedFilteredData = state.filteredData.slice();
-        state.sortState = { column: null, asc: true };
+        const firstSort = schema.tables[table]?.default_sort?.[0];
+        state.sortState = firstSort?.column
+            ? { column: firstSort.column, asc: (firstSort.dir ?? 'asc').toLowerCase() !== 'desc' }
+            : { column: null, asc: true };
         state.gridTitleEl = gridTitleEl;
         state.addRowBtn = addRowBtn;
         state.containerEl = document.getElementById('grid');
@@ -117,6 +126,7 @@ export async function renderGrid(schema) {
     _setupPagination(schema);
     debugLog('Grid rendered', { rows: pageRows.length });
     loadCommentCounts(pageRows);
+    loadM2mColumns(pageRows, schema);
 }
 
 export async function resetFilters(schema) {
@@ -126,4 +136,5 @@ export async function resetFilters(schema) {
 
 document.addEventListener('DOMContentLoaded', () => {
     initPreviewPopup();
+    initM2mPopup();
 });

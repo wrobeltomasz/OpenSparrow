@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/api_helpers.php';
 
 session_start();
 if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
@@ -36,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting'];
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m'];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);
@@ -69,74 +70,190 @@ if ($action === 'init_db') {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
 
-        $schemaIdent = '"' . str_replace('"', '""', sys_schema()) . '"';
-        $tUsers = sys_table('users');
-        $tUsersLog = sys_table('users_log');
-        $tUsersNotifications = sys_table('users_notifications');
-        $tCronLog = sys_table('users_notifications_log');
-        $tFiles = sys_table('files');
-        $tLoginAttempts = sys_table('login_attempts');
-        $tComments = sys_table('comments');
+        $schemaIdent      = '"' . str_replace('"', '""', sys_schema()) . '"';
+        $tUsers           = sys_table('users');
+        $tUsersLog        = sys_table('users_log');
+        $tLoginAttempts   = sys_table('login_attempts');
+        $tNotifications   = sys_table('users_notifications');
+        $tCronLog         = sys_table('users_notifications_log');
+        $tFiles           = sys_table('files');
+        $tComments        = sys_table('comments');
         $tRecordSnapshots = sys_table('record_snapshots');
+        $tRecordOwners    = sys_table('record_owners');
+        $tMigrations      = sys_table('migrations');
 
-        // Prepare missing DB updates and tables creation
-        $queries = [
+        // Bootstrap: schema + migrations tracker must exist before anything else.
+        $bootstrap = [
             "CREATE SCHEMA IF NOT EXISTS $schemaIdent",
-			"CREATE TABLE IF NOT EXISTS $tUsers ( id serial4 NOT NULL, username varchar(50) NOT NULL, password_hash varchar(255) NOT NULL, salt varchar(64), password_algo varchar(32) DEFAULT 'argon2id' NOT NULL, password_params jsonb DEFAULT '{}'::jsonb, is_active bool DEFAULT true, role varchar(20) DEFAULT 'editor' NOT NULL, CONSTRAINT spw_users_pkey PRIMARY KEY (id), CONSTRAINT spw_users_username_key UNIQUE (username) )",
-            "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS is_active bool DEFAULT true",
-            "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS \"role\" varchar(20) DEFAULT 'editor' NOT NULL",
-			"ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS salt varchar(64)",
-			"ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS password_algo varchar(32) DEFAULT 'argon2id' NOT NULL",
-			"ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS password_params jsonb DEFAULT '{}'::jsonb",
-            "CREATE TABLE IF NOT EXISTS $tUsersLog ( id serial4 NOT NULL, user_id int4 NOT NULL, \"action\" varchar(50) NOT NULL, target_table varchar(100), record_id int4, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT spw_users_log_pkey PRIMARY KEY (id) )",
-            "CREATE TABLE IF NOT EXISTS $tUsersNotifications ( id serial4 NOT NULL, user_id int8 NOT NULL, title varchar(255) NOT NULL, link varchar(255), source_table varchar(100), source_id int8, is_read bool DEFAULT false, notify_date date NOT NULL, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT spw_users_notifications_pkey PRIMARY KEY (id), CONSTRAINT spw_users_notifications_user_id_source_table_source_id_notify_d_key UNIQUE (user_id, source_table, source_id, notify_date) )",
-            "CREATE TABLE IF NOT EXISTS $tFiles ( id serial4 NOT NULL, \"uuid\" uuid DEFAULT gen_random_uuid() NOT NULL, \"name\" varchar(255) NOT NULL, display_name varchar(255) NULL, \"type\" varchar(50) NOT NULL, mime_type varchar(100) NOT NULL, \"extension\" varchar(20) NOT NULL, size_bytes int8 DEFAULT 0 NOT NULL, storage_path text NOT NULL, related_table varchar(100) NULL, related_id int4 NULL, related_field varchar(100) NULL, uploaded_by int4 NULL, created_at timestamp DEFAULT now() NOT NULL, updated_at timestamp DEFAULT now() NOT NULL, deleted_at timestamp NULL, description text NULL, tags _text NULL, metadata jsonb NULL, CONSTRAINT spw_files_pkey PRIMARY KEY (id), CONSTRAINT spw_files_uuid_key UNIQUE (uuid), CONSTRAINT spw_files_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES $tUsers(id) ON DELETE SET NULL)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_files_deleted_at ON $tFiles USING btree (deleted_at) WHERE (deleted_at IS NULL)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_files_metadata ON $tFiles USING gin (metadata)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_files_related ON $tFiles USING btree (related_table, related_id)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_files_tags ON $tFiles USING gin (tags)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_files_type ON $tFiles USING btree (type)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_files_uploaded_by ON $tFiles USING btree (uploaded_by)",
-            "CREATE TABLE IF NOT EXISTS $tLoginAttempts ( id serial4 NOT NULL, username varchar(50) NOT NULL, ip_hash varchar(64) NOT NULL, attempted_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL, CONSTRAINT spw_login_attempts_pkey PRIMARY KEY (id) )",
-            "CREATE INDEX IF NOT EXISTS idx_spw_login_attempts_username ON $tLoginAttempts USING btree (username, attempted_at)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_login_attempts_ip ON $tLoginAttempts USING btree (ip_hash, attempted_at)",
-            "CREATE TABLE IF NOT EXISTS $tCronLog ( id serial4 NOT NULL, started_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL, finished_at timestamp NULL, status varchar(20) NOT NULL DEFAULT 'running', triggered_by varchar(20) NOT NULL DEFAULT 'cron', sources_processed int4 NULL, notifications_created int4 NULL, error_message text NULL, CONSTRAINT spw_users_notifications_log_pkey PRIMARY KEY (id) )",
-            "CREATE INDEX IF NOT EXISTS idx_spw_cron_log_started_at ON $tCronLog USING btree (started_at)",
-            "UPDATE $tUsers SET role = 'editor' WHERE role = 'full'",
-            "UPDATE $tUsers SET role = 'viewer' WHERE role = 'readonly'",
-            "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS avatar_id smallint",
-            "CREATE TABLE IF NOT EXISTS $tComments ( id serial4 NOT NULL, related_table varchar(100) NOT NULL, related_id int4 NOT NULL, user_id int4 NOT NULL, body text NOT NULL, created_at timestamp DEFAULT now() NOT NULL, deleted_at timestamp NULL, CONSTRAINT spw_comments_pkey PRIMARY KEY (id), CONSTRAINT spw_comments_body_len CHECK (char_length(body) <= 4000), CONSTRAINT spw_comments_user_id_fkey FOREIGN KEY (user_id) REFERENCES $tUsers(id) ON DELETE SET NULL )",
-            "CREATE INDEX IF NOT EXISTS idx_spw_comments_related ON $tComments USING btree (related_table, related_id, created_at)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_comments_user_id ON $tComments USING btree (user_id)",
-            "CREATE TABLE IF NOT EXISTS $tRecordSnapshots ( id serial4 NOT NULL, log_id int4 NOT NULL, table_name varchar(100) NOT NULL, record_id int4 NOT NULL, snapshot jsonb NOT NULL, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT spw_record_snapshots_pkey PRIMARY KEY (id), CONSTRAINT spw_record_snapshots_log_id_fkey FOREIGN KEY (log_id) REFERENCES $tUsersLog(id) ON DELETE CASCADE )",
-            "ALTER TABLE $tRecordSnapshots DROP COLUMN IF EXISTS snapshot_type",
-            "CREATE INDEX IF NOT EXISTS idx_spw_record_snapshots_log_id ON $tRecordSnapshots USING btree (log_id)",
-            "CREATE INDEX IF NOT EXISTS idx_spw_record_snapshots_table_record ON $tRecordSnapshots USING btree (table_name, record_id)"
+            "CREATE TABLE IF NOT EXISTS $tMigrations ( id serial4 NOT NULL, name varchar(100) NOT NULL, applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id), CONSTRAINT spw_migrations_name_key UNIQUE (name) )",
         ];
-        
-        foreach ($queries as $q) {
-            $res = @pg_query($conn, $q);
-            if (!$res) {
-                admin_db_fail($conn, 'init_db');
+        foreach ($bootstrap as $q) {
+            if (!@pg_query($conn, $q)) {
+                admin_db_fail($conn, 'init_db:bootstrap');
             }
         }
 
+        // Load already-applied migration names.
+        $appliedRes = pg_query($conn, "SELECT name FROM $tMigrations");
+        if (!$appliedRes) {
+            admin_db_fail($conn, 'init_db:load_migrations');
+        }
+        $applied = [];
+        while ($r = pg_fetch_row($appliedRes)) {
+            $applied[$r[0]] = true;
+        }
+
+        // Migration registry — append only, never edit existing entries.
+        // Each key is a unique migration name; value is an array of SQL statements.
+        $migrations = [
+
+            '2.0_baseline' => [
+                // spw_users
+                "CREATE TABLE IF NOT EXISTS $tUsers ( id serial4 NOT NULL, username varchar(50) NOT NULL, password_hash varchar(255) NOT NULL, salt varchar(64), password_algo varchar(32) DEFAULT 'argon2id' NOT NULL, password_params jsonb DEFAULT '{}'::jsonb, is_active bool DEFAULT true, role varchar(20) DEFAULT 'editor' NOT NULL, CONSTRAINT spw_users_pkey PRIMARY KEY (id), CONSTRAINT spw_users_username_key UNIQUE (username) )",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS is_active bool DEFAULT true",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS role varchar(20) DEFAULT 'editor' NOT NULL",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS salt varchar(64)",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS password_algo varchar(32) DEFAULT 'argon2id' NOT NULL",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS password_params jsonb DEFAULT '{}'::jsonb",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS avatar_id smallint",
+                "UPDATE $tUsers SET role = 'editor' WHERE role = 'full'",
+                "UPDATE $tUsers SET role = 'viewer' WHERE role = 'readonly'",
+                // spw_users_log
+                "CREATE TABLE IF NOT EXISTS $tUsersLog ( id serial4 NOT NULL, user_id int4 NOT NULL, action varchar(50) NOT NULL, target_table varchar(100), record_id int4, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT spw_users_log_pkey PRIMARY KEY (id) )",
+                // spw_login_attempts
+                "CREATE TABLE IF NOT EXISTS $tLoginAttempts ( id serial4 NOT NULL, username varchar(50) NOT NULL, ip_hash varchar(64) NOT NULL, attempted_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL, CONSTRAINT spw_login_attempts_pkey PRIMARY KEY (id) )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_login_attempts_username ON $tLoginAttempts USING btree (username, attempted_at)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_login_attempts_ip ON $tLoginAttempts USING btree (ip_hash, attempted_at)",
+                // spw_users_notifications + spw_users_notifications_log
+                "CREATE TABLE IF NOT EXISTS $tNotifications ( id serial4 NOT NULL, user_id int8 NOT NULL, title varchar(255) NOT NULL, link varchar(255), source_table varchar(100), source_id int8, is_read bool DEFAULT false, notify_date date NOT NULL, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT spw_users_notifications_pkey PRIMARY KEY (id), CONSTRAINT spw_users_notifications_user_id_source_table_source_id_notify_d_key UNIQUE (user_id, source_table, source_id, notify_date) )",
+                "CREATE TABLE IF NOT EXISTS $tCronLog ( id serial4 NOT NULL, started_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL, finished_at timestamp NULL, status varchar(20) NOT NULL DEFAULT 'running', triggered_by varchar(20) NOT NULL DEFAULT 'cron', sources_processed int4 NULL, notifications_created int4 NULL, error_message text NULL, CONSTRAINT spw_users_notifications_log_pkey PRIMARY KEY (id) )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_cron_log_started_at ON $tCronLog USING btree (started_at)",
+                // spw_files
+                "CREATE TABLE IF NOT EXISTS $tFiles ( id serial4 NOT NULL, uuid uuid DEFAULT gen_random_uuid() NOT NULL, name varchar(255) NOT NULL, display_name varchar(255) NULL, type varchar(50) NOT NULL, mime_type varchar(100) NOT NULL, extension varchar(20) NOT NULL, size_bytes int8 DEFAULT 0 NOT NULL, storage_path text NOT NULL, related_table varchar(100) NULL, related_id int4 NULL, related_field varchar(100) NULL, uploaded_by int4 NULL, created_at timestamp DEFAULT now() NOT NULL, updated_at timestamp DEFAULT now() NOT NULL, deleted_at timestamp NULL, description text NULL, tags _text NULL, metadata jsonb NULL, CONSTRAINT spw_files_pkey PRIMARY KEY (id), CONSTRAINT spw_files_uuid_key UNIQUE (uuid), CONSTRAINT spw_files_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES $tUsers(id) ON DELETE SET NULL )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_files_deleted_at ON $tFiles USING btree (deleted_at) WHERE (deleted_at IS NULL)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_files_metadata ON $tFiles USING gin (metadata)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_files_related ON $tFiles USING btree (related_table, related_id)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_files_tags ON $tFiles USING gin (tags)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_files_type ON $tFiles USING btree (type)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_files_uploaded_by ON $tFiles USING btree (uploaded_by)",
+                // spw_comments
+                "CREATE TABLE IF NOT EXISTS $tComments ( id serial4 NOT NULL, related_table varchar(100) NOT NULL, related_id int4 NOT NULL, user_id int4 NOT NULL, body text NOT NULL, created_at timestamp DEFAULT now() NOT NULL, deleted_at timestamp NULL, CONSTRAINT spw_comments_pkey PRIMARY KEY (id), CONSTRAINT spw_comments_body_len CHECK (char_length(body) <= 4000), CONSTRAINT spw_comments_user_id_fkey FOREIGN KEY (user_id) REFERENCES $tUsers(id) ON DELETE SET NULL )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_comments_related ON $tComments USING btree (related_table, related_id, created_at)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_comments_user_id ON $tComments USING btree (user_id)",
+                // spw_record_snapshots
+                "CREATE TABLE IF NOT EXISTS $tRecordSnapshots ( id serial4 NOT NULL, log_id int4 NOT NULL, table_name varchar(100) NOT NULL, record_id int4 NOT NULL, snapshot jsonb NOT NULL, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT spw_record_snapshots_pkey PRIMARY KEY (id), CONSTRAINT spw_record_snapshots_log_id_fkey FOREIGN KEY (log_id) REFERENCES $tUsersLog(id) ON DELETE CASCADE )",
+                "ALTER TABLE $tRecordSnapshots DROP COLUMN IF EXISTS snapshot_type",
+                "CREATE INDEX IF NOT EXISTS idx_spw_record_snapshots_log_id ON $tRecordSnapshots USING btree (log_id)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_record_snapshots_table_record ON $tRecordSnapshots USING btree (table_name, record_id)",
+                // spw_record_owners
+                "CREATE TABLE IF NOT EXISTS $tRecordOwners ( id serial4 NOT NULL, table_name varchar(100) NOT NULL, record_id int4 NOT NULL, owner_id int4 NULL, changed_by int4 NULL, changed_at timestamp DEFAULT now() NOT NULL, is_current bool NOT NULL DEFAULT false, CONSTRAINT spw_record_owners_pkey PRIMARY KEY (id), CONSTRAINT spw_record_owners_owner_fkey FOREIGN KEY (owner_id) REFERENCES $tUsers(id) ON DELETE SET NULL, CONSTRAINT spw_record_owners_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES $tUsers(id) ON DELETE SET NULL )",
+                "ALTER TABLE $tRecordOwners ADD COLUMN IF NOT EXISTS changed_by int4 NULL",
+                "ALTER TABLE $tRecordOwners ADD COLUMN IF NOT EXISTS is_current bool NOT NULL DEFAULT false",
+                "ALTER TABLE $tRecordOwners DROP CONSTRAINT IF EXISTS spw_record_owners_unique",
+                "CREATE INDEX IF NOT EXISTS idx_spw_record_owners_current ON $tRecordOwners USING btree (table_name, record_id, is_current)",
+            ],
+
+            '2.0_record_owners_changed_at' => [
+                // Rename created_at → changed_at if the old name still exists.
+                "DO \$\$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'spw_record_owners' AND column_name = 'created_at') THEN ALTER TABLE $tRecordOwners RENAME COLUMN created_at TO changed_at; END IF; END \$\$",
+            ],
+
+            // Add future migrations below — never modify entries above.
+
+        ];
+
+        // Run each migration that has not been applied yet.
+        $applied_count = 0;
+        foreach ($migrations as $name => $queries) {
+            if (isset($applied[$name])) {
+                continue;
+            }
+            foreach ($queries as $q) {
+                if (!@pg_query($conn, $q)) {
+                    admin_db_fail($conn, "init_db:migration:{$name}");
+                }
+            }
+            $res = @pg_query_params($conn, "INSERT INTO $tMigrations (name) VALUES (\$1)", [$name]);
+            if (!$res) {
+                admin_db_fail($conn, "init_db:record_migration:{$name}");
+            }
+            $applied_count++;
+        }
+
         // Create default admin account for a clean installation (only when no users exist at all).
-        // Default credentials: admin / admin — must be changed immediately after first login.
-        $firstAdminHash = password_hash('admin', PASSWORD_DEFAULT);
+        // Generates a random temporary password logged to PHP error_log — must be changed immediately.
+        $tmpPassword    = bin2hex(random_bytes(12));
+        $firstAdminSalt = bin2hex(random_bytes(32));
+        $argonOpts      = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
+        $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, $argonOpts);
+        error_log('[OpenSparrow] First-run admin password: ' . $tmpPassword . ' — change immediately after login!');
         $resAdmin = @pg_query_params(
             $conn,
-            "INSERT INTO $tUsers (username, password_hash, is_active, role) SELECT 'admin', \$1, true, 'admin' WHERE NOT EXISTS (SELECT 1 FROM $tUsers LIMIT 1)",
-            [$firstAdminHash]
+            "INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role)
+             SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin'
+             WHERE NOT EXISTS (SELECT 1 FROM $tUsers LIMIT 1)",
+            [
+                $firstAdminHash,
+                $firstAdminSalt,
+                'argon2id',
+                json_encode($argonOpts),
+            ]
         );
         if (!$resAdmin) {
             admin_db_fail($conn, 'init_db:first_admin');
         }
 
+        $total = count($migrations);
+        $skipped = $total - $applied_count;
         header('Content-Type: application/json');
-        echo json_encode(['status' => 'success', 'message' => 'System tables initialized successfully.']);
+        echo json_encode([
+            'status'  => 'success',
+            'message' => "Migrations: {$applied_count} applied, {$skipped} already up to date.",
+        ]);
     } catch (Exception $e) {
         header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// List all migrations: known registry vs applied in DB
+if ($action === 'migrations_list') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+        $tMigrations = sys_table('migrations');
+
+        // Must match keys in init_db $migrations registry — append only.
+        $known = [
+            '2.0_baseline',
+        ];
+
+        $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");
+        $applied = [];
+        if ($appliedRes) {
+            while ($r = pg_fetch_assoc($appliedRes)) {
+                $applied[$r['name']] = $r['applied_at'];
+            }
+        }
+
+        $list = [];
+        foreach ($known as $name) {
+            $list[] = [
+                'name'       => $name,
+                'status'     => isset($applied[$name]) ? 'applied' : 'pending',
+                'applied_at' => $applied[$name] ?? null,
+            ];
+        }
+        foreach ($applied as $name => $at) {
+            if (!in_array($name, $known, true)) {
+                $list[] = ['name' => $name, 'status' => 'applied', 'applied_at' => $at];
+            }
+        }
+
+        echo json_encode(['status' => 'success', 'migrations' => $list]);
+    } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
     }
     exit;
@@ -192,10 +309,17 @@ if ($action === 'users_add') {
     try {
         require_once __DIR__ . '/../includes/db.php';
         require_once __DIR__ . '/../includes/api_helpers.php';
-        $conn = db_connect();
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $sql = "INSERT INTO " . sys_table('users') . " (username, password_hash, is_active, role) VALUES ($1, $2, true, $3) RETURNING id";
-        $res = @pg_query_params($conn, $sql, [$username, $hash, $role]);
+        $conn    = db_connect();
+        $newSalt = bin2hex(random_bytes(32));
+        $opts    = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
+        $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, $opts);
+        $sql     = 'INSERT INTO ' . sys_table('users')
+            . ' (username, password_hash, salt, password_algo, password_params, is_active, role)'
+            . ' VALUES ($1, $2, $3, $4, $5, true, $6) RETURNING id';
+        $res = @pg_query_params($conn, $sql, [
+            $username, $hash, $newSalt, 'argon2id',
+            json_encode($opts), $role,
+        ]);
         if (!$res) {
             admin_db_fail($conn, 'users_add');
         }
@@ -647,11 +771,12 @@ if ($action === 'export') {
     }
 
     $zip = new ZipArchive();
-    $zipFile = sys_get_temp_dir() . '/sparrow_config_' . time() . '.zip';
+    // Random suffix prevents temp file enumeration attacks
+    $zipFile = sys_get_temp_dir() . '/sparrow_config_' . bin2hex(random_bytes(8)) . '.zip';
     if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
         $includesDir = __DIR__ . '/../includes/';
-        // Dodałem files.json do backupu
-        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'database.json', 'security.json', 'workflows.json', 'files.json'];
+        // database.json excluded — contains plaintext DB credentials
+        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'security.json', 'workflows.json', 'files.json'];
         foreach ($filesToBackup as $f) {
             if (file_exists($includesDir . $f)) {
                 $zip->addFile($includesDir . $f, $f);
@@ -1045,7 +1170,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Allowed config files for read and write operations
 // Dodałem 'files' do autoryzowanych konfiguracji
-$allowedFiles = ['schema', 'dashboard', 'calendar', 'database', 'security', 'workflows', 'files'];
+$allowedFiles = ['schema', 'dashboard', 'calendar', 'database', 'security', 'workflows', 'files', 'views'];
 
 // Get content of a JSON config file
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
@@ -1202,3 +1327,732 @@ if ($action === 'get_db_columns') {
     }
     exit;
 }
+
+if ($action === 'performance_check') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+
+        $schemaJson   = @file_get_contents(__DIR__ . '/../includes/schema.json');
+        $dashJson     = @file_get_contents(__DIR__ . '/../includes/dashboard.json');
+        $schemaCfg    = $schemaJson  ? (json_decode($schemaJson,  true) ?? []) : [];
+        $dashCfg      = $dashJson    ? (json_decode($dashJson,    true) ?? []) : [];
+        $tables       = $schemaCfg['tables'] ?? [];
+        $widgets      = $dashCfg['widgets']  ?? [];
+
+        // Collect [pgSchema][tableName][column] = [reasons]
+        $needed = [];
+
+        foreach ($tables as $tableName => $tableCfg) {
+            $pgSchema = $tableCfg['schema'] ?? 'app';
+
+            // FK columns on this table (child side of a relation)
+            foreach (($tableCfg['foreign_keys'] ?? []) as $fkCol => $fkDef) {
+                if (!is_string($fkCol)) continue;
+                $needed[$pgSchema][$tableName][$fkCol][] = 'Foreign key column';
+            }
+
+            // Subtables: FK column lives on child table
+            foreach (($tableCfg['subtables'] ?? []) as $sub) {
+                $child   = $sub['table']       ?? '';
+                $fkCol   = $sub['foreign_key'] ?? '';
+                if ($child === '' || $fkCol === '') continue;
+                $childSchema = $tables[$child]['schema'] ?? 'app';
+                $needed[$childSchema][$child][$fkCol][] = "Subtable join from {$tableName}";
+            }
+
+            // Default sort columns
+            foreach (($tableCfg['default_sort'] ?? []) as $rule) {
+                $col = $rule['column'] ?? '';
+                if ($col !== '' && $col !== 'id') {
+                    $needed[$pgSchema][$tableName][$col][] = 'Default sort column';
+                }
+            }
+        }
+
+        // Dashboard widget columns
+        foreach ($widgets as $widget) {
+            $wTable = $widget['table'] ?? '';
+            if ($wTable === '' || !isset($tables[$wTable])) continue;
+            $wSchema = $tables[$wTable]['schema'] ?? 'app';
+            $wTitle  = $widget['title'] ?? ($widget['id'] ?? 'widget');
+            $query   = $widget['query'] ?? [];
+
+            foreach (($query['conditions'] ?? []) as $cond) {
+                $col = $cond['col'] ?? '';
+                if ($col !== '' && $col !== 'id') {
+                    $needed[$wSchema][$wTable][$col][] = "Widget filter: \"{$wTitle}\"";
+                }
+            }
+            $orderBy  = $query['order_by']      ?? '';
+            $groupCol = $query['group_column']   ?? '';
+            $aggCol   = $query['agg_column']     ?? '';
+            if ($orderBy  !== '' && $orderBy  !== 'id') $needed[$wSchema][$wTable][$orderBy][]  = "Widget ORDER BY: \"{$wTitle}\"";
+            if ($groupCol !== '' && $groupCol !== 'id') $needed[$wSchema][$wTable][$groupCol][] = "Widget GROUP BY: \"{$wTitle}\"";
+        }
+
+        // For each table fetch existing pg_indexes, build set of already-indexed leading columns
+        $suggestions = [];
+
+        foreach ($needed as $pgSchema => $schemaTables) {
+            foreach ($schemaTables as $tableName => $columns) {
+                $res = @pg_query_params(
+                    $conn,
+                    "SELECT indexdef FROM pg_indexes WHERE schemaname = \$1 AND tablename = \$2",
+                    [$pgSchema, $tableName]
+                );
+                $indexedCols = [];
+                if ($res) {
+                    while ($row = pg_fetch_row($res)) {
+                        // Extract column list from indexdef: "... ON schema.table USING btree (col1, col2)"
+                        if (preg_match('/\(([^)]+)\)/', $row[0], $m)) {
+                            foreach (explode(',', $m[1]) as $ic) {
+                                $ic = trim(preg_replace('/\s+(ASC|DESC|NULLS\s+(FIRST|LAST))\s*$/i', '', trim($ic)));
+                                $indexedCols[] = $ic;
+                            }
+                        }
+                    }
+                }
+
+                foreach ($columns as $col => $reasons) {
+                    if (in_array($col, $indexedCols, true)) continue;
+
+                    $priority = 'medium';
+                    foreach ($reasons as $r) {
+                        if (str_contains($r, 'Foreign key') || str_contains($r, 'Subtable join')) {
+                            $priority = 'high';
+                            break;
+                        }
+                    }
+
+                    $indexName    = 'idx_' . $tableName . '_' . $col;
+                    $suggestions[] = [
+                        'schema'   => $pgSchema,
+                        'table'    => $tableName,
+                        'column'   => $col,
+                        'reasons'  => array_values(array_unique($reasons)),
+                        'priority' => $priority,
+                        'sql'      => "CREATE INDEX IF NOT EXISTS {$indexName} ON \"{$pgSchema}\".\"{$tableName}\" ({$col});",
+                    ];
+                }
+            }
+        }
+
+        // High priority first, then alpha by table+column
+        usort($suggestions, static function ($a, $b) {
+            $pa = $a['priority'] === 'high' ? 0 : 1;
+            $pb = $b['priority'] === 'high' ? 0 : 1;
+            if ($pa !== $pb) return $pa - $pb;
+            $ta = $a['table'] . '.' . $a['column'];
+            $tb = $b['table'] . '.' . $b['column'];
+            return strcmp($ta, $tb);
+        });
+
+        echo json_encode(['status' => 'success', 'suggestions' => $suggestions, 'total' => count($suggestions)]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'performance_slow_queries') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+
+        // Check extension available
+        $extRes = @pg_query($conn, "SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'");
+        if (!$extRes || pg_num_rows($extRes) === 0) {
+            echo json_encode(['status' => 'unavailable', 'message' => 'pg_stat_statements extension is not installed. Run: CREATE EXTENSION pg_stat_statements;']);
+            exit;
+        }
+
+        $sql = "
+            SELECT query,
+                   calls,
+                   ROUND(mean_exec_time::numeric, 2)  AS mean_ms,
+                   ROUND(total_exec_time::numeric, 2) AS total_ms,
+                   ROUND(stddev_exec_time::numeric, 2) AS stddev_ms,
+                   rows
+            FROM pg_stat_statements
+            WHERE query NOT LIKE '%pg_stat_statements%'
+            ORDER BY mean_exec_time DESC
+            LIMIT 15
+        ";
+        $res = @pg_query($conn, $sql);
+        if (!$res) admin_db_fail($conn, 'slow_queries');
+
+        $rows = [];
+        while ($r = pg_fetch_assoc($res)) $rows[] = $r;
+        echo json_encode(['status' => 'success', 'rows' => $rows]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'performance_table_stats') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+
+        $schemaJson = @file_get_contents(__DIR__ . '/../includes/schema.json');
+        $schemaCfg  = $schemaJson ? (json_decode($schemaJson, true) ?? []) : [];
+        $tables     = $schemaCfg['tables'] ?? [];
+
+        // Build set of (pgSchema, tableName) pairs from schema.json
+        $tracked = [];
+        foreach ($tables as $tableName => $cfg) {
+            $tracked[] = [$cfg['schema'] ?? 'app', $tableName];
+        }
+
+        if (empty($tracked)) {
+            echo json_encode(['status' => 'success', 'rows' => []]);
+            exit;
+        }
+
+        $sql = "
+            SELECT s.schemaname,
+                   s.relname AS tablename,
+                   s.n_live_tup,
+                   s.n_dead_tup,
+                   CASE WHEN s.n_live_tup + s.n_dead_tup > 0
+                        THEN ROUND(100.0 * s.n_dead_tup / (s.n_live_tup + s.n_dead_tup), 1)
+                        ELSE 0 END AS dead_pct,
+                   s.seq_scan,
+                   s.idx_scan,
+                   TO_CHAR(s.last_vacuum,      'YYYY-MM-DD HH24:MI') AS last_vacuum,
+                   TO_CHAR(s.last_autovacuum,  'YYYY-MM-DD HH24:MI') AS last_autovacuum,
+                   TO_CHAR(s.last_analyze,     'YYYY-MM-DD HH24:MI') AS last_analyze,
+                   TO_CHAR(s.last_autoanalyze, 'YYYY-MM-DD HH24:MI') AS last_autoanalyze,
+                   pg_size_pretty(pg_total_relation_size(quote_ident(s.schemaname) || '.' || quote_ident(s.relname))) AS total_size,
+                   c.reltuples::bigint AS estimated_rows
+            FROM pg_stat_user_tables s
+            JOIN pg_class c ON c.relname = s.relname
+            JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = s.schemaname
+            WHERE (s.schemaname, s.relname) = ANY(\$1::text[][])
+            ORDER BY s.n_dead_tup DESC, s.seq_scan DESC
+        ";
+
+        $pairs = '{' . implode(',', array_map(fn($p) => '{"' . $p[0] . '","' . $p[1] . '"}', $tracked)) . '}';
+        $res = @pg_query_params($conn, $sql, [$pairs]);
+        if (!$res) {
+            // Fallback: query per table if array-of-arrays not supported
+            $rows = [];
+            foreach ($tracked as [$pgSchema, $tableName]) {
+                $r2 = @pg_query_params($conn, "
+                    SELECT s.schemaname, s.relname AS tablename,
+                           s.n_live_tup, s.n_dead_tup,
+                           CASE WHEN s.n_live_tup + s.n_dead_tup > 0
+                                THEN ROUND(100.0 * s.n_dead_tup / (s.n_live_tup + s.n_dead_tup), 1)
+                                ELSE 0 END AS dead_pct,
+                           s.seq_scan, s.idx_scan,
+                           TO_CHAR(s.last_autovacuum,  'YYYY-MM-DD HH24:MI') AS last_autovacuum,
+                           TO_CHAR(s.last_autoanalyze, 'YYYY-MM-DD HH24:MI') AS last_autoanalyze,
+                           pg_size_pretty(pg_total_relation_size(quote_ident(s.schemaname) || '.' || quote_ident(s.relname))) AS total_size,
+                           c.reltuples::bigint AS estimated_rows
+                    FROM pg_stat_user_tables s
+                    JOIN pg_class c ON c.relname = s.relname
+                    JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = s.schemaname
+                    WHERE s.schemaname = \$1 AND s.relname = \$2
+                ", [$pgSchema, $tableName]);
+                if ($r2 && $row = pg_fetch_assoc($r2)) $rows[] = $row;
+            }
+            echo json_encode(['status' => 'success', 'rows' => $rows]);
+            exit;
+        }
+
+        $rows = [];
+        while ($r = pg_fetch_assoc($res)) $rows[] = $r;
+        echo json_encode(['status' => 'success', 'rows' => $rows]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'performance_db_health') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+
+        $dbRes = @pg_query($conn, "
+            SELECT datname,
+                   blks_hit, blks_read,
+                   CASE WHEN blks_hit + blks_read > 0
+                        THEN ROUND(100.0 * blks_hit / (blks_hit + blks_read), 2)
+                        ELSE 100 END AS cache_hit_ratio,
+                   numbackends,
+                   xact_commit, xact_rollback, deadlocks,
+                   pg_size_pretty(pg_database_size(current_database())) AS db_size
+            FROM pg_stat_database
+            WHERE datname = current_database()
+        ");
+        if (!$dbRes) admin_db_fail($conn, 'db_health_stat');
+        $db = pg_fetch_assoc($dbRes);
+
+        $maxConnRes = @pg_query($conn, "SELECT setting FROM pg_settings WHERE name = 'max_connections'");
+        $maxConn = $maxConnRes ? (int)(pg_fetch_row($maxConnRes)[0] ?? 100) : 100;
+
+        $verRes = @pg_query($conn, "SELECT version()");
+        $version = $verRes ? (pg_fetch_row($verRes)[0] ?? '') : '';
+
+        $activeRes = @pg_query($conn, "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'");
+        $activeConn = $activeRes ? (int)(pg_fetch_row($activeRes)[0] ?? 0) : 0;
+
+        echo json_encode([
+            'status'       => 'success',
+            'db'           => $db,
+            'max_conn'     => $maxConn,
+            'active_conn'  => $activeConn,
+            'pg_version'   => $version,
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'performance_unused_indexes') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+
+        $sql = "
+            SELECT s.schemaname, s.relname AS tablename, s.indexrelname AS indexname,
+                   s.idx_scan,
+                   pg_size_pretty(pg_relation_size(s.indexrelid)) AS index_size,
+                   pg_relation_size(s.indexrelid) AS index_bytes,
+                   i.indexdef
+            FROM pg_stat_user_indexes s
+            JOIN pg_indexes i ON i.schemaname = s.schemaname
+                              AND i.tablename  = s.relname
+                              AND i.indexname  = s.indexrelname
+            WHERE s.idx_scan = 0
+              AND i.indexdef NOT LIKE '%UNIQUE%'
+              AND s.indexrelname NOT LIKE '%_pkey'
+            ORDER BY pg_relation_size(s.indexrelid) DESC
+        ";
+        $res = @pg_query($conn, $sql);
+        if (!$res) admin_db_fail($conn, 'unused_indexes');
+
+        $rows = [];
+        while ($r = pg_fetch_assoc($res)) {
+            $r['drop_sql'] = 'DROP INDEX IF EXISTS ' . pg_escape_identifier($conn, $r['schemaname']) . '.' . pg_escape_identifier($conn, $r['indexname']) . ';';
+            $rows[] = $r;
+        }
+        echo json_encode(['status' => 'success', 'rows' => $rows]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'performance_schema_warnings') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+
+        $schemaJson  = @file_get_contents(__DIR__ . '/../includes/schema.json');
+        $dashJson    = @file_get_contents(__DIR__ . '/../includes/dashboard.json');
+        $schemaCfg   = $schemaJson ? (json_decode($schemaJson, true) ?? []) : [];
+        $dashCfg     = $dashJson   ? (json_decode($dashJson,   true) ?? []) : [];
+        $tables      = $schemaCfg['tables'] ?? [];
+        $widgets     = $dashCfg['widgets']  ?? [];
+
+        $warnings = [];
+
+        // Get estimated row counts from pg_class
+        $rowCounts = [];
+        foreach ($tables as $tableName => $cfg) {
+            $pgSchema = $cfg['schema'] ?? 'app';
+            $r = @pg_query_params($conn,
+                "SELECT c.reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = \$1 AND c.relname = \$2",
+                [$pgSchema, $tableName]
+            );
+            if ($r && $row = pg_fetch_row($r)) {
+                $rowCounts[$tableName] = (int)$row[0];
+            }
+        }
+
+        foreach ($tables as $tableName => $cfg) {
+            $cols     = $cfg['columns'] ?? [];
+            $colCount = count($cols);
+            $estRows  = $rowCounts[$tableName] ?? 0;
+            $display  = $cfg['display_name'] ?? $tableName;
+
+            // Too many columns
+            if ($colCount > 20) {
+                $warnings[] = [
+                    'severity' => 'medium',
+                    'category' => 'Schema complexity',
+                    'table'    => $tableName,
+                    'display'  => $display,
+                    'message'  => "{$colCount} columns defined — consider splitting or hiding non-essential columns (show_in_grid: false).",
+                ];
+            }
+
+            // Large table without initial_limit
+            if ($estRows > 5000 && empty($cfg['initial_limit'])) {
+                $warnings[] = [
+                    'severity' => 'high',
+                    'category' => 'Load performance',
+                    'table'    => $tableName,
+                    'display'  => $display,
+                    'message'  => "~" . number_format($estRows) . " rows, no Initial Load Limit set — full table fetched on grid load. Set initial_limit in Schema → Table Properties.",
+                ];
+            }
+
+            // Large table without default_sort
+            if ($estRows > 1000 && empty($cfg['default_sort'])) {
+                $warnings[] = [
+                    'severity' => 'low',
+                    'category' => 'UX / sort',
+                    'table'    => $tableName,
+                    'display'  => $display,
+                    'message'  => "~" . number_format($estRows) . " rows, no Default Sort configured — falls back to id DESC. Define default_sort in Schema → Table Properties.",
+                ];
+            }
+
+            // Subtables without columns_to_show
+            foreach (($cfg['subtables'] ?? []) as $sub) {
+                if (empty($sub['columns_to_show'])) {
+                    $warnings[] = [
+                        'severity' => 'medium',
+                        'category' => 'Subtable config',
+                        'table'    => $tableName,
+                        'display'  => $display,
+                        'message'  => "Subtable \"{$sub['table']}\" has no columns_to_show — all columns fetched in drilldown. Specify columns_to_show in Schema.",
+                    ];
+                }
+            }
+        }
+
+        // Widgets without table or on large tables without limit
+        foreach ($widgets as $widget) {
+            $wTable = $widget['table'] ?? '';
+            $wTitle = $widget['title'] ?? ($widget['id'] ?? 'widget');
+            if ($wTable === '' || !isset($tables[$wTable])) continue;
+            $estRows = $rowCounts[$wTable] ?? 0;
+
+            if ($widget['type'] === 'list' && empty($widget['query']['limit']) && $estRows > 1000) {
+                $warnings[] = [
+                    'severity' => 'medium',
+                    'category' => 'Widget config',
+                    'table'    => $wTable,
+                    'display'  => $tables[$wTable]['display_name'] ?? $wTable,
+                    'message'  => "List widget \"{$wTitle}\" has no row limit on a table with ~" . number_format($estRows) . " rows — set query.limit in Dashboard editor.",
+                ];
+            }
+        }
+
+        // Sort: high → medium → low
+        $order = ['high' => 0, 'medium' => 1, 'low' => 2];
+        usort($warnings, fn($a, $b) => ($order[$a['severity']] ?? 9) - ($order[$b['severity']] ?? 9));
+
+        echo json_encode(['status' => 'success', 'warnings' => $warnings, 'total' => count($warnings)]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'cron_log') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+        $tLog = sys_table('users_notifications_log');
+        $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
+        $res = @pg_query($conn, "
+            SELECT id,
+                   TO_CHAR(started_at,  'YYYY-MM-DD HH24:MI:SS') AS started_at,
+                   TO_CHAR(finished_at, 'YYYY-MM-DD HH24:MI:SS') AS finished_at,
+                   status, triggered_by, sources_processed, notifications_created, error_message,
+                   CASE WHEN finished_at IS NOT NULL
+                        THEN ROUND(EXTRACT(EPOCH FROM (finished_at - started_at))::numeric, 1)
+                        ELSE NULL END AS duration_sec
+            FROM {$tLog}
+            ORDER BY started_at DESC
+            LIMIT {$limit}
+        ");
+        if (!$res) admin_db_fail($conn, 'cron_log');
+        $rows = [];
+        while ($r = pg_fetch_assoc($res)) $rows[] = $r;
+        echo json_encode(['status' => 'success', 'rows' => $rows]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'cron_stats') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+        $tN = sys_table('users_notifications');
+        $tU = sys_table('users');
+
+        $totRes = @pg_query($conn, "
+            SELECT
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE is_read = false) AS unread,
+                COUNT(*) FILTER (WHERE is_read = false AND notify_date >= CURRENT_DATE) AS upcoming_unread,
+                COUNT(*) FILTER (WHERE notify_date = CURRENT_DATE AND is_read = false) AS due_today
+            FROM {$tN}
+        ");
+        if (!$totRes) admin_db_fail($conn, 'cron_stats_total');
+        $totals = pg_fetch_assoc($totRes);
+
+        $perUserRes = @pg_query($conn, "
+            SELECT u.username, COUNT(n.id) AS unread_count
+            FROM {$tN} n
+            JOIN {$tU} u ON u.id = n.user_id
+            WHERE n.is_read = false
+            GROUP BY u.username
+            ORDER BY unread_count DESC
+            LIMIT 10
+        ");
+        if (!$perUserRes) admin_db_fail($conn, 'cron_stats_per_user');
+        $perUser = [];
+        while ($r = pg_fetch_assoc($perUserRes)) $perUser[] = $r;
+
+        $lastRunRes = @pg_query($conn, "
+            SELECT TO_CHAR(started_at, 'YYYY-MM-DD HH24:MI:SS') AS last_run,
+                   status, notifications_created
+            FROM " . sys_table('users_notifications_log') . "
+            ORDER BY started_at DESC LIMIT 1
+        ");
+        $lastRun = ($lastRunRes && $r = pg_fetch_assoc($lastRunRes)) ? $r : null;
+
+        echo json_encode(['status' => 'success', 'totals' => $totals, 'per_user' => $perUser, 'last_run' => $lastRun]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ── Many-to-Many Relationship Builder ─────────────────────────────────────────
+
+if ($action === 'list_m2m') {
+    header('Content-Type: application/json');
+    $schemaPath = realpath(__DIR__ . '/../includes/schema.json');
+    if (!$schemaPath) { echo json_encode(['tables' => [], 'relationships' => []]); exit; }
+    $schema = json_decode(file_get_contents($schemaPath), true);
+    if (!is_array($schema['tables'] ?? null)) { echo json_encode(['tables' => [], 'relationships' => []]); exit; }
+
+    $tables = [];
+    $relationships = [];
+    foreach ($schema['tables'] as $tName => $tCfg) {
+        if (!empty($tCfg['hidden'])) continue;
+        $tables[] = [
+            'name'         => $tName,
+            'display_name' => $tCfg['display_name'] ?? $tName,
+            'columns'      => array_keys($tCfg['columns'] ?? []),
+        ];
+        foreach ($tCfg['many_to_many'] ?? [] as $i => $m2m) {
+            $otherTable = $m2m['other_table'] ?? '';
+            $relationships[] = [
+                'table_a'         => $tName,
+                'table_a_display' => $tCfg['display_name'] ?? $tName,
+                'table_b'         => $otherTable,
+                'table_b_display' => $schema['tables'][$otherTable]['display_name'] ?? $otherTable,
+                'junction_table'  => $m2m['junction_table']  ?? '',
+                'label'           => $m2m['label']           ?? '',
+                'display_column'  => $m2m['display_column']  ?? '',
+                'm2m_index'       => $i,
+            ];
+        }
+    }
+    echo json_encode(['tables' => $tables, 'relationships' => $relationships]);
+    exit;
+}
+
+if ($action === 'create_m2m') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) { echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']); exit; }
+
+    $body       = json_decode(file_get_contents('php://input'), true) ?? [];
+    $tableA     = $body['table_a']       ?? '';
+    $tableB     = $body['table_b']       ?? '';
+    $jt         = $body['junction_table'] ?? '';
+    $selfFk     = $body['self_fk']       ?? '';
+    $otherFk    = $body['other_fk']      ?? '';
+    $label      = $body['label']         ?? '';
+    $displayCol = $body['display_column'] ?? 'name';
+
+    // Validate identifiers: only a-z, 0-9, underscore
+    $identRe = '/^[a-z][a-z0-9_]*$/';
+    foreach (['tableA' => $tableA, 'tableB' => $tableB, 'jt' => $jt, 'selfFk' => $selfFk, 'otherFk' => $otherFk] as $field => $val) {
+        if (!preg_match($identRe, $val)) {
+            echo json_encode(['status' => 'error', 'error' => "Invalid identifier: $val"]); exit;
+        }
+    }
+    if ($tableA === $tableB) { echo json_encode(['status' => 'error', 'error' => 'Tables must be different.']); exit; }
+
+    $schemaPath = realpath(__DIR__ . '/../includes/schema.json');
+    $schema     = json_decode(file_get_contents($schemaPath), true);
+    if (!isset($schema['tables'][$tableA]) || !isset($schema['tables'][$tableB])) {
+        echo json_encode(['status' => 'error', 'error' => 'One or both tables not found in schema.']); exit;
+    }
+
+    // Check for duplicate M2M entry
+    foreach ($schema['tables'][$tableA]['many_to_many'] ?? [] as $existing) {
+        if (($existing['junction_table'] ?? '') === $jt) {
+            echo json_encode(['status' => 'error', 'error' => "M2M via $jt already exists on $tableA."]); exit;
+        }
+    }
+
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+        $pgSchema = $schema['tables'][$tableA]['schema'] ?? 'public';
+
+        // Create junction table in PostgreSQL
+        $sql = sprintf(
+            'CREATE TABLE IF NOT EXISTS "%s"."%s" (
+                id         SERIAL PRIMARY KEY,
+                %s         INT NOT NULL REFERENCES "%s"."%s"(id) ON DELETE CASCADE,
+                %s         INT NOT NULL REFERENCES "%s"."%s"(id) ON DELETE CASCADE,
+                UNIQUE(%s, %s)
+            )',
+            $pgSchema, $jt,
+            pg_ident($selfFk),  $pgSchema, $tableA,
+            pg_ident($otherFk), $pgSchema, $tableB,
+            pg_ident($selfFk), pg_ident($otherFk)
+        );
+        $res = @pg_query($conn, $sql);
+        if (!$res) {
+            $err = pg_last_error($conn);
+            echo json_encode(['status' => 'error', 'error' => 'PostgreSQL: ' . $err]); exit;
+        }
+
+        // Add hidden junction table entry to schema.json (if not exists)
+        if (!isset($schema['tables'][$jt])) {
+            $schema['tables'][$jt] = [
+                'display_name' => str_replace('_', '–', $jt),
+                'schema'       => $pgSchema,
+                'hidden'       => true,
+                'columns'      => [
+                    'id'      => ['display_name' => 'ID',   'type' => 'number', 'not_null' => true, 'readonly' => true, 'show_in_grid' => true, 'show_in_edit' => true],
+                    $selfFk   => ['display_name' => ucfirst(str_replace('_', ' ', $selfFk)),  'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
+                    $otherFk  => ['display_name' => ucfirst(str_replace('_', ' ', $otherFk)), 'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
+                ],
+                'foreign_keys' => [
+                    $selfFk  => ['reference_table' => $tableA, 'reference_column' => 'id', 'display_column' => 'id'],
+                    $otherFk => ['reference_table' => $tableB, 'reference_column' => 'id', 'display_column' => $displayCol],
+                ],
+                'subtables' => [],
+            ];
+        }
+
+        // Add many_to_many entry to table_a
+        if (!isset($schema['tables'][$tableA]['many_to_many']) || !is_array($schema['tables'][$tableA]['many_to_many'])) {
+            $schema['tables'][$tableA]['many_to_many'] = [];
+        }
+        $schema['tables'][$tableA]['many_to_many'][] = [
+            'label'          => $label ?: ucfirst($tableB),
+            'junction_table' => $jt,
+            'self_fk'        => $selfFk,
+            'other_fk'       => $otherFk,
+            'other_table'    => $tableB,
+            'display_column' => $displayCol,
+        ];
+
+        // Save schema.json
+        $encoded = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (file_put_contents($schemaPath, $encoded) === false) {
+            echo json_encode(['status' => 'error', 'error' => 'Failed to write schema.json.']); exit;
+        }
+
+        echo json_encode(['status' => 'success', 'junction_table' => $jt]);
+    } catch (\Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'delete_m2m') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) { echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']); exit; }
+
+    $body          = json_decode(file_get_contents('php://input'), true) ?? [];
+    $tableA        = $body['table_a']      ?? '';
+    $m2mIndex      = (int)($body['m2m_index'] ?? -1);
+    $junctionTable = $body['junction_table'] ?? '';
+    $dropTable     = !empty($body['drop_table']);
+
+    if (!preg_match('/^[a-z][a-z0-9_]*$/', $tableA)) { echo json_encode(['status' => 'error', 'error' => 'Invalid table_a.']); exit; }
+
+    $schemaPath = realpath(__DIR__ . '/../includes/schema.json');
+    $schema     = json_decode(file_get_contents($schemaPath), true);
+
+    if (!isset($schema['tables'][$tableA]['many_to_many'][$m2mIndex])) {
+        echo json_encode(['status' => 'error', 'error' => 'M2M entry not found.']); exit;
+    }
+
+    // Remove the M2M entry
+    array_splice($schema['tables'][$tableA]['many_to_many'], $m2mIndex, 1);
+    if (empty($schema['tables'][$tableA]['many_to_many'])) {
+        unset($schema['tables'][$tableA]['many_to_many']);
+    }
+
+    try {
+        if ($dropTable && preg_match('/^[a-z][a-z0-9_]*$/', $junctionTable)) {
+            require_once __DIR__ . '/../includes/db.php';
+            $conn     = db_connect();
+            $pgSchema = $schema['tables'][$junctionTable]['schema'] ?? 'public';
+            @pg_query($conn, sprintf('DROP TABLE IF EXISTS "%s"."%s"', $pgSchema, $junctionTable));
+        }
+
+        // Remove hidden junction table entry from schema.json
+        if ($junctionTable && isset($schema['tables'][$junctionTable]['hidden']) && $schema['tables'][$junctionTable]['hidden'] === true) {
+            // Only remove if no other table's M2M still references this junction
+            $stillUsed = false;
+            foreach ($schema['tables'] as $tCfg) {
+                foreach ($tCfg['many_to_many'] ?? [] as $m) {
+                    if (($m['junction_table'] ?? '') === $junctionTable) { $stillUsed = true; break 2; }
+                }
+            }
+            if (!$stillUsed) unset($schema['tables'][$junctionTable]);
+        }
+
+        $encoded = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (file_put_contents($schemaPath, $encoded) === false) {
+            echo json_encode(['status' => 'error', 'error' => 'Failed to write schema.json.']); exit;
+        }
+
+        echo json_encode(['status' => 'success']);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'cron_purge_log') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) { echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']); exit; }
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+        $days = max(1, (int)(json_decode(file_get_contents('php://input'), true)['days'] ?? 30));
+        $tLog = sys_table('users_notifications_log');
+        $res = @pg_query_params($conn,
+            "DELETE FROM {$tLog} WHERE started_at < NOW() - (\$1 || ' days')::interval",
+            [$days]
+        );
+        if (!$res) admin_db_fail($conn, 'cron_purge_log');
+        echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+require_once __DIR__ . '/api_demo.php';

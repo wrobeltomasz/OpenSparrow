@@ -54,12 +54,14 @@ $tables       = safeReadJson($schemaPath)['tables'] ?? [];
 
 $currentPage  = basename($_SERVER['PHP_SELF']);
 $currentTable = substr($_GET['table'] ?? '', 0, 64);
+$currentView  = substr($_GET['view'] ?? '', 0, 64);
 $isWorkflows  = isset($_GET['workflows']);
 
 $dashCfg  = loadMenuConfig('dashboard', $includeDir);
 $calCfg   = loadMenuConfig('calendar',  $includeDir);
 $filesCfg = loadMenuConfig('files',     $includeDir);
 $wfCfg    = loadMenuConfig('workflows', $includeDir);
+$viewsCfg = loadMenuConfig('views',     $includeDir);
 
 // Build catalog: key → display data
 $menuCatalog = [
@@ -98,6 +100,24 @@ if (!empty($wfCfg['workflows'])) {
         'hidden'    => !empty($wfCfg['hidden']),
         'active'    => $isWorkflows && $currentPage === 'index.php',
         'data-page' => 'workflows',
+    ];
+}
+
+$hasVisibleViews = false;
+foreach ($viewsCfg['views'] ?? [] as $vConfig) {
+    if (empty($vConfig['hidden'])) {
+        $hasVisibleViews = true;
+        break;
+    }
+}
+if ($hasVisibleViews) {
+    $menuCatalog['views'] = [
+        'type'   => 'views',
+        'href'   => 'views.php',
+        'name'   => 'Views',
+        'icon'   => 'assets/icons/table_chart_view.png',
+        'hidden' => false,
+        'active' => $currentPage === 'views.php',
     ];
 }
 

@@ -38,16 +38,19 @@ export async function initWorkflows(menuListEl, containerEl, titleEl, appSchema)
     const config = await fetchWorkflowsConfig();
 
     if (!config || !config.workflows || config.workflows.length === 0) {
-        return;
+        return false;
     }
 
     // Respect the "Hide from Sidebar Menu" flag from admin Global Settings
     if (config.hidden === true) {
-        return;
+        return false;
     }
 
     // Restore grid UI elements when navigating back to standard tables
     document.addEventListener("tableLoaded", () => {
+        const bar = document.getElementById('wf-step-bar');
+        if (bar) bar.remove();
+
         const gridUI = document.querySelectorAll('.actions, #filterBar, #globalSearch, #columnFilter, #addRow');
         gridUI.forEach(el => el.style.display = '');
     });
@@ -78,7 +81,10 @@ export async function initWorkflows(menuListEl, containerEl, titleEl, appSchema)
         const uiToHide = document.querySelectorAll('.actions, #filterBar, #globalSearch, #columnFilter, #clearFilters, #addRow');
         uiToHide.forEach(el => el.style.display = 'none');
         renderWorkflowsList(config.workflows, containerEl, titleEl, menuName, appSchema);
+        return true; // signals app.js to skip loadTable
     }
+
+    return false;
 }
 
 // Render the beautiful grid list of available workflows
@@ -198,7 +204,7 @@ function renderWorkflowsList(workflows, containerEl, titleEl, menuName, appSchem
         card.appendChild(cardDesc);
         card.appendChild(footer);
         
-        card.addEventListener('click', () => startWorkflow(wf, containerEl, titleEl, appSchema));
+        card.addEventListener('click', () => startWorkflow(wf, containerEl, titleEl, appSchema, workflows, menuName));
         
         listContainer.appendChild(card);
     });
@@ -207,19 +213,64 @@ function renderWorkflowsList(workflows, containerEl, titleEl, menuName, appSchem
 }
 
 // Start and manage the step-by-step wizard
-function startWorkflow(workflow, containerEl, titleEl, appSchema) {
+function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, menuName) {
     let currentStepIndex = 0;
     const stepResults = {}; 
+
+    // Step progress indicator above the form
+    function renderStepBar() {
+        let bar = document.getElementById('wf-step-bar');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'wf-step-bar';
+            bar.style.cssText = 'display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:0; margin:32px auto 28px; max-width:700px; padding:0 20px;';
+            containerEl.parentNode.insertBefore(bar, containerEl);
+        }
+        bar.textContent = '';
+
+        workflow.steps.forEach((s, i) => {
+            const done      = i < currentStepIndex;
+            const current   = i === currentStepIndex;
+            const labelText = s.title || `Step ${i + 1}`;
+
+            const pill = document.createElement('div');
+            pill.style.cssText = [
+                'display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap; transition:all .2s;',
+                done    ? 'background:#dcfce7; color:#166534;'  :
+                current ? 'background:var(--accent); color:#fff;' :
+                          'background:#f1f5f9; color:#94a3b8;'
+            ].join('');
+
+            const dot = document.createElement('span');
+            dot.style.cssText = `width:8px; height:8px; border-radius:50%; background:${done ? '#16a34a' : current ? '#fff' : '#cbd5e1'};`;
+            const lbl = document.createElement('span');
+            lbl.textContent = labelText;
+
+            pill.append(dot, lbl);
+            bar.appendChild(pill);
+
+            if (i < workflow.steps.length - 1) {
+                const arrow = document.createElement('span');
+                arrow.textContent = '→';
+                arrow.style.cssText = 'color:#cbd5e1; font-size:14px; padding:0 2px; flex-shrink:0;';
+                bar.appendChild(arrow);
+            }
+        });
+    }
 
     // Render a single step of the workflow
     async function renderCurrentStep() {
         if (currentStepIndex >= workflow.steps.length) {
+            const bar = document.getElementById('wf-step-bar');
+            if (bar) bar.remove();
             renderSuccessScreen();
             return;
         }
 
         const step = workflow.steps[currentStepIndex];
-        
+
+        renderStepBar();
+
         // Set main title to show progress
         titleEl.textContent = `${workflow.title} - Step ${currentStepIndex + 1} of ${workflow.steps.length}`;
         containerEl.textContent = ''; // Safely clear container
@@ -253,6 +304,27 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
             if (key) tableSchema = activeSchema.tables[key];
         }
 
+        // fullSchema is used for FK linkage detection (referenced tables' FK maps).
+        // Default to activeSchema; upgraded below if hidden-table fetch is needed.
+        let fullSchema = activeSchema;
+
+        // Hidden tables (e.g. subtables used only in workflows) are excluded from
+        // window.schema — fetch full schema including hidden when not found.
+        if (!tableSchema) {
+            try {
+                const res = await fetch('api_schema.php?include_hidden=1', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const full = await res.json();
+                fullSchema = full;
+                tableSchema = full.tables?.[step.table];
+                if (!tableSchema && full.tables) {
+                    const key = Object.keys(full.tables).find(k => k.toLowerCase() === step.table.toLowerCase());
+                    if (key) tableSchema = full.tables[key];
+                }
+            } catch { /* fall through to error below */ }
+        }
+
         if (!tableSchema) {
             const errorMsg = document.createElement('p');
             errorMsg.style.cssText = 'color: red; text-align: center; margin-top: 40px;';
@@ -261,10 +333,91 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
             return;
         }
 
+        // Pre-fetch FK options for all non-injected FK columns in parallel
+        const fkOptionMap = {}; // { colName: [{value, label}] }
+        const fkCfgMap = tableSchema.foreign_keys || {};
+        const csrfForFk = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+        await Promise.all(
+            Object.entries(fkCfgMap).map(async ([colName, fkDef]) => {
+                // Skip if this FK will be auto-injected from a previous step
+                if (step.foreign_key === colName && step.link_to_step !== undefined && step.link_to_step !== '') {
+                    return;
+                }
+                const refCol = fkDef.reference_column || 'id';
+                // display_columns may be array or comma-separated string
+                const rawDisp = (Array.isArray(fkDef.display_columns) && fkDef.display_columns.length > 0)
+                    ? fkDef.display_columns : (fkDef.display_column ?? '');
+                const dispCols = Array.isArray(rawDisp)
+                    ? rawDisp
+                    : String(rawDisp).split(',').map(s => s.trim()).filter(Boolean);
+
+                try {
+                    const res = await fetch(
+                        `api_fk.php?table=${encodeURIComponent(step.table)}&col=${encodeURIComponent(colName)}`,
+                        { headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrfForFk } }
+                    );
+                    const data = await res.json();
+                    const rows = data.rows || [];
+                    fkOptionMap[colName] = rows.map(row => {
+                        const label = dispCols.length
+                            ? dispCols.map(c => row[c] ?? '').filter(Boolean).join(' ')
+                            : String(row[refCol] ?? row.id ?? '');
+                        return { value: row[refCol] ?? row.id, label: label || String(row[refCol] ?? row.id) };
+                    });
+                } catch {
+                    fkOptionMap[colName] = [];
+                }
+            })
+        );
+
+        // Re-fetch FK options for a column, optionally filtered by a master column value
+        async function fetchFkOptions(colName, filterCol = '', filterVal = '') {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            let url = `api_fk.php?table=${encodeURIComponent(step.table)}&col=${encodeURIComponent(colName)}`;
+            if (filterCol && filterVal !== '') {
+                url += `&filter_col=${encodeURIComponent(filterCol)}&filter_val=${encodeURIComponent(filterVal)}`;
+            }
+            try {
+                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf } });
+                const data = await res.json();
+                const rows = data.rows || [];
+                const fkDef = fkCfgMap[colName] || {};
+                const refCol = fkDef.reference_column || 'id';
+                const rawDisp = (Array.isArray(fkDef.display_columns) && fkDef.display_columns.length > 0)
+                    ? fkDef.display_columns : (fkDef.display_column ?? '');
+                const dispCols = Array.isArray(rawDisp) ? rawDisp : String(rawDisp).split(',').map(s => s.trim()).filter(Boolean);
+                return rows.map(row => {
+                    const label = dispCols.length
+                        ? dispCols.map(c => row[c] ?? '').filter(Boolean).join(' ')
+                        : String(row[refCol] ?? row.id ?? '');
+                    return { value: row[refCol] ?? row.id, label: label || String(row[refCol] ?? row.id) };
+                });
+            } catch {
+                return [];
+            }
+        }
+
+        function rebuildSelect(selectEl, options) {
+            const prev = selectEl.value;
+            selectEl.textContent = '';
+            const blank = document.createElement('option');
+            blank.value = '';
+            blank.textContent = '-- Select --';
+            selectEl.appendChild(blank);
+            options.forEach(({ value, label }) => {
+                const opt = document.createElement('option');
+                opt.value = String(value);
+                opt.textContent = label;
+                selectEl.appendChild(opt);
+            });
+            selectEl.value = options.some(o => String(o.value) === prev) ? prev : '';
+        }
+
         const form = document.createElement('form');
         // Center the form and remove boxy styling to eliminate "white space" nesting
         form.style.maxWidth = '500px';
-        form.style.margin = '40px auto';
+        form.style.margin = '8px auto 40px';
         form.style.width = '100%';
         form.style.padding = '0 20px 40px 20px';
 
@@ -296,9 +449,34 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
             form.appendChild(spacer);
         }
 
+        // Track virtual column display elements for live recalculation
+        const virtualFields = {}; // { colName: { el, formula } }
+
+        function calcVirtualValue(formula) {
+            const ops = formula.cols || [];
+            const vals = ops.map(c => {
+                const el = form.querySelector(`[name="${c}"]`);
+                return parseFloat(el?.value ?? 0) || 0;
+            });
+            switch (formula.op) {
+                case 'multiply':  return vals.reduce((a, b) => a * b, 1);
+                case 'add':       return vals.reduce((a, b) => a + b, 0);
+                case 'subtract':  return vals.length >= 2 ? vals[0] - vals.slice(1).reduce((a, b) => a + b, 0) : 0;
+                case 'divide':    return vals.length >= 2 && vals[1] !== 0 ? vals[0] / vals[1] : 0;
+                default:          return 0;
+            }
+        }
+
+        function refreshVirtuals() {
+            for (const [, vf] of Object.entries(virtualFields)) {
+                const result = calcVirtualValue(vf.formula);
+                vf.el.value = Number.isInteger(result) ? result : parseFloat(result.toFixed(4));
+            }
+        }
+
         // Generate form fields dynamically based on schema
         for (const [colName, colDef] of Object.entries(tableSchema.columns)) {
-            if (colName === 'id' || colDef.readonly) continue;
+            if (colName === 'id' || colDef.readonly || colDef.show_in_edit === false) continue;
 
             // Skip rendering the field if it will be automatically injected as a foreign key
             if (step.foreign_key === colName && step.link_to_step !== undefined && step.link_to_step !== "") {
@@ -317,10 +495,36 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
             label.style.fontSize = '13.5px';
 
             let input;
+            let isVirtual = false;
             const type = (colDef.type || '').toLowerCase();
 
+            // Render virtual column as live-calculated readonly display
+            if (type === 'virtual') {
+                isVirtual = true;
+                input = document.createElement('input');
+                input.type = 'text';
+                input.readOnly = true;
+                input.tabIndex = -1;
+                input.dataset.virtual = colName;
+                input.style.background = '#f1f5f9';
+                input.style.color = 'var(--muted)';
+                input.style.cursor = 'default';
+                virtualFields[colName] = { el: input, formula: colDef.formula || {} };
+            // Render FK column as searchable select using schema FK config
+            } else if (Object.prototype.hasOwnProperty.call(fkOptionMap, colName)) {
+                input = document.createElement('select');
+                const blankOpt = document.createElement('option');
+                blankOpt.value = '';
+                blankOpt.textContent = '-- Select --';
+                input.appendChild(blankOpt);
+                (fkOptionMap[colName] || []).forEach(({ value, label }) => {
+                    const opt = document.createElement('option');
+                    opt.value = value;
+                    opt.textContent = label;
+                    input.appendChild(opt);
+                });
             // Render select dropdown for ENUM types
-            if (type === 'enum' && Array.isArray(colDef.options)) {
+            } else if (type === 'enum' && Array.isArray(colDef.options)) {
                 input = document.createElement('select');
                 const defaultOpt = document.createElement('option');
                 defaultOpt.value = '';
@@ -351,19 +555,20 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
             input.style.border = '1px solid var(--border)';
             input.style.borderRadius = 'var(--radius)';
             input.style.fontSize = '14px';
-            input.style.color = 'var(--text)';
-            input.style.transition = 'border-color var(--transition), box-shadow var(--transition)';
-            input.style.background = '#fff';
-            
-            input.addEventListener('focus', () => {
-                input.style.borderColor = 'var(--accent)';
-                input.style.outline = 'none';
-                input.style.boxShadow = '0 0 0 2px var(--accent-light)';
-            });
-            input.addEventListener('blur', () => {
-                input.style.borderColor = 'var(--border)';
-                input.style.boxShadow = 'none';
-            });
+            if (!isVirtual) {
+                input.style.color = 'var(--text)';
+                input.style.transition = 'border-color var(--transition), box-shadow var(--transition)';
+                input.style.background = '#fff';
+                input.addEventListener('focus', () => {
+                    input.style.borderColor = 'var(--accent)';
+                    input.style.outline = 'none';
+                    input.style.boxShadow = '0 0 0 2px var(--accent-light)';
+                });
+                input.addEventListener('blur', () => {
+                    input.style.borderColor = 'var(--border)';
+                    input.style.boxShadow = 'none';
+                });
+            }
 
             if (type.includes('bool')) {
                 input.style.width = 'auto';
@@ -374,6 +579,62 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
             form.appendChild(formGroup);
         }
 
+        // Detect FK linkages: for each FK select, check if referenced table has a FK
+        // column that also appears in this form → enable "Show related only" checkbox.
+        const fkLinkMap = {}; // { dependentCol: masterCol }
+        for (const [colName, fkDef] of Object.entries(fkCfgMap)) {
+            const refTableName = fkDef.reference_table;
+            if (!refTableName) continue;
+            let refSchema = fullSchema?.tables?.[refTableName];
+            if (!refSchema && fullSchema?.tables) {
+                const k = Object.keys(fullSchema.tables).find(t => t.toLowerCase() === refTableName.toLowerCase());
+                if (k) refSchema = fullSchema.tables[k];
+            }
+            if (!refSchema?.foreign_keys) continue;
+            for (const refFkCol of Object.keys(refSchema.foreign_keys)) {
+                if (refFkCol !== colName && fkCfgMap[refFkCol]) {
+                    fkLinkMap[colName] = refFkCol;
+                    break;
+                }
+            }
+        }
+
+        // Add "Show related only" checkbox for each linked FK select
+        for (const [depCol, masterCol] of Object.entries(fkLinkMap)) {
+            const selectEl = form.querySelector(`[name="${depCol}"]`);
+            const masterEl = form.querySelector(`[name="${masterCol}"]`);
+            if (!selectEl || !masterEl) continue;
+
+            const filterRow = document.createElement('label');
+            filterRow.style.cssText = 'display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none;';
+            const filterCb = document.createElement('input');
+            filterCb.type = 'checkbox';
+            filterCb.style.cssText = 'cursor:pointer; margin:0;';
+            const filterLbl = document.createElement('span');
+            filterLbl.textContent = 'Show related only';
+            filterRow.appendChild(filterCb);
+            filterRow.appendChild(filterLbl);
+            selectEl.parentElement.appendChild(filterRow);
+
+            const applyFilter = async () => {
+                const masterVal = masterEl.value;
+                const opts = (filterCb.checked && masterVal)
+                    ? await fetchFkOptions(depCol, masterCol, masterVal)
+                    : await fetchFkOptions(depCol);
+                rebuildSelect(selectEl, opts);
+            };
+
+            filterCb.addEventListener('change', applyFilter);
+            masterEl.addEventListener('change', () => { if (filterCb.checked) applyFilter(); });
+        }
+
+        // Wire live recalculation: any input change refreshes all virtual fields
+        if (Object.keys(virtualFields).length > 0) {
+            form.addEventListener('input', refreshVirtuals);
+            form.addEventListener('change', refreshVirtuals);
+            refreshVirtuals(); // initial render with empty values = 0
+        }
+
         // Add action buttons
         const btnContainer = document.createElement('div');
         btnContainer.style.marginTop = '24px';
@@ -382,38 +643,26 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
 
         const submitBtn = document.createElement('button');
         submitBtn.type = 'submit';
-        submitBtn.textContent = step.allow_multiple ? 'Save & Add Another' : 'Next step';
+        submitBtn.dataset.action = step.allow_multiple ? 'add' : 'continue';
+        submitBtn.textContent = step.allow_multiple ? 'Save & Add Another' : 'Next Step';
         submitBtn.style.cssText = 'padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 600; box-shadow: var(--shadow-sm); transition: background var(--transition);';
-        
         submitBtn.addEventListener('mouseenter', () => submitBtn.style.background = 'var(--accent-dark)');
         submitBtn.addEventListener('mouseleave', () => submitBtn.style.background = 'var(--accent)');
-        
         btnContainer.appendChild(submitBtn);
 
-        let finishBtn = null;
+        // For multi-record steps: "Save & Exit" saves current entry (or skips if empty) then advances
+        let continueBtn = null;
         if (step.allow_multiple) {
-            finishBtn = document.createElement('button');
-            finishBtn.type = 'button';
-            finishBtn.textContent = 'Finish this step';
-            finishBtn.style.cssText = 'padding: 10px 20px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-weight: 600; transition: all var(--transition);';
-            
-            finishBtn.addEventListener('mouseenter', () => {
-                finishBtn.style.color = 'var(--text)';
-                finishBtn.style.borderColor = 'var(--muted)';
-                finishBtn.style.background = '#f8fafc';
-            });
-            finishBtn.addEventListener('mouseleave', () => {
-                finishBtn.style.color = 'var(--muted)';
-                finishBtn.style.borderColor = 'var(--border)';
-                finishBtn.style.background = 'transparent';
-            });
-            
-            finishBtn.addEventListener('click', () => {
-                currentStepIndex++;
-                renderCurrentStep();
-            });
-            btnContainer.appendChild(finishBtn);
+            continueBtn = document.createElement('button');
+            continueBtn.type = 'submit';
+            continueBtn.dataset.action = 'continue';
+            continueBtn.textContent = 'Save & Exit';
+            continueBtn.style.cssText = 'padding: 10px 20px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-weight: 600; transition: all var(--transition);';
+            continueBtn.addEventListener('mouseenter', () => { continueBtn.style.color = 'var(--text)'; continueBtn.style.borderColor = 'var(--muted)'; continueBtn.style.background = '#f8fafc'; });
+            continueBtn.addEventListener('mouseleave', () => { continueBtn.style.color = 'var(--muted)'; continueBtn.style.borderColor = 'var(--border)'; continueBtn.style.background = 'transparent'; });
+            btnContainer.appendChild(continueBtn);
         }
+        const finishBtn = continueBtn; // alias kept for error-reset reference below
 
         form.appendChild(btnContainer);
 
@@ -426,17 +675,18 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
         // Handle form submission and data saving
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const action = e.submitter?.dataset?.action || 'continue';
             submitBtn.disabled = true;
-            if (finishBtn) finishBtn.disabled = true;
-            submitBtn.textContent = 'Saving...';
-            msgBox.textContent = ''; // Safely clear messages
+            if (continueBtn) continueBtn.disabled = true;
+            e.submitter.textContent = 'Saving...';
+            msgBox.textContent = '';
 
             const payload = {};
             
             // Extract values from the form inputs securely
             for (const [colName, colDef] of Object.entries(tableSchema.columns)) {
-                if (colName === 'id' || colDef.readonly) continue;
-                
+                if (colName === 'id' || colDef.readonly || (colDef.type || '').toLowerCase() === 'virtual') continue;
+
                 if (step.foreign_key === colName && step.link_to_step !== undefined && step.link_to_step !== "") {
                     continue;
                 }
@@ -496,21 +746,19 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
                         stepResults[currentStepIndex] = result.id;
                     }
 
-                    if (step.allow_multiple) {
+                    if (action === 'add') {
                         form.reset();
-                        
-                        // Safely create success message
+                        refreshVirtuals();
                         const successSpan = document.createElement('span');
                         successSpan.style.color = 'var(--ok)';
-                        successSpan.textContent = 'Record saved successfully. Add another or finish.';
+                        successSpan.textContent = 'Record saved. Add another or click Save & Exit.';
                         msgBox.appendChild(successSpan);
-                        
                         submitBtn.disabled = false;
-                        if (finishBtn) finishBtn.disabled = false;
+                        if (continueBtn) continueBtn.disabled = false;
                         submitBtn.textContent = 'Save & Add Another';
                     } else {
                         currentStepIndex++;
-                        renderCurrentStep(); 
+                        renderCurrentStep();
                     }
                 } else {
                     throw new Error(result.error || result.message || 'Unknown error occurred while saving.');
@@ -519,8 +767,9 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
                 console.error(err);
                 showToast(`Error saving data: ${err.message}`, 'error');
                 submitBtn.disabled = false;
-                if (finishBtn) finishBtn.disabled = false;
-                submitBtn.textContent = step.allow_multiple ? 'Save & Add Another' : 'Next step';
+                if (continueBtn) continueBtn.disabled = false;
+                submitBtn.textContent = step.allow_multiple ? 'Save & Add Another' : 'Next Step';
+                if (e.submitter) e.submitter.textContent = e.submitter.dataset.action === 'add' ? 'Save & Add Another' : (step.allow_multiple ? 'Save & Exit' : 'Next Step');
             }
         });
 
@@ -559,7 +808,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema) {
 
         finishBtn.addEventListener('mouseenter', () => finishBtn.style.background = 'var(--accent-dark)');
         finishBtn.addEventListener('mouseleave', () => finishBtn.style.background = 'var(--accent)');
-        finishBtn.addEventListener('click', () => window.location.reload());
+        finishBtn.addEventListener('click', () => renderWorkflowsList(allWorkflows, containerEl, titleEl, menuName, appSchema));
 
         wrapper.appendChild(heading);
         wrapper.appendChild(paragraph);

@@ -7,7 +7,7 @@ export function buildExpandButton(row, schema, tr) {
     btn.style.cssText = 'background:none; border:none; cursor:pointer; font-size:14px; color:var(--accent); font-weight:bold;';
 
     const subtables = schema.tables[state.currentTable]?.subtables || [];
-    const isReadOnly = window.USER_ROLE !== 'editor';
+    const isReadOnly = window.USER_ROLE !== 'editor' && window.USER_ROLE !== 'admin';
 
     btn.addEventListener('click', async () => {
         const next = tr.nextElementSibling;
@@ -44,10 +44,26 @@ async function buildSubtableBlock(sub, row) {
     wrapper.className = 'drilldown-container';
     wrapper.style.marginBottom = '20px';
 
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:10px;';
+
     const title = document.createElement('h4');
     title.textContent = sub.label || sub.table;
-    title.style.cssText = 'margin:0 0 10px 0; font-size:14px; color:var(--text);';
-    wrapper.appendChild(title);
+    title.style.cssText = 'margin:0; font-size:14px; color:var(--text);';
+    header.appendChild(title);
+
+    const canWrite = window.USER_ROLE === 'editor' || window.USER_ROLE === 'admin';
+    if (canWrite && sub.foreign_key) {
+        const addBtn = document.createElement('a');
+        addBtn.href = `create.php?table=${encodeURIComponent(sub.table)}&${encodeURIComponent(sub.foreign_key)}=${encodeURIComponent(row.id)}`;
+        addBtn.className = 'btn-action';
+        addBtn.textContent = '+';
+        addBtn.style.cssText = 'padding:1px 8px; font-size:16px; font-weight:bold; line-height:1.4; text-decoration:none;';
+        addBtn.title = `Add ${sub.label || sub.table}`;
+        header.appendChild(addBtn);
+    }
+
+    wrapper.appendChild(header);
 
     try {
         const res = await fetch(

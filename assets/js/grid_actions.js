@@ -205,6 +205,34 @@ export async function deleteRow(id) {
   }
 }
 
+// Duplicate row
+export async function duplicateRow(id) {
+  const table = getCurrentTable();
+  if (!table || !id) return;
+
+  try {
+    const res = await fetch('index.php?api=duplicate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+      body: JSON.stringify({ table, id, action: 'duplicate' })
+    });
+
+    let payload = null;
+    try { payload = await res.json(); } catch {}
+
+    if (!res.ok || payload?.error) {
+      console.error("Duplicate failed", { status: res.status, payload });
+      showToast(payload?.error || `Duplicate failed (${res.status})`, 'error');
+      return;
+    }
+
+    debugLog("Duplicate success", { id, newId: payload?.id });
+    return payload;
+  } catch (err) {
+    console.error("Network error during duplicate", err);
+  }
+}
+
 // Add row
 export async function addRow() {
   const table = getCurrentTable();

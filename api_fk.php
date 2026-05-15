@@ -52,6 +52,16 @@ if (empty($refTable)) {
     exit;
 }
 
+// Validate optional filter_col against reference table columns to prevent injection
+$filterCol = $_GET['filter_col'] ?? '';
+$filterVal = $_GET['filter_val'] ?? '';
+if ($filterCol !== '') {
+    $refColumns = array_keys($schemaData['tables'][$refTable]['columns'] ?? []);
+    if (!in_array($filterCol, $refColumns, true)) {
+        unset($_GET['filter_col'], $_GET['filter_val']);
+    }
+}
+
 // Rewrite GET parameters to simulate a direct call to api.php for the reference table
 $_GET['api'] = 'list';
 $_GET['table'] = $refTable;

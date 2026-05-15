@@ -53,6 +53,18 @@ export function renderThead(schema, isReadOnly, onRerender) {
         headRow.appendChild(th);
     }
 
+    // M2M columns — one TH per configured relationship
+    const m2mList = schema.tables[state.currentTable]?.many_to_many || [];
+    for (const cfg of m2mList) {
+        const thM2m = document.createElement('th');
+        thM2m.className = 'th-m2m';
+        const thM2mLabel = document.createElement('span');
+        thM2mLabel.className = 'th-label';
+        thM2mLabel.textContent = cfg.label || 'Related';
+        thM2m.appendChild(thM2mLabel);
+        headRow.appendChild(thM2m);
+    }
+
     const thComments = document.createElement('th');
     thComments.className = 'th-comments';
     const commLabel = document.createElement('img');
@@ -65,10 +77,7 @@ export function renderThead(schema, isReadOnly, onRerender) {
 
     if (!isReadOnly) {
         const thActions = document.createElement('th');
-        const actLabel = document.createElement('span');
-        actLabel.className = 'th-label';
-        actLabel.textContent = 'Actions';
-        thActions.appendChild(actLabel);
+        thActions.className = 'th-actions';
         headRow.appendChild(thActions);
     }
 

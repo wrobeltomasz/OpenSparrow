@@ -46,8 +46,8 @@ function db_connect(): \PgSql\Connection
         throw new RuntimeException('Cannot connect to Postgres. Check database credentials or server status.');
     }
 
-    // Set timezone
-    pg_query($conn, "SET TIME ZONE '" . APP_TIMEZONE . "'");
+    // Use pg_escape_literal to prevent SQL injection via APP_TIMEZONE env var
+    pg_query($conn, 'SET TIME ZONE ' . pg_escape_literal($conn, APP_TIMEZONE));
     
     return $conn;
 }

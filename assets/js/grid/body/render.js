@@ -1,4 +1,4 @@
-import { deleteRow } from '../../grid_actions.js';
+import { deleteRow, duplicateRow } from '../../grid_actions.js';
 import { state } from '../state.js';
 import { CellRenderer } from '../cells/registry.js';
 import { buildExpandButton } from './drilldown.js';
@@ -128,6 +128,17 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
 
         if (firstDataTd) attachRowTooltip(firstDataTd, row, schema);
 
+        // M2M columns — one TD per configured relationship, populated async by loader.js
+        const m2mList = schema.tables[state.currentTable]?.many_to_many || [];
+        for (let mi = 0; mi < m2mList.length; mi++) {
+            const tdM2m = document.createElement('td');
+            tdM2m.className = 'td-m2m';
+            tdM2m.dataset.m2mRowId = String(row['id']);
+            tdM2m.dataset.m2mIndex = String(mi);
+            tdM2m.dataset.m2mLabel = m2mList[mi].label || 'Related';
+            tr.appendChild(tdM2m);
+        }
+
         // Comments column
         const tdComments = document.createElement('td');
         tdComments.className = 'td-comments';
@@ -147,18 +158,40 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
 
 function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     const tdActions = document.createElement('td');
+    tdActions.className = 'td-actions';
 
     const editBtn = document.createElement('button');
-    editBtn.textContent = 'Edit';
-    editBtn.style.marginRight = '8px';
+    editBtn.className = 'btn-icon';
+    editBtn.title = 'Edit';
+    const editImg = document.createElement('img');
+    editImg.src = 'assets/img/edit_square.png';
+    editImg.alt = 'Edit';
+    editBtn.appendChild(editImg);
     editBtn.addEventListener('click', () => {
         window.location.href = `edit.php?table=${state.currentTable}&id=${row['id']}`;
     });
     tdActions.appendChild(editBtn);
 
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-icon';
+    copyBtn.title = 'Duplicate';
+    const copyImg = document.createElement('img');
+    copyImg.src = 'assets/img/content_copy.png';
+    copyImg.alt = 'Duplicate';
+    copyBtn.appendChild(copyImg);
+    copyBtn.addEventListener('click', async () => {
+        const result = await duplicateRow(row['id']);
+        if (result?.ok) await onTableReload();
+    });
+    tdActions.appendChild(copyBtn);
+
     const delBtn = document.createElement('button');
-    delBtn.textContent = 'Delete';
-    delBtn.className = 'danger';
+    delBtn.className = 'btn-icon btn-icon-danger';
+    delBtn.title = 'Delete';
+    const delImg = document.createElement('img');
+    delImg.src = 'assets/img/delete.png';
+    delImg.alt = 'Delete';
+    delBtn.appendChild(delImg);
     delBtn.addEventListener('click', async () => {
         if (!confirm('Are you sure you want to delete this record? This operation cannot be undone.')) return;
         const result = await deleteRow(row['id']);

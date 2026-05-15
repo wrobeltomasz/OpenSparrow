@@ -8,6 +8,64 @@ function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
+// Global grid settings form (page size, etc.)
+export function renderSchemaGlobalSettings(config, ctx) {
+    const { workspaceEl } = ctx;
+    workspaceEl.innerHTML = '';
+
+    const PAGE_SIZES = [10, 25, 50, 100];
+    const current = Number(config.default_page_size) || 25;
+
+    const card = document.createElement('div');
+    card.style.cssText = 'max-width:560px;';
+
+    const h3 = document.createElement('h3');
+    h3.style.cssText = 'margin:0 0 6px;';
+    h3.textContent = 'Global Grid Settings';
+    const sub = document.createElement('p');
+    sub.style.cssText = 'color:var(--muted); font-size:14px; margin:0 0 24px;';
+    sub.textContent = 'Settings that apply to all data grids in the frontend application.';
+    card.append(h3, sub);
+
+    // Page size setting
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:16px; padding:16px; background:white; border:1px solid var(--border); border-radius:6px;';
+
+    const labelWrap = document.createElement('div');
+    labelWrap.style.flex = '1';
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:block; font-weight:600; font-size:14px; margin-bottom:4px;';
+    lbl.textContent = 'Default Page Size';
+    const hint = document.createElement('span');
+    hint.style.cssText = 'font-size:12px; color:var(--muted);';
+    hint.textContent = 'Records shown per page. Users can override this per-session from the grid pagination bar.';
+    labelWrap.append(lbl, hint);
+
+    const sel = document.createElement('select');
+    sel.style.cssText = 'padding:6px 10px; border:1px solid var(--border); border-radius:4px; font-size:14px; min-width:80px;';
+    PAGE_SIZES.forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        if (n === current) opt.selected = true;
+        sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => {
+        config.default_page_size = Number(sel.value);
+        markDirty();
+    });
+
+    row.append(labelWrap, sel);
+    card.appendChild(row);
+
+    const note = document.createElement('p');
+    note.style.cssText = 'font-size:12px; color:var(--muted); margin-top:12px;';
+    note.textContent = 'Stored in schema.json as "default_page_size". Included in config export/import.';
+    card.appendChild(note);
+
+    workspaceEl.appendChild(card);
+}
+
 // Function to generate the Add Table button and handle its logic
 export function createAddTableButton(currentConfig, defaultSchema, onSuccess, onError) {
     const btnAddTable = document.createElement('button');
@@ -111,6 +169,79 @@ export async function syncSchemaTables(currentConfig, schemaName, onSuccess, onE
         console.error(e);
         onError('Error communicating with database.');
     }
+}
+
+function buildDefaultSortUI(tableData) {
+    if (!Array.isArray(tableData.default_sort)) tableData.default_sort = [];
+    const rules = tableData.default_sort;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'margin-bottom:15px;';
+
+    const label = document.createElement('label');
+    label.style.cssText = 'display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:600;';
+    label.textContent = 'Default Sort Order';
+    wrapper.appendChild(label);
+
+    const listEl = document.createElement('div');
+    listEl.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
+    wrapper.appendChild(listEl);
+
+    function renderRules() {
+        listEl.replaceChildren();
+        rules.forEach((rule, i) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px;';
+
+            const colInput = document.createElement('select');
+            colInput.style.cssText = 'padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px; width:160px;';
+            const blankOpt = document.createElement('option');
+            blankOpt.value = '';
+            blankOpt.textContent = '— column —';
+            colInput.appendChild(blankOpt);
+            ['id', ...Object.keys(tableData.columns || {})].forEach(col => {
+                const opt = document.createElement('option');
+                opt.value = col;
+                opt.textContent = col;
+                if (rule.column === col) opt.selected = true;
+                colInput.appendChild(opt);
+            });
+            colInput.addEventListener('change', () => { rules[i].column = colInput.value; markDirty(); });
+
+            const dirSel = document.createElement('select');
+            dirSel.style.cssText = 'padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;';
+            [['asc', 'ASC ↑'], ['desc', 'DESC ↓']].forEach(([val, lbl]) => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = lbl;
+                if ((rule.dir || 'asc') === val) opt.selected = true;
+                dirSel.appendChild(opt);
+            });
+            dirSel.addEventListener('change', () => { rules[i].dir = dirSel.value; markDirty(); });
+
+            const btnRemove = document.createElement('button');
+            btnRemove.type = 'button';
+            btnRemove.textContent = '✕';
+            btnRemove.style.cssText = 'background:#ef4444; color:#fff; border:none; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:13px;';
+            btnRemove.addEventListener('click', () => { rules.splice(i, 1); markDirty(); renderRules(); });
+
+            row.appendChild(colInput);
+            row.appendChild(dirSel);
+            row.appendChild(btnRemove);
+            listEl.appendChild(row);
+        });
+    }
+
+    renderRules();
+
+    const btnAdd = document.createElement('button');
+    btnAdd.type = 'button';
+    btnAdd.textContent = '+ Add Sort Rule';
+    btnAdd.style.cssText = 'margin-top:6px; padding:4px 10px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;';
+    btnAdd.addEventListener('click', () => { rules.push({ column: '', dir: 'asc' }); markDirty(); renderRules(); });
+    wrapper.appendChild(btnAdd);
+
+    return wrapper;
 }
 
 // Render the schema editor UI
@@ -357,6 +488,22 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         tableData.hidden = val;
         refreshPreview();
     }, false));
+
+    // Default Sort
+    workspaceEl.appendChild(buildDefaultSortUI(tableData));
+
+    // Initial Load Limit
+    workspaceEl.appendChild(createTextInput(
+        'initial_limit',
+        'Initial Load Limit (rows, 0 = unlimited)',
+        String(tableData.initial_limit ?? 0),
+        (val) => {
+            const n = parseInt(val, 10);
+            if (n > 0) tableData.initial_limit = n;
+            else delete tableData.initial_limit;
+            markDirty();
+        }
+    ));
 
     const colsTitle = document.createElement('h3');
     colsTitle.textContent = 'Columns Configuration';
@@ -825,4 +972,106 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     };
 
     renderSubtables();
+
+    // ── Many-to-Many Relationships ────────────────────────────────────────────
+    if (!Array.isArray(tableData.many_to_many)) tableData.many_to_many = [];
+
+    const m2mTitle = document.createElement('h3');
+    m2mTitle.textContent = 'Many-to-Many Relationships';
+    m2mTitle.style.marginTop = '40px';
+    workspaceEl.appendChild(m2mTitle);
+
+    const m2mHint = document.createElement('p');
+    m2mHint.style.cssText = 'color:var(--muted); font-size:13px; margin:-8px 0 14px;';
+    m2mHint.textContent = 'Checkbox panels shown in edit/create forms. Each entry links this table to another via a junction table.';
+    workspaceEl.appendChild(m2mHint);
+
+    const m2mContainer = document.createElement('div');
+    workspaceEl.appendChild(m2mContainer);
+
+    const renderM2m = () => {
+        m2mContainer.replaceChildren();
+
+        tableData.many_to_many.forEach((cfg, index) => {
+            const block = document.createElement('div');
+            block.className = 'column-block collapsed';
+            block.style.borderLeft = '4px solid #8b5cf6';
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'block-header';
+            headerDiv.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:15px;';
+            headerDiv.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                block.classList.toggle('collapsed');
+            });
+
+            const chevron = document.createElement('span');
+            chevron.className = 'block-chevron';
+            chevron.textContent = '▶';
+
+            const h4 = document.createElement('h4');
+            h4.style.cssText = 'margin:0; flex:1;';
+            h4.textContent = cfg.label || `M2M #${index + 1}`;
+
+            const btnDel = document.createElement('button');
+            btnDel.type = 'button';
+            btnDel.textContent = 'Delete';
+            btnDel.style.cssText = 'background:none; border:none; color:red; cursor:pointer; font-weight:bold; text-decoration:underline;';
+            btnDel.onclick = () => { tableData.many_to_many.splice(index, 1); markDirty(); renderM2m(); };
+
+            headerDiv.append(chevron, h4, btnDel);
+            block.appendChild(headerDiv);
+
+            block.appendChild(createTextInput(
+                `m2m_label_${index}`, 'Display Label',
+                cfg.label || '',
+                (val) => { cfg.label = val; h4.textContent = val || `M2M #${index + 1}`; markDirty(); }
+            ));
+            block.appendChild(createSelectInput(
+                `m2m_jt_${index}`, 'Junction Table',
+                getTableOptions(), cfg.junction_table || '',
+                (val) => { cfg.junction_table = val; markDirty(); }
+            ));
+            block.appendChild(createTextInput(
+                `m2m_sfk_${index}`, 'Self FK — this table\'s ID column in junction',
+                cfg.self_fk || '',
+                (val) => { cfg.self_fk = val; markDirty(); }
+            ));
+            block.appendChild(createTextInput(
+                `m2m_ofk_${index}`, 'Other FK — related table\'s ID column in junction',
+                cfg.other_fk || '',
+                (val) => { cfg.other_fk = val; markDirty(); }
+            ));
+            block.appendChild(createSelectInput(
+                `m2m_ot_${index}`, 'Other Table (the related entity)',
+                getTableOptions(), cfg.other_table || '',
+                (val) => { cfg.other_table = val; markDirty(); }
+            ));
+            block.appendChild(createTextInput(
+                `m2m_dc_${index}`, 'Display Column (from Other Table)',
+                cfg.display_column || '',
+                (val) => { cfg.display_column = val; markDirty(); }
+            ));
+
+            makeCollapsible(block);
+            m2mContainer.appendChild(block);
+        });
+
+        const btnAdd = document.createElement('button');
+        btnAdd.type = 'button';
+        btnAdd.className = 'btn-add';
+        btnAdd.style.background = '#8b5cf6';
+        btnAdd.textContent = '+ Add Many-to-Many';
+        btnAdd.onclick = () => {
+            tableData.many_to_many.push({
+                label: '', junction_table: '', self_fk: '',
+                other_fk: '', other_table: '', display_column: 'name'
+            });
+            markDirty();
+            renderM2m();
+        };
+        m2mContainer.appendChild(btnAdd);
+    };
+
+    renderM2m();
 }

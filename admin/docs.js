@@ -2,10 +2,12 @@
 
 export function renderDocumentation(ctx) {
     const { workspaceEl } = ctx;
+    workspaceEl.innerHTML = '';
 
-    // Render the static documentation content
-    workspaceEl.innerHTML = `
-        <div style="max-width: 900px; padding: 30px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #334155; line-height: 1.6; margin-bottom: 40px;">
+    const content = document.createElement('div');
+    content.style.cssText = 'max-width:900px; padding:30px; background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#334155; line-height:1.6; margin-bottom:40px;';
+    content.innerHTML = `
+        <div>
             <h2 style="border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 0; color: #0f172a;">
                 OpenSparrow - Admin Panel Documentation
             </h2>
@@ -13,25 +15,25 @@ export function renderDocumentation(ctx) {
                 Configure your frontend application, manage database connections, and build dynamic dashboards, calendars and workflows without writing a single line of code.
             </p>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">0. First-Run Setup</h3>
+            <h3 id="doc-0" style="color: #2563eb; margin-top: 30px;">0. First-Run Setup</h3>
             <p style="background:#fef3c7;padding:10px 14px;border-left:3px solid #f59e0b;border-radius:4px;font-size:14px;">
                 <strong>Fresh installation?</strong> The admin panel automatically detects that the database is not yet configured (no connection or missing <code>spw_users</code> table) and opens without requiring a login. Follow these steps exactly:
             </p>
             <ol style="padding-left: 20px;">
                 <li>Open <code>/admin</code> in your browser — the panel loads in setup mode with a yellow banner.</li>
                 <li>Go to <strong>System → Database</strong>, enter host, port, database name, user and password, then click <strong>Save config</strong>.</li>
-                <li>Still in the Database tab, click <strong>Initialize System Tables</strong>. This creates all <code>spw_*</code> tables and inserts a default admin account: username <code>admin</code>, password <code>admin</code>.</li>
+                <li>Go to <strong>System → Migrations</strong> and click <strong>Apply Pending Migrations</strong>. This creates all <code>spw_*</code> tables and inserts a default admin account: username <code>admin</code>, password <code>admin</code>.</li>
                 <li>Go to <code>/login</code>, log in as <code>admin</code> / <code>admin</code>. You are redirected to <code>/admin</code> automatically.</li>
                 <li>Go to <strong>System → Users</strong>, find the <em>admin</em> row and click <strong>Change pwd</strong>. Enter your current password (<code>admin</code>) and set a strong new one.</li>
             </ol>
             <p>From that point the admin panel requires a valid session — the setup bypass is permanently closed once <code>spw_users</code> exists in the database.</p>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">0b. Admin Panel Layout</h3>
+            <h3 id="doc-0b" style="color: #2563eb; margin-top: 30px;">0b. Admin Panel Layout</h3>
             <p>The admin panel uses a collapsible left sidebar with four sections. The header provides global actions.</p>
             <ul style="padding-left: 20px;">
                 <li><strong>Data Management:</strong> Schema, Dashboard, Calendar, Files, Menu Preview, Add Table.</li>
                 <li><strong>Workflows:</strong> Workflow Manager.</li>
-                <li><strong>System:</strong> Database, Users, Health Check, Backup Tables, Audit &amp; Snapshots.</li>
+                <li><strong>System:</strong> Database, Users, Health Check, Backup Tables, Audit &amp; Snapshots, Migrations, Performance, Cron Notifications.</li>
                 <li><strong>Configuration:</strong> Export Config, Import Config, Run Notifications Cron.</li>
                 <li><strong>Save config:</strong> Persists the currently edited JSON file to <code>includes/</code>. After a successful save a green status pill appears next to the button confirming which file was written. Error pills stay visible for 6 seconds so they are not missed.</li>
                 <li><strong>Unsaved-changes guard:</strong> Tracks pending changes in config-editing tabs (Schema, Dashboard, Calendar, etc.) and shows a confirmation prompt before discarding them. Tabs that save immediately via API (Users, Database, Health, Backup) never trigger this warning.</li>
@@ -39,7 +41,7 @@ export function renderDocumentation(ctx) {
                 <li><strong>Docs icon (book):</strong> Opens this documentation page.</li>
             </ul>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">1. Technical Requirements & Database Structure</h3>
+            <h3 id="doc-1" style="color: #2563eb; margin-top: 30px;">1. Technical Requirements & Database Structure</h3>
             <p>Before configuring OpenSparrow, make sure your PostgreSQL database meets these core requirements:</p>
             <ul style="padding-left: 20px;">
                 <li><strong>Primary keys (mandatory):</strong> Every table <strong>must</strong> have a primary key column named <code>id</code> (typically <code>SERIAL</code> or <code>BIGSERIAL</code>). OpenSparrow relies on this exact column name to edit, delete, and view specific records.</li>
@@ -60,12 +62,14 @@ export function renderDocumentation(ctx) {
                 <li><code>spw_login_attempts</code> — rolling log used by the DB-backed rate limiter on <code>login.php</code> (IP-hash and username counters).</li>
                 <li><code>spw_comments</code> — user comments attached to any record. Each row links to a specific record via <code>related_table</code> + <code>related_id</code>, stores the author (<code>user_id</code>), body text (max 4000 chars), and a soft-delete timestamp.</li>
                 <li><code>spw_record_snapshots</code> — JSONB snapshots of records captured after every INSERT or UPDATE. Each row is linked to the corresponding <code>spw_users_log</code> entry via <code>log_id</code> (CASCADE DELETE). Only active when the Record Snapshots module is enabled (see section 9b).</li>
+                <li><code>spw_record_owners</code> — append-only ownership log. Each row records who owns a specific record (<code>table_name</code> + <code>record_id</code>) and who made the change (<code>changed_by</code>). The current owner is the row where <code>is_current = true</code>; all previous rows form the full ownership history. Created automatically on INSERT; reassignable by editors via the Record Owner panel in the edit view (see section 9c).</li>
+                <li><code>spw_migrations</code> — migration tracker. One row per applied migration name + timestamp. Bootstrapped automatically by the first run of <em>Apply Pending Migrations</em>. Used by <em>System → Migrations</em> to determine which schema changes have already been applied.</li>
             </ul>
             <p style="background: #fef3c7; padding: 10px 14px; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 14px;">
                 <strong>Note:</strong> Tables starting with <code>spw_</code> are treated as system tables. They are <strong>filtered out</strong> from the <em>Sync DB Tables</em> list in the Schema tab and will not appear in your application schema, even if they live in the same PostgreSQL schema as your business tables.
             </p>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">2. Schema & Grid Configuration</h3>
+            <h3 id="doc-2" style="color: #2563eb; margin-top: 30px;">2. Schema & Grid Configuration</h3>
             <p>The <strong>Schema</strong> tab is the core of your configuration. It maps your database tables to frontend grids and forms.</p>
 
             <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Add Table (Data Management → Add Table)</h4>
@@ -121,7 +125,7 @@ export function renderDocumentation(ctx) {
                 <li><strong>Foreign-key column:</strong> the column in the child table that references the parent's <code>id</code> (e.g. <code>client_id</code>).</li>
             </ul>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">3. Dashboard Builder</h3>
+            <h3 id="doc-3" style="color: #2563eb; margin-top: 30px;">3. Dashboard Builder</h3>
             <p>The <strong>Dashboard</strong> tab composes analytical views from your database. The layout uses a fixed <strong>3-column grid</strong>; each widget occupies 1, 2, or 3 columns and a small, medium, or large height.</p>
 
             <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Widget types</h4>
@@ -183,7 +187,7 @@ export function renderDocumentation(ctx) {
                 <li><strong>Menu Display Name / Icon / Hidden:</strong> Same controls as other sections — reflected in the live sidebar preview.</li>
             </ul>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">4. Calendar Module</h3>
+            <h3 id="doc-4" style="color: #2563eb; margin-top: 30px;">4. Calendar Module</h3>
             <p>The <strong>Calendar</strong> tab binds date columns from your database directly to a visual calendar.</p>
             <ul style="padding-left: 20px;">
                 <li><strong>Global settings:</strong> The <em>Global Settings</em> sidebar item lets you set the menu name, icon and visibility of the Calendar entry in the frontend navigation. A live sidebar preview reflects changes immediately.</li>
@@ -192,7 +196,7 @@ export function renderDocumentation(ctx) {
                 <li><strong>Row context:</strong> The full database row is attached to each calendar event, enabling click-through modals or custom actions.</li>
             </ul>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">5. Workflows Builder</h3>
+            <h3 id="doc-5" style="color: #2563eb; margin-top: 30px;">5. Workflows Builder</h3>
             <p>The <strong>Workflows</strong> tab composes multi-step wizards that guide users through structured data entry across related tables.</p>
             <ul style="padding-left: 20px;">
                 <li><strong>Global settings:</strong> Click <em>Global Settings</em> in the sidebar to set the menu name, icon and visibility of the Workflows entry. A live sidebar preview shows the result immediately, including a <em>HIDDEN</em> badge when the section is hidden.</li>
@@ -202,7 +206,7 @@ export function renderDocumentation(ctx) {
                 <li><strong>Multiple records:</strong> Enable <em>Allow adding multiple records</em> to let users submit several entries in a single step (e.g. several employees for a company) before moving on.</li>
             </ul>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">6. Users Management</h3>
+            <h3 id="doc-6" style="color: #2563eb; margin-top: 30px;">6. Users Management</h3>
             <p>The <strong>Users</strong> tab (<em>System → Users</em>) is the single place to manage all accounts — including the admin's own password.</p>
             <ul style="padding-left: 20px;">
                 <li><strong>Create users:</strong> Provide a username, password and role. Passwords are hashed with Argon2id before being stored. A live strength meter ranks passwords from <em>Weak</em> to <em>Strong</em>.</li>
@@ -226,7 +230,7 @@ export function renderDocumentation(ctx) {
                 <strong>Tip:</strong> There is no separate "admin password" file anymore. All accounts — including admin — live in <code>spw_users</code> and are managed from this tab.
             </p>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">7. Database Configuration</h3>
+            <h3 id="doc-7" style="color: #2563eb; margin-top: 30px;">7. Database Configuration</h3>
             <p>Manage the core PostgreSQL connection from <strong>System → Database</strong>.</p>
             <ul style="padding-left: 20px;">
                 <li><strong>Database configuration:</strong> Update host, port, database name, username and password. Settings are written to <code>includes/database.json</code> and take effect immediately.</li>
@@ -235,7 +239,7 @@ export function renderDocumentation(ctx) {
                 <li><strong>Login protection:</strong> <code>login.php</code> applies a DB-backed rate limiter (IP-hash: 20 attempts / 15 min, username: 5 attempts / 15 min, configurable via env) plus CSRF tokens, session fingerprinting (User-Agent hash), an 8-hour absolute session lifetime, and <code>SameSite=Lax</code> / <code>HttpOnly</code> cookies. All thresholds are tunable via environment variables — see <em>Deployment Notes</em> below.</li>
             </ul>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">8. Backup Tables</h3>
+            <h3 id="doc-8" style="color: #2563eb; margin-top: 30px;">8. Backup Tables</h3>
             <p><strong>System → Backup Tables</strong> creates timestamped copies of selected tables directly in PostgreSQL.</p>
             <ul style="padding-left: 20px;">
                 <li><strong>Table selection:</strong> The page lists all tables from <code>schema.json</code> (Application Tables) and all <code>spw_*</code> system tables fetched live from the database. Use <em>Select all</em> / <em>Deselect all</em> or tick individual tables.</li>
@@ -248,17 +252,17 @@ export function renderDocumentation(ctx) {
                 <strong>Tip:</strong> Run <em>Backup Tables</em> before applying schema changes or upgrading OpenSparrow. Pair it with a <code>pg_dump</code> snapshot and a config ZIP export for a complete backup.
             </p>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">9. System Health, Cron &amp; Config</h3>
+            <h3 id="doc-9" style="color: #2563eb; margin-top: 30px;">9. System Health, Cron &amp; Config</h3>
             <p>Keep the environment healthy and configuration portable.</p>
             <ul style="padding-left: 20px;">
-                <li><strong>Initialize System Tables:</strong> Creates all <code>spw_*</code> tables inside the configured schema (default <code>app</code>) and runs any pending column migrations. On a <strong>clean install</strong> it also inserts a default admin account (<code>admin</code> / <code>admin</code>) — change this password immediately via <em>System → Users → Change pwd</em>. On an existing database it is safe to re-run: it uses <code>CREATE TABLE IF NOT EXISTS</code> and <code>ALTER TABLE … ADD COLUMN IF NOT EXISTS</code>. Also migrates legacy roles automatically: <code>full → editor</code>, <code>readonly → viewer</code>.</li>
+                <li><strong>Database Migrations:</strong> Moved to <em>System → Migrations</em>. Click <strong>Apply Pending Migrations</strong> to run all unapplied schema changes. See section 9c for details.</li>
                 <li><strong>System diagnostics:</strong> Live checks for PHP version, ZIP / pgsql extensions, write permissions on <code>includes/</code>, and database connectivity.</li>
                 <li><strong>Run Notifications Cron</strong> (System drop-down): Executes <code>cron/cron_notifications.php</code> ad-hoc from the admin panel without waiting for the scheduled task. A modal displays the full execution log in real time. Each run (whether triggered here or by the system scheduler) is recorded in <code>spw_users_notifications_log</code> with timestamp, status, trigger source (<code>admin</code> vs <code>cron</code>), sources processed, notifications created, and any error message. Only users that exist and are active in <code>spw_users</code> receive notifications — stale IDs in the calendar source configuration are silently skipped.</li>
                 <li><strong>Scheduling the cron automatically:</strong> Add a system cron job (e.g. daily at 07:00) to run <code>php /path/to/cron/cron_notifications.php</code>. The script sets the <code>triggered_by</code> flag to <code>cron</code> automatically when called from the command line.</li>
                 <li><strong>Export / Import config:</strong> The <em>Configuration</em> drop-down downloads or uploads a ZIP of all JSON settings. Recommended for backups and migrations to production.</li>
             </ul>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">9b. Audit &amp; Record Snapshots</h3>
+            <h3 id="doc-9b" style="color: #2563eb; margin-top: 30px;">9b. Audit &amp; Record Snapshots</h3>
             <p>
                 <strong>System → Audit &amp; Snapshots</strong> controls the record snapshot module — an optional extension of the audit trail that captures the full state of a record after every write operation.
             </p>
@@ -282,7 +286,263 @@ export function renderDocumentation(ctx) {
                 <strong>Tip:</strong> Use <code>SELECT s.snapshot FROM spw_record_snapshots s JOIN spw_users_log l ON l.id = s.log_id WHERE l.target_table = 'your_table' AND s.record_id = 42 ORDER BY s.created_at DESC</code> to retrieve the full change history of a specific record.
             </p>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">10. Files Module</h3>
+            <h3 id="doc-9c" style="color: #2563eb; margin-top: 30px;">9c. Database Migrations</h3>
+            <p>
+                <strong>System → Migrations</strong> is the single place to apply and track all schema changes to <code>spw_*</code> system tables.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>How it works:</strong> Each schema change is registered as a named migration (e.g. <code>2.0_baseline</code>). Applied migrations are recorded in <code>spw_migrations</code>. On each run, only migrations not yet recorded are executed — already-applied ones are skipped. Re-running is always safe.</li>
+                <li><strong>Status table:</strong> Shows every known migration with a green <em>APPLIED</em> or yellow <em>PENDING</em> badge, and the exact timestamp when it was applied.</li>
+                <li><strong>Apply Pending Migrations:</strong> Runs all pending migrations in order and records them. Also creates the default admin account on a fresh install. The response message reports how many migrations were applied vs skipped.</li>
+                <li><strong>Adding migrations (developers):</strong> Append a new key/value entry to the <code>$migrations</code> array in <code>admin/api.php</code> <code>init_db</code>, and add the same key to the <code>$known</code> array in the <code>migrations_list</code> action. Never modify existing entries — they are immutable history.</li>
+            </ul>
+            <p style="background:#f0f9ff;padding:10px 14px;border-left:3px solid #38bdf8;border-radius:4px;font-size:14px;">
+                <strong>Tip:</strong> Always run <em>Apply Pending Migrations</em> after upgrading OpenSparrow to pick up any new system tables or columns added in the new version.
+            </p>
+
+            <h3 id="doc-9d" style="color: #2563eb; margin-top: 30px;">9d. Record Ownership</h3>
+            <p>
+                Every record can have an <strong>owner</strong> — the user responsible for it. Ownership is tracked in <code>spw_record_owners</code> and visible in the <em>Record History</em> tab of the edit view.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Auto-assignment:</strong> When a new record is created the creator is automatically set as owner.</li>
+                <li><strong>Record History tab:</strong> Open any record in <code>edit.php</code> and switch to the <em>Record History</em> tab. The top section shows the current owner and (for Editor/Admin users) a dropdown to reassign ownership. Below it the full <em>Assignment History</em> table lists every change — owner, changed-by, and timestamp.</li>
+                <li><strong>Changing the owner:</strong> Users with <strong>Editor</strong> or <strong>Admin</strong> role see the reassignment dropdown. Select a user and click <em>Change Owner</em>. The change is saved immediately and the history table refreshes.</li>
+                <li><strong>Full history:</strong> Every change appends a row to <code>spw_record_owners</code>. Previous rows have <code>is_current = false</code>. No data is deleted.</li>
+                <li><strong>Viewer access:</strong> Can see current owner but cannot reassign.</li>
+                <li><strong>API:</strong> <code>GET api_owners.php?action=history&amp;table=X&amp;id=Y</code> returns the full assignment log (owner, changed_by, timestamp).</li>
+            </ul>
+            <p style="background:#fef3c7;padding:10px 14px;border-left:3px solid #f59e0b;border-radius:4px;font-size:14px;">
+                <strong>Prerequisite:</strong> Run <em>Apply Pending Migrations</em> (System → Migrations) to create the <code>spw_record_owners</code> table. If the table was created before migration <code>2.0_record_owners_changed_at</code> was added, that migration renames the legacy <code>created_at</code> column to <code>changed_at</code> automatically.
+            </p>
+
+            <h3 id="doc-9e" style="color: #2563eb; margin-top: 30px;">9e. Grid Default Sort &amp; Load Limit</h3>
+            <p>
+                Each table can have a <strong>server-side default sort order</strong> and an <strong>initial load limit</strong> configured in Schema → Table Properties. These settings control what the API returns before the user applies any interactive filter or sort.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Default Sort Order:</strong> Add one or more sort rules (column + ASC/DESC). The column dropdown lists all columns defined in the schema. Rules are applied left-to-right as a multi-column <code>ORDER BY</code>. If no rules are configured, the fallback is <code>id DESC</code>. The first rule also pre-selects the column header highlight in the grid.</li>
+                <li><strong>Initial Load Limit:</strong> Enter the maximum number of rows to fetch on first load (e.g. <code>500</code>). <code>0</code> means unlimited. When the result is truncated an info toast appears: <em>"Showing first N records (limit set in Schema settings)"</em>. Useful for large tables where the full fetch causes slow page loads.</li>
+                <li><strong>Where to configure:</strong> Admin → Schema → select table → <em>Table Properties</em> section → <em>Default Sort Order</em> and <em>Initial Load Limit</em> fields → Save File.</li>
+                <li><strong>Stored in:</strong> <code>includes/schema.json</code> under the table object as <code>"default_sort": [{"column": "name", "dir": "asc"}]</code> and <code>"initial_limit": 500</code>.</li>
+            </ul>
+
+            <h3 id="doc-9f" style="color: #2563eb; margin-top: 30px;">9f. Grid Drilldown — Quick Add</h3>
+            <p>
+                When a row in the grid is expanded to show related (subtable) records, each subtable block header contains a <strong>+</strong> button. Clicking it navigates directly to <code>create.php</code> for that subtable, pre-filling the foreign key with the parent record's ID — so the new record is immediately linked to the correct parent.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li>Only visible to <strong>Editor</strong> and <strong>Admin</strong> roles.</li>
+                <li>The foreign key column used is the one defined in <code>subtables[].foreign_key</code> in <code>schema.json</code>.</li>
+                <li>URL format: <code>create.php?table=&lt;child_table&gt;&amp;&lt;fk_column&gt;=&lt;parent_id&gt;</code>.</li>
+            </ul>
+
+            <h3 id="doc-9f2" style="color: #2563eb; margin-top: 30px;">9f2. Grid Action Buttons</h3>
+            <p>
+                The <strong>Actions</strong> column in the data grid uses icon buttons instead of text labels. Icons are served from <code>assets/img/</code>.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Edit</strong> — <code>edit_square.png</code> icon, navigates to <code>edit.php</code> for the row.</li>
+                <li><strong>Delete</strong> — <code>delete.png</code> icon (red hover), requires confirmation before deleting the record.</li>
+                <li>Both buttons are 30×30 px with transparent background, 70 % opacity at rest, full opacity on hover. Delete hover background turns red.</li>
+                <li>The Actions column header is intentionally empty (no label) and fixed at 70 px width.</li>
+                <li>Only visible to <strong>Editor</strong> role — hidden entirely for <strong>Viewer</strong>.</li>
+            </ul>
+
+            <h3 id="doc-9g" style="color: #2563eb; margin-top: 30px;">9g. Performance Tab</h3>
+            <p>
+                <strong>Admin → System → Performance</strong> — a read-only diagnostic panel that scans <code>schema.json</code>, <code>dashboard.json</code>, and live PostgreSQL statistics to identify bottlenecks. Contains six independent sections; each has its own <em>Scan</em> button. The <strong>Run Full Analysis</strong> button at the top fires all six in parallel.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>1. Missing Index Advisor:</strong> Reads <code>schema.json</code> and <code>dashboard.json</code>, then queries <code>pg_indexes</code> to find columns that lack indexes. Checks: foreign key columns, subtable join columns (<code>foreign_key</code> field), default sort columns, widget <code>ORDER BY</code> / <code>GROUP BY</code> / filter condition columns. Suggestions are priority-tagged (HIGH = FK/join, MEDIUM = sort/filter) and include ready-to-run <code>CREATE INDEX IF NOT EXISTS …</code> SQL with copy buttons.</li>
+                <li><strong>2. Unused Indexes:</strong> Queries <code>pg_stat_user_indexes</code> for indexes with <code>idx_scan = 0</code> (excludes primary keys and unique constraints). Displays index size and generates <code>DROP INDEX IF EXISTS …</code> SQL. Unused indexes waste storage and slow INSERT/UPDATE.</li>
+                <li><strong>3. Slow Query Analyzer:</strong> Reads <code>pg_stat_statements</code> (top 15 by mean execution time). Highlights queries over 100 ms in amber, over 500 ms in red. Requires the <code>pg_stat_statements</code> extension — displays installation instructions if missing (<code>CREATE EXTENSION pg_stat_statements;</code>).</li>
+                <li><strong>4. Table Statistics &amp; Bloat:</strong> Reads <code>pg_stat_user_tables</code> for every table in <code>schema.json</code>. Shows estimated rows, dead-row count, bloat %, sequential vs index scan counts, table size, and last autovacuum/autoanalyze timestamps. Dead % &gt; 10 shows a <em>VACUUM</em> copy button.</li>
+                <li><strong>5. Database Health:</strong> KPI cards from <code>pg_stat_database</code> — cache hit ratio (target &gt; 99 %), active vs max connections, deadlock count, committed transactions, DB size, and PostgreSQL version string.</li>
+                <li><strong>6. Schema Configuration Warnings:</strong> Pure analysis of <code>schema.json</code> and <code>dashboard.json</code> combined with <code>pg_class.reltuples</code> row estimates. Flags: tables with &gt; 20 columns, tables with &gt; 5 000 rows and no <code>initial_limit</code>, tables with &gt; 1 000 rows and no <code>default_sort</code>, subtables missing <code>columns_to_show</code>, list widgets without a row cap on large tables.</li>
+            </ul>
+            <p style="background:#f0f9ff;padding:10px 14px;border-left:3px solid #38bdf8;border-radius:4px;font-size:14px;">
+                <strong>Note:</strong> The Performance tab is read-only — it generates SQL suggestions but never executes them. Copy the SQL and run it in your PostgreSQL client or via a migration entry in <em>System → Migrations</em>.
+            </p>
+
+            <h3 id="doc-9h" style="color: #2563eb; margin-top: 30px;">9h. Cron Notifications Tab</h3>
+            <p>
+                <strong>Admin → System → Cron Notifications</strong> — a dedicated management page for the notification dispatch cron job. Replaces the simple run-modal that was in the <em>Configuration</em> dropdown with a full five-section interface.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>1. Manual Run:</strong> Click <em>Run Cron Now</em> to execute <code>cron/cron_notifications.php</code> immediately via the server. Full stdout output is displayed inline. The run is recorded in <code>spw_users_notifications_log</code> with <code>triggered_by = admin</code>.</li>
+                <li><strong>2. Run History:</strong> Click <em>Load History</em> to fetch the last 50 entries from <code>spw_users_notifications_log</code>. The table shows: run ID, status badge (SUCCESS / ERROR / RUNNING), trigger source (<code>admin</code> or <code>cron</code>), start time, duration in seconds, sources processed, notifications created, and any error message.</li>
+                <li><strong>3. Notification Stats:</strong> Click <em>Load Stats</em> for a live snapshot of <code>spw_users_notifications</code>:
+                    <ul style="padding-left: 20px; margin-top: 5px;">
+                        <li><strong>KPI cards:</strong> Total notifications, Unread, Due Today (unread), Upcoming Unread.</li>
+                        <li><strong>Last run summary:</strong> Start time and status from the most recent cron log entry.</li>
+                        <li><strong>Top Unread per User:</strong> Table of the 10 users with the most unread notifications.</li>
+                    </ul>
+                </li>
+                <li><strong>4. Cron Setup:</strong> Static guide with ready-to-copy scheduler commands for four environments:
+                    <ul style="padding-left: 20px; margin-top: 5px;">
+                        <li>Linux/macOS crontab — every 15 minutes or every hour.</li>
+                        <li>Windows Task Scheduler — <code>schtasks</code> command.</li>
+                        <li>Docker — a sidecar container with a sleep loop.</li>
+                    </ul>
+                </li>
+                <li><strong>5. Log Cleanup:</strong> Enter a retention period in days and click <em>Purge Old Logs</em>. Deletes all <code>spw_users_notifications_log</code> rows older than N days (DELETE with a parameterised interval — never executes arbitrary SQL). A confirmation dialog is required before deletion. Reports the number of rows deleted.</li>
+            </ul>
+            <p style="background:#f0f9ff;padding:10px 14px;border-left:3px solid #38bdf8;border-radius:4px;font-size:14px;">
+                <strong>Note:</strong> The quick <em>Run Notifications Cron</em> button in the <em>Configuration</em> section of the left nav still exists as a shortcut modal. The Cron Notifications tab provides the full history, stats, and cleanup tools.
+            </p>
+
+            <h3 id="doc-9i" style="color: #2563eb; margin-top: 30px;">9i. Grid Page Size</h3>
+            <p>
+                Each data grid shows a configurable number of records per page. A global default is set in the admin panel; individual users can override it from the grid itself — their choice persists across browser sessions.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Admin default:</strong> Schema tab → <em>Global Grid Settings</em> (first item in the sidebar) → <em>Default Page Size</em> select (10 / 25 / 50 / 100) → <em>Save File</em>. Stored as <code>default_page_size</code> at the top level of <code>includes/schema.json</code>. Included in config export/import ZIP.</li>
+                <li><strong>User override:</strong> The <em>Rows per page</em> selector in the left side of every pagination bar. Selecting a value saves it to <code>localStorage</code> (<code>sparrow_page_size</code>) immediately and re-renders the grid. The override survives page refreshes and table switches for that browser.</li>
+                <li><strong>Priority chain:</strong> <code>localStorage</code> value → <code>schema.default_page_size</code> → built-in fallback of 25.</li>
+                <li><strong>Pagination bar layout:</strong> <em>Rows per page: [select]</em> on the left — spacer — <em>Showing X–Y of Z records</em> — <em>Prev</em> / <em>Page N of M</em> / <em>Next</em> on the right.</li>
+                <li><strong>Valid values:</strong> 10, 25, 50, 100. Values outside this set are ignored (both from <code>localStorage</code> and from the admin config) and the fallback applies.</li>
+            </ul>
+
+            <h3 id="doc-9j" style="color: #2563eb; margin-top: 30px;">9j. Many-to-Many Relationships</h3>
+            <p>
+                Many-to-many (M2M) relationships allow a record in one table to be linked to multiple records in another table — and vice versa.
+                The links are stored in a <strong>junction table</strong> (also called a pivot or bridge table) that holds pairs of foreign keys.
+                OpenSparrow renders these as a <strong>checkbox panel</strong> at the bottom of the edit and create forms — no custom code required.
+            </p>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">How it works end-to-end</h4>
+            <ol style="padding-left: 20px;">
+                <li><strong>Create the junction table in PostgreSQL</strong> (once, manually or via DB migration):
+                    <pre style="background:#f1f5f9; padding:12px 16px; border-radius:6px; font-size:13px; overflow-x:auto; margin-top:8px;">CREATE TABLE app.employee_company (
+    id          SERIAL PRIMARY KEY,
+    employee_id INT NOT NULL REFERENCES app.employee(id) ON DELETE CASCADE,
+    company_id  INT NOT NULL REFERENCES app.company(id)  ON DELETE CASCADE,
+    UNIQUE (employee_id, company_id)
+);</pre>
+                    The <code>ON DELETE CASCADE</code> clauses ensure orphan rows are cleaned up automatically when either side is deleted.
+                    The <code>UNIQUE</code> constraint prevents duplicate links.
+                </li>
+                <li><strong>Configure the relationship</strong> in the admin panel: Schema → select the parent table → scroll to <em>Many-to-Many Relationships</em> → click <strong>+ Add Many-to-Many</strong>.</li>
+                <li><strong>Save File</strong> — the checkbox panel appears automatically in <code>edit.php</code> and <code>create.php</code>.</li>
+            </ol>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">Admin configuration fields</h4>
+            <p>Each M2M entry has six fields. All are required:</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Display Label</strong> — heading shown above the checkbox group in the form (e.g. <em>Companies</em>).</li>
+                <li><strong>Junction Table</strong> — the pivot table that stores the links (<code>employee_company</code>). Select from all tables known to the schema.</li>
+                <li><strong>Self FK</strong> — the column in the junction table that references <em>this</em> table's primary key (e.g. <code>employee_id</code>).</li>
+                <li><strong>Other FK</strong> — the column in the junction table that references the <em>related</em> table (e.g. <code>company_id</code>).</li>
+                <li><strong>Other Table</strong> — the related entity table whose records appear as checkboxes (e.g. <code>company</code>). Select from all tables known to the schema.</li>
+                <li><strong>Display Column</strong> — the column from Other Table used as the checkbox label (e.g. <code>name</code>). Defaults to <code>name</code>.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">Resulting JSON in schema.json</h4>
+            <pre style="background:#f1f5f9; padding:12px 16px; border-radius:6px; font-size:13px; overflow-x:auto;">"employee": {
+    "display_name": "Employee",
+    "columns": { ... },
+    "foreign_keys": { ... },
+    "many_to_many": [
+        {
+            "label":          "Companies",
+            "junction_table": "employee_company",
+            "self_fk":        "employee_id",
+            "other_fk":       "company_id",
+            "other_table":    "company",
+            "display_column": "name"
+        }
+    ]
+}</pre>
+            <p>Multiple M2M blocks are supported — add one entry per relationship.</p>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">Runtime behaviour — edit form</h4>
+            <ul style="padding-left: 20px;">
+                <li>All records from Other Table are loaded as checkboxes, sorted by Display Column.</li>
+                <li>Currently linked records are pre-checked based on the existing rows in the junction table.</li>
+                <li>On <strong>Save</strong> or <strong>Save &amp; Exit</strong>: all existing junction rows for this record are deleted and new rows are inserted for each checked option — atomically in a single PostgreSQL transaction. If the transaction fails, no partial state is written.</li>
+                <li>Unchecking all boxes and saving removes all links (full unlink).</li>
+                <li>Read-only users (<em>viewer</em> role) see checkboxes in disabled state — they can view links but cannot change them.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">Runtime behaviour — create form</h4>
+            <ul style="padding-left: 20px;">
+                <li>Checkboxes appear at the bottom of the create form with nothing pre-checked.</li>
+                <li>Links are saved immediately after the main record is inserted — in the same PHP request. The new record's ID is used as the Self FK value.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">Junction table — must it be in schema.json?</h4>
+            <p>
+                The junction table does <strong>not</strong> need its own schema.json entry for the M2M panel to work — the helper queries it directly using the column names you configured.
+                However, if you want to control the PostgreSQL schema name (e.g. <code>app</code> instead of <code>public</code>), add a minimal hidden entry:
+            </p>
+            <pre style="background:#f1f5f9; padding:12px 16px; border-radius:6px; font-size:13px; overflow-x:auto;">"employee_company": {
+    "hidden": true,
+    "schema": "app",
+    "columns": {}
+}</pre>
+            <p>Without this entry the junction table is accessed in the <code>public</code> schema by default.</p>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">M2M column in the data grid</h4>
+            <p>
+                Every table that has at least one M2M relationship configured automatically gets one extra column in the data grid for each relationship — no additional setup required.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Column header:</strong> The <em>Display Label</em> value from the M2M config (e.g. <em>Companies</em>).</li>
+                <li><strong>Cell content:</strong> Up to 3 linked items are shown as indigo chips. If there are more, a grey <em>+N</em> overflow chip is added.</li>
+                <li><strong>Hover tooltip:</strong> Hovering over any chip cell opens a popup listing all linked items with a title — identical in style to the comments tooltip.</li>
+                <li><strong>Batch loading:</strong> A single <code>GET api.php?api=m2m_rows&amp;table=…&amp;m2m_index=…&amp;ids=…</code> request fetches all M2M data for the visible page rows at once — no per-row requests.</li>
+                <li><strong>Frontend modules:</strong> <code>assets/js/grid/m2m/loader.js</code> (fetch, cache, render chips) and <code>assets/js/grid/m2m/popup.js</code> (hover tooltip).</li>
+                <li><strong>Junction table schema:</strong> For the batch query to resolve the correct PostgreSQL schema, the junction table should have a minimal entry in <code>schema.json</code> with a <code>"schema"</code> key. Without it, <code>public</code> is assumed.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">M2M Builder (admin tab)</h4>
+            <p>
+                <strong>Data Management → M2M Builder</strong> is a dedicated admin tab for creating new many-to-many relationship entries. It provides a guided form-based wizard as an alternative to editing <code>schema.json</code> directly.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li>Select the parent table, fill in the six M2M fields (label, junction table, self FK, other FK, other table, display column), and click <em>Create Relationship</em>.</li>
+                <li>The action writes the new entry to <code>schema.json</code> via <code>admin/api.php?action=create_m2m</code>.</li>
+                <li>Each saved relationship is listed as a card (↔ badge) in the sidebar. Clicking a card opens an edit/delete view.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #8b5cf6; padding-left: 15px;">Backend implementation</h4>
+            <ul style="padding-left: 20px;">
+                <li><code>includes/m2m.php</code> — three helper functions: <code>m2m_options()</code> (fetch checkable items), <code>m2m_selected()</code> (fetch current links), <code>m2m_sync()</code> (atomic DELETE + INSERT).</li>
+                <li>All SQL identifiers pass through <code>pg_ident()</code> — injection-safe even for user-supplied column names.</li>
+                <li>Checkbox values are validated as integers server-side (<code>ctype_digit</code>) before any INSERT.</li>
+                <li>No new API endpoint for form sync — runs entirely server-side within the existing PHP request lifecycle.</li>
+                <li>Grid batch fetch: <code>api.php?api=m2m_rows</code> — GET endpoint returning <code>{"data": {"rowId": ["Label A", …]}}</code>. The <code>many_to_many</code> array is included in the public schema served by <code>api_schema.php</code>.</li>
+            </ul>
+
+            <h3 id="doc-9k" style="color: #2563eb; margin-top: 30px;">9k. Schema Map (ERD)</h3>
+            <p>
+                <strong>Data Management → Schema Map</strong> renders an interactive entity-relationship diagram of your entire schema — tables, foreign keys, subtables, and M2M links — directly from <code>schema.json</code>. No external libraries are used.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Auto-layout:</strong> Tables are positioned using a force-directed algorithm (repulsion + spring attraction along edges). Runs automatically on open and when toggling hidden tables.</li>
+                <li><strong>Connection types:</strong>
+                    <ul style="padding-left: 20px; margin-top: 4px;">
+                        <li><span style="color:#2563eb;">●</span> <strong>Foreign key</strong> — solid blue arrow from referencing table to referenced table.</li>
+                        <li><span style="color:#16a34a;">●</span> <strong>Subtable</strong> — dashed green line.</li>
+                        <li><span style="color:#7c3aed;">●</span> <strong>Many-to-many</strong> — dotted purple line.</li>
+                    </ul>
+                </li>
+                <li><strong>Pan:</strong> Click and drag the canvas background.</li>
+                <li><strong>Zoom:</strong> Scroll wheel — zoom anchored to cursor position.</li>
+                <li><strong>Reposition table:</strong> Click and drag any table node.</li>
+                <li><strong>Highlight connections:</strong> Click a table to highlight its direct relationships and dim everything else. Click again to deselect.</li>
+                <li><strong>Search:</strong> Type in the <em>Search tables…</em> input to highlight matching tables (by internal name or display name). Non-matching tables are dimmed.</li>
+                <li><strong>Hidden tables:</strong> Check <em>Hidden tables</em> to include tables marked <code>"hidden": true</code> in the diagram (shown with a grey header).</li>
+                <li><strong>Fit View:</strong> The <em>⌖ Fit View</em> button resets pan and zoom to fit all visible tables in the viewport.</li>
+                <li><strong>Export PNG:</strong> The <em>↓ PNG</em> button renders the full diagram (all tables, not just the visible viewport) to a <code>schema-map.png</code> file at 2× resolution.</li>
+                <li><strong>Stats bar:</strong> Shows a live count of tables, FK relationships, subtable links, and M2M links in the current view.</li>
+            </ul>
+            <p style="background:#f0f9ff;padding:10px 14px;border-left:3px solid #38bdf8;border-radius:4px;font-size:14px;">
+                <strong>Tip:</strong> The Schema Map reads <code>schema.json</code> directly — it always reflects your latest saved configuration. Re-open the tab after saving schema changes to see an updated diagram.
+            </p>
+
+            <h3 id="doc-10" style="color: #2563eb; margin-top: 30px;">10. Files Module</h3>
             <p>The <strong>Files</strong> tab is a central repository for documents and media, backed by the <code>spw_files</code> table.</p>
             <ul style="padding-left: 20px;">
                 <li><strong>Global settings:</strong> The <em>Global Settings</em> sidebar item lets you set the menu name, icon and visibility of the Files entry. A live sidebar preview updates as you change these values.</li>
@@ -291,7 +551,7 @@ export function renderDocumentation(ctx) {
                 <li><strong>File library:</strong> Upload, search, filter by type, preview images and delete files from the admin UI. Deletions are logged to the audit trail.</li>
             </ul>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">11. Menu Preview &amp; Navigation Editor</h3>
+            <h3 id="doc-11" style="color: #2563eb; margin-top: 30px;">11. Menu Preview &amp; Navigation Editor</h3>
             <p>
                 The <strong>Menu Preview</strong> tab renders the frontend sidebar exactly as users see it and lets you
                 rearrange or nest items by dragging — no code required. Every change is saved automatically.
@@ -366,7 +626,75 @@ export function renderDocumentation(ctx) {
                 Both sets of changes take effect on the frontend simultaneously.
             </p>
 
-            <h3 style="color: #2563eb; margin-top: 30px;">12. Deployment Notes</h3>
+            <h3 id="doc-11b" style="color: #2563eb; margin-top: 30px;">11b. Demo Systems (Quick-Start Templates)</h3>
+            <p>
+                <strong>System → Demo Systems</strong> provides three pre-built, fully-configured demo applications. Each includes a complete PostgreSQL schema, seed data, dashboard widgets, workflows, and calendar sources — everything needed to explore OpenSparrow features in minutes.
+            </p>
+            <ul style="padding-left: 20px;">
+                <li><strong>What gets installed:</strong>
+                    <ul style="padding-left: 20px; margin-top: 5px;">
+                        <li>New PostgreSQL schema (e.g. <code>spw_crm</code>) with demo tables.</li>
+                        <li>Realistic seed data (15+ records per table, dates relative to installation time).</li>
+                        <li>Schema configuration entries in <code>includes/schema.json</code> with foreign keys, subtables, and column descriptions.</li>
+                        <li>Dashboard widgets in <code>includes/dashboard.json</code> (stat cards, charts, lists).</li>
+                        <li>Calendar sources and workflows in <code>includes/workflows.json</code>.</li>
+                        <li>Optional SQL views for derived data (e.g. low-stock products).</li>
+                    </ul>
+                </li>
+                <li><strong>Safety:</strong> Installation and uninstallation both require typing <code>CONFIRM</code> to prevent accidental data loss.</li>
+                <li><strong>Cleanup on uninstall:</strong> The demo schema is dropped from PostgreSQL (CASCADE), and config files are removed if they contain only demo content. Non-demo configurations are preserved.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Demo 1: CRM (Customer Relationship Management)</h4>
+            <p>Manage companies, contacts, sales deals, and activity logs. Demonstrates foreign keys, subtables, and workflow steps.</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Tables:</strong> Companies (15 records), Contacts (6), Deals (6), Activities (5).</li>
+                <li><strong>Features:</strong> Company-to-contact one-to-many, deal stages with color coding (Lead, Qualified, Proposal, Negotiation, Won, Lost), activity types (Call, Email, Meeting, Task, Note).</li>
+                <li><strong>Dashboard:</strong> 3 stat cards (Companies, Contacts, Pipeline Value) + bar chart (Deals by Stage) + pie chart (Activities Status).</li>
+                <li><strong>Workflow:</strong> <em>New CRM Deal</em> — add company → select contact → create deal → log activity.</li>
+                <li><strong>Schema:</strong> <code>spw_crm</code>.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Demo 2: WMS (Warehouse Management System)</h4>
+            <p>Track inventory across warehouses, manage product stock levels, and log movements (inbound, outbound, transfers).</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Tables:</strong> Warehouses (5 records), Products (6), Stock (10), Movements (5).</li>
+                <li><strong>Features:</strong> Low-stock alerts via a filtered SQL view (<code>v_demo_wms_stock</code>), movement types with color coding (Inbound, Outbound, Transfer, Adjustment).</li>
+                <li><strong>Dashboard:</strong> 3 stat cards (Warehouses, Products, Stock Entries) + bar chart (Movements by Type) + pie chart (Stock by Category).</li>
+                <li><strong>Workflow:</strong> <em>New Stock Movement</em> — select product → set stock level → log movement.</li>
+                <li><strong>Schema:</strong> <code>spw_wms</code>.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Demo 3: Task Management</h4>
+            <p>Organize projects, assign tasks, track time spent, and manage deadlines. Demonstrates priorities, statuses, and subtables.</p>
+            <ul style="padding-left: 20px;">
+                <li><strong>Tables:</strong> Projects (5 records), Tasks (7), Time Logs (9).</li>
+                <li><strong>Features:</strong> Task priority levels (Low, Medium, High, Critical), status tracking (Todo, In Progress, Review, Done, Blocked), hourly time logging.</li>
+                <li><strong>Dashboard:</strong> 3 stat cards (Projects, Open Tasks, Total Hours) + pie chart (Task Status) + list (Overdue Tasks).</li>
+                <li><strong>Workflow:</strong> <em>New Project Setup</em> — create project → add multiple tasks → log hours per task.</li>
+                <li><strong>Schema:</strong> <code>spw_tasks</code>.</li>
+            </ul>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Installation & Uninstallation flow</h4>
+            <ol style="padding-left: 20px;">
+                <li>Open <strong>System → Demo Systems</strong> and select one of three demo cards (CRM, WMS, Tasks).</li>
+                <li>A panel displays the demo name, description, and target PostgreSQL schema.</li>
+                <li>Click <strong>Install Demo</strong>. A text input asks for confirmation — type <code>CONFIRM</code> and click <strong>Proceed</strong>.</li>
+                <li>On success, the schema and config files are created. The panel switches to show installed details and an <strong>Uninstall</strong> button.</li>
+                <li>To uninstall: click <strong>Uninstall Demo</strong>, type <code>CONFIRM</code>, and click <strong>Proceed</strong>. The schema is dropped and config files cleaned up.</li>
+                <li>Demo content is isolated — you can use demos alongside your own tables and configurations.</li>
+            </ol>
+
+            <h4 style="color: #475569; margin-top: 20px; border-left: 3px solid #cbd5e1; padding-left: 15px;">Data & configuration notes</h4>
+            <ul style="padding-left: 20px;">
+                <li><strong>Realistic seed data:</strong> All dates in seed records are relative to installation time (±5 days from NOW) to keep demo data fresh.</li>
+                <li><strong>Column descriptions:</strong> Every column in the schema includes a human-readable description, visible as tooltips in the data grid.</li>
+                <li><strong>Enum colors:</strong> Status fields use color-coded badges (e.g. deal stages: grey for Lead, green for Won, red for Lost).</li>
+                <li><strong>Foreign key dropdowns:</strong> All foreign keys are configured with display columns for human-readable selections (e.g. contacts show first + last name, not numeric IDs).</li>
+                <li><strong>Subtables:</strong> Parent records expand to show related children inline (e.g. a company card shows all its contacts and deals).</li>
+            </ul>
+
+            <h3 id="doc-12" style="color: #2563eb; margin-top: 30px;">12. Deployment Notes</h3>
             <ul style="padding-left: 20px;">
                 <li><strong>Deny public access to <code>includes/</code>:</strong> Configure your web server so <code>database.json</code>, <code>schema.json</code> and other JSON config files cannot be fetched directly. An <code>.htaccess</code> rule blocking <code>*.json</code> is included by default.</li>
                 <li><strong>Storage permissions:</strong> Under Docker, <code>includes/</code> and <code>storage/</code> must be writable by the web-server user (UID/GID <code>82:82</code> for musl-based slim PHP images).</li>
@@ -409,4 +737,26 @@ export function renderDocumentation(ctx) {
             </table>
         </div>
     `;
+
+    workspaceEl.appendChild(content);
+
+    // Populate admin sidebar with section links
+    const itemListEl = document.getElementById('itemList');
+    const sidebarTitle = document.getElementById('sidebarTitle');
+    if (sidebarTitle) sidebarTitle.textContent = 'Contents';
+
+    if (itemListEl) {
+        itemListEl.innerHTML = '';
+        content.querySelectorAll('h3[id]').forEach(h => {
+            const li = document.createElement('li');
+            li.textContent = h.textContent.trim();
+            li.style.cssText = 'cursor:pointer; font-size:12px; line-height:1.4; padding:5px 8px; border-radius:4px; color:#475569;';
+            li.addEventListener('mouseover', () => { li.style.background = '#e2e8f0'; li.style.color = '#0f172a'; });
+            li.addEventListener('mouseout',  () => { li.style.background = '';        li.style.color = '#475569'; });
+            li.addEventListener('click', () => {
+                h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            itemListEl.appendChild(li);
+        });
+    }
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/includes/bootstrap.php';
+require __DIR__ . '/includes/m2m.php';
 
 use App\Form\RenderContext;
 
@@ -24,8 +25,10 @@ if (!$schemas->hasTable($table)) {
     die('Invalid table.');
 }
 
-$tableCfg = $schemas->table($table);
-$error    = '';
+$tableCfg   = $schemas->table($table);
+$rawSchema  = $schemas->raw();
+$m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
+$error      = '';
 
 if ($request->isPost()) {
     if (!$csrf->isValid($request->post('csrf_token'))) {
@@ -34,10 +37,16 @@ if ($request->isPost()) {
     }
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
-        $newId = $records->insert($tableCfg, $data);
-        $logId = $audit->log($session->userId(), 'INSERT', $tableCfg->name, (int)$newId);
+        $newId  = $records->insert($tableCfg, $data);
+        $userId = $session->userId();
+        $logId  = $audit->log($userId, 'INSERT', $tableCfg->name, (int)$newId);
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
             snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, $logId);
+        }
+        set_record_owner($GLOBALS['conn'], $tableCfg->name, (int)$newId, $userId, $userId);
+        foreach ($m2mConfigs as $mi => $m2mCfg) {
+            $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
+            m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$newId, $selected, $rawSchema);
         }
         header('Location: index.php?table=' . urlencode($table));
         exit;
@@ -49,7 +58,6 @@ if ($request->isPost()) {
 
 // Pre-load FK options for all FK columns.
 $fkOptions = [];
-$rawSchema  = $schemas->raw();
 foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
     $fkOptions[$colName] = $fkLoader->load($fkCfg, $rawSchema);
 }
@@ -73,7 +81,9 @@ $ctx = new RenderContext($isReadOnly, $fkOptions, $prefilled, $locked);
     <meta charset="utf-8">
     <title>OpenSparrow | Add Record - <?php echo htmlspecialchars($tableCfg->displayName); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf->token(), ENT_QUOTES, 'UTF-8'); ?>">
     <link href="/assets/css/styles.css" rel="stylesheet">
+    <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)">
 </head>
 <body>
 <?php include 'templates/header.php'; ?>
@@ -110,6 +120,34 @@ $ctx = new RenderContext($isReadOnly, $fkOptions, $prefilled, $locked);
                 </div>
             <?php endforeach; ?>
             </div>
+
+            <?php if (!empty($m2mConfigs)) : ?>
+            <div style="border-top:1px solid var(--border-light); margin:20px 0 4px; padding-top:18px;">
+                <?php foreach ($m2mConfigs as $mi => $m2mCfg) : ?>
+                <?php $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema); ?>
+                <div style="margin-bottom:18px;">
+                    <div style="font-weight:600; font-size:13px; color:var(--text); margin-bottom:10px;">
+                        <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
+                    </div>
+                    <?php if (empty($m2mOpts)) : ?>
+                        <p style="color:var(--muted); font-size:13px; margin:0;">No options available.</p>
+                    <?php else : ?>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px 24px;">
+                        <?php foreach ($m2mOpts as $opt) : ?>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:14px; color:var(--text); cursor:pointer;">
+                            <input type="checkbox"
+                                name="m2m_<?php echo (int)$mi; ?>[]"
+                                value="<?php echo htmlspecialchars($opt['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                <?php if ($isReadOnly) echo 'disabled'; ?>>
+                            <?php echo htmlspecialchars($opt['label']); ?>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
 
             <div class="form-actions">
                 <?php if ($isReadOnly) : ?>

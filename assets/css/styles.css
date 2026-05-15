@@ -116,7 +116,7 @@ header select {
   color: #fff;
   font-size: 13px;
   appearance: none;
-  background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" height="16" viewBox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-image: url('/assets/icons/chevron-down-white.svg');
   background-repeat: no-repeat;
   background-position: right 8px center;
   background-size: 16px;
@@ -601,6 +601,76 @@ thead th {
 thead th:first-child { padding-left: 0.6rem; }
 thead th:last-child  { padding-right: 0.6rem; }
 
+.th-m2m,
+.td-m2m {
+  min-width: 80px;
+  max-width: 200px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.m2m-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.m2m-chip {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #e0e7ff;
+  color: #3730a3;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m2m-chip-more {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.m2m-popup {
+  position: fixed;
+  z-index: 10001;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #333;
+  min-width: 160px;
+  max-width: 280px;
+  max-height: 320px;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.m2m-popup-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.m2m-popup-item {
+  padding: 3px 0;
+  border-bottom: 1px solid #f3f4f6;
+  color: #111;
+}
+
+.m2m-popup-item:last-child {
+  border-bottom: none;
+}
+
 .th-comments,
 .td-comments {
   width: 40px !important;
@@ -613,6 +683,53 @@ thead th:last-child  { padding-right: 0.6rem; }
   width: 20px;
   height: 20px;
   display: block;
+}
+
+.th-actions {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.td-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  flex-wrap: wrap;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.btn-icon:hover {
+  opacity: 1;
+  background: #f1f5f9;
+}
+
+.btn-icon img {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.btn-icon-danger:hover {
+  background: #fee2e2;
 }
 
 .th-virtual-badge {
@@ -643,6 +760,10 @@ thead th:last-child  { padding-right: 0.6rem; }
   overflow: hidden;
   text-overflow: ellipsis;
   pointer-events: none;
+}
+
+tbody tr {
+  height: 36px;
 }
 
 tbody td {
@@ -1728,11 +1849,17 @@ th.drag-over .th-label {
   color: white;
   font-size: 1.5rem;
   cursor: pointer;
-  margin-left: -10px;
+  margin-left: 0px;
   margin-right: 5px;
   line-height: 1;
   padding: 0 4px;
 }
+
+/* Transparent wrapper; children join header flex row directly on desktop */
+.header-controls { display: contents; }
+
+/* Search drawer toggle — only shown on mobile (mobile.css overrides to display:flex) */
+.header-search-toggle { display: none; }
 
 /* =========================================
    NOTIFICATIONS IN HEADER

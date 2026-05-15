@@ -443,6 +443,71 @@ try {
         exit;
     }
 
+    // GET: BATCH M2M RELATED LABELS FOR GRID COLUMN
+    if ($method === 'GET' && ($_GET['api'] ?? '') === 'm2m_rows') {
+        $table   = $_GET['table']     ?? '';
+        $m2mIdx  = (int)($_GET['m2m_index'] ?? 0);
+        $idsRaw  = $_GET['ids']       ?? '';
+
+        if (!isset($schema['tables'][$table])) {
+            exit(json_encode(['data' => (object)[]]));
+        }
+
+        $ids = array_values(array_filter(explode(',', $idsRaw), 'ctype_digit'));
+        if (empty($ids)) {
+            exit(json_encode(['data' => (object)[]]));
+        }
+
+        $m2mList = $schema['tables'][$table]['many_to_many'] ?? [];
+        if (!isset($m2mList[$m2mIdx])) {
+            exit(json_encode(['data' => (object)[]]));
+        }
+
+        $cfg        = $m2mList[$m2mIdx];
+        $jt         = $cfg['junction_table'] ?? '';
+        $selfFk     = $cfg['self_fk']        ?? '';
+        $otherFk    = $cfg['other_fk']       ?? '';
+        $otherTable = $cfg['other_table']    ?? '';
+        $displayCol = $cfg['display_column'] ?? 'id';
+
+        if (!$jt || !$selfFk || !$otherFk || !$otherTable
+            || !isset($schema['tables'][$jt], $schema['tables'][$otherTable])) {
+            exit(json_encode(['data' => (object)[]]));
+        }
+
+        $jtSchema = $schema['tables'][$jt]['schema']         ?? 'public';
+        $otSchema = $schema['tables'][$otherTable]['schema'] ?? 'public';
+
+        $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($ids)));
+
+        $sql = sprintf(
+            'SELECT j.%s AS sid, o.%s AS label
+               FROM "%s"."%s" j
+               JOIN "%s"."%s" o ON o."id" = j.%s
+              WHERE j.%s IN (%s)
+              ORDER BY j.%s, o.%s',
+            pg_ident($selfFk), pg_ident($displayCol),
+            $jtSchema, $jt,
+            $otSchema, $otherTable,
+            pg_ident($otherFk),
+            pg_ident($selfFk), $placeholders,
+            pg_ident($selfFk), pg_ident($displayCol)
+        );
+
+        $res = @pg_query_params($conn, $sql, $ids);
+        if (!$res) {
+            exit(json_encode(['data' => (object)[]]));
+        }
+
+        $data = [];
+        while ($row = pg_fetch_assoc($res)) {
+            $sid = (string)$row['sid'];
+            $data[$sid][] = (string)$row['label'];
+        }
+
+        exit(json_encode(['data' => $data ?: (object)[]]));
+    }
+
     // GET: LIST TABLE ROWS
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'list') {
         $table = $_GET['table'] ?? '';
@@ -464,13 +529,32 @@ try {
             $params[] = $filterVal;
         }
 
+        $defaultSort  = $tableCfg['default_sort'] ?? [];
+        $orderClauses = [];
+        if (is_array($defaultSort)) {
+            foreach ($defaultSort as $rule) {
+                $col = $rule['column'] ?? '';
+                $dir = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+                if ($col !== '' && (isset($tableCfg['columns'][$col]) || $col === $idCol)) {
+                    $orderClauses[] = pg_ident($col) . ' ' . $dir;
+                }
+            }
+        }
+        if (empty($orderClauses)) {
+            $orderClauses[] = pg_ident($idCol) . ' DESC';
+        }
+
+        $initialLimit = (int)($tableCfg['initial_limit'] ?? 0);
+        $limitSql     = $initialLimit > 0 ? ' LIMIT ' . $initialLimit : '';
+
         $sql = sprintf(
-            'SELECT %s FROM "%s"."%s"%s ORDER BY %s DESC',
+            'SELECT %s FROM "%s"."%s"%s ORDER BY %s%s',
             $selectSql,
             $schemaName,
             $table,
             $whereSql,
-            pg_ident($idCol)
+            implode(', ', $orderClauses),
+            $limitSql
         );
 
         $res = @pg_query_params($conn, $sql, $params);
@@ -490,12 +574,13 @@ try {
         $rows = map_fk_display($schema, $tableCfg, $rows);
 
         echo json_encode([
-            'columns' => $selectCols,
-            'rows' => $rows,
-            'table' => [
-                'name' => $table,
-                'display_name' => to_display_name($tableCfg)
-            ]
+            'columns'   => $selectCols,
+            'rows'      => $rows,
+            'truncated' => $initialLimit > 0 && count($rows) === $initialLimit,
+            'table'     => [
+                'name'         => $table,
+                'display_name' => to_display_name($tableCfg),
+            ],
         ]);
         exit;
     }
@@ -711,10 +796,88 @@ try {
             $newId = $row[$idCol] ?? null;
 
             if ($newId !== null) {
-                $logId = log_user_action($conn, (int)$_SESSION['user_id'], 'INSERT', $table, (int)$newId);
+                $userId = (int)$_SESSION['user_id'];
+                $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
                 if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
                     snapshot_record($conn, $schemaName, $table, (int) $newId, $logId);
                 }
+                set_record_owner($conn, $table, (int)$newId, $userId, $userId);
+            }
+
+            echo json_encode(['ok' => true, 'id' => $newId]);
+            exit;
+        }
+
+        // POST: DUPLICATE ROW
+        if ($method === 'POST' && ($body['action'] ?? '') === 'duplicate' && isset($body['id'])) {
+            $srcId = (int)$body['id'];
+            if ($srcId <= 0) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid ID']);
+                exit;
+            }
+
+            $dupCols = [];
+            foreach ($tableCfg['columns'] as $colName => $colCfg) {
+                if ($colName === $idCol) {
+                    continue;
+                }
+                if (strtolower($colCfg['type'] ?? '') === 'virtual') {
+                    continue;
+                }
+                $dupCols[] = $colName;
+            }
+
+            if (empty($dupCols)) {
+                http_response_code(422);
+                echo json_encode(['error' => 'No columns to duplicate']);
+                exit;
+            }
+
+            $colIdents = implode(', ', array_map('pg_ident', $dupCols));
+            $sql = sprintf(
+                'INSERT INTO "%s"."%s" (%s) SELECT %s FROM "%s"."%s" WHERE %s = $1 RETURNING %s',
+                $schemaName,
+                $table,
+                $colIdents,
+                $colIdents,
+                $schemaName,
+                $table,
+                pg_ident($idCol),
+                pg_ident($idCol)
+            );
+
+            $res = @pg_query_params($conn, $sql, [$srcId]);
+            if (!$res) {
+                $pgErr = pg_last_error($conn);
+                error_log('[api][duplicate] ' . $pgErr);
+                http_response_code(422);
+                if (stripos($pgErr, 'unique') !== false || stripos($pgErr, 'unikaln') !== false) {
+                    $col = '';
+                    if (preg_match('/[Kk]ey\s*\(([^)]+)\)|Klucz\s*\(([^)]+)\)/', $pgErr, $m)) {
+                        $col = $m[1] ?: $m[2];
+                    }
+                    $msg = $col
+                        ? "Duplicate failed: column \"$col\" must be unique. Edit it in the new record."
+                        : 'Duplicate failed: a unique column conflict occurred. Edit the value in the new record.';
+                    echo json_encode(['error' => $msg]);
+                } else {
+                    echo json_encode(['error' => 'Database error']);
+                }
+                exit;
+            }
+
+            $row = pg_fetch_assoc($res);
+            pg_free_result($res);
+            $newId = $row[$idCol] ?? null;
+
+            if ($newId !== null) {
+                $userId = (int)$_SESSION['user_id'];
+                $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
+                if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
+                    snapshot_record($conn, $schemaName, $table, (int)$newId, $logId);
+                }
+                set_record_owner($conn, $table, (int)$newId, $userId, $userId);
             }
 
             echo json_encode(['ok' => true, 'id' => $newId]);

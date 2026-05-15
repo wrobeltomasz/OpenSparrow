@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/includes/bootstrap.php';
+require __DIR__ . '/includes/m2m.php';
 
 use App\Form\RenderContext;
 use App\Support\ByteFormatter;
@@ -26,8 +27,10 @@ if (!$schemas->hasTable($table)) {
     die('Invalid table.');
 }
 
-$tableCfg = $schemas->table($table);
-$error    = '';
+$tableCfg   = $schemas->table($table);
+$rawSchema  = $schemas->raw();
+$m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
+$error      = '';
 
 if ($request->isPost()) {
     if (!$csrf->isValid($request->post('csrf_token'))) {
@@ -41,7 +44,15 @@ if ($request->isPost()) {
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
             snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
         }
-        header('Location: index.php?table=' . urlencode($table));
+        foreach ($m2mConfigs as $mi => $m2mCfg) {
+            $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
+            m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
+        }
+        if (($request->post('_save_action') ?? 'exit') === 'stay') {
+            header('Location: edit.php?table=' . urlencode($table) . '&id=' . urlencode((string)$id) . '&saved=1');
+        } else {
+            header('Location: index.php?table=' . urlencode($table));
+        }
         exit;
     } catch (\RuntimeException $e) {
         error_log('[edit.php] ' . $e->getMessage());
@@ -58,8 +69,7 @@ $subtablesData = $records->subtables($tableCfg, $id);
 $relatedFiles  = $files->forRecord($tableCfg->name, $id);
 
 // Pre-load FK options for all FK columns — eliminates N+1 queries in the template.
-$fkOptions = [];
-$rawSchema  = $schemas->raw();
+$fkOptions  = [];
 foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
     $fkOptions[$colName] = $fkLoader->load($fkCfg, $rawSchema);
 }
@@ -75,6 +85,7 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf->token(), ENT_QUOTES, 'UTF-8'); ?>">
     <link href="/assets/css/styles.css" rel="stylesheet">
+    <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)">
     <style>
         .tag-badge { background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #cbd5e1; margin-right: 4px; display: inline-block; }
     </style>
@@ -85,6 +96,12 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
 
 <main style="padding: 20px; max-width: 1060px; margin: 0 auto;">
     <h2>Edit record in <?php echo htmlspecialchars($tableCfg->displayName); ?></h2>
+
+    <?php if ($request->query('saved') === '1') : ?>
+        <div style="color: #166534; margin-bottom: 15px; padding: 10px 14px; border: 1px solid #86efac; background: #dcfce7; border-radius: 6px; font-weight: 500;">
+            Record saved successfully.
+        </div>
+    <?php endif; ?>
 
     <?php if ($error) : ?>
         <div style="color: red; margin-bottom: 15px; padding: 10px; border: 1px solid red; background: #fee; border-radius: 6px;">
@@ -116,6 +133,7 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
             Files
         </button>
         <button class="tab-btn" data-tab="tab-comments" role="tab" aria-selected="false">Comments</button>
+        <button class="tab-btn" data-tab="tab-history" role="tab" aria-selected="false">Record History</button>
     </div>
 
     <div class="tab-panel active" id="tab-details" role="tabpanel">
@@ -153,11 +171,47 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
             <?php endforeach; ?>
             </div>
 
+            <?php if (!empty($m2mConfigs)) : ?>
+            <div style="border-top:1px solid var(--border-light); margin:20px 0 4px; padding-top:18px;">
+                <?php foreach ($m2mConfigs as $mi => $m2mCfg) : ?>
+                <?php
+                $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema);
+                $m2mSel  = m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema);
+                ?>
+                <div style="margin-bottom:18px;">
+                    <div style="font-weight:600; font-size:13px; color:var(--text); margin-bottom:10px;">
+                        <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
+                    </div>
+                    <?php if (empty($m2mOpts)) : ?>
+                        <p style="color:var(--muted); font-size:13px; margin:0;">No options available.</p>
+                    <?php else : ?>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px 24px;">
+                        <?php foreach ($m2mOpts as $opt) : ?>
+                        <label style="display:flex; align-items:center; gap:6px; font-size:14px; color:var(--text); cursor:pointer;">
+                            <input type="checkbox"
+                                name="m2m_<?php echo (int)$mi; ?>[]"
+                                value="<?php echo htmlspecialchars($opt['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                <?php if (in_array($opt['id'], $m2mSel, true)) echo 'checked'; ?>
+                                <?php if ($isReadOnly) echo 'disabled'; ?>>
+                            <?php echo htmlspecialchars($opt['label']); ?>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
+            <input type="hidden" name="_save_action" id="saveAction" value="exit">
             <div class="form-actions">
                 <?php if ($isReadOnly) : ?>
                     <button type="button" class="btn-save" disabled>Update Record</button>
                 <?php else : ?>
-                    <button type="submit" class="btn-save">Save Changes</button>
+                    <button type="submit" class="btn-save"
+                        onclick="document.getElementById('saveAction').value='stay'">Save</button>
+                    <button type="submit" class="btn-cancel"
+                        onclick="document.getElementById('saveAction').value='exit'">Save &amp; Exit</button>
                 <?php endif; ?>
                 <button type="button" class="btn-cancel" onclick="window.location.href='index.php?table=<?php echo urlencode($table); ?>'">Cancel</button>
             </div>
@@ -316,6 +370,22 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
         <div id="c-panel"></div>
     </div><!-- /tab-panel#tab-comments -->
 
+    <div class="tab-panel" id="tab-history" role="tabpanel">
+        <div id="ow-panel" class="owner-panel" style="margin-top: 20px; padding: 16px 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
+            <h3 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Record Owner</h3>
+            <div id="ow-current" style="font-size: 14px; color: #0f172a; margin-bottom: 12px;">Loading…</div>
+            <div id="ow-change" hidden style="align-items: center; gap: 10px; flex-wrap: wrap;">
+                <select id="ow-select" style="padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: #fff;"></select>
+                <button id="ow-save" type="button" class="btn-action">Change Owner</button>
+                <span id="ow-status" style="font-size: 13px;"></span>
+            </div>
+        </div>
+        <div id="ow-history" style="margin-top: 20px;">
+            <h3 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Assignment History</h3>
+            <div id="ow-history-body" style="font-size: 14px; color: #64748b;">Loading…</div>
+        </div>
+    </div><!-- /tab-panel#tab-history -->
+
 </main>
 </div>
 
@@ -394,6 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const formData = new FormData();
             formData.append('action', 'upload');
+            formData.append('csrf_token', window.CSRF_TOKEN);
             formData.append('file', fileInput.files[0]);
             if (nameInput.value.trim()) formData.append('display_name', nameInput.value.trim());
             if (tagsInput && tagsInput.value.trim()) formData.append('tags', tagsInput.value.trim());
@@ -427,6 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>"></script>
+<script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>"></script>
 
 </body>
 </html>

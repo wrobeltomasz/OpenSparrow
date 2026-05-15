@@ -55,9 +55,11 @@ if (!is_array($schemaData) || !isset($schemaData['tables'])) {
 
 $publicSchema = [];
 
+$includeHidden = ($_GET['include_hidden'] ?? '0') === '1';
+
 foreach ($schemaData['tables'] as $tableName => $tableConfig) {
-    // Skip hidden tables completely
-    if (!empty($tableConfig['hidden'])) continue;
+    // Skip hidden tables unless caller explicitly requests them (e.g. workflow context)
+    if (!$includeHidden && !empty($tableConfig['hidden'])) continue;
 
     $publicColumns = [];
     foreach ($tableConfig['columns'] as $colName => $colDef) {
@@ -106,9 +108,24 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
     if (!empty($tableConfig['foreign_keys'])) {
         foreach ($tableConfig['foreign_keys'] as $col => $fk) {
             $foreignKeys[$col] = [
-                'display_column' => $fk['display_column'] ?? 'id'
+                'display_column'   => $fk['display_column']   ?? 'id',
+                'reference_table'  => $fk['reference_table']  ?? '',
+                'reference_column' => $fk['reference_column'] ?? 'id',
+                'display_columns'  => $fk['display_columns']  ?? [],
             ];
         }
+    }
+
+    $m2mList = [];
+    foreach ($tableConfig['many_to_many'] ?? [] as $m2m) {
+        $m2mList[] = [
+            'label'          => $m2m['label']          ?? '',
+            'junction_table' => $m2m['junction_table'] ?? '',
+            'self_fk'        => $m2m['self_fk']        ?? '',
+            'other_fk'       => $m2m['other_fk']       ?? '',
+            'other_table'    => $m2m['other_table']    ?? '',
+            'display_column' => $m2m['display_column'] ?? 'id',
+        ];
     }
 
     $publicSchema[$tableName] = [
@@ -117,7 +134,20 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
         'icon'         => $tableConfig['icon'] ?? null,
         'foreign_keys' => $foreignKeys,
         'subtables'    => $tableConfig['subtables'] ?? [],
+        'many_to_many' => $m2mList,
     ];
 }
 
-echo json_encode(['tables' => $publicSchema]);
+$pageSize = null;
+if (isset($schemaData['default_page_size'])) {
+    $ps = (int) $schemaData['default_page_size'];
+    if (in_array($ps, [10, 25, 50, 100], true)) {
+        $pageSize = $ps;
+    }
+}
+
+$response = ['tables' => $publicSchema];
+if ($pageSize !== null) {
+    $response['default_page_size'] = $pageSize;
+}
+echo json_encode($response);

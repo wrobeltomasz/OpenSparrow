@@ -166,6 +166,14 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/build.png" alt="">
                         Add Table
                     </button>
+                    <button class="admin-tab" data-file="erd">
+                        <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
+                        Schema Map
+                    </button>
+                    <button class="admin-tab" data-file="views">
+                        <img class="nav-item-icon" src="../assets/icons/table_chart_view.png" alt="">
+                        Views
+                    </button>
                 </div>
             </div>
 
@@ -211,6 +219,26 @@ if (empty($_SESSION['csrf_token'])) {
                     <button class="admin-tab" data-file="audit">
                         <img class="nav-item-icon" src="../assets/icons/fact_check.png" alt="">
                         Audit &amp; Snapshots
+                    </button>
+                    <button class="admin-tab" data-file="migrations">
+                        <img class="nav-item-icon" src="../assets/icons/database.png" alt="">
+                        Migrations
+                    </button>
+                    <button class="admin-tab" data-file="performance">
+                        <img class="nav-item-icon" src="../assets/icons/health_and_safety.png" alt="">
+                        Performance
+                    </button>
+                    <button class="admin-tab" data-file="cron">
+                        <img class="nav-item-icon" src="../assets/icons/manage_history.png" alt="">
+                        Cron Notifications
+                    </button>
+                    <button class="admin-tab" data-file="m2m">
+                        <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
+                        M2M Builder
+                    </button>
+                    <button class="admin-tab" data-file="demo">
+                        <img class="nav-item-icon" src="../assets/icons/playground.png" alt="">
+                        Demo Systems
                     </button>
                 </div>
             </div>
@@ -258,7 +286,6 @@ if (empty($_SESSION['csrf_token'])) {
         <div class="admin-content">
 
             <section class="admin-workspace" id="workspace">
-                <h2 style="margin-top: 0;">Select an item to edit</h2>
                 <div id="editorForm"></div>
             </section>
 
@@ -315,7 +342,10 @@ if (empty($_SESSION['csrf_token'])) {
         schema: 'Schema', dashboard: 'Dashboard', calendar: 'Calendar',
         files: 'Files', menu: 'Menu Preview', workflows: 'Workflows',
         database: 'Database', users: 'Users', health: 'Health Check',
-        backup: 'Backup Tables', audit: 'Audit & Snapshots', docs: 'Documentation'
+        backup: 'Backup Tables', audit: 'Audit & Snapshots', docs: 'Documentation',
+        performance: 'Performance',
+        cron: 'Cron Notifications',
+        views: 'Views'
     };
     var breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
     document.querySelectorAll('.admin-tab[data-file]').forEach(function(tab) {
