@@ -57,7 +57,7 @@ $cspNonce = bin2hex(random_bytes(16));
 header("X-Frame-Options: DENY");
 header("X-Content-Type-Options: nosniff");
 header("Referrer-Policy: strict-origin-when-cross-origin");
-header("Content-Security-Policy: default-src 'self'; style-src 'self' 'nonce-$cspNonce'; script-src 'self' 'nonce-$cspNonce'");
+header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-$cspNonce'");
 
 // Redirect if already authenticated
 if (isset($_SESSION['user_id'])) {
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    $ipHash = hash_hmac('sha256', $_SERVER['REMOTE_ADDR'], IP_HASH_SALT);
+    $ipHash = hash_hmac('sha256', client_ip(), IP_HASH_SALT);
     
     // Basic input validation
     if (!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username)) {
@@ -144,10 +144,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $toVerify = $storedSalt !== '' ? $storedSalt . $password : $password;
 
                 if ($user && password_verify($toVerify, $user['password_hash'])) {
-                    // Reset session and token after login
-                    session_regenerate_id(true);
-                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                    // Regenerate session ID without deleting old file immediately.
+                    // The `true` parameter (delete old session) is known to cause issues
+                    // on some shared hosting configs — without it PHP cleans up via GC.
+                    session_regenerate_id(false);
 
+                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['role'] = $user['role'] ?? 'editor';
@@ -169,6 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     log_user_action($conn, $user['id'], 'LOGIN');
+
+                    session_write_close();
 
                     if (($_SESSION['role'] ?? '') === 'admin') {
                         header("Location: admin/");

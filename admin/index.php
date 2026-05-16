@@ -46,6 +46,7 @@ if (!$firstRun && !isset($_SESSION['user_id'])) {
 
 // Only admin role may access this panel (skipped on first run)
 if (!$firstRun && ($_SESSION['role'] ?? '') !== 'admin') {
+    $currentRole = $_SESSION['role'] ?? 'none';
     http_response_code(403);
     ?>
     <!DOCTYPE html>
@@ -66,7 +67,10 @@ if (!$firstRun && ($_SESSION['role'] ?? '') !== 'admin') {
         <div class="card">
             <h1>Access Denied</h1>
             <p>Your account does not have permission to access the admin panel.</p>
-            <p><a href="../">Return to application</a></p>
+            <p>Logged in as: <strong><?php echo htmlspecialchars($_SESSION['username'] ?? 'unknown'); ?></strong></p>
+            <p>Your role: <strong><?php echo htmlspecialchars($currentRole); ?></strong></p>
+            <p>Required role: <strong>admin</strong></p>
+            <p><a href="../logout.php">Log out</a> | <a href="../">Return to application</a></p>
         </div>
     </body>
     </html>

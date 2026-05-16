@@ -8,7 +8,8 @@ composer.lock
 
 # Cache
 cache/
-tmp/
+tmp/*
+!tmp/.htaccess
 temp/
 
 # IDE
@@ -31,6 +32,9 @@ Thumbs.db
 # Config json
 includes/*.json
 includes/php.ini
+
+# Auto-generated IP hash salt — host-specific secret, must not be committed
+includes/.secret_salt
 
 # CodeSniffer
 phpcs.phar

@@ -9,10 +9,59 @@ if (defined('OPENSPARROW_CONFIG_LOADED')) {
 }
 define('OPENSPARROW_CONFIG_LOADED', true);
 
+// Detect HTTPS through reverse proxy (CloudFlare, Nginx, load balancer).
+// Required: when behind proxy, $_SERVER['HTTPS'] is empty even though client uses HTTPS.
+// PHP's session secure cookie flag depends on this — without it, sessions break.
+if (
+    (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
+    (!empty($_SERVER['HTTP_CF_VISITOR']) && stripos($_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"') !== false) ||
+    (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower($_SERVER['HTTP_X_FORWARDED_SSL']) === 'on')
+) {
+    $_SERVER['HTTPS'] = 'on';
+    $_SERVER['SERVER_PORT'] = 443;
+}
+
+// Force absolute path for session storage.
+// PHP-FPM may chdir to the script's directory, so a relative save_path like "tmp"
+// resolves to "./tmp" — different folder per script location, breaking session
+// continuity between /login.php and /admin/index.php.
+// Resolves relative paths against project root (parent of includes/).
+$_sessSavePath = ini_get('session.save_path');
+if ($_sessSavePath === '' || $_sessSavePath[0] !== '/') {
+    $_projectRoot = realpath(__DIR__ . '/..');
+    if ($_projectRoot !== false) {
+        $_relPath = $_sessSavePath !== '' ? $_sessSavePath : 'tmp';
+        $_absPath = $_projectRoot . '/' . $_relPath;
+        if (!is_dir($_absPath)) {
+            @mkdir($_absPath, 0700, true);
+        }
+        if (is_dir($_absPath) && is_writable($_absPath)) {
+            ini_set('session.save_path', $_absPath);
+        }
+    }
+    unset($_projectRoot, $_relPath, $_absPath);
+}
+unset($_sessSavePath);
+
 function get_env(string $key, string $default = ''): string
 {
     $v = getenv($key);
     return ($v === false || $v === '') ? $default : $v;
+}
+
+// Resolve the real client IP. Behind a reverse proxy (CloudFlare, Nginx), $_SERVER['REMOTE_ADDR']
+// points to the proxy, not the user — breaking rate limiting (all users appear to share one IP).
+// CloudFlare adds HTTP_CF_CONNECTING_IP + HTTP_CF_RAY signature; we only trust them together.
+// Generic proxies set HTTP_X_REAL_IP. Falls back to REMOTE_ADDR for direct connections (localhost).
+function client_ip(): string
+{
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && !empty($_SERVER['HTTP_CF_RAY'])) {
+        return $_SERVER['HTTP_CF_CONNECTING_IP'];
+    }
+    if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        return $_SERVER['HTTP_X_REAL_IP'];
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? '';
 }
 
 // -------------------------------------------------------------------------
@@ -58,14 +107,34 @@ define('SESSION_SAMESITE', get_env('SESSION_SAMESITE', 'Lax'));
 // regardless of browser cookie state. Default is 8 hours (28 800 s).
 define('SESSION_MAX_LIFETIME', (int) get_env('SESSION_MAX_LIFETIME', '28800'));
 
+// Sync PHP's garbage collector with our app-level session lifetime.
+// Default php.ini session.gc_maxlifetime is 1440 s (24 min) — PHP could delete
+// session files long before SESSION_MAX_LIFETIME, silently logging users out.
+ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
+
 // -------------------------------------------------------------------------
 // Authentication & rate limiting
 // -------------------------------------------------------------------------
 
 // HMAC-SHA256 secret used to pseudonymise client IP addresses before storing
-// them in the login_attempts table. Must be set via environment variable in
-// production — there is no safe hardcoded fallback.
-define('IP_HASH_SALT', get_env('IP_HASH_SALT', ''));
+// them in the login_attempts table. Prefer the IP_HASH_SALT env var in production.
+// When neither env nor stored file is present, generate a 64-char random salt
+// and persist to includes/.secret_salt (web-denied by includes/.htaccess + gitignored).
+(static function (): void {
+    $env = get_env('IP_HASH_SALT', '');
+    if ($env !== '') {
+        define('IP_HASH_SALT', $env);
+        return;
+    }
+    $file = __DIR__ . '/.secret_salt';
+    $stored = is_file($file) ? trim((string) @file_get_contents($file)) : '';
+    if ($stored === '') {
+        $stored = bin2hex(random_bytes(32));
+        @file_put_contents($file, $stored, LOCK_EX);
+        @chmod($file, 0600);
+    }
+    define('IP_HASH_SALT', $stored);
+})();
 
 // Maximum number of failed login attempts allowed from a single IP address
 // within the lockout window before that IP is temporarily blocked.
