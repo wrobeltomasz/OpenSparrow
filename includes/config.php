@@ -4,6 +4,37 @@
 
 declare(strict_types=1);
 
+// Functions are declared OUTSIDE the OPENSPARROW_CONFIG_LOADED guard and
+// wrapped in function_exists(). If something (e.g. auto_prepend_file, an
+// opcache-cached older copy of this file, or an unrelated define()) sets
+// OPENSPARROW_CONFIG_LOADED before this file runs, the guard short-circuits
+// the constants block — but get_env() / client_ip() must still be defined or
+// login.php fatals with "Call to undefined function client_ip()".
+if (!function_exists('get_env')) {
+    function get_env(string $key, string $default = ''): string
+    {
+        $v = getenv($key);
+        return ($v === false || $v === '') ? $default : $v;
+    }
+}
+
+// Resolve the real client IP. Behind a reverse proxy (CloudFlare, Nginx), $_SERVER['REMOTE_ADDR']
+// points to the proxy, not the user — breaking rate limiting (all users appear to share one IP).
+// CloudFlare adds HTTP_CF_CONNECTING_IP + HTTP_CF_RAY signature; we only trust them together.
+// Generic proxies set HTTP_X_REAL_IP. Falls back to REMOTE_ADDR for direct connections (localhost).
+if (!function_exists('client_ip')) {
+    function client_ip(): string
+    {
+        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && !empty($_SERVER['HTTP_CF_RAY'])) {
+            return $_SERVER['HTTP_CF_CONNECTING_IP'];
+        }
+        if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+            return $_SERVER['HTTP_X_REAL_IP'];
+        }
+        return $_SERVER['REMOTE_ADDR'] ?? '';
+    }
+}
+
 if (defined('OPENSPARROW_CONFIG_LOADED')) {
     return;
 }
@@ -42,27 +73,6 @@ if ($_sessSavePath === '' || $_sessSavePath[0] !== '/') {
     unset($_projectRoot, $_relPath, $_absPath);
 }
 unset($_sessSavePath);
-
-function get_env(string $key, string $default = ''): string
-{
-    $v = getenv($key);
-    return ($v === false || $v === '') ? $default : $v;
-}
-
-// Resolve the real client IP. Behind a reverse proxy (CloudFlare, Nginx), $_SERVER['REMOTE_ADDR']
-// points to the proxy, not the user — breaking rate limiting (all users appear to share one IP).
-// CloudFlare adds HTTP_CF_CONNECTING_IP + HTTP_CF_RAY signature; we only trust them together.
-// Generic proxies set HTTP_X_REAL_IP. Falls back to REMOTE_ADDR for direct connections (localhost).
-function client_ip(): string
-{
-    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && !empty($_SERVER['HTTP_CF_RAY'])) {
-        return $_SERVER['HTTP_CF_CONNECTING_IP'];
-    }
-    if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
-        return $_SERVER['HTTP_X_REAL_IP'];
-    }
-    return $_SERVER['REMOTE_ADDR'] ?? '';
-}
 
 // -------------------------------------------------------------------------
 // Runtime environment
