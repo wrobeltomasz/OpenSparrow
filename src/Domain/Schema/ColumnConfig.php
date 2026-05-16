@@ -35,6 +35,11 @@ final class ColumnConfig
         return str_contains(strtolower($this->type), 'date');
     }
 
+    public function isTimestamp(): bool
+    {
+        return str_contains(strtolower($this->type), 'timestamp');
+    }
+
     public function isEnum(): bool
     {
         $t = strtolower($this->type);

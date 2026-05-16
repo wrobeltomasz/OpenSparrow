@@ -13,6 +13,7 @@ use App\Form\FieldTypeRegistry;
 use App\Form\Type\BooleanField;
 use App\Form\Type\DateField;
 use App\Form\Type\EnumField;
+use App\Form\Type\TimestampField;
 use App\Form\Type\ForeignKeyField;
 use App\Form\Type\TextField;
 use App\Form\UpdateMapper;
@@ -42,6 +43,7 @@ $fieldRegistry = new FieldTypeRegistry([
     new ForeignKeyField(),
     new BooleanField(),
     new EnumField(),
+    new TimestampField(),
     new DateField(),
     new TextField(), // universal fallback — must be last
 ]);

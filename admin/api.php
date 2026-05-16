@@ -488,7 +488,7 @@ if ($action === 'add_column') {
     $input = json_decode(file_get_contents('php://input'), true);
 
     // Strict input sanitization
-    $schemaName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['schema'] ?? 'public'));
+    $schemaName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['schema'] ?? ''));
     $tableName  = preg_replace('/[^a-z0-9_]/', '', strtolower($input['table']  ?? ''));
     $colName    = preg_replace('/[^a-z0-9_]/', '', strtolower($input['column'] ?? ''));
     $colType    = $input['type'] ?? 'varchar(255)';
@@ -499,8 +499,8 @@ if ($action === 'add_column') {
     $notNull    = !empty($input['not_null']);
     $default    = trim((string)($input['default'] ?? ''));
 
-    if (empty($tableName) || empty($colName) || empty($schemaName)) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid schema, table or column name.']);
+    if (empty($tableName) || empty($colName)) {
+        echo json_encode(['status' => 'error', 'error' => 'Invalid table or column name.']);
         exit;
     }
 
@@ -508,11 +508,14 @@ if ($action === 'add_column') {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
 
+        if ($schemaName === '') {
+            $schemaName = sys_schema();
+        }
         $safeSchema = pg_escape_identifier($conn, $schemaName);
         $safeTable  = pg_escape_identifier($conn, $tableName);
         $safeCol    = pg_escape_identifier($conn, $colName);
 
-        $allowedTypes = ['varchar(255)', 'int4', 'int8', 'boolean', 'text', 'date', 'timestamp'];
+        $allowedTypes = ['varchar(255)', 'int4', 'int8', 'boolean', 'text', 'date', 'timestamp', 'timestamptz'];
         if (!in_array($colType, $allowedTypes, true)) {
             throw new Exception('Invalid data type provided.');
         }

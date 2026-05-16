@@ -8,6 +8,7 @@ import '../cells/fk-cell.js';
 import '../cells/enum-cell.js';
 import '../cells/boolean-cell.js';
 import '../cells/date-cell.js';
+import '../cells/timestamp-cell.js';
 import '../cells/text-cell.js';
 import '../cells/virtual-cell.js';
 
@@ -17,6 +18,7 @@ function resolveCellType(colCfg, hasFk) {
     const t = (colCfg.type || '').toLowerCase();
     if (t === 'enum') return 'enum';
     if (t.includes('boolean')) return 'boolean';
+    if (t.includes('timestamp')) return 'timestamp';
     if (t.includes('date')) return 'date';
     return 'text';
 }

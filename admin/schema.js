@@ -296,7 +296,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     // Fetch and sync columns from database
     btnSyncCols.onclick = async () => {
         try {
-            const schemaName = tableData.schema || 'public';
+            const schemaName = tableData.schema || 'app';
             // POST with JSON body — avoids WAF false positives on GET query strings.
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const res = await fetch('api.php?action=get_db_columns', {
@@ -343,7 +343,9 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                             mappedType = 'number';
                         } else if (/bool/i.test(rawType)) {
                             mappedType = 'boolean';
-                        } else if (/date|time|timestamp/i.test(rawType)) {
+                        } else if (/timestamp|timestamptz/i.test(rawType)) {
+                            mappedType = 'timestamp';
+                        } else if (/date|time/i.test(rawType)) {
                             mappedType = 'date';
                         }
 
@@ -413,7 +415,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                     'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
                 },
                 // Pass schema context accurately to backend
-                body: JSON.stringify({ schema: tableData.schema || 'public', table: tableName, column: formattedColName, type: colType })
+                body: JSON.stringify({ schema: tableData.schema || 'app', table: tableName, column: formattedColName, type: colType })
             });
 
             const result = await response.json();
@@ -512,12 +514,13 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
     // Standard field types allowed in the application
     const dataTypeOptions = [
-        { value: 'text',    label: 'Text' },
-        { value: 'number',  label: 'Number' },
-        { value: 'boolean', label: 'Boolean' },
-        { value: 'date',    label: 'Date' },
-        { value: 'enum',    label: 'Enum' },
-        { value: 'virtual', label: 'Virtual (Computed)' },
+        { value: 'text',      label: 'Text' },
+        { value: 'number',    label: 'Number' },
+        { value: 'boolean',   label: 'Boolean' },
+        { value: 'date',      label: 'Date' },
+        { value: 'timestamp', label: 'Timestamp (Date + Time)' },
+        { value: 'enum',      label: 'Enum' },
+        { value: 'virtual',   label: 'Virtual (Computed)' },
     ];
 
     const virtualOpsNumeric = [
@@ -606,10 +609,11 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
         // Clean up any rogue legacy DB types just in case they slipped through earlier
         let currentType = String(colCfg.type || 'text').toLowerCase();
-        if (!['text', 'number', 'boolean', 'date', 'enum', 'virtual'].includes(currentType)) {
+        if (!['text', 'number', 'boolean', 'date', 'timestamp', 'enum', 'virtual'].includes(currentType)) {
             if (/int|num|float|double|real|serial|dec/i.test(currentType)) currentType = 'number';
             else if (/bool/i.test(currentType)) currentType = 'boolean';
-            else if (/date|time|timestamp/i.test(currentType)) currentType = 'date';
+            else if (/timestamp|timestamptz/i.test(currentType)) currentType = 'timestamp';
+            else if (/date|time/i.test(currentType)) currentType = 'date';
             else currentType = 'text';
             colCfg.type = currentType;
         }
