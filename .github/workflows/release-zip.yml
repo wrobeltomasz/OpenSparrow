@@ -9,6 +9,9 @@ on:
   push:
     tags: ['*']
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-zip:
     runs-on: ubuntu-latest
@@ -18,18 +21,20 @@ jobs:
     steps:
       - name: Resolve release tag
         run: |
+          set -euo pipefail
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Stamp VERSION file with release tag
-        run: echo "${RELEASE_TAG}" > includes/VERSION
+        run: |
+          set -euo pipefail
+          echo "${RELEASE_TAG}" > includes/VERSION
 
       - name: Assemble and zip release package
         run: |
+          set -euo pipefail
           VERSION="${RELEASE_TAG}"
           PKG="opensparrow-${VERSION}"
 
@@ -41,6 +46,15 @@ jobs:
             --exclude='.claude'           \
             --exclude='tests'             \
             --exclude='dist'              \
+            --exclude='tmp'               \
+            --exclude='temp'              \
+            --exclude='cache'             \
+            --exclude='node_modules'      \
+            --exclude='cypress'           \
+            --exclude='.cypress-cache'    \
+            --exclude='cypress.config.js' \
+            --exclude='package.json'      \
+            --exclude='package-lock.json' \
             --exclude='Dockerfile'        \
             --exclude='docker-compose.yml'\
             --exclude='docker-php-dev.ini'\
@@ -57,6 +71,7 @@ jobs:
             --exclude='CONTRIBUTING.md'   \
             --exclude='SECURITY.md'       \
             --exclude='*.json'            \
+            --exclude='includes/.secret_salt' \
             --exclude='storage/files/*'   \
             . "dist/${PKG}/"
 

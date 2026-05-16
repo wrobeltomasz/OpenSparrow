@@ -18,9 +18,10 @@ jobs:
 
       - name: Scan for forbidden libraries
         run: |
+          set -euo pipefail
           # Match library names only in import/require/script-src contexts to avoid
           # false positives from plain English prose (e.g. "at the moment of execution").
-          FORBIDDEN="bootstrap|tailwind|jquery|bulma|foundation|react|vue|angular|materialize|uikit|semantic|svelte|ember|alpine|lodash|underscore|axios|moment|popper"
+          FORBIDDEN="bootstrap|tailwind|jquery|bulma|foundation|react|vue|angular|materialize|uikit|semantic|svelte|ember|alpine|lodash|underscore|axios|moment|popper|chart\.js|swiper|htmx|gsap|three|stimulus|d3"
 
           echo "Scanning assets and templates for forbidden frameworks..."
 
@@ -29,7 +30,7 @@ jobs:
                -e "<script[^>]+src=['\"][^'\"]*($FORBIDDEN)" \
                -e "cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com" \
                assets templates admin includes ./*.php \
-               --exclude-dir={.git,vendor,node_modules,.github} \
+               --exclude-dir={.git,vendor,node_modules,.github,tests,cypress,storage,tmp,temp,cache,.claude} \
                --exclude={README.md,COPYING,LICENCE,Dockerfile,docker-compose.yml}; then
             echo "--------------------------------------------------------"
             echo "ERROR: Forbidden library detected in application code!"
