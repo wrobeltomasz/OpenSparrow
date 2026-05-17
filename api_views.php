@@ -88,7 +88,7 @@ try {
 
         $cfg        = $views[$viewName];
         $conn       = db_connect();
-        $schemaName = sys_schema();
+        $schemaName = $cfg['schema'] ?? sys_schema();
         $level      = max(0, (int)($_GET['level'] ?? 0));
         $filterCol  = $_GET['filter_col'] ?? '';
         $filterVal  = isset($_GET['filter_val']) ? $_GET['filter_val'] : null;

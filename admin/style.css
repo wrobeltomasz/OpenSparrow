@@ -756,6 +756,24 @@ body {
     color: var(--muted);
 }
 
+.demo-card.recommended {
+    border-color: #f59e0b;
+}
+
+.demo-recommended-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #f59e0b;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
 .demo-confirm-section {
     margin-top: 24px;
     padding: 20px;

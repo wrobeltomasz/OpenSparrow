@@ -6,6 +6,7 @@ const DEMOS = {
         tables:      ['companies', 'contacts', 'deals', 'activities'],
         color:       '#3b82f6',
         icon:        '🤝',
+        recommended: true,
     },
     wms: {
         label:       'WMS',
@@ -140,7 +141,9 @@ function renderInstallForm(workspaceEl) {
         const card = document.createElement('div');
         card.className   = 'demo-card';
         card.dataset.type = key;
+        if (def.recommended) card.classList.add('recommended');
         card.innerHTML   = `
+            ${def.recommended ? '<span class="demo-recommended-badge">Recommended</span>' : ''}
             <div class="demo-card-emoji">${def.icon}</div>
             <div class="demo-card-title">${def.label}</div>
             <div class="demo-card-desc">${def.description}</div>
