@@ -51,6 +51,16 @@ function resolve_landing_page(): string {
     return 'index.php';
 }
 
+// Read application version
+$version = 'unknown';
+$versionFile = __DIR__ . '/includes/VERSION';
+if (is_file($versionFile)) {
+    $versionContent = @file_get_contents($versionFile);
+    if ($versionContent !== false) {
+        $version = trim($versionContent);
+    }
+}
+
 // Generate a unique nonce for Content Security Policy
 $cspNonce = bin2hex(random_bytes(16));
 
@@ -200,14 +210,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="assets/css/styles.css" rel="stylesheet" /> 
     <style nonce="<?php echo $cspNonce; ?>">
-        body { 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            background: var(--bg, #F1F1F1); 
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: var(--bg, #F1F1F1);
             margin: 0;
             font-family: Inter, "Segoe UI", system-ui, sans-serif;
+        }
+        .login-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 2rem 1rem;
         }
         .login-box { 
             background: var(--panel, #ffffff); 
@@ -274,29 +290,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cursor: pointer;
             margin-top: -8px;
         }
+        .login-info {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 12px;
+            color: var(--muted, #666);
+        }
+        .login-info a {
+            color: var(--accent, #007ACC);
+            text-decoration: none;
+            transition: color 150ms ease;
+        }
+        .login-info a:hover {
+            color: var(--accent-dark, #003366);
+            text-decoration: underline;
+        }
+        .login-info-separator {
+            margin: 0 0.5rem;
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
-    <div class="login-box" data-cy="login-box">
-        <center><img src="assets/img/logo-brown.png" alt="Logo" class="footer-logo" height="48" /></center>
-        <h2>OpenSparrow</h2>
-        <?php if ($error) : ?>
-            <div class="error" data-cy="login-error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-        <form method="POST">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
-            <input type="text" name="username" data-cy="username" placeholder="Login" required autofocus autocomplete="username" />
-            <div class="password-container">
-                <input type="password" id="password" name="password" data-cy="password" placeholder="Password" required autocomplete="current-password" />
-                <span id="togglePassword" class="toggle-password">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                </span>
+    <div class="login-wrapper">
+        <div class="login-box" data-cy="login-box">
+            <center><img src="assets/img/logo-brown.png" alt="Logo" class="footer-logo" height="48" /></center>
+            <h2>OpenSparrow</h2>
+            <?php if ($error) : ?>
+                <div class="error" data-cy="login-error"><?php echo htmlspecialchars($error); ?></div>
+            <?php endif; ?>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
+                <input type="text" name="username" data-cy="username" placeholder="Login" required autofocus autocomplete="username" />
+                <div class="password-container">
+                    <input type="password" id="password" name="password" data-cy="password" placeholder="Password" required autocomplete="current-password" />
+                    <span id="togglePassword" class="toggle-password">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </span>
+                </div>
+                <button type="submit" data-cy="loginBtn">Submit</button>
+            </form>
+            <div class="login-info">
+                <span>v<?php echo htmlspecialchars($version); ?></span>
+                <span class="login-info-separator">·</span>
+                <a href="https://github.com/wrobeltomasz/open-sparrow" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
-            <button type="submit" data-cy="loginBtn">Submit</button>
-        </form>
+        </div>
     </div>
     <script nonce="<?php echo $cspNonce; ?>">
     const passwordInput = document.getElementById("password");
@@ -315,5 +357,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     });
     </script>
+    <?php require 'templates/footer.php'; ?>
 </body>
 </html>
