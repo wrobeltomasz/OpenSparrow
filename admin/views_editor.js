@@ -257,6 +257,29 @@ export function renderViewsEditor(ctx) {
                 views[vName].columns[colName].display_name = v;
             }));
 
+            /* summary function */
+            const summaryGrp = document.createElement('div');
+            summaryGrp.className = 'form-group';
+            const summaryLbl = document.createElement('label');
+            summaryLbl.textContent = 'Summary';
+            summaryGrp.appendChild(summaryLbl);
+            const summarySel = document.createElement('select');
+            ['none', 'sum', 'avg', 'count', 'min', 'max'].forEach(fn => {
+                const opt = document.createElement('option');
+                opt.value = fn;
+                opt.textContent = fn === 'none' ? 'None' : fn.toUpperCase();
+                if ((colCfg.summary ?? 'none') === fn) opt.selected = true;
+                summarySel.appendChild(opt);
+            });
+            summarySel.addEventListener('change', () => {
+                const v = summarySel.value;
+                if (v === 'none') delete views[vName].columns[colName].summary;
+                else views[vName].columns[colName].summary = v;
+                markDirty();
+            });
+            summaryGrp.appendChild(summarySel);
+            colBlock.appendChild(summaryGrp);
+
             /* color rules */
             const rulesLabel = document.createElement('label');
             rulesLabel.textContent = 'Color rules';

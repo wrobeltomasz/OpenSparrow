@@ -221,6 +221,59 @@ function renderView(data) {
 
     const tbody = document.createElement('tbody');
     table.appendChild(tbody);
+
+    /* ── summary tfoot ── */
+    const tfoot         = document.createElement('tfoot');
+    const summaryTr     = document.createElement('tr');
+    summaryTr.className = 'vw-summary-row';
+    const summaryUpdaters = {};
+    let hasSummary = false;
+
+    allKeys.forEach((key, colIdx) => {
+        const td = document.createElement('td');
+        const fn = (columns[key]?.summary ?? '').toLowerCase();
+
+        if (fn && fn !== 'none') {
+            hasSummary = true;
+            td.className = 'vw-summary-cell';
+
+            summaryUpdaters[key] = (filteredRows) => {
+                td.innerHTML = '';
+                let value;
+                if (fn === 'count') {
+                    value = filteredRows.length;
+                } else {
+                    const nums = filteredRows.map(r => parseFloat(r[key])).filter(n => !isNaN(n));
+                    if (!nums.length) {
+                        td.textContent = '—';
+                        return;
+                    }
+                    if      (fn === 'sum') value = nums.reduce((a, b) => a + b, 0);
+                    else if (fn === 'avg') value = nums.reduce((a, b) => a + b, 0) / nums.length;
+                    else if (fn === 'min') value = Math.min(...nums);
+                    else if (fn === 'max') value = Math.max(...nums);
+                }
+                const strong = document.createElement('strong');
+                strong.textContent = typeof value === 'number'
+                    ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                    : '—';
+                const badge = document.createElement('span');
+                badge.className   = 'vw-summary-fn';
+                badge.textContent = fn.toUpperCase();
+                td.appendChild(strong);
+                td.appendChild(badge);
+            };
+        } else if (colIdx === 0) {
+            td.className   = 'vw-summary-label-cell';
+            td.textContent = 'Σ';
+        }
+        summaryTr.appendChild(td);
+    });
+
+    tfoot.appendChild(summaryTr);
+    if (!hasSummary) tfoot.style.display = 'none';
+    table.appendChild(tfoot);
+
     tableWrap.appendChild(table);
     containerEl.appendChild(tableWrap);
 
@@ -242,6 +295,7 @@ function renderView(data) {
         }
         result = sortRows(result, viewSortState);
         currentFilteredRows = result;
+        Object.values(summaryUpdaters).forEach(fn => fn(result));
 
         tbody.innerHTML = '';
         result.forEach(row => {
