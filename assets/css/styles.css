@@ -782,6 +782,7 @@ tbody tr:hover td { background: var(--accent-light) !important; }
 /* ===== TABLE INNER INPUTS ===== */
 td select,
 td input[type="date"],
+td input[type="datetime-local"],
 td input[list] {
   width: 100%;
   min-width: 120px;
@@ -797,11 +798,13 @@ td input[list] {
 }
 td select:hover,
 td input[type="date"]:hover,
+td input[type="datetime-local"]:hover,
 td input[list]:hover {
   background-color: rgba(255,255,255,0.6);
 }
 td select:focus,
 td input[type="date"]:focus,
+td input[type="datetime-local"]:focus,
 td input[list]:focus {
   border-color: var(--accent);
   background-color: #fff;
@@ -2001,6 +2004,7 @@ th.drag-over .th-label {
 
 .editor-form input[type="text"],
 .editor-form input[type="date"],
+.editor-form input[type="datetime-local"],
 .editor-form input[type="email"],
 .editor-form input[type="number"],
 .editor-form input[type="password"],
@@ -2019,6 +2023,7 @@ th.drag-over .th-label {
 
 .editor-form input[type="text"]:focus,
 .editor-form input[type="date"]:focus,
+.editor-form input[type="datetime-local"]:focus,
 .editor-form input[type="email"]:focus,
 .editor-form input[type="number"]:focus,
 .editor-form select:focus {
