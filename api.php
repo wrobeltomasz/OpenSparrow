@@ -299,6 +299,26 @@ try {
                         $widget['sql_error'] = pg_last_error($conn);
                     }
                 }
+            } elseif ($qType === 'sum') {
+                $col = $widget['query']['column'] ?? '';
+                if (isset($tableCfg['columns'][$col])) {
+                    $sql = sprintf(
+                        'SELECT COALESCE(SUM(%s), 0) AS total FROM "%s"."%s"%s',
+                        pg_ident($col),
+                        $schemaName,
+                        $table,
+                        $sqlWhere
+                    );
+                    $res = @pg_query($conn, $sql);
+                    if ($res) {
+                        $row = pg_fetch_assoc($res);
+                        $val = (float)($row['total'] ?? 0);
+                        $data = ($val == (int)$val) ? (int)$val : round($val, 2);
+                        pg_free_result($res);
+                    } else {
+                        $widget['sql_error'] = pg_last_error($conn);
+                    }
+                }
             } elseif ($qType === 'group_by') {
                 $grpCol = $widget['query']['group_column'] ?? '';
                 $aggCol = $widget['query']['agg_column'] ?? id_column();
