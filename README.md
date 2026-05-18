@@ -14,6 +14,7 @@
   </p>
 
   ![PHP Lint](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/php-lint.yml/badge.svg)
+  ![PHP Tests](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/php-tests.yml/badge.svg)
   ![Vanilla Check](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/vanilla-check.yml/badge.svg)
   ![CodeQL Analysis](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/codeql.yml/badge.svg)
   ![Docker Lint](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/docker-lint.yml/badge.svg)
@@ -27,8 +28,9 @@
 
 OpenSparrow is a JSON schema-driven platform for building internal systems. Tables, forms, dashboards, and calendars are generated from configuration files, so business logic stays decoupled from infrastructure. Self-hosted on PostgreSQL — no vendor lock-in, full data ownership.
 
-> **No Composer. No npm. No build step.**  
-> Drop the files, point to PostgreSQL, open `/admin`. That's it.
+> **No Composer. No npm. No build step** — in production.  
+> Drop the files, point to PostgreSQL, open `/admin`. That's it.  
+> Composer is used **dev-only** for the PHPUnit test suite (`composer install` is never required to run the application).
 
 Demo: https://demo.opensparrow.org
 
@@ -70,6 +72,7 @@ Demo: https://demo.opensparrow.org
 - **`templates/`** — layout wrappers (`template.php`).
 - **`storage/files/`** — user-uploaded files.
 - **`cypress/`** — E2E test suite (Cypress 13.x). Tests live in `e2e/`, shared helpers in `support/`.
+- **`tests/`** — PHPUnit unit test suite. Mirrors `src/` namespace structure under `Tests\`. Run with `vendor/bin/phpunit`.
 
 ### Key files
 - **`setup.php` / `setup_api.php`** — first-run setup wizard and its API backend. Active only when `config/database.json` is absent.
@@ -85,12 +88,41 @@ Demo: https://demo.opensparrow.org
 - **`cypress.config.js`** — Cypress E2E test framework configuration.
 - **`cypress/e2e/`** — end-to-end test suites (login, admin, grid, CRUD).
 - **`cypress/support/e2e.js`** — shared test helpers and utilities.
+- **`composer.json`** — dev-only dependency manifest (`phpunit/phpunit ^11`). Not required for production.
+- **`phpunit.xml`** — PHPUnit configuration (bootstrap, test suite directory, coverage source).
 
 ---
 
 ## Testing
 
-### Overview
+### PHPUnit — unit tests
+
+Pure unit tests covering the OOP `src/` layer. No database required.
+
+```bash
+# Install dev dependencies (once)
+composer install
+
+# Run all tests
+vendor/bin/phpunit
+
+# Or via Docker
+docker compose exec app composer install --no-interaction
+docker compose exec app vendor/bin/phpunit
+```
+
+**87 tests, 129 assertions** across 14 files. Mirrors `src/` namespace under `Tests\`:
+
+| Wave | Scope | Key classes |
+|---|---|---|
+| Wave 1 | Pure logic, no mocks | `ByteFormatter`, `BoundValue`, `RecordData`, all `Form/Type/*` fields |
+| Wave 2 | Interface stubs (anonymous classes) | `ColumnConfig`, `TableConfig`, `FieldTypeRegistry`, `UpdateMapper`, `SessionCsrfTokenManager` |
+
+CI runs on PHP 8.1, 8.2, 8.3 via `.github/workflows/php-tests.yml`.
+
+---
+
+### Cypress — E2E tests
 
 OpenSparrow includes a **Cypress E2E test suite** covering authentication, admin panel, grid operations, and CRUD workflows. Tests use the `data-cy` attribute selector strategy with intelligent fallbacks for robustness. Session caching and polling patterns prevent flakiness.
 
@@ -260,7 +292,9 @@ Available at **http://localhost:8080**.
 
 ### 4. Dependencies
 
-None. The repository has no composer/npm step.
+**Production:** none. No Composer, no npm, no build step required to run the application.
+
+**Development (optional):** `composer install` installs PHPUnit for the unit test suite. `npm install` installs Cypress for E2E tests. Neither is needed to serve the app.
 
 ### 5. Environment variables (optional)
 

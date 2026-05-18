@@ -1,7 +1,7 @@
 <?php
 // admin/index.php
 
-require __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/session.php';
 
 // First-run check: if database.json doesn't exist, redirect to setup wizard
 if (!file_exists(__DIR__ . '/../config/database.json')) {
@@ -9,17 +9,7 @@ if (!file_exists(__DIR__ . '/../config/database.json')) {
     exit;
 }
 
-// Set secure session cookie parameters before starting the session
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '',
-    'secure' => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-
-session_start();
+start_session();
 
 // First-run bypass: if spw_users table doesn't exist yet the panel must be
 // reachable so the operator can run "Initialize System Tables". Once the table
@@ -55,16 +45,10 @@ if (!$firstRun && ($_SESSION['role'] ?? '') !== 'admin') {
         <meta charset="UTF-8">
         <title>403 Forbidden</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }
-            .card { background: white; padding: 40px 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 380px; border: 1px solid #e2e8f0; }
-            h1 { color: #ef4444; font-size: 22px; margin-bottom: 10px; }
-            p { color: #64748b; font-size: 14px; }
-            a { color: #3b82f6; text-decoration: none; font-weight: 600; }
-        </style>
+        <link rel="stylesheet" href="../assets/css/styles.css">
     </head>
-    <body>
-        <div class="card">
+    <body class="admin-403-page">
+        <div class="admin-403-card">
             <h1>Access Denied</h1>
             <p>Your account does not have permission to access the admin panel.</p>
             <p>Logged in as: <strong><?php echo htmlspecialchars($_SESSION['username'] ?? 'unknown'); ?></strong></p>

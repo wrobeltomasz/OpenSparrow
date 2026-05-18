@@ -6,13 +6,11 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/db.php';
 
-session_start();
-
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
-header('Content-Security-Policy: default-src \'none\'');
+start_session();
+send_security_headers('', false, 'download');
 
 // Block access without active session
 if (empty($_SESSION['user_id'])) {

@@ -2,19 +2,8 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/includes/config.php';
-
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'domain'   => '',
-    'secure'   => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/includes/session.php';
+start_session();
 
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);

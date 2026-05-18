@@ -2,19 +2,8 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/includes/config.php';
-
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'domain'   => '',
-    'secure'   => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/includes/session.php';
+start_session();
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -34,11 +23,7 @@ $cspNonce  = bin2hex(random_bytes(16));
 $viewName  = substr($_GET['view'] ?? '', 0, 64);
 $userRole  = $_SESSION['role'] ?? 'viewer';
 
-header('X-Frame-Options: DENY');
-header('X-Content-Type-Options: nosniff');
-header('Referrer-Policy: strict-origin-when-cross-origin');
-header('Strict-Transport-Security: max-age=' . HSTS_MAX_AGE . '; includeSubDomains');
-header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-$cspNonce'; connect-src 'self'");
+send_security_headers($cspNonce, true, 'unsafe-style');
 ?>
 <!doctype html>
 <html lang="en">

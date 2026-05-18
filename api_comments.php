@@ -5,23 +5,13 @@
 declare(strict_types=1);
 
 ini_set('display_errors', '0');
-header('Content-Type: application/json; charset=utf-8');
-header('X-Content-Type-Options: nosniff');
-header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? ''));
-
-require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/api_helpers.php';
-
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'domain'   => '',
-    'secure'   => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-session_start();
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? ''));
+send_security_headers();
+start_session();
 
 $conn = db_connect();
 

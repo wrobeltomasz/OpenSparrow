@@ -64,6 +64,7 @@ jobs:
             --exclude='phpcs.phar'        \
             --exclude='phpcbf.phar'       \
             --exclude='phpcs.xml'         \
+            --exclude='phpunit.xml'       \
             --exclude='.gitignore'        \
             --exclude='CLAUDE.md'         \
             --exclude='CLA.md'            \

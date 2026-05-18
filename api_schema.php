@@ -2,23 +2,8 @@
 // Disable HTML error output to prevent corrupting JSON payload
 ini_set('display_errors', 0);
 
-require_once __DIR__ . '/includes/config.php';
-
-// Safely start session only if not already active.
-// Cookie params must match dashboard.php / login.php so session ID resolves to
-// the same save_path entry — without config.php normalising save_path first,
-// PHP-FPM falls back to its working dir and the lookup misses, returning 401.
-if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'domain'   => '',
-        'secure'   => SECURE_COOKIES,
-        'httponly' => true,
-        'samesite' => SESSION_SAMESITE,
-    ]);
-    session_start();
-}
+require_once __DIR__ . '/includes/session.php';
+start_session();
 
 // Deny access if unauthorized
 if (!isset($_SESSION['user_id'])) {

@@ -2,6 +2,7 @@
   "name": "opensparrow-e2e",
   "private": true,
   "scripts": {
+    "test": "vendor/bin/phpunit",
     "cy:open": "cypress open",
     "cy:run": "cypress run"
   },

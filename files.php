@@ -2,18 +2,8 @@
 // files.php
 declare(strict_types=1);
 
-require __DIR__ . '/includes/config.php';
-
-// Set secure session cookie parameters before starting the session
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'domain'   => '',
-    'secure'   => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-session_start();
+require_once __DIR__ . '/includes/session.php';
+start_session();
 
 // Redirect to login if no session
 if (!isset($_SESSION['user_id'])) {
@@ -50,13 +40,7 @@ if (empty($_SESSION['csrf_token'])) {
 // Generate a unique nonce for Content Security Policy
 $cspNonce = bin2hex(random_bytes(16));
 
-// Apply essential security headers
-header("X-Frame-Options: DENY");
-header("X-Content-Type-Options: nosniff");
-header("Referrer-Policy: strict-origin-when-cross-origin");
-header("Strict-Transport-Security: max-age=" . HSTS_MAX_AGE . "; includeSubDomains");
-// style-src uses nonce instead of unsafe-inline to prevent CSS injection attacks
-header("Content-Security-Policy: default-src 'self'; style-src 'self' 'nonce-$cspNonce'; script-src 'self' 'nonce-$cspNonce'; connect-src 'self'");
+send_security_headers($cspNonce);
 
 $userRole = $_SESSION['role'] ?? 'viewer';
 
@@ -77,95 +61,6 @@ $userCaps = [
     <link href="/assets/css/styles.css" rel="stylesheet" />
     <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <style nonce="<?php echo $cspNonce; ?>">
-        /* Modern UI Variables */
-        :root {
-            --f-primary: #0f172a;
-            --f-accent: #3b82f6;
-            --f-danger: #ef4444;
-            --f-bg-light: #f8fafc;
-            --f-border: #e2e8f0;
-            --f-text-main: #334155;
-            --f-text-muted: #64748b;
-        }
-
-        /* Layout & Cards */
-        .files-container { max-width: 1400px; margin: 0 auto; color: var(--f-text-main); font-family: system-ui, -apple-system, sans-serif; }
-        .f-card { background: #fff; border: 1px solid var(--f-border); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 24px; }
-
-        /* Upload Area */
-        .file-upload-box { border: 2px dashed #cbd5e1; background: var(--f-bg-light); border-radius: 8px; padding: 30px 20px; text-align: center; transition: border-color 0.2s, background 0.2s; }
-        .file-upload-box:hover { border-color: var(--f-accent); background: #f1f6ff; }
-        .file-upload-inputs { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
-
-        /* Form Controls */
-        .f-input { padding: 10px 14px; border: 1px solid var(--f-border); border-radius: 6px; font-size: 14px; color: var(--f-text-main); outline: none; transition: all 0.2s; background: #fff; box-sizing: border-box; }
-        .f-input:focus { border-color: var(--f-accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-        .f-input:disabled { background: #f1f5f9; cursor: not-allowed; color: #94a3b8; }
-        .f-input-file { background: transparent; border: none; box-shadow: none; padding: 0; }
-        .f-input-w200 { width: 200px; }
-        .f-input-w280 { width: 280px; }
-        .f-search-input { flex: 1; min-width: 250px; }
-        .f-filter-select { min-width: 180px; }
-
-        /* Toolbar */
-        .files-toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: #fff; padding: 16px; border: 1px solid var(--f-border); border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-
-        /* Buttons */
-        .f-btn { padding: 10px 18px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
-        .f-btn-primary { background: var(--f-primary); color: #fff; }
-        .f-btn-primary:hover { background: #1e293b; box-shadow: 0 4px 6px rgba(15, 23, 42, 0.2); }
-        .f-btn-accent { background: var(--f-accent); color: #fff; }
-        .f-btn-accent:hover { background: #2563eb; }
-        .f-btn-danger { background: var(--f-danger); color: #fff; }
-        .f-btn-danger:hover { background: #dc2626; }
-        .f-btn-outline { background: #fff; border: 1px solid #cbd5e1; color: var(--f-text-main); }
-        .f-btn-outline:hover { background: var(--f-bg-light); border-color: #94a3b8; }
-        .f-btn-upload { margin-top: 10px; min-width: 150px; }
-        .f-btn-sm { padding: 6px 12px; font-size: 13px; text-decoration: none; }
-        .f-btn-sm-ml { margin-left: 6px; }
-
-        /* Table Grid */
-        .table-responsive { overflow-x: auto; border: 1px solid var(--f-border); border-radius: 8px; background: #fff; }
-        .file-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; white-space: nowrap; }
-        .file-table th { background: var(--f-bg-light); color: var(--f-text-muted); font-weight: 600; padding: 14px 16px; border-bottom: 2px solid var(--f-border); text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-        .file-table td { padding: 14px 16px; border-bottom: 1px solid var(--f-border); color: var(--f-text-main); vertical-align: middle; }
-        .file-table tbody tr { transition: background 0.15s; }
-        .file-table tbody tr:hover { background: #f8fafc; }
-        .file-table tbody tr:last-child td { border-bottom: none; }
-
-        /* Type cell — replaces inline styles in JS-rendered rows */
-        .f-td-type { padding: 10px 16px; }
-        .f-type-cell { display: flex; align-items: center; gap: 8px; }
-        .f-type-icon { width: 20px; height: 20px; opacity: 0.8; }
-        .f-type-label { font-weight: bold; color: #64748b; font-size: 12px; }
-        .f-td-name { font-weight: 500; }
-        .f-td-empty { text-align: center; padding: 30px; color: #64748b; }
-        .f-td-error { color: #ef4444; text-align: center; padding: 30px; }
-
-        /* Badges & Typography */
-        .file-icon { font-size: 12px; font-weight: 700; color: var(--f-text-muted); background: #e2e8f0; padding: 4px 8px; border-radius: 4px; display: inline-block; width: 45px; text-align: center; margin-right: 10px; }
-        .related-badge { background: #eff6ff; color: #1d4ed8; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; border: 1px solid #bfdbfe; display: inline-block; text-decoration: none; transition: background 0.2s; }
-        .related-badge:hover { background: #dbeafe; }
-        .f-title { margin-top: 0; color: var(--f-primary); font-size: 18px; margin-bottom: 16px; font-weight: 600; }
-        .tag-badge { background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #cbd5e1; margin-right: 4px; display: inline-block; }
-
-        /* Upload status states */
-        .f-upload-status { margin-top: 15px; font-weight: 500; font-size: 14px; }
-        .f-status-success { color: #10b981; }
-        .f-status-error   { color: var(--f-danger); }
-        .f-status-neutral { color: var(--f-text-main); }
-
-        /* Pagination */
-        .f-pagination { display: flex; gap: 8px; justify-content: center; margin-top: 24px; }
-        .f-pagination button { padding: 8px 14px; border: 1px solid var(--f-border); background: #fff; border-radius: 6px; cursor: pointer; color: var(--f-text-main); transition: all 0.2s; font-weight: 500; font-size: 14px; }
-        .f-pagination button:hover { background: var(--f-bg-light); border-color: #cbd5e1; }
-        .f-pagination button.active { background: var(--f-primary); color: #fff; border-color: var(--f-primary); }
-
-        /* Section & hidden scaffold */
-        #filesSection { padding: 24px; }
-        .f-hidden { display: none; }
-    </style>
 </head>
 <body>
 

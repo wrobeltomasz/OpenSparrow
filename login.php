@@ -1,6 +1,6 @@
 <?php
   
-require __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/session.php';
 
 // First-run check: if database.json doesn't exist, redirect to setup wizard
 if (!file_exists(__DIR__ . '/config/database.json')) {
@@ -8,17 +8,7 @@ if (!file_exists(__DIR__ . '/config/database.json')) {
     exit;
 }
 
-// Set secure session cookie parameters before starting the session
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '',
-    'secure' => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-
-session_start();
+start_session();
 
 // Resolve the landing page after login by walking the sidebar order.
 // When an administrator hides a module from the sidebar (hidden: true in
@@ -64,11 +54,7 @@ if (is_file($versionFile)) {
 // Generate a unique nonce for Content Security Policy
 $cspNonce = bin2hex(random_bytes(16));
 
-// Apply essential security headers using nonce-based CSP
-header("X-Frame-Options: DENY");
-header("X-Content-Type-Options: nosniff");
-header("Referrer-Policy: strict-origin-when-cross-origin");
-header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-$cspNonce'");
+send_security_headers($cspNonce, false, 'login');
 
 // Redirect if already authenticated
 if (isset($_SESSION['user_id'])) {
@@ -209,109 +195,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>OpenSparrow | Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="assets/css/styles.css" rel="stylesheet" /> 
-    <style nonce="<?php echo $cspNonce; ?>">
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            background: var(--bg, #F1F1F1);
-            margin: 0;
-            font-family: Inter, "Segoe UI", system-ui, sans-serif;
-        }
-        .login-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            padding: 2rem 1rem;
-        }
-        .login-box { 
-            background: var(--panel, #ffffff); 
-            padding: 2.5rem 2rem; 
-            border-radius: var(--radius-lg, 10px); 
-            box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,.10)); 
-            width: 100%; 
-            max-width: 360px; 
-            box-sizing: border-box;
-        }
-        .login-box h2 { 
-            margin-top: 0; 
-            color: var(--accent-dark, #003366); 
-            text-align: center; 
-            margin-bottom: 1.5rem;
-        }
-        .login-box input { 
-            width: 100%; 
-            padding: 0.85rem; 
-            margin-bottom: 1rem; 
-            border: 1px solid var(--border, #AAB8C2); 
-            border-radius: var(--radius, 6px); 
-            font-size: 14px; 
-            box-sizing: border-box;
-            transition: border-color 150ms ease;
-        }
-        .login-box input:focus { 
-            outline: none; 
-            border-color: var(--accent, #007ACC); 
-            box-shadow: 0 0 0 2px rgba(0,122,204,.15);
-        }
-        .login-box button { 
-            width: 100%; 
-            justify-content: center; 
-            padding: 0.85rem; 
-            background: var(--accent, #007ACC); 
-            color: white; 
-            border: none; 
-            font-size: 15px; 
-            font-weight: 500;
-            border-radius: var(--radius, 6px);
-            cursor: pointer; 
-            transition: background 150ms ease; 
-        }
-        .login-box button:hover { 
-            background: var(--accent-dark, #003366); 
-        }
-        .error { 
-            color: var(--danger, #dc2626); 
-            font-size: 13.5px; 
-            text-align: center; 
-            margin-bottom: 1rem; 
-            background: #fef2f2;
-            padding: 0.5rem;
-            border-radius: 4px;
-            border: 1px solid #fca5a5;
-        }
-        .password-container { position: relative; }
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            margin-top: -8px;
-        }
-        .login-info {
-            text-align: center;
-            margin-top: 1.5rem;
-            font-size: 12px;
-            color: var(--muted, #666);
-        }
-        .login-info a {
-            color: var(--accent, #007ACC);
-            text-decoration: none;
-            transition: color 150ms ease;
-        }
-        .login-info a:hover {
-            color: var(--accent-dark, #003366);
-            text-decoration: underline;
-        }
-        .login-info-separator {
-            margin: 0 0.5rem;
-            opacity: 0.5;
-        }
-    </style>
 </head>
-<body>
+<body class="login-page">
     <div class="login-wrapper">
         <div class="login-box" data-cy="login-box">
             <center><img src="assets/img/logo-brown.png" alt="Logo" class="footer-logo" height="48" /></center>

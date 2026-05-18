@@ -1,28 +1,8 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/includes/config.php';
-
-// Guarded session start — this file is both called directly (e.g. PATCH from
-// inline grid edits) and require'd from index.php, which already calls
-// session_start(). Without the guard, PHP emits an "Ignoring session_start()"
-// Notice that gets echoed as HTML before the JSON body, silently corrupting
-// every response (client res.json() throws, deleteRow returns null, the grid
-// refresh after DELETE never runs, etc.).
-// Cookie params must match dashboard.php / login.php so session ID resolves to
-// the same save_path entry — without config.php normalising save_path first,
-// PHP-FPM falls back to its working dir and the lookup misses, returning 401.
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'domain'   => '',
-        'secure'   => SECURE_COOKIES,
-        'httponly' => true,
-        'samesite' => SESSION_SAMESITE,
-    ]);
-    session_start();
-}
+require_once __DIR__ . '/includes/session.php';
+start_session();
 
 // Block access without active session
 if (!isset($_SESSION['user_id'])) {

@@ -1,16 +1,6 @@
 <?php
-require __DIR__ . '/includes/config.php';
-
-// Set secure session cookie parameters before starting the session
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '',
-    'secure' => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-session_start();
+require_once __DIR__ . '/includes/session.php';
+start_session();
 
 // Redirect to login if user is not authenticated
 if (!isset($_SESSION['user_id'])) {
@@ -42,13 +32,7 @@ if ($sessionUserAgent !== null && !hash_equals($sessionUserAgent, $currentUserAg
 // Generate a unique nonce for Content Security Policy
 $cspNonce = bin2hex(random_bytes(16));
 
-// Apply essential security headers
-header("X-Frame-Options: DENY");
-header("X-Content-Type-Options: nosniff");
-header("Referrer-Policy: strict-origin-when-cross-origin");
-header("Strict-Transport-Security: max-age=" . HSTS_MAX_AGE . "; includeSubDomains");
-// style-src uses nonce instead of unsafe-inline to prevent CSS injection attacks
-header("Content-Security-Policy: default-src 'self'; style-src 'self' 'nonce-$cspNonce'; script-src 'self' 'nonce-$cspNonce'");
+send_security_headers($cspNonce, true, 'no-connect');
 
 // Retrieve user role with a safe fallback
 $userRole = $_SESSION['role'] ?? 'viewer';
@@ -74,11 +58,6 @@ $userCaps = [
     <link href="assets/css/styles.css" rel="stylesheet" />
     <link href="assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <!-- Inline style attributes are not covered by nonce — moved to a nonce-protected style block -->
-    <style nonce="<?php echo $cspNonce; ?>">
-        #dashboardMain  { padding: 20px; width: 100%; overflow-y: auto; }
-        #gridTitle      { margin-bottom: 20px; }
-    </style>
 </head>
 <body>
 <?php include 'templates/header.php'; ?>

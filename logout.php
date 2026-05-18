@@ -1,17 +1,7 @@
 <?php
 
-require __DIR__ . '/includes/config.php';
-
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'domain'   => '',
-    'secure'   => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-
-session_start();
+require_once __DIR__ . '/includes/session.php';
+start_session();
 
 if (isset($_SESSION['user_id'])) {
     require __DIR__ . '/includes/db.php';

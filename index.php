@@ -1,5 +1,6 @@
 <?php
-require __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/session.php';
+start_session();
 
 // First-run setup check: if database.json doesn't exist and user is not authenticated,
 // redirect to the setup wizard
@@ -8,16 +9,6 @@ if (!$databaseConfigExists && !isset($_SESSION['user_id'])) {
     header('Location: setup.php');
     exit;
 }
-
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '',
-    'secure' => SECURE_COOKIES,
-    'httponly' => true,
-    'samesite' => SESSION_SAMESITE,
-]);
-session_start();
 
 // Redirect to login if user is not authenticated
 if (!isset($_SESSION['user_id'])) {
@@ -39,12 +30,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 $cspNonce = bin2hex(random_bytes(16));
-header('X-Frame-Options: DENY');
-header('X-Content-Type-Options: nosniff');
-header('Referrer-Policy: strict-origin-when-cross-origin');
-header('Strict-Transport-Security: max-age=' . HSTS_MAX_AGE . '; includeSubDomains');
-// style-src allows 'unsafe-inline' for element style attributes used throughout the template
-header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-$cspNonce'; connect-src 'self'");
+send_security_headers($cspNonce, true, 'unsafe-style');
 
 // Route API requests directly to api.php
 if (isset($_GET['api'])) {

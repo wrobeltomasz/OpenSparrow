@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/api_helpers.php';
 
-session_start();
+start_session();
 if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     header('Content-Type: application/json');
     echo json_encode(['status' => 'error', 'error' => 'Unauthorized access. Log in first.']);
