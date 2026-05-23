@@ -154,6 +154,10 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/build.png" alt="">
                         Add Table
                     </button>
+                    <button class="admin-tab" data-file="csv_import">
+                        <img class="nav-item-icon" src="../assets/icons/upload.png" alt="">
+                        CSV Import
+                    </button>
                     <button class="admin-tab" data-file="erd">
                         <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
                         Schema Map
@@ -337,7 +341,8 @@ if (empty($_SESSION['csrf_token'])) {
         backup: 'Backup Tables', audit: 'Audit & Snapshots', docs: 'Documentation',
         performance: 'Performance',
         cron: 'Cron Notifications',
-        views: 'Views'
+        views: 'Views',
+        csv_import: 'CSV Import'
     };
     var breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
     document.querySelectorAll('.admin-tab[data-file]').forEach(function(tab) {

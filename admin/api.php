@@ -81,6 +81,8 @@ if ($action === 'init_db') {
         $tRecordSnapshots = sys_table('record_snapshots');
         $tRecordOwners    = sys_table('record_owners');
         $tMigrations      = sys_table('migrations');
+        $tImports         = sys_table('imports');
+        $tImportRowsLog   = sys_table('import_rows_log');
 
         // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
@@ -158,6 +160,16 @@ if ($action === 'init_db') {
                 "DO \$\$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'spw_record_owners' AND column_name = 'created_at') THEN ALTER TABLE $tRecordOwners RENAME COLUMN created_at TO changed_at; END IF; END \$\$",
             ],
 
+            '2.3.1_csv_import_tables' => [
+                // spw_imports: audit trail of each CSV import run
+                "CREATE TABLE IF NOT EXISTS $tImports ( id serial4 NOT NULL, user_id int4 NULL, filename varchar(255) NOT NULL, target_table varchar(100) NOT NULL, status varchar(20) NOT NULL DEFAULT 'pending', total_rows int4 NOT NULL DEFAULT 0, imported_rows int4 NOT NULL DEFAULT 0, skipped_rows int4 NOT NULL DEFAULT 0, column_mapping jsonb NULL, conflict_column varchar(100) NULL, error_message text NULL, started_at timestamp DEFAULT now() NOT NULL, finished_at timestamp NULL, CONSTRAINT spw_imports_pkey PRIMARY KEY (id), CONSTRAINT spw_imports_user_fkey FOREIGN KEY (user_id) REFERENCES $tUsers(id) ON DELETE SET NULL )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_imports_started_at ON $tImports USING btree (started_at)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_imports_user_id ON $tImports USING btree (user_id)",
+                // spw_import_rows_log: per-row errors for skipped rows
+                "CREATE TABLE IF NOT EXISTS $tImportRowsLog ( id bigserial NOT NULL, import_id int4 NOT NULL, row_number int4 NOT NULL, raw_data jsonb NULL, error_message text NOT NULL, logged_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_import_rows_log_pkey PRIMARY KEY (id), CONSTRAINT spw_import_rows_log_import_fkey FOREIGN KEY (import_id) REFERENCES $tImports(id) ON DELETE CASCADE )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_import_rows_log_import_id ON $tImportRowsLog USING btree (import_id)",
+            ],
+
             // Add future migrations below — never modify entries above.
 
         ];
@@ -228,6 +240,8 @@ if ($action === 'migrations_list') {
         // Must match keys in init_db $migrations registry — append only.
         $known = [
             '2.0_baseline',
+            '2.0_record_owners_changed_at',
+            '2.3.1_csv_import_tables',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");

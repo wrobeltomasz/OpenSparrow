@@ -370,6 +370,18 @@ ${_p(s.s11b_demo2_text)}
 ${_h4(s.s11b_demo3_head)}
 ${_p(s.s11b_demo3_text)}
 
+${_h3('doc-11c', s.s11c_head)}
+${_p(s.s11c_desc)}
+${_ul([
+    `<strong>${s.s11c_step1_label}:</strong> ${s.s11c_step1}`,
+    `<strong>${s.s11c_step2_label}:</strong> ${s.s11c_step2}`,
+    `<strong>${s.s11c_upsert_label}:</strong> ${s.s11c_upsert}`,
+    `<strong>${s.s11c_types_label}:</strong> ${s.s11c_types}`,
+    `<strong>${s.s11c_errors_label}:</strong> ${s.s11c_errors}`,
+    `<strong>${s.s11c_tables_label}:</strong> ${s.s11c_tables}`,
+    `<strong>${s.s11c_history_label}:</strong> ${s.s11c_history}`
+])}
+
 ${_h3('doc-13', s.s13_head)}
 ${_p(s.s13_desc)}
 ${_h4(s.s13_config_head)}
