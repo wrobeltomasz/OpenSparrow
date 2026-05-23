@@ -5,6 +5,9 @@ export async function renderBackupPage(ctx) {
 
     workspaceEl.innerHTML = '<p style="color:#64748b;padding:20px;">Loading tables…</p>';
 
+    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
+    const myId = workspaceEl._renderId;
+
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     let userTables = [];
@@ -37,9 +40,12 @@ export async function renderBackupPage(ctx) {
             }));
         }
     } catch (e) {
+        if (workspaceEl._renderId !== myId) return;
         workspaceEl.innerHTML = '<p style="color:#ef4444;padding:20px;">Failed to load tables.</p>';
         return;
     }
+
+    if (workspaceEl._renderId !== myId) return;
 
     const allTables = [...userTables, ...systemTables];
 

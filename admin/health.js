@@ -3,6 +3,9 @@ export async function renderHealthDashboard(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = `<h3>Checking system status...</h3>`;
 
+    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
+    const myId = workspaceEl._renderId;
+
     try {
         const res  = await fetch('api.php?action=health');
         const data = await res.json();
@@ -104,6 +107,7 @@ export async function renderHealthDashboard(ctx) {
                 </div>`;
         }
 
+        if (workspaceEl._renderId !== myId) return;
         workspaceEl.innerHTML = html;
 
         const gotoBtn = document.getElementById('goto-migrations-btn');
@@ -115,6 +119,7 @@ export async function renderHealthDashboard(ctx) {
         }
 
     } catch (e) {
+        if (workspaceEl._renderId !== myId) return;
         workspaceEl.innerHTML = `<h3 style="color:#ef4444;">Error loading diagnostics. Check server logs.</h3>`;
     }
 }

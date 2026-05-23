@@ -8,14 +8,20 @@ export async function renderAuditEditor(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '<h3>Loading audit settings...</h3>';
 
+    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
+    const myId = workspaceEl._renderId;
+
     let data;
     try {
         const res = await fetch('api.php?action=get_snapshot_setting');
         data = await res.json();
     } catch (e) {
+        if (workspaceEl._renderId !== myId) return;
         workspaceEl.innerHTML = '<h3 style="color:#ef4444;">Error loading audit settings. Check server logs.</h3>';
         return;
     }
+
+    if (workspaceEl._renderId !== myId) return;
 
     const lockedByEnv = data.locked_by_env ?? false;
     let enabled = data.enabled ?? false;

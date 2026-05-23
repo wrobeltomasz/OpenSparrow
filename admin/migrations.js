@@ -3,6 +3,7 @@ export async function renderMigrationsPage(ctx) {
 
     workspaceEl.innerHTML = '';
 
+    // --- DB migrations section ---
     const wrap = document.createElement('div');
     wrap.style.cssText = 'padding:24px; max-width:860px;';
 
@@ -28,10 +29,32 @@ export async function renderMigrationsPage(ctx) {
     tableWrap.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
 
     wrap.append(heading, sub, runBtn, statusEl, tableWrap);
+
+    // --- Release migrations section ---
+    const divider = document.createElement('hr');
+    divider.style.cssText = 'border:none; border-top:1px solid #e2e8f0; margin:32px 0 24px;';
+
+    const relHeading = document.createElement('h2');
+    relHeading.style.cssText = 'margin:0 0 6px; font-size:20px; color:#0f172a;';
+    relHeading.textContent = 'Release Migrations';
+
+    const relSub = document.createElement('p');
+    relSub.style.cssText = 'margin:0 0 24px; font-size:13px; color:#64748b;';
+    relSub.textContent = 'File and config cleanup tasks defined in config/migrations.json. Run after upgrading to a new version.';
+
+    const relContainer = document.createElement('div');
+    relContainer.id = 'mig-release-container';
+    relContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
+
+    const relWrap = document.createElement('div');
+    relWrap.style.cssText = 'padding:0 24px 24px; max-width:860px;';
+    relWrap.append(divider, relHeading, relSub, relContainer);
+
+    // Append ALL DOM to workspace synchronously before any await
     workspaceEl.appendChild(wrap);
+    workspaceEl.appendChild(relWrap);
 
-    await loadMigrations(tableWrap);
-
+    // Event listener before async work
     runBtn.addEventListener('click', async () => {
         if (!confirm('Apply all pending migrations now?')) return;
 
@@ -65,27 +88,8 @@ export async function renderMigrationsPage(ctx) {
         }
     });
 
-    // Release migrations section
-    const divider = document.createElement('hr');
-    divider.style.cssText = 'border:none; border-top:1px solid #e2e8f0; margin:32px 0 24px;';
-
-    const relHeading = document.createElement('h2');
-    relHeading.style.cssText = 'margin:0 0 6px; font-size:20px; color:#0f172a;';
-    relHeading.textContent = 'Release Migrations';
-
-    const relSub = document.createElement('p');
-    relSub.style.cssText = 'margin:0 0 24px; font-size:13px; color:#64748b;';
-    relSub.textContent = 'File and config cleanup tasks defined in config/migrations.json. Run after upgrading to a new version.';
-
-    const relContainer = document.createElement('div');
-    relContainer.id = 'mig-release-container';
-    relContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
-
-    const relWrap = document.createElement('div');
-    relWrap.style.cssText = 'padding:0 24px 24px; max-width:860px;';
-    relWrap.append(divider, relHeading, relSub, relContainer);
-    workspaceEl.appendChild(relWrap);
-
+    // Async data loading fills pre-created containers
+    await loadMigrations(tableWrap);
     loadReleaseMigrations(relContainer);
 }
 
@@ -179,18 +183,16 @@ async function loadReleaseMigrations(container) {
         return;
     }
 
-    versions.forEach(v => renderVersionCard(v, container, data));
+    versions.forEach(v => renderVersionCard(v, container));
 }
 
-function renderVersionCard(v, container, scanData) {
-    const isPending   = v.status === 'pending';
-    const hasActions  = v.actions.some(a => a.type !== 'file_deprecated');
-    const allSkipped  = !hasActions;
+function renderVersionCard(v, container) {
+    const isPending  = v.status === 'pending';
+    const hasActions = v.actions.some(a => a.type !== 'file_deprecated');
 
     const card = document.createElement('div');
     card.style.cssText = `border:1px solid ${isPending ? '#fbbf24' : '#e2e8f0'}; border-radius:6px; padding:16px 20px; margin-bottom:16px; background:${isPending ? '#fffbeb' : '#f8fafc'};`;
 
-    // Card header
     const headerRow = document.createElement('div');
     headerRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:8px;';
 
@@ -214,8 +216,8 @@ function renderVersionCard(v, container, scanData) {
         card.appendChild(notes);
     }
 
-    // Action list with checkboxes (pending only)
     const checkboxes = [];
+
     if (isPending && v.actions.length > 0) {
         const actionsLabel = document.createElement('p');
         actionsLabel.style.cssText = 'font-size:12px; font-weight:600; color:#64748b; margin:0 0 8px; text-transform:uppercase; letter-spacing:.5px;';
@@ -258,7 +260,6 @@ function renderVersionCard(v, container, scanData) {
         card.appendChild(none);
     }
 
-    // Applied history detail
     if (!isPending && v.applied_data) {
         const ad = v.applied_data;
         const hist = document.createElement('p');
@@ -283,14 +284,13 @@ function renderVersionCard(v, container, scanData) {
         }
     }
 
-    // Apply button (pending only)
     if (isPending) {
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'margin-top:14px;';
 
         const applyBtn = document.createElement('button');
         applyBtn.style.cssText = 'background:#3b82f6; color:#fff; border:none; padding:8px 18px; border-radius:4px; font-weight:600; font-size:13px; cursor:pointer;';
-        applyBtn.textContent = allSkipped ? 'Mark as applied' : 'Apply selected';
+        applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
 
         const statusMsg = document.createElement('span');
         statusMsg.style.cssText = 'margin-left:12px; font-size:13px;';
@@ -317,23 +317,21 @@ function renderVersionCard(v, container, scanData) {
                 if (data.status === 'success') {
                     statusMsg.style.color = '#10b981';
                     statusMsg.textContent = '✓ Applied.';
-                    // Refresh the whole release section
                     const relContainer = document.getElementById('mig-release-container');
                     if (relContainer) loadReleaseMigrations(relContainer);
-                    // Hide pending banner if present
                     const banner = document.getElementById('mig-pending-banner');
                     if (banner) banner.style.display = 'none';
                 } else {
                     statusMsg.style.color = '#ef4444';
                     statusMsg.textContent = '✗ ' + (data.error || 'Unknown error.');
                     applyBtn.disabled    = false;
-                    applyBtn.textContent = allSkipped ? 'Mark as applied' : 'Apply selected';
+                    applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
                 }
             } catch {
                 statusMsg.style.color = '#ef4444';
                 statusMsg.textContent = '✗ Network error.';
                 applyBtn.disabled    = false;
-                applyBtn.textContent = allSkipped ? 'Mark as applied' : 'Apply selected';
+                applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
             }
         });
 
