@@ -81,6 +81,7 @@ if ($action === 'init_db') {
         $tRecordSnapshots = sys_table('record_snapshots');
         $tRecordOwners    = sys_table('record_owners');
         $tMigrations      = sys_table('migrations');
+        $tRelMigrations   = sys_table('release_migrations');
         $tImports         = sys_table('imports');
         $tImportRowsLog   = sys_table('import_rows_log');
 
@@ -170,6 +171,11 @@ if ($action === 'init_db') {
                 "CREATE INDEX IF NOT EXISTS idx_spw_import_rows_log_import_id ON $tImportRowsLog USING btree (import_id)",
             ],
 
+            '2.4.0_release_migrations_table' => [
+                "CREATE TABLE IF NOT EXISTS $tRelMigrations ( id serial4 NOT NULL, version varchar(20) NOT NULL, applied_at timestamp NOT NULL DEFAULT now(), applied_by int4 REFERENCES $tUsers(id) ON DELETE SET NULL, actions jsonb NOT NULL DEFAULT '[]', CONSTRAINT spw_release_migrations_pkey PRIMARY KEY (id), CONSTRAINT spw_release_migrations_version_key UNIQUE (version) )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_release_migrations_version ON $tRelMigrations USING btree (version)",
+            ],
+
             // Add future migrations below — never modify entries above.
 
         ];
@@ -242,6 +248,7 @@ if ($action === 'migrations_list') {
             '2.0_baseline',
             '2.0_record_owners_changed_at',
             '2.3.1_csv_import_tables',
+            '2.4.0_release_migrations_table',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");
@@ -1154,7 +1161,7 @@ $menuSanitizeIcon = static function (string $icon) : string {
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     header('Content-Type: application/json');
 
-    $inc = __DIR__ . '/../includes';
+    $inc = __DIR__ . '/../config';
 
     // Build catalog: key → full display entry
     $catalog = [];

@@ -1,0 +1,8 @@
+{
+    "2.4.0": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Added Release Migration Manager. No file or config cleanup required for this release."
+    }
+}

@@ -35,7 +35,7 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import']);
+const NON_CONFIG_TABS = new Set(['users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
@@ -258,11 +258,20 @@ async function loadConfigFile(fileName) {
             currentConfig = {};
         }
 
-        renderSidebar();
-        workspaceEl.innerHTML = `<h2>Select an item from the left menu to edit</h2>`;
-        
-        if (fileName === 'database' || fileName === 'security' || fileName === 'views') {
+        if (fileName === 'dashboard' || fileName === 'calendar' || fileName === 'workflows' || fileName === 'files') {
+            currentItemKey = 'LAYOUT';
+            renderSidebar();
+            renderEditor('LAYOUT', null, false);
+        } else if (fileName === 'schema') {
+            currentItemKey = 'GLOBAL_SCHEMA';
+            renderSidebar();
+            renderEditor('GLOBAL_SCHEMA', null, false);
+        } else if (fileName === 'database' || fileName === 'security' || fileName === 'views') {
+            renderSidebar();
             renderEditor('SETTINGS', currentConfig, false);
+        } else {
+            renderSidebar();
+            workspaceEl.innerHTML = `<h2>Select an item from the left menu to edit</h2>`;
         }
         // Freshly loaded config is clean; any subsequent edit flips the flag.
         markClean();
@@ -562,7 +571,7 @@ function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar };
     
-    if (['health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
+    if (['health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
@@ -658,6 +667,26 @@ function renderEditor(key, itemData, isArray) {
     else if (currentFile === 'calendar') renderCalendarEditor(key, itemData, isArray, ctx);
     else if (currentFile === 'workflows') renderWorkflowsEditor(key, itemData, isArray, ctx);
 }
+
+// Show pending-release-migrations banner if any versions are unresolved
+(async () => {
+    try {
+        const res  = await fetch('api_migrations.php?action=scan');
+        const data = await res.json();
+        if (data.status !== 'success') return;
+        const pending = (data.versions || []).filter(v => v.status === 'pending');
+        if (pending.length === 0) return;
+        const banner = document.getElementById('mig-pending-banner');
+        if (!banner) return;
+        const noun = pending.length === 1 ? 'release' : 'releases';
+        banner.querySelector('.mig-pending-banner-text').textContent =
+            pending.length + ' pending release migration' + (pending.length > 1 ? 's' : '') +
+            ' (' + pending.map(v => 'v' + v.version).join(', ') + '). Go to System → Migrations to apply.';
+        banner.style.display = 'block';
+    } catch {
+        // silently ignore — banner is non-critical
+    }
+})();
 
 btnSave.addEventListener('click', async () => {
     if (!currentConfig) return;

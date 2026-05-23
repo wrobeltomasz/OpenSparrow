@@ -29,8 +29,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Config json
+# Config json (instance-specific — except migrations.json which is distribution-tracked)
 config/*.json
+!config/migrations.json
 includes/php.ini
 
 # Auto-generated IP hash salt — host-specific secret, must not be committed

@@ -80,6 +80,10 @@ if (empty($_SESSION['csrf_token'])) {
 </head>
 <body>
 
+<div id="mig-pending-banner" style="display:none; background:#fef3c7; border-bottom:1px solid #fbbf24; padding:10px 24px; font-size:13px; color:#78350f;">
+    <strong>Upgrade notice:</strong> <span class="mig-pending-banner-text"></span>
+</div>
+
 <?php if ($firstRun) : ?>
 <div class="first-run-banner">
     <strong>First-run setup mode.</strong>

@@ -396,6 +396,35 @@ ${_ul([s.s13_js1, s.s13_js2, s.s13_js3, s.s13_js4, s.s13_js5, s.s13_js6])}
 ${_h4(s.s13_add_head)}
 ${_ol([s.s13_add1, s.s13_add2, s.s13_add3, s.s13_add4])}
 
+${_h3('doc-14', 'Upgrading OpenSparrow')}
+${_p('After running <code>git pull</code> to a new version, use <strong>System → Migrations</strong> to check for pending release migrations. The admin header displays a yellow upgrade notice when action is required.')}
+${_h4('Release workflow')}
+${_ol([
+    'Pull the new release: <code>git pull</code>',
+    'Open Admin → <strong>System → Migrations</strong>.',
+    'Run <strong>Apply Pending Migrations</strong> first (database schema changes).',
+    'Scroll to the <strong>Release Migrations</strong> section. Select the actions you want to apply and click <strong>Apply selected</strong>.',
+    'Verify the upgrade notice in the header has disappeared.',
+])}
+${_h4('What Release Migrations do')}
+${_ul([
+    '<strong>Remove file</strong> — moves an obsolete file to <code>storage/migrations_backup/&lt;version&gt;/</code> then deletes it from the working tree.',
+    '<strong>Remove config key</strong> — removes a deprecated field from a <code>config/*.json</code> file; original saved to backup first.',
+    '<strong>Deprecated (info only)</strong> — no action taken; the file is still present but generates a warning in <code>storage/logs/deprecations.log</code> if accessed.',
+])}
+${_h4('Backups')}
+${_p('Every file and config snapshot is saved to <code>storage/migrations_backup/&lt;version&gt;/</code> before any change. The applied history in the Migrations tab shows the backup path for each action.')}
+${_h4('Adding a migration entry (for contributors)')}
+${_p('Every pull request that removes a file or a <code>config/*.json</code> key must add an entry to <code>config/migrations.json</code> in the same PR. Example:')}
+<pre style="background:#f1f5f9;padding:12px;border-radius:4px;font-size:12px;overflow-x:auto;">"2.5.0": {
+  "removed_files": ["admin/old_feature.php"],
+  "deprecated_files": [],
+  "removed_config_keys": [
+    { "file": "schema.json", "path": "$.tables[*].legacy_flag" }
+  ],
+  "notes": "Removed old feature, replaced by new system."
+}</pre>
+
 ${_h3('doc-12', s.s12_head)}
 ${_ul([s.s12_li1, s.s12_li2, s.s12_li3, s.s12_li4])}
 ${_h4(s.s12_env_head)}

@@ -40,6 +40,8 @@ if (defined('OPENSPARROW_CONFIG_LOADED')) {
 }
 define('OPENSPARROW_CONFIG_LOADED', true);
 
+require_once __DIR__ . '/version.php';
+
 // Detect HTTPS through reverse proxy (CloudFlare, Nginx, load balancer).
 // Required: when behind proxy, $_SERVER['HTTPS'] is empty even though client uses HTTPS.
 // PHP's session secure cookie flag depends on this — without it, sessions break.

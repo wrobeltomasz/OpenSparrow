@@ -35,14 +35,14 @@ export async function renderMigrationsPage(ctx) {
     runBtn.addEventListener('click', async () => {
         if (!confirm('Apply all pending migrations now?')) return;
 
-        runBtn.disabled   = true;
+        runBtn.disabled    = true;
         runBtn.textContent = 'Applying…';
         statusEl.style.color = '#64748b';
         statusEl.textContent = '';
 
         try {
-            const csrf   = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            const res    = await fetch('api.php?action=init_db', {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const res  = await fetch('api.php?action=init_db', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
             });
@@ -60,10 +60,33 @@ export async function renderMigrationsPage(ctx) {
             statusEl.style.color = '#ef4444';
             statusEl.textContent = '✗ Network error.';
         } finally {
-            runBtn.disabled   = false;
+            runBtn.disabled    = false;
             runBtn.textContent = 'Apply Pending Migrations';
         }
     });
+
+    // Release migrations section
+    const divider = document.createElement('hr');
+    divider.style.cssText = 'border:none; border-top:1px solid #e2e8f0; margin:32px 0 24px;';
+
+    const relHeading = document.createElement('h2');
+    relHeading.style.cssText = 'margin:0 0 6px; font-size:20px; color:#0f172a;';
+    relHeading.textContent = 'Release Migrations';
+
+    const relSub = document.createElement('p');
+    relSub.style.cssText = 'margin:0 0 24px; font-size:13px; color:#64748b;';
+    relSub.textContent = 'File and config cleanup tasks defined in config/migrations.json. Run after upgrading to a new version.';
+
+    const relContainer = document.createElement('div');
+    relContainer.id = 'mig-release-container';
+    relContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
+
+    const relWrap = document.createElement('div');
+    relWrap.style.cssText = 'padding:0 24px 24px; max-width:860px;';
+    relWrap.append(divider, relHeading, relSub, relContainer);
+    workspaceEl.appendChild(relWrap);
+
+    loadReleaseMigrations(relContainer);
 }
 
 async function loadMigrations(container) {
@@ -129,4 +152,202 @@ async function loadMigrations(container) {
 
     container.innerHTML = '';
     container.append(table, summary);
+}
+
+async function loadReleaseMigrations(container) {
+    container.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
+
+    let data;
+    try {
+        const res = await fetch('api_migrations.php?action=scan');
+        data = await res.json();
+    } catch {
+        container.innerHTML = '<p style="color:#ef4444; font-size:13px;">Failed to load release migrations.</p>';
+        return;
+    }
+
+    if (data.status !== 'success') {
+        container.innerHTML = `<p style="color:#ef4444; font-size:13px;">Error: ${data.error || 'Unknown'}</p>`;
+        return;
+    }
+
+    container.innerHTML = '';
+
+    const versions = data.versions || [];
+    if (versions.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8; font-size:13px;">No release migrations defined in config/migrations.json.</p>';
+        return;
+    }
+
+    versions.forEach(v => renderVersionCard(v, container, data));
+}
+
+function renderVersionCard(v, container, scanData) {
+    const isPending   = v.status === 'pending';
+    const hasActions  = v.actions.some(a => a.type !== 'file_deprecated');
+    const allSkipped  = !hasActions;
+
+    const card = document.createElement('div');
+    card.style.cssText = `border:1px solid ${isPending ? '#fbbf24' : '#e2e8f0'}; border-radius:6px; padding:16px 20px; margin-bottom:16px; background:${isPending ? '#fffbeb' : '#f8fafc'};`;
+
+    // Card header
+    const headerRow = document.createElement('div');
+    headerRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:8px;';
+
+    const verSpan = document.createElement('span');
+    verSpan.style.cssText = 'font-family:monospace; font-size:15px; font-weight:700; color:#0f172a;';
+    verSpan.textContent = 'v' + v.version;
+
+    const badge = document.createElement('span');
+    badge.style.cssText = isPending
+        ? 'background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;'
+        : 'background:#dcfce7; color:#166534; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;';
+    badge.textContent = isPending ? 'PENDING' : 'APPLIED';
+
+    headerRow.append(verSpan, badge);
+    card.appendChild(headerRow);
+
+    if (v.notes) {
+        const notes = document.createElement('p');
+        notes.style.cssText = 'font-size:13px; color:#475569; margin:0 0 12px;';
+        notes.textContent = v.notes;
+        card.appendChild(notes);
+    }
+
+    // Action list with checkboxes (pending only)
+    const checkboxes = [];
+    if (isPending && v.actions.length > 0) {
+        const actionsLabel = document.createElement('p');
+        actionsLabel.style.cssText = 'font-size:12px; font-weight:600; color:#64748b; margin:0 0 8px; text-transform:uppercase; letter-spacing:.5px;';
+        actionsLabel.textContent = 'Actions';
+        card.appendChild(actionsLabel);
+
+        v.actions.forEach((a, idx) => {
+            const row = document.createElement('label');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:13px; color:#334155; margin-bottom:6px; cursor:pointer;';
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            if (a.type !== 'file_deprecated') {
+                cb.checked = true;
+                cb.dataset.idx = idx;
+                checkboxes.push(cb);
+            } else {
+                cb.disabled = true;
+                cb.title = 'Informational only — no action taken';
+            }
+
+            const lbl = document.createElement('span');
+            const typeTag = a.type === 'file_deprecated'
+                ? '<span style="color:#94a3b8; font-size:11px;">[info]</span> '
+                : '';
+            const existTag = (a.type === 'file_remove' && !a.exists)
+                ? ' <span style="color:#94a3b8; font-size:11px;">(file not found — will skip)</span>'
+                : (a.type === 'config_key_remove' && !a.present)
+                    ? ' <span style="color:#94a3b8; font-size:11px;">(key not found — will skip)</span>'
+                    : '';
+            lbl.innerHTML = typeTag + escRelMig(a.label) + existTag;
+
+            row.append(cb, lbl);
+            card.appendChild(row);
+        });
+    } else if (isPending && v.actions.length === 0) {
+        const none = document.createElement('p');
+        none.style.cssText = 'font-size:13px; color:#64748b; margin:0 0 12px;';
+        none.textContent = 'No file or config changes required for this release.';
+        card.appendChild(none);
+    }
+
+    // Applied history detail
+    if (!isPending && v.applied_data) {
+        const ad = v.applied_data;
+        const hist = document.createElement('p');
+        hist.style.cssText = 'font-size:12px; color:#64748b; margin:4px 0 0;';
+        hist.textContent = 'Applied: ' + new Date(ad.applied_at).toLocaleString();
+        card.appendChild(hist);
+
+        if (ad.actions && ad.actions.length > 0) {
+            const actList = document.createElement('ul');
+            actList.style.cssText = 'margin:8px 0 0; padding-left:18px; font-size:12px; color:#64748b;';
+            ad.actions.forEach(a => {
+                const li = document.createElement('li');
+                if (a.status === 'done' && a.backup) {
+                    li.innerHTML = escRelMig(a.type + ': ' + (a.path || a.file)) +
+                        ' <span style="color:#94a3b8;">— backup: ' + escRelMig(a.backup) + '</span>';
+                } else {
+                    li.textContent = a.type + ': ' + (a.path || a.file || '') + ' [' + a.status + ']';
+                }
+                actList.appendChild(li);
+            });
+            card.appendChild(actList);
+        }
+    }
+
+    // Apply button (pending only)
+    if (isPending) {
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'margin-top:14px;';
+
+        const applyBtn = document.createElement('button');
+        applyBtn.style.cssText = 'background:#3b82f6; color:#fff; border:none; padding:8px 18px; border-radius:4px; font-weight:600; font-size:13px; cursor:pointer;';
+        applyBtn.textContent = allSkipped ? 'Mark as applied' : 'Apply selected';
+
+        const statusMsg = document.createElement('span');
+        statusMsg.style.cssText = 'margin-left:12px; font-size:13px;';
+
+        applyBtn.addEventListener('click', async () => {
+            const selected = checkboxes.filter(cb => cb.checked).map(cb => parseInt(cb.dataset.idx, 10));
+
+            if (!confirm('Apply release migration v' + v.version + '? This will run the selected actions and cannot be undone.')) return;
+
+            applyBtn.disabled    = true;
+            applyBtn.textContent = 'Applying…';
+            statusMsg.style.color = '#64748b';
+            statusMsg.textContent = '';
+
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res  = await fetch('api_migrations.php?action=apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                    body: JSON.stringify({ version: v.version, selected }),
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    statusMsg.style.color = '#10b981';
+                    statusMsg.textContent = '✓ Applied.';
+                    // Refresh the whole release section
+                    const relContainer = document.getElementById('mig-release-container');
+                    if (relContainer) loadReleaseMigrations(relContainer);
+                    // Hide pending banner if present
+                    const banner = document.getElementById('mig-pending-banner');
+                    if (banner) banner.style.display = 'none';
+                } else {
+                    statusMsg.style.color = '#ef4444';
+                    statusMsg.textContent = '✗ ' + (data.error || 'Unknown error.');
+                    applyBtn.disabled    = false;
+                    applyBtn.textContent = allSkipped ? 'Mark as applied' : 'Apply selected';
+                }
+            } catch {
+                statusMsg.style.color = '#ef4444';
+                statusMsg.textContent = '✗ Network error.';
+                applyBtn.disabled    = false;
+                applyBtn.textContent = allSkipped ? 'Mark as applied' : 'Apply selected';
+            }
+        });
+
+        btnRow.append(applyBtn, statusMsg);
+        card.appendChild(btnRow);
+    }
+
+    container.appendChild(card);
+}
+
+function escRelMig(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
