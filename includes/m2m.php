@@ -31,10 +31,10 @@ function m2m_options(mixed $conn, array $cfg, array $rawSchema): array
     $displayCol = $cfg['display_column'] ?? 'id';
 
     $sql = sprintf(
-        'SELECT "id", %s AS label FROM "%s"."%s" ORDER BY %s',
+        'SELECT "id", %s AS label FROM %s.%s ORDER BY %s',
         pg_ident($displayCol),
-        $pgSchema,
-        $otherTable,
+        pg_ident($pgSchema),
+        pg_ident($otherTable),
         pg_ident($displayCol)
     );
 
@@ -68,10 +68,10 @@ function m2m_selected(mixed $conn, array $cfg, int $recordId, array $rawSchema):
     $pgSchema = $rawSchema['tables'][$jt]['schema'] ?? 'public';
 
     $sql = sprintf(
-        'SELECT %s FROM "%s"."%s" WHERE %s = $1',
+        'SELECT %s FROM %s.%s WHERE %s = $1',
         pg_ident($otherFk),
-        $pgSchema,
-        $jt,
+        pg_ident($pgSchema),
+        pg_ident($jt),
         pg_ident($selfFk)
     );
 
@@ -108,8 +108,10 @@ function m2m_sync(mixed $conn, array $cfg, int $recordId, array $selectedIds, ar
     pg_query($conn, 'BEGIN');
 
     $del = sprintf(
-        'DELETE FROM "%s"."%s" WHERE %s = $1',
-        $pgSchema, $jt, pg_ident($selfFk)
+        'DELETE FROM %s.%s WHERE %s = $1',
+        pg_ident($pgSchema),
+        pg_ident($jt),
+        pg_ident($selfFk)
     );
     if (!@pg_query_params($conn, $del, [$recordId])) {
         pg_query($conn, 'ROLLBACK');
@@ -122,8 +124,11 @@ function m2m_sync(mixed $conn, array $cfg, int $recordId, array $selectedIds, ar
             continue; // skip non-integer values
         }
         $ins = sprintf(
-            'INSERT INTO "%s"."%s" (%s, %s) VALUES ($1, $2)',
-            $pgSchema, $jt, pg_ident($selfFk), pg_ident($otherFk)
+            'INSERT INTO %s.%s (%s, %s) VALUES ($1, $2)',
+            pg_ident($pgSchema),
+            pg_ident($jt),
+            pg_ident($selfFk),
+            pg_ident($otherFk)
         );
         if (!@pg_query_params($conn, $ins, [$recordId, $otherId])) {
             pg_query($conn, 'ROLLBACK');

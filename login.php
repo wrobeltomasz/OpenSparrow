@@ -1,5 +1,5 @@
 <?php
-  
+
 require_once __DIR__ . '/includes/session.php';
 
 // First-run check: if database.json doesn't exist, redirect to setup wizard
@@ -16,7 +16,8 @@ start_session();
 // item that is actually visible in the navigation. Order mirrors the
 // prepend sequence in assets/js/app.js: Dashboard, Calendar, Files,
 // then the first table in the schema.
-function resolve_landing_page(): string {
+function resolve_landing_page(): string
+{
     $isHidden = static function (string $configFile): bool {
         $path = __DIR__ . '/config/' . $configFile;
         if (!is_file($path)) {
@@ -82,9 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
-    
+
     $ipHash = hash_hmac('sha256', client_ip(), IP_HASH_SALT);
-    
+
     // Basic input validation
     if (!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username)) {
         $error = 'Invalid credentials.';
@@ -93,9 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($error)) {
         require __DIR__ . '/includes/db.php';
         require __DIR__ . '/includes/api_helpers.php';
-        
+
         $conn = db_connect();
-        
+
         $maxAttemptsPerIp       = LOGIN_MAX_ATTEMPTS_PER_IP;
         $maxAttemptsPerUsername = LOGIN_MAX_ATTEMPTS_PER_USERNAME;
         $lockoutMinutes         = LOGIN_LOCKOUT_MINUTES;
@@ -141,10 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $toVerify = $storedSalt !== '' ? $storedSalt . $password : $password;
 
                 if ($user && password_verify($toVerify, $user['password_hash'])) {
-                    // Regenerate session ID without deleting old file immediately.
-                    // The `true` parameter (delete old session) is known to cause issues
-                    // on some shared hosting configs — without it PHP cleans up via GC.
-                    session_regenerate_id(false);
+                    session_regenerate_id(true);
 
                     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                     $_SESSION['user_id'] = $user['id'];
@@ -156,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // Rehash on login if parameters changed; generate new salt when rehashing
                     $newOptions = [
-                        'memory_cost' => 1<<17,
+                        'memory_cost' => 1 << 17,
                         'time_cost' => 4,
                         'threads' => 1
                     ];

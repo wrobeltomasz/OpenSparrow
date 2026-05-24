@@ -2220,7 +2220,7 @@ if ($action === 'delete_m2m') {
             require_once __DIR__ . '/../includes/db.php';
             $conn     = db_connect();
             $pgSchema = $schema['tables'][$junctionTable]['schema'] ?? 'public';
-            @pg_query($conn, sprintf('DROP TABLE IF EXISTS "%s"."%s"', $pgSchema, $junctionTable));
+            @pg_query($conn, sprintf('DROP TABLE IF EXISTS %s.%s', pg_ident($pgSchema), pg_ident($junctionTable)));
         }
 
         // Remove hidden junction table entry from schema.json

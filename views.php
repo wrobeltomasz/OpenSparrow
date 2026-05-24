@@ -54,7 +54,7 @@ include __DIR__ . '/templates/header.php';
 <?php include __DIR__ . '/templates/footer.php'; ?>
 
 <script nonce="<?php echo $cspNonce; ?>">
-    window.VIEWS_INITIAL = <?php echo json_encode(htmlspecialchars($viewName, ENT_QUOTES, 'UTF-8') ?: null); ?>;
+    window.VIEWS_INITIAL = <?php echo json_encode($viewName ?: null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     window.CSRF_TOKEN    = <?php echo json_encode($_SESSION['csrf_token']); ?>;
 </script>
 <script type="module" src="assets/js/views.js?v=<?php echo @filemtime('assets/js/views.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
