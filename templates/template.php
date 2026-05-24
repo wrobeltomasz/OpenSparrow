@@ -65,7 +65,7 @@ include __DIR__ . '/header.php';
 <?php include 'templates/footer.php'; ?>
 
 <script nonce="<?php echo $cspNonce ?? ''; ?>">
-    window.USER_ROLE = '<?php echo htmlspecialchars($userRole ?? 'viewer', ENT_QUOTES, 'UTF-8'); ?>';
+    window.USER_ROLE = <?php echo json_encode($userRole ?? 'viewer', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     document.addEventListener("DOMContentLoaded", () => {
         const mobileActions = document.getElementById("mobileActions");
         if (mobileActions) {

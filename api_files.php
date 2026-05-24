@@ -1,4 +1,5 @@
 <?php
+
 // api_files.php
 // OpenSparrow Files Module API
 // Handles configuration updates, file uploads, listing and safe deletion
@@ -11,23 +12,24 @@ require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/api_helpers.php';
 header('Content-Type: application/json; charset=utf-8');
-// Restrict API to same origin — reject cross-origin requests explicitly
-header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? ''));
 send_security_headers();
 start_session();
-
 // Connect to database
 $conn = db_connect();
 
 // JSON error response helper
-function jsonError(string $msg, int $code = 400): void {
+function jsonError(string $msg, int $code = 400): void
+{
+
     http_response_code($code);
     echo json_encode(['success' => false, 'error' => $msg]);
     exit;
 }
 
 // JSON success response helper — supports explicit HTTP status code
-function jsonSuccess(array $data = [], int $code = 200): void {
+function jsonSuccess(array $data = [], int $code = 200): void
+{
+
     http_response_code($code);
     $data['success'] = true;
     echo json_encode($data);
@@ -35,14 +37,18 @@ function jsonSuccess(array $data = [], int $code = 200): void {
 }
 
 // Auth validation helper
-function requireLogin(): void {
+function requireLogin(): void
+{
+
     if (empty($_SESSION['user_id'])) {
         jsonError('Unauthorised', 401);
     }
 }
 
 // Editor validation helper (upload/delete requires editor role)
-function requireAdmin(): void {
+function requireAdmin(): void
+{
+
     if (($_SESSION['role'] ?? '') !== 'editor') {
         jsonError('Forbidden', 403);
     }
@@ -50,7 +56,9 @@ function requireAdmin(): void {
 
 // CSRF validation helper for all mutating POST actions.
 // Reads token from FormData ($_POST) or JSON body array.
-function requireCsrfToken(array $body = []): void {
+function requireCsrfToken(array $body = []): void
+{
+
     $tokenPost    = $_POST['csrf_token'] ?? $body['csrf_token'] ?? '';
     $tokenSession = $_SESSION['csrf_token'] ?? '';
     if (!$tokenSession || !hash_equals($tokenSession, (string)$tokenPost)) {
@@ -59,7 +67,9 @@ function requireCsrfToken(array $body = []): void {
 }
 
 // Load config from JSON with size guard and corruption check
-function loadConfig(): array {
+function loadConfig(): array
+{
+
     $path = __DIR__ . '/config/files.json';
     if (!file_exists($path)) {
         jsonError('files.json not found', 500);
@@ -77,7 +87,9 @@ function loadConfig(): array {
 }
 
 // Save config atomically via temp file + rename to prevent race conditions and partial writes
-function saveConfig(array $config): void {
+function saveConfig(array $config): void
+{
+
     $path    = __DIR__ . '/config/files.json';
     $tmpPath = $path . '.tmp.' . bin2hex(random_bytes(4));
     $json    = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
@@ -89,8 +101,7 @@ try {
     $method = $_SERVER['REQUEST_METHOD'];
     $action = '';
     $body   = [];
-
-    // Catch server-level post_max_size drops
+// Catch server-level post_max_size drops
     if ($method === 'POST' && empty($_POST) && empty($_FILES) && isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0) {
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         if (str_contains($contentType, 'multipart/form-data')) {
@@ -125,38 +136,35 @@ try {
         'get_related_records'  => actionGetRelatedRecords($conn),
         default                => jsonError("Unknown action: {$action}", 400),
     };
-
 } catch (Throwable $e) {
     jsonError($e->getMessage(), 500);
 }
 
 // Handle list action
-function actionList($conn): void {
-    requireLogin();
+function actionList($conn): void
+{
 
+    requireLogin();
     $page   = max(1, (int) ($_GET['page']   ?? 1));
     $limit  = min(FILES_PAGE_LIMIT_MAX, max(1, (int) ($_GET['limit'] ?? FILES_PAGE_LIMIT)));
     $offset = ($page - 1) * $limit;
     $type   = $_GET['type']   ?? 'all';
     $search = trim($_GET['search'] ?? '');
-
     $where  = ['f.deleted_at IS NULL'];
     $params = [];
-
     if ($type !== 'all') {
         $where[]  = 'f.type = $' . (count($params) + 1);
         $params[] = $type;
     }
 
     if ($search !== '') {
-        // Convert array to string for easy partial text matching
+// Convert array to string for easy partial text matching
         $paramIdx = count($params) + 1;
         $where[]  = '(f.name ILIKE $' . $paramIdx . ' OR f.display_name ILIKE $' . $paramIdx . ' OR array_to_string(f.tags, \' \') ILIKE $' . $paramIdx . ')';
         $params[] = '%' . $search . '%';
     }
 
     $whereSQL = implode(' AND ', $where);
-
     $countSQL = "SELECT COUNT(*) AS cnt FROM " . sys_table('files') . " f WHERE {$whereSQL}";
     $resCount = pg_query_params($conn, $countSQL, $params);
     if (!$resCount) {
@@ -164,7 +172,6 @@ function actionList($conn): void {
         jsonError('Database error.', 500);
     }
     $total = (int) pg_fetch_result($resCount, 0, 'cnt');
-
     $paramsList = $params;
     $listSQL    = "
         SELECT
@@ -177,10 +184,8 @@ function actionList($conn): void {
         ORDER BY f.created_at DESC
         LIMIT $" . (count($paramsList) + 1) . "
         OFFSET $" . (count($paramsList) + 2);
-
     $paramsList[] = $limit;
     $paramsList[] = $offset;
-
     $resList = pg_query_params($conn, $listSQL, $paramsList);
     if (!$resList) {
         error_log('api_files actionList list failed: ' . pg_last_error($conn));
@@ -201,38 +206,39 @@ function actionList($conn): void {
 }
 
 // Handle get config action
-function actionGetConfig(): void {
+function actionGetConfig(): void
+{
+
     requireAdmin();
     jsonSuccess(['config' => loadConfig()]);
 }
 
 // Provide relation definitions for frontend upload form
-function actionGetRelationsConfig(): void {
-    requireLogin();
+function actionGetRelationsConfig(): void
+{
 
+    requireLogin();
     $config    = loadConfig();
     $relations = $config['relations'] ?? [];
-
     jsonSuccess(['relations' => $relations]);
 }
 
 // Handle file upload action
-function actionUpload($conn): void {
+function actionUpload($conn): void
+{
+
     requireLogin();
     requireCsrfToken();
-
     if (!isset($_FILES['file'])) {
         jsonError('No file received.', 400);
     }
 
     $file = $_FILES['file'];
-
     if ($file['error'] !== UPLOAD_ERR_OK) {
         jsonError('Upload failed with PHP error code: ' . $file['error'], 400);
     }
 
     $config = loadConfig();
-
     $maxBytes = ($config['max_file_size_mb'] ?? FILES_MAX_SIZE_MB) * 1024 * 1024;
     if ($file['size'] > $maxBytes) {
         jsonError('File exceeds maximum size.', 413);
@@ -241,13 +247,11 @@ function actionUpload($conn): void {
     $originalName = $file['name'];
     $ext          = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
     $allowedExts  = $config['allowed_extensions'] ?? [];
-
     if (!in_array($ext, $allowedExts, true)) {
         jsonError('Extension is not allowed.', 415);
     }
 
     $type = detectType($ext);
-
     if (!in_array($type, $config['allowed_types'] ?? [], true)) {
         jsonError('File type category is not allowed.', 415);
     }
@@ -261,26 +265,22 @@ function actionUpload($conn): void {
     $uuid        = generateUuid();
     $filename    = $uuid . '.' . $ext;
     $dir         = rtrim(__DIR__ . '/' . ($config['storage_path'] ?? 'storage/files'), '/');
-
     if (!is_dir($dir)) {
         mkdir($dir, 0750, true);
     }
 
     $destination = $dir . '/' . $filename;
-
     if (!move_uploaded_file($file['tmp_name'], $destination)) {
         jsonError('Failed to save physical file to disk.', 500);
     }
 
     $displayName = trim($_POST['display_name'] ?? '') ?: $originalName;
     $dbPath      = trim($config['storage_path'] ?? 'storage/files', '/') . '/' . $filename;
-
-    // Process related record data automatically linked to the configured tables
+// Process related record data automatically linked to the configured tables
     $relatedTableReq = trim($_POST['related_table'] ?? '');
     $relatedId       = isset($_POST['related_id']) && $_POST['related_id'] !== '' ? (int)$_POST['related_id'] : null;
     $relatedTable    = null;
-
-    // Validate that the requested table exists in config
+// Validate that the requested table exists in config
     if ($relatedTableReq && $relatedId) {
         $relations = $config['relations'] ?? [];
         foreach ($relations as $rel) {
@@ -311,7 +311,6 @@ function actionUpload($conn): void {
             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id, uuid
     ";
-
     $params = [
         $uuid,
         $originalName,
@@ -326,7 +325,6 @@ function actionUpload($conn): void {
         $relatedId,
         $tagsPgArray
     ];
-
     $res = pg_query_params($conn, $sql, $params);
     if (!$res) {
         error_log('api_files actionUpload insert failed: ' . pg_last_error($conn));
@@ -335,15 +333,16 @@ function actionUpload($conn): void {
     }
 
     $row = pg_fetch_assoc($res);
-    // Return 201 Created on successful upload
+// Return 201 Created on successful upload
     jsonSuccess(['file' => $row], 201);
 }
 
 // Handle soft delete action
-function actionDelete($conn, array $body): void {
+function actionDelete($conn, array $body): void
+{
+
     requireAdmin();
     requireCsrfToken($body);
-
     $uuid = trim($body['uuid'] ?? '');
     if (!$uuid) {
         jsonError('uuid is required.', 400);
@@ -351,7 +350,6 @@ function actionDelete($conn, array $body): void {
 
     $sql = "UPDATE " . sys_table('files') . " SET deleted_at = NOW() WHERE uuid = $1 AND deleted_at IS NULL RETURNING id";
     $res = pg_query_params($conn, $sql, [$uuid]);
-
     if (!$res) {
         error_log('api_files actionDelete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
@@ -365,22 +363,22 @@ function actionDelete($conn, array $body): void {
 }
 
 // Handle config save action (supports multiple relations)
-function actionSaveConfig(array $body): void {
+function actionSaveConfig(array $body): void
+{
+
     requireAdmin();
     requireCsrfToken($body);
-
     $current = loadConfig();
-
     if (isset($body['max_file_size_mb'])) {
         $current['max_file_size_mb'] = max(1, (int) $body['max_file_size_mb']);
     }
 
     if (isset($body['storage_path'])) {
-        // Allow only letters, numbers, dashes, underscores and slashes
+// Allow only letters, numbers, dashes, underscores and slashes
         $raw = preg_replace('/[^a-zA-Z0-9\-_\/]/', '', $body['storage_path']);
-        // Remove double dot sequences
+// Remove double dot sequences
         $raw = preg_replace('/\.{2,}/', '', $raw);
-        // Normalize multiple slashes to a single slash
+// Normalize multiple slashes to a single slash
         $raw = preg_replace('/\/+/', '/', $raw);
         $current['storage_path'] = trim($raw, '/') . '/';
     }
@@ -406,24 +404,22 @@ function actionSaveConfig(array $body): void {
 
     // Clean up legacy single-relation fields from old config if they exist
     unset($current['related_table'], $current['display_column_1'], $current['display_column_2']);
-
     saveConfig($current);
     jsonSuccess(['config' => $current]);
 }
 
 // Fetch records for dynamically selected relation table
-function actionGetRelatedRecords($conn): void {
+function actionGetRelatedRecords($conn): void
+{
+
     requireLogin();
-
     $reqTable = trim($_GET['table'] ?? '');
-
     if (!$reqTable) {
         jsonSuccess(['records' => []]);
     }
 
     $config    = loadConfig();
     $relConfig = null;
-
     $relations = $config['relations'] ?? [];
     foreach ($relations as $rel) {
         if ($rel['table'] === $reqTable) {
@@ -438,8 +434,7 @@ function actionGetRelatedRecords($conn): void {
 
     $col1 = $relConfig['col1'] ?: 'id';
     $col2 = $relConfig['col2'] ?: '';
-
-    // Validate columns directly from database schema
+// Validate columns directly from database schema
     $sqlCols = "SELECT column_name FROM information_schema.columns WHERE table_schema = 'app' AND table_name = $1";
     $resCols = pg_query_params($conn, $sqlCols, [$reqTable]);
     if (!$resCols) {
@@ -465,7 +460,6 @@ function actionGetRelatedRecords($conn): void {
     $quotedTable = '"' . str_replace('"', '""', $reqTable) . '"';
     $quotedCol1  = '"' . str_replace('"', '""', $col1) . '"';
     $sel2        = $col2 ? ', "' . str_replace('"', '""', $col2) . '"' : '';
-
     $sql = "SELECT id, {$quotedCol1} AS val1 {$sel2} FROM app.{$quotedTable} ORDER BY id DESC LIMIT 500";
     $res = pg_query($conn, $sql);
     if (!$res) {
@@ -487,7 +481,9 @@ function actionGetRelatedRecords($conn): void {
 }
 
 // File type detection logic
-function detectType(string $ext): string {
+function detectType(string $ext): string
+{
+
     $map = [
         // SVG excluded from allowed images to prevent XSS via inline script in SVG content
         'image'       => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
@@ -496,7 +492,6 @@ function detectType(string $ext): string {
         'spreadsheet' => ['xls', 'xlsx', 'ods', 'csv'],
         'archive'     => ['zip', 'tar', 'gz'],
     ];
-
     foreach ($map as $type => $exts) {
         if (in_array($ext, $exts, true)) {
             return $type;
@@ -506,7 +501,9 @@ function detectType(string $ext): string {
 }
 
 // Generate secure unique identifier
-function generateUuid(): string {
+function generateUuid(): string
+{
+
     $data    = random_bytes(16);
     $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
     $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);

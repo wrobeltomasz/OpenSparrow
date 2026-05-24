@@ -161,6 +161,22 @@ function fetch_record_json($conn, string $schemaName, string $table, int $record
     return ($row && $row[0] !== null) ? $row[0] : null;
 }
 
+// Returns the current owner_id for a record, or null if no ownership row exists.
+function get_record_owner_id($conn, string $table, int $recordId): ?int
+{
+    $t   = sys_table('record_owners');
+    $res = @pg_query_params(
+        $conn,
+        "SELECT owner_id FROM $t WHERE table_name = \$1 AND record_id = \$2 AND is_current = true",
+        [$table, $recordId]
+    );
+    if (!$res || pg_num_rows($res) === 0) {
+        return null;
+    }
+    $row = pg_fetch_assoc($res);
+    return $row['owner_id'] !== null ? (int)$row['owner_id'] : null;
+}
+
 // Record ownership: mark previous current row inactive, insert new current row.
 function set_record_owner($conn, string $table, int $recordId, int $ownerId, int $changedBy): void
 {

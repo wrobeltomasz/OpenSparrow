@@ -106,7 +106,7 @@ async function loadMigrations(container) {
     }
 
     if (data.status !== 'success') {
-        container.innerHTML = `<p style="color:#ef4444; font-size:13px;">Error: ${data.error}</p>`;
+        container.innerHTML = `<p style="color:#ef4444; font-size:13px;">Error: ${escRelMig(data.error)}</p>`;
         return;
     }
 
@@ -171,7 +171,7 @@ async function loadReleaseMigrations(container) {
     }
 
     if (data.status !== 'success') {
-        container.innerHTML = `<p style="color:#ef4444; font-size:13px;">Error: ${data.error || 'Unknown'}</p>`;
+        container.innerHTML = `<p style="color:#ef4444; font-size:13px;">Error: ${escRelMig(data.error || 'Unknown')}</p>`;
         return;
     }
 

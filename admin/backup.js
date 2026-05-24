@@ -1,5 +1,7 @@
 // admin/backup.js
 
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
 export async function renderBackupPage(ctx) {
     const { workspaceEl } = ctx;
 
@@ -175,21 +177,21 @@ export async function renderBackupPage(ctx) {
                     if (r.status === 'success') {
                         li.style.background = '#dcfce7';
                         li.innerHTML = `<span style="color:#166534;font-weight:700;">✓</span>`
-                            + ` <strong>${r.table}</strong> → <code style="background:#bbf7d0;padding:1px 5px;border-radius:3px;">${r.backup}</code>`
-                            + ` <span style="color:#4ade80;font-size:11px;">(${r.rows} row${r.rows !== 1 ? 's' : ''})</span>`;
+                            + ` <strong>${esc(r.table)}</strong> → <code style="background:#bbf7d0;padding:1px 5px;border-radius:3px;">${esc(r.backup)}</code>`
+                            + ` <span style="color:#4ade80;font-size:11px;">(${esc(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
                     } else {
                         li.style.background = '#fee2e2';
                         li.innerHTML = `<span style="color:#991b1b;font-weight:700;">✗</span>`
-                            + ` <strong>${r.table}</strong>: <span style="color:#991b1b;">${r.message}</span>`;
+                            + ` <strong>${esc(r.table)}</strong>: <span style="color:#991b1b;">${esc(r.message)}</span>`;
                     }
                     ul.appendChild(li);
                 });
                 resultArea.appendChild(ul);
             } else {
-                resultArea.innerHTML = `<p style="color:#ef4444;margin:0;">Error: ${data.error || 'Unknown error'}</p>`;
+                resultArea.innerHTML = `<p style="color:#ef4444;margin:0;">Error: ${esc(data.error || 'Unknown error')}</p>`;
             }
         } catch (e) {
-            resultArea.innerHTML = `<p style="color:#ef4444;margin:0;">Request failed: ${e.message}</p>`;
+            resultArea.innerHTML = `<p style="color:#ef4444;margin:0;">Request failed: ${esc(e.message)}</p>`;
         }
 
         btnBackup.disabled = false;

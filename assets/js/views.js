@@ -3,6 +3,8 @@
 import { sortRows } from './grid/state.js';
 import { I18n } from './i18n.js';
 
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
 /* ── colour rule engine ── */
 function applyColorRules(rawValue, rules) {
     if (!Array.isArray(rules) || rules.length === 0) return null;
@@ -130,7 +132,11 @@ async function loadView(viewName, level, filterCol, filterVal) {
         const data = await apiFetch(url);
         renderView(data);
     } catch (err) {
-        containerEl.innerHTML = `<div class="vw-error">Error: ${err.message}</div>`;
+        containerEl.innerHTML = '';
+        const errDiv1 = document.createElement('div');
+        errDiv1.className = 'vw-error';
+        errDiv1.textContent = `Error: ${err.message}`;
+        containerEl.appendChild(errDiv1);
     }
 }
 
@@ -389,7 +395,11 @@ async function loadViewSelector() {
         }
         renderSelector(data.views);
     } catch (err) {
-        containerEl.innerHTML = `<div class="vw-error">Error: ${err.message}</div>`;
+        containerEl.innerHTML = '';
+        const errDiv2 = document.createElement('div');
+        errDiv2.className = 'vw-error';
+        errDiv2.textContent = `Error: ${err.message}`;
+        containerEl.appendChild(errDiv2);
     }
 }
 

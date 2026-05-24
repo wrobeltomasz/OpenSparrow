@@ -61,7 +61,10 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
                     v => itemData.notified_users = v
                 ));
             } else {
-                usersWrapper.innerHTML = `<p style="color:red; font-size:13px;">Error loading users: ${data.error}</p>`;
+                const errP = document.createElement('p');
+                errP.style.cssText = 'color:red;font-size:13px;';
+                errP.textContent = `Error loading users: ${data.error}`;
+                usersWrapper.appendChild(errP);
             }
         })
         .catch(() => {

@@ -19,7 +19,7 @@ export async function renderUsersEditor(ctx) {
         const data = await res.json();
         
         if (data.status !== 'success') {
-            workspaceEl.innerHTML = `<h3 style="color:red;">Error</h3><p>${data.error}</p>`;
+            workspaceEl.innerHTML = `<h3 style="color:red;">Error</h3><p>${escHtml(data.error)}</p>`;
             return;
         }
         

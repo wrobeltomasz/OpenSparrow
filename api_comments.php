@@ -1,4 +1,5 @@
 <?php
+
 // This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 
@@ -9,12 +10,9 @@ require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/api_helpers.php';
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? ''));
 send_security_headers();
 start_session();
-
 $conn = db_connect();
-
 function jsonError(string $msg, int $code = 400): void
 {
     http_response_code($code);
@@ -61,10 +59,7 @@ function validatedTable(string $table): string
     if ($table === '') {
         jsonError('related_table is required.', 400);
     }
-    $schema = json_decode(
-        (string)file_get_contents(__DIR__ . '/config/schema.json'),
-        true
-    );
+    $schema = json_decode((string)file_get_contents(__DIR__ . '/config/schema.json'), true);
     if (!isset($schema['tables'][$table])) {
         jsonError('Unknown table.', 400);
     }
@@ -75,7 +70,6 @@ try {
     $method = $_SERVER['REQUEST_METHOD'];
     $action = '';
     $body   = [];
-
     if ($method === 'GET') {
         $action = $_GET['action'] ?? '';
     } elseif ($method === 'POST') {
@@ -101,11 +95,9 @@ try {
 function actionList($conn): void
 {
     requireLogin();
-
     $relatedTable = validatedTable(trim($_GET['related_table'] ?? ''));
     $relatedId    = (int)($_GET['related_id'] ?? 0);
     $limit        = isset($_GET['limit']) ? min(COMMENTS_PAGE_LIMIT_MAX, max(1, (int)$_GET['limit'])) : null;
-
     if ($relatedId <= 0) {
         jsonError('related_id must be a positive integer.', 400);
     }
@@ -114,7 +106,6 @@ function actionList($conn): void
     // gets the most recent N without client-side sorting.
     $orderDir    = $limit ? 'DESC' : 'ASC';
     $limitClause = $limit ? " LIMIT {$limit}" : '';
-
     $sql = "
         SELECT
             c.id,
@@ -129,7 +120,6 @@ function actionList($conn): void
         WHERE c.related_table = \$1 AND c.related_id = \$2
         ORDER BY c.created_at {$orderDir}{$limitClause}
     ";
-
     $res = pg_query_params($conn, $sql, [$relatedTable, $relatedId]);
     if (!$res) {
         error_log('api_comments actionList failed: ' . pg_last_error($conn));
@@ -149,11 +139,9 @@ function actionAdd($conn, array $body): void
 {
     requireWrite();
     requireCsrf($body);
-
     $relatedTable = validatedTable(trim($body['related_table'] ?? ''));
     $relatedId    = (int)($body['related_id'] ?? 0);
     $rawBody      = trim($body['body'] ?? '');
-
     if ($relatedId <= 0) {
         jsonError('related_id must be a positive integer.', 400);
     }
@@ -165,14 +153,12 @@ function actionAdd($conn, array $body): void
     }
 
     $userId = (int)$_SESSION['user_id'];
-
     $sql = "
         INSERT INTO " . sys_table('comments') . "
             (related_table, related_id, user_id, body)
         VALUES (\$1, \$2, \$3, \$4)
         RETURNING id, created_at
     ";
-
     $res = pg_query_params($conn, $sql, [$relatedTable, $relatedId, $userId, $rawBody]);
     if (!$res) {
         error_log('api_comments actionAdd failed: ' . pg_last_error($conn));
@@ -181,8 +167,7 @@ function actionAdd($conn, array $body): void
 
     $inserted = pg_fetch_assoc($res);
     log_user_action($conn, $userId, 'COMMENT_ADD', $relatedTable, $relatedId);
-
-    // Return the full comment row including user info for immediate render
+// Return the full comment row including user info for immediate render
     $fetchSql = "
         SELECT c.id, c.body, c.created_at, c.deleted_at, c.user_id,
                u.username, u.avatar_id
@@ -203,11 +188,9 @@ function actionDelete($conn, array $body): void
 {
     requireLogin();
     requireCsrf($body);
-
     $id     = (int)($body['id'] ?? 0);
     $userId = (int)$_SESSION['user_id'];
     $role   = $_SESSION['role'] ?? 'editor';
-
     if ($id <= 0) {
         jsonError('id is required.', 400);
     }
@@ -238,20 +221,14 @@ function actionDelete($conn, array $body): void
 function actionCounts($conn): void
 {
     requireLogin();
-
     $relatedTable = validatedTable(trim($_GET['related_table'] ?? ''));
     $rawIds       = trim($_GET['related_ids'] ?? '');
-
     if ($rawIds === '') {
         jsonSuccess(['counts' => []]);
     }
 
     // Parse and validate IDs — integers only
-    $ids = array_values(array_filter(
-        array_map('intval', explode(',', $rawIds)),
-        fn($id) => $id > 0
-    ));
-
+    $ids = array_values(array_filter(array_map('intval', explode(',', $rawIds)), fn($id) => $id > 0));
     if (empty($ids)) {
         jsonSuccess(['counts' => []]);
     }
@@ -259,14 +236,12 @@ function actionCounts($conn): void
     // Build safe parameterized IN clause
     $placeholders = implode(', ', array_map(fn($i) => '$' . ($i + 2), array_keys($ids)));
     $params       = array_merge([$relatedTable], $ids);
-
     $sql = "
         SELECT related_id, COUNT(*) AS cnt
         FROM " . sys_table('comments') . "
         WHERE related_table = \$1 AND related_id IN ($placeholders) AND deleted_at IS NULL
         GROUP BY related_id
     ";
-
     $res = pg_query_params($conn, $sql, $params);
     if (!$res) {
         error_log('api_comments actionCounts failed: ' . pg_last_error($conn));
