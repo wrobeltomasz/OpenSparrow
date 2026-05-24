@@ -84,11 +84,12 @@ try {
     }
 
     match ($action) {
-        'get'     => actionGet($conn),
-        'history' => actionHistory($conn),
-        'editors' => actionEditors($conn),
-        'set'     => actionSet($conn, $body),
-        default   => jsonError("Unknown action: {$action}", 400),
+        'get'      => actionGet($conn),
+        'history'  => actionHistory($conn),
+        'editors'  => actionEditors($conn),
+        'set'      => actionSet($conn, $body),
+        'mass_set' => actionMassSet($conn, $body),
+        default    => jsonError("Unknown action: {$action}", 400),
     };
 } catch (Throwable $e) {
     error_log('[api_owners] ' . $e->getMessage());
@@ -196,6 +197,81 @@ function actionEditors($conn): void
     }
 
     jsonSuccess(['users' => $users]);
+}
+
+function actionMassSet($conn, array $body): void
+{
+    requireWrite();
+    requireCsrf($body);
+
+    $table   = validatedTable(trim($body['table'] ?? ''));
+    $ownerId = (int)($body['owner_id'] ?? 0);
+
+    if ($ownerId <= 0) {
+        jsonError('owner_id must be a positive integer.', 400);
+    }
+
+    $checkRes = pg_query_params(
+        $conn,
+        "SELECT id FROM " . sys_table('users') .
+        " WHERE id = \$1 AND is_active = true AND role IN ('editor', 'admin')",
+        [$ownerId]
+    );
+    if (!$checkRes || pg_num_rows($checkRes) === 0) {
+        jsonError('Invalid owner: user not found or does not have editor access.', 400);
+    }
+
+    $rawIds = $body['row_ids'] ?? [];
+    if (!is_array($rawIds)) {
+        jsonError('row_ids must be an array.', 400);
+    }
+    $rowIds = [];
+    foreach ($rawIds as $id) {
+        $int = filter_var($id, FILTER_VALIDATE_INT);
+        if ($int !== false && $int > 0) {
+            $rowIds[] = $int;
+        }
+    }
+    $rowIds = array_values(array_unique($rowIds));
+
+    if (empty($rowIds)) {
+        jsonError('No rows selected.', 400);
+    }
+
+    $changedBy = (int)$_SESSION['user_id'];
+    $t         = sys_table('record_owners');
+    $arrParam  = '{' . implode(',', array_map('intval', $rowIds)) . '}';
+
+    @pg_query($conn, 'BEGIN');
+
+    $res = @pg_query_params(
+        $conn,
+        "UPDATE $t SET is_current = false
+         WHERE table_name = \$1 AND record_id = ANY(\$2::int[]) AND is_current = true",
+        [$table, $arrParam]
+    );
+    if (!$res) {
+        @pg_query($conn, 'ROLLBACK');
+        jsonError('Database error.', 500);
+    }
+
+    $res2 = @pg_query_params(
+        $conn,
+        "INSERT INTO $t (table_name, record_id, owner_id, changed_by, is_current)
+         SELECT \$1, unnest(\$2::int[]), \$3, \$4, true",
+        [$table, $arrParam, $ownerId, $changedBy]
+    );
+    if (!$res2) {
+        @pg_query($conn, 'ROLLBACK');
+        jsonError('Database error.', 500);
+    }
+
+    $affected = pg_affected_rows($res2);
+    @pg_query($conn, 'COMMIT');
+
+    log_user_action($conn, $changedBy, 'MASS_OWNER', $table, null);
+
+    jsonSuccess(['updated' => $affected]);
 }
 
 function actionSet($conn, array $body): void

@@ -8,6 +8,30 @@ export function renderThead(schema, isReadOnly, onRerender) {
     const headRow = document.createElement('tr');
     const subtables = schema.tables[state.currentTable]?.subtables || [];
 
+    if (!isReadOnly) {
+        const thSelect = document.createElement('th');
+        thSelect.className = 'th-select';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'select-all-cb';
+        cb.setAttribute('aria-label', 'Select all rows');
+        cb.title = 'Select / deselect all';
+        cb.addEventListener('change', e => {
+            const allIds = state.filteredData.map(r => r.id);
+            if (e.target.checked) {
+                allIds.forEach(id => state.selectedIds.add(id));
+            } else {
+                allIds.forEach(id => state.selectedIds.delete(id));
+            }
+            document.querySelectorAll('.row-select-cb').forEach(rowCb => {
+                rowCb.checked = e.target.checked;
+            });
+            document.dispatchEvent(new CustomEvent('selectionChanged'));
+        });
+        thSelect.appendChild(cb);
+        headRow.appendChild(thSelect);
+    }
+
     if (subtables.length > 0) {
         const th = document.createElement('th');
         th.style.width = '30px';

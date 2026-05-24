@@ -11,7 +11,12 @@ export const state = {
     containerEl: null,
     gridTitleEl: null,
     addRowBtn: null,
+    selectedIds: new Set(),
 };
+
+export function clearSelection() {
+    state.selectedIds.clear();
+}
 
 // Public read-only snapshot used by external modules (pagination, export_csv, app.js)
 export function getState() {

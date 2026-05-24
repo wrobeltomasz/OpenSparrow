@@ -262,6 +262,57 @@
         "month_nov": "Listopad",
         "month_dec": "Grudzień"
     },
+    "mass_edit": {
+        "title": "Masowa edycja",
+        "action_label": "Masowa edycja",
+        "edit_fields": "Edytuj pola",
+        "deselect_all": "Odznacz wszystkie",
+        "rows_selected": "{n} wierszy zaznaczonych",
+        "column": "Kolumna do edycji",
+        "new_value": "Nowa wartość",
+        "scope_info": "Zostaną zaktualizowane: {n} wierszy",
+        "apply": "Zastosuj zmiany",
+        "confirm": "Ustawić nową wartość dla {n} wierszy? Operacja nieodwracalna.",
+        "applied": "Gotowe. Zaktualizowano {n} wierszy.",
+        "select_column": "Najpierw wybierz kolumnę.",
+        "value_placeholder": "Nowa wartość…",
+        "set_null": "Ustaw NULL / puste",
+        "export_btn": "Eksportuj zaznaczone",
+        "export_title": "Wybierz kolumny do eksportu",
+        "export_download": "Pobierz CSV",
+        "export_select_all": "Zaznacz wszystkie",
+        "export_select_none": "Odznacz wszystkie",
+        "export_none_selected": "Zaznacz co najmniej jedną kolumnę.",
+        "export_rows": "Wierszy do eksportu: {n}",
+        "select_fk_placeholder": "— Wybierz —",
+        "preview": "Podgląd zmian",
+        "preview_count": "Wierszy do aktualizacji: {n}",
+        "col_id": "ID",
+        "col_current": "Wartość obecna",
+        "col_new": "Nowa wartość",
+        "run_preview_first": "Najpierw uruchom podgląd."
+    },
+    "mass_owner": {
+        "title": "Przypisz właściciela",
+        "btn": "Przypisz właściciela",
+        "apply": "Przypisz",
+        "scope_info": "Właściciel zostanie przypisany do {n} wierszy",
+        "select_user": "Wybierz użytkownika",
+        "select_first": "Najpierw wybierz użytkownika.",
+        "confirm": "Przypisać właściciela do {n} wierszy?",
+        "applied": "Gotowe. Przypisano właściciela do {n} wierszy."
+    },
+    "mass_duplicate": {
+        "duplicate_btn": "Duplikuj zaznaczone",
+        "confirm": "Duplikować {n} wierszy?",
+        "applied": "Gotowe. Zduplikowano {n} wierszy.",
+        "error_unique": "Duplikowanie nieudane: naruszenie unikalności. Edytuj wartości w nowych rekordach."
+    },
+    "mass_delete": {
+        "delete_btn": "Usuń zaznaczone",
+        "confirm": "Usunąć {n} wierszy? Operacja nieodwracalna.",
+        "applied": "Gotowe. Usunięto {n} wierszy."
+    },
     "shortcuts": {
         "help_title": "Skróty klawiaturowe",
         "navigate": "Nawiguj między komórkami",

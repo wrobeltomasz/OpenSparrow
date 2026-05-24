@@ -115,6 +115,25 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
     for (const row of pageRows) {
         const tr = document.createElement('tr');
 
+        if (!isReadOnly) {
+            const tdSelect = document.createElement('td');
+            tdSelect.className = 'td-select';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'row-select-cb';
+            cb.setAttribute('aria-label', 'Select row');
+            cb.dataset.id = String(row.id);
+            cb.checked = state.selectedIds.has(row.id);
+            cb.addEventListener('change', e => {
+                e.stopPropagation();
+                if (e.target.checked) state.selectedIds.add(row.id);
+                else state.selectedIds.delete(row.id);
+                document.dispatchEvent(new CustomEvent('selectionChanged'));
+            });
+            tdSelect.appendChild(cb);
+            tr.appendChild(tdSelect);
+        }
+
         if (hasSubtables) {
             tr.appendChild(buildExpandButton(row, schema, tr));
         }

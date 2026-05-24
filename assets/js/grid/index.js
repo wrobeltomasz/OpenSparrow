@@ -11,6 +11,7 @@ import { initM2mPopup } from './m2m/popup.js';
 import { computeVirtual } from './cells/virtual-cell.js';
 
 export { getState, setFilteredData };
+export { clearSelection } from './state.js';
 
 export { buildMenu } from './menu.js';
 

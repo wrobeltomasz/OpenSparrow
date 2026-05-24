@@ -258,6 +258,57 @@
         "month_nov": "November",
         "month_dec": "December"
     },
+    "mass_edit": {
+        "title": "Mass Edit",
+        "action_label": "Mass Edit",
+        "edit_fields": "Edit Fields",
+        "deselect_all": "Deselect All",
+        "rows_selected": "{n} rows selected",
+        "column": "Column to edit",
+        "new_value": "New value",
+        "scope_info": "Will update {n} selected rows",
+        "apply": "Apply changes",
+        "confirm": "Set new value for {n} rows? This cannot be undone.",
+        "applied": "Done. {n} rows updated.",
+        "select_column": "Select a column first.",
+        "value_placeholder": "New value…",
+        "set_null": "Set to NULL / empty",
+        "export_btn": "Export Selected",
+        "export_title": "Export columns",
+        "export_download": "Download CSV",
+        "export_select_all": "Select all",
+        "export_select_none": "Deselect all",
+        "export_none_selected": "Select at least one column.",
+        "export_rows": "Rows to export: {n}",
+        "select_fk_placeholder": "— Select —",
+        "preview": "Preview changes",
+        "preview_count": "Rows to be updated: {n}",
+        "col_id": "ID",
+        "col_current": "Current value",
+        "col_new": "New value",
+        "run_preview_first": "Run preview first."
+    },
+    "mass_owner": {
+        "title": "Assign Owner",
+        "btn": "Assign Owner",
+        "apply": "Assign",
+        "scope_info": "Will assign owner to {n} selected rows",
+        "select_user": "Select user",
+        "select_first": "Select a user first.",
+        "confirm": "Assign owner to {n} rows?",
+        "applied": "Done. Owner assigned to {n} rows."
+    },
+    "mass_duplicate": {
+        "duplicate_btn": "Duplicate Selected",
+        "confirm": "Duplicate {n} rows?",
+        "applied": "Done. {n} rows duplicated.",
+        "error_unique": "Duplicate failed: unique constraint violation. Edit values in the new records."
+    },
+    "mass_delete": {
+        "delete_btn": "Delete Selected",
+        "confirm": "Delete {n} rows? This cannot be undone.",
+        "applied": "Done. {n} rows deleted."
+    },
     "shortcuts": {
         "help_title": "Keyboard Shortcuts",
         "navigate": "Navigate cells",
