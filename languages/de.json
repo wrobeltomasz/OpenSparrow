@@ -1,5 +1,8 @@
 {
-    "_meta": { "name": "Deutsch", "dir": "ltr" },
+    "_meta": {
+        "name": "Deutsch",
+        "dir": "ltr"
+    },
     "common": {
         "save": "Speichern",
         "cancel": "Abbrechen",
@@ -124,21 +127,27 @@
         "min": "Min:",
         "max": "Max:",
         "all": "Alle",
-        "yes_true": "Ja \/ Wahr",
-        "no_false": "Nein \/ Falsch"
+        "yes_true": "Ja / Wahr",
+        "no_false": "Nein / Falsch"
     },
     "files": {
         "upload": "Datei hochladen",
         "download": "Herunterladen",
         "delete_confirm": "Diese Datei löschen?",
         "size_limit": "Datei überschreitet das Limit von {max} MB",
-        "count": { "one": "{count} Datei", "other": "{count} Dateien" }
+        "count": {
+            "one": "{count} Datei",
+            "other": "{count} Dateien"
+        }
     },
     "notifications": {
         "mark_read": "Als gelesen markieren",
         "mark_all_read": "Alle als gelesen markieren",
         "none": "Keine neuen Benachrichtigungen",
-        "count": { "one": "{count} Benachrichtigung", "other": "{count} Benachrichtigungen" }
+        "count": {
+            "one": "{count} Benachrichtigung",
+            "other": "{count} Benachrichtigungen"
+        }
     },
     "dashboard": {
         "loading": "Daten werden geladen…",
@@ -148,7 +157,10 @@
         "click_details": "Klicken für Details"
     },
     "workflow": {
-        "steps": { "one": "{count} Schritt", "other": "{count} Schritte" },
+        "steps": {
+            "one": "{count} Schritt",
+            "other": "{count} Schritte"
+        },
         "step_of": "{title} — Schritt {current} von {total}",
         "start": "Workflow starten →",
         "finish_return": "Beenden & Zurück",
@@ -195,13 +207,33 @@
         "error": "Fehler: {message}",
         "open": "Ansicht öffnen →",
         "back": "◀ Zurück",
-        "rows": { "one": "{count} Zeile", "other": "{count} Zeilen" },
+        "rows": {
+            "one": "{count} Zeile",
+            "other": "{count} Zeilen"
+        },
         "rows_filtered": "(gefiltert aus {total})",
         "fn_sum": "SUMME",
         "fn_avg": "DURCHSCHN",
         "fn_min": "MIN",
         "fn_max": "MAX",
         "fn_count": "ANZAHL"
+    },
+    "data_cleanup": {
+        "title": "Schnelle Datenbereinigung",
+        "column": "Spalte",
+        "find": "Suchen",
+        "replace": "Ersetzen durch",
+        "replace_hint": "Leer = löschen",
+        "toggle_case": "Groß-/Kleinschreibung beachten",
+        "toggle_word": "Nur ganze Wörter",
+        "toggle_accent": "Umlaute ignorieren",
+        "preview_count": "Zu ändernde Zeilen: {n}",
+        "col_before": "Vorher",
+        "col_after": "Nachher",
+        "apply": "Änderungen übernehmen",
+        "confirm": "{n} Zeilen ändern? Dies kann nicht rückgängig gemacht werden.",
+        "applied": "Fertig. {n} Zeilen aktualisiert.",
+        "empty_result": "(leer)"
     },
     "calendar": {
         "prev": "Zurück",

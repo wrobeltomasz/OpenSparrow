@@ -218,6 +218,23 @@
         "fn_max": "MAX",
         "fn_count": "DARAB"
     },
+    "data_cleanup": {
+        "title": "Gyors adattisztítás",
+        "column": "Oszlop",
+        "find": "Keresés",
+        "replace": "Csere erre",
+        "replace_hint": "Üres = töröl",
+        "toggle_case": "Nagy/kisbetű megkülönböztetése",
+        "toggle_word": "Csak egész szavak",
+        "toggle_accent": "Ékezetek figyelmen kívül hagyása",
+        "preview_count": "Módosítandó sorok: {n}",
+        "col_before": "Előtte",
+        "col_after": "Utána",
+        "apply": "Módosítások alkalmazása",
+        "confirm": "{n} sor módosítása? Ez a művelet nem vonható vissza.",
+        "applied": "Kész. {n} sor frissítve.",
+        "empty_result": "(üres)"
+    },
     "calendar": {
         "prev": "Előző",
         "next": "Következő",

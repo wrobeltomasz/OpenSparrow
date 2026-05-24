@@ -218,6 +218,23 @@
         "fn_max": "MAX",
         "fn_count": "NB"
     },
+    "data_cleanup": {
+        "title": "Nettoyage rapide des données",
+        "column": "Colonne",
+        "find": "Rechercher",
+        "replace": "Remplacer par",
+        "replace_hint": "Vide = supprimer",
+        "toggle_case": "Respecter la casse",
+        "toggle_word": "Mots entiers uniquement",
+        "toggle_accent": "Ignorer les accents",
+        "preview_count": "Lignes à modifier : {n}",
+        "col_before": "Avant",
+        "col_after": "Après",
+        "apply": "Appliquer les modifications",
+        "confirm": "Modifier {n} lignes ? Cette opération est irréversible.",
+        "applied": "Terminé. {n} lignes mises à jour.",
+        "empty_result": "(vide)"
+    },
     "calendar": {
         "prev": "Précédent",
         "next": "Suivant",

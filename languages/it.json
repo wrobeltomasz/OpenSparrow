@@ -218,6 +218,23 @@
         "fn_max": "MAX",
         "fn_count": "CONTA"
     },
+    "data_cleanup": {
+        "title": "Pulizia rapida dei dati",
+        "column": "Colonna",
+        "find": "Cerca",
+        "replace": "Sostituisci con",
+        "replace_hint": "Vuoto = elimina",
+        "toggle_case": "Distingui maiuscole",
+        "toggle_word": "Solo parole intere",
+        "toggle_accent": "Ignora accenti",
+        "preview_count": "Righe da modificare: {n}",
+        "col_before": "Prima",
+        "col_after": "Dopo",
+        "apply": "Applica modifiche",
+        "confirm": "Modificare {n} righe? Questa operazione non può essere annullata.",
+        "applied": "Fatto. {n} righe aggiornate.",
+        "empty_result": "(vuoto)"
+    },
     "calendar": {
         "prev": "Precedente",
         "next": "Successivo",

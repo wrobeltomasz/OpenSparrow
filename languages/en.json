@@ -203,6 +203,23 @@
         "fn_max": "MAX",
         "fn_count": "COUNT"
     },
+    "data_cleanup": {
+        "title": "Quick Data Cleanup",
+        "column": "Column",
+        "find": "Find",
+        "replace": "Replace with",
+        "replace_hint": "Empty = delete",
+        "toggle_case": "Case sensitive",
+        "toggle_word": "Whole words only",
+        "toggle_accent": "Ignore accents (ą→a, ę→e…)",
+        "preview_count": "Rows to be modified: {n}",
+        "col_before": "Before",
+        "col_after": "After",
+        "apply": "Apply changes",
+        "confirm": "Modify {n} rows? This cannot be undone.",
+        "applied": "Done. {n} rows updated.",
+        "empty_result": "(empty)"
+    },
     "calendar": {
         "prev": "Prev",
         "next": "Next",

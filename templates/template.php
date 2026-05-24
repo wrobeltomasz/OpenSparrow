@@ -38,12 +38,18 @@ include __DIR__ . '/header.php';
                     <?php endif; ?>
                     <option value="export"><?= htmlspecialchars(t('grid.export_csv'), ENT_QUOTES, 'UTF-8') ?></option>
                     <option value="refresh"><?= htmlspecialchars(t('grid.refresh_table'), ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php if (($userRole ?? '') === 'editor') : ?>
+                    <option value="data-cleanup"><?= htmlspecialchars(t('data_cleanup.title'), ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endif; ?>
                 </select>
 
                 <?php if (($userRole ?? '') === 'editor') : ?>
                 <button id="addRow" data-cy="add" class="success"><?= htmlspecialchars(t('common.add'), ENT_QUOTES, 'UTF-8') ?></button>
                 <?php endif; ?>
                 <button id="exportCsv" data-cy="export"><?= htmlspecialchars(t('grid.export_csv'), ENT_QUOTES, 'UTF-8') ?></button>
+                <?php if (($userRole ?? '') === 'editor') : ?>
+                <button id="dataCleanupBtn" data-cy="data-cleanup"><?= htmlspecialchars(t('data_cleanup.title'), ENT_QUOTES, 'UTF-8') ?></button>
+                <?php endif; ?>
             </div>
 
             <div id="pagination" data-cy="pagination" class="pagination"></div>
@@ -65,6 +71,7 @@ include __DIR__ . '/header.php';
                 const action = e.target.value;
                 if (action === "add") { const b = document.getElementById("addRow"); if (b) b.click(); }
                 if (action === "export") { const b = document.getElementById("exportCsv"); if (b) b.click(); }
+                if (action === "data-cleanup") { const b = document.getElementById("dataCleanupBtn"); if (b) b.click(); }
                 if (action === "refresh") location.reload();
                 mobileActions.value = "";
             });

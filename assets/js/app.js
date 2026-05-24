@@ -5,10 +5,12 @@ import { exportCSV } from './export_csv.js';
 import { debugLog } from './debug.js';
 import { setupPagination, getPageRows, initPageSize } from './pagination.js';
 import { initWorkflows } from './workflows.js';
+import { initDataCleanup } from './data_cleanup.js';
 
 // Break circular dependency: grid/index.js cannot import pagination.js because
 // pagination.js imports renderGrid from grid.js. We wire them together here.
 injectPagination(getPageRows, setupPagination);
+initDataCleanup();
 
 const menuEl = document.getElementById('menu');
 const gridTitleEl = document.getElementById('gridTitle');

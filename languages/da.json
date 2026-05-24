@@ -218,6 +218,23 @@
         "fn_max": "MAKS",
         "fn_count": "ANTAL"
     },
+    "data_cleanup": {
+        "title": "Hurtig datarensning",
+        "column": "Kolonne",
+        "find": "Find",
+        "replace": "Erstat med",
+        "replace_hint": "Tom = slet",
+        "toggle_case": "Forskel på store/små bogstaver",
+        "toggle_word": "Kun hele ord",
+        "toggle_accent": "Ignorer accenter",
+        "preview_count": "Rækker der ændres: {n}",
+        "col_before": "Før",
+        "col_after": "Efter",
+        "apply": "Anvend ændringer",
+        "confirm": "Ændre {n} rækker? Denne handling kan ikke fortrydes.",
+        "applied": "Færdig. {n} rækker opdateret.",
+        "empty_result": "(tom)"
+    },
     "calendar": {
         "prev": "Forrige",
         "next": "Næste",

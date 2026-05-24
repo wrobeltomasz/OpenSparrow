@@ -218,6 +218,23 @@
         "fn_max": "MAX",
         "fn_count": "ANTAL"
     },
+    "data_cleanup": {
+        "title": "Snabb datarensning",
+        "column": "Kolumn",
+        "find": "Sök",
+        "replace": "Ersätt med",
+        "replace_hint": "Tom = ta bort",
+        "toggle_case": "Skiftlägeskänslig",
+        "toggle_word": "Hela ord",
+        "toggle_accent": "Ignorera accenter",
+        "preview_count": "Rader att ändra: {n}",
+        "col_before": "Före",
+        "col_after": "Efter",
+        "apply": "Tillämpa ändringar",
+        "confirm": "Ändra {n} rader? Det går inte att ångra.",
+        "applied": "Klart. {n} rader uppdaterade.",
+        "empty_result": "(tom)"
+    },
     "calendar": {
         "prev": "Föregående",
         "next": "Nästa",

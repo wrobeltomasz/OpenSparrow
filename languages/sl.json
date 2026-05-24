@@ -226,6 +226,23 @@
         "fn_max": "MAKS",
         "fn_count": "ŠTEVILO"
     },
+    "data_cleanup": {
+        "title": "Hitro čiščenje podatkov",
+        "column": "Stolpec",
+        "find": "Poišči",
+        "replace": "Zamenjaj z",
+        "replace_hint": "Prazno = izbriši",
+        "toggle_case": "Razlikuj velike/male črke",
+        "toggle_word": "Samo cele besede",
+        "toggle_accent": "Prezri diakritike",
+        "preview_count": "Vrstic za spremembo: {n}",
+        "col_before": "Pred",
+        "col_after": "Po",
+        "apply": "Uveljavi spremembe",
+        "confirm": "Spremeniti {n} vrstic? Te operacije ni mogoče razveljaviti.",
+        "applied": "Končano. Posodobljenih {n} vrstic.",
+        "empty_result": "(prazno)"
+    },
     "calendar": {
         "prev": "Prejšnji",
         "next": "Naslednji",

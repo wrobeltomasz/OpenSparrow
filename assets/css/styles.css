@@ -2431,3 +2431,145 @@ th.drag-over .th-label {
 .admin-403-card h1 { color: #ef4444; font-size: 22px; margin-bottom: 10px; }
 .admin-403-card p { color: #64748b; font-size: 14px; }
 .admin-403-card a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+
+/* === data cleanup drawer (dc-) === */
+.dc-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+.dc-overlay.active { display: block; }
+
+.dc-panel {
+    position: fixed;
+    top: 0;
+    right: -440px;
+    width: 420px;
+    height: 100vh;
+    background: #fff;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.18);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.25s ease;
+    overflow: hidden;
+}
+.dc-panel.active { right: 0; }
+
+.dc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+    background: #f8fafc;
+}
+.dc-title { margin: 0; font-size: 15px; font-weight: 600; color: #1e293b; }
+
+.dc-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #64748b;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+.dc-close:hover { background: #e2e8f0; color: #1e293b; }
+
+.dc-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.dc-field { display: flex; flex-direction: column; gap: 5px; }
+.dc-field label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; }
+.dc-field input, .dc-field select {
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #1e293b;
+    background: #fff;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.dc-field input:focus, .dc-field select:focus {
+    outline: none;
+    border-color: var(--accent, #007ACC);
+    box-shadow: 0 0 0 3px rgba(0,122,204,0.12);
+}
+
+.dc-toggles { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; }
+.dc-toggle-row { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.dc-toggle-row input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent, #007ACC); flex-shrink: 0; }
+.dc-toggle-label { font-size: 13px; color: #475569; }
+
+.dc-status { font-size: 13px; color: #475569; min-height: 18px; }
+.dc-status.error { color: #ef4444; }
+
+.dc-preview-area {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    min-height: 60px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: #fff;
+}
+.dc-preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.dc-preview-table th {
+    background: #f8fafc;
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+}
+.dc-preview-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+    word-break: break-word;
+    max-width: 170px;
+    color: #334155;
+}
+.dc-preview-table tr:last-child td { border-bottom: none; }
+.dc-del { background: #fee2e2; color: #b91c1c; text-decoration: line-through; border-radius: 2px; padding: 0 2px; }
+.dc-ins { background: #dcfce7; color: #15803d; border-radius: 2px; padding: 0 2px; }
+.dc-empty { color: #94a3b8; font-style: italic; }
+
+.dc-footer { padding: 16px 20px; border-top: 1px solid #e2e8f0; flex-shrink: 0; }
+.dc-apply-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--accent, #007ACC);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.dc-apply-btn:hover:not(:disabled) { background: #005fa3; }
+.dc-apply-btn:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+    .dc-panel { width: 100%; right: -100%; }
+    .dc-panel.active { right: 0; }
+}

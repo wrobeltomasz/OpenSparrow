@@ -218,6 +218,23 @@
         "fn_max": "MAKS",
         "fn_count": "ARV"
     },
+    "data_cleanup": {
+        "title": "Kiire andmepuhastus",
+        "column": "Veerg",
+        "find": "Otsi",
+        "replace": "Asenda",
+        "replace_hint": "Tühi = kustuta",
+        "toggle_case": "Eristada suur-/väiketähti",
+        "toggle_word": "Ainult terved sõnad",
+        "toggle_accent": "Ignoreeri diakriitilisi märke",
+        "preview_count": "Muudetavaid ridu: {n}",
+        "col_before": "Enne",
+        "col_after": "Pärast",
+        "apply": "Rakenda muudatused",
+        "confirm": "Muuta {n} rida? Seda toimingut ei saa tagasi võtta.",
+        "applied": "Valmis. {n} rida uuendatud.",
+        "empty_result": "(tühi)"
+    },
     "calendar": {
         "prev": "Eelmine",
         "next": "Järgmine",

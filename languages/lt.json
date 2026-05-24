@@ -222,6 +222,23 @@
         "fn_max": "MAKS",
         "fn_count": "SKAIČIUS"
     },
+    "data_cleanup": {
+        "title": "Greitas duomenų valymas",
+        "column": "Stulpelis",
+        "find": "Rasti",
+        "replace": "Pakeisti į",
+        "replace_hint": "Tuščia = ištrinti",
+        "toggle_case": "Skirti didžiąsias/mažąsias raides",
+        "toggle_word": "Tik visi žodžiai",
+        "toggle_accent": "Ignoruoti kirčiavimą",
+        "preview_count": "Eilučių keistis: {n}",
+        "col_before": "Prieš",
+        "col_after": "Po",
+        "apply": "Taikyti pakeitimus",
+        "confirm": "Keisti {n} eilutes? Šio veiksmo atšaukti negalima.",
+        "applied": "Atlikta. Atnaujinta {n} eilučių.",
+        "empty_result": "(tuščia)"
+    },
     "calendar": {
         "prev": "Ankstesnis",
         "next": "Kitas",

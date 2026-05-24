@@ -222,6 +222,23 @@
         "fn_max": "MAKS",
         "fn_count": "BROJ"
     },
+    "data_cleanup": {
+        "title": "Brzo čišćenje podataka",
+        "column": "Stupac",
+        "find": "Pronađi",
+        "replace": "Zamijeni s",
+        "replace_hint": "Prazno = briši",
+        "toggle_case": "Razlikuj velika/mala slova",
+        "toggle_word": "Samo cijele riječi",
+        "toggle_accent": "Ignoriraj dijakritike",
+        "preview_count": "Redaka za izmjenu: {n}",
+        "col_before": "Prije",
+        "col_after": "Nakon",
+        "apply": "Primijeni promjene",
+        "confirm": "Izmijeniti {n} redaka? Ova se radnja ne može poništiti.",
+        "applied": "Gotovo. Ažurirano {n} redaka.",
+        "empty_result": "(prazno)"
+    },
     "calendar": {
         "prev": "Prethodni",
         "next": "Sljedeći",

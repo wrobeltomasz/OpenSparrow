@@ -222,6 +222,23 @@
         "fn_max": "MAX",
         "fn_count": "NUMĂR"
     },
+    "data_cleanup": {
+        "title": "Curățare rapidă a datelor",
+        "column": "Coloană",
+        "find": "Caută",
+        "replace": "Înlocuiește cu",
+        "replace_hint": "Gol = șterge",
+        "toggle_case": "Distinge majusculele",
+        "toggle_word": "Numai cuvinte întregi",
+        "toggle_accent": "Ignoră diacriticele",
+        "preview_count": "Rânduri de modificat: {n}",
+        "col_before": "Înainte",
+        "col_after": "După",
+        "apply": "Aplică modificările",
+        "confirm": "Modifici {n} rânduri? Această operație nu poate fi anulată.",
+        "applied": "Gata. {n} rânduri actualizate.",
+        "empty_result": "(gol)"
+    },
     "calendar": {
         "prev": "Anterior",
         "next": "Următor",

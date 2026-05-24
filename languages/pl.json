@@ -211,6 +211,23 @@
         "fn_max": "Maks.",
         "fn_count": "Liczba"
     },
+    "data_cleanup": {
+        "title": "Szybkie czyszczenie danych",
+        "column": "Kolumna",
+        "find": "Znajdź",
+        "replace": "Zamień na",
+        "replace_hint": "Puste = usuń",
+        "toggle_case": "Rozróżniaj wielkość liter",
+        "toggle_word": "Tylko całe wyrazy",
+        "toggle_accent": "Ignoruj ogonki (ą→a, ę→e…)",
+        "preview_count": "Modyfikowanych wierszy: {n}",
+        "col_before": "Przed",
+        "col_after": "Po",
+        "apply": "Zastosuj zmiany",
+        "confirm": "Zmienić {n} wierszy? Operacja nieodwracalna.",
+        "applied": "Gotowe. Zaktualizowano {n} wierszy.",
+        "empty_result": "(puste)"
+    },
     "calendar": {
         "prev": "Poprz.",
         "next": "Nast.",

@@ -222,6 +222,23 @@
         "fn_max": "MAX",
         "fn_count": "POČET"
     },
+    "data_cleanup": {
+        "title": "Rychlé čištění dat",
+        "column": "Sloupec",
+        "find": "Hledat",
+        "replace": "Nahradit",
+        "replace_hint": "Prázdné = smazat",
+        "toggle_case": "Rozlišovat velikost písmen",
+        "toggle_word": "Pouze celá slova",
+        "toggle_accent": "Ignorovat diakritiku",
+        "preview_count": "Řádků ke změně: {n}",
+        "col_before": "Před",
+        "col_after": "Po",
+        "apply": "Použít změny",
+        "confirm": "Změnit {n} řádků? Tuto operaci nelze vrátit zpět.",
+        "applied": "Hotovo. Aktualizováno {n} řádků.",
+        "empty_result": "(prázdné)"
+    },
     "calendar": {
         "prev": "Předchozí",
         "next": "Další",

@@ -218,6 +218,23 @@
         "fn_max": "MAKS",
         "fn_count": "SKAITS"
     },
+    "data_cleanup": {
+        "title": "Ātra datu tīrīšana",
+        "column": "Kolonna",
+        "find": "Atrast",
+        "replace": "Aizstāt ar",
+        "replace_hint": "Tukšs = dzēst",
+        "toggle_case": "Reģistrjutīgs",
+        "toggle_word": "Tikai veseli vārdi",
+        "toggle_accent": "Ignorēt diakritiskās zīmes",
+        "preview_count": "Rindas, ko modificēt: {n}",
+        "col_before": "Pirms",
+        "col_after": "Pēc",
+        "apply": "Lietot izmaiņas",
+        "confirm": "Modificēt {n} rindas? Šo darbību nevar atsaukt.",
+        "applied": "Gatavs. Atjauninātas {n} rindas.",
+        "empty_result": "(tukšs)"
+    },
     "calendar": {
         "prev": "Iepriekšējais",
         "next": "Nākamais",
