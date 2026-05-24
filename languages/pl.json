@@ -330,5 +330,15 @@
         "close_help": "Zamknij",
         "all_selected": "Zaznaczono {n} komórek",
         "copied": "Skopiowano do schowka"
+    },
+    "agent": {
+        "title": "Zapytaj AI",
+        "close": "Zamknij",
+        "no_tags": "Brak tagów.",
+        "tags_error": "Nie udało się załadować tagów.",
+        "thinking": "Myślę…",
+        "placeholder": "Zadaj pytanie…",
+        "clear": "Wyczyść",
+        "send": "Wyślij"
     }
 }

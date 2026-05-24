@@ -326,5 +326,15 @@
         "close_help": "Close",
         "all_selected": "Selected {n} cells",
         "copied": "Copied to clipboard"
+    },
+    "agent": {
+        "title": "Ask AI",
+        "close": "Close",
+        "no_tags": "No tags.",
+        "tags_error": "Could not load tags.",
+        "thinking": "Thinking…",
+        "placeholder": "Ask a question…",
+        "clear": "Clear",
+        "send": "Send"
     }
 }

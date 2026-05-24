@@ -326,5 +326,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Jautāt AI",
+        "close": "Aizvērt",
+        "no_tags": "Nav tagu.",
+        "tags_error": "Neizdevās ielādēt tagus.",
+        "thinking": "Domāju…",
+        "placeholder": "Uzdodiet jautājumu…",
+        "clear": "Notīrīt",
+        "send": "Sūtīt"
+    }
 }

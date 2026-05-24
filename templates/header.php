@@ -61,6 +61,7 @@ $cacheBust = @filemtime(__DIR__ . '/../assets/js/user-menu.js');
             <div class="user-avatar-menu" id="userAvatarMenu" role="menu">
                 <button class="user-avatar-menu-item" id="changeAvatarBtn" role="menuitem"><?= htmlspecialchars(t('header.change_avatar'), ENT_QUOTES, 'UTF-8') ?></button>
                 <button class="user-avatar-menu-item" id="changePasswordBtn" role="menuitem"><?= htmlspecialchars(t('auth.change_password'), ENT_QUOTES, 'UTF-8') ?></button>
+                <button class="user-avatar-menu-item" id="openAgentBtn" role="menuitem"><?= htmlspecialchars(t('agent.title'), ENT_QUOTES, 'UTF-8') ?></button>
                 <div class="user-avatar-menu-divider"></div>
                 <button class="user-avatar-menu-item danger" id="logoutBtn" data-cy="logout" role="menuitem"><?= htmlspecialchars(t('auth.logout'), ENT_QUOTES, 'UTF-8') ?></button>
             </div>
@@ -71,5 +72,6 @@ $cacheBust = @filemtime(__DIR__ . '/../assets/js/user-menu.js');
 <script src="assets/js/sidebar.js?v=<?= @filemtime(__DIR__ . '/../assets/js/sidebar.js') ?>"<?= $nonceAttr ?>></script>
 <script src="assets/js/notifications.js?v=<?= @filemtime(__DIR__ . '/../assets/js/notifications.js') ?>"<?= $nonceAttr ?>></script>
 <script type="module" src="assets/js/user-menu.js?v=<?= $cacheBust ?>"<?= $nonceAttr ?>></script>
+<script type="module" src="assets/js/agent-panel.js?v=<?= @filemtime(__DIR__ . '/../assets/js/agent-panel.js') ?>"<?= $nonceAttr ?>></script>
 <div class="app-container">
 <?php include __DIR__ . '/menu.php'; ?>

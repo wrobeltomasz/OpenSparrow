@@ -326,5 +326,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Interroger l'IA",
+        "close": "Fermer",
+        "no_tags": "Aucun tag.",
+        "tags_error": "Impossible de charger les tags.",
+        "thinking": "Réflexion…",
+        "placeholder": "Posez une question…",
+        "clear": "Effacer",
+        "send": "Envoyer"
+    }
 }

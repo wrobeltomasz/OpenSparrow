@@ -188,6 +188,21 @@ if (empty($_SESSION['csrf_token'])) {
                 </div>
             </div>
 
+            <!-- KNOWLEDGE BASE -->
+            <div class="nav-section open">
+                <div class="nav-section-header">
+                    <img class="nav-section-icon" src="../assets/icons/menu_book.png" alt="">
+                    <span class="nav-section-label">Knowledge Base</span>
+                    <span class="nav-chevron">▼</span>
+                </div>
+                <div class="nav-section-items">
+                    <button class="admin-tab" data-file="rag">
+                        <img class="nav-item-icon" src="../assets/icons/docs.png" alt="">
+                        RAG Documents
+                    </button>
+                </div>
+            </div>
+
             <!-- SYSTEM -->
             <div class="nav-section open">
                 <div class="nav-section-header">
@@ -346,7 +361,8 @@ if (empty($_SESSION['csrf_token'])) {
         performance: 'Performance',
         cron: 'Cron Notifications',
         views: 'Views',
-        csv_import: 'CSV Import'
+        csv_import: 'CSV Import',
+        rag: 'RAG Documents'
     };
     var breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
     document.querySelectorAll('.admin-tab[data-file]').forEach(function(tab) {

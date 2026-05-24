@@ -250,3 +250,13 @@ define('RECORD_SNAPSHOTS_ENABLED', (function (): bool {
     }
     return false;
 })());
+
+// -------------------------------------------------------------------------
+// RAG (Retrieval-Augmented Generation)
+// -------------------------------------------------------------------------
+
+// Base URL of the local Ollama instance. Override via env or config/rag.json.
+define('OLLAMA_URL', get_env('OLLAMA_URL', 'http://localhost:11434'));
+
+// Default Ollama model name. Override via env or config/rag.json.
+define('OLLAMA_MODEL', get_env('OLLAMA_MODEL', 'llama3'));

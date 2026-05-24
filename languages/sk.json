@@ -330,5 +330,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Opýtaj sa AI",
+        "close": "Zavrieť",
+        "no_tags": "Žiadne štítky.",
+        "tags_error": "Štítky sa nepodarilo načítať.",
+        "thinking": "Premýšľam…",
+        "placeholder": "Položte otázku…",
+        "clear": "Vymazať",
+        "send": "Odoslať"
+    }
 }

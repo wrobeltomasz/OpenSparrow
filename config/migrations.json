@@ -10,5 +10,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Added Grid Keyboard Shortcuts module (arrow navigation, selection, clipboard, search highlight, help modal) and Quick Data Cleanup module (find/replace with accent support)."
+    },
+    "2.6.0": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Added local RAG module: knowledge base from .txt files, full-text search, tag filtering, Ollama integration, admin management panel, user chat interface."
     }
 }

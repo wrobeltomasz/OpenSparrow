@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m'];
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check'];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);
@@ -84,6 +84,8 @@ if ($action === 'init_db') {
         $tRelMigrations   = sys_table('release_migrations');
         $tImports         = sys_table('imports');
         $tImportRowsLog   = sys_table('import_rows_log');
+        $tRagFiles        = sys_table('rag_files');
+        $tRagQueries      = sys_table('rag_queries');
 
         // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
@@ -176,6 +178,18 @@ if ($action === 'init_db') {
                 "CREATE INDEX IF NOT EXISTS idx_spw_release_migrations_version ON $tRelMigrations USING btree (version)",
             ],
 
+            '2.6.0_rag_files' => [
+                "CREATE TABLE IF NOT EXISTS $tRagFiles ( id serial4 NOT NULL, filename varchar(255) NOT NULL, content text NOT NULL, tags text[] NOT NULL DEFAULT '{}', file_size int4 NOT NULL DEFAULT 0, uploaded_by int4 NULL, created_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_rag_files_pkey PRIMARY KEY (id), CONSTRAINT spw_rag_files_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES $tUsers(id) ON DELETE SET NULL )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_files_tags ON $tRagFiles USING gin (tags)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_files_content_fts ON $tRagFiles USING gin (to_tsvector('simple', content))",
+            ],
+
+            '2.6.0_rag_queries' => [
+                "CREATE TABLE IF NOT EXISTS $tRagQueries ( id serial4 NOT NULL, query text NOT NULL, tags text[] NOT NULL DEFAULT '{}', matched_files int4 NOT NULL DEFAULT 0, prompt_tokens int4 NOT NULL DEFAULT 0, completion_tokens int4 NOT NULL DEFAULT 0, total_ms int4 NOT NULL DEFAULT 0, model varchar(255) NOT NULL DEFAULT '', user_id int4 NULL, created_at timestamp NOT NULL DEFAULT now(), CONSTRAINT spw_rag_queries_pkey PRIMARY KEY (id), CONSTRAINT spw_rag_queries_user_fkey FOREIGN KEY (user_id) REFERENCES $tUsers(id) ON DELETE SET NULL )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_queries_created_at ON $tRagQueries USING btree (created_at)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_queries_user_id ON $tRagQueries USING btree (user_id)",
+            ],
+
             // Add future migrations below — never modify entries above.
 
         ];
@@ -249,6 +263,8 @@ if ($action === 'migrations_list') {
             '2.0_record_owners_changed_at',
             '2.3.1_csv_import_tables',
             '2.4.0_release_migrations_table',
+            '2.6.0_rag_files',
+            '2.6.0_rag_queries',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");
@@ -321,7 +337,7 @@ if ($action === 'users_add') {
     $username = trim($data['username'] ?? '');
     $password = $data['password'] ?? '';
     $role = in_array($data['role'] ?? '', ['admin', 'editor', 'viewer'], true) ? $data['role'] : 'editor';
-    
+
     if (empty($username) || empty($password)) {
         echo json_encode(['status' => 'error', 'error' => 'Username and password are required.']);
         exit;
@@ -471,7 +487,7 @@ if ($action === 'users_change_password') {
 if ($action === 'create_table') {
     header('Content-Type: application/json');
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     // Sanitize schema and table variables
     $schemaName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['schema'] ?? 'public'));
     $tableName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['table'] ?? ''));
@@ -484,7 +500,7 @@ if ($action === 'create_table') {
     try {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
-        
+
         // Prepare schema-prefixed identifiers
         $safeSchema = pg_escape_identifier($conn, $schemaName);
         $safeTable = pg_escape_identifier($conn, $tableName);
@@ -764,7 +780,7 @@ if ($action === 'health') {
         // Filesystem
         'dir_writable'          => is_writable(__DIR__ . '/../config'),
         'storage_writable'      => is_dir(__DIR__ . '/../storage') && is_writable(__DIR__ . '/../storage'),
-        'storage_files_writable'=> is_dir(__DIR__ . '/../storage/files') && is_writable(__DIR__ . '/../storage/files'),
+        'storage_files_writable' => is_dir(__DIR__ . '/../storage/files') && is_writable(__DIR__ . '/../storage/files'),
 
         // Config files
         'database_json_ok' => (static function () {
@@ -841,7 +857,8 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
             $filename = $zip->getNameIndex($i);
             $basename = substr($filename, 0, -5); // strip .json suffix
             // Reject any path separator (blocks subdirs and traversal), non-.json, or unknown config name
-            if (str_contains($filename, '/') || str_contains($filename, '\\')
+            if (
+                str_contains($filename, '/') || str_contains($filename, '\\')
                 || substr($filename, -5) !== '.json'
                 || !in_array($basename, $importAllowed, true)
             ) {
@@ -1136,7 +1153,7 @@ if ($action === 'backup_tables') {
 
 // Shared helpers for menu_config GET and POST
 $menuMaxBytes = CONFIG_FILE_MAX_BYTES;
-$menuSafeReadJson = static function (string $path) use ($menuMaxBytes) : ?array {
+$menuSafeReadJson = static function (string $path) use ($menuMaxBytes): ?array {
     if (!file_exists($path) || filesize($path) > $menuMaxBytes) {
         return null;
     }
@@ -1147,7 +1164,7 @@ $menuSafeReadJson = static function (string $path) use ($menuMaxBytes) : ?array 
     $decoded = json_decode($content, true);
     return is_array($decoded) ? $decoded : null;
 };
-$menuSanitizeIcon = static function (string $icon) : string {
+$menuSanitizeIcon = static function (string $icon): string {
     if ($icon === '') {
         return '';
     }
@@ -1459,8 +1476,8 @@ if ($action === 'performance_check') {
 
         $schemaJson   = @file_get_contents(__DIR__ . '/../config/schema.json');
         $dashJson     = @file_get_contents(__DIR__ . '/../config/dashboard.json');
-        $schemaCfg    = $schemaJson  ? (json_decode($schemaJson,  true) ?? []) : [];
-        $dashCfg      = $dashJson    ? (json_decode($dashJson,    true) ?? []) : [];
+        $schemaCfg    = $schemaJson  ? (json_decode($schemaJson, true) ?? []) : [];
+        $dashCfg      = $dashJson    ? (json_decode($dashJson, true) ?? []) : [];
         $tables       = $schemaCfg['tables'] ?? [];
         $widgets      = $dashCfg['widgets']  ?? [];
 
@@ -1472,7 +1489,9 @@ if ($action === 'performance_check') {
 
             // FK columns on this table (child side of a relation)
             foreach (($tableCfg['foreign_keys'] ?? []) as $fkCol => $fkDef) {
-                if (!is_string($fkCol)) continue;
+                if (!is_string($fkCol)) {
+                    continue;
+                }
                 $needed[$pgSchema][$tableName][$fkCol][] = 'Foreign key column';
             }
 
@@ -1480,7 +1499,9 @@ if ($action === 'performance_check') {
             foreach (($tableCfg['subtables'] ?? []) as $sub) {
                 $child   = $sub['table']       ?? '';
                 $fkCol   = $sub['foreign_key'] ?? '';
-                if ($child === '' || $fkCol === '') continue;
+                if ($child === '' || $fkCol === '') {
+                    continue;
+                }
                 $childSchema = $tables[$child]['schema'] ?? 'app';
                 $needed[$childSchema][$child][$fkCol][] = "Subtable join from {$tableName}";
             }
@@ -1497,7 +1518,9 @@ if ($action === 'performance_check') {
         // Dashboard widget columns
         foreach ($widgets as $widget) {
             $wTable = $widget['table'] ?? '';
-            if ($wTable === '' || !isset($tables[$wTable])) continue;
+            if ($wTable === '' || !isset($tables[$wTable])) {
+                continue;
+            }
             $wSchema = $tables[$wTable]['schema'] ?? 'app';
             $wTitle  = $widget['title'] ?? ($widget['id'] ?? 'widget');
             $query   = $widget['query'] ?? [];
@@ -1511,8 +1534,12 @@ if ($action === 'performance_check') {
             $orderBy  = $query['order_by']      ?? '';
             $groupCol = $query['group_column']   ?? '';
             $aggCol   = $query['agg_column']     ?? '';
-            if ($orderBy  !== '' && $orderBy  !== 'id') $needed[$wSchema][$wTable][$orderBy][]  = "Widget ORDER BY: \"{$wTitle}\"";
-            if ($groupCol !== '' && $groupCol !== 'id') $needed[$wSchema][$wTable][$groupCol][] = "Widget GROUP BY: \"{$wTitle}\"";
+            if ($orderBy  !== '' && $orderBy  !== 'id') {
+                $needed[$wSchema][$wTable][$orderBy][]  = "Widget ORDER BY: \"{$wTitle}\"";
+            }
+            if ($groupCol !== '' && $groupCol !== 'id') {
+                $needed[$wSchema][$wTable][$groupCol][] = "Widget GROUP BY: \"{$wTitle}\"";
+            }
         }
 
         // For each table fetch existing pg_indexes, build set of already-indexed leading columns
@@ -1539,7 +1566,9 @@ if ($action === 'performance_check') {
                 }
 
                 foreach ($columns as $col => $reasons) {
-                    if (in_array($col, $indexedCols, true)) continue;
+                    if (in_array($col, $indexedCols, true)) {
+                        continue;
+                    }
 
                     $priority = 'medium';
                     foreach ($reasons as $r) {
@@ -1566,7 +1595,9 @@ if ($action === 'performance_check') {
         usort($suggestions, static function ($a, $b) {
             $pa = $a['priority'] === 'high' ? 0 : 1;
             $pb = $b['priority'] === 'high' ? 0 : 1;
-            if ($pa !== $pb) return $pa - $pb;
+            if ($pa !== $pb) {
+                return $pa - $pb;
+            }
             $ta = $a['table'] . '.' . $a['column'];
             $tb = $b['table'] . '.' . $b['column'];
             return strcmp($ta, $tb);
@@ -1605,10 +1636,14 @@ if ($action === 'performance_slow_queries') {
             LIMIT 15
         ";
         $res = @pg_query($conn, $sql);
-        if (!$res) admin_db_fail($conn, 'slow_queries');
+        if (!$res) {
+            admin_db_fail($conn, 'slow_queries');
+        }
 
         $rows = [];
-        while ($r = pg_fetch_assoc($res)) $rows[] = $r;
+        while ($r = pg_fetch_assoc($res)) {
+            $rows[] = $r;
+        }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
@@ -1682,14 +1717,18 @@ if ($action === 'performance_table_stats') {
                     JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = s.schemaname
                     WHERE s.schemaname = \$1 AND s.relname = \$2
                 ", [$pgSchema, $tableName]);
-                if ($r2 && $row = pg_fetch_assoc($r2)) $rows[] = $row;
+                if ($r2 && $row = pg_fetch_assoc($r2)) {
+                    $rows[] = $row;
+                }
             }
             echo json_encode(['status' => 'success', 'rows' => $rows]);
             exit;
         }
 
         $rows = [];
-        while ($r = pg_fetch_assoc($res)) $rows[] = $r;
+        while ($r = pg_fetch_assoc($res)) {
+            $rows[] = $r;
+        }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
@@ -1715,7 +1754,9 @@ if ($action === 'performance_db_health') {
             FROM pg_stat_database
             WHERE datname = current_database()
         ");
-        if (!$dbRes) admin_db_fail($conn, 'db_health_stat');
+        if (!$dbRes) {
+            admin_db_fail($conn, 'db_health_stat');
+        }
         $db = pg_fetch_assoc($dbRes);
 
         $maxConnRes = @pg_query($conn, "SELECT setting FROM pg_settings WHERE name = 'max_connections'");
@@ -1762,7 +1803,9 @@ if ($action === 'performance_unused_indexes') {
             ORDER BY pg_relation_size(s.indexrelid) DESC
         ";
         $res = @pg_query($conn, $sql);
-        if (!$res) admin_db_fail($conn, 'unused_indexes');
+        if (!$res) {
+            admin_db_fail($conn, 'unused_indexes');
+        }
 
         $rows = [];
         while ($r = pg_fetch_assoc($res)) {
@@ -1785,7 +1828,7 @@ if ($action === 'performance_schema_warnings') {
         $schemaJson  = @file_get_contents(__DIR__ . '/../config/schema.json');
         $dashJson    = @file_get_contents(__DIR__ . '/../config/dashboard.json');
         $schemaCfg   = $schemaJson ? (json_decode($schemaJson, true) ?? []) : [];
-        $dashCfg     = $dashJson   ? (json_decode($dashJson,   true) ?? []) : [];
+        $dashCfg     = $dashJson   ? (json_decode($dashJson, true) ?? []) : [];
         $tables      = $schemaCfg['tables'] ?? [];
         $widgets     = $dashCfg['widgets']  ?? [];
 
@@ -1795,7 +1838,8 @@ if ($action === 'performance_schema_warnings') {
         $rowCounts = [];
         foreach ($tables as $tableName => $cfg) {
             $pgSchema = $cfg['schema'] ?? 'app';
-            $r = @pg_query_params($conn,
+            $r = @pg_query_params(
+                $conn,
                 "SELECT c.reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = \$1 AND c.relname = \$2",
                 [$pgSchema, $tableName]
             );
@@ -1861,7 +1905,9 @@ if ($action === 'performance_schema_warnings') {
         foreach ($widgets as $widget) {
             $wTable = $widget['table'] ?? '';
             $wTitle = $widget['title'] ?? ($widget['id'] ?? 'widget');
-            if ($wTable === '' || !isset($tables[$wTable])) continue;
+            if ($wTable === '' || !isset($tables[$wTable])) {
+                continue;
+            }
             $estRows = $rowCounts[$wTable] ?? 0;
 
             if ($widget['type'] === 'list' && empty($widget['query']['limit']) && $estRows > 1000) {
@@ -1905,9 +1951,13 @@ if ($action === 'cron_log') {
             ORDER BY started_at DESC
             LIMIT {$limit}
         ");
-        if (!$res) admin_db_fail($conn, 'cron_log');
+        if (!$res) {
+            admin_db_fail($conn, 'cron_log');
+        }
         $rows = [];
-        while ($r = pg_fetch_assoc($res)) $rows[] = $r;
+        while ($r = pg_fetch_assoc($res)) {
+            $rows[] = $r;
+        }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
@@ -1931,7 +1981,9 @@ if ($action === 'cron_stats') {
                 COUNT(*) FILTER (WHERE notify_date = CURRENT_DATE AND is_read = false) AS due_today
             FROM {$tN}
         ");
-        if (!$totRes) admin_db_fail($conn, 'cron_stats_total');
+        if (!$totRes) {
+            admin_db_fail($conn, 'cron_stats_total');
+        }
         $totals = pg_fetch_assoc($totRes);
 
         $perUserRes = @pg_query($conn, "
@@ -1943,9 +1995,13 @@ if ($action === 'cron_stats') {
             ORDER BY unread_count DESC
             LIMIT 10
         ");
-        if (!$perUserRes) admin_db_fail($conn, 'cron_stats_per_user');
+        if (!$perUserRes) {
+            admin_db_fail($conn, 'cron_stats_per_user');
+        }
         $perUser = [];
-        while ($r = pg_fetch_assoc($perUserRes)) $perUser[] = $r;
+        while ($r = pg_fetch_assoc($perUserRes)) {
+            $perUser[] = $r;
+        }
 
         $lastRunRes = @pg_query($conn, "
             SELECT TO_CHAR(started_at, 'YYYY-MM-DD HH24:MI:SS') AS last_run,
@@ -1967,14 +2023,22 @@ if ($action === 'cron_stats') {
 if ($action === 'list_m2m') {
     header('Content-Type: application/json');
     $schemaPath = realpath(__DIR__ . '/../config/schema.json');
-    if (!$schemaPath) { echo json_encode(['tables' => [], 'relationships' => []]); exit; }
+    if (!$schemaPath) {
+        echo json_encode(['tables' => [], 'relationships' => []]);
+        exit;
+    }
     $schema = json_decode(file_get_contents($schemaPath), true);
-    if (!is_array($schema['tables'] ?? null)) { echo json_encode(['tables' => [], 'relationships' => []]); exit; }
+    if (!is_array($schema['tables'] ?? null)) {
+        echo json_encode(['tables' => [], 'relationships' => []]);
+        exit;
+    }
 
     $tables = [];
     $relationships = [];
     foreach ($schema['tables'] as $tName => $tCfg) {
-        if (!empty($tCfg['hidden'])) continue;
+        if (!empty($tCfg['hidden'])) {
+            continue;
+        }
         $tables[] = [
             'name'         => $tName,
             'display_name' => $tCfg['display_name'] ?? $tName,
@@ -2000,7 +2064,10 @@ if ($action === 'list_m2m') {
 
 if ($action === 'create_m2m') {
     header('Content-Type: application/json');
-    if ($isDemoMode) { echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']); exit; }
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
+        exit;
+    }
 
     $body       = json_decode(file_get_contents('php://input'), true) ?? [];
     $tableA     = $body['table_a']       ?? '';
@@ -2015,21 +2082,27 @@ if ($action === 'create_m2m') {
     $identRe = '/^[a-z][a-z0-9_]*$/';
     foreach (['tableA' => $tableA, 'tableB' => $tableB, 'jt' => $jt, 'selfFk' => $selfFk, 'otherFk' => $otherFk] as $field => $val) {
         if (!preg_match($identRe, $val)) {
-            echo json_encode(['status' => 'error', 'error' => "Invalid identifier: $val"]); exit;
+            echo json_encode(['status' => 'error', 'error' => "Invalid identifier: $val"]);
+            exit;
         }
     }
-    if ($tableA === $tableB) { echo json_encode(['status' => 'error', 'error' => 'Tables must be different.']); exit; }
+    if ($tableA === $tableB) {
+        echo json_encode(['status' => 'error', 'error' => 'Tables must be different.']);
+        exit;
+    }
 
     $schemaPath = realpath(__DIR__ . '/../config/schema.json');
     $schema     = json_decode(file_get_contents($schemaPath), true);
     if (!isset($schema['tables'][$tableA]) || !isset($schema['tables'][$tableB])) {
-        echo json_encode(['status' => 'error', 'error' => 'One or both tables not found in schema.']); exit;
+        echo json_encode(['status' => 'error', 'error' => 'One or both tables not found in schema.']);
+        exit;
     }
 
     // Check for duplicate M2M entry
     foreach ($schema['tables'][$tableA]['many_to_many'] ?? [] as $existing) {
         if (($existing['junction_table'] ?? '') === $jt) {
-            echo json_encode(['status' => 'error', 'error' => "M2M via $jt already exists on $tableA."]); exit;
+            echo json_encode(['status' => 'error', 'error' => "M2M via $jt already exists on $tableA."]);
+            exit;
         }
     }
 
@@ -2046,15 +2119,22 @@ if ($action === 'create_m2m') {
                 %s         INT NOT NULL REFERENCES "%s"."%s"(id) ON DELETE CASCADE,
                 UNIQUE(%s, %s)
             )',
-            $pgSchema, $jt,
-            pg_ident($selfFk),  $pgSchema, $tableA,
-            pg_ident($otherFk), $pgSchema, $tableB,
-            pg_ident($selfFk), pg_ident($otherFk)
+            $pgSchema,
+            $jt,
+            pg_ident($selfFk),
+            $pgSchema,
+            $tableA,
+            pg_ident($otherFk),
+            $pgSchema,
+            $tableB,
+            pg_ident($selfFk),
+            pg_ident($otherFk)
         );
         $res = @pg_query($conn, $sql);
         if (!$res) {
             $err = pg_last_error($conn);
-            echo json_encode(['status' => 'error', 'error' => 'PostgreSQL: ' . $err]); exit;
+            echo json_encode(['status' => 'error', 'error' => 'PostgreSQL: ' . $err]);
+            exit;
         }
 
         // Add hidden junction table entry to schema.json (if not exists)
@@ -2092,7 +2172,8 @@ if ($action === 'create_m2m') {
         // Save schema.json
         $encoded = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if (file_put_contents($schemaPath, $encoded) === false) {
-            echo json_encode(['status' => 'error', 'error' => 'Failed to write schema.json.']); exit;
+            echo json_encode(['status' => 'error', 'error' => 'Failed to write schema.json.']);
+            exit;
         }
 
         echo json_encode(['status' => 'success', 'junction_table' => $jt]);
@@ -2104,7 +2185,10 @@ if ($action === 'create_m2m') {
 
 if ($action === 'delete_m2m') {
     header('Content-Type: application/json');
-    if ($isDemoMode) { echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']); exit; }
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
+        exit;
+    }
 
     $body          = json_decode(file_get_contents('php://input'), true) ?? [];
     $tableA        = $body['table_a']      ?? '';
@@ -2112,13 +2196,17 @@ if ($action === 'delete_m2m') {
     $junctionTable = $body['junction_table'] ?? '';
     $dropTable     = !empty($body['drop_table']);
 
-    if (!preg_match('/^[a-z][a-z0-9_]*$/', $tableA)) { echo json_encode(['status' => 'error', 'error' => 'Invalid table_a.']); exit; }
+    if (!preg_match('/^[a-z][a-z0-9_]*$/', $tableA)) {
+        echo json_encode(['status' => 'error', 'error' => 'Invalid table_a.']);
+        exit;
+    }
 
     $schemaPath = realpath(__DIR__ . '/../config/schema.json');
     $schema     = json_decode(file_get_contents($schemaPath), true);
 
     if (!isset($schema['tables'][$tableA]['many_to_many'][$m2mIndex])) {
-        echo json_encode(['status' => 'error', 'error' => 'M2M entry not found.']); exit;
+        echo json_encode(['status' => 'error', 'error' => 'M2M entry not found.']);
+        exit;
     }
 
     // Remove the M2M entry
@@ -2141,15 +2229,21 @@ if ($action === 'delete_m2m') {
             $stillUsed = false;
             foreach ($schema['tables'] as $tCfg) {
                 foreach ($tCfg['many_to_many'] ?? [] as $m) {
-                    if (($m['junction_table'] ?? '') === $junctionTable) { $stillUsed = true; break 2; }
+                    if (($m['junction_table'] ?? '') === $junctionTable) {
+                        $stillUsed = true;
+                        break 2;
+                    }
                 }
             }
-            if (!$stillUsed) unset($schema['tables'][$junctionTable]);
+            if (!$stillUsed) {
+                unset($schema['tables'][$junctionTable]);
+            }
         }
 
         $encoded = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if (file_put_contents($schemaPath, $encoded) === false) {
-            echo json_encode(['status' => 'error', 'error' => 'Failed to write schema.json.']); exit;
+            echo json_encode(['status' => 'error', 'error' => 'Failed to write schema.json.']);
+            exit;
         }
 
         echo json_encode(['status' => 'success']);
@@ -2161,21 +2255,367 @@ if ($action === 'delete_m2m') {
 
 if ($action === 'cron_purge_log') {
     header('Content-Type: application/json');
-    if ($isDemoMode) { echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']); exit; }
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
+        exit;
+    }
     try {
         require_once __DIR__ . '/../includes/db.php';
         $conn = db_connect();
         $days = max(1, (int)(json_decode(file_get_contents('php://input'), true)['days'] ?? 30));
         $tLog = sys_table('users_notifications_log');
-        $res = @pg_query_params($conn,
+        $res = @pg_query_params(
+            $conn,
             "DELETE FROM {$tLog} WHERE started_at < NOW() - (\$1 || ' days')::interval",
             [$days]
         );
-        if (!$res) admin_db_fail($conn, 'cron_purge_log');
+        if (!$res) {
+            admin_db_fail($conn, 'cron_purge_log');
+        }
         echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
     }
     exit;
 }
+// ── RAG Knowledge Base ────────────────────────────────────────────────────────
+
+if ($action === 'rag_list') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn  = db_connect();
+        $tRag  = sys_table('rag_files');
+        $res   = @pg_query($conn, "SELECT id, filename, tags, file_size, created_at FROM {$tRag} ORDER BY created_at DESC");
+        if (!$res) {
+            admin_db_fail($conn, 'rag_list');
+        }
+        $files = [];
+        while ($row = pg_fetch_assoc($res)) {
+            $files[] = $row;
+        }
+        echo json_encode(['status' => 'success', 'files' => $files]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'rag_upload') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
+        exit;
+    }
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+        $tRag = sys_table('rag_files');
+
+        if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+            $code = $_FILES['file']['error'] ?? -1;
+            throw new RuntimeException('File upload error (code ' . $code . ').');
+        }
+
+        $uploadedName = (string) ($_FILES['file']['name'] ?? '');
+        $tmpPath      = (string) ($_FILES['file']['tmp_name'] ?? '');
+        $fileSize     = (int)   ($_FILES['file']['size'] ?? 0);
+
+        $ext = strtolower(pathinfo($uploadedName, PATHINFO_EXTENSION));
+        if ($ext !== 'txt') {
+            throw new RuntimeException('Only .txt files are accepted.');
+        }
+
+        $rawTagsJson = $_POST['tags'] ?? '[]';
+        $tags = @json_decode($rawTagsJson, true);
+        if (!is_array($tags)) {
+            $tags = [];
+        }
+        $tags = array_values(array_filter(array_map('trim', $tags), fn($t) => $t !== ''));
+
+        require_once __DIR__ . '/../includes/rag_helpers.php';
+        $ragCfg     = rag_config();
+        $maxMb      = (int) ($ragCfg['max_file_size_mb'] ?? 10);
+        $maxBytes   = $maxMb * 1024 * 1024;
+
+        if ($fileSize > $maxBytes) {
+            throw new RuntimeException("File too large. Maximum size is {$maxMb} MB.");
+        }
+
+        $content = file_get_contents($tmpPath);
+        if ($content === false) {
+            throw new RuntimeException('Could not read uploaded file.');
+        }
+
+        // Reject non-UTF-8 or binary content
+        if (!mb_check_encoding($content, 'UTF-8')) {
+            throw new RuntimeException('File is not valid UTF-8 text.');
+        }
+        // Reject files with high density of non-printable bytes (binary detection)
+        $nonPrintable = preg_match_all('/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/', $content);
+        if ($nonPrintable > 0 && ($nonPrintable / max(1, strlen($content))) > 0.05) {
+            throw new RuntimeException('File appears to contain binary content and was rejected.');
+        }
+
+        $tagLiteral  = php_array_to_pg_text($tags);
+        $filename    = basename($uploadedName);
+        $uploadedBy  = (int) ($_SESSION['user_id'] ?? 0);
+
+        $sql = "INSERT INTO {$tRag} (filename, content, tags, file_size, uploaded_by)
+                VALUES (\$1, \$2, \$3::text[], \$4, \$5) RETURNING id";
+        $res = @pg_query_params($conn, $sql, [$filename, $content, $tagLiteral, $fileSize, $uploadedBy]);
+        if (!$res) {
+            admin_db_fail($conn, 'rag_upload');
+        }
+        $row = pg_fetch_assoc($res);
+        echo json_encode(['status' => 'success', 'id' => (int) $row['id']]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'rag_delete') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
+        exit;
+    }
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+        $tRag = sys_table('rag_files');
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $id   = (int) ($body['id'] ?? 0);
+        if ($id <= 0) {
+            throw new RuntimeException('Invalid document ID.');
+        }
+        $res = @pg_query_params($conn, "DELETE FROM {$tRag} WHERE id = \$1", [$id]);
+        if (!$res) {
+            admin_db_fail($conn, 'rag_delete');
+        }
+        echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'rag_settings') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/rag_helpers.php';
+        $cfg = rag_config();
+        unset($cfg['__cached']);
+        echo json_encode(['status' => 'success', 'settings' => $cfg]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'rag_settings_save') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
+        exit;
+    }
+    try {
+        $body       = json_decode(file_get_contents('php://input'), true) ?? [];
+        $ollamaUrl  = trim((string) ($body['ollama_url'] ?? ''));
+        $model      = trim((string) ($body['ollama_model'] ?? ''));
+        $maxCtx     = max(1, min(20, (int) ($body['max_context_files'] ?? 3)));
+        $maxSizeMb  = max(1, min(100, (int) ($body['max_file_size_mb'] ?? 10)));
+        $timeout    = max(10, min(600, (int) ($body['ollama_timeout'] ?? 120)));
+
+        if ($ollamaUrl === '' || $model === '') {
+            throw new RuntimeException('ollama_url and ollama_model are required.');
+        }
+        if (!filter_var($ollamaUrl, FILTER_VALIDATE_URL)) {
+            throw new RuntimeException('ollama_url must be a valid URL.');
+        }
+
+        $cfg = [
+            'ollama_url'        => $ollamaUrl,
+            'ollama_model'      => $model,
+            'max_context_files' => $maxCtx,
+            'max_file_size_mb'  => $maxSizeMb,
+            'ollama_timeout'    => $timeout,
+        ];
+
+        $configDir  = __DIR__ . '/../config';
+        $configPath = $configDir . '/rag.json';
+        if (!is_dir($configDir)) {
+            throw new RuntimeException('Config directory not found.');
+        }
+        $written = file_put_contents($configPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+        if ($written === false) {
+            throw new RuntimeException('Could not write config/rag.json.');
+        }
+        echo json_encode(['status' => 'success']);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'rag_test_query') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        require_once __DIR__ . '/../includes/rag_helpers.php';
+        $body     = json_decode(file_get_contents('php://input'), true) ?? [];
+        $query    = trim((string) ($body['query'] ?? ''));
+        $tags     = array_values(array_filter(array_map('trim', (array) ($body['tags'] ?? [])), fn($t) => $t !== ''));
+        $language = mb_substr(trim((string) ($body['language'] ?? '')), 0, 10);
+
+        if ($query === '') {
+            throw new RuntimeException('Query is required.');
+        }
+
+        $cfg   = rag_config();
+        $conn  = db_connect();
+        $limit = (int) ($cfg['max_context_files'] ?? 3);
+        $files = rag_retrieve($conn, $query, $tags, $limit);
+        $prompt = rag_build_prompt($query, $files, '', $language);
+
+        if (DEMO_MODE) {
+            $ollamaResult = ['response' => '[Demo mode] Ollama disabled. Matched ' . count($files) . ' document(s).', 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_ms' => 0];
+        } else {
+            $ollamaResult = rag_call_ollama(
+                (string) $cfg['ollama_url'],
+                (string) $cfg['ollama_model'],
+                $prompt,
+                (int) ($cfg['ollama_timeout'] ?? 120)
+            );
+        }
+
+        $sources = array_map(fn($f) => [
+            'filename' => $f['filename'],
+            'tags'     => pg_text_array_to_php($f['tags'] ?? '{}'),
+        ], $files);
+
+        $resp = ['status' => 'success', 'answer' => $ollamaResult['response'], 'sources' => $sources];
+        if (!empty($body['return_prompt'])) {
+            $resp['prompt'] = $prompt;
+        }
+        echo json_encode($resp);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// POST: proxy to Ollama /api/tags — returns available local models + version
+if ($action === 'rag_ollama_check') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/rag_helpers.php';
+        $body      = json_decode(file_get_contents('php://input'), true) ?? [];
+        $cfg       = rag_config();
+        $ollamaUrl = trim((string) ($body['ollama_url'] ?? $cfg['ollama_url'] ?? 'http://localhost:11434'));
+
+        if ($ollamaUrl === '') {
+            throw new RuntimeException('ollama_url is required.');
+        }
+        if (!function_exists('curl_init')) {
+            throw new RuntimeException('cURL extension required.');
+        }
+
+        // Fetch model list
+        $tagsUrl = rtrim($ollamaUrl, '/') . '/api/tags';
+        $ch      = curl_init($tagsUrl);
+        if ($ch === false) {
+            throw new RuntimeException('Failed to initialize cURL.');
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 8,
+            CURLOPT_CONNECTTIMEOUT => 5,
+        ]);
+        $response = curl_exec($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_error($ch);
+        curl_close($ch);
+
+        if ($response === false || $response === '') {
+            throw new RuntimeException('Cannot reach Ollama: ' . ($curlErr ?: 'no response'));
+        }
+        if ($httpCode !== 200) {
+            throw new RuntimeException('Ollama returned HTTP ' . $httpCode . '.');
+        }
+
+        $data = json_decode($response, true);
+        if (!is_array($data)) {
+            throw new RuntimeException('Unexpected response from Ollama.');
+        }
+
+        $models = [];
+        foreach ($data['models'] ?? [] as $m) {
+            $models[] = [
+                'name'     => (string) ($m['name'] ?? ''),
+                'size'     => (int)    ($m['size'] ?? 0),
+                'modified' => (string) ($m['modified_at'] ?? $m['modified'] ?? ''),
+            ];
+        }
+
+        // Also try /api/version for server info
+        $version = '';
+        $vCh = curl_init(rtrim($ollamaUrl, '/') . '/api/version');
+        if ($vCh !== false) {
+            curl_setopt_array($vCh, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 3, CURLOPT_CONNECTTIMEOUT => 2]);
+            $vResp = curl_exec($vCh);
+            curl_close($vCh);
+            if ($vResp !== false) {
+                $vData = @json_decode($vResp, true);
+                $version = (string) ($vData['version'] ?? '');
+            }
+        }
+
+        echo json_encode(['status' => 'success', 'models' => $models, 'version' => $version]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// GET: RAG query statistics summary + recent queries
+if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn        = db_connect();
+        $tRagQueries = sys_table('rag_queries');
+
+        $summaryRes = @pg_query(
+            $conn,
+            "SELECT COUNT(*) AS total_queries,
+                    COALESCE(ROUND(AVG(total_ms)), 0) AS avg_ms,
+                    COALESCE(ROUND(AVG(prompt_tokens)), 0) AS avg_prompt_tokens,
+                    COALESCE(ROUND(AVG(completion_tokens)), 0) AS avg_completion_tokens
+             FROM {$tRagQueries}"
+        );
+        $summary = $summaryRes ? (pg_fetch_assoc($summaryRes) ?: []) : [];
+
+        $recentRes = @pg_query(
+            $conn,
+            "SELECT id, query, tags, matched_files, model, prompt_tokens, completion_tokens, total_ms, created_at
+             FROM {$tRagQueries}
+             ORDER BY created_at DESC
+             LIMIT 50"
+        );
+        $recent = [];
+        if ($recentRes) {
+            while ($r = pg_fetch_assoc($recentRes)) {
+                $recent[] = $r;
+            }
+        }
+
+        echo json_encode(['status' => 'success', 'summary' => $summary, 'recent' => $recent]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 require_once __DIR__ . '/api_demo.php';

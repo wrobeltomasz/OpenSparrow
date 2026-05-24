@@ -326,5 +326,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Fråga AI",
+        "close": "Stäng",
+        "no_tags": "Inga taggar.",
+        "tags_error": "Kunde inte ladda taggar.",
+        "thinking": "Tänker…",
+        "placeholder": "Ställ en fråga…",
+        "clear": "Rensa",
+        "send": "Skicka"
+    }
 }

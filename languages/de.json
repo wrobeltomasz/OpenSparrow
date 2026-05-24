@@ -326,5 +326,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "KI fragen",
+        "close": "Schließen",
+        "no_tags": "Keine Tags.",
+        "tags_error": "Tags konnten nicht geladen werden.",
+        "thinking": "Denke nach…",
+        "placeholder": "Frage stellen…",
+        "clear": "Leeren",
+        "send": "Senden"
+    }
 }

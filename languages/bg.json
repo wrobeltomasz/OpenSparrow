@@ -326,5 +326,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Попитай AI",
+        "close": "Затвори",
+        "no_tags": "Няма тагове.",
+        "tags_error": "Неуспешно зареждане на тагове.",
+        "thinking": "Мисля…",
+        "placeholder": "Задайте въпрос…",
+        "clear": "Изчисти",
+        "send": "Изпрати"
+    }
 }

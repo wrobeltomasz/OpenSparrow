@@ -330,5 +330,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Klausk AI",
+        "close": "Uždaryti",
+        "no_tags": "Nėra žymų.",
+        "tags_error": "Nepavyko įkelti žymų.",
+        "thinking": "Galvoju…",
+        "placeholder": "Užduokite klausimą…",
+        "clear": "Išvalyti",
+        "send": "Siųsti"
+    }
 }

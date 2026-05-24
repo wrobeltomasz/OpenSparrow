@@ -334,5 +334,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Vprašaj AI",
+        "close": "Zapri",
+        "no_tags": "Ni oznak.",
+        "tags_error": "Oznak ni bilo mogoče naložiti.",
+        "thinking": "Razmišljam…",
+        "placeholder": "Postavite vprašanje…",
+        "clear": "Počisti",
+        "send": "Pošlji"
+    }
 }

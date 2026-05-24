@@ -326,5 +326,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Ρώτα το AI",
+        "close": "Κλείσιμο",
+        "no_tags": "Δεν υπάρχουν ετικέτες.",
+        "tags_error": "Αδυναμία φόρτωσης ετικετών.",
+        "thinking": "Σκέφτομαι…",
+        "placeholder": "Υποβάλετε ερώτηση…",
+        "clear": "Εκκαθάριση",
+        "send": "Αποστολή"
+    }
 }

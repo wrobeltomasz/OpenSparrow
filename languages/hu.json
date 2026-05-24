@@ -326,5 +326,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Kérdezd az AI-t",
+        "close": "Bezárás",
+        "no_tags": "Nincsenek címkék.",
+        "tags_error": "A címkék betöltése nem sikerült.",
+        "thinking": "Gondolkodom…",
+        "placeholder": "Tegyen fel egy kérdést…",
+        "clear": "Törlés",
+        "send": "Küldés"
+    }
 }

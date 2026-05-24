@@ -326,5 +326,15 @@
                        "select_first":  "Select a user first.",
                        "confirm":  "Assign owner to {n} rows?",
                        "applied":  "Done. Owner assigned to {n} rows."
-                   }
+                   },
+    "agent": {
+        "title": "Küsi AI-lt",
+        "close": "Sulge",
+        "no_tags": "Sildid puuduvad.",
+        "tags_error": "Siltide laadimine ebaõnnestus.",
+        "thinking": "Mõtlen…",
+        "placeholder": "Esita küsimus…",
+        "clear": "Tühjenda",
+        "send": "Saada"
+    }
 }
