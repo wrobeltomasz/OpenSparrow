@@ -26,10 +26,10 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
         itemData.steps.forEach((step, index) => {
             const block = document.createElement('div');
             block.className = 'column-block';
-            block.style.borderLeft = '4px solid #8b5cf6';
+            block.style.borderLeft = '4px solid #5c6b73';
             block.style.marginBottom = '20px';
             block.style.padding = '15px';
-            block.style.background = '#f8fafc';
+            block.style.background = '#c2dfe3';
 
             const header = document.createElement('div');
             header.style.display = 'flex';
@@ -42,7 +42,7 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
 
             const delBtn = document.createElement('button');
             delBtn.textContent = 'Delete Step';
-            delBtn.style.cssText = 'background:none; border:none; color:red; cursor:pointer; font-weight:bold;';
+            delBtn.style.cssText = 'background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;';
             delBtn.onclick = () => {
                 itemData.steps.splice(index, 1);
                 renderSteps();
@@ -91,7 +91,7 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
 
         const addBtn = document.createElement('button');
         addBtn.className = 'btn-add';
-        addBtn.style.background = '#8b5cf6';
+        addBtn.style.background = '#5c6b73';
         addBtn.textContent = '+ Add Step';
         addBtn.onclick = () => {
             itemData.steps.push({ title: '', description: '', table: '', foreign_key: '', link_to_step: itemData.steps.length > 0 ? itemData.steps.length - 1 : 0, allow_multiple: false });

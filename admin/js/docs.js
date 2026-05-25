@@ -6,13 +6,13 @@ const ALL_LANGS = ['en', 'pl', 'de', 'fr', 'it', 'es'];
 const STORAGE_KEY = 'sparrow_docs_lang';
 
 // HTML generators
-const _h2 = (t) => `<h2 style="border-bottom:2px solid #e2e8f0;padding-bottom:10px;margin-top:0;color:#0f172a;">${t}</h2>`;
-const _h3 = (id, t) => `<h3 id="${id}" style="color:#2563eb;margin-top:30px;">${t}</h3>`;
-const _h4 = (t, c = '#cbd5e1') => `<h4 style="color:#475569;margin-top:20px;border-left:3px solid ${c};padding-left:15px;">${t}</h4>`;
+const _h2 = (t) => `<h2 style="border-bottom:2px solid #c2dfe3;padding-bottom:10px;margin-top:0;color:#253237;">${t}</h2>`;
+const _h3 = (id, t) => `<h3 id="${id}" style="color:#5c6b73;margin-top:30px;">${t}</h3>`;
+const _h4 = (t, c = '#c2dfe3') => `<h4 style="color:#5c6b73;margin-top:20px;border-left:3px solid ${c};padding-left:15px;">${t}</h4>`;
 const _p = (t, style = '') => style ? `<p style="${style}">${t}</p>` : `<p>${t}</p>`;
 const _ul = (items) => `<ul style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
 const _ol = (items) => `<ol style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ol>`;
-const _warn = (s, t) => `<p style="background:#fef3c7;padding:10px 14px;border-left:3px solid #f59e0b;border-radius:4px;font-size:14px;"><strong>${s}</strong> ${t}</p>`;
+const _warn = (s, t) => `<p style="background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;font-size:14px;"><strong>${s}</strong> ${t}</p>`;
 
 export function renderDocumentation(ctx) {
     // Guard against missing context
@@ -49,7 +49,7 @@ function createLanguageBar(currentLang, ctx) {
         
         btn.textContent = l.toUpperCase();
         btn.dataset.lang = l;
-        btn.style.cssText = `padding:3px 10px; border-radius:4px; border:1px solid #cbd5e1; cursor:pointer; font-size:12px; font-weight:600; background:${isActive ? '#2563eb' : '#f8fafc'}; color:${isActive ? '#fff' : '#475569'};`;
+        btn.style.cssText = `padding:3px 10px; border-radius:4px; border:1px solid #c2dfe3; cursor:pointer; font-size:12px; font-weight:600; background:${isActive ? '#5c6b73' : '#c2dfe3'}; color:${isActive ? '#fff' : '#5c6b73'};`;
         
         // Handle language switch
         btn.addEventListener('click', () => {
@@ -65,7 +65,7 @@ function createLanguageBar(currentLang, ctx) {
 
 function createContentArea(s) {
     const content = document.createElement('div');
-    content.style.cssText = 'max-width:900px; padding:30px; background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#334155; line-height:1.6; margin-bottom:40px;';
+    content.style.cssText = 'max-width:900px; padding:30px; background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#5c6b73; line-height:1.6; margin-bottom:40px;';
     content.innerHTML = buildContent(s);
     return content;
 }
@@ -83,10 +83,10 @@ function updateSidebar(s, contentEl) {
     contentEl.querySelectorAll('h3[id]').forEach(h => {
         const li = document.createElement('li');
         li.textContent = h.textContent.trim();
-        li.style.cssText = 'cursor:pointer; font-size:12px; line-height:1.4; padding:5px 8px; border-radius:4px; color:#475569;';
+        li.style.cssText = 'cursor:pointer; font-size:12px; line-height:1.4; padding:5px 8px; border-radius:4px; color:#5c6b73;';
         
-        li.addEventListener('mouseover', () => { li.style.background = '#e2e8f0'; li.style.color = '#0f172a'; });
-        li.addEventListener('mouseout',  () => { li.style.background = '';        li.style.color = '#475569'; });
+        li.addEventListener('mouseover', () => { li.style.background = '#c2dfe3'; li.style.color = '#253237'; });
+        li.addEventListener('mouseout',  () => { li.style.background = '';        li.style.color = '#5c6b73'; });
         li.addEventListener('click', () => h.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         
         itemListEl.appendChild(li);
@@ -96,7 +96,7 @@ function updateSidebar(s, contentEl) {
 function buildContent(s) {
     return `<div>
 ${_h2(s.title)}
-<p style="font-size:15px;color:#64748b;margin-bottom:30px;">${s.subtitle}</p>
+<p style="font-size:15px;color:#9db4c0;margin-bottom:30px;">${s.subtitle}</p>
 
 ${_h3('doc-0', s.s0_head)}
 ${_warn(s.s0_warn_strong, s.s0_warn_text)}
@@ -321,15 +321,15 @@ ${_ul([
 
 ${_h3('doc-9j', s.s9j_head)}
 ${_p(s.s9j_desc)}
-${_h4(s.s9j_how_head, '#8b5cf6')}
+${_h4(s.s9j_how_head, '#5c6b73')}
 ${_ol([
     `<strong>${s.s9j_how1_label}:</strong> ${s.s9j_how1}`,
     `<strong>${s.s9j_how2_label}:</strong> ${s.s9j_how2}`,
     `<strong>${s.s9j_how3_label}:</strong> ${s.s9j_how3}`
 ])}
-${_h4(s.s9j_config_head, '#8b5cf6')}
+${_h4(s.s9j_config_head, '#5c6b73')}
 ${_ul([`<strong>${s.s9j_config_li}</strong>`])}
-${_h4(s.s9j_runtime_head, '#8b5cf6')}
+${_h4(s.s9j_runtime_head, '#5c6b73')}
 ${_ul([s.s9j_runtime1, s.s9j_runtime2])}
 
 ${_h3('doc-9k', s.s9k_head)}
@@ -416,7 +416,7 @@ ${_h4('Backups')}
 ${_p('Every file and config snapshot is saved to <code>storage/migrations_backup/&lt;version&gt;/</code> before any change. The applied history in the Migrations tab shows the backup path for each action.')}
 ${_h4('Adding a migration entry (for contributors)')}
 ${_p('Every pull request that removes a file or a <code>config/*.json</code> key must add an entry to <code>config/migrations.json</code> in the same PR. Example:')}
-<pre style="background:#f1f5f9;padding:12px;border-radius:4px;font-size:12px;overflow-x:auto;">"2.5.0": {
+<pre style="background:#c2dfe3;padding:12px;border-radius:4px;font-size:12px;overflow-x:auto;">"2.5.0": {
   "removed_files": ["admin/old_feature.php"],
   "deprecated_files": [],
   "removed_config_keys": [
@@ -429,26 +429,26 @@ ${_h3('doc-12', s.s12_head)}
 ${_ul([s.s12_li1, s.s12_li2, s.s12_li3, s.s12_li4])}
 ${_h4(s.s12_env_head)}
 <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">
-    <thead><tr style="background:#f1f5f9;">
-        <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;">${s.s12_th_var}</th>
-        <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;">${s.s12_th_default}</th>
-        <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;">${s.s12_th_desc}</th>
+    <thead><tr style="background:#c2dfe3;">
+        <th style="text-align:left;padding:6px 10px;border:1px solid #c2dfe3;">${s.s12_th_var}</th>
+        <th style="text-align:left;padding:6px 10px;border:1px solid #c2dfe3;">${s.s12_th_default}</th>
+        <th style="text-align:left;padding:6px 10px;border:1px solid #c2dfe3;">${s.s12_th_desc}</th>
     </tr></thead>
     <tbody>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>APP_ENV</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>production</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_appenv}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>DB_HOST</code> / <code>PGHOST</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>localhost</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_dbhost}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>DB_PORT</code> / <code>PGPORT</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>5432</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_dbport}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>APP_TIMEZONE</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>Europe/Warsaw</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_timezone}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>SECURE_COOKIES</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>true</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_cookies}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>SESSION_MAX_LIFETIME</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>28800</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_session}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>IP_HASH_SALT</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><em>${s.env_none}</em></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><strong>${s.env_iphash_req}</strong> ${s.env_iphash}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>LOGIN_MAX_ATTEMPTS_PER_IP</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_ip_attempts}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>LOGIN_MAX_ATTEMPTS_PER_USERNAME</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>5</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_user_attempts}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>LOGIN_LOCKOUT_MINUTES</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>15</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_lockout}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>DEMO_MODE</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_demo}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>FILES_MAX_SIZE_MB</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_files}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>RECORD_SNAPSHOTS_ENABLED</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_snapshots}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>PGSCHEMA</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;"><code>app</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0;">${s.env_pgschema}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>APP_ENV</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>production</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_appenv}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>DB_HOST</code> / <code>PGHOST</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>localhost</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_dbhost}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>DB_PORT</code> / <code>PGPORT</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>5432</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_dbport}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>APP_TIMEZONE</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>Europe/Warsaw</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_timezone}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>SECURE_COOKIES</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>true</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_cookies}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>SESSION_MAX_LIFETIME</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>28800</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_session}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>IP_HASH_SALT</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><em>${s.env_none}</em></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><strong>${s.env_iphash_req}</strong> ${s.env_iphash}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>LOGIN_MAX_ATTEMPTS_PER_IP</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_ip_attempts}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>LOGIN_MAX_ATTEMPTS_PER_USERNAME</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>5</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_user_attempts}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>LOGIN_LOCKOUT_MINUTES</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>15</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_lockout}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>DEMO_MODE</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_demo}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>FILES_MAX_SIZE_MB</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_files}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>RECORD_SNAPSHOTS_ENABLED</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_snapshots}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>PGSCHEMA</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>app</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_pgschema}</td></tr>
     </tbody>
 </table>
 </div>`;

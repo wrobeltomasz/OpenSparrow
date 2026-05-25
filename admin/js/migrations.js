@@ -16,12 +16,12 @@ export async function renderMigrationsPage(ctx) {
 
     // --- Tab 0: DB migrations ---
     const sub = document.createElement('p');
-    sub.style.cssText = 'margin:0 0 20px; font-size:13px; color:#64748b;';
+    sub.style.cssText = 'margin:0 0 20px; font-size:13px; color:#9db4c0;';
     sub.textContent = 'Each migration runs once and is recorded in spw_migrations. Running "Apply Migrations" is safe to repeat.';
 
     const runBtn = document.createElement('button');
     runBtn.id = 'mig-run-btn';
-    runBtn.style.cssText = 'background:#3b82f6; color:#fff; border:none; padding:9px 20px; border-radius:4px; font-weight:600; font-size:13px; cursor:pointer; margin-bottom:24px;';
+    runBtn.style.cssText = 'background:#5c6b73; color:#fff; border:none; padding:9px 20px; border-radius:4px; font-weight:600; font-size:13px; cursor:pointer; margin-bottom:24px;';
     runBtn.textContent = 'Apply Pending Migrations';
 
     const statusEl = document.createElement('p');
@@ -30,18 +30,18 @@ export async function renderMigrationsPage(ctx) {
 
     const tableWrap = document.createElement('div');
     tableWrap.id = 'mig-table';
-    tableWrap.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
+    tableWrap.innerHTML = '<p style="color:#9db4c0; font-size:13px;">Loading…</p>';
 
     panel0.append(sub, runBtn, statusEl, tableWrap);
 
     // --- Tab 1: Release migrations ---
     const relSub = document.createElement('p');
-    relSub.style.cssText = 'margin:0 0 20px; font-size:13px; color:#64748b;';
+    relSub.style.cssText = 'margin:0 0 20px; font-size:13px; color:#9db4c0;';
     relSub.textContent = 'File and config cleanup tasks defined in config/migrations.json. Run after upgrading to a new version.';
 
     const relContainer = document.createElement('div');
     relContainer.id = 'mig-release-container';
-    relContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
+    relContainer.innerHTML = '<p style="color:#9db4c0; font-size:13px;">Loading…</p>';
 
     panel1.append(relSub, relContainer);
 
@@ -54,7 +54,7 @@ export async function renderMigrationsPage(ctx) {
 
         runBtn.disabled    = true;
         runBtn.textContent = 'Applying…';
-        statusEl.style.color = '#64748b';
+        statusEl.style.color = '#9db4c0';
         statusEl.textContent = '';
 
         try {
@@ -66,16 +66,16 @@ export async function renderMigrationsPage(ctx) {
             const data = await res.json();
 
             if (data.status === 'success') {
-                statusEl.style.color = '#10b981';
-                statusEl.textContent = '✓ ' + data.message;
+                statusEl.style.color = '#2b9348';
+                statusEl.textContent = '�s� ' + data.message;
                 await loadMigrations(tableWrap);
             } else {
-                statusEl.style.color = '#ef4444';
-                statusEl.textContent = '✗ ' + (data.error || 'Unknown error.');
+                statusEl.style.color = '#d00000';
+                statusEl.textContent = '�s� ' + (data.error || 'Unknown error.');
             }
         } catch {
-            statusEl.style.color = '#ef4444';
-            statusEl.textContent = '✗ Network error.';
+            statusEl.style.color = '#d00000';
+            statusEl.textContent = '�s� Network error.';
         } finally {
             runBtn.disabled    = false;
             runBtn.textContent = 'Apply Pending Migrations';
@@ -88,19 +88,19 @@ export async function renderMigrationsPage(ctx) {
 }
 
 async function loadMigrations(container) {
-    container.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
+    container.innerHTML = '<p style="color:#9db4c0; font-size:13px;">Loading…</p>';
 
     let data;
     try {
         const res = await fetch('api.php?action=migrations_list');
         data = await res.json();
     } catch {
-        container.innerHTML = '<p style="color:#ef4444; font-size:13px;">Failed to load migrations.</p>';
+        container.innerHTML = '<p style="color:#d00000; font-size:13px;">Failed to load migrations.</p>';
         return;
     }
 
     if (data.status !== 'success') {
-        container.innerHTML = `<p style="color:#ef4444; font-size:13px;">Error: ${escRelMig(data.error)}</p>`;
+        container.innerHTML = `<p style="color:#d00000; font-size:13px;">Error: ${escRelMig(data.error)}</p>`;
         return;
     }
 
@@ -113,10 +113,10 @@ async function loadMigrations(container) {
 
     const thead = document.createElement('thead');
     thead.innerHTML = `
-        <tr style="border-bottom:2px solid #e2e8f0; background:#f8fafc; text-align:left;">
-            <th style="padding:10px 12px; color:#475569;">Migration</th>
-            <th style="padding:10px 12px; color:#475569;">Status</th>
-            <th style="padding:10px 12px; color:#475569;">Applied at</th>
+        <tr style="border-bottom:2px solid #c2dfe3; background:#c2dfe3; text-align:left;">
+            <th style="padding:10px 12px; color:#5c6b73;">Migration</th>
+            <th style="padding:10px 12px; color:#5c6b73;">Status</th>
+            <th style="padding:10px 12px; color:#5c6b73;">Applied at</th>
         </tr>`;
     table.appendChild(thead);
 
@@ -124,28 +124,28 @@ async function loadMigrations(container) {
 
     migrations.forEach(m => {
         const tr = document.createElement('tr');
-        tr.style.cssText = 'border-bottom:1px solid #f1f5f9;';
+        tr.style.cssText = 'border-bottom:1px solid #c2dfe3;';
 
         const isPending = m.status === 'pending';
-        const badge     = isPending
-            ? '<span style="background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;">PENDING</span>'
-            : '<span style="background:#dcfce7; color:#166534; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;">APPLIED</span>';
+        const badge = isPending
+            ? '<span class="adm-badge adm-badge-warn">PENDING</span>'
+            : '<span class="adm-badge adm-badge-ok">APPLIED</span>';
 
         const appliedAt = m.applied_at
             ? new Date(m.applied_at).toLocaleString()
             : '—';
 
         tr.innerHTML = `
-            <td style="padding:10px 12px; font-family:monospace; color:#0f172a;">${m.name}</td>
+            <td style="padding:10px 12px; font-family:monospace; color:#253237;">${m.name}</td>
             <td style="padding:10px 12px;">${badge}</td>
-            <td style="padding:10px 12px; color:#64748b;">${appliedAt}</td>`;
+            <td style="padding:10px 12px; color:#9db4c0;">${appliedAt}</td>`;
         tbody.appendChild(tr);
     });
 
     table.appendChild(tbody);
 
     const summary = document.createElement('p');
-    summary.style.cssText = 'font-size:12px; color:#94a3b8; margin-top:12px;';
+    summary.style.cssText = 'font-size:12px; color:#9db4c0; margin-top:12px;';
     summary.textContent = `Total: ${migrations.length} | Applied: ${applied.length} | Pending: ${pending.length}`;
 
     container.innerHTML = '';
@@ -153,19 +153,19 @@ async function loadMigrations(container) {
 }
 
 async function loadReleaseMigrations(container) {
-    container.innerHTML = '<p style="color:#94a3b8; font-size:13px;">Loading…</p>';
+    container.innerHTML = '<p style="color:#9db4c0; font-size:13px;">Loading…</p>';
 
     let data;
     try {
         const res = await fetch('api_migrations.php?action=scan');
         data = await res.json();
     } catch {
-        container.innerHTML = '<p style="color:#ef4444; font-size:13px;">Failed to load release migrations.</p>';
+        container.innerHTML = '<p style="color:#d00000; font-size:13px;">Failed to load release migrations.</p>';
         return;
     }
 
     if (data.status !== 'success') {
-        container.innerHTML = `<p style="color:#ef4444; font-size:13px;">Error: ${escRelMig(data.error || 'Unknown')}</p>`;
+        container.innerHTML = `<p style="color:#d00000; font-size:13px;">Error: ${escRelMig(data.error || 'Unknown')}</p>`;
         return;
     }
 
@@ -173,7 +173,7 @@ async function loadReleaseMigrations(container) {
 
     const versions = data.versions || [];
     if (versions.length === 0) {
-        container.innerHTML = '<p style="color:#94a3b8; font-size:13px;">No release migrations defined in config/migrations.json.</p>';
+        container.innerHTML = '<p style="color:#9db4c0; font-size:13px;">No release migrations defined in config/migrations.json.</p>';
         return;
     }
 
@@ -185,19 +185,17 @@ function renderVersionCard(v, container) {
     const hasActions = v.actions.some(a => a.type !== 'file_deprecated');
 
     const card = document.createElement('div');
-    card.style.cssText = `border:1px solid ${isPending ? '#fbbf24' : '#e2e8f0'}; border-radius:6px; padding:16px 20px; margin-bottom:16px; background:${isPending ? '#fffbeb' : '#f8fafc'};`;
+    card.style.cssText = `border:1px solid ${isPending ? '#ffc300' : '#c2dfe3'}; border-radius:6px; padding:16px 20px; margin-bottom:16px; background:${isPending ? 'rgba(255,195,0,0.08)' : '#c2dfe3'};`;
 
     const headerRow = document.createElement('div');
     headerRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:8px;';
 
     const verSpan = document.createElement('span');
-    verSpan.style.cssText = 'font-family:monospace; font-size:15px; font-weight:700; color:#0f172a;';
+    verSpan.style.cssText = 'font-family:monospace; font-size:15px; font-weight:700; color:#253237;';
     verSpan.textContent = 'v' + v.version;
 
     const badge = document.createElement('span');
-    badge.style.cssText = isPending
-        ? 'background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;'
-        : 'background:#dcfce7; color:#166534; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;';
+    badge.className = `adm-badge ${isPending ? 'adm-badge-warn' : 'adm-badge-ok'}`;
     badge.textContent = isPending ? 'PENDING' : 'APPLIED';
 
     headerRow.append(verSpan, badge);
@@ -205,7 +203,7 @@ function renderVersionCard(v, container) {
 
     if (v.notes) {
         const notes = document.createElement('p');
-        notes.style.cssText = 'font-size:13px; color:#475569; margin:0 0 12px;';
+        notes.style.cssText = 'font-size:13px; color:#5c6b73; margin:0 0 12px;';
         notes.textContent = v.notes;
         card.appendChild(notes);
     }
@@ -214,13 +212,13 @@ function renderVersionCard(v, container) {
 
     if (isPending && v.actions.length > 0) {
         const actionsLabel = document.createElement('p');
-        actionsLabel.style.cssText = 'font-size:12px; font-weight:600; color:#64748b; margin:0 0 8px; text-transform:uppercase; letter-spacing:.5px;';
+        actionsLabel.style.cssText = 'font-size:12px; font-weight:600; color:#9db4c0; margin:0 0 8px; text-transform:uppercase; letter-spacing:.5px;';
         actionsLabel.textContent = 'Actions';
         card.appendChild(actionsLabel);
 
         v.actions.forEach((a, idx) => {
             const row = document.createElement('label');
-            row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:13px; color:#334155; margin-bottom:6px; cursor:pointer;';
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:13px; color:#5c6b73; margin-bottom:6px; cursor:pointer;';
 
             const cb = document.createElement('input');
             cb.type = 'checkbox';
@@ -235,12 +233,12 @@ function renderVersionCard(v, container) {
 
             const lbl = document.createElement('span');
             const typeTag = a.type === 'file_deprecated'
-                ? '<span style="color:#94a3b8; font-size:11px;">[info]</span> '
+                ? '<span style="color:#9db4c0; font-size:11px;">[info]</span> '
                 : '';
             const existTag = (a.type === 'file_remove' && !a.exists)
-                ? ' <span style="color:#94a3b8; font-size:11px;">(file not found — will skip)</span>'
+                ? ' <span style="color:#9db4c0; font-size:11px;">(file not found — will skip)</span>'
                 : (a.type === 'config_key_remove' && !a.present)
-                    ? ' <span style="color:#94a3b8; font-size:11px;">(key not found — will skip)</span>'
+                    ? ' <span style="color:#9db4c0; font-size:11px;">(key not found — will skip)</span>'
                     : '';
             lbl.innerHTML = typeTag + escRelMig(a.label) + existTag;
 
@@ -249,7 +247,7 @@ function renderVersionCard(v, container) {
         });
     } else if (isPending && v.actions.length === 0) {
         const none = document.createElement('p');
-        none.style.cssText = 'font-size:13px; color:#64748b; margin:0 0 12px;';
+        none.style.cssText = 'font-size:13px; color:#9db4c0; margin:0 0 12px;';
         none.textContent = 'No file or config changes required for this release.';
         card.appendChild(none);
     }
@@ -257,18 +255,18 @@ function renderVersionCard(v, container) {
     if (!isPending && v.applied_data) {
         const ad = v.applied_data;
         const hist = document.createElement('p');
-        hist.style.cssText = 'font-size:12px; color:#64748b; margin:4px 0 0;';
+        hist.style.cssText = 'font-size:12px; color:#9db4c0; margin:4px 0 0;';
         hist.textContent = 'Applied: ' + new Date(ad.applied_at).toLocaleString();
         card.appendChild(hist);
 
         if (ad.actions && ad.actions.length > 0) {
             const actList = document.createElement('ul');
-            actList.style.cssText = 'margin:8px 0 0; padding-left:18px; font-size:12px; color:#64748b;';
+            actList.style.cssText = 'margin:8px 0 0; padding-left:18px; font-size:12px; color:#9db4c0;';
             ad.actions.forEach(a => {
                 const li = document.createElement('li');
                 if (a.status === 'done' && a.backup) {
                     li.innerHTML = escRelMig(a.type + ': ' + (a.path || a.file)) +
-                        ' <span style="color:#94a3b8;">— backup: ' + escRelMig(a.backup) + '</span>';
+                        ' <span style="color:#9db4c0;">— backup: ' + escRelMig(a.backup) + '</span>';
                 } else {
                     li.textContent = a.type + ': ' + (a.path || a.file || '') + ' [' + a.status + ']';
                 }
@@ -283,7 +281,7 @@ function renderVersionCard(v, container) {
         btnRow.style.cssText = 'margin-top:14px;';
 
         const applyBtn = document.createElement('button');
-        applyBtn.style.cssText = 'background:#3b82f6; color:#fff; border:none; padding:8px 18px; border-radius:4px; font-weight:600; font-size:13px; cursor:pointer;';
+        applyBtn.style.cssText = 'background:#5c6b73; color:#fff; border:none; padding:8px 18px; border-radius:4px; font-weight:600; font-size:13px; cursor:pointer;';
         applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
 
         const statusMsg = document.createElement('span');
@@ -296,7 +294,7 @@ function renderVersionCard(v, container) {
 
             applyBtn.disabled    = true;
             applyBtn.textContent = 'Applying…';
-            statusMsg.style.color = '#64748b';
+            statusMsg.style.color = '#9db4c0';
             statusMsg.textContent = '';
 
             try {
@@ -309,21 +307,21 @@ function renderVersionCard(v, container) {
                 const data = await res.json();
 
                 if (data.status === 'success') {
-                    statusMsg.style.color = '#10b981';
-                    statusMsg.textContent = '✓ Applied.';
+                    statusMsg.style.color = '#2b9348';
+                    statusMsg.textContent = '�s� Applied.';
                     const relContainer = document.getElementById('mig-release-container');
                     if (relContainer) loadReleaseMigrations(relContainer);
                     const banner = document.getElementById('mig-pending-banner');
                     if (banner) banner.style.display = 'none';
                 } else {
-                    statusMsg.style.color = '#ef4444';
-                    statusMsg.textContent = '✗ ' + (data.error || 'Unknown error.');
+                    statusMsg.style.color = '#d00000';
+                    statusMsg.textContent = '�s� ' + (data.error || 'Unknown error.');
                     applyBtn.disabled    = false;
                     applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
                 }
             } catch {
-                statusMsg.style.color = '#ef4444';
-                statusMsg.textContent = '✗ Network error.';
+                statusMsg.style.color = '#d00000';
+                statusMsg.textContent = '�s� Network error.';
                 applyBtn.disabled    = false;
                 applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
             }

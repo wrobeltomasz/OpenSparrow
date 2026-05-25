@@ -57,10 +57,10 @@ export function showStatusPill(anchor, message, variant = 'success') {
     pill.className = 'status-pill status-pill-' + variant;
     pill.textContent = message;
     const colors = {
-        success: { bg: '#dcfce7', fg: '#166534', border: '#86efac' },
-        error:   { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5' },
-        info:    { bg: '#e0f2fe', fg: '#075985', border: '#7dd3fc' },
-    }[variant] || { bg: '#e2e8f0', fg: '#0f172a', border: '#cbd5e1' };
+        success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#5c6b73' },
+        error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
+        info:    { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' },
+    }[variant] || { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' };
     pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px; font-size:12px; font-weight:600; transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
 
@@ -132,12 +132,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const title = document.createElement('strong');
         title.textContent = 'Run Notifications Cron';
         const closeBtn = document.createElement('button');
-        closeBtn.textContent = '✕';
+        closeBtn.textContent = '�s�';
         closeBtn.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;line-height:1;';
         closeBtn.addEventListener('click', () => overlay.remove());
         header.append(title, closeBtn);
         const content = document.createElement('div');
-        content.style.cssText = 'overflow-y:auto;flex:1;font-size:13px;line-height:1.6;border:1px solid #e2e8f0;border-radius:4px;padding:12px;background:#f8fafc;';
+        content.style.cssText = 'overflow-y:auto;flex:1;font-size:13px;line-height:1.6;border:1px solid #c2dfe3;border-radius:4px;padding:12px;background:#c2dfe3;';
         content.textContent = 'Running…';
         box.append(header, content);
         overlay.appendChild(box);
@@ -154,11 +154,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 content.innerHTML = data.output;
             } else {
                 content.textContent = 'Error: ' + (data.error || 'Unknown error');
-                content.style.color = '#991b1b';
+                content.style.color = '#a80000';
             }
         } catch (err) {
             content.textContent = 'Request failed: ' + err.message;
-            content.style.color = '#991b1b';
+            content.style.color = '#a80000';
         }
     });
 
@@ -284,10 +284,10 @@ async function loadConfigFile(fileName) {
 function addNewItem() {
     let newIndex = 0;
     if (currentFile === 'dashboard') {
-        currentConfig.widgets.push({ id: "widget_" + Date.now(), type: "kpi_card", title: "New Widget", table: "", query: { type: "count", column: "id" }, icon: "", color: "#3b82f6", display_columns: [] });
+        currentConfig.widgets.push({ id: "widget_" + Date.now(), type: "kpi_card", title: "New Widget", table: "", query: { type: "count", column: "id" }, icon: "", color: "#5c6b73", display_columns: [] });
         newIndex = currentConfig.widgets.length - 1;
     } else if (currentFile === 'calendar') {
-        currentConfig.sources.push({ table: "", date_column: "", title_column: "", color: "#3b82f6", notify_before_days: 0, user_id_column: "", url_template: "" });
+        currentConfig.sources.push({ table: "", date_column: "", title_column: "", color: "#5c6b73", notify_before_days: 0, user_id_column: "", url_template: "" });
         newIndex = currentConfig.sources.length - 1;
     } else if (currentFile === 'workflows') {
         currentConfig.workflows.push({ id: "wf_" + Date.now(), title: "New Workflow", icon: "", steps: [] });

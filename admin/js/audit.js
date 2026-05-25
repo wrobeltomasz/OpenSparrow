@@ -17,7 +17,7 @@ export async function renderAuditEditor(ctx) {
         data = await res.json();
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<h3 style="color:#ef4444;">Error loading audit settings. Check server logs.</h3>';
+        workspaceEl.innerHTML = '<h3 style="color:#d00000;">Error loading audit settings. Check server logs.</h3>';
         return;
     }
 
@@ -40,7 +40,7 @@ export async function renderAuditEditor(ctx) {
     workspaceEl.appendChild(h3);
 
     const desc = document.createElement('p');
-    desc.style.cssText = 'color:#64748b; font-size:14px; margin-bottom:24px;';
+    desc.style.cssText = 'color:#9db4c0; font-size:14px; margin-bottom:24px;';
     desc.textContent = 'When enabled, every INSERT, UPDATE, and DELETE on user data tables saves a full JSONB snapshot of the record to spw_record_snapshots, linked to the audit log entry in spw_users_log.';
     workspaceEl.appendChild(desc);
 
@@ -50,15 +50,15 @@ export async function renderAuditEditor(ctx) {
 
     const statusCard = (title, isOk, msg) => {
         const div = document.createElement('div');
-        div.style.cssText = `padding:12px 16px; border-left:4px solid ${isOk ? '#10b981' : '#ef4444'}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
-        div.innerHTML = `<strong style="font-size:14px; display:block; margin-bottom:4px; color:${isOk ? '#059669' : '#dc2626'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong><span style="color:#475569; font-size:13px;">${msg}</span>`;
+        div.style.cssText = `padding:12px 16px; border-left:4px solid ${isOk ? '#2b9348' : '#d00000'}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
+        div.innerHTML = `<strong style="font-size:14px; display:block; margin-bottom:4px; color:${isOk ? '#2b9348' : '#d00000'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong><span style="color:#5c6b73; font-size:13px;">${msg}</span>`;
         return div;
     };
 
     const infoCard = (title, msg) => {
         const div = document.createElement('div');
-        div.style.cssText = 'padding:12px 16px; border-left:4px solid #3b82f6; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;';
-        div.innerHTML = `<strong style="font-size:14px; display:block; margin-bottom:4px; color:#1d4ed8;">[INFO] ${title}</strong><span style="color:#475569; font-size:13px;">${msg}</span>`;
+        div.style.cssText = 'padding:12px 16px; border-left:4px solid #5c6b73; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;';
+        div.innerHTML = `<strong style="font-size:14px; display:block; margin-bottom:4px; color:#253237;">[INFO] ${title}</strong><span style="color:#5c6b73; font-size:13px;">${msg}</span>`;
         return div;
     };
 
@@ -81,7 +81,7 @@ export async function renderAuditEditor(ctx) {
 
     // --- Toggle ---
     const toggleSection = document.createElement('div');
-    toggleSection.style.cssText = 'padding:20px; background:white; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:24px;';
+    toggleSection.style.cssText = 'padding:20px; background:white; border:1px solid #c2dfe3; border-radius:8px; margin-bottom:24px;';
 
     const toggleRow = document.createElement('div');
     toggleRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:16px;';
@@ -91,7 +91,7 @@ export async function renderAuditEditor(ctx) {
     labelTitle.style.cssText = 'display:block; font-size:15px; margin-bottom:4px;';
     labelTitle.textContent = 'Record Snapshots';
     const labelDesc = document.createElement('span');
-    labelDesc.style.cssText = 'color:#64748b; font-size:13px;';
+    labelDesc.style.cssText = 'color:#9db4c0; font-size:13px;';
     labelDesc.textContent = 'Capture full record state on every write operation and store it in spw_record_snapshots.';
     labelGroup.appendChild(labelTitle);
     labelGroup.appendChild(labelDesc);
@@ -109,7 +109,7 @@ export async function renderAuditEditor(ctx) {
     switchSlider.style.cssText = `
         position:absolute; cursor:${lockedByEnv || !tableExists ? 'not-allowed' : 'pointer'};
         top:0; left:0; right:0; bottom:0;
-        background:${enabled ? '#3b82f6' : '#cbd5e1'};
+        background:${enabled ? '#5c6b73' : '#c2dfe3'};
         border-radius:26px; transition:background .2s;
     `;
     const switchKnob = document.createElement('span');
@@ -137,7 +137,7 @@ export async function renderAuditEditor(ctx) {
             const result = await res.json();
             if (result.status === 'success') {
                 enabled = newVal;
-                switchSlider.style.background = newVal ? '#3b82f6' : '#cbd5e1';
+                switchSlider.style.background = newVal ? '#5c6b73' : '#c2dfe3';
                 switchKnob.style.left = newVal ? '24px' : '3px';
                 showStatusPill(pillAnchor, newVal ? 'Snapshots enabled' : 'Snapshots disabled', 'success');
             } else {
@@ -159,23 +159,23 @@ export async function renderAuditEditor(ctx) {
 
     // --- Schema info ---
     const schemaSection = document.createElement('div');
-    schemaSection.style.cssText = 'padding:16px 20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;';
+    schemaSection.style.cssText = 'padding:16px 20px; background:#c2dfe3; border:1px solid #c2dfe3; border-radius:8px;';
     schemaSection.innerHTML = `
-        <h4 style="margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8;">Table: spw_record_snapshots</h4>
+        <h4 style="margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:#9db4c0;">Table: spw_record_snapshots</h4>
         <table style="width:100%; border-collapse:collapse; font-size:13px;">
             <thead>
-                <tr style="text-align:left; color:#64748b; border-bottom:1px solid #e2e8f0;">
+                <tr style="text-align:left; color:#9db4c0; border-bottom:1px solid #c2dfe3;">
                     <th style="padding:4px 8px 6px;">Column</th>
                     <th style="padding:4px 8px 6px;">Type</th>
                     <th style="padding:4px 8px 6px;">Description</th>
                 </tr>
             </thead>
-            <tbody style="color:#334155;">
+            <tbody style="color:#5c6b73;">
                 <tr><td style="padding:4px 8px;">id</td><td style="padding:4px 8px;">serial</td><td style="padding:4px 8px;">Primary key</td></tr>
-                <tr style="background:#f1f5f9;"><td style="padding:4px 8px;">log_id</td><td style="padding:4px 8px;">int4</td><td style="padding:4px 8px;">FK to spw_users_log.id (CASCADE DELETE)</td></tr>
+                <tr style="background:#c2dfe3;"><td style="padding:4px 8px;">log_id</td><td style="padding:4px 8px;">int4</td><td style="padding:4px 8px;">FK to spw_users_log.id (CASCADE DELETE)</td></tr>
                 <tr><td style="padding:4px 8px;">table_name</td><td style="padding:4px 8px;">varchar(100)</td><td style="padding:4px 8px;">Name of the affected table</td></tr>
                 <tr><td style="padding:4px 8px;">record_id</td><td style="padding:4px 8px;">int4</td><td style="padding:4px 8px;">PK of the affected record</td></tr>
-                <tr style="background:#f1f5f9;"><td style="padding:4px 8px;">snapshot</td><td style="padding:4px 8px;">jsonb</td><td style="padding:4px 8px;">Full record as JSON (row_to_json)</td></tr>
+                <tr style="background:#c2dfe3;"><td style="padding:4px 8px;">snapshot</td><td style="padding:4px 8px;">jsonb</td><td style="padding:4px 8px;">Full record as JSON (row_to_json)</td></tr>
                 <tr><td style="padding:4px 8px;">created_at</td><td style="padding:4px 8px;">timestamp</td><td style="padding:4px 8px;">When the snapshot was saved</td></tr>
             </tbody>
         </table>

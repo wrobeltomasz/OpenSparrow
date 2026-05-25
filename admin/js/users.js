@@ -19,18 +19,18 @@ export async function renderUsersEditor(ctx) {
         const data = await res.json();
         
         if (data.status !== 'success') {
-            workspaceEl.innerHTML = `<h3 style="color:red;">Error</h3><p>${escHtml(data.error)}</p>`;
+            workspaceEl.innerHTML = `<h3 style="color:var(--danger);">Error</h3><p>${escHtml(data.error)}</p>`;
             return;
         }
         
         let html = `
             <h3>System Users Management</h3>
-            <p style="color: #777; margin-bottom: 20px;">
+            <p style="color:#9db4c0; margin-bottom: 20px;">
                 Manage user accounts and roles. Roles: <strong>Admin</strong> – admin panel only; <strong>Editor</strong> – full frontend CRUD; <strong>Viewer</strong> – read-only frontend.
             </p>
             <table style="width:100%; border-collapse: collapse; margin-bottom: 30px; text-align: left;">
                 <thead>
-                    <tr style="border-bottom: 2px solid #cbd5e1;">
+                    <tr style="border-bottom: 2px solid #c2dfe3;">
                         <th style="padding: 10px;">ID</th>
                         <th style="padding: 10px;">Username</th>
                         <th style="padding: 10px;">Status</th>
@@ -43,26 +43,26 @@ export async function renderUsersEditor(ctx) {
         
         data.users.forEach(u => {
             html += `
-                <tr style="border-bottom: 1px solid #e2e8f0;">
+                <tr style="border-bottom: 1px solid #c2dfe3;">
                     <td style="padding: 10px;">${escHtml(u.id)}</td>
                     <td style="padding: 10px;"><strong>${escHtml(u.username)}</strong></td>
                     <td style="padding: 10px;">
-                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; color: white; background: ${u.is_active ? '#10b981' : '#ef4444'};">
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; color: white; background: ${u.is_active ? '#2b9348' : '#d00000'};">
                             ${u.is_active ? 'Active' : 'Inactive'}
                         </span>
                     </td>
                     <td style="padding: 10px;">
-                        <select class="select-user-role" data-id="${u.id}" style="padding: 5px; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff;">
+                        <select class="select-user-role" data-id="${u.id}" style="padding: 5px; border-radius: 4px; border: 1px solid #c2dfe3; background: #fff;">
                             <option value="admin"  ${u.role === 'admin'  ? 'selected' : ''}>Admin</option>
                             <option value="editor" ${u.role === 'editor' || !u.role ? 'selected' : ''}>Editor</option>
                             <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                         </select>
                     </td>
                     <td style="padding: 10px; display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn-toggle-user" data-id="${u.id}" data-active="${u.is_active}" style="padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px; background: ${u.is_active ? '#f59e0b' : '#3b82f6'}; color: white; font-weight: bold;">
+                        <button class="btn-toggle-user" data-id="${u.id}" data-active="${u.is_active}" style="padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px; background: ${u.is_active ? '#ffc300' : '#5c6b73'}; color: white; font-weight: bold;">
                             ${u.is_active ? 'Deactivate' : 'Activate'}
                         </button>
-                        <button class="btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}" style="padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px; background: #6366f1; color: white; font-weight: bold;">
+                        <button class="btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}" style="padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px; background: #5c6b73; color: white; font-weight: bold;">
                             Change pwd
                         </button>
                     </td>
@@ -74,29 +74,29 @@ export async function renderUsersEditor(ctx) {
                 </tbody>
             </table>
             
-            <div style="background: #f8fafc; padding: 20px; border-radius: 6px; border: 1px solid #cbd5e1;">
+            <div style="background: #c2dfe3; padding: 20px; border-radius: 6px; border: 1px solid #c2dfe3;">
                 <h4 style="margin-top: 0; margin-bottom: 15px;">Add New User</h4>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Username</label>
-                    <input type="text" id="newUsername" placeholder="e.g. john_doe" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    <input type="text" id="newUsername" placeholder="e.g. john_doe" style="width: 100%; padding: 8px; border: 1px solid #c2dfe3; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Password</label>
-                    <input type="password" id="newPassword" placeholder="Minimum 6 characters" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                    <div id="passwordStrengthBar" style="height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
+                    <input type="password" id="newPassword" placeholder="Minimum 6 characters" style="width: 100%; padding: 8px; border: 1px solid #c2dfe3; border-radius: 4px; box-sizing: border-box;">
+                    <div id="passwordStrengthBar" style="height: 6px; background: #c2dfe3; border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
                         <div id="passwordStrengthFill" style="height: 100%; width: 0%; transition: width 0.3s, background 0.3s;"></div>
                     </div>
-                    <small id="passwordStrengthLabel" style="color: #777; display: block; margin-top: 4px;"></small>
+                    <small id="passwordStrengthLabel" style="color:#9db4c0; display: block; margin-top: 4px;"></small>
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Role</label>
-                    <select id="newRole" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    <select id="newRole" style="width: 100%; padding: 8px; border: 1px solid #c2dfe3; border-radius: 4px; box-sizing: border-box;">
                         <option value="editor" selected>Editor</option>
                         <option value="viewer">Viewer</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
-                <button id="btnAddUser" style="background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Create User</button>
+                <button id="btnAddUser" style="background: #2b9348; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Create User</button>
             </div>
         `;
         
@@ -180,7 +180,7 @@ export async function renderUsersEditor(ctx) {
                 box.appendChild(h3);
 
                 const userP = document.createElement('p');
-                userP.style.cssText = 'margin:0 0 16px;font-size:13px;color:#64748b;';
+                userP.style.cssText = 'margin:0 0 16px;font-size:13px;color:#9db4c0;';
                 userP.textContent = 'User: ';
                 const userStrong = document.createElement('strong');
                 userStrong.textContent = username;
@@ -192,7 +192,7 @@ export async function renderUsersEditor(ctx) {
                     currentInput.type = 'password';
                     currentInput.id = 'cpw-current';
                     currentInput.placeholder = 'Current password';
-                    currentInput.style.cssText = 'width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
+                    currentInput.style.cssText = 'width:100%;padding:8px;border:1px solid #c2dfe3;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
                     box.appendChild(currentInput);
                 }
 
@@ -200,14 +200,14 @@ export async function renderUsersEditor(ctx) {
                 newInput.type = 'password';
                 newInput.id = 'cpw-new';
                 newInput.placeholder = 'New password (min 8 chars)';
-                newInput.style.cssText = 'width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
+                newInput.style.cssText = 'width:100%;padding:8px;border:1px solid #c2dfe3;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
                 box.appendChild(newInput);
 
                 const confirmInput = document.createElement('input');
                 confirmInput.type = 'password';
                 confirmInput.id = 'cpw-confirm';
                 confirmInput.placeholder = 'Confirm new password';
-                confirmInput.style.cssText = 'width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:12px;';
+                confirmInput.style.cssText = 'width:100%;padding:8px;border:1px solid #c2dfe3;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:12px;';
                 box.appendChild(confirmInput);
 
                 const msgEl = document.createElement('p');
@@ -221,13 +221,13 @@ export async function renderUsersEditor(ctx) {
                 const cancelBtn = document.createElement('button');
                 cancelBtn.id = 'cpw-cancel';
                 cancelBtn.textContent = 'Cancel';
-                cancelBtn.style.cssText = 'padding:7px 16px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;';
+                cancelBtn.style.cssText = 'padding:7px 16px;border:1px solid #c2dfe3;border-radius:6px;background:#fff;cursor:pointer;';
                 buttonDiv.appendChild(cancelBtn);
 
                 const saveBtn = document.createElement('button');
                 saveBtn.id = 'cpw-save';
                 saveBtn.textContent = 'Save';
-                saveBtn.style.cssText = 'padding:7px 16px;border:none;border-radius:6px;background:#6366f1;color:#fff;font-weight:600;cursor:pointer;';
+                saveBtn.style.cssText = 'padding:7px 16px;border:none;border-radius:6px;background:#5c6b73;color:#fff;font-weight:600;cursor:pointer;';
                 buttonDiv.appendChild(saveBtn);
 
                 box.appendChild(buttonDiv);
@@ -243,21 +243,21 @@ export async function renderUsersEditor(ctx) {
                     const pwd     = newInput.value;
                     const confirm = box.querySelector('#cpw-confirm').value;
                     if (isSelf && !box.querySelector('#cpw-current').value) {
-                        msgEl.style.color = '#ef4444';
+                        msgEl.style.color = '#d00000';
                         msgEl.textContent = 'Current password is required.';
                         return;
                     }
                     if (pwd.length < 8) {
-                        msgEl.style.color = '#ef4444';
+                        msgEl.style.color = '#d00000';
                         msgEl.textContent = 'Password must be at least 8 characters.';
                         return;
                     }
                     if (pwd !== confirm) {
-                        msgEl.style.color = '#ef4444';
+                        msgEl.style.color = '#d00000';
                         msgEl.textContent = 'Passwords do not match.';
                         return;
                     }
-                    msgEl.style.color = '#64748b';
+                    msgEl.style.color = '#9db4c0';
                     msgEl.textContent = 'Saving…';
                     try {
                         let res, data;
@@ -280,10 +280,10 @@ export async function renderUsersEditor(ctx) {
                             data = await res.json();
                             if (data.status === 'success') { overlay.remove(); return; }
                         }
-                        msgEl.style.color = '#ef4444';
+                        msgEl.style.color = '#d00000';
                         msgEl.textContent = data.error || 'Error saving password.';
                     } catch {
-                        msgEl.style.color = '#ef4444';
+                        msgEl.style.color = '#d00000';
                         msgEl.textContent = 'Network error.';
                     }
                 });
@@ -304,11 +304,11 @@ export async function renderUsersEditor(ctx) {
             if (/\d/.test(pwd)) score++;
             if (/[^a-zA-Z0-9]/.test(pwd)) score++;
             
-            if (pwd.length < 6) return { level: 'weak', percent: 25, label: 'Too short', color: '#ef4444' };
-            if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: '#ef4444' };
-            if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: '#f59e0b' };
-            if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: '#3b82f6' };
-            return { level: 'strong', percent: 100, label: 'Strong', color: '#10b981' };
+            if (pwd.length < 6) return { level: 'weak', percent: 25, label: 'Too short', color: '#d00000' };
+            if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: '#d00000' };
+            if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: '#ffc300' };
+            if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: '#5c6b73' };
+            return { level: 'strong', percent: 100, label: 'Strong', color: '#2b9348' };
         }
         
         passwordInput.addEventListener('input', () => {
@@ -359,6 +359,6 @@ export async function renderUsersEditor(ctx) {
         });
 
     } catch (e) {
-        workspaceEl.innerHTML = `<h3 style="color:red;">Network Error</h3><p>${e.message}</p>`;
+        workspaceEl.innerHTML = `<h3 style="color:var(--danger);">Network Error</h3><p>${e.message}</p>`;
     }
 }

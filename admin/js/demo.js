@@ -4,8 +4,8 @@ const DEMOS = {
         description: 'Customer Relationship Management — companies, contacts, deals, and activities.',
         schema:      'spw_crm',
         tables:      ['companies', 'contacts', 'deals', 'activities'],
-        color:       '#3b82f6',
-        icon:        '🤝',
+        color:       '#5c6b73',
+        icon:        'dz�t',
         recommended: true,
     },
     wms: {
@@ -13,16 +13,16 @@ const DEMOS = {
         description: 'Warehouse Management System — warehouses, products, stock levels, and movements.',
         schema:      'spw_wms',
         tables:      ['warehouses', 'products', 'stock', 'movements'],
-        color:       '#f59e0b',
-        icon:        '📦',
+        color:       '#ffc300',
+        icon:        'dz��',
     },
     tasks: {
         label:       'Task Management',
         description: 'Project & task tracking — projects, tasks, and time logs.',
         schema:      'spw_tasks',
         tables:      ['projects', 'tasks', 'time_logs'],
-        color:       '#10b981',
-        icon:        '✅',
+        color:       '#2b9348',
+        icon:        '�s�',
     },
 };
 
@@ -170,7 +170,7 @@ function renderInstallForm(workspaceEl) {
 
 function renderInstalled(workspaceEl, meta) {
     workspaceEl.innerHTML = '';
-    const def = DEMOS[meta.type] ?? { label: meta.type, color: '#888', icon: '🗂' };
+    const def = DEMOS[meta.type] ?? { label: meta.type, color: '#9db4c0', icon: 'dz��' };
 
     const h2 = document.createElement('h2');
     h2.style.marginTop = '0';

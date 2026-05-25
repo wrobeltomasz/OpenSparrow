@@ -49,8 +49,8 @@ export function renderViewsEditor(ctx) {
     function setStatus(msg, type = 'info') {
         const styles = {
             info:  'background:var(--accent-light); color:var(--accent-dark);',
-            ok:    'background:#f0fdf4; color:var(--ok);',
-            error: 'background:#fef2f2; color:var(--danger);',
+            ok:    'background:rgba(43,147,72,0.08); color:var(--ok);',
+            error: 'background:rgba(208,0,0,0.08); color:var(--danger);',
         };
         statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px; ${styles[type] ?? styles.info}`;
         statusEl.textContent = msg;
@@ -148,7 +148,7 @@ export function renderViewsEditor(ctx) {
         toggleBtn.addEventListener('click', () => {
             const open = body.style.display === 'block';
             body.style.display = open ? 'none' : 'block';
-            toggleBtn.textContent = open ? '▶' : '▼';
+            toggleBtn.textContent = open ? '▶' : '�L';
         });
 
         return card;
@@ -304,7 +304,7 @@ export function renderViewsEditor(ctx) {
             addRuleBtn.style.cssText = 'margin:0; padding:7px 12px; font-size:13px;';
             addRuleBtn.textContent = '+ Add color rule';
             addRuleBtn.addEventListener('click', () => {
-                rules.push({ op: '>', value: 0, color: '#dc2626' });
+                rules.push({ op: '>', value: 0, color: '#d00000' });
                 renderRules();
                 markDirty();
             });
@@ -340,13 +340,13 @@ export function renderViewsEditor(ctx) {
         const colorInp = document.createElement('input');
         colorInp.type  = 'color';
         colorInp.style.cssText = 'width:44px; height:36px; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; padding:1px;';
-        colorInp.value = rule.color ?? '#dc2626';
+        colorInp.value = rule.color ?? '#d00000';
         colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; });
 
         const delBtn = document.createElement('button');
         delBtn.className   = 'btn-remove';
         delBtn.style.cssText = 'float:none; padding:6px 10px; font-size:12px;';
-        delBtn.textContent = '✕ Remove';
+        delBtn.textContent = '�s� Remove';
         delBtn.addEventListener('click', () => { rules.splice(idx, 1); onUpdate(); markDirty(); });
 
         row.appendChild(opSel); row.appendChild(valInp); row.appendChild(colorInp); row.appendChild(delBtn);
@@ -414,7 +414,7 @@ export function renderViewsEditor(ctx) {
                 const delBtn = document.createElement('button');
                 delBtn.className   = 'btn-remove';
                 delBtn.style.cssText = 'float:none; padding:6px 10px; font-size:12px;';
-                delBtn.textContent = '✕';
+                delBtn.textContent = '�s�';
                 delBtn.addEventListener('click', () => { dd.levels.splice(idx, 1); renderLevels(); markDirty(); });
 
                 lvlRow.appendChild(idxSpan); lvlRow.appendChild(gbSel); lvlRow.appendChild(labelInp); lvlRow.appendChild(delBtn);

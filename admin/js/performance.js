@@ -5,17 +5,11 @@ function escHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
-function badge(text, bg, fg) {
-    const b = document.createElement('span');
-    b.textContent = text;
-    b.style.cssText = `background:${bg}; color:${fg}; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap;`;
-    return b;
-}
-
 function severityBadge(sev) {
-    const map = { high: ['#fee2e2','#991b1b'], medium: ['#fef3c7','#92400e'], low: ['#e0f2fe','#075985'] };
-    const [bg, fg] = map[sev] || ['#e2e8f0','#0f172a'];
-    return badge(sev.toUpperCase(), bg, fg);
+    const b = document.createElement('span');
+    b.className = `adm-badge adm-badge-${sev in { high:1, medium:1, low:1 } ? sev : 'muted'}`;
+    b.textContent = sev.toUpperCase();
+    return b;
 }
 
 function copyBtn(getText, label = 'Copy SQL', small = true) {
@@ -38,28 +32,30 @@ function mkThead(table, cols) {
     const tr = thead.insertRow();
     cols.forEach(h => {
         const th = document.createElement('th');
+        th.className = 'adm-th';
         th.textContent = h;
-        th.style.cssText = 'text-align:left; padding:8px 12px; background:#f8fafc; border-bottom:1px solid var(--border); color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;';
         tr.appendChild(th);
     });
 }
 
 function mkTable() {
     const t = document.createElement('table');
-    t.style.cssText = 'width:100%; border-collapse:collapse; font-size:13px;';
+    t.className = 'adm-tbl';
     return t;
 }
 
 function td(text, extra = '') {
     const el = document.createElement('td');
-    el.style.cssText = 'padding:8px 12px; border-bottom:1px solid #f1f5f9;' + extra;
+    el.className = 'adm-td';
+    if (extra) el.style.cssText = extra.replace(/^[;\s]+/, '');
     el.textContent = text ?? '—';
     return el;
 }
 
 function tdEl(child, extra = '') {
     const el = document.createElement('td');
-    el.style.cssText = 'padding:8px 12px; border-bottom:1px solid #f1f5f9;' + extra;
+    el.className = 'adm-td';
+    if (extra) el.style.cssText = extra.replace(/^[;\s]+/, '');
     if (child) el.appendChild(child);
     return el;
 }
@@ -68,10 +64,10 @@ function tdEl(child, extra = '') {
 
 function makeSection(title, description) {
     const card = document.createElement('div');
-    card.style.cssText = 'border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:20px;';
+    card.className = 'adm-sec-card';
 
     const hdr = document.createElement('div');
-    hdr.style.cssText = 'padding:14px 18px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:12px;';
+    hdr.className = 'adm-sec-hdr';
 
     const hdrLeft = document.createElement('div');
     const h3 = document.createElement('h3');
@@ -93,9 +89,10 @@ function makeSection(title, description) {
     card.appendChild(hdr);
 
     const body = document.createElement('div');
-    body.style.cssText = 'padding:16px 18px;';
+    body.className = 'adm-sec-body';
     const placeholder = document.createElement('p');
-    placeholder.style.cssText = 'color:var(--muted); font-size:13px; margin:0;';
+    placeholder.className = 'c-muted';
+    placeholder.style.cssText = 'font-size:13px; margin:0;';
     placeholder.textContent = 'Click Scan to run analysis.';
     body.appendChild(placeholder);
     card.appendChild(body);
@@ -122,8 +119,8 @@ function setBodyError(body, msg) {
 function setBodyEmpty(body, msg) {
     body.replaceChildren();
     const p = document.createElement('p');
-    p.style.cssText = 'color:#10b981; font-weight:600; font-size:13px; margin:0;';
-    p.textContent = '✓ ' + msg;
+    p.style.cssText = 'color:#2b9348; font-weight:600; font-size:13px; margin:0;';
+    p.textContent = '�s� ' + msg;
     body.appendChild(p);
 }
 
@@ -160,7 +157,7 @@ function renderIndexAdvisor(body, data) {
         grp.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
 
         const gh = document.createElement('div');
-        gh.style.cssText = 'padding:8px 12px; background:#f8fafc; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace; font-size:13px; font-weight:600;';
+        gh.style.cssText = 'padding:8px 12px; background:#c2dfe3; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace; font-size:13px; font-weight:600;';
         const ghText = document.createElement('span');
         ghText.textContent = tableKey;
         gh.appendChild(ghText);
@@ -176,9 +173,9 @@ function renderIndexAdvisor(body, data) {
             tr.appendChild(td(s.column, 'font-family:monospace; font-weight:600;'));
             tr.appendChild(td(s.reasons.join(' · ')));
             const codeTd = document.createElement('td');
-            codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #f1f5f9; max-width:340px;';
+            codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #c2dfe3; max-width:340px;';
             const code = document.createElement('code');
-            code.style.cssText = 'font-size:11px; background:#f1f5f9; padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
+            code.style.cssText = 'font-size:11px; background:#c2dfe3; padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
             code.textContent = s.sql;
             codeTd.appendChild(code);
             tr.appendChild(codeTd);
@@ -201,7 +198,7 @@ function renderUnusedIndexes(body, data) {
     }
 
     const warn = document.createElement('p');
-    warn.style.cssText = 'font-size:13px; color:#92400e; background:#fef3c7; padding:8px 12px; border-radius:6px; margin-bottom:14px;';
+    warn.style.cssText = 'font-size:13px; color:#5c6b73; background:rgba(255,195,0,0.12); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
     warn.textContent = `⚠ ${rows.length} unused index${rows.length !== 1 ? 'es' : ''} found. Unused indexes waste storage and slow down writes. Verify before dropping.`;
     body.appendChild(warn);
 
@@ -218,9 +215,9 @@ function renderUnusedIndexes(body, data) {
         tr.appendChild(td(r.idx_scan));
         tr.appendChild(td(r.index_size));
         const codeTd = document.createElement('td');
-        codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #f1f5f9; max-width:300px;';
+        codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #c2dfe3; max-width:300px;';
         const code = document.createElement('code');
-        code.style.cssText = 'font-size:11px; background:#fee2e2; padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
+        code.style.cssText = 'font-size:11px; background:rgba(208,0,0,0.08); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
         code.textContent = r.drop_sql;
         codeTd.appendChild(code);
         tr.appendChild(codeTd);
@@ -240,7 +237,7 @@ function renderSlowQueries(body, data) {
         p.style.cssText = 'font-size:13px; color:var(--muted);';
         p.textContent = data.message;
         const code = document.createElement('code');
-        code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:#f1f5f9; border-radius:4px; font-size:12px;';
+        code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:#c2dfe3; border-radius:4px; font-size:12px;';
         code.textContent = 'CREATE EXTENSION pg_stat_statements;';
         body.appendChild(p);
         body.appendChild(code);
@@ -259,13 +256,13 @@ function renderSlowQueries(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         const avgMs = parseFloat(r.mean_ms);
-        const color = avgMs > 500 ? '#991b1b' : avgMs > 100 ? '#92400e' : 'inherit';
+        const color = avgMs > 500 ? '#a80000' : avgMs > 100 ? '#5c6b73' : 'inherit';
         tr.appendChild(td(r.mean_ms + ' ms', `font-weight:600; color:${color};`));
         tr.appendChild(td(r.total_ms + ' ms'));
         tr.appendChild(td(r.calls));
         tr.appendChild(td(r.calls > 0 ? Math.round(r.rows / r.calls) : '—'));
         const qtd = document.createElement('td');
-        qtd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #f1f5f9; max-width:420px;';
+        qtd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #c2dfe3; max-width:420px;';
         const code = document.createElement('code');
         code.style.cssText = 'font-size:11px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);';
         code.title = r.query;
@@ -294,10 +291,10 @@ function renderTableStats(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         const deadPct = parseFloat(r.dead_pct);
-        const bloatColor = deadPct > 20 ? '#991b1b' : deadPct > 10 ? '#92400e' : 'inherit';
+        const bloatColor = deadPct > 20 ? '#a80000' : deadPct > 10 ? '#5c6b73' : 'inherit';
         const seqScan = parseInt(r.seq_scan) || 0;
         const idxScan = parseInt(r.idx_scan) || 0;
-        const scanColor = seqScan > 100 && seqScan > idxScan * 2 ? '#92400e' : 'inherit';
+        const scanColor = seqScan > 100 && seqScan > idxScan * 2 ? '#5c6b73' : 'inherit';
 
         tr.appendChild(td(r.tablename));
         tr.appendChild(td(Number(r.estimated_rows).toLocaleString()));
@@ -354,13 +351,13 @@ function renderDbHealth(body, data) {
         'Cache Hit Ratio',
         cacheHit + '%',
         'target: > 99%',
-        cacheHit >= 99 ? '#10b981' : cacheHit >= 95 ? '#f59e0b' : '#ef4444'
+        cacheHit >= 99 ? '#2b9348' : cacheHit >= 95 ? '#ffc300' : '#d00000'
     ));
     grid.appendChild(kpi(
         'Active Connections',
         activeConn + ' / ' + maxConn,
         connPct + '% of max_connections',
-        connPct > 80 ? '#ef4444' : connPct > 60 ? '#f59e0b' : '#10b981'
+        connPct > 80 ? '#d00000' : connPct > 60 ? '#ffc300' : '#2b9348'
     ));
     grid.appendChild(kpi('DB Size', db.db_size));
     grid.appendChild(kpi('Committed Txns', Number(db.xact_commit).toLocaleString()));
@@ -368,7 +365,7 @@ function renderDbHealth(body, data) {
         'Deadlocks',
         db.deadlocks,
         '',
-        parseInt(db.deadlocks) > 0 ? '#ef4444' : '#10b981'
+        parseInt(db.deadlocks) > 0 ? '#d00000' : '#2b9348'
     ));
     grid.appendChild(kpi('Rollbacks', Number(db.xact_rollback).toLocaleString()));
 

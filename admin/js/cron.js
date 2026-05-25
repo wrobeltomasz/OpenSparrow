@@ -10,26 +10,17 @@ function getCronCsrf() {
     return m ? m.getAttribute('content') : '';
 }
 
-function cronBadge(text, bg, fg) {
-    const b = document.createElement('span');
-    b.textContent = text;
-    b.style.cssText = `background:${bg}; color:${fg}; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap;`;
-    return b;
-}
-
 function statusBadge(status) {
-    const map = {
-        success: ['#dcfce7', '#166534'],
-        error:   ['#fee2e2', '#991b1b'],
-        running: ['#fef3c7', '#92400e'],
-    };
-    const [bg, fg] = map[status] || ['#e2e8f0', '#0f172a'];
-    return cronBadge(status.toUpperCase(), bg, fg);
+    const cls = { success: 'ok', error: 'danger', running: 'warn' }[status] ?? 'muted';
+    const b = document.createElement('span');
+    b.className = `adm-badge adm-badge-${cls}`;
+    b.textContent = status.toUpperCase();
+    return b;
 }
 
 function cronMkTable() {
     const t = document.createElement('table');
-    t.style.cssText = 'width:100%; border-collapse:collapse; font-size:13px;';
+    t.className = 'adm-tbl';
     return t;
 }
 
@@ -38,22 +29,24 @@ function cronMkThead(table, cols) {
     const tr = thead.insertRow();
     cols.forEach(h => {
         const th = document.createElement('th');
+        th.className = 'adm-th';
         th.textContent = h;
-        th.style.cssText = 'text-align:left; padding:8px 12px; background:#f8fafc; border-bottom:1px solid var(--border); color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;';
         tr.appendChild(th);
     });
 }
 
 function cronTd(text, extra = '') {
     const el = document.createElement('td');
-    el.style.cssText = 'padding:8px 12px; border-bottom:1px solid #f1f5f9;' + extra;
+    el.className = 'adm-td';
+    if (extra) el.style.cssText = extra.replace(/^[;\s]+/, '');
     el.textContent = text ?? '—';
     return el;
 }
 
 function cronTdEl(child, extra = '') {
     const el = document.createElement('td');
-    el.style.cssText = 'padding:8px 12px; border-bottom:1px solid #f1f5f9;' + extra;
+    el.className = 'adm-td';
+    if (extra) el.style.cssText = extra.replace(/^[;\s]+/, '');
     if (child) el.appendChild(child);
     return el;
 }
@@ -63,23 +56,25 @@ function cronTdEl(child, extra = '') {
 function cronMakeSection(id, title, description) {
     const card = document.createElement('div');
     card.id = id;
-    card.style.cssText = 'border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:20px;';
+    card.className = 'adm-sec-card';
 
     const hdr = document.createElement('div');
-    hdr.style.cssText = 'padding:14px 18px; background:var(--bg); border-bottom:1px solid var(--border);';
+    hdr.className = 'adm-sec-hdr';
+    hdr.style.display = 'block';
 
     const h3 = document.createElement('h3');
     h3.textContent = title;
     h3.style.cssText = 'margin:0 0 4px; font-size:15px;';
     const desc = document.createElement('p');
     desc.textContent = description;
-    desc.style.cssText = 'margin:0; color:var(--muted); font-size:13px;';
+    desc.style.cssText = 'margin:0; font-size:13px;';
+    desc.className = 'c-muted';
 
     hdr.append(h3, desc);
     card.appendChild(hdr);
 
     const body = document.createElement('div');
-    body.style.cssText = 'padding:18px;';
+    body.className = 'adm-sec-body';
     card.appendChild(body);
 
     return { card, body };
@@ -96,7 +91,7 @@ function buildManualRunSection() {
     runBtn.textContent = 'Run Cron Now';
 
     const output = document.createElement('pre');
-    output.style.cssText = 'margin-top:14px; padding:12px; background:#f8fafc; border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
+    output.style.cssText = 'margin-top:14px; padding:12px; background:#c2dfe3; border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
     runBtn.addEventListener('click', async () => {
         runBtn.disabled = true;
@@ -115,11 +110,11 @@ function buildManualRunSection() {
                 output.textContent = data.output || '(no output)';
             } else {
                 output.textContent = 'Error: ' + (data.error || 'unknown');
-                output.style.color = '#991b1b';
+                output.style.color = '#a80000';
             }
         } catch (e) {
             output.textContent = 'Request failed: ' + e.message;
-            output.style.color = '#991b1b';
+            output.style.color = '#a80000';
         }
 
         runBtn.disabled = false;
@@ -175,7 +170,7 @@ function buildRunHistorySection() {
                 tr.appendChild(cronTd(dur));
                 tr.appendChild(cronTd(r.sources_processed));
                 tr.appendChild(cronTd(r.notifications_created));
-                tr.appendChild(cronTd(r.error_message, 'color:#991b1b; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
+                tr.appendChild(cronTd(r.error_message, 'color:#a80000; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
             });
 
             container.innerHTML = '';
@@ -225,10 +220,10 @@ function buildStatsSection() {
             kpiGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:18px;';
 
             const kpis = [
-                ['Total Notifications', t.total ?? '—', '#3b82f6'],
-                ['Unread',              t.unread ?? '—', '#ef4444'],
-                ['Due Today (unread)',  t.due_today ?? '—', '#f59e0b'],
-                ['Upcoming Unread',     t.upcoming_unread ?? '—', '#8b5cf6'],
+                ['Total Notifications', t.total ?? '—', '#5c6b73'],
+                ['Unread',              t.unread ?? '—', '#d00000'],
+                ['Due Today (unread)',  t.due_today ?? '—', '#ffc300'],
+                ['Upcoming Unread',     t.upcoming_unread ?? '—', '#5c6b73'],
             ];
             kpis.forEach(([label, val, color]) => {
                 const kpi = document.createElement('div');
@@ -300,14 +295,14 @@ function buildSetupSection() {
 
     function guideBlock(heading, code, note) {
         const wrap = document.createElement('div');
-        wrap.style.cssText = 'background:#f8fafc; border:1px solid var(--border); border-radius:6px; padding:14px;';
+        wrap.style.cssText = 'background:#c2dfe3; border:1px solid var(--border); border-radius:6px; padding:14px;';
 
         const h = document.createElement('strong');
         h.textContent = heading;
         h.style.cssText = 'display:block; margin-bottom:8px; font-size:13px;';
 
         const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0 0 6px; font-size:12px; background:#1e293b; color:#e2e8f0; padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
+        pre.style.cssText = 'margin:0 0 6px; font-size:12px; background:#253237; color:#c2dfe3; padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
         pre.textContent = code;
 
         wrap.append(h, pre);
@@ -389,7 +384,7 @@ function buildCleanupSection() {
         const days = parseInt(input.value, 10);
         if (!days || days < 1) {
             result.textContent = 'Enter a valid number of days.';
-            result.style.color = '#991b1b';
+            result.style.color = '#a80000';
             result.style.display = '';
             return;
         }
@@ -412,14 +407,14 @@ function buildCleanupSection() {
             const data = await res.json();
             if (data.status === 'success') {
                 result.textContent = `Deleted ${data.deleted} log row(s).`;
-                result.style.color = '#166534';
+                result.style.color = '#2b9348';
             } else {
                 result.textContent = 'Error: ' + (data.error || 'unknown');
-                result.style.color = '#991b1b';
+                result.style.color = '#a80000';
             }
         } catch (e) {
             result.textContent = 'Request failed: ' + e.message;
-            result.style.color = '#991b1b';
+            result.style.color = '#a80000';
         }
 
         result.style.display = '';

@@ -75,7 +75,7 @@ function renderFilesTab() {
                     <input type="text" id="cfg-storage-path" name="storage_path" class="form-control" />
                     <small class="form-hint">Relative to project root. Must not be web-accessible.</small>
                 </div>
-                <div class="form-group" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                <div class="form-group" style="margin-top: 15px; border-top: 1px solid #c2dfe3; padding-top: 15px;">
                     <label for="cfg-related-table">Related Table</label>
                     <select id="cfg-related-table" name="related_table" class="form-control"></select>
                 </div>

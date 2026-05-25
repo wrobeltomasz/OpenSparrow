@@ -42,10 +42,10 @@ function ragStatusPill(anchor, msg, type = 'success') {
     const prev = anchor.parentNode?.querySelector('.rag-status-pill');
     if (prev) prev.remove();
     const colors = {
-        success: { bg: '#dcfce7', fg: '#166534', border: '#86efac' },
-        error:   { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5' },
-        info:    { bg: '#e0f2fe', fg: '#075985', border: '#7dd3fc' },
-    }[type] ?? { bg: '#e2e8f0', fg: '#0f172a', border: '#cbd5e1' };
+        success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#5c6b73' },
+        error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
+        info:    { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' },
+    }[type] ?? { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' };
     const pill = document.createElement('span');
     pill.className = 'rag-status-pill';
     pill.textContent = msg;
@@ -242,7 +242,7 @@ function ragBuildDocumentsTab(panel) {
     ['Filename', 'Tags', 'Size', 'Uploaded', ''].forEach(col => {
         const th = document.createElement('th');
         th.textContent = col;
-        th.style.cssText = 'text-align:left;padding:8px 12px;background:#f8fafc;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;';
+        th.className = 'adm-th';
         hdr.appendChild(th);
     });
     const tbody = document.createElement('tbody');
@@ -287,10 +287,10 @@ function ragBuildDocumentsTab(panel) {
         files.forEach(file => {
             const row = tbody.insertRow();
             row.style.transition = 'background .15s';
-            row.addEventListener('mouseover', () => { row.style.background = '#f8fafc'; });
+            row.addEventListener('mouseover', () => { row.style.background = '#c2dfe3'; });
             row.addEventListener('mouseout',  () => { row.style.background = ''; });
 
-            const tdStyle = 'padding:10px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;';
+            const tdStyle = 'padding:10px 12px;border-bottom:1px solid #c2dfe3;vertical-align:middle;';
 
             const td1 = row.insertCell();
             td1.style.cssText  = tdStyle + 'font-weight:500;';
@@ -580,14 +580,14 @@ function ragBuildSettingsTab(panel) {
         ['Model name', 'Size', 'Modified'].forEach(col => {
             const th = document.createElement('th');
             th.textContent = col;
-            th.style.cssText = 'text-align:left;padding:6px 10px;background:#f8fafc;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;';
+            th.className = 'adm-th adm-th-sm';
             hr.appendChild(th);
         });
 
         const tbody = tbl.createTBody();
         models.forEach(m => {
             const row = tbody.insertRow();
-            const tdStyle = 'padding:8px 10px;border-bottom:1px solid #f1f5f9;';
+            const tdStyle = 'padding:8px 10px;border-bottom:1px solid #c2dfe3;';
 
             const td1 = row.insertCell();
             td1.style.cssText = tdStyle + 'font-weight:500;';
@@ -629,7 +629,7 @@ function ragBuildSettingsTab(panel) {
         checkBtn.disabled    = true;
         checkBtn.textContent = 'Connecting…';
         statusLine.style.display = 'block';
-        statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;';
+        statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(255,195,0,0.12);color:#5c6b73;border:1px solid #ffc300;';
         statusLine.textContent   = 'Connecting to ' + url + '…';
 
         try {
@@ -642,21 +642,21 @@ function ragBuildSettingsTab(panel) {
 
             if (data.status === 'success') {
                 const n = (data.models ?? []).length;
-                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:#dcfce7;color:#166534;border:1px solid #86efac;';
-                statusLine.textContent   = '✓ Connected · ' + n + ' model' + (n !== 1 ? 's' : '') + ' available'
+                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(43,147,72,0.12);color:#2b9348;border:1px solid #5c6b73;';
+                statusLine.textContent   = '�s� Connected · ' + n + ' model' + (n !== 1 ? 's' : '') + ' available'
                     + (data.version ? ' · Ollama ' + data.version : '');
 
                 const currentModel = manualMode ? modelManualInp.value.trim() : (modelSelect.value || '');
                 populateModelSelect(data.models ?? [], currentModel);
                 renderModelsTable(data.models ?? [], data.version ?? '');
             } else {
-                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;';
-                statusLine.textContent   = '✗ ' + (data.error ?? 'Connection failed');
+                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(208,0,0,0.08);color:#a80000;border:1px solid #d00000;';
+                statusLine.textContent   = '�s� ' + (data.error ?? 'Connection failed');
                 modelsTable.style.display = 'none';
             }
         } catch (e) {
-            statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;';
-            statusLine.textContent   = '✗ Request failed: ' + e.message;
+            statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(208,0,0,0.08);color:#a80000;border:1px solid #d00000;';
+            statusLine.textContent   = '�s� Request failed: ' + e.message;
             modelsTable.style.display = 'none';
         } finally {
             checkBtn.disabled    = false;
@@ -831,7 +831,7 @@ function ragBuildTestTab(panel) {
     answerLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
 
     const answerBox = document.createElement('div');
-    answerBox.style.cssText = 'padding:14px;background:#f8fafc;border:1px solid var(--border);border-radius:4px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;margin-bottom:12px;';
+    answerBox.style.cssText = 'padding:14px;background:#c2dfe3;border:1px solid var(--border);border-radius:4px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;margin-bottom:12px;';
 
     const sourcesLabel = document.createElement('div');
     sourcesLabel.textContent = 'Sources used';
@@ -947,7 +947,7 @@ function ragBuildStatsTab(panel) {
 
     function statCard(label, valueEl) {
         const box = document.createElement('div');
-        box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:#f8fafc;';
+        box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:#c2dfe3;';
         const v = document.createElement('div');
         v.style.cssText = 'font-size:28px;font-weight:700;color:var(--accent);margin-bottom:4px;';
         v.textContent = '—';
@@ -982,7 +982,7 @@ function ragBuildStatsTab(panel) {
     ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)'].forEach(col => {
         const th = document.createElement('th');
         th.textContent = col;
-        th.style.cssText = 'text-align:left;padding:8px 10px;background:#f8fafc;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;';
+        th.className = 'adm-th adm-th-sm';
         hr.appendChild(th);
     });
     const tbody = tbl.createTBody();
@@ -1019,10 +1019,10 @@ function ragBuildStatsTab(panel) {
                 td.style.cssText = 'padding:16px;color:var(--muted);text-align:center;font-style:italic;';
                 return;
             }
-            const tdStyle = 'padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle;';
+            const tdStyle = 'padding:8px 10px;border-bottom:1px solid #c2dfe3;vertical-align:middle;';
             rows.forEach(r => {
                 const row = tbody.insertRow();
-                row.addEventListener('mouseover', () => { row.style.background = '#f8fafc'; });
+                row.addEventListener('mouseover', () => { row.style.background = '#c2dfe3'; });
                 row.addEventListener('mouseout',  () => { row.style.background = ''; });
 
                 const td1 = row.insertCell();

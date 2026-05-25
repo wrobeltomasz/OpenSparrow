@@ -5,7 +5,7 @@ function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').
 export async function renderBackupPage(ctx) {
     const { workspaceEl } = ctx;
 
-    workspaceEl.innerHTML = '<p style="color:#64748b;padding:20px;">Loading tables…</p>';
+    workspaceEl.innerHTML = '<p style="color:#9db4c0;padding:20px;">Loading tables…</p>';
 
     workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
     const myId = workspaceEl._renderId;
@@ -43,7 +43,7 @@ export async function renderBackupPage(ctx) {
         }
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<p style="color:#ef4444;padding:20px;">Failed to load tables.</p>';
+        workspaceEl.innerHTML = '<p style="color:#d00000;padding:20px;">Failed to load tables.</p>';
         return;
     }
 
@@ -60,7 +60,7 @@ export async function renderBackupPage(ctx) {
     wrap.appendChild(heading);
 
     const desc = document.createElement('p');
-    desc.style.color = '#64748b';
+    desc.style.color = '#9db4c0';
     desc.innerHTML = 'Creates a copy of selected tables in the same schema using <code>CREATE TABLE prefix_name AS SELECT * FROM name</code>.'
         + ' The prefix is the current date and time — e.g. <code>202604211709_tablename</code>.'
         + ' Data and column structure are copied; indexes and constraints are not.';
@@ -68,7 +68,7 @@ export async function renderBackupPage(ctx) {
 
     if (allTables.length === 0) {
         const empty = document.createElement('p');
-        empty.style.color = '#94a3b8';
+        empty.style.color = '#9db4c0';
         empty.textContent = 'No tables found. Configure the database connection and define tables in the Schema tab.';
         wrap.appendChild(empty);
         workspaceEl.innerHTML = '';
@@ -81,7 +81,7 @@ export async function renderBackupPage(ctx) {
     selRow.style.cssText = 'margin-bottom:14px;display:flex;gap:10px;';
     const btnAll  = document.createElement('button');
     const btnNone = document.createElement('button');
-    const btnStyle = 'background:none;border:1px solid #cbd5e1;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:13px;';
+    const btnStyle = 'background:none;border:1px solid #c2dfe3;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:13px;';
     btnAll.type  = 'button'; btnAll.textContent  = 'Select all';   btnAll.style.cssText  = btnStyle;
     btnNone.type = 'button'; btnNone.textContent = 'Deselect all'; btnNone.style.cssText = btnStyle;
     selRow.append(btnAll, btnNone);
@@ -98,13 +98,13 @@ export async function renderBackupPage(ctx) {
 
     for (const [groupName, tables] of Object.entries(groups)) {
         const groupLabel = document.createElement('div');
-        groupLabel.style.cssText = 'font-weight:600;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 6px;';
+        groupLabel.style.cssText = 'font-weight:600;color:#5c6b73;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 6px;';
         groupLabel.textContent = groupName;
         wrap.appendChild(groupLabel);
 
         tables.forEach(t => {
             const label = document.createElement('label');
-            label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:4px;margin-bottom:4px;cursor:pointer;background:#fff;user-select:none;';
+            label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #c2dfe3;border-radius:4px;margin-bottom:4px;cursor:pointer;background:#fff;user-select:none;';
 
             const cb = document.createElement('input');
             cb.type = 'checkbox';
@@ -118,7 +118,7 @@ export async function renderBackupPage(ctx) {
             nameSpan.textContent = t.display !== t.name ? `${t.display}  (${t.name})` : t.name;
 
             const schemaTag = document.createElement('span');
-            schemaTag.style.cssText = 'font-size:11px;color:#94a3b8;font-family:monospace;';
+            schemaTag.style.cssText = 'font-size:11px;color:#9db4c0;font-family:monospace;';
             schemaTag.textContent = t.schema;
 
             label.append(cb, nameSpan, schemaTag);
@@ -135,7 +135,7 @@ export async function renderBackupPage(ctx) {
     const btnBackup = document.createElement('button');
     btnBackup.type = 'button';
     btnBackup.textContent = 'Backup selected tables';
-    btnBackup.style.cssText = 'background:#0f172a;color:#fff;border:none;padding:10px 22px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;';
+    btnBackup.style.cssText = 'background:#253237;color:#fff;border:none;padding:10px 22px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;';
     actionRow.appendChild(btnBackup);
     wrap.appendChild(actionRow);
 
@@ -149,7 +149,7 @@ export async function renderBackupPage(ctx) {
             .map(cb => ({ name: cb.dataset.name, schema: cb.dataset.schema }));
 
         if (selected.length === 0) {
-            resultArea.innerHTML = '<p style="color:#f59e0b;margin:0;">No tables selected.</p>';
+            resultArea.innerHTML = '<p style="color:#ffc300;margin:0;">No tables selected.</p>';
             return;
         }
 
@@ -175,23 +175,23 @@ export async function renderBackupPage(ctx) {
                     const li = document.createElement('li');
                     li.style.cssText = 'padding:8px 12px;border-radius:4px;margin-bottom:4px;font-size:13px;display:flex;gap:8px;align-items:baseline;';
                     if (r.status === 'success') {
-                        li.style.background = '#dcfce7';
-                        li.innerHTML = `<span style="color:#166534;font-weight:700;">✓</span>`
-                            + ` <strong>${esc(r.table)}</strong> → <code style="background:#bbf7d0;padding:1px 5px;border-radius:3px;">${esc(r.backup)}</code>`
-                            + ` <span style="color:#4ade80;font-size:11px;">(${esc(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
+                        li.style.background = 'rgba(43,147,72,0.12)';
+                        li.innerHTML = `<span style="color:#2b9348;font-weight:700;">�s�</span>`
+                            + ` <strong>${esc(r.table)}</strong> → <code style="background:rgba(43,147,72,0.12);padding:1px 5px;border-radius:3px;">${esc(r.backup)}</code>`
+                            + ` <span style="color:#2b9348;font-size:11px;">(${esc(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
                     } else {
-                        li.style.background = '#fee2e2';
-                        li.innerHTML = `<span style="color:#991b1b;font-weight:700;">✗</span>`
-                            + ` <strong>${esc(r.table)}</strong>: <span style="color:#991b1b;">${esc(r.message)}</span>`;
+                        li.style.background = 'rgba(208,0,0,0.08)';
+                        li.innerHTML = `<span style="color:#a80000;font-weight:700;">�s�</span>`
+                            + ` <strong>${esc(r.table)}</strong>: <span style="color:#a80000;">${esc(r.message)}</span>`;
                     }
                     ul.appendChild(li);
                 });
                 resultArea.appendChild(ul);
             } else {
-                resultArea.innerHTML = `<p style="color:#ef4444;margin:0;">Error: ${esc(data.error || 'Unknown error')}</p>`;
+                resultArea.innerHTML = `<p style="color:#d00000;margin:0;">Error: ${esc(data.error || 'Unknown error')}</p>`;
             }
         } catch (e) {
-            resultArea.innerHTML = `<p style="color:#ef4444;margin:0;">Request failed: ${esc(e.message)}</p>`;
+            resultArea.innerHTML = `<p style="color:#d00000;margin:0;">Request failed: ${esc(e.message)}</p>`;
         }
 
         btnBackup.disabled = false;
