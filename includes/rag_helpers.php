@@ -17,6 +17,7 @@ function rag_config(): array
         'max_context_files' => 3,
         'max_file_size_mb'  => 10,
         'ollama_timeout'    => 120,
+        'ollama_ssl_verify' => true,
     ];
     $path = __DIR__ . '/../config/rag.json';
     if (!is_file($path)) {
@@ -114,7 +115,7 @@ function rag_build_prompt(string $query, array $files, string $pageContext = '',
         . "Documents:\n{$context}Question: {$query}\n\nAnswer:";
 }
 
-function rag_call_ollama(string $ollamaUrl, string $model, string $prompt, int $timeout = 120): array
+function rag_call_ollama(string $ollamaUrl, string $model, string $prompt, int $timeout = 120, bool $sslVerify = true): array
 {
     if (!function_exists('curl_init')) {
         throw new RuntimeException('cURL extension is required for Ollama integration.');
@@ -128,12 +129,14 @@ function rag_call_ollama(string $ollamaUrl, string $model, string $prompt, int $
         throw new RuntimeException('Failed to initialize cURL.');
     }
     curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_RETURNTRANSFER  => true,
+        CURLOPT_POST            => true,
+        CURLOPT_POSTFIELDS      => $payload,
+        CURLOPT_HTTPHEADER      => ['Content-Type: application/json'],
+        CURLOPT_TIMEOUT         => $timeout,
+        CURLOPT_CONNECTTIMEOUT  => 10,
+        CURLOPT_SSL_VERIFYPEER  => $sslVerify,
+        CURLOPT_SSL_VERIFYHOST  => $sslVerify ? 2 : 0,
     ]);
 
     $response = curl_exec($ch);

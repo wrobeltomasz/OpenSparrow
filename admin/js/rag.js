@@ -485,6 +485,34 @@ function ragBuildSettingsTab(panel) {
     modelsTable.style.marginBottom = '16px';
     connBody.appendChild(modelsTable);
 
+    // SSL verify toggle
+    const sslRow = document.createElement('div');
+    sslRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:10px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);';
+
+    const sslChk = document.createElement('input');
+    sslChk.type    = 'checkbox';
+    sslChk.id      = 'rag-ssl-verify';
+    sslChk.checked = true;
+    sslChk.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
+
+    const sslTextWrap = document.createElement('label');
+    sslTextWrap.htmlFor = 'rag-ssl-verify';
+    sslTextWrap.style.cssText = 'cursor:pointer;';
+
+    const sslTitle = document.createElement('div');
+    sslTitle.style.cssText = 'font-size:13px;font-weight:600;';
+    sslTitle.textContent = 'Verify SSL certificate';
+
+    const sslDesc = document.createElement('div');
+    sslDesc.style.cssText = 'font-size:12px;color:var(--muted);margin-top:2px;';
+    sslDesc.textContent = 'Disable only when using a tunnel (e.g. Serveo, ngrok) that presents a certificate your server cannot verify. Never disable in production.';
+
+    sslTextWrap.appendChild(sslTitle);
+    sslTextWrap.appendChild(sslDesc);
+    sslRow.appendChild(sslChk);
+    sslRow.appendChild(sslTextWrap);
+    connBody.appendChild(sslRow);
+
     // Other settings grid
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
@@ -636,7 +664,7 @@ function ragBuildSettingsTab(panel) {
             const res  = await fetch('api.php?action=rag_ollama_check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
-                body: JSON.stringify({ ollama_url: url }),
+                body: JSON.stringify({ ollama_url: url, ssl_verify: sslChk.checked }),
             });
             const data = await res.json();
 
@@ -679,6 +707,7 @@ function ragBuildSettingsTab(panel) {
                 if (s.max_context_files) ctxInp.value         = s.max_context_files;
                 if (s.max_file_size_mb)  sizeInp.value        = s.max_file_size_mb;
                 if (s.ollama_timeout)    timeoutInp.value     = s.ollama_timeout;
+                if (s.ollama_ssl_verify !== undefined) sslChk.checked = !!s.ollama_ssl_verify;
 
                 // Pre-populate select with saved model as single option
                 if (s.ollama_model) {
@@ -705,6 +734,7 @@ function ragBuildSettingsTab(panel) {
             max_context_files: parseInt(ctxInp.value, 10) || 3,
             max_file_size_mb:  parseInt(sizeInp.value, 10) || 10,
             ollama_timeout:    parseInt(timeoutInp.value, 10) || 120,
+            ssl_verify:        sslChk.checked,
         };
         if (!payload.ollama_url || !payload.ollama_model) {
             ragStatusPill(saveBtn, 'URL and model are required.', 'error');

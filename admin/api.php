@@ -2427,6 +2427,7 @@ if ($action === 'rag_settings_save') {
         $maxCtx     = max(1, min(20, (int) ($body['max_context_files'] ?? 3)));
         $maxSizeMb  = max(1, min(100, (int) ($body['max_file_size_mb'] ?? 10)));
         $timeout    = max(10, min(600, (int) ($body['ollama_timeout'] ?? 120)));
+        $sslVerify  = isset($body['ssl_verify']) ? (bool) $body['ssl_verify'] : true;
 
         if ($ollamaUrl === '' || $model === '') {
             throw new RuntimeException('ollama_url and ollama_model are required.');
@@ -2441,6 +2442,7 @@ if ($action === 'rag_settings_save') {
             'max_context_files' => $maxCtx,
             'max_file_size_mb'  => $maxSizeMb,
             'ollama_timeout'    => $timeout,
+            'ollama_ssl_verify' => $sslVerify,
         ];
 
         $configDir  = __DIR__ . '/../config';
@@ -2486,7 +2488,8 @@ if ($action === 'rag_test_query') {
                 (string) $cfg['ollama_url'],
                 (string) $cfg['ollama_model'],
                 $prompt,
-                (int) ($cfg['ollama_timeout'] ?? 120)
+                (int) ($cfg['ollama_timeout'] ?? 120),
+                (bool) ($cfg['ollama_ssl_verify'] ?? true)
             );
         }
 
@@ -2514,6 +2517,9 @@ if ($action === 'rag_ollama_check') {
         $body      = json_decode(file_get_contents('php://input'), true) ?? [];
         $cfg       = rag_config();
         $ollamaUrl = trim((string) ($body['ollama_url'] ?? $cfg['ollama_url'] ?? 'http://localhost:11434'));
+        $sslVerify = isset($body['ssl_verify'])
+            ? (bool) $body['ssl_verify']
+            : (bool) ($cfg['ollama_ssl_verify'] ?? true);
 
         if ($ollamaUrl === '') {
             throw new RuntimeException('ollama_url is required.');
@@ -2532,6 +2538,8 @@ if ($action === 'rag_ollama_check') {
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 8,
             CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_SSL_VERIFYPEER => $sslVerify,
+            CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
         ]);
         $response = curl_exec($ch);
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -2563,7 +2571,13 @@ if ($action === 'rag_ollama_check') {
         $version = '';
         $vCh = curl_init(rtrim($ollamaUrl, '/') . '/api/version');
         if ($vCh !== false) {
-            curl_setopt_array($vCh, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 3, CURLOPT_CONNECTTIMEOUT => 2]);
+            curl_setopt_array($vCh, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 3,
+                CURLOPT_CONNECTTIMEOUT => 2,
+                CURLOPT_SSL_VERIFYPEER => $sslVerify,
+                CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
+            ]);
             $vResp = curl_exec($vCh);
             curl_close($vCh);
             if ($vResp !== false) {
