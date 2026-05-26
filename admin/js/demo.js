@@ -1,11 +1,11 @@
-const DEMOS = {
+﻿const DEMOS = {
     crm: {
         label:       'CRM',
         description: 'Customer Relationship Management — companies, contacts, deals, and activities.',
         schema:      'spw_crm',
         tables:      ['companies', 'contacts', 'deals', 'activities'],
-        color:       '#5c6b73',
-        icon:        'dz�t',
+        color:       '#64748B',
+        icon:        'assets/icons/account_box.png',
         recommended: true,
     },
     wms: {
@@ -14,7 +14,7 @@ const DEMOS = {
         schema:      'spw_wms',
         tables:      ['warehouses', 'products', 'stock', 'movements'],
         color:       '#ffc300',
-        icon:        'dz��',
+        icon:        'assets/icons/box.png',
     },
     tasks: {
         label:       'Task Management',
@@ -22,7 +22,7 @@ const DEMOS = {
         schema:      'spw_tasks',
         tables:      ['projects', 'tasks', 'time_logs'],
         color:       '#2b9348',
-        icon:        '�s�',
+        icon:        'assets/icons/fact_check.png',
     },
 };
 
@@ -144,7 +144,7 @@ function renderInstallForm(workspaceEl) {
         if (def.recommended) card.classList.add('recommended');
         card.innerHTML   = `
             ${def.recommended ? '<span class="demo-recommended-badge">Recommended</span>' : ''}
-            <div class="demo-card-emoji">${def.icon}</div>
+            <img class="demo-card-icon" src="../${def.icon}" alt="">
             <div class="demo-card-title">${def.label}</div>
             <div class="demo-card-desc">${def.description}</div>
             <div class="demo-card-meta">
@@ -170,7 +170,7 @@ function renderInstallForm(workspaceEl) {
 
 function renderInstalled(workspaceEl, meta) {
     workspaceEl.innerHTML = '';
-    const def = DEMOS[meta.type] ?? { label: meta.type, color: '#9db4c0', icon: 'dz��' };
+    const def = DEMOS[meta.type] ?? { label: meta.type, color: '#64748B', icon: 'assets/icons/box.png' };
 
     const h2 = document.createElement('h2');
     h2.style.marginTop = '0';
@@ -181,7 +181,7 @@ function renderInstalled(workspaceEl, meta) {
     badge.className = 'demo-installed-badge';
     badge.style.borderColor = def.color;
     badge.innerHTML = `
-        <span class="demo-installed-emoji">${def.icon}</span>
+        <img class="demo-installed-icon" src="../${def.icon}" alt="">
         <div>
             <strong>${def.label}</strong>
             <div class="demo-installed-meta">

@@ -24,22 +24,11 @@ $viewName  = substr($_GET['view'] ?? '', 0, 64);
 $userRole  = $_SESSION['role'] ?? 'viewer';
 
 send_security_headers($cspNonce, true, 'unsafe-style');
-?>
-<!doctype html>
-<html lang="<?= htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8') ?>">
-<head>
-    <meta charset="utf-8">
-    <title>OpenSparrow — Views</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
-    <link href="assets/css/styles.css" rel="stylesheet">
-    <link href="assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)">
-    <link href="assets/css/views.css" rel="stylesheet">
-</head>
-<body>
-<?php
+
+$pageTitle      = 'OpenSparrow — Views';
+$extraCss       = '<link href="assets/css/views.css" rel="stylesheet">';
 $headerControls = '<input id="globalSearch" type="text" placeholder="' . htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8') . '" />';
-include __DIR__ . '/templates/header.php';
+ob_start();
 ?>
 <main>
     <section id="viewSection">
@@ -49,14 +38,15 @@ include __DIR__ . '/templates/header.php';
         </div>
     </section>
 </main>
-</div>
-
-<?php include __DIR__ . '/templates/footer.php'; ?>
-
+<?php
+$pageContent = ob_get_clean();
+ob_start();
+?>
 <script nonce="<?php echo $cspNonce; ?>">
     window.VIEWS_INITIAL = <?php echo json_encode($viewName ?: null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     window.CSRF_TOKEN    = <?php echo json_encode($_SESSION['csrf_token']); ?>;
 </script>
 <script type="module" src="assets/js/views.js?v=<?php echo @filemtime('assets/js/views.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
-</body>
-</html>
+<?php
+$extraScripts = ob_get_clean();
+include __DIR__ . '/templates/layout.php';

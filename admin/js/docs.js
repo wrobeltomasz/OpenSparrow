@@ -1,4 +1,4 @@
-// admin/docs.js
+﻿// admin/docs.js
 import { STRINGS } from './docs-strings.js';
 
 // Configuration constants - limited to required languages
@@ -6,9 +6,9 @@ const ALL_LANGS = ['en', 'pl', 'de', 'fr', 'it', 'es'];
 const STORAGE_KEY = 'sparrow_docs_lang';
 
 // HTML generators
-const _h2 = (t) => `<h2 style="border-bottom:2px solid #c2dfe3;padding-bottom:10px;margin-top:0;color:#253237;">${t}</h2>`;
-const _h3 = (id, t) => `<h3 id="${id}" style="color:#5c6b73;margin-top:30px;">${t}</h3>`;
-const _h4 = (t, c = '#c2dfe3') => `<h4 style="color:#5c6b73;margin-top:20px;border-left:3px solid ${c};padding-left:15px;">${t}</h4>`;
+const _h2 = (t) => `<h2 style="border-bottom:2px solid #DDEAF4;padding-bottom:10px;margin-top:0;color:#1E293B;">${t}</h2>`;
+const _h3 = (id, t) => `<h3 id="${id}" style="color:#64748B;margin-top:30px;">${t}</h3>`;
+const _h4 = (t, c = '#DDEAF4') => `<h4 style="color:#64748B;margin-top:20px;border-left:3px solid ${c};padding-left:15px;">${t}</h4>`;
 const _p = (t, style = '') => style ? `<p style="${style}">${t}</p>` : `<p>${t}</p>`;
 const _ul = (items) => `<ul style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
 const _ol = (items) => `<ol style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ol>`;
@@ -49,7 +49,7 @@ function createLanguageBar(currentLang, ctx) {
         
         btn.textContent = l.toUpperCase();
         btn.dataset.lang = l;
-        btn.style.cssText = `padding:3px 10px; border-radius:4px; border:1px solid #c2dfe3; cursor:pointer; font-size:12px; font-weight:600; background:${isActive ? '#5c6b73' : '#c2dfe3'}; color:${isActive ? '#fff' : '#5c6b73'};`;
+        btn.style.cssText = `padding:3px 10px; border-radius:4px; border:1px solid #CBD5E1; cursor:pointer; font-size:12px; font-weight:600; background:${isActive ? '#64748B' : '#DDEAF4'}; color:${isActive ? '#fff' : '#64748B'};`;
         
         // Handle language switch
         btn.addEventListener('click', () => {
@@ -65,7 +65,7 @@ function createLanguageBar(currentLang, ctx) {
 
 function createContentArea(s) {
     const content = document.createElement('div');
-    content.style.cssText = 'max-width:900px; padding:30px; background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#5c6b73; line-height:1.6; margin-bottom:40px;';
+    content.style.cssText = 'max-width:900px; padding:30px; background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#64748B; line-height:1.6; margin-bottom:40px;';
     content.innerHTML = buildContent(s);
     return content;
 }
@@ -83,10 +83,10 @@ function updateSidebar(s, contentEl) {
     contentEl.querySelectorAll('h3[id]').forEach(h => {
         const li = document.createElement('li');
         li.textContent = h.textContent.trim();
-        li.style.cssText = 'cursor:pointer; font-size:12px; line-height:1.4; padding:5px 8px; border-radius:4px; color:#5c6b73;';
+        li.style.cssText = 'cursor:pointer; font-size:12px; line-height:1.4; padding:5px 8px; border-radius:4px; color:#64748B;';
         
-        li.addEventListener('mouseover', () => { li.style.background = '#c2dfe3'; li.style.color = '#253237'; });
-        li.addEventListener('mouseout',  () => { li.style.background = '';        li.style.color = '#5c6b73'; });
+        li.addEventListener('mouseover', () => { li.style.background = '#DDEAF4'; li.style.color = '#1E293B'; });
+        li.addEventListener('mouseout',  () => { li.style.background = '';        li.style.color = '#64748B'; });
         li.addEventListener('click', () => h.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         
         itemListEl.appendChild(li);
@@ -96,7 +96,7 @@ function updateSidebar(s, contentEl) {
 function buildContent(s) {
     return `<div>
 ${_h2(s.title)}
-<p style="font-size:15px;color:#9db4c0;margin-bottom:30px;">${s.subtitle}</p>
+<p style="font-size:15px;color:#64748B;margin-bottom:30px;">${s.subtitle}</p>
 
 ${_h3('doc-0', s.s0_head)}
 ${_warn(s.s0_warn_strong, s.s0_warn_text)}
@@ -321,15 +321,15 @@ ${_ul([
 
 ${_h3('doc-9j', s.s9j_head)}
 ${_p(s.s9j_desc)}
-${_h4(s.s9j_how_head, '#5c6b73')}
+${_h4(s.s9j_how_head, '#64748B')}
 ${_ol([
     `<strong>${s.s9j_how1_label}:</strong> ${s.s9j_how1}`,
     `<strong>${s.s9j_how2_label}:</strong> ${s.s9j_how2}`,
     `<strong>${s.s9j_how3_label}:</strong> ${s.s9j_how3}`
 ])}
-${_h4(s.s9j_config_head, '#5c6b73')}
+${_h4(s.s9j_config_head, '#64748B')}
 ${_ul([`<strong>${s.s9j_config_li}</strong>`])}
-${_h4(s.s9j_runtime_head, '#5c6b73')}
+${_h4(s.s9j_runtime_head, '#64748B')}
 ${_ul([s.s9j_runtime1, s.s9j_runtime2])}
 
 ${_h3('doc-9k', s.s9k_head)}
@@ -396,6 +396,20 @@ ${_ul([s.s13_js1, s.s13_js2, s.s13_js3, s.s13_js4, s.s13_js5, s.s13_js6])}
 ${_h4(s.s13_add_head)}
 ${_ol([s.s13_add1, s.s13_add2, s.s13_add3, s.s13_add4])}
 
+${_h3('doc-14-aut', s.s14_head)}
+${_p(s.s14_desc)}
+${_h4(s.s14_trigger_label)}
+${_p(s.s14_trigger)}
+${_h4(s.s14_cond_label)}
+${_p(s.s14_cond)}
+${_h4(s.s14_actions_label)}
+${_p(s.s14_actions)}
+${_h4(s.s14_vars_label)}
+${_p(s.s14_vars)}
+${_h4(s.s14_history_label)}
+${_p(s.s14_history)}
+${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;font-size:14px;')}
+
 ${_h3('doc-14', 'Upgrading OpenSparrow')}
 ${_p('After running <code>git pull</code> to a new version, use <strong>System → Migrations</strong> to check for pending release migrations. The admin header displays a yellow upgrade notice when action is required.')}
 ${_h4('Release workflow')}
@@ -416,7 +430,7 @@ ${_h4('Backups')}
 ${_p('Every file and config snapshot is saved to <code>storage/migrations_backup/&lt;version&gt;/</code> before any change. The applied history in the Migrations tab shows the backup path for each action.')}
 ${_h4('Adding a migration entry (for contributors)')}
 ${_p('Every pull request that removes a file or a <code>config/*.json</code> key must add an entry to <code>config/migrations.json</code> in the same PR. Example:')}
-<pre style="background:#c2dfe3;padding:12px;border-radius:4px;font-size:12px;overflow-x:auto;">"2.5.0": {
+<pre style="background:#F4F7F9;padding:12px;border-radius:4px;font-size:12px;overflow-x:auto;">"2.5.0": {
   "removed_files": ["admin/old_feature.php"],
   "deprecated_files": [],
   "removed_config_keys": [
@@ -429,26 +443,26 @@ ${_h3('doc-12', s.s12_head)}
 ${_ul([s.s12_li1, s.s12_li2, s.s12_li3, s.s12_li4])}
 ${_h4(s.s12_env_head)}
 <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">
-    <thead><tr style="background:#c2dfe3;">
-        <th style="text-align:left;padding:6px 10px;border:1px solid #c2dfe3;">${s.s12_th_var}</th>
-        <th style="text-align:left;padding:6px 10px;border:1px solid #c2dfe3;">${s.s12_th_default}</th>
-        <th style="text-align:left;padding:6px 10px;border:1px solid #c2dfe3;">${s.s12_th_desc}</th>
+    <thead><tr style="background:#F4F7F9;">
+        <th style="text-align:left;padding:6px 10px;border:1px solid #CBD5E1;">${s.s12_th_var}</th>
+        <th style="text-align:left;padding:6px 10px;border:1px solid #CBD5E1;">${s.s12_th_default}</th>
+        <th style="text-align:left;padding:6px 10px;border:1px solid #CBD5E1;">${s.s12_th_desc}</th>
     </tr></thead>
     <tbody>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>APP_ENV</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>production</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_appenv}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>DB_HOST</code> / <code>PGHOST</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>localhost</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_dbhost}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>DB_PORT</code> / <code>PGPORT</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>5432</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_dbport}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>APP_TIMEZONE</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>Europe/Warsaw</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_timezone}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>SECURE_COOKIES</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>true</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_cookies}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>SESSION_MAX_LIFETIME</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>28800</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_session}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>IP_HASH_SALT</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><em>${s.env_none}</em></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><strong>${s.env_iphash_req}</strong> ${s.env_iphash}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>LOGIN_MAX_ATTEMPTS_PER_IP</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_ip_attempts}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>LOGIN_MAX_ATTEMPTS_PER_USERNAME</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>5</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_user_attempts}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>LOGIN_LOCKOUT_MINUTES</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>15</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_lockout}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>DEMO_MODE</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_demo}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>FILES_MAX_SIZE_MB</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_files}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>RECORD_SNAPSHOTS_ENABLED</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_snapshots}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>PGSCHEMA</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;"><code>app</code></td><td style="padding:5px 10px;border:1px solid #c2dfe3;">${s.env_pgschema}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>APP_ENV</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>production</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_appenv}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>DB_HOST</code> / <code>PGHOST</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>localhost</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_dbhost}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>DB_PORT</code> / <code>PGPORT</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>5432</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_dbport}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>APP_TIMEZONE</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>Europe/Warsaw</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_timezone}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>SECURE_COOKIES</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>true</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_cookies}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>SESSION_MAX_LIFETIME</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>28800</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_session}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>IP_HASH_SALT</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><em>${s.env_none}</em></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><strong>${s.env_iphash_req}</strong> ${s.env_iphash}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>LOGIN_MAX_ATTEMPTS_PER_IP</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_ip_attempts}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>LOGIN_MAX_ATTEMPTS_PER_USERNAME</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>5</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_user_attempts}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>LOGIN_LOCKOUT_MINUTES</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>15</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_lockout}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>DEMO_MODE</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_demo}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>FILES_MAX_SIZE_MB</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_files}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>RECORD_SNAPSHOTS_ENABLED</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_snapshots}</td></tr>
+        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>PGSCHEMA</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>app</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_pgschema}</td></tr>
     </tbody>
 </table>
 </div>`;

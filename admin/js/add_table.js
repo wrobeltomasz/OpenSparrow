@@ -2,10 +2,10 @@
 import { showStatusPill } from './app.js';
 
 const COLUMN_TYPES = [
-    { value: 'varchar(255)', label: 'varchar(255) — short text' },
-    { value: 'text',         label: 'text — long text' },
-    { value: 'int4',         label: 'int4 — integer' },
-    { value: 'int8',         label: 'int8 — big integer' },
+    { value: 'varchar(255)', label: 'varchar(255) â€” short text' },
+    { value: 'text',         label: 'text â€” long text' },
+    { value: 'int4',         label: 'int4 â€” integer' },
+    { value: 'int8',         label: 'int8 â€” big integer' },
     { value: 'boolean',      label: 'boolean' },
     { value: 'date',         label: 'date' },
     { value: 'timestamp',    label: 'timestamp' },
@@ -187,7 +187,7 @@ export function renderAddTableEditor(ctx) {
         const idRow = document.createElement('div');
         idRow.className = 'column-block';
         idRow.style.cssText = 'border-left:4px solid var(--muted);opacity:.7;display:flex;align-items:center;gap:16px;padding:12px 16px;';
-        idRow.innerHTML = '<strong style="min-width:80px;">id</strong><span style="font-size:13px;color:var(--muted);">serial PRIMARY KEY — added automatically</span>';
+        idRow.innerHTML = '<strong style="min-width:80px;">id</strong><span style="font-size:13px;color:var(--muted);">serial PRIMARY KEY â€” added automatically</span>';
         columnsWrap.appendChild(idRow);
 
         state.columns.forEach((col, index) => {
@@ -271,9 +271,9 @@ export function renderAddTableEditor(ctx) {
                 sel.style.maxWidth = '260px';
                 [
                     { value: '',       label: 'none' },
-                    { value: 'btree',  label: 'btree — standard (=, <, >, LIKE prefix)' },
-                    { value: 'hash',   label: 'hash — equality only' },
-                    { value: 'unique', label: 'unique — enforces uniqueness' },
+                    { value: 'btree',  label: 'btree â€” standard (=, <, >, LIKE prefix)' },
+                    { value: 'hash',   label: 'hash â€” equality only' },
+                    { value: 'unique', label: 'unique â€” enforces uniqueness' },
                 ].forEach(({ value, label }) => {
                     const opt = document.createElement('option');
                     opt.value = value; opt.textContent = label;
@@ -289,7 +289,7 @@ export function renderAddTableEditor(ctx) {
                 const inp = document.createElement('input');
                 inp.type = 'text';
                 inp.value = col.comment || '';
-                inp.placeholder = 'Optional — stored as COMMENT ON COLUMN';
+                inp.placeholder = 'Optional â€” stored as COMMENT ON COLUMN';
                 inp.addEventListener('input', () => { col.comment = inp.value; });
                 return inp;
             });
@@ -301,7 +301,7 @@ export function renderAddTableEditor(ctx) {
 
                 const fkTableSel = document.createElement('select');
                 fkTableSel.style.maxWidth = '200px';
-                const tableOptions = getTableOptions ? getTableOptions() : [{ value: '', label: '— no schema loaded —' }];
+                const tableOptions = getTableOptions ? getTableOptions() : [{ value: '', label: 'â€” no schema loaded â€”' }];
                 tableOptions.forEach(({ value, label }) => {
                     const opt = document.createElement('option');
                     opt.value = value; opt.textContent = label;
@@ -314,7 +314,7 @@ export function renderAddTableEditor(ctx) {
 
                 function populateFkCols(tableName) {
                     fkColSel.innerHTML = '';
-                    const opts = getColumnOptionsForTable ? getColumnOptionsForTable(tableName) : [{ value: '', label: '— select table first —' }];
+                    const opts = getColumnOptionsForTable ? getColumnOptionsForTable(tableName) : [{ value: '', label: 'â€” select table first â€”' }];
                     opts.forEach(({ value, label }) => {
                         const opt = document.createElement('option');
                         opt.value = value; opt.textContent = label;
@@ -334,7 +334,7 @@ export function renderAddTableEditor(ctx) {
                 row.appendChild(fkTableSel);
                 row.appendChild(fkColSel);
                 return row;
-            }, 'Optional — adds FOREIGN KEY constraint referencing the selected table/column.');
+            }, 'Optional â€” adds FOREIGN KEY constraint referencing the selected table/column.');
 
             columnsWrap.appendChild(block);
         });
@@ -406,7 +406,7 @@ export function renderAddTableEditor(ctx) {
         }
 
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Creating…';
+        submitBtn.textContent = 'Creatingâ€¦';
 
         try {
             // 1. Create table (id only)

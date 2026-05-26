@@ -1,4 +1,4 @@
-// admin/erd.js — Schema Map: SVG diagram of FK / subtable / M2M relationships
+﻿// admin/erd.js — Schema Map: SVG diagram of FK / subtable / M2M relationships
 
 const NS  = 'http://www.w3.org/2000/svg';
 const NW  = 195;   // node width
@@ -22,29 +22,29 @@ export async function renderErdPage(ctx) {
 
     const h2 = document.createElement('h2');
     h2.textContent = 'Schema Map';
-    h2.style.cssText = 'margin:0;font-size:18px;color:#253237;';
+    h2.style.cssText = 'margin:0;font-size:18px;color:#1E293B;';
     tb.appendChild(h2);
 
     const hint = document.createElement('span');
     hint.textContent = 'Drag canvas to pan · Scroll to zoom · Click table to highlight · Drag table to reposition';
-    hint.style.cssText = 'font-size:11px;color:#9db4c0;';
+    hint.style.cssText = 'font-size:11px;color:#64748B;';
     tb.appendChild(hint);
 
     const right = document.createElement('div');
     right.style.cssText = 'margin-left:auto;display:flex;gap:10px;align-items:center;';
 
     const statsEl = document.createElement('span');
-    statsEl.style.cssText = 'font-size:12px;color:#9db4c0;';
+    statsEl.style.cssText = 'font-size:12px;color:#64748B;';
     right.appendChild(statsEl);
 
     const searchEl = document.createElement('input');
     searchEl.type = 'search';
     searchEl.placeholder = 'Search tables…';
-    searchEl.style.cssText = 'padding:4px 8px;font-size:12px;border:1px solid #c2dfe3;border-radius:4px;width:140px;outline:none;';
+    searchEl.style.cssText = 'padding:4px 8px;font-size:12px;border:1px solid #CBD5E1;border-radius:4px;width:140px;outline:none;';
     right.appendChild(searchEl);
 
     const hiddenLbl = document.createElement('label');
-    hiddenLbl.style.cssText = 'font-size:12px;color:#5c6b73;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;';
+    hiddenLbl.style.cssText = 'font-size:12px;color:#64748B;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;';
     const hiddenChk = document.createElement('input');
     hiddenChk.type = 'checkbox';
     hiddenLbl.appendChild(hiddenChk);
@@ -52,14 +52,14 @@ export async function renderErdPage(ctx) {
     right.appendChild(hiddenLbl);
 
     const resetBtn = document.createElement('button');
-    resetBtn.textContent = '�S� Fit View';
-    resetBtn.style.cssText = 'padding:4px 10px;font-size:12px;cursor:pointer;border:1px solid #c2dfe3;background:#fff;border-radius:4px;';
+    resetBtn.textContent = '⤢ Fit View';
+    resetBtn.style.cssText = 'padding:4px 10px;font-size:12px;cursor:pointer;border:1px solid #CBD5E1;background:#fff;border-radius:4px;';
     right.appendChild(resetBtn);
 
     const exportBtn = document.createElement('button');
     exportBtn.textContent = '↓ PNG';
     exportBtn.title = 'Export full diagram as PNG';
-    exportBtn.style.cssText = 'padding:4px 10px;font-size:12px;cursor:pointer;border:1px solid #c2dfe3;background:#fff;border-radius:4px;';
+    exportBtn.style.cssText = 'padding:4px 10px;font-size:12px;cursor:pointer;border:1px solid #CBD5E1;background:#fff;border-radius:4px;';
     right.appendChild(exportBtn);
 
     tb.appendChild(right);
@@ -67,7 +67,7 @@ export async function renderErdPage(ctx) {
 
     const loadEl = document.createElement('p');
     loadEl.textContent = 'Loading schema…';
-    loadEl.style.cssText = 'color:#9db4c0;font-size:14px;';
+    loadEl.style.cssText = 'color:#64748B;font-size:14px;';
     wrap.appendChild(loadEl);
 
     let rawSchema;
@@ -81,7 +81,7 @@ export async function renderErdPage(ctx) {
     loadEl.remove();
 
     const container = document.createElement('div');
-    container.style.cssText = 'flex:1;position:relative;border:1px solid #c2dfe3;border-radius:8px;overflow:hidden;background:#c2dfe3;cursor:grab;';
+    container.style.cssText = 'flex:1;position:relative;border:1px solid #CBD5E1;border-radius:8px;overflow:hidden;background:#F4F7F9;cursor:grab;';
     wrap.appendChild(container);
 
     startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, searchEl, statsEl);
@@ -204,7 +204,7 @@ function svgTxt(content, x, y, o = {}) {
         'text-anchor':       o.ta   || 'start',
         'font-size':         o.sz   || 12,
         'font-family':       'system-ui,-apple-system,sans-serif',
-        fill:                o.fill || '#5c6b73',
+        fill:                o.fill || '#64748B',
         ...(o.weight  ? { 'font-weight': o.weight  } : {}),
         ...(o.opacity ? { opacity:       o.opacity  } : {}),
     });
@@ -243,16 +243,16 @@ function topRoundedRect(x, y, w, h, r) {
 // ── rendering ─────────────────────────────────────────────────────────────────
 
 const EDGE_STYLE = {
-    fk:  { color: '#5c6b73', dash: '' },
+    fk:  { color: '#64748B', dash: '' },
     sub: { color: '#2b9348', dash: '7,4' },
-    m2m: { color: '#5c6b73', dash: '3,5' },
+    m2m: { color: '#64748B', dash: '3,5' },
 };
 
 const HDR_COLOR = {
-    normal: '#253237',
-    hidden: '#9db4c0',
+    normal: '#1E293B',
+    hidden: '#64748B',
     sel:    '#ffc300',
-    nbr:    '#253237',
+    nbr:    '#1E293B',
 };
 
 function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
@@ -317,7 +317,7 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
 
         // Body
         g.appendChild(svgEl('rect', { x, y, width:n.w, height:n.h, rx:7, fill:'#fff',
-            stroke: isSel ? '#ffc300' : isNbr ? '#253237' : '#c2dfe3',
+            stroke: isSel ? '#ffc300' : isNbr ? '#1E293B' : '#DDEAF4',
             'stroke-width': (isSel || isNbr) ? 2 : 1,
         }));
 
@@ -335,22 +335,22 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
         }
 
         // Separator
-        g.appendChild(svgEl('line', { x1:x, y1:y+NHD, x2:x+n.w, y2:y+NHD, stroke:'#c2dfe3', 'stroke-width':1 }));
+        g.appendChild(svgEl('line', { x1:x, y1:y+NHD, x2:x+n.w, y2:y+NHD, stroke:'#DDEAF4', 'stroke-width':1 }));
 
         // Columns
         n.cols.forEach((col, ci) => {
             const cy = y + NHD + ci*NRH + NRH/2 + 2;
-            if (col.isFk) g.appendChild(svgTxt('�?', x+6, cy, { fill:'#5c6b73', sz:10 }));
+            if (col.isFk) g.appendChild(svgTxt('→', x+6, cy, { fill:'#64748B', sz:10 }));
             g.appendChild(svgTxt(col.name, col.isFk ? x+18 : x+8, cy,
-                { fill:'#253237', sz:11, max:17 }));
+                { fill:'#1E293B', sz:11, max:17 }));
             g.appendChild(svgTxt(col.type, x+n.w-7, cy,
-                { ta:'end', fill:'#9db4c0', sz:10, max:10 }));
+                { ta:'end', fill:'#64748B', sz:10, max:10 }));
         });
 
         if (n.extra > 0) {
             const cy = y + NHD + n.cols.length*NRH + NRH/2 + 2;
             g.appendChild(svgTxt(`+ ${n.extra} more`, x+n.w/2, cy,
-                { ta:'middle', fill:'#9db4c0', sz:10 }));
+                { ta:'middle', fill:'#64748B', sz:10 }));
         }
 
         gN.appendChild(g);
@@ -378,12 +378,12 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
 
     // Legend overlay
     const leg = document.createElement('div');
-    leg.style.cssText = 'position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.95);border:1px solid #c2dfe3;border-radius:6px;padding:8px 12px;font-size:11px;line-height:2;pointer-events:none;z-index:5;';
+    leg.style.cssText = 'position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.95);border:1px solid #CBD5E1;border-radius:6px;padding:8px 12px;font-size:11px;line-height:2;pointer-events:none;z-index:5;';
     leg.innerHTML = [
-        '<b style="font-size:12px;color:#5c6b73;display:block;margin-bottom:2px;">Legend</b>',
-        '<div><span style="display:inline-block;width:22px;height:2px;background:#5c6b73;vertical-align:middle;margin-right:6px;"></span>Foreign key</div>',
+        '<b style="font-size:12px;color:#64748B;display:block;margin-bottom:2px;">Legend</b>',
+        '<div><span style="display:inline-block;width:22px;height:2px;background:#005A9E;vertical-align:middle;margin-right:6px;"></span>Foreign key</div>',
         '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dashed #2b9348;vertical-align:middle;margin-right:6px;"></span>Subtable</div>',
-        '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dotted #5c6b73;vertical-align:middle;margin-right:6px;"></span>Many-to-many</div>',
+        '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dotted #64748B;vertical-align:middle;margin-right:6px;"></span>Many-to-many</div>',
     ].join('');
     container.appendChild(leg);
 
@@ -521,7 +521,7 @@ function exportPng(svg, nodes) {
     const bg = document.createElementNS(NS, 'rect');
     bg.setAttribute('x', String(mnX)); bg.setAttribute('y', String(mnY));
     bg.setAttribute('width', String(vw)); bg.setAttribute('height', String(vh));
-    bg.setAttribute('fill', '#c2dfe3');
+    bg.setAttribute('fill', '#DDEAF4');
     if (gAllClone) gAllClone.prepend(bg);
 
     const svgStr  = new XMLSerializer().serializeToString(clone);
@@ -535,7 +535,7 @@ function exportPng(svg, nodes) {
         canvas.width  = Math.round(vw * scale);
         canvas.height = Math.round(vh * scale);
         const c2 = canvas.getContext('2d');
-        c2.fillStyle = '#c2dfe3';
+        c2.fillStyle = '#DDEAF4';
         c2.fillRect(0, 0, canvas.width, canvas.height);
         c2.scale(scale, scale);
         c2.drawImage(img, 0, 0);

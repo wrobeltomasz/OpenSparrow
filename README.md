@@ -222,7 +222,7 @@ Flakiness usually comes from hardcoded waits. Our helpers use **polling with exp
 
 ### Best practices
 
-See [TESTING_GUIDELINES.md](TESTING_GUIDELINES.md) for comprehensive guidance:
+See [TESTING_GUIDELINES.md](docs/TESTING_GUIDELINES.md) for comprehensive guidance:
 
 - **Selector strategy:** prefer `data-cy` attributes, fallback to semantic HTML and role.
 - **Helper patterns:** use shared helpers instead of inline Cypress chains.

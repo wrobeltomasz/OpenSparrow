@@ -36,22 +36,10 @@ $cspNonce = bin2hex(random_bytes(16));
 send_security_headers($cspNonce);
 
 $userRole = $_SESSION['role'] ?? 'viewer';
+$pageTitle = 'OpenSparrow | Knowledge Base';
+$extraCss  = '<link href="/assets/css/rag.css" rel="stylesheet">';
+ob_start();
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <title>OpenSparrow | Knowledge Base</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>" />
-    <link href="/assets/css/styles.css" rel="stylesheet" />
-    <link href="/assets/css/rag.css" rel="stylesheet" />
-    <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-</head>
-<body>
-
-<?php include 'templates/header.php'; ?>
 
 <main>
     <section id="ragSection" class="rag-section">
@@ -94,14 +82,14 @@ $userRole = $_SESSION['role'] ?? 'viewer';
 
     </section>
 </main>
-
-</div><!-- /.app-container -->
-
-<?php include 'templates/footer.php'; ?>
-
+<?php
+$pageContent = ob_get_clean();
+ob_start();
+?>
 <script nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
     window.CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token'], JSON_THROW_ON_ERROR); ?>;
 </script>
 <script type="module" src="assets/js/rag.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/rag.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
-</body>
-</html>
+<?php
+$extraScripts = ob_get_clean();
+include __DIR__ . '/templates/layout.php';

@@ -44,6 +44,7 @@ if ($request->isPost()) {
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
             snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
         }
+        evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId());
         foreach ($m2mConfigs as $mi => $m2mCfg) {
             $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
             m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
@@ -76,20 +77,9 @@ foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
 
 $ctx = new RenderContext($isReadOnly, $fkOptions);
 
+$pageTitle = 'OpenSparrow | Edit Record - ' . $tableCfg->displayName;
+ob_start();
 ?>
-<!doctype html>
-<html lang="<?= htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8') ?>">
-<head>
-    <meta charset="utf-8">
-    <title>OpenSparrow | Edit Record - <?php echo htmlspecialchars($tableCfg->displayName); ?></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf->token(), ENT_QUOTES, 'UTF-8'); ?>">
-    <link href="/assets/css/styles.css" rel="stylesheet">
-    <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)">
-</head>
-<body>
-
-<?php include 'templates/header.php'; ?>
 
 <main style="padding: 20px; max-width: 1060px; margin: 0 auto;">
     <h2><?= htmlspecialchars(t('form.edit_record', ['table' => $tableCfg->displayName])) ?></h2>
@@ -384,10 +374,10 @@ $ctx = new RenderContext($isReadOnly, $fkOptions);
     </div><!-- /tab-panel#tab-history -->
 
 </main>
-</div>
-
-<?php include 'templates/footer.php'; ?>
-
+<?php
+$pageContent = ob_get_clean();
+ob_start();
+?>
 <script>
     window.CSRF_TOKEN      = <?php echo json_encode($csrf->token(), JSON_THROW_ON_ERROR); ?>;
     window.EDIT_TABLE      = <?php echo json_encode($tableCfg->name, JSON_THROW_ON_ERROR); ?>;
@@ -496,6 +486,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>"></script>
 <script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>"></script>
-
-</body>
-</html>
+<?php
+$extraScripts = ob_get_clean();
+include __DIR__ . '/templates/layout.php';

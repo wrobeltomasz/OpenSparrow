@@ -16,5 +16,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Added local RAG module: knowledge base from .txt files, full-text search, tag filtering, Ollama integration, admin management panel, user chat interface."
+    },
+    "2.7.0": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Added Automations module: rule-based triggers on record create/update/delete, condition evaluation, field update actions with template variables."
     }
 }

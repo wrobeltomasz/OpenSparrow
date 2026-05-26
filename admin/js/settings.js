@@ -1,4 +1,4 @@
-// This file is part of OpenSparrow - https://opensparrow.org
+﻿// This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 
 // admin/settings.js
@@ -32,7 +32,7 @@ export async function renderSettingsPage(ctx) {
     // ── Language Settings card ─────────────────────────────────────────────
 
     const card = document.createElement('div');
-    card.style.cssText = 'padding:20px; background:white; border:1px solid #c2dfe3; border-radius:8px; margin-bottom:24px; max-width:540px;';
+    card.style.cssText = 'padding:20px; background:white; border:1px solid #CBD5E1; border-radius:8px; margin-bottom:24px; max-width:540px;';
 
     const cardTitle = document.createElement('h4');
     cardTitle.style.cssText = 'margin:0 0 4px; font-size:15px;';
@@ -40,7 +40,7 @@ export async function renderSettingsPage(ctx) {
     card.appendChild(cardTitle);
 
     const cardDesc = document.createElement('p');
-    cardDesc.style.cssText = 'color:#9db4c0; font-size:13px; margin:0 0 20px;';
+    cardDesc.style.cssText = 'color:#64748B; font-size:13px; margin:0 0 20px;';
     cardDesc.textContent = 'Set the site-wide default language and which languages users can switch to. Language files live in languages/*.json.';
     card.appendChild(cardDesc);
 
@@ -50,13 +50,13 @@ export async function renderSettingsPage(ctx) {
 
     const defLabel = document.createElement('label');
     defLabel.htmlFor = 'setting-default-lang';
-    defLabel.style.cssText = 'display:block; font-size:13px; font-weight:600; color:#5c6b73; margin-bottom:6px;';
+    defLabel.style.cssText = 'display:block; font-size:13px; font-weight:600; color:#64748B; margin-bottom:6px;';
     defLabel.textContent = 'Default language';
     defRow.appendChild(defLabel);
 
     const defSelect = document.createElement('select');
     defSelect.id = 'setting-default-lang';
-    defSelect.style.cssText = 'padding:7px 10px; border:1px solid #c2dfe3; border-radius:6px; font-size:14px; width:220px; background:white;';
+    defSelect.style.cssText = 'padding:7px 10px; border:1px solid #CBD5E1; border-radius:6px; font-size:14px; width:220px; background:white;';
     data.all_locales.forEach(loc => {
         const opt = document.createElement('option');
         opt.value = loc.code;
@@ -72,14 +72,14 @@ export async function renderSettingsPage(ctx) {
     availRow.style.cssText = 'margin-bottom:20px;';
 
     const availLabel = document.createElement('div');
-    availLabel.style.cssText = 'font-size:13px; font-weight:600; color:#5c6b73; margin-bottom:8px;';
+    availLabel.style.cssText = 'font-size:13px; font-weight:600; color:#64748B; margin-bottom:8px;';
     availLabel.textContent = 'Available languages';
     availRow.appendChild(availLabel);
 
     const checkboxes = [];
     data.all_locales.forEach(loc => {
         const row = document.createElement('label');
-        row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; font-size:14px; color:#5c6b73;';
+        row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; font-size:14px; color:#64748B;';
 
         const cb = document.createElement('input');
         cb.type = 'checkbox';
@@ -100,7 +100,7 @@ export async function renderSettingsPage(ctx) {
 
     const saveBtn = document.createElement('button');
     saveBtn.textContent = 'Save language settings';
-    saveBtn.style.cssText = 'padding:8px 18px; background:#5c6b73; color:white; border:none; border-radius:6px; font-size:14px; cursor:pointer; font-weight:500;';
+    saveBtn.className = 'btn btn-primary';
 
     const pillAnchor = document.createElement('span');
 
@@ -151,8 +151,8 @@ export async function renderSettingsPage(ctx) {
     // ── Info card ──────────────────────────────────────────────────────────
 
     const infoCard = document.createElement('div');
-    infoCard.style.cssText = 'padding:14px 18px; background:#c2dfe3; border:1px solid #c2dfe3; border-radius:8px; font-size:13px; color:#5c6b73; max-width:540px;';
-    infoCard.innerHTML = '<strong style="display:block; margin-bottom:6px; color:#5c6b73;">How language detection works</strong>'
+    infoCard.style.cssText = 'padding:14px 18px; background:#F4F7F9; border:1px solid #CBD5E1; border-radius:8px; font-size:13px; color:#64748B; max-width:540px;';
+    infoCard.innerHTML = '<strong style="display:block; margin-bottom:6px; color:#64748B;">How language detection works</strong>'
         + '<ol style="margin:0; padding-left:18px; line-height:1.8;">'
         + '<li>User selects language via URL <code>?lang=xx</code> → stored in session</li>'
         + '<li>User\'s personal preference from <code>spw_users.locale</code> (if set)</li>'
@@ -160,6 +160,6 @@ export async function renderSettingsPage(ctx) {
         + '<li><strong>Default language</strong> from this settings page</li>'
         + '<li>Fallback: <code>en</code></li>'
         + '</ol>'
-        + '<p style="margin:10px 0 0; color:#9db4c0;">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
+        + '<p style="margin:10px 0 0; color:#64748B;">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
     workspaceEl.appendChild(infoCard);
 }

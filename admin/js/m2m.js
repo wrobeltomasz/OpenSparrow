@@ -1,4 +1,4 @@
-// admin/m2m.js — Many-to-Many Relationship Builder wizard
+﻿// admin/m2m.js — Many-to-Many Relationship Builder wizard
 import { showStatusPill } from './app.js';
 
 let _renderGen = 0;
@@ -47,7 +47,7 @@ export async function renderM2mPage(ctx) {
     const cardHeader = document.createElement('div');
     cardHeader.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:22px;';
     const cardBadge = document.createElement('div');
-    cardBadge.style.cssText = 'width:32px; height:32px; border-radius:50%; background:#5c6b73; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; line-height:1;';
+    cardBadge.style.cssText = 'width:32px; height:32px; border-radius:50%; background:#005A9E; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; line-height:1;';
     cardBadge.textContent = '↔';
     const cardH3 = document.createElement('h3');
     cardH3.style.cssText = 'margin:0; font-size:16px;';
@@ -163,7 +163,7 @@ export async function renderM2mPage(ctx) {
     // Create button ─────────────────────────────────────────────────────────────
     const btnCreate = document.createElement('button');
     btnCreate.type = 'button';
-    btnCreate.style.cssText = 'padding:10px 28px; background:#5c6b73; color:#fff; border:none; border-radius:var(--radius); cursor:pointer; font-weight:600; font-size:14px; display:inline-flex; align-items:center; gap:8px;';
+    btnCreate.className = 'btn btn-primary';
     btnCreate.innerHTML = '<span style="font-size:18px;font-weight:300;line-height:1;">+</span> Create Relationship';
     card.appendChild(btnCreate);
 
@@ -230,7 +230,7 @@ export async function renderM2mPage(ctx) {
         row.style.cssText = 'display:flex; align-items:center; gap:14px; padding:14px 18px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);';
 
         const dot = document.createElement('div');
-        dot.style.cssText = 'width:10px; height:10px; border-radius:50%; background:#5c6b73; flex-shrink:0;';
+        dot.style.cssText = 'width:10px; height:10px; border-radius:50%; background:#005A9E; flex-shrink:0;';
 
         const info = document.createElement('div');
         info.style.flex = '1';

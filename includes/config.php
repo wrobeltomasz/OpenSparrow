@@ -63,7 +63,7 @@ $_sessSavePath = ini_get('session.save_path');
 if ($_sessSavePath === '' || $_sessSavePath[0] !== '/') {
     $_projectRoot = realpath(__DIR__ . '/..');
     if ($_projectRoot !== false) {
-        $_relPath = $_sessSavePath !== '' ? $_sessSavePath : 'tmp';
+        $_relPath = $_sessSavePath !== '' ? $_sessSavePath : 'storage/sessions';
         $_absPath = $_projectRoot . '/' . $_relPath;
         if (!is_dir($_absPath)) {
             @mkdir($_absPath, 0700, true);

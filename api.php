@@ -140,6 +140,7 @@ $schema = json_decode($schemaJson, true, 512, JSON_THROW_ON_ERROR);
 require __DIR__ . '/includes/db.php';
 $conn = db_connect();
 require __DIR__ . '/includes/api_helpers.php';
+require_once __DIR__ . '/includes/automations.php';
 $method = $_SERVER['REQUEST_METHOD'];
 header('Content-Type: application/json; charset=utf-8');
 try {
@@ -679,6 +680,7 @@ try {
             if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
                 snapshot_record($conn, $schemaName, $table, (int) $body['id'], $logId);
             }
+            evaluate_automation_rules($conn, $schemaName, $table, (int)$body['id'], 'update', (int)$_SESSION['user_id']);
             echo json_encode(['ok' => true]);
             exit;
         }
@@ -740,6 +742,7 @@ try {
                     snapshot_record($conn, $schemaName, $table, (int) $newId, $logId);
                 }
                 set_record_owner($conn, $table, (int)$newId, $userId, $userId);
+                evaluate_automation_rules($conn, $schemaName, $table, (int)$newId, 'create', $userId);
             }
 
             echo json_encode(['ok' => true, 'id' => $newId]);
@@ -838,6 +841,7 @@ try {
             }
 
             log_user_action($conn, (int)$_SESSION['user_id'], 'DELETE', $table, $deleteId);
+            evaluate_automation_rules($conn, $schemaName, $table, $deleteId, 'delete', (int)$_SESSION['user_id']);
             echo json_encode(['ok' => true]);
             exit;
         }

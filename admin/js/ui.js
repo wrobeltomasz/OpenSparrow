@@ -1,4 +1,4 @@
-// admin/ui.js
+﻿// admin/ui.js
 
 export const helpTexts = {
     display_name: "The name that will be shown to users in the interface.",
@@ -105,11 +105,12 @@ export function createIconPicker(key, labelText, value, onChange) {
         
         const closeBtn = document.createElement('button');
         closeBtn.textContent = 'Close';
-        closeBtn.style.cssText = `position:absolute; top:15px; right:15px; background:#d00000; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;`;
+        closeBtn.className = 'btn btn-danger btn-xs';
+        closeBtn.style.cssText = 'position:absolute; top:15px; right:15px;';
         closeBtn.onclick = () => modal.remove();
         content.appendChild(closeBtn);
         
-        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:#9db4c0; font-size:13px;">Icons are loaded from <code>assets/icons/</code> and <code>assets/img/</code>.</p>';
+        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:#64748B; font-size:13px;">Icons are loaded from <code>assets/icons/</code> and <code>assets/img/</code>.</p>';
         
         const grid = document.createElement('div');
         grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;
@@ -120,9 +121,9 @@ export function createIconPicker(key, labelText, value, onChange) {
             if (data.status === 'success' && data.icons.length > 0) {
                 data.icons.forEach(iconPath => {
                     const imgBox = document.createElement('div');
-                    imgBox.style.cssText = `cursor:pointer; text-align:center; padding:10px; border:1px solid #c2dfe3; border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center; height: 70px;`;
-                    imgBox.onmouseover = () => { imgBox.style.borderColor = '#5c6b73'; imgBox.style.background = '#c2dfe3'; };
-                    imgBox.onmouseout = () => { imgBox.style.borderColor = '#c2dfe3'; imgBox.style.background = 'transparent'; };
+                    imgBox.style.cssText = `cursor:pointer; text-align:center; padding:10px; border:1px solid #CBD5E1; border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center; height: 70px;`;
+                    imgBox.onmouseover = () => { imgBox.style.borderColor = '#64748B'; imgBox.style.background = '#DDEAF4'; };
+                    imgBox.onmouseout = () => { imgBox.style.borderColor = '#DDEAF4'; imgBox.style.background = 'transparent'; };
                     
                     const img = document.createElement('img');
                     img.src = '../' + iconPath; 
@@ -139,7 +140,7 @@ export function createIconPicker(key, labelText, value, onChange) {
                     grid.appendChild(imgBox);
                 });
             } else {
-                grid.innerHTML = '<p style="grid-column: 1 / -1; color:#9db4c0;">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
+                grid.innerHTML = '<p style="grid-column: 1 / -1; color:#64748B;">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
             }
         } catch(e) {
             grid.innerHTML = '<p style="color:var(--danger); grid-column: 1 / -1;">An error occurred while loading icons.</p>';
@@ -190,7 +191,7 @@ export function createColorInput(key, labelText, value, onChange) {
     wrapper.appendChild(label);
     const input = document.createElement('input');
     input.type = 'color';
-    input.value = value || '#5c6b73'; 
+    input.value = value || '#64748B'; 
     input.addEventListener('input', (e) => onChange(e.target.value));
     wrapper.appendChild(input);
     return wrapper;
@@ -236,7 +237,7 @@ export function createMenuPreview() {
 
     const item = document.createElement('div');
     item.className = 'menu-preview-item';
-    item.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; background:#253237; color:#c2dfe3; border-radius:6px; font-size:14px; min-width:220px; max-width:320px; transition:opacity .15s;';
+    item.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; background:#003366; color:#F0F6FA; border-radius:6px; font-size:14px; min-width:220px; max-width:320px; transition:opacity .15s;';
 
     const iconEl = document.createElement('span');
     iconEl.style.cssText = 'width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;';
@@ -353,7 +354,13 @@ export function createFullMenuPreview(config) {
 
     // ── DOM helpers ────────────────────────────────────────────────────────
     function buildIcon(icon) {
-        if (icon && (icon.includes('/') || icon.includes('.'))) {
+        if (!icon) {
+            const img = document.createElement('img');
+            img.src = '../assets/icons/database.png';
+            img.alt = '';
+            return img;
+        }
+        if (icon.includes('/') || icon.includes('.')) {
             const img = document.createElement('img');
             img.src = '../' + icon;
             img.alt = '';
@@ -362,7 +369,7 @@ export function createFullMenuPreview(config) {
         }
         const span = document.createElement('span');
         span.className = 'menu-icon-span';
-        span.textContent = icon || 'dz��d�Z';
+        span.textContent = icon;
         return span;
     }
 
@@ -568,7 +575,7 @@ export function createFullMenuPreview(config) {
                 }
                 const arrow = document.createElement('span');
                 arrow.className = 'menu-arrow';
-                arrow.textContent = '�l';
+                arrow.textContent = '▾';
                 summary.appendChild(arrow);
                 details.appendChild(summary);
 
@@ -623,12 +630,12 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
     wrapper.appendChild(label);
 
     const container = document.createElement('div');
-    container.style.cssText = 'max-height: 150px; overflow-y: auto; border: 1px solid #c2dfe3; padding: 10px; border-radius: 4px; background: #fff;';
+    container.style.cssText = 'max-height: 150px; overflow-y: auto; border: 1px solid #DDEAF4; padding: 10px; border-radius: 4px; background: #fff;';
 
     const safeValues = Array.isArray(selectedValues) ? [...selectedValues] : [];
 
     if (options.length === 0) {
-        container.innerHTML = '<span style="color:#9db4c0; font-size:13px;">No options available</span>';
+        container.innerHTML = '<span style="color:#64748B; font-size:13px;">No options available</span>';
     } else {
         options.forEach(opt => {
             const lbl = document.createElement('label');

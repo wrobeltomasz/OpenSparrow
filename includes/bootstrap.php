@@ -6,6 +6,7 @@ require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/autoload.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/api_helpers.php';
+require_once __DIR__ . '/automations.php';
 
 use App\Audit\DbAuditLogger;
 use App\Csrf\SessionCsrfTokenManager;

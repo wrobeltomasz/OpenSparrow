@@ -185,6 +185,10 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/build.png" alt="">
                         Workflow Manager
                     </button>
+                    <button class="admin-tab" data-file="automations">
+                        <img class="nav-item-icon" src="../assets/icons/automation.png" alt="">
+                        Automations
+                    </button>
                 </div>
             </div>
 
@@ -362,7 +366,8 @@ if (empty($_SESSION['csrf_token'])) {
         cron: 'Cron Notifications',
         views: 'Views',
         csv_import: 'CSV Import',
-        rag: 'RAG Documents'
+        rag: 'RAG Documents',
+        automations: 'Automations'
     };
     var breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
     document.querySelectorAll('.admin-tab[data-file]').forEach(function(tab) {

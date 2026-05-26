@@ -1,9 +1,9 @@
 # Cypress E2E Testing Guidelines
 ## OpenSparrow Frontend Testing Standards
 
-**Version:** 1.0  
+**Version:** 2.7  
 **Audience:** Frontend Developers  
-**Focus:** `cypress/e2e/login.cy.js` and related test modifications  
+**Focus:** All Cypress E2E test files in `cypress/e2e/`  
 
 ---
 
@@ -17,6 +17,12 @@
 - **Current Test Files:**
   - `cypress/e2e/login.cy.js` — Authentication flows, grid navigation, core UI
   - `cypress/e2e/admin.cy.js` — Admin panel interactions
+  - `cypress/e2e/grid.cy.js` — Grid operations, sorting, filtering, pagination
+  - `cypress/e2e/crud.cy.js` — Create/edit/delete record flows
+  - `cypress/e2e/data_cleanup.cy.js` — Find & Replace drawer, accent/case options
+  - `cypress/e2e/keyboard_shortcuts.cy.js` — Keyboard navigation, cell selection, copy/paste
+
+- **Shared Helpers** (`cypress/support/e2e.js`): `loginAsTestUser`, `loginAsAdmin`, `waitForGridOrEmpty`, `waitForPagination`
 
 ### Guiding Principle
 **Tests as living documentation.** Every test should answer: _"What does the happy path look like?"_ and _"When does it fail?"_
@@ -566,6 +572,36 @@ npm run cy:run -- --verbose
 - [ ] Config export/import buttons present
 - [ ] Logout from admin → login page
 
+### Grid Operations (grid.cy.js)
+- [ ] Sort by column header click (asc/desc toggle)
+- [ ] Column filter by type (text, enum, date range, boolean)
+- [ ] Active filter chips shown and removable
+- [ ] Row checkbox selection and mass edit bar appears
+- [ ] Duplicate row action creates copy
+- [ ] Inline cell edit saves on blur/Enter, cancels on Escape
+
+### CRUD Flows (crud.cy.js)
+- [ ] Create record → appears in grid
+- [ ] Edit record → changes persist
+- [ ] Delete record → removed from grid
+- [ ] Required field validation prevents submit
+- [ ] FK autocomplete resolves display value
+
+### Keyboard Navigation (keyboard_shortcuts.cy.js)
+- [ ] Arrow keys move focus between cells
+- [ ] Enter/F2 enters edit mode, Escape exits
+- [ ] Ctrl+C copies selection to clipboard
+- [ ] Ctrl+F focuses search field
+- [ ] Ctrl hold 2s shows shortcut help overlay
+- [ ] Escape pressed before nav shortcuts (isCellEdit guard)
+
+### Data Cleanup (data_cleanup.cy.js)
+- [ ] Find & Replace drawer opens from toolbar
+- [ ] Preview shows matched rows with before/after highlight
+- [ ] Case-insensitive and accent-ignore options work
+- [ ] Apply replaces all matched values
+- [ ] Wait for column options to load before typing
+
 ---
 
 ## XI. Code Review Checklist
@@ -692,6 +728,6 @@ npm run cy:run -- --browser chrome --debug
 
 ---
 
-**Last Updated:** 2026-05-17  
+**Last Updated:** 2026-05-26  
 **Maintained By:** Senior Test Engineer  
 **Questions/Issues:** Open discussion in PR reviews

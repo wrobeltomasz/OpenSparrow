@@ -1,4 +1,4 @@
-// admin/users.js
+﻿// admin/users.js
 
 function escHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -25,12 +25,12 @@ export async function renderUsersEditor(ctx) {
         
         let html = `
             <h3>System Users Management</h3>
-            <p style="color:#9db4c0; margin-bottom: 20px;">
+            <p style="color:#64748B; margin-bottom: 20px;">
                 Manage user accounts and roles. Roles: <strong>Admin</strong> – admin panel only; <strong>Editor</strong> – full frontend CRUD; <strong>Viewer</strong> – read-only frontend.
             </p>
             <table style="width:100%; border-collapse: collapse; margin-bottom: 30px; text-align: left;">
                 <thead>
-                    <tr style="border-bottom: 2px solid #c2dfe3;">
+                    <tr style="border-bottom: 2px solid #DDEAF4;">
                         <th style="padding: 10px;">ID</th>
                         <th style="padding: 10px;">Username</th>
                         <th style="padding: 10px;">Status</th>
@@ -43,7 +43,7 @@ export async function renderUsersEditor(ctx) {
         
         data.users.forEach(u => {
             html += `
-                <tr style="border-bottom: 1px solid #c2dfe3;">
+                <tr style="border-bottom: 1px solid #DDEAF4;">
                     <td style="padding: 10px;">${escHtml(u.id)}</td>
                     <td style="padding: 10px;"><strong>${escHtml(u.username)}</strong></td>
                     <td style="padding: 10px;">
@@ -52,17 +52,17 @@ export async function renderUsersEditor(ctx) {
                         </span>
                     </td>
                     <td style="padding: 10px;">
-                        <select class="select-user-role" data-id="${u.id}" style="padding: 5px; border-radius: 4px; border: 1px solid #c2dfe3; background: #fff;">
+                        <select class="select-user-role" data-id="${u.id}" style="padding: 5px; border-radius: 4px; border: 1px solid #DDEAF4; background: #fff;">
                             <option value="admin"  ${u.role === 'admin'  ? 'selected' : ''}>Admin</option>
                             <option value="editor" ${u.role === 'editor' || !u.role ? 'selected' : ''}>Editor</option>
                             <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                         </select>
                     </td>
                     <td style="padding: 10px; display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn-toggle-user" data-id="${u.id}" data-active="${u.is_active}" style="padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px; background: ${u.is_active ? '#ffc300' : '#5c6b73'}; color: white; font-weight: bold;">
+                        <button class="btn btn-xs btn-toggle-user" data-id="${u.id}" data-active="${u.is_active}" style="background:${u.is_active ? '#ffc300' : 'var(--muted)'}; color:${u.is_active ? '#1E293B' : '#fff'}; border-color:${u.is_active ? '#ffc300' : 'var(--muted)'};">
                             ${u.is_active ? 'Deactivate' : 'Activate'}
                         </button>
-                        <button class="btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}" style="padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px; background: #5c6b73; color: white; font-weight: bold;">
+                        <button class="btn btn-xs btn-secondary btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}">
                             Change pwd
                         </button>
                     </td>
@@ -74,29 +74,29 @@ export async function renderUsersEditor(ctx) {
                 </tbody>
             </table>
             
-            <div style="background: #c2dfe3; padding: 20px; border-radius: 6px; border: 1px solid #c2dfe3;">
+            <div style="background: #DDEAF4; padding: 20px; border-radius: 6px; border: 1px solid #DDEAF4;">
                 <h4 style="margin-top: 0; margin-bottom: 15px;">Add New User</h4>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Username</label>
-                    <input type="text" id="newUsername" placeholder="e.g. john_doe" style="width: 100%; padding: 8px; border: 1px solid #c2dfe3; border-radius: 4px; box-sizing: border-box;">
+                    <input type="text" id="newUsername" placeholder="e.g. john_doe" class="adm-input" style="width:100%;">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Password</label>
-                    <input type="password" id="newPassword" placeholder="Minimum 6 characters" style="width: 100%; padding: 8px; border: 1px solid #c2dfe3; border-radius: 4px; box-sizing: border-box;">
-                    <div id="passwordStrengthBar" style="height: 6px; background: #c2dfe3; border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
+                    <input type="password" id="newPassword" placeholder="Minimum 6 characters" class="adm-input" style="width:100%;">
+                    <div id="passwordStrengthBar" style="height: 6px; background: #DDEAF4; border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
                         <div id="passwordStrengthFill" style="height: 100%; width: 0%; transition: width 0.3s, background 0.3s;"></div>
                     </div>
-                    <small id="passwordStrengthLabel" style="color:#9db4c0; display: block; margin-top: 4px;"></small>
+                    <small id="passwordStrengthLabel" style="color:#64748B; display: block; margin-top: 4px;"></small>
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Role</label>
-                    <select id="newRole" style="width: 100%; padding: 8px; border: 1px solid #c2dfe3; border-radius: 4px; box-sizing: border-box;">
+                    <select id="newRole" class="adm-input" style="width:100%;">
                         <option value="editor" selected>Editor</option>
                         <option value="viewer">Viewer</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
-                <button id="btnAddUser" style="background: #2b9348; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Create User</button>
+                <button id="btnAddUser" class="btn btn-success">Create User</button>
             </div>
         `;
         
@@ -180,7 +180,7 @@ export async function renderUsersEditor(ctx) {
                 box.appendChild(h3);
 
                 const userP = document.createElement('p');
-                userP.style.cssText = 'margin:0 0 16px;font-size:13px;color:#9db4c0;';
+                userP.style.cssText = 'margin:0 0 16px;font-size:13px;color:#64748B;';
                 userP.textContent = 'User: ';
                 const userStrong = document.createElement('strong');
                 userStrong.textContent = username;
@@ -192,7 +192,7 @@ export async function renderUsersEditor(ctx) {
                     currentInput.type = 'password';
                     currentInput.id = 'cpw-current';
                     currentInput.placeholder = 'Current password';
-                    currentInput.style.cssText = 'width:100%;padding:8px;border:1px solid #c2dfe3;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
+                    currentInput.style.cssText = 'width:100%;padding:8px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
                     box.appendChild(currentInput);
                 }
 
@@ -200,14 +200,14 @@ export async function renderUsersEditor(ctx) {
                 newInput.type = 'password';
                 newInput.id = 'cpw-new';
                 newInput.placeholder = 'New password (min 8 chars)';
-                newInput.style.cssText = 'width:100%;padding:8px;border:1px solid #c2dfe3;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
+                newInput.style.cssText = 'width:100%;padding:8px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
                 box.appendChild(newInput);
 
                 const confirmInput = document.createElement('input');
                 confirmInput.type = 'password';
                 confirmInput.id = 'cpw-confirm';
                 confirmInput.placeholder = 'Confirm new password';
-                confirmInput.style.cssText = 'width:100%;padding:8px;border:1px solid #c2dfe3;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:12px;';
+                confirmInput.style.cssText = 'width:100%;padding:8px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:12px;';
                 box.appendChild(confirmInput);
 
                 const msgEl = document.createElement('p');
@@ -221,13 +221,13 @@ export async function renderUsersEditor(ctx) {
                 const cancelBtn = document.createElement('button');
                 cancelBtn.id = 'cpw-cancel';
                 cancelBtn.textContent = 'Cancel';
-                cancelBtn.style.cssText = 'padding:7px 16px;border:1px solid #c2dfe3;border-radius:6px;background:#fff;cursor:pointer;';
+                cancelBtn.style.cssText = 'padding:7px 16px;border:1px solid #CBD5E1;border-radius:6px;background:#fff;cursor:pointer;';
                 buttonDiv.appendChild(cancelBtn);
 
                 const saveBtn = document.createElement('button');
                 saveBtn.id = 'cpw-save';
                 saveBtn.textContent = 'Save';
-                saveBtn.style.cssText = 'padding:7px 16px;border:none;border-radius:6px;background:#5c6b73;color:#fff;font-weight:600;cursor:pointer;';
+                saveBtn.className = 'btn btn-primary btn-sm';
                 buttonDiv.appendChild(saveBtn);
 
                 box.appendChild(buttonDiv);
@@ -257,7 +257,7 @@ export async function renderUsersEditor(ctx) {
                         msgEl.textContent = 'Passwords do not match.';
                         return;
                     }
-                    msgEl.style.color = '#9db4c0';
+                    msgEl.style.color = '#64748B';
                     msgEl.textContent = 'Saving…';
                     try {
                         let res, data;
@@ -307,7 +307,7 @@ export async function renderUsersEditor(ctx) {
             if (pwd.length < 6) return { level: 'weak', percent: 25, label: 'Too short', color: '#d00000' };
             if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: '#d00000' };
             if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: '#ffc300' };
-            if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: '#5c6b73' };
+            if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: '#64748B' };
             return { level: 'strong', percent: 100, label: 'Strong', color: '#2b9348' };
         }
         

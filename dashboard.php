@@ -47,29 +47,22 @@ $userCaps = [
     'canEdit'   => $userRole === 'editor',
     'canExport' => in_array($userRole, ['editor', 'export'], true),
 ];
+
+$pageTitle = 'OpenSparrow | Dashboard';
+ob_start();
 ?>
-<!doctype html>
-<html lang="<?= htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8') ?>">
-<head>
-    <meta charset="utf-8" />
-    <title>OpenSparrow | Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>" />
-    <link href="assets/css/styles.css" rel="stylesheet" />
-    <link href="assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-</head>
-<body>
-<?php include 'templates/header.php'; ?>
 <main id="dashboardMain">
     <h2 id="gridTitle">Dashboard</h2>
     <section id="dashboardSection" class="dashboard-grid"></section>
 </main>
-</div><?php include 'templates/footer.php'; ?>
+<?php
+$pageContent = ob_get_clean();
+ob_start();
+?>
 <script nonce="<?php echo $cspNonce; ?>">
-    // Expose binary capability flags only — never the raw role string
     window.USER_CAPS = <?php echo json_encode($userCaps, JSON_THROW_ON_ERROR); ?>;
 </script>
 <script type="module" src="assets/js/dashboard.js?v=<?php echo @filemtime('assets/js/dashboard/drill-down.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
-</body>
-</html>
+<?php
+$extraScripts = ob_get_clean();
+include __DIR__ . '/templates/layout.php';

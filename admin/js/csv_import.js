@@ -1,4 +1,4 @@
-// admin/csv_import.js
+﻿// admin/csv_import.js
 
 export async function renderCsvImportPage(ctx) {
     const { workspaceEl } = ctx;
@@ -27,7 +27,7 @@ export async function renderCsvImportPage(ctx) {
     wrap.appendChild(heading);
 
     const desc = document.createElement('p');
-    desc.style.cssText = 'color:#9db4c0;margin-bottom:24px;font-size:14px;';
+    desc.style.cssText = 'color:#64748B;margin-bottom:24px;font-size:14px;';
     desc.textContent = 'Import rows from a CSV file into an existing table. Select a target table, upload the file, map headers to columns, choose optional upsert conflict handling, then run the import.';
     wrap.appendChild(desc);
 
@@ -41,7 +41,7 @@ export async function renderCsvImportPage(ctx) {
     tableLabel.style.minWidth = '110px';
 
     const tableSelect = document.createElement('select');
-    tableSelect.style.cssText = 'padding:7px 10px;border:1px solid #c2dfe3;border-radius:4px;font-size:13px;min-width:220px;';
+    tableSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;min-width:220px;';
     appendOpt(tableSelect, '', '— Select table —');
 
     try {
@@ -60,18 +60,19 @@ export async function renderCsvImportPage(ctx) {
 
     // Upload drop zone
     const dropZone = document.createElement('div');
-    dropZone.style.cssText = 'border:2px dashed #c2dfe3;border-radius:8px;padding:32px 20px;text-align:center;background:#fff;cursor:pointer;transition:border-color .2s,background .2s;margin-top:16px;';
+    dropZone.style.cssText = 'border:2px dashed var(--border,#CBD5E1);border-radius:8px;padding:32px 20px;text-align:center;background:#fff;cursor:pointer;transition:border-color .2s,background .2s;margin-top:16px;';
 
-    const uploadIcon = document.createElement('div');
-    uploadIcon.style.cssText = 'font-size:36px;margin-bottom:8px;pointer-events:none;';
-    uploadIcon.textContent = 'dz��';
+    const uploadIcon = document.createElement('img');
+    uploadIcon.src = '../assets/icons/upload.png';
+    uploadIcon.alt = '';
+    uploadIcon.style.cssText = 'width:36px;height:36px;margin-bottom:8px;pointer-events:none;opacity:0.5;';
 
     const uploadMsg = document.createElement('div');
-    uploadMsg.style.cssText = 'font-size:14px;color:#5c6b73;margin-bottom:4px;pointer-events:none;';
+    uploadMsg.style.cssText = 'font-size:14px;color:var(--muted,#64748B);margin-bottom:4px;pointer-events:none;';
     uploadMsg.textContent = 'Click to select a CSV file or drag & drop here';
 
     const uploadHint = document.createElement('div');
-    uploadHint.style.cssText = 'font-size:12px;color:#9db4c0;pointer-events:none;';
+    uploadHint.style.cssText = 'font-size:12px;color:var(--muted,#64748B);pointer-events:none;';
     uploadHint.textContent = '.csv only · max 50 MB';
 
     const fileInput = document.createElement('input');
@@ -98,15 +99,15 @@ export async function renderCsvImportPage(ctx) {
     conflictLabel.style.minWidth = '140px';
 
     const conflictSelect = document.createElement('select');
-    conflictSelect.style.cssText = 'padding:7px 10px;border:1px solid #c2dfe3;border-radius:4px;font-size:13px;min-width:200px;';
+    conflictSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;min-width:200px;';
     appendOpt(conflictSelect, '', '— None (insert only) —');
 
     const conflictNote = document.createElement('span');
-    conflictNote.style.cssText = 'font-size:12px;color:#9db4c0;';
+    conflictNote.style.cssText = 'font-size:12px;color:#64748B;';
     conflictNote.textContent = 'Matching rows will be updated instead of rejected (requires unique constraint).';
 
     const conflictWarn = document.createElement('div');
-    conflictWarn.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:rgba(255,195,0,0.12);border:1px solid #ffc300;border-radius:4px;font-size:12px;color:#5c6b73;';
+    conflictWarn.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:rgba(255,195,0,0.12);border:1px solid #ffc300;border-radius:4px;font-size:12px;color:#64748B;';
 
     conflictRow.append(conflictLabel, conflictSelect, conflictNote);
     card2.el.appendChild(conflictRow);
@@ -115,7 +116,8 @@ export async function renderCsvImportPage(ctx) {
     const execBtn = document.createElement('button');
     execBtn.type      = 'button';
     execBtn.textContent = 'Execute Import';
-    execBtn.style.cssText = 'margin-top:20px;padding:10px 28px;background:#5c6b73;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;';
+    execBtn.className = 'btn btn-primary';
+    execBtn.style.marginTop = '20px';
     card2.el.appendChild(execBtn);
 
     const execStatus = document.createElement('div');
@@ -161,8 +163,8 @@ export async function renderCsvImportPage(ctx) {
 
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropZone.style.borderColor = '#5c6b73';
-        dropZone.style.background  = '#c2dfe3';
+        dropZone.style.borderColor = '#64748B';
+        dropZone.style.background  = '#DDEAF4';
     });
     dropZone.addEventListener('dragleave', () => resetDropZone());
     dropZone.addEventListener('drop', (e) => {
@@ -191,7 +193,7 @@ export async function renderCsvImportPage(ctx) {
         }
 
         uploadMsg.textContent  = `Uploading ${esc(file.name)}…`;
-        uploadMsg.style.color  = '#5c6b73';
+        uploadMsg.style.color  = '#64748B';
         uploadHint.textContent = '';
 
         const fd = new FormData();
@@ -212,10 +214,10 @@ export async function renderCsvImportPage(ctx) {
             csvTmpName  = data.tmp_name;
             csvOrigName = data.original_name;
 
-            uploadMsg.textContent  = `�s� ${esc(file.name)}  —  ${csvRowCount.toLocaleString()} data rows, ${csvHeaders.length} columns`;
+            uploadMsg.textContent  = `✓ ${esc(file.name)}  —  ${csvRowCount.toLocaleString()} data rows, ${csvHeaders.length} columns`;
             uploadMsg.style.color  = '#2b9348';
             uploadHint.textContent = '';
-            dropZone.style.borderColor = '#5c6b73';
+            dropZone.style.borderColor = '#64748B';
 
             renderMapping();
             card2.el.style.display = 'block';
@@ -231,7 +233,7 @@ export async function renderCsvImportPage(ctx) {
         if (!csvHeaders.length || !selectedTable) return;
 
         const note = document.createElement('p');
-        note.style.cssText = 'font-size:13px;color:#9db4c0;margin:0 0 12px;';
+        note.style.cssText = 'font-size:13px;color:#64748B;margin:0 0 12px;';
         note.textContent   = `Map ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to "${esc(selectedTable)}" columns. Leave "— Skip —" to ignore a CSV column.`;
         mappingContainer.appendChild(note);
 
@@ -242,7 +244,7 @@ export async function renderCsvImportPage(ctx) {
         const hrow  = document.createElement('tr');
         for (const h of ['CSV Header', 'Sample values', 'Target column']) {
             const th = document.createElement('th');
-            th.style.cssText = 'text-align:left;padding:8px 12px;background:#c2dfe3;border:1px solid #c2dfe3;font-weight:600;color:#5c6b73;';
+            th.style.cssText = 'text-align:left;padding:8px 12px;background:#F4F7F9;border:1px solid #CBD5E1;font-weight:600;color:#64748B;';
             th.textContent = h;
             hrow.appendChild(th);
         }
@@ -254,26 +256,26 @@ export async function renderCsvImportPage(ctx) {
 
         csvHeaders.forEach((hdr, idx) => {
             const tr = document.createElement('tr');
-            tr.style.background = idx % 2 === 0 ? '#fff' : '#c2dfe3';
+            tr.style.background = idx % 2 === 0 ? '#fff' : '#DDEAF4';
 
             // CSV header name
             const tdH = document.createElement('td');
-            tdH.style.cssText = 'padding:8px 12px;border:1px solid #c2dfe3;font-family:monospace;color:#253237;white-space:nowrap;';
+            tdH.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;font-family:monospace;color:#1E293B;white-space:nowrap;';
             tdH.textContent = hdr;
 
             // Sample values
             const tdS = document.createElement('td');
-            tdS.style.cssText = 'padding:8px 12px;border:1px solid #c2dfe3;color:#9db4c0;font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            tdS.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;color:#64748B;font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
             const samples = csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== '').slice(0, 3);
             tdS.textContent = samples.length ? samples.join(', ') : '(empty)';
             tdS.title       = samples.join(' | ');
 
             // Target column select
             const tdC  = document.createElement('td');
-            tdC.style.cssText = 'padding:8px 12px;border:1px solid #c2dfe3;';
+            tdC.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;';
             const sel  = document.createElement('select');
             sel.dataset.header = hdr;
-            sel.style.cssText  = 'padding:5px 8px;border:1px solid #c2dfe3;border-radius:4px;font-size:13px;width:100%;';
+            sel.style.cssText  = 'padding:5px 8px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;width:100%;';
             appendOpt(sel, '', '— Skip —');
             dbCols.forEach(col => {
                 const cfg = tableColumns[col] || {};
@@ -371,16 +373,16 @@ export async function renderCsvImportPage(ctx) {
     function renderResult(data) {
         const ok       = data.skipped_rows === 0;
         const resultEl = document.createElement('div');
-        resultEl.style.cssText = `padding:16px;border-radius:6px;background:${ok ? 'rgba(43,147,72,0.12)' : 'rgba(255,195,0,0.08)'};border:1px solid ${ok ? '#5c6b73' : '#ffc300'};`;
+        resultEl.style.cssText = `padding:16px;border-radius:6px;background:${ok ? 'rgba(43,147,72,0.12)' : 'rgba(255,195,0,0.08)'};border:1px solid ${ok ? '#64748B' : '#ffc300'};`;
 
         const title = document.createElement('div');
         title.style.cssText = 'font-weight:600;font-size:14px;margin-bottom:6px;';
         title.textContent = ok
-            ? `�s� Import complete — ${data.imported_rows.toLocaleString()} rows inserted/updated.`
+            ? `✓ Import complete — ${data.imported_rows.toLocaleString()} rows inserted/updated.`
             : `⚠ Import finished with issues — ${data.imported_rows.toLocaleString()} imported, ${data.skipped_rows.toLocaleString()} skipped.`;
 
         const detail = document.createElement('div');
-        detail.style.cssText = 'font-size:13px;color:#5c6b73;';
+        detail.style.cssText = 'font-size:13px;color:#64748B;';
         detail.textContent = `Total: ${data.total_rows} · Imported: ${data.imported_rows} · Skipped: ${data.skipped_rows}`;
 
         resultEl.append(title, detail);
@@ -388,7 +390,7 @@ export async function renderCsvImportPage(ctx) {
         if (data.has_errors && data.import_id) {
             const logLink = document.createElement('a');
             logLink.href  = '#';
-            logLink.style.cssText = 'display:inline-block;margin-top:10px;font-size:13px;color:#5c6b73;';
+            logLink.style.cssText = 'display:inline-block;margin-top:10px;font-size:13px;color:#64748B;';
             logLink.textContent = 'View skipped row details ↓';
             logLink.addEventListener('click', async (e) => {
                 e.preventDefault();
@@ -408,7 +410,7 @@ export async function renderCsvImportPage(ctx) {
             const data = await res.json();
             if (data.status !== 'success' || !data.rows.length) {
                 const note = document.createElement('p');
-                note.style.cssText = 'font-size:13px;color:#9db4c0;margin-top:8px;';
+                note.style.cssText = 'font-size:13px;color:#64748B;margin-top:8px;';
                 note.textContent = 'No row-level errors logged.';
                 container.appendChild(note);
                 return;
@@ -419,7 +421,7 @@ export async function renderCsvImportPage(ctx) {
 
     function buildRowLogTable(rows) {
         const wrap = document.createElement('div');
-        wrap.style.cssText = 'margin-top:12px;max-height:320px;overflow-y:auto;border:1px solid #c2dfe3;border-radius:4px;';
+        wrap.style.cssText = 'margin-top:12px;max-height:320px;overflow-y:auto;border:1px solid #CBD5E1;border-radius:4px;';
 
         const tbl = document.createElement('table');
         tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
@@ -428,7 +430,7 @@ export async function renderCsvImportPage(ctx) {
         const hrow  = document.createElement('tr');
         for (const h of ['Row #', 'Error', 'Raw data (JSON)']) {
             const th = document.createElement('th');
-            th.style.cssText = 'text-align:left;padding:6px 10px;background:#c2dfe3;border:1px solid #c2dfe3;white-space:nowrap;font-weight:600;';
+            th.style.cssText = 'text-align:left;padding:6px 10px;background:#F4F7F9;border:1px solid #CBD5E1;white-space:nowrap;font-weight:600;';
             th.textContent = h;
             hrow.appendChild(th);
         }
@@ -438,11 +440,11 @@ export async function renderCsvImportPage(ctx) {
         const tbody = document.createElement('tbody');
         rows.forEach((row, idx) => {
             const tr = document.createElement('tr');
-            tr.style.background = idx % 2 === 0 ? '#fff' : '#c2dfe3';
+            tr.style.background = idx % 2 === 0 ? '#fff' : '#DDEAF4';
 
-            const tdN = td(String(row.row_number), 'padding:5px 10px;border:1px solid #c2dfe3;white-space:nowrap;');
-            const tdE = td(row.error_message || '', 'padding:5px 10px;border:1px solid #c2dfe3;color:#d00000;');
-            const tdR = td(row.raw_data || '', 'padding:5px 10px;border:1px solid #c2dfe3;font-family:monospace;font-size:11px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
+            const tdN = td(String(row.row_number), 'padding:5px 10px;border:1px solid #CBD5E1;white-space:nowrap;');
+            const tdE = td(row.error_message || '', 'padding:5px 10px;border:1px solid #CBD5E1;color:#d00000;');
+            const tdR = td(row.raw_data || '', 'padding:5px 10px;border:1px solid #CBD5E1;font-family:monospace;font-size:11px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
             tdR.title = row.raw_data || '';
 
             tr.append(tdN, tdE, tdR);
@@ -454,13 +456,13 @@ export async function renderCsvImportPage(ctx) {
     }
 
     async function loadHistory() {
-        histContainer.innerHTML = '<p style="color:#9db4c0;font-size:13px;padding:4px 0;">Loading…</p>';
+        histContainer.innerHTML = '<p style="color:#64748B;font-size:13px;padding:4px 0;">Loading…</p>';
         try {
             const res  = await fetch('api_csv_import.php?action=csv_import_history');
             const data = await res.json();
 
             if (data.status !== 'success' || !data.imports.length) {
-                histContainer.innerHTML = '<p style="color:#9db4c0;font-size:13px;">No imports yet.</p>';
+                histContainer.innerHTML = '<p style="color:#64748B;font-size:13px;">No imports yet.</p>';
                 return;
             }
 
@@ -471,7 +473,7 @@ export async function renderCsvImportPage(ctx) {
             const hrow  = document.createElement('tr');
             for (const h of ['#', 'File', 'Table', 'Status', 'Imported', 'Skipped', 'By', 'Started', '']) {
                 const th = document.createElement('th');
-                th.style.cssText = 'text-align:left;padding:8px 10px;background:#c2dfe3;border:1px solid #c2dfe3;white-space:nowrap;font-weight:600;color:#5c6b73;';
+                th.style.cssText = 'text-align:left;padding:8px 10px;background:#F4F7F9;border:1px solid #CBD5E1;white-space:nowrap;font-weight:600;color:#64748B;';
                 th.textContent = h;
                 hrow.appendChild(th);
             }
@@ -481,23 +483,23 @@ export async function renderCsvImportPage(ctx) {
             const tbody = document.createElement('tbody');
             data.imports.forEach((row, idx) => {
                 const tr = document.createElement('tr');
-                tr.style.background = idx % 2 === 0 ? '#fff' : '#c2dfe3';
+                tr.style.background = idx % 2 === 0 ? '#fff' : '#DDEAF4';
 
                 const statusCfg = {
                     done:    { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348' },
                     failed:  { bg: 'rgba(208,0,0,0.08)', fg: '#a80000' },
-                    running: { bg: 'rgba(255,195,0,0.12)', fg: '#5c6b73' },
-                }[row.status] ?? { bg: '#c2dfe3', fg: '#5c6b73' };
+                    running: { bg: 'rgba(255,195,0,0.12)', fg: '#64748B' },
+                }[row.status] ?? { bg: '#DDEAF4', fg: '#64748B' };
 
                 for (const [val, style] of [
-                    [row.id,                        'padding:8px 10px;border:1px solid #c2dfe3;white-space:nowrap;'],
-                    [row.filename,                  'padding:8px 10px;border:1px solid #c2dfe3;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'],
-                    [row.target_table,              'padding:8px 10px;border:1px solid #c2dfe3;'],
-                    [null,                          'padding:8px 10px;border:1px solid #c2dfe3;'], // badge placeholder
-                    [row.imported_rows ?? 0,        'padding:8px 10px;border:1px solid #c2dfe3;text-align:right;'],
-                    [row.skipped_rows  ?? 0,        'padding:8px 10px;border:1px solid #c2dfe3;text-align:right;'],
-                    [row.username || '—',           'padding:8px 10px;border:1px solid #c2dfe3;'],
-                    [(row.started_at || '').slice(0, 16), 'padding:8px 10px;border:1px solid #c2dfe3;white-space:nowrap;'],
+                    [row.id,                        'padding:8px 10px;border:1px solid #CBD5E1;white-space:nowrap;'],
+                    [row.filename,                  'padding:8px 10px;border:1px solid #CBD5E1;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'],
+                    [row.target_table,              'padding:8px 10px;border:1px solid #CBD5E1;'],
+                    [null,                          'padding:8px 10px;border:1px solid #CBD5E1;'], // badge placeholder
+                    [row.imported_rows ?? 0,        'padding:8px 10px;border:1px solid #CBD5E1;text-align:right;'],
+                    [row.skipped_rows  ?? 0,        'padding:8px 10px;border:1px solid #CBD5E1;text-align:right;'],
+                    [row.username || '—',           'padding:8px 10px;border:1px solid #CBD5E1;'],
+                    [(row.started_at || '').slice(0, 16), 'padding:8px 10px;border:1px solid #CBD5E1;white-space:nowrap;'],
                 ]) {
                     const cell = document.createElement('td');
                     cell.style.cssText = style;
@@ -514,12 +516,12 @@ export async function renderCsvImportPage(ctx) {
 
                 // Actions cell — "Log" toggle
                 const tdAct = document.createElement('td');
-                tdAct.style.cssText = 'padding:8px 10px;border:1px solid #c2dfe3;';
+                tdAct.style.cssText = 'padding:8px 10px;border:1px solid #CBD5E1;';
                 if ((row.skipped_rows ?? 0) > 0) {
                     const logBtn = document.createElement('button');
                     logBtn.type      = 'button';
                     logBtn.textContent = 'Log';
-                    logBtn.style.cssText = 'padding:3px 10px;font-size:12px;border:1px solid #c2dfe3;border-radius:4px;cursor:pointer;background:#fff;';
+                    logBtn.style.cssText = 'padding:3px 10px;font-size:12px;border:1px solid #CBD5E1;border-radius:4px;cursor:pointer;background:#fff;';
                     logBtn.addEventListener('click', async () => {
                         const existing = tr.nextElementSibling;
                         if (existing && existing.dataset.logForId === String(row.id)) {
@@ -552,7 +554,7 @@ export async function renderCsvImportPage(ctx) {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     function resetDropZone() {
-        dropZone.style.borderColor = '#c2dfe3';
+        dropZone.style.borderColor = '#DDEAF4';
         dropZone.style.background  = '#fff';
     }
 
@@ -560,7 +562,7 @@ export async function renderCsvImportPage(ctx) {
         csvTmpName  = '';
         csvOrigName = '';
         uploadMsg.textContent  = 'Click to select a CSV file or drag & drop here';
-        uploadMsg.style.color  = '#5c6b73';
+        uploadMsg.style.color  = '#64748B';
         uploadHint.textContent = '.csv only · max 50 MB';
         resetDropZone();
     }
@@ -575,9 +577,9 @@ export async function renderCsvImportPage(ctx) {
 
     function showBanner(container, msg, type) {
         const colors = {
-            success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#5c6b73' },
+            success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#64748B' },
             error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
-        }[type] ?? { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' };
+        }[type] ?? { bg: '#DDEAF4', fg: '#1E293B', border: '#DDEAF4' };
         const div = document.createElement('div');
         div.style.cssText = `padding:10px 14px;border-radius:6px;background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};font-size:13px;`;
         div.textContent = msg;
@@ -590,9 +592,9 @@ export async function renderCsvImportPage(ctx) {
 
 function buildCard(title) {
     const el = document.createElement('div');
-    el.style.cssText = 'background:#c2dfe3;border:1px solid #c2dfe3;border-radius:8px;padding:20px;margin-bottom:20px;';
+    el.style.cssText = 'background:#F4F7F9;border:1px solid #CBD5E1;border-radius:8px;padding:20px;margin-bottom:20px;';
     const h = document.createElement('h3');
-    h.style.cssText = 'margin:0 0 16px;font-size:15px;color:#253237;';
+    h.style.cssText = 'margin:0 0 16px;font-size:15px;color:#1E293B;';
     h.textContent = title;
     el.appendChild(h);
     return { el };
@@ -606,7 +608,7 @@ function buildRow() {
 
 function buildLabel(text) {
     const lbl = document.createElement('label');
-    lbl.style.cssText = 'font-size:13px;font-weight:600;color:#5c6b73;';
+    lbl.style.cssText = 'font-size:13px;font-weight:600;color:#64748B;';
     lbl.textContent = text;
     return lbl;
 }

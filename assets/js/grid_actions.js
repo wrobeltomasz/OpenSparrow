@@ -1,6 +1,8 @@
 // grid_actions.js
 import { debugLog } from './debug.js';
 import { showToast } from './toast.js';
+import { loadTable } from './grid.js';
+import { state } from './grid/state.js';
 
 function getCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -105,9 +107,16 @@ async function performUpdate(el, table, id, column, value) {
 
     debugLog("Update success", payload || { ok: true });
     markCell(td, true);
-    
-    // Confirm that the saved value is now the original baseline for future edits
-    el._originalValue = value; 
+    el._originalValue = value;
+
+    // Reload the grid row so automation-triggered field changes become visible.
+    if (state.currentTable && window.schema) {
+      loadTable(
+        window.schema, state.currentTable,
+        document.getElementById('gridTitle'),
+        document.getElementById('addRow')
+      );
+    }
 
   } catch (err) {
     console.error("Network error during update", err);

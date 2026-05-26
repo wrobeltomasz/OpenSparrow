@@ -1,4 +1,4 @@
-// admin/rag.js — RAG knowledge base management page
+﻿// admin/rag.js — RAG knowledge base management page
 
 function ragEsc(str) {
     return String(str ?? '').replace(/[&<>"']/g, m => ({
@@ -42,10 +42,10 @@ function ragStatusPill(anchor, msg, type = 'success') {
     const prev = anchor.parentNode?.querySelector('.rag-status-pill');
     if (prev) prev.remove();
     const colors = {
-        success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#5c6b73' },
+        success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#64748B' },
         error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
-        info:    { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' },
-    }[type] ?? { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' };
+        info:    { bg: '#DDEAF4', fg: '#1E293B', border: '#DDEAF4' },
+    }[type] ?? { bg: '#DDEAF4', fg: '#1E293B', border: '#DDEAF4' };
     const pill = document.createElement('span');
     pill.className = 'rag-status-pill';
     pill.textContent = msg;
@@ -287,10 +287,10 @@ function ragBuildDocumentsTab(panel) {
         files.forEach(file => {
             const row = tbody.insertRow();
             row.style.transition = 'background .15s';
-            row.addEventListener('mouseover', () => { row.style.background = '#c2dfe3'; });
+            row.addEventListener('mouseover', () => { row.style.background = '#DDEAF4'; });
             row.addEventListener('mouseout',  () => { row.style.background = ''; });
 
-            const tdStyle = 'padding:10px 12px;border-bottom:1px solid #c2dfe3;vertical-align:middle;';
+            const tdStyle = 'padding:10px 12px;border-bottom:1px solid #CBD5E1;vertical-align:middle;';
 
             const td1 = row.insertCell();
             td1.style.cssText  = tdStyle + 'font-weight:500;';
@@ -615,7 +615,7 @@ function ragBuildSettingsTab(panel) {
         const tbody = tbl.createTBody();
         models.forEach(m => {
             const row = tbody.insertRow();
-            const tdStyle = 'padding:8px 10px;border-bottom:1px solid #c2dfe3;';
+            const tdStyle = 'padding:8px 10px;border-bottom:1px solid #CBD5E1;';
 
             const td1 = row.insertCell();
             td1.style.cssText = tdStyle + 'font-weight:500;';
@@ -657,7 +657,7 @@ function ragBuildSettingsTab(panel) {
         checkBtn.disabled    = true;
         checkBtn.textContent = 'Connecting…';
         statusLine.style.display = 'block';
-        statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(255,195,0,0.12);color:#5c6b73;border:1px solid #ffc300;';
+        statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(255,195,0,0.12);color:#64748B;border:1px solid #ffc300;';
         statusLine.textContent   = 'Connecting to ' + url + '…';
 
         try {
@@ -670,8 +670,8 @@ function ragBuildSettingsTab(panel) {
 
             if (data.status === 'success') {
                 const n = (data.models ?? []).length;
-                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(43,147,72,0.12);color:#2b9348;border:1px solid #5c6b73;';
-                statusLine.textContent   = '�s� Connected · ' + n + ' model' + (n !== 1 ? 's' : '') + ' available'
+                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(43,147,72,0.12);color:#2b9348;border:1px solid #CBD5E1;';
+                statusLine.textContent   = '✓ Connected · ' + n + ' model' + (n !== 1 ? 's' : '') + ' available'
                     + (data.version ? ' · Ollama ' + data.version : '');
 
                 const currentModel = manualMode ? modelManualInp.value.trim() : (modelSelect.value || '');
@@ -679,12 +679,12 @@ function ragBuildSettingsTab(panel) {
                 renderModelsTable(data.models ?? [], data.version ?? '');
             } else {
                 statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(208,0,0,0.08);color:#a80000;border:1px solid #d00000;';
-                statusLine.textContent   = '�s� ' + (data.error ?? 'Connection failed');
+                statusLine.textContent   = '✗ ' + (data.error ?? 'Connection failed');
                 modelsTable.style.display = 'none';
             }
         } catch (e) {
             statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(208,0,0,0.08);color:#a80000;border:1px solid #d00000;';
-            statusLine.textContent   = '�s� Request failed: ' + e.message;
+            statusLine.textContent   = '✗ Request failed: ' + e.message;
             modelsTable.style.display = 'none';
         } finally {
             checkBtn.disabled    = false;
@@ -861,7 +861,7 @@ function ragBuildTestTab(panel) {
     answerLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
 
     const answerBox = document.createElement('div');
-    answerBox.style.cssText = 'padding:14px;background:#c2dfe3;border:1px solid var(--border);border-radius:4px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;margin-bottom:12px;';
+    answerBox.style.cssText = 'padding:14px;background:#F4F7F9;border:1px solid var(--border);border-radius:4px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;margin-bottom:12px;';
 
     const sourcesLabel = document.createElement('div');
     sourcesLabel.textContent = 'Sources used';
@@ -977,7 +977,7 @@ function ragBuildStatsTab(panel) {
 
     function statCard(label, valueEl) {
         const box = document.createElement('div');
-        box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:#c2dfe3;';
+        box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:#F4F7F9;';
         const v = document.createElement('div');
         v.style.cssText = 'font-size:28px;font-weight:700;color:var(--accent);margin-bottom:4px;';
         v.textContent = '—';
@@ -1049,10 +1049,10 @@ function ragBuildStatsTab(panel) {
                 td.style.cssText = 'padding:16px;color:var(--muted);text-align:center;font-style:italic;';
                 return;
             }
-            const tdStyle = 'padding:8px 10px;border-bottom:1px solid #c2dfe3;vertical-align:middle;';
+            const tdStyle = 'padding:8px 10px;border-bottom:1px solid #CBD5E1;vertical-align:middle;';
             rows.forEach(r => {
                 const row = tbody.insertRow();
-                row.addEventListener('mouseover', () => { row.style.background = '#c2dfe3'; });
+                row.addEventListener('mouseover', () => { row.style.background = '#DDEAF4'; });
                 row.addEventListener('mouseout',  () => { row.style.background = ''; });
 
                 const td1 = row.insertCell();

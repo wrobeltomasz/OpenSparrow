@@ -44,6 +44,7 @@ if ($request->isPost()) {
             snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, $logId);
         }
         set_record_owner($GLOBALS['conn'], $tableCfg->name, (int)$newId, $userId, $userId);
+        evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, 'create', $userId);
         foreach ($m2mConfigs as $mi => $m2mCfg) {
             $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
             m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$newId, $selected, $rawSchema);
@@ -74,19 +75,9 @@ foreach ($tableCfg->writableColumns() as $col) {
 
 $ctx = new RenderContext($isReadOnly, $fkOptions, $prefilled, $locked);
 
+$pageTitle = 'OpenSparrow | Add Record - ' . $tableCfg->displayName;
+ob_start();
 ?>
-<!doctype html>
-<html lang="<?= htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8') ?>">
-<head>
-    <meta charset="utf-8">
-    <title>OpenSparrow | Add Record - <?php echo htmlspecialchars($tableCfg->displayName); ?></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($csrf->token(), ENT_QUOTES, 'UTF-8'); ?>">
-    <link href="/assets/css/styles.css" rel="stylesheet">
-    <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)">
-</head>
-<body>
-<?php include 'templates/header.php'; ?>
 
 <main style="padding: 20px; max-width: 1060px; margin: 0 auto;">
     <h2><?= htmlspecialchars(t('form.add_new_record', ['table' => $tableCfg->displayName])) ?></h2>
@@ -160,36 +151,29 @@ $ctx = new RenderContext($isReadOnly, $fkOptions, $prefilled, $locked);
         </form>
     </div>
 </main>
-</div>
-
-<?php include 'templates/footer.php'; ?>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Enum select color update
-    document.querySelectorAll('select[data-enum-colors]').forEach(sel => {
-        const colors = JSON.parse(sel.dataset.enumColors || '{}');
-        const apply  = () => { sel.style.background = colors[sel.value] || ''; };
-        sel.addEventListener('change', apply);
+<?php
+$pageContent = ob_get_clean();
+$extraScripts = '<script>
+document.addEventListener(\'DOMContentLoaded\', function() {
+    document.querySelectorAll(\'select[data-enum-colors]\').forEach(sel => {
+        const colors = JSON.parse(sel.dataset.enumColors || \'{}\');
+        const apply  = () => { sel.style.background = colors[sel.value] || \'\'; };
+        sel.addEventListener(\'change\', apply);
         apply();
     });
-
-    const inputs = document.querySelectorAll('input[data-pattern]');
-    inputs.forEach(input => {
+    document.querySelectorAll(\'input[data-pattern]\').forEach(input => {
         const validate = () => {
-            if (!input.value) { input.setCustomValidity(''); return; }
+            if (!input.value) { input.setCustomValidity(\'\'); return; }
             try {
                 const regex = new RegExp(input.dataset.pattern);
-                input.setCustomValidity(regex.test(input.value) ? '' : (input.dataset.message || 'Invalid format'));
+                input.setCustomValidity(regex.test(input.value) ? \'\' : (input.dataset.message || \'Invalid format\'));
             } catch (e) {
-                console.error('Invalid RegExp in schema:', input.dataset.pattern, e);
+                console.error(\'Invalid RegExp in schema:\', input.dataset.pattern, e);
             }
         };
-        input.addEventListener('input', validate);
+        input.addEventListener(\'input\', validate);
         validate();
     });
 });
-</script>
-
-</body>
-</html>
+</script>';
+include __DIR__ . '/templates/layout.php';

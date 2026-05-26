@@ -1,4 +1,4 @@
-// admin/performance.js — Performance & Index Advisor
+﻿// admin/performance.js — Performance & Index Advisor
 import { buildInnerTabs } from './ui.js';
 
 function escHtml(str) {
@@ -120,7 +120,7 @@ function setBodyEmpty(body, msg) {
     body.replaceChildren();
     const p = document.createElement('p');
     p.style.cssText = 'color:#2b9348; font-weight:600; font-size:13px; margin:0;';
-    p.textContent = '�s� ' + msg;
+    p.textContent = '✓ ' + msg;
     body.appendChild(p);
 }
 
@@ -157,7 +157,7 @@ function renderIndexAdvisor(body, data) {
         grp.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
 
         const gh = document.createElement('div');
-        gh.style.cssText = 'padding:8px 12px; background:#c2dfe3; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace; font-size:13px; font-weight:600;';
+        gh.style.cssText = 'padding:8px 12px; background:#F4F7F9; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace; font-size:13px; font-weight:600;';
         const ghText = document.createElement('span');
         ghText.textContent = tableKey;
         gh.appendChild(ghText);
@@ -173,9 +173,9 @@ function renderIndexAdvisor(body, data) {
             tr.appendChild(td(s.column, 'font-family:monospace; font-weight:600;'));
             tr.appendChild(td(s.reasons.join(' · ')));
             const codeTd = document.createElement('td');
-            codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #c2dfe3; max-width:340px;';
+            codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #CBD5E1; max-width:340px;';
             const code = document.createElement('code');
-            code.style.cssText = 'font-size:11px; background:#c2dfe3; padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
+            code.style.cssText = 'font-size:11px; background:#F4F7F9; padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
             code.textContent = s.sql;
             codeTd.appendChild(code);
             tr.appendChild(codeTd);
@@ -198,7 +198,7 @@ function renderUnusedIndexes(body, data) {
     }
 
     const warn = document.createElement('p');
-    warn.style.cssText = 'font-size:13px; color:#5c6b73; background:rgba(255,195,0,0.12); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
+    warn.style.cssText = 'font-size:13px; color:#64748B; background:rgba(255,195,0,0.12); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
     warn.textContent = `⚠ ${rows.length} unused index${rows.length !== 1 ? 'es' : ''} found. Unused indexes waste storage and slow down writes. Verify before dropping.`;
     body.appendChild(warn);
 
@@ -215,7 +215,7 @@ function renderUnusedIndexes(body, data) {
         tr.appendChild(td(r.idx_scan));
         tr.appendChild(td(r.index_size));
         const codeTd = document.createElement('td');
-        codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #c2dfe3; max-width:300px;';
+        codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #CBD5E1; max-width:300px;';
         const code = document.createElement('code');
         code.style.cssText = 'font-size:11px; background:rgba(208,0,0,0.08); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
         code.textContent = r.drop_sql;
@@ -237,7 +237,7 @@ function renderSlowQueries(body, data) {
         p.style.cssText = 'font-size:13px; color:var(--muted);';
         p.textContent = data.message;
         const code = document.createElement('code');
-        code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:#c2dfe3; border-radius:4px; font-size:12px;';
+        code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:#F4F7F9; border-radius:4px; font-size:12px;';
         code.textContent = 'CREATE EXTENSION pg_stat_statements;';
         body.appendChild(p);
         body.appendChild(code);
@@ -256,13 +256,13 @@ function renderSlowQueries(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         const avgMs = parseFloat(r.mean_ms);
-        const color = avgMs > 500 ? '#a80000' : avgMs > 100 ? '#5c6b73' : 'inherit';
+        const color = avgMs > 500 ? '#a80000' : avgMs > 100 ? '#64748B' : 'inherit';
         tr.appendChild(td(r.mean_ms + ' ms', `font-weight:600; color:${color};`));
         tr.appendChild(td(r.total_ms + ' ms'));
         tr.appendChild(td(r.calls));
         tr.appendChild(td(r.calls > 0 ? Math.round(r.rows / r.calls) : '—'));
         const qtd = document.createElement('td');
-        qtd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #c2dfe3; max-width:420px;';
+        qtd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #CBD5E1; max-width:420px;';
         const code = document.createElement('code');
         code.style.cssText = 'font-size:11px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);';
         code.title = r.query;
@@ -291,10 +291,10 @@ function renderTableStats(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         const deadPct = parseFloat(r.dead_pct);
-        const bloatColor = deadPct > 20 ? '#a80000' : deadPct > 10 ? '#5c6b73' : 'inherit';
+        const bloatColor = deadPct > 20 ? '#a80000' : deadPct > 10 ? '#64748B' : 'inherit';
         const seqScan = parseInt(r.seq_scan) || 0;
         const idxScan = parseInt(r.idx_scan) || 0;
-        const scanColor = seqScan > 100 && seqScan > idxScan * 2 ? '#5c6b73' : 'inherit';
+        const scanColor = seqScan > 100 && seqScan > idxScan * 2 ? '#64748B' : 'inherit';
 
         tr.appendChild(td(r.tablename));
         tr.appendChild(td(Number(r.estimated_rows).toLocaleString()));

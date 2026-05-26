@@ -51,20 +51,9 @@ $userCaps = [
     'canExport' => in_array($userRole, ['editor', 'export'], true),
 ];
 
+$pageTitle = 'OpenSparrow | Files';
+ob_start();
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <title>OpenSparrow | Files</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="/assets/css/styles.css" rel="stylesheet" />
-    <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-</head>
-<body>
-
-<?php include 'templates/header.php'; ?>
 
 <main>
     <section id="filesSection">
@@ -127,14 +116,12 @@ $userCaps = [
     </section>
 </main>
 
-</div><!-- /.app-container -->
-
-<?php include 'templates/footer.php'; ?>
-
+<?php
+$pageContent = ob_get_clean();
+ob_start();
+?>
 <script nonce="<?php echo $cspNonce; ?>">
-    // Expose binary capability flags only — never the raw role string
-    window.USER_CAPS = <?php echo json_encode($userCaps, JSON_THROW_ON_ERROR); ?>;
-    // CSRF token for all POST requests originating from this page
+    window.USER_CAPS  = <?php echo json_encode($userCaps, JSON_THROW_ON_ERROR); ?>;
     window.CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token'], JSON_THROW_ON_ERROR); ?>;
 </script>
 
@@ -437,5 +424,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 </script>
-</body>
-</html>
+<?php
+$extraScripts = ob_get_clean();
+include __DIR__ . '/templates/layout.php';

@@ -1,4 +1,4 @@
-// admin/app.js
+﻿// admin/app.js
 import { moveArrayItem, moveObjectKey, renderGlobalSettings, createFullMenuPreview } from './ui.js';
 import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings } from './schema.js';
 import { renderDashboardLayout, renderDashboardEditor, initDashboardUI } from './dashboard.js';
@@ -23,6 +23,7 @@ import { renderDemoPage } from './demo.js';
 import { renderSettingsPage } from './settings.js';
 import { renderCsvImportPage } from './csv_import.js';
 import { renderRagPage } from './rag.js';
+import { renderAutomationsPage } from './automations.js';
 
 let currentConfig = null;
 let currentFile = 'schema';
@@ -57,10 +58,10 @@ export function showStatusPill(anchor, message, variant = 'success') {
     pill.className = 'status-pill status-pill-' + variant;
     pill.textContent = message;
     const colors = {
-        success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#5c6b73' },
+        success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#2b9348' },
         error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
-        info:    { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' },
-    }[variant] || { bg: '#c2dfe3', fg: '#253237', border: '#c2dfe3' };
+        info:    { bg: '#DDEAF4', fg: '#1E293B', border: '#CBD5E1' },
+    }[variant] || { bg: '#DDEAF4', fg: '#1E293B', border: '#CBD5E1' };
     pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px; font-size:12px; font-weight:600; transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
 
@@ -132,12 +133,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const title = document.createElement('strong');
         title.textContent = 'Run Notifications Cron';
         const closeBtn = document.createElement('button');
-        closeBtn.textContent = '�s�';
+        closeBtn.textContent = '✕';
         closeBtn.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;line-height:1;';
         closeBtn.addEventListener('click', () => overlay.remove());
         header.append(title, closeBtn);
         const content = document.createElement('div');
-        content.style.cssText = 'overflow-y:auto;flex:1;font-size:13px;line-height:1.6;border:1px solid #c2dfe3;border-radius:4px;padding:12px;background:#c2dfe3;';
+        content.style.cssText = 'overflow-y:auto;flex:1;font-size:13px;line-height:1.6;border:1px solid #CBD5E1;border-radius:4px;padding:12px;background:#F4F7F9;';
         content.textContent = 'Running…';
         box.append(header, content);
         overlay.appendChild(box);
@@ -247,6 +248,8 @@ async function loadConfigFile(fileName) {
         } else if (fileName === 'workflows') {
             if (!currentConfig.workflows || !Array.isArray(currentConfig.workflows)) currentConfig.workflows = [];
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Workflows';
+        } else if (fileName === 'automations') {
+            if (!currentConfig.automations || !Array.isArray(currentConfig.automations)) currentConfig.automations = [];
         } else if (fileName === 'files') {
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Files';
         } else if (fileName === 'views') {
@@ -259,7 +262,7 @@ async function loadConfigFile(fileName) {
             currentConfig = {};
         }
 
-        if (fileName === 'dashboard' || fileName === 'calendar' || fileName === 'workflows' || fileName === 'files') {
+        if (fileName === 'dashboard' || fileName === 'calendar' || fileName === 'workflows' || fileName === 'files' || fileName === 'automations') {
             currentItemKey = 'LAYOUT';
             renderSidebar();
             renderEditor('LAYOUT', null, false);
@@ -284,10 +287,10 @@ async function loadConfigFile(fileName) {
 function addNewItem() {
     let newIndex = 0;
     if (currentFile === 'dashboard') {
-        currentConfig.widgets.push({ id: "widget_" + Date.now(), type: "kpi_card", title: "New Widget", table: "", query: { type: "count", column: "id" }, icon: "", color: "#5c6b73", display_columns: [] });
+        currentConfig.widgets.push({ id: "widget_" + Date.now(), type: "kpi_card", title: "New Widget", table: "", query: { type: "count", column: "id" }, icon: "", color: "#64748B", display_columns: [] });
         newIndex = currentConfig.widgets.length - 1;
     } else if (currentFile === 'calendar') {
-        currentConfig.sources.push({ table: "", date_column: "", title_column: "", color: "#5c6b73", notify_before_days: 0, user_id_column: "", url_template: "" });
+        currentConfig.sources.push({ table: "", date_column: "", title_column: "", color: "#64748B", notify_before_days: 0, user_id_column: "", url_template: "" });
         newIndex = currentConfig.sources.length - 1;
     } else if (currentFile === 'workflows') {
         currentConfig.workflows.push({ id: "wf_" + Date.now(), title: "New Workflow", icon: "", steps: [] });
@@ -596,6 +599,7 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'settings') return renderSettingsPage(ctx);
     if (currentFile === 'csv_import') return renderCsvImportPage(ctx);
     if (currentFile === 'rag') return renderRagPage(ctx);
+    if (currentFile === 'automations') return renderAutomationsPage(ctx);
     if (currentFile === 'views') return renderViewsEditor(ctx);
     if (currentFile === 'files' && key === 'MANAGER') return renderFilesEditor(ctx);
 

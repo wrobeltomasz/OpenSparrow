@@ -100,7 +100,7 @@ function renderConditionsBuilder(q, colOptions) {
             // Remove button
             const rmBtn = document.createElement('button');
             rmBtn.type = 'button';
-            rmBtn.textContent = '�s�';
+            rmBtn.textContent = '✕';
             rmBtn.style.cssText = 'background:var(--danger,#d00000);color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:13px;';
             rmBtn.addEventListener('click', () => {
                 q.conditions.splice(idx, 1);

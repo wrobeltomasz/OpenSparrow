@@ -1,16 +1,3 @@
-<!doctype html>
-<html lang="<?= htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8') ?>">
-<head>
-    <meta charset="utf-8" />
-    <title>OpenSparrow | Open source | PHP + vanilla JS + Postgres</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" />
-    <link href="/assets/css/styles.css" rel="stylesheet" />
-    <link href="/assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-</head>
-<body>
-
 <?php
 $tSearchPlaceholder = htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
 $tAllColumns        = htmlspecialchars(t('grid.all_columns'), ENT_QUOTES, 'UTF-8');
@@ -21,7 +8,8 @@ $headerControls = <<<HTML
     <div id="filterBar" style="display:flex;gap:10px;"></div>
     <button id="clearFilters" title="{$tClearFilters}" style="display:none;">{$tClearFilters}</button>
 HTML;
-include __DIR__ . '/header.php';
+$pageTitle = 'OpenSparrow | Open source | PHP + vanilla JS + Postgres';
+ob_start();
 ?>
 <main>
     <section id="gridSection">
@@ -58,12 +46,12 @@ include __DIR__ . '/header.php';
         </div>
     </section>
 </main>
-</div>
 
 <pre id="debug"></pre>
-
-<?php include 'templates/footer.php'; ?>
-
+<?php
+$pageContent = ob_get_clean();
+ob_start();
+?>
 <script nonce="<?php echo $cspNonce ?? ''; ?>">
     window.USER_ROLE = <?php echo json_encode($userRole ?? 'viewer', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     document.addEventListener("DOMContentLoaded", () => {
@@ -82,6 +70,6 @@ include __DIR__ . '/header.php';
     });
 </script>
 <script type="module" src="assets/js/app.js?v=<?php echo @filemtime('assets/js/app.js'); ?>"></script>
-
-</body>
-</html>
+<?php
+$extraScripts = ob_get_clean();
+include __DIR__ . '/layout.php';

@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check'];
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete'];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);
@@ -86,6 +86,7 @@ if ($action === 'init_db') {
         $tImportRowsLog   = sys_table('import_rows_log');
         $tRagFiles        = sys_table('rag_files');
         $tRagQueries      = sys_table('rag_queries');
+        $tAutomationRuns  = sys_table('automation_runs');
 
         // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
@@ -190,6 +191,12 @@ if ($action === 'init_db') {
                 "CREATE INDEX IF NOT EXISTS idx_spw_rag_queries_user_id ON $tRagQueries USING btree (user_id)",
             ],
 
+            '2.7.0_automation_runs' => [
+                "CREATE TABLE IF NOT EXISTS $tAutomationRuns ( id serial4 NOT NULL, rule_id varchar(50) NOT NULL DEFAULT '', rule_name varchar(255) NOT NULL DEFAULT '', table_name varchar(100) NOT NULL DEFAULT '', record_id int4 NOT NULL DEFAULT 0, event varchar(20) NOT NULL DEFAULT '', status varchar(20) NOT NULL DEFAULT 'ok', error_msg text NULL, executed_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_automation_runs_pkey PRIMARY KEY (id) )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_automation_runs_rule_id ON $tAutomationRuns USING btree (rule_id, executed_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_automation_runs_executed_at ON $tAutomationRuns USING btree (executed_at DESC)",
+            ],
+
             // Add future migrations below — never modify entries above.
 
         ];
@@ -265,6 +272,7 @@ if ($action === 'migrations_list') {
             '2.4.0_release_migrations_table',
             '2.6.0_rag_files',
             '2.6.0_rag_queries',
+            '2.7.0_automation_runs',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");
@@ -1310,7 +1318,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Allowed config files for read and write operations
 // Dodałem 'files' do autoryzowanych konfiguracji
-$allowedFiles = ['schema', 'dashboard', 'calendar', 'database', 'security', 'workflows', 'files', 'views'];
+$allowedFiles = ['schema', 'dashboard', 'calendar', 'database', 'security', 'workflows', 'files', 'views', 'automations'];
 
 // Get content of a JSON config file
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
@@ -2628,6 +2636,162 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode(['status' => 'success', 'summary' => $summary, 'recent' => $recent]);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// GET: list automation run history
+if ($action === 'automations_runs' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn  = db_connect();
+        $tRuns = sys_table('automation_runs');
+        $ruleId = trim((string) ($_GET['rule_id'] ?? ''));
+
+        if ($ruleId !== '') {
+            $res = @pg_query_params(
+                $conn,
+                "SELECT id, rule_id, rule_name, table_name, record_id, event, status, error_msg, executed_at
+                 FROM $tRuns WHERE rule_id = \$1 ORDER BY executed_at DESC LIMIT 100",
+                [$ruleId]
+            );
+        } else {
+            $res = @pg_query(
+                $conn,
+                "SELECT id, rule_id, rule_name, table_name, record_id, event, status, error_msg, executed_at
+                 FROM $tRuns ORDER BY executed_at DESC LIMIT 200"
+            );
+        }
+
+        $runs = [];
+        if ($res) {
+            while ($row = pg_fetch_assoc($res)) {
+                $runs[] = $row;
+            }
+        }
+        echo json_encode(['ok' => true, 'runs' => $runs]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// ── Automations CRUD (JSON-backed) ───────────────────────────────────────────
+
+function auto_cfg_path(): string
+{
+    return __DIR__ . '/../config/automations.json';
+}
+
+function auto_cfg_read(): array
+{
+    $path = auto_cfg_path();
+    if (!file_exists($path)) {
+        return [];
+    }
+    $data = json_decode(file_get_contents($path), true);
+    return $data['automations'] ?? [];
+}
+
+function auto_cfg_write(array $automations): void
+{
+    $path    = auto_cfg_path();
+    $json    = json_encode(['automations' => array_values($automations)], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    $tmpPath = $path . '.tmp.' . bin2hex(random_bytes(4));
+    file_put_contents($tmpPath, $json, LOCK_EX);
+    rename($tmpPath, $path);
+}
+
+// GET: list all automation rules
+if ($action === 'automations_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Content-Type: application/json');
+    try {
+        echo json_encode(['ok' => true, 'automations' => auto_cfg_read()]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// POST: create or update automation rule
+if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    try {
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
+        $name         = trim((string) ($body['name'] ?? ''));
+        $enabled      = !empty($body['enabled']);
+        $triggerTable = trim((string) ($body['trigger_table'] ?? ''));
+        $triggerEvent = trim((string) ($body['trigger_event'] ?? ''));
+        $conditions   = $body['conditions'] ?? ['type' => 'AND', 'rules' => []];
+        $actions      = $body['actions'] ?? [];
+        $id           = isset($body['id']) && $body['id'] !== null && $body['id'] !== ''
+            ? (string) $body['id']
+            : null;
+
+        if ($name === '') {
+            echo json_encode(['ok' => false, 'error' => 'Name is required.']);
+            exit;
+        }
+        if (!in_array($triggerEvent, ['create', 'update', 'delete'], true)) {
+            echo json_encode(['ok' => false, 'error' => 'Invalid trigger_event.']);
+            exit;
+        }
+
+        $list  = auto_cfg_read();
+        $found = false;
+
+        $entry = [
+            'id'            => $id ?? ('auto_' . bin2hex(random_bytes(6))),
+            'name'          => $name,
+            'enabled'       => $enabled,
+            'trigger_table' => $triggerTable,
+            'trigger_event' => $triggerEvent,
+            'conditions'    => $conditions,
+            'actions'       => $actions,
+        ];
+
+        if ($id) {
+            foreach ($list as &$item) {
+                if (($item['id'] ?? '') === $id) {
+                    $item  = $entry;
+                    $found = true;
+                    break;
+                }
+            }
+            unset($item);
+        }
+
+        if (!$found) {
+            $list[] = $entry;
+        }
+
+        auto_cfg_write($list);
+        echo json_encode(['ok' => true]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// POST: delete automation rule
+if ($action === 'automations_delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    try {
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $id   = (string) ($body['id'] ?? '');
+        if ($id === '') {
+            echo json_encode(['ok' => false, 'error' => 'Invalid id.']);
+            exit;
+        }
+
+        $list    = auto_cfg_read();
+        $filtered = array_filter($list, static fn(array $item) => ($item['id'] ?? '') !== $id);
+        auto_cfg_write($filtered);
+        echo json_encode(['ok' => true]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
     }
     exit;
 }

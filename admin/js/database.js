@@ -1,4 +1,4 @@
-// admin/database.js
+﻿// admin/database.js
 import { createTextInput } from './ui.js';
 
 export function renderDatabaseEditor(key, itemData, isArray, ctx) {
@@ -6,7 +6,7 @@ export function renderDatabaseEditor(key, itemData, isArray, ctx) {
     
     workspaceEl.innerHTML = `
         <h3>PostgreSQL Connection Settings</h3>
-        <p style="color:#9db4c0; margin-bottom: 20px;">
+        <p style="color:#64748B; margin-bottom: 20px;">
             Configure your database connection. <strong>Click "Save File" in the top right corner before testing!</strong>
         </p>
     `;
@@ -19,30 +19,32 @@ export function renderDatabaseEditor(key, itemData, isArray, ctx) {
     workspaceEl.appendChild(createTextInput('schema', 'System Schema (for spw_* tables, default: app)', currentConfig.schema || 'app', v => currentConfig.schema = v));
 
     const testBtn = document.createElement('button');
-    testBtn.innerHTML = 'dz�S Test Saved Connection';
-    testBtn.style.cssText = 'margin-top: 20px; padding: 10px 15px; background: #5c6b73; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;';
-    
+    testBtn.textContent = 'Test Saved Connection';
+    testBtn.className = 'btn btn-primary';
+    testBtn.style.marginTop = '20px';
+    testBtn.style.width = '100%';
+
     testBtn.onclick = async () => {
-        testBtn.innerHTML = '�Zl Testing...';
+        testBtn.textContent = 'Testing...';
         testBtn.style.opacity = '0.7';
-        
+
         try {
 
             const res = await fetch('api.php?action=health');
             const data = await res.json();
-            
+
             if (data.db_connected) {
-                alert('�s� Success! Successfully connected to the database.');
+                alert('✓ Success! Successfully connected to the database.');
                 testBtn.style.background = '#2b9348';
             } else {
-                alert('�tS Connection failed:\\n' + data.db_error + '\\n\\nDid you click "Save File" before testing?');
+                alert('✗ Connection failed:\n' + data.db_error + '\n\nDid you click "Save File" before testing?');
                 testBtn.style.background = '#d00000';
             }
         } catch (e) {
-            alert('�tS API Error: Cannot reach server.');
+            alert('✗ API Error: Cannot reach server.');
         }
-        
-        testBtn.innerHTML = 'dz�S Test Saved Connection';
+
+        testBtn.textContent = 'Test Saved Connection';
         testBtn.style.opacity = '1';
     };
 

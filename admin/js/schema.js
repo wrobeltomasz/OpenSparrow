@@ -1,4 +1,4 @@
-// admin/schema.js
+﻿// admin/schema.js
 import { createTextInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';
 import { showStatusPill, markDirty } from './app.js';
 
@@ -42,7 +42,8 @@ export function renderSchemaGlobalSettings(config, ctx) {
     labelWrap.append(lbl, hint);
 
     const sel = document.createElement('select');
-    sel.style.cssText = 'padding:6px 10px; border:1px solid var(--border); border-radius:4px; font-size:14px; min-width:80px;';
+    sel.className = 'adm-input';
+    sel.style.minWidth = '80px';
     PAGE_SIZES.forEach(n => {
         const opt = document.createElement('option');
         opt.value = n;
@@ -70,9 +71,8 @@ export function renderSchemaGlobalSettings(config, ctx) {
 export function createAddTableButton(currentConfig, defaultSchema, onSuccess, onError) {
     const btnAddTable = document.createElement('button');
     btnAddTable.type = 'button';
-    btnAddTable.className = 'btn-add';
+    btnAddTable.className = 'btn btn-success';
     btnAddTable.textContent = '+ Add Table';
-    btnAddTable.style.background = '#2b9348';
     btnAddTable.style.marginLeft = '10px';
 
     btnAddTable.onclick = async (e) => {
@@ -194,7 +194,8 @@ function buildDefaultSortUI(tableData) {
             row.style.cssText = 'display:flex; align-items:center; gap:8px;';
 
             const colInput = document.createElement('select');
-            colInput.style.cssText = 'padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px; width:160px;';
+            colInput.className = 'adm-input';
+            colInput.style.width = '160px';
             const blankOpt = document.createElement('option');
             blankOpt.value = '';
             blankOpt.textContent = '— column —';
@@ -209,7 +210,7 @@ function buildDefaultSortUI(tableData) {
             colInput.addEventListener('change', () => { rules[i].column = colInput.value; markDirty(); });
 
             const dirSel = document.createElement('select');
-            dirSel.style.cssText = 'padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:13px;';
+            dirSel.className = 'adm-input';
             [['asc', 'ASC ↑'], ['desc', 'DESC ↓']].forEach(([val, lbl]) => {
                 const opt = document.createElement('option');
                 opt.value = val;
@@ -221,8 +222,8 @@ function buildDefaultSortUI(tableData) {
 
             const btnRemove = document.createElement('button');
             btnRemove.type = 'button';
-            btnRemove.textContent = '�s�';
-            btnRemove.style.cssText = 'background:#d00000; color:#fff; border:none; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:13px;';
+            btnRemove.textContent = '✕';
+            btnRemove.className = 'btn btn-danger btn-xs';
             btnRemove.addEventListener('click', () => { rules.splice(i, 1); markDirty(); renderRules(); });
 
             row.appendChild(colInput);
@@ -237,7 +238,8 @@ function buildDefaultSortUI(tableData) {
     const btnAdd = document.createElement('button');
     btnAdd.type = 'button';
     btnAdd.textContent = '+ Add Sort Rule';
-    btnAdd.style.cssText = 'margin-top:6px; padding:4px 10px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px;';
+    btnAdd.className = 'btn btn-primary btn-xs';
+    btnAdd.style.marginTop = '6px';
     btnAdd.addEventListener('click', () => { rules.push({ column: '', dir: 'asc' }); markDirty(); renderRules(); });
     wrapper.appendChild(btnAdd);
 
@@ -264,7 +266,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     const btnDeleteTable = document.createElement('button');
     btnDeleteTable.type = 'button';
     btnDeleteTable.textContent = 'Delete Table';
-    btnDeleteTable.style.cssText = 'background: #d00000; color: white; border: none; padding: 6px 12px; cursor: pointer; font-weight: bold; border-radius: 4px;';
+    btnDeleteTable.className = 'btn btn-danger btn-sm';
     btnDeleteTable.onclick = () => {
         if (confirm('Are you sure you want to remove this table from the configuration?')) {
             if (ctx.currentConfig && ctx.currentConfig.tables) {
@@ -289,8 +291,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
     const btnSyncCols = document.createElement('button');
     btnSyncCols.type = 'button';
-    btnSyncCols.className = 'btn-add';
-    btnSyncCols.style.background = '#5c6b73';
+    btnSyncCols.className = 'btn btn-sm';
     btnSyncCols.innerHTML = 'Sync Columns from DB';
     
     // Fetch and sync columns from database
@@ -384,9 +385,8 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     // New code for dynamic column addition
     const btnAddCol = document.createElement('button');
     btnAddCol.type = 'button';
-    btnAddCol.className = 'btn-add';
+    btnAddCol.className = 'btn btn-sm';
     btnAddCol.textContent = '+ Add Column';
-    btnAddCol.style.background = '#5c6b73';
     btnAddCol.style.marginLeft = '10px';
 
     btnAddCol.onclick = async (e) => {
@@ -439,9 +439,9 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     // Add Virtual Column — schema-only, no DB interaction
     const btnAddVirtual = document.createElement('button');
     btnAddVirtual.type = 'button';
-    btnAddVirtual.className = 'btn-add';
+    btnAddVirtual.className = 'btn btn-primary btn-sm';
     btnAddVirtual.textContent = '+ Add Virtual Column';
-    btnAddVirtual.style.cssText = 'background:#5c6b73;margin-left:10px;';
+    btnAddVirtual.style.marginLeft = '10px';
     btnAddVirtual.onclick = () => {
         const colName = prompt('Enter virtual column name (lowercase, no spaces):');
         if (!colName) return;
@@ -525,9 +525,9 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
     const virtualOpsNumeric = [
         { value: 'sum',      label: 'Sum (col1 + col2 + …)' },
-        { value: 'subtract', label: 'Subtract (col1 �?� col2)' },
-        { value: 'multiply', label: 'Multiply (col1 A� col2 A� …)' },
-        { value: 'divide',   label: 'Divide (col1 A� col2)' },
+        { value: 'subtract', label: 'Subtract (col1 − col2)' },
+        { value: 'multiply', label: 'Multiply (col1 × col2 × …)' },
+        { value: 'divide',   label: 'Divide (col1 ÷ col2)' },
         { value: 'average',  label: 'Average' },
         { value: 'concat',   label: 'Concat (text join)' },
     ];
@@ -552,7 +552,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         headerDiv.style.display = 'flex';
         headerDiv.style.alignItems = 'center';
         headerDiv.style.gap = '8px';
-        headerDiv.style.borderBottom = '1px solid #c2dfe3';
+        headerDiv.style.borderBottom = '1px solid #DDEAF4';
         headerDiv.style.paddingBottom = '5px';
         headerDiv.style.marginBottom = '15px';
         headerDiv.addEventListener('click', (e) => {
@@ -635,11 +635,11 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             const f = colCfg.formula;
 
             const vBlock = document.createElement('div');
-            vBlock.style.cssText = 'margin-left:20px;padding-left:10px;border-left:2px solid #5c6b73;margin-bottom:15px;';
+            vBlock.style.cssText = 'margin-left:20px;padding-left:10px;border-left:2px solid #64748B;margin-bottom:15px;';
 
             const vTitle = document.createElement('h5');
             vTitle.textContent = 'Formula Configuration';
-            vTitle.style.cssText = 'margin-top:0;margin-bottom:10px;color:#5c6b73;';
+            vTitle.style.cssText = 'margin-top:0;margin-bottom:10px;color:#64748B;';
             vBlock.appendChild(vTitle);
 
             // Operation selector
@@ -676,8 +676,8 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
                     const rmBtn = document.createElement('button');
                     rmBtn.type = 'button';
-                    rmBtn.textContent = '�s�';
-                    rmBtn.style.cssText = 'background:var(--danger,#d00000);color:#fff;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:12px;';
+                    rmBtn.textContent = '✕';
+                    rmBtn.className = 'btn btn-danger btn-xs';
                     rmBtn.addEventListener('click', () => {
                         f.cols.splice(i, 1);
                         rebuildSelectedList();
@@ -742,7 +742,8 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             const btnDelVirtual = document.createElement('button');
             btnDelVirtual.type = 'button';
             btnDelVirtual.textContent = 'Delete Virtual Column';
-            btnDelVirtual.style.cssText = 'background:#d00000;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;margin-top:8px;font-size:13px;';
+            btnDelVirtual.className = 'btn btn-danger btn-sm';
+            btnDelVirtual.style.marginTop = '8px';
             btnDelVirtual.addEventListener('click', () => {
                 if (confirm(`Delete virtual column "${colName}"?`)) {
                     delete tableData.columns[colName];
@@ -803,7 +804,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             const colorsContainer = document.createElement('div');
             colorsContainer.style.marginLeft = '20px';
             colorsContainer.style.paddingLeft = '10px';
-            colorsContainer.style.borderLeft = '2px solid #5c6b73';
+            colorsContainer.style.borderLeft = '2px solid #64748B';
             colorsContainer.style.marginBottom = '15px';
             
             const colorsTitle = document.createElement('h5');
@@ -856,7 +857,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         const regexContainer = document.createElement('div');
         regexContainer.style.marginLeft = '20px'; 
         regexContainer.style.paddingLeft = '10px'; 
-        regexContainer.style.borderLeft = '2px solid #5c6b73'; 
+        regexContainer.style.borderLeft = '2px solid #64748B'; 
         regexContainer.style.marginBottom = '15px';
 
         const regexTitle = document.createElement('h5');
@@ -965,8 +966,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
         const btnAddSub = document.createElement('button');
         btnAddSub.type = 'button';
-        btnAddSub.className = 'btn-add';
-        btnAddSub.style.background = '#2b9348';
+        btnAddSub.className = 'btn btn-success btn-sm';
         btnAddSub.textContent = '+ Add Subtable';
         btnAddSub.onclick = () => {
             tableData.subtables.push({ table: '', foreign_key: '', label: '', columns_to_show: ['id'] });
@@ -999,7 +999,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         tableData.many_to_many.forEach((cfg, index) => {
             const block = document.createElement('div');
             block.className = 'column-block collapsed';
-            block.style.borderLeft = '4px solid #5c6b73';
+            block.style.borderLeft = '4px solid #64748B';
 
             const headerDiv = document.createElement('div');
             headerDiv.className = 'block-header';
@@ -1063,8 +1063,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
         const btnAdd = document.createElement('button');
         btnAdd.type = 'button';
-        btnAdd.className = 'btn-add';
-        btnAdd.style.background = '#5c6b73';
+        btnAdd.className = 'btn btn-sm';
         btnAdd.textContent = '+ Add Many-to-Many';
         btnAdd.onclick = () => {
             tableData.many_to_many.push({

@@ -148,7 +148,7 @@ export function renderViewsEditor(ctx) {
         toggleBtn.addEventListener('click', () => {
             const open = body.style.display === 'block';
             body.style.display = open ? 'none' : 'block';
-            toggleBtn.textContent = open ? '▶' : '�L';
+            toggleBtn.textContent = open ? '▶' : '▼';
         });
 
         return card;
@@ -322,7 +322,8 @@ export function renderViewsEditor(ctx) {
         row.style.cssText = 'display:flex; align-items:center; gap:8px;';
 
         const opSel = document.createElement('select');
-        opSel.style.cssText = 'width:64px; padding:8px 6px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--panel); color:var(--text);';
+        opSel.className = 'adm-input';
+        opSel.style.width = '64px';
         ['>', '>=', '<', '<=', '=='].forEach(op => {
             const o = document.createElement('option');
             o.value = op; o.textContent = op;
@@ -333,7 +334,8 @@ export function renderViewsEditor(ctx) {
 
         const valInp = document.createElement('input');
         valInp.type  = 'number';
-        valInp.style.cssText = 'width:100px; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--panel); color:var(--text);';
+        valInp.className = 'adm-input';
+        valInp.style.width = '100px';
         valInp.value = rule.value ?? 0;
         valInp.addEventListener('input', () => { rules[idx].value = parseFloat(valInp.value) || 0; });
 
@@ -344,9 +346,8 @@ export function renderViewsEditor(ctx) {
         colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; });
 
         const delBtn = document.createElement('button');
-        delBtn.className   = 'btn-remove';
-        delBtn.style.cssText = 'float:none; padding:6px 10px; font-size:12px;';
-        delBtn.textContent = '�s� Remove';
+        delBtn.className   = 'btn btn-danger btn-xs';
+        delBtn.textContent = '✕ Remove';
         delBtn.addEventListener('click', () => { rules.splice(idx, 1); onUpdate(); markDirty(); });
 
         row.appendChild(opSel); row.appendChild(valInp); row.appendChild(colorInp); row.appendChild(delBtn);
@@ -395,7 +396,8 @@ export function renderViewsEditor(ctx) {
                 idxSpan.textContent = `Level ${idx}:`;
 
                 const gbSel = document.createElement('select');
-                gbSel.style.cssText = 'flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--panel); color:var(--text);';
+                gbSel.className = 'adm-input';
+                gbSel.style.flex = '1';
                 allCols.forEach(c => {
                     const o = document.createElement('option');
                     o.value = c; o.textContent = c;
@@ -408,13 +410,13 @@ export function renderViewsEditor(ctx) {
                 labelInp.type        = 'text';
                 labelInp.placeholder = 'Label (optional)';
                 labelInp.value       = lvl.label ?? '';
-                labelInp.style.cssText = 'flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; background:var(--panel); color:var(--text);';
+                labelInp.className = 'adm-input';
+                labelInp.style.flex = '1';
                 labelInp.addEventListener('input', () => { dd.levels[idx].label = labelInp.value; });
 
                 const delBtn = document.createElement('button');
-                delBtn.className   = 'btn-remove';
-                delBtn.style.cssText = 'float:none; padding:6px 10px; font-size:12px;';
-                delBtn.textContent = '�s�';
+                delBtn.className   = 'btn btn-danger btn-xs';
+                delBtn.textContent = '✕';
                 delBtn.addEventListener('click', () => { dd.levels.splice(idx, 1); renderLevels(); markDirty(); });
 
                 lvlRow.appendChild(idxSpan); lvlRow.appendChild(gbSel); lvlRow.appendChild(labelInp); lvlRow.appendChild(delBtn);

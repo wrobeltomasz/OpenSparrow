@@ -1,4 +1,4 @@
-// admin/files_render.js
+﻿// admin/files_render.js
 // OpenSparrow Files Module UI
 
 const FILES_API = 'api_files.php';
@@ -93,10 +93,10 @@ function buildSkeleton() {
                 <input id="f-allowed-exts" type="text" style="width:100%" placeholder="jpg, png, pdf, zip">
             </div>
             
-            <div class="form-group" style="margin-top:20px; padding-top:15px; border-top:1px solid #c2dfe3;">
-                <label style="font-weight:bold; color:#253237;">Allowed Record Relations (Auto-Link)</label>
+            <div class="form-group" style="margin-top:20px; padding-top:15px; border-top:1px solid #DDEAF4;">
+                <label style="font-weight:bold; color:#1E293B;">Allowed Record Relations (Auto-Link)</label>
                 <div id="f-relations-list" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;"></div>
-                <button id="f-add-relation-btn" type="button" class="btn-add" style="margin-top:10px; padding:4px 10px; font-size:12px; background:#253237;">+ Add Relation</button>
+                <button id="f-add-relation-btn" type="button" class="btn btn-primary btn-xs" style="margin-top:10px;">+ Add Relation</button>
             </div>
 
             <button type="button" id="f-save-cfg" class="btn-add" style="margin:0">Save configuration</button>
@@ -129,10 +129,10 @@ function buildSkeleton() {
                 </select>
                 <button type="button" id="f-refresh" class="btn-add" style="margin:0;padding:6px 14px">Refresh</button>
             </div>
-            <div id="f-status" style="font-size:13px;color:#9db4c0;margin-bottom:8px"></div>
+            <div id="f-status" style="font-size:13px;color:#64748B;margin-bottom:8px"></div>
             <table style="width:100%;border-collapse:collapse;font-size:13px" id="f-table">
                 <thead>
-                    <tr style="background:#c2dfe3;text-align:left">
+                    <tr style="background:#F4F7F9;text-align:left">
                         <th style="padding:8px 6px;width:40px"></th>
                         <th style="padding:8px 6px">Name</th>
                         <th style="padding:8px 6px">Type</th>
@@ -144,7 +144,7 @@ function buildSkeleton() {
                     </tr>
                 </thead>
                 <tbody id="f-tbody">
-                    <tr><td colspan="8" style="padding:16px;color:#9db4c0">Loading...</td></tr>
+                    <tr><td colspan="8" style="padding:16px;color:#64748B">Loading...</td></tr>
                 </tbody>
             </table>
             <div id="f-pages" style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"></div>
@@ -181,7 +181,7 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     const list = document.getElementById('f-relations-list');
     const row = document.createElement('div');
     row.className = 'f-relation-row';
-    row.style.cssText = 'display:flex; gap:10px; background:#c2dfe3; padding:10px; border:1px solid #c2dfe3; border-radius:4px; align-items:flex-end;';
+    row.style.cssText = 'display:flex; gap:10px; background:#F4F7F9; padding:10px; border:1px solid #CBD5E1; border-radius:4px; align-items:flex-end;';
 
     const tables = _state.getTableOptions ? _state.getTableOptions() : [];
     
@@ -201,7 +201,7 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
             <label style="font-size:11px; display:block; margin-bottom:4px;">Col 2 (Opt)</label>
             <select class="rel-col2" style="width:100%"></select>
         </div>
-        <button type="button" class="btn-del-rel" style="padding:6px 10px; background:#d00000; color:white; border:none; border-radius:4px; cursor:pointer;">X</button>
+        <button type="button" class="btn btn-danger btn-xs btn-del-rel">✕</button>
     `;
 
     const tableSel = row.querySelector('.rel-table');
@@ -248,7 +248,7 @@ function fillConfigForm(cfg) {
     typesEl.innerHTML = ALL_TYPES.map(t => `
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:normal">
             <input type="checkbox" value="${t}" ${(cfg.allowed_types || []).includes(t) ? 'checked' : ''}>
-            <span style="font-size:11px;font-weight:bold;color:#9db4c0">${TYPE_ICONS[t]}</span> ${cap(t)}
+            <span style="font-size:11px;font-weight:bold;color:#64748B">${TYPE_ICONS[t]}</span> ${cap(t)}
         </label>
     `).join('');
 
@@ -328,7 +328,7 @@ async function uploadFile() {
     }
 
     statusEl.textContent = 'Uploading...';
-    statusEl.style.color = '#9db4c0';
+    statusEl.style.color = '#64748B';
 
     try {
         const res = await fetch(FILES_API, {
@@ -355,7 +355,7 @@ async function uploadFile() {
 async function loadList() {
     if (_state.loading) return;
     _state.loading = true;
-    setTbody('<tr><td colspan="8" style="padding:16px;color:#9db4c0">Loading...</td></tr>');
+    setTbody('<tr><td colspan="8" style="padding:16px;color:#64748B">Loading...</td></tr>');
 
     const params = new URLSearchParams({
         action: 'list',
@@ -392,25 +392,25 @@ async function loadList() {
 // Render table structure
 function renderTable(files) {
     if (!files.length) {
-        setTbody('<tr><td colspan="8" style="padding:16px;color:#9db4c0">No files found.</td></tr>');
+        setTbody('<tr><td colspan="8" style="padding:16px;color:#64748B">No files found.</td></tr>');
         return;
     }
 
     const rows = files.map(f => `
-        <tr style="border-bottom:1px solid #c2dfe3" data-uuid="${esc(f.uuid)}">
-            <td style="padding:7px 6px;font-size:12px;font-weight:bold;text-align:center;color:#9db4c0">${TYPE_ICONS[f.type] ?? TYPE_ICONS.other}</td>
+        <tr style="border-bottom:1px solid #CBD5E1" data-uuid="${esc(f.uuid)}">
+            <td style="padding:7px 6px;font-size:12px;font-weight:bold;text-align:center;color:#64748B">${TYPE_ICONS[f.type] ?? TYPE_ICONS.other}</td>
             <td style="padding:7px 6px">
                 ${f.type === 'image'
                     ? `<img src="../file_download.php?uuid=${esc(f.uuid)}&thumb=1" alt="" style="height:32px;width:32px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px">`
                     : ''}
-                <a href="../file_download.php?uuid=${esc(f.uuid)}" target="_blank" style="color:var(--accent,#5c6b73)">${esc(f.display_name || f.name)}</a>
+                <a href="../file_download.php?uuid=${esc(f.uuid)}" target="_blank" style="color:var(--accent,#64748B)">${esc(f.display_name || f.name)}</a>
             </td>
             <td style="padding:7px 6px">
-                <span style="background:#c2dfe3;padding:2px 7px;border-radius:10px;font-size:11px">${esc(f.type)}</span>
+                <span style="background:#F4F7F9;padding:2px 7px;border-radius:10px;font-size:11px">${esc(f.type)}</span>
             </td>
             <td style="padding:7px 6px;white-space:nowrap">${formatBytes(f.size_bytes)}</td>
             <td style="padding:7px 6px">
-                ${f.related_table ? `<span style="background:#c2dfe3;color:#253237;padding:2px 6px;border-radius:4px;font-size:11px">${esc(f.related_table)} #${f.related_id}</span>` : '-'}
+                ${f.related_table ? `<span style="background:#F4F7F9;color:#1E293B;padding:2px 6px;border-radius:4px;font-size:11px">${esc(f.related_table)} #${f.related_id}</span>` : '-'}
             </td>
             <td style="padding:7px 6px">${esc(f.uploaded_by_username || '-')}</td>
             <td style="padding:7px 6px;white-space:nowrap">${formatDate(f.created_at)}</td>
@@ -461,9 +461,9 @@ function renderPager() {
     let html = '';
     for (let p = 1; p <= pages; p++) {
         if (p === 1 || p === pages || (p >= page - 2 && p <= page + 2)) {
-            html += `<button data-p="${p}" style="padding:4px 10px;border:1px solid #c2dfe3;border-radius:4px;cursor:pointer;background:${p === page ? 'var(--accent,#5c6b73)' : '#fff'};color:${p === page ? '#fff' : '#5c6b73'}">${p}</button>`;
+            html += `<button data-p="${p}" style="padding:4px 10px;border:1px solid #CBD5E1;border-radius:4px;cursor:pointer;background:${p === page ? 'var(--accent,#64748B)' : '#fff'};color:${p === page ? '#fff' : '#64748B'}">${p}</button>`;
         } else if (p === page - 3 || p === page + 3) {
-            html += `<span style="padding:4px 4px;color:#9db4c0">...</span>`;
+            html += `<span style="padding:4px 4px;color:#64748B">...</span>`;
         }
     }
 

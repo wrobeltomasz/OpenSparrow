@@ -12,6 +12,9 @@ tmp/*
 !tmp/.htaccess
 temp/
 
+# PHP session files — stored in storage/sessions/ (outside webroot-exposed tmp/)
+storage/sessions/*
+
 # IDE
 .vscode/
 .idea/

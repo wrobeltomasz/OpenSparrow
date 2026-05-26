@@ -47,19 +47,10 @@ $userCaps = [
     'canEdit'   => $userRole === 'editor',
     'canExport' => in_array($userRole, ['editor', 'export'], true),
 ];
+
+$pageTitle = 'OpenSparrow | Calendar';
+ob_start();
 ?>
-<!doctype html>
-<html lang="<?= htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8') ?>">
-<head>
-    <meta charset="utf-8" />
-    <title>OpenSparrow | Calendar</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>" />
-    <link href="assets/css/styles.css" rel="stylesheet" />
-    <link href="assets/css/mobile.css" rel="stylesheet" media="only screen and (max-width: 768px)" />
-</head>
-<body>
-<?php include 'templates/header.php'; ?>
 <main id="calendarMain">
     <div class="calendar-header">
         <h2 id="calendarTitle">Month Year</h2>
@@ -71,11 +62,14 @@ $userCaps = [
 
     <div id="calendarContainer" class="calendar-grid"></div>
 </main>
-</div>
-<?php include 'templates/footer.php'; ?>
+<?php
+$pageContent = ob_get_clean();
+ob_start();
+?>
 <script nonce="<?php echo $cspNonce; ?>">
     window.USER_CAPS = <?php echo json_encode($userCaps, JSON_THROW_ON_ERROR); ?>;
 </script>
 <script type="module" src="assets/js/calendar.js?v=<?php echo @filemtime('assets/js/calendar.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
-</body>
-</html>
+<?php
+$extraScripts = ob_get_clean();
+include __DIR__ . '/templates/layout.php';

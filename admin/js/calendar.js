@@ -1,4 +1,4 @@
-// admin/calendar.js
+﻿// admin/calendar.js
 import { createTextInput, createSelectInput, createColorInput, createIconPicker, createMultiSelect } from './ui.js';
 
 export function renderCalendarEditor(key, itemData, isArray, ctx) {
@@ -35,12 +35,12 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
         }
     }));
     
-    workspaceEl.appendChild(createColorInput('color', 'Event Color', itemData.color || '#5c6b73', v => itemData.color = v));
+    workspaceEl.appendChild(createColorInput('color', 'Event Color', itemData.color || '#64748B', v => itemData.color = v));
     workspaceEl.appendChild(createTextInput('notify_before_days', 'Notify Before (Days)', itemData.notify_before_days, v => itemData.notify_before_days = parseInt(v) || 0));
 
     // Async block for loading active users from database
     const usersWrapper = document.createElement('div');
-    usersWrapper.innerHTML = '<p style="color:#9db4c0; font-size:13px;">Loading active users...</p>';
+    usersWrapper.innerHTML = '<p style="color:#64748B; font-size:13px;">Loading active users...</p>';
     workspaceEl.appendChild(usersWrapper);
 
     fetch('api.php?action=users_list')

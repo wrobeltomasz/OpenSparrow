@@ -1,4 +1,4 @@
-// admin/health.js
+﻿// admin/health.js
 export async function renderHealthDashboard(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = `<h3>Checking system status...</h3>`;
@@ -13,19 +13,19 @@ export async function renderHealthDashboard(ctx) {
         const card = (title, isOk, msg) => `
             <div style="padding:12px 16px; border-left:4px solid ${isOk ? '#2b9348' : '#d00000'}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;">
                 <strong style="font-size:14px; display:block; margin-bottom:4px; color:${isOk ? '#2b9348' : '#d00000'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong>
-                <span style="color:#5c6b73; font-size:13px;">${msg}</span>
+                <span style="color:#64748B; font-size:13px;">${msg}</span>
             </div>`;
 
         let _sectionIdx = 0;
         const section = (title) => {
             const id = `health-section-${_sectionIdx++}`;
-            return `<h4 id="${id}" style="margin:24px 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:#9db4c0;">${title}</h4>`;
+            return `<h4 id="${id}" style="margin:24px 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:#64748B;">${title}</h4>`;
         };
 
         let html = `
             <h3>System Health</h3>
-            <p style="color:#9db4c0; margin-bottom:20px; font-size:14px;">Diagnostics of the hosting environment running OpenSparrow.</p>
-            <div style="padding:12px 18px; background:#c2dfe3; border:1px solid #c2dfe3; border-radius:8px; margin-bottom:8px; font-size:14px;">
+            <p style="color:#64748B; margin-bottom:20px; font-size:14px;">Diagnostics of the hosting environment running OpenSparrow.</p>
+            <div style="padding:12px 18px; background:#F4F7F9; border:1px solid #CBD5E1; border-radius:8px; margin-bottom:8px; font-size:14px;">
                 <strong>OpenSparrow</strong>&nbsp;&nbsp;v${data.app_version}
             </div>
             <div style="display:grid; gap:10px;">
@@ -98,12 +98,10 @@ export async function renderHealthDashboard(ctx) {
         // --- First time setup ---
         if (data.db_connected) {
             html += `
-                <div style="margin-top:30px; padding:20px; background:#c2dfe3; border:1px dashed #5c6b73; border-radius:8px;">
-                    <h4 style="margin-top:0; color:#253237;">Database Migrations</h4>
-                    <p style="font-size:14px; color:#253237;">Use the Migrations tab to apply pending schema changes and view migration history.</p>
-                    <button id="goto-migrations-btn" style="background:#5c6b73; color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold; transition:background .2s;">
-                        Go to Migrations
-                    </button>
+                <div style="margin-top:30px; padding:20px; background:#F4F7F9; border:1px dashed #005A9E; border-radius:8px;">
+                    <h4 style="margin-top:0; color:#1E293B;">Database Migrations</h4>
+                    <p style="font-size:14px; color:#1E293B;">Use the Migrations tab to apply pending schema changes and view migration history.</p>
+                    <button id="goto-migrations-btn" class="btn btn-primary">Go to Migrations</button>
                 </div>`;
         }
 

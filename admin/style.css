@@ -1,21 +1,21 @@
 /* admin/style.css */
 /* Modern UI configuration variables */
 :root {
-  --bg:           #ffffff;
+  --bg:           #F4F7F9;
   --panel:        #ffffff;
-  --text:         #253237;
-  --muted:        #9db4c0;
-  --accent:       #5c6b73;
-  --accent-dark:  #253237;
-  --accent-light: #c2dfe3;
-  --accent-mid:   #c2dfe3;
+  --text:         #1E293B;
+  --muted:        #64748B;
+  --accent:       #005A9E;
+  --accent-dark:  #003366;
+  --accent-light: #F0F6FA;
+  --accent-mid:   #DDEAF4;
   --danger:       #d00000;
   --ok:           #2b9348;
   --warn:         #ffc300;
-  --border:       #c2dfe3;
-  --border-light: #c2dfe3;
-  --shadow-sm:    0 1px 2px rgba(37, 50, 55, 0.08);
-  --shadow-md:    0 4px 6px -1px rgba(37, 50, 55, 0.12), 0 2px 4px -1px rgba(37, 50, 55, 0.06);
+  --border:       #CBD5E1;
+  --border-light: #E2EAF0;
+  --shadow-sm:    0 1px 2px rgba(30, 41, 59, 0.08);
+  --shadow-md:    0 4px 6px -1px rgba(30, 41, 59, 0.12), 0 2px 4px -1px rgba(30, 41, 59, 0.06);
   --radius:       6px;
   --radius-lg:    10px;
   --header-h:     56px;
@@ -40,12 +40,12 @@ body {
     border-bottom: 2px solid #ffc300;
     padding: 10px 20px;
     font-size: 13px;
-    color: #253237;
+    color: var(--text);
     text-align: center;
 }
 
 .first-run-banner a {
-    color: #253237;
+    color: var(--text);
     font-weight: bold;
 }
 
@@ -550,7 +550,102 @@ body {
     font-size: 15px;
 }
 
-/* ===== Buttons ===== */
+/* ===== Utility buttons ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.btn:hover {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+.btn.btn-primary:hover,
+.btn-primary:hover {
+    background: var(--accent-dark);
+    border-color: var(--accent-dark);
+    color: #fff;
+}
+.btn-secondary {
+    background: var(--panel);
+    color: var(--muted);
+    border-color: var(--border);
+}
+.btn-secondary:hover {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
+}
+.btn.btn-danger:hover,
+.btn-danger:hover {
+    background: #a80000;
+    border-color: #a80000;
+    color: #fff;
+}
+.btn-success {
+    background: var(--ok);
+    color: #fff;
+    border-color: var(--ok);
+}
+.btn.btn-success:hover,
+.btn-success:hover {
+    background: #236e38;
+    border-color: #236e38;
+    color: #fff;
+}
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+.btn-xs {
+    padding: 3px 8px;
+    font-size: 11px;
+}
+
+/* ===== Utility inputs ===== */
+.adm-input,
+.form-input {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    box-sizing: border-box;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+.adm-input:focus,
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-mid);
+}
+
+/* ===== Legacy section buttons ===== */
 .btn-add {
     background: var(--ok);
     color: white;
@@ -709,7 +804,7 @@ body {
 
 .demo-card:hover {
     border-color: var(--demo-color, var(--accent));
-    box-shadow: 0 4px 12px rgba(37, 50, 55, 0.12);
+    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.12);
 }
 
 .demo-card.selected {
@@ -717,10 +812,11 @@ body {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--demo-color, var(--accent)) 20%, transparent);
 }
 
-.demo-card-emoji {
-    font-size: 2rem;
+.demo-card-icon {
+    width: 40px;
+    height: 40px;
     margin-bottom: 10px;
-    line-height: 1;
+    opacity: 0.75;
 }
 
 .demo-card-title {
@@ -766,7 +862,7 @@ body {
     top: 12px;
     right: 12px;
     background: #ffc300;
-    color: #253237;
+    color: var(--text);
     font-size: 11px;
     font-weight: 600;
     padding: 2px 8px;
@@ -787,7 +883,7 @@ body {
 .demo-warning {
     background: rgba(255, 195, 0, 0.12);
     border: 1px solid #ffc300;
-    color: #253237;
+    color: var(--text);
     border-radius: 6px;
     padding: 12px 16px;
     font-size: 13px;
@@ -824,9 +920,11 @@ body {
     max-width: 480px;
 }
 
-.demo-installed-emoji {
-    font-size: 2.2rem;
-    line-height: 1;
+.demo-installed-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    opacity: 0.75;
 }
 
 .demo-installed-meta {

@@ -110,7 +110,7 @@ tar -xzf storage_backup.tar.gz
 
 ```bash
 # 1. Update image version in .env (release tags follow X.Y.Z format, no "v" prefix)
-DOCKER_IMAGE=wrobeltom/open-sparrow:2.1.0
+DOCKER_IMAGE=wrobeltom/open-sparrow:2.7.0
 
 # 2. Pull & restart
 docker compose pull
