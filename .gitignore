@@ -62,3 +62,5 @@ node_modules/
 # Dependencies — commit package*.json for reproducibility
 # package.json
 # package-lock.json
+
+docs/opensparrow/
