@@ -1,0 +1,30 @@
+# OpenSparrow — Railway config
+# One-click deploy: https://railway.app/new/template?template=https://github.com/wrobeltomasz/open-sparrow
+#
+# Setup:
+#   1. Create new Railway project
+#   2. Add PostgreSQL service (Dashboard → New → Database → PostgreSQL)
+#      Railway auto-injects PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
+#   3. Deploy this repo — Railway reads this file automatically
+#   4. Set required env vars in Railway dashboard:
+#        PGSCHEMA         = app
+#        APP_ENV          = production
+#        SECURE_COOKIES   = true
+#        IP_HASH_SALT     = <generate a random 32-char string>
+#        SESSION_MAX_LIFETIME = 28800
+#   5. Open the generated Railway URL
+#   6. Go to /admin → Initialize System Tables
+#
+# Cron notifications: add a second Railway service pointing to the same repo
+# with start command: php /var/www/html/cron/cron_notifications.php
+# and a Railway Cron trigger set to "* * * * *"
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.standalone"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

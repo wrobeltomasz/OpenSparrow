@@ -1,0 +1,19 @@
+FROM php:8.2-fpm-alpine
+
+RUN apk upgrade --no-cache \
+    && apk add --no-cache --virtual .build-deps postgresql-dev \
+    && apk add --no-cache libpq nginx supervisor \
+    && docker-php-ext-install pdo pdo_pgsql pgsql \
+    && apk del .build-deps \
+    && rm -rf /tmp/pear \
+    && mkdir -p /run/nginx /var/log/supervisor
+
+WORKDIR /var/www/html
+COPY --chown=www-data:www-data . .
+
+COPY nginx.standalone.conf /etc/nginx/nginx.conf
+COPY supervisord.standalone.conf /etc/supervisord.conf
+
+EXPOSE 80
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

@@ -1,0 +1,98 @@
+# OpenSparrow — Render Blueprint
+# One-click deploy: https://render.com/deploy?repo=https://github.com/wrobeltomasz/open-sparrow
+#
+# What this creates:
+#   - Managed PostgreSQL database (free tier, 90-day limit)
+#   - Web service: nginx + PHP-FPM in one container (free tier, spins down after 15 min idle)
+#   - Cron service: notification worker (every minute)
+#
+# After deploy:
+#   1. Open the web service URL
+#   2. Go to /admin → Initialize System Tables
+#   3. Configure your schema in /admin → Schema
+#
+# Persistent file uploads require a paid plan. Add a disk:
+#   disk:
+#     name: opensparrow-storage
+#     mountPath: /var/www/html/storage
+#     sizeGB: 1
+
+databases:
+  - name: opensparrow-db
+    databaseName: opensparrow
+    user: sparrow
+    plan: free
+
+services:
+  - type: web
+    name: opensparrow
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.standalone
+    dockerContext: .
+    healthCheckPath: /
+    envVars:
+      - key: PGHOST
+        fromDatabase:
+          name: opensparrow-db
+          property: host
+      - key: PGPORT
+        fromDatabase:
+          name: opensparrow-db
+          property: port
+      - key: PGDATABASE
+        fromDatabase:
+          name: opensparrow-db
+          property: database
+      - key: PGUSER
+        fromDatabase:
+          name: opensparrow-db
+          property: user
+      - key: PGPASSWORD
+        fromDatabase:
+          name: opensparrow-db
+          property: password
+      - key: PGSCHEMA
+        value: app
+      - key: APP_ENV
+        value: production
+      - key: SECURE_COOKIES
+        value: "true"
+      - key: SESSION_MAX_LIFETIME
+        value: "28800"
+      - key: IP_HASH_SALT
+        generateValue: true
+
+  - type: cron
+    name: opensparrow-cron
+    env: docker
+    plan: free
+    schedule: "* * * * *"
+    startCommand: php /var/www/html/cron/cron_notifications.php
+    dockerfilePath: ./Dockerfile.standalone
+    dockerContext: .
+    envVars:
+      - key: PGHOST
+        fromDatabase:
+          name: opensparrow-db
+          property: host
+      - key: PGPORT
+        fromDatabase:
+          name: opensparrow-db
+          property: port
+      - key: PGDATABASE
+        fromDatabase:
+          name: opensparrow-db
+          property: database
+      - key: PGUSER
+        fromDatabase:
+          name: opensparrow-db
+          property: user
+      - key: PGPASSWORD
+        fromDatabase:
+          name: opensparrow-db
+          property: password
+      - key: PGSCHEMA
+        value: app
+      - key: APP_ENV
+        value: production
