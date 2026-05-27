@@ -1,13 +1,15 @@
 import { debugLog } from '../debug.js';
 import { state } from './state.js';
 
-export async function fetchTableData(table, urlParams) {
+export async function fetchTableData(table, urlParams, { offset = 0, search = '' } = {}) {
     let url = `api.php?api=list&table=${encodeURIComponent(table)}`;
     const filterCol = urlParams.get('filter_col');
     const filterVal = urlParams.get('filter_val');
     if (urlParams.get('table') === table && filterCol && filterVal !== null) {
         url += `&filter_col=${encodeURIComponent(filterCol)}&filter_val=${encodeURIComponent(filterVal)}`;
     }
+    if (offset > 0) url += `&offset=${offset}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
     const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();

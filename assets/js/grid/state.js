@@ -12,6 +12,11 @@ export const state = {
     gridTitleEl: null,
     addRowBtn: null,
     selectedIds: new Set(),
+    serverSearchMode: false,
+    serverSearchActive: false,
+    wasTruncated: false,
+    loadedOffset: 0,
+    totalRows: 0,
 };
 
 export function clearSelection() {
@@ -26,6 +31,11 @@ export function getState() {
         filteredData: state.filteredData,
         displayedColumns: state.displayedColumns,
         sortState: state.sortState,
+        serverSearchMode: state.serverSearchMode,
+        serverSearchActive: state.serverSearchActive,
+        wasTruncated: state.wasTruncated,
+        loadedOffset: state.loadedOffset,
+        totalRows: state.totalRows,
     };
 }
 

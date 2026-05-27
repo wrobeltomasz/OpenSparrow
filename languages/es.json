@@ -51,7 +51,10 @@
                  "drilldown_add":  "Agregar {label}",
                  "drilldown_no_records":  "No hay registros relacionados.",
                  "drilldown_no_title":  "Sin título",
-                 "drilldown_error":  "Error al obtener datos."
+                 "drilldown_error":  "Error al obtener datos.",
+                 "load_more":  "Cargar más",
+                 "total_in_db":  "total en tabla",
+                 "truncated_notice":  "Mostrando los primeros {loaded} de {total} registros. Use la búsqueda o \"Cargar más\" ({remaining} restantes)."
              },
     "form":  {
                  "add_record":  "Agregar registro",

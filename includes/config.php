@@ -220,6 +220,12 @@ define('NOTIFICATIONS_DROPDOWN_LIMIT', (int) get_env('NOTIFICATIONS_DROPDOWN_LIM
 // unexpectedly large or corrupt files.
 define('CONFIG_FILE_MAX_BYTES', (int) get_env('CONFIG_FILE_MAX_BYTES', '524288'));
 
+// Hard ceiling on the number of rows returned by the grid list API (api=list).
+// Prevents PHP memory exhaustion on very large tables. Per-table initial_limit
+// in schema.json takes precedence when set; this is the global fallback.
+// Override via env var for installations with high-memory PHP pools.
+define('MAX_LIST_ROWS', (int) get_env('MAX_LIST_ROWS', '10000'));
+
 // -------------------------------------------------------------------------
 // HTTP security headers
 // -------------------------------------------------------------------------

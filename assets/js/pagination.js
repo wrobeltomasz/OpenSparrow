@@ -119,6 +119,21 @@ export function renderPagination(schema) {
     });
     paginationEl.appendChild(nextBtn);
 
+    // Load more button — shown when server returned a truncated response
+    const { wasTruncated, loadedOffset, totalRows } = getState();
+    if (wasTruncated) {
+        const remaining = totalRows > loadedOffset ? totalRows - loadedOffset : 0;
+        const loadMoreBtn = document.createElement('button');
+        loadMoreBtn.textContent = remaining > 0
+            ? `${I18n.t('grid.load_more')} (${remaining.toLocaleString()})`
+            : I18n.t('grid.load_more');
+        loadMoreBtn.style.cssText = 'margin-left:12px;';
+        loadMoreBtn.addEventListener('click', () => {
+            document.dispatchEvent(new CustomEvent('grid:loadMore'));
+        });
+        paginationEl.appendChild(loadMoreBtn);
+    }
+
     debugLog("Pagination rendered", { currentPage, totalPages, pageSize });
 }
 
@@ -168,5 +183,12 @@ function renderPaginationInfo(filteredData) {
         if (paginationEl) paginationEl.appendChild(infoEl);
     }
 
-    infoEl.textContent = I18n.t('grid.showing', { from: start, to: end, total: totalRecords });
+    const { wasTruncated, totalRows, loadedOffset } = getState();
+    if (wasTruncated && totalRows > loadedOffset) {
+        const dbTotal = totalRows.toLocaleString();
+        infoEl.textContent = I18n.t('grid.showing', { from: start, to: end, total: totalRecords })
+            + ` / ${dbTotal} ${I18n.t('grid.total_in_db')}`;
+    } else {
+        infoEl.textContent = I18n.t('grid.showing', { from: start, to: end, total: totalRecords });
+    }
 }

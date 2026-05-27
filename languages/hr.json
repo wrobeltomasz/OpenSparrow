@@ -51,7 +51,10 @@
                  "drilldown_add":  "Dodaj {label}",
                  "drilldown_no_records":  "Nema povezanih zapisa.",
                  "drilldown_no_title":  "Bez naslova",
-                 "drilldown_error":  "Pogreška pri dohvaćanju podataka."
+                 "drilldown_error":  "Pogreška pri dohvaćanju podataka.",
+                 "load_more":  "Učitaj više",
+                 "total_in_db":  "ukupno u tablici",
+                 "truncated_notice":  "Prikazano prvih {loaded} od {total} zapisa. Koristite pretragu ili \"Učitaj više\" (preostalo {remaining})."
              },
     "form":  {
                  "add_record":  "Dodaj zapis",

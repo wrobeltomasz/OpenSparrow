@@ -462,33 +462,18 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     };
     workspaceEl.appendChild(btnAddVirtual);
 
-    // Live FE sidebar preview — mirrors the menu entry produced by this table
-    // in templates/menu.php so changes to display_name/icon/hidden are visible
-    // immediately without saving.
-    const preview = createMenuPreview();
-    workspaceEl.appendChild(preview.el);
-    const refreshPreview = () => preview.update({
-        name: tableData.display_name || tableName,
-        icon: tableData.icon || '',
-        hidden: !!tableData.hidden,
-    });
-    refreshPreview();
-
     workspaceEl.appendChild(createTextInput('display_name', 'Display Name', tableData.display_name, (val) => {
         tableData.display_name = val;
-        refreshPreview();
     }));
     workspaceEl.appendChild(createTextInput('schema', 'Database Schema', tableData.schema || 'app', (val) => tableData.schema = val));
 
     workspaceEl.appendChild(createIconPicker('icon', 'Icon Path', tableData.icon, (val) => {
         if (val) tableData.icon = val;
         else delete tableData.icon;
-        refreshPreview();
     }));
 
     workspaceEl.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu', tableData.hidden, (val) => {
         tableData.hidden = val;
-        refreshPreview();
     }, false));
 
     // Default Sort
@@ -511,6 +496,14 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     colsTitle.textContent = 'Columns Configuration';
     colsTitle.style.marginTop = '30px';
     workspaceEl.appendChild(colsTitle);
+
+    if (!tableData.columns || !tableData.columns['id']) {
+        const idWarn = document.createElement('div');
+        idWarn.className = 'status-pill error';
+        idWarn.style.cssText = 'display:block; margin-bottom:16px; padding:10px 14px; line-height:1.5;';
+        idWarn.innerHTML = '<strong>Missing required <code>id</code> column.</strong> OpenSparrow requires a column named <code>id</code> of type <code>serial4</code> (auto-increment integer primary key). Without it the grid, edit forms, and relations will not work. Add it via your database tool or by running: <code>ALTER TABLE &lt;table&gt; ADD COLUMN id serial4 PRIMARY KEY;</code> then click <em>Sync Columns from DB</em>.';
+        workspaceEl.appendChild(idWarn);
+    }
 
     // Standard field types allowed in the application
     const dataTypeOptions = [

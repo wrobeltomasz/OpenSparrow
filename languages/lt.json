@@ -51,7 +51,10 @@
                  "drilldown_add":  "Pridėti {label}",
                  "drilldown_no_records":  "Susijusių įrašų nėra.",
                  "drilldown_no_title":  "Be pavadinimo",
-                 "drilldown_error":  "Klaida gaunant duomenis."
+                 "drilldown_error":  "Klaida gaunant duomenis.",
+                 "load_more":  "Įkelti daugiau",
+                 "total_in_db":  "iš viso lentelėje",
+                 "truncated_notice":  "Rodomi pirmieji {loaded} iš {total} įrašų. Naudokite paiešką arba \"Įkelti daugiau\" (liko {remaining})."
              },
     "form":  {
                  "add_record":  "Pridėti įrašą",

@@ -51,7 +51,10 @@
         "drilldown_add": "Add {label}",
         "drilldown_no_records": "No related records.",
         "drilldown_no_title": "No title",
-        "drilldown_error": "Error fetching data."
+        "drilldown_error": "Error fetching data.",
+        "load_more": "Load more",
+        "total_in_db": "total in table",
+        "truncated_notice": "Showing first {loaded} of {total} records. Use search or \"Load more\" ({remaining} remaining)."
     },
     "form": {
         "add_record": "Add Record",

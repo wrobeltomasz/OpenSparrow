@@ -51,7 +51,10 @@
                  "drilldown_add":  "Tilføj {label}",
                  "drilldown_no_records":  "Ingen relaterede poster.",
                  "drilldown_no_title":  "Ingen titel",
-                 "drilldown_error":  "Fejl ved hentning af data."
+                 "drilldown_error":  "Fejl ved hentning af data.",
+                 "load_more":  "Indlæs mere",
+                 "total_in_db":  "i alt i tabellen",
+                 "truncated_notice":  "Viser de første {loaded} af {total} poster. Brug søgning eller \"Indlæs mere\" ({remaining} tilbage)."
              },
     "form":  {
                  "add_record":  "Tilføj post",

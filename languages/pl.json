@@ -51,7 +51,10 @@
         "drilldown_add": "Dodaj {label}",
         "drilldown_no_records": "Brak powiązanych rekordów.",
         "drilldown_no_title": "Brak tytułu",
-        "drilldown_error": "Błąd pobierania danych."
+        "drilldown_error": "Błąd pobierania danych.",
+        "load_more": "Załaduj więcej",
+        "total_in_db": "łącznie w tabeli",
+        "truncated_notice": "Wyświetlono pierwsze {loaded} z {total} rekordów. Użyj wyszukiwarki lub \"Załaduj więcej\" (pozostało {remaining})."
     },
     "form": {
         "add_record": "Dodaj rekord",

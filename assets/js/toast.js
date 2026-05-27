@@ -1,6 +1,6 @@
 // Shared non-blocking toast used across FE modules.
 // Stacks at bottom-right, auto-dismisses after 4 s.
-export function showToast(message, variant = 'error') {
+export function showToast(message, variant = 'error', duration = 4000) {
     const colors = {
         error:   { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5' },
         success: { bg: '#dcfce7', fg: '#166534', border: '#86efac' },
@@ -22,5 +22,5 @@ export function showToast(message, variant = 'error') {
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
-    }, 4000);
+    }, duration);
 }

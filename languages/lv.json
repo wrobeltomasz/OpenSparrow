@@ -51,7 +51,10 @@
                  "drilldown_add":  "Pievienot {label}",
                  "drilldown_no_records":  "Nav saistītu ierakstu.",
                  "drilldown_no_title":  "Bez virsraksta",
-                 "drilldown_error":  "Kļūda iegūstot datus."
+                 "drilldown_error":  "Kļūda iegūstot datus.",
+                 "load_more":  "Ielādēt vairāk",
+                 "total_in_db":  "kopā tabulā",
+                 "truncated_notice":  "Rāda pirmos {loaded} no {total} ierakstiem. Izmantojiet meklēšanu vai \"Ielādēt vairāk\" (atlikuši {remaining})."
              },
     "form":  {
                  "add_record":  "Pievienot ierakstu",

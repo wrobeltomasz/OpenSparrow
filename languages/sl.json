@@ -51,7 +51,10 @@
                  "drilldown_add":  "Dodaj {label}",
                  "drilldown_no_records":  "Ni povezanih zapisov.",
                  "drilldown_no_title":  "Brez naslova",
-                 "drilldown_error":  "Napaka pri pridobivanju podatkov."
+                 "drilldown_error":  "Napaka pri pridobivanju podatkov.",
+                 "load_more":  "Naloži več",
+                 "total_in_db":  "skupaj v tabeli",
+                 "truncated_notice":  "Prikazanih prvih {loaded} od {total} zapisov. Uporabite iskanje ali \"Naloži več\" (ostane {remaining})."
              },
     "form":  {
                  "add_record":  "Dodaj zapis",

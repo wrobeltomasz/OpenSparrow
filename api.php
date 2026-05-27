@@ -499,6 +499,20 @@ try {
             }
         }
 
+        $search = trim($_GET['search'] ?? '');
+        if ($search !== '') {
+            $likeVal  = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
+            $paramNum = count($params) + 1;
+            $searchClauses = array_map(
+                fn($c) => sprintf('%s::text ILIKE $%d', pg_ident($c), $paramNum),
+                $selectCols
+            );
+            $whereSql .= ($whereSql !== '' ? ' AND ' : ' WHERE ') . '(' . implode(' OR ', $searchClauses) . ')';
+            $params[]  = $likeVal;
+        }
+
+        $offset = max(0, (int)($_GET['offset'] ?? 0));
+
         $defaultSort  = $tableCfg['default_sort'] ?? [];
         $orderClauses = [];
         if (is_array($defaultSort)) {
@@ -515,8 +529,17 @@ try {
         }
 
         $initialLimit = (int)($tableCfg['initial_limit'] ?? 0);
-        $limitSql     = $initialLimit > 0 ? ' LIMIT ' . $initialLimit : '';
-        $sql = sprintf('SELECT %s FROM "%s"."%s"%s ORDER BY %s%s', $selectSql, $schemaName, $table, $whereSql, implode(', ', $orderClauses), $limitSql);
+        $rowCap       = $initialLimit > 0 ? $initialLimit : MAX_LIST_ROWS;
+        $sql = sprintf(
+            'SELECT %s, COUNT(1) OVER() AS __spw_total FROM "%s"."%s"%s ORDER BY %s LIMIT %d OFFSET %d',
+            $selectSql,
+            $schemaName,
+            $table,
+            $whereSql,
+            implode(', ', $orderClauses),
+            $rowCap,
+            $offset
+        );
         $res = @pg_query_params($conn, $sql, $params);
         if (!$res) {
             error_log('[api][list] ' . pg_last_error($conn));
@@ -526,15 +549,22 @@ try {
         }
 
         $rows = [];
+        $dbTotal = 0;
         while ($r = pg_fetch_assoc($res)) {
+            if ($dbTotal === 0) {
+                $dbTotal = (int)($r['__spw_total'] ?? 0);
+            }
+            unset($r['__spw_total']);
             $rows[] = $r;
         }
         pg_free_result($res);
         $rows = map_fk_display($schema, $tableCfg, $rows);
+        $rowCount = count($rows);
         echo json_encode([
             'columns'   => $selectCols,
             'rows'      => $rows,
-            'truncated' => $initialLimit > 0 && count($rows) === $initialLimit,
+            'truncated' => $rowCount === $rowCap,
+            'total'     => $dbTotal,
             'table'     => [
                 'name'         => $table,
                 'display_name' => to_display_name($tableCfg),

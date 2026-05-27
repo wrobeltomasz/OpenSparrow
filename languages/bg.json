@@ -51,7 +51,10 @@
                  "drilldown_add":  "Добавяне на {label}",
                  "drilldown_no_records":  "Няма свързани записи.",
                  "drilldown_no_title":  "Без заглавие",
-                 "drilldown_error":  "Грешка при извличане на данни."
+                 "drilldown_error":  "Грешка при извличане на данни.",
+                 "load_more":  "Зареди още",
+                 "total_in_db":  "общо в таблицата",
+                 "truncated_notice":  "Показани първите {loaded} от {total} записа. Използвайте търсене или \"Зареди още\" (остават {remaining})."
              },
     "form":  {
                  "add_record":  "Добавяне на запис",

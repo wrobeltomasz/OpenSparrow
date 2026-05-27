@@ -51,7 +51,10 @@
                  "drilldown_add":  "Lägg till {label}",
                  "drilldown_no_records":  "Inga relaterade poster.",
                  "drilldown_no_title":  "Ingen titel",
-                 "drilldown_error":  "Fel vid hämtning av data."
+                 "drilldown_error":  "Fel vid hämtning av data.",
+                 "load_more":  "Ladda mer",
+                 "total_in_db":  "totalt i tabellen",
+                 "truncated_notice":  "Visar de första {loaded} av {total} poster. Använd sökning eller \"Ladda mer\" ({remaining} kvar)."
              },
     "form":  {
                  "add_record":  "Lägg till post",

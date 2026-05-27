@@ -51,7 +51,10 @@
                  "drilldown_add":  "Aggiungi {label}",
                  "drilldown_no_records":  "Nessun record correlato.",
                  "drilldown_no_title":  "Nessun titolo",
-                 "drilldown_error":  "Errore nel recupero dei dati."
+                 "drilldown_error":  "Errore nel recupero dei dati.",
+                 "load_more":  "Carica altro",
+                 "total_in_db":  "totale nella tabella",
+                 "truncated_notice":  "Mostrati i primi {loaded} di {total} record. Usa la ricerca o \"Carica altro\" (rimanenti {remaining})."
              },
     "form":  {
                  "add_record":  "Aggiungi record",

@@ -1,5 +1,6 @@
 import { debugLog } from '../debug.js';
 import { showToast } from '../toast.js';
+import { I18n } from '../i18n.js';
 import { state, getState, setFilteredData, resetFiltersState } from './state.js';
 import { fetchTableData, preloadForeignKeys } from './api.js';
 import { renderThead } from './header/render.js';
@@ -29,8 +30,24 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         clearPreviewCache();
         clearM2mStore();
         state.fullData = data.rows || [];
+        state.serverSearchMode = !!data.truncated;
+        state.serverSearchActive = false;
+        state.wasTruncated = !!data.truncated;
+        state.loadedOffset = state.fullData.length;
+        state.totalRows = data.total ?? state.fullData.length;
         if (data.truncated) {
-            showToast(`Showing first ${state.fullData.length} records (limit set in Schema settings).`, 'info');
+            const total = state.totalRows;
+            const loaded = state.fullData.length;
+            const remaining = total > loaded ? (total - loaded).toLocaleString() : '?';
+            showToast(
+                I18n.t('grid.truncated_notice', {
+                    loaded: loaded.toLocaleString(),
+                    total: total.toLocaleString(),
+                    remaining,
+                }),
+                'info',
+                3000
+            );
         }
 
         // Pre-compute virtual column values into each row so sort/filter work transparently
@@ -133,6 +150,55 @@ export async function renderGrid(schema) {
 export async function resetFilters(schema) {
     resetFiltersState();
     await renderGrid(schema);
+}
+
+function applyVirtualCols(schema, rows) {
+    const tableCols = schema.tables[state.currentTable]?.columns || {};
+    for (const [colName, colCfg] of Object.entries(tableCols)) {
+        if (colCfg.type !== 'virtual') continue;
+        rows.forEach(row => { row[colName] = computeVirtual(colCfg.formula, row); });
+    }
+}
+
+export async function appendMoreRows(schema, search = '') {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const data = await fetchTableData(state.currentTable, urlParams, {
+            offset: state.loadedOffset,
+            search,
+        });
+        const newRows = data.rows || [];
+        applyVirtualCols(schema, newRows);
+        state.fullData = [...state.fullData, ...newRows];
+        state.loadedOffset = state.fullData.length;
+        state.wasTruncated = !!data.truncated;
+        state.totalRows = data.total ?? state.fullData.length;
+        setFilteredData(state.fullData.slice());
+        await renderGrid(schema);
+    } catch (err) {
+        console.error('Failed to load more rows:', err);
+        showToast(`Cannot load more rows. ${err.message}`, 'error');
+    }
+}
+
+export async function serverSearchRows(schema, search) {
+    try {
+        state.loadedOffset = 0;
+        const urlParams = new URLSearchParams(window.location.search);
+        const data = await fetchTableData(state.currentTable, urlParams, { search });
+        const rows = data.rows || [];
+        applyVirtualCols(schema, rows);
+        state.fullData = rows;
+        state.loadedOffset = rows.length;
+        state.wasTruncated = !!data.truncated;
+        state.totalRows = data.total ?? rows.length;
+        state.serverSearchActive = true;
+        setFilteredData(rows);
+        await renderGrid(schema);
+    } catch (err) {
+        console.error('Server search failed:', err);
+        showToast(`Search failed. ${err.message}`, 'error');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

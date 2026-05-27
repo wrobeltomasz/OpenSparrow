@@ -51,7 +51,10 @@
                  "drilldown_add":  "Adicionar {label}",
                  "drilldown_no_records":  "Nenhum registo relacionado.",
                  "drilldown_no_title":  "Sem título",
-                 "drilldown_error":  "Erro ao obter dados."
+                 "drilldown_error":  "Erro ao obter dados.",
+                 "load_more":  "Carregar mais",
+                 "total_in_db":  "total na tabela",
+                 "truncated_notice":  "Mostrando os primeiros {loaded} de {total} registos. Use a pesquisa ou \"Carregar mais\" ({remaining} restantes)."
              },
     "form":  {
                  "add_record":  "Adicionar registo",

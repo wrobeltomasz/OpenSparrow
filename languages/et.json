@@ -51,7 +51,10 @@
                  "drilldown_add":  "Lisa {label}",
                  "drilldown_no_records":  "Seotud kirjeid pole.",
                  "drilldown_no_title":  "Pealkiri puudub",
-                 "drilldown_error":  "Viga andmete toomisel."
+                 "drilldown_error":  "Viga andmete toomisel.",
+                 "load_more":  "Laadi rohkem",
+                 "total_in_db":  "kokku tabelis",
+                 "truncated_notice":  "Näidatakse esimest {loaded} kirjet {total}-st. Kasutage otsingut või \"Laadi rohkem\" (jäänud {remaining})."
              },
     "form":  {
                  "add_record":  "Lisa kirje",

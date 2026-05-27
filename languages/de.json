@@ -51,7 +51,10 @@
                  "drilldown_add":  "{label} hinzufügen",
                  "drilldown_no_records":  "Keine verknüpften Datensätze.",
                  "drilldown_no_title":  "Kein Titel",
-                 "drilldown_error":  "Fehler beim Abrufen der Daten."
+                 "drilldown_error":  "Fehler beim Abrufen der Daten.",
+                 "load_more":  "Mehr laden",
+                 "total_in_db":  "gesamt in Tabelle",
+                 "truncated_notice":  "Erste {loaded} von {total} Datensätzen. Suche oder \"Mehr laden\" verwenden ({remaining} verbleibend)."
              },
     "form":  {
                  "add_record":  "Datensatz hinzufügen",

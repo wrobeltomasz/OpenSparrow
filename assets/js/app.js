@@ -1,9 +1,9 @@
 import { I18n } from './i18n.js';
-import { loadTable, renderGrid, getState, setFilteredData, resetFilters, injectPagination } from './grid.js';
+import { loadTable, renderGrid, getState, setFilteredData, resetFilters, injectPagination, appendMoreRows, serverSearchRows } from './grid.js';
 import { state as gridState } from './grid/state.js';
 import { exportCSV } from './export_csv.js';
 import { debugLog } from './debug.js';
-import { setupPagination, getPageRows, initPageSize } from './pagination.js';
+import { setupPagination, getPageRows, initPageSize, resetPagination } from './pagination.js';
 import { initWorkflows } from './workflows.js';
 import { initDataCleanup } from './data_cleanup.js';
 import { initGridKeyboard } from './grid/keyboard.js';
@@ -368,19 +368,62 @@ function renderFilterPills() {
     pillsContainer.style.display = hasPills ? 'flex' : 'none';
 }
 
+// Apply only column filters to a row set (no text search). Used after server search
+// and after load-more to avoid re-triggering a server round-trip.
+function applyColumnFiltersOnly(rows) {
+    return rows.filter(row => {
+        for (const [col, filter] of Object.entries(activeFilters.columns)) {
+            if (filter.type === 'dict') {
+                if (String(row[col]) !== String(filter.val)) return false;
+            } else if (filter.type === 'bool') {
+                const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
+                if (rowBool !== (filter.val === 'true')) return false;
+            } else if (filter.type === 'date') {
+                const rowDateStr = String(row[col] || '').substring(0, 10);
+                if (!rowDateStr) return false;
+                const rowTime = new Date(rowDateStr).getTime();
+                if (filter.from && rowTime < new Date(filter.from).getTime()) return false;
+                if (filter.to && rowTime > new Date(filter.to).getTime()) return false;
+            } else if (filter.type === 'number') {
+                const rowNum = Number(row[col]);
+                if (isNaN(rowNum)) return false;
+                if (filter.min !== '' && rowNum < Number(filter.min)) return false;
+                if (filter.max !== '' && rowNum > Number(filter.max)) return false;
+            }
+        }
+        return true;
+    });
+}
+
 // Apply global search and column filters
 async function applySearch() {
-    const { fullData, displayedColumns } = getState();
+    const { fullData, displayedColumns, serverSearchMode } = getState();
     const q = activeFilters.search.toLowerCase();
 
+    if (serverSearchMode && q) {
+        // Large table text search → server. Column filters applied client-side on results.
+        resetPagination();
+        await serverSearchRows(window.schema, activeFilters.search);
+        if (Object.keys(activeFilters.columns).length > 0) {
+            const filtered = applyColumnFiltersOnly(getState().fullData);
+            setFilteredData(filtered);
+            await renderGrid(window.schema);
+        }
+        renderFilterPills();
+        updateClearFiltersVisibility();
+        return;
+    }
+
+    // Client-side filter: small tables (text+column), or large table column-only filter.
+    // When serverSearchMode=true and q="", fullData holds whatever was last loaded
+    // (original rows or server search results). Column filters work on that set.
     let rows = fullData.filter(row => {
         for (const [col, filter] of Object.entries(activeFilters.columns)) {
             if (filter.type === 'dict') {
                 if (String(row[col]) !== String(filter.val)) return false;
             } else if (filter.type === 'bool') {
                 const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
-                const targetBool = (filter.val === 'true');
-                if (rowBool !== targetBool) return false;
+                if (rowBool !== (filter.val === 'true')) return false;
             } else if (filter.type === 'date') {
                 const rowDateStr = String(row[col] || '').substring(0, 10);
                 if (!rowDateStr) return false;
@@ -426,12 +469,18 @@ clearFiltersBtn.addEventListener('click', async () => {
     activeFilters = { search: '', columns: {} };
     searchEl.value = '';
     columnFilterEl.value = '';
-    
-    handleColumnFilterChange();
+
     renderFilterPills();
     updateClearFiltersVisibility();
-    
-    await resetFilters(window.schema);
+
+    const { serverSearchMode, serverSearchActive } = getState();
+    if (serverSearchMode && serverSearchActive) {
+        // fullData currently holds server search results — reload original
+        await loadTable(window.schema, gridState.currentTable, gridState.gridTitleEl, gridState.addRowBtn);
+    } else {
+        handleColumnFilterChange();
+        await resetFilters(window.schema);
+    }
 });
 
 // Sync search input
@@ -445,6 +494,16 @@ searchEl.addEventListener('input', () => {
 });
 
 columnFilterEl.addEventListener('change', handleColumnFilterChange);
+
+document.addEventListener('grid:loadMore', async () => {
+    await appendMoreRows(window.schema, activeFilters.search);
+    // Re-apply column filters on expanded fullData without triggering another server call
+    if (Object.keys(activeFilters.columns).length > 0) {
+        const filtered = applyColumnFiltersOnly(getState().fullData);
+        setFilteredData(filtered);
+        await renderGrid(window.schema);
+    }
+});
 
 // Export CSV button (wired here to avoid circular grid.js ↔ export_csv.js import)
 document.addEventListener('DOMContentLoaded', () => {

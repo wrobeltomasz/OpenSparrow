@@ -51,7 +51,10 @@
                  "drilldown_add":  "Adaugă {label}",
                  "drilldown_no_records":  "Nicio înregistrare asociată.",
                  "drilldown_no_title":  "Fără titlu",
-                 "drilldown_error":  "Eroare la preluarea datelor."
+                 "drilldown_error":  "Eroare la preluarea datelor.",
+                 "load_more":  "Încarcă mai mult",
+                 "total_in_db":  "total în tabel",
+                 "truncated_notice":  "Se afișează primele {loaded} din {total} înregistrări. Folosiți căutarea sau \"Încarcă mai mult\" ({remaining} rămase)."
              },
     "form":  {
                  "add_record":  "Adaugă înregistrare",

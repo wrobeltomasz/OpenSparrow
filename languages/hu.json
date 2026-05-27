@@ -51,7 +51,10 @@
                  "drilldown_add":  "{label} hozzáadása",
                  "drilldown_no_records":  "Nincsenek kapcsolódó rekordok.",
                  "drilldown_no_title":  "Nincs cím",
-                 "drilldown_error":  "Hiba az adatok lekérésekor."
+                 "drilldown_error":  "Hiba az adatok lekérésekor.",
+                 "load_more":  "Több betöltése",
+                 "total_in_db":  "összesen a táblában",
+                 "truncated_notice":  "Az első {loaded} rekord látható {total}-ból. Használja a keresést vagy a \"Több betöltése\" gombot (marad {remaining})."
              },
     "form":  {
                  "add_record":  "Rekord hozzáadása",

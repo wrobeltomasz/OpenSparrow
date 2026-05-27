@@ -51,7 +51,10 @@
                  "drilldown_add":  "Προσθήκη {label}",
                  "drilldown_no_records":  "Δεν υπάρχουν σχετικές εγγραφές.",
                  "drilldown_no_title":  "Χωρίς τίτλο",
-                 "drilldown_error":  "Σφάλμα κατά τη λήψη δεδομένων."
+                 "drilldown_error":  "Σφάλμα κατά τη λήψη δεδομένων.",
+                 "load_more":  "Φόρτωση περισσότερων",
+                 "total_in_db":  "σύνολο στον πίνακα",
+                 "truncated_notice":  "Εμφάνιση πρώτων {loaded} από {total} εγγραφές. Χρησιμοποιήστε αναζήτηση ή \"Φόρτωση περισσότερων\" (απομένουν {remaining})."
              },
     "form":  {
                  "add_record":  "Προσθήκη εγγραφής",
