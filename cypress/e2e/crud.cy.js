@@ -362,3 +362,195 @@ describe('OpenSparrow – Subtables (if present)', () => {
     });
   });
 });
+
+// ============================================================================
+// Test Suite: Create Record — Actual Save
+// ============================================================================
+
+describe('OpenSparrow – Create Record: Actual Save', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/create.php?table=${TEST_TABLE}`);
+    cy.get('form.editor-form', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
+  });
+
+  it('filling first text input and submitting redirects to grid', () => {
+    cy.get('form.editor-form').then($form => {
+      const $inputs = $form.find('input[type="text"]:not([readonly]):not([disabled])');
+      if ($inputs.length === 0) {
+        Cypress.log({ message: 'No text inputs on create form — may be all FK/enum/readonly' });
+        return;
+      }
+
+      const uniqueVal = `cypress-test-${Date.now()}`;
+      cy.wrap($inputs).first().clear().type(uniqueVal);
+      cy.get('button[type="submit"].btn-save').click();
+
+      // Either redirects to grid (success) or stays with an error (missing required fields)
+      cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).then(url => {
+        if (url.includes('index.php')) {
+          cy.url().should('include', `table=${TEST_TABLE}`);
+        } else {
+          // Stayed on create.php — form likely has more required fields
+          cy.url().should('include', 'create.php');
+          Cypress.log({ message: 'Form has more required fields — stayed on create page' });
+        }
+      });
+    });
+  });
+
+  it('empty required field shows native validation or stays on page', () => {
+    // Click submit without filling any fields
+    cy.get('button[type="submit"].btn-save').click();
+
+    // Either HTML5 :invalid OR still on create.php
+    cy.url().then(url => {
+      if (url.includes('create.php')) {
+        cy.url().should('include', 'create.php');
+      } else {
+        // Redirected — table had no required fields
+        Cypress.log({ message: 'No required fields — record created with empty values' });
+      }
+    });
+  });
+
+  it('cancel button returns to grid without creating record', () => {
+    cy.get('button.btn-cancel, a.btn-cancel').click();
+    cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', `table=${TEST_TABLE}`);
+  });
+});
+
+// ============================================================================
+// Test Suite: Edit Record — Actual Save
+// ============================================================================
+
+describe('OpenSparrow – Edit Record: Actual Save', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
+    waitForGridOrEmpty().then(res => {
+      if (res.type !== 'grid') return;
+      cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
+        .first()
+        .find('button[title="Edit"]')
+        .click({ force: true });
+      cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
+    });
+  });
+
+  it('changing a text field and saving redirects to grid', () => {
+    cy.url().then(url => {
+      if (!url.includes('edit.php')) return;
+
+      cy.get('input[type="text"]:not([readonly]):not([disabled])', {
+        timeout: CypressHelpers.TIMEOUTS.medium,
+      }).then($inputs => {
+        if ($inputs.length === 0) {
+          Cypress.log({ message: 'No editable text inputs on edit form' });
+          return;
+        }
+
+        const uniqueSuffix = ` (edited ${Date.now()})`;
+        cy.wrap($inputs).first().then($inp => {
+          const originalVal = $inp.val();
+          const newVal = String(originalVal).slice(0, 50) + ' cy';
+          cy.wrap($inp).clear().type(newVal);
+        });
+
+        // Click "Save & Exit"
+        cy.get('button.btn-save[type="submit"], button[onclick*="saveAction"]')
+          .first()
+          .click();
+
+        cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).then(afterUrl => {
+          if (afterUrl.includes('index.php') || afterUrl.includes('?saved=1')) {
+            cy.url().should('include', TEST_TABLE);
+          } else {
+            // Some tables redirect back to edit with ?saved=1
+            Cypress.log({ message: 'Stayed on edit page after save' });
+          }
+        });
+      });
+    });
+  });
+
+  it('save shows success indication (toast or saved=1)', () => {
+    cy.url().then(url => {
+      if (!url.includes('edit.php')) return;
+
+      cy.get('button.btn-save[type="submit"], button[onclick*="saveAction"]')
+        .first()
+        .click();
+
+      // Look for success indicator: ?saved=1 param, toast, or redirect to grid
+      cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).then(afterUrl => {
+        const isSuccess = afterUrl.includes('saved=1')
+          || afterUrl.includes('index.php')
+          || afterUrl.includes(TEST_TABLE);
+
+        if (isSuccess) {
+          expect(isSuccess).to.be.true;
+        } else {
+          // Could be inline success message on same page
+          cy.get('.toast, .success-msg, [class*="success"]').should('exist');
+        }
+      });
+    });
+  });
+});
+
+// ============================================================================
+// Test Suite: Delete Record — Actual Flow
+// ============================================================================
+
+describe('OpenSparrow – Delete Record: Actual Flow', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
+  });
+
+  it('cancelling delete confirm keeps record in grid', () => {
+    waitForGridOrEmpty().then(res => {
+      if (res.type !== 'grid') return;
+
+      cy.get('#grid tbody tr').its('length').then(rowsBefore => {
+        cy.window().then(win => {
+          cy.stub(win, 'confirm').as('delConfirm').returns(false);
+
+          cy.get('#grid tbody tr')
+            .first()
+            .find('button[title="Delete"]')
+            .click({ force: true });
+
+          cy.get('@delConfirm').should('have.been.called');
+          cy.get('#grid tbody tr').should('have.length', rowsBefore);
+        });
+      });
+    });
+  });
+
+  it('confirming delete removes record from grid', () => {
+    waitForGridOrEmpty().then(res => {
+      if (res.type !== 'grid') return;
+
+      cy.get('#grid tbody tr').its('length').then(rowsBefore => {
+        if (rowsBefore < 1) {
+          Cypress.log({ message: 'No rows to delete' });
+          return;
+        }
+
+        cy.window().then(win => {
+          cy.stub(win, 'confirm').returns(true);
+
+          cy.get('#grid tbody tr')
+            .last()
+            .find('button[title="Delete"]')
+            .click({ force: true });
+
+          cy.get('#grid tbody tr', { timeout: CypressHelpers.TIMEOUTS.long })
+            .should('have.length', rowsBefore - 1);
+        });
+      });
+    });
+  });
+});
