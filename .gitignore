@@ -11,6 +11,9 @@ cache/
 tmp/*
 !tmp/.htaccess
 temp/
+.phpunit.result.cache
+
+*.csv
 
 # PHP session files — stored in storage/sessions/ (outside webroot-exposed tmp/)
 storage/sessions/*
