@@ -1,10 +1,10 @@
 <?php
+
 // files.php
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/session.php';
 start_session();
-
 // Redirect to login if no session
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -39,18 +39,14 @@ if (empty($_SESSION['csrf_token'])) {
 
 // Generate a unique nonce for Content Security Policy
 $cspNonce = bin2hex(random_bytes(16));
-
 send_security_headers($cspNonce);
-
 $userRole = $_SESSION['role'] ?? 'viewer';
-
 // Expose only capability flags to the client instead of the raw role name
 // to reduce attack surface during reconnaissance
 $userCaps = [
     'canEdit'   => $userRole === 'editor',
     'canExport' => in_array($userRole, ['editor', 'export'], true),
 ];
-
 $pageTitle = 'OpenSparrow | Files';
 ob_start();
 ?>

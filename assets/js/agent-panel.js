@@ -3,13 +3,25 @@
 // Licensed under LGPL v3. See LICENCE file for details.
 
 import { I18n } from './i18n.js';
+import { renderAnswer } from './rag-render.js';
 
 const API  = 'api_rag.php';
 const CSRF = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const t    = (k, v) => I18n.t(k, v);
 
-let panelEl, overlayEl, tagsEl, convEl, queryEl, sendBtn, clearBtn;
+// Maximum grid rows and columns included in the page context sent to the model.
+const MAX_CONTEXT_ROWS = 50;
+const MAX_CONTEXT_COLS = 12;
+
+function fmtTime() {
+    return new Date().toTimeString().slice(0, 8);
+}
+
+let panelEl, overlayEl, tagsEl, convEl, queryEl, sendBtn, stopBtn, clearBtn;
+let contextBarEl, fabEl;
 let tagsLoaded = false;
+let currentAbortController = null;
+let abortedByUser = false;
 
 // ── Build DOM ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +50,12 @@ function buildPanel() {
     closeBtn.textContent = '×';
     header.appendChild(titleEl);
     header.appendChild(closeBtn);
+
+    // Context bar (table indicator)
+    contextBarEl           = document.createElement('div');
+    contextBarEl.className = 'ag-context-bar';
+    contextBarEl.id        = 'agContextBar';
+    contextBarEl.hidden    = true;
 
     // Tags strip
     tagsEl           = document.createElement('div');
@@ -71,12 +89,19 @@ function buildPanel() {
     sendBtn.className   = 'ag-send-btn';
     sendBtn.type        = 'button';
     sendBtn.textContent = t('agent.send');
+    stopBtn             = document.createElement('button');
+    stopBtn.className   = 'ag-stop-btn';
+    stopBtn.type        = 'button';
+    stopBtn.disabled    = true;
+    stopBtn.textContent = t('agent.stop');
     actions.appendChild(clearBtn);
+    actions.appendChild(stopBtn);
     actions.appendChild(sendBtn);
     inputArea.appendChild(queryEl);
     inputArea.appendChild(actions);
 
     panelEl.appendChild(header);
+    panelEl.appendChild(contextBarEl);
     panelEl.appendChild(tagsEl);
     panelEl.appendChild(convEl);
     panelEl.appendChild(inputArea);
@@ -86,6 +111,7 @@ function buildPanel() {
     closeBtn.addEventListener('click', closePanel);
     overlayEl.addEventListener('click', closePanel);
     sendBtn.addEventListener('click', sendQuery);
+    stopBtn.addEventListener('click', () => { abortedByUser = true; currentAbortController?.abort(); });
     clearBtn.addEventListener('click', () => { convEl.innerHTML = ''; });
     queryEl.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -103,6 +129,8 @@ function buildPanel() {
 function openPanel() {
     panelEl.classList.add('active');
     overlayEl.classList.add('active');
+    if (fabEl) fabEl.hidden = true;
+    updateContextBar();
     if (!tagsLoaded) loadTags();
     queryEl.focus();
 }
@@ -110,13 +138,62 @@ function openPanel() {
 function closePanel() {
     panelEl.classList.remove('active');
     overlayEl.classList.remove('active');
+    if (fabEl) fabEl.hidden = false;
 }
 
-// ── Tags ──────────────────────────────────────────────────────────────────────
+// ── Context bar ───────────────────────────────────────────────────────────────
 
 function pageTableName() {
     return new URLSearchParams(window.location.search).get('table') ?? '';
 }
+
+function pageTableDisplayName() {
+    const raw = pageTableName();
+    if (!raw) return '';
+    const activeLink = document.querySelector('.custom-nav-link.active[data-table]');
+    return activeLink?.querySelector('.menu-text')?.textContent.trim() || raw;
+}
+
+function updateContextBar() {
+    const displayName = pageTableDisplayName();
+    if (!displayName) {
+        contextBarEl.hidden = true;
+        return;
+    }
+    contextBarEl.hidden = false;
+    contextBarEl.innerHTML = '';
+    const icon = document.createElement('img');
+    icon.src    = 'assets/icons/grid_on.png';
+    icon.alt    = '';
+    icon.width  = 14;
+    icon.height = 14;
+    icon.style.cssText = 'vertical-align:middle; opacity:0.7; flex-shrink:0;';
+    const label = document.createElement('span');
+    label.textContent = t('agent.context_table', { table: displayName });
+    contextBarEl.appendChild(icon);
+    contextBarEl.appendChild(label);
+}
+
+// ── FAB ───────────────────────────────────────────────────────────────────────
+
+function buildFab() {
+    if (!window.CHAT_BUBBLE_ENABLED) return;
+    fabEl           = document.createElement('button');
+    fabEl.id        = 'agFab';
+    fabEl.className = 'ag-fab';
+    fabEl.type      = 'button';
+    fabEl.setAttribute('aria-label', t('agent.title'));
+    const img   = document.createElement('img');
+    img.src     = 'assets/icons/comment.png';
+    img.alt     = '';
+    img.width   = 24;
+    img.height  = 24;
+    fabEl.appendChild(img);
+    fabEl.addEventListener('click', openPanel);
+    document.body.appendChild(fabEl);
+}
+
+// ── Tags ──────────────────────────────────────────────────────────────────────
 
 function readGridContext() {
     const table = document.querySelector('#grid table');
@@ -124,25 +201,42 @@ function readGridContext() {
     const tableName = pageTableName();
 
     // headers: only th[data-col] elements, preserving their index among all ths
-    const allThs    = Array.from(table.querySelectorAll('thead th'));
-    const headerEls = allThs.filter(th => th.dataset.col);
+    const allThs       = Array.from(table.querySelectorAll('thead th'));
+    let   headerEls    = allThs.filter(th => th.dataset.col);
     if (headerEls.length === 0) return '';
+
+    // Limit to essential columns: always keep an "id" column, then fill up to the cap.
+    const totalCols = headerEls.length;
+    if (headerEls.length > MAX_CONTEXT_COLS) {
+        const idEls   = headerEls.filter(th => th.dataset.col.toLowerCase() === 'id');
+        const restEls = headerEls.filter(th => th.dataset.col.toLowerCase() !== 'id');
+        headerEls     = idEls.concat(restEls).slice(0, MAX_CONTEXT_COLS);
+        // Restore original left-to-right order for readability.
+        headerEls.sort((a, b) => allThs.indexOf(a) - allThs.indexOf(b));
+    }
 
     const headers    = headerEls.map(th => th.dataset.col);
     const colIndexes = headerEls.map(th => allThs.indexOf(th));
 
-    const rows = [];
+    const allRows = [];
     table.querySelectorAll('tbody tr').forEach(tr => {
         const allTds  = Array.from(tr.querySelectorAll('td'));
         const cells   = colIndexes.map(i => (allTds[i]?.textContent.trim() ?? '').replace(/\s+/g, ' '));
-        if (cells.some(c => c !== '')) rows.push(cells);
+        if (cells.some(c => c !== '')) allRows.push(cells);
     });
 
-    if (rows.length === 0) return '';
+    if (allRows.length === 0) return '';
 
-    let text = `table: ${tableName}, ${rows.length} row(s) visible\n`;
+    // Truncate by whole rows rather than mid-string to keep every row well-formed.
+    const rows        = allRows.slice(0, MAX_CONTEXT_ROWS);
+    const hiddenRows  = allRows.length - rows.length;
+    const hiddenCols  = totalCols - headers.length;
+
+    let text = `table: ${tableName}, ${rows.length} of ${allRows.length} row(s) shown\n`;
     text += headers.join(' | ') + '\n';
     rows.forEach(r => { text += r.join(' | ') + '\n'; });
+    if (hiddenRows > 0) text += `...(${hiddenRows} more rows not shown)\n`;
+    if (hiddenCols > 0) text += `...(${hiddenCols} more columns not shown)\n`;
     return text;
 }
 
@@ -196,7 +290,11 @@ function appendUserMsg(text) {
     const bubble    = document.createElement('div');
     bubble.className   = 'ag-msg-bubble';
     bubble.textContent = text;
+    const ts           = document.createElement('div');
+    ts.className       = 'ag-msg-time';
+    ts.textContent     = fmtTime();
     wrap.appendChild(bubble);
+    wrap.appendChild(ts);
     convEl.appendChild(wrap);
     scrollDown();
     return wrap;
@@ -214,11 +312,23 @@ function appendThinking() {
     return wrap;
 }
 
-function replaceWithAnswer(wrap, answer, sources) {
+function replaceWithAnswer(wrap, answer, sources, tagFallback, suggestions) {
     wrap.innerHTML = '';
-    const bubble       = document.createElement('div');
-    bubble.className   = 'ag-msg-bubble';
-    bubble.textContent = answer;
+
+    if (tagFallback) {
+        const warn       = document.createElement('div');
+        warn.className   = 'ag-msg-warning';
+        warn.textContent = t('agent.tag_fallback');
+        wrap.appendChild(warn);
+    }
+
+    const bubble     = document.createElement('div');
+    bubble.className = 'ag-msg-bubble';
+    bubble.innerHTML = renderAnswer(answer, {
+        allowedTables: window.SCHEMA_TABLES,
+        linkClass:     'ag-record-link',
+        markdown:      false,
+    });
     wrap.appendChild(bubble);
 
     if (sources && sources.length > 0) {
@@ -232,6 +342,29 @@ function replaceWithAnswer(wrap, answer, sources) {
         });
         wrap.appendChild(srcRow);
     }
+
+    if (suggestions && suggestions.length > 0) {
+        const suggRow     = document.createElement('div');
+        suggRow.className = 'ag-msg-suggestions';
+        suggestions.forEach(q => {
+            const chip       = document.createElement('button');
+            chip.type        = 'button';
+            chip.className   = 'ag-suggestion-chip';
+            chip.textContent = q;
+            chip.addEventListener('click', () => {
+                queryEl.value = q;
+                sendQuery();
+            });
+            suggRow.appendChild(chip);
+        });
+        wrap.appendChild(suggRow);
+    }
+
+    const ts       = document.createElement('div');
+    ts.className   = 'ag-msg-time';
+    ts.textContent = fmtTime();
+    wrap.appendChild(ts);
+
     scrollDown();
 }
 
@@ -254,8 +387,11 @@ async function sendQuery() {
     const query = queryEl.value.trim();
     if (!query) return;
 
-    sendBtn.disabled = true;
-    queryEl.disabled = true;
+    currentAbortController = new AbortController();
+    abortedByUser          = false;
+    sendBtn.disabled       = true;
+    stopBtn.disabled       = false;
+    queryEl.disabled       = true;
     appendUserMsg(query);
     queryEl.value = '';
     const thinkWrap = appendThinking();
@@ -268,18 +404,37 @@ async function sendQuery() {
                 'X-CSRF-Token': CSRF(),
             },
             body: JSON.stringify({ query, tags: selectedTags(), page_context: readGridContext(), language: document.documentElement.lang || '' }),
+            signal: currentAbortController.signal,
         });
-        const data = await res.json();
+
+        let data;
+        try {
+            data = await res.json();
+        } catch {
+            replaceWithError(thinkWrap, 'The server timed out or returned an unexpected response. Please try again.');
+            return;
+        }
+
         if (!res.ok || data.error) {
             replaceWithError(thinkWrap, data.error ?? 'Request failed.');
         } else {
-            replaceWithAnswer(thinkWrap, data.answer, data.sources ?? []);
+            replaceWithAnswer(thinkWrap, data.answer, data.sources ?? [], data.tag_fallback ?? false, data.suggestions ?? []);
         }
     } catch (err) {
-        replaceWithError(thinkWrap, err.message || 'Network error.');
+        if (err.name === 'AbortError') {
+            if (abortedByUser) {
+                replaceWithError(thinkWrap, 'Query cancelled.');
+            } else {
+                replaceWithError(thinkWrap, 'The request timed out. The AI model may be busy — please try again.');
+            }
+        } else {
+            replaceWithError(thinkWrap, err.message || 'Network error.');
+        }
     } finally {
-        sendBtn.disabled = false;
-        queryEl.disabled = false;
+        currentAbortController = null;
+        sendBtn.disabled       = false;
+        stopBtn.disabled       = true;
+        queryEl.disabled       = false;
         queryEl.focus();
     }
 }
@@ -289,6 +444,7 @@ async function sendQuery() {
 document.addEventListener('DOMContentLoaded', async () => {
     await I18n.load();
     buildPanel();
+    buildFab();
     document.getElementById('openAgentBtn')?.addEventListener('click', () => {
         document.getElementById('userAvatarMenu')?.classList.remove('open');
         document.getElementById('userAvatarBtn')?.setAttribute('aria-expanded', 'false');

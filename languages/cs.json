@@ -342,6 +342,9 @@
         "thinking": "Přemýšlím…",
         "placeholder": "Položte otázku…",
         "clear": "Vymazat",
-        "send": "Odeslat"
+        "send": "Odeslat",
+        "stop": "Zastavit",
+        "tag_fallback": "Žádné výsledky pro vybrané štítky — zobrazuji výsledky ze všech dokumentů.",
+        "context_table": "Zobrazení: {table}"
     }
 }

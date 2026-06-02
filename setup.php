@@ -1,4 +1,5 @@
-﻿<?php
+<?php
+
 // setup.php - First-run database configuration wizard
 // This file is intentionally standalone (no config.php require)
 // to avoid errors when database.json doesn't exist yet.

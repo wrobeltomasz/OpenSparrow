@@ -342,6 +342,9 @@
         "thinking": "Razmišljam…",
         "placeholder": "Postavi pitanje…",
         "clear": "Očisti",
-        "send": "Pošalji"
+        "send": "Pošalji",
+        "stop": "Zaustavi",
+        "tag_fallback": "Nema rezultata za odabrane oznake — prikazujem rezultate iz svih dokumenata.",
+        "context_table": "Prikaz: {table}"
     }
 }

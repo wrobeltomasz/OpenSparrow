@@ -48,16 +48,18 @@ ob_start();
 
             <aside class="rag-sidebar">
                 <div class="rag-sidebar-inner">
-                    <h3 class="rag-sidebar-title">Filter by tag</h3>
-                    <div id="ragTagList" class="rag-tag-list">
+                    <h3 class="rag-sidebar-title">Documents</h3>
+                    <div id="ragFileList" class="rag-tag-list">
                         <span class="rag-tag-loading">Loading…</span>
                     </div>
+                    <div id="ragTokenWarn" class="rag-token-warning" hidden></div>
+                    <p class="rag-sidebar-hint">Select files before asking a question.</p>
                 </div>
             </aside>
 
             <div class="rag-chat-panel">
                 <h2 class="rag-chat-title">Knowledge Base</h2>
-                <p class="rag-chat-desc">Ask questions answered from uploaded documents. Select tags to narrow the search.</p>
+                <p class="rag-chat-desc">Select one or more documents on the left, then ask your question.</p>
 
                 <div id="ragConversation" class="rag-conversation" role="log" aria-live="polite" aria-label="Conversation history"></div>
 
@@ -72,7 +74,9 @@ ob_start();
                     ></textarea>
                     <div class="rag-input-actions">
                         <button id="ragSendBtn" class="rag-send-btn" type="button">Send</button>
+                        <button id="ragStopBtn" class="rag-stop-btn" type="button" disabled>Stop</button>
                         <button id="ragClearBtn" class="rag-clear-btn" type="button">Clear history</button>
+                        <span id="ragMemoryPill" class="rag-memory-pill" hidden></span>
                     </div>
                 </div>
 
@@ -88,6 +92,12 @@ ob_start();
 ?>
 <script nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
     window.CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token'], JSON_THROW_ON_ERROR); ?>;
+    <?php
+        $rawSchemaRag = @file_get_contents(__DIR__ . '/config/schema.json');
+        $decodedSchemaRag = $rawSchemaRag ? @json_decode($rawSchemaRag, true) : null;
+        $ragSchemaTableNames = is_array($decodedSchemaRag['tables'] ?? null) ? array_keys($decodedSchemaRag['tables']) : [];
+    ?>
+    window.SCHEMA_TABLES = <?php echo json_encode($ragSchemaTableNames, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 </script>
 <script type="module" src="assets/js/rag.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/rag.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php

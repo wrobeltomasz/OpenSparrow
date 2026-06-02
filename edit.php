@@ -32,6 +32,15 @@ $rawSchema  = $schemas->raw();
 $m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
 $error      = '';
 
+// Row-level authorization gate, applied before any read or write. Records the user
+// may not access return the same 404 as missing records, so existence is never
+// disclosed. Covers both the POST update path below and the GET render path.
+$rawTableCfg = $rawSchema['tables'][$table] ?? [];
+if (!can_access_record($GLOBALS['conn'], $rawTableCfg, $table, (int)$id, $session->userId(), $session->role())) {
+    http_response_code(404);
+    die('Record not found.');
+}
+
 if ($request->isPost()) {
     if (!$csrf->isValid($request->post('csrf_token'))) {
         http_response_code(403);
@@ -63,6 +72,7 @@ if ($request->isPost()) {
 
 $row = $records->find($tableCfg, $id);
 if ($row === null) {
+    http_response_code(404);
     die('Record not found.');
 }
 
@@ -131,7 +141,7 @@ ob_start();
             <?php
             $pkVal = $row[$tableCfg->primaryKey] ?? null;
             if ($pkVal !== null) :
-            ?>
+                ?>
             <div class="form-id-strip">
                 <span class="form-id-label">ID</span>
                 <span class="form-id-value"><?php echo htmlspecialchars((string)$pkVal); ?></span>
@@ -141,7 +151,9 @@ ob_start();
             <div class="form-grid">
             <?php foreach ($tableCfg->visibleColumns() as $col) : ?>
                 <?php
-                if ($col->name === $tableCfg->primaryKey) continue;
+                if ($col->name === $tableCfg->primaryKey) {
+                    continue;
+                }
                 $val     = $row[$col->name] ?? '';
                 $hasFk   = $tableCfg->hasForeignKey($col->name);
                 $isColRo = $col->readonly || $isReadOnly;
@@ -161,10 +173,10 @@ ob_start();
             <?php if (!empty($m2mConfigs)) : ?>
             <div style="border-top:1px solid var(--border-light); margin:20px 0 4px; padding-top:18px;">
                 <?php foreach ($m2mConfigs as $mi => $m2mCfg) : ?>
-                <?php
-                $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema);
-                $m2mSel  = m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema);
-                ?>
+                    <?php
+                    $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema);
+                    $m2mSel  = m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema);
+                    ?>
                 <div style="margin-bottom:18px;">
                     <div style="font-weight:600; font-size:13px; color:var(--text); margin-bottom:10px;">
                         <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
@@ -178,8 +190,12 @@ ob_start();
                             <input type="checkbox"
                                 name="m2m_<?php echo (int)$mi; ?>[]"
                                 value="<?php echo htmlspecialchars($opt['id'], ENT_QUOTES, 'UTF-8'); ?>"
-                                <?php if (in_array($opt['id'], $m2mSel, true)) echo 'checked'; ?>
-                                <?php if ($isReadOnly) echo 'disabled'; ?>>
+                                <?php if (in_array($opt['id'], $m2mSel, true)) {
+                                    echo 'checked';
+                                } ?>
+                                <?php if ($isReadOnly) {
+                                    echo 'disabled';
+                                } ?>>
                             <?php echo htmlspecialchars($opt['label']); ?>
                         </label>
                         <?php endforeach; ?>
@@ -207,12 +223,12 @@ ob_start();
     </div><!-- /tab-panel#tab-details -->
 
     <?php foreach ($subtablesData as $si => $sd) : ?>
-    <?php
+        <?php
         $sTable  = $sd['config']['table'];
         $sFk     = $sd['config']['foreign_key'];
         $sCols   = $sd['config']['columns_to_show'] ?? ['id'];
         $siLabel = $sd['config']['label'] ?? ($sd['schema']->displayName ?? $sTable);
-    ?>
+        ?>
     <div class="tab-panel" id="tab-sub-<?php echo (int)$si; ?>" role="tabpanel">
         <div class="subtable-container" style="margin-top: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">

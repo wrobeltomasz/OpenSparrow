@@ -227,6 +227,86 @@ function ragBuildDocumentsTab(panel) {
     uploadForm.appendChild(uploadBtn);
     uploadBody.appendChild(uploadForm);
 
+    // Preparation guidelines (collapsible)
+    const guideWrap = document.createElement('div');
+    guideWrap.style.cssText = 'margin-top:16px;border-top:1px solid var(--border);padding-top:12px;';
+
+    const guideHdr = document.createElement('div');
+    guideHdr.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;';
+    const guideLbl = document.createElement('span');
+    guideLbl.style.cssText = 'font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;';
+    guideLbl.textContent = 'Document preparation guidelines';
+    const guideArrow = document.createElement('span');
+    guideArrow.textContent = '▾';
+    guideArrow.style.cssText = 'font-size:11px;color:var(--muted);display:inline-block;transition:transform .15s;';
+    guideHdr.appendChild(guideLbl);
+    guideHdr.appendChild(guideArrow);
+
+    const guideBody = document.createElement('div');
+    guideBody.style.display = 'none';
+    guideBody.style.marginTop = '12px';
+
+    const guideSections = [
+        {
+            title: 'Format',
+            items: [
+                '.txt files only — convert PDF or Word to plain text before uploading.',
+                'Encoding: UTF-8 without BOM. Files in other encodings will be rejected.',
+                'Maximum size: 10 MB by default (configurable in Settings).',
+            ],
+        },
+        {
+            title: 'Structure',
+            items: [
+                'Separate topics with a blank line — this is the primary chunk boundary used by the splitter.',
+                'Keep paragraphs under ~900 characters so one topic stays in one chunk.',
+                'End every sentence with . ! or ? — required for the sentence splitter to find split points.',
+            ],
+        },
+        {
+            title: 'Content',
+            items: [
+                'Use the exact words users will search for. Search has no stemming — "invoices" does not match "invoice".',
+                'Avoid bullet lists without full sentences. Items without end punctuation are treated as one run-on block.',
+                'Avoid tables formatted with spaces or pipes — they produce noisy retrieval results.',
+                'One language per file. Use the Language field at upload for non-English content.',
+            ],
+        },
+        {
+            title: 'Tags',
+            items: [
+                'Assign at least one category tag (e.g. legal, faq, pricing, technical).',
+                'Tags let users filter queries to a specific topic area for more precise answers.',
+            ],
+        },
+    ];
+
+    guideSections.forEach(sec => {
+        const secWrap = document.createElement('div');
+        secWrap.style.cssText = 'margin-bottom:10px;';
+        const secTitle = document.createElement('div');
+        secTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;';
+        secTitle.textContent = sec.title;
+        secWrap.appendChild(secTitle);
+        sec.items.forEach(item => {
+            const line = document.createElement('div');
+            line.style.cssText = 'font-size:12px;color:var(--text);line-height:1.65;padding-left:10px;';
+            line.textContent = '– ' + item;
+            secWrap.appendChild(line);
+        });
+        guideBody.appendChild(secWrap);
+    });
+
+    guideHdr.addEventListener('click', () => {
+        const open = guideBody.style.display !== 'none';
+        guideBody.style.display = open ? 'none' : '';
+        guideArrow.style.transform = open ? '' : 'rotate(-90deg)';
+    });
+
+    guideWrap.appendChild(guideHdr);
+    guideWrap.appendChild(guideBody);
+    uploadBody.appendChild(guideWrap);
+
     // File list card
     const { card: listCard, body: listBody } = ragCard('Uploaded Documents', '');
     panel.appendChild(listCard);
@@ -239,7 +319,7 @@ function ragBuildDocumentsTab(panel) {
     table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
     const thead = table.createTHead();
     const hdr   = thead.insertRow();
-    ['Filename', 'Tags', 'Size', 'Uploaded', ''].forEach(col => {
+    ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', ''].forEach(col => {
         const th = document.createElement('th');
         th.textContent = col;
         th.className = 'adm-th';
@@ -248,6 +328,35 @@ function ragBuildDocumentsTab(panel) {
     const tbody = document.createElement('tbody');
     table.appendChild(tbody);
     tableWrap.appendChild(table);
+
+        const rechunkAllBtn = document.createElement('button');
+    rechunkAllBtn.type = 'button';
+    rechunkAllBtn.textContent = 'Re-chunk All';
+    rechunkAllBtn.style.cssText = 'padding:6px 14px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:4px;font-size:12px;cursor:pointer;margin-bottom:12px;';
+    listBody.insertBefore(rechunkAllBtn, tableWrap);
+
+    rechunkAllBtn.addEventListener('click', async () => {
+        if (!confirm('Re-chunk all documents from scratch? Existing chunks will be replaced.')) return;
+        rechunkAllBtn.disabled = true;
+        try {
+            const res = await fetch('api.php?action=rag_rechunk_all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
+                body: JSON.stringify({}),
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                ragStatusPill(rechunkAllBtn, `Re-chunked ${data.processed} doc${data.processed !== 1 ? 's' : ''}.`, 'success');
+                await loadFiles();
+            } else {
+                ragStatusPill(rechunkAllBtn, data.error ?? 'Error.', 'error');
+            }
+        } catch (e) {
+            ragStatusPill(rechunkAllBtn, 'Request failed: ' + e.message, 'error');
+        } finally {
+            rechunkAllBtn.disabled = false;
+        }
+    });
 
     // Stats bar above table
     const statsBar = document.createElement('div');
@@ -258,12 +367,21 @@ function ragBuildDocumentsTab(panel) {
         try {
             const res  = await fetch('api.php?action=rag_list');
             const data = await res.json();
+            if (data.status === 'error') {
+                tbody.innerHTML = '';
+                const row = tbody.insertRow();
+                const td  = row.insertCell();
+                td.colSpan = 7;
+                td.textContent = 'Error loading documents: ' + (data.error ?? 'Unknown error');
+                td.style.cssText = 'padding:16px;color:var(--danger);text-align:center;';
+                return;
+            }
             renderFiles(data.files ?? []);
         } catch (e) {
             tbody.innerHTML = '';
             const row = tbody.insertRow();
             const td  = row.insertCell();
-            td.colSpan    = 5;
+            td.colSpan    = 7;
             td.textContent = 'Failed to load: ' + e.message;
             td.style.cssText = 'padding:16px;color:var(--danger);text-align:center;';
         }
@@ -275,7 +393,7 @@ function ragBuildDocumentsTab(panel) {
             statsBar.textContent = '';
             const row = tbody.insertRow();
             const td  = row.insertCell();
-            td.colSpan = 5;
+            td.colSpan = 6;
             td.textContent = 'No documents uploaded yet.';
             td.style.cssText = 'padding:16px;color:var(--muted);text-align:center;font-style:italic;';
             return;
@@ -317,18 +435,51 @@ function ragBuildDocumentsTab(panel) {
             td3.style.cssText = tdStyle + 'color:var(--muted);';
             td3.textContent   = ragFmtSize(file.file_size);
 
-            const td4 = row.insertCell();
-            td4.style.cssText = tdStyle + 'color:var(--muted);font-size:12px;';
-            td4.textContent   = ragFmtDate(file.created_at);
+            const tdChunks = row.insertCell();
+            tdChunks.style.cssText = tdStyle + 'text-align:center;color:var(--muted);';
+            tdChunks.textContent   = file.chunk_count > 0 ? file.chunk_count : '—';
 
             const td5 = row.insertCell();
-            td5.style.cssText = tdStyle;
+            td5.style.cssText = tdStyle + 'color:var(--muted);font-size:12px;';
+            td5.textContent   = ragFmtDate(file.created_at);
+
+            const td6 = row.insertCell();
+            td6.style.cssText = tdStyle;
+            const btnGroup = document.createElement('div');
+            btnGroup.style.cssText = 'display:flex;gap:6px;';
+
+            const rechunkBtn = document.createElement('button');
+            rechunkBtn.type = 'button';
+            rechunkBtn.textContent = 'Re-chunk';
+            rechunkBtn.style.cssText = 'padding:4px 10px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:4px;font-size:11px;cursor:pointer;';
+            rechunkBtn.addEventListener('click', async () => {
+                rechunkBtn.disabled = true;
+                try {
+                    const r = await fetch('api.php?action=rag_rechunk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
+                        body: JSON.stringify({ id: file.id }),
+                    });
+                    const d = await r.json();
+                    if (d.status === 'success') {
+                        await loadFiles();
+                    } else {
+                        alert('Re-chunk failed: ' + (d.error ?? 'Unknown error'));
+                        rechunkBtn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('Request failed: ' + e.message);
+                    rechunkBtn.disabled = false;
+                }
+            });
+            btnGroup.appendChild(rechunkBtn);
+
             const delBtn = document.createElement('button');
             delBtn.type      = 'button';
             delBtn.textContent = 'Delete';
-            delBtn.style.cssText = 'padding:4px 12px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:4px;font-size:12px;cursor:pointer;';
+            delBtn.style.cssText = 'padding:4px 10px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:4px;font-size:11px;cursor:pointer;';
             delBtn.addEventListener('click', async () => {
-                if (!confirm('Delete "' + file.filename + '"?')) return;
+                if (!confirm('Delete "' + ragEsc(file.filename) + '"?')) return;
                 delBtn.disabled = true;
                 try {
                     const r = await fetch('api.php?action=rag_delete', {
@@ -348,7 +499,8 @@ function ragBuildDocumentsTab(panel) {
                     delBtn.disabled = false;
                 }
             });
-            td5.appendChild(delBtn);
+            btnGroup.appendChild(delBtn);
+            td6.appendChild(btnGroup);
         });
     }
 
@@ -513,7 +665,7 @@ function ragBuildSettingsTab(panel) {
     sslRow.appendChild(sslTextWrap);
     connBody.appendChild(sslRow);
 
-    // Other settings grid
+        // Other settings grid
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
         const lbl = document.createElement('label');
@@ -531,14 +683,44 @@ function ragBuildSettingsTab(panel) {
     }
 
     const otherGrid = document.createElement('div');
-    otherGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;';
+    otherGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:16px;';
     const { group: ctxGroup,     inp: ctxInp }     = ragField('Max context files', 'rag-max-ctx', '3');
     const { group: sizeGroup,    inp: sizeInp }    = ragField('Max file size (MB)', 'rag-max-size', '10');
     const { group: timeoutGroup, inp: timeoutInp } = ragField('Ollama timeout (s)', 'rag-timeout', '120');
+    const { group: memGroup,     inp: memInp }     = ragField('Conversation memory (turns)', 'rag-conv-turns', '0');
+    memInp.title = '0 = disabled; max 10. Each turn = one user question + one assistant reply.';
     otherGrid.appendChild(ctxGroup);
     otherGrid.appendChild(sizeGroup);
     otherGrid.appendChild(timeoutGroup);
+    otherGrid.appendChild(memGroup);
     connBody.appendChild(otherGrid);
+
+    const chunksRow = document.createElement('div');
+    chunksRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:10px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);';
+
+    const chunksChk = document.createElement('input');
+    chunksChk.type    = 'checkbox';
+    chunksChk.id      = 'rag-use-chunks';
+    chunksChk.checked = true;
+    chunksChk.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
+
+    const chunksTextWrap = document.createElement('label');
+    chunksTextWrap.htmlFor = 'rag-use-chunks';
+    chunksTextWrap.style.cssText = 'cursor:pointer;';
+
+    const chunksTitle = document.createElement('div');
+    chunksTitle.style.cssText = 'font-size:13px;font-weight:600;';
+    chunksTitle.textContent = 'Use document chunking';
+
+    const chunksDesc = document.createElement('div');
+    chunksDesc.style.cssText = 'font-size:12px;color:var(--muted);margin-top:2px;';
+    chunksDesc.textContent = 'When enabled, uploaded documents are split into overlapping chunks for fine-grained retrieval. Disable to send full file content directly — better for small documents.';
+
+    chunksTextWrap.appendChild(chunksTitle);
+    chunksTextWrap.appendChild(chunksDesc);
+    chunksRow.appendChild(chunksChk);
+    chunksRow.appendChild(chunksTextWrap);
+    connBody.appendChild(chunksRow);
 
     const saveBtn = document.createElement('button');
     saveBtn.type = 'button';
@@ -708,6 +890,8 @@ function ragBuildSettingsTab(panel) {
                 if (s.max_file_size_mb)  sizeInp.value        = s.max_file_size_mb;
                 if (s.ollama_timeout)    timeoutInp.value     = s.ollama_timeout;
                 if (s.ollama_ssl_verify !== undefined) sslChk.checked = !!s.ollama_ssl_verify;
+                if (s.use_chunks !== undefined) chunksChk.checked = !!s.use_chunks;
+                if (s.conversation_turns !== undefined) memInp.value = s.conversation_turns;
 
                 // Pre-populate select with saved model as single option
                 if (s.ollama_model) {
@@ -729,12 +913,14 @@ function ragBuildSettingsTab(panel) {
             : (modelSelect.value.trim());
 
         const payload = {
-            ollama_url:        urlInp.value.trim(),
-            ollama_model:      modelValue,
-            max_context_files: parseInt(ctxInp.value, 10) || 3,
-            max_file_size_mb:  parseInt(sizeInp.value, 10) || 10,
-            ollama_timeout:    parseInt(timeoutInp.value, 10) || 120,
-            ssl_verify:        sslChk.checked,
+            ollama_url:          urlInp.value.trim(),
+            ollama_model:        modelValue,
+            max_context_files:   parseInt(ctxInp.value, 10) || 3,
+            max_file_size_mb:    parseInt(sizeInp.value, 10) || 10,
+            ollama_timeout:      parseInt(timeoutInp.value, 10) || 120,
+            ssl_verify:          sslChk.checked,
+            use_chunks:          chunksChk.checked,
+            conversation_turns:  Math.max(0, Math.min(10, parseInt(memInp.value, 10) || 0)),
         };
         if (!payload.ollama_url || !payload.ollama_model) {
             ragStatusPill(saveBtn, 'URL and model are required.', 'error');
@@ -847,9 +1033,17 @@ function ragBuildTestTab(panel) {
     runBtn.type = 'button';
     runBtn.textContent = 'Run';
     runBtn.style.cssText = 'padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;';
+    const testStopBtn = document.createElement('button');
+    testStopBtn.type = 'button';
+    testStopBtn.textContent = 'Stop';
+    testStopBtn.disabled = true;
+    testStopBtn.style.cssText = 'padding:8px 16px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;opacity:0.35;transition:opacity .15s,background .15s,color .15s;';
     queryRow.appendChild(queryInp);
     queryRow.appendChild(runBtn);
+    queryRow.appendChild(testStopBtn);
     testBody.appendChild(queryRow);
+
+    let testAbortCtrl = null;
 
     // Result area
     const resultWrap = document.createElement('div');
@@ -875,6 +1069,22 @@ function ragBuildTestTab(panel) {
     resultWrap.appendChild(sourcesLabel);
     resultWrap.appendChild(sourcesRow);
 
+    // Prompt preview card — defined before runQuery so the reference is valid at call time
+    const { card: promptCard, body: promptBody } = ragCard(
+        'Prompt Preview',
+        'Shows the exact prompt sent to Ollama for the last query — useful for debugging context quality.'
+    );
+    panel.appendChild(promptCard);
+
+    const promptBox = document.createElement('pre');
+    promptBox.style.cssText = 'margin:0;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:var(--muted);font-style:italic;';
+    promptBox.textContent = 'Run a query above to see the prompt.';
+    promptBody.appendChild(promptBox);
+
+    testStopBtn.addEventListener('click', () => {
+        testAbortCtrl?.abort();
+    });
+
     async function runQuery() {
         const q = queryInp.value.trim();
         if (!q) return;
@@ -882,7 +1092,10 @@ function ragBuildTestTab(panel) {
         const tags     = Array.from(tagChips.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
         const language = langSelect.value;
 
+        testAbortCtrl = new AbortController();
         runBtn.disabled = true;
+        testStopBtn.disabled = false;
+        testStopBtn.style.opacity = '1';
         resultWrap.style.display = '';
         answerBox.textContent    = 'Querying…';
         answerBox.style.color    = 'var(--muted)';
@@ -892,9 +1105,17 @@ function ragBuildTestTab(panel) {
             const res  = await fetch('api.php?action=rag_test_query', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
-                body: JSON.stringify({ query: q, tags, language }),
+                body: JSON.stringify({ query: q, tags, language, return_prompt: true }),
+                signal: testAbortCtrl.signal,
             });
-            const data = await res.json();
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                answerBox.textContent = 'The server timed out or returned an unexpected response. Please try again.';
+                answerBox.style.color = 'var(--danger)';
+                return;
+            }
             if (data.status === 'success') {
                 answerBox.textContent = data.answer ?? '(empty response)';
                 answerBox.style.color = 'var(--text)';
@@ -913,53 +1134,31 @@ function ragBuildTestTab(panel) {
                         sourcesRow.appendChild(chip);
                     });
                 }
+                if (data.prompt) {
+                    promptBox.textContent = data.prompt;
+                    promptBox.style.color = 'var(--text)';
+                }
             } else {
                 answerBox.textContent = 'Error: ' + (data.error ?? 'Unknown error');
                 answerBox.style.color = 'var(--danger)';
             }
         } catch (e) {
-            answerBox.textContent = 'Request failed: ' + e.message;
+            if (e.name === 'AbortError') {
+                answerBox.textContent = 'Query cancelled.';
+            } else {
+                answerBox.textContent = 'Request failed: ' + e.message;
+            }
             answerBox.style.color = 'var(--danger)';
         } finally {
+            testAbortCtrl = null;
             runBtn.disabled = false;
+            testStopBtn.disabled = true;
+            testStopBtn.style.opacity = '0.35';
         }
     }
 
     runBtn.addEventListener('click', runQuery);
     queryInp.addEventListener('keydown', e => { if (e.key === 'Enter') runQuery(); });
-
-    // Prompt preview card
-    const { card: promptCard, body: promptBody } = ragCard(
-        'Prompt Preview',
-        'Shows the exact prompt sent to Ollama for the last query — useful for debugging context quality.'
-    );
-    panel.appendChild(promptCard);
-
-    const promptBox = document.createElement('pre');
-    promptBox.style.cssText = 'margin:0;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:var(--muted);font-style:italic;';
-    promptBox.textContent = 'Run a query above to see the prompt.';
-    promptBody.appendChild(promptBox);
-
-    // Intercept to also show prompt
-    const origRun = runBtn.onclick;
-    runBtn.addEventListener('click', async () => {
-        const q = queryInp.value.trim();
-        if (!q) return;
-        const tags     = Array.from(tagChips.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
-        const language = langSelect.value;
-        try {
-            const res  = await fetch('api.php?action=rag_test_query', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
-                body: JSON.stringify({ query: q, tags, language, return_prompt: true }),
-            });
-            const data = await res.json();
-            if (data.prompt) {
-                promptBox.textContent = data.prompt;
-                promptBox.style.color = 'var(--text)';
-            }
-        } catch (_) { /* prompt preview optional */ }
-    });
 }
 
 // ── Statistics tab ───────────────────────────────────────────────────────────
@@ -975,7 +1174,7 @@ function ragBuildStatsTab(panel) {
     cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:4px;';
     summaryBody.appendChild(cardsGrid);
 
-    function statCard(label, valueEl) {
+    function statCard(label) {
         const box = document.createElement('div');
         box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:#F4F7F9;';
         const v = document.createElement('div');
@@ -997,7 +1196,7 @@ function ragBuildStatsTab(panel) {
 
     const { card: recentCard, body: recentBody } = ragCard(
         'Recent Queries',
-        'Last 50 queries, newest first.'
+        'Last 50 queries, newest first. Click a row to see which chunks were used and the full prompt sent to Ollama.'
     );
     panel.appendChild(recentCard);
 
@@ -1009,7 +1208,7 @@ function ragBuildStatsTab(panel) {
     tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
     const thead = tbl.createTHead();
     const hr    = thead.insertRow();
-    ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)'].forEach(col => {
+    ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)', 'Sources'].forEach(col => {
         const th = document.createElement('th');
         th.textContent = col;
         th.className = 'adm-th adm-th-sm';
@@ -1044,7 +1243,7 @@ function ragBuildStatsTab(panel) {
             if (rows.length === 0) {
                 const row = tbody.insertRow();
                 const td  = row.insertCell();
-                td.colSpan = 8;
+                td.colSpan = 9;
                 td.textContent = 'No queries recorded yet.';
                 td.style.cssText = 'padding:16px;color:var(--muted);text-align:center;font-style:italic;';
                 return;
@@ -1052,17 +1251,19 @@ function ragBuildStatsTab(panel) {
             const tdStyle = 'padding:8px 10px;border-bottom:1px solid #CBD5E1;vertical-align:middle;';
             rows.forEach(r => {
                 const row = tbody.insertRow();
-                row.addEventListener('mouseover', () => { row.style.background = '#DDEAF4'; });
-                row.addEventListener('mouseout',  () => { row.style.background = ''; });
+                row.style.cursor = 'pointer';
+                row.title = 'Click to view sources and prompt';
+                row.addEventListener('mouseover', () => { if (!row.dataset.expanded) row.style.background = '#DDEAF4'; });
+                row.addEventListener('mouseout',  () => { if (!row.dataset.expanded) row.style.background = ''; });
 
                 const td1 = row.insertCell();
                 td1.style.cssText = tdStyle + 'font-size:12px;color:var(--muted);white-space:nowrap;';
                 td1.textContent   = ragFmtDate(r.created_at);
 
                 const td2 = row.insertCell();
-                td2.style.cssText = tdStyle + 'max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                td2.style.cssText = tdStyle + 'max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                 td2.title         = r.query;
-                td2.textContent   = r.query.length > 80 ? r.query.slice(0, 80) + '…' : r.query;
+                td2.textContent   = r.query.length > 70 ? r.query.slice(0, 70) + '…' : r.query;
 
                 const td3 = row.insertCell();
                 td3.style.cssText = tdStyle;
@@ -1098,12 +1299,105 @@ function ragBuildStatsTab(panel) {
                 const td8 = row.insertCell();
                 td8.style.cssText = tdStyle + 'text-align:right;font-weight:600;';
                 td8.textContent   = r.total_ms ? (parseInt(r.total_ms, 10) / 1000).toFixed(2) + 's' : '0s';
+
+                const td9 = row.insertCell();
+                td9.style.cssText = tdStyle + 'text-align:center;';
+                const srcs = r.sources ?? [];
+                if (srcs.length > 0) {
+                    const chunkCount = srcs.filter(s => s.source_type === 'chunk').length;
+                    const badge = document.createElement('span');
+                    badge.textContent = srcs.length + (chunkCount > 0 ? ' chunk' : ' file') + (srcs.length !== 1 ? 's' : '');
+                    badge.style.cssText = 'display:inline-block;padding:1px 8px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-size:11px;font-weight:600;color:var(--accent-dark);';
+                    td9.appendChild(badge);
+                } else {
+                    td9.textContent = '—';
+                    td9.style.color = 'var(--muted)';
+                }
+
+                let detailRow = null;
+                row.addEventListener('click', () => {
+                    if (detailRow && detailRow.parentNode) {
+                        detailRow.remove();
+                        detailRow = null;
+                        delete row.dataset.expanded;
+                        row.style.background = '';
+                        return;
+                    }
+                    row.dataset.expanded = '1';
+                    row.style.background = 'var(--accent-light)';
+
+                    detailRow = document.createElement('tr');
+                    row.insertAdjacentElement('afterend', detailRow);
+                    const dtd = detailRow.insertCell();
+                    dtd.colSpan = 9;
+                    dtd.style.cssText = 'padding:14px 20px;background:#EEF4FA;border-bottom:2px solid var(--border);';
+
+                    if (srcs.length > 0) {
+                        const srcHdr = document.createElement('div');
+                        srcHdr.textContent = 'Sources used (' + srcs.length + ')';
+                        srcHdr.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;';
+                        dtd.appendChild(srcHdr);
+
+                        const srcGrid = document.createElement('div');
+                        srcGrid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
+                        srcs.forEach(s => {
+                            const card = document.createElement('div');
+                            card.style.cssText = 'padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:#fff;';
+                            const title = document.createElement('div');
+                            title.style.cssText = 'font-size:12px;font-weight:600;margin-bottom:4px;';
+                            const chunkLabel = s.source_type === 'chunk' && parseInt(s.chunk_index, 10) >= 0
+                                ? '  [chunk #' + s.chunk_index + ']'
+                                : '  [full file]';
+                            title.textContent = (s.filename || '—') + chunkLabel;
+                            const snippet = document.createElement('div');
+                            snippet.style.cssText = 'font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-word;line-height:1.5;';
+                            const snipText = s.snippet || '';
+                            snippet.textContent = snipText.length > 350 ? snipText.slice(0, 350) + '…' : snipText;
+                            card.appendChild(title);
+                            card.appendChild(snippet);
+                            srcGrid.appendChild(card);
+                        });
+                        dtd.appendChild(srcGrid);
+                    }
+
+                    if (r.prompt_snapshot) {
+                        const promptToggle = document.createElement('div');
+                        promptToggle.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px;user-select:none;';
+                        const promptLbl = document.createElement('span');
+                        promptLbl.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;';
+                        promptLbl.textContent = 'Full prompt sent to Ollama';
+                        const promptArrow = document.createElement('span');
+                        promptArrow.textContent = '▾';
+                        promptArrow.style.cssText = 'font-size:12px;color:var(--muted);transition:transform .15s;display:inline-block;';
+                        promptToggle.appendChild(promptLbl);
+                        promptToggle.appendChild(promptArrow);
+
+                        const promptBox = document.createElement('pre');
+                        promptBox.style.cssText = 'display:none;margin:0;padding:12px;background:#F0F4F8;border:1px solid var(--border);border-radius:4px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto;color:var(--text);';
+                        promptBox.textContent = r.prompt_snapshot;
+
+                        promptToggle.addEventListener('click', e => {
+                            e.stopPropagation();
+                            const open = promptBox.style.display !== 'none';
+                            promptBox.style.display = open ? 'none' : 'block';
+                            promptArrow.style.transform = open ? '' : 'rotate(-90deg)';
+                        });
+
+                        dtd.appendChild(promptToggle);
+                        dtd.appendChild(promptBox);
+                    } else if (srcs.length === 0) {
+                        const noData = document.createElement('div');
+                        noData.textContent = 'No detail data recorded for this query (pre-2.10.0 entry).';
+                        noData.style.cssText = 'font-size:12px;color:var(--muted);font-style:italic;';
+                        dtd.appendChild(noData);
+                    }
+                });
             });
         } catch (e) {
             tbody.innerHTML = '';
             const row = tbody.insertRow();
             const td  = row.insertCell();
-            td.colSpan = 8;
+            td.colSpan = 9;
             td.textContent = 'Failed to load: ' + e.message;
             td.style.cssText = 'padding:16px;color:var(--danger);text-align:center;';
         } finally {

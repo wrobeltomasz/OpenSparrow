@@ -1003,3 +1003,205 @@ body {
 .c-ok     { color: var(--ok); }
 .c-warn   { color: var(--warn); }
 .c-text   { color: var(--text); }
+
+/* ── Overview dashboard ─────────────────────────────────────────────── */
+.ov-loading {
+    color: var(--muted);
+    font-size: 14px;
+    padding: 24px 0;
+}
+.ov-welcome-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.ov-welcome-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ov-welcome-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+}
+.ov-version-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    background: var(--accent-mid);
+    color: var(--accent);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.ov-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+@media (max-width: 800px) {
+    .ov-stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+.ov-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+}
+.ov-stat-icon {
+    width: 28px;
+    height: 28px;
+    opacity: 0.75;
+    flex-shrink: 0;
+}
+.ov-stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ov-stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+}
+.ov-stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.ov-stat-sub {
+    font-size: 11px;
+    color: var(--muted);
+}
+.ov-mid-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+@media (max-width: 800px) {
+    .ov-mid-row { grid-template-columns: 1fr; }
+}
+.ov-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+}
+.ov-tables-panel { margin-bottom: 0; }
+.ov-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+}
+.ov-feed-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+    min-width: 0;
+}
+.ov-feed-row:last-child { border-bottom: none; }
+.ov-feed-time {
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 110px;
+}
+.ov-feed-user {
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    min-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ov-feed-action {
+    color: var(--text);
+    flex-shrink: 0;
+}
+.ov-feed-table {
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+}
+.ov-status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+}
+.ov-status-row:last-child { border-bottom: none; }
+.ov-status-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.ov-badge-ok   { background: rgba(43,147,72,.12); color: #2b9348; }
+.ov-badge-warn { background: rgba(208,0,0,.08);   color: #a80000; }
+.ov-status-label  { flex: 1; color: var(--text); }
+.ov-status-detail { color: var(--muted); font-size: 11px; }
+.ov-tables-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.ov-table-item {
+    display: grid;
+    grid-template-columns: 160px 1fr 60px;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+}
+.ov-table-name {
+    color: var(--text);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ov-bar-wrap {
+    background: var(--border-light);
+    border-radius: 99px;
+    height: 8px;
+    overflow: hidden;
+}
+.ov-bar {
+    background: var(--accent);
+    height: 100%;
+    border-radius: 99px;
+    min-width: 2px;
+    transition: width .3s ease;
+}
+.ov-table-count {
+    color: var(--muted);
+    text-align: right;
+    font-size: 11px;
+}
+.ov-empty {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 4px 0 0;
+}

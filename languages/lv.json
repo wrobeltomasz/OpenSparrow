@@ -338,6 +338,9 @@
         "thinking": "Domāju…",
         "placeholder": "Uzdodiet jautājumu…",
         "clear": "Notīrīt",
-        "send": "Sūtīt"
+        "send": "Sūtīt",
+        "stop": "Apturēt",
+        "tag_fallback": "Nav rezultātu atlasītajiem tagiem — rādu rezultātus no visiem dokumentiem.",
+        "context_table": "Skats: {table}"
     }
 }

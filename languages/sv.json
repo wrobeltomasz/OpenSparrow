@@ -338,6 +338,9 @@
         "thinking": "Tänker…",
         "placeholder": "Ställ en fråga…",
         "clear": "Rensa",
-        "send": "Skicka"
+        "send": "Skicka",
+        "stop": "Stopp",
+        "tag_fallback": "Inga resultat för valda taggar — visar resultat från alla dokument.",
+        "context_table": "Visas: {table}"
     }
 }

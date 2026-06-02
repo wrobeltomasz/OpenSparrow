@@ -41,14 +41,14 @@ function db_connect(): \PgSql\Connection
 
     // Suppress native warnings and throw a safe generic exception
     $conn = @pg_connect($connStr);
-    
+
     if (!$conn) {
         throw new RuntimeException('Cannot connect to Postgres. Check database credentials or server status.');
     }
 
     // Use pg_escape_literal to prevent SQL injection via APP_TIMEZONE env var
     pg_query($conn, 'SET TIME ZONE ' . pg_escape_literal($conn, APP_TIMEZONE));
-    
+
     return $conn;
 }
 

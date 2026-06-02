@@ -115,7 +115,7 @@ ob_start();
             <?php if (!empty($m2mConfigs)) : ?>
             <div style="border-top:1px solid var(--border-light); margin:20px 0 4px; padding-top:18px;">
                 <?php foreach ($m2mConfigs as $mi => $m2mCfg) : ?>
-                <?php $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema); ?>
+                    <?php $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema); ?>
                 <div style="margin-bottom:18px;">
                     <div style="font-weight:600; font-size:13px; color:var(--text); margin-bottom:10px;">
                         <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
@@ -129,7 +129,9 @@ ob_start();
                             <input type="checkbox"
                                 name="m2m_<?php echo (int)$mi; ?>[]"
                                 value="<?php echo htmlspecialchars($opt['id'], ENT_QUOTES, 'UTF-8'); ?>"
-                                <?php if ($isReadOnly) echo 'disabled'; ?>>
+                                <?php if ($isReadOnly) {
+                                    echo 'disabled';
+                                } ?>>
                             <?php echo htmlspecialchars($opt['label']); ?>
                         </label>
                         <?php endforeach; ?>

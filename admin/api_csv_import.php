@@ -128,9 +128,11 @@ final class RowCaster
         if (str_contains($t, 'int') || str_contains($t, 'serial')) {
             return is_numeric($v) ? (string)(int) $v : null;
         }
-        if (str_contains($t, 'numeric') || str_contains($t, 'decimal') ||
+        if (
+            str_contains($t, 'numeric') || str_contains($t, 'decimal') ||
             str_contains($t, 'float')   || str_contains($t, 'real')    ||
-            str_contains($t, 'double')) {
+            str_contains($t, 'double')
+        ) {
             $n = str_replace(',', '.', $v);
             return is_numeric($n) ? (string)(float) $n : null;
         }
@@ -176,13 +178,15 @@ final class RowCaster
  */
 final class ImportRepository
 {
-    public function __construct(private readonly \PgSql\Connection $conn) {}
+    public function __construct(private readonly \PgSql\Connection $conn)
+    {
+    }
 
     public function createRecord(
-        int    $userId,
+        int $userId,
         string $filename,
         string $tableName,
-        array  $mapping,
+        array $mapping,
         ?string $conflictCol
     ): int {
         $sql = 'INSERT INTO ' . sys_table('imports')
@@ -199,11 +203,11 @@ final class ImportRepository
     }
 
     public function finalize(
-        int    $importId,
+        int $importId,
         string $status,
-        int    $total,
-        int    $imported,
-        int    $skipped,
+        int $total,
+        int $imported,
+        int $skipped,
         ?string $errorMsg = null
     ): void {
         $sql = 'UPDATE ' . sys_table('imports')
@@ -287,8 +291,9 @@ final class CsvImportService
 {
     public function __construct(
         private readonly \PgSql\Connection $conn,
-        private readonly ImportRepository  $repo,
-    ) {}
+        private readonly ImportRepository $repo,
+    ) {
+    }
 
     /**
      * @param  array<string,string|null> $mapping      csvHeader => dbColumn (null = skip)
@@ -296,15 +301,15 @@ final class CsvImportService
      * @return array{0:int,1:int,2:int}  [total, imported, skipped]
      */
     public function execute(
-        string  $csvPath,
-        string  $tableName,
-        string  $tableSchema,
-        array   $mapping,
-        array   $colTypes,
+        string $csvPath,
+        string $tableName,
+        string $tableSchema,
+        array $mapping,
+        array $colTypes,
         ?string $conflictCol,
-        int     $importId,
-        string  $delimiter = ',',
-        string  $encoding  = 'UTF-8'
+        int $importId,
+        string $delimiter = ',',
+        string $encoding = 'UTF-8'
     ): array {
         $tableIdent = pg_ident($tableSchema) . '.' . pg_ident($tableName);
         $dbCols     = array_values(array_unique(array_filter($mapping)));
@@ -376,9 +381,9 @@ final class CsvImportService
      * @return array{0:int,1:int,2:list<array>} [imported, skipped, errors]
      */
     private function flushBatch(
-        array   $batch,
-        string  $tableIdent,
-        array   $dbCols,
+        array $batch,
+        string $tableIdent,
+        array $dbCols,
         ?string $conflictCol
     ): array {
         @pg_query($this->conn, 'BEGIN');
@@ -402,9 +407,9 @@ final class CsvImportService
     }
 
     private function buildInsertSql(
-        array   $batch,
-        string  $tableIdent,
-        array   $dbCols,
+        array $batch,
+        string $tableIdent,
+        array $dbCols,
         ?string $conflictCol
     ): string {
         $colList = implode(',', array_map('pg_ident', $dbCols));
@@ -464,10 +469,10 @@ final class CsvImportService
         string $csvPath,
         string $tableName,
         string $tableSchema,
-        array  $mapping,
-        int    $importId,
+        array $mapping,
+        int $importId,
         string $delimiter = ',',
-        string $encoding  = 'UTF-8'
+        string $encoding = 'UTF-8'
     ): array {
         $tableIdent = pg_ident($tableSchema) . '.' . pg_ident($tableName);
 
@@ -556,8 +561,10 @@ final class CsvImportService
             if (@pg_end_copy($this->conn) === false) {
                 $pgErr = pg_last_error($this->conn);
                 $hint  = '';
-                if (preg_match('/invalid input syntax for type (\w+).*column (\w+)/i', $pgErr, $m)
-                    || preg_match('/niepra.*?dla typu (\w+).*kolumn[ay] (\w+)/iu', $pgErr, $m)) {
+                if (
+                    preg_match('/invalid input syntax for type (\w+).*column (\w+)/i', $pgErr, $m)
+                    || preg_match('/niepra.*?dla typu (\w+).*kolumn[ay] (\w+)/iu', $pgErr, $m)
+                ) {
                     $hint = " Column \"{$m[2]}\" is typed {$m[1]} but received a non-{$m[1]} value."
                         . ' Cause: an earlier field in that row has an unquoted delimiter, shifting all subsequent columns.'
                         . ' Fix: use Normal mode (per-row error reporting) or correct the source CSV quoting.';
@@ -576,8 +583,10 @@ final class CsvImportService
 
     private static function quoteForCopy(string $val): string
     {
-        if (str_contains($val, ',') || str_contains($val, '"')
-            || str_contains($val, "\n") || str_contains($val, "\r")) {
+        if (
+            str_contains($val, ',') || str_contains($val, '"')
+            || str_contains($val, "\n") || str_contains($val, "\r")
+        ) {
             return '"' . str_replace('"', '""', $val) . '"';
         }
         return $val;
@@ -768,13 +777,25 @@ if ($action === 'csv_import_execute') {
 
         if ($copyMode) {
             [$total, $imported, $skipped] = $service->executeCopy(
-                $csvPath, $tableName, $tableSchema,
-                $mapping, $importId, $delimiter, $encoding
+                $csvPath,
+                $tableName,
+                $tableSchema,
+                $mapping,
+                $importId,
+                $delimiter,
+                $encoding
             );
         } else {
             [$total, $imported, $skipped] = $service->execute(
-                $csvPath, $tableName, $tableSchema,
-                $mapping, $colTypes, $conflictCol, $importId, $delimiter, $encoding
+                $csvPath,
+                $tableName,
+                $tableSchema,
+                $mapping,
+                $colTypes,
+                $conflictCol,
+                $importId,
+                $delimiter,
+                $encoding
             );
         }
 

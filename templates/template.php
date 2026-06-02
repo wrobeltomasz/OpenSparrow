@@ -54,6 +54,12 @@ ob_start();
 ?>
 <script nonce="<?php echo $cspNonce ?? ''; ?>">
     window.USER_ROLE = <?php echo json_encode($userRole ?? 'viewer', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    <?php
+        $rawSchemaTpl = @file_get_contents(__DIR__ . '/../config/schema.json');
+        $decodedSchemaTpl = $rawSchemaTpl ? @json_decode($rawSchemaTpl, true) : null;
+        $schemaTableNames = is_array($decodedSchemaTpl['tables'] ?? null) ? array_keys($decodedSchemaTpl['tables']) : [];
+    ?>
+    window.SCHEMA_TABLES = <?php echo json_encode($schemaTableNames, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     document.addEventListener("DOMContentLoaded", () => {
         const mobileActions = document.getElementById("mobileActions");
         if (mobileActions) {

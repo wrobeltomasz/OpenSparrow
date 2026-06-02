@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete'];
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete'];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);
@@ -85,8 +85,10 @@ if ($action === 'init_db') {
         $tImports         = sys_table('imports');
         $tImportRowsLog   = sys_table('import_rows_log');
         $tRagFiles        = sys_table('rag_files');
-        $tRagQueries      = sys_table('rag_queries');
-        $tAutomationRuns  = sys_table('automation_runs');
+        $tRagChunks        = sys_table('rag_chunks');
+        $tRagQueries       = sys_table('rag_queries');
+        $tRagQuerySources  = sys_table('rag_query_sources');
+        $tAutomationRuns   = sys_table('automation_runs');
 
         // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
@@ -97,6 +99,18 @@ if ($action === 'init_db') {
             if (!@pg_query($conn, $q)) {
                 admin_db_fail($conn, 'init_db:bootstrap');
             }
+        }
+
+        // Rename legacy migration names in DB (versioning restructure, idempotent).
+        $legacyRenames = [
+            '2.7.0_automations'         => '2.7_automations',
+            '2.7.0_automation_runs'     => '2.7_automation_runs',
+            '2.9.0_rag_chunks'          => '2.7_rag_chunks',
+            '2.10.0_rag_queries_prompt' => '2.7_rag_queries_prompt',
+            '2.10.0_rag_query_sources'  => '2.7_rag_query_sources',
+        ];
+        foreach ($legacyRenames as $oldName => $newName) {
+            @pg_query_params($conn, "UPDATE $tMigrations SET name = \$1 WHERE name = \$2", [$newName, $oldName]);
         }
 
         // Load already-applied migration names.
@@ -191,10 +205,37 @@ if ($action === 'init_db') {
                 "CREATE INDEX IF NOT EXISTS idx_spw_rag_queries_user_id ON $tRagQueries USING btree (user_id)",
             ],
 
-            '2.7.0_automation_runs' => [
+            '2.7_automations' => [],
+
+            '2.7_automation_runs' => [
                 "CREATE TABLE IF NOT EXISTS $tAutomationRuns ( id serial4 NOT NULL, rule_id varchar(50) NOT NULL DEFAULT '', rule_name varchar(255) NOT NULL DEFAULT '', table_name varchar(100) NOT NULL DEFAULT '', record_id int4 NOT NULL DEFAULT 0, event varchar(20) NOT NULL DEFAULT '', status varchar(20) NOT NULL DEFAULT 'ok', error_msg text NULL, executed_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_automation_runs_pkey PRIMARY KEY (id) )",
                 "CREATE INDEX IF NOT EXISTS idx_spw_automation_runs_rule_id ON $tAutomationRuns USING btree (rule_id, executed_at DESC)",
                 "CREATE INDEX IF NOT EXISTS idx_spw_automation_runs_executed_at ON $tAutomationRuns USING btree (executed_at DESC)",
+            ],
+
+            '2.7_rag_chunks' => [
+                "CREATE TABLE IF NOT EXISTS $tRagChunks ( id serial4 NOT NULL, file_id int4 NOT NULL, chunk_index int4 NOT NULL, content text NOT NULL, CONSTRAINT spw_rag_chunks_pkey PRIMARY KEY (id), CONSTRAINT spw_rag_chunks_file_fkey FOREIGN KEY (file_id) REFERENCES $tRagFiles(id) ON DELETE CASCADE, CONSTRAINT spw_rag_chunks_file_chunk_key UNIQUE (file_id, chunk_index) )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_chunks_file_id ON $tRagChunks USING btree (file_id)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_chunks_content_fts ON $tRagChunks USING gin (to_tsvector('simple', content))",
+            ],
+
+            '2.7_rag_queries_prompt' => [
+                "ALTER TABLE {$tRagQueries} ADD COLUMN IF NOT EXISTS prompt_snapshot text",
+            ],
+
+            '2.7_rag_query_sources' => [
+                "CREATE TABLE IF NOT EXISTS {$tRagQuerySources} ( id serial4 NOT NULL, query_id int4 NOT NULL, file_id int4 NOT NULL, chunk_id int4 NULL, chunk_index int4 NOT NULL DEFAULT -1, filename varchar(255) NOT NULL, snippet text NOT NULL DEFAULT '', source_type varchar(10) NOT NULL DEFAULT 'file', rank_position int4 NOT NULL DEFAULT 0, CONSTRAINT spw_rag_query_sources_pkey PRIMARY KEY (id), CONSTRAINT spw_rag_query_sources_query_fkey FOREIGN KEY (query_id) REFERENCES {$tRagQueries}(id) ON DELETE CASCADE, CONSTRAINT spw_rag_query_sources_file_fkey FOREIGN KEY (file_id) REFERENCES {$tRagFiles}(id) ON DELETE CASCADE, CONSTRAINT spw_rag_query_sources_chunk_fkey FOREIGN KEY (chunk_id) REFERENCES {$tRagChunks}(id) ON DELETE SET NULL )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_query_sources_query_id ON {$tRagQuerySources} USING btree (query_id)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_query_sources_file_id ON {$tRagQuerySources} USING btree (file_id)",
+            ],
+
+            '2.7_rag_chunks_embedding' => [],
+
+            '2.7_rag_fts_english' => [
+                "DROP INDEX IF EXISTS idx_spw_rag_files_content_fts",
+                "DROP INDEX IF EXISTS idx_spw_rag_chunks_content_fts",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_files_content_fts ON $tRagFiles USING gin (to_tsvector('english', content))",
+                "CREATE INDEX IF NOT EXISTS idx_spw_rag_chunks_content_fts ON $tRagChunks USING gin (to_tsvector('english', content))",
             ],
 
             // Add future migrations below — never modify entries above.
@@ -272,7 +313,12 @@ if ($action === 'migrations_list') {
             '2.4.0_release_migrations_table',
             '2.6.0_rag_files',
             '2.6.0_rag_queries',
-            '2.7.0_automation_runs',
+            '2.7_automations',
+            '2.7_automation_runs',
+            '2.7_rag_chunks',
+            '2.7_rag_queries_prompt',
+            '2.7_rag_query_sources',
+            '2.7_rag_fts_english',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");
@@ -743,7 +789,7 @@ if ($action === 'health') {
                     $pg_version = $m[1];
                 }
             }
-            pg_close($conn);
+                        pg_close($conn);
         }
     } catch (Exception $e) {
         $db_error = $e->getMessage();
@@ -781,9 +827,9 @@ if ($action === 'health') {
         'bin2hex_ok'       => function_exists('bin2hex'),
 
         // Database
-        'db_connected' => $db_connected,
-        'db_error'     => $db_error,
-        'pg_version'   => $pg_version,
+        'db_connected'       => $db_connected,
+        'db_error'           => $db_error,
+        'pg_version'         => $pg_version,
 
         // Filesystem
         'dir_writable'          => is_writable(__DIR__ . '/../config'),
@@ -1114,6 +1160,53 @@ if ($action === 'set_language_setting') {
         'default_language'   => $defaultLang,
         'available_languages' => $available,
     ]);
+    exit;
+}
+
+// GET: return AI chat bubble setting
+if ($action === 'get_chat_bubble_setting') {
+    header('Content-Type: application/json');
+    $settingsFile = __DIR__ . '/../config/settings.json';
+    $settings     = [];
+    if (is_file($settingsFile)) {
+        $raw = @file_get_contents($settingsFile);
+        if ($raw !== false) {
+            $settings = @json_decode($raw, true) ?? [];
+        }
+    }
+    echo json_encode(['chat_bubble_enabled' => (bool) ($settings['chat_bubble_enabled'] ?? false)]);
+    exit;
+}
+
+// POST: save AI chat bubble setting
+if ($action === 'set_chat_bubble_setting') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
+        exit;
+    }
+    $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $enabled = !empty($body['chat_bubble_enabled']);
+
+    $settingsFile = __DIR__ . '/../config/settings.json';
+    $settings     = [];
+    if (is_file($settingsFile)) {
+        $raw = @file_get_contents($settingsFile);
+        if ($raw !== false) {
+            $settings = @json_decode($raw, true) ?? [];
+        }
+    }
+    $settings['chat_bubble_enabled'] = $enabled;
+
+    $written = @file_put_contents(
+        $settingsFile,
+        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    );
+    if ($written === false) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+        exit;
+    }
+    echo json_encode(['status' => 'success', 'chat_bubble_enabled' => $enabled]);
     exit;
 }
 
@@ -2292,14 +2385,20 @@ if ($action === 'rag_list') {
     header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../includes/db.php';
-        $conn  = db_connect();
-        $tRag  = sys_table('rag_files');
-        $res   = @pg_query($conn, "SELECT id, filename, tags, file_size, created_at FROM {$tRag} ORDER BY created_at DESC");
+        $conn       = db_connect();
+        $tRag       = sys_table('rag_files');
+        $tRagChunks = sys_table('rag_chunks');
+        $cChk       = (bool) @pg_query($conn, "SELECT 1 FROM {$tRagChunks} LIMIT 0");
+        $chunkExpr  = $cChk
+            ? "(SELECT COUNT(*) FROM {$tRagChunks} c WHERE c.file_id = f.id) AS chunk_count"
+            : '0 AS chunk_count';
+        $res        = @pg_query($conn, "SELECT f.id, f.filename, f.tags, f.file_size, f.uploaded_by, f.created_at, {$chunkExpr} FROM {$tRag} f ORDER BY f.created_at DESC");
         if (!$res) {
             admin_db_fail($conn, 'rag_list');
         }
         $files = [];
         while ($row = pg_fetch_assoc($res)) {
+            $row['chunk_count'] = (int) ($row['chunk_count'] ?? 0);
             $files[] = $row;
         }
         echo json_encode(['status' => 'success', 'files' => $files]);
@@ -2369,14 +2468,20 @@ if ($action === 'rag_upload') {
         $filename    = basename($uploadedName);
         $uploadedBy  = (int) ($_SESSION['user_id'] ?? 0);
 
-        $sql = "INSERT INTO {$tRag} (filename, content, tags, file_size, uploaded_by)
-                VALUES (\$1, \$2, \$3::text[], \$4, \$5) RETURNING id";
-        $res = @pg_query_params($conn, $sql, [$filename, $content, $tagLiteral, $fileSize, $uploadedBy]);
+        $res = @pg_query_params(
+            $conn,
+            "INSERT INTO {$tRag} (filename, content, tags, file_size, uploaded_by) VALUES (\$1, \$2, \$3::text[], \$4, \$5) RETURNING id",
+            [$filename, $content, $tagLiteral, $fileSize, $uploadedBy]
+        );
         if (!$res) {
             admin_db_fail($conn, 'rag_upload');
         }
-        $row = pg_fetch_assoc($res);
-        echo json_encode(['status' => 'success', 'id' => (int) $row['id']]);
+        $row    = pg_fetch_assoc($res);
+        $fileId = (int) $row['id'];
+        if ((bool) ($ragCfg['use_chunks'] ?? true)) {
+            rag_store_chunks($conn, $fileId, $content, $ragCfg);
+        }
+        echo json_encode(['status' => 'success', 'id' => $fileId]);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
     }
@@ -2409,6 +2514,70 @@ if ($action === 'rag_delete') {
     exit;
 }
 
+if ($action === 'rag_rechunk') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
+        exit;
+    }
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        require_once __DIR__ . '/../includes/rag_helpers.php';
+        $conn = db_connect();
+        $tRag = sys_table('rag_files');
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $id   = (int) ($body['id'] ?? 0);
+        if ($id <= 0) {
+            throw new RuntimeException('Invalid document ID.');
+        }
+        $res = @pg_query_params($conn, "SELECT content FROM {$tRag} WHERE id = \$1", [$id]);
+        if (!$res) {
+            admin_db_fail($conn, 'rag_rechunk');
+        }
+        $row = pg_fetch_assoc($res);
+        if (!$row) {
+            throw new RuntimeException('Document not found.');
+        }
+        $cfg    = rag_config();
+        $stored = rag_store_chunks($conn, $id, (string) $row['content'], $cfg);
+        echo json_encode(['status' => 'success', 'chunks' => $stored]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'rag_rechunk_all') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
+        exit;
+    }
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        require_once __DIR__ . '/../includes/rag_helpers.php';
+        $conn = db_connect();
+        $tRag = sys_table('rag_files');
+        $cfg  = rag_config();
+
+        $res = @pg_query($conn, "SELECT id, content FROM {$tRag} ORDER BY id ASC");
+        if (!$res) {
+            admin_db_fail($conn, 'rag_rechunk_all');
+        }
+
+        $processed = 0;
+        while ($row = pg_fetch_assoc($res)) {
+            rag_store_chunks($conn, (int) $row['id'], (string) $row['content'], $cfg);
+            $processed++;
+        }
+
+        echo json_encode(['status' => 'success', 'processed' => $processed]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 if ($action === 'rag_settings') {
     header('Content-Type: application/json');
     try {
@@ -2429,13 +2598,15 @@ if ($action === 'rag_settings_save') {
         exit;
     }
     try {
-        $body       = json_decode(file_get_contents('php://input'), true) ?? [];
-        $ollamaUrl  = trim((string) ($body['ollama_url'] ?? ''));
-        $model      = trim((string) ($body['ollama_model'] ?? ''));
-        $maxCtx     = max(1, min(20, (int) ($body['max_context_files'] ?? 3)));
-        $maxSizeMb  = max(1, min(100, (int) ($body['max_file_size_mb'] ?? 10)));
-        $timeout    = max(10, min(600, (int) ($body['ollama_timeout'] ?? 120)));
-        $sslVerify  = isset($body['ssl_verify']) ? (bool) $body['ssl_verify'] : true;
+        $body             = json_decode(file_get_contents('php://input'), true) ?? [];
+        $ollamaUrl        = trim((string) ($body['ollama_url'] ?? ''));
+        $model            = trim((string) ($body['ollama_model'] ?? ''));
+        $maxCtx           = max(1, min(20, (int) ($body['max_context_files'] ?? 3)));
+        $maxSizeMb        = max(1, min(100, (int) ($body['max_file_size_mb'] ?? 10)));
+        $timeout          = max(10, min(600, (int) ($body['ollama_timeout'] ?? 120)));
+        $sslVerify        = isset($body['ssl_verify']) ? (bool) $body['ssl_verify'] : true;
+        $useChunks        = isset($body['use_chunks']) ? (bool) $body['use_chunks'] : true;
+        $convTurns        = max(0, min(10, (int) ($body['conversation_turns'] ?? 0)));
 
         if ($ollamaUrl === '' || $model === '') {
             throw new RuntimeException('ollama_url and ollama_model are required.');
@@ -2444,17 +2615,28 @@ if ($action === 'rag_settings_save') {
             throw new RuntimeException('ollama_url must be a valid URL.');
         }
 
-        $cfg = [
-            'ollama_url'        => $ollamaUrl,
-            'ollama_model'      => $model,
-            'max_context_files' => $maxCtx,
-            'max_file_size_mb'  => $maxSizeMb,
-            'ollama_timeout'    => $timeout,
-            'ollama_ssl_verify' => $sslVerify,
-        ];
-
         $configDir  = __DIR__ . '/../config';
         $configPath = $configDir . '/rag.json';
+
+        // Preserve keys not exposed in the UI (chunk_size, chunk_overlap, etc.)
+        $existingCfg = [];
+        if (is_file($configPath)) {
+            $raw = @json_decode((string) @file_get_contents($configPath), true);
+            if (is_array($raw)) {
+                $existingCfg = $raw;
+            }
+        }
+
+        $cfg = array_merge($existingCfg, [
+            'ollama_url'         => $ollamaUrl,
+            'ollama_model'       => $model,
+            'max_context_files'  => $maxCtx,
+            'max_file_size_mb'   => $maxSizeMb,
+            'ollama_timeout'     => $timeout,
+            'ollama_ssl_verify'  => $sslVerify,
+            'use_chunks'         => $useChunks,
+            'conversation_turns' => $convTurns,
+        ]);
         if (!is_dir($configDir)) {
             throw new RuntimeException('Config directory not found.');
         }
@@ -2506,7 +2688,8 @@ if ($action === 'rag_test_query') {
             'tags'     => pg_text_array_to_php($f['tags'] ?? '{}'),
         ], $files);
 
-        $resp = ['status' => 'success', 'answer' => $ollamaResult['response'], 'sources' => $sources];
+        $parsed = rag_extract_suggestions($ollamaResult['response']);
+        $resp   = ['status' => 'success', 'answer' => $parsed['answer'], 'sources' => $sources];
         if (!empty($body['return_prompt'])) {
             $resp['prompt'] = $prompt;
         }
@@ -2601,13 +2784,14 @@ if ($action === 'rag_ollama_check') {
     exit;
 }
 
-// GET: RAG query statistics summary + recent queries
+// GET: RAG query statistics summary + recent queries with source attribution
 if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../includes/db.php';
-        $conn        = db_connect();
-        $tRagQueries = sys_table('rag_queries');
+        $conn             = db_connect();
+        $tRagQueries      = sys_table('rag_queries');
+        $tRagQuerySources = sys_table('rag_query_sources');
 
         $summaryRes = @pg_query(
             $conn,
@@ -2619,19 +2803,57 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         );
         $summary = $summaryRes ? (pg_fetch_assoc($summaryRes) ?: []) : [];
 
+        $hasPromptCol = false;
+        $colChk = @pg_query($conn, "SELECT 1 FROM information_schema.columns WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1");
+        if ($colChk && pg_num_rows($colChk) > 0) {
+            $hasPromptCol = true;
+        }
+        $promptSelect = $hasPromptCol ? ', prompt_snapshot' : ', NULL AS prompt_snapshot';
+
         $recentRes = @pg_query(
             $conn,
-            "SELECT id, query, tags, matched_files, model, prompt_tokens, completion_tokens, total_ms, created_at
+            "SELECT id, query, tags, matched_files, model, prompt_tokens, completion_tokens, total_ms, created_at{$promptSelect}
              FROM {$tRagQueries}
              ORDER BY created_at DESC
              LIMIT 50"
         );
         $recent = [];
+        $ids    = [];
         if ($recentRes) {
             while ($r = pg_fetch_assoc($recentRes)) {
                 $recent[] = $r;
+                $ids[]    = (int) $r['id'];
             }
         }
+
+        $sourcesByQuery = [];
+        if (!empty($ids)) {
+            $srcChk = @pg_query($conn, "SELECT 1 FROM {$tRagQuerySources} LIMIT 0");
+            if ($srcChk !== false) {
+                $idsList = implode(',', $ids);
+                $srcRes  = @pg_query(
+                    $conn,
+                    "SELECT query_id, file_id, chunk_id, chunk_index, filename, snippet, source_type, rank_position
+                     FROM {$tRagQuerySources}
+                     WHERE query_id IN ({$idsList})
+                     ORDER BY query_id, rank_position ASC"
+                );
+                if ($srcRes) {
+                    while ($s = pg_fetch_assoc($srcRes)) {
+                        $qid = (int) $s['query_id'];
+                        if (!isset($sourcesByQuery[$qid])) {
+                            $sourcesByQuery[$qid] = [];
+                        }
+                        $sourcesByQuery[$qid][] = $s;
+                    }
+                }
+            }
+        }
+
+        foreach ($recent as &$row) {
+            $row['sources'] = $sourcesByQuery[(int) $row['id']] ?? [];
+        }
+        unset($row);
 
         echo json_encode(['status' => 'success', 'summary' => $summary, 'recent' => $recent]);
     } catch (Throwable $e) {
@@ -2792,6 +3014,158 @@ if ($action === 'automations_delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['ok' => true]);
     } catch (Throwable $e) {
         echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// GET: admin overview dashboard data
+if ($action === 'overview') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../includes/db.php';
+        $conn = db_connect();
+
+        // -- Users --
+        $tUsers  = sys_table('users');
+        $uRes    = @pg_query($conn, "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE is_active) AS active FROM {$tUsers}");
+        $uRow    = $uRes ? pg_fetch_assoc($uRes) : ['total' => 0, 'active' => 0];
+
+        // -- Schema tables + per-table record counts --
+        $schemaPath  = __DIR__ . '/../config/schema.json';
+        $schemaObj   = file_exists($schemaPath) ? @json_decode((string) file_get_contents($schemaPath), true) : null;
+        $schemaTables = (is_array($schemaObj) && is_array($schemaObj['tables'] ?? null)) ? $schemaObj['tables'] : [];
+
+        $tables   = [];
+        $totalRec = 0;
+        foreach ($schemaTables as $tableName => $tableDef) {
+            $tableSchema = $tableDef['schema'] ?? 'public';
+            $safeTable = sprintf('%s.%s', pg_ident($tableSchema), pg_ident((string) $tableName));
+            $cRes  = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$safeTable}");
+            $count = $cRes ? (int) pg_fetch_result($cRes, 0, 0) : 0;
+            $totalRec += $count;
+            $tables[] = [
+                'name'  => $tableName,
+                'label' => $tableDef['display_name'] ?? $tableName,
+                'count' => $count,
+            ];
+        }
+        usort($tables, static fn($a, $b) => $b['count'] - $a['count']);
+
+        // -- Files --
+        $tFiles = sys_table('files');
+        $fRes   = @pg_query($conn, "SELECT COUNT(*) AS n, COALESCE(SUM(size_bytes),0) AS total_bytes FROM {$tFiles} WHERE deleted_at IS NULL");
+        $fRow   = $fRes ? pg_fetch_assoc($fRes) : ['n' => 0, 'total_bytes' => 0];
+
+        // -- RAG documents (table has no deleted_at column) --
+        $tRag   = sys_table('rag_files');
+        $rRes   = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$tRag}");
+        $ragCount = ($rRes && pg_num_rows($rRes) > 0) ? (int) pg_fetch_result($rRes, 0, 0) : 0;
+
+        // -- Views (config-driven) --
+        $viewsPath = __DIR__ . '/../config/views.json';
+        $viewsObj  = file_exists($viewsPath) ? @json_decode((string) file_get_contents($viewsPath), true) : null;
+        $viewCount = (is_array($viewsObj) && is_array($viewsObj['views'] ?? null)) ? count($viewsObj['views']) : 0;
+
+        // -- Automations (config-driven) --
+        $autoCount = count(auto_cfg_read());
+
+        // -- Cron recent runs (last 5) --
+        $tCronLog = sys_table('users_notifications_log');
+        $cLogRes  = @pg_query($conn, "
+            SELECT TO_CHAR(started_at, 'YYYY-MM-DD HH24:MI') AS started_at,
+                   status, triggered_by,
+                   COALESCE(notifications_created, 0) AS sent
+            FROM {$tCronLog}
+            ORDER BY started_at DESC
+            LIMIT 5
+        ");
+        $cronRecent  = [];
+        $lastCronRun = null;
+        if ($cLogRes) {
+            while ($r = pg_fetch_assoc($cLogRes)) {
+                if ($lastCronRun === null) {
+                    $lastCronRun = $r['started_at'];
+                }
+                $cronRecent[] = $r;
+            }
+        }
+
+        // -- Audit log recent (last 8) --
+        $tLog  = sys_table('users_log');
+        $aRes  = @pg_query($conn, "
+            SELECT ul.action, ul.target_table,
+                   TO_CHAR(ul.created_at, 'YYYY-MM-DD HH24:MI') AS created_at,
+                   u.username
+            FROM {$tLog} ul
+            LEFT JOIN {$tUsers} u ON u.id = ul.user_id
+            ORDER BY ul.created_at DESC
+            LIMIT 8
+        ");
+        $auditRecent = [];
+        if ($aRes) {
+            while ($r = pg_fetch_assoc($aRes)) {
+                $auditRecent[] = $r;
+            }
+        }
+
+        // -- Database size --
+        $dbSizeRes  = @pg_query($conn, 'SELECT pg_database_size(current_database()) AS sz');
+        $dbSizeBytes = ($dbSizeRes) ? (int) pg_fetch_result($dbSizeRes, 0, 0) : 0;
+
+        // -- Pending system migrations --
+        $tMig   = sys_table('migrations');
+        $mRes   = @pg_query($conn, "SELECT name FROM {$tMig}");
+        $applied = [];
+        if ($mRes) {
+            while ($r = pg_fetch_row($mRes)) {
+                $applied[$r[0]] = true;
+            }
+        }
+        $knownMig = [
+            '2.0_baseline', '2.0_record_owners_changed_at', '2.3.1_csv_import_tables',
+            '2.4.0_release_migrations_table', '2.6.0_rag_files', '2.6.0_rag_queries',
+            '2.7_automations', '2.7_automation_runs',
+            '2.7_rag_chunks', '2.7_rag_queries_prompt', '2.7_rag_query_sources',
+            '2.7_rag_fts_english',
+        ];
+        $pendingMig = count(array_filter($knownMig, static fn($n) => !isset($applied[$n])));
+
+        // -- System quick status --
+        $versionFile  = __DIR__ . '/../includes/VERSION';
+        $appVersion   = file_exists($versionFile) ? trim((string) file_get_contents($versionFile)) : 'unknown';
+        $pgVerRes     = @pg_query($conn, 'SELECT version()');
+        $pgVersionRaw = $pgVerRes ? (string) pg_fetch_result($pgVerRes, 0, 0) : '';
+        $pgVersion    = '';
+        if (preg_match('/PostgreSQL\s+([\d.]+)/i', $pgVersionRaw, $m)) {
+            $pgVersion = $m[1];
+        }
+        $displayErrors = ini_get('display_errors');
+
+        echo json_encode([
+            'status'            => 'success',
+            'app_version'       => $appVersion,
+            'user_total'        => (int) $uRow['total'],
+            'user_active'       => (int) $uRow['active'],
+            'table_count'       => count($tables),
+            'tables'            => $tables,
+            'total_records'     => $totalRec,
+            'file_count'        => (int) $fRow['n'],
+            'file_size_bytes'   => (int) $fRow['total_bytes'],
+            'rag_count'         => $ragCount,
+            'view_count'        => $viewCount,
+            'automation_count'  => $autoCount,
+            'last_cron_run'     => $lastCronRun,
+            'cron_recent'       => $cronRecent,
+            'audit_recent'      => $auditRecent,
+            'db_size_bytes'     => $dbSizeBytes,
+            'pg_version'        => $pgVersion,
+            'php_version'       => PHP_VERSION,
+            'php_ok'            => version_compare(PHP_VERSION, '8.1.0', '>='),
+            'display_errors_ok' => ($displayErrors === '' || $displayErrors == '0' || strtolower((string) $displayErrors) === 'off'),
+            'pending_migrations' => $pendingMig,
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
     }
     exit;
 }

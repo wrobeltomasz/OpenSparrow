@@ -74,7 +74,6 @@ export async function renderHealthDashboard(ctx) {
             data.db_connected
                 ? `Connected: <strong>PostgreSQL ${data.pg_version}</strong>`
                 : `Connection failed: <strong>${data.db_error}</strong> — check database.json.`);
-
         // --- Filesystem ---
         html += section('Filesystem');
         html += card('includes/ writable', data.dir_writable,

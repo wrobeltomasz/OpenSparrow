@@ -338,6 +338,9 @@
         "thinking": "Thinking…",
         "placeholder": "Ask a question…",
         "clear": "Clear",
-        "send": "Send"
+        "send": "Send",
+        "stop": "Stop",
+        "tag_fallback": "No results for selected tags — showing results from all documents.",
+        "context_table": "Viewing: {table}"
     }
 }

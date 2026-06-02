@@ -8,11 +8,15 @@ export async function renderSettingsPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '<h3>Loading settings…</h3>';
 
-    let data;
+    let data, bubbleData;
     try {
-        const res = await fetch('api.php?action=get_language_setting');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        data = await res.json();
+        const [langRes, bubbleRes] = await Promise.all([
+            fetch('api.php?action=get_language_setting'),
+            fetch('api.php?action=get_chat_bubble_setting'),
+        ]);
+        if (!langRes.ok) throw new Error('HTTP ' + langRes.status);
+        data       = await langRes.json();
+        bubbleData = bubbleRes.ok ? await bubbleRes.json() : { chat_bubble_enabled: false };
     } catch (e) {
         workspaceEl.innerHTML = '<h3 style="color:#d00000;">Error loading settings. Check server logs.</h3>';
         return;
@@ -147,6 +151,69 @@ export async function renderSettingsPage(ctx) {
     card.appendChild(saveRow);
 
     workspaceEl.appendChild(card);
+
+    // ── AI Chat Bubble card ────────────────────────────────────────────────
+
+    const bubbleCard = document.createElement('div');
+    bubbleCard.style.cssText = 'padding:20px; background:white; border:1px solid #CBD5E1; border-radius:8px; margin-bottom:24px; max-width:540px;';
+
+    const bubbleTitle = document.createElement('h4');
+    bubbleTitle.style.cssText = 'margin:0 0 4px; font-size:15px;';
+    bubbleTitle.textContent = 'AI Chat Bubble';
+    bubbleCard.appendChild(bubbleTitle);
+
+    const bubbleDesc = document.createElement('p');
+    bubbleDesc.style.cssText = 'color:#64748B; font-size:13px; margin:0 0 20px;';
+    bubbleDesc.textContent = 'Show a floating chat button in the bottom-right corner of every app page. Users can click it to open the AI assistant without going through the user menu.';
+    bubbleCard.appendChild(bubbleDesc);
+
+    const toggleRow = document.createElement('label');
+    toggleRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:#64748B; margin-bottom:20px;';
+
+    const toggleCb = document.createElement('input');
+    toggleCb.type    = 'checkbox';
+    toggleCb.id      = 'setting-chat-bubble';
+    toggleCb.checked = !!(bubbleData.chat_bubble_enabled);
+    toggleCb.style.cssText = 'width:16px; height:16px; cursor:pointer;';
+
+    toggleRow.appendChild(toggleCb);
+    toggleRow.appendChild(document.createTextNode('Enable floating chat button'));
+    bubbleCard.appendChild(toggleRow);
+
+    const bubbleSaveRow = document.createElement('div');
+    bubbleSaveRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
+
+    const bubbleSaveBtn = document.createElement('button');
+    bubbleSaveBtn.textContent = 'Save';
+    bubbleSaveBtn.className = 'btn btn-primary';
+
+    const bubblePillAnchor = document.createElement('span');
+
+    bubbleSaveBtn.addEventListener('click', async () => {
+        bubbleSaveBtn.disabled = true;
+        try {
+            const res = await fetch('api.php?action=set_chat_bubble_setting', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+                body: JSON.stringify({ chat_bubble_enabled: toggleCb.checked }),
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                showStatusPill(bubblePillAnchor, 'Saved. Reload the app to see the change.', 'success');
+            } else {
+                showStatusPill(bubblePillAnchor, result.error || 'Error saving setting.', 'error');
+            }
+        } catch (e) {
+            showStatusPill(bubblePillAnchor, 'Request failed.', 'error');
+        }
+        bubbleSaveBtn.disabled = false;
+    });
+
+    bubbleSaveRow.appendChild(bubbleSaveBtn);
+    bubbleSaveRow.appendChild(bubblePillAnchor);
+    bubbleCard.appendChild(bubbleSaveRow);
+
+    workspaceEl.appendChild(bubbleCard);
 
     // ── Info card ──────────────────────────────────────────────────────────
 

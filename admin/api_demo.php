@@ -96,9 +96,15 @@ if ($action === 'demo_install') {
             'layout' => $dashCfg['layout'],
             'widgets' => $dashCfg['widgets'],
         ];
-        if (isset($dashCfg['menu_name'])) $dashCfgOrdered['menu_name'] = $dashCfg['menu_name'];
-        if (isset($dashCfg['menu_icon'])) $dashCfgOrdered['menu_icon'] = $dashCfg['menu_icon'];
-        if (isset($dashCfg['hidden'])) $dashCfgOrdered['hidden'] = $dashCfg['hidden'];
+        if (isset($dashCfg['menu_name'])) {
+            $dashCfgOrdered['menu_name'] = $dashCfg['menu_name'];
+        }
+        if (isset($dashCfg['menu_icon'])) {
+            $dashCfgOrdered['menu_icon'] = $dashCfg['menu_icon'];
+        }
+        if (isset($dashCfg['hidden'])) {
+            $dashCfgOrdered['hidden'] = $dashCfg['hidden'];
+        }
         file_put_contents($dashPath, json_encode($dashCfgOrdered, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
         // calendar.json
@@ -130,8 +136,12 @@ if ($action === 'demo_install') {
             $wfCfg['workflows'][] = $wf;
         }
         // Preserve/add menu fields
-        if (!isset($wfCfg['menu_name'])) $wfCfg['menu_name'] = 'Workflows';
-        if (!isset($wfCfg['menu_icon'])) $wfCfg['menu_icon'] = 'assets/icons/automation.png';
+        if (!isset($wfCfg['menu_name'])) {
+            $wfCfg['menu_name'] = 'Workflows';
+        }
+        if (!isset($wfCfg['menu_icon'])) {
+            $wfCfg['menu_icon'] = 'assets/icons/automation.png';
+        }
         // Rebuild in correct order: workflows, menu_name, menu_icon
         $wfCfgOrdered = ['workflows' => $wfCfg['workflows'], 'menu_name' => $wfCfg['menu_name'], 'menu_icon' => $wfCfg['menu_icon']];
         file_put_contents($wfPath, json_encode($wfCfgOrdered, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -157,7 +167,9 @@ if ($action === 'demo_install') {
             }
             foreach ($demoData['menu_items'] as $entry) {
                 $k = $entry['key'] ?? '';
-                if ($k === '') continue;
+                if ($k === '') {
+                    continue;
+                }
                 $menuKeys[] = $k;
                 $menuCfg['items'] = array_values(
                     array_filter($menuCfg['items'], fn($i) => ($i['key'] ?? '') !== $k)

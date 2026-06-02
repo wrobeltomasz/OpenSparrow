@@ -342,6 +342,9 @@
         "thinking": "Mă gândesc…",
         "placeholder": "Pune o întrebare…",
         "clear": "Șterge",
-        "send": "Trimite"
+        "send": "Trimite",
+        "stop": "Oprire",
+        "tag_fallback": "Niciun rezultat pentru etichetele selectate — afișez rezultate din toate documentele.",
+        "context_table": "Vizualizare: {table}"
     }
 }

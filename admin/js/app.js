@@ -24,9 +24,10 @@ import { renderSettingsPage } from './settings.js';
 import { renderCsvImportPage } from './csv_import.js';
 import { renderRagPage } from './rag.js';
 import { renderAutomationsPage } from './automations.js';
+import { renderOverviewPage } from './overview.js';
 
 let currentConfig = null;
-let currentFile = 'schema';
+let currentFile = 'overview';
 let currentItemKey = null;
 let globalSchemaObj = null;
 let isDirty = false;
@@ -37,7 +38,7 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
@@ -225,7 +226,7 @@ function getColumnOptionsForTable(tableName) {
 }
 
 async function loadConfigFile(fileName) {
-    if (fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -322,7 +323,7 @@ function clearConfig() {
 function renderSidebar() {
     itemListEl.innerHTML = '';
     
-    if (currentFile === 'database' || currentFile === 'security' || currentFile === 'health' || currentFile === 'docs' || currentFile === 'users' || currentFile === 'backup' || currentFile === 'menu' || currentFile === 'audit' || currentFile === 'add_table' || currentFile === 'migrations' || currentFile === 'performance' || currentFile === 'cron' || currentFile === 'm2m' || currentFile === 'erd' || currentFile === 'demo' || currentFile === 'settings' || currentFile === 'csv_import' || currentFile === 'rag') {
+    if (currentFile === 'overview' || currentFile === 'database' || currentFile === 'security' || currentFile === 'health' || currentFile === 'docs' || currentFile === 'users' || currentFile === 'backup' || currentFile === 'menu' || currentFile === 'audit' || currentFile === 'add_table' || currentFile === 'migrations' || currentFile === 'performance' || currentFile === 'cron' || currentFile === 'm2m' || currentFile === 'erd' || currentFile === 'demo' || currentFile === 'settings' || currentFile === 'csv_import' || currentFile === 'rag') {
         document.getElementById('sidebarTitle').textContent = currentFile.charAt(0).toUpperCase() + currentFile.slice(1);
         const actionDiv = document.getElementById('sidebarActions');
         if (actionDiv) actionDiv.innerHTML = ''; 
@@ -356,6 +357,7 @@ function renderSidebar() {
             });
             return;
         }
+        if (currentFile === 'overview') title = "Overview";
         if (currentFile === 'docs') title = "Read Documentation";
         if (currentFile === 'users') title = "System Users";
         if (currentFile === 'backup') title = "Backup Tables";
@@ -576,12 +578,13 @@ function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar };
     
-    if (['health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
+    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
     }
 
+    if (currentFile === 'overview') return renderOverviewPage(ctx);
     if (currentFile === 'database') return renderDatabaseEditor(key, itemData, isArray, ctx);
     if (currentFile === 'security') return renderSecurityEditor(key, itemData, isArray, ctx);
     if (currentFile === 'health') return renderHealthDashboard(ctx);

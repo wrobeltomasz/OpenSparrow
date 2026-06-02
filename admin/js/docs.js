@@ -396,6 +396,16 @@ ${_ul([s.s13_js1, s.s13_js2, s.s13_js3, s.s13_js4, s.s13_js5, s.s13_js6])}
 ${_h4(s.s13_add_head)}
 ${_ol([s.s13_add1, s.s13_add2, s.s13_add3, s.s13_add4])}
 
+${_h3('doc-13-rag', s.sRag_head)}
+${_p(s.sRag_desc)}
+${_ul([
+    `<strong>${s.s13_docs_label}:</strong> ${s.s13_docs}`,
+    `<strong>${s.s13_config_label}:</strong> ${s.s13_config}`,
+    `<strong>${s.s13_test_label}:</strong> ${s.s13_test}`,
+    `<strong>${s.s13_stats_label}:</strong> ${s.s13_stats}`,
+    `<strong>${s.s13_multilang_label}:</strong> ${s.s13_multilang}`
+])}
+
 ${_h3('doc-14-aut', s.s14_head)}
 ${_p(s.s14_desc)}
 ${_h4(s.s14_trigger_label)}

@@ -17,10 +17,10 @@
         "removed_config_keys": [],
         "notes": "Added local RAG module: knowledge base from .txt files, full-text search, tag filtering, Ollama integration, admin management panel, user chat interface."
     },
-    "2.7.0": {
+    "2.7": {
         "removed_files": [],
         "deprecated_files": [],
         "removed_config_keys": [],
-        "notes": "Added Automations module: rule-based triggers on record create/update/delete, condition evaluation, field update actions with template variables."
+        "notes": "Added Automations module (rule-based triggers on record create/update/delete with template variables), document chunking for precise chunk-level retrieval (spw_rag_chunks), and expanded query history with source attribution and full prompt snapshots (spw_rag_query_sources). Run Initialize System Tables to apply all new migrations."
     }
 }

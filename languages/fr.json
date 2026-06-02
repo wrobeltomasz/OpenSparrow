@@ -338,6 +338,9 @@
         "thinking": "Réflexion…",
         "placeholder": "Posez une question…",
         "clear": "Effacer",
-        "send": "Envoyer"
+        "send": "Envoyer",
+        "stop": "Arrêter",
+        "tag_fallback": "Aucun résultat pour les tags sélectionnés — affichage depuis tous les documents.",
+        "context_table": "Affichage : {table}"
     }
 }

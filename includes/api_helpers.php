@@ -177,6 +177,22 @@ function get_record_owner_id($conn, string $table, int $recordId): ?int
     return $row['owner_id'] !== null ? (int)$row['owner_id'] : null;
 }
 
+// Row-level access policy for a single record. Tables without the owner_restricted
+// flag are open to any authenticated user. For restricted tables, access is granted
+// only when the record is unowned or owned by the user; admins always pass. Mirrors
+// the ownership policy enforced for PATCH and DELETE in api.php.
+function can_access_record($conn, array $tableCfg, string $table, int $recordId, int $userId, string $role = ''): bool
+{
+    if (empty($tableCfg['owner_restricted'])) {
+        return true;
+    }
+    if ($role === 'admin') {
+        return true;
+    }
+    $ownerId = get_record_owner_id($conn, $table, $recordId);
+    return $ownerId === null || $ownerId === $userId;
+}
+
 // Record ownership: mark previous current row inactive, insert new current row.
 function set_record_owner($conn, string $table, int $recordId, int $ownerId, int $changedBy): void
 {

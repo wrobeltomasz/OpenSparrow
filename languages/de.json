@@ -338,6 +338,9 @@
         "thinking": "Denke nach…",
         "placeholder": "Frage stellen…",
         "clear": "Leeren",
-        "send": "Senden"
+        "send": "Senden",
+        "stop": "Stop",
+        "tag_fallback": "Keine Ergebnisse für ausgewählte Tags — zeige Ergebnisse aus allen Dokumenten.",
+        "context_table": "Anzeige: {table}"
     }
 }

@@ -338,6 +338,9 @@
         "thinking": "Tænker…",
         "placeholder": "Still et spørgsmål…",
         "clear": "Ryd",
-        "send": "Send"
+        "send": "Send",
+        "stop": "Stop",
+        "tag_fallback": "Ingen resultater for valgte tags — viser resultater fra alle dokumenter.",
+        "context_table": "Visning: {table}"
     }
 }

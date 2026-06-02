@@ -1,4 +1,5 @@
 <?php
+
 // setup_api.php - Setup wizard API endpoint
 // Handles test_connection and init_database actions for first-run setup
 
@@ -190,7 +191,8 @@ if ($action === 'init_database') {
         }
 
         // Helper function to build table identifier
-        function table_ident($schema, $table) {
+        function table_ident($schema, $table)
+        {
             return '"' . str_replace('"', '""', $schema) . '"."' . str_replace('"', '""', $table) . '"';
         }
 
@@ -295,7 +297,6 @@ if ($action === 'init_database') {
             'admin_user' => 'admin',
             'admin_password' => 'admin'
         ]);
-
     } catch (Exception $e) {
         echo json_encode([
             'success' => false,

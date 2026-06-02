@@ -1,4 +1,4 @@
-{
+﻿{
     "_meta": {
         "name": "Polski",
         "dir": "ltr"
@@ -342,6 +342,9 @@
         "thinking": "Myślę…",
         "placeholder": "Zadaj pytanie…",
         "clear": "Wyczyść",
-        "send": "Wyślij"
+        "send": "Wyślij",
+        "stop": "Zatrzymaj",
+        "tag_fallback": "Brak wyników dla wybranych tagów — wyświetlam wyniki ze wszystkich dokumentów.",
+        "context_table": "Widok: {table}"
     }
 }

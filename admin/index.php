@@ -126,6 +126,16 @@ if (empty($_SESSION['csrf_token'])) {
     <nav class="admin-nav" id="adminNav">
         <div class="nav-sections">
 
+            <!-- OVERVIEW -->
+            <div class="nav-section open">
+                <div class="nav-section-items" style="padding-top:4px;">
+                    <button class="admin-tab active" data-file="overview">
+                        <img class="nav-item-icon" src="../assets/icons/health_and_safety.png" alt="">
+                        Overview
+                    </button>
+                </div>
+            </div>
+
             <!-- DATA MANAGEMENT -->
             <div class="nav-section open">
                 <div class="nav-section-header">
@@ -134,7 +144,7 @@ if (empty($_SESSION['csrf_token'])) {
                     <span class="nav-chevron">▼</span>
                 </div>
                 <div class="nav-section-items">
-                    <button class="admin-tab active" data-file="schema">
+                    <button class="admin-tab" data-file="schema">
                         <img class="nav-item-icon" src="../assets/icons/data_table.png" alt="">
                         Schema
                     </button>

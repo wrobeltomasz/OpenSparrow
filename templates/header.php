@@ -22,7 +22,9 @@ $cacheBust = @filemtime(__DIR__ . '/../assets/js/user-menu.js');
     <button class="header-search-toggle" id="searchToggle" aria-label="<?= htmlspecialchars(t('header.toggle_search'), ENT_QUOTES, 'UTF-8') ?>">&#128269;</button>
 
     <div class="header-controls">
-        <?php if (!empty($headerControls)) echo $headerControls; ?>
+        <?php if (!empty($headerControls)) {
+            echo $headerControls;
+        } ?>
     </div>
 
     <div class="header-user-menu">
@@ -72,6 +74,9 @@ $cacheBust = @filemtime(__DIR__ . '/../assets/js/user-menu.js');
 <script src="assets/js/sidebar.js?v=<?= @filemtime(__DIR__ . '/../assets/js/sidebar.js') ?>"<?= $nonceAttr ?>></script>
 <script src="assets/js/notifications.js?v=<?= @filemtime(__DIR__ . '/../assets/js/notifications.js') ?>"<?= $nonceAttr ?>></script>
 <script type="module" src="assets/js/user-menu.js?v=<?= $cacheBust ?>"<?= $nonceAttr ?>></script>
+<script<?= $nonceAttr ?>>
+    window.CHAT_BUBBLE_ENABLED = <?php echo (defined('CHAT_BUBBLE_ENABLED') && CHAT_BUBBLE_ENABLED) ? 'true' : 'false'; ?>;
+</script>
 <script type="module" src="assets/js/agent-panel.js?v=<?= @filemtime(__DIR__ . '/../assets/js/agent-panel.js') ?>"<?= $nonceAttr ?>></script>
 <div class="app-container">
 <?php include __DIR__ . '/menu.php'; ?>

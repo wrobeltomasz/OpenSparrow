@@ -338,6 +338,9 @@
         "thinking": "Mõtlen…",
         "placeholder": "Esita küsimus…",
         "clear": "Tühjenda",
-        "send": "Saada"
+        "send": "Saada",
+        "stop": "Peata",
+        "tag_fallback": "Valitud siltide jaoks tulemused puuduvad — näitan tulemusi kõigist dokumentidest.",
+        "context_table": "Vaade: {table}"
     }
 }

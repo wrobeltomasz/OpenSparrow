@@ -378,7 +378,7 @@ function demo_def_wms($conn): array
                 'status'       => ['display_name' => 'Status'],
                 'supplier'     => ['display_name' => 'Supplier'],
                 'warehouse'    => ['display_name' => 'Destination'],
-                'expected_date'=> ['display_name' => 'Expected'],
+                'expected_date' => ['display_name' => 'Expected'],
                 'line_count'   => ['display_name' => 'Lines',      'summary' => 'sum'],
                 'total_value'  => ['display_name' => 'Value (€)', 'summary' => 'sum'],
             ], 'drill_down' => ['enabled' => false]],
@@ -390,7 +390,7 @@ function demo_def_wms($conn): array
                 'expiry_date'   => ['display_name' => 'Expiry Date'],
                 'batch_status'  => ['display_name' => 'Status'],
                 'qty_on_hand'   => ['display_name' => 'Qty On Hand', 'summary' => 'sum'],
-                'days_to_expiry'=> ['display_name' => 'Days Left', 'color_rules' => [['op' => '<', 'value' => '30', 'color' => '#f87171'], ['op' => '<', 'value' => '60', 'color' => '#fcd34d']]],
+                'days_to_expiry' => ['display_name' => 'Days Left', 'color_rules' => [['op' => '<', 'value' => '30', 'color' => '#f87171'], ['op' => '<', 'value' => '60', 'color' => '#fcd34d']]],
             ], 'drill_down' => ['enabled' => false]],
 
             'v_demo_wms_inventory_value' => ['schema' => 'spw_wms', 'display_name' => 'Inventory Value', 'menu_name' => 'Inventory Value', 'icon' => 'assets/icons/payments.png', 'hidden' => false, 'description' => 'Stock value by warehouse → category → product.', 'columns' => [

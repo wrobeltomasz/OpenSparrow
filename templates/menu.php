@@ -2,22 +2,30 @@
 // templates/menu.php
 
 if (!function_exists('safeReadJson')) {
-    function safeReadJson(string $path, int $maxBytes = 524288): ?array {
-        if (!file_exists($path) || filesize($path) > $maxBytes) return null;
+    function safeReadJson(string $path, int $maxBytes = 524288): ?array
+    {
+        if (!file_exists($path) || filesize($path) > $maxBytes) {
+            return null;
+        }
         $content = file_get_contents($path, false, null, 0, $maxBytes);
-        if ($content === false) return null;
+        if ($content === false) {
+            return null;
+        }
         $decoded = json_decode($content, true);
         return is_array($decoded) ? $decoded : null;
     }
 }
 
 if (!function_exists('loadMenuConfig')) {
-    function loadMenuConfig(string $baseName, string $includeDir): array {
+    function loadMenuConfig(string $baseName, string $includeDir): array
+    {
         if (!preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $baseName)) {
             return [];
         }
         $realBase = realpath($includeDir);
-        if ($realBase === false) return [];
+        if ($realBase === false) {
+            return [];
+        }
         $candidates = [
             $includeDir . '/' . $baseName . '.json',
             $includeDir . '/' . $baseName . '_config.json',
@@ -26,9 +34,13 @@ if (!function_exists('loadMenuConfig')) {
         ];
         foreach ($candidates as $path) {
             $realPath = realpath($path);
-            if ($realPath === false || !str_starts_with($realPath, $realBase)) continue;
+            if ($realPath === false || !str_starts_with($realPath, $realBase)) {
+                continue;
+            }
             $decoded = safeReadJson($realPath);
-            if ($decoded !== null) return $decoded;
+            if ($decoded !== null) {
+                return $decoded;
+            }
         }
         return [];
     }
@@ -36,7 +48,8 @@ if (!function_exists('loadMenuConfig')) {
 
 // Validates image URIs against a strict whitelist to block javascript: and data: payloads.
 if (!function_exists('renderMenuIcon')) {
-    function renderMenuIcon(string $icon): string {
+    function renderMenuIcon(string $icon): string
+    {
         if (str_contains($icon, '/') || str_contains($icon, '.')) {
             if (!preg_match('#^(https://[^\s<>"\']+|assets/[^\s<>"\']*)$#i', $icon)) {
                 return '';
@@ -58,10 +71,10 @@ $currentView  = substr($_GET['view'] ?? '', 0, 64);
 $isWorkflows  = isset($_GET['workflows']);
 
 $dashCfg  = loadMenuConfig('dashboard', $includeDir);
-$calCfg   = loadMenuConfig('calendar',  $includeDir);
-$filesCfg = loadMenuConfig('files',     $includeDir);
+$calCfg   = loadMenuConfig('calendar', $includeDir);
+$filesCfg = loadMenuConfig('files', $includeDir);
 $wfCfg    = loadMenuConfig('workflows', $includeDir);
-$viewsCfg = loadMenuConfig('views',     $includeDir);
+$viewsCfg = loadMenuConfig('views', $includeDir);
 
 // Build catalog: key → display data
 $menuCatalog = [
@@ -149,12 +162,16 @@ $menuPlaced = [];
 if ($menuJson !== null && isset($menuJson['items']) && is_array($menuJson['items'])) {
     foreach ($menuJson['items'] as $entry) {
         $key = $entry['key'] ?? '';
-        if ($key === '' || !isset($menuCatalog[$key])) continue;
+        if ($key === '' || !isset($menuCatalog[$key])) {
+            continue;
+        }
         $item             = $menuCatalog[$key];
         $item['children'] = [];
         foreach ($entry['children'] ?? [] as $ce) {
             $ck = $ce['key'] ?? '';
-            if ($ck === '' || !isset($menuCatalog[$ck])) continue;
+            if ($ck === '' || !isset($menuCatalog[$ck])) {
+                continue;
+            }
             $item['children'][] = $menuCatalog[$ck];
             $menuPlaced[$ck]    = true;
         }
@@ -202,15 +219,20 @@ if (!function_exists('renderMenuLink')) {
 <nav id="menu" class="menu">
     <ul class="menu-list">
 
-        <?php foreach ($menuItems as $item): ?>
-            <?php if ($item['hidden'] && empty($item['children'])) continue; ?>
+        <?php foreach ($menuItems as $item) : ?>
+            <?php if ($item['hidden'] && empty($item['children'])) {
+                continue;
+            } ?>
 
-            <?php if (!empty($item['children'])): ?>
+            <?php if (!empty($item['children'])) : ?>
                 <?php
                 // Parent item with submenu: link navigates to grid, arrow toggles submenu
                 $anyChildActive = false;
                 foreach ($item['children'] as $child) {
-                    if (!empty($child['active'])) { $anyChildActive = true; break; }
+                    if (!empty($child['active'])) {
+                        $anyChildActive = true;
+                        break;
+                    }
                 }
                 $isOpen = $anyChildActive || (!empty($item['active']));
                 ?>
@@ -224,14 +246,16 @@ if (!function_exists('renderMenuLink')) {
                             <span class="menu-arrow">▾</span>
                         </summary>
                         <ul class="menu-submenu">
-                            <?php foreach ($item['children'] as $child): ?>
-                                <?php if ($child['hidden']) continue; ?>
+                            <?php foreach ($item['children'] as $child) : ?>
+                                <?php if ($child['hidden']) {
+                                    continue;
+                                } ?>
                                 <li><?php echo renderMenuLink($child); ?></li>
                             <?php endforeach; ?>
                         </ul>
                     </details>
                 </li>
-            <?php elseif (!$item['hidden']): ?>
+            <?php elseif (!$item['hidden']) : ?>
                 <li><?php echo renderMenuLink($item); ?></li>
             <?php endif; ?>
         <?php endforeach; ?>

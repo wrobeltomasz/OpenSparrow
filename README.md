@@ -56,6 +56,7 @@ Demo: https://demo.opensparrow.org
 - **Workflows builder** — multi-step wizards linking parent/child records across tables.
 - **File management** — per-record attachments with tagging and search, configurable via the admin panel.
 - **WCAG 2.1 focus** — accessibility-oriented UI.
+- **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Knowledge Base** tab. No cloud API required.
 - *(Planned)* REST API and webhook engine for n8n / Make / custom integrations.
 
 ---
@@ -83,6 +84,8 @@ Demo: https://demo.opensparrow.org
 - **`create.php` / `edit.php`** — record create/update forms.
 - **`api_schema.php`** — filtered schema endpoint for the frontend (hides backend-only structure).
 - **`api_fk.php`** — proxy endpoint for foreign-key dropdowns (never exposes internal relations).
+- **`api_rag.php`** — RAG knowledge base endpoint (`?action=tags` GET, `?action=query` POST).
+- **`rag.php`** — user-facing AI chat page (queries the local knowledge base via Ollama).
 - **`Dockerfile` / `docker-compose.yml`** — containerized deployment.
 - **`phpcs.xml`** — PSR-12 ruleset.
 - **`cypress.config.js`** — Cypress E2E test framework configuration.
@@ -343,6 +346,13 @@ All variables are read by `includes/config.php` on every request — the single 
 | `THUMBNAIL_MAX_WIDTH` | `300` | Max thumbnail width in pixels. |
 | `NOTIFICATIONS_DROPDOWN_LIMIT` | `10` | Max items in the bell notification dropdown. |
 | `HSTS_MAX_AGE` | `31536000` | HSTS `max-age` in seconds (1 year). Set `0` to disable on plain HTTP. |
+
+#### AI / RAG (Knowledge Base)
+
+| Variable | Default | Description |
+|---|---|---|
+| `OLLAMA_URL` | `http://localhost:11434` | Base URL of the local Ollama instance. Used by `api_rag.php` and admin RAG actions. |
+| `OLLAMA_MODEL` | `llama3` | Default Ollama model for RAG queries. Overridden by `config/rag.json` if present. |
 
 ### 6. First-run setup (Docker or bare server)
 

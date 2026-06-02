@@ -155,7 +155,7 @@ try {
             'level'        => $level,
             'max_level'    => max(0, count($drillLevels) - 1),
             'group_by'     => $groupBy,
-            'drill_enabled'=> !empty($cfg['drill_down']['enabled']),
+            'drill_enabled' => !empty($cfg['drill_down']['enabled']),
             'rows'         => $rows,
             'columns'      => $cfg['columns'] ?? [],
             'drill_down'   => $cfg['drill_down'] ?? ['enabled' => false, 'levels' => []],

@@ -1,63 +1,119 @@
 // assets/js/rag.js — Knowledge base chat interface
 
-const API = 'api_rag.php';
+import { renderAnswer } from './rag-render.js';
+
+const API  = 'api_rag.php';
 const CSRF = () => window.CSRF_TOKEN ?? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+const TOKEN_WARN_LIMIT = 8000;
 
-const tagListEl    = document.getElementById('ragTagList');
-const convEl       = document.getElementById('ragConversation');
-const queryEl      = document.getElementById('ragQuery');
-const sendBtn      = document.getElementById('ragSendBtn');
-const clearBtn     = document.getElementById('ragClearBtn');
+const fileListEl  = document.getElementById('ragFileList');
+const tokenWarnEl = document.getElementById('ragTokenWarn');
+const convEl      = document.getElementById('ragConversation');
+const queryEl     = document.getElementById('ragQuery');
+const sendBtn     = document.getElementById('ragSendBtn');
+const stopBtn     = document.getElementById('ragStopBtn');
+const clearBtn    = document.getElementById('ragClearBtn');
+const memPillEl   = document.getElementById('ragMemoryPill');
 
-function escHtml(str) {
-    return String(str ?? '').replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
+let conversationHistory = [];
+let maxTurns = 0;
+let currentAbortController = null;
+let abortedByUser = false;
+
+function fmtTime() {
+    return new Date().toTimeString().slice(0, 8);
 }
 
-// ── Tag sidebar ──────────────────────────────────────────────────────────────
-
-async function loadTags() {
-    try {
-        const res  = await fetch(API + '?action=tags');
-        const data = await res.json();
-        renderTags(data.tags ?? []);
-    } catch {
-        tagListEl.innerHTML = '';
-        const msg = document.createElement('span');
-        msg.className   = 'rag-tag-empty';
-        msg.textContent = 'Could not load tags.';
-        tagListEl.appendChild(msg);
-    }
+// Rough token estimate: 1 token ~ 4 characters
+function estimateTokens(charCount) {
+    return Math.ceil(charCount / 4);
 }
 
-function renderTags(tags) {
-    tagListEl.innerHTML = '';
-    if (tags.length === 0) {
-        const msg = document.createElement('span');
-        msg.className   = 'rag-tag-empty';
-        msg.textContent = 'No tags yet.';
-        tagListEl.appendChild(msg);
+// ── Memory pill ───────────────────────────────────────────────────────────────
+
+function updateMemoryPill() {
+    if (!memPillEl || maxTurns <= 0) {
+        if (memPillEl) memPillEl.hidden = true;
         return;
     }
-    tags.forEach(tag => {
+    const current = Math.floor(conversationHistory.length / 2);
+    memPillEl.textContent = 'Memory: ' + current + ' / ' + maxTurns + ' turn' + (maxTurns !== 1 ? 's' : '');
+    memPillEl.hidden = false;
+}
+
+// ── File sidebar ─────────────────────────────────────────────────────────────
+
+async function loadFiles() {
+    try {
+        const res  = await fetch(API + '?action=files');
+        const data = await res.json();
+        maxTurns = (data.conversation_turns ?? 0);
+        updateMemoryPill();
+        const files = (data.files ?? []).map(f => ({
+            id:       f.id,
+            filename: f.filename,
+            tokens:   estimateTokens(f.char_count ?? 0),
+        }));
+        renderFiles(files);
+    } catch {
+        fileListEl.innerHTML = '';
+        const msg = document.createElement('span');
+        msg.className   = 'rag-tag-empty';
+        msg.textContent = 'Could not load documents.';
+        fileListEl.appendChild(msg);
+    }
+}
+
+function renderFiles(files) {
+    fileListEl.innerHTML = '';
+    if (files.length === 0) {
+        const msg = document.createElement('span');
+        msg.className   = 'rag-tag-empty';
+        msg.textContent = 'No documents yet.';
+        fileListEl.appendChild(msg);
+        return;
+    }
+    files.forEach(file => {
         const label = document.createElement('label');
         label.className = 'rag-tag-item';
 
         const cb = document.createElement('input');
-        cb.type  = 'checkbox';
-        cb.value = tag;
+        cb.type           = 'checkbox';
+        cb.value          = String(file.id);
+        cb.dataset.tokens = String(file.tokens);
+        cb.addEventListener('change', updateTokenWarning);
 
-        const txt = document.createTextNode(tag);
+        const nameSpan = document.createElement('span');
+        nameSpan.className   = 'rag-file-name';
+        nameSpan.textContent = file.filename;
+        nameSpan.title       = file.filename;
+
+        const tokSpan = document.createElement('span');
+        tokSpan.className   = 'rag-file-tokens';
+        tokSpan.textContent = '~' + file.tokens.toLocaleString() + 't';
+
         label.appendChild(cb);
-        label.appendChild(txt);
-        tagListEl.appendChild(label);
+        label.appendChild(nameSpan);
+        label.appendChild(tokSpan);
+        fileListEl.appendChild(label);
     });
+    updateTokenWarning();
 }
 
-function selectedTags() {
-    return Array.from(tagListEl.querySelectorAll('input[type=checkbox]:checked'))
-        .map(cb => cb.value);
+function selectedFileIds() {
+    return Array.from(fileListEl.querySelectorAll('input[type=checkbox]:checked'))
+        .map(cb => parseInt(cb.value, 10));
+}
+
+function updateTokenWarning() {
+    const checked = Array.from(fileListEl.querySelectorAll('input[type=checkbox]:checked'));
+    const total   = checked.reduce((sum, cb) => sum + parseInt(cb.dataset.tokens ?? '0', 10), 0);
+    if (total > TOKEN_WARN_LIMIT) {
+        tokenWarnEl.textContent = 'Warning: ~' + total.toLocaleString() + ' tokens selected. Deselect documents to reduce below 8,000.';
+        tokenWarnEl.hidden = false;
+    } else {
+        tokenWarnEl.hidden = true;
+    }
 }
 
 // ── Conversation rendering ───────────────────────────────────────────────────
@@ -70,7 +126,12 @@ function appendUserMsg(text) {
     bubble.className   = 'rag-msg-bubble';
     bubble.textContent = text;
 
+    const ts = document.createElement('div');
+    ts.className   = 'rag-msg-time';
+    ts.textContent = fmtTime();
+
     wrap.appendChild(bubble);
+    wrap.appendChild(ts);
     convEl.appendChild(wrap);
     scrollDown();
     return wrap;
@@ -90,18 +151,21 @@ function appendThinking() {
     return wrap;
 }
 
-function replaceWithAnswer(thinkingWrap, answer, sources) {
+function replaceWithAnswer(thinkingWrap, answer, sources, suggestions) {
     thinkingWrap.innerHTML = '';
 
     const bubble = document.createElement('div');
-    bubble.className   = 'rag-msg-bubble';
-    bubble.textContent = answer;
+    bubble.className = 'rag-msg-bubble';
+    bubble.innerHTML = renderAnswer(answer, {
+        allowedTables: window.SCHEMA_TABLES,
+        linkClass:     'rag-record-link',
+        markdown:      true,
+    });
     thinkingWrap.appendChild(bubble);
 
     if (sources && sources.length > 0) {
         const srcRow = document.createElement('div');
         srcRow.className = 'rag-msg-sources';
-
         sources.forEach(src => {
             const chip = document.createElement('span');
             chip.className   = 'rag-source-chip';
@@ -110,6 +174,28 @@ function replaceWithAnswer(thinkingWrap, answer, sources) {
         });
         thinkingWrap.appendChild(srcRow);
     }
+
+    if (suggestions && suggestions.length > 0) {
+        const suggRow = document.createElement('div');
+        suggRow.className = 'rag-msg-suggestions';
+        suggestions.forEach(q => {
+            const chip = document.createElement('button');
+            chip.type      = 'button';
+            chip.className = 'rag-suggestion-chip';
+            chip.textContent = q;
+            chip.addEventListener('click', () => {
+                queryEl.value = q;
+                sendQuery();
+            });
+            suggRow.appendChild(chip);
+        });
+        thinkingWrap.appendChild(suggRow);
+    }
+
+    const ts = document.createElement('div');
+    ts.className   = 'rag-msg-time';
+    ts.textContent = fmtTime();
+    thinkingWrap.appendChild(ts);
 
     scrollDown();
 }
@@ -130,13 +216,23 @@ function scrollDown() {
 // ── Send ─────────────────────────────────────────────────────────────────────
 
 async function sendQuery() {
-    const query = queryEl.value.trim();
+    const query   = queryEl.value.trim();
     if (!query) return;
 
-    const tags = selectedTags();
+    const fileIds = selectedFileIds();
+    if (fileIds.length === 0) {
+        appendUserMsg(query);
+        queryEl.value = '';
+        const thinkWrap = appendThinking();
+        replaceWithError(thinkWrap, 'Please select at least one document from the list on the left.');
+        return;
+    }
 
-    sendBtn.disabled   = true;
-    queryEl.disabled   = true;
+    sendBtn.disabled  = true;
+    queryEl.disabled  = true;
+    stopBtn.disabled  = false;
+    abortedByUser     = false;
+    currentAbortController = new AbortController();
 
     appendUserMsg(query);
     queryEl.value = '';
@@ -144,27 +240,47 @@ async function sendQuery() {
     const thinkWrap = appendThinking();
 
     try {
-        const res  = await fetch(API + '?action=query', {
+        const res = await fetch(API + '?action=query', {
             method: 'POST',
             headers: {
-                'Content-Type':  'application/json',
-                'X-CSRF-Token':  CSRF(),
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF(),
             },
-            body: JSON.stringify({ query, tags }),
+            body: JSON.stringify({ query, file_ids: fileIds, history: conversationHistory }),
+            signal: currentAbortController.signal,
         });
 
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch {
+            replaceWithError(thinkWrap, 'The server timed out or returned an unexpected response. Please try again.');
+            return;
+        }
 
         if (!res.ok || data.error) {
             replaceWithError(thinkWrap, data.error ?? 'Request failed.');
         } else {
-            replaceWithAnswer(thinkWrap, data.answer, data.sources ?? []);
+            replaceWithAnswer(thinkWrap, data.answer, data.sources ?? [], data.suggestions ?? []);
+            conversationHistory.push({ role: 'user', content: query });
+            conversationHistory.push({ role: 'assistant', content: data.answer });
+            updateMemoryPill();
         }
     } catch (err) {
-        replaceWithError(thinkWrap, err.message || 'Network error.');
+        if (err.name === 'AbortError') {
+            if (abortedByUser) {
+                replaceWithError(thinkWrap, 'Query cancelled.');
+            } else {
+                replaceWithError(thinkWrap, 'The request timed out. The AI model may be busy — please try again.');
+            }
+        } else {
+            replaceWithError(thinkWrap, err.message || 'Network error.');
+        }
     } finally {
-        sendBtn.disabled = false;
-        queryEl.disabled = false;
+        currentAbortController = null;
+        sendBtn.disabled  = false;
+        queryEl.disabled  = false;
+        stopBtn.disabled  = true;
         queryEl.focus();
     }
 }
@@ -172,6 +288,11 @@ async function sendQuery() {
 // ── Event listeners ──────────────────────────────────────────────────────────
 
 sendBtn.addEventListener('click', sendQuery);
+
+stopBtn.addEventListener('click', () => {
+    abortedByUser = true;
+    currentAbortController?.abort();
+});
 
 queryEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -182,8 +303,10 @@ queryEl.addEventListener('keydown', (e) => {
 
 clearBtn.addEventListener('click', () => {
     convEl.innerHTML = '';
+    conversationHistory = [];
+    updateMemoryPill();
 });
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
-loadTags();
+loadFiles();

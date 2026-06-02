@@ -338,6 +338,9 @@
         "thinking": "Gondolkodom…",
         "placeholder": "Tegyen fel egy kérdést…",
         "clear": "Törlés",
-        "send": "Küldés"
+        "send": "Küldés",
+        "stop": "Leállít",
+        "tag_fallback": "Nincs találat a kiválasztott tagekre — az összes dokumentumból jelenítek meg eredményeket.",
+        "context_table": "Nézet: {table}"
     }
 }
