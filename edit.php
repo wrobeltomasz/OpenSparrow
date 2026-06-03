@@ -13,6 +13,15 @@ if (!$session->has('user_id')) {
     exit;
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_redirect();
+
+// This page echoes user-supplied record data into a form; send the same security
+// headers (CSP, X-Frame-Options, etc.) every other page sets. 'unsafe-style' mode
+// because the form markup uses inline style attributes for dynamic values.
+$cspNonce = bin2hex(random_bytes(16));
+send_security_headers($cspNonce, true, 'unsafe-style');
+
 $isReadOnly = $session->role() !== 'editor';
 
 if ($isReadOnly && $request->isPost()) {
@@ -211,12 +220,10 @@ ob_start();
                 <?php if ($isReadOnly) : ?>
                     <button type="button" class="btn-save" disabled><?= t('form.update_record') ?></button>
                 <?php else : ?>
-                    <button type="submit" class="btn-save"
-                        onclick="document.getElementById('saveAction').value='stay'"><?= t('form.save') ?></button>
-                    <button type="submit" class="btn-cancel"
-                        onclick="document.getElementById('saveAction').value='exit'"><?= t('form.save_exit') ?></button>
+                    <button type="submit" class="btn-save" data-save-action="stay"><?= t('form.save') ?></button>
+                    <button type="submit" class="btn-cancel" data-save-action="exit"><?= t('form.save_exit') ?></button>
                 <?php endif; ?>
-                <button type="button" class="btn-cancel" onclick="window.location.href='index.php?table=<?php echo urlencode($table); ?>'"><?= t('common.cancel') ?></button>
+                <button type="button" class="btn-cancel" data-nav="index.php?table=<?php echo htmlspecialchars(urlencode($table), ENT_QUOTES, 'UTF-8'); ?>"><?= t('common.cancel') ?></button>
             </div>
         </form>
     </div>
@@ -394,7 +401,7 @@ ob_start();
 $pageContent = ob_get_clean();
 ob_start();
 ?>
-<script>
+<script nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
     window.CSRF_TOKEN      = <?php echo json_encode($csrf->token(), JSON_THROW_ON_ERROR); ?>;
     window.EDIT_TABLE      = <?php echo json_encode($tableCfg->name, JSON_THROW_ON_ERROR); ?>;
     window.EDIT_ID         = <?php echo json_encode((int)$id, JSON_THROW_ON_ERROR); ?>;
@@ -402,7 +409,7 @@ ob_start();
     window.USER_ROLE       = <?php echo json_encode($session->role(), JSON_THROW_ON_ERROR); ?>;
 </script>
 
-<script>
+<script nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
 document.addEventListener('DOMContentLoaded', function() {
     // Tab switching
     const tabBtns   = document.querySelectorAll('.tab-btn');
@@ -425,6 +432,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (hash && document.getElementById(hash)) {
         activateTab(hash);
     }
+
+    // Save-action toggle + cancel navigation — moved off inline onclick so they
+    // work under the page CSP (nonces do not cover inline event-handler attributes).
+    document.querySelectorAll('[data-save-action]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sa = document.getElementById('saveAction');
+            if (sa) { sa.value = btn.dataset.saveAction; }
+        });
+    });
+    document.querySelectorAll('[data-nav]').forEach(btn => {
+        btn.addEventListener('click', () => { window.location.href = btn.dataset.nav; });
+    });
 
     // Enum select color update
     document.querySelectorAll('select[data-enum-colors]').forEach(sel => {
@@ -500,8 +519,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>"></script>
-<script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>"></script>
+<script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php
 $extraScripts = ob_get_clean();
 include __DIR__ . '/templates/layout.php';

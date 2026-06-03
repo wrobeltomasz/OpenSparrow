@@ -206,7 +206,8 @@ if (!function_exists('renderMenuLink')) {
         }
         $icon = renderMenuIcon((string)($item['icon'] ?? ''));
         if ($icon === '') {
-            $icon = '<span class="menu-icon-span">🗄️</span>';
+            // No-emoji policy: fall back to a local PNG, never a Unicode glyph.
+            $icon = '<img src="assets/icons/table_chart_view.png" alt="" />';
         }
         $name = htmlspecialchars($item['name'] ?? '', ENT_QUOTES, 'UTF-8');
         return '<a href="' . $href . '" class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '"' . $attrs . '>'

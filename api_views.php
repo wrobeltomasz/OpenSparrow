@@ -11,6 +11,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_json();
+
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/api_helpers.php';
 

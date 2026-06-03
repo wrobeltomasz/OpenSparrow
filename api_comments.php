@@ -12,6 +12,8 @@ require_once __DIR__ . '/includes/api_helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 send_security_headers();
 start_session();
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_json();
 $conn = db_connect();
 function jsonError(string $msg, int $code = 400): void
 {
@@ -89,7 +91,8 @@ try {
         default  => jsonError("Unknown action: {$action}", 400),
     };
 } catch (Throwable $e) {
-    jsonError($e->getMessage(), 500);
+    error_log('[api_comments] ' . $e->getMessage());
+    jsonError('Internal server error.', 500);
 }
 
 function actionList($conn): void

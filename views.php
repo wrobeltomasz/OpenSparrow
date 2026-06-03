@@ -10,6 +10,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_redirect();
+
 if (($_SESSION['role'] ?? 'viewer') === 'admin') {
     header('Location: admin/');
     exit;

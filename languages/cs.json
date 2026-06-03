@@ -345,6 +345,8 @@
         "send": "Odeslat",
         "stop": "Zastavit",
         "tag_fallback": "Žádné výsledky pro vybrané štítky — zobrazuji výsledky ze všech dokumentů.",
-        "context_table": "Zobrazení: {table}"
+        "context_table": "Zobrazení: {table}",
+        "use_grid_data": "Data aktuální tabulky",
+        "select_one": "Před odesláním vyberte alespoň jeden štítek dokumentu nebo data aktuální tabulky."
     }
 }

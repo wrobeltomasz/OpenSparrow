@@ -349,6 +349,8 @@
         "send": "Pošlji",
         "stop": "Ustavi",
         "tag_fallback": "Ni rezultatov za izbrane oznake — prikazujem rezultate iz vseh dokumentov.",
-        "context_table": "Prikaz: {table}"
+        "context_table": "Prikaz: {table}",
+        "use_grid_data": "Podatki trenutne tabele",
+        "select_one": "Pred pošiljanjem izberite vsaj eno oznako dokumenta ali podatke trenutne tabele."
     }
 }

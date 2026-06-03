@@ -20,11 +20,15 @@ function csrfToken() {
 
 // ── Tiny markdown-like formatter (no external libs) ────────────────────────
 function formatBody(raw) {
-    // Escape HTML first
+    // Escape HTML first — including quotes, since the auto-linked URL below is
+    // placed inside an href="" attribute. Without escaping " an attacker could
+    // close the attribute and inject an event handler (stored XSS).
     const esc = raw
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 
     return esc
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')

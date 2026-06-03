@@ -16,6 +16,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_redirect();
+
 // Admin role belongs in the admin panel, not the frontend
 if (($_SESSION['role'] ?? 'viewer') === 'admin') {
     header("Location: admin/");

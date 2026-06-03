@@ -11,6 +11,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_json();
+
 // Ensure response is JSON and prevent caching
 header('Content-Type: application/json');
 header('Cache-Control: no-store, no-cache, must-revalidate');

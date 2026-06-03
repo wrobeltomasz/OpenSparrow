@@ -12,6 +12,9 @@ if (!isset($_SESSION['user_id']) || !isset($_SERVER['HTTP_X_REQUESTED_WITH']) ||
     exit;
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_json();
+
 $table = $_GET['table'] ?? '';
 $col = $_GET['col'] ?? '';
 $schemaPath = __DIR__ . '/config/schema.json';

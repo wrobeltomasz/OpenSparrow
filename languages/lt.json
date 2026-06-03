@@ -345,6 +345,8 @@
         "send": "Siųsti",
         "stop": "Sustabdyti",
         "tag_fallback": "Nėra rezultatų pasirinktoms žymoms — rodomi rezultatai iš visų dokumentų.",
-        "context_table": "Rodoma: {table}"
+        "context_table": "Rodoma: {table}",
+        "use_grid_data": "Dabartinės lentelės duomenys",
+        "select_one": "Prieš siųsdami pasirinkite bent vieną dokumento žymą arba dabartinės lentelės duomenis."
     }
 }

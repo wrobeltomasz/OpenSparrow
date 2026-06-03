@@ -14,19 +14,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-if (isset($_SESSION['created_at']) && (time() - $_SESSION['created_at']) > SESSION_MAX_LIFETIME) {
-    session_destroy();
-    header('Location: login.php');
-    exit;
-}
-
-$sessionUserAgent = $_SESSION['user_agent'] ?? null;
-$currentUserAgent = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
-if ($sessionUserAgent !== null && !hash_equals($sessionUserAgent, $currentUserAgent)) {
-    session_destroy();
-    header('Location: login.php');
-    exit;
-}
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_redirect();
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

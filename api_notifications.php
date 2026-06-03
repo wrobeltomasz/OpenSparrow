@@ -11,6 +11,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_json();
+
 require_once __DIR__ . '/includes/db.php';
 header('Content-Type: application/json; charset=utf-8');
 // Safely cast the authenticated user ID

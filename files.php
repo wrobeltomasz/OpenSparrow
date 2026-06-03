@@ -16,21 +16,8 @@ if (($_SESSION['role'] ?? 'viewer') === 'admin') {
     exit;
 }
 
-if (isset($_SESSION['created_at']) && (time() - $_SESSION['created_at']) > SESSION_MAX_LIFETIME) {
-    session_destroy();
-    header("Location: login.php");
-    exit;
-}
-
-// Verify session integrity by comparing the stored User-Agent hash against the current request.
-// Eliminates opportunistic session hijacking with stolen cookies from different clients.
-$sessionUserAgent = $_SESSION['user_agent'] ?? null;
-$currentUserAgent = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
-if ($sessionUserAgent !== null && !hash_equals($sessionUserAgent, $currentUserAgent)) {
-    session_destroy();
-    header("Location: login.php");
-    exit;
-}
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_redirect();
 
 // Generate CSRF token if it does not exist
 if (empty($_SESSION['csrf_token'])) {

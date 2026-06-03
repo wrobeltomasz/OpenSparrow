@@ -14,6 +14,8 @@ require_once __DIR__ . '/includes/api_helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 send_security_headers();
 start_session();
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_json();
 // Connect to database
 $conn = db_connect();
 
@@ -137,7 +139,8 @@ try {
         default                => jsonError("Unknown action: {$action}", 400),
     };
 } catch (Throwable $e) {
-    jsonError($e->getMessage(), 500);
+    error_log('[api_files] ' . $e->getMessage());
+    jsonError('Internal server error.', 500);
 }
 
 // Handle list action
@@ -227,7 +230,10 @@ function actionGetRelationsConfig(): void
 function actionUpload($conn): void
 {
 
-    requireLogin();
+    // Uploading is a write operation — restrict to the editor role, matching
+    // delete/save_config. Viewers are read-only; the UI hides the upload control
+    // for them but the server must enforce it too.
+    requireAdmin();
     requireCsrfToken();
     if (!isset($_FILES['file'])) {
         jsonError('No file received.', 400);

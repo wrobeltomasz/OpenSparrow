@@ -10,6 +10,9 @@ if (!isset($_SESSION['user_id'])) {
     exit(json_encode(['error' => 'Unauthorized']));
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_json();
+
 $method = $_SERVER['REQUEST_METHOD'];
 $role = $_SESSION['role'] ?? 'viewer';
 // Validate CSRF token for all state-changing requests
@@ -213,10 +216,13 @@ try {
                     continue;
                 }
                 $colSql = pg_ident($col);
+                // Constrain the boolean connective to a strict allowlist — it is
+                // concatenated into SQL below, so never trust the raw config value.
+                $logic = strtoupper($cond['logic'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
                 if ($op === 'IS NULL' || $op === 'IS NOT NULL') {
-                    $condParts[] = [$colSql . ' ' . $op, strtoupper($cond['logic'] ?? 'AND')];
+                    $condParts[] = [$colSql . ' ' . $op, $logic];
                 } else {
-                    $condParts[] = [$colSql . ' ' . $op . " '" . pg_escape_string($conn, $val) . "'", strtoupper($cond['logic'] ?? 'AND')];
+                    $condParts[] = [$colSql . ' ' . $op . " '" . pg_escape_string($conn, $val) . "'", $logic];
                 }
             }
             if (!empty($condParts)) {
@@ -259,7 +265,7 @@ try {
             if ($qType === 'count') {
                 $col = $widget['query']['column'] ?? id_column();
                 if (isset($tableCfg['columns'][$col]) || $col === id_column()) {
-                    $sql = sprintf('SELECT COUNT(%s) AS count FROM "%s"."%s"%s', pg_ident($col), $schemaName, $table, $sqlWhere);
+                    $sql = sprintf('SELECT COUNT(%s) AS count FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
         // Supress warnings with at symbol to prevent HTML breaking JSON response
                     $res = @pg_query($conn, $sql);
                     if ($res) {
@@ -273,7 +279,7 @@ try {
             } elseif ($qType === 'sum') {
                 $col = $widget['query']['column'] ?? '';
                 if (isset($tableCfg['columns'][$col])) {
-                    $sql = sprintf('SELECT COALESCE(SUM(%s), 0) AS total FROM "%s"."%s"%s', pg_ident($col), $schemaName, $table, $sqlWhere);
+                    $sql = sprintf('SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
                     $res = @pg_query($conn, $sql);
                     if ($res) {
                         $row = pg_fetch_assoc($res);
@@ -291,7 +297,7 @@ try {
                 $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
                 $aggType = in_array($aggType, $allowedAgg, true) ? $aggType : 'COUNT';
                 if (isset($tableCfg['columns'][$grpCol])) {
-                    $sql = sprintf('SELECT %s AS label, %s(%s) AS value FROM "%s"."%s"%s GROUP BY %s ORDER BY value DESC', pg_ident($grpCol), $aggType, pg_ident($aggCol), $schemaName, $table, $sqlWhere, pg_ident($grpCol));
+                    $sql = sprintf('SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY %s ORDER BY value DESC', pg_ident($grpCol), $aggType, pg_ident($aggCol), pg_ident($schemaName), pg_ident($table), $sqlWhere, pg_ident($grpCol));
                     $res = @pg_query($conn, $sql);
                     if ($res) {
                         $data = [];
@@ -317,7 +323,7 @@ try {
 
                 $selectSql = implode(', ', array_map('pg_ident', $validCols));
                 if (isset($tableCfg['columns'][$orderBy]) || $orderBy === id_column()) {
-                    $sql = sprintf('SELECT %s FROM "%s"."%s"%s ORDER BY %s %s LIMIT %d', $selectSql, $schemaName, $table, $sqlWhere, pg_ident($orderBy), $dir, $limit);
+                    $sql = sprintf('SELECT %s FROM %s.%s%s ORDER BY %s %s LIMIT %d', $selectSql, pg_ident($schemaName), pg_ident($table), $sqlWhere, pg_ident($orderBy), $dir, $limit);
                     $res = @pg_query($conn, $sql);
                     if ($res) {
                         $data = [];
@@ -376,7 +382,7 @@ try {
                 $cols = column_list($tableCfg);
                 $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
                 $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
-                $sql = sprintf('SELECT %s FROM "%s"."%s" WHERE %s IS NOT NULL', $selectSql, $schemaName, $table, pg_ident($dateCol));
+                $sql = sprintf('SELECT %s FROM %s.%s WHERE %s IS NOT NULL', $selectSql, pg_ident($schemaName), pg_ident($table), pg_ident($dateCol));
                 $res = @pg_query($conn, $sql);
                 if ($res) {
                     $rows = [];
@@ -448,16 +454,16 @@ try {
 
         $sql = sprintf(
             'SELECT j.%s AS sid, o.%s AS label
-               FROM "%s"."%s" j
-               JOIN "%s"."%s" o ON o."id" = j.%s
+               FROM %s.%s j
+               JOIN %s.%s o ON o."id" = j.%s
               WHERE j.%s IN (%s)
               ORDER BY j.%s, o.%s',
             pg_ident($selfFk),
             pg_ident($displayCol),
-            $jtSchema,
-            $jt,
-            $otSchema,
-            $otherTable,
+            pg_ident($jtSchema),
+            pg_ident($jt),
+            pg_ident($otSchema),
+            pg_ident($otherTable),
             pg_ident($otherFk),
             pg_ident($selfFk),
             $placeholders,
@@ -531,10 +537,10 @@ try {
         $initialLimit = (int)($tableCfg['initial_limit'] ?? 0);
         $rowCap       = $initialLimit > 0 ? $initialLimit : MAX_LIST_ROWS;
         $sql = sprintf(
-            'SELECT %s, COUNT(1) OVER() AS __spw_total FROM "%s"."%s"%s ORDER BY %s LIMIT %d OFFSET %d',
+            'SELECT %s, COUNT(1) OVER() AS __spw_total FROM %s.%s%s ORDER BY %s LIMIT %d OFFSET %d',
             $selectSql,
-            $schemaName,
-            $table,
+            pg_ident($schemaName),
+            pg_ident($table),
             $whereSql,
             implode(', ', $orderClauses),
             $rowCap,
@@ -638,7 +644,7 @@ try {
             }
 
             // Update record via native pg_query_params for robust SQL injection prevention
-            $sql = sprintf('UPDATE "%s"."%s" SET "%s" = $1 WHERE %s = $2', $schemaName, $table, $dateColumn, pg_ident($idCol));
+            $sql = sprintf('UPDATE %s.%s SET %s = $1 WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($dateColumn), pg_ident($idCol));
             $res = @pg_query_params($conn, $sql, [$newDate, $id]);
             if (!$res) {
                 http_response_code(500);
@@ -697,7 +703,7 @@ try {
                 $val = null;
             }
 
-            $sql = sprintf('UPDATE "%s"."%s" SET %s = $1%s WHERE %s = $2', $schemaName, $table, pg_ident($col), $cast, pg_ident($idCol));
+            $sql = sprintf('UPDATE %s.%s SET %s = $1%s WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($col), $cast, pg_ident($idCol));
             $res = @pg_query_params($conn, $sql, [$val, $recordId]);
             if (!$res) {
                 error_log('[api][patch] ' . pg_last_error($conn));
@@ -748,10 +754,10 @@ try {
             }
 
             if (empty($cols)) {
-                $sql = sprintf('INSERT INTO "%s"."%s" DEFAULT VALUES RETURNING %s', $schemaName, $table, pg_ident($idCol));
+                $sql = sprintf('INSERT INTO %s.%s DEFAULT VALUES RETURNING %s', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));
                 $res = @pg_query($conn, $sql);
             } else {
-                $sql = sprintf('INSERT INTO "%s"."%s" (%s) VALUES (%s) RETURNING %s', $schemaName, $table, implode(', ', array_map('pg_ident', $cols)), implode(', ', $ph), pg_ident($idCol));
+                $sql = sprintf('INSERT INTO %s.%s (%s) VALUES (%s) RETURNING %s', pg_ident($schemaName), pg_ident($table), implode(', ', array_map('pg_ident', $cols)), implode(', ', $ph), pg_ident($idCol));
                 $res = @pg_query_params($conn, $sql, $vals);
             }
 
@@ -806,7 +812,7 @@ try {
             }
 
             $colIdents = implode(', ', array_map('pg_ident', $dupCols));
-            $sql = sprintf('INSERT INTO "%s"."%s" (%s) SELECT %s FROM "%s"."%s" WHERE %s = $1 RETURNING %s', $schemaName, $table, $colIdents, $colIdents, $schemaName, $table, pg_ident($idCol), pg_ident($idCol));
+            $sql = sprintf('INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s WHERE %s = $1 RETURNING %s', pg_ident($schemaName), pg_ident($table), $colIdents, $colIdents, pg_ident($schemaName), pg_ident($table), pg_ident($idCol), pg_ident($idCol));
             $res = @pg_query_params($conn, $sql, [$srcId]);
             if (!$res) {
                 $pgErr = pg_last_error($conn);
@@ -861,7 +867,7 @@ try {
                 }
             }
 
-            $sql = sprintf('DELETE FROM "%s"."%s" WHERE %s=$1', $schemaName, $table, pg_ident($idCol));
+            $sql = sprintf('DELETE FROM %s.%s WHERE %s=$1', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));
             $res = @pg_query_params($conn, $sql, [$deleteId]);
             if (!$res) {
                 error_log('[api][delete] ' . pg_last_error($conn));

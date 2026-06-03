@@ -61,3 +61,54 @@ function send_security_headers(
             break;
     }
 }
+
+// Decides whether the current session must be rejected. A session is stale when
+// it has exceeded its absolute lifetime (hard logout, independent of activity)
+// or when the bound User-Agent hash no longer matches the request — the latter
+// foils opportunistic reuse of a stolen cookie from a different client.
+// Centralises a check that was previously duplicated, and missing, across pages
+// and API endpoints, so every entry point now enforces it identically.
+function session_is_stale(): bool
+{
+    if (isset($_SESSION['created_at']) && (time() - (int) $_SESSION['created_at']) > SESSION_MAX_LIFETIME) {
+        return true;
+    }
+    $bound = $_SESSION['user_agent'] ?? null;
+    if ($bound !== null) {
+        $current = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+        if (!hash_equals($bound, $current)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Enforce session freshness for JSON API endpoints. No-op when no user is logged
+// in (the endpoint's own auth gate handles that). On a stale session: destroy it
+// and emit a 401 JSON error, then exit.
+function enforce_session_json(): void
+{
+    if (empty($_SESSION['user_id'])) {
+        return;
+    }
+    if (session_is_stale()) {
+        session_destroy();
+        http_response_code(401);
+        header('Content-Type: application/json; charset=utf-8');
+        exit(json_encode(['error' => 'Session expired']));
+    }
+}
+
+// Enforce session freshness for HTML page controllers. No-op when not logged in.
+// On a stale session: destroy it and redirect to the login page, then exit.
+function enforce_session_redirect(string $loginUrl = 'login.php'): void
+{
+    if (empty($_SESSION['user_id'])) {
+        return;
+    }
+    if (session_is_stale()) {
+        session_destroy();
+        header('Location: ' . $loginUrl);
+        exit;
+    }
+}

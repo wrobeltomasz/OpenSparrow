@@ -138,6 +138,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $user = pg_fetch_assoc($resUser);
 
+                // Equalise response time whether or not the username exists, so an
+                // attacker cannot enumerate valid usernames by timing the login.
+                // (password_verify is skipped for a missing user, so without this a
+                // non-existent account returns measurably faster.)
+                if (!$user) {
+                    password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1]);
+                }
+
                 $storedSalt = $user['salt'] ?? '';
                 $toVerify = $storedSalt !== '' ? $storedSalt . $password : $password;
 

@@ -16,11 +16,8 @@ if (!isset($_SESSION['user_id'])) {
     exit(json_encode(['error' => 'Unauthorized']));
 }
 
-if (isset($_SESSION['created_at']) && (time() - $_SESSION['created_at']) > SESSION_MAX_LIFETIME) {
-    session_destroy();
-    http_response_code(401);
-    exit(json_encode(['error' => 'Session expired']));
-}
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_json();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -183,12 +180,16 @@ if ($action === 'query' && $method === 'POST') {
                     $files[] = $row;
                 }
             }
-        } else {
+        } elseif (!empty($tags)) {
             $files = rag_retrieve($conn, $query, $tags, $limit);
-            if (empty($files) && !empty($tags)) {
+            if (empty($files)) {
                 $files       = rag_retrieve($conn, $query, [], $limit);
                 $tagFallback = !empty($files);
             }
+        } else {
+            // No tags and no file IDs selected: do not pull in any documents.
+            // The model answers from the page/grid context alone (if provided).
+            $files = [];
         }
 
         $prompt = rag_build_prompt($query, $files, $pageContext, $language, $history);
@@ -231,8 +232,9 @@ if ($action === 'query' && $method === 'POST') {
 
         exit(json_encode(['answer' => $answer, 'sources' => $sources, 'tag_fallback' => $tagFallback, 'suggestions' => $suggestions]));
     } catch (Throwable $e) {
+        error_log('[api_rag][query] ' . $e->getMessage());
         http_response_code(500);
-        exit(json_encode(['error' => $e->getMessage()]));
+        exit(json_encode(['error' => 'The assistant failed to answer. Please try again.']));
     }
 }
 

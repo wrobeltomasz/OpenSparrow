@@ -345,6 +345,8 @@
         "send": "Wyślij",
         "stop": "Zatrzymaj",
         "tag_fallback": "Brak wyników dla wybranych tagów — wyświetlam wyniki ze wszystkich dokumentów.",
-        "context_table": "Widok: {table}"
+        "context_table": "Widok: {table}",
+        "use_grid_data": "Dane z bieżącej tabeli",
+        "select_one": "Wybierz co najmniej jeden tag dokumentu lub dane z bieżącej tabeli przed wysłaniem."
     }
 }

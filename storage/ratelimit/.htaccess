@@ -1,0 +1,2 @@
+# Deny all direct web access to throttle state.
+Deny from all

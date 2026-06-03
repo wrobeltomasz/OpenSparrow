@@ -345,6 +345,8 @@
         "send": "Trimite",
         "stop": "Oprire",
         "tag_fallback": "Niciun rezultat pentru etichetele selectate — afișez rezultate din toate documentele.",
-        "context_table": "Vizualizare: {table}"
+        "context_table": "Vizualizare: {table}",
+        "use_grid_data": "Datele tabelului curent",
+        "select_one": "Selectați cel puțin o etichetă de document sau datele tabelului curent înainte de a trimite."
     }
 }

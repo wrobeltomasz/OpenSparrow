@@ -12,6 +12,15 @@ if (!$session->has('user_id')) {
     exit;
 }
 
+// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
+enforce_session_redirect();
+
+// This page echoes user-supplied data into a form; send the same security headers
+// (CSP, X-Frame-Options, etc.) every other page sets. 'unsafe-style' mode because
+// the form markup uses inline style attributes for dynamic values.
+$cspNonce = bin2hex(random_bytes(16));
+send_security_headers($cspNonce, true, 'unsafe-style');
+
 $isReadOnly = $session->role() !== 'editor';
 
 if ($isReadOnly && $request->isPost()) {
@@ -148,15 +157,18 @@ ob_start();
                 <?php else : ?>
                     <button type="submit" class="btn-save"><?= t('form.add_record') ?></button>
                 <?php endif; ?>
-                <button type="button" class="btn-cancel" onclick="window.location.href='index.php?table=<?php echo urlencode($table); ?>'"><?= t('common.cancel') ?></button>
+                <button type="button" class="btn-cancel" data-nav="index.php?table=<?php echo htmlspecialchars(urlencode($table), ENT_QUOTES, 'UTF-8'); ?>"><?= t('common.cancel') ?></button>
             </div>
         </form>
     </div>
 </main>
 <?php
 $pageContent = ob_get_clean();
-$extraScripts = '<script>
+$extraScripts = '<script nonce="' . htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8') . '">
 document.addEventListener(\'DOMContentLoaded\', function() {
+    document.querySelectorAll(\'[data-nav]\').forEach(btn => {
+        btn.addEventListener(\'click\', () => { window.location.href = btn.dataset.nav; });
+    });
     document.querySelectorAll(\'select[data-enum-colors]\').forEach(sel => {
         const colors = JSON.parse(sel.dataset.enumColors || \'{}\');
         const apply  = () => { sel.style.background = colors[sel.value] || \'\'; };

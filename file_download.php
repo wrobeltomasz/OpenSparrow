@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/api_helpers.php';
 start_session();
 send_security_headers('', false, 'download');
 // Block access without active session
@@ -34,7 +35,7 @@ if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 $conn = db_connect();
 // Fetch record from database
 $sql = "
-    SELECT name, storage_path, mime_type, deleted_at
+    SELECT name, storage_path, mime_type, deleted_at, related_table, related_id
     FROM " . sys_table('files') . "
     WHERE uuid = $1
 ";
@@ -50,6 +51,27 @@ pg_free_result($res);
 if ($row['deleted_at'] !== null) {
     http_response_code(404);
     exit('File was deleted');
+}
+
+// Row-level authorization: when the file is attached to a record, enforce the same
+// ownership policy used by the rest of the app (can_access_record). Files tied to no
+// record, or to a table without owner_restriction, stay accessible to any logged-in
+// user. A failed check returns the same 404 as a missing file — existence is never
+// disclosed.
+$relatedTable = $row['related_table'] ?? null;
+$relatedId    = $row['related_id'] ?? null;
+if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
+    $schemaJson = @file_get_contents(__DIR__ . '/config/schema.json');
+    $schema     = $schemaJson !== false ? json_decode($schemaJson, true) : null;
+    $tableCfg   = $schema['tables'][$relatedTable] ?? null;
+    if (is_array($tableCfg)) {
+        $uid  = (int) $_SESSION['user_id'];
+        $role = $_SESSION['role'] ?? '';
+        if (!can_access_record($conn, $tableCfg, $relatedTable, (int) $relatedId, $uid, $role)) {
+            http_response_code(404);
+            exit('File not found in database');
+        }
+    }
 }
 
 // Construct absolute physical path

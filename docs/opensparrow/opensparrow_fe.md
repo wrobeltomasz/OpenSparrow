@@ -515,6 +515,16 @@ Interfejs czatu do zadawania pytań o zaindeksowane dokumenty (Retrieval Augment
 - Automatyczne przewijanie do najnowszej wiadomości
 - Zaznaczone tagi filtrów zawężają zakres przeszukiwanych dokumentów
 
+### Panel "Zapytaj AI" (siatka)
+
+Wysuwany panel asystenta dostępny w aplikacji (ikona czatu lub pozycja w menu awatara). Korzysta z tej samej bazy wiedzy co `rag.php`, ale wszystkie źródła kontekstu wybiera się jawnie przez checkboxy:
+
+- Pasek kontekstu na górze: "Widok: `<tabela>`" wskazuje aktualnie przeglądaną tabelę
+- Checkbox "Dane z bieżącej tabeli": dołącza wiersze widocznej siatki do zapytania — wyłącznie gdy zaznaczony (nigdy automatycznie). Pojawia się tylko, gdy na stronie jest siatka z danymi
+- Checkboxy tagów: każdy tag dokumentu ma własny checkbox; domyślnie wszystkie odznaczone — dokumenty trafiają do kontekstu tylko po świadomym zaznaczeniu
+- Walidacja przed wysłaniem: jeśli nie zaznaczono żadnego checkboxa (ani tagu, ani danych tabeli), zapytanie nie jest wysyłane do modelu — pojawia się komunikat z prośbą o zaznaczenie co najmniej jednego źródła
+- Odpowiedzi, chipy źródeł i sugerowane pytania renderowane tak samo jak w czacie `rag.php`
+
 ---
 
 ## 13. Widoki (Views)

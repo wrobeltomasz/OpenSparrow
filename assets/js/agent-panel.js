@@ -18,7 +18,7 @@ function fmtTime() {
 }
 
 let panelEl, overlayEl, tagsEl, convEl, queryEl, sendBtn, stopBtn, clearBtn;
-let contextBarEl, fabEl;
+let contextBarEl, gridOptEl, fabEl;
 let tagsLoaded = false;
 let currentAbortController = null;
 let abortedByUser = false;
@@ -56,6 +56,12 @@ function buildPanel() {
     contextBarEl.className = 'ag-context-bar';
     contextBarEl.id        = 'agContextBar';
     contextBarEl.hidden    = true;
+
+    // Current-table-data option (grid context — opt-in via its own checkbox)
+    gridOptEl           = document.createElement('div');
+    gridOptEl.className = 'ag-grid-opt';
+    gridOptEl.id        = 'agGridOpt';
+    gridOptEl.hidden    = true;
 
     // Tags strip
     tagsEl           = document.createElement('div');
@@ -102,6 +108,7 @@ function buildPanel() {
 
     panelEl.appendChild(header);
     panelEl.appendChild(contextBarEl);
+    panelEl.appendChild(gridOptEl);
     panelEl.appendChild(tagsEl);
     panelEl.appendChild(convEl);
     panelEl.appendChild(inputArea);
@@ -131,6 +138,7 @@ function openPanel() {
     overlayEl.classList.add('active');
     if (fabEl) fabEl.hidden = true;
     updateContextBar();
+    renderGridDataOption();
     if (!tagsLoaded) loadTags();
     queryEl.focus();
 }
@@ -264,14 +272,13 @@ function renderTags(tags) {
         tagsEl.appendChild(msg);
         return;
     }
-    const currentTable = pageTableName().toLowerCase();
+    // Tags start unchecked: documents are attached only when the user picks them.
     tags.forEach(tag => {
         const label     = document.createElement('label');
         label.className = 'ag-tag-item';
         const cb        = document.createElement('input');
         cb.type         = 'checkbox';
         cb.value        = tag;
-        if (currentTable && tag.toLowerCase() === currentTable) cb.checked = true;
         label.appendChild(cb);
         label.appendChild(document.createTextNode(' ' + tag));
         tagsEl.appendChild(label);
@@ -280,6 +287,33 @@ function renderTags(tags) {
 
 function selectedTags() {
     return Array.from(tagsEl.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+}
+
+// Opt-in "current table data" checkbox. The grid context is sent to the model
+// only when this box is checked — never attached automatically.
+function renderGridDataOption() {
+    if (readGridContext() === '') {
+        gridOptEl.hidden    = true;
+        gridOptEl.innerHTML = '';
+        return;
+    }
+    const prevChecked = gridOptEl.querySelector('#agGridDataCb')?.checked ?? false;
+    gridOptEl.innerHTML = '';
+    gridOptEl.hidden    = false;
+
+    const label     = document.createElement('label');
+    label.className = 'ag-tag-item';
+    const cb        = document.createElement('input');
+    cb.type         = 'checkbox';
+    cb.id           = 'agGridDataCb';
+    cb.checked      = prevChecked;
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(' ' + t('agent.use_grid_data')));
+    gridOptEl.appendChild(label);
+}
+
+function gridDataSelected() {
+    return gridOptEl.querySelector('#agGridDataCb')?.checked ?? false;
 }
 
 // ── Conversation ──────────────────────────────────────────────────────────────
@@ -310,6 +344,19 @@ function appendThinking() {
     convEl.appendChild(wrap);
     scrollDown();
     return wrap;
+}
+
+// Standalone notice (e.g. "select at least one source"). Does not consume the
+// typed query, so the user can tick a checkbox and resend without retyping.
+function appendNotice(text) {
+    const wrap     = document.createElement('div');
+    wrap.className = 'ag-msg ag-msg-assistant';
+    const el       = document.createElement('div');
+    el.className   = 'ag-msg-warning';
+    el.textContent = text;
+    wrap.appendChild(el);
+    convEl.appendChild(wrap);
+    scrollDown();
 }
 
 function replaceWithAnswer(wrap, answer, sources, tagFallback, suggestions) {
@@ -387,6 +434,14 @@ async function sendQuery() {
     const query = queryEl.value.trim();
     if (!query) return;
 
+    const tags        = selectedTags();
+    const includeGrid = gridDataSelected();
+    // Require an explicit source: at least one document tag, or the current table data.
+    if (tags.length === 0 && !includeGrid) {
+        appendNotice(t('agent.select_one'));
+        return;
+    }
+
     currentAbortController = new AbortController();
     abortedByUser          = false;
     sendBtn.disabled       = true;
@@ -403,7 +458,7 @@ async function sendQuery() {
                 'Content-Type': 'application/json',
                 'X-CSRF-Token': CSRF(),
             },
-            body: JSON.stringify({ query, tags: selectedTags(), page_context: readGridContext(), language: document.documentElement.lang || '' }),
+            body: JSON.stringify({ query, tags, page_context: includeGrid ? readGridContext() : '', language: document.documentElement.lang || '' }),
             signal: currentAbortController.signal,
         });
 

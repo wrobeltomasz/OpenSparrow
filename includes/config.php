@@ -27,6 +27,12 @@ if (!function_exists('get_env')) {
 if (!function_exists('client_ip')) {
     function client_ip(): string
     {
+        // When the app is directly reachable (not strictly behind the trusted
+        // proxy), operators can set TRUST_PROXY_HEADERS=false so spoofed
+        // forwarding headers cannot be used to evade per-IP login rate limiting.
+        if (defined('TRUST_PROXY_HEADERS') && !TRUST_PROXY_HEADERS) {
+            return $_SERVER['REMOTE_ADDR'] ?? '';
+        }
         if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && !empty($_SERVER['HTTP_CF_RAY'])) {
             return $_SERVER['HTTP_CF_CONNECTING_IP'];
         }
@@ -148,6 +154,11 @@ define('LOGIN_MAX_ATTEMPTS_PER_USERNAME', (int) get_env('LOGIN_MAX_ATTEMPTS_PER_
 // Duration in minutes for which a locked-out IP or username is blocked
 // after exceeding the respective attempt threshold.
 define('LOGIN_LOCKOUT_MINUTES', (int) get_env('LOGIN_LOCKOUT_MINUTES', '15'));
+// Whether to trust reverse-proxy client-IP headers (CF-Connecting-IP, X-Real-IP)
+// when resolving the client address for login rate limiting. Keep "true" behind
+// the bundled nginx/Cloudflare setup; set "false" when the app is directly
+// reachable so a client cannot spoof these headers to bypass per-IP throttling.
+define('TRUST_PROXY_HEADERS', get_env('TRUST_PROXY_HEADERS', 'true') === 'true');
 // -------------------------------------------------------------------------
 // Demo mode
 // -------------------------------------------------------------------------
