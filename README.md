@@ -32,6 +32,8 @@ OpenSparrow is a JSON schema-driven platform for building internal systems. Tabl
 > Drop the files, point to PostgreSQL, open `/admin`. That's it.  
 > Composer is used **dev-only** for the PHPUnit test suite (`composer install` is never required to run the application).
 
+Project webiste: https://opensparrow.org
+
 Demo: https://demo.opensparrow.org
 
 ---
