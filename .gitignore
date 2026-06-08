@@ -57,6 +57,10 @@ __pycache__/
 storage/files/*
 !storage/files/.gitkeep
 
+# Runtime ratelimit state
+storage/ratelimit/*
+!storage/ratelimit/.htaccess
+
 # Files claude
 /.claude
 CLAUDE.md
@@ -73,4 +77,3 @@ node_modules/
 # package-lock.json
 
 docs/opensparrow/
-storage/ratelimit/user_1.json
