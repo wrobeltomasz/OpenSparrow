@@ -107,7 +107,7 @@ function buildManualRunSection() {
             });
             const data = await res.json();
             if (data.status === 'success') {
-                output.textContent = data.output || '(no output)';
+                output.innerHTML = data.output || '(no output)';
             } else {
                 output.textContent = 'Error: ' + (data.error || 'unknown');
                 output.style.color = '#a80000';
