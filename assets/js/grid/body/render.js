@@ -179,6 +179,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
 
     const editBtn = document.createElement('button');
     editBtn.className = 'btn-icon';
+    editBtn.dataset.cy = 'row-edit';
     editBtn.title = I18n.t('common.edit');
     const editImg = document.createElement('img');
     editImg.src = 'assets/img/edit_square.png';
@@ -191,6 +192,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
 
     const copyBtn = document.createElement('button');
     copyBtn.className = 'btn-icon';
+    copyBtn.dataset.cy = 'row-duplicate';
     copyBtn.title = I18n.t('grid.duplicate');
     const copyImg = document.createElement('img');
     copyImg.src = 'assets/img/content_copy.png';
@@ -204,6 +206,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
 
     const delBtn = document.createElement('button');
     delBtn.className = 'btn-icon btn-icon-danger';
+    delBtn.dataset.cy = 'row-delete';
     delBtn.title = I18n.t('common.delete');
     const delImg = document.createElement('img');
     delImg.src = 'assets/img/delete.png';

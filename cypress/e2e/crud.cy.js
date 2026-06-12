@@ -11,6 +11,10 @@ const TEST_TABLE = 'companies';
 // ============================================================================
 
 describe('OpenSparrow – Create Record Flow', () => {
+  before(() => {
+    cy.seedDatabase();
+  });
+
   beforeEach(() => {
     loginAsTestUser();
   });
@@ -122,7 +126,7 @@ describe('OpenSparrow – Edit Record Flow', () => {
         // Edit buttons are hidden behind CSS overflow:hidden; use force:true
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
-          .find('td.td-actions button:first-child')
+          .find('[data-cy=row-edit]')
           .click({ force: true });
 
         cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
@@ -195,7 +199,7 @@ describe('OpenSparrow – Edit Record Flow', () => {
   });
 
   it('displays Cancel button', () => {
-    cy.get('button.btn-cancel[onclick*="index.php"], a.btn-cancel', {
+    cy.get('button.btn-cancel', {
       timeout: CypressHelpers.TIMEOUTS.medium,
     }).should('be.visible');
   });
@@ -236,7 +240,7 @@ describe('OpenSparrow – Delete Record', () => {
       if (res.type === 'grid') {
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
-          .find('td.td-actions button.btn-icon-danger')
+          .find('[data-cy=row-delete]')
           .then($btn => {
             if ($btn.length > 0) {
               cy.wrap($btn).should('exist');
@@ -253,7 +257,7 @@ describe('OpenSparrow – Delete Record', () => {
         // Delete buttons are hidden (overflow:hidden CSS) — check existence not visibility
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
-          .find('td.td-actions button.btn-icon-danger')
+          .find('[data-cy=row-delete]')
           .then($btn => {
             if ($btn.length > 0) {
               cy.wrap($btn).should('exist');
@@ -322,7 +326,7 @@ describe('OpenSparrow – Subtables (if present)', () => {
       if (res.type === 'grid') {
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
-          .find('td.td-actions button:first-child')
+          .find('[data-cy=row-edit]')
           .click({ force: true });
 
         cy.url().should('include', 'edit.php');
@@ -432,7 +436,7 @@ describe('OpenSparrow – Edit Record: Actual Save', () => {
       if (res.type !== 'grid') return;
       cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
         .first()
-        .find('td.td-actions button:first-child')
+        .find('[data-cy=row-edit]')
         .click({ force: true });
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
     });
@@ -519,7 +523,7 @@ describe('OpenSparrow – Delete Record: Actual Flow', () => {
 
           cy.get('#grid tbody tr')
             .first()
-            .find('td.td-actions button.btn-icon-danger')
+            .find('[data-cy=row-delete]')
             .click({ force: true });
 
           cy.get('@delConfirm').should('have.been.called');
@@ -547,7 +551,7 @@ describe('OpenSparrow – Delete Record: Actual Flow', () => {
 
           cy.get('#grid tbody tr')
             .last()
-            .find('td.td-actions button.btn-icon-danger')
+            .find('[data-cy=row-delete]')
             .click({ force: true });
 
           cy.wait('@deleteReq', { timeout: CypressHelpers.TIMEOUTS.medium });
@@ -584,7 +588,7 @@ describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
       if (res.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
-        .find('td.td-actions button:nth-child(2)')
+        .find('[data-cy=row-duplicate]')
         .then($btn => {
           if ($btn.length === 0) {
             Cypress.log({ message: 'No Duplicate button — skipping' });
@@ -603,7 +607,7 @@ describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
       cy.get('#grid tbody tr').its('length').then(rowsBefore => {
         cy.get('#grid tbody tr')
           .first()
-          .find('td.td-actions button:nth-child(2)')
+          .find('[data-cy=row-duplicate]')
           .then($btn => {
             if ($btn.length === 0) return;
             cy.wrap($btn).click({ force: true });
@@ -627,7 +631,7 @@ describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
       cy.get('#grid tbody tr').its('length').then(rowsBefore => {
         cy.get('#grid tbody tr')
           .first()
-          .find('td.td-actions button:nth-child(2)')
+          .find('[data-cy=row-duplicate]')
           .then($btn => {
             if ($btn.length === 0) return;
             cy.wrap($btn).click({ force: true });
@@ -658,45 +662,32 @@ describe('OpenSparrow – Role-Based UI', () => {
     waitForGridOrEmpty();
   });
 
-  it('editor role: Add button visible; viewer role: Add button absent', () => {
-    cy.get('body').then($body => {
-      // addRow only renders for editor (see template.php — PHP guard)
-      const hasAdd = $body.find('#addRow, [data-cy=add]').length > 0;
-      Cypress.log({ message: `Add button present: ${hasAdd} — ${hasAdd ? 'editor' : 'viewer'} role` });
-      // Pass regardless — just log role
-      expect(true).to.be.true;
-    });
+  it('editor role: Add button is visible; it navigates to create.php', () => {
+    // test user is editor — Add button must be present and functional
+    cy.get('#addRow, [data-cy=add]').should('exist').and('be.visible');
   });
 
   it('Export CSV visible for all roles', () => {
-    // exportCsv renders for all roles (no PHP guard in template)
     cy.get('#exportCsv, [data-cy=export]').should('exist');
   });
 
-  it('editor role: Data Cleanup button present; viewer: absent', () => {
-    cy.get('body').then($body => {
-      const hasCleanup = $body.find('#dataCleanupBtn, [data-cy=data-cleanup]').length > 0;
-      Cypress.log({ message: `Data Cleanup button: ${hasCleanup ? 'present (editor)' : 'absent (viewer)'}` });
-      expect(true).to.be.true;
-    });
+  it('editor role: Data Cleanup button is present', () => {
+    // test user is editor — button must appear
+    cy.get('#dataCleanupBtn, [data-cy=data-cleanup]').should('exist');
   });
 
-  it('editor role: contenteditable cells present; viewer: absent', () => {
+  it('editor role: contenteditable cells are present', () => {
     waitForGridOrEmpty().then(res => {
       if (res.type !== 'grid') return;
-      cy.get('body').then($body => {
-        const editable = $body.find('[contenteditable="true"]').length > 0;
-        Cypress.log({ message: `Inline edit cells: ${editable ? 'present (editor)' : 'absent (viewer)'}` });
-        expect(true).to.be.true;
-      });
+      // test user is editor — at least one text column should be editable inline
+      cy.get('[contenteditable="true"]').should('have.length.gte', 1);
     });
   });
 
-  it('UI is role-consistent: Add + Cleanup appear or disappear together', () => {
+  it('UI is role-consistent: Add and Cleanup both appear for editor', () => {
     cy.get('body').then($body => {
       const hasAdd     = $body.find('#addRow').length > 0;
       const hasCleanup = $body.find('#dataCleanupBtn').length > 0;
-      // Both gated on editor role — should be consistent
       expect(hasAdd).to.equal(hasCleanup);
     });
   });
@@ -706,7 +697,7 @@ describe('OpenSparrow – Role-Based UI', () => {
       if (res.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
-        .find('td.td-actions button:first-child')
+        .find('[data-cy=row-edit]')
         .click({ force: true });
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
       cy.get('button.tab-btn[data-tab="tab-history"]').then($btn => {

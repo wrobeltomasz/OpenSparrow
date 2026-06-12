@@ -129,22 +129,19 @@ describe('OpenSparrow – Files: Search & Filter', () => {
   });
 
   it('typing in search input triggers file refresh', () => {
-    cy.get('#fileTableBody').invoke('html').then(before => {
-      cy.get('#fileSearch').clear().type('nonexistentfileXYZ123');
-      cy.wait(600);
-      cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
-        .invoke('text')
-        .should('not.include', 'Loading');
-    });
+    cy.get('#fileSearch').clear().type('nonexistentfileXYZ123');
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .invoke('text')
+      .should('not.include', 'Loading');
   });
 
   it('clearing search shows all files again', () => {
     cy.get('#fileSearch').clear().type('abc');
-    cy.wait(500);
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     cy.get('#fileSearch').clear();
-    cy.wait(500);
     cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .should('exist');
+      .invoke('text')
+      .should('not.include', 'Loading');
   });
 
   it('type filter change triggers file reload', () => {
@@ -180,7 +177,6 @@ describe('OpenSparrow – Files: Upload Form', () => {
 
   it('choosing table enables record select if relations configured', () => {
     cy.get('#fileRelatedTable', { timeout: CypressHelpers.TIMEOUTS.long }).then($sel => {
-      // If table select itself is disabled, no relations are configured — skip
       if ($sel.prop('disabled')) {
         Cypress.log({ message: 'No file relations configured — table select disabled, skipping' });
         return;
@@ -194,6 +190,35 @@ describe('OpenSparrow – Files: Upload Form', () => {
       cy.get('#fileRelatedId', { timeout: CypressHelpers.TIMEOUTS.medium })
         .should('not.be.disabled');
     });
+  });
+
+  it('selecting a file populates the file name input', () => {
+    cy.get('#fileInput').selectFile('cypress/fixtures/test_upload.txt', { force: true });
+    // After selectFile, the name input should be auto-populated or the input should register
+    cy.get('#fileInput').then($input => {
+      expect($input[0].files.length).to.be.gte(1);
+    });
+  });
+
+  it('upload attempt reaches the API and returns a status message', () => {
+    cy.intercept('POST', '**/api_files.php**').as('uploadReq');
+
+    cy.get('#fileInput').selectFile('cypress/fixtures/test_upload.txt', { force: true });
+    cy.get('#fileNameInput').then($el => {
+      if ($el.val() === '') {
+        cy.wrap($el).type('cypress-e2e-upload');
+      }
+    });
+    cy.get('#btnUpload').click();
+
+    cy.wait('@uploadReq', { timeout: CypressHelpers.TIMEOUTS.long })
+      .its('response.statusCode')
+      // 200/201 = success; 415 = .txt not in allowed_extensions (config-dependent)
+      .should('be.oneOf', [200, 201, 415]);
+
+    cy.get('#uploadStatus', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .invoke('text')
+      .should('not.be.empty');
   });
 });
 

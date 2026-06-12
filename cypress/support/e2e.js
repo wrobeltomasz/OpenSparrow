@@ -6,18 +6,38 @@
 const BASE = 'http://localhost:8080';
 
 const TIMEOUTS = {
-  short: 5000,
+  short:  5000,
   medium: 8000,
-  long: 15000,
+  long:   15000,
 };
+
+// ============================================================================
+// Database Seeding
+// ============================================================================
+
+/**
+ * Upsert test users and clean cypress-created records via the seed endpoint.
+ * Call once in a describe-level before() hook.
+ * Creates:  test / test   (editor role)
+ *           testadmin / testadmin  (admin role)
+ */
+Cypress.Commands.add('seedDatabase', () => {
+  cy.request({
+    method: 'POST',
+    url: `${BASE}/cypress_seed.php`,
+    form: true,
+    body: { token: 'cypress-dev-seed', action: 'seed' },
+    failOnStatusCode: true,
+  }).its('body.status').should('eq', 'ok');
+});
 
 // ============================================================================
 // Session & Authentication
 // ============================================================================
 
 /**
- * Authenticate as test user in persistent session.
- * Session is reused across multiple tests (faster than re-login each time).
+ * Authenticate as editor test user in a persistent cy.session.
+ * Session is reused across tests in a suite (faster than re-login each time).
  */
 function loginAsTestUser() {
   cy.session('testUser', () => {
@@ -34,22 +54,40 @@ function loginAsTestUser() {
 
     cy.url({ timeout: TIMEOUTS.long }).should('include', '/dashboard.php');
     cy.get('#menu', { timeout: TIMEOUTS.long }).should('exist');
+  }, {
+    // Re-create the session if the cached cookie was invalidated (e.g. by a logout test)
+    validate() {
+      cy.request({ url: `${BASE}/dashboard.php`, followRedirect: false })
+        .its('status').should('eq', 200);
+    },
   });
 }
 
 /**
- * Authenticate as admin in persistent session.
- * Admin login is separate from user auth.
+ * Authenticate as admin test user in a persistent cy.session.
+ * The testadmin account must exist (call cy.seedDatabase() first).
  */
 function loginAsAdmin() {
   cy.session('adminUser', () => {
-    cy.visit(`${BASE}/admin/index.php`);
-    cy.get('input[name="admin_password"]', { timeout: TIMEOUTS.long })
+    cy.visit(`${BASE}/login.php`);
+    cy.get('[data-cy=username], input[name="username"]', { timeout: TIMEOUTS.long })
       .should('exist')
       .clear()
-      .type('admin');
-    cy.get('button[type="submit"]').click();
-    cy.get('.admin-header-tabs, .admin-workspace', { timeout: TIMEOUTS.long }).should('exist');
+      .type('testadmin');
+    cy.get('[data-cy=password], input[name="password"]')
+      .clear()
+      .type('testadmin');
+    cy.get('[data-cy=loginBtn], button[type="submit"]')
+      .click();
+
+    // Admin is redirected to /admin/ after login (not /dashboard.php)
+    cy.url({ timeout: TIMEOUTS.long }).should('match', /\/(admin\/?(index\.php)?|dashboard\.php)/);
+  }, {
+    // Re-create the session if the cached cookie was invalidated (e.g. by a logout test)
+    validate() {
+      cy.request({ url: `${BASE}/admin/index.php`, followRedirect: false })
+        .its('status').should('eq', 200);
+    },
   });
 }
 
@@ -58,17 +96,18 @@ function loginAsAdmin() {
 // ============================================================================
 
 /**
- * Wait for grid to load OR empty-state to appear.
- * Tables may have no records → empty state instead of grid.
- * Returns { type: 'grid' | 'empty', element: HTMLElement }.
+ * Wait for grid to load OR empty-state to appear, with a hard timeout.
+ * Returns { type: 'grid' | 'empty' }.
  */
 function waitForGridOrEmpty({ timeout = TIMEOUTS.long } = {}) {
-  const gridSel = '#grid, [data-cy=grid], table[id*="grid"], .datagrid, .grid-wrapper';
+  const gridSel  = '#grid, [data-cy=grid], table[id*="grid"], .datagrid, .grid-wrapper';
   const emptySel = '.no-data, .empty-state, .grid-empty, .no-results, [data-cy=empty-state]';
 
   return cy.document({ timeout }).then(doc => {
+    const deadline = Date.now() + timeout;
+
     const check = () => {
-      const grid = doc.querySelector(gridSel);
+      const grid  = doc.querySelector(gridSel);
       const empty = doc.querySelector(emptySel);
 
       if (grid) {
@@ -76,6 +115,9 @@ function waitForGridOrEmpty({ timeout = TIMEOUTS.long } = {}) {
       }
       if (empty) {
         return cy.wrap(empty).should('exist').then(() => ({ type: 'empty', element: empty }));
+      }
+      if (Date.now() > deadline) {
+        throw new Error(`waitForGridOrEmpty: neither grid nor empty state appeared within ${timeout}ms`);
       }
 
       return cy.wait(200, { log: false }).then(check);
@@ -86,9 +128,7 @@ function waitForGridOrEmpty({ timeout = TIMEOUTS.long } = {}) {
 }
 
 /**
- * Wait for action buttons to be available (Add/Export).
- * Handles both desktop (#actions buttons) and mobile (#mobileActions select).
- * Does not return a sync value from then() — avoids Cypress async/sync mixing error.
+ * Wait for action buttons to be available (Add / Export).
  */
 function waitForActions({ timeout = TIMEOUTS.long } = {}) {
   return cy.get('#actions, #mobileActions', { timeout }).should('exist').then($container => {
@@ -108,11 +148,11 @@ function waitForActions({ timeout = TIMEOUTS.long } = {}) {
 }
 
 /**
- * Click Add button if it exists and optionally verify URL change.
- * Gracefully skips if button not present (read-only table).
+ * Click the Add button if present and verify navigation to create.php.
+ * Gracefully skips if the button is absent (read-only table / viewer role).
  */
 function clickAddIfPresent(tableParam = null) {
-  const addSel = '#addRow, [data-cy=add], [data-action="add"], .btn-add';
+  const addSel    = '#addRow, [data-cy=add], [data-action="add"], .btn-add';
   const mobileSel = '#mobileActions';
 
   return cy.get('body').then($body => {
@@ -135,7 +175,7 @@ function clickAddIfPresent(tableParam = null) {
       return cy
         .get(mobileSel)
         .select((i, el) => {
-          const opts = Array.from(el.options);
+          const opts  = Array.from(el.options);
           const match = opts.find(o => /add/i.test(o.value) || /add/i.test(o.text));
           return match ? match.value : null;
         })
@@ -151,48 +191,49 @@ function clickAddIfPresent(tableParam = null) {
 }
 
 /**
- * Tolerant pagination check — verify pagination exists if table has enough records.
- * Returns true if found, false if not (both are acceptable).
+ * Tolerant pagination check — verifies pagination exists when the table has
+ * enough records. Returns true if found, false otherwise (both are valid).
  */
 function waitForPagination({ timeout = TIMEOUTS.medium } = {}) {
   const pagSel = '#pagination, [data-cy=pagination], .pagination, [data-testid="pagination"]';
 
   return cy.document({ timeout }).then(doc => {
-    const check = start => {
+    const deadline = Date.now() + timeout;
+
+    const check = () => {
       const pag = doc.querySelector(pagSel);
       if (pag) {
         return cy.wrap(pag).scrollIntoView().should('exist').then(() => true);
       }
 
-      if (Date.now() - start > timeout) {
+      if (Date.now() > deadline) {
         Cypress.log({
-          name: 'waitForPagination',
+          name:    'waitForPagination',
           message: `Not found after ${timeout}ms (acceptable — may be single page)`,
         });
         return false;
       }
 
-      return cy.wait(200, { log: false }).then(() => check(start));
+      return cy.wait(200, { log: false }).then(check);
     };
 
-    return check(Date.now());
+    return check();
   });
 }
 
 // ============================================================================
-// Expose helpers as window globals so test files can call them directly
+// Expose helpers globally so spec files can call them without import
 // ============================================================================
 
-window.BASE = BASE;
-window.TIMEOUTS = TIMEOUTS;
-window.loginAsTestUser = loginAsTestUser;
-window.loginAsAdmin = loginAsAdmin;
+window.BASE              = BASE;
+window.TIMEOUTS          = TIMEOUTS;
+window.loginAsTestUser   = loginAsTestUser;
+window.loginAsAdmin      = loginAsAdmin;
 window.waitForGridOrEmpty = waitForGridOrEmpty;
-window.waitForActions = waitForActions;
+window.waitForActions    = waitForActions;
 window.clickAddIfPresent = clickAddIfPresent;
 window.waitForPagination = waitForPagination;
 
-// Also available via namespaced object
 window.CypressHelpers = {
   BASE,
   TIMEOUTS,

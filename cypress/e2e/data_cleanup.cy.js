@@ -212,9 +212,9 @@ describe('OpenSparrow – Data Cleanup Preview', () => {
       cy.get('#dc-column option', { timeout: CypressHelpers.TIMEOUTS.medium })
         .should('have.length.greaterThan', 0);
       cy.get('#dc-find').type('e');
-      cy.wait(600);
+      cy.get('#dc-status', { timeout: CypressHelpers.TIMEOUTS.long }).invoke('text').should('not.be.empty');
       cy.get('#dc-find').clear();
-      cy.wait(600);
+      cy.get('#dc-status', { timeout: CypressHelpers.TIMEOUTS.long }).invoke('text').should('not.be.empty');
       cy.get('#dc-apply').should('be.disabled');
     });
   });

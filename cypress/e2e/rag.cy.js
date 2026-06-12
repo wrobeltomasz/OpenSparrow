@@ -37,7 +37,7 @@ describe('OpenSparrow – RAG: Page Structure', () => {
   });
 
   it('has tag filter sidebar', () => {
-    cy.get('#ragTagList').should('exist');
+    cy.get('#ragFileList').should('exist');
   });
 
   it('sidebar has a title', () => {
@@ -60,24 +60,23 @@ describe('OpenSparrow – RAG: Tag Loading', () => {
     cy.visit(`${BASE}/rag.php`);
   });
 
-  it('tag list transitions from loading state', () => {
-    cy.get('#ragTagList', { timeout: CypressHelpers.TIMEOUTS.long }).should($el => {
+  it('file list transitions from loading state', () => {
+    cy.get('#ragFileList', { timeout: CypressHelpers.TIMEOUTS.long }).should($el => {
       const hasLoading = $el.find('.rag-tag-loading').length > 0;
-      const hasTags    = $el.find('.rag-tag, button, a').length > 0;
-      const isEmpty    = $el.children().length === 0
-        || ($el.text().trim() === '' || !$el.find('.rag-tag-loading').length);
-      expect(hasTags || !hasLoading, 'tag list should finish loading').to.be.true;
+      const hasItems   = $el.find('.rag-tag-item, .rag-tag-empty, label').length > 0;
+      expect(hasItems || !hasLoading, 'file list should finish loading').to.be.true;
     });
   });
 
-  it('tag list shows tags or empty state', () => {
-    cy.get('#ragTagList', { timeout: CypressHelpers.TIMEOUTS.long }).then($el => {
-      const hasTags = $el.find('.rag-tag, [data-tag]').length > 0;
-      if (hasTags) {
-        cy.get('#ragTagList .rag-tag, #ragTagList [data-tag]')
-          .should('have.length.gte', 1);
+  it('file list shows documents or empty state', () => {
+    cy.get('#ragFileList', { timeout: CypressHelpers.TIMEOUTS.long }).then($el => {
+      const hasDocs  = $el.find('.rag-tag-item, label').length > 0;
+      const hasEmpty = $el.find('.rag-tag-empty').length > 0;
+      if (hasDocs) {
+        cy.wrap($el).find('.rag-tag-item, label').should('have.length.gte', 1);
       } else {
-        Cypress.log({ message: 'No tags configured in RAG knowledge base' });
+        Cypress.log({ message: 'No documents in RAG knowledge base — empty state shown' });
+        expect(hasDocs || hasEmpty, 'file list shows docs or empty state').to.be.true;
       }
     });
   });
@@ -107,19 +106,40 @@ describe('OpenSparrow – RAG: Send Interaction', () => {
     cy.get('#ragSendBtn').should('not.be.disabled');
   });
 
-  it('Send fires POST to api_rag.php when question typed', () => {
-    cy.intercept('POST', '**/api_rag.php**').as('ragQuery');
+  it('clicking Send with query but no file selected shows error in conversation', () => {
+    // When no document is checked the JS appends the user message + an error
+    // bubble into #ragConversation without calling the API.
     cy.get('#ragQuery').type('What is OpenSparrow?');
     cy.get('#ragSendBtn').click();
-    cy.wait('@ragQuery', { timeout: CypressHelpers.TIMEOUTS.long });
+    cy.get('#ragConversation', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .children()
+      .should('have.length.gte', 1);
   });
 
-  it('after send: message appears in conversation', () => {
-    cy.intercept('POST', '**/api_rag.php**').as('ragSend');
+  it('Send fires POST to api_rag.php when a document is checked', () => {
+    cy.intercept('POST', '**/api_rag.php**').as('ragQuery');
+
+    // Only run if at least one document is available to check
+    cy.get('#ragFileList', { timeout: CypressHelpers.TIMEOUTS.long }).then($list => {
+      const checkboxes = $list.find('input[type="checkbox"]');
+      if (checkboxes.length === 0) {
+        Cypress.log({ message: 'No RAG documents available — skipping API send test' });
+        return;
+      }
+      cy.wrap(checkboxes.first()).check();
+      cy.get('#ragQuery').type('What is OpenSparrow?');
+      cy.get('#ragSendBtn').click();
+      cy.wait('@ragQuery', { timeout: CypressHelpers.TIMEOUTS.long })
+        .its('request.body')
+        .should('have.property', 'query');
+    });
+  });
+
+  it('after send: user message appears in conversation', () => {
     cy.get('#ragQuery').type('Hello');
     cy.get('#ragSendBtn').click();
-    cy.wait('@ragSend', { timeout: CypressHelpers.TIMEOUTS.long });
-    cy.get('#ragConversation', { timeout: CypressHelpers.TIMEOUTS.long })
+    // Message always appears (either the user bubble, or the no-source error)
+    cy.get('#ragConversation', { timeout: CypressHelpers.TIMEOUTS.medium })
       .children()
       .should('have.length.gte', 1);
   });

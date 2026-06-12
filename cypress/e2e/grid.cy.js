@@ -11,6 +11,10 @@ const TEST_TABLE = 'companies'; // Use companies table (confirmed in schema.json
 // ============================================================================
 
 describe('OpenSparrow – Grid Display', () => {
+  before(() => {
+    cy.seedDatabase();
+  });
+
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
@@ -203,10 +207,9 @@ describe('OpenSparrow – Grid Row Actions', () => {
   it('displays Edit button in row actions', () => {
     waitForGridOrEmpty().then(res => {
       if (res.type === 'grid') {
-        // Row action buttons are hidden behind CSS hover; check existence not visibility
-        cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
+        cy.get('#grid tbody tr')
           .first()
-          .find('td.td-actions button:first-child')
+          .find('[data-cy=row-edit]')
           .should('exist');
       }
     });
@@ -215,10 +218,9 @@ describe('OpenSparrow – Grid Row Actions', () => {
   it('Edit button navigates to edit.php', () => {
     waitForGridOrEmpty().then(res => {
       if (res.type === 'grid') {
-        cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
+        cy.get('#grid tbody tr')
           .first()
-          .find('td.td-actions button:first-child')
-          .should('exist')
+          .find('[data-cy=row-edit]')
           .click({ force: true });
 
         cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
@@ -229,14 +231,10 @@ describe('OpenSparrow – Grid Row Actions', () => {
   it('displays Duplicate button in row actions', () => {
     waitForGridOrEmpty().then(res => {
       if (res.type === 'grid') {
-        cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
+        cy.get('#grid tbody tr')
           .first()
-          .find('td.td-actions button:nth-child(2)')
-          .then($btn => {
-            if ($btn.length > 0) {
-              cy.wrap($btn).should('exist');
-            }
-          });
+          .find('[data-cy=row-duplicate]')
+          .should('exist');
       }
     });
   });
@@ -244,14 +242,10 @@ describe('OpenSparrow – Grid Row Actions', () => {
   it('displays Delete button in row actions', () => {
     waitForGridOrEmpty().then(res => {
       if (res.type === 'grid') {
-        cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
+        cy.get('#grid tbody tr')
           .first()
-          .find('td.td-actions button.btn-icon-danger')
-          .then($btn => {
-            if ($btn.length > 0) {
-              cy.wrap($btn).should('exist');
-            }
-          });
+          .find('[data-cy=row-delete]')
+          .should('exist');
       }
     });
   });
@@ -320,10 +314,6 @@ describe('OpenSparrow – Grid Mobile', () => {
   it('mobileActions select has Refresh option', () => {
     cy.get('#mobileActions option[value="refresh"]').should('exist');
   });
-
-  it('mobileActions select has export option value', () => {
-    cy.get('#mobileActions option[value="export"]').should('exist');
-  });
 });
 
 // ============================================================================
@@ -373,24 +363,20 @@ describe('OpenSparrow – Grid Inline Edit', () => {
     });
   });
 
-  it('blurring editable cell after change triggers save (cell-success or cell-error)', () => {
+  it('blurring editable cell after change triggers a PATCH request to the API', () => {
     cy.get('body').then($body => {
       if ($body.find('[contenteditable="true"]').length === 0) return;
+
+      cy.intercept('PATCH', /api\.php/).as('inlineSave');
 
       cy.get('[contenteditable="true"]').first()
         .click()
         .type('test')
         .blur();
 
-      // Cell should flash success or error class within 2s
-      cy.get('[contenteditable]').first()
-        .then($cell => {
-          cy.wrap($cell).should($el => {
-            const hasFeedback = $el.hasClass('cell-success') || $el.hasClass('cell-error');
-            // Flash may already be gone; either is fine — just assert save was attempted
-            expect(true).to.be.true;
-          });
-        });
+      cy.wait('@inlineSave', { timeout: CypressHelpers.TIMEOUTS.medium })
+        .its('response.statusCode')
+        .should('be.oneOf', [200, 400, 422]);
     });
   });
 

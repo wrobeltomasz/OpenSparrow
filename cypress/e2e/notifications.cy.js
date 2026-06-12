@@ -49,22 +49,17 @@ describe('OpenSparrow – Notifications: Interaction', () => {
     cy.get('[data-cy=notifications], .notifications-wrapper').should('exist');
   });
 
-  it('clicking bell toggles dropdown visibility', () => {
-    cy.get('.notifications-wrapper').then($wrapper => {
-      const $dropdown = $wrapper.find('#notif-dropdown');
-      const wasVisible = $dropdown.is(':visible') || $dropdown.css('display') !== 'none';
-
-      cy.wrap($wrapper).click();
-
-      if (!wasVisible) {
-        cy.get('#notif-dropdown').should('be.visible');
-      } else {
-        cy.get('#notif-dropdown').should($el => {
-          // Toggle may hide it
-          expect(true).to.be.true;
-        });
+  it('clicking bell opens the dropdown when it is closed', () => {
+    // Ensure the dropdown is closed first, then verify clicking opens it
+    cy.get('#notif-dropdown').then($dropdown => {
+      if ($dropdown.is(':visible')) {
+        // Close it by clicking elsewhere, then reopen
+        cy.get('body').click(0, 0);
       }
     });
+
+    cy.get('.notifications-wrapper').click();
+    cy.get('#notif-dropdown').should('be.visible');
   });
 
   it('dropdown has a header section', () => {
@@ -114,10 +109,10 @@ describe('OpenSparrow – Notifications: API', () => {
     cy.wait('@notifShape', { timeout: CypressHelpers.TIMEOUTS.long })
       .its('response.body')
       .should(body => {
-        // Body should be array or object with notifications key
+        // Body must be an array of notifications, or an object carrying one
         const data = typeof body === 'string' ? JSON.parse(body) : body;
-        const hasNotifs = Array.isArray(data) || Array.isArray(data?.notifications);
-        expect(hasNotifs || typeof data === 'object', 'valid JSON response').to.be.true;
+        const list = Array.isArray(data) ? data : data?.notifications;
+        expect(list, 'response carries a notifications array').to.be.an('array');
       });
   });
 });

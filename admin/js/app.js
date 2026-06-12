@@ -108,6 +108,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabs.forEach(t => t.classList.remove('active'));
             e.currentTarget.classList.add('active');
             currentFile = e.currentTarget.dataset.file;
+            // Invalidate any in-flight async render (e.g. overview awaiting its
+            // stats fetch) so it cannot clobber the newly selected tab's DOM.
+            workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
             markClean();
             loadConfigFile(currentFile);
         });
