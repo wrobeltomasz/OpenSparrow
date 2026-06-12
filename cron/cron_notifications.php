@@ -45,13 +45,22 @@ if (empty($config['sources'])) {
 }
 
 print_log("Loaded calendar.json file. Number of sources: " . count($config['sources']) . "<br>");
+
+// Table → PG schema map from schema.json; tables without an explicit schema
+// (or missing from schema.json) fall back to the system schema.
+$schemaFile   = __DIR__ . '/../config/schema.json';
+$schemaTables = [];
+if (file_exists($schemaFile)) {
+    $schemaCfg    = json_decode(file_get_contents($schemaFile), true) ?? [];
+    $schemaTables = is_array($schemaCfg['tables'] ?? null) ? $schemaCfg['tables'] : [];
+}
 try {
     print_log("Connecting to the database...");
     $conn = db_connect();
     print_log("Database connected successfully.<br><hr>");
 
     // Purge login attempts older than 30 days to prevent unbounded table growth.
-    pg_query($conn, "DELETE FROM " . sys_table('login_attempts') . " WHERE created_at < NOW() - INTERVAL '30 days'");
+    pg_query($conn, "DELETE FROM " . sys_table('login_attempts') . " WHERE attempted_at < NOW() - INTERVAL '30 days'");
 
     $tCronLog = sys_table('users_notifications_log');
     $logRes = pg_query_params($conn, "INSERT INTO $tCronLog (triggered_by) VALUES ($1) RETURNING id", [$triggeredBy]);
@@ -79,10 +88,11 @@ try {
             . " in column <b>" . htmlspecialchars($dateCol, ENT_QUOTES, 'UTF-8') . "</b>)"
         );
     // Fetch records matching the date directly from the target table
+        $tableSchema = (string)($schemaTables[$table]['schema'] ?? sys_schema());
         $sql = sprintf(
             'SELECT id AS record_id, %s AS title FROM %s.%s WHERE DATE(%s) = $1',
             pg_ident($titleCol),
-            pg_ident(sys_schema()),
+            pg_ident($tableSchema),
             pg_ident($table),
             pg_ident($dateCol)
         );

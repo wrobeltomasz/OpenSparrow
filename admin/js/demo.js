@@ -1,12 +1,13 @@
 ﻿const DEMOS = {
     crm: {
         label:       'CRM',
-        description: 'Customer Relationship Management — companies, contacts, deals, and activities.',
+        description: 'Full-featured Customer Relationship Management — companies, contacts, deals, leads, products, quotes, invoices, and assets. 75 companies, 60 leads, and 28 deals with full history seeded.',
         schema:      'spw_crm',
-        tables:      ['companies', 'contacts', 'deals', 'activities'],
+        tables:      ['companies', 'contacts', 'deals', 'activities', 'leads', 'products', 'quotes', 'invoices', 'assets'],
         color:       '#64748B',
         icon:        'assets/icons/account_box.png',
         recommended: true,
+        features:    ['10 dashboard widgets', '5 calendar sources + reminders', '2 workflows', '5 read-only views', '3 automations', 'M2M products ↔ contacts', 'file attachments'],
     },
     wms: {
         label:       'WMS',
@@ -142,11 +143,13 @@ function renderInstallForm(workspaceEl) {
         card.className   = 'demo-card';
         card.dataset.type = key;
         if (def.recommended) card.classList.add('recommended');
+        const featureTags = (def.features ?? []).map(f => `<span class="demo-feature-tag">${f}</span>`).join('');
         card.innerHTML   = `
             ${def.recommended ? '<span class="demo-recommended-badge">Recommended</span>' : ''}
             <img class="demo-card-icon" src="../${def.icon}" alt="">
             <div class="demo-card-title">${def.label}</div>
             <div class="demo-card-desc">${def.description}</div>
+            ${featureTags ? `<div class="demo-card-features">${featureTags}</div>` : ''}
             <div class="demo-card-meta">
                 <code class="demo-schema-badge">${def.schema}</code>
                 <span class="demo-card-tables">${def.tables.join(' · ')}</span>
@@ -161,7 +164,7 @@ function renderInstallForm(workspaceEl) {
             confirmInput.value   = '';
             installBtn.disabled  = true;
             confirmSection.style.display = '';
-            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into schema.json, dashboard.json, calendar.json, workflows.json, and views.json. Existing table keys with the same names will be overwritten.`;
+            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into schema.json, dashboard.json, calendar.json, workflows.json, views.json, and automations.json. Existing entries with the same keys/IDs will be overwritten.`;
         });
 
         grid.appendChild(card);

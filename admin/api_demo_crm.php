@@ -786,5 +786,85 @@ function demo_def_crm($conn): array
             ['table' => 'deals',     'col1' => 'name', 'col2' => ''],
             ['table' => 'contacts',  'col1' => 'name', 'col2' => ''],
         ],
+        'automations' => [
+            [
+                'id'            => 'auto_demo_crm_001',
+                'name'          => 'Deal Won — Close Notification',
+                'enabled'       => true,
+                'trigger_table' => 'deals',
+                'trigger_event' => 'update',
+                'conditions'    => [
+                    'type'  => 'AND',
+                    'rules' => [
+                        ['field' => 'stage', 'operator' => '=', 'value' => 'Won'],
+                    ],
+                ],
+                'actions' => [
+                    [
+                        'type'     => 'notify',
+                        'user_ids' => ['{{ current_user.id }}'],
+                        'title'    => 'Deal won: {{ record.title }}',
+                        'link'     => 'edit.php?table=deals&id={{ record.id }}',
+                    ],
+                ],
+            ],
+            [
+                'id'            => 'auto_demo_crm_002',
+                'name'          => 'New Web Lead — Auto Contact',
+                'enabled'       => true,
+                'trigger_table' => 'leads',
+                'trigger_event' => 'create',
+                'conditions'    => [
+                    'type'  => 'AND',
+                    'rules' => [
+                        ['field' => 'source', 'operator' => '=', 'value' => 'Web'],
+                    ],
+                ],
+                'actions' => [
+                    [
+                        'type' => 'update',
+                        'set'  => ['status' => 'Contacted'],
+                    ],
+                ],
+            ],
+            [
+                'id'            => 'auto_demo_crm_003',
+                'name'          => 'Quote Accepted — Generate Draft Invoice',
+                'enabled'       => true,
+                'trigger_table' => 'quotes',
+                'trigger_event' => 'update',
+                'conditions'    => [
+                    'type'  => 'AND',
+                    'rules' => [
+                        ['field' => 'status', 'operator' => '=', 'value' => 'Accepted'],
+                        // [Invoiced] marker is stamped into notes by the update action
+                        // below, so this rule fires at most once per quote.
+                        ['field' => 'notes', 'operator' => 'not_contains', 'value' => '[Invoiced]'],
+                    ],
+                ],
+                'actions' => [
+                    [
+                        'type'         => 'create_record',
+                        'target_table' => 'invoices',
+                        'set'          => [
+                            'deal_id'        => '{{ record.deal_id }}',
+                            'quote_id'       => '{{ record.id }}',
+                            'invoice_number' => 'INV-AUTO-Q{{ record.id }}',
+                            'status'         => 'Draft',
+                            'issue_date'     => '{{ record.created_at }}',
+                            'due_date'       => '{{ record.valid_until }}',
+                            'amount_net'     => '{{ record.subtotal }}',
+                            'amount_tax'     => '{{ record.tax }}',
+                            'amount_total'   => '{{ record.total }}',
+                            'notes'          => 'Auto-generated from quote {{ record.quote_number }}',
+                        ],
+                    ],
+                    [
+                        'type' => 'update',
+                        'set'  => ['notes' => '{{ record.notes }} [Invoiced]'],
+                    ],
+                ],
+            ],
+        ],
     ];
 }

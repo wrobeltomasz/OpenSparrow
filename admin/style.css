@@ -867,6 +867,22 @@ body {
     color: var(--muted);
 }
 
+.demo-card-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 12px;
+}
+
+.demo-feature-tag {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--accent-light);
+    color: var(--accent);
+    white-space: nowrap;
+}
+
 .demo-card.recommended {
     border-color: #ffc300;
 }

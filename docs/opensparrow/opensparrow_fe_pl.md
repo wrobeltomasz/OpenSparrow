@@ -877,7 +877,7 @@ Jednym kliknięciem załaduj przykładowe dane do testowania:
 
 | System | Zawiera |
 |--------|---------|
-| CRM | Klienci, zamówienia, interakcje |
+| CRM | Firmy, kontakty, szanse sprzedaży (deals), leady, produkty (M2M), oferty, faktury, aktywa; 10 widgetów dashboardu, 5 źródeł kalendarza z przypomnieniami dla instalującego admina, 2 workflows, 5 widoków, 3 automatyzacje (m.in. oferta zaakceptowana → automatyczna faktura robocza) |
 | WMS | Magazyny, inwentarz, wysyłki |
 | Tasks | Projekty, zadania, przypisania |
 

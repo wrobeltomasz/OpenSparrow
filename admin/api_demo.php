@@ -117,7 +117,13 @@ if ($action === 'demo_install') {
         $calCfg['sources'] = array_values(
             array_filter($calCfg['sources'], fn($s) => !in_array($s['table'] ?? '', $demoTbls, true))
         );
+        // Subscribe the installing admin to due-date reminders so the cron
+        // notification worker has a recipient out of the box.
+        $installerUid = (int)($_SESSION['user_id'] ?? 0);
         foreach ($demoData['calendar_sources'] as $s) {
+            if ($installerUid > 0 && empty($s['notified_users'])) {
+                $s['notified_users'] = [$installerUid];
+            }
             $calCfg['sources'][] = $s;
         }
         file_put_contents($calPath, json_encode($calCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
@@ -224,17 +230,36 @@ if ($action === 'demo_install') {
             file_put_contents($menuPath, json_encode($menuCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         }
 
+        // automations.json — merge demo automation rules if provided
+        $automationIds = [];
+        if (!empty($demoData['automations']) && is_array($demoData['automations'])) {
+            $autoPath = $configDir . '/automations.json';
+            $rawAuto  = file_exists($autoPath) ? (json_decode(file_get_contents($autoPath), true) ?? []) : [];
+            $rules    = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
+            foreach ($demoData['automations'] as $rule) {
+                $rid = $rule['id'] ?? '';
+                if ($rid === '') {
+                    continue;
+                }
+                $automationIds[] = $rid;
+                $rules = array_values(array_filter($rules, fn($r) => ($r['id'] ?? '') !== $rid));
+                $rules[] = $rule;
+            }
+            file_put_contents($autoPath, json_encode(['automations' => $rules], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        }
+
         // demo_meta.json
         $meta = [
-            'type'         => $type,
-            'schema'       => $demoData['pg_schema'],
-            'installed_at' => date('Y-m-d H:i:s'),
-            'tables'       => array_keys($demoData['schema_tables']),
-            'widget_ids'   => array_column($demoData['dashboard_widgets'], 'id'),
-            'workflow_ids' => array_column($demoData['workflows'], 'id'),
-            'view_keys'    => array_keys($demoData['views']),
-            'view_names'   => $demoData['view_names'],
-            'menu_keys'    => $menuKeys,
+            'type'           => $type,
+            'schema'         => $demoData['pg_schema'],
+            'installed_at'   => date('Y-m-d H:i:s'),
+            'tables'         => array_keys($demoData['schema_tables']),
+            'widget_ids'     => array_column($demoData['dashboard_widgets'], 'id'),
+            'workflow_ids'   => array_column($demoData['workflows'], 'id'),
+            'view_keys'      => array_keys($demoData['views']),
+            'view_names'     => $demoData['view_names'],
+            'menu_keys'      => $menuKeys,
+            'automation_ids' => $automationIds,
         ];
         file_put_contents(
             $configDir . '/demo_meta.json',
@@ -408,6 +433,22 @@ if ($action === 'demo_uninstall') {
                 @unlink($menuPath);
             } else {
                 file_put_contents($menuPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            }
+        }
+
+        // Clean automations.json (delete if empty)
+        $autoPath = $configDir . '/automations.json';
+        if (file_exists($autoPath)) {
+            $rawAuto = json_decode(file_get_contents($autoPath), true) ?? [];
+            $rules   = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
+            $ids     = $meta['automation_ids'] ?? [];
+            if (!empty($ids)) {
+                $rules = array_values(array_filter($rules, fn($r) => !in_array($r['id'] ?? '', $ids, true)));
+                if (empty($rules)) {
+                    @unlink($autoPath);
+                } else {
+                    file_put_contents($autoPath, json_encode(['automations' => $rules], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                }
             }
         }
 
