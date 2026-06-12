@@ -19,6 +19,11 @@ on:
   schedule:
     - cron: '20 1 * * 2'
 
+# Cancel superseded PR analyses only — never a scheduled or push scan.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})

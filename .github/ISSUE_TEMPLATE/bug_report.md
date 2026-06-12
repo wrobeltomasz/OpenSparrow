@@ -20,3 +20,11 @@ A clear and concise description of what you expected to happen.
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
+
+**Environment**
+- OpenSparrow version (admin → System Health):
+- OS (Windows/Linux/macOS):
+- Browser:
+- PHP version:
+- PostgreSQL version:
+- Deployment (Docker / Apache / Nginx / shared hosting):

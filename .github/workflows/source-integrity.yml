@@ -1,0 +1,92 @@
+name: Source Integrity
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  encoding:
+    name: UTF-8 encoding check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Guards against the 9e48402-style incident: files re-saved as
+      # Windows-1250 turn emoji, em dashes and Polish diacritics into
+      # U+FFFD replacement characters.
+      - name: Check for U+FFFD replacement characters
+        run: |
+          set -euo pipefail
+          HITS=$(git ls-files '*.php' '*.js' '*.css' '*.json' '*.html' \
+            | xargs grep -ln $'\xef\xbf\xbd' || true)
+          if [ -n "$HITS" ]; then
+            echo "::error::U+FFFD replacement characters found — file was saved with a broken encoding:"
+            echo "$HITS"
+            exit 1
+          fi
+          echo "No replacement characters found."
+
+      # Warning-only for now: ~39 pre-existing files (admin/js/*.js,
+      # languages/*.json) still carry a BOM. Flip ::warning to ::error
+      # once they have been cleaned up.
+      - name: Check for UTF-8 BOM (warning only)
+        run: |
+          set -euo pipefail
+          FOUND=0
+          while IFS= read -r f; do
+            if [ "$(head -c 3 "$f")" = "$(printf '\xef\xbb\xbf')" ]; then
+              echo "::warning file=$f::UTF-8 BOM found — repo standard is UTF-8 without BOM"
+              FOUND=1
+            fi
+          done < <(git ls-files '*.php' '*.js' '*.css' '*.json' '*.html')
+          [ "$FOUND" -eq 0 ] && echo "No BOM found." || echo "BOM warnings emitted (non-blocking)."
+
+  version-sync:
+    name: Version files in sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The release process requires includes/version.php, includes/VERSION
+      # and config/migrations.json to agree (see CLAUDE.md "Version bumps").
+      - name: Verify version.php, VERSION and migrations.json agree
+        run: |
+          set -euo pipefail
+          PHP_VER=$(php -r "require 'includes/version.php'; echo OPENSPARROW_VERSION;")
+          TXT_VER=$(tr -d '[:space:]' < includes/VERSION)
+          echo "includes/version.php = ${PHP_VER}, includes/VERSION = ${TXT_VER}"
+          if [ "$PHP_VER" != "$TXT_VER" ]; then
+            echo "::error::includes/version.php (${PHP_VER}) and includes/VERSION (${TXT_VER}) disagree"
+            exit 1
+          fi
+          if ! jq -e --arg v "$PHP_VER" 'has($v)' config/migrations.json > /dev/null; then
+            echo "::error::config/migrations.json has no entry for version ${PHP_VER}"
+            exit 1
+          fi
+          echo "config/migrations.json contains an entry for ${PHP_VER}."
+
+      - name: Validate migrations.json structure
+        run: |
+          set -euo pipefail
+          if ! jq -e 'to_entries | all(.value
+                | has("removed_files") and has("deprecated_files")
+                  and has("removed_config_keys") and has("notes"))' \
+              config/migrations.json > /dev/null; then
+            echo "::error::config/migrations.json entry is missing one of: removed_files, deprecated_files, removed_config_keys, notes"
+            exit 1
+          fi
+          echo "All migration entries have the required keys."

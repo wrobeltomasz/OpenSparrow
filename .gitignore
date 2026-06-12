@@ -5,6 +5,8 @@ composer.lock
 # Logs
 *.log
 *.txt
+# RAG sample documents are distribution-tracked despite the global *.txt rule
+!docs/rag-samples/*.txt
 
 # Cache
 cache/
@@ -75,5 +77,3 @@ node_modules/
 # Dependencies — commit package*.json for reproducibility
 # package.json
 # package-lock.json
-
-docs/opensparrow/

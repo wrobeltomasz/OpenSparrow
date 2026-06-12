@@ -1,0 +1,37 @@
+CRM Deals — Sales Pipeline
+===========================
+A Deal represents a sales opportunity with a specific company and contact.
+
+FIELDS:
+- title: Name of the deal (e.g. "Enterprise License Q2")
+- value: Estimated revenue in currency units
+- stage: Current pipeline position
+- expected_close: Target closing date
+- company_id: Linked company
+- contact_id: Primary contact person
+
+DEAL STAGES (in order):
+1. Lead — Initial interest, not yet qualified
+2. Qualified — Confirmed need and budget
+3. Proposal — Quote or proposal has been prepared/sent
+4. Negotiation — Terms being finalized
+5. Won — Deal closed successfully
+6. Lost — Deal did not proceed
+
+HOW TO PROGRESS A DEAL:
+- Move stage manually in the grid or edit form
+- Log activities (calls, meetings, emails) to track communication
+- Attach quotes under the Quotes subtable
+- Once quote is accepted, generate an invoice
+
+RELATED RECORDS:
+- Activities: scheduled calls, meetings, tasks linked to this deal
+- Quotes: pricing offers for this deal
+- Invoices: payment requests for this deal
+
+PIPELINE VIEW:
+Go to Menu → Pipeline Summary for a count and value breakdown by stage.
+Deals dashboard widget "Deals by Stage" shows a bar chart.
+
+CALENDAR:
+Deals appear on calendar by expected_close date (yellow, 3 days advance warning).

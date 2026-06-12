@@ -18,9 +18,9 @@ docker compose pull
 docker compose up -d
 
 # 5. Initialize database (first run only)
-# Open http://localhost/admin
-# Default credentials: admin / admin (change immediately after first login)
-# System Health → Initialize System Tables
+# Open http://localhost/ — you are redirected to the setup wizard,
+# which creates the admin account with a randomly generated password
+# (shown once in the wizard — copy it, then change it after first login)
 
 # 6. Verify
 docker compose ps
@@ -109,8 +109,8 @@ tar -xzf storage_backup.tar.gz
 ## Upgrade
 
 ```bash
-# 1. Update image version in .env (release tags follow X.Y.Z format, no "v" prefix)
-DOCKER_IMAGE=wrobeltom/open-sparrow:2.7.0
+# 1. Update image version in .env (release tags follow X.Y format, no "v" prefix)
+DOCKER_IMAGE=wrobeltom/open-sparrow:2.8
 
 # 2. Pull & restart
 docker compose pull

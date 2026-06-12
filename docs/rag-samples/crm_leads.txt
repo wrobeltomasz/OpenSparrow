@@ -1,0 +1,37 @@
+CRM Leads — Prospect Management
+=================================
+A Lead is an incoming prospect who has not yet been converted into a Contact.
+
+FIELDS:
+- source: How the lead was acquired (Web, Referral, Cold Call, Event, Ads, Other)
+- first_name, last_name: Lead's name
+- email, phone: Contact details
+- company_name: Free text company (not yet linked to companies table)
+- status: Qualification stage
+- converted_contact_id: Filled when lead is converted to a Contact
+
+LEAD STATUSES:
+1. New — Just captured, no action taken
+2. Contacted — Initial outreach made
+3. Qualified — Need and budget confirmed, ready for conversion
+4. Lost — Did not proceed
+
+CONVERSION WORKFLOW (Convert Lead):
+Step 1: Capture Lead — fill lead record with source and contact info
+Step 2: Add Company — create company record for their organization
+Step 3: Add Contact — create contact linked to that company
+Step 4: Create Deal — open a deal for the opportunity
+Step 5: Send Quote — attach a quote to the deal
+
+LEAD SOURCES:
+- Web: form submission or inbound inquiry
+- Referral: introduced by existing client or partner
+- Cold Call: outbound sales call
+- Event: trade show, conference, or webinar
+- Ads: paid campaign (PPC, social)
+- Other: anything not classified above
+
+LEADS FUNNEL VIEW:
+Menu → Leads Funnel shows lead count per status.
+Dashboard widget "Lead Sources" shows a pie chart by source.
+Dashboard widget "Active Leads" counts all leads where status is not Lost.

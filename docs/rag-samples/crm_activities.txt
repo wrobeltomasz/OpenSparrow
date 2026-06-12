@@ -1,0 +1,35 @@
+CRM Activities — Communication Log
+=====================================
+Activities track every interaction with a contact or deal.
+
+FIELDS:
+- type: Kind of activity (Call, Email, Meeting, Task, Note)
+- notes: Description of what was discussed or done
+- scheduled_at: Date and time of the activity
+- done: Boolean — true = completed, false = pending
+- deal_id: Deal this activity relates to
+- contact_id: Contact involved
+
+ACTIVITY TYPES:
+- Call: Phone or video call
+- Email: Email sent or received
+- Meeting: In-person or virtual meeting
+- Task: Action item or follow-up to complete
+- Note: Free-text memo, no external action
+
+HOW TO USE:
+- Log activities after every client interaction
+- Set done = false for future scheduled actions (they appear on the Calendar)
+- Set done = true when completed
+- Activities appear in the Calendar view under the deal's expected date
+- Calendar color for activities: blue (#93c5fd)
+- Notification fires 1 day before scheduled_at
+
+CALENDAR:
+Activities with a scheduled_at date show on the Calendar.
+Clicking an activity in the calendar opens edit.php?table=activities&id={id}
+
+FILTERING:
+- Filter by deal_id to see all communications for one opportunity
+- Filter by done = false to see open tasks and upcoming actions
+- Dashboard widget "Activities Status" shows done vs pending as a pie chart

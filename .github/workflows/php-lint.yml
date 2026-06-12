@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -30,6 +34,10 @@ jobs:
       with:
         php-version: ${{ matrix.php-version }}
         tools: phpcs
+        coverage: none
+
+    - name: PHP syntax check
+      run: git ls-files '*.php' | xargs -n1 -P4 php -l > /dev/null
 
     - name: Run PHP CodeSniffer
       run: phpcs --standard=phpcs.xml --runtime-set ignore_warnings_on_exit 1

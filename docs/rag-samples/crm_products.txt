@@ -1,0 +1,37 @@
+CRM Products — Product Catalog
+================================
+Products define sellable items and services available to quote and sell.
+
+FIELDS:
+- sku: Unique product code (e.g. SW-CORE-01)
+- name: Product or service name
+- description: Detailed description
+- unit_price: Standard list price
+- category: Software / Service / Support / Hardware
+- active: true = sellable, false = discontinued or hidden
+
+PRODUCT CATEGORIES:
+- Software: Licenses, subscriptions (e.g. OpenSparrow Core License — 4,900)
+- Service: Implementation, training, consulting (e.g. Implementation Standard — 3,500)
+- Support: Annual support contracts (e.g. Priority Support 4h SLA — 4,800)
+- Hardware: Physical equipment (e.g. Barcode Scanner Bundle — 320)
+
+SKU NAMING CONVENTION:
+- SW-  Software licenses
+- SVC- Professional services
+- SUP- Support contracts
+- HW-  Hardware items
+
+PRODUCT–CONTACT RELATIONSHIP (Many-to-Many):
+Products can be linked to interested Contacts via the product_contacts junction table.
+This tracks which contacts have expressed interest in specific products.
+View and manage interested contacts from the product's edit page → "Interested Contacts" section.
+
+INACTIVE PRODUCTS:
+Products with active = false are deprecated. They remain in the database for historical
+quote and invoice references but should not be used in new quotes.
+
+TIPS:
+- Filter active = true to see only current catalog items
+- Use the description field to capture technical specs or service scope
+- Unit price is the standard list price — discounts are applied at quote level

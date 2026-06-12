@@ -1,0 +1,7 @@
+version: 2
+updates:
+  # Keep pinned action versions (actions/checkout@v4, docker/*@vN, ...) current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"

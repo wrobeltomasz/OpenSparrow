@@ -1,0 +1,43 @@
+CRM Assets — Asset Registry
+==============================
+Assets track company-owned physical and intangible property.
+
+FIELDS:
+- asset_tag: Unique barcode/inventory tag (e.g. AST-00001)
+- name: Asset description
+- category: Hardware / Vehicle / Real Estate / Equipment / Software License / Other
+- purchase_date: Acquisition date
+- purchase_price: Original cost
+- current_value: Book value after depreciation
+- depreciation_method: Straight Line / Declining / None
+- assigned_contact_id: Responsible person (optional)
+- location: Physical or logical location
+- warranty_end: Warranty expiry date
+- next_inspection_date: Scheduled maintenance/inspection
+- status: Active / Maintenance / Retired / Lost
+- notes: Condition notes, insurance claims, history
+
+DEPRECIATION METHODS:
+- Straight Line: equal amount reduced per year
+- Declining: higher depreciation early, lower later (common for vehicles, equipment)
+- None: no depreciation applied (e.g. real estate valued at market)
+
+ASSET STATUSES:
+- Active: in use and operational
+- Maintenance: under repair or scheduled service
+- Retired: decommissioned, no longer in use
+- Lost: missing, theft or loss reported (file insurance claim in notes)
+
+CALENDAR:
+- warranty_end dates appear on calendar (grey, 14 days advance warning)
+- Use next_inspection_date to schedule physical reviews
+
+VIEWS:
+- Menu → Assets Summary: count and total book value by category
+- Dashboard widget "Active Assets" counts all records with status = Active
+
+TIPS:
+- Filter warranty_end < today to find expired warranties needing renewal
+- Filter status = Maintenance to monitor equipment under repair
+- Record insurance claim reference numbers in the notes field for Lost assets
+- Use assigned_contact_id to track who is responsible for each asset

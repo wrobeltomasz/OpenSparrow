@@ -1,0 +1,34 @@
+CRM Demo — OpenSparrow
+======================
+Customer Relationship Management system for tracking companies, contacts, deals, and sales activities.
+
+TABLES:
+- companies: Client organizations. Fields: name, industry, website, phone, email.
+- contacts: Individual people at companies. Fields: first_name, last_name, email, phone, position, company_id.
+- deals: Sales opportunities. Fields: title, value, stage, expected_close, company_id, contact_id.
+- activities: Actions on deals (calls, meetings, emails). Fields: type, notes, scheduled_at, done.
+- leads: Incoming prospects not yet converted. Fields: source, first_name, last_name, company_name, status.
+- products: Catalog of sellable items and services. Fields: sku, name, unit_price, category, active.
+- quotes: Pricing offers sent to clients. Fields: quote_number, status, subtotal, tax, total, valid_until.
+- invoices: Payment requests. Fields: invoice_number, status, issue_date, due_date, amount_total, paid_at.
+- assets: Company-owned physical and intangible assets. Fields: asset_tag, name, category, current_value, status.
+
+RELATIONSHIPS:
+- Contact belongs to Company (company_id)
+- Deal belongs to Company and Contact
+- Activity belongs to Deal and Contact
+- Quote belongs to Deal
+- Invoice belongs to Deal and optionally a Quote
+- Asset can be assigned to a Contact (assigned_contact_id)
+- Product to Contact is many-to-many via product_contacts table
+
+WORKFLOWS:
+1. New CRM Deal: Add Company → Add Contact → Create Deal → Log Activity
+2. Convert Lead: Capture Lead → Add Company → Add Contact → Create Deal → Send Quote
+
+VIEWS (read-only summaries):
+- Pipeline Summary: deal count and value by stage
+- Leads Funnel: lead count by status
+- Revenue Summary: invoice count and total by status
+- Assets Summary: asset count and book value by category
+- Revenue by Period: invoices drilled down by year → month

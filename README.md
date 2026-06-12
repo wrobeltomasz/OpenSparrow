@@ -32,7 +32,7 @@ OpenSparrow is a JSON schema-driven platform for building internal systems. Tabl
 > Drop the files, point to PostgreSQL, open `/admin`. That's it.  
 > Composer is used **dev-only** for the PHPUnit test suite (`composer install` is never required to run the application).
 
-Project webiste: https://opensparrow.org
+Project website: https://opensparrow.org
 
 Demo: https://demo.opensparrow.org
 
@@ -59,6 +59,8 @@ Demo: https://demo.opensparrow.org
 - **File management** — per-record attachments with tagging and search, configurable via the admin panel.
 - **WCAG 2.1 focus** — accessibility-oriented UI.
 - **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Knowledge Base** tab. No cloud API required.
+- **Automations** — rule-based triggers on record create/update/delete with template variables, configured from the admin panel.
+- **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab.
 - *(Planned)* REST API and webhook engine for n8n / Make / custom integrations.
 
 ---
@@ -70,7 +72,7 @@ Demo: https://demo.opensparrow.org
 - **`admin/`** — management panel (schema editor, dashboards, calendar, workflows, users, files, system health).
 - **`assets/`** — static frontend resources (`css/`, `js/`, `icons/`, `img/`).
 - **`includes/`** — backend helpers. `config.php` centralizes env-driven configuration; `db.php` centralizes PostgreSQL access; `api_helpers.php` holds request/response helpers; `autoload.php` registers the PSR-4 class loader; `bootstrap.php` wires all OOP dependencies.
-- **`config/`** — runtime JSON configuration files (`database.json`, `schema.json`, `menu.json`, `settings.json`, `dashboard.json`, `calendar.json`, `workflows.json`, `files.json`, `security.json`, `views.json`). All JSON in this folder is gitignored and web-denied via `.htaccess`.
+- **`config/`** — runtime JSON configuration files (`database.json`, `schema.json`, `menu.json`, `settings.json`, `dashboard.json`, `calendar.json`, `workflows.json`, `automations.json`, `files.json`, `rag.json`, `security.json`, `views.json`). All JSON in this folder is gitignored and web-denied via `.htaccess` — except `migrations.json`, the distribution-tracked release manifest.
 - **`cron/`** — scheduled workers (e.g. `cron_notifications.php`).
 - **`templates/`** — layout wrappers (`template.php`).
 - **`storage/files/`** — user-uploaded files.
@@ -182,13 +184,23 @@ Available browsers: `electron` (default, headless), `edge`, `chrome`. If Chrome 
 
 ### Test coverage
 
-| Suite | File | Tests | Coverage |
-|-------|------|-------|----------|
-| **Login & Auth** | `cypress/e2e/login.cy.js` | 16 | Dashboard display, sidebar, grid, search, Add button, logout, mobile |
-| **Admin Panel** | `cypress/e2e/admin.cy.js` | 35 | Schema/dashboard/calendar tabs, config export/import, user management, access control |
-| **Grid Operations** | `cypress/e2e/grid.cy.js` | 26 | Grid display, search/filter, export, pagination, row actions (edit, duplicate, delete), mobile |
-| **CRUD Forms** | `cypress/e2e/crud.cy.js` | 29 | Create form, edit form, delete, validation, required fields, enum/pattern fields, subtables |
-| **Total** | — | **106** | Full end-to-end application flow |
+| Suite | Covers |
+|-------|--------|
+| `login.cy.js` | Authentication, dashboard display, sidebar, logout, mobile |
+| `admin.cy.js` | Schema/dashboard/calendar tabs, config export/import, user management, access control |
+| `grid.cy.js` | Grid display, search/filter, export, pagination, row actions, mobile |
+| `crud.cy.js` | Create/edit forms, delete, validation, required/enum/pattern fields, subtables |
+| `calendar.cy.js` | Calendar view, event navigation, drag-and-drop |
+| `dashboard.cy.js` | Widget rendering and aggregation display |
+| `keyboard_shortcuts.cy.js` | Arrow navigation, selection, clipboard, help modal |
+| `mass_edit.cy.js` | Mass edit/delete/duplicate operations |
+| `data_cleanup.cy.js` | Find & replace with accent support |
+| `files.cy.js` | File attachments, tagging, search |
+| `comments.cy.js` | Record comment threads |
+| `notifications.cy.js` | Notification bell and dropdown |
+| `views.cy.js` | Saved grid views |
+| `workflows.cy.js` | Multi-step workflow wizards |
+| `rag.cy.js` | Knowledge-base chat interface |
 
 ### Shared test helpers
 
@@ -261,21 +273,21 @@ If you are deploying to shared hosting or any server without Docker, download th
 
 Each release ZIP is built automatically by GitHub Actions and includes:
 - All PHP, JS, and CSS files ready to serve
-- `includes/VERSION` stamped with the release tag (e.g. `2.0.0`) — used by the admin System Health panel to display the current version
+- `includes/VERSION` stamped with the release tag (e.g. `2.8`) — used by the admin System Health panel to display the current version
 - `config/database.json.example` — template for PostgreSQL connection configuration (see step 3 below)
 - An empty `storage/files/` directory placeholder
 
 **Steps:**
 
-1. Download `opensparrow-X.Y.Z.zip` from the Releases page.
+1. Download `opensparrow-X.Y.zip` from the Releases page.
 2. Extract and upload the contents to your server root (e.g. `public_html/`) via FTP.
 3. Make the `config/` and `storage/files/` directories writable by the web server (typically `chmod 755` or `775`, depending on your host).
 4. Open your site root in a browser — you will be automatically redirected to `/setup.php`. The **setup wizard** guides you through:
    - Testing your PostgreSQL connection
    - Choosing a schema name (default: `app`)
-   - Initializing all system tables and creating the default admin account (`admin` / `admin`)
-5. Go to `/login`, sign in as `admin` / `admin`. You are redirected to `/admin` automatically.
-6. Go to **System → Users → Change pwd** and set a strong password immediately.
+   - Initializing all system tables and creating the `admin` account with a **randomly generated password shown once in the wizard** — copy it before leaving the page
+5. Go to `/login`, sign in as `admin` with the generated password. You are redirected to `/admin` automatically.
+6. Go to **System → Users → Change pwd** and set your own strong password.
 
 > **Note:** The ZIP contains no pre-configured JSON files except `database.json.example`. Your `config/*.json` configuration files are created on first setup and are never overwritten during updates — existing configuration is always preserved.
 
@@ -364,10 +376,10 @@ The wizard walks you through four steps:
 
 1. **Welcome** — intro and requirements overview.
 2. **Database Connection** — enter host, port, database name, username, and password. Click **Test Connection** to verify before proceeding.
-3. **Schema** — choose the PostgreSQL schema name (default: `app`). Optionally tick *Create schema if not exists*. The default admin account (`admin` / `admin`) is shown here for reference.
-4. **Review & Initialize** — confirm settings and click **Initialize System Tables**. The wizard creates all `spw_*` tables, seeds the admin account, and writes `config/database.json`.
+3. **Schema** — choose the PostgreSQL schema name (default: `app`). Optionally tick *Create schema if not exists*.
+4. **Review & Initialize** — confirm settings and click **Initialize System Tables**. The wizard creates all `spw_*` tables, seeds the `admin` account with a **randomly generated password displayed once on this screen**, and writes `config/database.json`.
 
-After initialization you are redirected to `/login`. Sign in as `admin` / `admin`, then immediately go to **System → Users → Change pwd** and set a strong password.
+After initialization you are redirected to `/login`. Sign in as `admin` with the password shown in the wizard, then go to **System → Users → Change pwd** and set your own password.
 
 > Once `config/database.json` exists, the setup wizard is permanently inaccessible — all entry points redirect to `/login` instead.
 
@@ -386,7 +398,7 @@ All accounts are stored in `spw_users` and managed from **System → Users**. Th
 
 ### 8. Run without Docker
 
-*Skip this if you used Docker in step 2.*
+*Skip this if you used Docker in step 3.*
 
 **Option A** — serve via Apache/Nginx and open:
 ```
@@ -403,7 +415,7 @@ Open **http://localhost:8000/admin**.
 
 ## Updating via FTP
 
-1. Go to the [Releases page](https://github.com/wrobeltomasz/open-sparrow/releases/latest) and download the latest `opensparrow-X.Y.Z.zip`.
+1. Go to the [Releases page](https://github.com/wrobeltomasz/open-sparrow/releases/latest) and download the latest `opensparrow-X.Y.zip`.
 2. **Before uploading** — export your configuration from the admin panel: **Configuration → Export config files**. Keep this backup safe.
 3. Extract the ZIP and upload all files to your server via FTP, overwriting existing files.
 4. Your `config/*.json` files are **not included** in the ZIP, so your database connection, schema, dashboards, and all other settings are preserved automatically.
@@ -433,6 +445,6 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and sign the 
 
 ## License
 
-Copyright © 2024 OpenSparrow Contributors. Licensed under the **GNU Lesser General Public License v3.0 (LGPL v3)**.
+Copyright © 2024–2026 OpenSparrow Contributors. Licensed under the **GNU Lesser General Public License v3.0 (LGPL v3)**.
 
 You may use OpenSparrow in open-source and closed-source commercial projects. Modifications to core OpenSparrow files must remain under the same license. The LGPL v3 is a set of additional permissions on top of the GPL v3: see [COPYING.LESSER](COPYING.LESSER) for the LGPL terms and [COPYING](COPYING) for the base GPL v3.

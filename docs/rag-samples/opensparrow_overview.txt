@@ -1,0 +1,163 @@
+OpenSparrow — Platform Overview
+=================================
+OpenSparrow is an open-source, schema-driven web platform that generates full CRUD applications,
+dashboards, calendars, and workflows from configuration — no custom code required per table.
+
+Stack: PHP 8.1+, PostgreSQL 14+, vanilla JavaScript (ES6+). No npm, no composer required.
+License: LGPL v3. Self-hosted, works fully offline.
+
+
+CORE CONCEPTS
+-------------
+Everything is driven by schema.json configuration. You define tables, columns, and relationships
+in the Admin panel — OpenSparrow generates the grid, edit form, search, filters, and API
+automatically.
+
+
+DATA MANAGEMENT
+---------------
+Grid (index.php?table=X):
+  - Paginated, sortable, filterable data table for any configured table
+  - Inline editing, duplicate record, delete
+  - Column search and advanced filter bar
+  - Keyboard navigation: arrow keys, Enter to edit, Ctrl+F to search
+  - Export selected rows to CSV
+  - Mass Edit: select multiple rows, bulk-update a field across all selected
+  - Quick Data Cleanup: find-and-replace across a column, regex support
+
+Edit form (edit.php?table=X&id=Y):
+  - Full record editor with all configured columns
+  - Subtables: related records displayed inline (e.g. Contacts under a Company)
+  - File attachments per record
+  - Comments thread per record
+  - Record ownership tracking
+
+Schema editor (Admin → Schema):
+  - Add/rename/delete tables and columns
+  - Configure column types: text, number, date, timestamp, boolean, enum, file, relation
+  - Set display name, required, show in grid, default sort, initial load limit
+  - Define foreign key relationships and display columns
+  - Configure subtables shown inside edit forms
+  - Many-to-many (M2M) relationships via junction tables
+
+
+DASHBOARD
+---------
+Configurable widget grid (Admin → Dashboard).
+Widget types:
+  - Stat card: single aggregate value (count, sum, avg, min, max) with optional icon and color
+  - Bar chart: group-by column with count
+  - Pie chart: distribution by category
+  - Table widget: recent records list
+
+Widgets support conditions/filters. Dashboard visible at dashboard.php.
+
+
+CALENDAR
+--------
+Events from any date/timestamp column shown on a monthly calendar (calendar.php).
+Supports multiple sources with different colors and advance notification days.
+Clicking an event opens the related record in edit.php.
+Notification system: sends email/in-app alerts before events based on notify_before_days setting.
+
+
+WORKFLOWS
+---------
+Guided multi-step forms for entering related records in sequence (workflows.php).
+Example: Company → Contact → Deal → Quote in one guided flow.
+Each step links to the previous via a foreign key.
+Steps can allow multiple records (e.g. add several contacts for one company).
+
+
+KNOWLEDGE BASE (RAG)
+---------------------
+Local AI assistant powered by Ollama (100% offline, no external APIs).
+Documents uploaded as .txt files with tags in Admin → RAG Documents.
+Users ask questions at rag.php or via the "Ask AI" panel (avatar menu → Ask AI).
+Retrieval uses PostgreSQL full-text search to find relevant documents.
+Tag filtering narrows which documents are searched.
+Agent panel auto-selects tag matching current table name (e.g. on ?table=deals → tag "deals").
+
+
+FILES
+-----
+File upload per record (files.php, also accessible from edit form).
+Supported types configured in admin. Thumbnails generated for images.
+Files stored in storage/files/, accessible via api_files.php.
+
+
+USERS & ROLES
+-------------
+Three roles:
+  - admin: full access including Admin panel
+  - editor: can read and write data, no Admin panel
+  - viewer: read-only access
+
+User management in Admin → Users.
+Avatar selection (24 built-in avatars).
+Password change from user menu (top-right avatar).
+
+
+NOTIFICATIONS
+-------------
+In-app notification bell in header. Triggered by calendar events (cron job).
+Admin → Cron Notifications: manual run, history, stats, log cleanup.
+Cron worker: cron/notifications.php — run via system cron (e.g. every 15 min).
+
+
+ADMIN PANEL (admin/index.php)
+-----------------------------
+Sections:
+  Data Management: Schema, Dashboard, Calendar, Files, Menu Preview, Add Table, CSV Import,
+                   Schema Map (ERD), Views
+  Workflows:       Workflow Manager
+  Knowledge Base:  RAG Documents (upload .txt files, configure Ollama, test queries)
+  System:          Database (initialize tables), Users, Health Check, Backup Tables,
+                   Settings, Audit & Snapshots, Migrations, Performance, Cron Notifications,
+                   M2M Builder, Demo Systems
+  Configuration:   Export Config, Import Config, Run Notifications Cron
+
+
+VIEWS
+-----
+Read-only PostgreSQL views accessible as grid pages.
+Configured in Admin → Views. Support drill-down by group_by levels.
+Example: Revenue by Period drills Year → Month → Invoice.
+
+
+CSV IMPORT
+----------
+Admin → CSV Import: upload a CSV, map columns to table fields, preview, import in batches.
+Tracks import history in spw_csv_import_log.
+
+
+DEMO SYSTEMS
+------------
+Admin → Demo Systems: install a pre-built demo to explore the platform.
+Available demos:
+  - CRM (recommended): companies, contacts, deals, activities, leads, products, quotes, invoices, assets
+  - WMS: warehouses, products, stock, movements
+  - Task Management: projects, tasks, time_logs
+Each demo installs its own PostgreSQL schema, sample data, dashboard widgets, calendar sources,
+workflows, and views.
+
+
+SETUP
+-----
+1. Copy config/database.json.example to config/database.json, fill in DB credentials.
+2. Open /admin — click System → Database → Initialize System Tables.
+3. Log in as admin with the randomly generated password shown once in the setup wizard — change it after first login.
+Docker: docker compose up -d --build → http://localhost:8080
+
+
+CONFIGURATION FILES (config/*.json)
+------------------------------------
+  database.json   — DB connection (host, port, dbname, user, password, schema)
+  schema.json     — table/column definitions
+  menu.json       — sidebar navigation structure
+  settings.json   — app name, locale, features toggles
+  dashboard.json  — widget layout
+  calendar.json   — calendar event sources
+  workflows.json  — workflow step definitions
+  views.json      — view definitions
+  rag.json        — Ollama URL, model, max context files, file size limit, timeout

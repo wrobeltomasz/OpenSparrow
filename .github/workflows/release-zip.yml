@@ -4,13 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. 1.0.2)'
+        description: 'Release tag in X.Y format (e.g. 2.8)'
         required: true
   push:
     tags: ['*']
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   build-zip:
@@ -26,6 +29,17 @@ jobs:
           echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v4
+
+      - name: Verify release tag matches OPENSPARROW_VERSION
+        # Enforces the version-bump checklist: a release tag must equal the
+        # semver committed in includes/version.php (tags are bare, e.g. "2.8").
+        run: |
+          set -euo pipefail
+          PHP_VER=$(php -r "require 'includes/version.php'; echo OPENSPARROW_VERSION;")
+          if [ "$PHP_VER" != "$RELEASE_TAG" ]; then
+            echo "::error::Release tag '${RELEASE_TAG}' does not match OPENSPARROW_VERSION '${PHP_VER}' in includes/version.php. Bump the version files before tagging."
+            exit 1
+          fi
 
       - name: Stamp VERSION file with release tag
         run: |

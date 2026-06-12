@@ -21,16 +21,20 @@ Click the **Fork** button on GitHub and clone your fork:
 
 ### 3. Run the project locally
 
+**Option A — Docker (recommended):**
+
+    docker compose up -d --build
+
+Open http://localhost:8080 — on first run you are redirected to the setup wizard.
+
+**Option B — your own web server:**
+
 - Place the project in your server directory  
-- Open in browser:  
-  http://localhost/open-sparrow/admin  
+- Open http://localhost/open-sparrow/ in a browser  
 
-- Login with default credentials:
-  - Username: admin  
-  - Password: admin  
-
-- Configure database in Database tab  
-- Initialize system via System Health → Initialize System Tables  
+In both cases the **setup wizard** (`setup.php`) walks you through the database
+connection and creates the `admin` account with a randomly generated password
+shown once in the wizard — copy it before leaving the page.
 
 ---
 
@@ -81,6 +85,8 @@ Use clear and descriptive messages:
 - Ensure the project runs without errors  
 - Test your changes manually  
 - Avoid breaking existing features  
+- Run the linter on modified PHP files: `php phpcs.phar --standard=phpcs.xml`  
+- Run the unit tests: `composer install && vendor/bin/phpunit`  
 
 ### 5. Submit PR
 
@@ -95,21 +101,22 @@ We aim to keep the code clean and consistent.
 
 ### PHP
 
-- Follow standard PHP conventions  
+- **PSR-12**, enforced via `phpcs.xml` — check with `php phpcs.phar --standard=phpcs.xml`, auto-fix with `php phpcbf.phar`  
 - Use meaningful variable and function names  
 - Keep functions small and focused  
 
 ### JavaScript (Vanilla JS)
 
 - Use modern ES6+ syntax where possible  
+- **No external libraries or CDN resources** — the project must work fully offline (CI enforces this)  
 - Keep code modular and readable  
 
 ### Formatting
 
-If linters are introduced (e.g., PHP_CodeSniffer, Prettier), please follow them.  
-Until then, match the existing code style in the project.  
+CI runs PHP_CodeSniffer (PSR-12), PHPUnit, and a vanilla-code check on every PR.  
+Match the existing code style in the project.  
 
-## Contributing
+## Contributor License Agreement
 
 Before your PR can be merged, you must sign our [Contributor License Agreement](CLA.md). 
 This is handled automatically via a bot comment in your PR. 

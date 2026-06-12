@@ -1,0 +1,52 @@
+CRM Quotes and Invoices
+=========================
+
+QUOTES
+------
+A Quote is a priced offer sent to a client for a specific Deal.
+
+Fields:
+- quote_number: Unique identifier (e.g. Q-2026-001)
+- status: Draft → Sent → Accepted / Rejected / Expired
+- valid_until: Offer expiry date
+- subtotal: Sum before tax
+- tax: Tax amount (e.g. 23% VAT)
+- total: Grand total
+- notes: Internal or client-facing comments
+
+Quote lifecycle:
+1. Draft — being prepared
+2. Sent — delivered to client
+3. Accepted — client agreed (triggers invoice creation)
+4. Rejected — client declined
+5. Expired — valid_until date passed without response
+
+Calendar: Quotes appear on calendar by valid_until date (purple, 7 days advance warning).
+Dashboard widget "Quotes by Status" shows a bar chart.
+
+INVOICES
+--------
+An Invoice is a payment request. Can be created from a Quote or directly from a Deal.
+
+Fields:
+- invoice_number: Unique identifier (e.g. INV-2026-005)
+- status: Draft → Sent → Paid / Overdue / Cancelled
+- issue_date: Date invoice was issued
+- due_date: Payment deadline
+- amount_net: Net amount before tax
+- amount_tax: Tax charged
+- amount_total: Total payable
+- paid_at: Timestamp of payment (NULL if unpaid)
+- notes: Internal notes
+
+Invoice statuses:
+- Draft: not yet sent
+- Sent: delivered, awaiting payment
+- Paid: payment received (paid_at is set)
+- Overdue: due_date passed without payment
+- Cancelled: voided
+
+Calendar: Invoices appear on calendar by due_date (red, 7 days advance warning).
+Dashboard: "Outstanding Invoices" widget counts Sent + Overdue invoices.
+Revenue Summary view shows invoice count and total by status.
+Revenue by Period view drills down by year → month with totals.
