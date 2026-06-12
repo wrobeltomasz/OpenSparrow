@@ -52,6 +52,7 @@
         "drilldown_no_records": "No related records.",
         "drilldown_no_title": "No title",
         "drilldown_error": "Error fetching data.",
+        "drilldown_count": "{count} linked",
         "load_more": "Load more",
         "total_in_db": "total in table",
         "truncated_notice": "Showing first {loaded} of {total} records. Use search or \"Load more\" ({remaining} remaining)."

@@ -52,6 +52,7 @@
                  "drilldown_no_records":  "Aucun enregistrement lié.",
                  "drilldown_no_title":  "Sans titre",
                  "drilldown_error":  "Erreur lors de la récupération des données.",
+                 "drilldown_count":  "{count} lié(s)",
                  "load_more":  "Charger plus",
                  "total_in_db":  "total dans la table",
                  "truncated_notice":  "Affichage des {loaded} premiers sur {total} enregistrements. Utilisez la recherche ou \"Charger plus\" ({remaining} restants)."

@@ -6,6 +6,7 @@ import { fetchTableData, preloadForeignKeys } from './api.js';
 import { renderThead } from './header/render.js';
 import { renderTbody } from './body/render.js';
 import { loadCommentCounts } from './comments/counts.js';
+import { loadSubtableCounts } from './body/subtable-counts.js';
 import { initPreviewPopup, clearPreviewCache } from './comments/preview-popup.js';
 import { loadM2mColumns, clearM2mStore } from './m2m/loader.js';
 import { initM2mPopup } from './m2m/popup.js';
@@ -144,6 +145,7 @@ export async function renderGrid(schema) {
     _setupPagination(schema);
     debugLog('Grid rendered', { rows: pageRows.length });
     loadCommentCounts(pageRows);
+    loadSubtableCounts(pageRows, schema);
     loadM2mColumns(pageRows, schema);
 }
 

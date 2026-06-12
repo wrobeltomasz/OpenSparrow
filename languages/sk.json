@@ -52,6 +52,7 @@
                  "drilldown_no_records":  "Žiadne pridružené záznamy.",
                  "drilldown_no_title":  "Bez názvu",
                  "drilldown_error":  "Chyba pri načítaní dát.",
+                 "drilldown_count":  "{count} prepojených",
                  "load_more":  "Načítať viac",
                  "total_in_db":  "celkom v tabuľke",
                  "truncated_notice":  "Zobrazených prvých {loaded} z {total} záznamov. Použite vyhľadávanie alebo \"Načítať viac\" (zostáva {remaining})."

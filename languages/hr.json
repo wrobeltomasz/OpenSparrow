@@ -52,6 +52,7 @@
                  "drilldown_no_records":  "Nema povezanih zapisa.",
                  "drilldown_no_title":  "Bez naslova",
                  "drilldown_error":  "Pogreška pri dohvaćanju podataka.",
+                 "drilldown_count":  "{count} povezanih",
                  "load_more":  "Učitaj više",
                  "total_in_db":  "ukupno u tablici",
                  "truncated_notice":  "Prikazano prvih {loaded} od {total} zapisa. Koristite pretragu ili \"Učitaj više\" (preostalo {remaining})."

@@ -36,6 +36,7 @@ export function buildExpandButton(row, schema, tr) {
         }
     });
 
+    tdExpand.dataset.expandRowId = String(row.id);
     tdExpand.appendChild(btn);
     return tdExpand;
 }

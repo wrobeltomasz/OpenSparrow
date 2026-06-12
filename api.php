@@ -599,6 +599,71 @@ try {
         exit;
     }
 
+    // GET: SUBTABLE COUNTS — total linked records per row across all configured subtables
+    if ($method === 'GET' && ($_GET['api'] ?? '') === 'subtable_counts') {
+        $table     = $_GET['table'] ?? '';
+        $tableCfg  = safe_table($schema, $table);
+        $subtables = $tableCfg['subtables'] ?? [];
+
+        if (empty($subtables)) {
+            exit(json_encode(['success' => true, 'counts' => (object)[]]));
+        }
+
+        $rawIds = $_GET['ids'] ?? '';
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', explode(',', $rawIds)),
+            fn($id) => $id > 0
+        )));
+
+        if (empty($ids)) {
+            exit(json_encode(['success' => true, 'counts' => (object)[]]));
+        }
+
+        $idCol  = id_column();
+        $counts = array_fill_keys(array_map('strval', $ids), 0);
+
+        foreach ($subtables as $sub) {
+            $subTable = $sub['table'] ?? '';
+            $fkCol    = $sub['foreign_key'] ?? '';
+            if ($subTable === '' || $fkCol === '') {
+                continue;
+            }
+            if (!isset($schema['tables'][$subTable])) {
+                continue;
+            }
+            $subCfg  = $schema['tables'][$subTable];
+            $allowed = array_merge([$idCol], array_keys($subCfg['columns'] ?? []));
+            if (!in_array($fkCol, $allowed, true)) {
+                continue;
+            }
+            $subSchema    = $subCfg['schema'] ?? 'public';
+            $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), range(0, count($ids) - 1)));
+            $sql = sprintf(
+                'SELECT %s AS fk_val, COUNT(*) AS cnt FROM %s.%s WHERE %s IN (%s) GROUP BY %s',
+                pg_ident($fkCol),
+                pg_ident($subSchema),
+                pg_ident($subTable),
+                pg_ident($fkCol),
+                $placeholders,
+                pg_ident($fkCol)
+            );
+            $res = @pg_query_params($conn, $sql, $ids);
+            if (!$res) {
+                continue;
+            }
+            while ($r = pg_fetch_assoc($res)) {
+                $key = (string)$r['fk_val'];
+                if (isset($counts[$key])) {
+                    $counts[$key] += (int)$r['cnt'];
+                }
+            }
+            pg_free_result($res);
+        }
+
+        $nonZero = array_filter($counts, fn($v) => $v > 0);
+        exit(json_encode(['success' => true, 'counts' => $nonZero ?: (object)[]]));
+    }
+
     // POST / PATCH / DELETE
     if (in_array($method, ['POST','PATCH','DELETE'], true)) {
         $body = json_decode(file_get_contents('php://input') ?: '[]', true);

@@ -52,6 +52,17 @@ export async function fetchCommentCounts(table, ids) {
     return data.counts ?? {};
 }
 
+export async function fetchSubtableCounts(table, ids) {
+    const res = await fetch(
+        `api.php?api=subtable_counts&table=${encodeURIComponent(table)}&ids=${encodeURIComponent(ids)}`,
+        { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.success) throw new Error('subtable_counts API returned success=false');
+    return data.counts ?? {};
+}
+
 export async function fetchCommentPreview(table, rowId) {
     const res = await fetch(
         `api_comments.php?action=list&related_table=${encodeURIComponent(table)}&related_id=${encodeURIComponent(rowId)}&limit=3`,
