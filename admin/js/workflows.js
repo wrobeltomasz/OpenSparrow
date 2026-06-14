@@ -24,9 +24,11 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
         stepsContainer.innerHTML = '<h3>Workflow Steps</h3>';
         
         itemData.steps.forEach((step, index) => {
+            const incomplete = !step.title || step.title.trim() === '' || !step.table || step.table.trim() === '';
+
             const block = document.createElement('div');
             block.className = 'column-block';
-            block.style.borderLeft = '4px solid #64748B';
+            block.style.borderLeft = incomplete ? '4px solid var(--danger)' : '4px solid #64748B';
             block.style.marginBottom = '20px';
             block.style.padding = '15px';
             block.style.background = '#DDEAF4';
@@ -37,8 +39,9 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
             header.style.marginBottom = '10px';
 
             const h4 = document.createElement('h4');
-            h4.textContent = `Step ${index + 1}`;
+            h4.textContent = incomplete ? `Step ${index + 1} — incomplete` : `Step ${index + 1}`;
             h4.style.margin = '0';
+            if (incomplete) h4.style.color = 'var(--danger)';
 
             const delBtn = document.createElement('button');
             delBtn.textContent = 'Delete Step';

@@ -7,7 +7,7 @@
         color:       '#64748B',
         icon:        'assets/icons/account_box.png',
         recommended: true,
-        features:    ['10 dashboard widgets', '5 calendar sources + reminders', '2 workflows', '5 read-only views', '3 automations', 'M2M products ↔ contacts', 'file attachments'],
+        features:    ['10 dashboard widgets', '5 calendar sources + reminders', 'Kanban board: Deals by Stage', '2 workflows', '5 read-only views', '3 automations', 'M2M products ↔ contacts', 'file attachments'],
     },
     wms: {
         label:       'WMS',
@@ -77,7 +77,7 @@ function renderInstallForm(workspaceEl) {
 
     const intro = document.createElement('p');
     intro.style.color = 'var(--muted)';
-    intro.textContent = 'Choose a demo system. Installs a dedicated PostgreSQL schema, tables, and merges sample config into schema.json, dashboard.json, calendar.json, workflows.json, and views.json.';
+    intro.textContent = 'Choose a demo system. Installs a dedicated PostgreSQL schema, tables, and merges sample config into schema.json, dashboard.json, calendar.json, board.json, workflows.json, and views.json.';
     workspaceEl.appendChild(intro);
 
     const grid = document.createElement('div');
@@ -164,7 +164,7 @@ function renderInstallForm(workspaceEl) {
             confirmInput.value   = '';
             installBtn.disabled  = true;
             confirmSection.style.display = '';
-            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into schema.json, dashboard.json, calendar.json, workflows.json, views.json, and automations.json. Existing entries with the same keys/IDs will be overwritten.`;
+            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into schema.json, dashboard.json, calendar.json, board.json, workflows.json, views.json, and automations.json. Existing entries with the same keys/IDs will be overwritten.`;
         });
 
         grid.appendChild(card);

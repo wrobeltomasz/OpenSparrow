@@ -148,6 +148,10 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/build.png" alt="">
                         Add Table
                     </button>
+                    <button class="admin-tab" data-file="board">
+                        <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
+                        Board
+                    </button>
                     <button class="admin-tab" data-file="calendar">
                         <img class="nav-item-icon" src="../assets/icons/manage_history.png" alt="">
                         Calendar
@@ -159,6 +163,10 @@ if (empty($_SESSION['csrf_token'])) {
                     <button class="admin-tab" data-file="dashboard">
                         <img class="nav-item-icon" src="../assets/icons/ballot.png" alt="">
                         Dashboard
+                    </button>
+                    <button class="admin-tab" data-file="fdw">
+                        <img class="nav-item-icon" src="../assets/icons/database.png" alt="">
+                        External Databases
                     </button>
                     <button class="admin-tab" data-file="files">
                         <img class="nav-item-icon" src="../assets/icons/upload.png" alt="">
@@ -360,7 +368,8 @@ if (empty($_SESSION['csrf_token'])) {
         views: 'Views',
         csv_import: 'CSV Import',
         rag: 'RAG Documents',
-        automations: 'Automations'
+        automations: 'Automations',
+        fdw: 'External Databases'
     };
     var breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
     document.querySelectorAll('.admin-tab[data-file]').forEach(function(tab) {

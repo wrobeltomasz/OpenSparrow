@@ -63,6 +63,7 @@
 21. [Eksport i import danych](#21-eksport-i-import-danych)
 22. [Dostępność (WCAG 2.1)](#22-dostępność-wcag-21)
 23. [Przypadki użycia biznesowego](#23-przypadki-użycia-biznesowego)
+24. [Tablica (Board / Kanban)](#24-tablica-board--kanban)
 
 ---
 
@@ -536,6 +537,15 @@ Zapisane konfiguracje filtrów i układu kolumn.
 - Kliknięcie widoku: ładuje go (stosuje zapisane filtry, ewentualnie kolejność kolumn)
 - Tworzenie / edycja / usuwanie widoków dostępne dla roli Editor i Admin
 
+### Źródło danych: PostgreSQL i MySQL
+
+Edytor Widoków w panelu administracyjnym (Admin › Views) ma dwie zakładki, analogicznie do sekcji "Schema":
+
+- **PostgreSQL Views** — wykrywa i konfiguruje widoki z bazy PostgreSQL
+- **MySQL Views** — wykrywa i konfiguruje widoki z zewnętrznej bazy MySQL (przez MySQL Gateway)
+
+Każda zakładka ma własny przycisk synchronizacji ("↻ Sync PostgreSQL Views" / "↻ Sync MySQL Views"), który pobiera listę widoków i metadane kolumn z odpowiedniej bazy. Źródło każdego widoku jest zapisywane w `config/views.json` (pole `source`), dzięki czemu drill-down, reguły kolorów i agregacje działają identycznie niezależnie od bazy. Widoki MySQL są tylko do odczytu (jak natywne widoki SQL).
+
 ---
 
 ## 14. Workflows - kreator kroków
@@ -883,6 +893,22 @@ Jednym kliknięciem załaduj przykładowe dane do testowania:
 
 Przycisk "Reset" per system usuwa dane demo.
 
+### 17.22 Zewnętrzne bazy danych (MySQL Gateway)
+
+Zakładka **External Databases** (sekcja Data Management) umożliwia skonfigurowanie routingu zapytań bazy danych między PostgreSQL a MySQL na poziomie aplikacji PHP — bez zmian we frontendzie. Moduł implementuje wzorzec Factory Method w warstwie `includes/db/`.
+
+**Status połączenia MySQL:** górna karta pokazuje skonfigurowane zmienne środowiskowe (`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`, `MYSQL_USER`) oraz aktualny stan połączenia (etykieta Connected / Not connected / Not configured). Przycisk **Test connection** weryfikuje połączenie na żądanie.
+
+**Konfiguracja zmiennych środowiskowych:** składana sekcja instrukcji pokazuje przykładowy fragment `docker-compose.override.yml` do ustawienia zmiennych `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`, `MYSQL_USER`, `MYSQL_PASSWORD`.
+
+**Routing tabel MySQL:** lista nazw tabel kierowanych do MySQL zamiast PostgreSQL. Tabele spoza listy trafiają domyślnie do PostgreSQL. Konfiguracja przechowywana jest w `config/mysql_gateway.json`.
+
+**Warstwa abstrakcji (`includes/db/`):**
+- `DatabaseGatewayInterface` — kontrakt `fetchAll(string $table): array`.
+- `PostgresGateway` — implementacja przez natywne funkcje `pg_*`.
+- `MysqlGateway` — implementacja przez PDO.
+- `DatabaseFactory::make($table, $pgConn, $mysqlPdo)` — wybiera implementację na podstawie listy tabel MySQL; akcja `mysql_preview` w `admin/api_fdw.php` demonstruje integrację.
+
 ---
 
 ## 18. Responsywność i mobile
@@ -1129,6 +1155,72 @@ Trigger: UPDATE "Zgłoszenia", warunek grupa OR: (`priorytet` = "krytyczny") LUB
 
 **ERD jako mapa danych:**  
 Diagram ER w panelu admina pokazuje wszystkie tabele i relacje FK jednym rzutem oka. Nowy developer lub analityk biznesowy od razu rozumie strukturę danych bez czytania SQL. Kliknięcie tabeli w diagramie otwiera jej edytor schematu.
+
+---
+
+### 23.13 Integracja z istniejącą bazą MySQL (MySQL Gateway)
+
+**Stopniowa migracja z systemu legacy:**  
+Firma ma starą aplikację na MySQL i chce korzystać z interfejsu OpenSparrow bez przepisywania danych. Admin w zakładce External Databases rejestruje nazwy tabel MySQL (np. `klienci`, `zamowienia`). Warstwa `DatabaseFactory` automatycznie kieruje zapytania do MySQL dla tych tabel — handlowcy pracują w OpenSparrow, a dane pozostają w bazie MySQL, bez okna przestoju.
+
+**Architektura warstwowa bez zmian we frontendzie:**  
+`DatabaseFactory::make($table, $pgConn, $mysqlPdo)` zwraca `MysqlGateway` dla tabel z listy i `PostgresGateway` dla pozostałych. Obie implementują `DatabaseGatewayInterface` — logika frontendu pozostaje niezmieniona.
+
+---
+
+### 23.14 Zarządzanie pracą na tablicy (Board / Kanban)
+
+**Pipeline sprzedaży:**  
+Tabela "Szanse sprzedaży" z kolumną enum `etap` (Lead, Kwalifikacja, Oferta, Negocjacje, Wygrana, Przegrana). Handlowiec otwiera Tablicę i widzi wszystkie szanse jako karty w kolumnach odpowiadających etapom. Po telefonie z klientem przeciąga kartę z "Oferta" do "Negocjacje" — etap zmienia się natychmiast w bazie, bez otwierania formularza.
+
+**Zarządzanie zadaniami zespołu:**  
+Tabela "Zadania" z kolumną statusu (Do zrobienia, W trakcie, Do weryfikacji, Gotowe). Zespół używa Tablicy jako prostego narzędzia Kanban — przeciąganie kart między kolumnami odzwierciedla postęp prac, a liczniki w nagłówkach kolumn pokazują obciążenie na każdym etapie.
+
+---
+
+## 24. Tablica (Board / Kanban)
+
+Adres: `board.php`  
+Widok wizualizujący rekordy jednej tabeli jako przesuwalne karty rozłożone w kolumnach (torach), gdzie każdy tor odpowiada jednej wartości wybranej kolumny statusu (np. "Do zrobienia", "W trakcie", "Gotowe"). Przeciągnięcie karty do innego toru natychmiast zmienia status rekordu — to rdzeń zarządzania pracą znany z narzędzi typu Jira/Trello.
+
+### Układ tablicy
+
+- Nagłówek z nazwą tablicy oraz podtytułem: nazwa tabeli źródłowej i kolumna grupująca
+- Tory (kolumny) ułożone poziomo, przewijane w poziomie gdy nie mieszczą się na ekranie
+- Nagłówek toru: kropka w kolorze toru, nazwa wartości statusu, licznik kart
+- Karty w torze ułożone pionowo, sortowane od najnowszego rekordu
+
+### Karty
+
+- Tytuł karty z konfigurowanej kolumny (`title_column`); kolumny FK pokazywane jako etykieta, nie ID
+- Opcjonalne pola szczegółowe (`card_columns`) wyświetlane jako lista etykieta–wartość
+- Lewa krawędź karty w kolorze toru (statusu)
+- Identyfikator rekordu (`#id`) w prawym górnym rogu
+
+### Interakcje
+
+| Akcja | Efekt |
+|-------|-------|
+| Kliknięcie karty | Otwiera `edit.php` dla tego rekordu |
+| Przeciągnięcie karty do innego toru | Zmienia wartość kolumny statusu przez API |
+
+### Przeciąganie kart (Drag & Drop)
+
+- Dostępne tylko dla roli **editor** (viewer widzi tablicę w trybie tylko do odczytu)
+- Podczas przeciągania docelowy tor wyróżniany ramką
+- Optymistyczny UI: karta przenosi się natychmiast; po nieudanym zapisie wraca na poprzednie miejsce
+- Backend waliduje docelową wartość względem dozwolonej listy (opcje enum lub istniejące wartości) i respektuje własność rekordu (`owner_restricted`); zmiana jest zapisywana w logu audytu (`BOARD_MOVE`)
+- Rekordy ze statusem spoza zdefiniowanych torów trafiają do toru "Bez kategorii"
+
+### Konfiguracja przez admina
+
+Panel admina → zakładka **Board**:
+- Wybór tabeli źródłowej
+- **Wybór kolumny statusu** (najważniejsze ustawienie) — zalecana kolumna typu enum; jej opcje i kolory (`enum_colors`) stają się torami tablicy. Dla kolumn nie-enum tory są wyprowadzane z istniejących wartości
+- Podgląd torów z kolorami od razu po wyborze kolumny statusu
+- Kolumna tytułu karty oraz pola szczegółowe pokazywane na kartach
+- Domyślny kolor toru/karty
+- Ustawienia menu: nazwa, ikona, ukrycie w menu (tablica pojawia się w menu dopiero po ustawieniu tabeli i kolumny statusu)
 
 ---
 

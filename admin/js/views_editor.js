@@ -13,9 +13,14 @@ export function renderViewsEditor(ctx) {
     }
     const views = currentConfig.views;
 
+    /* migrate untagged views to the postgres source */
+    Object.keys(views).forEach(v => {
+        if (!views[v].source) views[v].source = 'postgres';
+    });
+
     /* ---------- state ---------- */
-    let dbViews   = [];
-    let dbColumns = {};
+    let currentSource = 'postgres';
+    let dbColumns     = {};
 
     /* ---------- root layout ---------- */
     const wrap = document.createElement('div');
@@ -32,9 +37,40 @@ export function renderViewsEditor(ctx) {
     const syncBtn = document.createElement('button');
     syncBtn.className   = 'btn-add';
     syncBtn.style.cssText = 'margin:0; flex-shrink:0;';
-    syncBtn.textContent = '↻ Sync from Database';
     hdr.appendChild(syncBtn);
     wrap.appendChild(hdr);
+
+    /* ---------- source tabs ---------- */
+    const tabBar = document.createElement('div');
+    tabBar.style.cssText = 'display:flex; gap:4px; margin-bottom:18px; border-bottom:1px solid var(--border-light);';
+
+    const pgTab    = document.createElement('button');
+    const mysqlTab = document.createElement('button');
+    [pgTab, mysqlTab].forEach(t => {
+        t.style.cssText = 'background:none; border:none; border-bottom:2px solid transparent; padding:8px 16px; font-size:14px; cursor:pointer; color:var(--muted); box-shadow:none;';
+    });
+    pgTab.textContent    = 'PostgreSQL Views';
+    mysqlTab.textContent = 'MySQL Views';
+    tabBar.appendChild(pgTab);
+    tabBar.appendChild(mysqlTab);
+    wrap.appendChild(tabBar);
+
+    function updateTabUi() {
+        const active = 'border-bottom:2px solid var(--accent); color:var(--text); font-weight:600;';
+        const idle   = 'border-bottom:2px solid transparent; color:var(--muted); font-weight:normal;';
+        pgTab.style.cssText    = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'postgres' ? active : idle);
+        mysqlTab.style.cssText = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'mysql' ? active : idle);
+        syncBtn.textContent = currentSource === 'mysql' ? '↻ Sync MySQL Views' : '↻ Sync PostgreSQL Views';
+    }
+
+    function switchSource(src) {
+        if (currentSource === src) return;
+        currentSource = src;
+        updateTabUi();
+        renderList();
+    }
+    pgTab.addEventListener('click', () => switchSource('postgres'));
+    mysqlTab.addEventListener('click', () => switchSource('mysql'));
 
     const statusEl = document.createElement('div');
     statusEl.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px;';
@@ -58,20 +94,22 @@ export function renderViewsEditor(ctx) {
 
     /* ---------- sync from DB ---------- */
     async function syncFromDb() {
-        setStatus('Syncing from database…', 'info');
+        const label = currentSource === 'mysql' ? 'MySQL' : 'PostgreSQL';
+        setStatus(`Syncing ${label} views…`, 'info');
         try {
-            const res  = await fetch('../api_views.php?action=sync');
+            const res  = await fetch('../api_views.php?action=sync&source=' + currentSource);
             const data = await res.json();
             if (data.status !== 'ok') { setStatus('Sync failed: ' + (data.error ?? 'unknown'), 'error'); return; }
-            dbViews   = data.db_views  ?? [];
-            dbColumns = data.columns   ?? {};
+            const synced = data.db_views ?? [];
+            Object.assign(dbColumns, data.columns ?? {});
 
-            dbViews.forEach(vName => {
+            synced.forEach(vName => {
                 if (!views[vName]) {
                     const cols = {};
                     Object.keys(dbColumns[vName] ?? {}).forEach(c => { cols[c] = { display_name: c, color_rules: [] }; });
-                    views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/table_chart_view.png', hidden: false, columns: cols, drill_down: { enabled: false, levels: [] } };
+                    views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/table_chart_view.png', hidden: false, source: currentSource, columns: cols, drill_down: { enabled: false, levels: [] } };
                 } else {
+                    views[vName].source = currentSource;
                     Object.keys(dbColumns[vName] ?? {}).forEach(c => {
                         if (!views[vName].columns) views[vName].columns = {};
                         if (!views[vName].columns[c]) views[vName].columns[c] = { display_name: c, color_rules: [] };
@@ -80,7 +118,7 @@ export function renderViewsEditor(ctx) {
             });
 
             markDirty();
-            setStatus(`Found ${dbViews.length} view(s). Edit below, then click "Save config".`, 'ok');
+            setStatus(`Found ${synced.length} ${label} view(s). Edit below, then click "Save config".`, 'ok');
             renderList();
         } catch (_) {
             setStatus('Network error during sync.', 'error');
@@ -88,13 +126,19 @@ export function renderViewsEditor(ctx) {
     }
 
     /* ---------- render list ---------- */
+    function viewNamesForSource(src) {
+        return Object.keys(views).filter(v => (views[v].source || 'postgres') === src);
+    }
+
     function renderList() {
         listEl.innerHTML = '';
-        if (dbViews.length === 0) {
-            listEl.innerHTML = '<p style="color:var(--muted); text-align:center; padding:32px;">No views found. Click "↻ Sync from Database" to discover views.</p>';
+        const names = viewNamesForSource(currentSource);
+        if (names.length === 0) {
+            const label = currentSource === 'mysql' ? 'MySQL' : 'PostgreSQL';
+            listEl.innerHTML = `<p style="color:var(--muted); text-align:center; padding:32px;">No ${label} views found. Click "${syncBtn.textContent}" to discover views.</p>`;
             return;
         }
-        dbViews.forEach(vName => listEl.appendChild(buildViewCard(vName, views[vName] ?? {})));
+        names.forEach(vName => listEl.appendChild(buildViewCard(vName, views[vName] ?? {})));
     }
 
     /* ---------- single view card (column-block style) ---------- */
@@ -442,15 +486,17 @@ export function renderViewsEditor(ctx) {
     /* ---------- init ---------- */
     syncBtn.addEventListener('click', syncFromDb);
 
+    Object.keys(views).forEach(v => {
+        dbColumns[v] = {};
+        Object.keys(views[v].columns ?? {}).forEach(c => { dbColumns[v][c] = { data_type: '' }; });
+    });
+
+    updateTabUi();
+
     if (Object.keys(views).length > 0) {
-        dbViews = Object.keys(views);
-        dbViews.forEach(v => {
-            dbColumns[v] = {};
-            Object.keys(views[v].columns ?? {}).forEach(c => { dbColumns[v][c] = { data_type: '' }; });
-        });
         renderList();
         setStatus('Config loaded. Sync to refresh column metadata from DB.', 'info');
     } else {
-        listEl.innerHTML = '<p style="color:var(--muted); text-align:center; padding:32px;">No views configured yet. Click "↻ Sync from Database" to start.</p>';
+        renderList();
     }
 }

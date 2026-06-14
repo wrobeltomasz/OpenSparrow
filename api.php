@@ -146,6 +146,125 @@ require __DIR__ . '/includes/api_helpers.php';
 require_once __DIR__ . '/includes/automations.php';
 $method = $_SERVER['REQUEST_METHOD'];
 header('Content-Type: application/json; charset=utf-8');
+
+// ---------------------------------------------------------------------------
+// MySQL Gateway helpers — load routing config and create PDO once per request
+// ---------------------------------------------------------------------------
+function mysql_gateway_tables(): array
+{
+    static $tables = null;
+    if ($tables === null) {
+        $path   = __DIR__ . '/config/mysql_gateway.json';
+        $raw    = is_file($path) ? @file_get_contents($path) : false;
+        $cfg    = ($raw !== false) ? json_decode($raw, true) : null;
+        $tables = is_array($cfg) ? ($cfg['mysql_tables'] ?? []) : [];
+    }
+    return $tables;
+}
+
+function mysql_pdo_api(): ?\PDO
+{
+    if (MYSQL_HOST === '' || MYSQL_DB === '' || MYSQL_USER === '') {
+        return null;
+    }
+    try {
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=5',
+            MYSQL_HOST,
+            MYSQL_PORT,
+            MYSQL_DB
+        );
+        return new \PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
+            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+        ]);
+    } catch (\PDOException $e) {
+        error_log('[api][mysql] ' . $e->getMessage());
+        return null;
+    }
+}
+
+function mysql_bt(string $name): string
+{
+    return '`' . str_replace('`', '', $name) . '`';
+}
+
+/**
+ * Build a MySQL WHERE clause (with `?` placeholders) for dashboard widgets,
+ * mirroring the PostgreSQL builder used for native tables. Validates every
+ * column against the table schema and binds values as parameters. The id
+ * column is mapped back to its real MySQL primary key when aliased via
+ * `mysql_pk`. Appended params are pushed onto $params by reference.
+ */
+function mysql_widget_where(
+    array $tableCfg,
+    array $conditions,
+    string $dateFilter,
+    string $dateTarget,
+    string $widgetTargetId,
+    array &$params
+): string {
+    $idCol   = id_column();
+    $mysqlPk = $tableCfg['mysql_pk'] ?? null;
+    $realCol = fn(string $c): string => ($c === $idCol && $mysqlPk !== null) ? $mysqlPk : $c;
+    $allowedOps = ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'ILIKE', 'IS NULL', 'IS NOT NULL'];
+
+    $condParts = [];
+    foreach ($conditions as $cond) {
+        $col = $cond['col'] ?? '';
+        $op  = $cond['op']  ?? '=';
+        $val = (string)($cond['val'] ?? '');
+        if (!isset($tableCfg['columns'][$col]) || !in_array($op, $allowedOps, true)) {
+            continue;
+        }
+        $logic  = strtoupper($cond['logic'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
+        // MySQL LIKE is case-insensitive on standard collations — map ILIKE to LIKE.
+        $myOp   = $op === 'ILIKE' ? 'LIKE' : $op;
+        $colSql = mysql_bt($realCol($col));
+        if ($op === 'IS NULL' || $op === 'IS NOT NULL') {
+            $condParts[] = [$colSql . ' ' . $op, $logic];
+        } else {
+            $condParts[] = [$colSql . ' ' . $myOp . ' ?', $logic];
+            $params[]    = $val;
+        }
+    }
+
+    $where = '';
+    if (!empty($condParts)) {
+        $built = $condParts[0][0];
+        for ($i = 1, $n = count($condParts); $i < $n; $i++) {
+            $built .= ' ' . $condParts[$i][1] . ' ' . $condParts[$i][0];
+        }
+        $where = ' WHERE ' . $built;
+    }
+
+    if ($dateFilter !== 'all' && ($dateTarget === 'all' || $dateTarget === $widgetTargetId)) {
+        $dateCol = null;
+        foreach ($tableCfg['columns'] as $cName => $cCfg) {
+            $cType = strtolower($cCfg['type'] ?? '');
+            if (str_contains($cType, 'date') || str_contains($cType, 'time') || str_contains($cType, 'timestamp')) {
+                $dateCol = $cName;
+                break;
+            }
+        }
+        if ($dateCol !== null) {
+            $dc     = mysql_bt($realCol($dateCol));
+            $prefix = $where === '' ? ' WHERE ' : ' AND ';
+            if ($dateFilter === 'today') {
+                $where .= $prefix . $dc . ' >= CURDATE()';
+            } elseif ($dateFilter === '7d') {
+                $where .= $prefix . $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
+            } elseif ($dateFilter === '30d') {
+                $where .= $prefix . $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+            } elseif ($dateFilter === 'this_month') {
+                $where .= $prefix . "DATE_FORMAT(" . $dc . ", '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
+            }
+        }
+    }
+
+    return $where;
+}
+
 try {
 // GET: SCHEMA DATA
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'schema') {
@@ -203,6 +322,115 @@ try {
             $sqlWhere = '';
 // Build WHERE from structured conditions (column validated against schema, values escaped)
             $conditions = is_array($widget['query']['conditions'] ?? null) ? $widget['query']['conditions'] : [];
+
+            // External MySQL tables don't exist in PostgreSQL — route the widget
+            // query through the MySQL gateway instead of pg_query.
+            if (in_array($table, mysql_gateway_tables(), true)) {
+                $mysqlPdo = mysql_pdo_api();
+                if ($mysqlPdo === null) {
+                    $widget['sql_error'] = 'MySQL connection unavailable.';
+                    $widget['data'] = null;
+                    $response['widgets'][] = $widget;
+                    continue;
+                }
+                $idColMy   = id_column();
+                $mysqlPkMy = $tableCfg['mysql_pk'] ?? null;
+                $realColMy = fn(string $c): string => ($c === $idColMy && $mysqlPkMy !== null) ? $mysqlPkMy : $c;
+                $myTable   = mysql_bt($table);
+
+                $dfFilter  = $_GET['date_filter'] ?? 'all';
+                $dfTarget  = $_GET['date_target'] ?? 'all';
+                $wTargetId = $widget['id'] ?? $widget['table'] ?? '';
+                $myParams  = [];
+                $myWhere   = mysql_widget_where($tableCfg, $conditions, $dfFilter, $dfTarget, $wTargetId, $myParams);
+
+                $data = null;
+                try {
+                    if ($qType === 'count') {
+                        $col = $widget['query']['column'] ?? $idColMy;
+                        if (isset($tableCfg['columns'][$col]) || $col === $idColMy) {
+                            $stmt = $mysqlPdo->prepare('SELECT COUNT(' . mysql_bt($realColMy($col)) . ') AS count FROM ' . $myTable . $myWhere);
+                            $stmt->execute($myParams);
+                            $data = (int) $stmt->fetchColumn();
+                        }
+                    } elseif ($qType === 'sum') {
+                        $col = $widget['query']['column'] ?? '';
+                        if (isset($tableCfg['columns'][$col])) {
+                            $stmt = $mysqlPdo->prepare('SELECT COALESCE(SUM(' . mysql_bt($realColMy($col)) . '), 0) AS total FROM ' . $myTable . $myWhere);
+                            $stmt->execute($myParams);
+                            $val  = (float) $stmt->fetchColumn();
+                            $data = ($val == (int) $val) ? (int) $val : round($val, 2);
+                        }
+                    } elseif ($qType === 'group_by') {
+                        $grpCol  = $widget['query']['group_column'] ?? '';
+                        $aggCol  = $widget['query']['agg_column'] ?? $idColMy;
+                        $aggType = strtoupper($widget['query']['agg_type'] ?? 'COUNT');
+                        $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
+                        $aggType = in_array($aggType, $allowedAgg, true) ? $aggType : 'COUNT';
+                        if (isset($tableCfg['columns'][$grpCol])) {
+                            $sql = sprintf(
+                                'SELECT %s AS label, %s(%s) AS value FROM %s%s GROUP BY %s ORDER BY value DESC',
+                                mysql_bt($realColMy($grpCol)),
+                                $aggType,
+                                mysql_bt($realColMy($aggCol)),
+                                $myTable,
+                                $myWhere,
+                                mysql_bt($realColMy($grpCol))
+                            );
+                            $stmt = $mysqlPdo->prepare($sql);
+                            $stmt->execute($myParams);
+                            $data = [];
+                            while ($r = $stmt->fetch()) {
+                                $r['value'] = is_numeric($r['value']) ? (float) $r['value'] : $r['value'];
+                                $data[] = $r;
+                            }
+                            $widget['column_type'] = $tableCfg['columns'][$grpCol]['type'] ?? 'text';
+                        }
+                    } else {
+                        $limit   = (int)($widget['query']['limit'] ?? 5);
+                        $orderBy = $widget['query']['order_by'] ?? $idColMy;
+                        $dir     = strtoupper($widget['query']['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
+                        $displayCols = $widget['display_columns'] ?? [$idColMy];
+                        $validCols   = array_filter($displayCols, fn($c) => isset($tableCfg['columns'][$c]) || $c === $idColMy);
+                        if (empty($validCols)) {
+                            $validCols = [$idColMy];
+                        }
+                        $selectSql = implode(', ', array_map(
+                            fn($c) => ($c === $idColMy && $mysqlPkMy !== null)
+                                ? mysql_bt($mysqlPkMy) . ' AS ' . mysql_bt($idColMy)
+                                : mysql_bt($c),
+                            $validCols
+                        ));
+                        if (isset($tableCfg['columns'][$orderBy]) || $orderBy === $idColMy) {
+                            $sql  = sprintf(
+                                'SELECT %s FROM %s%s ORDER BY %s %s LIMIT %d',
+                                $selectSql,
+                                $myTable,
+                                $myWhere,
+                                mysql_bt($realColMy($orderBy)),
+                                $dir,
+                                $limit
+                            );
+                            $stmt = $mysqlPdo->prepare($sql);
+                            $stmt->execute($myParams);
+                            $data = $stmt->fetchAll();
+                            $colTypes = [];
+                            foreach ($validCols as $col) {
+                                $colTypes[$col] = $tableCfg['columns'][$col]['type'] ?? 'text';
+                            }
+                            $widget['column_types'] = $colTypes;
+                        }
+                    }
+                } catch (\PDOException $e) {
+                    error_log('[api][mysql][dashboard] ' . $e->getMessage());
+                    $widget['sql_error'] = 'Query failed.';
+                }
+
+                $widget['data'] = $data;
+                $response['widgets'][] = $widget;
+                continue;
+            }
+
             $condParts = [];
             $allowedOps = ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'ILIKE', 'IS NULL', 'IS NOT NULL'];
             foreach ($conditions as $cond) {
@@ -394,6 +622,55 @@ try {
             if (isset($tableCfg['columns'][$dateCol])) {
                 $cols = column_list($tableCfg);
                 $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
+
+                // External MySQL tables don't exist in PostgreSQL — pull events
+                // through the MySQL gateway instead of pg_query_params.
+                if (in_array($table, mysql_gateway_tables(), true)) {
+                    $mysqlPdo = mysql_pdo_api();
+                    if ($mysqlPdo === null) {
+                        continue;
+                    }
+                    $mysqlPk = $tableCfg['mysql_pk'] ?? null;
+                    $realCol = fn(string $c): string => ($c === $idCol && $mysqlPk !== null) ? $mysqlPk : $c;
+                    $mySelect = implode(', ', array_map(
+                        fn($c) => ($c === $idCol && $mysqlPk !== null)
+                            ? mysql_bt($mysqlPk) . ' AS ' . mysql_bt($idCol)
+                            : mysql_bt($c),
+                        $selectCols
+                    ));
+                    // Inclusive end-of-range so datetime columns keep events on
+                    // the last day of the month (a plain BETWEEN would cut them at 00:00).
+                    $sql = sprintf(
+                        'SELECT %s FROM %s WHERE %s IS NOT NULL AND %s >= ? AND %s < DATE_ADD(?, INTERVAL 1 DAY)',
+                        $mySelect,
+                        mysql_bt($table),
+                        mysql_bt($realCol($dateCol)),
+                        mysql_bt($realCol($dateCol)),
+                        mysql_bt($realCol($dateCol))
+                    );
+                    try {
+                        $stmt = $mysqlPdo->prepare($sql);
+                        $stmt->execute([$dateFrom, $dateTo]);
+                        $rows = $stmt->fetchAll();
+                    } catch (\PDOException $e) {
+                        error_log('[api][mysql][calendar] ' . $e->getMessage());
+                        $rows = [];
+                    }
+                    $rows = map_fk_display($schema, $tableCfg, $rows);
+                    foreach ($rows as $r) {
+                        $events[] = [
+                            'id' => $r[$idCol],
+                            'table' => $table,
+                            'title' => $r[$titleCol] ?? 'No title',
+                            'date' => substr((string)($r[$dateCol] ?? ''), 0, 10),
+                            'color' => $color,
+                            'icon' => $src['icon'] ?? null,
+                            'rowData' => $r
+                        ];
+                    }
+                    continue;
+                }
+
                 $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
                 $sql = sprintf(
                     'SELECT %s FROM %s.%s WHERE %s IS NOT NULL AND %s BETWEEN $1 AND $2',
@@ -432,6 +709,188 @@ try {
             'hidden' => !empty($calendar['hidden']),
             'events' => $events
         ]);
+        exit;
+    }
+
+    // GET: BOARD (KANBAN) DATA
+    // Returns the board configuration plus its lanes (one per status value) and
+    // the records of the configured table grouped client-side by their status.
+    if ($method === 'GET' && ($_GET['api'] ?? '') === 'board') {
+        $boardPath = __DIR__ . '/config/board.json';
+        $boardCfg  = file_exists($boardPath)
+            ? json_decode(file_get_contents($boardPath), true, 512, JSON_THROW_ON_ERROR)
+            : [];
+
+        $meta = [
+            'menu_name'     => $boardCfg['menu_name'] ?? 'Board',
+            'menu_icon'     => $boardCfg['menu_icon'] ?? '',
+            'hidden'        => !empty($boardCfg['hidden']),
+            'configured'    => false,
+            'table'         => $boardCfg['table'] ?? '',
+            'status_column' => $boardCfg['status_column'] ?? '',
+            'columns'       => [],
+            'cards'         => [],
+            'can_edit'      => $role !== 'viewer',
+        ];
+
+        $table     = $boardCfg['table'] ?? '';
+        $statusCol = $boardCfg['status_column'] ?? '';
+        if ($table === '' || $statusCol === '') {
+            echo json_encode($meta);
+            exit;
+        }
+
+        try {
+            $tableCfg = safe_table($schema, $table);
+        } catch (Throwable $e) {
+            echo json_encode($meta);
+            exit;
+        }
+
+        if (!isset($tableCfg['columns'][$statusCol])) {
+            echo json_encode($meta);
+            exit;
+        }
+
+        $schemaName   = $tableCfg['schema'] ?? 'public';
+        $idCol        = id_column();
+        $titleCol     = $boardCfg['title_column'] ?? '';
+        if ($titleCol === '' || !isset($tableCfg['columns'][$titleCol])) {
+            $titleCol = $idCol;
+        }
+        $defaultColor = $boardCfg['color'] ?? '#005A9E';
+
+        // Card detail rows: only configured columns that still exist on the table.
+        $cardCols = [];
+        foreach (($boardCfg['card_columns'] ?? []) as $c) {
+            if (is_string($c) && isset($tableCfg['columns'][$c]) && $c !== $statusCol) {
+                $cardCols[] = $c;
+            }
+        }
+
+        // Lanes: an enum status column defines lanes (with colors) from its
+        // declared options; any other column derives lanes from the distinct
+        // values present in the data.
+        $statusDef  = $tableCfg['columns'][$statusCol];
+        $statusType = strtolower($statusDef['type'] ?? '');
+        $enumColors = is_array($statusDef['enum_colors'] ?? null) ? $statusDef['enum_colors'] : [];
+        $lanes      = [];
+        // External MySQL tables don't exist in PostgreSQL — route board queries
+        // through the MySQL gateway.
+        $isMysqlBoard = in_array($table, mysql_gateway_tables(), true);
+        $mysqlPkBoard = $tableCfg['mysql_pk'] ?? null;
+        $realColBoard = fn(string $c): string => ($c === $idCol && $mysqlPkBoard !== null) ? $mysqlPkBoard : $c;
+        if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
+            foreach ($statusDef['options'] as $opt) {
+                $val = (string)$opt;
+                $lanes[] = [
+                    'value' => $val,
+                    'label' => $val,
+                    'color' => $enumColors[$val] ?? $defaultColor,
+                ];
+            }
+        } elseif ($isMysqlBoard) {
+            $mysqlPdo = mysql_pdo_api();
+            if ($mysqlPdo !== null) {
+                $sqlDistinct = 'SELECT DISTINCT ' . mysql_bt($realColBoard($statusCol)) . ' AS v FROM '
+                    . mysql_bt($table) . ' WHERE ' . mysql_bt($realColBoard($statusCol)) . ' IS NOT NULL ORDER BY 1';
+                try {
+                    $stmt = $mysqlPdo->query($sqlDistinct);
+                    while ($r = $stmt->fetch()) {
+                        $val = (string)$r['v'];
+                        $lanes[] = ['value' => $val, 'label' => $val, 'color' => $defaultColor];
+                    }
+                } catch (\PDOException $e) {
+                    error_log('[api][mysql][board] ' . $e->getMessage());
+                }
+            }
+        } else {
+            $sqlDistinct = sprintf(
+                'SELECT DISTINCT %s AS v FROM %s.%s WHERE %s IS NOT NULL ORDER BY 1',
+                pg_ident($statusCol),
+                pg_ident($schemaName),
+                pg_ident($table),
+                pg_ident($statusCol)
+            );
+            $rd = @pg_query($conn, $sqlDistinct);
+            if ($rd) {
+                while ($r = pg_fetch_assoc($rd)) {
+                    $val = (string)$r['v'];
+                    $lanes[] = ['value' => $val, 'label' => $val, 'color' => $defaultColor];
+                }
+                pg_free_result($rd);
+            }
+        }
+
+        // Records — newest first; FK columns resolved to their display labels.
+        $cols       = column_list($tableCfg);
+        $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $cols)));
+        $cards = [];
+        if ($isMysqlBoard) {
+            $mysqlPdo = mysql_pdo_api();
+            $rows     = [];
+            if ($mysqlPdo !== null) {
+                $mySelect = implode(', ', array_map(
+                    fn($c) => ($c === $idCol && $mysqlPkBoard !== null)
+                        ? mysql_bt($mysqlPkBoard) . ' AS ' . mysql_bt($idCol)
+                        : mysql_bt($c),
+                    $selectCols
+                ));
+                $sqlMy = 'SELECT ' . $mySelect . ' FROM ' . mysql_bt($table)
+                    . ' ORDER BY ' . mysql_bt($realColBoard($idCol)) . ' DESC';
+                try {
+                    $stmt = $mysqlPdo->query($sqlMy);
+                    $rows = $stmt->fetchAll();
+                } catch (\PDOException $e) {
+                    error_log('[api][mysql][board] ' . $e->getMessage());
+                }
+            }
+            $rows = map_fk_display($schema, $tableCfg, $rows);
+        } else {
+            $selectSql  = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
+            $sql = sprintf(
+                'SELECT %s FROM %s.%s ORDER BY %s DESC',
+                $selectSql,
+                pg_ident($schemaName),
+                pg_ident($table),
+                pg_ident($idCol)
+            );
+            $res  = @pg_query($conn, $sql);
+            $rows = [];
+            if ($res) {
+                while ($r = pg_fetch_assoc($res)) {
+                    $rows[] = $r;
+                }
+                pg_free_result($res);
+            }
+            $rows = map_fk_display($schema, $tableCfg, $rows);
+        }
+        foreach ($rows as $r) {
+            $fields = [];
+            foreach ($cardCols as $c) {
+                $label = $tableCfg['columns'][$c]['display_name'] ?? $c;
+                $value = $r[$c . '__display'] ?? $r[$c] ?? '';
+                if ($value === null || $value === '') {
+                    continue;
+                }
+                $fields[] = ['label' => $label, 'value' => $value];
+            }
+            $cards[] = [
+                'id'     => $r[$idCol],
+                'status' => (string)($r[$statusCol] ?? ''),
+                'title'  => $r[$titleCol . '__display'] ?? $r[$titleCol] ?? ('#' . $r[$idCol]),
+                'fields' => $fields,
+            ];
+        }
+
+        $meta['configured']    = true;
+        $meta['title_column']  = $titleCol;
+        $meta['default_color'] = $defaultColor;
+        $meta['status_label']  = $statusDef['display_name'] ?? $statusCol;
+        $meta['table_label']   = $tableCfg['display_name'] ?? $table;
+        $meta['columns']       = $lanes;
+        $meta['cards']         = $cards;
+        echo json_encode($meta);
         exit;
     }
 
@@ -556,6 +1015,86 @@ try {
 
         $initialLimit = (int)($tableCfg['initial_limit'] ?? 0);
         $rowCap       = $initialLimit > 0 ? $initialLimit : MAX_LIST_ROWS;
+
+        // MySQL Gateway: serve this table from MySQL when it is in the routing list
+        if (in_array($table, mysql_gateway_tables(), true)) {
+            $mysqlPdo = mysql_pdo_api();
+            if ($mysqlPdo === null) {
+                http_response_code(503);
+                echo json_encode(['error' => 'MySQL connection not configured or unavailable']);
+                exit;
+            }
+            $myTable = mysql_bt($table);
+            $mysqlPk = $tableCfg['mysql_pk'] ?? null;
+            $realCol = fn(string $c): string => ($c === $idCol && $mysqlPk !== null) ? $mysqlPk : $c;
+            $myCols  = array_map(
+                fn($c) => ($c === $idCol && $mysqlPk !== null)
+                    ? mysql_bt($mysqlPk) . ' AS ' . mysql_bt($idCol)
+                    : mysql_bt($c),
+                $selectCols
+            );
+            $mySelect = implode(', ', $myCols);
+            $myParams = [];
+            $myWhere  = '';
+            if ($filterCol !== '' && $filterVal !== '') {
+                $allowedFilterCols = array_merge([$idCol], array_keys($tableCfg['columns'] ?? []));
+                if (in_array($filterCol, $allowedFilterCols, true)) {
+                    $myWhere    = ' WHERE ' . mysql_bt($realCol($filterCol)) . ' = ?';
+                    $myParams[] = $filterVal;
+                }
+            }
+            if ($search !== '') {
+                $likeVal = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
+                $clauses = array_map(
+                    fn($c) => 'CAST(' . mysql_bt($realCol($c)) . ' AS CHAR) LIKE ?',
+                    $selectCols
+                );
+                $myWhere .= ($myWhere !== '' ? ' AND ' : ' WHERE ') . '(' . implode(' OR ', $clauses) . ')';
+                foreach ($selectCols as $_ignored) {
+                    $myParams[] = $likeVal;
+                }
+            }
+            $myOrderClauses = [];
+            if (is_array($defaultSort)) {
+                foreach ($defaultSort as $rule) {
+                    $col = $rule['column'] ?? '';
+                    $dir = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+                    if ($col !== '' && (isset($tableCfg['columns'][$col]) || $col === $idCol)) {
+                        $myOrderClauses[] = mysql_bt($realCol($col)) . ' ' . $dir;
+                    }
+                }
+            }
+            if (empty($myOrderClauses)) {
+                $myOrderClauses[] = mysql_bt($realCol($idCol)) . ' DESC';
+            }
+            $countStmt = $mysqlPdo->prepare('SELECT COUNT(*) FROM ' . $myTable . $myWhere);
+            $countStmt->execute($myParams);
+            $dbTotal  = (int) $countStmt->fetchColumn();
+            $dataSql  = sprintf(
+                'SELECT %s FROM %s%s ORDER BY %s LIMIT %d OFFSET %d',
+                $mySelect,
+                $myTable,
+                $myWhere,
+                implode(', ', $myOrderClauses),
+                $rowCap,
+                $offset
+            );
+            $dataStmt = $mysqlPdo->prepare($dataSql);
+            $dataStmt->execute($myParams);
+            $rows     = $dataStmt->fetchAll();
+            echo json_encode([
+                'columns'   => $selectCols,
+                'rows'      => $rows,
+                'truncated' => count($rows) === $rowCap,
+                'total'     => $dbTotal,
+                'table'     => [
+                    'name'         => $table,
+                    'display_name' => to_display_name($tableCfg),
+                ],
+            ]);
+            exit;
+        }
+
         $sql = sprintf(
             'SELECT %s, COUNT(1) OVER() AS __spw_total FROM %s.%s%s ORDER BY %s LIMIT %d OFFSET %d',
             $selectSql,
@@ -738,6 +1277,35 @@ try {
                 exit;
             }
 
+            // External MySQL tables don't exist in PostgreSQL — route the update
+            // through the MySQL gateway.
+            if (in_array($table, mysql_gateway_tables(), true)) {
+                $mysqlPdo = mysql_pdo_api();
+                if ($mysqlPdo === null) {
+                    http_response_code(503);
+                    echo json_encode(['error' => 'MySQL connection not configured or unavailable']);
+                    exit;
+                }
+                $myPkCol = $tableCfg['mysql_pk'] ?? $idCol;
+                try {
+                    $stmt = $mysqlPdo->prepare(
+                        'UPDATE ' . mysql_bt($table) . ' SET ' . mysql_bt($dateColumn) . ' = ? WHERE ' . mysql_bt($myPkCol) . ' = ?'
+                    );
+                    $stmt->execute([$newDate, $id]);
+                } catch (\PDOException $e) {
+                    error_log('[api][mysql][calendar][move] ' . $e->getMessage());
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Database error']);
+                    exit;
+                }
+                // MySQL PDO rowCount() reports changed (not matched) rows, so a
+                // drop onto the same date returns 0 — treat a clean execute as
+                // success rather than a spurious 404.
+                log_user_action($conn, (int)$_SESSION['user_id'], 'CALENDAR_MOVE', $table, $id);
+                echo json_encode(['success' => true]);
+                exit;
+            }
+
             // Update record via native pg_query_params for robust SQL injection prevention
             $sql = sprintf('UPDATE %s.%s SET %s = $1 WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($dateColumn), pg_ident($idCol));
             $res = @pg_query_params($conn, $sql, [$newDate, $id]);
@@ -756,6 +1324,147 @@ try {
 
             log_user_action($conn, (int)$_SESSION['user_id'], 'CALENDAR_MOVE', $table, $id);
 
+            echo json_encode(['success' => true]);
+            exit;
+        }
+
+        // POST: BOARD MOVE CARD (Kanban drag & drop — changes the status column)
+        if ($method === 'POST' && ($body['api'] ?? '') === 'board' && ($body['action'] ?? '') === 'move_card') {
+            if ($role === 'viewer') {
+                http_response_code(403);
+                echo json_encode(['error' => 'Forbidden']);
+                exit;
+            }
+
+            $boardPath = __DIR__ . '/config/board.json';
+            $boardCfg  = file_exists($boardPath) ? json_decode(file_get_contents($boardPath), true) : [];
+            $cfgTable  = $boardCfg['table'] ?? '';
+            $statusCol = $boardCfg['status_column'] ?? '';
+
+            // The board is bound to a single configured table — reject anything else.
+            if ($cfgTable === '' || $statusCol === '' || $table !== $cfgTable) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid board table']);
+                exit;
+            }
+            if (!isset($tableCfg['columns'][$statusCol])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid status column']);
+                exit;
+            }
+
+            $id        = (int)($body['id'] ?? 0);
+            $newStatus = (string)($body['newStatus'] ?? '');
+            if ($id <= 0) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid ID']);
+                exit;
+            }
+
+            // Validate the target lane against the allowed value set so a tampered
+            // request cannot write an arbitrary status into the column.
+            $statusDef  = $tableCfg['columns'][$statusCol];
+            $statusType = strtolower($statusDef['type'] ?? '');
+            $isMysqlMove = in_array($table, mysql_gateway_tables(), true);
+            $mysqlPkMove = $tableCfg['mysql_pk'] ?? $idCol;
+            $allowed    = [];
+            if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
+                $allowed = array_map('strval', $statusDef['options']);
+            } elseif ($isMysqlMove) {
+                $mysqlPdo = mysql_pdo_api();
+                if ($mysqlPdo !== null) {
+                    try {
+                        $stmtD = $mysqlPdo->query(
+                            'SELECT DISTINCT ' . mysql_bt($statusCol) . ' AS v FROM '
+                            . mysql_bt($table) . ' WHERE ' . mysql_bt($statusCol) . ' IS NOT NULL'
+                        );
+                        while ($r = $stmtD->fetch()) {
+                            $allowed[] = (string)$r['v'];
+                        }
+                    } catch (\PDOException $e) {
+                        error_log('[api][mysql][board][move] ' . $e->getMessage());
+                    }
+                }
+            } else {
+                $sqlD = sprintf(
+                    'SELECT DISTINCT %s AS v FROM %s.%s WHERE %s IS NOT NULL',
+                    pg_ident($statusCol),
+                    pg_ident($schemaName),
+                    pg_ident($table),
+                    pg_ident($statusCol)
+                );
+                $rD = @pg_query($conn, $sqlD);
+                if ($rD) {
+                    while ($r = pg_fetch_assoc($rD)) {
+                        $allowed[] = (string)$r['v'];
+                    }
+                    pg_free_result($rD);
+                }
+            }
+            if (!in_array($newStatus, $allowed, true)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid status value']);
+                exit;
+            }
+
+            // Owner-restricted: cannot move a record owned by someone else.
+            if (!empty($tableCfg['owner_restricted'])) {
+                $ownerId = get_record_owner_id($conn, $table, $id);
+                if ($ownerId !== null && $ownerId !== (int)$_SESSION['user_id']) {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'Forbidden']);
+                    exit;
+                }
+            }
+
+            // External MySQL tables don't exist in PostgreSQL — route the update
+            // through the MySQL gateway.
+            if ($isMysqlMove) {
+                $mysqlPdo = mysql_pdo_api();
+                if ($mysqlPdo === null) {
+                    http_response_code(503);
+                    echo json_encode(['error' => 'MySQL connection not configured or unavailable']);
+                    exit;
+                }
+                try {
+                    $stmt = $mysqlPdo->prepare(
+                        'UPDATE ' . mysql_bt($table) . ' SET ' . mysql_bt($statusCol) . ' = ? WHERE ' . mysql_bt($mysqlPkMove) . ' = ?'
+                    );
+                    $stmt->execute([$newStatus, $id]);
+                } catch (\PDOException $e) {
+                    error_log('[api][mysql][board][move] ' . $e->getMessage());
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Database error']);
+                    exit;
+                }
+                // rowCount() reports changed rows in MySQL — a no-op drop returns 0,
+                // so a clean execute is treated as success rather than a 404.
+                log_user_action($conn, (int)$_SESSION['user_id'], 'BOARD_MOVE', $table, $id);
+                echo json_encode(['success' => true]);
+                exit;
+            }
+
+            $sql = sprintf(
+                'UPDATE %s.%s SET %s = $1 WHERE %s = $2',
+                pg_ident($schemaName),
+                pg_ident($table),
+                pg_ident($statusCol),
+                pg_ident($idCol)
+            );
+            $res = @pg_query_params($conn, $sql, [$newStatus, $id]);
+            if (!$res) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Database error']);
+                error_log('Board move_card error: ' . pg_last_error($conn));
+                exit;
+            }
+            if (pg_affected_rows($res) === 0) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Record not found']);
+                exit;
+            }
+
+            log_user_action($conn, (int)$_SESSION['user_id'], 'BOARD_MOVE', $table, $id);
             echo json_encode(['success' => true]);
             exit;
         }
@@ -798,6 +1507,34 @@ try {
                 $cast = '::boolean';
             } elseif ($val === '') {
                 $val = null;
+            }
+
+            // MySQL Gateway — UPDATE single cell
+            if (in_array($table, mysql_gateway_tables(), true)) {
+                $mysqlPdo = mysql_pdo_api();
+                if ($mysqlPdo === null) {
+                    http_response_code(503);
+                    echo json_encode(['error' => 'MySQL not configured or unavailable']);
+                    exit;
+                }
+                $myVal = str_contains($colType, 'bool')
+                    ? (($val === null) ? null : (in_array($val, ['TRUE', 'true', '1', 't', 'T'], true) ? 1 : 0))
+                    : $val;
+                $myPkCol = $tableCfg['mysql_pk'] ?? $idCol;
+                try {
+                    $stmt = $mysqlPdo->prepare(
+                        'UPDATE ' . mysql_bt($table) . ' SET ' . mysql_bt($col) . ' = ? WHERE ' . mysql_bt($myPkCol) . ' = ?'
+                    );
+                    $stmt->execute([$myVal, $recordId]);
+                } catch (\PDOException $e) {
+                    error_log('[api][mysql][patch] ' . $e->getMessage());
+                    http_response_code(422);
+                    echo json_encode(['error' => 'Database error']);
+                    exit;
+                }
+                log_user_action($conn, (int)$_SESSION['user_id'], 'UPDATE', $table, (int)$body['id']);
+                echo json_encode(['ok' => true]);
+                exit;
             }
 
             $sql = sprintf('UPDATE %s.%s SET %s = $1%s WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($col), $cast, pg_ident($idCol));
@@ -848,6 +1585,47 @@ try {
                     $ph[]   = str_contains($type, 'bool') ? '$' . $i . '::boolean' : '$' . $i;
                     $i++;
                 }
+            }
+
+            // MySQL Gateway — INSERT new row
+            if (in_array($table, mysql_gateway_tables(), true)) {
+                $mysqlPdo = mysql_pdo_api();
+                if ($mysqlPdo === null) {
+                    http_response_code(503);
+                    echo json_encode(['error' => 'MySQL not configured or unavailable']);
+                    exit;
+                }
+                $myVals = [];
+                foreach ($cols as $ci => $cn) {
+                    $ct       = strtolower($tableCfg['columns'][$cn]['type'] ?? '');
+                    $v        = $vals[$ci];
+                    $myVals[] = str_contains($ct, 'bool')
+                        ? (($v === null) ? null : (in_array($v, ['TRUE', 'true', '1', 't', 'T'], true) ? 1 : 0))
+                        : $v;
+                }
+                try {
+                    if (empty($cols)) {
+                        $stmt = $mysqlPdo->prepare('INSERT INTO ' . mysql_bt($table) . ' () VALUES ()');
+                        $stmt->execute([]);
+                    } else {
+                        $myCols = implode(', ', array_map('mysql_bt', $cols));
+                        $myPh   = implode(', ', array_fill(0, count($myVals), '?'));
+                        $stmt   = $mysqlPdo->prepare(
+                            'INSERT INTO ' . mysql_bt($table) . ' (' . $myCols . ') VALUES (' . $myPh . ')'
+                        );
+                        $stmt->execute($myVals);
+                    }
+                    $newId = (string) $mysqlPdo->lastInsertId();
+                } catch (\PDOException $e) {
+                    error_log('[api][mysql][insert] ' . $e->getMessage());
+                    http_response_code(422);
+                    echo json_encode(['error' => 'Database error']);
+                    exit;
+                }
+                $userId = (int)$_SESSION['user_id'];
+                log_user_action($conn, $userId, 'INSERT', $table, (int) $newId);
+                echo json_encode(['ok' => true, 'id' => $newId]);
+                exit;
             }
 
             if (empty($cols)) {
@@ -962,6 +1740,31 @@ try {
                     echo json_encode(['error' => 'Forbidden: you do not own this record.']);
                     exit;
                 }
+            }
+
+            // MySQL Gateway — DELETE row
+            if (in_array($table, mysql_gateway_tables(), true)) {
+                $mysqlPdo = mysql_pdo_api();
+                if ($mysqlPdo === null) {
+                    http_response_code(503);
+                    echo json_encode(['error' => 'MySQL not configured or unavailable']);
+                    exit;
+                }
+                $myPkCol = $tableCfg['mysql_pk'] ?? $idCol;
+                try {
+                    $stmt = $mysqlPdo->prepare(
+                        'DELETE FROM ' . mysql_bt($table) . ' WHERE ' . mysql_bt($myPkCol) . ' = ?'
+                    );
+                    $stmt->execute([$deleteId]);
+                } catch (\PDOException $e) {
+                    error_log('[api][mysql][delete] ' . $e->getMessage());
+                    http_response_code(422);
+                    echo json_encode(['error' => 'Database error']);
+                    exit;
+                }
+                log_user_action($conn, (int)$_SESSION['user_id'], 'DELETE', $table, $deleteId);
+                echo json_encode(['ok' => true]);
+                exit;
             }
 
             $sql = sprintf('DELETE FROM %s.%s WHERE %s=$1', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));

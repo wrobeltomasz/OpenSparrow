@@ -717,6 +717,18 @@ function demo_def_crm($conn): array
             ['table' => 'invoices', 'date_column' => 'due_date', 'title_column' => 'invoice_number', 'color' => '#f87171', 'notify_before_days' => 7, 'url_template' => 'edit.php?table=invoices&id={id}', 'icon' => 'assets/icons/file_present.png', 'notified_users' => []],
             ['table' => 'assets', 'date_column' => 'warranty_end', 'title_column' => 'name', 'color' => '#d1d5db', 'notify_before_days' => 14, 'url_template' => 'edit.php?table=assets&id={id}', 'icon' => 'assets/icons/database.png', 'notified_users' => []],
         ],
+        // Kanban board — Deals grouped by their sales Stage. Dragging a card
+        // between lanes moves the deal along the pipeline (updates deals.stage).
+        'board' => [
+            'menu_name'     => 'Deals Board',
+            'menu_icon'     => 'assets/icons/account_tree.png',
+            'hidden'        => false,
+            'table'         => 'deals',
+            'status_column' => 'stage',
+            'title_column'  => 'title',
+            'card_columns'  => ['company_id', 'value', 'expected_close'],
+            'color'         => '#005A9E',
+        ],
         'workflows' => [
             ['id' => 'wf_demo_crm_001', 'title' => 'New CRM Deal', 'icon' => 'assets/icons/apartment.png', 'description' => 'CRM: add company → contact → deal → activity.', 'steps' => [
                 ['title' => 'Add Company',  'table' => 'companies',  'foreign_key' => '',           'link_to_step' => 0, 'allow_multiple' => false],
@@ -780,6 +792,7 @@ function demo_def_crm($conn): array
             ]],
             ['key' => 'assets'],
             ['key' => 'activities'],
+            ['key' => 'board'],
         ],
         'files_relations' => [
             ['table' => 'companies', 'col1' => 'name', 'col2' => ''],

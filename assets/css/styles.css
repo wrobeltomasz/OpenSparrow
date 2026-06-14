@@ -247,6 +247,23 @@ header input.date-filter:focus {
   opacity: 1;
 }
 
+/* ===== NAV COLLAPSED TOOLTIP ===== */
+#nav-tip {
+  position: fixed;
+  background: #1e293b;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 0.12s;
+  z-index: 9999;
+}
+#nav-tip.nav-tip-visible { opacity: 1; }
+
 /* ===== USER AVATAR DROPDOWN ===== */
 .user-avatar-wrap {
   position: relative;
@@ -510,6 +527,8 @@ nav.collapsed li a, nav.collapsed .custom-nav-link {
 }
 
 nav.collapsed .menu-text { display: none; }
+
+nav.collapsed .menu-submenu-details { display: none; }
 
 /* Preserve exact casing from config — prevent any inherited text-transform */
 .menu-text {
@@ -1458,6 +1477,174 @@ footer {
   border: 2px solid var(--accent);
   border-radius: var(--radius);
   font-weight: 600;
+}
+
+/* ===== BOARD (KANBAN) VIEW ===== */
+#boardMain {
+  padding: 20px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.board-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.board-header h2 { margin: 0; }
+.board-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.board-meta-by::before {
+  content: "·";
+  margin-right: 8px;
+  color: var(--border);
+}
+.board-notice {
+  color: var(--muted);
+  text-align: center;
+  padding: 48px 20px;
+  font-size: 15px;
+}
+.board-loading {
+  color: var(--muted);
+  padding: 40px 20px;
+}
+.board-grid {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  flex: 1;
+  min-height: 0;
+}
+.board-lane {
+  background: var(--accent-light);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  width: 290px;
+  min-width: 290px;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+.board-lane.drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-mid);
+}
+.board-lane-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.board-lane-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.board-lane-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-lane-count {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 1px 9px;
+  flex-shrink: 0;
+}
+.board-lane-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 60px;
+}
+.board-lane-empty {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  padding: 18px 6px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+.board-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition: box-shadow 0.15s ease, transform 0.05s ease;
+  position: relative;
+}
+.board-card:hover {
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12);
+}
+.board-card[draggable="true"] { cursor: grab; }
+.board-card.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+.board-card-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 6px;
+  padding-right: 32px;
+  word-break: break-word;
+}
+.board-card-fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  font-size: 12px;
+}
+.board-card-fields dt {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.board-card-fields dd {
+  margin: 0;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-card-id {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: monospace;
 }
 
 /* ===== GRID LOADER (Spinner Overlay) ===== */

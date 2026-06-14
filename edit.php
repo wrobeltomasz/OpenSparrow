@@ -44,8 +44,13 @@ $error      = '';
 // Row-level authorization gate, applied before any read or write. Records the user
 // may not access return the same 404 as missing records, so existence is never
 // disclosed. Covers both the POST update path below and the GET render path.
+// Row-level ownership lives in PostgreSQL; MySQL gateway tables get basic CRUD
+// only, so the gate is skipped for them.
 $rawTableCfg = $rawSchema['tables'][$table] ?? [];
-if (!can_access_record($GLOBALS['conn'], $rawTableCfg, $table, (int)$id, $session->userId(), $session->role())) {
+if (
+    !$tableCfg->isMysql()
+    && !can_access_record($GLOBALS['conn'], $rawTableCfg, $table, (int)$id, $session->userId(), $session->role())
+) {
     http_response_code(404);
     die('Record not found.');
 }
@@ -59,13 +64,17 @@ if ($request->isPost()) {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
         $records->update($tableCfg, $id, $data);
         $logId = $audit->log($session->userId(), 'UPDATE', $tableCfg->name, (int)$id);
-        if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-            snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
-        }
-        evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId());
-        foreach ($m2mConfigs as $mi => $m2mCfg) {
-            $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
-            m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
+        // Snapshots, automations and m2m sync are PostgreSQL-side features; skip
+        // them for MySQL gateway tables (basic field CRUD only).
+        if (!$tableCfg->isMysql()) {
+            if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
+                snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
+            }
+            evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId());
+            foreach ($m2mConfigs as $mi => $m2mCfg) {
+                $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
+                m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
+            }
         }
         if (($request->post('_save_action') ?? 'exit') === 'stay') {
             header('Location: edit.php?table=' . urlencode($table) . '&id=' . urlencode((string)$id) . '&saved=1');
@@ -86,7 +95,8 @@ if ($row === null) {
 }
 
 $subtablesData = $records->subtables($tableCfg, $id);
-$relatedFiles  = $files->forRecord($tableCfg->name, $id);
+// File attachments are stored against PostgreSQL records; not offered for MySQL tables.
+$relatedFiles  = $tableCfg->isMysql() ? [] : $files->forRecord($tableCfg->name, $id);
 
 // Pre-load FK options for all FK columns — eliminates N+1 queries in the template.
 $fkOptions  = [];

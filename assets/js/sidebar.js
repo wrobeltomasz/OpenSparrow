@@ -77,4 +77,39 @@ document.addEventListener('DOMContentLoaded', () => {
             restoreDesktopState();
         }
     });
+
+    /* Tooltip for collapsed nav icons — body-level div avoids nav overflow clipping */
+    const navTip = document.createElement('div');
+    navTip.id = 'nav-tip';
+    navTip.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(navTip);
+
+    let tipTarget = null;
+
+    function showNavTip(link) {
+        if (!sidebar.classList.contains('collapsed') || isMobile()) return;
+        const label = link.dataset.tooltip;
+        if (!label) return;
+        const rect = link.getBoundingClientRect();
+        navTip.textContent = label;
+        navTip.style.top  = (rect.top + rect.height / 2) + 'px';
+        navTip.style.left = (rect.right + 10) + 'px';
+        navTip.classList.add('nav-tip-visible');
+    }
+
+    function hideNavTip() {
+        navTip.classList.remove('nav-tip-visible');
+        tipTarget = null;
+    }
+
+    sidebar.addEventListener('mouseover', (e) => {
+        const link = e.target.closest('.custom-nav-link');
+        if (link === tipTarget) return;
+        tipTarget = link;
+        if (link) showNavTip(link);
+        else hideNavTip();
+    });
+
+    sidebar.addEventListener('mouseleave', hideNavTip);
+    sidebar.addEventListener('click', hideNavTip);
 });

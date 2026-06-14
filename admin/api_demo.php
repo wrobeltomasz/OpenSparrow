@@ -128,6 +128,13 @@ if ($action === 'demo_install') {
         }
         file_put_contents($calPath, json_encode($calCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
+        // board.json — single-config Kanban board, written only if the demo
+        // defines one. Mirrors the structure produced by the admin Board editor.
+        if (!empty($demoData['board']) && is_array($demoData['board'])) {
+            $boardPath = $configDir . '/board.json';
+            file_put_contents($boardPath, json_encode($demoData['board'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        }
+
         // workflows.json
         $wfPath = $configDir . '/workflows.json';
         $wfCfg  = file_exists($wfPath) ? (json_decode(file_get_contents($wfPath), true) ?? []) : [];
@@ -260,6 +267,7 @@ if ($action === 'demo_install') {
             'view_names'     => $demoData['view_names'],
             'menu_keys'      => $menuKeys,
             'automation_ids' => $automationIds,
+            'board_table'    => $demoData['board']['table'] ?? null,
         ];
         file_put_contents(
             $configDir . '/demo_meta.json',
@@ -387,6 +395,17 @@ if ($action === 'demo_uninstall') {
                 @unlink($calPath);
             } else {
                 file_put_contents($calPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            }
+        }
+
+        // Clean board.json (remove only if it points at a demo table)
+        $boardPath = $configDir . '/board.json';
+        if (file_exists($boardPath)) {
+            $cfg     = json_decode(file_get_contents($boardPath), true) ?? [];
+            $tbls    = $meta['tables'] ?? [];
+            $bTable  = $cfg['table'] ?? ($meta['board_table'] ?? '');
+            if ($bTable !== '' && in_array($bTable, $tbls, true)) {
+                @unlink($boardPath);
             }
         }
 

@@ -43,6 +43,148 @@ if (file_exists($viewsPath)) {
 }
 $views = $viewsConfig['views'] ?? [];
 
+/**
+ * PDO connection to the MySQL Gateway database, or null when not configured.
+ * Mirrors mysql_pdo_api() in api.php (api_views.php is a standalone endpoint
+ * and does not include the main gateway).
+ */
+function views_mysql_pdo(): ?\PDO
+{
+    if (MYSQL_HOST === '' || MYSQL_DB === '' || MYSQL_USER === '') {
+        return null;
+    }
+    try {
+        $dsn = sprintf(
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=5',
+            MYSQL_HOST,
+            MYSQL_PORT,
+            MYSQL_DB
+        );
+        return new \PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
+            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+        ]);
+    } catch (\PDOException $e) {
+        error_log('[api_views][mysql] ' . $e->getMessage());
+        return null;
+    }
+}
+
+/** Backtick-quote a MySQL identifier. */
+function views_mysql_bt(string $name): string
+{
+    return '`' . str_replace('`', '', $name) . '`';
+}
+
+/**
+ * Render view data for a MySQL-sourced view (SELECT or drill-down GROUP BY).
+ * Echoes the JSON response and exits — mirrors the PostgreSQL data path.
+ */
+function views_mysql_data(
+    string $viewName,
+    array $cfg,
+    ?string $groupBy,
+    string $filterCol,
+    $filterVal,
+    array $drillLevels,
+    int $level
+): void {
+    if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $viewName)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid view name']);
+        exit;
+    }
+
+    $pdo = views_mysql_pdo();
+    if ($pdo === null) {
+        http_response_code(500);
+        echo json_encode(['error' => 'MySQL gateway not configured']);
+        exit;
+    }
+
+    $params      = [];
+    $whereClause = '';
+    if ($filterCol !== '' && $filterVal !== null) {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $filterCol)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid filter column']);
+            exit;
+        }
+        $params[]    = $filterVal;
+        $whereClause = 'WHERE ' . views_mysql_bt($filterCol) . ' = ?';
+    }
+
+    if ($groupBy !== null) {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $groupBy)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid group column']);
+            exit;
+        }
+        $colsCfg  = $cfg['columns'] ?? [];
+        $aggParts = [];
+        foreach ($colsCfg as $colName => $colCfg) {
+            if ($colName === $groupBy) {
+                continue;
+            }
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', (string) $colName)) {
+                continue;
+            }
+            $agg = strtolower($colCfg['aggregate'] ?? '');
+            if ($agg === 'count') {
+                $aggParts[] = 'COUNT(*) AS ' . views_mysql_bt($colName);
+            } elseif ($agg === 'sum') {
+                $aggParts[] = 'SUM(' . views_mysql_bt($colName) . ') AS ' . views_mysql_bt($colName);
+            } elseif ($agg === 'avg') {
+                $aggParts[] = 'ROUND(AVG(' . views_mysql_bt($colName) . '), 2) AS ' . views_mysql_bt($colName);
+            }
+        }
+        $selectExtra = empty($aggParts) ? 'COUNT(*) AS _count' : implode(', ', $aggParts);
+        $sql         = sprintf(
+            'SELECT %s, %s FROM %s.%s %s GROUP BY %s ORDER BY 2 DESC LIMIT 1000',
+            views_mysql_bt($groupBy),
+            $selectExtra,
+            views_mysql_bt(MYSQL_DB),
+            views_mysql_bt($viewName),
+            $whereClause,
+            views_mysql_bt($groupBy)
+        );
+    } else {
+        $sql = sprintf(
+            'SELECT * FROM %s.%s %s LIMIT 1000',
+            views_mysql_bt(MYSQL_DB),
+            views_mysql_bt($viewName),
+            $whereClause
+        );
+    }
+
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+    } catch (\PDOException $e) {
+        error_log('[api_views][mysql data] ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error']);
+        exit;
+    }
+
+    echo json_encode([
+        'status'        => 'ok',
+        'view'          => $viewName,
+        'display_name'  => $cfg['display_name'] ?? $viewName,
+        'level'         => $level,
+        'max_level'     => max(0, count($drillLevels) - 1),
+        'group_by'      => $groupBy,
+        'drill_enabled' => !empty($cfg['drill_down']['enabled']),
+        'rows'          => $rows,
+        'columns'       => $cfg['columns'] ?? [],
+        'drill_down'    => $cfg['drill_down'] ?? ['enabled' => false, 'levels' => []],
+        'icon'          => $cfg['icon'] ?? '',
+        'source'        => 'mysql',
+    ]);
+    exit;
+}
+
 try {
     /* LIST — visible views for FE menu/selector */
     if ($action === 'list' && $method === 'GET') {
@@ -89,6 +231,10 @@ try {
         $groupBy     = null;
         if (!empty($drillLevels) && isset($drillLevels[$level])) {
             $groupBy = $drillLevels[$level]['group_by'] ?? null;
+        }
+
+        if (($cfg['source'] ?? 'postgres') === 'mysql') {
+            views_mysql_data($viewName, $cfg, $groupBy, $filterCol, $filterVal, $drillLevels, $level);
         }
 
         $params      = [];
@@ -169,6 +315,45 @@ try {
 
     /* SYNC — read DB views list and column metadata (admin only) */
     if ($action === 'sync' && $method === 'GET' && $role === 'admin') {
+        $source = ($_GET['source'] ?? 'postgres') === 'mysql' ? 'mysql' : 'postgres';
+
+        if ($source === 'mysql') {
+            $pdo = views_mysql_pdo();
+            if ($pdo === null) {
+                http_response_code(500);
+                echo json_encode(['error' => 'MySQL gateway not configured']);
+                exit;
+            }
+
+            $vStmt = $pdo->prepare(
+                'SELECT TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME'
+            );
+            $vStmt->execute([MYSQL_DB]);
+            $dbViews = array_column($vStmt->fetchAll(), 'TABLE_NAME');
+
+            $viewsColumns = [];
+            foreach ($dbViews as $vName) {
+                $cStmt = $pdo->prepare(
+                    'SELECT COLUMN_NAME, DATA_TYPE FROM information_schema.COLUMNS '
+                    . 'WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION'
+                );
+                $cStmt->execute([MYSQL_DB, $vName]);
+                $cols = [];
+                foreach ($cStmt->fetchAll() as $col) {
+                    $cols[$col['COLUMN_NAME']] = ['data_type' => $col['DATA_TYPE']];
+                }
+                $viewsColumns[$vName] = $cols;
+            }
+
+            echo json_encode([
+                'status'   => 'ok',
+                'db_views' => $dbViews,
+                'columns'  => $viewsColumns,
+                'source'   => 'mysql',
+            ]);
+            exit;
+        }
+
         $conn       = db_connect();
         $schemaName = sys_schema();
 
@@ -200,7 +385,12 @@ try {
             $viewsColumns[$vName] = $cols;
         }
 
-        echo json_encode(['status' => 'ok', 'db_views' => $dbViews, 'columns' => $viewsColumns]);
+        echo json_encode([
+            'status'   => 'ok',
+            'db_views' => $dbViews,
+            'columns'  => $viewsColumns,
+            'source'   => 'postgres',
+        ]);
         exit;
     }
 

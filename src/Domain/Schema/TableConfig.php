@@ -20,7 +20,15 @@ final class TableConfig
         public readonly array $subtables,
         public readonly string $primaryKey = 'id',
         public readonly string $icon = '',
+        public readonly string $source = 'postgres',
+        public readonly string $mysqlPk = 'id',
     ) {
+    }
+
+    /** True when this table is routed to the external MySQL gateway, not PostgreSQL. */
+    public function isMysql(): bool
+    {
+        return $this->source === 'mysql';
     }
 
     /** Columns shown in edit/create forms (respects show_in_edit; virtual columns excluded). */

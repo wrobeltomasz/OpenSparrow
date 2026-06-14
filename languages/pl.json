@@ -266,6 +266,14 @@
         "month_nov": "Listopad",
         "month_dec": "Grudzień"
     },
+    "board": {
+        "title": "Tablica",
+        "grouped_by": "pogrupowane wg {column}",
+        "uncategorized": "Bez kategorii",
+        "empty_lane": "Brak kart",
+        "not_configured": "Tablica nie została jeszcze skonfigurowana. Administrator może ustawić tabelę źródłową i kolumnę statusu w panelu administracyjnym.",
+        "load_error": "Nie udało się załadować tablicy."
+    },
     "mass_edit": {
         "title": "Masowa edycja",
         "action_label": "Masowa edycja",

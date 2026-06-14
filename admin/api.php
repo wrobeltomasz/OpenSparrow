@@ -870,7 +870,7 @@ if ($action === 'export') {
     if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
         $configDir = __DIR__ . '/../config/';
         // database.json excluded — contains plaintext DB credentials
-        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'security.json', 'workflows.json', 'files.json'];
+        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'board.json', 'security.json', 'workflows.json', 'files.json'];
         foreach ($filesToBackup as $f) {
             if (file_exists($configDir . $f)) {
                 $zip->addFile($configDir . $f, $f);
@@ -910,7 +910,7 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
     $zip = new ZipArchive();
     if ($zip->open($_FILES['backup_file']['tmp_name']) === true) {
         $extractPath = __DIR__ . '/../config/';
-        $importAllowed = ['schema', 'dashboard', 'calendar', 'database', 'security', 'workflows', 'files'];
+        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files'];
         $validFiles = [];
 
         // Validate each file inside the archive
@@ -1342,6 +1342,17 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         'children' => [],
     ];
 
+    $boardRaw = $menuSafeReadJson($inc . '/board.json') ?? [];
+    if (!empty($boardRaw['table']) && !empty($boardRaw['status_column'])) {
+        $catalog['board'] = [
+            'type' => 'board', 'key' => 'board',
+            'name'   => $boardRaw['menu_name'] ?? 'Board',
+            'icon'   => $menuSanitizeIcon((string)($boardRaw['menu_icon'] ?? 'assets/icons/account_tree.png')),
+            'hidden' => !empty($boardRaw['hidden']),
+            'children' => [],
+        ];
+    }
+
     $filesRaw = $menuSafeReadJson($inc . '/files.json') ?? [];
     $catalog['files'] = [
         'type' => 'files', 'key' => 'files',
@@ -1414,8 +1425,8 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $inc       = __DIR__ . '/../config';
     $schemaRaw = $menuSafeReadJson($inc . '/schema.json') ?? [];
-    $validKeys  = array_merge(['dashboard', 'calendar', 'files'], array_keys($schemaRaw['tables'] ?? []));
-    $validTypes = ['dashboard', 'calendar', 'files', 'table'];
+    $validKeys  = array_merge(['dashboard', 'calendar', 'board', 'files'], array_keys($schemaRaw['tables'] ?? []));
+    $validTypes = ['dashboard', 'calendar', 'board', 'files', 'table'];
 
     $sanitized = [];
     foreach ($body['items'] as $entry) {
@@ -1451,7 +1462,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Allowed config files for read and write operations
 // Dodałem 'files' do autoryzowanych konfiguracji
-$allowedFiles = ['schema', 'dashboard', 'calendar', 'database', 'security', 'workflows', 'files', 'views', 'automations'];
+$allowedFiles = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files', 'views', 'automations'];
 
 // Get content of a JSON config file
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {

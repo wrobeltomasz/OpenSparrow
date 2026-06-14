@@ -72,6 +72,7 @@ $isWorkflows  = isset($_GET['workflows']);
 
 $dashCfg  = loadMenuConfig('dashboard', $includeDir);
 $calCfg   = loadMenuConfig('calendar', $includeDir);
+$boardCfg = loadMenuConfig('board', $includeDir);
 $filesCfg = loadMenuConfig('files', $includeDir);
 $wfCfg    = loadMenuConfig('workflows', $includeDir);
 $viewsCfg = loadMenuConfig('views', $includeDir);
@@ -103,6 +104,18 @@ $menuCatalog = [
         'active' => $currentPage === 'files.php',
     ],
 ];
+
+// Board appears in the sidebar only once an admin has bound it to a table+status.
+if (!empty($boardCfg['table']) && !empty($boardCfg['status_column'])) {
+    $menuCatalog['board'] = [
+        'type'   => 'board',
+        'href'   => 'board.php',
+        'name'   => $boardCfg['menu_name'] ?? 'Board',
+        'icon'   => $boardCfg['menu_icon'] ?? 'assets/icons/account_tree.png',
+        'hidden' => !empty($boardCfg['hidden']),
+        'active' => $currentPage === 'board.php',
+    ];
+}
 
 if (!empty($wfCfg['workflows'])) {
     $menuCatalog['workflows'] = [
@@ -210,7 +223,7 @@ if (!function_exists('renderMenuLink')) {
             $icon = '<img src="assets/icons/table_chart_view.png" alt="" />';
         }
         $name = htmlspecialchars($item['name'] ?? '', ENT_QUOTES, 'UTF-8');
-        return '<a href="' . $href . '" class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '"' . $attrs . '>'
+        return '<a href="' . $href . '" class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '"' . $attrs . ' data-tooltip="' . $name . '">'
              . $icon
              . '<span class="menu-text">' . $name . '</span>'
              . '</a>';

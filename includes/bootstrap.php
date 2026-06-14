@@ -21,10 +21,13 @@ use App\Form\Type\TextField;
 use App\Form\UpdateMapper;
 use App\Http\PhpRequest;
 use App\Http\PhpSession;
+use App\Persistence\MysqlConnection;
 use App\Persistence\PgConnection;
 use App\Repository\FkOptionsLoader;
+use App\Repository\MysqlRecordRepository;
 use App\Repository\PgFileRepository;
 use App\Repository\PgRecordRepository;
+use App\Repository\RoutingRecordRepository;
 
 start_session();
 
@@ -48,7 +51,15 @@ $fieldRegistry = new FieldTypeRegistry([
     new TextField(), // universal fallback — must be last
 ]);
 
-$mapper  = new UpdateMapper($fieldRegistry);
-$records = new PgRecordRepository($db, $schemas, $fkLoader);
-$files   = new PgFileRepository($db);
-$audit   = new DbAuditLogger($db);
+$mapper = new UpdateMapper($fieldRegistry);
+
+// Records go through a router: PostgreSQL by default, MySQL for tables listed in
+// config/mysql_gateway.json. The MySQL connection is optional — when it is not
+// configured, PostgreSQL tables keep working and only MySQL tables error.
+$pgRecords    = new PgRecordRepository($db, $schemas, $fkLoader);
+$mysqlConn    = MysqlConnection::fromConfig();
+$mysqlRecords = $mysqlConn !== null ? new MysqlRecordRepository($mysqlConn) : null;
+$records      = new RoutingRecordRepository($pgRecords, $mysqlRecords);
+
+$files = new PgFileRepository($db);
+$audit = new DbAuditLogger($db);

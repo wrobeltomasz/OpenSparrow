@@ -1,8 +1,9 @@
 ﻿// admin/app.js
 import { moveArrayItem, moveObjectKey, renderGlobalSettings, createFullMenuPreview } from './ui.js';
-import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings } from './schema.js';
+import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings, renderExternalTablesView } from './schema.js';
 import { renderDashboardLayout, renderDashboardEditor, initDashboardUI } from './dashboard.js';
 import { renderCalendarEditor } from './calendar.js';
+import { renderBoardEditor } from './board.js';
 import { renderDatabaseEditor } from './database.js';
 import { renderSecurityEditor } from './security.js';
 import { renderHealthDashboard } from './health.js';
@@ -25,6 +26,7 @@ import { renderCsvImportPage } from './csv_import.js';
 import { renderRagPage } from './rag.js';
 import { renderAutomationsPage, autoActions } from './automations.js';
 import { renderOverviewPage } from './overview.js';
+import { renderFdwPage } from './fdw.js';
 
 let currentConfig = null;
 let currentFile = 'overview';
@@ -32,13 +34,28 @@ let currentItemKey = null;
 let globalSchemaObj = null;
 let isDirty = false;
 
+// Names of tables routed from external MySQL (config/mysql_gateway.json).
+// Used to keep PostgreSQL and external MySQL tables in separate admin tabs.
+let mysqlTableSet = new Set();
+export function isMysqlTable(name) { return mysqlTableSet.has(name); }
+
+async function refreshMysqlTableSet() {
+    try {
+        const res = await fetch('api_fdw.php?action=mysql_status');
+        const data = await res.json();
+        mysqlTableSet = new Set(data.mysql_tables || []);
+    } catch {
+        mysqlTableSet = new Set();
+    }
+}
+
 const itemPanelEl = document.getElementById('itemPanel');
 const workspaceEl = document.getElementById('editorForm');
 const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
@@ -228,8 +245,27 @@ function getColumnOptionsForTable(tableName) {
     return options;
 }
 
+// Enum-typed columns of a table — used by the Board editor to offer sensible
+// status-column candidates whose values map cleanly onto board lanes.
+function getEnumColumnsForTable(tableName) {
+    const options = [];
+    const cols = globalSchemaObj?.tables?.[tableName]?.columns;
+    if (cols) {
+        for (const c in cols) {
+            if ((cols[c].type || '').toLowerCase() === 'enum') {
+                options.push({ value: c, label: cols[c].display_name || c });
+            }
+        }
+    }
+    return options;
+}
+
+function getColumnMeta(tableName, colName) {
+    return globalSchemaObj?.tables?.[tableName]?.columns?.[colName] || null;
+}
+
 async function loadConfigFile(fileName) {
-    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'fdw') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -242,6 +278,7 @@ async function loadConfigFile(fileName) {
 
         if (fileName === 'schema') {
             if (!currentConfig.tables || Array.isArray(currentConfig.tables)) currentConfig.tables = {};
+            await refreshMysqlTableSet();
         } else if (fileName === 'dashboard') {
             if (!currentConfig.layout) currentConfig.layout = { columns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" };
             if (!currentConfig.widgets || !Array.isArray(currentConfig.widgets)) currentConfig.widgets = [];
@@ -249,6 +286,9 @@ async function loadConfigFile(fileName) {
         } else if (fileName === 'calendar') {
             if (!currentConfig.sources || !Array.isArray(currentConfig.sources)) currentConfig.sources = [];
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Calendar';
+        } else if (fileName === 'board') {
+            if (!Array.isArray(currentConfig.card_columns)) currentConfig.card_columns = [];
+            if (!currentConfig.menu_name) currentConfig.menu_name = 'Board';
         } else if (fileName === 'workflows') {
             if (!currentConfig.workflows || !Array.isArray(currentConfig.workflows)) currentConfig.workflows = [];
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Workflows';
@@ -278,7 +318,7 @@ async function loadConfigFile(fileName) {
             currentItemKey = 'LAYOUT';
             renderSidebar();
             renderEditor('LAYOUT', null, false);
-        } else if (fileName === 'database' || fileName === 'security' || fileName === 'views') {
+        } else if (fileName === 'database' || fileName === 'security' || fileName === 'views' || fileName === 'board') {
             renderSidebar();
             renderEditor('SETTINGS', currentConfig, false);
         } else {
@@ -333,7 +373,7 @@ function renderSidebar() {
     const fullPageTabs = new Set([
         'overview', 'database', 'security', 'health', 'docs', 'users', 'backup',
         'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron',
-        'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'views',
+        'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'fdw', 'board',
     ]);
 
     if (fullPageTabs.has(currentFile)) {
@@ -427,7 +467,7 @@ function renderSidebar() {
         const btnAll = document.createElement('button');
         btnAll.type = 'button';
         btnAll.className = 'item-btn' + (currentItemKey === null ? ' active' : '');
-        btnAll.textContent = currentFile === 'schema'       ? 'All Tables'
+        btnAll.textContent = currentFile === 'schema'       ? 'All PostgreSQL tables'
                            : currentFile === 'dashboard'    ? 'All Widgets'
                            : currentFile === 'workflows'    ? 'All Workflows'
                            : currentFile === 'automations'  ? 'All Automations'
@@ -439,6 +479,20 @@ function renderSidebar() {
             else renderItemCards();
         };
         itemsRow.insertBefore(btnAll, itemsRow.firstChild);
+
+        if (currentFile === 'schema') {
+            const btnExt = document.createElement('button');
+            btnExt.type = 'button';
+            btnExt.className = 'item-btn' + (currentItemKey === 'EXTERNAL_TABLES' ? ' active' : '');
+            btnExt.textContent = 'All External MySQL Tables';
+            btnExt.onclick = () => {
+                currentItemKey = 'EXTERNAL_TABLES';
+                renderSidebar();
+                renderEditor('EXTERNAL_TABLES', null, false);
+            };
+            btnAll.insertAdjacentElement('afterend', btnExt);
+        }
+
         itemPanelEl.appendChild(itemsRow);
         return;
     }
@@ -530,7 +584,9 @@ function renderItemCards() {
                        : isDashboard ? (currentConfig.widgets   || [])
                        : isWorkflows ? (currentConfig.workflows || [])
                        : (currentConfig.sources || []);
-        const freshKeys = getKeys(fresh);
+        // The schema "All PostgreSQL tables" view lists native PG tables only;
+        // external MySQL tables live in their own "All External MySQL Tables" tab.
+        const freshKeys = getKeys(fresh).filter(k => !(isSchema && isMysqlTable(k)));
         list.innerHTML = '';
         if (freshKeys.length === 0) {
             const empty = document.createElement('p');
@@ -706,9 +762,9 @@ function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
 
 function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
-    const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar };
+    const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar };
     
-    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'automations'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
+    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'automations'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && key === 'EXTERNAL_TABLES')) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
@@ -732,6 +788,7 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'settings') return renderSettingsPage(ctx);
     if (currentFile === 'csv_import') return renderCsvImportPage(ctx);
     if (currentFile === 'rag') return renderRagPage(ctx);
+    if (currentFile === 'fdw') return renderFdwPage(ctx);
     if (currentFile === 'automations') {
         if (key === 'LAYOUT') {
             const msg = document.createElement('p');
@@ -743,6 +800,7 @@ function renderEditor(key, itemData, isArray) {
         return renderAutomationsPage(ctx);
     }
     if (currentFile === 'views') return renderViewsEditor(ctx);
+    if (currentFile === 'board') return renderBoardEditor(ctx);
     if (currentFile === 'files' && key === 'MANAGER') return renderFilesEditor(ctx);
 
     if (currentFile === 'menu') {
@@ -787,6 +845,7 @@ function renderEditor(key, itemData, isArray) {
         }
     }
     
+    if (currentFile === 'schema' && key === 'EXTERNAL_TABLES') return renderExternalTablesView(ctx);
     if (currentFile === 'schema' && key === 'GLOBAL_SCHEMA') return renderSchemaGlobalSettings(currentConfig, ctx);
     if (currentFile === 'schema') return renderSchemaEditor(key, itemData, ctx);
 
@@ -837,8 +896,43 @@ function renderEditor(key, itemData, isArray) {
     }
 })();
 
+// Validate a workflows config before saving — a workflow cannot be saved while
+// any step is incomplete (missing name or target table) or it has no steps at
+// all. This is database-agnostic (pure config check) so it guards PostgreSQL and
+// MySQL-routed step tables alike. Returns an error string, or null when valid.
+function validateWorkflowsConfig(config) {
+    const workflows = config.workflows || [];
+    for (let w = 0; w < workflows.length; w++) {
+        const wf = workflows[w];
+        const label = (wf.title && wf.title.trim()) || `Workflow ${w + 1}`;
+        const steps = wf.steps || [];
+        if (steps.length === 0) {
+            return `"${label}" has no steps — add at least one step or remove the workflow.`;
+        }
+        for (let s = 0; s < steps.length; s++) {
+            const step = steps[s] || {};
+            if (!step.title || step.title.trim() === '') {
+                return `"${label}" — Step ${s + 1} is missing a step name.`;
+            }
+            if (!step.table || step.table.trim() === '') {
+                return `"${label}" — Step ${s + 1} ("${step.title.trim()}") has no target table.`;
+            }
+        }
+    }
+    return null;
+}
+
 btnSave.addEventListener('click', async () => {
     if (!currentConfig) return;
+
+    if (currentFile === 'workflows') {
+        const err = validateWorkflowsConfig(currentConfig);
+        if (err) {
+            showStatusPill(btnSave, err, 'error');
+            return;
+        }
+    }
+
     try {
         const response = await fetch(`api.php?action=save&file=${currentFile}`, {
             method: 'POST',

@@ -190,7 +190,8 @@ function renderWorkflowsList(workflows, containerEl, titleEl, menuName, appSchem
         stepCount.style.fontWeight = '600';
         stepCount.style.textTransform = 'uppercase';
         stepCount.style.letterSpacing = '0.5px';
-        stepCount.textContent = I18n.t('workflow.steps', { count: wf.steps.length }, wf.steps.length);
+        const validStepCount = (wf.steps || []).filter(s => s && s.table).length;
+        stepCount.textContent = I18n.t('workflow.steps', { count: validStepCount }, validStepCount);
         
         const startBtn = document.createElement('span');
         startBtn.style.fontSize = '13.5px';
@@ -215,8 +216,14 @@ function renderWorkflowsList(workflows, containerEl, titleEl, menuName, appSchem
 
 // Start and manage the step-by-step wizard
 function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, menuName) {
+    // Drop steps with no target table (e.g. a blank step left in the workflow
+    // config). They cannot render and would otherwise abort the run after a
+    // valid step with "Schema for table '' not found.". Use a local copy so the
+    // saved config and the workflow list are untouched.
+    workflow = { ...workflow, steps: (workflow.steps || []).filter(s => s && s.table) };
+
     let currentStepIndex = 0;
-    const stepResults = {}; 
+    const stepResults = {};
 
     // Step progress indicator above the form
     function renderStepBar() {

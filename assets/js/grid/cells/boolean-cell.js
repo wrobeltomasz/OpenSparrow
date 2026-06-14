@@ -6,7 +6,9 @@ function renderBooleanCell({ row, col, colCfg, isReadOnly }) {
     const input = document.createElement('input');
     input.type = 'checkbox';
     const value = row[col + '__display'] ?? row[col] ?? '';
-    input.checked = value === true || value === 't' || value === 'true';
+    // Accept Postgres (t/true/bool) and MySQL tinyint(1) (1/"1") truthy forms.
+    input.checked = value === true || value === 't' || value === 'true'
+        || value === 1 || value === '1';
     input.dataset.column = col;
     input.dataset.id = row['id'];
 

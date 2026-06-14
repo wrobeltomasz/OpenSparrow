@@ -185,6 +185,15 @@ ${_ul([
     `<strong>${s.s4_context_label}:</strong> ${s.s4_context}`
 ])}
 
+${_h3('doc-4b', s.s4b_head)}
+${_p(s.s4b_desc)}
+${_ul([
+    `<strong>${s.s4b_table_label}:</strong> ${s.s4b_table}`,
+    `<strong>${s.s4b_status_label}:</strong> ${s.s4b_status}`,
+    `<strong>${s.s4b_cards_label}:</strong> ${s.s4b_cards}`,
+    `<strong>${s.s4b_dnd_label}:</strong> ${s.s4b_dnd}`
+])}
+
 ${_h3('doc-5', s.s5_head)}
 ${_p(s.s5_desc)}
 ${_ul([
@@ -192,6 +201,8 @@ ${_ul([
     `<strong>${s.s5_link_label}:</strong> ${s.s5_link}`,
     `<strong>${s.s5_multi_label}:</strong> ${s.s5_multi}`
 ])}
+${_h4(s.s5_validation_head)}
+${_p(s.s5_validation_desc)}
 
 ${_h3('doc-6', s.s6_head)}
 ${_p(s.s6_desc)}
@@ -313,6 +324,23 @@ ${_ul([
     `<strong>${s.s9k_types_label}:</strong> ${s.s9k_types}`,
     `<strong>${s.s9k_controls_label}:</strong> ${s.s9k_controls}`
 ])}
+
+${_h3('doc-9l', s.s9l_head)}
+${_p(s.s9l_desc)}
+${_h4(s.s9l_conn_head)}
+${_p(s.s9l_conn)}
+${_h4(s.s9l_tables_head)}
+${_ul([s.s9l_tables, s.s9l_remove])}
+${_h4(s.s9l_meta_head)}
+${_p(s.s9l_meta)}
+${_h4(s.s9l_sync_head)}
+${_p(s.s9l_sync)}
+${_h4(s.s9l_seps_head)}
+${_ul([s.s9l_seps_tabs, s.s9l_seps_sync, s.s9l_seps_inline])}
+${_p(s.s9l_crud)}
+${_h4(s.s9l_views_head)}
+${_p(s.s9l_views_desc)}
+${_ul([s.s9l_views_tabs, s.s9l_views_sync])}
 
 ${_h3('doc-10', s.s10_head)}
 ${_p(s.s10_desc)}

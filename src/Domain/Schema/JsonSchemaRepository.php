@@ -9,8 +9,10 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
     private array $rawData;
     /** @var array<string, TableConfig> */
     private array $cache = [];
+    /** @var list<string> Tables routed to the external MySQL gateway. */
+    private array $mysqlTables;
 
-    public function __construct(string $path)
+    public function __construct(string $path, ?string $gatewayPath = null)
     {
         $json = file_get_contents($path);
         if ($json === false) {
@@ -20,7 +22,8 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
         if (!is_array($data)) {
             throw new \RuntimeException("Invalid schema JSON in: {$path}");
         }
-        $this->rawData = $data;
+        $this->rawData     = $data;
+        $this->mysqlTables = $this->loadMysqlTables($gatewayPath ?? dirname($path) . '/mysql_gateway.json');
     }
 
     public function table(string $name): TableConfig
@@ -76,6 +79,31 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
             subtables: $cfg['subtables'] ?? [],
             primaryKey: 'id',
             icon: $cfg['icon'] ?? '',
+            source: in_array($name, $this->mysqlTables, true) ? 'mysql' : 'postgres',
+            mysqlPk: $cfg['mysql_pk'] ?? 'id',
         );
+    }
+
+    /**
+     * Read the gateway routing list (config/mysql_gateway.json -> mysql_tables).
+     * Missing/invalid file degrades to no MySQL tables — same tolerant behaviour
+     * as api.php::mysql_gateway_tables().
+     *
+     * @return list<string>
+     */
+    private function loadMysqlTables(string $path): array
+    {
+        if (!is_file($path)) {
+            return [];
+        }
+        $json = file_get_contents($path);
+        if ($json === false) {
+            return [];
+        }
+        $data = json_decode($json, true);
+        if (!is_array($data) || !isset($data['mysql_tables']) || !is_array($data['mysql_tables'])) {
+            return [];
+        }
+        return array_values(array_filter($data['mysql_tables'], 'is_string'));
     }
 }

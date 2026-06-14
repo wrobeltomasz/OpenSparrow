@@ -262,6 +262,14 @@
         "month_nov": "November",
         "month_dec": "December"
     },
+    "board": {
+        "title": "Board",
+        "grouped_by": "grouped by {column}",
+        "uncategorized": "Uncategorized",
+        "empty_lane": "No cards",
+        "not_configured": "The board has not been configured yet. An administrator can set the source table and status column in the admin panel.",
+        "load_error": "Could not load the board."
+    },
     "mass_edit": {
         "title": "Mass Edit",
         "action_label": "Mass Edit",
