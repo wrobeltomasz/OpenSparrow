@@ -94,7 +94,7 @@ describe('OpenSparrow – RAG: Send Interaction', () => {
   });
 
   it('Send button click with empty textarea does not post', () => {
-    cy.intercept('POST', '**/api_rag.php**').as('ragPost');
+    cy.intercept('POST', '**/api/rag.php**').as('ragPost');
     cy.get('#ragSendBtn').click();
     // With empty input, should not fire API call
     cy.wait(500);
@@ -116,8 +116,8 @@ describe('OpenSparrow – RAG: Send Interaction', () => {
       .should('have.length.gte', 1);
   });
 
-  it('Send fires POST to api_rag.php when a document is checked', () => {
-    cy.intercept('POST', '**/api_rag.php**').as('ragQuery');
+  it('Send fires POST to api/rag.php when a document is checked', () => {
+    cy.intercept('POST', '**/api/rag.php**').as('ragQuery');
 
     // Only run if at least one document is available to check
     cy.get('#ragFileList', { timeout: CypressHelpers.TIMEOUTS.long }).then($list => {

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="38.371" tests="19" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:17:46" tests="0" file="cypress\e2e\login.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Authenticated user flow" timestamp="2026-06-17T05:17:46" tests="10" time="24.384" failures="0">
+    <testcase name="OpenSparrow – Authenticated user flow displays the sidebar with core menu items" time="3.738" classname="displays the sidebar with core menu items">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow toggles the sidebar on mobile" time="1.140" classname="toggles the sidebar on mobile">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow displays user avatar button in header" time="1.004" classname="displays user avatar button in header">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow displays notifications widget" time="0.750" classname="displays notifications widget">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow shows admin link for admin users" time="0.923" classname="shows admin link for admin users">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow navigates to Company grid" time="2.265" classname="navigates to Company grid">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow shows grid action buttons when present" time="2.854" classname="shows grid action buttons when present">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow displays search and filter controls on grid" time="2.808" classname="displays search and filter controls on grid">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow shows pagination if table has enough records" time="2.099" classname="shows pagination if table has enough records">
+    </testcase>
+    <testcase name="OpenSparrow – Authenticated user flow allows Add record when editor role" time="6.282" classname="allows Add record when editor role">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Login &amp; Logout flow" timestamp="2026-06-17T05:18:11" tests="5" time="9.268" failures="0">
+    <testcase name="OpenSparrow – Login &amp; Logout flow displays login page with branding" time="0.377" classname="displays login page with branding">
+    </testcase>
+    <testcase name="OpenSparrow – Login &amp; Logout flow logs in successfully with valid credentials" time="2.451" classname="logs in successfully with valid credentials">
+    </testcase>
+    <testcase name="OpenSparrow – Login &amp; Logout flow fails to log in with invalid password" time="2.471" classname="fails to log in with invalid password">
+    </testcase>
+    <testcase name="OpenSparrow – Login &amp; Logout flow shows error when submitting with empty username" time="0.673" classname="shows error when submitting with empty username">
+    </testcase>
+    <testcase name="OpenSparrow – Login &amp; Logout flow logs out successfully" time="3.122" classname="logs out successfully">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Mobile viewport" timestamp="2026-06-17T05:18:20" tests="4" time="4.707" failures="0">
+    <testcase name="OpenSparrow – Mobile viewport loads dashboard on mobile" time="0.895" classname="loads dashboard on mobile">
+    </testcase>
+    <testcase name="OpenSparrow – Mobile viewport displays mobile-friendly grid on mobile" time="1.209" classname="displays mobile-friendly grid on mobile">
+    </testcase>
+    <testcase name="OpenSparrow – Mobile viewport shows mobileActions select on mobile viewport" time="0.923" classname="shows mobileActions select on mobile viewport">
+    </testcase>
+    <testcase name="OpenSparrow – Mobile viewport mobileActions select has at least export option" time="1.491" classname="mobileActions select has at least export option">
+    </testcase>
+  </testsuite>
+</testsuites>

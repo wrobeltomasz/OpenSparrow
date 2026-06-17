@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="24.798" tests="12" failures="1">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:20:48" tests="0" file="cypress\e2e\notifications.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Notifications: Bell Structure" timestamp="2026-06-17T05:20:48" tests="5" time="6.455" failures="0">
+    <testcase name="OpenSparrow – Notifications: Bell Structure notifications wrapper exists in header" time="3.443" classname="notifications wrapper exists in header">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: Bell Structure badge element exists" time="0.928" classname="badge element exists">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: Bell Structure dropdown container exists" time="0.632" classname="dropdown container exists">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: Bell Structure notification list exists" time="0.659" classname="notification list exists">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: Bell Structure badge displays a number" time="0.587" classname="badge displays a number">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Notifications: Interaction" timestamp="2026-06-17T05:20:54" tests="5" time="5.391" failures="0">
+    <testcase name="OpenSparrow – Notifications: Interaction clicking bell opens the dropdown when it is closed" time="0.697" classname="clicking bell opens the dropdown when it is closed">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: Interaction dropdown has a header section" time="0.946" classname="dropdown has a header section">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: Interaction notification list is ul element" time="1.047" classname="notification list is ul element">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: Interaction if notifications exist: list has items" time="0.743" classname="if notifications exist: list has items">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: Interaction bell present on grid page too" time="1.810" classname="bell present on grid page too">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Notifications: API" timestamp="2026-06-17T05:21:00" tests="2" time="12.946" failures="1">
+    <testcase name="OpenSparrow – Notifications: API page load triggers GET to api/notifications.php" time="1.233" classname="page load triggers GET to api/notifications.php">
+    </testcase>
+    <testcase name="OpenSparrow – Notifications: API API response has expected shape" time="0.000" classname="API response has expected shape">
+      <failure message="Timed out retrying after 10000ms: response carries a notifications array: expected undefined to be an array" type="AssertionError"><![CDATA[AssertionError: Timed out retrying after 10000ms: response carries a notifications array: expected undefined to be an array
+    at Proxy.<anonymous> (http://localhost:8080/__cypress/runner/cypress_runner.js:139122:9)
+    at Proxy.an (http://localhost:8080/__cypress/runner/cypress_runner.js:80081:10)
+    at Proxy.chainableMethodWrapper (http://localhost:8080/__cypress/runner/cypress_runner.js:79192:49)
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/notifications.cy.js:115:69)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:118738:17)
+    at Context.shouldFnWithCallback (http://localhost:8080/__cypress/runner/cypress_runner.js:118735:66)
+    at Context.shouldFn (http://localhost:8080/__cypress/runner/cypress_runner.js:118778:37)
+    at Context.should (http://localhost:8080/__cypress/runner/cypress_runner.js:118897:23)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:143014:39)
+    at assertions (http://localhost:8080/__cypress/runner/cypress_runner.js:143262:16)]]></failure>
+    </testcase>
+  </testsuite>
+</testsuites>

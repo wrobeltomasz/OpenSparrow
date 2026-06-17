@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="42.221" tests="34" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:18:27" tests="0" file="cypress\e2e\mass_edit.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Mass Edit: Selection &amp; Bar" timestamp="2026-06-17T05:18:27" tests="8" time="14.117" failures="0">
+    <testcase name="OpenSparrow – Mass Edit: Selection &amp; Bar row select checkboxes exist for editor users" time="4.438" classname="row select checkboxes exist for editor users">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Selection &amp; Bar select-all header checkbox exists for editor users" time="1.475" classname="select-all header checkbox exists for editor users">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Selection &amp; Bar me-bar appears after checking a row" time="1.069" classname="me-bar appears after checking a row">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Selection &amp; Bar me-bar count reflects selected row count" time="1.192" classname="me-bar count reflects selected row count">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Selection &amp; Bar me-bar contains all action buttons" time="0.828" classname="me-bar contains all action buttons">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Selection &amp; Bar Deselect All button hides me-bar" time="1.159" classname="Deselect All button hides me-bar">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Selection &amp; Bar Deselect All unchecks all visible row checkboxes" time="1.854" classname="Deselect All unchecks all visible row checkboxes">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Selection &amp; Bar select-all header checkbox selects all visible rows" time="1.603" classname="select-all header checkbox selects all visible rows">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Mass Edit: Edit Fields Panel" timestamp="2026-06-17T05:18:41" tests="8" time="10.998" failures="0">
+    <testcase name="OpenSparrow – Mass Edit: Edit Fields Panel Edit Fields button opens mass edit panel" time="0.558" classname="Edit Fields button opens mass edit panel">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Edit Fields Panel mass edit panel contains required form elements" time="1.352" classname="mass edit panel contains required form elements">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Edit Fields Panel apply button is disabled before preview runs" time="1.443" classname="apply button is disabled before preview runs">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Edit Fields Panel column select is populated" time="2.112" classname="column select is populated">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Edit Fields Panel null toggle disables value input when checked" time="1.382" classname="null toggle disables value input when checked">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Edit Fields Panel close button dismisses mass edit panel" time="1.018" classname="close button dismisses mass edit panel">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Edit Fields Panel overlay click dismisses mass edit panel" time="1.293" classname="overlay click dismisses mass edit panel">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Edit Fields Panel changing column clears preview and disables apply" time="1.352" classname="changing column clears preview and disables apply">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Mass Edit: Export Column Picker" timestamp="2026-06-17T05:18:52" tests="9" time="8.552" failures="0">
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker Export Selected button opens export panel" time="0.911" classname="Export Selected button opens export panel">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker export panel contains column checkboxes" time="0.696" classname="export panel contains column checkboxes">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker all column checkboxes are checked by default" time="0.973" classname="all column checkboxes are checked by default">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker Download CSV button is enabled when columns checked" time="1.277" classname="Download CSV button is enabled when columns checked">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker Deselect all disables download button" time="1.118" classname="Deselect all disables download button">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker Select all re-enables download button after deselect" time="0.569" classname="Select all re-enables download button after deselect">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker export panel shows row count info" time="0.855" classname="export panel shows row count info">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker column picker list uses me-col-picker-list container" time="0.903" classname="column picker list uses me-col-picker-list container">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Export Column Picker export panel close button works" time="0.899" classname="export panel close button works">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Mass Edit: Assign Owner Panel" timestamp="2026-06-17T05:19:01" tests="6" time="5.618" failures="0">
+    <testcase name="OpenSparrow – Mass Edit: Assign Owner Panel Assign Owner button opens owner panel" time="0.776" classname="Assign Owner button opens owner panel">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Assign Owner Panel owner panel loads user select from API" time="1.019" classname="owner panel loads user select from API">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Assign Owner Panel apply button disabled when no user selected" time="0.722" classname="apply button disabled when no user selected">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Assign Owner Panel selecting a user enables apply button" time="0.960" classname="selecting a user enables apply button">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Assign Owner Panel owner panel shows scope info with row count" time="1.104" classname="owner panel shows scope info with row count">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Assign Owner Panel owner panel close button works" time="0.787" classname="owner panel close button works">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Mass Edit: Duplicate &amp; Delete Guards" timestamp="2026-06-17T05:19:06" tests="3" time="2.932" failures="0">
+    <testcase name="OpenSparrow – Mass Edit: Duplicate &amp; Delete Guards Duplicate button triggers confirm dialog" time="0.936" classname="Duplicate button triggers confirm dialog">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Duplicate &amp; Delete Guards Delete button triggers confirm dialog" time="0.991" classname="Delete button triggers confirm dialog">
+    </testcase>
+    <testcase name="OpenSparrow – Mass Edit: Duplicate &amp; Delete Guards cancelling confirm keeps rows selected" time="0.875" classname="cancelling confirm keeps rows selected">
+    </testcase>
+  </testsuite>
+</testsuites>

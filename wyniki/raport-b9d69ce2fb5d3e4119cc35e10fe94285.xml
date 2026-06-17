@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="24.127" tests="18" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:21:15" tests="0" file="cypress\e2e\rag.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – RAG: Page Structure" timestamp="2026-06-17T05:21:15" tests="8" time="10.863" failures="0">
+    <testcase name="OpenSparrow – RAG: Page Structure loads RAG page" time="4.268" classname="loads RAG page">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Page Structure has conversation container" time="1.151" classname="has conversation container">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Page Structure has query textarea" time="0.827" classname="has query textarea">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Page Structure has Send button" time="0.676" classname="has Send button">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Page Structure has Clear history button" time="0.316" classname="has Clear history button">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Page Structure has tag filter sidebar" time="0.990" classname="has tag filter sidebar">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Page Structure sidebar has a title" time="1.061" classname="sidebar has a title">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Page Structure textarea is writable" time="1.357" classname="textarea is writable">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – RAG: Tag Loading" timestamp="2026-06-17T05:21:25" tests="2" time="4.536" failures="0">
+    <testcase name="OpenSparrow – RAG: Tag Loading file list transitions from loading state" time="1.186" classname="file list transitions from loading state">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Tag Loading file list shows documents or empty state" time="3.264" classname="file list shows documents or empty state">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – RAG: Send Interaction" timestamp="2026-06-17T05:21:30" tests="6" time="7.015" failures="0">
+    <testcase name="OpenSparrow – RAG: Send Interaction Send button click with empty textarea does not post" time="1.100" classname="Send button click with empty textarea does not post">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Send Interaction typing question enables send interaction" time="1.337" classname="typing question enables send interaction">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Send Interaction clicking Send with query but no file selected shows error in conversation" time="1.302" classname="clicking Send with query but no file selected shows error in conversation">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Send Interaction Send fires POST to api/rag.php when a document is checked" time="0.811" classname="Send fires POST to api/rag.php when a document is checked">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Send Interaction after send: user message appears in conversation" time="1.365" classname="after send: user message appears in conversation">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Send Interaction Clear history button empties conversation" time="0.838" classname="Clear history button empties conversation">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – RAG: Mobile" timestamp="2026-06-17T05:21:37" tests="2" time="1.706" failures="0">
+    <testcase name="OpenSparrow – RAG: Mobile loads on mobile viewport" time="1.068" classname="loads on mobile viewport">
+    </testcase>
+    <testcase name="OpenSparrow – RAG: Mobile textarea and send button exist on mobile" time="0.587" classname="textarea and send button exist on mobile">
+    </testcase>
+  </testsuite>
+</testsuites>

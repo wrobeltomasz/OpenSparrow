@@ -4,20 +4,19 @@ composer.lock
 
 # Logs
 *.log
-*.txt
-# RAG sample documents are distribution-tracked despite the global *.txt rule
-!docs/rag-samples/*.txt
+
+# Stray data exports — scoped to the repo root only (the storage/ tree is
+# ignored wholesale below). Avoids blanket *.txt / *.csv globs that silently
+# untracked legitimate files such as docs/rag*/*.txt and cypress fixtures.
+/*.txt
+/*.csv
 
 # Cache
 cache/
-tmp/*
-!tmp/.htaccess
 temp/
 .phpunit.result.cache
 
-*.csv
-
-# PHP session files — stored in storage/sessions/ (outside webroot-exposed tmp/)
+# PHP session files — stored in storage/sessions/
 storage/sessions/*
 
 # IDE

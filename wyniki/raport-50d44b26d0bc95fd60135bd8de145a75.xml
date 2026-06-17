@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="21.681" tests="18" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:07:59" tests="0" file="cypress\e2e\calendar.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Calendar: Page Structure" timestamp="2026-06-17T05:07:59" tests="7" time="9.123" failures="0">
+    <testcase name="OpenSparrow – Calendar: Page Structure loads calendar page" time="3.415" classname="loads calendar page">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Page Structure shows navigation buttons" time="0.569" classname="shows navigation buttons">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Page Structure shows month/year in calendar title" time="1.020" classname="shows month/year in calendar title">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Page Structure renders 7 day-name headers" time="1.119" classname="renders 7 day-name headers">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Page Structure renders day cells (&gt;= 28 for any month)" time="0.881" classname="renders day cells (&gt;= 28 for any month)">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Page Structure marks today cell with .today class" time="1.037" classname="marks today cell with .today class">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Page Structure shows sidebar menu" time="0.786" classname="shows sidebar menu">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Calendar: Navigation" timestamp="2026-06-17T05:08:08" tests="4" time="5.461" failures="0">
+    <testcase name="OpenSparrow – Calendar: Navigation Next button changes month title" time="1.486" classname="Next button changes month title">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Navigation Prev button changes month title" time="1.229" classname="Prev button changes month title">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Navigation Prev then Next returns to original month" time="1.252" classname="Prev then Next returns to original month">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Navigation calendar re-renders cells after navigation" time="1.301" classname="calendar re-renders cells after navigation">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Calendar: Events" timestamp="2026-06-17T05:08:14" tests="4" time="5.018" failures="0">
+    <testcase name="OpenSparrow – Calendar: Events event chips render if calendar is configured" time="1.003" classname="event chips render if calendar is configured">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Events event chip click navigates to edit.php" time="1.957" classname="event chip click navigates to edit.php">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Events event chip has background color set" time="1.058" classname="event chip has background color set">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Events event chip is draggable" time="0.830" classname="event chip is draggable">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Calendar: Mobile" timestamp="2026-06-17T05:08:19" tests="3" time="2.075" failures="0">
+    <testcase name="OpenSparrow – Calendar: Mobile loads calendar on mobile viewport" time="0.729" classname="loads calendar on mobile viewport">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Mobile calendar title visible on mobile" time="0.565" classname="calendar title visible on mobile">
+    </testcase>
+    <testcase name="OpenSparrow – Calendar: Mobile navigation buttons exist on mobile" time="0.672" classname="navigation buttons exist on mobile">
+    </testcase>
+  </testsuite>
+</testsuites>

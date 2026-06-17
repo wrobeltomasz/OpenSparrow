@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="52.957" tests="15" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:08:23" tests="0" file="cypress\e2e\comments.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Comments: Tab Structure" timestamp="2026-06-17T05:08:23" tests="6" time="19.885" failures="0">
+    <testcase name="OpenSparrow – Comments: Tab Structure edit.php shows Comments tab button" time="5.018" classname="edit.php shows Comments tab button">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Tab Structure clicking Comments tab activates it" time="2.601" classname="clicking Comments tab activates it">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Tab Structure Comments panel #c-panel renders after tab click" time="3.678" classname="Comments panel #c-panel renders after tab click">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Tab Structure Comments panel has thread container" time="2.473" classname="Comments panel has thread container">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Tab Structure thread shows messages or empty state after load" time="3.182" classname="thread shows messages or empty state after load">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Tab Structure editor role: textarea and send button present" time="2.525" classname="editor role: textarea and send button present">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Comments: Add Comment" timestamp="2026-06-17T05:08:43" tests="4" time="14.339" failures="0">
+    <testcase name="OpenSparrow – Comments: Add Comment typing in textarea updates its value" time="4.348" classname="typing in textarea updates its value">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Add Comment send button not disabled when textarea has content" time="3.134" classname="send button not disabled when textarea has content">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Add Comment submitting comment appends .c-msg to thread and clears input" time="2.813" classname="submitting comment appends .c-msg to thread and clears input">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Add Comment Ctrl+Enter posts comment" time="3.813" classname="Ctrl+Enter posts comment">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Comments: Delete Comment" timestamp="2026-06-17T05:08:57" tests="3" time="12.075" failures="0">
+    <testcase name="OpenSparrow – Comments: Delete Comment cancelling delete confirm keeps message intact" time="3.128" classname="cancelling delete confirm keeps message intact">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Delete Comment confirming delete adds .c-msg-deleted to message" time="3.846" classname="confirming delete adds .c-msg-deleted to message">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: Delete Comment deleted message hides delete button" time="4.894" classname="deleted message hides delete button">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Comments: API Integration" timestamp="2026-06-17T05:09:09" tests="2" time="6.646" failures="0">
+    <testcase name="OpenSparrow – Comments: API Integration activating Comments tab triggers GET to api/comments.php" time="3.227" classname="activating Comments tab triggers GET to api/comments.php">
+    </testcase>
+    <testcase name="OpenSparrow – Comments: API Integration posting comment triggers POST to api/comments.php" time="3.328" classname="posting comment triggers POST to api/comments.php">
+    </testcase>
+  </testsuite>
+</testsuites>

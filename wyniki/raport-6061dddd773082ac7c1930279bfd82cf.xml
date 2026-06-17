@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="33.882" tests="18" failures="1">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:16:32" tests="0" file="cypress\e2e\i18n.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – i18n: Bundle API" timestamp="2026-06-17T05:16:32" tests="5" time="4.888" failures="0">
+    <testcase name="OpenSparrow – i18n: Bundle API GET /api.php?action=i18n_bundle returns 200" time="4.176" classname="GET /api.php?action=i18n_bundle returns 200">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: Bundle API bundle response is a non-empty JSON object" time="0.251" classname="bundle response is a non-empty JSON object">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: Bundle API bundle contains required common keys" time="0.104" classname="bundle contains required common keys">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: Bundle API English bundle value for common.save is &quot;Save&quot;" time="0.099" classname="English bundle value for common.save is &quot;Save&quot;">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: Bundle API alternate language bundle differs from English when configured" time="0.120" classname="alternate language bundle differs from English when configured">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – i18n: ?lang= URL Switch" timestamp="2026-06-17T05:16:36" tests="5" time="10.589" failures="0">
+    <testcase name="OpenSparrow – i18n: ?lang= URL Switch page lang attribute matches en by default" time="1.151" classname="page lang attribute matches en by default">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: ?lang= URL Switch ?lang=pl sets &lt;html lang=&quot;pl&quot;&gt;" time="4.064" classname="?lang=pl sets &lt;html lang=&quot;pl&quot;&gt;">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: ?lang= URL Switch ?lang=de sets &lt;html lang=&quot;de&quot;&gt;" time="0.534" classname="?lang=de sets &lt;html lang=&quot;de&quot;&gt;">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: ?lang= URL Switch ?lang=en restores English" time="4.070" classname="?lang=en restores English">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: ?lang= URL Switch invalid ?lang= falls back gracefully (does not crash the page)" time="0.601" classname="invalid ?lang= falls back gracefully (does not crash the page)">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – i18n: Session Persistence" timestamp="2026-06-17T05:16:47" tests="2" time="4.913" failures="0">
+    <testcase name="OpenSparrow – i18n: Session Persistence language choice persists to the next page without ?lang= in URL" time="2.617" classname="language choice persists to the next page without ?lang= in URL">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: Session Persistence i18n bundle locale matches &lt;html lang&gt; on the page" time="2.228" classname="i18n bundle locale matches &lt;html lang&gt; on the page">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – i18n: JS Module" timestamp="2026-06-17T05:16:52" tests="4" time="4.593" failures="1">
+    <testcase name="OpenSparrow – i18n: JS Module window.I18n is available on the page" time="1.438" classname="window.I18n is available on the page">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: JS Module I18n.locale() returns a 2-letter language code" time="0.677" classname="I18n.locale() returns a 2-letter language code">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: JS Module I18n.t() returns a translated string" time="0.000" classname="I18n.t() returns a translated string">
+      <failure message="expected &apos;common.save&apos; to not equal &apos;common.save&apos;" type="AssertionError"><![CDATA[AssertionError: expected 'common.save' to not equal 'common.save'
+    at captureUserInvocationStack (http://localhost:8080/__cypress/runner/cypress_runner.js:139094:94)
+    at Proxy.<anonymous> (http://localhost:8080/__cypress/runner/cypress_runner.js:139122:9)
+    at Proxy.assertEqual (http://localhost:8080/__cypress/runner/cypress_runner.js:80801:12)
+    at Proxy.methodWrapper (http://localhost:8080/__cypress/runner/cypress_runner.js:78647:25)
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/i18n.cy.js:223:47)
+    at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:119314:20)
+    at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:119325:66)
+    at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:119576:21)
+    at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:138092:19)]]></failure>
+    </testcase>
+    <testcase name="OpenSparrow – i18n: JS Module page load triggers exactly one i18n_bundle request" time="0.886" classname="page load triggers exactly one i18n_bundle request">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – i18n: Admin Settings Panel" timestamp="2026-06-17T05:16:57" tests="2" time="8.888" failures="0">
+    <testcase name="OpenSparrow – i18n: Admin Settings Panel get_language_setting API returns current default and available languages" time="5.999" classname="get_language_setting API returns current default and available languages">
+    </testcase>
+    <testcase name="OpenSparrow – i18n: Admin Settings Panel settings tab renders language configuration card" time="2.786" classname="settings tab renders language configuration card">
+    </testcase>
+  </testsuite>
+</testsuites>

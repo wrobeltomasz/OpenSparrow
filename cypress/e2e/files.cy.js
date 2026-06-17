@@ -201,7 +201,7 @@ describe('OpenSparrow – Files: Upload Form', () => {
   });
 
   it('upload attempt reaches the API and returns a status message', () => {
-    cy.intercept('POST', '**/api_files.php**').as('uploadReq');
+    cy.intercept('POST', '**/api/files.php**').as('uploadReq');
 
     cy.get('#fileInput').selectFile('cypress/fixtures/test_upload.txt', { force: true });
     cy.get('#fileNameInput').then($el => {

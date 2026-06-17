@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="21.170" tests="17" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:21:40" tests="0" file="cypress\e2e\views.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Views: Page Structure" timestamp="2026-06-17T05:21:40" tests="5" time="9.075" failures="0">
+    <testcase name="OpenSparrow – Views: Page Structure loads views page" time="3.557" classname="loads views page">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Page Structure view container exists" time="3.315" classname="view container exists">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Page Structure shows loading state initially" time="0.684" classname="shows loading state initially">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Page Structure shows global search input" time="0.831" classname="shows global search input">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Page Structure shows sidebar menu" time="0.509" classname="shows sidebar menu">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Views: Selector Loading" timestamp="2026-06-17T05:21:50" tests="5" time="6.280" failures="0">
+    <testcase name="OpenSparrow – Views: Selector Loading view container transitions out of loading state" time="3.067" classname="view container transitions out of loading state">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Selector Loading shows selector cards, empty message, or error after load" time="0.527" classname="shows selector cards, empty message, or error after load">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Selector Loading if views configured: selector cards render" time="0.830" classname="if views configured: selector cards render">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Selector Loading if views configured: each card has a title (h3)" time="0.662" classname="if views configured: each card has a title (h3)">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Selector Loading if no views: shows empty state message" time="1.055" classname="if no views: shows empty state message">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Views: Open View" timestamp="2026-06-17T05:21:56" tests="6" time="4.743" failures="0">
+    <testcase name="OpenSparrow – Views: Open View clicking a view card opens view with header" time="0.913" classname="clicking a view card opens view with header">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Open View view header shows title" time="0.963" classname="view header shows title">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Open View opened view shows data table or empty state" time="0.664" classname="opened view shows data table or empty state">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Open View opened view has back (drill-up) button" time="1.047" classname="opened view has back (drill-up) button">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Open View back button returns to selector" time="0.453" classname="back button returns to selector">
+    </testcase>
+    <testcase name="OpenSparrow – Views: Open View view table has sortable column headers" time="0.482" classname="view table has sortable column headers">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Views: URL param" timestamp="2026-06-17T05:22:01" tests="1" time="1.068" failures="0">
+    <testcase name="OpenSparrow – Views: URL param views.php with ?view= param auto-opens view if valid" time="1.030" classname="views.php with ?view= param auto-opens view if valid">
+    </testcase>
+  </testsuite>
+</testsuites>

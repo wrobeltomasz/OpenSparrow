@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="13.469" tests="12" failures="1">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:07:44" tests="0" file="cypress\e2e\board.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Board: Page Structure" timestamp="2026-06-17T05:07:44" tests="4" time="6.336" failures="1">
+    <testcase name="OpenSparrow – Board: Page Structure loads board page" time="3.414" classname="loads board page">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Page Structure shows a board title" time="0.906" classname="shows a board title">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Page Structure renders lanes or a configuration notice" time="0.000" classname="renders lanes or a configuration notice">
+      <failure message="lanes or notice present: expected 0 to be above 0" type="AssertionError"><![CDATA[AssertionError: lanes or notice present: expected 0 to be above 0
+    at captureUserInvocationStack (http://localhost:8080/__cypress/runner/cypress_runner.js:139094:94)
+    at Proxy.<anonymous> (http://localhost:8080/__cypress/runner/cypress_runner.js:139122:9)
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/board.cy.js:34:62)
+    at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:119314:20)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4338:29)
+    at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:119325:66)
+    at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:119576:21)
+    at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:138092:19)]]></failure>
+    </testcase>
+    <testcase name="OpenSparrow – Board: Page Structure shows sidebar menu" time="0.793" classname="shows sidebar menu">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Board: Lanes &amp; Cards" timestamp="2026-06-17T05:07:50" tests="4" time="4.344" failures="0">
+    <testcase name="OpenSparrow – Board: Lanes &amp; Cards each lane has a header with a title and a count badge" time="1.287" classname="each lane has a header with a title and a count badge">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Lanes &amp; Cards cards are draggable for the editor role" time="0.899" classname="cards are draggable for the editor role">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Lanes &amp; Cards a card has a colored left border accent" time="0.805" classname="a card has a colored left border accent">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Lanes &amp; Cards clicking a card opens the record in edit.php" time="1.090" classname="clicking a card opens the record in edit.php">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Board: Mobile" timestamp="2026-06-17T05:07:54" tests="2" time="2.061" failures="0">
+    <testcase name="OpenSparrow – Board: Mobile loads board on mobile viewport" time="1.135" classname="loads board on mobile viewport">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Mobile board title visible on mobile" time="0.817" classname="board title visible on mobile">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Board: API contract" timestamp="2026-06-17T05:07:56" tests="2" time="0.724" failures="0">
+    <testcase name="OpenSparrow – Board: API contract returns the expected board payload shape" time="0.399" classname="returns the expected board payload shape">
+    </testcase>
+    <testcase name="OpenSparrow – Board: API contract rejects a move_card request with a missing CSRF token" time="0.278" classname="rejects a move_card request with a missing CSRF token">
+    </testcase>
+  </testsuite>
+</testsuites>

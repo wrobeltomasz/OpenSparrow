@@ -254,8 +254,8 @@ describe('OpenSparrow – Comments: Delete Comment', () => {
 // ============================================================================
 
 describe('OpenSparrow – Comments: API Integration', () => {
-  it('activating Comments tab triggers GET to api_comments.php', () => {
-    cy.intercept('GET', '**/api_comments.php**').as('commentsFetch');
+  it('activating Comments tab triggers GET to api/comments.php', () => {
+    cy.intercept('GET', '**/api/comments.php**').as('commentsFetch');
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
     waitForGridOrEmpty().then(res => {
@@ -274,8 +274,8 @@ describe('OpenSparrow – Comments: API Integration', () => {
     });
   });
 
-  it('posting comment triggers POST to api_comments.php', () => {
-    cy.intercept('POST', '**/api_comments.php**').as('commentPost');
+  it('posting comment triggers POST to api/comments.php', () => {
+    cy.intercept('POST', '**/api/comments.php**').as('commentPost');
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
     waitForGridOrEmpty().then(res => {

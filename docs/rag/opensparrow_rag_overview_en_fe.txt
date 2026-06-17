@@ -1,0 +1,122 @@
+OpenSparrow — Frontend (User) Overview
+======================================
+This document describes OpenSparrow from the end user's perspective: the data grid, forms,
+dashboard, calendar, workflows, files, notifications, and the AI assistant. Everything here
+is what a logged-in user sees and does in the application.
+
+OpenSparrow is an open-source, schema-driven web platform. The tables, forms, and pages you
+see are generated from configuration maintained by your administrator — if you need a new
+table, column, widget, or workflow, ask an admin.
+
+Current version: 2.8. Self-hosted, works fully offline.
+
+
+LOGIN & SESSION
+---------------
+Log in at login.php with username and password. Sessions expire after a configured time
+(default 8 hours) — you will be logged out automatically. Change your password anytime from
+the user menu (top-right avatar). You can also pick an avatar (24 built-in choices).
+
+
+ROLES (what you can do)
+-----------------------
+  - admin:  full access, including the Admin panel
+  - editor: can read and write data; no Admin panel
+  - viewer: read-only — grids, dashboard, and calendar visible, no editing
+
+
+NAVIGATION
+----------
+Sidebar menu lists all available tables, views, workflows, and pages (Dashboard, Calendar,
+Files, AI assistant). The menu structure is configured by the admin.
+
+
+DATA GRID (index.php?table=X)
+-----------------------------
+The main way to browse and edit data:
+  - Paginated, sortable, filterable data table
+  - Inline editing directly in cells, duplicate record, delete
+  - Column search and advanced filter bar
+  - Keyboard navigation: arrow keys to move, Enter to edit, Ctrl+F to focus search,
+    Ctrl+A to select all
+  - Export selected rows to CSV
+  - Mass Edit: select multiple rows, bulk-update a field across all selected
+  - Quick Data Cleanup: find-and-replace across a column, with regex support
+
+
+CREATE & EDIT FORMS
+-------------------
+Create a record at create.php, edit at edit.php?table=X&id=Y:
+  - Full record editor with all fields; required fields and validation enforced
+  - Field types include text, numbers, dates, checkboxes, dropdowns (enums with colors),
+    links to other records (foreign keys), and multi-select relations
+  - Subtables: related records displayed inline (e.g. Contacts under a Company)
+  - File attachments per record
+  - Comments thread per record
+  - Record ownership tracking (who owns/created the record)
+
+
+DASHBOARD (dashboard.php)
+-------------------------
+Widget grid showing live data:
+  - Stat cards: a single aggregate value (count, sum, average...) with icon and color
+  - Bar charts and pie charts: distribution by category
+  - Table widgets: recent records lists
+Widget layout and content are configured by the admin.
+
+
+CALENDAR (calendar.php)
+-----------------------
+Monthly calendar showing events taken from date fields of your tables.
+Multiple sources with different colors. Clicking an event opens the related record.
+Events can trigger advance notifications (e.g. 3 days before a deadline).
+
+
+WORKFLOWS (index.php?workflows=1)
+---------------------------------
+Guided multi-step forms for entering related records in sequence, opened from the
+sidebar menu. Example: Company → Contact → Deal → Quote in one guided flow.
+Each step links to the previous record automatically; some steps allow adding
+multiple records (e.g. several contacts for one company).
+
+
+AUTOMATIONS (background behavior)
+---------------------------------
+Admins can configure rules that run automatically when you create or update a record —
+for example auto-filling fields, sending you a notification, or creating a follow-up
+record in another table. If a record changes "by itself" after saving, an automation
+rule did it.
+
+
+AI ASSISTANT (RAG, rag.php)
+---------------------------
+Local AI assistant — 100% offline, no external APIs.
+Ask questions at rag.php or via the "Ask AI" panel (avatar menu → Ask AI).
+Answers are based on documents uploaded by the admin; tag filtering narrows which
+documents are searched. The Ask AI panel automatically pre-selects the tag matching
+the table you are currently viewing (e.g. on ?table=deals → tag "deals").
+
+
+FILES (files.php)
+-----------------
+File manager for uploads, also accessible from each record's edit form.
+Thumbnails are generated for images. Allowed file types and size limits are set
+by the admin.
+
+
+VIEWS (views.php)
+-----------------
+Read-only report pages built on database views, with drill-down navigation.
+Example: Revenue by Period drills Year → Month → Invoice.
+
+
+NOTIFICATIONS
+-------------
+In-app notification bell in the header. Notifications come from upcoming calendar
+events and from automation rules. Click a notification to open the related record.
+
+
+MOBILE & ACCESSIBILITY
+----------------------
+The interface is responsive and usable on mobile devices.
+Accessibility target: WCAG 2.1 (keyboard navigation, focus indicators, contrast).

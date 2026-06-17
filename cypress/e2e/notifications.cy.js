@@ -94,8 +94,8 @@ describe('OpenSparrow – Notifications: Interaction', () => {
 // ============================================================================
 
 describe('OpenSparrow – Notifications: API', () => {
-  it('page load triggers GET to api_notifications.php', () => {
-    cy.intercept('GET', '**/api_notifications.php**').as('notifFetch');
+  it('page load triggers GET to api/notifications.php', () => {
+    cy.intercept('GET', '**/api/notifications.php**').as('notifFetch');
     loginAsTestUser();
     cy.visit(`${BASE}/dashboard.php`);
     cy.wait('@notifFetch', { timeout: CypressHelpers.TIMEOUTS.long });
@@ -103,7 +103,7 @@ describe('OpenSparrow – Notifications: API', () => {
   });
 
   it('API response has expected shape', () => {
-    cy.intercept('GET', '**/api_notifications.php**').as('notifShape');
+    cy.intercept('GET', '**/api/notifications.php**').as('notifShape');
     loginAsTestUser();
     cy.visit(`${BASE}/dashboard.php`);
     cy.wait('@notifShape', { timeout: CypressHelpers.TIMEOUTS.long })

@@ -1,0 +1,203 @@
+OpenSparrow — Admin Panel Overview
+==================================
+The Admin panel (/admin/) is where the entire OpenSparrow application is configured:
+tables, forms, dashboards, calendars, workflows, automations, users, and system maintenance.
+Available to the admin role (and partially to editor). All configuration is stored as JSON
+files in config/ — no code changes required.
+
+Current version: 2.8.
+Stack: PHP 8.1+, PostgreSQL 14+, vanilla JavaScript (ES6+). No npm, no composer required.
+License: LGPL v3. Self-hosted, works fully offline.
+
+
+SETUP & INSTALLATION
+--------------------
+1. Open the app — the first-run setup wizard (setup.php) configures the database connection.
+   (Alternatively copy config/database.json.example to config/database.json manually.)
+2. Open /admin — click System → Database → Initialize System Tables.
+3. Log in as admin with the randomly generated password shown once in the setup wizard —
+   change it after first login.
+Docker: docker compose up -d --build → http://localhost:8080
+System tables live in the PostgreSQL schema from database.json (default "app"),
+all prefixed spw_.
+
+
+Navigation sections: Overview, Data Management, Workflows, Knowledge Base, System,
+Configuration. A Docs button in the header opens built-in searchable documentation
+(Getting Started / Schema / Grid Features / Admin Panel / Troubleshooting).
+
+
+OVERVIEW (landing tab)
+----------------------
+Dashboard shown on entering the admin panel: application version, database size,
+recent record activity, and recent cron runs.
+
+
+DATA MANAGEMENT
+---------------
+Schema:
+  - Manage tables and columns (config/schema.json)
+  - Global settings: default grid page size, visibility options
+  - Per table: display name, icon, hidden flag (excludes from menu), default sort,
+    initial load limit
+  - Per column: name, type (string / int / enum / FK / M2M / file / virtual), display
+    name, description (grid header tooltip), nullable, unique, readonly, default value,
+    regex validation with custom error message, enum options with colors, FK config
+    (referenced table + column + display column)
+  - Drag-and-drop column reordering
+  - Subtable configuration (FK back-references shown inside edit forms)
+  - M2M (many-to-many) configuration
+
+Add Table:
+  - Wizard for creating a new PostgreSQL table and registering it in the schema
+
+Dashboard:
+  - Add widgets: stat/KPI card, bar chart, pie chart, table (recent records list)
+  - Per widget: title, source table, aggregate (COUNT/SUM/AVG/MIN/MAX), axis columns,
+    group-by, filter conditions, width/height, color palette
+  - Drag widgets to reorder in a 3-column grid; live preview while editing
+
+Calendar:
+  - Configure event sources: table + date/timestamp column
+  - Event title template (which column becomes the title)
+  - Color rules (per enum value or fixed hex), optional icon
+  - Advance notification days (notify_before_days) per source
+
+CSV Import:
+  - Upload CSV, map columns to table fields, preview, import in batches
+  - Import history tracked in spw_csv_import_log
+
+Files:
+  - File management settings: allowed types, size limits (config/files.json)
+
+Menu Preview:
+  - Sidebar navigation structure (config/menu.json): visibility, order, grouping
+
+Schema Map (ERD):
+  - Visual entity-relationship diagram: all tables with FK relations drawn as arrows
+  - Click a table to jump to its schema editor; zoom and pan controls
+
+Views:
+  - Read-only PostgreSQL views exposed as grid pages (config/views.json)
+  - Create/edit/delete view definitions: name, description, filters, column order
+  - Drill-down by group_by levels (e.g. Year → Month → Invoice)
+
+
+WORKFLOWS
+---------
+Workflow Manager:
+  - Guided multi-step entry flows shown to users (e.g. Company → Contact → Deal)
+  - Per workflow: title, description, icon
+  - Step builder: add / remove / drag-reorder steps
+  - Per step: target table, form fields, multi-record option (e.g. several contacts)
+
+Automations:
+  - Event-driven rules executed by the backend on record events
+  - Rule list shows name, table, event, status; Edit / History / Delete per rule
+  - Triggers: After create (INSERT), After update (PATCH)
+  - Conditions: AND/OR groups, nestable; operators equals, not equals, contains,
+    not contains, is empty, is not empty
+  - Actions:
+      1. Update fields on this record
+      2. Send notification — recipient user ID, title, optional link; one notification
+         per (rule, record, user, day), duplicates ignored
+      3. Create record in another table — target table + field mapping
+  - Values support variables {{ record.field_name }} and {{ current_user.id }}
+  - Run History: last 100 executions per rule — time, table, record ID, event,
+    status (ok / error / skipped), error message; stored in spw_automation_runs
+
+
+KNOWLEDGE BASE
+--------------
+RAG Documents:
+  - Upload .txt documents (drag & drop) with comma-separated tags; convert PDF/Word
+    to plain text before uploading
+  - File list: name, size, tags, date; delete, retag, search by name or tag
+  - Statistics: total files and tokens, per-file token counts, query history
+  - Configure Ollama (URL, model) and test retrieval-augmented queries directly
+  - Retrieval uses PostgreSQL full-text search; tag filtering narrows the search
+
+
+SYSTEM
+------
+Audit & Snapshots:
+  - Log of all record mutations (INSERT / UPDATE / DELETE): timestamp, user, action,
+    table, record ID
+  - Filter by table, user, action type; view before/after record snapshots
+
+Backup Tables:
+  - Manual backup button (SQL dump), list of backups with timestamps
+  - Download backup (.sql file); restore from backup (confirmation required)
+
+Cron Notifications:
+  - Manual run (trigger the notification cron immediately)
+  - Run history (status, output, duration), statistics (avg duration, success rate)
+  - Setup guide for the server system cron (cron/notifications.php, e.g. every 15 min)
+  - Log cleanup (delete old cron log entries)
+
+Database:
+  - Initialize System Tables (creates/updates spw_* tables — required on first install)
+  - PostgreSQL schema browser, table creation wizard, column type documentation
+
+Demo Systems:
+  - One-click install of a pre-built demo with its own PostgreSQL schema, sample data,
+    dashboard widgets, calendar sources, workflows, and views
+  - Demos: CRM (recommended — companies, contacts, deals, activities, leads, products,
+    quotes, invoices, assets), WMS (warehouses, products, stock, movements),
+    Task Management (projects, tasks, time logs)
+  - Reset button per demo removes its data
+
+Health Check:
+  - Database connection status, table bloat analysis, index advisor,
+    slow query log, backup status
+
+M2M Builder:
+  - Visual builder for many-to-many relations: left/right FK tables, junction table
+    name, display columns
+
+Migrations:
+  - Database migrations tab: list of system migrations (pending / applied),
+    "Apply pending migrations" button
+  - Release migrations tab: config cleanup driven by config/migrations.json —
+    tracks files and config keys removed between versions, applied manually on upgrade
+
+Performance:
+  - 6 diagnostic sections, each with a Scan button: index advisor (missing indexes with
+    recommended SQL), unused indexes, slow query log, table bloat, DB health (connection
+    pool, cache hit rate), schema warnings (e.g. table without primary key)
+  - Copy SQL buttons for recommended fix queries
+
+Settings:
+  - Application settings: system name, theme, menu configuration, notification settings
+  - Security configuration stored in config/security.json: CORS, HSTS, CSP modes,
+    optional IP whitelist, session timeout, password policy
+
+Users:
+  - User list: ID, name, status (active/inactive), role
+  - Role dropdown per user: admin / editor / viewer
+  - Activate / deactivate accounts; per-user password change dialog with strength meter
+  - Add new user form: name + password + role
+
+
+CONFIGURATION
+-------------
+Export Config — download all config/*.json as a single export.
+Import Config — upload a previously exported configuration.
+Run Notifications Cron — trigger the notification worker manually.
+
+
+CONFIGURATION FILES (config/*.json)
+------------------------------------
+  database.json    — DB connection (host, port, dbname, user, password, schema)
+  schema.json      — table/column definitions
+  menu.json        — sidebar navigation structure
+  settings.json    — app name, locale, feature toggles
+  dashboard.json   — widget layout
+  calendar.json    — calendar event sources
+  workflows.json   — workflow step definitions
+  automations.json — automation rules (triggers, conditions, actions)
+  views.json       — view definitions
+  files.json       — file upload settings (allowed types, size limits)
+  security.json    — CORS, HSTS, CSP, IP whitelist, session and password policy
+  rag.json         — Ollama URL, model, max context files, file size limit, timeout
+  migrations.json  — release manifest (files/config keys removed per version)

@@ -231,8 +231,8 @@ describe('OpenSparrow – Data Cleanup Apply', () => {
     waitForGridOrEmpty();
   });
 
-  it('apply triggers POST to api_data_cleanup.php', () => {
-    cy.intercept('POST', '**/api_data_cleanup.php**').as('cleanupApply');
+  it('apply triggers POST to api/data_cleanup.php', () => {
+    cy.intercept('POST', '**/api/data_cleanup.php**').as('cleanupApply');
     cy.get('body').then($body => {
       if ($body.find('#dataCleanupBtn').length === 0) return;
       cy.get('#dataCleanupBtn').click({ force: true });

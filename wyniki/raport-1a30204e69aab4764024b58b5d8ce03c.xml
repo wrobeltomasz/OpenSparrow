@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="93.273" tests="11" failures="4">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:19:12" tests="0" file="cypress\e2e\mysql_crud.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="MySQL CRUD E2E Tests" timestamp="2026-06-17T05:19:12" tests="11" time="93.267" failures="4">
+    <testcase name="MySQL CRUD E2E Tests loads edit page for a MySQL table without PostgreSQL fallback error" time="19.360" classname="loads edit page for a MySQL table without PostgreSQL fallback error">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests handles boolean toggle correctly and persists changes" time="4.632" classname="handles boolean toggle correctly and persists changes">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests accepts empty values for nullable fields without errors" time="2.436" classname="accepts empty values for nullable fields without errors">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests updates a standard text field correctly" time="3.735" classname="updates a standard text field correctly">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests creates a new record in a MySQL table and verifies search works" time="0.000" classname="creates a new record in a MySQL table and verifies search works">
+      <failure message="Timed out retrying after 10000ms: expected &apos;http://localhost:8080/create.php?table=users_mysql&apos; to equal &apos;http://localhost:8080/index.php?table=users_mysql&apos;" type="AssertionError"><![CDATA[AssertionError: Timed out retrying after 10000ms: expected 'http://localhost:8080/create.php?table=users_mysql' to equal 'http://localhost:8080/index.php?table=users_mysql'
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/mysql_crud.cy.js:91:31)
+    at runnable.fn (http://localhost:8080/__cypress/runner/cypress_runner.js:138359:19)
+    at callFn (http://localhost:8080/__cypress/runner/cypress_runner.js:156978:21)
+    at Runnable.run (http://localhost:8080/__cypress/runner/cypress_runner.js:156965:7)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:162889:30)
+    at PassThroughHandlerContext.finallyHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:4095:23)
+    at Async._drainQueues (http://localhost:8080/__cypress/runner/cypress_runner.js:2439:5)
+    at Async.drainQueues (http://localhost:8080/__cypress/runner/cypress_runner.js:2309:14)]]></failure>
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests does not break when PostgreSQL-specific UI components are absent" time="2.995" classname="does not break when PostgreSQL-specific UI components are absent">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests formats HTML5 datetime-local input safely for MySQL" time="2.463" classname="formats HTML5 datetime-local input safely for MySQL">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests searches for a newly created record and finds it" time="0.000" classname="searches for a newly created record and finds it">
+      <failure message="Timed out retrying after 10000ms: expected &apos;http://localhost:8080/create.php?table=users_mysql&apos; to equal &apos;http://localhost:8080/index.php?table=users_mysql&apos;" type="AssertionError"><![CDATA[AssertionError: Timed out retrying after 10000ms: expected 'http://localhost:8080/create.php?table=users_mysql' to equal 'http://localhost:8080/index.php?table=users_mysql'
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/mysql_crud.cy.js:136:13)
+    at runnable.fn (http://localhost:8080/__cypress/runner/cypress_runner.js:138359:19)
+    at callFn (http://localhost:8080/__cypress/runner/cypress_runner.js:156978:21)
+    at Runnable.run (http://localhost:8080/__cypress/runner/cypress_runner.js:156965:7)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:162889:30)
+    at PassThroughHandlerContext.finallyHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:4095:23)]]></failure>
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests deletes a record and confirms it no longer appears on the grid" time="0.000" classname="deletes a record and confirms it no longer appears on the grid">
+      <failure message="Timed out retrying after 10000ms: expected &apos;http://localhost:8080/create.php?table=users_mysql&apos; to equal &apos;http://localhost:8080/index.php?table=users_mysql&apos;" type="AssertionError"><![CDATA[AssertionError: Timed out retrying after 10000ms: expected 'http://localhost:8080/create.php?table=users_mysql' to equal 'http://localhost:8080/index.php?table=users_mysql'
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/mysql_crud.cy.js:154:13)
+    at runnable.fn (http://localhost:8080/__cypress/runner/cypress_runner.js:138359:19)
+    at callFn (http://localhost:8080/__cypress/runner/cypress_runner.js:156978:21)
+    at Runnable.run (http://localhost:8080/__cypress/runner/cypress_runner.js:156965:7)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:162889:30)
+    at PassThroughHandlerContext.finallyHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:4095:23)]]></failure>
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests changes number of rows per page and updates pagination info" time="1.256" classname="changes number of rows per page and updates pagination info">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests allows inline editing of a field and persists the change" time="0.000" classname="allows inline editing of a field and persists the change">
+      <failure message="Timed out retrying after 10000ms: expected &apos;http://localhost:8080/create.php?table=users_mysql&apos; to equal &apos;http://localhost:8080/index.php?table=users_mysql&apos;" type="AssertionError"><![CDATA[AssertionError: Timed out retrying after 10000ms: expected 'http://localhost:8080/create.php?table=users_mysql' to equal 'http://localhost:8080/index.php?table=users_mysql'
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/mysql_crud.cy.js:208:13)
+    at runnable.fn (http://localhost:8080/__cypress/runner/cypress_runner.js:138359:19)
+    at callFn (http://localhost:8080/__cypress/runner/cypress_runner.js:156978:21)
+    at Runnable.run (http://localhost:8080/__cypress/runner/cypress_runner.js:156965:7)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:162889:30)
+    at PassThroughHandlerContext.finallyHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:4095:23)]]></failure>
+    </testcase>
+  </testsuite>
+</testsuites>

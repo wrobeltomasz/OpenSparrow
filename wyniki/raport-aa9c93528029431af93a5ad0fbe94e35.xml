@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="56.608" tests="28" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:14:20" tests="0" file="cypress\e2e\files.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Files: Page Structure" timestamp="2026-06-17T05:14:20" tests="12" time="28.269" failures="0">
+    <testcase name="OpenSparrow – Files: Page Structure loads files page" time="3.407" classname="loads files page">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure shows upload card with required inputs" time="3.305" classname="shows upload card with required inputs">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure shows target table select" time="1.289" classname="shows target table select">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure record select is disabled before table chosen" time="0.791" classname="record select is disabled before table chosen">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure shows Upload button" time="3.786" classname="shows Upload button">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure shows upload status area" time="0.689" classname="shows upload status area">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure shows search input" time="4.071" classname="shows search input">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure shows file type filter with predefined options" time="1.398" classname="shows file type filter with predefined options">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure type filter includes All option" time="0.899" classname="type filter includes All option">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure shows Refresh button" time="3.223" classname="shows Refresh button">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure shows file table with headers" time="0.846" classname="shows file table with headers">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Page Structure file table body exists" time="4.079" classname="file table body exists">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Files: List Loading" timestamp="2026-06-17T05:14:48" tests="4" time="9.545" failures="0">
+    <testcase name="OpenSparrow – Files: List Loading file table body transitions from loading state" time="0.487" classname="file table body transitions from loading state">
+    </testcase>
+    <testcase name="OpenSparrow – Files: List Loading file table shows files or empty message after load" time="4.061" classname="file table shows files or empty message after load">
+    </testcase>
+    <testcase name="OpenSparrow – Files: List Loading files show download links if files exist" time="0.783" classname="files show download links if files exist">
+    </testcase>
+    <testcase name="OpenSparrow – Files: List Loading table dropdown loads available tables" time="4.085" classname="table dropdown loads available tables">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Files: Search &amp; Filter" timestamp="2026-06-17T05:14:58" tests="4" time="7.728" failures="0">
+    <testcase name="OpenSparrow – Files: Search &amp; Filter typing in search input triggers file refresh" time="1.473" classname="typing in search input triggers file refresh">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Search &amp; Filter clearing search shows all files again" time="1.621" classname="clearing search shows all files again">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Search &amp; Filter type filter change triggers file reload" time="1.463" classname="type filter change triggers file reload">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Search &amp; Filter Refresh button reloads file list" time="3.001" classname="Refresh button reloads file list">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Files: Upload Form" timestamp="2026-06-17T05:15:05" tests="4" time="7.174" failures="0">
+    <testcase name="OpenSparrow – Files: Upload Form clicking Upload without file shows status message" time="1.057" classname="clicking Upload without file shows status message">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Upload Form choosing table enables record select if relations configured" time="0.682" classname="choosing table enables record select if relations configured">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Upload Form selecting a file populates the file name input" time="3.286" classname="selecting a file populates the file name input">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Upload Form upload attempt reaches the API and returns a status message" time="1.981" classname="upload attempt reaches the API and returns a status message">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Files: Delete Guard" timestamp="2026-06-17T05:15:12" tests="2" time="1.823" failures="0">
+    <testcase name="OpenSparrow – Files: Delete Guard delete button exists per file row for editor role" time="0.918" classname="delete button exists per file row for editor role">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Delete Guard delete button triggers confirm dialog" time="0.851" classname="delete button triggers confirm dialog">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Files: Mobile" timestamp="2026-06-17T05:15:14" tests="2" time="2.064" failures="0">
+    <testcase name="OpenSparrow – Files: Mobile loads files page on mobile" time="0.856" classname="loads files page on mobile">
+    </testcase>
+    <testcase name="OpenSparrow – Files: Mobile upload and search inputs exist on mobile" time="1.157" classname="upload and search inputs exist on mobile">
+    </testcase>
+  </testsuite>
+</testsuites>

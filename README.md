@@ -67,12 +67,17 @@ Demo: https://demo.opensparrow.org
 
 ## Project Structure
 
+The **web document root is the `public/` directory**. Everything served
+over HTTP lives under `public/` (entry PHP scripts, `public/admin/`,
+`public/assets/`, `favicon.ico`); all backend code and data listed below sits at
+the repository root, *outside* the document root, and cannot be reached over the web.
+
 ### Core directories
 - **`src/`** — OOP application layer (PSR-4, no Composer). Namespaced under `App\`. Sub-directories: `Audit/`, `Csrf/`, `Domain/`, `Form/`, `Http/`, `Persistence/`, `Repository/`, `Support/`. Loaded via `includes/autoload.php`; wired in `includes/bootstrap.php`.
-- **`admin/`** — management panel (schema editor, dashboards, calendar, workflows, users, files, system health).
-- **`assets/`** — static frontend resources (`css/`, `js/`, `icons/`, `img/`).
+- **`public/admin/`** — management panel (schema editor, dashboards, calendar, workflows, users, files, system health). Web-served; self-authenticated (requires role `admin`).
+- **`public/assets/`** — static frontend resources (`css/`, `js/`, `icons/`, `img/`).
 - **`includes/`** — backend helpers. `config.php` centralizes env-driven configuration; `db.php` centralizes PostgreSQL access; `api_helpers.php` holds request/response helpers; `autoload.php` registers the PSR-4 class loader; `bootstrap.php` wires all OOP dependencies.
-- **`config/`** — runtime JSON configuration files (`database.json`, `schema.json`, `menu.json`, `settings.json`, `dashboard.json`, `calendar.json`, `workflows.json`, `automations.json`, `files.json`, `rag.json`, `security.json`, `views.json`). All JSON in this folder is gitignored and web-denied via `.htaccess` — except `migrations.json`, the distribution-tracked release manifest.
+- **`config/`** — runtime JSON configuration files (`database.json`, `schema.json`, `menu.json`, `settings.json`, `dashboard.json`, `calendar.json`, `workflows.json`, `automations.json`, `files.json`, `rag.json`, `security.json`, `views.json`). All JSON in this folder is gitignored and, being outside the `public/` document root, is not web-reachable — except `migrations.json`, the distribution-tracked release manifest.
 - **`cron/`** — scheduled workers (e.g. `cron_notifications.php`).
 - **`templates/`** — layout wrappers (`template.php`).
 - **`storage/files/`** — user-uploaded files.
@@ -80,15 +85,17 @@ Demo: https://demo.opensparrow.org
 - **`tests/`** — PHPUnit unit test suite. Mirrors `src/` namespace structure under `Tests\`. Run with `vendor/bin/phpunit`.
 
 ### Key files
+All web-served files below live under `public/` (the document root).
+
 - **`setup.php` / `setup_api.php`** — first-run setup wizard and its API backend. Active only when `config/database.json` is absent.
 - **`api.php`** — main API gateway (GET / POST / PATCH / DELETE).
 - **`index.php`** — default landing / data entry page.
 - **`dashboard.php` / `calendar.php`** — user-facing visualization and scheduling modules.
 - **`login.php` / `logout.php`** — session and authentication.
 - **`create.php` / `edit.php`** — record create/update forms.
-- **`api_schema.php`** — filtered schema endpoint for the frontend (hides backend-only structure).
-- **`api_fk.php`** — proxy endpoint for foreign-key dropdowns (never exposes internal relations).
-- **`api_rag.php`** — RAG knowledge base endpoint (`?action=tags` GET, `?action=query` POST).
+- **`api/schema.php`** — filtered schema endpoint for the frontend (hides backend-only structure).
+- **`api/fk.php`** — proxy endpoint for foreign-key dropdowns (never exposes internal relations).
+- **`api/rag.php`** — RAG knowledge base endpoint (`?action=tags` GET, `?action=query` POST).
 - **`rag.php`** — user-facing AI chat page (queries the local knowledge base via Ollama).
 - **`Dockerfile` / `docker-compose.yml`** — containerized deployment.
 - **`phpcs.xml`** — PSR-12 ruleset.
@@ -280,7 +287,7 @@ Each release ZIP is built automatically by GitHub Actions and includes:
 **Steps:**
 
 1. Download `opensparrow-X.Y.zip` from the Releases page.
-2. Extract and upload the contents to your server root (e.g. `public_html/`) via FTP.
+2. Extract and upload the files to your server via FTP, then set your site's **document root** to the `public/` sub-directory (e.g. point your domain / `public_html` at `.../public/`). The backend folders (`includes/`, `config/`, `storage/`, …) stay above the document root and are never served over HTTP.
 3. Make the `config/` and `storage/files/` directories writable by the web server (typically `chmod 755` or `775`, depending on your host).
 4. Open your site root in a browser — you will be automatically redirected to `/setup.php`. The **setup wizard** guides you through:
    - Testing your PostgreSQL connection
@@ -365,7 +372,7 @@ All variables are read by `includes/config.php` on every request — the single 
 
 | Variable | Default | Description |
 |---|---|---|
-| `OLLAMA_URL` | `http://localhost:11434` | Base URL of the local Ollama instance. Used by `api_rag.php` and admin RAG actions. |
+| `OLLAMA_URL` | `http://localhost:11434` | Base URL of the local Ollama instance. Used by `api/rag.php` and admin RAG actions. |
 | `OLLAMA_MODEL` | `llama3` | Default Ollama model for RAG queries. Overridden by `config/rag.json` if present. |
 
 ### 6. First-run setup (Docker or bare server)
@@ -426,14 +433,14 @@ Open **http://localhost:8000/admin**.
 
 ## Security & Configuration
 
-Configuration lives in `config/database.json`, protected by `.htaccess`. Environment variables (see section 5) take precedence and are the recommended approach for containerized deployments.
+Configuration lives in `config/database.json`. The web document root is the `public/` directory, so `config/` (and every other backend folder) sits **outside** the web root and cannot be served over HTTP at all. Environment variables (see section 5) take precedence and are the recommended approach for containerized deployments.
 
-- **Production:** deny public web access to `config/` at the web-server level (a `Deny from all` `.htaccess` is shipped by default; nginx users must add an equivalent block).
+- **Production:** serve only the `public/` directory — set your web server's document root to `public/` (the shipped `nginx.conf` / `nginx.standalone.conf` already do this). Backend folders (`includes/`, `config/`, `src/`, `vendor/`, `storage/`, …) live above it and are unreachable over HTTP. The per-folder `Deny from all` `.htaccess` files remain as defense-in-depth.
 - **Cookies:** `SECURE_COOKIES=true` (default) enforces the `Secure` flag. Set to `false` only on plain HTTP environments.
 - **Authentication:** all roles share a single login page (`/login`). The admin panel (`/admin`) requires role `admin`. Frontend pages require role `editor` or `viewer`. There is no separate admin password file — all accounts live in `spw_users`.
 - **Session security:** sessions include a User-Agent fingerprint and an 8-hour absolute lifetime to guard against hijacking and stale sessions.
 - **Reverse-proxy aware:** `includes/config.php` auto-detects HTTPS through CloudFlare / Nginx / load-balancer headers (`X-Forwarded-Proto`, `CF-Visitor`, `X-Forwarded-SSL`), resolves the real client IP via `CF-Connecting-IP` / `X-Real-IP`, and forces an absolute `session.save_path` so PHP-FPM `chdir` behaviour does not split sessions across script directories.
-- **Session storage hardening:** the `tmp/` directory (default `session.save_path`) ships with a `.htaccess` denying all HTTP access, ensuring session files cannot be read directly over the web.
+- **Session storage hardening:** session files are stored in `storage/sessions/` (resolved to an absolute path by `includes/config.php`), which lives outside the `public/` document root; a `.htaccess` denying HTTP access also ships as defense-in-depth.
 
 ---
 

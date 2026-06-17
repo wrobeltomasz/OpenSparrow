@@ -33,7 +33,7 @@ jobs:
                -e "(import|require)\s*\(?\s*['\"]($FORBIDDEN)" \
                -e "<script[^>]+src=['\"][^'\"]*($FORBIDDEN)" \
                -e "cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com" \
-               assets templates admin includes ./*.php \
+               public/assets templates public/admin includes public/*.php \
                --exclude-dir={.git,vendor,node_modules,.github,tests,cypress,storage,tmp,temp,cache,.claude} \
                --exclude={README.md,COPYING,LICENCE,Dockerfile,docker-compose.yml}; then
             echo "--------------------------------------------------------"

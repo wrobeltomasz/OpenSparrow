@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="70.294" tests="47" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:15:19" tests="0" file="cypress\e2e\grid.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Display" timestamp="2026-06-17T05:15:19" tests="5" time="12.009" failures="0">
+    <testcase name="OpenSparrow – Grid Display loads grid with correct title" time="4.746" classname="loads grid with correct title">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Display displays grid or empty state" time="0.604" classname="displays grid or empty state">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Display shows grid header with column names" time="1.769" classname="shows grid header with column names">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Display renders grid rows" time="2.792" classname="renders grid rows">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Display shows empty state when no records" time="1.805" classname="shows empty state when no records">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Search &amp; Filter" timestamp="2026-06-17T05:15:31" tests="6" time="9.033" failures="0">
+    <testcase name="OpenSparrow – Grid Search &amp; Filter displays search input field" time="1.510" classname="displays search input field">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Search &amp; Filter displays column filter select" time="0.840" classname="displays column filter select">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Search &amp; Filter search input filters results" time="2.518" classname="search input filters results">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Search &amp; Filter clears search term" time="1.073" classname="clears search term">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Search &amp; Filter column filter select loads options" time="1.530" classname="column filter select loads options">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Search &amp; Filter displays clear filters button when filter applied" time="1.099" classname="displays clear filters button when filter applied">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Row Actions" timestamp="2026-06-17T05:15:40" tests="8" time="15.116" failures="0">
+    <testcase name="OpenSparrow – Grid Row Actions displays Export CSV button" time="1.476" classname="displays Export CSV button">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Row Actions Export CSV button is clickable" time="0.778" classname="Export CSV button is clickable">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Row Actions displays Add button for editor role" time="0.579" classname="displays Add button for editor role">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Row Actions Add button navigates to create.php" time="2.652" classname="Add button navigates to create.php">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Row Actions displays Edit button in row actions" time="2.043" classname="displays Edit button in row actions">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Row Actions Edit button navigates to edit.php" time="3.053" classname="Edit button navigates to edit.php">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Row Actions displays Duplicate button in row actions" time="2.256" classname="displays Duplicate button in row actions">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Row Actions displays Delete button in row actions" time="1.838" classname="displays Delete button in row actions">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Pagination" timestamp="2026-06-17T05:15:55" tests="2" time="2.465" failures="0">
+    <testcase name="OpenSparrow – Grid Pagination shows pagination if table has multiple pages" time="0.782" classname="shows pagination if table has multiple pages">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Pagination pagination buttons are functional" time="1.598" classname="pagination buttons are functional">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Mobile" timestamp="2026-06-17T05:15:58" tests="4" time="3.615" failures="0">
+    <testcase name="OpenSparrow – Grid Mobile loads grid on mobile viewport" time="0.705" classname="loads grid on mobile viewport">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Mobile displays mobileActions select on mobile" time="0.560" classname="displays mobileActions select on mobile">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Mobile mobileActions select has Export option" time="1.019" classname="mobileActions select has Export option">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Mobile mobileActions select has Refresh option" time="1.143" classname="mobileActions select has Refresh option">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Inline Edit" timestamp="2026-06-17T05:16:01" tests="5" time="4.733" failures="0">
+    <testcase name="OpenSparrow – Grid Inline Edit text cells have contentEditable for editor role" time="0.888" classname="text cells have contentEditable for editor role">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Inline Edit clicking editable cell keeps it focused" time="0.926" classname="clicking editable cell keeps it focused">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Inline Edit typing in editable cell updates cell content" time="0.939" classname="typing in editable cell updates cell content">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Inline Edit blurring editable cell after change triggers a PATCH request to the API" time="1.011" classname="blurring editable cell after change triggers a PATCH request to the API">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Inline Edit Escape key on editable cell cancels edit without navigating away" time="0.767" classname="Escape key on editable cell cancels edit without navigating away">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Column Filters" timestamp="2026-06-17T05:16:06" tests="8" time="10.762" failures="0">
+    <testcase name="OpenSparrow – Grid Column Filters #columnFilter select exists and has options" time="1.841" classname="#columnFilter select exists and has options">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Filters #filterPills container exists in DOM" time="1.541" classname="#filterPills container exists in DOM">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Filters #filterBar exists in DOM" time="0.929" classname="#filterBar exists in DOM">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Filters selecting a column may render filter input in #filterBar" time="1.206" classname="selecting a column may render filter input in #filterBar">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Filters if enum/FK column selected: #dictFilter appears" time="1.148" classname="if enum/FK column selected: #dictFilter appears">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Filters if bool column selected: #boolFilter appears" time="1.022" classname="if bool column selected: #boolFilter appears">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Filters applying dict filter creates pill in #filterPills" time="1.205" classname="applying dict filter creates pill in #filterPills">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Filters clicking pill × removes it" time="1.406" classname="clicking pill × removes it">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Rows Per Page" timestamp="2026-06-17T05:16:17" tests="5" time="5.266" failures="0">
+    <testcase name="OpenSparrow – Grid Rows Per Page pagination area renders if table has records" time="0.770" classname="pagination area renders if table has records">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Rows Per Page page size select inside #pagination has standard options" time="0.821" classname="page size select inside #pagination has standard options">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Rows Per Page changing page size persists to localStorage" time="1.382" classname="changing page size persists to localStorage">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Rows Per Page page size change re-renders grid rows" time="1.184" classname="page size change re-renders grid rows">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Rows Per Page page size persists after reload" time="0.897" classname="page size persists after reload">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Column Sorting" timestamp="2026-06-17T05:16:22" tests="4" time="7.287" failures="0">
+    <testcase name="OpenSparrow – Grid Column Sorting column headers are clickable" time="1.744" classname="column headers are clickable">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Sorting clicking header adds sort indicator" time="1.975" classname="clicking header adds sort indicator">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Sorting clicking sorted header twice reverses sort" time="1.798" classname="clicking sorted header twice reverses sort">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Column Sorting grid rerenders after sort click" time="1.558" classname="grid rerenders after sort click">
+    </testcase>
+  </testsuite>
+</testsuites>

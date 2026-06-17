@@ -1,0 +1,23 @@
+# OpenSparrow — Apache configuration for the PUBLIC web root.
+#
+# This directory (public/) is the web document root. All backend
+# code, configuration, vendor libraries and storage live ABOVE this folder,
+# outside the document root, so they cannot be served over HTTP at all.
+#
+# Apache / shared hosting: point your DocumentRoot (or the cPanel
+# "Document Root" / "Web Root" setting) at this public/ directory.
+
+# Do not expose directory listings.
+Options -Indexes
+
+# Block dotfiles (.env, .git metadata, etc.) as defense-in-depth.
+<FilesMatch "^\.">
+    Deny from all
+</FilesMatch>
+
+# Baseline security headers (mirrors nginx.conf).
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>

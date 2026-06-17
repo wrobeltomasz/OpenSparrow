@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="31.899" tests="18" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:13:46" tests="0" file="cypress\e2e\data_cleanup.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Data Cleanup Panel" timestamp="2026-06-17T05:13:46" tests="11" time="18.400" failures="0">
+    <testcase name="OpenSparrow – Data Cleanup Panel displays Data Cleanup button in grid toolbar" time="3.827" classname="displays Data Cleanup button in grid toolbar">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel opens panel when Data Cleanup button clicked" time="0.659" classname="opens panel when Data Cleanup button clicked">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel panel contains required form elements" time="0.687" classname="panel contains required form elements">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel column select is populated with text columns" time="2.359" classname="column select is populated with text columns">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel overlay appears when panel is open" time="1.589" classname="overlay appears when panel is open">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel close button hides panel" time="0.946" classname="close button hides panel">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel overlay click hides panel" time="1.957" classname="overlay click hides panel">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel apply button stays disabled without preview" time="1.056" classname="apply button stays disabled without preview">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel typing in find field triggers debounced status update" time="2.242" classname="typing in find field triggers debounced status update">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel find field cleared on panel reopen" time="1.266" classname="find field cleared on panel reopen">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Panel replace field accepts empty value (delete mode)" time="1.201" classname="replace field accepts empty value (delete mode)">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Data Cleanup Preview" timestamp="2026-06-17T05:14:04" tests="5" time="8.849" failures="0">
+    <testcase name="OpenSparrow – Data Cleanup Preview preview area empty on panel open" time="0.618" classname="preview area empty on panel open">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Preview status shows loading then result after find input" time="2.390" classname="status shows loading then result after find input">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Preview preview table uses dc-preview-table class when rows returned" time="0.900" classname="preview table uses dc-preview-table class when rows returned">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Preview apply button becomes enabled after preview finds matches" time="1.926" classname="apply button becomes enabled after preview finds matches">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Preview apply button disabled again after clear" time="2.786" classname="apply button disabled again after clear">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Data Cleanup Apply" timestamp="2026-06-17T05:14:13" tests="2" time="4.633" failures="0">
+    <testcase name="OpenSparrow – Data Cleanup Apply apply triggers POST to api/data_cleanup.php" time="1.875" classname="apply triggers POST to api/data_cleanup.php">
+    </testcase>
+    <testcase name="OpenSparrow – Data Cleanup Apply after apply: apply button returns to disabled" time="2.620" classname="after apply: apply button returns to disabled">
+    </testcase>
+  </testsuite>
+</testsuites>

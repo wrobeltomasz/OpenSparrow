@@ -119,15 +119,15 @@ describe('OpenSparrow – Agent Panel: Send', () => {
     cy.get('#agPanel').should('have.class', 'active');
   });
 
-  it('empty textarea does not post to api_rag.php', () => {
-    cy.intercept('POST', '**/api_rag.php**').as('ragPost');
+  it('empty textarea does not post to api/rag.php', () => {
+    cy.intercept('POST', '**/api/rag.php**').as('ragPost');
     cy.get('.ag-send-btn').click();
     cy.wait(500);
     cy.get('@ragPost.all').should('have.length', 0);
   });
 
   it('without selecting a source, send shows a notice instead of posting', () => {
-    cy.intercept('POST', '**/api_rag.php**').as('ragPostGuard');
+    cy.intercept('POST', '**/api/rag.php**').as('ragPostGuard');
     cy.get('#agQuery').type('test question');
     cy.get('.ag-send-btn').click();
     // Either a notice appears (no source selected) or a request fires (grid data auto-selected)

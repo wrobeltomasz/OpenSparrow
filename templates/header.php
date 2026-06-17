@@ -15,7 +15,7 @@ $unameEsc  = htmlspecialchars($uname, ENT_QUOTES, 'UTF-8');
 $nonceAttr = isset($cspNonce)
     ? ' nonce="' . htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8') . '"'
     : '';
-$cacheBust = @filemtime(__DIR__ . '/../assets/js/user-menu.js');
+$cacheBust = @filemtime(__DIR__ . '/../public/assets/js/user-menu.js');
 
 $tToggleSidebar  = htmlspecialchars(t('header.toggle_sidebar'), ENT_QUOTES, 'UTF-8');
 $tToggleSearch   = htmlspecialchars(t('header.toggle_search'), ENT_QUOTES, 'UTF-8');
@@ -27,9 +27,9 @@ $tChangePassword = htmlspecialchars(t('auth.change_password'), ENT_QUOTES, 'UTF-
 $tAgentTitle     = htmlspecialchars(t('agent.title'), ENT_QUOTES, 'UTF-8');
 $tLogout         = htmlspecialchars(t('auth.logout'), ENT_QUOTES, 'UTF-8');
 
-$vSidebarJs = @filemtime(__DIR__ . '/../assets/js/sidebar.js');
-$vNotifJs   = @filemtime(__DIR__ . '/../assets/js/notifications.js');
-$vAgentJs   = @filemtime(__DIR__ . '/../assets/js/agent-panel.js');
+$vSidebarJs = @filemtime(__DIR__ . '/../public/assets/js/sidebar.js');
+$vNotifJs   = @filemtime(__DIR__ . '/../public/assets/js/notifications.js');
+$vAgentJs   = @filemtime(__DIR__ . '/../public/assets/js/agent-panel.js');
 ?>
 <header>
     <button id="sidebarToggle" data-cy="sidebar-toggle" aria-label="<?= $tToggleSidebar ?>">&#9776;</button>

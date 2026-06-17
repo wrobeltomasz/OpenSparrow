@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="97.921" tests="45" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-17T05:09:18" tests="0" file="cypress\e2e\crud.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Create Record Flow" timestamp="2026-06-17T05:09:18" tests="10" time="13.549" failures="0">
+    <testcase name="OpenSparrow – Create Record Flow navigates to create.php with table parameter" time="4.786" classname="navigates to create.php with table parameter">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow displays create form" time="0.929" classname="displays create form">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow displays submit button" time="1.141" classname="displays submit button">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow displays cancel button" time="0.861" classname="displays cancel button">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow cancel button returns to grid" time="1.512" classname="cancel button returns to grid">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow displays form fields" time="1.242" classname="displays form fields">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow shows CSRF token in form" time="0.736" classname="shows CSRF token in form">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow marks required fields" time="0.550" classname="marks required fields">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow handles enum fields with dropdown if present" time="0.656" classname="handles enum fields with dropdown if present">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record Flow form respects pattern validation on inputs if present" time="0.643" classname="form respects pattern validation on inputs if present">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Edit Record Flow" timestamp="2026-06-17T05:09:32" tests="11" time="34.213" failures="0">
+    <testcase name="OpenSparrow – Edit Record Flow loads edit.php with record ID" time="2.977" classname="loads edit.php with record ID">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow displays tab navigation" time="2.570" classname="displays tab navigation">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow shows Details tab as default" time="2.754" classname="shows Details tab as default">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow displays tab buttons: Details, Comments, History" time="2.585" classname="displays tab buttons: Details, Comments, History">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow switches to Comments tab" time="3.654" classname="switches to Comments tab">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow switches to History tab" time="3.421" classname="switches to History tab">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow displays Save button" time="3.085" classname="displays Save button">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow displays Cancel button" time="3.105" classname="displays Cancel button">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow shows record ID strip" time="3.361" classname="shows record ID strip">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow displays form fields in Details tab" time="3.232" classname="displays form fields in Details tab">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record Flow Comments tab mounts comment panel" time="2.754" classname="Comments tab mounts comment panel">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Delete Record" timestamp="2026-06-17T05:10:06" tests="2" time="3.975" failures="0">
+    <testcase name="OpenSparrow – Delete Record displays Delete button in grid row actions" time="1.986" classname="displays Delete button in grid row actions">
+    </testcase>
+    <testcase name="OpenSparrow – Delete Record shows delete button exists in grid row" time="1.880" classname="shows delete button exists in grid row">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Form Validation" timestamp="2026-06-17T05:10:10" tests="3" time="3.217" failures="0">
+    <testcase name="OpenSparrow – Form Validation prevents submit with empty required fields" time="1.141" classname="prevents submit with empty required fields">
+    </testcase>
+    <testcase name="OpenSparrow – Form Validation shows validation for pattern inputs if present" time="1.028" classname="shows validation for pattern inputs if present">
+    </testcase>
+    <testcase name="OpenSparrow – Form Validation form has visible submit button" time="0.916" classname="form has visible submit button">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Subtables (if present)" timestamp="2026-06-17T05:10:13" tests="3" time="11.108" failures="0">
+    <testcase name="OpenSparrow – Subtables (if present) displays subtable containers if present" time="3.271" classname="displays subtable containers if present">
+    </testcase>
+    <testcase name="OpenSparrow – Subtables (if present) displays Add subtable links if present" time="3.503" classname="displays Add subtable links if present">
+    </testcase>
+    <testcase name="OpenSparrow – Subtables (if present) subtable Add link navigates to create.php" time="4.051" classname="subtable Add link navigates to create.php">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Create Record: Actual Save" timestamp="2026-06-17T05:10:24" tests="3" time="6.191" failures="0">
+    <testcase name="OpenSparrow – Create Record: Actual Save filling first text input and submitting redirects to grid" time="2.949" classname="filling first text input and submitting redirects to grid">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record: Actual Save empty required field shows native validation or stays on page" time="1.296" classname="empty required field shows native validation or stays on page">
+    </testcase>
+    <testcase name="OpenSparrow – Create Record: Actual Save cancel button returns to grid without creating record" time="1.809" classname="cancel button returns to grid without creating record">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Edit Record: Actual Save" timestamp="2026-06-17T05:10:30" tests="2" time="8.305" failures="0">
+    <testcase name="OpenSparrow – Edit Record: Actual Save changing a text field and saving redirects to grid" time="4.051" classname="changing a text field and saving redirects to grid">
+    </testcase>
+    <testcase name="OpenSparrow – Edit Record: Actual Save save shows success indication (toast or saved=1)" time="4.117" classname="save shows success indication (toast or saved=1)">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Delete Record: Actual Flow" timestamp="2026-06-17T05:10:39" tests="2" time="4.879" failures="0">
+    <testcase name="OpenSparrow – Delete Record: Actual Flow cancelling delete confirm keeps record in grid" time="1.627" classname="cancelling delete confirm keeps record in grid">
+    </testcase>
+    <testcase name="OpenSparrow – Delete Record: Actual Flow confirming delete removes record from grid" time="3.134" classname="confirming delete removes record from grid">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Duplicate Record: Actual Flow" timestamp="2026-06-17T05:10:44" tests="3" time="5.271" failures="0">
+    <testcase name="OpenSparrow – Duplicate Record: Actual Flow clicking Duplicate fires POST to duplicate endpoint" time="1.774" classname="clicking Duplicate fires POST to duplicate endpoint">
+    </testcase>
+    <testcase name="OpenSparrow – Duplicate Record: Actual Flow duplicate does not decrease row count" time="1.311" classname="duplicate does not decrease row count">
+    </testcase>
+    <testcase name="OpenSparrow – Duplicate Record: Actual Flow duplicate adds a row on success (no unique constraint)" time="2.062" classname="duplicate adds a row on success (no unique constraint)">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Role-Based UI" timestamp="2026-06-17T05:10:49" tests="6" time="7.196" failures="0">
+    <testcase name="OpenSparrow – Role-Based UI editor role: Add button is visible; it navigates to create.php" time="0.799" classname="editor role: Add button is visible; it navigates to create.php">
+    </testcase>
+    <testcase name="OpenSparrow – Role-Based UI Export CSV visible for all roles" time="0.612" classname="Export CSV visible for all roles">
+    </testcase>
+    <testcase name="OpenSparrow – Role-Based UI editor role: Data Cleanup button is present" time="0.880" classname="editor role: Data Cleanup button is present">
+    </testcase>
+    <testcase name="OpenSparrow – Role-Based UI editor role: contenteditable cells are present" time="1.570" classname="editor role: contenteditable cells are present">
+    </testcase>
+    <testcase name="OpenSparrow – Role-Based UI UI is role-consistent: Add and Cleanup both appear for editor" time="0.750" classname="UI is role-consistent: Add and Cleanup both appear for editor">
+    </testcase>
+    <testcase name="OpenSparrow – Role-Based UI History tab shows audit entries or empty state on edit.php" time="2.379" classname="History tab shows audit entries or empty state on edit.php">
+    </testcase>
+  </testsuite>
+</testsuites>
