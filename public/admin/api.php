@@ -574,6 +574,11 @@ if ($action === 'users_change_password') {
 // Handle table creation
 if ($action === 'create_table') {
     header('Content-Type: application/json');
+    if ($isDemoMode) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'error' => 'Disabled in Demo Mode.']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true);
 
     // Sanitize schema and table variables
@@ -610,6 +615,11 @@ if ($action === 'create_table') {
 
 if ($action === 'add_column') {
     header('Content-Type: application/json');
+    if ($isDemoMode) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'error' => 'Disabled in Demo Mode.']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true);
 
     // Strict input sanitization
