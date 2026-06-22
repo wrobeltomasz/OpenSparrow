@@ -43,17 +43,19 @@ function cron_mysql_pdo(): ?\PDO
     }
     try {
         $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=5',
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
             MYSQL_HOST,
             MYSQL_PORT,
-            MYSQL_DB
+            MYSQL_DB,
+            MYSQL_CONNECT_TIMEOUT
         );
         return new \PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
             \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            \PDO::ATTR_TIMEOUT            => MYSQL_CONNECT_TIMEOUT,
         ]);
     } catch (\PDOException $e) {
-        error_log('[cron][mysql] ' . $e->getMessage());
+        error_log('[cron][mysql] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
         return null;
     }
 }

@@ -59,12 +59,18 @@ $fieldRegistry = new FieldTypeRegistry([
 $mapper = new UpdateMapper($fieldRegistry);
 
 // Records go through a router: PostgreSQL by default, MySQL for tables listed in
-// config/mysql_gateway.json. The MySQL connection is optional — when it is not
+// config/mysql_gateway.json. The MySQL connection is built lazily — it opens
+// only when a MySQL-routed table is actually accessed, so PostgreSQL-only pages
+// never open (or stall on) the external MySQL gateway. When MySQL is not
 // configured, PostgreSQL tables keep working and only MySQL tables error.
-$pgRecords    = new PgRecordRepository($db, $schemas, $fkLoader);
-$mysqlConn    = MysqlConnection::fromConfig();
-$mysqlRecords = $mysqlConn !== null ? new MysqlRecordRepository($mysqlConn) : null;
-$records      = new RoutingRecordRepository($pgRecords, $mysqlRecords);
+$pgRecords = new PgRecordRepository($db, $schemas, $fkLoader);
+$records   = new RoutingRecordRepository(
+    $pgRecords,
+    static function (): ?MysqlRecordRepository {
+        $conn = MysqlConnection::fromConfig();
+        return $conn !== null ? new MysqlRecordRepository($conn) : null;
+    }
+);
 
 $files = new PgFileRepository($db);
 $audit = new DbAuditLogger($db);

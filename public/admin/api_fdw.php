@@ -105,17 +105,19 @@ function fdw_mysql_pdo(): ?PDO
     }
     try {
         $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=5',
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
             MYSQL_HOST,
             MYSQL_PORT,
-            MYSQL_DB
+            MYSQL_DB,
+            MYSQL_CONNECT_TIMEOUT
         );
         return new PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT            => MYSQL_CONNECT_TIMEOUT,
         ]);
     } catch (\PDOException $e) {
-        error_log('[api_fdw][mysql_pdo] ' . $e->getMessage());
+        error_log('[api_fdw][mysql_pdo] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
         return null;
     }
 }
@@ -127,16 +129,20 @@ function fdw_test_connection(string $host, int $port, string $db, string $user, 
     }
     try {
         $dsn    = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=5',
+            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
             $host,
             $port,
-            $db
+            $db,
+            MYSQL_CONNECT_TIMEOUT
         );
-        $testPdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $testPdo = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => MYSQL_CONNECT_TIMEOUT,
+        ]);
         unset($testPdo);
         return true;
     } catch (\PDOException $e) {
-        error_log('[api_fdw][test_connection] ' . $e->getMessage());
+        error_log('[api_fdw][test_connection] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
         return false;
     }
 }

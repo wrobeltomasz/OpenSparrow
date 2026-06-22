@@ -324,3 +324,10 @@ define('RAG_PAGE_CONTEXT_MAX_CHARS', (int) get_env('RAG_PAGE_CONTEXT_MAX_CHARS',
     define('MYSQL_USER', $envUser !== '' ? $envUser : (string) ($file['user']     ?? ''));
     define('MYSQL_PASSWORD', $envPass !== '' ? $envPass : (string) ($file['password'] ?? ''));
 })();
+
+// Strict connect timeout (seconds) applied to every MySQL gateway PDO connection
+// (both the DSN connect_timeout and PDO::ATTR_TIMEOUT). Kept deliberately low so a
+// firewalled, hung, or dead MySQL host fails fast instead of tying up a PHP worker
+// long enough to starve the core PostgreSQL request path. Floor of 1s — never 0,
+// which several drivers treat as "no timeout". Env-overridable.
+define('MYSQL_CONNECT_TIMEOUT', max(1, (int) get_env('MYSQL_CONNECT_TIMEOUT', '2')));

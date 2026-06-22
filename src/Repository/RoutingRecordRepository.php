@@ -17,10 +17,25 @@ use App\Form\RecordData;
  */
 final class RoutingRecordRepository implements RecordRepositoryInterface
 {
+    /** @var \Closure(): ?RecordRepositoryInterface */
+    private \Closure $mysqlFactory;
+    private bool $mysqlResolved = false;
+    private ?RecordRepositoryInterface $mysql = null;
+
     public function __construct(
         private readonly RecordRepositoryInterface $postgres,
-        private readonly ?RecordRepositoryInterface $mysql = null,
+        RecordRepositoryInterface|\Closure|null $mysql = null,
     ) {
+        if ($mysql instanceof \Closure) {
+            // Lazy: connect only when a MySQL-routed table is first accessed, so
+            // PostgreSQL-only requests never open (or wait on) the MySQL gateway.
+            $this->mysqlFactory = $mysql;
+            return;
+        }
+        // Eager instance (or null) — wrap it so resolution is uniform.
+        $this->mysql         = $mysql;
+        $this->mysqlResolved = true;
+        $this->mysqlFactory  = static fn(): ?RecordRepositoryInterface => $mysql;
     }
 
     public function find(TableConfig $cfg, string|int $id): ?array
@@ -43,16 +58,43 @@ final class RoutingRecordRepository implements RecordRepositoryInterface
         return $this->route($cfg)->subtables($cfg, $parentId);
     }
 
+    private function mysql(): ?RecordRepositoryInterface
+    {
+        if ($this->mysqlResolved) {
+            return $this->mysql;
+        }
+        // Resolve the lazy MySQL connection at most once per request. Mark it
+        // resolved up-front so a throwing factory cannot leave a half-initialised
+        // state or trigger a reconnect storm on the next record operation.
+        $this->mysqlResolved = true;
+        try {
+            $this->mysql = ($this->mysqlFactory)();
+        } catch (\Throwable $e) {
+            // The MySQL gateway is optional; a failure building it must never crash
+            // the request with an unexpected exception type. Log the detail and fall
+            // back to the "no connection" path — route() then throws a clean
+            // RuntimeException for MySQL-routed tables only, while PostgreSQL tables
+            // (which never call this method) are wholly unaffected.
+            error_log(
+                '[RoutingRecordRepository] MySQL connection factory failed: '
+                . $e->getMessage() . ' | ' . $e->getTraceAsString()
+            );
+            $this->mysql = null;
+        }
+        return $this->mysql;
+    }
+
     private function route(TableConfig $cfg): RecordRepositoryInterface
     {
         if (!$cfg->isMysql()) {
             return $this->postgres;
         }
-        if ($this->mysql === null) {
+        $mysql = $this->mysql();
+        if ($mysql === null) {
             throw new \RuntimeException(
                 "Table '{$cfg->name}' is routed to MySQL, but no MySQL connection is configured."
             );
         }
-        return $this->mysql;
+        return $mysql;
     }
 }
