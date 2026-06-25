@@ -72,28 +72,30 @@ if (
 // resolves to "./tmp" — different folder per script location, breaking session
 // continuity between /login.php and /admin/index.php.
 // Resolves relative paths against project root (parent of includes/).
-$_sessSavePath = ini_get('session.save_path');
-if ($_sessSavePath === '' || $_sessSavePath[0] !== '/') {
-    $_projectRoot = realpath(__DIR__ . '/..');
-    if ($_projectRoot !== false) {
-        $_relPath = $_sessSavePath !== '' ? $_sessSavePath : 'storage/sessions';
-        $_absPath = $_projectRoot . '/' . $_relPath;
-        if (!is_dir($_absPath)) {
-            @mkdir($_absPath, 0700, true);
-        }
-        if (is_dir($_absPath) && is_writable($_absPath)) {
-            ini_set('session.save_path', $_absPath);
-            // Deny direct web access to session files on Apache (defence-in-depth).
-            $_htaccess = $_absPath . '/.htaccess';
-            if (!is_file($_htaccess)) {
-                @file_put_contents($_htaccess, "Require all denied\n");
-            }
-            unset($_htaccess);
-        }
+// Force an absolute session save path so that PHP-FPM pools that inherit
+// a system-level session.save_path (e.g. /tmp, blocked by open_basedir on
+// shared hosts) do not break session continuity between subdirectories.
+// Priority: SESSION_SAVE_PATH env var > project storage/sessions fallback.
+$_projectRoot = realpath(__DIR__ . '/..');
+$_envSessPath = get_env('SESSION_SAVE_PATH', '');
+if ($_envSessPath !== '') {
+    ini_set('session.save_path', $_envSessPath);
+} elseif ($_projectRoot !== false) {
+    $_absPath = $_projectRoot . '/storage/sessions';
+    if (!is_dir($_absPath)) {
+        @mkdir($_absPath, 0700, true);
     }
-    unset($_projectRoot, $_relPath, $_absPath);
+    if (is_dir($_absPath) && is_writable($_absPath)) {
+        ini_set('session.save_path', $_absPath);
+        $_htaccess = $_absPath . '/.htaccess';
+        if (!is_file($_htaccess)) {
+            @file_put_contents($_htaccess, "Require all denied\n");
+        }
+        unset($_htaccess);
+    }
+    unset($_absPath);
 }
-unset($_sessSavePath);
+unset($_projectRoot, $_envSessPath);
 // -------------------------------------------------------------------------
 // Runtime environment
 // -------------------------------------------------------------------------

@@ -16,8 +16,10 @@ cache/
 temp/
 .phpunit.result.cache
 
-# PHP session files — stored in storage/sessions/
+# PHP session files — stored in storage/sessions/ (keep the dir placeholder + web-deny guard)
 storage/sessions/*
+!storage/sessions/.gitkeep
+!storage/sessions/.htaccess
 
 # IDE
 .vscode/
@@ -51,6 +53,8 @@ phpcbf.phar
 # Python
 __pycache__/
 *.py
+# keep tracked helper scripts (the *.py blanket above would otherwise drop them)
+!scripts/*.py
 *.pyc
 *.bak
 

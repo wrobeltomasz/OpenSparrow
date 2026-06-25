@@ -346,6 +346,7 @@ All variables are read by `includes/config.php` on every request — the single 
 | `SECURE_COOKIES` | `true` | Set `false` on plain HTTP (local dev). |
 | `SESSION_SAMESITE` | `Lax` | Cookie SameSite policy. Do not change to `Strict` — it causes `ERR_TOO_MANY_REDIRECTS` on the login→admin redirect. |
 | `SESSION_MAX_LIFETIME` | `28800` | Hard session expiry in seconds (8 h). |
+| `SESSION_SAVE_PATH` | *(auto)* | Absolute path for PHP session storage. When unset, defaults to `storage/sessions/` inside the project root — overriding any server-level `session.save_path`, which on some shared hosts (e.g. home.pl) differs per subdirectory and may point to a system `/tmp` blocked by `open_basedir`. Set explicitly when your host requires a specific path or for shared storage across nodes. |
 
 #### Authentication & rate limiting
 
