@@ -57,6 +57,7 @@
     - 17.19 [Edytor Workflows](#1719-edytor-workflows)
     - 17.20 [Edytor Widoków](#1720-edytor-widoków)
     - 17.21 [Systemy demo](#1721-systemy-demo)
+    - 17.22 [Anonimizacja danych](#1722-anonimizacja-danych)
 18. [Responsywność i mobile](#18-responsywność-i-mobile)
 19. [Powiadomienia i feedback](#19-powiadomienia-i-feedback)
 20. [Internacjonalizacja (i18n)](#20-internacjonalizacja-i18n)
@@ -909,6 +910,20 @@ Zakładka **External Databases** (sekcja Data Management) umożliwia skonfigurow
 - `MysqlGateway` — implementacja przez PDO.
 - `DatabaseFactory::make($table, $pgConn, $mysqlPdo)` — wybiera implementację na podstawie listy tabel MySQL; akcja `mysql_preview` w `admin/api_fdw.php` demonstruje integrację.
 
+### 17.22 Anonimizacja danych
+
+Zakładka **Anonymization** (sekcja System) obsługuje automatyczną anonimizację danych osobowych zgodnie z wymogami RODO — prawdziwie zanonimizowane dane nie są danymi osobowymi i nie podlegają przepisom o ochronie danych UE. Moduł działa wyłącznie w panelu admina, cronie i bazie danych (brak wpływu na frontend).
+
+**Zakładka Rules:** definiuje reguły anonimizacji — dla każdej reguły wybierz tabelę, kolumnę i wartość zastępczą (np. `***ANONYMIZED***`). Reguły przechowywane w `config/anonymization.json`. Historia wykonań widoczna w sekcji Run History (tabela `spw_anonymization_log`).
+
+**Zakładka Schedule:** włączenie/wyłączenie modułu, wybór częstotliwości (Manual / Daily / Weekly / Monthly) egzekwowanej przez sam skrypt crona. Przycisk **Run Now** uruchamia `cron/cron_anonymization.php` natychmiast przez panel admina. Sekcja Cron Setup Guide zawiera gotowe polecenia dla Linux/macOS (crontab), Windows (Task Scheduler) i Docker.
+
+**Zakładka Suggestions:** przycisk **Scan Schema** przeszukuje `schema.json` pod kątem kolumn, których nazwy zawierają słowa kluczowe ze słownika. Znalezione kolumny wyświetlane są w tabeli; przycisk **+ Add Rule** dodaje regułę dla danej kolumny.
+
+**Zakładka Dictionary:** lista słów kluczowych rozdzielona przecinkami (np. `PESEL, NIP, email, phone, address, imię, nazwisko`). Używana przez zakładkę Suggestions do dopasowania nazw kolumn (dopasowanie podciągu, bez rozróżniania wielkości liter). Sekcja Log Cleanup pozwala usunąć stare wpisy z `spw_anonymization_log` starsze niż N dni.
+
+**Skrypt crona:** `cron/cron_anonymization.php` — tylko CLI. Sprawdza flagę `enabled`, egzekwuje okno częstotliwości (sprawdza ostatni udany run w tabeli logu), wykonuje `UPDATE` dla każdej reguły z użyciem `pg_ident()` dla identyfikatorów. Rejestruje każde wykonanie w `spw_anonymization_log` (status running → success/error, liczba przetworzonych reguł, liczba zanonimizowanych wierszy).
+
 ---
 
 ## 18. Responsywność i mobile
@@ -1168,7 +1183,17 @@ Firma ma starą aplikację na MySQL i chce korzystać z interfejsu OpenSparrow b
 
 ---
 
-### 23.14 Zarządzanie pracą na tablicy (Board / Kanban)
+### 23.14 Anonimizacja danych osobowych (RODO)
+
+**Wygasłe leady:**  
+Leady starsze niż 2 lata nie wymagają już pełnych danych. Słownik zawiera "email, phone, imię, nazwisko". Scan Suggestions wskazuje kolumny `email`, `phone`, `first_name`, `last_name` w tabeli `leads`. Reguły ustawione z wartością `USUNIĘTO`. Cron działa miesięcznie — co 30 dni wszystkie pasujące rekordy są zanonimizowane, dane nadal istnieją w bazie (audit log), ale nie są już danymi osobowymi.
+
+**Dane klientów po zamknięciu umowy:**  
+NIP i PESEL klientów niepotrzebne po archiwizacji umów. Słownik: "pesel, nip". Suggestions wskazuje `pesel` i `nip` w tabeli `customers`. Replacement: `***`. Cron cotygodniowy; historia wykonań widoczna w zakładce Run History.
+
+---
+
+### 23.15 Zarządzanie pracą na tablicy (Board / Kanban)
 
 **Pipeline sprzedaży:**  
 Tabela "Szanse sprzedaży" z kolumną enum `etap` (Lead, Kwalifikacja, Oferta, Negocjacje, Wygrana, Przegrana). Handlowiec otwiera Tablicę i widzi wszystkie szanse jako karty w kolumnach odpowiadających etapom. Po telefonie z klientem przeciąga kartę z "Oferta" do "Negocjacje" — etap zmienia się natychmiast w bazie, bez otwierania formularza.

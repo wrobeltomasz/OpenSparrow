@@ -424,6 +424,15 @@ ${_h4(s.s14_history_label)}
 ${_p(s.s14_history)}
 ${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;font-size:14px;')}
 
+${_h3('doc-9m', s.s9m_head)}
+${_p(s.s9m_desc)}
+${_ul([
+    `<strong>${s.s9m_tab1_label}:</strong> ${s.s9m_tab1}`,
+    `<strong>${s.s9m_tab2_label}:</strong> ${s.s9m_tab2}`,
+    `<strong>${s.s9m_tab3_label}:</strong> ${s.s9m_tab3}`,
+    `<strong>${s.s9m_tab4_label}:</strong> ${s.s9m_tab4}`
+])}
+
 ${_h3('doc-14', 'Upgrading OpenSparrow')}
 ${_p('After running <code>git pull</code> to a new version, use <strong>System → Migrations</strong> to check for pending release migrations. The admin header displays a yellow upgrade notice when action is required.')}
 ${_h4('Release workflow')}

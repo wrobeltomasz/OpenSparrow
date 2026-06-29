@@ -235,6 +235,10 @@ if (empty($_SESSION['csrf_token'])) {
                     <span class="nav-chevron">▼</span>
                 </div>
                 <div class="nav-section-items">
+                    <button class="admin-tab" data-file="anonymization">
+                        <img class="nav-item-icon" src="../assets/icons/fact_check.png" alt="">
+                        Anonymization
+                    </button>
                     <button class="admin-tab" data-file="audit">
                         <img class="nav-item-icon" src="../assets/icons/fact_check.png" alt="">
                         Audit &amp; Snapshots
@@ -371,7 +375,8 @@ if (empty($_SESSION['csrf_token'])) {
         csv_import: 'CSV Import',
         rag: 'RAG Documents',
         automations: 'Automations',
-        fdw: 'External Databases'
+        fdw: 'External Databases',
+        anonymization: 'Data Anonymization'
     };
     var breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
     document.querySelectorAll('.admin-tab[data-file]').forEach(function(tab) {

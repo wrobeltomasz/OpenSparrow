@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete'];
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete', 'anonymization_save', 'run_anonymization', 'anonymization_purge_log'];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);
@@ -124,6 +124,7 @@ if ($action === 'init_db') {
         $tRagQueries       = sys_table('rag_queries');
         $tRagQuerySources  = sys_table('rag_query_sources');
         $tAutomationRuns   = sys_table('automation_runs');
+        $tAnonLog          = sys_table('anonymization_log');
 
         // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
@@ -273,6 +274,11 @@ if ($action === 'init_db') {
                 "CREATE INDEX IF NOT EXISTS idx_spw_rag_chunks_content_fts ON $tRagChunks USING gin (to_tsvector('english', content))",
             ],
 
+            '2.9_anonymization_log' => [
+                "CREATE TABLE IF NOT EXISTS $tAnonLog ( id serial4 NOT NULL, started_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL, finished_at timestamp NULL, status varchar(20) NOT NULL DEFAULT 'running', triggered_by varchar(20) NOT NULL DEFAULT 'cron', rules_processed int4 NULL, rows_anonymized int4 NULL, error_message text NULL, CONSTRAINT spw_anonymization_log_pkey PRIMARY KEY (id) )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_anonymization_log_started_at ON $tAnonLog USING btree (started_at DESC)",
+            ],
+
             // Add future migrations below — never modify entries above.
 
         ];
@@ -354,6 +360,7 @@ if ($action === 'migrations_list') {
             '2.7_rag_queries_prompt',
             '2.7_rag_query_sources',
             '2.7_rag_fts_english',
+            '2.9_anonymization_log',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");
@@ -2397,6 +2404,155 @@ if ($action === 'cron_purge_log') {
     }
     exit;
 }
+// ── Data Anonymization ────────────────────────────────────────────────────────
+
+if ($action === 'anonymization_load') {
+    header('Content-Type: application/json');
+    $path = __DIR__ . '/../../config/anonymization.json';
+    $defaults = [
+        'enabled'    => false,
+        'frequency'  => 'daily',
+        'dictionary' => ['pesel', 'nip', 'email', 'phone', 'address', 'imie', 'nazwisko', 'name'],
+        'rules'      => [],
+    ];
+    if (is_file($path)) {
+        $raw    = @file_get_contents($path);
+        $parsed = $raw !== false ? @json_decode($raw, true) : null;
+        $config = is_array($parsed) ? array_merge($defaults, $parsed) : $defaults;
+    } else {
+        $config = $defaults;
+    }
+    echo json_encode(['status' => 'success', 'config' => $config]);
+    exit;
+}
+
+if ($action === 'anonymization_save') {
+    header('Content-Type: application/json');
+    require_not_demo('Demo mode — writes disabled.');
+    $data = json_decode((string) file_get_contents('php://input'), true);
+    if (!is_array($data)) {
+        echo json_encode(['status' => 'error', 'error' => 'Invalid JSON.']);
+        exit;
+    }
+    $validFrequencies = ['manual', 'daily', 'weekly', 'monthly'];
+    $config = [
+        'enabled'   => (bool)($data['enabled'] ?? false),
+        'frequency' => in_array($data['frequency'] ?? '', $validFrequencies, true)
+            ? $data['frequency']
+            : 'daily',
+        'dictionary' => array_values(array_filter(
+            array_map('trim', (array)($data['dictionary'] ?? []))
+        )),
+        'rules'     => [],
+    ];
+    foreach ((array)($data['rules'] ?? []) as $rule) {
+        if (!is_array($rule)) {
+            continue;
+        }
+        $t  = trim((string)($rule['table']       ?? ''));
+        $c  = trim((string)($rule['column']      ?? ''));
+        $dc = trim((string)($rule['date_column'] ?? ''));
+        $d  = (int)($rule['days'] ?? 0);
+        $r  = (string)($rule['replacement'] ?? '');
+        if ($t === '' || $c === '' || $dc === '' || $d < 1) {
+            continue;
+        }
+        $config['rules'][] = [
+            'table'       => $t,
+            'date_column' => $dc,
+            'days'        => $d,
+            'column'      => $c,
+            'replacement' => $r,
+        ];
+    }
+    $path = __DIR__ . '/../../config/anonymization.json';
+    $tmp  = $path . '.tmp';
+    $encoded = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (@file_put_contents($tmp, $encoded, LOCK_EX) === false) {
+        echo json_encode(['status' => 'error', 'error' => 'Failed to write config file.']);
+        exit;
+    }
+    @rename($tmp, $path);
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
+if ($action === 'run_anonymization') {
+    header('Content-Type: application/json');
+    $cronScript = realpath(__DIR__ . '/../../cron/cron_anonymization.php');
+    if ($cronScript === false || !is_readable($cronScript)) {
+        echo json_encode(['status' => 'error', 'error' => 'Anonymization cron script not found.']);
+        exit;
+    }
+    if (!function_exists('exec')) {
+        echo json_encode(['status' => 'error', 'error' => 'exec() is disabled on this server.']);
+        exit;
+    }
+    $lines      = [];
+    $returnCode = 0;
+    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' admin 2>&1', $lines, $returnCode);
+    echo json_encode(['status' => 'success', 'output' => implode("\n", $lines)]);
+    exit;
+}
+
+if ($action === 'anonymization_log') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../../includes/db.php';
+        $conn  = db_connect();
+        $tLog  = sys_table('anonymization_log');
+        $probe = @pg_query($conn, "SELECT 1 FROM {$tLog} LIMIT 0");
+        if (!$probe) {
+            echo json_encode([
+                'status' => 'success',
+                'rows'   => [],
+                'note'   => 'Run Initialize System Tables to create the log table.',
+            ]);
+            exit;
+        }
+        $res = @pg_query(
+            $conn,
+            "SELECT id, started_at, finished_at, status, triggered_by, rules_processed, rows_anonymized, error_message,
+                    EXTRACT(EPOCH FROM (COALESCE(finished_at, now()) - started_at)) AS duration_sec
+             FROM {$tLog} ORDER BY started_at DESC LIMIT 50"
+        );
+        if (!$res) {
+            admin_db_fail($conn, 'anonymization_log');
+        }
+        $rows = [];
+        while ($row = pg_fetch_assoc($res)) {
+            $rows[] = $row;
+        }
+        echo json_encode(['status' => 'success', 'rows' => $rows]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'anonymization_purge_log') {
+    header('Content-Type: application/json');
+    require_not_demo('Demo mode — writes disabled.');
+    try {
+        require_once __DIR__ . '/../../includes/db.php';
+        $conn = db_connect();
+        $days = max(1, (int)(json_decode((string) file_get_contents('php://input'), true)['days'] ?? 90));
+        $tLog = sys_table('anonymization_log');
+        $res  = @pg_query_params(
+            $conn,
+            "DELETE FROM {$tLog} WHERE started_at < NOW() - (\$1 || ' days')::interval",
+            [$days]
+        );
+        if (!$res) {
+            admin_db_fail($conn, 'anonymization_purge_log');
+        }
+        echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 // ── RAG Knowledge Base ────────────────────────────────────────────────────────
 
 if ($action === 'rag_list') {

@@ -23,6 +23,12 @@
         "removed_config_keys": [],
         "notes": "Added Automations module (rule-based triggers on record create/update/delete with template variables), document chunking for precise chunk-level retrieval (spw_rag_chunks), and expanded query history with source attribution and full prompt snapshots (spw_rag_query_sources). Run Initialize System Tables to apply all new migrations."
     },
+    "2.9": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Added Data Anonymization module: admin panel UI for defining table/column anonymization rules, configurable run frequency, dictionary-based PII column suggestions, and a cron worker (cron/cron_anonymization.php). Run Initialize System Tables to create spw_anonymization_log."
+    },
     "2.8": {
         "removed_files": [],
         "deprecated_files": [],
