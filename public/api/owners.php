@@ -7,39 +7,10 @@ declare(strict_types=1);
 // match() action routing: get, history, editors, set, mass_set — keyed by (table_name, record_id), is_current flag
 // sys_table('record_owners'); parameterized queries; JSON via jsonError()/jsonSuccess()
 
-ini_set('display_errors', '0');
-require_once __DIR__ . '/../../includes/session.php';
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
-header('Content-Type: application/json; charset=utf-8');
-send_security_headers();
-start_session();
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
+require_once __DIR__ . '/../../includes/api_bootstrap.php';
+$conn = api_bootstrap();
 
-$conn = db_connect();
-
-function jsonError(string $msg, int $code = 400): void
-{
-    http_response_code($code);
-    echo json_encode(['success' => false, 'error' => $msg]);
-    exit;
-}
-
-function jsonSuccess(array $data = [], int $code = 200): void
-{
-    http_response_code($code);
-    $data['success'] = true;
-    echo json_encode($data);
-    exit;
-}
-
-function requireLogin(): void
-{
-    if (empty($_SESSION['user_id'])) {
-        jsonError('Unauthorised', 401);
-    }
-}
+// jsonError(), jsonSuccess(), requireLogin() and validatedTable() are shared via includes/api_helpers.php
 
 function requireWrite(): void
 {
@@ -57,21 +28,6 @@ function requireCsrf(array $body): void
     if (!$session || !hash_equals($session, (string)$token)) {
         jsonError('Invalid CSRF token.', 403);
     }
-}
-
-function validatedTable(string $table): string
-{
-    if ($table === '') {
-        jsonError('table is required.', 400);
-    }
-    $schema = json_decode(
-        (string)file_get_contents(__DIR__ . '/../../config/schema.json'),
-        true
-    );
-    if (!isset($schema['tables'][$table])) {
-        jsonError('Unknown table.', 400);
-    }
-    return $table;
 }
 
 try {

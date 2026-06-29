@@ -52,34 +52,8 @@ if (file_exists($mysqlGatewayPath)) {
     $mysqlGatewayTables = is_array($mgCfg) ? ($mgCfg['mysql_tables'] ?? []) : [];
 }
 
-function mass_edit_mysql_bt(string $name): string
-{
-    return '`' . str_replace('`', '', $name) . '`';
-}
-
-function mass_edit_mysql_pdo(): ?\PDO
-{
-    if (MYSQL_HOST === '' || MYSQL_DB === '' || MYSQL_USER === '') {
-        return null;
-    }
-    try {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
-            MYSQL_HOST,
-            MYSQL_PORT,
-            MYSQL_DB,
-            MYSQL_CONNECT_TIMEOUT
-        );
-        return new \PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
-            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-            \PDO::ATTR_TIMEOUT            => MYSQL_CONNECT_TIMEOUT,
-        ]);
-    } catch (\PDOException $e) {
-        error_log('[mass_edit][mysql] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
-        return null;
-    }
-}
+// MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
+require_once __DIR__ . '/../../includes/mysql.php';
 
 // Validate table + column against schema. Returns [$tableCfg, $tableName, $colCfg, $colSql, $tblSql].
 function validateTableColumn(array $body, array $schema): array
@@ -154,16 +128,16 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
     [$tableCfg, $tableName, , $colSql, $tblSql] = validateTableColumn($body, $schema);
 
     if (in_array($tableName, $mysqlGatewayTables, true)) {
-        $pdo = mass_edit_mysql_pdo();
+        $pdo = mysql_pdo('mass_edit');
         if ($pdo === null) {
             http_response_code(503);
             exit(json_encode(['error' => 'MySQL connection unavailable']));
         }
         $colName  = (string)($body['column'] ?? '');
         $mysqlPk  = (string)($tableCfg['mysql_pk'] ?? 'id');
-        $pkBt     = mass_edit_mysql_bt($mysqlPk);
-        $colBt    = mass_edit_mysql_bt($colName);
-        $tblBt    = mass_edit_mysql_bt(MYSQL_DB) . '.' . mass_edit_mysql_bt($tableName);
+        $pkBt     = mysql_bt($mysqlPk);
+        $colBt    = mysql_bt($colName);
+        $tblBt    = mysql_bt(MYSQL_DB) . '.' . mysql_bt($tableName);
         $inList   = implode(',', array_fill(0, count($rowIds), '?'));
         try {
             $stmtCnt = $pdo->prepare("SELECT COUNT(*) FROM {$tblBt} WHERE {$pkBt} IN ({$inList})");
@@ -269,16 +243,16 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
     [$tableCfg, $tableName, , $colSql, $tblSql] = validateTableColumn($body, $schema);
 
     if (in_array($tableName, $mysqlGatewayTables, true)) {
-        $pdo = mass_edit_mysql_pdo();
+        $pdo = mysql_pdo('mass_edit');
         if ($pdo === null) {
             http_response_code(503);
             exit(json_encode(['error' => 'MySQL connection unavailable']));
         }
         $colName = (string)($body['column'] ?? '');
         $mysqlPk = (string)($tableCfg['mysql_pk'] ?? 'id');
-        $pkBt    = mass_edit_mysql_bt($mysqlPk);
-        $colBt   = mass_edit_mysql_bt($colName);
-        $tblBt   = mass_edit_mysql_bt(MYSQL_DB) . '.' . mass_edit_mysql_bt($tableName);
+        $pkBt    = mysql_bt($mysqlPk);
+        $colBt   = mysql_bt($colName);
+        $tblBt   = mysql_bt(MYSQL_DB) . '.' . mysql_bt($tableName);
         $inList  = implode(',', array_fill(0, count($rowIds), '?'));
         try {
             $params = array_merge([$value], $rowIds);
@@ -452,14 +426,14 @@ if ($action === 'mass_delete' && $method === 'POST') {
     }
 
     if (in_array($tableName, $mysqlGatewayTables, true)) {
-        $pdo = mass_edit_mysql_pdo();
+        $pdo = mysql_pdo('mass_edit');
         if ($pdo === null) {
             http_response_code(503);
             exit(json_encode(['error' => 'MySQL connection unavailable']));
         }
         $mysqlPk = (string)($tableCfg['mysql_pk'] ?? 'id');
-        $pkBt    = mass_edit_mysql_bt($mysqlPk);
-        $tblBt   = mass_edit_mysql_bt(MYSQL_DB) . '.' . mass_edit_mysql_bt($tableName);
+        $pkBt    = mysql_bt($mysqlPk);
+        $tblBt   = mysql_bt(MYSQL_DB) . '.' . mysql_bt($tableName);
         $inList  = implode(',', array_fill(0, count($rowIds), '?'));
         try {
             $stmt = $pdo->prepare("DELETE FROM {$tblBt} WHERE {$pkBt} IN ({$inList})");

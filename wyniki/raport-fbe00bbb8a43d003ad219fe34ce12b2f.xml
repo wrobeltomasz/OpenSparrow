@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="19.705" tests="19" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-29T16:12:01" tests="0" file="cypress\e2e\keyboard_shortcuts.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Keyboard Help Modal" timestamp="2026-06-29T16:12:01" tests="9" time="8.152" failures="0">
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal help button exists in grid area" time="2.357" classname="help button exists in grid area">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal clicking help button opens help overlay" time="0.674" classname="clicking help button opens help overlay">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal help overlay has keyboard shortcut table" time="0.697" classname="help overlay has keyboard shortcut table">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal help overlay has key labels with kg-help-key class" time="0.662" classname="help overlay has key labels with kg-help-key class">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal help overlay has close button" time="0.662" classname="help overlay has close button">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal close button dismisses help overlay" time="0.750" classname="close button dismisses help overlay">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal Escape key closes help overlay" time="0.689" classname="Escape key closes help overlay">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal backdrop click dismisses help overlay" time="0.705" classname="backdrop click dismisses help overlay">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Help Modal help overlay has role=dialog and aria-modal" time="0.632" classname="help overlay has role=dialog and aria-modal">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid ARIA Live Region" timestamp="2026-06-29T16:12:09" tests="1" time="0.614" failures="0">
+    <testcase name="OpenSparrow – Grid ARIA Live Region aria live region exists in DOM after grid loads" time="0.573" classname="aria live region exists in DOM after grid loads">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Keyboard Navigation" timestamp="2026-06-29T16:12:10" tests="8" time="9.781" failures="0">
+    <testcase name="OpenSparrow – Grid Keyboard Navigation grid cells have tabindex attribute set" time="0.970" classname="grid cells have tabindex attribute set">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Navigation grid cells have role=gridcell" time="1.294" classname="grid cells have role=gridcell">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Navigation grid table has role=grid" time="1.274" classname="grid table has role=grid">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Navigation cell gets kg-focused class on focus" time="1.313" classname="cell gets kg-focused class on focus">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Navigation arrow key moves kg-focused to next row" time="1.284" classname="arrow key moves kg-focused to next row">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Navigation Ctrl+A selects all cells with kg-selected class" time="1.143" classname="Ctrl+A selects all cells with kg-selected class">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Navigation Ctrl+F focuses search input" time="1.026" classname="Ctrl+F focuses search input">
+    </testcase>
+    <testcase name="OpenSparrow – Grid Keyboard Navigation search highlights cells with kg-search-match when term matches" time="1.151" classname="search highlights cells with kg-search-match when term matches">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Grid Nav-Mode" timestamp="2026-06-29T16:12:20" tests="1" time="1.152" failures="0">
+    <testcase name="OpenSparrow – Grid Nav-Mode keyboard navigation does not leave cell in editing state" time="1.107" classname="keyboard navigation does not leave cell in editing state">
+    </testcase>
+  </testsuite>
+</testsuites>

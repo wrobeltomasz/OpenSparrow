@@ -48,40 +48,8 @@ if (file_exists($viewsPath)) {
 }
 $views = $viewsConfig['views'] ?? [];
 
-/**
- * PDO connection to the MySQL Gateway database, or null when not configured.
- * Mirrors mysql_pdo_api() in api.php (api/views.php is a standalone endpoint
- * and does not include the main gateway).
- */
-function views_mysql_pdo(): ?\PDO
-{
-    if (MYSQL_HOST === '' || MYSQL_DB === '' || MYSQL_USER === '') {
-        return null;
-    }
-    try {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
-            MYSQL_HOST,
-            MYSQL_PORT,
-            MYSQL_DB,
-            MYSQL_CONNECT_TIMEOUT
-        );
-        return new \PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
-            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-            \PDO::ATTR_TIMEOUT            => MYSQL_CONNECT_TIMEOUT,
-        ]);
-    } catch (\PDOException $e) {
-        error_log('[api_views][mysql] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
-        return null;
-    }
-}
-
-/** Backtick-quote a MySQL identifier. */
-function views_mysql_bt(string $name): string
-{
-    return '`' . str_replace('`', '', $name) . '`';
-}
+// MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
+require_once __DIR__ . '/../../includes/mysql.php';
 
 /**
  * Render view data for a MySQL-sourced view (SELECT or drill-down GROUP BY).
@@ -102,7 +70,7 @@ function views_mysql_data(
         exit;
     }
 
-    $pdo = views_mysql_pdo();
+    $pdo = mysql_pdo('api_views');
     if ($pdo === null) {
         http_response_code(500);
         echo json_encode(['error' => 'MySQL gateway not configured']);
@@ -118,7 +86,7 @@ function views_mysql_data(
             exit;
         }
         $params[]    = $filterVal;
-        $whereClause = 'WHERE ' . views_mysql_bt($filterCol) . ' = ?';
+        $whereClause = 'WHERE ' . mysql_bt($filterCol) . ' = ?';
     }
 
     if ($groupBy !== null) {
@@ -138,28 +106,28 @@ function views_mysql_data(
             }
             $agg = strtolower($colCfg['aggregate'] ?? '');
             if ($agg === 'count') {
-                $aggParts[] = 'COUNT(*) AS ' . views_mysql_bt($colName);
+                $aggParts[] = 'COUNT(*) AS ' . mysql_bt($colName);
             } elseif ($agg === 'sum') {
-                $aggParts[] = 'SUM(' . views_mysql_bt($colName) . ') AS ' . views_mysql_bt($colName);
+                $aggParts[] = 'SUM(' . mysql_bt($colName) . ') AS ' . mysql_bt($colName);
             } elseif ($agg === 'avg') {
-                $aggParts[] = 'ROUND(AVG(' . views_mysql_bt($colName) . '), 2) AS ' . views_mysql_bt($colName);
+                $aggParts[] = 'ROUND(AVG(' . mysql_bt($colName) . '), 2) AS ' . mysql_bt($colName);
             }
         }
         $selectExtra = empty($aggParts) ? 'COUNT(*) AS _count' : implode(', ', $aggParts);
         $sql         = sprintf(
             'SELECT %s, %s FROM %s.%s %s GROUP BY %s ORDER BY 2 DESC LIMIT 1000',
-            views_mysql_bt($groupBy),
+            mysql_bt($groupBy),
             $selectExtra,
-            views_mysql_bt(MYSQL_DB),
-            views_mysql_bt($viewName),
+            mysql_bt(MYSQL_DB),
+            mysql_bt($viewName),
             $whereClause,
-            views_mysql_bt($groupBy)
+            mysql_bt($groupBy)
         );
     } else {
         $sql = sprintf(
             'SELECT * FROM %s.%s %s LIMIT 1000',
-            views_mysql_bt(MYSQL_DB),
-            views_mysql_bt($viewName),
+            mysql_bt(MYSQL_DB),
+            mysql_bt($viewName),
             $whereClause
         );
     }
@@ -325,7 +293,7 @@ try {
         $source = ($_GET['source'] ?? 'postgres') === 'mysql' ? 'mysql' : 'postgres';
 
         if ($source === 'mysql') {
-            $pdo = views_mysql_pdo();
+            $pdo = mysql_pdo('api_views');
             if ($pdo === null) {
                 http_response_code(500);
                 echo json_encode(['error' => 'MySQL gateway not configured']);

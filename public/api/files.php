@@ -8,46 +8,10 @@
 
 declare(strict_types=1);
 
-// Prevent PHP from outputting HTML warnings that break JSON
-ini_set('display_errors', '0');
-require_once __DIR__ . '/../../includes/session.php';
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
-header('Content-Type: application/json; charset=utf-8');
-send_security_headers();
-start_session();
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
-// Connect to database
-$conn = db_connect();
+require_once __DIR__ . '/../../includes/api_bootstrap.php';
+$conn = api_bootstrap();
 
-// JSON error response helper
-function jsonError(string $msg, int $code = 400): void
-{
-
-    http_response_code($code);
-    echo json_encode(['success' => false, 'error' => $msg]);
-    exit;
-}
-
-// JSON success response helper — supports explicit HTTP status code
-function jsonSuccess(array $data = [], int $code = 200): void
-{
-
-    http_response_code($code);
-    $data['success'] = true;
-    echo json_encode($data);
-    exit;
-}
-
-// Auth validation helper
-function requireLogin(): void
-{
-
-    if (empty($_SESSION['user_id'])) {
-        jsonError('Unauthorised', 401);
-    }
-}
+// jsonError(), jsonSuccess() and requireLogin() are shared via includes/api_helpers.php
 
 // Editor validation helper (upload/delete requires editor role)
 function requireEditor(): void
@@ -101,34 +65,8 @@ function saveConfig(array $config): void
     rename($tmpPath, $path);
 }
 
-function files_mysql_bt(string $name): string
-{
-    return '`' . str_replace('`', '', $name) . '`';
-}
-
-function files_mysql_pdo(): ?\PDO
-{
-    if (MYSQL_HOST === '' || MYSQL_DB === '' || MYSQL_USER === '') {
-        return null;
-    }
-    try {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
-            MYSQL_HOST,
-            MYSQL_PORT,
-            MYSQL_DB,
-            MYSQL_CONNECT_TIMEOUT
-        );
-        return new \PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
-            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-            \PDO::ATTR_TIMEOUT            => MYSQL_CONNECT_TIMEOUT,
-        ]);
-    } catch (\PDOException $e) {
-        error_log('[api_files][mysql] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
-        return null;
-    }
-}
+// MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
+require_once __DIR__ . '/../../includes/mysql.php';
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];
@@ -489,7 +427,7 @@ function actionGetRelatedRecords($conn): void
         $mgTables = is_array($mgCfg) ? ($mgCfg['mysql_tables'] ?? []) : [];
     }
     if (in_array($reqTable, $mgTables, true)) {
-        $pdo = files_mysql_pdo();
+        $pdo = mysql_pdo('api_files');
         if ($pdo === null) {
             jsonSuccess(['records' => []]);
         }
@@ -510,10 +448,10 @@ function actionGetRelatedRecords($conn): void
         }
         $col1 = in_array($col1, $validCols, true) ? $col1 : $mysqlPk;
         $col2 = ($col2 && in_array($col2, $validCols, true)) ? $col2 : '';
-        $pkBt   = files_mysql_bt($mysqlPk);
-        $col1Bt = files_mysql_bt($col1);
-        $tblBt  = files_mysql_bt(MYSQL_DB) . '.' . files_mysql_bt($reqTable);
-        $sel2   = $col2 ? (', ' . files_mysql_bt($col2)) : '';
+        $pkBt   = mysql_bt($mysqlPk);
+        $col1Bt = mysql_bt($col1);
+        $tblBt  = mysql_bt(MYSQL_DB) . '.' . mysql_bt($reqTable);
+        $sel2   = $col2 ? (', ' . mysql_bt($col2)) : '';
         $sql    = "SELECT {$pkBt} AS id, {$col1Bt} AS val1 {$sel2} FROM {$tblBt} ORDER BY {$pkBt} DESC LIMIT 500";
         try {
             $stmt = $pdo->query($sql);

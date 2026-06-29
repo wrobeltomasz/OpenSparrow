@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="36.338" tests="16" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-29T16:09:34" tests="0" file="cypress\e2e\dashboard.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Dashboard: Page Structure" timestamp="2026-06-29T16:09:34" tests="5" time="9.519" failures="0">
+    <testcase name="OpenSparrow – Dashboard: Page Structure loads dashboard page" time="2.044" classname="loads dashboard page">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Page Structure has dashboard section container" time="2.529" classname="has dashboard section container">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Page Structure has sidebar menu" time="0.357" classname="has sidebar menu">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Page Structure has notifications bell" time="4.070" classname="has notifications bell">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Page Structure header contains user avatar button" time="0.340" classname="header contains user avatar button">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Dashboard: Widget Loading" timestamp="2026-06-29T16:09:43" tests="5" time="13.045" failures="0">
+    <testcase name="OpenSparrow – Dashboard: Widget Loading dashboard section transitions out of loading state" time="4.038" classname="dashboard section transitions out of loading state">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Widget Loading renders widgets or error after load" time="0.342" classname="renders widgets or error after load">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Widget Loading if widgets configured: each has a title" time="0.360" classname="if widgets configured: each has a title">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Widget Loading if widgets configured: widget has data-w attribute" time="5.704" classname="if widgets configured: widget has data-w attribute">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Widget Loading if error: .dash-error message is not empty" time="2.470" classname="if error: .dash-error message is not empty">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Dashboard: Navigation" timestamp="2026-06-29T16:09:56" tests="3" time="8.993" failures="0">
+    <testcase name="OpenSparrow – Dashboard: Navigation sidebar menu has at least one link" time="0.351" classname="sidebar menu has at least one link">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Navigation clicking first table link navigates to grid" time="4.501" classname="clicking first table link navigates to grid">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Navigation sidebar toggle button exists" time="4.035" classname="sidebar toggle button exists">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Dashboard: Mobile" timestamp="2026-06-29T16:10:05" tests="3" time="4.775" failures="0">
+    <testcase name="OpenSparrow – Dashboard: Mobile loads on mobile viewport" time="0.330" classname="loads on mobile viewport">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Mobile sidebar toggle visible on mobile" time="4.049" classname="sidebar toggle visible on mobile">
+    </testcase>
+    <testcase name="OpenSparrow – Dashboard: Mobile dashboard section renders on mobile" time="0.317" classname="dashboard section renders on mobile">
+    </testcase>
+  </testsuite>
+</testsuites>

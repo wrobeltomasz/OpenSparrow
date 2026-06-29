@@ -98,29 +98,8 @@ function fdw_mysql_configured(): bool
     return MYSQL_HOST !== '' && MYSQL_DB !== '' && MYSQL_USER !== '';
 }
 
-function fdw_mysql_pdo(): ?PDO
-{
-    if (!fdw_mysql_configured()) {
-        return null;
-    }
-    try {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
-            MYSQL_HOST,
-            MYSQL_PORT,
-            MYSQL_DB,
-            MYSQL_CONNECT_TIMEOUT
-        );
-        return new PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_TIMEOUT            => MYSQL_CONNECT_TIMEOUT,
-        ]);
-    } catch (\PDOException $e) {
-        error_log('[api_fdw][mysql_pdo] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
-        return null;
-    }
-}
+// MySQL Gateway PDO factory lives in the shared includes/mysql.php module
+require_once __DIR__ . '/../../includes/mysql.php';
 
 function fdw_test_connection(string $host, int $port, string $db, string $user, string $pass): bool
 {
@@ -250,7 +229,7 @@ function fdw_discover_columns(PDO $pdo, string $dbName, string $tableName): arra
 // ---- mysql_status (GET) ----------------------------------------------------
 if ($action === 'mysql_status') {
     $configured = fdw_mysql_configured();
-    $connected  = $configured && fdw_mysql_pdo() !== null;
+    $connected  = $configured && mysql_pdo('api_fdw') !== null;
     $cfg        = fdw_load_config();
     fdw_respond([
         'status'       => 'success',
@@ -324,7 +303,7 @@ if ($action === 'mysql_test') {
     if (!fdw_mysql_configured()) {
         fdw_fail('MySQL not configured. Enter credentials in the form or set MYSQL_* env vars.');
     }
-    if (fdw_mysql_pdo() === null) {
+    if (mysql_pdo('api_fdw') === null) {
         fdw_fail('Connection failed. Verify host, port, database, user and password.');
     }
     fdw_respond(['status' => 'success', 'message' => 'Connection successful.']);
@@ -369,7 +348,7 @@ if ($action === 'mysql_tables_save') {
             unset($schema['tables'][$rt]);
         }
         if (!empty($added)) {
-            $pdo = fdw_mysql_pdo();
+            $pdo = mysql_pdo('api_fdw');
             foreach ($added as $at) {
                 if (isset($schema['tables'][$at])) {
                     continue;
@@ -408,7 +387,7 @@ if ($action === 'mysql_preview') {
     DatabaseFactory::setMysqlTables($cfg['mysql_tables'] ?? []);
 
     $pgConn   = db_connect();
-    $mysqlPdo = fdw_mysql_pdo();
+    $mysqlPdo = mysql_pdo('api_fdw');
     $gateway  = DatabaseFactory::make($table, $pgConn, $mysqlPdo);
     $rows     = $gateway->fetchAll($table);
 
@@ -515,7 +494,7 @@ if ($action === 'mysql_columns_sync') {
         fdw_fail('Table is not in the MySQL routing list.');
     }
 
-    $pdo = fdw_mysql_pdo();
+    $pdo = mysql_pdo('api_fdw');
     if ($pdo === null) {
         fdw_fail('MySQL connection not available.', 503);
     }

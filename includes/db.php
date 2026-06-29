@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 // db.php — PostgreSQL connection manager and system table naming helpers
+// db_config() loads and caches config/database.json once per request
 // db_connect() reads config/database.json + env vars (PGHOST, PGPORT, etc.) and returns PgSql\Connection
 // sys_schema() returns schema name (default "app") from config/database.json or PGSCHEMA env
 // sys_table($name) returns fully qualified quoted identifier: schema."spw_$name"
@@ -10,10 +11,25 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 
+// Load and cache config/database.json once per request. Returns [] when absent.
+function db_config(): array
+{
+    static $config = null;
+    if ($config === null) {
+        $config = [];
+        $configFile = __DIR__ . '/../config/database.json';
+        if (file_exists($configFile)) {
+            $decoded = json_decode((string) @file_get_contents($configFile), true);
+            if (is_array($decoded)) {
+                $config = $decoded;
+            }
+        }
+    }
+    return $config;
+}
+
 function db_connect(): \PgSql\Connection
 {
-    $configFile = __DIR__ . '/../config/database.json';
-
     // Default values fallback
     $host = DB_HOST;
     $port = DB_PORT;
@@ -21,18 +37,13 @@ function db_connect(): \PgSql\Connection
     $user = getenv('PGUSER') ?: '';
     $password = getenv('PGPASSWORD') ?: '';
 
-    // Load config from JSON file if exists
-    if (file_exists($configFile)) {
-        $json = file_get_contents($configFile);
-        $config = json_decode($json, true);
-        if (is_array($config)) {
-            $host = !empty($config['host']) ? $config['host'] : $host;
-            $port = !empty($config['port']) ? $config['port'] : $port;
-            $dbname = !empty($config['dbname']) ? $config['dbname'] : $dbname;
-            $user = !empty($config['user']) ? $config['user'] : $user;
-            $password = $config['password'] ?? $password;
-        }
-    }
+    // Apply config/database.json overrides on top of the env defaults
+    $config = db_config();
+    $host = !empty($config['host']) ? $config['host'] : $host;
+    $port = !empty($config['port']) ? $config['port'] : $port;
+    $dbname = !empty($config['dbname']) ? $config['dbname'] : $dbname;
+    $user = !empty($config['user']) ? $config['user'] : $user;
+    $password = $config['password'] ?? $password;
 
     // Build connection string
     $connStr = sprintf(
@@ -67,13 +78,9 @@ function sys_schema(): string
         return $schema;
     }
     $schema = getenv('PGSCHEMA') ?: 'app';
-    $configFile = __DIR__ . '/../config/database.json';
-    if (file_exists($configFile)) {
-        $json = @file_get_contents($configFile);
-        $config = @json_decode($json, true);
-        if (is_array($config) && !empty($config['schema'])) {
-            $schema = (string) $config['schema'];
-        }
+    $config = db_config();
+    if (!empty($config['schema'])) {
+        $schema = (string) $config['schema'];
     }
     return $schema;
 }

@@ -50,6 +50,27 @@ if (!function_exists('client_ip')) {
 
 }
 
+// Read a single key from config/settings.json, returning $default when absent.
+// The decoded file is cached for the request so repeated lookups read it once.
+if (!function_exists('settings_value')) {
+    function settings_value(string $key, $default = null)
+    {
+        static $settings = null;
+        if ($settings === null) {
+            $settings = [];
+            $f = __DIR__ . '/../config/settings.json';
+            if (is_file($f)) {
+                $decoded = @json_decode((string) file_get_contents($f), true);
+                if (is_array($decoded)) {
+                    $settings = $decoded;
+                }
+            }
+        }
+        return array_key_exists($key, $settings) ? $settings[$key] : $default;
+    }
+
+}
+
 if (defined('OPENSPARROW_CONFIG_LOADED')) {
     return;
 }
@@ -249,14 +270,7 @@ define('RECORD_SNAPSHOTS_ENABLED', (function (): bool {
     if ($env !== '') {
         return $env === 'true';
     }
-    $f = __DIR__ . '/../config/settings.json';
-    if (is_file($f)) {
-        $s = @json_decode((string) file_get_contents($f), true);
-        if (is_array($s) && array_key_exists('record_snapshots_enabled', $s)) {
-            return (bool) $s['record_snapshots_enabled'];
-        }
-    }
-    return false;
+    return (bool) settings_value('record_snapshots_enabled', false);
 })());
 // -------------------------------------------------------------------------
 // AI Chat Bubble
@@ -270,14 +284,7 @@ define('CHAT_BUBBLE_ENABLED', (function (): bool {
     if ($env !== '') {
         return $env === 'true';
     }
-    $f = __DIR__ . '/../config/settings.json';
-    if (is_file($f)) {
-        $s = @json_decode((string) file_get_contents($f), true);
-        if (is_array($s) && array_key_exists('chat_bubble_enabled', $s)) {
-            return (bool) $s['chat_bubble_enabled'];
-        }
-    }
-    return false;
+    return (bool) settings_value('chat_bubble_enabled', false);
 })());
 // -------------------------------------------------------------------------
 // RAG (Retrieval-Augmented Generation)

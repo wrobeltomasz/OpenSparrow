@@ -11,6 +11,9 @@
 
 declare(strict_types=1);
 
+// settings_value() lives in config.php; required explicitly so i18n is self-sufficient
+require_once __DIR__ . '/config.php';
+
 /**
  * Lightweight i18n engine — zero external dependencies.
  *
@@ -229,12 +232,9 @@ final class I18n
             return $cache;
         }
 
-        $settingsPath = __DIR__ . '/../config/settings.json';
-        if (is_file($settingsPath)) {
-            $s = json_decode((string)file_get_contents($settingsPath), true);
-            if (is_array($s['available_languages'] ?? null)) {
-                return $cache = array_map('strval', $s['available_languages']);
-            }
+        $langs = settings_value('available_languages');
+        if (is_array($langs)) {
+            return $cache = array_map('strval', $langs);
         }
 
         $files = glob(self::LANGUAGES_DIR . '*.json') ?: [];
@@ -265,12 +265,9 @@ final class I18n
         if ($default !== null) {
             return $default;
         }
-        $path = __DIR__ . '/../config/settings.json';
-        if (is_file($path)) {
-            $s = json_decode((string)file_get_contents($path), true);
-            if (is_string($s['default_language'] ?? null)) {
-                return $default = $s['default_language'];
-            }
+        $lang = settings_value('default_language');
+        if (is_string($lang)) {
+            return $default = $lang;
         }
         return $default = self::FALLBACK;
     }
@@ -281,12 +278,9 @@ final class I18n
         if ($version !== null) {
             return $version;
         }
-        $path = __DIR__ . '/../config/settings.json';
-        if (is_file($path)) {
-            $s = json_decode((string)file_get_contents($path), true);
-            if (is_string($s['locale_version'] ?? null)) {
-                return $version = $s['locale_version'];
-            }
+        $ver = settings_value('locale_version');
+        if (is_string($ver)) {
+            return $version = $ver;
         }
         return $version = '';
     }

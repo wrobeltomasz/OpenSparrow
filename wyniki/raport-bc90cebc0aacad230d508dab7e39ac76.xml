@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="97.785" tests="40" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-29T16:03:27" tests="0" file="cypress\e2e\admin.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Admin Panel" timestamp="2026-06-29T16:03:27" tests="35" time="72.272" failures="0">
+    <testcase name="OpenSparrow – Admin Panel displays admin header" time="4.971" classname="displays admin header">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel Save Config button is hidden on Overview and shown on config tabs" time="1.549" classname="Save Config button is hidden on Overview and shown on config tabs">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel displays Logout button" time="0.670" classname="displays Logout button">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel displays admin nav sidebar" time="0.870" classname="displays admin nav sidebar">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: schema" time="0.983" classname="navigates to data tab: schema">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: dashboard" time="0.983" classname="navigates to data tab: dashboard">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: calendar" time="0.821" classname="navigates to data tab: calendar">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: files" time="0.950" classname="navigates to data tab: files">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: menu" time="0.875" classname="navigates to data tab: menu">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: add_table" time="0.901" classname="navigates to data tab: add_table">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: erd" time="0.806" classname="navigates to data tab: erd">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: views" time="0.969" classname="navigates to data tab: views">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to data tab: csv_import" time="0.898" classname="navigates to data tab: csv_import">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: database" time="2.643" classname="navigates to system tab: database">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: users" time="2.409" classname="navigates to system tab: users">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: health" time="2.626" classname="navigates to system tab: health">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: backup" time="2.636" classname="navigates to system tab: backup">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: audit" time="2.642" classname="navigates to system tab: audit">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: migrations" time="2.693" classname="navigates to system tab: migrations">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: performance" time="2.450" classname="navigates to system tab: performance">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: cron" time="2.386" classname="navigates to system tab: cron">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: demo" time="2.393" classname="navigates to system tab: demo">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to system tab: settings" time="2.390" classname="navigates to system tab: settings">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to advanced tab: workflows" time="2.390" classname="navigates to advanced tab: workflows">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to advanced tab: automations" time="2.392" classname="navigates to advanced tab: automations">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to advanced tab: rag" time="2.404" classname="navigates to advanced tab: rag">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to Docs tab" time="3.030" classname="navigates to Docs tab">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel navigates to Overview tab" time="2.376" classname="navigates to Overview tab">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel Export Config button is visible" time="2.705" classname="Export Config button is visible">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel clicking Export Config does not crash the panel" time="2.504" classname="clicking Export Config does not crash the panel">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel Import Config button is visible" time="2.302" classname="Import Config button is visible">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel clicking Import Config reveals file input" time="2.383" classname="clicking Import Config reveals file input">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel Save Config button is clickable and panel survives" time="2.507" classname="Save Config button is clickable and panel survives">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel Run Notifications Cron button exists" time="2.292" classname="Run Notifications Cron button exists">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel Users tab lists existing users" time="2.428" classname="Users tab lists existing users">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Admin Access Control" timestamp="2026-06-29T16:04:39" tests="3" time="6.548" failures="0">
+    <testcase name="OpenSparrow – Admin Access Control unauthenticated user is redirected to login" time="0.143" classname="unauthenticated user is redirected to login">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Access Control editor-role user cannot access admin panel" time="3.601" classname="editor-role user cannot access admin panel">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Access Control admin logout redirects to login page" time="2.710" classname="admin logout redirects to login page">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Admin Panel Mobile" timestamp="2026-06-29T16:04:45" tests="2" time="18.954" failures="0">
+    <testcase name="OpenSparrow – Admin Panel Mobile loads admin panel on mobile" time="16.607" classname="loads admin panel on mobile">
+    </testcase>
+    <testcase name="OpenSparrow – Admin Panel Mobile admin nav is accessible on mobile" time="2.286" classname="admin nav is accessible on mobile">
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -146,6 +146,14 @@ function rag_store_chunks($conn, int $fileId, string $content, array $cfg): int
     return $stored;
 }
 
+// Shared full-text ranking expression: derives a tsquery from query parameter $1,
+// OR-ing its lexemes and falling back to plainto_tsquery for unindexable input.
+function rag_tsquery_expr(): string
+{
+    return "(SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1))"
+        . " FROM unnest(to_tsvector('english', \$1)))";
+}
+
 function rag_retrieve($conn, string $query, array $tags, int $limit = 3): array
 {
     $cfg     = rag_config();
@@ -159,6 +167,7 @@ function rag_retrieve($conn, string $query, array $tags, int $limit = 3): array
     }
 
     $useChunks = (bool) ($cfg['use_chunks'] ?? true);
+    $tsq       = rag_tsquery_expr();
 
     static $chunksExist = null;
     if ($chunksExist === null) {
@@ -174,19 +183,19 @@ function rag_retrieve($conn, string $query, array $tags, int $limit = 3): array
                 SELECT c.content, f.filename, f.tags,
                        f.id AS file_id, c.id AS chunk_id, c.chunk_index,
                        'chunk'::text AS source_type,
-                       ts_rank(to_tsvector('english', c.content), (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))) AS rank
+                       ts_rank(to_tsvector('english', c.content), {$tsq}) AS rank
                 FROM {$tChunks} c JOIN {$tRag} f ON f.id = c.file_id
                 WHERE f.tags && \$2::text[]
-                  AND to_tsvector('english', c.content) @@ (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))
+                  AND to_tsvector('english', c.content) @@ {$tsq}
                 UNION ALL
                 SELECT f.content, f.filename, f.tags,
                        f.id AS file_id, NULL::int4 AS chunk_id, -1 AS chunk_index,
                        'file'::text AS source_type,
-                       ts_rank(to_tsvector('english', f.content), (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))) AS rank
+                       ts_rank(to_tsvector('english', f.content), {$tsq}) AS rank
                 FROM {$tRag} f
                 WHERE NOT EXISTS (SELECT 1 FROM {$tChunks} cx WHERE cx.file_id = f.id)
                   AND f.tags && \$2::text[]
-                  AND to_tsvector('english', f.content) @@ (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))
+                  AND to_tsvector('english', f.content) @@ {$tsq}
             ) combined ORDER BY rank DESC LIMIT \$3";
             $res = @pg_query_params($conn, $sql, [$query, $tagLiteral, $limit]);
         } else {
@@ -194,17 +203,17 @@ function rag_retrieve($conn, string $query, array $tags, int $limit = 3): array
                 SELECT c.content, f.filename, f.tags,
                        f.id AS file_id, c.id AS chunk_id, c.chunk_index,
                        'chunk'::text AS source_type,
-                       ts_rank(to_tsvector('english', c.content), (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))) AS rank
+                       ts_rank(to_tsvector('english', c.content), {$tsq}) AS rank
                 FROM {$tChunks} c JOIN {$tRag} f ON f.id = c.file_id
-                WHERE to_tsvector('english', c.content) @@ (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))
+                WHERE to_tsvector('english', c.content) @@ {$tsq}
                 UNION ALL
                 SELECT f.content, f.filename, f.tags,
                        f.id AS file_id, NULL::int4 AS chunk_id, -1 AS chunk_index,
                        'file'::text AS source_type,
-                       ts_rank(to_tsvector('english', f.content), (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))) AS rank
+                       ts_rank(to_tsvector('english', f.content), {$tsq}) AS rank
                 FROM {$tRag} f
                 WHERE NOT EXISTS (SELECT 1 FROM {$tChunks} cx WHERE cx.file_id = f.id)
-                  AND to_tsvector('english', f.content) @@ (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))
+                  AND to_tsvector('english', f.content) @@ {$tsq}
             ) combined ORDER BY rank DESC LIMIT \$2";
             $res = @pg_query_params($conn, $sql, [$query, $limit]);
         }
@@ -215,16 +224,16 @@ function rag_retrieve($conn, string $query, array $tags, int $limit = 3): array
                            'file'::text AS source_type, f.filename, f.content, f.tags
                     FROM {$tRag} f
                     WHERE f.tags && \$2::text[]
-                      AND to_tsvector('english', f.content) @@ (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))
-                    ORDER BY ts_rank(to_tsvector('english', f.content), (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))) DESC
+                      AND to_tsvector('english', f.content) @@ {$tsq}
+                    ORDER BY ts_rank(to_tsvector('english', f.content), {$tsq}) DESC
                     LIMIT \$3";
             $res = @pg_query_params($conn, $sql, [$query, $tagLiteral, $limit]);
         } else {
             $sql = "SELECT f.id AS file_id, NULL::int4 AS chunk_id, -1 AS chunk_index,
                            'file'::text AS source_type, f.filename, f.content, f.tags
                     FROM {$tRag} f
-                    WHERE to_tsvector('english', f.content) @@ (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))
-                    ORDER BY ts_rank(to_tsvector('english', f.content), (SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1)) FROM unnest(to_tsvector('english', \$1)))) DESC
+                    WHERE to_tsvector('english', f.content) @@ {$tsq}
+                    ORDER BY ts_rank(to_tsvector('english', f.content), {$tsq}) DESC
                     LIMIT \$2";
             $res = @pg_query_params($conn, $sql, [$query, $limit]);
         }

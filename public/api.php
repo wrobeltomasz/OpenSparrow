@@ -168,34 +168,8 @@ function mysql_gateway_tables(): array
     return $tables;
 }
 
-function mysql_pdo_api(): ?\PDO
-{
-    if (MYSQL_HOST === '' || MYSQL_DB === '' || MYSQL_USER === '') {
-        return null;
-    }
-    try {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
-            MYSQL_HOST,
-            MYSQL_PORT,
-            MYSQL_DB,
-            MYSQL_CONNECT_TIMEOUT
-        );
-        return new \PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
-            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-            \PDO::ATTR_TIMEOUT            => MYSQL_CONNECT_TIMEOUT,
-        ]);
-    } catch (\PDOException $e) {
-        error_log('[api][mysql] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
-        return null;
-    }
-}
-
-function mysql_bt(string $name): string
-{
-    return '`' . str_replace('`', '', $name) . '`';
-}
+// MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
+require_once __DIR__ . '/../includes/mysql.php';
 
 /**
  * Build a MySQL WHERE clause (with `?` placeholders) for dashboard widgets,
@@ -334,7 +308,7 @@ try {
             // External MySQL tables don't exist in PostgreSQL — route the widget
             // query through the MySQL gateway instead of pg_query.
             if (in_array($table, mysql_gateway_tables(), true)) {
-                $mysqlPdo = mysql_pdo_api();
+                $mysqlPdo = mysql_pdo('api');
                 if ($mysqlPdo === null) {
                     $widget['sql_error'] = 'MySQL connection unavailable.';
                     $widget['data'] = null;
@@ -634,7 +608,7 @@ try {
                 // External MySQL tables don't exist in PostgreSQL — pull events
                 // through the MySQL gateway instead of pg_query_params.
                 if (in_array($table, mysql_gateway_tables(), true)) {
-                    $mysqlPdo = mysql_pdo_api();
+                    $mysqlPdo = mysql_pdo('api');
                     if ($mysqlPdo === null) {
                         continue;
                     }
@@ -798,7 +772,7 @@ try {
                 ];
             }
         } elseif ($isMysqlBoard) {
-            $mysqlPdo = mysql_pdo_api();
+            $mysqlPdo = mysql_pdo('api');
             if ($mysqlPdo !== null) {
                 $sqlDistinct = 'SELECT DISTINCT ' . mysql_bt($realColBoard($statusCol)) . ' AS v FROM '
                     . mysql_bt($table) . ' WHERE ' . mysql_bt($realColBoard($statusCol)) . ' IS NOT NULL ORDER BY 1';
@@ -835,7 +809,7 @@ try {
         $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $cols)));
         $cards = [];
         if ($isMysqlBoard) {
-            $mysqlPdo = mysql_pdo_api();
+            $mysqlPdo = mysql_pdo('api');
             $rows     = [];
             if ($mysqlPdo !== null) {
                 $mySelect = implode(', ', array_map(
@@ -1026,7 +1000,7 @@ try {
 
         // MySQL Gateway: serve this table from MySQL when it is in the routing list
         if (in_array($table, mysql_gateway_tables(), true)) {
-            $mysqlPdo = mysql_pdo_api();
+            $mysqlPdo = mysql_pdo('api');
             if ($mysqlPdo === null) {
                 http_response_code(503);
                 echo json_encode(['error' => 'MySQL connection not configured or unavailable']);
@@ -1247,14 +1221,7 @@ try {
             }
 
             // Owner-restricted: prevent moving a record owned by someone else.
-            if (!empty($tableCfg['owner_restricted'])) {
-                $ownerId = get_record_owner_id($conn, $table, $id);
-                if ($ownerId !== null && $ownerId !== (int)$_SESSION['user_id']) {
-                    http_response_code(403);
-                    echo json_encode(['error' => 'Forbidden']);
-                    exit;
-                }
-            }
+            check_record_ownership($conn, $tableCfg, $table, $id, (int)$_SESSION['user_id']);
 
             // Validate strict YYYY-MM-DD date format
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate) || !checkdate((int)substr($newDate, 5, 2), (int)substr($newDate, 8, 2), (int)substr($newDate, 0, 4))) {
@@ -1288,7 +1255,7 @@ try {
             // External MySQL tables don't exist in PostgreSQL — route the update
             // through the MySQL gateway.
             if (in_array($table, mysql_gateway_tables(), true)) {
-                $mysqlPdo = mysql_pdo_api();
+                $mysqlPdo = mysql_pdo('api');
                 if ($mysqlPdo === null) {
                     http_response_code(503);
                     echo json_encode(['error' => 'MySQL connection not configured or unavailable']);
@@ -1379,7 +1346,7 @@ try {
             if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
                 $allowed = array_map('strval', $statusDef['options']);
             } elseif ($isMysqlMove) {
-                $mysqlPdo = mysql_pdo_api();
+                $mysqlPdo = mysql_pdo('api');
                 if ($mysqlPdo !== null) {
                     try {
                         $stmtD = $mysqlPdo->query(
@@ -1416,19 +1383,12 @@ try {
             }
 
             // Owner-restricted: cannot move a record owned by someone else.
-            if (!empty($tableCfg['owner_restricted'])) {
-                $ownerId = get_record_owner_id($conn, $table, $id);
-                if ($ownerId !== null && $ownerId !== (int)$_SESSION['user_id']) {
-                    http_response_code(403);
-                    echo json_encode(['error' => 'Forbidden']);
-                    exit;
-                }
-            }
+            check_record_ownership($conn, $tableCfg, $table, $id, (int)$_SESSION['user_id']);
 
             // External MySQL tables don't exist in PostgreSQL — route the update
             // through the MySQL gateway.
             if ($isMysqlMove) {
-                $mysqlPdo = mysql_pdo_api();
+                $mysqlPdo = mysql_pdo('api');
                 if ($mysqlPdo === null) {
                     http_response_code(503);
                     echo json_encode(['error' => 'MySQL connection not configured or unavailable']);
@@ -1498,14 +1458,7 @@ try {
                 exit;
             }
 
-            if (!empty($tableCfg['owner_restricted'])) {
-                $ownerId = get_record_owner_id($conn, $table, $recordId);
-                if ($ownerId !== null && $ownerId !== (int)$_SESSION['user_id']) {
-                    http_response_code(403);
-                    echo json_encode(['error' => 'Forbidden: you do not own this record.']);
-                    exit;
-                }
-            }
+            check_record_ownership($conn, $tableCfg, $table, $recordId, (int)$_SESSION['user_id'], 'Forbidden: you do not own this record.');
 
             $colType = strtolower($tableCfg['columns'][$col]['type'] ?? '');
             $cast = '';
@@ -1519,7 +1472,7 @@ try {
 
             // MySQL Gateway — UPDATE single cell
             if (in_array($table, mysql_gateway_tables(), true)) {
-                $mysqlPdo = mysql_pdo_api();
+                $mysqlPdo = mysql_pdo('api');
                 if ($mysqlPdo === null) {
                     http_response_code(503);
                     echo json_encode(['error' => 'MySQL not configured or unavailable']);
@@ -1597,7 +1550,7 @@ try {
 
             // MySQL Gateway — INSERT new row
             if (in_array($table, mysql_gateway_tables(), true)) {
-                $mysqlPdo = mysql_pdo_api();
+                $mysqlPdo = mysql_pdo('api');
                 if ($mysqlPdo === null) {
                     http_response_code(503);
                     echo json_encode(['error' => 'MySQL not configured or unavailable']);
@@ -1741,18 +1694,11 @@ try {
                 exit;
             }
 
-            if (!empty($tableCfg['owner_restricted'])) {
-                $ownerId = get_record_owner_id($conn, $table, $deleteId);
-                if ($ownerId !== null && $ownerId !== (int)$_SESSION['user_id']) {
-                    http_response_code(403);
-                    echo json_encode(['error' => 'Forbidden: you do not own this record.']);
-                    exit;
-                }
-            }
+            check_record_ownership($conn, $tableCfg, $table, $deleteId, (int)$_SESSION['user_id'], 'Forbidden: you do not own this record.');
 
             // MySQL Gateway — DELETE row
             if (in_array($table, mysql_gateway_tables(), true)) {
-                $mysqlPdo = mysql_pdo_api();
+                $mysqlPdo = mysql_pdo('api');
                 if ($mysqlPdo === null) {
                     http_response_code(503);
                     echo json_encode(['error' => 'MySQL not configured or unavailable']);

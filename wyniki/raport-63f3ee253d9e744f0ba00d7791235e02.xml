@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="18.530" tests="12" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-29T16:05:24" tests="0" file="cypress\e2e\board.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Board: Page Structure" timestamp="2026-06-29T16:05:24" tests="4" time="4.999" failures="0">
+    <testcase name="OpenSparrow – Board: Page Structure loads board page" time="1.907" classname="loads board page">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Page Structure shows a board title" time="0.285" classname="shows a board title">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Page Structure renders lanes or a configuration notice" time="2.440" classname="renders lanes or a configuration notice">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Page Structure shows sidebar menu" time="0.255" classname="shows sidebar menu">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Board: Lanes &amp; Cards" timestamp="2026-06-29T16:05:29" tests="4" time="8.807" failures="0">
+    <testcase name="OpenSparrow – Board: Lanes &amp; Cards each lane has a header with a title and a count badge" time="4.099" classname="each lane has a header with a title and a count badge">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Lanes &amp; Cards cards are draggable for the editor role" time="0.249" classname="cards are draggable for the editor role">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Lanes &amp; Cards a card has a colored left border accent" time="4.104" classname="a card has a colored left border accent">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Lanes &amp; Cards clicking a card opens the record in edit.php" time="0.240" classname="clicking a card opens the record in edit.php">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Board: Mobile" timestamp="2026-06-29T16:05:37" tests="2" time="4.381" failures="0">
+    <testcase name="OpenSparrow – Board: Mobile loads board on mobile viewport" time="4.028" classname="loads board on mobile viewport">
+    </testcase>
+    <testcase name="OpenSparrow – Board: Mobile board title visible on mobile" time="0.311" classname="board title visible on mobile">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Board: API contract" timestamp="2026-06-29T16:05:42" tests="2" time="0.324" failures="0">
+    <testcase name="OpenSparrow – Board: API contract returns the expected board payload shape" time="0.225" classname="returns the expected board payload shape">
+    </testcase>
+    <testcase name="OpenSparrow – Board: API contract rejects a move_card request with a missing CSRF token" time="0.065" classname="rejects a move_card request with a missing CSRF token">
+    </testcase>
+  </testsuite>
+</testsuites>

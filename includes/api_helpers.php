@@ -3,7 +3,7 @@
 // api_helpers.php — Shared helper functions for API endpoints
 // Provides safe table/column access, FK display mapping, boolean normalization, type min values, audit logging, ownership checks, and record snapshots
 // All SQL identifiers are quoted with pg_ident(); values are escaped or parameterized; uses sys_table() for system tables
-// Functions: safe_table, column_list, pg_ident, map_fk_display, log_user_action, get_record_owner_id, can_access_record, set_record_owner, snapshot_record
+// Functions: safe_table, column_list, pg_ident, map_fk_display, log_user_action, get_record_owner_id, can_access_record, set_record_owner, snapshot_record, jsonError, jsonSuccess, requireLogin, validatedTable
 
 function safe_table(array $schema, string $table): array
 {
@@ -196,6 +196,18 @@ function can_access_record($conn, array $tableCfg, string $table, int $recordId,
     return $ownerId === null || $ownerId === $userId;
 }
 
+// Enforce owner-restricted access on a mutation: emit 403 + JSON error and exit when
+// the record is owned by another user. No-op for open tables or records the user may
+// touch. Wraps can_access_record() so the policy stays defined in one place.
+function check_record_ownership($conn, array $tableCfg, string $table, int $recordId, int $userId, string $message = 'Forbidden'): void
+{
+    if (!can_access_record($conn, $tableCfg, $table, $recordId, $userId)) {
+        http_response_code(403);
+        echo json_encode(['error' => $message]);
+        exit;
+    }
+}
+
 // Record ownership: mark previous current row inactive, insert new current row.
 function set_record_owner($conn, string $table, int $recordId, int $ownerId, int $changedBy): void
 {
@@ -217,4 +229,47 @@ function snapshot_record($conn, string $schemaName, string $table, int $recordId
             . ' (log_id, table_name, record_id, snapshot) VALUES ($1, $2, $3, $4)',
         [$logId, $table, $recordId, $json]
     );
+}
+
+// ---------------------------------------------------------------------------
+// Shared JSON response + request-guard helpers for the api/ endpoints
+// ---------------------------------------------------------------------------
+
+// Emit a JSON error envelope and stop. Shape kept stable for the frontend.
+function jsonError(string $msg, int $code = 400): void
+{
+    http_response_code($code);
+    echo json_encode(['success' => false, 'error' => $msg]);
+    exit;
+}
+
+// Emit a JSON success envelope (adds success=true) and stop.
+function jsonSuccess(array $data = [], int $code = 200): void
+{
+    http_response_code($code);
+    $data['success'] = true;
+    echo json_encode($data);
+    exit;
+}
+
+// Reject unauthenticated requests with 401.
+function requireLogin(): void
+{
+    if (empty($_SESSION['user_id'])) {
+        jsonError('Unauthorised', 401);
+    }
+}
+
+// Validate a table name against schema.json. $field names the offending input in
+// the "is required" message so callers preserve their existing error wording.
+function validatedTable(string $table, string $field = 'table'): string
+{
+    if ($table === '') {
+        jsonError($field . ' is required.', 400);
+    }
+    $schema = json_decode((string)file_get_contents(__DIR__ . '/../config/schema.json'), true);
+    if (!isset($schema['tables'][$table])) {
+        jsonError('Unknown table.', 400);
+    }
+    return $table;
 }

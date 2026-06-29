@@ -31,34 +31,35 @@ function admin_db_fail($conn, string $context): void
     throw new RuntimeException('Database operation failed. Check server logs for details.');
 }
 
-function admin_mysql_bt(string $name): string
+// Demo Mode guard for admin write actions. Emits the standard error envelope and
+// exits when DEMO_MODE is on; $code 0 leaves the HTTP status untouched.
+function require_not_demo(string $message = 'Action disabled in Demo Mode.', int $code = 0): void
 {
-    return '`' . str_replace('`', '', $name) . '`';
+    if (!DEMO_MODE) {
+        return;
+    }
+    if ($code !== 0) {
+        http_response_code($code);
+    }
+    echo json_encode(['status' => 'error', 'error' => $message]);
+    exit;
 }
 
-function admin_mysql_pdo(): ?\PDO
+// Read config/settings.json into an array, returning [] when missing or unreadable.
+function admin_read_settings(string $path): array
 {
-    if (MYSQL_HOST === '' || MYSQL_DB === '' || MYSQL_USER === '') {
-        return null;
+    if (is_file($path)) {
+        $raw = @file_get_contents($path);
+        if ($raw !== false) {
+            $decoded = @json_decode($raw, true);
+            return is_array($decoded) ? $decoded : [];
+        }
     }
-    try {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
-            MYSQL_HOST,
-            MYSQL_PORT,
-            MYSQL_DB,
-            MYSQL_CONNECT_TIMEOUT
-        );
-        return new \PDO($dsn, MYSQL_USER, MYSQL_PASSWORD, [
-            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-            \PDO::ATTR_TIMEOUT            => MYSQL_CONNECT_TIMEOUT,
-        ]);
-    } catch (\PDOException $e) {
-        error_log('[admin][mysql] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
-        return null;
-    }
+    return [];
 }
+
+// MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
+require_once __DIR__ . '/../../includes/mysql.php';
 // CSRF Protection for state-changing POST requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
@@ -416,10 +417,7 @@ if ($action === 'users_list') {
 // Add a new user securely
 if ($action === 'users_add') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
 
     $data = json_decode(file_get_contents('php://input'), true);
     $username = trim($data['username'] ?? '');
@@ -461,10 +459,7 @@ if ($action === 'users_add') {
 // Toggle user activation status
 if ($action === 'users_toggle') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
 
     $data = json_decode(file_get_contents('php://input'), true);
     $userId = (int)($data['id'] ?? 0);
@@ -494,10 +489,7 @@ if ($action === 'users_toggle') {
 // Handle user role update
 if ($action === 'users_update_role') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
 
     $data = json_decode(file_get_contents('php://input'), true);
     $userId = (int)($data['id'] ?? 0);
@@ -528,10 +520,7 @@ if ($action === 'users_update_role') {
 // Change a user's password (admin action — no current-password check required)
 if ($action === 'users_change_password') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
 
     $data     = json_decode(file_get_contents('php://input'), true);
     $userId   = (int)($data['id'] ?? 0);
@@ -574,11 +563,7 @@ if ($action === 'users_change_password') {
 // Handle table creation
 if ($action === 'create_table') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'Disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
 
     // Sanitize schema and table variables
@@ -615,11 +600,7 @@ if ($action === 'create_table') {
 
 if ($action === 'add_column') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'Disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
 
     // Strict input sanitization
@@ -721,11 +702,7 @@ if ($action === 'add_column') {
 if ($action === 'schema_add_table') {
     header('Content-Type: application/json');
 
-    if ($isDemoMode) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'Disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo('Disabled in Demo Mode.', 403);
 
     $input       = json_decode(file_get_contents('php://input'), true);
     $tableName   = preg_replace('/[^a-z0-9_]/', '', strtolower($input['table']   ?? ''));
@@ -1085,14 +1062,8 @@ if ($action === 'get_snapshot_setting') {
     if ($lockedByEnv) {
         $enabled = ($envVal === 'true');
     } else {
-        $settingsFile = __DIR__ . '/../../config/settings.json';
-        if (is_file($settingsFile)) {
-            $raw = @file_get_contents($settingsFile);
-            if ($raw !== false) {
-                $s = @json_decode($raw, true);
-                $enabled = (bool) ($s['record_snapshots_enabled'] ?? false);
-            }
-        }
+        $s = admin_read_settings(__DIR__ . '/../../config/settings.json');
+        $enabled = (bool) ($s['record_snapshots_enabled'] ?? false);
     }
 
     try {
@@ -1119,10 +1090,7 @@ if ($action === 'get_snapshot_setting') {
 // POST: toggle record-snapshot setting in config/settings.json
 if ($action === 'set_snapshot_setting') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
     $envVal = getenv('RECORD_SNAPSHOTS_ENABLED');
     if ($envVal !== false && $envVal !== '') {
         echo json_encode(['status' => 'error', 'error' => 'Controlled by RECORD_SNAPSHOTS_ENABLED environment variable — cannot override from admin panel.']);
@@ -1131,13 +1099,7 @@ if ($action === 'set_snapshot_setting') {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $enabled = (bool) ($body['enabled'] ?? false);
     $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings = [];
-    if (is_file($settingsFile)) {
-        $raw = @file_get_contents($settingsFile);
-        if ($raw !== false) {
-            $settings = @json_decode($raw, true) ?? [];
-        }
-    }
+    $settings = admin_read_settings($settingsFile);
     $settings['record_snapshots_enabled'] = $enabled;
     $written = @file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     if ($written === false) {
@@ -1152,13 +1114,7 @@ if ($action === 'set_snapshot_setting') {
 if ($action === 'get_language_setting') {
     header('Content-Type: application/json');
     $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings     = [];
-    if (is_file($settingsFile)) {
-        $raw = @file_get_contents($settingsFile);
-        if ($raw !== false) {
-            $settings = @json_decode($raw, true) ?? [];
-        }
-    }
+    $settings = admin_read_settings($settingsFile);
 
     $defaultLanguage    = is_string($settings['default_language'] ?? null) ? $settings['default_language'] : 'en';
     $availableLanguages = is_array($settings['available_languages'] ?? null) ? $settings['available_languages'] : null;
@@ -1189,10 +1145,7 @@ if ($action === 'get_language_setting') {
 // POST: save language settings to config/settings.json
 if ($action === 'set_language_setting') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
 
     $body        = json_decode(file_get_contents('php://input'), true) ?? [];
     $defaultLang = preg_match('/^[a-z]{2}(?:-[A-Z]{2})?$/', (string)($body['default_language'] ?? ''))
@@ -1214,13 +1167,7 @@ if ($action === 'set_language_setting') {
     }
 
     $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings     = [];
-    if (is_file($settingsFile)) {
-        $raw = @file_get_contents($settingsFile);
-        if ($raw !== false) {
-            $settings = @json_decode($raw, true) ?? [];
-        }
-    }
+    $settings = admin_read_settings($settingsFile);
     if (($settings['default_language'] ?? null) !== $defaultLang) {
         $settings['locale_version'] = bin2hex(random_bytes(8));
     }
@@ -1251,13 +1198,7 @@ if ($action === 'set_language_setting') {
 if ($action === 'get_chat_bubble_setting') {
     header('Content-Type: application/json');
     $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings     = [];
-    if (is_file($settingsFile)) {
-        $raw = @file_get_contents($settingsFile);
-        if ($raw !== false) {
-            $settings = @json_decode($raw, true) ?? [];
-        }
-    }
+    $settings = admin_read_settings($settingsFile);
     echo json_encode(['chat_bubble_enabled' => (bool) ($settings['chat_bubble_enabled'] ?? false)]);
     exit;
 }
@@ -1265,21 +1206,12 @@ if ($action === 'get_chat_bubble_setting') {
 // POST: save AI chat bubble setting
 if ($action === 'set_chat_bubble_setting') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $enabled = !empty($body['chat_bubble_enabled']);
 
     $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings     = [];
-    if (is_file($settingsFile)) {
-        $raw = @file_get_contents($settingsFile);
-        if ($raw !== false) {
-            $settings = @json_decode($raw, true) ?? [];
-        }
-    }
+    $settings = admin_read_settings($settingsFile);
     $settings['chat_bubble_enabled'] = $enabled;
 
     $written = @file_put_contents(
@@ -2260,10 +2192,7 @@ if ($action === 'list_m2m') {
 
 if ($action === 'create_m2m') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
-        exit;
-    }
+    require_not_demo('Demo mode — writes disabled.');
 
     $body       = json_decode(file_get_contents('php://input'), true) ?? [];
     $tableA     = $body['table_a']       ?? '';
@@ -2381,10 +2310,7 @@ if ($action === 'create_m2m') {
 
 if ($action === 'delete_m2m') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
-        exit;
-    }
+    require_not_demo('Demo mode — writes disabled.');
 
     $body          = json_decode(file_get_contents('php://input'), true) ?? [];
     $tableA        = $body['table_a']      ?? '';
@@ -2451,10 +2377,7 @@ if ($action === 'delete_m2m') {
 
 if ($action === 'cron_purge_log') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
-        exit;
-    }
+    require_not_demo('Demo mode — writes disabled.');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -2505,10 +2428,7 @@ if ($action === 'rag_list') {
 
 if ($action === 'rag_upload') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -2585,10 +2505,7 @@ if ($action === 'rag_upload') {
 
 if ($action === 'rag_delete') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -2611,10 +2528,7 @@ if ($action === 'rag_delete') {
 
 if ($action === 'rag_rechunk') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
     try {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../../includes/rag_helpers.php';
@@ -2644,10 +2558,7 @@ if ($action === 'rag_rechunk') {
 
 if ($action === 'rag_rechunk_all') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
     try {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../../includes/rag_helpers.php';
@@ -2688,10 +2599,7 @@ if ($action === 'rag_settings') {
 
 if ($action === 'rag_settings_save') {
     header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Action disabled in Demo Mode.']);
-        exit;
-    }
+    require_not_demo();
     try {
         $body             = json_decode(file_get_contents('php://input'), true) ?? [];
         $ollamaUrl        = trim((string) ($body['ollama_url'] ?? ''));
@@ -3144,14 +3052,14 @@ if ($action === 'overview') {
             $tableSchema = $tableDef['schema'] ?? 'public';
             if (in_array($tableName, $mgOvTables, true)) {
                 if ($mysqlPdoOv === null) {
-                    $mysqlPdoOv = admin_mysql_pdo();
+                    $mysqlPdoOv = mysql_pdo('admin');
                 }
                 $count = 0;
                 if ($mysqlPdoOv !== null) {
                     try {
                         $stmtOv = $mysqlPdoOv->query(
                             'SELECT COUNT(*) FROM '
-                            . admin_mysql_bt(MYSQL_DB) . '.' . admin_mysql_bt((string) $tableName)
+                            . mysql_bt(MYSQL_DB) . '.' . mysql_bt((string) $tableName)
                         );
                         $count = $stmtOv ? (int) $stmtOv->fetchColumn() : 0;
                     } catch (\PDOException $e) {

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="111.238" tests="16" failures="6">
+  <testsuite name="Root Suite" timestamp="2026-06-29T16:07:41" tests="0" file="cypress\e2e\csv_import.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – CSV Import: Tab Structure" timestamp="2026-06-29T16:07:41" tests="8" time="14.420" failures="0">
+    <testcase name="OpenSparrow – CSV Import: Tab Structure csv_import nav button is visible after scrolling" time="3.914" classname="csv_import nav button is visible after scrolling">
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: Tab Structure workspace shows the CSV Import heading" time="1.458" classname="workspace shows the CSV Import heading">
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: Tab Structure renders sub-tabs: Import / Configuration / Import History" time="1.418" classname="renders sub-tabs: Import / Configuration / Import History">
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: Tab Structure file input accepts only CSV" time="1.440" classname="file input accepts only CSV">
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: Tab Structure target table select has a placeholder and table options" time="1.606" classname="target table select has a placeholder and table options">
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: Tab Structure create-new-table checkbox is present and unchecked by default" time="1.423" classname="create-new-table checkbox is present and unchecked by default">
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: Tab Structure delimiter and encoding selects are rendered" time="1.357" classname="delimiter and encoding selects are rendered">
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: Tab Structure switching to Import History sub-tab works" time="1.538" classname="switching to Import History sub-tab works">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – CSV Import: Upload Guard" timestamp="2026-06-29T16:07:55" tests="1" time="12.032" failures="1">
+    <testcase name="OpenSparrow – CSV Import: Upload Guard selecting a file without a target table shows a warning instead of uploading" time="0.000" classname="selecting a file without a target table shows a warning instead of uploading">
+      <failure message="Timed out retrying after 10000ms: expected &apos;&lt;div#editorForm&gt;&apos; to contain text &apos;Select a target table first&apos;, but the text was &apos;Admin Overviewv2.85Users5 active12Tablesin schema713Records12 tables0Files0 B2RAG Docsdocuments14Viewsconfigured3Automationsrules22:15Last Cron2026-06-14Recent Activity2026-06-29 18:07testadminLOGIN2026-06-29 18:07testINSERTcompanies2026-06-29 18:07testINSERTcompanies2026-06-29 18:07testINSERTcompanies2026-06-29 18:07testDELETEcompanies2026-06-29 18:07testUPDATEcompanies2026-06-29 18:07testUPDATEcompanies2026-06-29 18:07testINSERTcompanies2026-06-14 22:15SUCCESS5 sentvia admin2026-06-14 22:15SUCCESS0 sentvia adminSystem StatusOKPHP 8.2.30OKPostgreSQL 16.10WARNdisplay_errorsOn — disable in productionOKPending migrationsNoneDatabase size543.5 MBTable Record CountsUsers Mysql89Vw Users Mysq89Companies80Product–Contacts65Invoices62Leads60Assets60Activities59Products49Quotes40Contacts31Deals29&apos;" type="AssertionError"><![CDATA[AssertionError: Timed out retrying after 10000ms: expected '<div#editorForm>' to contain text 'Select a target table first', but the text was 'Admin Overviewv2.85Users5 active12Tablesin schema713Records12 tables0Files0 B2RAG Docsdocuments14Viewsconfigured3Automationsrules22:15Last Cron2026-06-14Recent Activity2026-06-29 18:07testadminLOGIN2026-06-29 18:07testINSERTcompanies2026-06-29 18:07testINSERTcompanies2026-06-29 18:07testINSERTcompanies2026-06-29 18:07testDELETEcompanies2026-06-29 18:07testUPDATEcompanies2026-06-29 18:07testUPDATEcompanies2026-06-29 18:07testINSERTcompanies2026-06-14 22:15SUCCESS5 sentvia admin2026-06-14 22:15SUCCESS0 sentvia adminSystem StatusOKPHP 8.2.30OKPostgreSQL 16.10WARNdisplay_errorsOn — disable in productionOKPending migrationsNoneDatabase size543.5 MBTable Record CountsUsers Mysql89Vw Users Mysq89Companies80Product–Contacts65Invoices62Leads60Assets60Activities59Products49Quotes40Contacts31Deals29'
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/csv_import.cy.js:138:26)
+    at runnable.fn (http://localhost:8080/__cypress/runner/cypress_runner.js:138359:19)
+    at callFn (http://localhost:8080/__cypress/runner/cypress_runner.js:156978:21)
+    at Runnable.run (http://localhost:8080/__cypress/runner/cypress_runner.js:156965:7)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:162889:30)
+    at PassThroughHandlerContext.finallyHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:4095:23)]]></failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – CSV Import: File Upload" timestamp="2026-06-29T16:08:07" tests="3" time="50.783" failures="3">
+    <testcase name="OpenSparrow – CSV Import: File Upload uploading with a table selected POSTs to api_csv_import.php and succeeds" time="0.000" classname="uploading with a table selected POSTs to api_csv_import.php and succeeds">
+      <failure message="Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait" type="CypressError"><![CDATA[CypressError: Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait
+    at cypressErr (http://localhost:8080/__cypress/runner/cypress_runner.js:76065:18)
+    at Object.errByPath (http://localhost:8080/__cypress/runner/cypress_runner.js:76119:10)
+    at checkForXhr (http://localhost:8080/__cypress/runner/cypress_runner.js:135342:84)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:135368:28)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4338:29)
+    at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:143744:68)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:143685:14)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)
+    at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1599:18)
+    at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1644:10)
+    at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1724:18)
+    at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1668:18)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5473:46)
+From Your Spec Code:
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/csv_import.cy.js:48:4)
+    at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:119314:20)
+    at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:119325:66)
+    at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:119576:21)
+    at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:138092:19)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:144016:15)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)]]></failure>
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: File Upload upload response contains headers and row_count" time="0.000" classname="upload response contains headers and row_count">
+      <failure message="Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait" type="CypressError"><![CDATA[CypressError: Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait
+    at cypressErr (http://localhost:8080/__cypress/runner/cypress_runner.js:76065:18)
+    at Object.errByPath (http://localhost:8080/__cypress/runner/cypress_runner.js:76119:10)
+    at checkForXhr (http://localhost:8080/__cypress/runner/cypress_runner.js:135342:84)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:135368:28)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4338:29)
+    at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:143744:68)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:143685:14)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)
+    at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1599:18)
+    at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1644:10)
+    at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1724:18)
+    at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1668:18)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5473:46)
+From Your Spec Code:
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/csv_import.cy.js:48:4)
+    at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:119314:20)
+    at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:119325:66)
+    at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:119576:21)
+    at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:138092:19)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:144016:15)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)
+    at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1599:18)]]></failure>
+    </testcase>
+    <testcase name="OpenSparrow – CSV Import: File Upload upload status shows the filename and row count" time="0.000" classname="upload status shows the filename and row count">
+      <failure message="Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait" type="CypressError"><![CDATA[CypressError: Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait
+    at cypressErr (http://localhost:8080/__cypress/runner/cypress_runner.js:76065:18)
+    at Object.errByPath (http://localhost:8080/__cypress/runner/cypress_runner.js:76119:10)
+    at checkForXhr (http://localhost:8080/__cypress/runner/cypress_runner.js:135342:84)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:135368:28)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4338:29)
+    at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:143744:68)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:143685:14)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)
+    at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1599:18)
+    at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1644:10)
+    at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1724:18)
+    at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1668:18)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5473:46)
+From Your Spec Code:
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/csv_import.cy.js:48:4)
+    at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:119314:20)
+    at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:119325:66)
+    at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:119576:21)
+    at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:138092:19)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:144016:15)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)
+    at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1599:18)]]></failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – CSV Import: Column Mapping" timestamp="2026-06-29T16:08:58" tests="3" time="16.946" failures="1">
+    <testcase name="OpenSparrow – CSV Import: Column Mapping &quot;before each&quot; hook for &quot;mapping renders one select per CSV column&quot;" time="0.000" classname="&quot;before each&quot; hook for &quot;mapping renders one select per CSV column&quot;">
+      <failure message="Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait
+
+Because this error occurred during a `before each` hook we are skipping the remaining tests in the current suite: `OpenSparrow – CSV Import: C...`" type="CypressError"><![CDATA[CypressError: Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait
+
+Because this error occurred during a `before each` hook we are skipping the remaining tests in the current suite: `OpenSparrow – CSV Import: C...`
+    at cypressErr (http://localhost:8080/__cypress/runner/cypress_runner.js:76065:18)
+    at Object.errByPath (http://localhost:8080/__cypress/runner/cypress_runner.js:76119:10)
+    at checkForXhr (http://localhost:8080/__cypress/runner/cypress_runner.js:135342:84)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:135368:28)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4338:29)
+    at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:143744:68)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:143685:14)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)
+    at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1599:18)
+    at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1644:10)
+    at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1724:18)
+    at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1668:18)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5473:46)
+From Your Spec Code:
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/csv_import.cy.js:48:4)
+    at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:119314:20)
+    at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:119325:66)
+    at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:119576:21)
+    at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:138092:19)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:144016:15)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)]]></failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – CSV Import: Execute" timestamp="2026-06-29T16:09:15" tests="1" time="17.050" failures="1">
+    <testcase name="OpenSparrow – CSV Import: Execute mapping a column and executing fires csv_import_execute" time="0.000" classname="mapping a column and executing fires csv_import_execute">
+      <failure message="Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait" type="CypressError"><![CDATA[CypressError: Timed out retrying after 15000ms: `cy.wait()` timed out waiting `15000ms` for the 1st request to the route: `csvUpload`. No request ever occurred.
+
+https://on.cypress.io/wait
+    at cypressErr (http://localhost:8080/__cypress/runner/cypress_runner.js:76065:18)
+    at Object.errByPath (http://localhost:8080/__cypress/runner/cypress_runner.js:76119:10)
+    at checkForXhr (http://localhost:8080/__cypress/runner/cypress_runner.js:135342:84)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:135368:28)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise.attempt.Promise.try (http://localhost:8080/__cypress/runner/cypress_runner.js:4338:29)
+    at whenStable (http://localhost:8080/__cypress/runner/cypress_runner.js:143744:68)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:143685:14)
+    at tryCatcher (http://localhost:8080/__cypress/runner/cypress_runner.js:1830:23)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)
+    at Promise._settlePromise (http://localhost:8080/__cypress/runner/cypress_runner.js:1599:18)
+    at Promise._settlePromise0 (http://localhost:8080/__cypress/runner/cypress_runner.js:1644:10)
+    at Promise._settlePromises (http://localhost:8080/__cypress/runner/cypress_runner.js:1724:18)
+    at Promise._fulfill (http://localhost:8080/__cypress/runner/cypress_runner.js:1668:18)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:5473:46)
+From Your Spec Code:
+    at Context.eval (webpack://opensparrow-e2e/./cypress/e2e/csv_import.cy.js:48:4)
+    at getRet (http://localhost:8080/__cypress/runner/cypress_runner.js:119314:20)
+    at Context.thenFn (http://localhost:8080/__cypress/runner/cypress_runner.js:119325:66)
+    at Context.then (http://localhost:8080/__cypress/runner/cypress_runner.js:119576:21)
+    at wrapped (http://localhost:8080/__cypress/runner/cypress_runner.js:138092:19)
+    at <unknown> (http://localhost:8080/__cypress/runner/cypress_runner.js:144016:15)
+    at Promise._settlePromiseFromHandler (http://localhost:8080/__cypress/runner/cypress_runner.js:1542:31)]]></failure>
+    </testcase>
+  </testsuite>
+</testsuites>

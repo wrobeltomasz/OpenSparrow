@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="54.153" tests="11" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-29T16:13:09" tests="0" file="cypress\e2e\mysql_crud.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="MySQL CRUD E2E Tests" timestamp="2026-06-29T16:13:09" tests="11" time="54.145" failures="0">
+    <testcase name="MySQL CRUD E2E Tests loads edit page for a MySQL table without PostgreSQL fallback error" time="20.576" classname="loads edit page for a MySQL table without PostgreSQL fallback error">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests handles boolean toggle correctly and persists changes" time="3.129" classname="handles boolean toggle correctly and persists changes">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests accepts empty values for nullable fields without errors" time="5.366" classname="accepts empty values for nullable fields without errors">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests updates a standard text field correctly" time="4.417" classname="updates a standard text field correctly">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests creates a new record in a MySQL table and verifies search works" time="2.218" classname="creates a new record in a MySQL table and verifies search works">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests does not break when PostgreSQL-specific UI components are absent" time="2.583" classname="does not break when PostgreSQL-specific UI components are absent">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests formats HTML5 datetime-local input safely for MySQL" time="3.343" classname="formats HTML5 datetime-local input safely for MySQL">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests searches for a newly created record and finds it" time="2.329" classname="searches for a newly created record and finds it">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests deletes a record and confirms it no longer appears on the grid" time="2.725" classname="deletes a record and confirms it no longer appears on the grid">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests changes number of rows per page and updates pagination info" time="0.836" classname="changes number of rows per page and updates pagination info">
+    </testcase>
+    <testcase name="MySQL CRUD E2E Tests allows inline editing of a field and persists the change" time="6.074" classname="allows inline editing of a field and persists the change">
+    </testcase>
+  </testsuite>
+</testsuites>
