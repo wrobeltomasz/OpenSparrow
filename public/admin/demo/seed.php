@@ -140,6 +140,34 @@ if ($action === 'demo_install') {
             file_put_contents($boardPath, json_encode($demoData['board'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         }
 
+        // anonymization.json — merge demo GDPR rules if provided. Existing user
+        // settings (enabled/frequency/dictionary) win; demo rules replace any
+        // previous rules pointing at demo tables.
+        if (!empty($demoData['anonymization']) && is_array($demoData['anonymization'])) {
+            $anonPath = $configDir . '/anonymization.json';
+            $anonCfg  = file_exists($anonPath) ? (json_decode(file_get_contents($anonPath), true) ?? []) : [];
+            $demoAnon = $demoData['anonymization'];
+            $anonCfg['enabled']    = $anonCfg['enabled']    ?? ($demoAnon['enabled']    ?? false);
+            $anonCfg['frequency']  = $anonCfg['frequency']  ?? ($demoAnon['frequency']  ?? 'manual');
+            $anonCfg['dictionary'] = (isset($anonCfg['dictionary']) && is_array($anonCfg['dictionary']))
+                ? $anonCfg['dictionary']
+                : ($demoAnon['dictionary'] ?? []);
+            $demoTblsAnon = array_keys($demoData['schema_tables']);
+            $rules = is_array($anonCfg['rules'] ?? null) ? $anonCfg['rules'] : [];
+            $rules = array_values(array_filter($rules, fn($r) => !in_array($r['table'] ?? '', $demoTblsAnon, true)));
+            foreach ($demoAnon['rules'] ?? [] as $r) {
+                $rules[] = $r;
+            }
+            $anonCfg['rules'] = $rules;
+            $anonCfgOrdered = [
+                'enabled'    => $anonCfg['enabled'],
+                'frequency'  => $anonCfg['frequency'],
+                'dictionary' => $anonCfg['dictionary'],
+                'rules'      => $anonCfg['rules'],
+            ];
+            file_put_contents($anonPath, json_encode($anonCfgOrdered, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        }
+
         // workflows.json
         $wfPath = $configDir . '/workflows.json';
         $wfCfg  = file_exists($wfPath) ? (json_decode(file_get_contents($wfPath), true) ?? []) : [];
@@ -411,6 +439,21 @@ if ($action === 'demo_uninstall') {
             $bTable  = $cfg['table'] ?? ($meta['board_table'] ?? '');
             if ($bTable !== '' && in_array($bTable, $tbls, true)) {
                 @unlink($boardPath);
+            }
+        }
+
+        // Clean anonymization.json (drop rules pointing at demo tables; delete if no rules remain)
+        $anonPath = $configDir . '/anonymization.json';
+        if (file_exists($anonPath)) {
+            $cfg  = json_decode(file_get_contents($anonPath), true) ?? [];
+            $tbls = $meta['tables'] ?? [];
+            $cfg['rules'] = array_values(
+                array_filter($cfg['rules'] ?? [], fn($r) => !in_array($r['table'] ?? '', $tbls, true))
+            );
+            if (empty($cfg['rules'])) {
+                @unlink($anonPath);
+            } else {
+                file_put_contents($anonPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
             }
         }
 

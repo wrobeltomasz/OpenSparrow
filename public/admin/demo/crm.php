@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 // admin/demo/crm.php — CRM demo app definition (data only, no auth/routing)
-// demo_def_crm($conn): returns the spw_crm schema spec — DDL (companies, contacts, deals, activities, leads, products, quotes, invoices, assets), view names, and seed data
+// demo_def_crm($conn): returns the spw_crm schema spec — DDL (companies, contacts, deals, activities, leads, products, quotes, invoices, assets), view names, seed data,
+// plus config payloads: dashboard widgets, calendar sources, Kanban board, workflows, views, menu, files relations, automations (incl. email action) and anonymization rules
 // Consumed by demo/seed.php during demo_install
 
 function demo_def_crm($conn): array
@@ -283,6 +284,10 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Web', 'Carl', 'Ray', 'carl.r@horizon.com', '+1-555-3058', 'Horizon Digital', 'Qualified', 16)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Ads', 'Joyce', 'Green', 'joyce.g@apex.io', '+1-555-3059', 'Apex Ventures', 'New', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Cold Call', 'Henry', 'Quinn', 'henry.q@zenith.com', '+1-555-3060', 'Zenith Systems', 'Lost', NULL)",
+            // Stale leads (created_at > 1 year ago) — matched by the demo anonymization rules, visible in Anonymization dry-run preview
+            "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id, created_at) VALUES ('Web', 'Victor', 'Lindqvist', 'victor.l@oldnordic.se', '+46-8-555-0161', 'Old Nordic AB', 'Lost', NULL, NOW() - INTERVAL '18 months')",
+            "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id, created_at) VALUES ('Event', 'Helena', 'Novak', 'helena.n@pragueretail.cz', '+420-2-555-0162', 'Prague Retail sro', 'Lost', NULL, NOW() - INTERVAL '2 years')",
+            "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id, created_at) VALUES ('Cold Call', 'Bruno', 'Ferreira', 'bruno.f@lisboatech.pt', '+351-21-555-0163', 'Lisboa Tech Lda', 'Lost', NULL, NOW() - INTERVAL '14 months')",
             "INSERT INTO spw_crm.products (sku, name, description, unit_price, category, active) VALUES ('SW-CORE-01', 'OpenSparrow Core License', 'Single-tenant production license', 4900.00, 'Software', TRUE)",
             "INSERT INTO spw_crm.products (sku, name, description, unit_price, category, active) VALUES ('SW-CORE-ENT', 'OpenSparrow Enterprise License', 'Multi-tenant + priority support', 14900.00, 'Software', TRUE)",
             "INSERT INTO spw_crm.products (sku, name, description, unit_price, category, active) VALUES ('SVC-IMPL-S', 'Implementation — Standard', 'Up to 5 tables, 1 dashboard, 10 hrs', 3500.00, 'Service', TRUE)",
@@ -556,6 +561,14 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.product_contacts (product_id, contact_id, interested_at) VALUES (16, 6, NOW() - INTERVAL '12 days')",
             "INSERT INTO spw_crm.product_contacts (product_id, contact_id, interested_at) VALUES (17, 1, NOW() - INTERVAL '7 days')",
             "INSERT INTO spw_crm.product_contacts (product_id, contact_id, interested_at) VALUES (18, 2, NOW() - INTERVAL '3 days')",
+            // Spread created_at over past weeks/months so the dashboard period filter
+            // (Today/7d/30d) and KPI trend deltas have history to compare against.
+            // The WHERE guard on leads keeps the intentionally stale GDPR-demo rows intact.
+            "UPDATE spw_crm.companies SET created_at = NOW() - (id % 180) * INTERVAL '1 day'",
+            "UPDATE spw_crm.contacts  SET created_at = NOW() - (id % 120) * INTERVAL '1 day'",
+            "UPDATE spw_crm.deals     SET created_at = NOW() - (id % 90)  * INTERVAL '1 day'",
+            "UPDATE spw_crm.products  SET created_at = NOW() - (id % 300) * INTERVAL '1 day'",
+            "UPDATE spw_crm.leads     SET created_at = NOW() - (id % 60)  * INTERVAL '1 day' WHERE created_at >= NOW() - INTERVAL '7 days'",
         ],
         'schema_tables' => [
             'companies' => ['display_name' => 'Companies', 'schema' => 'spw_crm', 'icon' => 'assets/icons/apartment.png', 'columns' => [
@@ -705,7 +718,7 @@ function demo_def_crm($conn): array
         'dashboard_widgets' => [
             ['id' => 'demo_crm_001', 'type' => 'stat_card', 'title' => 'Companies',           'table' => 'companies',  'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => []], 'icon' => 'assets/icons/apartment.png',    'color' => '#553eb1', 'display_columns' => []],
             ['id' => 'demo_crm_002', 'type' => 'stat_card', 'title' => 'Contacts',            'table' => 'contacts',   'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => []], 'icon' => 'assets/icons/person.png',       'color' => '#289f6f', 'display_columns' => []],
-            ['id' => 'demo_crm_004', 'type' => 'stat_card', 'title' => 'Pipeline Value',       'table' => 'deals',      'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => []], 'icon' => 'assets/icons/payments.png',     'color' => '#e2b932', 'display_columns' => []],
+            ['id' => 'demo_crm_004', 'type' => 'stat_card', 'title' => 'Pipeline Value',       'table' => 'deals',      'width' => 1, 'height' => 1, 'query' => ['type' => 'sum', 'column' => 'value', 'conditions' => [['col' => 'stage', 'op' => '!=', 'val' => 'Won'], ['col' => 'stage', 'op' => '!=', 'val' => 'Lost']]], 'icon' => 'assets/icons/payments.png',     'color' => '#e2b932', 'display_columns' => []],
             ['id' => 'demo_crm_003', 'type' => 'bar_chart', 'title' => 'Deals by Stage',       'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'stage',  'conditions' => []], 'icon' => 'assets/icons/point_of_sale.png','color' => '#fcd34d', 'display_columns' => []],
             ['id' => 'demo_crm_005', 'type' => 'pie_chart', 'title' => 'Activities Status',    'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'done',   'conditions' => []], 'icon' => 'assets/icons/calendar.png',     'color' => '#c4b5fd', 'display_columns' => []],
             ['id' => 'demo_crm_007', 'type' => 'pie_chart', 'title' => 'Lead Sources',         'table' => 'leads',      'width' => 2, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'source', 'conditions' => []], 'icon' => 'assets/icons/account_tree.png', 'color' => '#c4b5fd', 'display_columns' => []],
@@ -881,6 +894,42 @@ function demo_def_crm($conn): array
                         'set'  => ['notes' => '{{ record.notes }} [Invoiced]'],
                     ],
                 ],
+            ],
+            [
+                'id'            => 'auto_demo_crm_004',
+                'name'          => 'New Lead — Welcome Email',
+                'enabled'       => true,
+                'trigger_table' => 'leads',
+                'trigger_event' => 'create',
+                'conditions'    => [
+                    'type'  => 'AND',
+                    'rules' => [
+                        ['field' => 'email', 'operator' => 'is_not_empty', 'value' => ''],
+                    ],
+                ],
+                // Email action (2.9): queues to spw_automation_emails, delivered by cron_notifications.php
+                'actions' => [
+                    [
+                        'type'       => 'email',
+                        'recipients' => ['{{ record.email }}'],
+                        'subject'    => 'Thank you for your interest, {{ record.first_name }}',
+                        'body'       => "Hello {{ record.first_name }} {{ record.last_name }},\n\nThank you for reaching out to us. One of our sales representatives will contact you shortly.\n\nBest regards,\nThe Sales Team",
+                    ],
+                ],
+            ],
+        ],
+        // Data Anonymization (2.9) — GDPR retention rules for lead PII. Frequency
+        // 'manual' so nothing runs unattended; use Anonymization > Preview (dry run)
+        // to see matches (seed includes stale leads older than 1 year).
+        'anonymization' => [
+            'enabled'    => true,
+            'frequency'  => 'manual',
+            'dictionary' => ['pesel', 'nip', 'email', 'phone', 'address', 'imie', 'nazwisko', 'name'],
+            'rules'      => [
+                ['table' => 'leads', 'date_column' => 'created_at', 'days' => 365, 'column' => 'email',      'replacement' => 'anonymized@example.com'],
+                ['table' => 'leads', 'date_column' => 'created_at', 'days' => 365, 'column' => 'phone',      'replacement' => '[REDACTED]'],
+                ['table' => 'leads', 'date_column' => 'created_at', 'days' => 365, 'column' => 'first_name', 'replacement' => '[REDACTED]'],
+                ['table' => 'leads', 'date_column' => 'created_at', 'days' => 365, 'column' => 'last_name',  'replacement' => '[REDACTED]'],
             ],
         ],
     ];
