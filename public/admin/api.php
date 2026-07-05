@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete', 'anonymization_save', 'run_anonymization', 'anonymization_purge_log'];
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete', 'anonymization_save', 'run_anonymization', 'anonymization_purge_log', 'upload_logo', 'remove_logo'];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);
@@ -1265,6 +1265,125 @@ if ($action === 'set_chat_bubble_setting') {
         exit;
     }
     echo json_encode(['status' => 'success', 'chat_bubble_enabled' => $enabled]);
+    exit;
+}
+
+// GET: return the current custom logo path (null when not set — the frontend falls back to the default logo)
+if ($action === 'get_logo_setting') {
+    header('Content-Type: application/json');
+    $settings = admin_read_settings(__DIR__ . '/../../config/settings.json');
+    $logoPath = $settings['custom_logo_path'] ?? null;
+    echo json_encode(['logo_path' => is_string($logoPath) ? $logoPath : null]);
+    exit;
+}
+
+// POST: upload a replacement logo shown on the frontend footer
+if ($action === 'upload_logo') {
+    header('Content-Type: application/json');
+    require_not_demo();
+
+    if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['status' => 'error', 'error' => 'No file received or upload error.']);
+        exit;
+    }
+
+    $file = $_FILES['file'];
+    // A logo has no reason to be large; keeps the upload folder and page weight small.
+    $maxBytes = 2 * 1024 * 1024;
+    if ($file['size'] > $maxBytes) {
+        echo json_encode(['status' => 'error', 'error' => 'Logo must be 2 MB or smaller.']);
+        exit;
+    }
+
+    // Content-sniff the actual bytes rather than trusting the client-supplied
+    // extension/MIME — SVG is deliberately excluded to avoid inline-script XSS.
+    $allowedMimes = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
+    $mimeType = 'application/octet-stream';
+    if (class_exists('finfo')) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']) ?: 'application/octet-stream';
+    }
+    if (!isset($allowedMimes[$mimeType])) {
+        echo json_encode(['status' => 'error', 'error' => 'Only PNG, JPEG or WEBP images are allowed.']);
+        exit;
+    }
+
+    $uploadDir = __DIR__ . '/../assets/img/uploads';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+        // Defense in depth on top of the MIME whitelist above: this folder must stay
+        // web-readable (the frontend <img> links directly into it), so — unlike
+        // storage/files/.htaccess — script execution is blocked instead of all access.
+        @file_put_contents(
+            $uploadDir . '/.htaccess',
+            "<FilesMatch \"\\.(php\\d?|phtml|pl|py|cgi|sh)$\">\n    Require all denied\n</FilesMatch>\n"
+        );
+    }
+
+    // Server-chosen random filename — never derived from the client's original name.
+    $ext         = $allowedMimes[$mimeType];
+    $filename    = 'logo-' . bin2hex(random_bytes(8)) . '.' . $ext;
+    $destination = $uploadDir . '/' . $filename;
+    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+        echo json_encode(['status' => 'error', 'error' => 'Failed to save the uploaded file.']);
+        exit;
+    }
+
+    $settingsFile = __DIR__ . '/../../config/settings.json';
+    $settings     = admin_read_settings($settingsFile);
+
+    // Remove the previous custom logo file so uploads don't accumulate on disk.
+    $oldPath   = $settings['custom_logo_path'] ?? null;
+    $uploadDirReal = realpath($uploadDir) ?: '';
+    if (is_string($oldPath) && $oldPath !== '' && $uploadDirReal !== '') {
+        $oldReal = realpath(__DIR__ . '/../' . ltrim($oldPath, '/'));
+        if ($oldReal !== false && str_starts_with($oldReal, $uploadDirReal)) {
+            @unlink($oldReal);
+        }
+    }
+
+    $settings['custom_logo_path'] = '/assets/img/uploads/' . $filename;
+    $written = @file_put_contents(
+        $settingsFile,
+        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    );
+    if ($written === false) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+        exit;
+    }
+
+    echo json_encode(['status' => 'success', 'logo_path' => $settings['custom_logo_path']]);
+    exit;
+}
+
+// POST: remove the custom logo and revert to the default OpenSparrow logo
+if ($action === 'remove_logo') {
+    header('Content-Type: application/json');
+    require_not_demo();
+
+    $settingsFile = __DIR__ . '/../../config/settings.json';
+    $settings     = admin_read_settings($settingsFile);
+    $oldPath      = $settings['custom_logo_path'] ?? null;
+
+    if (is_string($oldPath) && $oldPath !== '') {
+        $uploadDirReal = realpath(__DIR__ . '/../assets/img/uploads') ?: '';
+        $oldReal       = realpath(__DIR__ . '/../' . ltrim($oldPath, '/'));
+        if ($uploadDirReal !== '' && $oldReal !== false && str_starts_with($oldReal, $uploadDirReal)) {
+            @unlink($oldReal);
+        }
+    }
+    unset($settings['custom_logo_path']);
+
+    $written = @file_put_contents(
+        $settingsFile,
+        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    );
+    if ($written === false) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+        exit;
+    }
+
+    echo json_encode(['status' => 'success']);
     exit;
 }
 

@@ -30,8 +30,16 @@ $tLogout         = htmlspecialchars(t('auth.logout'), ENT_QUOTES, 'UTF-8');
 $vSidebarJs = @filemtime(__DIR__ . '/../public/assets/js/sidebar.js');
 $vNotifJs   = @filemtime(__DIR__ . '/../public/assets/js/notifications.js');
 $vAgentJs   = @filemtime(__DIR__ . '/../public/assets/js/agent-panel.js');
+
+$customLogoPath = settings_value('custom_logo_path', null);
+$logoSrc = is_string($customLogoPath) && $customLogoPath !== ''
+    ? htmlspecialchars($customLogoPath, ENT_QUOTES, 'UTF-8')
+    : 'assets/img/logo-blue.png';
 ?>
 <header>
+    <a href="/" class="brand-logo">
+        <img src="<?= $logoSrc ?>" alt="OpenSparrow Logo">
+    </a>
     <button id="sidebarToggle" data-cy="sidebar-toggle" aria-label="<?= $tToggleSidebar ?>">&#9776;</button>
     <button class="header-search-toggle" id="searchToggle" aria-label="<?= $tToggleSearch ?>">
         <img class="header-search-icon" src="assets/icons/search.png" alt="">

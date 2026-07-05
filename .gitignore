@@ -67,6 +67,11 @@ storage/files/*
 storage/ratelimit/*
 !storage/ratelimit/.htaccess
 
+# Uploaded custom logo (admin → Settings → Custom Logo)
+public/assets/img/uploads/*
+!public/assets/img/uploads/.gitkeep
+!public/assets/img/uploads/.htaccess
+
 # Files claude
 /.claude
 CLAUDE.md

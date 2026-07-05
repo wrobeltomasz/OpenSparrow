@@ -1,7 +1,7 @@
 ﻿// This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 //
-// admin/js/settings.js — General settings page (renderSettingsPage): loads/saves app + chat-bubble settings via api.php (get/set_*_setting).
+// admin/js/settings.js — General settings page (renderSettingsPage): loads/saves app + chat-bubble + custom-logo settings via api.php (get/set_*_setting, upload_logo, remove_logo).
 import { showStatusPill } from './app.js';
 import { createPageHeader } from './ui.js';
 
@@ -9,15 +9,17 @@ export async function renderSettingsPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '<h3>Loading settings…</h3>';
 
-    let data, bubbleData;
+    let data, bubbleData, logoData;
     try {
-        const [langRes, bubbleRes] = await Promise.all([
+        const [langRes, bubbleRes, logoRes] = await Promise.all([
             fetch('api.php?action=get_language_setting'),
             fetch('api.php?action=get_chat_bubble_setting'),
+            fetch('api.php?action=get_logo_setting'),
         ]);
         if (!langRes.ok) throw new Error('HTTP ' + langRes.status);
         data       = await langRes.json();
         bubbleData = bubbleRes.ok ? await bubbleRes.json() : { chat_bubble_enabled: false };
+        logoData   = logoRes.ok ? await logoRes.json() : { logo_path: null };
     } catch (e) {
         workspaceEl.innerHTML = '<h3 style="color:var(--danger);">Error loading settings. Check server logs.</h3>';
         return;
@@ -212,6 +214,107 @@ export async function renderSettingsPage(ctx) {
     bubbleCard.appendChild(bubbleSaveRow);
 
     workspaceEl.appendChild(bubbleCard);
+
+    // ── Custom Logo card ────────────────────────────────────────────────────
+
+    const logoCard = document.createElement('div');
+    logoCard.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
+
+    const logoTitle = document.createElement('h4');
+    logoTitle.style.cssText = 'margin:0 0 4px; font-size:15px;';
+    logoTitle.textContent = 'Custom Logo';
+    logoCard.appendChild(logoTitle);
+
+    const logoDesc = document.createElement('p');
+    logoDesc.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 16px;';
+    logoDesc.textContent = 'Replace the default OpenSparrow logo shown in the frontend header with your own image. PNG, JPEG or WEBP, up to 2 MB.';
+    logoCard.appendChild(logoDesc);
+
+    const logoPreview = document.createElement('img');
+    logoPreview.style.cssText = 'max-height:60px; max-width:220px; display:' + (logoData.logo_path ? 'block' : 'none') + '; border:1px solid var(--border); border-radius:4px; padding:6px; margin-bottom:16px;';
+    if (logoData.logo_path) logoPreview.src = logoData.logo_path + '?t=' + Date.now();
+    logoCard.appendChild(logoPreview);
+
+    const logoFileInput = document.createElement('input');
+    logoFileInput.type = 'file';
+    logoFileInput.accept = 'image/png,image/jpeg,image/webp';
+    logoFileInput.style.cssText = 'margin-bottom:16px; display:block;';
+    logoCard.appendChild(logoFileInput);
+
+    const logoBtnRow = document.createElement('div');
+    logoBtnRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
+
+    const logoUploadBtn = document.createElement('button');
+    logoUploadBtn.textContent = 'Upload logo';
+    logoUploadBtn.className = 'btn btn-primary';
+
+    const logoRemoveBtn = document.createElement('button');
+    logoRemoveBtn.textContent = 'Remove logo';
+    logoRemoveBtn.className = 'btn';
+    logoRemoveBtn.style.display = logoData.logo_path ? 'inline-block' : 'none';
+
+    const logoPillAnchor = document.createElement('span');
+
+    logoUploadBtn.addEventListener('click', async () => {
+        const chosenFile = logoFileInput.files[0];
+        if (!chosenFile) {
+            showStatusPill(logoPillAnchor, 'Choose a file first.', 'error');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', chosenFile);
+
+        logoUploadBtn.disabled = true;
+        try {
+            const res = await fetch('api.php?action=upload_logo', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': getCsrfToken() },
+                body: formData,
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                logoPreview.src = result.logo_path + '?t=' + Date.now();
+                logoPreview.style.display = 'block';
+                logoRemoveBtn.style.display = 'inline-block';
+                logoFileInput.value = '';
+                showStatusPill(logoPillAnchor, 'Logo uploaded. Reload the app to see the change.', 'success');
+            } else {
+                showStatusPill(logoPillAnchor, result.error || 'Error uploading logo.', 'error');
+            }
+        } catch (e) {
+            showStatusPill(logoPillAnchor, 'Request failed.', 'error');
+        }
+        logoUploadBtn.disabled = false;
+    });
+
+    logoRemoveBtn.addEventListener('click', async () => {
+        logoRemoveBtn.disabled = true;
+        try {
+            const res = await fetch('api.php?action=remove_logo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+                body: JSON.stringify({}),
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                logoPreview.style.display = 'none';
+                logoRemoveBtn.style.display = 'none';
+                showStatusPill(logoPillAnchor, 'Logo removed. Reload the app to see the change.', 'success');
+            } else {
+                showStatusPill(logoPillAnchor, result.error || 'Error removing logo.', 'error');
+            }
+        } catch (e) {
+            showStatusPill(logoPillAnchor, 'Request failed.', 'error');
+        }
+        logoRemoveBtn.disabled = false;
+    });
+
+    logoBtnRow.appendChild(logoUploadBtn);
+    logoBtnRow.appendChild(logoRemoveBtn);
+    logoBtnRow.appendChild(logoPillAnchor);
+    logoCard.appendChild(logoBtnRow);
+
+    workspaceEl.appendChild(logoCard);
 
     // ── Info card ──────────────────────────────────────────────────────────
 
