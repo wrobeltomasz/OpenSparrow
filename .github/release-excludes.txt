@@ -29,6 +29,8 @@ phpcs.xml
 phpunit.xml
 .phpunit.result.cache
 .gitignore
+.gitattributes
+scripts
 CLAUDE.md
 CLA.md
 CODE_OF_CONDUCT.md
