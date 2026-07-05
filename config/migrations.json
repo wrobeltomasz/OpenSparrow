@@ -23,16 +23,16 @@
         "removed_config_keys": [],
         "notes": "Added Automations module (rule-based triggers on record create/update/delete with template variables), document chunking for precise chunk-level retrieval (spw_rag_chunks), and expanded query history with source attribution and full prompt snapshots (spw_rag_query_sources). Run Initialize System Tables to apply all new migrations."
     },
-    "2.9": {
-        "removed_files": [],
-        "deprecated_files": [],
-        "removed_config_keys": [],
-        "notes": "Added Data Anonymization module (GDPR/EDPB): admin panel UI for defining table/column anonymization rules, configurable run frequency, dictionary-based PII column suggestions, dry-run preview, and a CLI cron worker (cron/cron_anonymization.php). Each run records its status in spw_anonymization_log and writes a structured JSON execution report (report_id, execution_summary, per-rule details with EDPB residual-risk assessment) to the dedicated spw_anonymization_report table, viewable and downloadable from Run History. Run Initialize System Tables to create spw_anonymization_log and spw_anonymization_report."
-    },
     "2.8": {
         "removed_files": [],
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Security hardening: ownership checks enforced on mass edit/delete/duplicate, data cleanup and calendar drag-and-drop; setup wizard now generates a random Argon2id admin password; storage/sessions directory protected from web access on Apache; demo-mode import guard added; pg_last_error no longer exposed to non-admin clients; hardcoded schema name in files module replaced with sys_schema(); tag array literal escaping fixed; storage_path constrained to storage/ subtree (prefix check tightened to block siblings like storage-pub); mass_duplicate now registers ownership rows for new records inside the same transaction; preview queries for mass edit and data cleanup now apply the same ownership filter as apply, so the displayed count matches what is actually changed. Added External Databases module: MySQL Gateway — PHP abstraction layer (DatabaseGatewayInterface / PostgresGateway / MysqlGateway / DatabaseFactory in includes/db/) routes queries to PostgreSQL or MySQL based on a configurable table-name list (config/mysql_gateway.json); MySQL connection configured via MYSQL_HOST / MYSQL_PORT / MYSQL_DB / MYSQL_USER / MYSQL_PASSWORD env vars; no new system tables required. Added Board (Kanban) view: visualises records of a configured table as draggable cards in lanes derived from a status column (enum recommended); dragging a card between lanes updates that column via api.php (api=board, action=move_card) with ownership and value-allowlist enforcement and audit logging (BOARD_MOVE); configured from the admin Board tab (config/board.json)."
+    },
+    "2.9": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Added Data Anonymization module (GDPR/EDPB): admin panel UI for defining table/column anonymization rules, configurable run frequency, dictionary-based PII column suggestions, dry-run preview, and a CLI cron worker (cron/cron_anonymization.php). Each run records its status in spw_anonymization_log and writes a structured JSON execution report (report_id, execution_summary, per-rule details with EDPB residual-risk assessment) to the dedicated spw_anonymization_report table, viewable and downloadable from Run History. Run Initialize System Tables to create spw_anonymization_log and spw_anonymization_report."
     }
 }
