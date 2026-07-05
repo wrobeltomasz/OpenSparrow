@@ -102,6 +102,12 @@ function render() {
     if ((byStatus[UNMATCHED] || []).length > 0) {
         container.appendChild(buildLane(UNMATCHED, t('board.uncategorized'), '#94a3b8', byStatus[UNMATCHED], false));
     }
+
+    // A configured board can still produce zero lanes (status column with no
+    // lane values and no records) — never leave the container blank.
+    if (container.children.length === 0) {
+        renderNotice(container, t('board.not_configured'));
+    }
 }
 
 function renderNotice(container, message) {

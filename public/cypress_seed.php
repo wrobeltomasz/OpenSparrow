@@ -1,17 +1,26 @@
 <?php
 
 // cypress_seed.php — Development-only test-data seeder for Cypress E2E tests.
-// SECURITY: must NEVER be deployed to production. Called by Cypress via cy.request() in before() hooks.
-// Guarded by a shared token (CYPRESS_SEED_TOKEN env, default 'cypress-dev-seed') compared with hash_equals
+// SECURITY: dead on production — hard APP_ENV guard (404) runs before the token check,
+// so an accidental deployment exposes nothing (APP_ENV defaults to 'production' in includes/config.php).
+// Second gate: shared token (CYPRESS_SEED_TOKEN env, default 'cypress-dev-seed') compared with hash_equals
 // actions: seed/users — upserts fixed test users (Argon2id hashes) into sys_table('users'); returns JSON results
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/config.php';
 
+// Hard environment guard: APP_ENV defaults to 'production' when unset, so this
+// endpoint only comes alive when the operator explicitly opts into a dev
+// environment (docker-compose.override.yml sets APP_ENV=development). A 404
+// with no body mirrors a missing file — existence is not disclosed.
+if (APP_ENV === 'production') {
+    http_response_code(404);
+    exit;
+}
+
 // Token guard: prevents accidental or malicious triggering.
 // Override with CYPRESS_SEED_TOKEN env var for CI.
-// Note: this file must not be deployed to production servers.
 $expectedToken = getenv('CYPRESS_SEED_TOKEN') ?: 'cypress-dev-seed';
 $providedToken = $_POST['token'] ?? $_GET['token'] ?? '';
 if (!hash_equals($expectedToken, $providedToken)) {

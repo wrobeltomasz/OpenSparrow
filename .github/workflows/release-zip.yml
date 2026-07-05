@@ -54,43 +54,9 @@ jobs:
 
           mkdir -p "dist/${PKG}"
 
-          rsync -a \
-            --exclude='.git'              \
-            --exclude='.github'           \
-            --exclude='.claude'           \
-            --exclude='tests'             \
-            --exclude='dist'              \
-            --exclude='tmp/sess_*'        \
-            --exclude='temp'              \
-            --exclude='cache'             \
-            --exclude='node_modules'      \
-            --exclude='cypress'           \
-            --exclude='.cypress-cache'    \
-            --exclude='cypress.config.js' \
-            --exclude='package.json'      \
-            --exclude='package-lock.json' \
-            --exclude='composer.json'     \
-            --exclude='Dockerfile'        \
-            --exclude='docker-compose.yml'\
-            --exclude='docker-php-dev.ini'\
-            --exclude='docker-compose.override.yml' \
-            --exclude='nginx.conf'        \
-            --exclude='.dockerignore'     \
-            --exclude='phpcs.phar'        \
-            --exclude='phpcbf.phar'       \
-            --exclude='phpcs.xml'         \
-            --exclude='phpunit.xml'       \
-            --exclude='.phpunit.result.cache' \
-            --exclude='.gitignore'        \
-            --exclude='CLAUDE.md'         \
-            --exclude='CLA.md'            \
-            --exclude='CODE_OF_CONDUCT.md'\
-            --exclude='CONTRIBUTING.md'   \
-            --exclude='SECURITY.md'       \
-            --exclude='config/*.example'  \
-            --exclude='includes/.secret_salt' \
-            --exclude='storage/files/*'   \
-            . "dist/${PKG}/"
+          # Exclude list shared with deploy-smoke.yml, which boots this exact
+          # file set in CI — edit .github/release-excludes.txt to change it.
+          rsync -a --exclude-from=.github/release-excludes.txt . "dist/${PKG}/"
 
           # Guarantee storage/files exists — PHP will write here on first upload.
           # The directory is required; its contents are never distributed.

@@ -7,40 +7,13 @@ declare(strict_types=1);
 // POST actions: mass_edit_preview, mass_edit_apply, mass_duplicate, mass_delete — operate on a selected set of record IDs, preview before apply
 // Reads config/schema.json + config/mysql_gateway.json; parameterized queries; sys_table()
 
-ini_set('display_errors', '0');
-require_once __DIR__ . '/../../includes/session.php';
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-header('Content-Type: application/json; charset=utf-8');
-send_security_headers();
-start_session();
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
-
-if (empty($_SESSION['user_id'])) {
-    http_response_code(401);
-    exit(json_encode(['error' => 'Unauthorized']));
-}
-
-$role = $_SESSION['role'] ?? 'viewer';
-if ($role !== 'editor') {
-    http_response_code(403);
-    exit(json_encode(['error' => 'Forbidden: editor role required']));
-}
+// Auth gate + editor-role gate + header CSRF on POST; returns an open DB connection
+$conn = os_api_bootstrap(['role' => 'editor']);
 
 $method = $_SERVER['REQUEST_METHOD'];
-
-if ($method === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        exit(json_encode(['error' => 'CSRF token mismatch']));
-    }
-}
-
 $action = $_GET['action'] ?? '';
-$conn   = db_connect();
 
 $schemaJson = file_get_contents(__DIR__ . '/../../config/schema.json');
 $schema     = json_decode($schemaJson, true, 512, JSON_THROW_ON_ERROR);
@@ -240,7 +213,13 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
         ? ($body['value'] === null ? null : (string)$body['value'])
         : null;
 
-    [$tableCfg, $tableName, , $colSql, $tblSql] = validateTableColumn($body, $schema);
+    [$tableCfg, $tableName, $colCfg, $colSql, $tblSql] = validateTableColumn($body, $schema);
+
+    // Server-side validation_regexp enforcement (client check is advisory)
+    if (($regexpError = validate_column_regexp($colCfg, $value)) !== null) {
+        http_response_code(422);
+        exit(json_encode(['error' => $regexpError]));
+    }
 
     if (in_array($tableName, $mysqlGatewayTables, true)) {
         $pdo = mysql_pdo('mass_edit');

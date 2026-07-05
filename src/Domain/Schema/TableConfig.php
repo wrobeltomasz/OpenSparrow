@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schema;
 
-final class TableConfig
+final readonly class TableConfig
 {
     /**
      * @param array<string, ColumnConfig>          $columns
@@ -12,23 +12,23 @@ final class TableConfig
      * @param list<array<string, mixed>>           $subtables
      */
     public function __construct(
-        public readonly string $name,
-        public readonly string $schema,
-        public readonly string $displayName,
-        public readonly array $columns,
-        public readonly array $foreignKeys,
-        public readonly array $subtables,
-        public readonly string $primaryKey = 'id',
-        public readonly string $icon = '',
-        public readonly string $source = 'postgres',
-        public readonly string $mysqlPk = 'id',
+        public string $name,
+        public string $schema,
+        public string $displayName,
+        public array $columns,
+        public array $foreignKeys,
+        public array $subtables,
+        public string $primaryKey = 'id',
+        public string $icon = '',
+        public DataSource $source = DataSource::Postgres,
+        public string $mysqlPk = 'id',
     ) {
     }
 
     /** True when this table is routed to the external MySQL gateway, not PostgreSQL. */
     public function isMysql(): bool
     {
-        return $this->source === 'mysql';
+        return $this->source === DataSource::Mysql;
     }
 
     /** Columns shown in edit/create forms (respects show_in_edit; virtual columns excluded). */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Repository;
 
+use App\Domain\Schema\DataSource;
 use App\Domain\Schema\TableConfig;
 use App\Form\RecordData;
 use App\Repository\RecordRepositoryInterface;
@@ -49,12 +50,12 @@ final class RoutingRecordRepositoryTest extends TestCase
 {
     private function pgTable(): TableConfig
     {
-        return new TableConfig('pg_widgets', 'app', 'PG Widgets', [], [], [], 'id', '', 'postgres', 'id');
+        return new TableConfig('pg_widgets', 'app', 'PG Widgets', [], [], [], 'id', '', DataSource::Postgres, 'id');
     }
 
     private function mysqlTable(): TableConfig
     {
-        return new TableConfig('my_widgets', 'app', 'MySQL Widgets', [], [], [], 'id', '', 'mysql', 'id');
+        return new TableConfig('my_widgets', 'app', 'MySQL Widgets', [], [], [], 'id', '', DataSource::Mysql, 'id');
     }
 
     public function testPostgresTableNeverInvokesTheMysqlFactory(): void

@@ -172,6 +172,9 @@ ${_p(s.s3_mobile)}
 ${_h4(s.s3_filter_head)}
 ${_p(s.s3_filter_desc)}
 ${_ul([`${s.s3_filter_ops}: <code>=</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>LIKE</code>, <code>ILIKE</code>, <code>IS NULL</code>, <code>IS NOT NULL</code>.`])}
+${_h4(s.s3_period_head)}
+${_p(s.s3_period_desc)}
+${_p(s.s3_export_desc)}
 ${_h4(s.s3_preview_head)}
 ${_p(s.s3_preview_desc)}
 ${_h4(s.s3_global_head)}

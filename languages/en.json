@@ -158,7 +158,14 @@
         "error_load": "Error occurred while loading dashboard data.",
         "error_config": "Cannot load dashboard configuration. Try refreshing.",
         "cannot_load": "Cannot load widget",
-        "click_details": "Click to view details"
+        "click_details": "Click to view details",
+        "filter_label": "Period",
+        "filter_all": "All time",
+        "filter_today": "Today",
+        "filter_7d": "Last 7 days",
+        "filter_30d": "Last 30 days",
+        "filter_month": "This month",
+        "vs_prev": "vs previous period ({prev})"
     },
     "workflow": {
         "steps": {
@@ -260,7 +267,8 @@
         "month_sep": "September",
         "month_oct": "October",
         "month_nov": "November",
-        "month_dec": "December"
+        "month_dec": "December",
+        "filter_all": "All"
     },
     "board": {
         "title": "Board",

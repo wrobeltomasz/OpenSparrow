@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 // edit.php — Record edit form page (modern OOP path)
-// Boots via includes/bootstrap.php ($session, $request, $schemas, $fieldRegistry, CSRF) + includes/m2m.php; uses ByteFormatter for file sizes
-// Auth gate: redirect to login if no session; UA/lifetime enforcement; editor role required for POST (read-only users get 403)
-// Loads existing record by ?id and renders a dynamic edit form from schema.json (incl. many_to_many); CSP nonce + send_security_headers('unsafe-style')
+// Boots via includes/bootstrap.php: os_page_bootstrap() (auth gate, UA/lifetime enforcement, CSP nonce + 'unsafe-style' headers) + os_boot_app() (object graph) + includes/m2m.php; uses ByteFormatter for file sizes
+// Editor role required for POST (read-only users get 403)
+// Loads existing record by ?id and renders a dynamic edit form from schema.json (incl. many_to_many)
 
 require __DIR__ . '/../includes/bootstrap.php';
 require __DIR__ . '/../includes/m2m.php';
@@ -13,19 +13,14 @@ require __DIR__ . '/../includes/m2m.php';
 use App\Form\RenderContext;
 use App\Support\ByteFormatter;
 
-if (!$session->has('user_id')) {
-    header('Location: login.php');
-    exit;
-}
+// 'unsafe-style' CSP mode: the form markup uses inline style attributes for
+// dynamic values. Admins are not redirected — the form pages allow them through.
+$pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
+$cspNonce = $pageMeta['nonce'];
 
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_redirect();
-
-// This page echoes user-supplied record data into a form; send the same security
-// headers (CSP, X-Frame-Options, etc.) every other page sets. 'unsafe-style' mode
-// because the form markup uses inline style attributes for dynamic values.
-$cspNonce = bin2hex(random_bytes(16));
-send_security_headers($cspNonce, true, 'unsafe-style');
+['session' => $session, 'request' => $request, 'csrf' => $csrf, 'schemas' => $schemas,
+ 'fieldRegistry' => $fieldRegistry, 'mapper' => $mapper, 'records' => $records,
+ 'files' => $files, 'audit' => $audit, 'fkLoader' => $fkLoader] = os_boot_app();
 
 $isReadOnly = $session->role() !== 'editor';
 
@@ -67,6 +62,10 @@ if ($request->isPost()) {
     }
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
+        // Pre-update state for change-based automation conditions (changed_from/changed_to).
+        $oldRecord = $tableCfg->isMysql()
+            ? null
+            : auto_capture_old_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id);
         $records->update($tableCfg, $id, $data);
         $logId = $audit->log($session->userId(), 'UPDATE', $tableCfg->name, (int)$id);
         // Snapshots, automations and m2m sync are PostgreSQL-side features; skip
@@ -75,7 +74,7 @@ if ($request->isPost()) {
             if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
                 snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
             }
-            evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId());
+            evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId(), $oldRecord);
             foreach ($m2mConfigs as $mi => $m2mCfg) {
                 $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
                 m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
@@ -87,6 +86,9 @@ if ($request->isPost()) {
             header('Location: index.php?table=' . urlencode($table));
         }
         exit;
+    } catch (\App\Form\ValidationException $e) {
+        // validation_regexp mismatch — message comes from schema.json and is user-facing
+        $error = $e->getMessage();
     } catch (\RuntimeException $e) {
         error_log('[edit.php] ' . $e->getMessage());
         $error = 'Database error. Please try again.';

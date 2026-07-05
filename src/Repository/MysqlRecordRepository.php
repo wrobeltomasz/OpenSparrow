@@ -28,12 +28,13 @@ use App\Persistence\MysqlIdentifier;
  * PostgreSQL-side relations (subtables, FK display expansion, m2m) are
  * out of scope here — see RoutingRecordRepository and the edit/create guards.
  */
-final class MysqlRecordRepository implements RecordRepositoryInterface
+final readonly class MysqlRecordRepository implements RecordRepositoryInterface
 {
-    public function __construct(private readonly MysqlConnection $conn)
+    public function __construct(private MysqlConnection $conn)
     {
     }
 
+    #[\Override]
     public function find(TableConfig $cfg, string|int $id): ?array
     {
         $cols   = array_unique(array_merge([$cfg->primaryKey], array_keys($cfg->dbColumns())));
@@ -49,6 +50,7 @@ final class MysqlRecordRepository implements RecordRepositoryInterface
         return is_array($row) ? $this->castRow($cfg, $row) : null;
     }
 
+    #[\Override]
     public function update(TableConfig $cfg, string|int $id, RecordData $data): void
     {
         if ($data->isEmpty()) {
@@ -70,6 +72,7 @@ final class MysqlRecordRepository implements RecordRepositoryInterface
         $this->conn->execute($sql, $params);
     }
 
+    #[\Override]
     public function insert(TableConfig $cfg, RecordData $data): string|int
     {
         $cols   = [];
@@ -104,6 +107,7 @@ final class MysqlRecordRepository implements RecordRepositoryInterface
         return $this->conn->lastInsertId();
     }
 
+    #[\Override]
     public function subtables(TableConfig $cfg, string|int $parentId): array
     {
         // Subtables join across PostgreSQL relations; not supported for MySQL tables.

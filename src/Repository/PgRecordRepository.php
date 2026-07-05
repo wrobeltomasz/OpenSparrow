@@ -10,15 +10,16 @@ use App\Form\RecordData;
 use App\Persistence\ConnectionInterface;
 use App\Persistence\Identifier;
 
-final class PgRecordRepository implements RecordRepositoryInterface
+final readonly class PgRecordRepository implements RecordRepositoryInterface
 {
     public function __construct(
-        private readonly ConnectionInterface $conn,
-        private readonly SchemaRepositoryInterface $schemas,
-        private readonly FkOptionsLoader $fkLoader,
+        private ConnectionInterface $conn,
+        private SchemaRepositoryInterface $schemas,
+        private FkOptionsLoader $fkLoader,
     ) {
     }
 
+    #[\Override]
     public function find(TableConfig $cfg, string|int $id): ?array
     {
         $cols       = array_unique(array_merge([$cfg->primaryKey], array_keys($cfg->dbColumns())));
@@ -34,6 +35,7 @@ final class PgRecordRepository implements RecordRepositoryInterface
         return $row !== false ? $row : null;
     }
 
+    #[\Override]
     public function update(TableConfig $cfg, string|int $id, RecordData $data): void
     {
         if ($data->isEmpty()) {
@@ -58,6 +60,7 @@ final class PgRecordRepository implements RecordRepositoryInterface
         $this->conn->execute($sql, $params);
     }
 
+    #[\Override]
     public function insert(TableConfig $cfg, RecordData $data): string|int
     {
         if ($data->isEmpty()) {
@@ -94,6 +97,7 @@ final class PgRecordRepository implements RecordRepositoryInterface
         return $row[$cfg->primaryKey];
     }
 
+    #[\Override]
     public function subtables(TableConfig $cfg, string|int $parentId): array
     {
         $result    = [];

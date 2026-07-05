@@ -7,40 +7,13 @@ declare(strict_types=1);
 // POST actions: data_cleanup_preview (dry-run report), data_cleanup_apply (executes removal of orphaned/stale records based on schema relations)
 // Reads config/schema.json + config/mysql_gateway.json; parameterized queries; sys_table()
 
-ini_set('display_errors', '0');
-require_once __DIR__ . '/../../includes/session.php';
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-header('Content-Type: application/json; charset=utf-8');
-send_security_headers();
-start_session();
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
-
-if (empty($_SESSION['user_id'])) {
-    http_response_code(401);
-    exit(json_encode(['error' => 'Unauthorized']));
-}
-
-$role = $_SESSION['role'] ?? 'viewer';
-if ($role !== 'editor') {
-    http_response_code(403);
-    exit(json_encode(['error' => 'Forbidden: editor role required']));
-}
+// Auth gate + editor-role gate + header CSRF on POST; returns an open DB connection
+$conn = os_api_bootstrap(['role' => 'editor']);
 
 $method = $_SERVER['REQUEST_METHOD'];
-
-if ($method === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        exit(json_encode(['error' => 'CSRF token mismatch']));
-    }
-}
-
 $action = $_GET['action'] ?? '';
-$conn   = db_connect();
 
 $schemaJson = file_get_contents(__DIR__ . '/../../config/schema.json');
 $schema     = json_decode($schemaJson, true, 512, JSON_THROW_ON_ERROR);

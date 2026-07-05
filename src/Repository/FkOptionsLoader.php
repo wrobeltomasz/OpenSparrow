@@ -8,9 +8,9 @@ use App\Domain\Schema\TableConfig;
 use App\Persistence\ConnectionInterface;
 use App\Persistence\Identifier;
 
-final class FkOptionsLoader
+final readonly class FkOptionsLoader
 {
-    public function __construct(private readonly ConnectionInterface $conn)
+    public function __construct(private ConnectionInterface $conn)
     {
     }
 

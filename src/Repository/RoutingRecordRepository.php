@@ -38,21 +38,25 @@ final class RoutingRecordRepository implements RecordRepositoryInterface
         $this->mysqlFactory  = static fn(): ?RecordRepositoryInterface => $mysql;
     }
 
+    #[\Override]
     public function find(TableConfig $cfg, string|int $id): ?array
     {
         return $this->route($cfg)->find($cfg, $id);
     }
 
+    #[\Override]
     public function update(TableConfig $cfg, string|int $id, RecordData $data): void
     {
         $this->route($cfg)->update($cfg, $id, $data);
     }
 
+    #[\Override]
     public function insert(TableConfig $cfg, RecordData $data): string|int
     {
         return $this->route($cfg)->insert($cfg, $data);
     }
 
+    #[\Override]
     public function subtables(TableConfig $cfg, string|int $parentId): array
     {
         return $this->route($cfg)->subtables($cfg, $parentId);

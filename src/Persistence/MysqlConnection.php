@@ -12,9 +12,9 @@ namespace App\Persistence;
  * MySQL record repository can route DML without touching PostgreSQL. The
  * connection recipe mirrors api.php::mysql_pdo_api().
  */
-final class MysqlConnection
+final readonly class MysqlConnection
 {
-    public function __construct(private readonly \PDO $pdo)
+    public function __construct(private \PDO $pdo)
     {
     }
 

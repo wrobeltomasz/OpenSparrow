@@ -1,6 +1,7 @@
 // assets/js/dashboard/widgets/stat-card.js — Registers the 'stat_card' widget; large value tile (optional coloured background) + drill-down.
 
 import { applyDrillDown, firstEqCondition } from '../drill-down.js';
+import { buildDelta } from '../delta.js';
 import { WidgetRegistry } from '../registry.js';
 
 function renderStatCard(widget) {
@@ -20,6 +21,8 @@ function renderStatCard(widget) {
     title.textContent = widget.title;
 
     wrapper.append(value, title);
+    const delta = buildDelta(widget);
+    if (delta) wrapper.appendChild(delta);
     const fc = firstEqCondition(widget.query?.conditions);
     applyDrillDown(wrapper, widget.table, fc?.col ?? null, fc?.val ?? null);
     wrapper.addEventListener('mouseenter', () => { wrapper.style.transform = 'translateY(-2px)'; });

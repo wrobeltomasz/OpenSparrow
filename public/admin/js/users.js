@@ -24,13 +24,13 @@ export async function renderUsersEditor(ctx) {
         }
         
         let html = `
-            <h3>System Users Management</h3>
-            <p style="color:#64748B; margin-bottom: 20px;">
+            <h2 class="admin-page-title">System Users Management</h2>
+            <p class="admin-page-desc">
                 Manage user accounts and roles. Roles: <strong>Admin</strong> – admin panel only; <strong>Editor</strong> – full frontend CRUD; <strong>Viewer</strong> – read-only frontend.
             </p>
             <table style="width:100%; border-collapse: collapse; margin-bottom: 30px; text-align: left;">
                 <thead>
-                    <tr style="border-bottom: 2px solid #DDEAF4;">
+                    <tr style="border-bottom: 2px solid var(--accent-mid);">
                         <th style="padding: 10px;">ID</th>
                         <th style="padding: 10px;">Username</th>
                         <th style="padding: 10px;">Status</th>
@@ -43,23 +43,23 @@ export async function renderUsersEditor(ctx) {
         
         data.users.forEach(u => {
             html += `
-                <tr style="border-bottom: 1px solid #DDEAF4;">
+                <tr style="border-bottom: 1px solid var(--accent-mid);">
                     <td style="padding: 10px;">${escHtml(u.id)}</td>
                     <td style="padding: 10px;"><strong>${escHtml(u.username)}</strong></td>
                     <td style="padding: 10px;">
-                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; color: white; background: ${u.is_active ? '#2b9348' : '#d00000'};">
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; color: white; background: ${u.is_active ? 'var(--ok)' : 'var(--danger)'};">
                             ${u.is_active ? 'Active' : 'Inactive'}
                         </span>
                     </td>
                     <td style="padding: 10px;">
-                        <select class="select-user-role" data-id="${u.id}" style="padding: 5px; border-radius: 4px; border: 1px solid #DDEAF4; background: #fff;">
+                        <select class="select-user-role" data-id="${u.id}" style="padding: 5px; border-radius: 4px; border: 1px solid var(--accent-mid); background: #fff;">
                             <option value="admin"  ${u.role === 'admin'  ? 'selected' : ''}>Admin</option>
                             <option value="editor" ${u.role === 'editor' || !u.role ? 'selected' : ''}>Editor</option>
                             <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                         </select>
                     </td>
                     <td style="padding: 10px; display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn btn-xs btn-toggle-user" data-id="${u.id}" data-active="${u.is_active}" style="background:${u.is_active ? '#ffc300' : 'var(--muted)'}; color:${u.is_active ? '#1E293B' : '#fff'}; border-color:${u.is_active ? '#ffc300' : 'var(--muted)'};">
+                        <button class="btn btn-xs btn-toggle-user" data-id="${u.id}" data-active="${u.is_active}" style="background:${u.is_active ? 'var(--warn)' : 'var(--muted)'}; color:${u.is_active ? 'var(--text)' : '#fff'}; border-color:${u.is_active ? 'var(--warn)' : 'var(--muted)'};">
                             ${u.is_active ? 'Deactivate' : 'Activate'}
                         </button>
                         <button class="btn btn-xs btn-secondary btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}">
@@ -74,7 +74,7 @@ export async function renderUsersEditor(ctx) {
                 </tbody>
             </table>
             
-            <div style="background: #DDEAF4; padding: 20px; border-radius: 6px; border: 1px solid #DDEAF4;">
+            <div style="background: var(--accent-mid); padding: 20px; border-radius: 6px; border: 1px solid var(--accent-mid);">
                 <h4 style="margin-top: 0; margin-bottom: 15px;">Add New User</h4>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Username</label>
@@ -83,10 +83,10 @@ export async function renderUsersEditor(ctx) {
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Password</label>
                     <input type="password" id="newPassword" placeholder="Minimum 6 characters" class="adm-input" style="width:100%;">
-                    <div id="passwordStrengthBar" style="height: 6px; background: #DDEAF4; border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
+                    <div id="passwordStrengthBar" style="height: 6px; background: var(--accent-mid); border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
                         <div id="passwordStrengthFill" style="height: 100%; width: 0%; transition: width 0.3s, background 0.3s;"></div>
                     </div>
-                    <small id="passwordStrengthLabel" style="color:#64748B; display: block; margin-top: 4px;"></small>
+                    <small id="passwordStrengthLabel" style="color:var(--muted); display: block; margin-top: 4px;"></small>
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Role</label>
@@ -180,7 +180,7 @@ export async function renderUsersEditor(ctx) {
                 box.appendChild(h3);
 
                 const userP = document.createElement('p');
-                userP.style.cssText = 'margin:0 0 16px;font-size:13px;color:#64748B;';
+                userP.style.cssText = 'margin:0 0 16px;font-size:13px;color:var(--muted);';
                 userP.textContent = 'User: ';
                 const userStrong = document.createElement('strong');
                 userStrong.textContent = username;
@@ -192,7 +192,7 @@ export async function renderUsersEditor(ctx) {
                     currentInput.type = 'password';
                     currentInput.id = 'cpw-current';
                     currentInput.placeholder = 'Current password';
-                    currentInput.style.cssText = 'width:100%;padding:8px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
+                    currentInput.style.cssText = 'width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
                     box.appendChild(currentInput);
                 }
 
@@ -200,14 +200,14 @@ export async function renderUsersEditor(ctx) {
                 newInput.type = 'password';
                 newInput.id = 'cpw-new';
                 newInput.placeholder = 'New password (min 8 chars)';
-                newInput.style.cssText = 'width:100%;padding:8px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
+                newInput.style.cssText = 'width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
                 box.appendChild(newInput);
 
                 const confirmInput = document.createElement('input');
                 confirmInput.type = 'password';
                 confirmInput.id = 'cpw-confirm';
                 confirmInput.placeholder = 'Confirm new password';
-                confirmInput.style.cssText = 'width:100%;padding:8px;border:1px solid #CBD5E1;border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:12px;';
+                confirmInput.style.cssText = 'width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:12px;';
                 box.appendChild(confirmInput);
 
                 const msgEl = document.createElement('p');
@@ -221,7 +221,7 @@ export async function renderUsersEditor(ctx) {
                 const cancelBtn = document.createElement('button');
                 cancelBtn.id = 'cpw-cancel';
                 cancelBtn.textContent = 'Cancel';
-                cancelBtn.style.cssText = 'padding:7px 16px;border:1px solid #CBD5E1;border-radius:6px;background:#fff;cursor:pointer;';
+                cancelBtn.style.cssText = 'padding:7px 16px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;';
                 buttonDiv.appendChild(cancelBtn);
 
                 const saveBtn = document.createElement('button');
@@ -243,21 +243,21 @@ export async function renderUsersEditor(ctx) {
                     const pwd     = newInput.value;
                     const confirm = box.querySelector('#cpw-confirm').value;
                     if (isSelf && !box.querySelector('#cpw-current').value) {
-                        msgEl.style.color = '#d00000';
+                        msgEl.style.color = 'var(--danger)';
                         msgEl.textContent = 'Current password is required.';
                         return;
                     }
                     if (pwd.length < 8) {
-                        msgEl.style.color = '#d00000';
+                        msgEl.style.color = 'var(--danger)';
                         msgEl.textContent = 'Password must be at least 8 characters.';
                         return;
                     }
                     if (pwd !== confirm) {
-                        msgEl.style.color = '#d00000';
+                        msgEl.style.color = 'var(--danger)';
                         msgEl.textContent = 'Passwords do not match.';
                         return;
                     }
-                    msgEl.style.color = '#64748B';
+                    msgEl.style.color = 'var(--muted)';
                     msgEl.textContent = 'Saving…';
                     try {
                         let res, data;
@@ -280,10 +280,10 @@ export async function renderUsersEditor(ctx) {
                             data = await res.json();
                             if (data.status === 'success') { overlay.remove(); return; }
                         }
-                        msgEl.style.color = '#d00000';
+                        msgEl.style.color = 'var(--danger)';
                         msgEl.textContent = data.error || 'Error saving password.';
                     } catch {
-                        msgEl.style.color = '#d00000';
+                        msgEl.style.color = 'var(--danger)';
                         msgEl.textContent = 'Network error.';
                     }
                 });
@@ -304,11 +304,11 @@ export async function renderUsersEditor(ctx) {
             if (/\d/.test(pwd)) score++;
             if (/[^a-zA-Z0-9]/.test(pwd)) score++;
             
-            if (pwd.length < 6) return { level: 'weak', percent: 25, label: 'Too short', color: '#d00000' };
-            if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: '#d00000' };
-            if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: '#ffc300' };
-            if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: '#64748B' };
-            return { level: 'strong', percent: 100, label: 'Strong', color: '#2b9348' };
+            if (pwd.length < 6) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--danger)' };
+            if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: 'var(--danger)' };
+            if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: 'var(--warn)' };
+            if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: 'var(--muted)' };
+            return { level: 'strong', percent: 100, label: 'Strong', color: 'var(--ok)' };
         }
         
         passwordInput.addEventListener('input', () => {

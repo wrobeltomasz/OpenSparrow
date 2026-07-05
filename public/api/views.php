@@ -7,35 +7,14 @@ declare(strict_types=1);
 // actions: list (GET), config (GET, admin), data (GET — runs the view SELECT / drill-down GROUP BY), sync (GET, admin — discovers MySQL information_schema.VIEWS), save (POST, admin)
 // Reads/writes config/views.json; column names validated against schema, values parameterized
 
-require_once __DIR__ . '/../../includes/session.php';
-start_session();
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Unauthorized']);
-    exit;
-}
-
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
-
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
-
-header('Content-Type: application/json; charset=utf-8');
+// Auth gate + header CSRF on POST; connect=false — actions open their own connection
+os_api_bootstrap(['connect' => false]);
 
 $role   = $_SESSION['role'] ?? 'viewer';
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
-
-if ($method === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        echo json_encode(['error' => 'CSRF token mismatch']);
-        exit;
-    }
-}
 
 $viewsPath   = __DIR__ . '/../../config/views.json';
 $viewsConfig = [];

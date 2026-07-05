@@ -7,35 +7,16 @@ declare(strict_types=1);
 // actions: get_count (unread badge), get_list (dropdown), mark_read
 // sys_table('users_notifications'); parameterized queries
 
-require_once __DIR__ . '/../../includes/session.php';
-start_session();
-// Block unauthenticated access immediately to prevent IDOR
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
-    exit;
-}
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
+// Auth gate + header CSRF on POST; returns an open DB connection
+$conn = os_api_bootstrap();
 
-require_once __DIR__ . '/../../includes/db.php';
-header('Content-Type: application/json; charset=utf-8');
 // Safely cast the authenticated user ID
 $userId = (int)$_SESSION['user_id'];
 $action = $_GET['action'] ?? 'get_count';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'message' => 'CSRF token mismatch.']);
-        exit;
-    }
-}
-
 try {
-    $conn = db_connect();
 // Fetch the count of unread notifications for the user
     if ($action === 'get_count') {
 // Removed notify_date <= today to show upcoming notifications immediately

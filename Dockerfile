@@ -1,6 +1,6 @@
-# Optimized PHP 8.2 FPM image for OpenSparrow using Alpine Linux
+# Optimized PHP 8.4 FPM image for OpenSparrow using Alpine Linux
 # This image is approximately 150MB, compared to 1GB+ for standard Debian-based images.
-FROM php:8.2-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # Upgrade existing packages to prevent musl library conflicts during build
 # Install system-level dependencies for PostgreSQL

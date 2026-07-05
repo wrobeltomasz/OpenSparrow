@@ -27,7 +27,7 @@
         "removed_files": [],
         "deprecated_files": [],
         "removed_config_keys": [],
-        "notes": "Added Data Anonymization module: admin panel UI for defining table/column anonymization rules, configurable run frequency, dictionary-based PII column suggestions, and a cron worker (cron/cron_anonymization.php). Run Initialize System Tables to create spw_anonymization_log."
+        "notes": "Added Data Anonymization module (GDPR/EDPB): admin panel UI for defining table/column anonymization rules, configurable run frequency, dictionary-based PII column suggestions, dry-run preview, and a CLI cron worker (cron/cron_anonymization.php). Each run records its status in spw_anonymization_log and writes a structured JSON execution report (report_id, execution_summary, per-rule details with EDPB residual-risk assessment) to the dedicated spw_anonymization_report table, viewable and downloadable from Run History. Run Initialize System Tables to create spw_anonymization_log and spw_anonymization_report."
     },
     "2.8": {
         "removed_files": [],

@@ -8,8 +8,10 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../includes/api_bootstrap.php';
-$conn = api_bootstrap();
+require_once __DIR__ . '/../../includes/bootstrap.php';
+
+// csrf=manual: mutating actions validate the FormData/body token via os_require_csrf() themselves
+$conn = os_api_bootstrap(['csrf' => 'manual']);
 
 // jsonError(), jsonSuccess() and requireLogin() are shared via includes/api_helpers.php
 
@@ -19,18 +21,6 @@ function requireEditor(): void
 
     if (($_SESSION['role'] ?? '') !== 'editor') {
         jsonError('Forbidden', 403);
-    }
-}
-
-// CSRF validation helper for all mutating POST actions.
-// Reads token from FormData ($_POST) or JSON body array.
-function requireCsrfToken(array $body = []): void
-{
-
-    $tokenPost    = $_POST['csrf_token'] ?? $body['csrf_token'] ?? '';
-    $tokenSession = $_SESSION['csrf_token'] ?? '';
-    if (!$tokenSession || !hash_equals($tokenSession, (string)$tokenPost)) {
-        jsonError('Invalid CSRF token.', 403);
     }
 }
 
@@ -203,7 +193,7 @@ function actionUpload($conn): void
     // delete/save_config. Viewers are read-only; the UI hides the upload control
     // for them but the server must enforce it too.
     requireEditor();
-    requireCsrfToken();
+    os_require_csrf('body');
     if (!isset($_FILES['file'])) {
         jsonError('No file received.', 400);
     }
@@ -319,7 +309,7 @@ function actionDelete($conn, array $body): void
 {
 
     requireEditor();
-    requireCsrfToken($body);
+    os_require_csrf('body', $body);
     $uuid = trim($body['uuid'] ?? '');
     if (!$uuid) {
         jsonError('uuid is required.', 400);
@@ -344,7 +334,7 @@ function actionSaveConfig(array $body): void
 {
 
     requireEditor();
-    requireCsrfToken($body);
+    os_require_csrf('body', $body);
     $current = loadConfig();
     if (isset($body['max_file_size_mb'])) {
         $current['max_file_size_mb'] = max(1, (int) $body['max_file_size_mb']);

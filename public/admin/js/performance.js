@@ -1,6 +1,6 @@
 ﻿// admin/js/performance.js — Performance & Index Advisor page
 // Tabs over api.php performance_* actions (check, slow_queries, table_stats, db_health, unused_indexes, schema_warnings); severity badges.
-import { buildInnerTabs } from './ui.js';
+import { buildInnerTabs, createPageHeader } from './ui.js';
 
 function escHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -15,8 +15,7 @@ function severityBadge(sev) {
 
 function copyBtn(getText, label = 'Copy SQL', small = true) {
     const btn = document.createElement('button');
-    btn.className = 'btn-action';
-    btn.style.cssText = small ? 'padding:3px 10px; font-size:12px; white-space:nowrap;' : 'padding:6px 16px; font-size:13px;';
+    btn.className = small ? 'btn btn-primary btn-xs' : 'btn btn-primary btn-sm';
     btn.textContent = label;
     btn.addEventListener('click', () => {
         navigator.clipboard.writeText(getText()).then(() => {
@@ -81,8 +80,7 @@ function makeSection(title, description) {
     hdrLeft.appendChild(desc);
 
     const btn = document.createElement('button');
-    btn.className = 'btn-action';
-    btn.style.cssText = 'padding:6px 16px; white-space:nowrap;';
+    btn.className = 'btn btn-primary btn-sm';
     btn.textContent = 'Scan';
 
     hdr.appendChild(hdrLeft);
@@ -120,7 +118,7 @@ function setBodyError(body, msg) {
 function setBodyEmpty(body, msg) {
     body.replaceChildren();
     const p = document.createElement('p');
-    p.style.cssText = 'color:#2b9348; font-weight:600; font-size:13px; margin:0;';
+    p.style.cssText = 'color:var(--ok); font-weight:600; font-size:13px; margin:0;';
     p.textContent = '✓ ' + msg;
     body.appendChild(p);
 }
@@ -158,7 +156,7 @@ function renderIndexAdvisor(body, data) {
         grp.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
 
         const gh = document.createElement('div');
-        gh.style.cssText = 'padding:8px 12px; background:#F4F7F9; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace; font-size:13px; font-weight:600;';
+        gh.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace; font-size:13px; font-weight:600;';
         const ghText = document.createElement('span');
         ghText.textContent = tableKey;
         gh.appendChild(ghText);
@@ -174,9 +172,9 @@ function renderIndexAdvisor(body, data) {
             tr.appendChild(td(s.column, 'font-family:monospace; font-weight:600;'));
             tr.appendChild(td(s.reasons.join(' · ')));
             const codeTd = document.createElement('td');
-            codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #CBD5E1; max-width:340px;';
+            codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:340px;';
             const code = document.createElement('code');
-            code.style.cssText = 'font-size:11px; background:#F4F7F9; padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
+            code.style.cssText = 'font-size:11px; background:var(--bg); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
             code.textContent = s.sql;
             codeTd.appendChild(code);
             tr.appendChild(codeTd);
@@ -199,7 +197,7 @@ function renderUnusedIndexes(body, data) {
     }
 
     const warn = document.createElement('p');
-    warn.style.cssText = 'font-size:13px; color:#64748B; background:rgba(255,195,0,0.12); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
+    warn.style.cssText = 'font-size:13px; color:var(--muted); background:rgba(255,195,0,0.12); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
     warn.textContent = `⚠ ${rows.length} unused index${rows.length !== 1 ? 'es' : ''} found. Unused indexes waste storage and slow down writes. Verify before dropping.`;
     body.appendChild(warn);
 
@@ -216,7 +214,7 @@ function renderUnusedIndexes(body, data) {
         tr.appendChild(td(r.idx_scan));
         tr.appendChild(td(r.index_size));
         const codeTd = document.createElement('td');
-        codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #CBD5E1; max-width:300px;';
+        codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:300px;';
         const code = document.createElement('code');
         code.style.cssText = 'font-size:11px; background:rgba(208,0,0,0.08); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
         code.textContent = r.drop_sql;
@@ -238,7 +236,7 @@ function renderSlowQueries(body, data) {
         p.style.cssText = 'font-size:13px; color:var(--muted);';
         p.textContent = data.message;
         const code = document.createElement('code');
-        code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:#F4F7F9; border-radius:4px; font-size:12px;';
+        code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:var(--bg); border-radius:4px; font-size:12px;';
         code.textContent = 'CREATE EXTENSION pg_stat_statements;';
         body.appendChild(p);
         body.appendChild(code);
@@ -257,13 +255,13 @@ function renderSlowQueries(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         const avgMs = parseFloat(r.mean_ms);
-        const color = avgMs > 500 ? '#a80000' : avgMs > 100 ? '#64748B' : 'inherit';
+        const color = avgMs > 500 ? '#a80000' : avgMs > 100 ? 'var(--muted)' : 'inherit';
         tr.appendChild(td(r.mean_ms + ' ms', `font-weight:600; color:${color};`));
         tr.appendChild(td(r.total_ms + ' ms'));
         tr.appendChild(td(r.calls));
         tr.appendChild(td(r.calls > 0 ? Math.round(r.rows / r.calls) : '—'));
         const qtd = document.createElement('td');
-        qtd.style.cssText = 'padding:8px 12px; border-bottom:1px solid #CBD5E1; max-width:420px;';
+        qtd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:420px;';
         const code = document.createElement('code');
         code.style.cssText = 'font-size:11px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);';
         code.title = r.query;
@@ -292,10 +290,10 @@ function renderTableStats(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         const deadPct = parseFloat(r.dead_pct);
-        const bloatColor = deadPct > 20 ? '#a80000' : deadPct > 10 ? '#64748B' : 'inherit';
+        const bloatColor = deadPct > 20 ? '#a80000' : deadPct > 10 ? 'var(--muted)' : 'inherit';
         const seqScan = parseInt(r.seq_scan) || 0;
         const idxScan = parseInt(r.idx_scan) || 0;
-        const scanColor = seqScan > 100 && seqScan > idxScan * 2 ? '#64748B' : 'inherit';
+        const scanColor = seqScan > 100 && seqScan > idxScan * 2 ? 'var(--muted)' : 'inherit';
 
         tr.appendChild(td(r.tablename));
         tr.appendChild(td(Number(r.estimated_rows).toLocaleString()));
@@ -352,13 +350,13 @@ function renderDbHealth(body, data) {
         'Cache Hit Ratio',
         cacheHit + '%',
         'target: > 99%',
-        cacheHit >= 99 ? '#2b9348' : cacheHit >= 95 ? '#ffc300' : '#d00000'
+        cacheHit >= 99 ? 'var(--ok)' : cacheHit >= 95 ? 'var(--warn)' : 'var(--danger)'
     ));
     grid.appendChild(kpi(
         'Active Connections',
         activeConn + ' / ' + maxConn,
         connPct + '% of max_connections',
-        connPct > 80 ? '#d00000' : connPct > 60 ? '#ffc300' : '#2b9348'
+        connPct > 80 ? 'var(--danger)' : connPct > 60 ? 'var(--warn)' : 'var(--ok)'
     ));
     grid.appendChild(kpi('DB Size', db.db_size));
     grid.appendChild(kpi('Committed Txns', Number(db.xact_commit).toLocaleString()));
@@ -366,7 +364,7 @@ function renderDbHealth(body, data) {
         'Deadlocks',
         db.deadlocks,
         '',
-        parseInt(db.deadlocks) > 0 ? '#d00000' : '#2b9348'
+        parseInt(db.deadlocks) > 0 ? 'var(--danger)' : 'var(--ok)'
     ));
     grid.appendChild(kpi('Rollbacks', Number(db.xact_rollback).toLocaleString()));
 
@@ -434,17 +432,13 @@ export function renderPerformancePage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.replaceChildren();
 
-    const h2 = document.createElement('h2');
-    h2.textContent = 'Performance';
-    h2.style.marginTop = '0';
-    workspaceEl.appendChild(h2);
+    workspaceEl.appendChild(createPageHeader('Performance'));
 
     const topRow = document.createElement('div');
     topRow.style.cssText = 'display:flex; align-items:center; gap:14px; margin-bottom:20px;';
 
     const btnAll = document.createElement('button');
-    btnAll.className = 'btn-action';
-    btnAll.style.cssText = 'padding:8px 20px; font-size:14px;';
+    btnAll.className = 'btn btn-primary';
     btnAll.textContent = 'Run All';
     topRow.appendChild(btnAll);
     workspaceEl.appendChild(topRow);

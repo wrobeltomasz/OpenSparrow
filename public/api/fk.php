@@ -5,20 +5,11 @@
 // GET table+col -> resolves reference_table from schema.json foreign_keys, returns selectable rows
 // Defensive: returns {"rows":[]} on any failure (missing schema, unknown relation)
 
-// Disable HTML error output to prevent corrupting JSON payload
-ini_set('display_errors', 0);
-require_once __DIR__ . '/../../includes/session.php';
-start_session();
-// Require authorization and AJAX request
-if (!isset($_SESSION['user_id']) || !isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
-    http_response_code(403);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => 'Unauthorized']);
-    exit;
-}
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
+// Read-only AJAX endpoint: auth + AJAX gates, no CSRF, no DB connection here
+// (the request is delegated to api.php below, which connects itself)
+os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none']);
 
 $table = $_GET['table'] ?? '';
 $col = $_GET['col'] ?? '';

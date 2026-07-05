@@ -256,6 +256,8 @@ if ($action === 'init_database') {
         // Do not log the password — it is already visible in the wizard response.
         $tmpPassword    = bin2hex(random_bytes(12));
         $firstAdminSalt = bin2hex(random_bytes(32));
+        // setup_api.php runs standalone (before config exists), so it cannot use
+        // the ARGON2_OPTIONS constant from includes/config.php — keep in sync.
         $argonOpts      = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
         $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, $argonOpts);
         error_log('[OpenSparrow] First-run admin account created. Change the password shown in the setup wizard immediately after login.');

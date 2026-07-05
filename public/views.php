@@ -3,35 +3,16 @@
 declare(strict_types=1);
 
 // views.php — Custom/saved views page (frontend HTML)
-// Auth gate: redirect to login if no session; admin redirected to /admin; UA/lifetime enforcement
-// Generates CSRF token + CSP nonce + send_security_headers('unsafe-style'); ?view= selects the view (max 64 chars)
+// Boots via includes/bootstrap.php: os_page_bootstrap('unsafe-style' CSP) — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
+// ?view= selects the view (max 64 chars)
 // Renders the saved-view UI (views.css); data via api/views.php
 
-require_once __DIR__ . '/../includes/session.php';
-start_session();
+require_once __DIR__ . '/../includes/bootstrap.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_redirect();
-
-if (($_SESSION['role'] ?? 'viewer') === 'admin') {
-    header('Location: admin/');
-    exit;
-}
-
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-$cspNonce  = bin2hex(random_bytes(16));
+$page      = os_page_bootstrap(['csp' => 'unsafe-style']);
+$cspNonce  = $page['nonce'];
+$userRole  = $page['role'];
 $viewName  = substr($_GET['view'] ?? '', 0, 64);
-$userRole  = $_SESSION['role'] ?? 'viewer';
-
-send_security_headers($cspNonce, true, 'unsafe-style');
 
 $pageTitle      = 'OpenSparrow — Views';
 $extraCss       = '<link href="assets/css/views.css" rel="stylesheet">';

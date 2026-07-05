@@ -26,6 +26,7 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
         $this->mysqlTables = $this->loadMysqlTables($gatewayPath ?? dirname($path) . '/mysql_gateway.json');
     }
 
+    #[\Override]
     public function table(string $name): TableConfig
     {
         if (!$this->hasTable($name)) {
@@ -34,11 +35,13 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
         return $this->cache[$name] ??= $this->build($name, $this->rawData['tables'][$name]);
     }
 
+    #[\Override]
     public function hasTable(string $name): bool
     {
         return isset($this->rawData['tables'][$name]);
     }
 
+    #[\Override]
     public function all(): array
     {
         $result = [];
@@ -48,6 +51,7 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
         return $result;
     }
 
+    #[\Override]
     public function raw(): array
     {
         return $this->rawData;
@@ -79,7 +83,7 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
             subtables: $cfg['subtables'] ?? [],
             primaryKey: 'id',
             icon: $cfg['icon'] ?? '',
-            source: in_array($name, $this->mysqlTables, true) ? 'mysql' : 'postgres',
+            source: in_array($name, $this->mysqlTables, true) ? DataSource::Mysql : DataSource::Postgres,
             mysqlPk: $cfg['mysql_pk'] ?? 'id',
         );
     }

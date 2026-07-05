@@ -6,7 +6,7 @@ Available to the admin role (and partially to editor). All configuration is stor
 files in config/ — no code changes required.
 
 Current version: 2.8.
-Stack: PHP 8.1+, PostgreSQL 14+, vanilla JavaScript (ES6+). No npm, no composer required.
+Stack: PHP 8.4+, PostgreSQL 14+, vanilla JavaScript (ES6+). No npm, no composer required.
 License: LGPL v3. Self-hosted, works fully offline.
 
 

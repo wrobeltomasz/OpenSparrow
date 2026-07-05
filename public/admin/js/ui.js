@@ -94,9 +94,7 @@ export function createIconPicker(key, labelText, value, onChange) {
     const btn = document.createElement('button');
     btn.textContent = 'Browse';
     btn.type = 'button';
-    btn.className = 'btn-add';
-    btn.style.margin = '0';
-    btn.style.padding = '0 15px';
+    btn.className = 'btn btn-secondary btn-sm';
     btn.onclick = async () => {
         const modal = document.createElement('div');
         modal.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:10000;`;
@@ -680,10 +678,12 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
 }
 
 // ── Shared inner-tab builder ──────────────────────────────────────────────────
-// tabs = [{label}] — returns array of panel divs (caller fills each panel)
+// tabs = [{label}] — returns array of panel divs (caller fills each panel).
+// Emits the same .item-panel-items / .item-btn markup as the schema item panel
+// (see admin/style.css) so every inner-tab strip in the panel looks identical.
 export function buildInnerTabs(container, tabs) {
     const bar = document.createElement('div');
-    bar.style.cssText = 'display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px;';
+    bar.className = 'item-panel-items';
 
     const panels = [];
     const btns   = [];
@@ -691,9 +691,7 @@ export function buildInnerTabs(container, tabs) {
     tabs.forEach(({ label }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.style.cssText = 'padding:10px 20px;background:none;border:none;'
-            + 'border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;'
-            + 'font-size:13px;font-weight:600;color:var(--muted);transition:color .15s,border-color .15s;';
+        btn.className = 'item-btn';
         btn.textContent = label;
         bar.appendChild(btn);
         btns.push(btn);
@@ -708,13 +706,29 @@ export function buildInnerTabs(container, tabs) {
 
     function activate(i) {
         panels.forEach((p, j) => { p.style.display = j === i ? '' : 'none'; });
-        btns.forEach((b, j) => {
-            b.style.color = j === i ? 'var(--accent)' : 'var(--muted)';
-            b.style.borderBottomColor = j === i ? 'var(--accent)' : 'transparent';
-        });
+        btns.forEach((b, j) => b.classList.toggle('active', j === i));
     }
     btns.forEach((btn, i) => btn.addEventListener('click', () => activate(i)));
     activate(0);
 
     return panels;
+}
+
+// ── Standard page header ──────────────────────────────────────────────────────
+// Returns an <h2 class="admin-page-title"> + optional <p class="admin-page-desc">.
+// Use this instead of hand-rolling headings so title level, size and spacing are
+// consistent across every tab. `description` may contain HTML (or be omitted).
+export function createPageHeader(title, description) {
+    const frag = document.createDocumentFragment();
+    const h = document.createElement('h2');
+    h.className = 'admin-page-title';
+    h.textContent = title;
+    frag.appendChild(h);
+    if (description) {
+        const p = document.createElement('p');
+        p.className = 'admin-page-desc';
+        p.innerHTML = description;
+        frag.appendChild(p);
+    }
+    return frag;
 }

@@ -214,11 +214,10 @@ describe('OpenSparrow – i18n: JS Module', () => {
     cy.visit(`${BASE}/dashboard.php?lang=en`);
     // Wait for the async bundle fetch to complete before probing the JS object
     cy.wait('@bundle', { timeout: CypressHelpers.TIMEOUTS.long });
-    cy.window().then(win => {
-      if (!win.I18n?.t) {
-        Cypress.log({ message: 'I18n.t not available — skipping' });
-        return;
-      }
+    // .should() retries: the intercept resolves when the response arrives,
+    // but the app assigns the parsed bundle a tick later (await res.json()).
+    cy.window().should(win => {
+      expect(win.I18n?.t, 'I18n.t available').to.be.a('function');
       const result = win.I18n.t('common.save');
       expect(result).to.be.a('string').and.not.eq('common.save');
     });

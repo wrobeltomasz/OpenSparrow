@@ -6,12 +6,13 @@ namespace App\Audit;
 
 use App\Persistence\ConnectionInterface;
 
-final class DbAuditLogger implements AuditLoggerInterface
+final readonly class DbAuditLogger implements AuditLoggerInterface
 {
-    public function __construct(private readonly ConnectionInterface $conn)
+    public function __construct(private ConnectionInterface $conn)
     {
     }
 
+    #[\Override]
     public function log(int $userId, string $action, string $table, int $recordId): ?int
     {
         $sql = 'INSERT INTO ' . sys_table('users_log')

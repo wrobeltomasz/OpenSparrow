@@ -3,28 +3,23 @@
 declare(strict_types=1);
 
 // create.php — Record creation form page (modern OOP path)
-// Boots via includes/bootstrap.php ($session, $request, $schemas, $fieldRegistry, CSRF) + includes/m2m.php
-// Auth gate: redirect to login if no session; UA/lifetime enforcement; editor role required for POST (read-only users get 403)
-// Renders a dynamic create form from schema.json (incl. many_to_many); CSP nonce + send_security_headers('unsafe-style')
+// Boots via includes/bootstrap.php: os_page_bootstrap() (auth gate, UA/lifetime enforcement, CSP nonce + 'unsafe-style' headers) + os_boot_app() (object graph) + includes/m2m.php
+// Editor role required for POST (read-only users get 403)
+// Renders a dynamic create form from schema.json (incl. many_to_many)
 
 require __DIR__ . '/../includes/bootstrap.php';
 require __DIR__ . '/../includes/m2m.php';
 
 use App\Form\RenderContext;
 
-if (!$session->has('user_id')) {
-    header('Location: login.php');
-    exit;
-}
+// 'unsafe-style' CSP mode: the form markup uses inline style attributes for
+// dynamic values. Admins are not redirected — the form pages allow them through.
+$pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
+$cspNonce = $pageMeta['nonce'];
 
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_redirect();
-
-// This page echoes user-supplied data into a form; send the same security headers
-// (CSP, X-Frame-Options, etc.) every other page sets. 'unsafe-style' mode because
-// the form markup uses inline style attributes for dynamic values.
-$cspNonce = bin2hex(random_bytes(16));
-send_security_headers($cspNonce, true, 'unsafe-style');
+['session' => $session, 'request' => $request, 'csrf' => $csrf, 'schemas' => $schemas,
+ 'fieldRegistry' => $fieldRegistry, 'mapper' => $mapper, 'records' => $records,
+ 'audit' => $audit, 'fkLoader' => $fkLoader] = os_boot_app();
 
 $isReadOnly = $session->role() !== 'editor';
 
@@ -69,6 +64,9 @@ if ($request->isPost()) {
         }
         header('Location: index.php?table=' . urlencode($table));
         exit;
+    } catch (\App\Form\ValidationException $e) {
+        // validation_regexp mismatch — message comes from schema.json and is user-facing
+        $error = $e->getMessage();
     } catch (\RuntimeException $e) {
         error_log('[create.php] ' . $e->getMessage());
         $error = 'Database error. Please try again.';

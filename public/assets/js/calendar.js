@@ -1,6 +1,8 @@
-// calendar.js — Calendar view (non-module classic script)
+// calendar.js — Calendar view (loaded as ES module by calendar.php)
 // Renders records of a table as events positioned by a date column; dragging an
 // event reschedules it via api.php (api=calendar). CSRF from meta tag; i18n via /api.php?action=i18n_bundle.
+// Filter bar: per-source visibility chips (window.CALENDAR_SOURCES) and enum value
+// dropdowns built from the public schema; state persisted in localStorage.
 
 function getCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -28,11 +30,142 @@ let currentYear = new Date().getFullYear();
 let eventsData = [];
 let appSchema = null;
 
+// ── Filters: source visibility (chips) + enum column values (dropdowns) ──────
+const FILTER_STORAGE_KEY = 'sparrow_calendar_filters';
+let hiddenTables = new Set();
+// Keyed "table|column" -> selected enum value; absent key means "all"
+let enumFilters = {};
+
+function loadFilterState() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || '{}');
+        hiddenTables = new Set(Array.isArray(saved.hiddenTables) ? saved.hiddenTables : []);
+        enumFilters = (saved.enumFilters && typeof saved.enumFilters === 'object') ? saved.enumFilters : {};
+    } catch (_) {
+        hiddenTables = new Set();
+        enumFilters = {};
+    }
+}
+
+function saveFilterState() {
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({
+        hiddenTables: [...hiddenTables],
+        enumFilters
+    }));
+}
+
+function calendarSources() {
+    return Array.isArray(window.CALENDAR_SOURCES) ? window.CALENDAR_SOURCES : [];
+}
+
+function tableLabel(table) {
+    return appSchema?.tables?.[table]?.display_name || table;
+}
+
+// Enum columns of a source table (type=enum with a non-empty options list)
+function enumColumnsFor(table) {
+    const cols = appSchema?.tables?.[table]?.columns || {};
+    return Object.entries(cols)
+        .filter(([, def]) => (def.type || '').toLowerCase() === 'enum'
+            && Array.isArray(def.options) && def.options.length > 0)
+        .map(([name, def]) => ({ name, def }));
+}
+
+// Events that pass both the source chips and the enum dropdowns
+function visibleEvents() {
+    return eventsData.filter(ev => {
+        if (hiddenTables.has(ev.table)) return false;
+        return enumColumnsFor(ev.table).every(({ name }) => {
+            const selected = enumFilters[`${ev.table}|${name}`] ?? '';
+            return selected === '' || String(ev.rowData?.[name] ?? '') === selected;
+        });
+    });
+}
+
+function buildSourceChip(src) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'calendar-filter-chip' + (hiddenTables.has(src.table) ? ' off' : '');
+
+    const dot = document.createElement('span');
+    dot.className = 'calendar-filter-dot';
+    dot.style.backgroundColor = src.color;
+    chip.appendChild(dot);
+    chip.appendChild(document.createTextNode(tableLabel(src.table)));
+
+    chip.addEventListener('click', () => {
+        if (hiddenTables.has(src.table)) {
+            hiddenTables.delete(src.table);
+        } else {
+            hiddenTables.add(src.table);
+        }
+        saveFilterState();
+        renderFilterBar();
+        renderCalendar();
+    });
+    return chip;
+}
+
+function buildEnumSelect(table, name, def) {
+    const key = `${table}|${name}`;
+    const wrap = document.createElement('label');
+    wrap.className = 'calendar-filter-enum';
+
+    const caption = document.createElement('span');
+    caption.textContent = `${tableLabel(table)}: ${def.display_name || name}`;
+    wrap.appendChild(caption);
+
+    const select = document.createElement('select');
+    const allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = t('calendar.filter_all');
+    select.appendChild(allOpt);
+    def.options.forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = String(val);
+        opt.textContent = String(val);
+        select.appendChild(opt);
+    });
+    select.value = enumFilters[key] ?? '';
+
+    select.addEventListener('change', () => {
+        if (select.value === '') {
+            delete enumFilters[key];
+        } else {
+            enumFilters[key] = select.value;
+        }
+        saveFilterState();
+        renderCalendar();
+    });
+    wrap.appendChild(select);
+    return wrap;
+}
+
+function renderFilterBar() {
+    const bar = document.getElementById('calendarFilters');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    const sources = calendarSources();
+    sources.forEach(src => bar.appendChild(buildSourceChip(src)));
+
+    // Enum dropdowns only for sources that are currently visible
+    sources
+        .filter(src => !hiddenTables.has(src.table))
+        .forEach(src => {
+            enumColumnsFor(src.table).forEach(({ name, def }) => {
+                bar.appendChild(buildEnumSelect(src.table, name, def));
+            });
+        });
+}
+
 // Init calendar when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchI18n();
     await fetchSchema();
     await fetchEvents(currentYear, currentMonth + 1);
+    loadFilterState();
+    renderFilterBar();
     renderCalendar();
 
     document.getElementById('btnPrev').addEventListener('click', async () => {
@@ -92,6 +225,7 @@ async function fetchEvents(year, month) {
 function renderCalendar() {
     const container = document.getElementById('calendarContainer');
     const title = document.getElementById('calendarTitle');
+    const monthEvents = visibleEvents();
     
     // Clear container safely
     container.innerHTML = '';
@@ -227,7 +361,7 @@ function renderCalendar() {
             }
         });
 
-        const dayEvents = eventsData.filter(e => e.date === dateString);
+        const dayEvents = monthEvents.filter(e => e.date === dateString);
         dayEvents.forEach(ev => {
             const evEl = document.createElement('div');
             evEl.className = 'calendar-event';

@@ -11,11 +11,13 @@ use App\Form\RenderContext;
 
 final class DateField implements FieldTypeInterface
 {
+    #[\Override]
     public function supports(ColumnConfig $col, bool $hasForeignKey): bool
     {
         return $col->isDate();
     }
 
+    #[\Override]
     public function bind(string $colName, array $postData): BoundValue
     {
         $val = $postData[$colName] ?? null;
@@ -25,6 +27,7 @@ final class DateField implements FieldTypeInterface
         return new BoundValue($val);
     }
 
+    #[\Override]
     public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
     {
         $val     = $ctx->isPrefilled($col->name) ? $ctx->prefilledValue($col->name) : (string)($currentValue ?? '');

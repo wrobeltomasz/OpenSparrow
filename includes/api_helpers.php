@@ -5,6 +5,10 @@
 // All SQL identifiers are quoted with pg_ident(); values are escaped or parameterized; uses sys_table() for system tables
 // Functions: safe_table, column_list, pg_ident, map_fk_display, log_user_action, get_record_owner_id, can_access_record, set_record_owner, snapshot_record, jsonError, jsonSuccess, requireLogin, validatedTable
 
+require_once __DIR__ . '/../src/Security/UserRole.php';
+
+use App\Security\UserRole;
+
 function safe_table(array $schema, string $table): array
 {
     if (!isset($schema['tables'][$table])) {
@@ -35,7 +39,7 @@ function to_display_name(array $tableCfg): string
     return $tableCfg['display_name'] ?? ($tableCfg['name'] ?? 'Unknown');
 }
 
-function map_fk_display(array $schema, array $tableCfg, array $rows, $conn = null): array
+function map_fk_display(array $schema, array $tableCfg, array $rows, ?\PgSql\Connection $conn = null): array
 {
     if (empty($rows) || !isset($tableCfg['foreign_keys'])) {
         return $rows;
@@ -72,7 +76,7 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, $conn = nul
         }
 
         // Escape all columns and merge them using CONCAT_WS for PostgreSQL
-        $escapedDispCols = array_map('pg_ident', $refDispRaw);
+        $escapedDispCols = array_map(pg_ident(...), $refDispRaw);
         if (count($escapedDispCols) > 1) {
             $dispSql = "CONCAT_WS(' - ', " . implode(', ', $escapedDispCols) . ")";
         } else {
@@ -113,13 +117,13 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, $conn = nul
     return $rows;
 }
 
-function normalize_boolean($val): string
+function normalize_boolean(mixed $val): string
 {
     $truthy = ['true', '1', 1, true, 't', 'T', 'TRUE'];
     return in_array($val, $truthy, true) ? 'TRUE' : 'FALSE';
 }
 
-function type_min_value(string $type)
+function type_min_value(string $type): string|int
 {
     $t = strtolower($type);
     if (str_contains($t, 'bool')) {
@@ -136,7 +140,7 @@ function type_min_value(string $type)
 }
 
 // Log action to db — returns the new log row id so callers can attach snapshots.
-function log_user_action($conn, int $userId, string $action, ?string $targetTable = null, ?int $recordId = null): ?int
+function log_user_action(\PgSql\Connection $conn, int $userId, string $action, ?string $targetTable = null, ?int $recordId = null): ?int
 {
     $sql = 'INSERT INTO ' . sys_table('users_log')
          . ' (user_id, action, target_table, record_id) VALUES ($1, $2, $3, $4) RETURNING id';
@@ -149,7 +153,7 @@ function log_user_action($conn, int $userId, string $action, ?string $targetTabl
 
 // Fetch a single record as a JSON string using row_to_json().
 // row_to_json requires SELECT * to capture all columns dynamically regardless of schema.
-function fetch_record_json($conn, string $schemaName, string $table, int $recordId): ?string
+function fetch_record_json(\PgSql\Connection $conn, string $schemaName, string $table, int $recordId): ?string
 {
     $safeRef = pg_ident($schemaName) . '.' . pg_ident($table);
     $res = pg_query_params(
@@ -165,7 +169,7 @@ function fetch_record_json($conn, string $schemaName, string $table, int $record
 }
 
 // Returns the current owner_id for a record, or null if no ownership row exists.
-function get_record_owner_id($conn, string $table, int $recordId): ?int
+function get_record_owner_id(\PgSql\Connection $conn, string $table, int $recordId): ?int
 {
     $t   = sys_table('record_owners');
     $res = @pg_query_params(
@@ -184,12 +188,12 @@ function get_record_owner_id($conn, string $table, int $recordId): ?int
 // flag are open to any authenticated user. For restricted tables, access is granted
 // only when the record is unowned or owned by the user; admins always pass. Mirrors
 // the ownership policy enforced for PATCH and DELETE in api.php.
-function can_access_record($conn, array $tableCfg, string $table, int $recordId, int $userId, string $role = ''): bool
+function can_access_record(\PgSql\Connection $conn, array $tableCfg, string $table, int $recordId, int $userId, string $role = ''): bool
 {
     if (empty($tableCfg['owner_restricted'])) {
         return true;
     }
-    if ($role === 'admin') {
+    if ($role === UserRole::Admin->value) {
         return true;
     }
     $ownerId = get_record_owner_id($conn, $table, $recordId);
@@ -199,7 +203,7 @@ function can_access_record($conn, array $tableCfg, string $table, int $recordId,
 // Enforce owner-restricted access on a mutation: emit 403 + JSON error and exit when
 // the record is owned by another user. No-op for open tables or records the user may
 // touch. Wraps can_access_record() so the policy stays defined in one place.
-function check_record_ownership($conn, array $tableCfg, string $table, int $recordId, int $userId, string $message = 'Forbidden'): void
+function check_record_ownership(\PgSql\Connection $conn, array $tableCfg, string $table, int $recordId, int $userId, string $message = 'Forbidden'): void
 {
     if (!can_access_record($conn, $tableCfg, $table, $recordId, $userId)) {
         http_response_code(403);
@@ -209,7 +213,7 @@ function check_record_ownership($conn, array $tableCfg, string $table, int $reco
 }
 
 // Record ownership: mark previous current row inactive, insert new current row.
-function set_record_owner($conn, string $table, int $recordId, int $ownerId, int $changedBy): void
+function set_record_owner(\PgSql\Connection $conn, string $table, int $recordId, int $ownerId, int $changedBy): void
 {
     $t = sys_table('record_owners');
     @pg_query_params($conn, "UPDATE $t SET is_current = false WHERE table_name = \$1 AND record_id = \$2 AND is_current = true", [$table, $recordId]);
@@ -217,7 +221,7 @@ function set_record_owner($conn, string $table, int $recordId, int $ownerId, int
 }
 
 // Save a JSONB snapshot of the current record state linked to a log entry.
-function snapshot_record($conn, string $schemaName, string $table, int $recordId, int $logId): void
+function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $table, int $recordId, int $logId): void
 {
     $json = fetch_record_json($conn, $schemaName, $table, $recordId);
     if ($json === null) {
@@ -236,7 +240,7 @@ function snapshot_record($conn, string $schemaName, string $table, int $recordId
 // ---------------------------------------------------------------------------
 
 // Emit a JSON error envelope and stop. Shape kept stable for the frontend.
-function jsonError(string $msg, int $code = 400): void
+function jsonError(string $msg, int $code = 400): never
 {
     http_response_code($code);
     echo json_encode(['success' => false, 'error' => $msg]);
@@ -244,7 +248,7 @@ function jsonError(string $msg, int $code = 400): void
 }
 
 // Emit a JSON success envelope (adds success=true) and stop.
-function jsonSuccess(array $data = [], int $code = 200): void
+function jsonSuccess(array $data = [], int $code = 200): never
 {
     http_response_code($code);
     $data['success'] = true;
@@ -258,6 +262,26 @@ function requireLogin(): void
     if (empty($_SESSION['user_id'])) {
         jsonError('Unauthorised', 401);
     }
+}
+
+// Server-side mirror of the client data-pattern check (assets/js/grid_actions.js):
+// unanchored match, skipped for NULL/empty values, fail-open on an invalid pattern
+// (logged) so a broken regexp in schema.json cannot lock editing. Returns the
+// column's validation_message (or a default) on mismatch, null when the value passes.
+function validate_column_regexp(array $colCfg, mixed $val): ?string
+{
+    $pattern = $colCfg['validation_regexp'] ?? '';
+    if (!is_string($pattern) || $pattern === '' || $val === null || $val === '') {
+        return null;
+    }
+    // '~' delimiter: not a JS regex metacharacter, so schema patterns written for
+    // the client never need it escaped — escaping any literal '~' here is enough.
+    $result = @preg_match('~' . str_replace('~', '\~', $pattern) . '~u', (string) $val);
+    if ($result === false) {
+        error_log('[validate_column_regexp] invalid validation_regexp in schema.json: ' . $pattern);
+        return null;
+    }
+    return $result === 1 ? null : (string) ($colCfg['validation_message'] ?? 'Invalid format');
 }
 
 // Validate a table name against schema.json. $field names the offending input in

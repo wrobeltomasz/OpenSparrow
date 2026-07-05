@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Form;
 
-final class RenderContext
+final readonly class RenderContext
 {
     /**
      * @param array<string, array<string|int, string>> $fkOptions  colName => [value => label]
@@ -12,10 +12,10 @@ final class RenderContext
      * @param array<string, bool>                      $locked      colName => true if field is locked
      */
     public function __construct(
-        public readonly bool $readOnly,
-        public readonly array $fkOptions = [],
-        public readonly array $prefilled = [],
-        public readonly array $locked = [],
+        public bool $readOnly,
+        public array $fkOptions = [],
+        public array $prefilled = [],
+        public array $locked = [],
     ) {
     }
 

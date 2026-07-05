@@ -1,13 +1,15 @@
 ﻿// admin/js/demo.js — Demo sample-apps catalog + install UI
 // DEMOS metadata (CRM/WMS/Tasks: labels, schemas, tables, feature lists); installs/uninstalls the demo apps via api.php (demo_install / demo_uninstall / demo_status).
 
+import { createPageHeader } from './ui.js';
+
 const DEMOS = {
     crm: {
         label:       'CRM',
         description: 'Full-featured Customer Relationship Management — companies, contacts, deals, leads, products, quotes, invoices, and assets. 75 companies, 60 leads, and 28 deals with full history seeded.',
         schema:      'spw_crm',
         tables:      ['companies', 'contacts', 'deals', 'activities', 'leads', 'products', 'quotes', 'invoices', 'assets'],
-        color:       '#64748B',
+        color:       'var(--muted)',
         icon:        'assets/icons/account_box.png',
         recommended: true,
         features:    ['10 dashboard widgets', '5 calendar sources + reminders', 'Kanban board: Deals by Stage', '2 workflows', '5 read-only views', '3 automations', 'M2M products ↔ contacts', 'file attachments'],
@@ -17,7 +19,7 @@ const DEMOS = {
         description: 'Warehouse Management System — warehouses, products, stock levels, and movements.',
         schema:      'spw_wms',
         tables:      ['warehouses', 'products', 'stock', 'movements'],
-        color:       '#ffc300',
+        color:       'var(--warn)',
         icon:        'assets/icons/box.png',
     },
     tasks: {
@@ -25,7 +27,7 @@ const DEMOS = {
         description: 'Project & task tracking — projects, tasks, and time logs.',
         schema:      'spw_tasks',
         tables:      ['projects', 'tasks', 'time_logs'],
-        color:       '#2b9348',
+        color:       'var(--ok)',
         icon:        'assets/icons/fact_check.png',
     },
 };
@@ -73,15 +75,8 @@ export function renderDemoPage({ workspaceEl }) {
 function renderInstallForm(workspaceEl) {
     workspaceEl.innerHTML = '';
 
-    const h2 = document.createElement('h2');
-    h2.style.marginTop = '0';
-    h2.textContent = 'Install Demo System';
-    workspaceEl.appendChild(h2);
-
-    const intro = document.createElement('p');
-    intro.style.color = 'var(--muted)';
-    intro.textContent = 'Choose a demo system. Installs a dedicated PostgreSQL schema, tables, and merges sample config into schema.json, dashboard.json, calendar.json, board.json, workflows.json, and views.json.';
-    workspaceEl.appendChild(intro);
+    workspaceEl.appendChild(createPageHeader('Install Demo System',
+        'Choose a demo system. Installs a dedicated PostgreSQL schema, tables, and merges sample config into schema.json, dashboard.json, calendar.json, board.json, workflows.json, and views.json.'));
 
     const grid = document.createElement('div');
     grid.className = 'demo-cards';
@@ -176,12 +171,9 @@ function renderInstallForm(workspaceEl) {
 
 function renderInstalled(workspaceEl, meta) {
     workspaceEl.innerHTML = '';
-    const def = DEMOS[meta.type] ?? { label: meta.type, color: '#64748B', icon: 'assets/icons/box.png' };
+    const def = DEMOS[meta.type] ?? { label: meta.type, color: 'var(--muted)', icon: 'assets/icons/box.png' };
 
-    const h2 = document.createElement('h2');
-    h2.style.marginTop = '0';
-    h2.textContent = 'Demo Installed';
-    workspaceEl.appendChild(h2);
+    workspaceEl.appendChild(createPageHeader('Demo Installed'));
 
     const badge = document.createElement('div');
     badge.className = 'demo-installed-badge';

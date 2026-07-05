@@ -5,32 +5,16 @@
 // Returns a sanitised view of config/schema.json (tables, columns, FK reference_table, default_page_size); strips sensitive config
 // Role-aware; read-only
 
-// Disable HTML error output to prevent corrupting JSON payload
-ini_set('display_errors', 0);
-require_once __DIR__ . '/../../includes/session.php';
-start_session();
-// Deny access if unauthorized
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Unauthorized']);
-    exit;
-}
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
+// Read-only AJAX endpoint: auth + AJAX gates, no CSRF, no DB — data comes from schema.json
+os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none']);
 
-// Ensure response is JSON and prevent caching
-header('Content-Type: application/json');
+// Prevent caching of the schema descriptor
 header('Cache-Control: no-store, no-cache, must-revalidate');
 // Restrict to GET method
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
-    exit;
-}
-
-// Enforce AJAX request
-if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
-    http_response_code(403);
     exit;
 }
 

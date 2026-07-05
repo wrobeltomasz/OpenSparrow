@@ -4,30 +4,19 @@
 // This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 //
-// Auth gate: redirect to login if no session; UA/lifetime enforcement; CSRF token + CSP nonce + send_security_headers()
+// Boots via includes/bootstrap.php: os_page_bootstrap(redirect_admin=false) — auth gate, UA/lifetime enforcement, CSRF token, CSP nonce + headers
 // Renders the RAG chat UI (rag.css) with a document sidebar; questions are sent to api/rag.php
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../includes/session.php';
-start_session();
+require_once __DIR__ . '/../includes/bootstrap.php';
+require_once __DIR__ . '/../includes/rag_helpers.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_redirect();
-
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-$cspNonce = bin2hex(random_bytes(16));
-send_security_headers($cspNonce);
-
-$userRole = $_SESSION['role'] ?? 'viewer';
+// redirect_admin=false: admins may open the knowledge base page (existing behaviour)
+$page     = os_page_bootstrap(['redirect_admin' => false]);
+$cspNonce = $page['nonce'];
+$userRole = $page['role'];
+$ragChatEnabled = (bool) (rag_config()['chat_enabled'] ?? true);
 $pageTitle = 'OpenSparrow | Knowledge Base';
 $extraCss  = '<link href="/assets/css/rag.css" rel="stylesheet">';
 ob_start();
@@ -84,6 +73,7 @@ ob_start();
 ?>
 <script nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
     window.CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token'], JSON_THROW_ON_ERROR); ?>;
+    window.RAG_CHAT_ENABLED = <?php echo $ragChatEnabled ? 'true' : 'false'; ?>;
     <?php
         $rawSchemaRag = @file_get_contents(__DIR__ . '/../config/schema.json');
         $decodedSchemaRag = $rawSchemaRag ? @json_decode($rawSchemaRag, true) : null;

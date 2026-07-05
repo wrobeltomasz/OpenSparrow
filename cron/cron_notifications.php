@@ -1,6 +1,9 @@
 <?php
 
-// cron/cron_notifications.php
+// cron/cron_notifications.php — CLI cron: calendar-based in-app notifications + automation email delivery
+// Reads config/calendar.json sources and inserts spw_users_notifications rows (daily de-duplication)
+// Also delivers pending rows from spw_automation_emails (queued by the "email" automation action) via mail();
+// requires AUTOMATION_EMAIL_FROM, retries up to AUTOMATION_EMAIL_MAX_ATTEMPTS, header-injection safe
 declare(strict_types=1);
 
 if (php_sapi_name() !== 'cli') {
@@ -208,6 +211,72 @@ try {
         }
         print_log("<hr>");
     }
+
+    // ── Automation email queue (spw_automation_emails) ──────────────────────
+    // Rows are queued by the "email" automation action (includes/automations.php)
+    // and delivered here so record writes never block on SMTP.
+    print_log("<h3>Automation email queue</h3>");
+    $tAutoEmails = sys_table('automation_emails');
+    $emailsSent  = 0;
+    $emailsFailed = 0;
+    if (AUTOMATION_EMAIL_FROM === '') {
+        print_log("<span style='color:orange;'>AUTOMATION_EMAIL_FROM is not configured — skipping email delivery (queued emails stay pending).</span>");
+    } else {
+        $pendRes = pg_query_params(
+            $conn,
+            "SELECT id, recipient, subject, body FROM $tAutoEmails
+             WHERE status = 'pending' AND attempts < \$1
+             ORDER BY id ASC LIMIT \$2",
+            [AUTOMATION_EMAIL_MAX_ATTEMPTS, AUTOMATION_EMAIL_BATCH_LIMIT]
+        );
+        $pending = $pendRes ? (pg_fetch_all($pendRes) ?: []) : [];
+        print_log("Pending emails picked up: <b>" . count($pending) . "</b>");
+
+        // Strip CR/LF so user-templated values cannot inject extra mail headers.
+        $hdrSafe = static fn(string $s): string => str_replace(["\r", "\n"], ' ', $s);
+
+        foreach ($pending as $mailRow) {
+            $mailId    = (int) $mailRow['id'];
+            $recipient = $hdrSafe((string) $mailRow['recipient']);
+            $subject   = $hdrSafe((string) $mailRow['subject']);
+            $headers   = 'From: ' . $hdrSafe(AUTOMATION_EMAIL_FROM) . "\r\n"
+                       . "MIME-Version: 1.0\r\n"
+                       . "Content-Type: text/plain; charset=UTF-8\r\n"
+                       . "Content-Transfer-Encoding: 8bit";
+
+            $ok = @mail(
+                $recipient,
+                '=?UTF-8?B?' . base64_encode($subject) . '?=',
+                (string) $mailRow['body'],
+                $headers
+            );
+
+            if ($ok) {
+                pg_query_params(
+                    $conn,
+                    "UPDATE $tAutoEmails SET status = 'sent', sent_at = NOW(), attempts = attempts + 1, error_msg = NULL WHERE id = \$1",
+                    [$mailId]
+                );
+                $emailsSent++;
+                print_log("&nbsp;&nbsp; Sent email #$mailId to " . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8'));
+            } else {
+                // Mark as error once the attempt budget is exhausted; otherwise retry next run.
+                pg_query_params(
+                    $conn,
+                    "UPDATE $tAutoEmails
+                     SET attempts = attempts + 1,
+                         error_msg = \$2,
+                         status = CASE WHEN attempts + 1 >= \$3 THEN 'error' ELSE 'pending' END
+                     WHERE id = \$1",
+                    [$mailId, 'mail() returned false', AUTOMATION_EMAIL_MAX_ATTEMPTS]
+                );
+                $emailsFailed++;
+                print_log("<span style='color:red;'>&nbsp;&nbsp; Failed email #$mailId to " . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8') . "</span>");
+            }
+        }
+        print_log("Emails sent: <b>$emailsSent</b>, failed this run: <b>$emailsFailed</b>");
+    }
+    print_log("<hr>");
 
     print_log("<h3>Finished. NEW notifications generated: $insertedCount</h3>");
     if ($logId) {

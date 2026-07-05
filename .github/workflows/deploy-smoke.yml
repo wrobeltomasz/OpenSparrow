@@ -1,0 +1,191 @@
+name: Deploy Smoke
+
+# Verifies that a fresh OpenSparrow install actually boots on every supported
+# hosting path (see README "Deploy in Minutes"):
+#   compose    — docker-compose.yml stack (Docker path)
+#   standalone — Dockerfile.standalone image (Render / Railway path)
+#   zip        — release ZIP file set served by PHP built-in server (FTP path)
+# Each job runs .github/scripts/deploy-smoke.sh: setup wizard -> init ->
+# admin login -> docroot isolation.
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  compose:
+    name: Docker Compose path
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Make config/ and storage/ writable by www-data (UID 82)
+        run: |
+          set -euo pipefail
+          mkdir -p config storage/files storage/sessions
+          sudo chown -R 82:82 config/ storage/
+          sudo chmod -R 775 config/ storage/
+
+      - name: Start the stack
+        # docker-compose.override.yml is auto-merged: APP_ENV=development,
+        # SECURE_COOKIES=false (required — curl cannot return Secure cookies
+        # over plain HTTP).
+        run: docker compose up -d
+
+      - name: Run install smoke test
+        env:
+          BASE_URL: http://localhost:8080
+          DB_HOST: db
+          DB_NAME: opensparrow
+          DB_USER: sparrow
+          DB_PASS: sparrow
+        run: bash .github/scripts/deploy-smoke.sh
+
+      - name: Seed Cypress test users
+        run: |
+          set -euo pipefail
+          RESP=$(curl -fs -X POST --data 'token=cypress-dev-seed' \
+            'http://localhost:8080/cypress_seed.php?action=seed')
+          echo "$RESP" | jq .
+
+      - name: Run Cypress login suite (warning-only for now)
+        # Warning-only until the suite is confirmed green on a fresh, empty
+        # instance in CI — then drop continue-on-error and add more suites
+        # (admin, grid, crud).
+        id: cypress
+        continue-on-error: true
+        run: |
+          npm ci
+          npx cypress run --spec "cypress/e2e/login.cy.js"
+
+      - name: Annotate Cypress result
+        if: steps.cypress.outcome == 'failure'
+        run: echo "::warning::Cypress login suite failed on the fresh compose stack (non-blocking) — check the artifacts."
+
+      - name: Upload Cypress screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --tail=200
+
+  standalone:
+    name: Standalone image (Render / Railway path)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build Dockerfile.standalone
+        run: docker build -f Dockerfile.standalone -t opensparrow-standalone .
+
+      - name: Start PostgreSQL and the app on a shared network
+        # DB_HOST must be a hostname ("pg"), not an IP — setup_api.php rejects
+        # private/loopback IPs as an SSRF guard.
+        run: |
+          set -euo pipefail
+          docker network create smoke
+          docker run -d --name pg --network smoke \
+            -e POSTGRES_DB=opensparrow \
+            -e POSTGRES_USER=sparrow \
+            -e POSTGRES_PASSWORD=sparrow \
+            postgres:16-alpine
+          for i in $(seq 1 30); do
+            if docker exec pg pg_isready -U sparrow > /dev/null 2>&1; then break; fi
+            if [ "$i" -eq 30 ]; then echo "::error::PostgreSQL did not become ready"; exit 1; fi
+            sleep 2
+          done
+          docker run -d --name app --network smoke -p 8080:80 \
+            -e SECURE_COOKIES=false \
+            opensparrow-standalone
+
+      - name: Run install smoke test
+        env:
+          BASE_URL: http://localhost:8080
+          DB_HOST: pg
+          DB_NAME: opensparrow
+          DB_USER: sparrow
+          DB_PASS: sparrow
+        run: bash .github/scripts/deploy-smoke.sh
+
+      - name: Show container logs on failure
+        if: failure()
+        run: |
+          docker logs --tail=200 app || true
+          docker logs --tail=50 pg || true
+
+  zip:
+    name: Release ZIP file set (FTP path)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: opensparrow
+          POSTGRES_USER: sparrow
+          POSTGRES_PASSWORD: sparrow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sparrow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up PHP 8.4 (lowest supported)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pgsql, pdo_pgsql
+          coverage: none
+
+      - name: Assemble the release file set
+        # Same exclude list release-zip.yml uses to build the ZIP — verifies
+        # that nothing the app needs at runtime is excluded from releases.
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pkg
+          rsync -a --exclude-from=.github/release-excludes.txt . /tmp/pkg/
+          mkdir -p /tmp/pkg/storage/files /tmp/pkg/config
+
+      - name: Serve public/ with the PHP built-in server
+        run: |
+          cd /tmp/pkg
+          SECURE_COOKIES=false nohup php -S 127.0.0.1:8000 -t public \
+            > /tmp/php-server.log 2>&1 &
+
+      - name: Run install smoke test
+        # DB_HOST is the hostname "localhost" (not 127.0.0.1) — setup_api.php
+        # rejects numeric loopback IPs as an SSRF guard.
+        env:
+          BASE_URL: http://127.0.0.1:8000
+          DB_HOST: localhost
+          DB_NAME: opensparrow
+          DB_USER: sparrow
+          DB_PASS: sparrow
+        run: bash .github/scripts/deploy-smoke.sh
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/php-server.log

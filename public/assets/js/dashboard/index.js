@@ -2,6 +2,7 @@
 // Imports all widget modules (they self-register into WidgetRegistry), loads i18n, then fetches dashboard.json widget data and renders #dashboardSection.
 
 import { WidgetRegistry } from './registry.js';
+import { buildExportButton } from './export.js';
 import { I18n } from '../i18n.js';
 
 // Import widgets so they self-register
@@ -38,12 +39,44 @@ async function initDashboard() {
         return;
     }
 
+    container.before(buildFilterBar(container));
     renderWidgets(container, globalConfig);
+}
+
+// Global period filter (All time / Today / 7d / 30d / This month) — reloads
+// all widgets via loadDashboardData; count/sum cards also get prev_data deltas.
+function buildFilterBar(container) {
+    const bar = document.createElement('div');
+    bar.className = 'dash-filter-bar';
+
+    const label = document.createElement('label');
+    label.className = 'dash-filter-label';
+    label.setAttribute('for', 'dashDateFilter');
+    label.textContent = I18n.t('dashboard.filter_label');
+
+    const select = document.createElement('select');
+    select.id = 'dashDateFilter';
+    const options = [
+        ['all', 'dashboard.filter_all'],
+        ['today', 'dashboard.filter_today'],
+        ['7d', 'dashboard.filter_7d'],
+        ['30d', 'dashboard.filter_30d'],
+        ['this_month', 'dashboard.filter_month'],
+    ];
+    for (const [value, key] of options) {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = I18n.t(key);
+        select.appendChild(opt);
+    }
+    select.addEventListener('change', () => loadDashboardData(container, select.value, 'all'));
+
+    bar.append(label, select);
+    return bar;
 }
 
 async function loadDashboardData(container, dateFilter, targetWidget) {
     const loading = document.createElement('div');
-    loading.className = 'dash-loading';
     loading.className = 'dash-loading';
     loading.textContent = 'Loading data...';
     container.replaceChildren(loading);
@@ -94,6 +127,8 @@ function renderWidgets(container, config) {
         }
 
         widgetEl.appendChild(WidgetRegistry.render(widget));
+        const exportBtn = buildExportButton(widget);
+        if (exportBtn) widgetEl.appendChild(exportBtn);
         container.appendChild(widgetEl);
     });
 }

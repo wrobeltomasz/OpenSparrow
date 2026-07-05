@@ -26,6 +26,31 @@ function anon_log(string $msg): void
     flush();
 }
 
+/**
+ * Map an anonymization technique to an EDPB-style residual-risk assessment
+ * (singling-out / linkability / inference), per EDPB/WP29 WP216 criteria.
+ * OpenSparrow currently applies retention-based static replacement only;
+ * the match keeps the report extensible for future techniques.
+ */
+function anon_edpb_assessment(string $method): array
+{
+    return match ($method) {
+        // Column value is irreversibly overwritten with a constant token:
+        // that attribute can no longer single out a data subject, but other
+        // remaining attributes may still allow linkage / inference.
+        'static_replacement' => [
+            'single_out_risk'  => 'none',
+            'linkability_risk' => 'low',
+            'inference_risk'   => 'low',
+        ],
+        default => [
+            'single_out_risk'  => 'unknown',
+            'linkability_risk' => 'unknown',
+            'inference_risk'   => 'unknown',
+        ],
+    };
+}
+
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/api_helpers.php';
 
@@ -76,7 +101,8 @@ try {
     exit(1);
 }
 
-$tLog = sys_table('anonymization_log');
+$tLog    = sys_table('anonymization_log');
+$tReport = sys_table('anonymization_report');
 
 // Frequency guard — skip if a successful run already occurred within the window.
 if ($triggeredBy === 'cron' && $frequency !== 'manual') {
@@ -114,6 +140,7 @@ if (!$dryRun) {
 $rulesProcessed = 0;
 $rowsAnonymized = 0;
 $errorMessage   = null;
+$reportDetails  = []; // per-rule entries for the structured JSON report
 
 // Load schema.json once for per-table schema lookup.
 $schemaPath = __DIR__ . '/../config/schema.json';
@@ -201,6 +228,22 @@ foreach ($rules as $rule) {
     $affected        = pg_affected_rows($res);
     $rowsAnonymized += $affected;
     $rulesProcessed++;
+
+    $reportDetails[] = [
+        'table_name'  => $table,
+        'schema_name' => $tableSchema,
+        'column_name' => $column,
+        'method'      => 'static_replacement',
+        'parameters'  => [
+            'replacement_value' => $replacement,
+            'date_column'       => $dateColumn,
+            'retention_days'    => $days,
+        ],
+        'is_reversible'   => false,
+        'rows_affected'   => $affected,
+        'edpb_compliance' => anon_edpb_assessment('static_replacement'),
+    ];
+
     anon_log("[anonymization] Updated {$affected} row(s) in {$tableSchema}.{$table}.{$column}.");
 }
 
@@ -214,6 +257,52 @@ if ($logId !== null) {
          WHERE id = \$5",
         [$finalStatus, $rulesProcessed, $rowsAnonymized, $errorMessage, $logId]
     );
+
+    // Build a structured, GDPR/EDPB-style processing report and persist it as
+    // JSON on the log row (report column added in migration 2.9_anonymization_report).
+    $affectedTables = [];
+    foreach ($reportDetails as $d) {
+        if ($d['rows_affected'] > 0) {
+            $affectedTables[$d['schema_name'] . '.' . $d['table_name']] = true;
+        }
+    }
+
+    $report = [
+        'report_id'         => sprintf('JOB-%s-%04d', date('Ymd'), $logId),
+        'timestamp'         => gmdate('Y-m-d\TH:i:s\Z'),
+        'system'            => 'opensparrow',
+        'version'           => defined('OPENSPARROW_VERSION') ? OPENSPARROW_VERSION : null,
+        'triggered_by'      => $triggeredBy,
+        'status'            => $finalStatus,
+        'execution_summary' => [
+            'total_rules_processed' => $rulesProcessed,
+            'total_tables_affected' => count($affectedTables),
+            'total_rows_affected'   => $rowsAnonymized,
+        ],
+        'details'           => array_values($reportDetails),
+    ];
+    if ($errorMessage !== null) {
+        $report['error_message'] = $errorMessage;
+    }
+
+    $reportJson = json_encode($report, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($reportJson !== false) {
+        $repRes = @pg_query_params(
+            $conn,
+            "INSERT INTO {$tReport} (log_id, report_id, triggered_by, status, rows_affected, report)
+             VALUES (\$1, \$2, \$3, \$4, \$5, \$6::jsonb)",
+            [$logId, $report['report_id'], $triggeredBy, $finalStatus, $rowsAnonymized, $reportJson]
+        );
+        if (!$repRes) {
+            error_log('[cron_anonymization] Could not persist report — '
+                . 'run Initialize System Tables to create the report table.');
+            anon_log('[anonymization] WARNING: report table missing — run Initialize System Tables.');
+        } else {
+            anon_log('[anonymization] Report ' . $report['report_id'] . ' saved to ' . $tReport
+                . ' (run #' . $logId . ').');
+            anon_log(json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        }
+    }
 }
 
 if ($dryRun) {

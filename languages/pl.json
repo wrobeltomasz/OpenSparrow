@@ -1,4 +1,4 @@
-﻿{
+{
     "_meta": {
         "name": "Polski",
         "dir": "ltr"
@@ -160,7 +160,14 @@
         "error_load": "Wystąpił błąd podczas ładowania danych dashboardu.",
         "error_config": "Nie można załadować konfiguracji dashboardu. Odśwież stronę.",
         "cannot_load": "Nie można załadować widgetu",
-        "click_details": "Kliknij, aby zobaczyć szczegóły"
+        "click_details": "Kliknij, aby zobaczyć szczegóły",
+        "filter_label": "Okres",
+        "filter_all": "Cały okres",
+        "filter_today": "Dzisiaj",
+        "filter_7d": "Ostatnie 7 dni",
+        "filter_30d": "Ostatnie 30 dni",
+        "filter_month": "Bieżący miesiąc",
+        "vs_prev": "względem poprzedniego okresu ({prev})"
     },
     "workflow": {
         "steps": {
@@ -264,7 +271,8 @@
         "month_sep": "Wrzesień",
         "month_oct": "Październik",
         "month_nov": "Listopad",
-        "month_dec": "Grudzień"
+        "month_dec": "Grudzień",
+        "filter_all": "Wszystkie"
     },
     "board": {
         "title": "Tablica",

@@ -15,6 +15,7 @@ class MysqlGateway implements DatabaseGatewayInterface
     {
     }
 
+    #[\Override]
     public function fetchAll(string $table): array
     {
         $safe  = str_replace('`', '', $table);

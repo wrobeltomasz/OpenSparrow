@@ -1,6 +1,7 @@
 // assets/js/dashboard/widgets/kpi-card.js — Registers the 'kpi_card' widget; single metric with a coloured left border + drill-down.
 
 import { applyDrillDown, firstEqCondition } from '../drill-down.js';
+import { buildDelta } from '../delta.js';
 import { WidgetRegistry } from '../registry.js';
 
 function renderKPICard(widget) {
@@ -16,6 +17,8 @@ function renderKPICard(widget) {
     value.className = 'kpi-value';
     value.textContent = widget.data ?? 0;
     info.append(title, value);
+    const delta = buildDelta(widget);
+    if (delta) info.appendChild(delta);
 
     const iconContainer = document.createElement('div');
     iconContainer.className = 'kpi-icon';

@@ -27,6 +27,7 @@ function rag_config(): array
         'chunk_overlap'      => 200,
         'use_chunks'         => true,
         'conversation_turns' => 0,
+        'chat_enabled'       => true,
     ];
     $path = __DIR__ . '/../config/rag.json';
     if (!is_file($path)) {
@@ -48,7 +49,9 @@ function pg_text_array_to_php(string $pgArray): array
     if ($inner === '') {
         return [];
     }
-    return str_getcsv($inner, ',', '"');
+    // Explicit '\\' escape: PostgreSQL array output escapes quotes with a
+    // backslash, and PHP 8.4 deprecates omitting the $escape parameter.
+    return str_getcsv($inner, ',', '"', '\\');
 }
 
 function php_array_to_pg_text(array $arr): string
@@ -118,7 +121,7 @@ function rag_chunk_text(string $text, int $chunkSize = 1000, int $overlap = 200)
 }
 
 
-function rag_store_chunks($conn, int $fileId, string $content, array $cfg): int
+function rag_store_chunks(\PgSql\Connection $conn, int $fileId, string $content, array $cfg): int
 {
     $tChunks   = sys_table('rag_chunks');
     $chunkSize = (int) ($cfg['chunk_size'] ?? 1000);
@@ -154,7 +157,7 @@ function rag_tsquery_expr(): string
         . " FROM unnest(to_tsvector('english', \$1)))";
 }
 
-function rag_retrieve($conn, string $query, array $tags, int $limit = 3): array
+function rag_retrieve(\PgSql\Connection $conn, string $query, array $tags, int $limit = 3): array
 {
     $cfg     = rag_config();
     $limit   = max(1, min(10, $limit ?: (int) ($cfg['max_context_files'] ?? 3)));
@@ -403,7 +406,7 @@ function rag_call_ollama(string $ollamaUrl, string $model, string $prompt, int $
     ];
 }
 
-function rag_log_query($conn, array $data): void
+function rag_log_query(\PgSql\Connection $conn, array $data): void
 {
     $tRagQueries      = sys_table('rag_queries');
     $tRagQuerySources = sys_table('rag_query_sources');

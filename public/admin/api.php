@@ -5,7 +5,8 @@ declare(strict_types=1);
 // admin/api.php — Main admin-panel REST API (large action-based endpoint)
 // Auth gate: session + role === 'admin' (403 otherwise); CSRF on POST; DEMO_MODE disables writes
 // ~60 actions by $action: init_db, users_* , create_table/add_column/schema_add_table, health, export/import backup, menu_config, get/save config files, performance_*, cron_*, list/create/delete_m2m, rag_* (knowledge base), automations_*, overview, snapshot/language/chat_bubble settings
-// admin_db_fail() logs raw pg errors and returns a generic message (never leaks schema/constraint details); requires demo/seed.php at the end
+// Error envelope: deliberate messages thrown as AdminApiMessage pass to the client via admin_error_message(); any other Throwable is logged and genericized (never leaks paths/SQL/credentials)
+// admin_db_fail() logs raw pg errors and throws AdminApiMessage with a generic message (never leaks schema/constraint details); requires demo/seed.php at the end
 
 require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/api_helpers.php';
@@ -21,6 +22,26 @@ $action = $_GET['action'] ?? '';
 $file = $_GET['file'] ?? '';
 $isDemoMode = DEMO_MODE;
 
+// Deliberate, user-facing API errors thrown by this endpoint's own validation.
+// Catch blocks pass these messages through to the client via admin_error_message();
+// every other Throwable (PDO/pg driver errors, JSON or type failures) is logged
+// and replaced with a generic message so file paths, SQL or credentials never
+// reach the HTTP response. Note: a plain instanceof-RuntimeException whitelist
+// would not work here — PDOException extends RuntimeException.
+final class AdminApiMessage extends RuntimeException
+{
+}
+
+// Map a caught exception to a client-safe message (see AdminApiMessage above).
+function admin_error_message(Throwable $e): string
+{
+    if ($e instanceof AdminApiMessage) {
+        return $e->getMessage();
+    }
+    error_log('[admin_api][unhandled] ' . get_class($e) . ': ' . $e->getMessage());
+    return 'Internal error. Check server logs for details.';
+}
+
 // Never leak raw Postgres errors (schema names, constraint names, column lists)
 // into the HTTP response. Details go to the PHP error log; the client gets a
 // stable, generic message so the operator knows to check the server logs.
@@ -28,7 +49,7 @@ function admin_db_fail($conn, string $context): void
 {
     $raw = $conn !== null ? pg_last_error($conn) : 'no connection';
     error_log('[admin_api][' . $context . '] ' . $raw);
-    throw new RuntimeException('Database operation failed. Check server logs for details.');
+    throw new AdminApiMessage('Database operation failed. Check server logs for details.');
 }
 
 // Demo Mode guard for admin write actions. Emits the standard error envelope and
@@ -124,7 +145,9 @@ if ($action === 'init_db') {
         $tRagQueries       = sys_table('rag_queries');
         $tRagQuerySources  = sys_table('rag_query_sources');
         $tAutomationRuns   = sys_table('automation_runs');
+        $tAutomationEmails = sys_table('automation_emails');
         $tAnonLog          = sys_table('anonymization_log');
+        $tAnonReport       = sys_table('anonymization_report');
 
         // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
@@ -279,6 +302,18 @@ if ($action === 'init_db') {
                 "CREATE INDEX IF NOT EXISTS idx_spw_anonymization_log_started_at ON $tAnonLog USING btree (started_at DESC)",
             ],
 
+            '2.9_anonymization_report' => [
+                "CREATE TABLE IF NOT EXISTS $tAnonReport ( id serial4 NOT NULL, log_id int4 NULL, report_id varchar(64) NOT NULL, triggered_by varchar(20) NULL, status varchar(20) NULL, rows_affected int4 NULL, report jsonb NOT NULL, created_at timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL, CONSTRAINT spw_anonymization_report_pkey PRIMARY KEY (id) )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_anonymization_report_log_id ON $tAnonReport USING btree (log_id)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_anonymization_report_created_at ON $tAnonReport USING btree (created_at DESC)",
+            ],
+
+            '2.9_automation_emails' => [
+                "CREATE TABLE IF NOT EXISTS $tAutomationEmails ( id serial4 NOT NULL, rule_id varchar(50) NOT NULL DEFAULT '', recipient varchar(255) NOT NULL, subject varchar(255) NOT NULL, body text NOT NULL DEFAULT '', source_table varchar(100) NOT NULL DEFAULT '', record_id int4 NOT NULL DEFAULT 0, created_by int4 NOT NULL DEFAULT 0, status varchar(20) NOT NULL DEFAULT 'pending', attempts int4 NOT NULL DEFAULT 0, error_msg text NULL, created_at timestamp DEFAULT now() NOT NULL, sent_at timestamp NULL, CONSTRAINT spw_automation_emails_pkey PRIMARY KEY (id) )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_automation_emails_status ON $tAutomationEmails USING btree (status, created_at)",
+                "CREATE INDEX IF NOT EXISTS idx_spw_automation_emails_rule_id ON $tAutomationEmails USING btree (rule_id, created_at DESC)",
+            ],
+
             // Add future migrations below — never modify entries above.
 
         ];
@@ -305,8 +340,7 @@ if ($action === 'init_db') {
         // Generates a random temporary password logged to PHP error_log — must be changed immediately.
         $tmpPassword    = bin2hex(random_bytes(12));
         $firstAdminSalt = bin2hex(random_bytes(32));
-        $argonOpts      = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
-        $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, $argonOpts);
+        $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
         error_log('[OpenSparrow] First-run admin password: ' . $tmpPassword . ' — change immediately after login!');
         $resAdmin = @pg_query_params(
             $conn,
@@ -317,7 +351,7 @@ if ($action === 'init_db') {
                 $firstAdminHash,
                 $firstAdminSalt,
                 'argon2id',
-                json_encode($argonOpts),
+                json_encode(ARGON2_OPTIONS),
             ]
         );
         if (!$resAdmin) {
@@ -331,9 +365,9 @@ if ($action === 'init_db') {
             'status'  => 'success',
             'message' => "Migrations: {$applied_count} applied, {$skipped} already up to date.",
         ]);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         header('Content-Type: application/json');
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -361,6 +395,8 @@ if ($action === 'migrations_list') {
             '2.7_rag_query_sources',
             '2.7_rag_fts_english',
             '2.9_anonymization_log',
+            '2.9_anonymization_report',
+            '2.9_automation_emails',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");
@@ -386,8 +422,8 @@ if ($action === 'migrations_list') {
         }
 
         echo json_encode(['status' => 'success', 'migrations' => $list]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -403,7 +439,7 @@ if ($action === 'users_list') {
         if (!$res) {
             $err = pg_last_error($conn);
             if (str_contains($err, 'is_active') || str_contains($err, 'does not exist')) {
-                throw new Exception("Database schema is outdated or missing. Please initialize tables.");
+                throw new AdminApiMessage("Database schema is outdated or missing. Please initialize tables.");
             }
             admin_db_fail($conn, 'users_list');
         }
@@ -415,8 +451,8 @@ if ($action === 'users_list') {
         }
 
         echo json_encode(['status' => 'success', 'users' => $users]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -441,14 +477,13 @@ if ($action === 'users_add') {
         require_once __DIR__ . '/../../includes/api_helpers.php';
         $conn    = db_connect();
         $newSalt = bin2hex(random_bytes(32));
-        $opts    = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
-        $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, $opts);
+        $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
         $sql     = 'INSERT INTO ' . sys_table('users')
             . ' (username, password_hash, salt, password_algo, password_params, is_active, role)'
             . ' VALUES ($1, $2, $3, $4, $5, true, $6) RETURNING id';
         $res = @pg_query_params($conn, $sql, [
             $username, $hash, $newSalt, 'argon2id',
-            json_encode($opts), $role,
+            json_encode(ARGON2_OPTIONS), $role,
         ]);
         if (!$res) {
             admin_db_fail($conn, 'users_add');
@@ -457,8 +492,8 @@ if ($action === 'users_add') {
         $newUserId = (int)($newRow['id'] ?? 0);
         log_user_action($conn, 0, 'ADD_USER', 'users', $newUserId);
         echo json_encode(['status' => 'success']);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -487,8 +522,8 @@ if ($action === 'users_toggle') {
         }
         log_user_action($conn, 0, 'TOGGLE_USER', 'users', $userId);
         echo json_encode(['status' => 'success']);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -518,8 +553,8 @@ if ($action === 'users_update_role') {
         }
         log_user_action($conn, 0, 'UPDATE_ROLE', 'users', $userId);
         echo json_encode(['status' => 'success']);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -547,13 +582,12 @@ if ($action === 'users_change_password') {
         require_once __DIR__ . '/../../includes/api_helpers.php';
         $conn    = db_connect();
         $newSalt = bin2hex(random_bytes(32));
-        $opts    = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
-        $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, $opts);
+        $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
         $sql     = 'UPDATE ' . sys_table('users')
             . ' SET password_hash = $1, salt = $2, password_algo = $3, password_params = $4 WHERE id = $5';
         $res = @pg_query_params($conn, $sql, [
             $hash, $newSalt, 'argon2id',
-            json_encode(['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1]),
+            json_encode(ARGON2_OPTIONS),
             $userId,
         ]);
         if (!$res) {
@@ -561,8 +595,8 @@ if ($action === 'users_change_password') {
         }
         log_user_action($conn, 0, 'CHANGE_PASSWORD', 'users', $userId);
         echo json_encode(['status' => 'success']);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -599,8 +633,8 @@ if ($action === 'create_table') {
         }
 
         echo json_encode(['status' => 'success']);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -640,7 +674,7 @@ if ($action === 'add_column') {
 
         $allowedTypes = ['varchar(255)', 'int4', 'int8', 'boolean', 'text', 'date', 'timestamp', 'timestamptz'];
         if (!in_array($colType, $allowedTypes, true)) {
-            throw new Exception('Invalid data type provided.');
+            throw new AdminApiMessage('Invalid data type provided.');
         }
 
         $sql = "ALTER TABLE " . $safeSchema . "." . $safeTable . " ADD COLUMN " . $safeCol . " " . $colType;
@@ -699,8 +733,8 @@ if ($action === 'add_column') {
         }
 
         echo json_encode(['status' => 'success']);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -819,7 +853,7 @@ if ($action === 'health') {
             }
                         pg_close($conn);
         }
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         $db_error = $e->getMessage();
     }
 
@@ -898,7 +932,7 @@ if ($action === 'export') {
     if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
         $configDir = __DIR__ . '/../../config/';
         // database.json excluded — contains plaintext DB credentials
-        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'board.json', 'security.json', 'workflows.json', 'files.json'];
+        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'board.json', 'security.json', 'workflows.json', 'files.json', 'views.json', 'automations.json'];
         foreach ($filesToBackup as $f) {
             if (file_exists($configDir . $f)) {
                 $zip->addFile($configDir . $f, $f);
@@ -938,7 +972,7 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
     $zip = new ZipArchive();
     if ($zip->open($_FILES['backup_file']['tmp_name']) === true) {
         $extractPath = __DIR__ . '/../../config/';
-        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files'];
+        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files', 'views', 'automations'];
         $validFiles = [];
 
         // Validate each file inside the archive
@@ -948,7 +982,7 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
             // Reject any path separator (blocks subdirs and traversal), non-.json, or unknown config name
             if (
                 str_contains($filename, '/') || str_contains($filename, '\\')
-                || substr($filename, -5) !== '.json'
+                || !str_ends_with($filename, '.json')
                 || !in_array($basename, $importAllowed, true)
             ) {
                 $zip->close();
@@ -987,8 +1021,9 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
                 echo json_encode(['error' => 'File exceeds maximum allowed size: ' . $file]);
                 exit;
             }
-            json_decode($jsonContent);
-            if (json_last_error() !== JSON_ERROR_NONE) {
+            // json_validate() checks syntax without building the value tree —
+            // no allocation for archives at the 512 KB per-file cap.
+            if (!json_validate($jsonContent)) {
                 $zip->close();
                 http_response_code(400);
                 header('Content-Type: application/json');
@@ -1054,8 +1089,8 @@ if ($action === 'list_system_tables') {
             $tables[] = ['name' => $row['table_name'], 'schema' => $row['table_schema']];
         }
         echo json_encode(['status' => 'success', 'tables' => $tables]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -1080,7 +1115,7 @@ if ($action === 'get_snapshot_setting') {
         $countRes = $conn ? @pg_query($conn, "SELECT COUNT(*) FROM $tSnap") : false;
         $snapshotCount = ($countRes && ($cr = pg_fetch_row($countRes))) ? (int) $cr[0] : null;
         $tableExists = ($countRes !== false);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         $snapshotCount = null;
         $tableExists = false;
     }
@@ -1269,8 +1304,8 @@ if ($action === 'backup_tables') {
             }
         }
         echo json_encode(['status' => 'success', 'results' => $results]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -1519,8 +1554,8 @@ if ($action === 'sync_schema') {
         }
 
         echo json_encode(['status' => 'success', 'tables' => $tables]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -1597,8 +1632,8 @@ if ($action === 'get_db_columns') {
         }
 
         echo json_encode(['status' => 'success', 'columns' => $columns]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -1739,8 +1774,8 @@ if ($action === 'performance_check') {
         });
 
         echo json_encode(['status' => 'success', 'suggestions' => $suggestions, 'total' => count($suggestions)]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -1780,8 +1815,8 @@ if ($action === 'performance_slow_queries') {
             $rows[] = $r;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -1865,8 +1900,8 @@ if ($action === 'performance_table_stats') {
             $rows[] = $r;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -1910,8 +1945,8 @@ if ($action === 'performance_db_health') {
             'active_conn'  => $activeConn,
             'pg_version'   => $version,
         ]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -1948,8 +1983,8 @@ if ($action === 'performance_unused_indexes') {
             $rows[] = $r;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2061,8 +2096,8 @@ if ($action === 'performance_schema_warnings') {
         usort($warnings, fn($a, $b) => ($order[$a['severity']] ?? 9) - ($order[$b['severity']] ?? 9));
 
         echo json_encode(['status' => 'success', 'warnings' => $warnings, 'total' => count($warnings)]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2094,8 +2129,8 @@ if ($action === 'cron_log') {
             $rows[] = $r;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2147,8 +2182,8 @@ if ($action === 'cron_stats') {
         $lastRun = ($lastRunRes && $r = pg_fetch_assoc($lastRunRes)) ? $r : null;
 
         echo json_encode(['status' => 'success', 'totals' => $totals, 'per_user' => $perUser, 'last_run' => $lastRun]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2310,7 +2345,7 @@ if ($action === 'create_m2m') {
 
         echo json_encode(['status' => 'success', 'junction_table' => $jt]);
     } catch (\Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2376,8 +2411,8 @@ if ($action === 'delete_m2m') {
         }
 
         echo json_encode(['status' => 'success']);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2399,8 +2434,8 @@ if ($action === 'cron_purge_log') {
             admin_db_fail($conn, 'cron_purge_log');
         }
         echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2519,8 +2554,9 @@ if ($action === 'anonymization_log') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn  = db_connect();
-        $tLog  = sys_table('anonymization_log');
-        $probe = @pg_query($conn, "SELECT 1 FROM {$tLog} LIMIT 0");
+        $tLog    = sys_table('anonymization_log');
+        $tReport = sys_table('anonymization_report');
+        $probe   = @pg_query($conn, "SELECT 1 FROM {$tLog} LIMIT 0");
         if (!$probe) {
             echo json_encode([
                 'status' => 'success',
@@ -2529,12 +2565,24 @@ if ($action === 'anonymization_log') {
             ]);
             exit;
         }
-        $res = @pg_query(
+        $cols = 'l.id, l.started_at, l.finished_at, l.status, l.triggered_by, l.rules_processed, '
+              . 'l.rows_anonymized, l.error_message';
+        $dur  = 'EXTRACT(EPOCH FROM (COALESCE(l.finished_at, now()) - l.started_at)) AS duration_sec';
+        // Reports live in their own table (spw_anonymization_report); join the latest one per run.
+        $res  = @pg_query(
             $conn,
-            "SELECT id, started_at, finished_at, status, triggered_by, rules_processed, rows_anonymized, error_message,
-                    EXTRACT(EPOCH FROM (COALESCE(finished_at, now()) - started_at)) AS duration_sec
-             FROM {$tLog} ORDER BY started_at DESC LIMIT 50"
+            "SELECT {$cols}, r.report, {$dur}
+             FROM {$tLog} l
+             LEFT JOIN {$tReport} r ON r.log_id = l.id
+             ORDER BY l.started_at DESC LIMIT 50"
         );
+        if (!$res) {
+            // Backward compatibility: report table not yet created (migration 2.9_anonymization_report).
+            $res = @pg_query(
+                $conn,
+                "SELECT {$cols}, {$dur} FROM {$tLog} l ORDER BY l.started_at DESC LIMIT 50"
+            );
+        }
         if (!$res) {
             admin_db_fail($conn, 'anonymization_log');
         }
@@ -2543,8 +2591,8 @@ if ($action === 'anonymization_log') {
             $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2555,9 +2603,10 @@ if ($action === 'anonymization_purge_log') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
-        $days = max(1, (int)(json_decode((string) file_get_contents('php://input'), true)['days'] ?? 90));
-        $tLog = sys_table('anonymization_log');
-        $res  = @pg_query_params(
+        $days    = max(1, (int)(json_decode((string) file_get_contents('php://input'), true)['days'] ?? 90));
+        $tLog    = sys_table('anonymization_log');
+        $tReport = sys_table('anonymization_report');
+        $res     = @pg_query_params(
             $conn,
             "DELETE FROM {$tLog} WHERE started_at < NOW() - (\$1 || ' days')::interval",
             [$days]
@@ -2565,9 +2614,15 @@ if ($action === 'anonymization_purge_log') {
         if (!$res) {
             admin_db_fail($conn, 'anonymization_purge_log');
         }
+        // Keep the report table in sync (best-effort: it may not exist on older installs).
+        @pg_query_params(
+            $conn,
+            "DELETE FROM {$tReport} WHERE created_at < NOW() - (\$1 || ' days')::interval",
+            [$days]
+        );
         echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2596,7 +2651,7 @@ if ($action === 'rag_list') {
         }
         echo json_encode(['status' => 'success', 'files' => $files]);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2611,7 +2666,7 @@ if ($action === 'rag_upload') {
 
         if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
             $code = $_FILES['file']['error'] ?? -1;
-            throw new RuntimeException('File upload error (code ' . $code . ').');
+            throw new AdminApiMessage('File upload error (code ' . $code . ').');
         }
 
         $uploadedName = (string) ($_FILES['file']['name'] ?? '');
@@ -2620,7 +2675,7 @@ if ($action === 'rag_upload') {
 
         $ext = strtolower(pathinfo($uploadedName, PATHINFO_EXTENSION));
         if ($ext !== 'txt') {
-            throw new RuntimeException('Only .txt files are accepted.');
+            throw new AdminApiMessage('Only .txt files are accepted.');
         }
 
         $rawTagsJson = $_POST['tags'] ?? '[]';
@@ -2636,22 +2691,22 @@ if ($action === 'rag_upload') {
         $maxBytes   = $maxMb * 1024 * 1024;
 
         if ($fileSize > $maxBytes) {
-            throw new RuntimeException("File too large. Maximum size is {$maxMb} MB.");
+            throw new AdminApiMessage("File too large. Maximum size is {$maxMb} MB.");
         }
 
         $content = file_get_contents($tmpPath);
         if ($content === false) {
-            throw new RuntimeException('Could not read uploaded file.');
+            throw new AdminApiMessage('Could not read uploaded file.');
         }
 
         // Reject non-UTF-8 or binary content
         if (!mb_check_encoding($content, 'UTF-8')) {
-            throw new RuntimeException('File is not valid UTF-8 text.');
+            throw new AdminApiMessage('File is not valid UTF-8 text.');
         }
         // Reject files with high density of non-printable bytes (binary detection)
         $nonPrintable = preg_match_all('/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/', $content);
         if ($nonPrintable > 0 && ($nonPrintable / max(1, strlen($content))) > 0.05) {
-            throw new RuntimeException('File appears to contain binary content and was rejected.');
+            throw new AdminApiMessage('File appears to contain binary content and was rejected.');
         }
 
         $tagLiteral  = php_array_to_pg_text($tags);
@@ -2673,7 +2728,7 @@ if ($action === 'rag_upload') {
         }
         echo json_encode(['status' => 'success', 'id' => $fileId]);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2688,7 +2743,7 @@ if ($action === 'rag_delete') {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $id   = (int) ($body['id'] ?? 0);
         if ($id <= 0) {
-            throw new RuntimeException('Invalid document ID.');
+            throw new AdminApiMessage('Invalid document ID.');
         }
         $res = @pg_query_params($conn, "DELETE FROM {$tRag} WHERE id = \$1", [$id]);
         if (!$res) {
@@ -2696,7 +2751,7 @@ if ($action === 'rag_delete') {
         }
         echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2712,7 +2767,7 @@ if ($action === 'rag_rechunk') {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $id   = (int) ($body['id'] ?? 0);
         if ($id <= 0) {
-            throw new RuntimeException('Invalid document ID.');
+            throw new AdminApiMessage('Invalid document ID.');
         }
         $res = @pg_query_params($conn, "SELECT content FROM {$tRag} WHERE id = \$1", [$id]);
         if (!$res) {
@@ -2720,13 +2775,13 @@ if ($action === 'rag_rechunk') {
         }
         $row = pg_fetch_assoc($res);
         if (!$row) {
-            throw new RuntimeException('Document not found.');
+            throw new AdminApiMessage('Document not found.');
         }
         $cfg    = rag_config();
         $stored = rag_store_chunks($conn, $id, (string) $row['content'], $cfg);
         echo json_encode(['status' => 'success', 'chunks' => $stored]);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2754,7 +2809,7 @@ if ($action === 'rag_rechunk_all') {
 
         echo json_encode(['status' => 'success', 'processed' => $processed]);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2767,7 +2822,7 @@ if ($action === 'rag_settings') {
         unset($cfg['__cached']);
         echo json_encode(['status' => 'success', 'settings' => $cfg]);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2785,12 +2840,15 @@ if ($action === 'rag_settings_save') {
         $sslVerify        = isset($body['ssl_verify']) ? (bool) $body['ssl_verify'] : true;
         $useChunks        = isset($body['use_chunks']) ? (bool) $body['use_chunks'] : true;
         $convTurns        = max(0, min(10, (int) ($body['conversation_turns'] ?? 0)));
+        $chatEnabled      = isset($body['chat_enabled']) ? (bool) $body['chat_enabled'] : true;
 
-        if ($ollamaUrl === '' || $model === '') {
-            throw new RuntimeException('ollama_url and ollama_model are required.');
-        }
-        if (!filter_var($ollamaUrl, FILTER_VALIDATE_URL)) {
-            throw new RuntimeException('ollama_url must be a valid URL.');
+        if ($chatEnabled) {
+            if ($ollamaUrl === '' || $model === '') {
+                throw new AdminApiMessage('ollama_url and ollama_model are required when chat is enabled.');
+            }
+            if (!filter_var($ollamaUrl, FILTER_VALIDATE_URL)) {
+                throw new AdminApiMessage('ollama_url must be a valid URL.');
+            }
         }
 
         $configDir  = __DIR__ . '/../../config';
@@ -2814,17 +2872,18 @@ if ($action === 'rag_settings_save') {
             'ollama_ssl_verify'  => $sslVerify,
             'use_chunks'         => $useChunks,
             'conversation_turns' => $convTurns,
+            'chat_enabled'       => $chatEnabled,
         ]);
         if (!is_dir($configDir)) {
-            throw new RuntimeException('Config directory not found.');
+            throw new AdminApiMessage('Config directory not found.');
         }
         $written = file_put_contents($configPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
         if ($written === false) {
-            throw new RuntimeException('Could not write config/rag.json.');
+            throw new AdminApiMessage('Could not write config/rag.json.');
         }
         echo json_encode(['status' => 'success']);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2840,7 +2899,7 @@ if ($action === 'rag_test_query') {
         $language = mb_substr(trim((string) ($body['language'] ?? '')), 0, 10);
 
         if ($query === '') {
-            throw new RuntimeException('Query is required.');
+            throw new AdminApiMessage('Query is required.');
         }
 
         $cfg   = rag_config();
@@ -2873,7 +2932,7 @@ if ($action === 'rag_test_query') {
         }
         echo json_encode($resp);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -2891,17 +2950,17 @@ if ($action === 'rag_ollama_check') {
             : (bool) ($cfg['ollama_ssl_verify'] ?? true);
 
         if ($ollamaUrl === '') {
-            throw new RuntimeException('ollama_url is required.');
+            throw new AdminApiMessage('ollama_url is required.');
         }
         if (!function_exists('curl_init')) {
-            throw new RuntimeException('cURL extension required.');
+            throw new AdminApiMessage('cURL extension required.');
         }
 
         // Fetch model list
         $tagsUrl = rtrim($ollamaUrl, '/') . '/api/tags';
         $ch      = curl_init($tagsUrl);
         if ($ch === false) {
-            throw new RuntimeException('Failed to initialize cURL.');
+            throw new AdminApiMessage('Failed to initialize cURL.');
         }
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -2916,15 +2975,15 @@ if ($action === 'rag_ollama_check') {
         curl_close($ch);
 
         if ($response === false || $response === '') {
-            throw new RuntimeException('Cannot reach Ollama: ' . ($curlErr ?: 'no response'));
+            throw new AdminApiMessage('Cannot reach Ollama: ' . ($curlErr ?: 'no response'));
         }
         if ($httpCode !== 200) {
-            throw new RuntimeException('Ollama returned HTTP ' . $httpCode . '.');
+            throw new AdminApiMessage('Ollama returned HTTP ' . $httpCode . '.');
         }
 
         $data = json_decode($response, true);
         if (!is_array($data)) {
-            throw new RuntimeException('Unexpected response from Ollama.');
+            throw new AdminApiMessage('Unexpected response from Ollama.');
         }
 
         $models = [];
@@ -2957,7 +3016,7 @@ if ($action === 'rag_ollama_check') {
 
         echo json_encode(['status' => 'success', 'models' => $models, 'version' => $version]);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -3035,7 +3094,7 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 
         echo json_encode(['status' => 'success', 'summary' => $summary, 'recent' => $recent]);
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -3072,7 +3131,7 @@ if ($action === 'automations_runs' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         echo json_encode(['ok' => true, 'runs' => $runs]);
     } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['ok' => false, 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -3109,7 +3168,7 @@ if ($action === 'automations_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         echo json_encode(['ok' => true, 'automations' => auto_cfg_read()]);
     } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['ok' => false, 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -3137,6 +3196,39 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!in_array($triggerEvent, ['create', 'update', 'delete'], true)) {
             echo json_encode(['ok' => false, 'error' => 'Invalid trigger_event.']);
             exit;
+        }
+
+        // Per-action validation for outbound action types (webhook, email).
+        foreach ((array) $actions as $idx => $act) {
+            $aType = is_array($act) ? (string) ($act['type'] ?? '') : '';
+            $label = 'Action ' . ($idx + 1);
+            if ($aType === 'webhook') {
+                $url    = trim((string) ($act['url'] ?? ''));
+                $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+                if ($url === '' || !in_array($scheme, ['http', 'https'], true)) {
+                    echo json_encode(['ok' => false, 'error' => $label . ' (webhook): a valid http(s) URL is required.']);
+                    exit;
+                }
+                if (!in_array(strtoupper((string) ($act['method'] ?? 'POST')), ['POST', 'PUT'], true)) {
+                    echo json_encode(['ok' => false, 'error' => $label . ' (webhook): method must be POST or PUT.']);
+                    exit;
+                }
+            }
+            if ($aType === 'email') {
+                $recips = $act['recipients'] ?? [];
+                if (is_string($recips)) {
+                    $recips = array_map('trim', explode(',', $recips));
+                }
+                $recips = array_filter((array) $recips, static fn($r) => trim((string) $r) !== '');
+                if ($recips === []) {
+                    echo json_encode(['ok' => false, 'error' => $label . ' (email): at least one recipient is required.']);
+                    exit;
+                }
+                if (trim((string) ($act['subject'] ?? '')) === '') {
+                    echo json_encode(['ok' => false, 'error' => $label . ' (email): subject is required.']);
+                    exit;
+                }
+            }
         }
 
         $list  = auto_cfg_read();
@@ -3170,7 +3262,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         auto_cfg_write($list);
         echo json_encode(['ok' => true]);
     } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['ok' => false, 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -3191,7 +3283,7 @@ if ($action === 'automations_delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         auto_cfg_write($filtered);
         echo json_encode(['ok' => true]);
     } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        echo json_encode(['ok' => false, 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -3330,7 +3422,8 @@ if ($action === 'overview') {
             '2.4.0_release_migrations_table', '2.6.0_rag_files', '2.6.0_rag_queries',
             '2.7_automations', '2.7_automation_runs',
             '2.7_rag_chunks', '2.7_rag_queries_prompt', '2.7_rag_query_sources',
-            '2.7_rag_fts_english',
+            '2.7_rag_fts_english', '2.9_anonymization_log', '2.9_anonymization_report',
+            '2.9_automation_emails',
         ];
         $pendingMig = count(array_filter($knownMig, static fn($n) => !isset($applied[$n])));
 
@@ -3368,8 +3461,8 @@ if ($action === 'overview') {
             'display_errors_ok' => ($displayErrors === '' || $displayErrors == '0' || strtolower((string) $displayErrors) === 'off'),
             'pending_migrations' => $pendingMig,
         ]);
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }

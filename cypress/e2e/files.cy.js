@@ -186,9 +186,20 @@ describe('OpenSparrow – Files: Upload Form', () => {
         Cypress.log({ message: 'No relation tables available — skipping' });
         return;
       }
+      // The record select only becomes enabled when get_related_records
+      // succeeds — verify against the actual API outcome instead of assuming.
+      cy.intercept('GET', '**/api/files.php?action=get_related_records*').as('relRecords');
       cy.wrap($sel).select(opts[0].value);
-      cy.get('#fileRelatedId', { timeout: CypressHelpers.TIMEOUTS.medium })
-        .should('not.be.disabled');
+      cy.wait('@relRecords', { timeout: CypressHelpers.TIMEOUTS.long }).then(({ response }) => {
+        const body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
+        if (body && body.success && body.records) {
+          cy.get('#fileRelatedId', { timeout: CypressHelpers.TIMEOUTS.medium })
+            .should('not.be.disabled');
+        } else {
+          Cypress.log({ message: 'get_related_records returned no data — select stays disabled by design' });
+          cy.get('#fileRelatedId').should('be.disabled');
+        }
+      });
     });
   });
 

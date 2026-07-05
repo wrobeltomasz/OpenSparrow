@@ -43,12 +43,30 @@ const AUTO_OPS = [
     { value: 'not_contains', label: 'not contains' },
     { value: 'is_empty',     label: 'is empty' },
     { value: 'is_not_empty', label: 'is not empty' },
+    { value: '>',            label: 'greater than' },
+    { value: '<',            label: 'less than' },
+    { value: '>=',           label: 'greater or equal' },
+    { value: '<=',           label: 'less or equal' },
+    { value: 'changed',      label: 'changed' },
+    { value: 'not_changed',  label: 'not changed' },
+    { value: 'changed_from', label: 'changed from' },
+    { value: 'changed_to',   label: 'changed to' },
 ];
+
+// Operators that ignore the value input.
+const AUTO_OPS_NO_VALUE = ['is_empty', 'is_not_empty', 'changed', 'not_changed'];
 
 const AUTO_ACTION_TYPES = [
     { value: 'update',        label: 'Update fields on this record' },
     { value: 'notify',        label: 'Send notification' },
     { value: 'create_record', label: 'Create record in another table' },
+    { value: 'webhook',       label: 'Send webhook (HTTP request)' },
+    { value: 'email',         label: 'Send email (via cron)' },
+];
+
+const AUTO_WEBHOOK_METHODS = [
+    { value: 'POST', label: 'POST' },
+    { value: 'PUT',  label: 'PUT' },
 ];
 
 const AUTO_RUN_COLORS = {
@@ -151,9 +169,6 @@ function buildConditionsSection(parsed, getColumns) {
                     const fldSel = makeSelect(cols, item.field, (v) => { item.field = v; });
                     fldSel.style.flex = '1';
 
-                    const opSel = makeSelect(AUTO_OPS, item.operator, (v) => { item.operator = v; });
-                    opSel.style.minWidth = '120px';
-
                     const valInp = document.createElement('input');
                     valInp.type        = 'text';
                     valInp.className   = 'form-input';
@@ -161,6 +176,18 @@ function buildConditionsSection(parsed, getColumns) {
                     valInp.value       = item.value || '';
                     valInp.style.flex  = '1';
                     valInp.addEventListener('input', () => { item.value = valInp.value; });
+
+                    const syncValInp = () => {
+                        valInp.disabled = AUTO_OPS_NO_VALUE.includes(item.operator);
+                        valInp.style.opacity = valInp.disabled ? '0.4' : '';
+                    };
+
+                    const opSel = makeSelect(AUTO_OPS, item.operator, (v) => {
+                        item.operator = v;
+                        syncValInp();
+                    });
+                    opSel.style.minWidth = '120px';
+                    syncValInp();
 
                     const btnRm = document.createElement('button');
                     btnRm.className   = 'btn btn-sm btn-danger';
@@ -260,12 +287,14 @@ function buildActionsSection(parsed, tableOptions, getColumns, users) {
                 typeSel.appendChild(o);
             });
             typeSel.addEventListener('change', () => {
-                const newType = typeSel.value;
-                parsed.actions[i] = newType === 'update'
-                    ? { type: 'update', set: {} }
-                    : newType === 'notify'
-                        ? { type: 'notify', user_ids: ['{{ current_user.id }}'], title: '', link: '' }
-                        : { type: 'create_record', target_table: tableOptions[0]?.value ?? '', set: {} };
+                const defaults = {
+                    update:        { type: 'update', set: {} },
+                    notify:        { type: 'notify', user_ids: ['{{ current_user.id }}'], title: '', link: '' },
+                    create_record: { type: 'create_record', target_table: tableOptions[0]?.value ?? '', set: {} },
+                    webhook:       { type: 'webhook', method: 'POST', url: '', payload: {} },
+                    email:         { type: 'email', recipients: [], subject: '', body: '' },
+                };
+                parsed.actions[i] = defaults[typeSel.value] ?? defaults.update;
                 renderActRows();
             });
 
@@ -291,6 +320,10 @@ function buildActionsSection(parsed, tableOptions, getColumns, users) {
                 renderNotifyBody(bodyEl, action, users);
             } else if (aType === 'create_record') {
                 renderCreateRecordBody(bodyEl, action, tableOptions, getColumns);
+            } else if (aType === 'webhook') {
+                renderWebhookBody(bodyEl, action);
+            } else if (aType === 'email') {
+                renderEmailBody(bodyEl, action);
             }
 
             rows.appendChild(actWrap);
@@ -579,6 +612,188 @@ function renderCreateRecordBody(bodyEl, action, tableOptions, getColumns) {
     renderSetRows();
 }
 
+function autoHintText(text) {
+    const hint = document.createElement('div');
+    hint.textContent = text;
+    hint.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:8px;';
+    return hint;
+}
+
+function autoLabeledInput(bodyEl, label, placeholder, value, onInput) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+    const lbl = document.createElement('span');
+    lbl.textContent = label;
+    lbl.style.cssText = 'font-size:12px;font-weight:600;min-width:80px;color:var(--muted);';
+    const inp = document.createElement('input');
+    inp.type        = 'text';
+    inp.className   = 'form-input';
+    inp.placeholder = placeholder;
+    inp.value       = value || '';
+    inp.style.flex  = '1';
+    inp.addEventListener('input', () => onInput(inp.value));
+    wrap.appendChild(lbl);
+    wrap.appendChild(inp);
+    bodyEl.appendChild(wrap);
+    return inp;
+}
+
+function renderWebhookBody(bodyEl, action) {
+    if (!action.payload) action.payload = {};
+    if (!action.method) action.method = 'POST';
+
+    bodyEl.appendChild(autoHintText(
+        'Sends a JSON payload to the endpoint. Payload fields below map JSON keys to values '
+        + '(templates allowed). Leave the mapping empty to send the full record.'
+    ));
+
+    // Method + URL row
+    const reqRow = document.createElement('div');
+    reqRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+    const methodSel = makeSelect(AUTO_WEBHOOK_METHODS, action.method, (v) => { action.method = v; });
+    methodSel.style.width = '90px';
+    const urlInp = document.createElement('input');
+    urlInp.type        = 'url';
+    urlInp.className   = 'form-input';
+    urlInp.placeholder = 'https://example.com/hooks/opensparrow';
+    urlInp.value       = action.url || '';
+    urlInp.style.flex  = '1';
+    urlInp.addEventListener('input', () => { action.url = urlInp.value; });
+    reqRow.appendChild(methodSel);
+    reqRow.appendChild(urlInp);
+    bodyEl.appendChild(reqRow);
+
+    autoLabeledInput(
+        bodyEl,
+        'Secret',
+        'optional — adds X-Sparrow-Signature header (HMAC SHA-256 of the JSON body)',
+        action.secret,
+        (v) => { action.secret = v; }
+    );
+
+    // Payload mapping: free-text JSON key -> template value
+    const mapLbl = document.createElement('div');
+    mapLbl.textContent = 'Payload fields';
+    mapLbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;';
+    bodyEl.appendChild(mapLbl);
+
+    const mapRows = document.createElement('div');
+    bodyEl.appendChild(mapRows);
+
+    const btnAddField = document.createElement('button');
+    btnAddField.className   = 'btn btn-sm';
+    btnAddField.textContent = '+ Add Field';
+    btnAddField.style.marginTop = '4px';
+    btnAddField.addEventListener('click', () => {
+        let key = 'field';
+        let n = 1;
+        while (action.payload[key] !== undefined) { key = 'field_' + (++n); }
+        action.payload[key] = '';
+        renderMapRows();
+    });
+    bodyEl.appendChild(btnAddField);
+
+    function renderMapRows() {
+        mapRows.innerHTML = '';
+        Object.entries(action.payload ?? {}).forEach(([key, val]) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
+
+            const keyInp = document.createElement('input');
+            keyInp.type        = 'text';
+            keyInp.className   = 'form-input';
+            keyInp.placeholder = 'json_key';
+            keyInp.value       = key;
+            keyInp.style.flex  = '1';
+            keyInp.addEventListener('change', () => {
+                const newKey = keyInp.value.trim();
+                if (!newKey || newKey === key || action.payload[newKey] !== undefined) {
+                    keyInp.value = key;
+                    return;
+                }
+                const oldVal = action.payload[key];
+                delete action.payload[key];
+                action.payload[newKey] = oldVal;
+                renderMapRows();
+            });
+
+            const eq = document.createElement('span');
+            eq.textContent   = '=';
+            eq.style.cssText = 'color:var(--muted);font-weight:600;';
+
+            const valInp = document.createElement('input');
+            valInp.type        = 'text';
+            valInp.className   = 'form-input';
+            valInp.placeholder = 'value or {{ record.field }} / {{ current_user.id }}';
+            valInp.value       = val || '';
+            valInp.style.flex  = '2';
+            valInp.addEventListener('input', () => { action.payload[key] = valInp.value; });
+
+            const btnRm = document.createElement('button');
+            btnRm.className   = 'btn btn-sm btn-danger';
+            btnRm.textContent = '×';
+            btnRm.addEventListener('click', () => {
+                delete action.payload[key];
+                renderMapRows();
+            });
+
+            row.appendChild(keyInp);
+            row.appendChild(eq);
+            row.appendChild(valInp);
+            row.appendChild(btnRm);
+            mapRows.appendChild(row);
+        });
+    }
+
+    renderMapRows();
+}
+
+function renderEmailBody(bodyEl, action) {
+    // Normalize recipients to an array (backend accepts array or comma string).
+    if (!Array.isArray(action.recipients)) {
+        action.recipients = typeof action.recipients === 'string' && action.recipients !== ''
+            ? action.recipients.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
+    }
+
+    bodyEl.appendChild(autoHintText(
+        'Queues an email delivered by the notification cron (cron_notifications.php). '
+        + 'Recipients accept literal addresses or templates like {{ record.email }}.'
+    ));
+
+    autoLabeledInput(
+        bodyEl,
+        'Recipients',
+        'e.g. sales@example.com, {{ record.email }}',
+        action.recipients.join(', '),
+        (v) => { action.recipients = v.split(',').map(s => s.trim()).filter(Boolean); }
+    );
+
+    autoLabeledInput(
+        bodyEl,
+        'Subject',
+        'e.g. New lead: {{ record.name }}',
+        action.subject,
+        (v) => { action.subject = v; }
+    );
+
+    const bodyLblRow = document.createElement('div');
+    bodyLblRow.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;';
+    const bodyLbl = document.createElement('span');
+    bodyLbl.textContent = 'Message';
+    bodyLbl.style.cssText = 'font-size:12px;font-weight:600;min-width:80px;color:var(--muted);padding-top:6px;';
+    const bodyTa = document.createElement('textarea');
+    bodyTa.className   = 'form-input';
+    bodyTa.rows        = 4;
+    bodyTa.placeholder = 'Plain-text message. Templates allowed, e.g. Status changed to {{ record.status }}.';
+    bodyTa.value       = action.body || '';
+    bodyTa.style.flex  = '1';
+    bodyTa.addEventListener('input', () => { action.body = bodyTa.value; });
+    bodyLblRow.appendChild(bodyLbl);
+    bodyLblRow.appendChild(bodyTa);
+    bodyEl.appendChild(bodyLblRow);
+}
+
 // ── Shared action handle (set by renderAutomationsPage, used by item panel) ────
 export const autoActions = { openNew: null };
 
@@ -694,6 +909,26 @@ export async function renderAutomationsPage(ctx) {
             badge.className = rule.enabled ? 'adm-badge adm-badge-ok' : 'adm-badge adm-badge-muted';
             badge.textContent = rule.enabled ? 'Active' : 'Disabled';
             badge.style.flexShrink = '0';
+            badge.style.cursor = 'pointer';
+            badge.title = rule.enabled ? 'Click to disable' : 'Click to enable';
+            badge.addEventListener('click', e => {
+                e.stopPropagation();
+                saveRulePayload(rulePayload(rule, { enabled: !rule.enabled }), badge);
+            });
+
+            const btnDup = document.createElement('button');
+            btnDup.type = 'button';
+            btnDup.className = 'btn btn-sm';
+            btnDup.textContent = 'Duplicate';
+            btnDup.style.flexShrink = '0';
+            btnDup.title = 'Create a disabled copy of this rule';
+            btnDup.addEventListener('click', e => {
+                e.stopPropagation();
+                saveRulePayload(
+                    rulePayload(rule, { id: null, name: rule.name + ' (copy)', enabled: false }),
+                    btnDup
+                );
+            });
 
             const btnHist = document.createElement('button');
             btnHist.type = 'button';
@@ -713,6 +948,7 @@ export async function renderAutomationsPage(ctx) {
             hdr.appendChild(nameSpan);
             hdr.appendChild(tableMeta);
             hdr.appendChild(badge);
+            hdr.appendChild(btnDup);
             hdr.appendChild(btnHist);
             hdr.appendChild(btnDel);
             card.appendChild(hdr);
@@ -855,6 +1091,40 @@ export async function renderAutomationsPage(ctx) {
             cardBody.appendChild(tbl);
         } catch (_) {
             loading.textContent = 'Failed to load run history.';
+        }
+    }
+
+    // ── Quick save helpers (toggle enable, duplicate) ────────────
+    // Full rule entry for automations_save built from a list row; overrides
+    // let callers flip enabled or clear the id to create a copy.
+    function rulePayload(rule, overrides = {}) {
+        return {
+            id:            rule.id,
+            name:          rule.name,
+            enabled:       !!rule.enabled,
+            trigger_table: rule.trigger_table,
+            trigger_event: rule.trigger_event,
+            conditions:    rule.conditions ?? { type: 'AND', rules: [] },
+            actions:       rule.actions ?? [],
+            ...overrides,
+        };
+    }
+
+    async function saveRulePayload(payload, anchorEl) {
+        try {
+            const r    = await fetch('api.php?action=automations_save', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': autoCsrf() },
+                body:    JSON.stringify(payload),
+            });
+            const data = await r.json();
+            if (data.ok) {
+                await loadList();
+            } else {
+                autoStatusPill(anchorEl, data.error || 'Error', 'error');
+            }
+        } catch (_) {
+            autoStatusPill(anchorEl, 'Request failed', 'error');
         }
     }
 

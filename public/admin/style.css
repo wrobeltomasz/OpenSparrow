@@ -1,5 +1,9 @@
 /* admin/style.css */
-/* Modern UI configuration variables */
+/* Modern UI configuration variables.
+   NOTE: index.php loads assets/css/styles.css (the app stylesheet) first, then
+   this file. These :root tokens and the button classes below intentionally
+   override the app's equivalents so the admin panel owns its own palette and
+   button sizing regardless of load order. Keep button classes defined here. */
 :root {
   --bg:           #F4F7F9;
   --panel:        #ffffff;
@@ -475,6 +479,25 @@ body {
     background-color: var(--bg);
 }
 
+/* ===== Standard page header ===== */
+/* Every tab opens with the same title + description block. Use createPageHeader()
+   from ui.js to emit this markup so heading level and spacing stay consistent. */
+.admin-page {
+    max-width: 960px;
+}
+.admin-page-title {
+    margin: 0 0 4px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+}
+.admin-page-desc {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
 /* ===== Form elements ===== */
 .form-group {
     margin-bottom: 24px;
@@ -639,6 +662,34 @@ body {
     font-size: 11px;
 }
 
+/* .btn-action — blue primary action. Defined here so the admin panel does not
+   silently depend on the app stylesheet (assets/css/styles.css) which also
+   declares it and loads first. Kept as an alias of .btn-primary's look. */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.btn-action:hover {
+    background: var(--accent-dark);
+    border-color: var(--accent-dark);
+    color: #fff;
+    text-decoration: none;
+}
+
 /* ===== Utility inputs ===== */
 .adm-input,
 .form-input {
@@ -660,35 +711,46 @@ body {
 }
 
 /* ===== Legacy section buttons ===== */
+/* Sized to match the .btn box model (padding/font/border) so green "add" and
+   red "remove" buttons are identical in size to .btn-success / .btn-danger.
+   Colours and the legacy .btn-add bottom spacing are preserved. */
 .btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     background: var(--ok);
     color: white;
-    border: none;
-    padding: 10px 16px;
+    border: 1px solid var(--ok);
+    padding: 8px 14px;
     border-radius: var(--radius);
     cursor: pointer;
     margin-bottom: 15px;
-    font-weight: 600;
-    font-size: 14px;
-    transition: background var(--transition), transform 100ms;
+    font-weight: 500;
+    font-size: 13px;
+    white-space: nowrap;
+    transition: background var(--transition), border-color var(--transition), transform 100ms;
 }
 
-.btn-add:hover { background: #236e38; }
+.btn-add:hover { background: #236e38; border-color: #236e38; }
 .btn-add:active { transform: scale(0.98); }
 
 .btn-remove {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     background: var(--danger);
     color: white;
-    border: none;
-    padding: 10px 16px;
+    border: 1px solid var(--danger);
+    padding: 8px 14px;
     border-radius: var(--radius);
     cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    transition: background var(--transition), transform 100ms;
+    font-weight: 500;
+    font-size: 13px;
+    white-space: nowrap;
+    transition: background var(--transition), border-color var(--transition), transform 100ms;
 }
 
-.btn-remove:hover { background: #a80000; }
+.btn-remove:hover { background: #a80000; border-color: #a80000; }
 .btn-remove:active { transform: scale(0.98); }
 
 /* ===== Data tables ===== */

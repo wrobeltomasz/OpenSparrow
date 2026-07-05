@@ -45,27 +45,17 @@ function send_security_headers(
 
     $nonce = $cspNonce !== '' ? " 'nonce-{$cspNonce}'" : '';
 
-    switch ($cspMode) {
-        case 'download':
-            // File proxy: block all resources — only binary content served
-            header("Content-Security-Policy: default-src 'none'");
-            break;
-        case 'login':
-            // Auth page: unsafe-inline styles (inline CSS present), no connect-src
-            header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'{$nonce}");
-            break;
-        case 'no-connect':
-            // Pages with no direct AJAX (dashboard, calendar)
-            header("Content-Security-Policy: default-src 'self'; style-src 'self'{$nonce}; script-src 'self'{$nonce}");
-            break;
-        case 'unsafe-style':
-            // Pages using inline style attributes for dynamic values (views, index)
-            header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'{$nonce}; connect-src 'self'");
-            break;
-        default:
-            header("Content-Security-Policy: default-src 'self'; style-src 'self'{$nonce}; script-src 'self'{$nonce}; connect-src 'self'");
-            break;
-    }
+    header('Content-Security-Policy: ' . match ($cspMode) {
+        // File proxy: block all resources — only binary content served
+        'download'     => "default-src 'none'",
+        // Auth page: unsafe-inline styles (inline CSS present), no connect-src
+        'login'        => "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'{$nonce}",
+        // Pages with no direct AJAX (dashboard, calendar)
+        'no-connect'   => "default-src 'self'; style-src 'self'{$nonce}; script-src 'self'{$nonce}",
+        // Pages using inline style attributes for dynamic values (views, index)
+        'unsafe-style' => "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'{$nonce}; connect-src 'self'",
+        default        => "default-src 'self'; style-src 'self'{$nonce}; script-src 'self'{$nonce}; connect-src 'self'",
+    });
 }
 
 // Decides whether the current session must be rejected. A session is stale when

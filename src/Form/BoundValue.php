@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Form;
 
-final class BoundValue
+final readonly class BoundValue
 {
     public function __construct(
-        public readonly mixed $value,
-        public readonly ?string $cast = null,
+        public mixed $value,
+        public ?string $cast = null,
     ) {
     }
 

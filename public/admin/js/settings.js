@@ -3,6 +3,7 @@
 //
 // admin/js/settings.js — General settings page (renderSettingsPage): loads/saves app + chat-bubble settings via api.php (get/set_*_setting).
 import { showStatusPill } from './app.js';
+import { createPageHeader } from './ui.js';
 
 export async function renderSettingsPage(ctx) {
     const { workspaceEl } = ctx;
@@ -18,7 +19,7 @@ export async function renderSettingsPage(ctx) {
         data       = await langRes.json();
         bubbleData = bubbleRes.ok ? await bubbleRes.json() : { chat_bubble_enabled: false };
     } catch (e) {
-        workspaceEl.innerHTML = '<h3 style="color:#d00000;">Error loading settings. Check server logs.</h3>';
+        workspaceEl.innerHTML = '<h3 style="color:var(--danger);">Error loading settings. Check server logs.</h3>';
         return;
     }
 
@@ -28,15 +29,12 @@ export async function renderSettingsPage(ctx) {
 
     workspaceEl.innerHTML = '';
 
-    const h3 = document.createElement('h3');
-    h3.style.marginTop = '0';
-    h3.textContent = 'Application Settings';
-    workspaceEl.appendChild(h3);
+    workspaceEl.appendChild(createPageHeader('Application Settings'));
 
     // ── Language Settings card ─────────────────────────────────────────────
 
     const card = document.createElement('div');
-    card.style.cssText = 'padding:20px; background:white; border:1px solid #CBD5E1; border-radius:8px; margin-bottom:24px; max-width:540px;';
+    card.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
 
     const cardTitle = document.createElement('h4');
     cardTitle.style.cssText = 'margin:0 0 4px; font-size:15px;';
@@ -44,7 +42,7 @@ export async function renderSettingsPage(ctx) {
     card.appendChild(cardTitle);
 
     const cardDesc = document.createElement('p');
-    cardDesc.style.cssText = 'color:#64748B; font-size:13px; margin:0 0 20px;';
+    cardDesc.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 20px;';
     cardDesc.textContent = 'Set the site-wide default language and which languages users can switch to. Language files live in languages/*.json.';
     card.appendChild(cardDesc);
 
@@ -54,13 +52,13 @@ export async function renderSettingsPage(ctx) {
 
     const defLabel = document.createElement('label');
     defLabel.htmlFor = 'setting-default-lang';
-    defLabel.style.cssText = 'display:block; font-size:13px; font-weight:600; color:#64748B; margin-bottom:6px;';
+    defLabel.style.cssText = 'display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;';
     defLabel.textContent = 'Default language';
     defRow.appendChild(defLabel);
 
     const defSelect = document.createElement('select');
     defSelect.id = 'setting-default-lang';
-    defSelect.style.cssText = 'padding:7px 10px; border:1px solid #CBD5E1; border-radius:6px; font-size:14px; width:220px; background:white;';
+    defSelect.style.cssText = 'padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; width:220px; background:white;';
     data.all_locales.forEach(loc => {
         const opt = document.createElement('option');
         opt.value = loc.code;
@@ -76,14 +74,14 @@ export async function renderSettingsPage(ctx) {
     availRow.style.cssText = 'margin-bottom:20px;';
 
     const availLabel = document.createElement('div');
-    availLabel.style.cssText = 'font-size:13px; font-weight:600; color:#64748B; margin-bottom:8px;';
+    availLabel.style.cssText = 'font-size:13px; font-weight:600; color:var(--muted); margin-bottom:8px;';
     availLabel.textContent = 'Available languages';
     availRow.appendChild(availLabel);
 
     const checkboxes = [];
     data.all_locales.forEach(loc => {
         const row = document.createElement('label');
-        row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; font-size:14px; color:#64748B;';
+        row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; font-size:14px; color:var(--muted);';
 
         const cb = document.createElement('input');
         cb.type = 'checkbox';
@@ -155,7 +153,7 @@ export async function renderSettingsPage(ctx) {
     // ── AI Chat Bubble card ────────────────────────────────────────────────
 
     const bubbleCard = document.createElement('div');
-    bubbleCard.style.cssText = 'padding:20px; background:white; border:1px solid #CBD5E1; border-radius:8px; margin-bottom:24px; max-width:540px;';
+    bubbleCard.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
 
     const bubbleTitle = document.createElement('h4');
     bubbleTitle.style.cssText = 'margin:0 0 4px; font-size:15px;';
@@ -163,12 +161,12 @@ export async function renderSettingsPage(ctx) {
     bubbleCard.appendChild(bubbleTitle);
 
     const bubbleDesc = document.createElement('p');
-    bubbleDesc.style.cssText = 'color:#64748B; font-size:13px; margin:0 0 20px;';
+    bubbleDesc.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 20px;';
     bubbleDesc.textContent = 'Show a floating chat button in the bottom-right corner of every app page. Users can click it to open the AI assistant without going through the user menu.';
     bubbleCard.appendChild(bubbleDesc);
 
     const toggleRow = document.createElement('label');
-    toggleRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:#64748B; margin-bottom:20px;';
+    toggleRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:var(--muted); margin-bottom:20px;';
 
     const toggleCb = document.createElement('input');
     toggleCb.type    = 'checkbox';
@@ -218,8 +216,8 @@ export async function renderSettingsPage(ctx) {
     // ── Info card ──────────────────────────────────────────────────────────
 
     const infoCard = document.createElement('div');
-    infoCard.style.cssText = 'padding:14px 18px; background:#F4F7F9; border:1px solid #CBD5E1; border-radius:8px; font-size:13px; color:#64748B; max-width:540px;';
-    infoCard.innerHTML = '<strong style="display:block; margin-bottom:6px; color:#64748B;">How language detection works</strong>'
+    infoCard.style.cssText = 'padding:14px 18px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:13px; color:var(--muted); max-width:540px;';
+    infoCard.innerHTML = '<strong style="display:block; margin-bottom:6px; color:var(--muted);">How language detection works</strong>'
         + '<ol style="margin:0; padding-left:18px; line-height:1.8;">'
         + '<li>User selects language via URL <code>?lang=xx</code> → stored in session</li>'
         + '<li>User\'s personal preference from <code>spw_users.locale</code> (if set)</li>'
@@ -227,6 +225,6 @@ export async function renderSettingsPage(ctx) {
         + '<li><strong>Default language</strong> from this settings page</li>'
         + '<li>Fallback: <code>en</code></li>'
         + '</ol>'
-        + '<p style="margin:10px 0 0; color:#64748B;">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
+        + '<p style="margin:10px 0 0; color:var(--muted);">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
     workspaceEl.appendChild(infoCard);
 }

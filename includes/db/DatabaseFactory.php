@@ -38,10 +38,8 @@ class DatabaseFactory
      *   $gateway = DatabaseFactory::make($_GET['table'], db_connect(), $mysqlPdo);
      *   header('Content-Type: application/json');
      *   echo json_encode($gateway->fetchAll($_GET['table']));
-     *
-     * @param resource $pgConn
      */
-    public static function make(string $table, $pgConn, ?\PDO $mysqlPdo = null): DatabaseGatewayInterface
+    public static function make(string $table, \PgSql\Connection $pgConn, ?\PDO $mysqlPdo = null): DatabaseGatewayInterface
     {
         if ($mysqlPdo !== null && in_array($table, self::$mysqlTables, true)) {
             return new MysqlGateway($mysqlPdo);

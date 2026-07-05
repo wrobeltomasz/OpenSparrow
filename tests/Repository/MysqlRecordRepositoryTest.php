@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Repository;
 
 use App\Domain\Schema\ColumnConfig;
+use App\Domain\Schema\DataSource;
 use App\Domain\Schema\TableConfig;
 use App\Form\BoundValue;
 use App\Form\RecordData;
@@ -83,7 +84,7 @@ final class MysqlRecordRepositoryTest extends TestCase
             [],
             'id',
             '',
-            'mysql',
+            DataSource::Mysql,
             'id',
         );
     }

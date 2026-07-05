@@ -28,7 +28,10 @@ describe('OpenSparrow – Board: Page Structure', () => {
   });
 
   it('renders lanes or a configuration notice', () => {
-    cy.get('#boardContainer', { timeout: CypressHelpers.TIMEOUTS.long }).then($c => {
+    // .should() retries until the async board fetch + render completes;
+    // a one-shot .then() raced the render because #boardContainer exists
+    // in the server HTML long before lanes are painted.
+    cy.get('#boardContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should($c => {
       const lanes = $c.find('.board-lane').length;
       const notice = $c.find('.board-notice').length;
       expect(lanes + notice, 'lanes or notice present').to.be.greaterThan(0);

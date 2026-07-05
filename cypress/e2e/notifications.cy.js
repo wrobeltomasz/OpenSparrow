@@ -103,13 +103,26 @@ describe('OpenSparrow – Notifications: API', () => {
   });
 
   it('API response has expected shape', () => {
-    cy.intercept('GET', '**/api/notifications.php**').as('notifShape');
+    // Page load fires only action=get_count (the badge poll) — it returns
+    // { status, count }, never a notifications array. The list arrives from
+    // action=get_list, which fires when the dropdown opens. Assert both shapes.
+    cy.intercept('GET', '**/api/notifications.php?action=get_count*').as('notifCount');
+    cy.intercept('GET', '**/api/notifications.php?action=get_list*').as('notifList');
     loginAsTestUser();
     cy.visit(`${BASE}/dashboard.php`);
-    cy.wait('@notifShape', { timeout: CypressHelpers.TIMEOUTS.long })
+
+    cy.wait('@notifCount', { timeout: CypressHelpers.TIMEOUTS.long })
       .its('response.body')
       .should(body => {
-        // Body must be an array of notifications, or an object carrying one
+        const data = typeof body === 'string' ? JSON.parse(body) : body;
+        expect(data.status, 'count status').to.eq('success');
+        expect(data.count, 'unread count').to.be.a('number');
+      });
+
+    cy.get('.notifications-wrapper').click();
+    cy.wait('@notifList', { timeout: CypressHelpers.TIMEOUTS.long })
+      .its('response.body')
+      .should(body => {
         const data = typeof body === 'string' ? JSON.parse(body) : body;
         const list = Array.isArray(data) ? data : data?.notifications;
         expect(list, 'response carries a notifications array').to.be.an('array');

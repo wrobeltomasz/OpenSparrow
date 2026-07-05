@@ -1,6 +1,6 @@
 # OpenSparrow - Dokumentacja Funkcji Frontendu
 
-**Wersja:** 2.7.0+  
+**Wersja:** 2.9+  
 **Język:** Polski  
 **Przeznaczenie:** Dokumentacja dla użytkowników i modeli AI. Opisuje wszystkie funkcje dostępne w interfejsie użytkownika (frontend) platformy OpenSparrow - konfigurowalnego systemu CRUD/dashboard na PostgreSQL.
 
@@ -57,7 +57,8 @@
     - 17.19 [Edytor Workflows](#1719-edytor-workflows)
     - 17.20 [Edytor Widoków](#1720-edytor-widoków)
     - 17.21 [Systemy demo](#1721-systemy-demo)
-    - 17.22 [Anonimizacja danych](#1722-anonimizacja-danych)
+    - 17.22 [Zewnętrzne bazy danych (MySQL Gateway)](#1722-zewnętrzne-bazy-danych-mysql-gateway)
+    - 17.23 [Anonimizacja danych](#1723-anonimizacja-danych)
 18. [Responsywność i mobile](#18-responsywność-i-mobile)
 19. [Powiadomienia i feedback](#19-powiadomienia-i-feedback)
 20. [Internacjonalizacja (i18n)](#20-internacjonalizacja-i18n)
@@ -910,11 +911,13 @@ Zakładka **External Databases** (sekcja Data Management) umożliwia skonfigurow
 - `MysqlGateway` — implementacja przez PDO.
 - `DatabaseFactory::make($table, $pgConn, $mysqlPdo)` — wybiera implementację na podstawie listy tabel MySQL; akcja `mysql_preview` w `admin/api_fdw.php` demonstruje integrację.
 
-### 17.22 Anonimizacja danych
+### 17.23 Anonimizacja danych
 
 Zakładka **Anonymization** (sekcja System) obsługuje automatyczną anonimizację danych osobowych zgodnie z wymogami RODO — prawdziwie zanonimizowane dane nie są danymi osobowymi i nie podlegają przepisom o ochronie danych UE. Moduł działa wyłącznie w panelu admina, cronie i bazie danych (brak wpływu na frontend).
 
 **Zakładka Rules:** definiuje reguły anonimizacji — dla każdej reguły wybierz tabelę, kolumnę typu data/znacznik czasu oraz próg wieku (anonimizowane są tylko rekordy starsze niż N dni liczonych od tej kolumny), kolumnę z danymi osobowymi i wartość zastępczą (np. `***ANONYMIZED***`). Przycisk **Preview (dry run)** wykonuje próbny przebieg: zlicza, ile wierszy obejmie każda reguła, **bez modyfikowania danych** — pozwala zweryfikować konfigurację przed nieodwracalnym nadpisaniem. Reguły przechowywane w `config/anonymization.json`. Historia wykonań widoczna w sekcji Run History (tabela `spw_anonymization_log`).
+
+**Raport wykonania (Report):** każdy przebieg generuje ustrukturyzowany raport JSON zapisywany w dedykowanej tabeli `spw_anonymization_report` (kolumna `report` typu `jsonb`, powiązana z przebiegiem przez `log_id`). Raport zawiera identyfikator zadania (`report_id`, np. `JOB-20260629-0042`), znacznik czasu UTC, podsumowanie wykonania (`execution_summary`: liczba przetworzonych reguł, liczba dotkniętych tabel, łączna liczba zanonimizowanych wierszy) oraz listę `details` z wpisem dla każdej reguły: tabela, kolumna, metoda (`static_replacement`), parametry (wartość zastępcza, kolumna daty, próg dni), informacja o nieodwracalności (`is_reversible: false`), liczba zmienionych wierszy oraz ocena ryzyka w stylu EDPB/RODO (`edpb_compliance`: ryzyko wyodrębnienia, powiązania i wnioskowania). W sekcji Run History (zakładka Rules) kolumna **Report** udostępnia przycisk **View** (rozwija sformatowany JSON pod wierszem) oraz **Download JSON** (pobranie raportu jako pliku `<report_id>.json`). Tryb próbny (Preview) nie generuje raportu — nie zapisuje wpisu w dzienniku.
 
 **Zakładka Schedule:** włączenie/wyłączenie modułu, wybór częstotliwości (Manual / Daily / Weekly / Monthly) egzekwowanej przez sam skrypt crona. Przycisk **Run Now** uruchamia `cron/cron_anonymization.php` natychmiast przez panel admina. Sekcja Cron Setup Guide zawiera gotowe polecenia dla Linux/macOS (crontab), Windows (Task Scheduler) i Docker.
 
@@ -922,7 +925,7 @@ Zakładka **Anonymization** (sekcja System) obsługuje automatyczną anonimizacj
 
 **Zakładka Dictionary:** lista słów kluczowych rozdzielona przecinkami (np. `PESEL, NIP, email, phone, address, imię, nazwisko`). Używana przez zakładkę Suggestions do dopasowania nazw kolumn (dopasowanie podciągu, bez rozróżniania wielkości liter). Sekcja Log Cleanup pozwala usunąć stare wpisy z `spw_anonymization_log` starsze niż N dni.
 
-**Skrypt crona:** `cron/cron_anonymization.php` — tylko CLI. Sprawdza flagę `enabled`, egzekwuje okno częstotliwości (sprawdza ostatni udany run w tabeli logu), wykonuje `UPDATE` dla każdej reguły z użyciem `pg_ident()` dla identyfikatorów; warunek `WHERE` filtruje rekordy starsze niż próg dni względem wskazanej kolumny daty. Rejestruje każde wykonanie w `spw_anonymization_log` (status running → success/error, liczba przetworzonych reguł, liczba zanonimizowanych wierszy). Tryb próbny (drugi argument `dry`, wywoływany przez przycisk **Preview**) uruchamia `SELECT COUNT(*)` z tym samym warunkiem `WHERE` zamiast `UPDATE` — nie zmienia danych i nie zapisuje wpisu w dzienniku.
+**Skrypt crona:** `cron/cron_anonymization.php` — tylko CLI. Sprawdza flagę `enabled`, egzekwuje okno częstotliwości (sprawdza ostatni udany run w tabeli logu), wykonuje `UPDATE` dla każdej reguły z użyciem `pg_ident()` dla identyfikatorów; warunek `WHERE` filtruje rekordy starsze niż próg dni względem wskazanej kolumny daty. Rejestruje każde wykonanie w `spw_anonymization_log` (status running → success/error, liczba przetworzonych reguł, liczba zanonimizowanych wierszy) oraz zapisuje ustrukturyzowany raport JSON (EDPB/RODO) w dedykowanej tabeli `spw_anonymization_report`. Tryb próbny (drugi argument `dry`, wywoływany przez przycisk **Preview**) uruchamia `SELECT COUNT(*)` z tym samym warunkiem `WHERE` zamiast `UPDATE` — nie zmienia danych i nie zapisuje wpisu w dzienniku.
 
 ---
 
@@ -1249,4 +1252,4 @@ Panel admina → zakładka **Board**:
 
 ---
 
-*Dokumentacja wygenerowana: 2026-05-26 | Pokrycie: wszystkie moduły FE OpenSparrow v2.7.0+*
+*Dokumentacja wygenerowana: 2026-07-01 | Pokrycie: wszystkie moduły FE OpenSparrow v2.9+*

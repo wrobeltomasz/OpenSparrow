@@ -49,7 +49,8 @@ final class CsvReader
             throw new \RuntimeException('Cannot open CSV file for reading.');
         }
         try {
-            $headers = fgetcsv($fh, 0, $delimiter);
+            // Explicit enclosure + escape: PHP 8.4 deprecates relying on the defaults
+            $headers = fgetcsv($fh, 0, $delimiter, '"', '\\');
             if ($headers === false || $headers === null) {
                 return;
             }
@@ -61,7 +62,7 @@ final class CsvReader
             yield 0 => $headers;
 
             $rowNum = 1;
-            while (($row = fgetcsv($fh, 0, $delimiter)) !== false) {
+            while (($row = fgetcsv($fh, 0, $delimiter, '"', '\\')) !== false) {
                 if (count($row) === 1 && $row[0] === null) {
                     continue; // skip blank lines
                 }
@@ -498,7 +499,7 @@ final class CsvImportService
 
         try {
             // fgetcsv handles quoted fields with embedded newlines — fgets() does not
-            $csvHeaders = fgetcsv($fh, 0, $delimiter);
+            $csvHeaders = fgetcsv($fh, 0, $delimiter, '"', '\\');
             if ($csvHeaders === false || $csvHeaders === null) {
                 throw new \RuntimeException('Empty CSV file.');
             }
@@ -514,7 +515,7 @@ final class CsvImportService
                 array_values($colMap)
             );
 
-            $colList = implode(',', array_map('pg_ident', array_keys($colMap)));
+            $colList = implode(',', array_map(pg_ident(...), array_keys($colMap)));
             $sql     = "COPY {$tableIdent} ({$colList}) FROM STDIN WITH (FORMAT CSV, NULL '')";
 
             if (@pg_query($this->conn, $sql) === false) {
@@ -524,7 +525,7 @@ final class CsvImportService
             $total  = 0;
             $buffer = '';
 
-            while (($row = fgetcsv($fh, 0, $delimiter)) !== false) {
+            while (($row = fgetcsv($fh, 0, $delimiter, '"', '\\')) !== false) {
                 if (count($row) === 1 && $row[0] === null) {
                     continue; // blank line
                 }

@@ -31,8 +31,8 @@ final class I18n
     private static ?self $instance = null;
 
     private string $locale;
-    private const FALLBACK      = 'en';
-    private const LANGUAGES_DIR = __DIR__ . '/../languages/';
+    private const string FALLBACK      = 'en';
+    private const string LANGUAGES_DIR = __DIR__ . '/../languages/';
 
     /** @var array<string,mixed> */
     private array $strings = [];
@@ -219,6 +219,11 @@ final class I18n
         $content = file_get_contents($path);
         if ($content === false) {
             return [];
+        }
+        // Language files saved by some editors carry a UTF-8 BOM, which makes
+        // json_decode() return null and silently empties the whole locale.
+        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+            $content = substr($content, 3);
         }
         $decoded = json_decode($content, true);
         return is_array($decoded) ? $decoded : [];

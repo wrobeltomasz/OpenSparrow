@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Domain\Schema;
 
-final class ColumnConfig
+final readonly class ColumnConfig
 {
     public function __construct(
-        public readonly string $name,
-        public readonly string $type,
-        public readonly string $displayName,
-        public readonly bool $readonly = false,
-        public readonly bool $notNull = false,
-        public readonly bool $showInEdit = true,
-        public readonly array $options = [],
-        public readonly array $enumColors = [],
-        public readonly ?string $validationRegexp = null,
-        public readonly ?string $validationMessage = null,
+        public string $name,
+        public string $type,
+        public string $displayName,
+        public bool $readonly = false,
+        public bool $notNull = false,
+        public bool $showInEdit = true,
+        public array $options = [],
+        public array $enumColors = [],
+        public ?string $validationRegexp = null,
+        public ?string $validationMessage = null,
     ) {
     }
 

@@ -310,4 +310,13 @@ clearBtn.addEventListener('click', () => {
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
+if (window.RAG_CHAT_ENABLED === false) {
+    const inputArea = document.querySelector('.rag-input-area');
+    if (inputArea) inputArea.hidden = true;
+    const notice = document.createElement('div');
+    notice.className   = 'rag-disabled-notice';
+    notice.textContent = 'AI chat is currently disabled by the administrator.';
+    convEl.appendChild(notice);
+}
+
 loadFiles();

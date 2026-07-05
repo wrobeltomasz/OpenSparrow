@@ -1,43 +1,18 @@
 <?php
 
 // files.php — Files module page (frontend HTML)
-// Auth gate: redirect to login if no session; admin redirected to /admin; UA/lifetime enforcement
-// Generates CSRF token + CSP nonce + send_security_headers(); exposes capability flags (canEdit/canExport) to the client
+// Boots via includes/bootstrap.php: os_page_bootstrap() — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
+// Exposes capability flags (canEdit/canExport) to the client
 // Renders the file manager UI; data and uploads via api/files.php, downloads via file_download.php
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../includes/session.php';
-start_session();
-// Redirect to login if no session
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+require_once __DIR__ . '/../includes/bootstrap.php';
 
-if (($_SESSION['role'] ?? 'viewer') === 'admin') {
-    header("Location: admin/");
-    exit;
-}
-
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_redirect();
-
-// Generate CSRF token if it does not exist
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-// Generate a unique nonce for Content Security Policy
-$cspNonce = bin2hex(random_bytes(16));
-send_security_headers($cspNonce);
-$userRole = $_SESSION['role'] ?? 'viewer';
-// Expose only capability flags to the client instead of the raw role name
-// to reduce attack surface during reconnaissance
-$userCaps = [
-    'canEdit'   => $userRole === 'editor',
-    'canExport' => in_array($userRole, ['editor', 'export'], true),
-];
+$page     = os_page_bootstrap();
+$cspNonce = $page['nonce'];
+$userRole = $page['role'];
+$userCaps = $page['caps'];
 $pageTitle = 'OpenSparrow | Files';
 ob_start();
 ?>

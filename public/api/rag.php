@@ -12,32 +12,14 @@ declare(strict_types=1);
 
 set_time_limit(240); // Set execution limit higher than Ollama timeout to prevent early termination
 
-require_once __DIR__ . '/../../includes/session.php';
-start_session();
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    exit(json_encode(['error' => 'Unauthorized']));
-}
-
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
-
-header('Content-Type: application/json; charset=utf-8');
+// Auth gate + header CSRF on POST; connect=false — actions open their own connection
+os_api_bootstrap(['connect' => false]);
 
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
-if ($method === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        exit(json_encode(['error' => 'CSRF token mismatch.']));
-    }
-}
-
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
 require_once __DIR__ . '/../../includes/rag_helpers.php';
 require_once __DIR__ . '/../../includes/rag_throttle.php';
 

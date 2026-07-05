@@ -51,7 +51,7 @@ function mkStatusEl() {
 
 function showStatus(el, msg, ok) {
     el.textContent = msg;
-    el.style.color = ok ? '#2b9348' : '#a80000';
+    el.style.color = ok ? 'var(--ok)' : '#a80000';
     el.style.display = '';
 }
 
@@ -186,14 +186,13 @@ function buildPreviewBlock(container) {
     const btn = document.createElement('button');
     btn.className   = 'btn-action';
     btn.textContent = 'Preview (dry run)';
-    btn.style.cssText = 'padding:7px 18px; font-size:13px;';
 
     const hint = document.createElement('span');
     hint.textContent = 'Counts how many rows each rule would anonymize — no data is modified.';
     hint.style.cssText = 'margin-left:12px; font-size:12px; color:var(--muted);';
 
     const out = document.createElement('pre');
-    out.style.cssText = 'margin-top:12px; padding:12px; background:#F4F7F9; border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
+    out.style.cssText = 'margin-top:12px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
     btn.addEventListener('click', async () => {
         btn.disabled    = true;
@@ -227,7 +226,7 @@ function buildPreviewBlock(container) {
 
 function buildAddForm(container, tableOptions, onAdded) {
     const formCard = document.createElement('div');
-    formCard.style.cssText = 'background:#F4F7F9; border:1px solid var(--border); border-radius:6px; padding:16px; max-width:900px;';
+    formCard.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:16px; max-width:900px;';
 
     const title = document.createElement('strong');
     title.textContent = 'Add Rule';
@@ -329,7 +328,7 @@ function buildAddForm(container, tableOptions, onAdded) {
     const addBtn = document.createElement('button');
     addBtn.className   = 'btn-action';
     addBtn.textContent = '+ Add Rule';
-    addBtn.style.cssText = 'align-self:flex-end; padding:7px 18px; font-size:13px;';
+    addBtn.style.alignSelf = 'flex-end';
 
     const st = mkStatusEl();
 
@@ -437,7 +436,7 @@ function buildScheduleTab() {
     const saveBtn = document.createElement('button');
     saveBtn.className   = 'btn-action';
     saveBtn.textContent = 'Save Schedule Settings';
-    saveBtn.style.cssText = 'padding:8px 20px; font-size:14px; margin-bottom:24px;';
+    saveBtn.style.marginBottom = '24px';
     saveBtn.addEventListener('click', async () => {
         saveBtn.disabled = true;
         await saveConfig({ enabled: enabledChk.checked, frequency: freqSelect.value }, saveSt);
@@ -454,10 +453,9 @@ function buildScheduleTab() {
     const runBtn = document.createElement('button');
     runBtn.className   = 'btn-action';
     runBtn.textContent = 'Run Now';
-    runBtn.style.cssText = 'padding:8px 20px; font-size:14px;';
 
     const output = document.createElement('pre');
-    output.style.cssText = 'margin-top:14px; padding:12px; background:#F4F7F9; border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
+    output.style.cssText = 'margin-top:14px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
     runBtn.addEventListener('click', async () => {
         runBtn.disabled    = true;
@@ -498,12 +496,12 @@ function buildScheduleTab() {
 
     function guideBlock(heading, code, note) {
         const wrap = document.createElement('div');
-        wrap.style.cssText = 'background:#F4F7F9; border:1px solid var(--border); border-radius:6px; padding:14px; margin-bottom:12px;';
+        wrap.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:14px; margin-bottom:12px;';
         const h = document.createElement('strong');
         h.textContent = heading;
         h.style.cssText = 'display:block; margin-bottom:8px; font-size:13px;';
         const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0 0 6px; font-size:12px; background:#003366; color:#F0F6FA; padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
+        pre.style.cssText = 'margin:0 0 6px; font-size:12px; background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
         pre.textContent = code;
         wrap.append(h, pre);
         if (note) {
@@ -547,7 +545,6 @@ function buildSuggestionsTab() {
     const scanBtn = document.createElement('button');
     scanBtn.className   = 'btn-action';
     scanBtn.textContent = 'Scan Schema';
-    scanBtn.style.cssText = 'padding:8px 20px; font-size:14px;';
 
     const container = document.createElement('div');
     container.style.marginTop = '16px';
@@ -636,7 +633,7 @@ function buildSuggestionsTab() {
                 if (alreadyHas) {
                     const badge = document.createElement('span');
                     badge.textContent = '✓ Rule exists';
-                    badge.style.cssText = 'font-size:12px; color:#2b9348;';
+                    badge.style.cssText = 'font-size:12px; color:var(--ok);';
                     tdA.appendChild(badge);
                 } else {
                     const addBtn = document.createElement('button');
@@ -738,8 +735,8 @@ function buildSuggestionsTab() {
                             addBtn.disabled = true;
                             addBtn.style.display = '';
                             addBtn.textContent = '✓ Added';
-                            addBtn.style.borderColor = '#2b9348';
-                            addBtn.style.color = '#2b9348';
+                            addBtn.style.borderColor = 'var(--ok)';
+                            addBtn.style.color = 'var(--ok)';
                         });
 
                         btnRow.append(saveBtn, cancelBtn);
@@ -793,7 +790,6 @@ function buildDictionaryTab() {
     const saveBtn = document.createElement('button');
     saveBtn.className   = 'btn-action';
     saveBtn.textContent = 'Save Dictionary';
-    saveBtn.style.cssText = 'padding:8px 20px; font-size:14px;';
 
     const st = mkStatusEl();
 
@@ -880,6 +876,85 @@ function buildDictionaryTab() {
 
 // ─── Tab 2 supplement: Run History ───────────────────────────────────────────
 
+// Renders the per-run "Report" cell: a View toggle that expands the structured
+// GDPR/EDPB JSON report below the row, plus a Download button.
+function buildReportCell(r, tbody, colspan) {
+    const cell = document.createElement('td');
+    cell.className = 'adm-td';
+
+    let report = null;
+    if (r.report) {
+        try {
+            report = typeof r.report === 'string' ? JSON.parse(r.report) : r.report;
+        } catch (e) {
+            report = null;
+        }
+    }
+
+    if (!report) {
+        cell.textContent = '—';
+        cell.style.color = 'var(--muted)';
+        return cell;
+    }
+
+    const viewBtn = document.createElement('button');
+    viewBtn.textContent  = 'View';
+    viewBtn.style.cssText = 'background:none; border:1px solid var(--accent); color:var(--accent); border-radius:4px; padding:3px 10px; font-size:12px; cursor:pointer;';
+
+    let detailRow = null;
+
+    viewBtn.addEventListener('click', () => {
+        if (detailRow) {
+            detailRow.remove();
+            detailRow = null;
+            viewBtn.textContent = 'View';
+            return;
+        }
+
+        const parentTr = cell.closest('tr');
+        detailRow = tbody.insertRow(parentTr.sectionRowIndex + 1);
+        viewBtn.textContent = 'Hide';
+
+        const dtd = detailRow.insertCell();
+        dtd.className   = 'adm-td';
+        dtd.colSpan     = colspan;
+        dtd.style.cssText = 'background:var(--bg); padding:12px;';
+
+        const bar = document.createElement('div');
+        bar.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap;';
+
+        const idLbl = document.createElement('strong');
+        idLbl.textContent = report.report_id || 'Report';
+        idLbl.style.cssText = 'font-size:13px; font-family:monospace;';
+
+        const dlBtn = document.createElement('button');
+        dlBtn.textContent  = 'Download JSON';
+        dlBtn.style.cssText = 'background:var(--accent); color:#fff; border:none; border-radius:4px; padding:3px 12px; font-size:12px; cursor:pointer;';
+        dlBtn.addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = (report.report_id || 'anonymization-report') + '.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        });
+
+        bar.append(idLbl, dlBtn);
+
+        const pre = document.createElement('pre');
+        pre.style.cssText = 'margin:0; padding:12px; background:#fff; border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.5; max-height:360px; overflow:auto; white-space:pre-wrap;';
+        pre.textContent = JSON.stringify(report, null, 2);
+
+        dtd.append(bar, pre);
+    });
+
+    cell.appendChild(viewBtn);
+    return cell;
+}
+
 function buildHistorySection() {
     const { card, body } = mkSection(
         'Run History',
@@ -914,9 +989,10 @@ function buildHistorySection() {
             }
             const tbl   = document.createElement('table');
             tbl.className = 'adm-tbl';
+            const headers = ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Rules', 'Rows Anonymized', 'Report', 'Error'];
             const thead = tbl.createTHead();
             const hr    = thead.insertRow();
-            ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Rules', 'Rows Anonymized', 'Error'].forEach(h => {
+            headers.forEach(h => {
                 const th = document.createElement('th');
                 th.className   = 'adm-th';
                 th.textContent = h;
@@ -948,6 +1024,7 @@ function buildHistorySection() {
                     td(r.duration_sec !== null && r.duration_sec !== undefined ? Number(r.duration_sec).toFixed(2) + 's' : '—'),
                     td(r.rules_processed),
                     td(r.rows_anonymized),
+                    buildReportCell(r, tbody, headers.length),
                     td(r.error_message, 'color:#a80000; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
                 );
             });

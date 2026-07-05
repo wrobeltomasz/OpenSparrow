@@ -26,16 +26,20 @@ const BASE = 'http://localhost:8080';
 /** Open the CSV Import tab and wait for its async workspace to build. */
 function openCsvImportTab() {
   cy.visit(`${BASE}/admin/index.php`);
-  // Wait until the admin JS has initialised and rendered the initial tab —
-  // clicking the nav before listeners attach silently does nothing.
+  // Wait until the Overview tab has FULLY rendered — not just its loading
+  // placeholder. Switching tabs while the overview stats fetch is still in
+  // flight can leave the workspace in a mixed state where the overview
+  // content later replaces the CSV workspace mid-test.
   cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.long })
-    .should($el => {
-      expect($el.children().length, 'admin JS rendered initial tab').to.be.gte(1);
-    });
+    .should('contain.text', 'Admin Overview');
   cy.get('button.admin-tab[data-file="csv_import"]')
     .scrollIntoView()
     .should('be.visible')
     .click();
+  // The CSV workspace must fully replace the overview before tests proceed
+  cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.long })
+    .should('contain.text', 'CSV Import')
+    .and('not.contain.text', 'Admin Overview');
   // The drop-zone file input appears once the async build completes
   cy.get('#editorForm input[type="file"][accept*=".csv"]', { timeout: CypressHelpers.TIMEOUTS.long })
     .should('exist');
@@ -43,9 +47,12 @@ function openCsvImportTab() {
 
 /** Select the first real table in the target-table select (prefers "companies"). */
 function selectTargetTable() {
-  cy.get('#editorForm select').first().find('option').then($opts => {
-    const real = [...$opts].filter(o => o.value !== '');
-    expect(real.length, 'at least one table available for import').to.be.gte(1);
+  // Retryable: wait until the schema fetch has populated the table options
+  cy.get('#editorForm select').first()
+    .find('option')
+    .should('have.length.gte', 2); // placeholder + at least one table
+  cy.get('#editorForm select').first().should('not.be.disabled').then($sel => {
+    const real = [...$sel.find('option')].filter(o => o.value !== '');
     const preferred = real.find(o => o.value === 'companies') || real[0];
     cy.get('#editorForm select').first().select(preferred.value);
   });

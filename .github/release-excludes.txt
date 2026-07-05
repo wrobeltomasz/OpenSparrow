@@ -1,0 +1,39 @@
+# release-excludes.txt — rsync exclude list shared by release-zip.yml (builds
+# the FTP release ZIP) and deploy-smoke.yml (verifies the same file set boots).
+# Keep the two workflows in sync by editing only this file.
+.git
+.github
+.claude
+tests
+dist
+tmp/sess_*
+temp
+cache
+node_modules
+cypress
+.cypress-cache
+cypress.config.js
+public/cypress_seed.php
+package.json
+package-lock.json
+composer.json
+Dockerfile
+docker-compose.yml
+docker-php-dev.ini
+docker-compose.override.yml
+nginx.conf
+.dockerignore
+phpcs.phar
+phpcbf.phar
+phpcs.xml
+phpunit.xml
+.phpunit.result.cache
+.gitignore
+CLAUDE.md
+CLA.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+config/*.example
+includes/.secret_salt
+storage/files/*

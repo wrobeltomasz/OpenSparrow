@@ -553,6 +553,40 @@ function ragFmtModelSize(bytes) {
 
 function ragBuildSettingsTab(panel) {
 
+    // ── Frontend Chat card ───────────────────────────────────────────────────
+    const { card: chatCard, body: chatBody } = ragCard(
+        'Frontend Chat',
+        'Controls whether the AI chat interface is visible to users on the Knowledge Base page.'
+    );
+    panel.appendChild(chatCard);
+
+    const chatRow = document.createElement('div');
+    chatRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);';
+
+    const chatChk = document.createElement('input');
+    chatChk.type    = 'checkbox';
+    chatChk.id      = 'rag-chat-enabled';
+    chatChk.checked = true;
+    chatChk.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
+
+    const chatTextWrap = document.createElement('label');
+    chatTextWrap.htmlFor = 'rag-chat-enabled';
+    chatTextWrap.style.cssText = 'cursor:pointer;';
+
+    const chatTitle = document.createElement('div');
+    chatTitle.style.cssText = 'font-size:13px;font-weight:600;';
+    chatTitle.textContent = 'Enable AI chat on the front end';
+
+    const chatDesc = document.createElement('div');
+    chatDesc.style.cssText = 'font-size:12px;color:var(--muted);margin-top:2px;';
+    chatDesc.textContent = 'When unchecked, the chat input and send button are hidden for all users. The document list remains visible. Useful when Ollama is not yet set up or during maintenance.';
+
+    chatTextWrap.appendChild(chatTitle);
+    chatTextWrap.appendChild(chatDesc);
+    chatRow.appendChild(chatChk);
+    chatRow.appendChild(chatTextWrap);
+    chatBody.appendChild(chatRow);
+
     // ── Connection card ──────────────────────────────────────────────────────
     const { card: connCard, body: connBody } = ragCard(
         'Ollama Connection',
@@ -893,6 +927,7 @@ function ragBuildSettingsTab(panel) {
                 if (s.ollama_ssl_verify !== undefined) sslChk.checked = !!s.ollama_ssl_verify;
                 if (s.use_chunks !== undefined) chunksChk.checked = !!s.use_chunks;
                 if (s.conversation_turns !== undefined) memInp.value = s.conversation_turns;
+                if (s.chat_enabled !== undefined) chatChk.checked = !!s.chat_enabled;
 
                 // Pre-populate select with saved model as single option
                 if (s.ollama_model) {
@@ -922,9 +957,10 @@ function ragBuildSettingsTab(panel) {
             ssl_verify:          sslChk.checked,
             use_chunks:          chunksChk.checked,
             conversation_turns:  Math.max(0, Math.min(10, parseInt(memInp.value, 10) || 0)),
+            chat_enabled:        chatChk.checked,
         };
-        if (!payload.ollama_url || !payload.ollama_model) {
-            ragStatusPill(saveBtn, 'URL and model are required.', 'error');
+        if (payload.chat_enabled && (!payload.ollama_url || !payload.ollama_model)) {
+            ragStatusPill(saveBtn, 'URL and model are required when chat is enabled.', 'error');
             return;
         }
         try {

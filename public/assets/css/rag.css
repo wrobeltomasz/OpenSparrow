@@ -427,6 +427,19 @@
     white-space: nowrap;
 }
 
+/* ── Chat disabled notice ────────────────────────────────────────────────── */
+
+.rag-disabled-notice {
+    padding: 14px 18px;
+    background: #F4F7F9;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--muted);
+    font-style: italic;
+    text-align: center;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {

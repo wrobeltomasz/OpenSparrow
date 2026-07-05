@@ -11,11 +11,13 @@ use App\Form\RenderContext;
 
 final class TimestampField implements FieldTypeInterface
 {
+    #[\Override]
     public function supports(ColumnConfig $col, bool $hasForeignKey): bool
     {
         return $col->isTimestamp();
     }
 
+    #[\Override]
     public function bind(string $colName, array $postData): BoundValue
     {
         $val = $postData[$colName] ?? null;
@@ -26,6 +28,7 @@ final class TimestampField implements FieldTypeInterface
         return new BoundValue(str_replace('T', ' ', (string) $val));
     }
 
+    #[\Override]
     public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
     {
         $raw    = $ctx->isPrefilled($col->name) ? $ctx->prefilledValue($col->name) : (string)($currentValue ?? '');

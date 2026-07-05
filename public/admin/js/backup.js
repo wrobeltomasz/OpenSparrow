@@ -1,11 +1,13 @@
 ﻿// admin/js/backup.js — Backup & restore page (renderBackupPage): per-table export/import and full backup via api.php (export / import / backup_tables). CSRF from meta tag.
 
+import { createPageHeader } from './ui.js';
+
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 export async function renderBackupPage(ctx) {
     const { workspaceEl } = ctx;
 
-    workspaceEl.innerHTML = '<p style="color:#64748B;padding:20px;">Loading tables…</p>';
+    workspaceEl.innerHTML = '<p style="color:var(--muted);padding:20px;">Loading tables…</p>';
 
     workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
     const myId = workspaceEl._renderId;
@@ -43,7 +45,7 @@ export async function renderBackupPage(ctx) {
         }
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<p style="color:#d00000;padding:20px;">Failed to load tables.</p>';
+        workspaceEl.innerHTML = '<p style="color:var(--danger);padding:20px;">Failed to load tables.</p>';
         return;
     }
 
@@ -52,23 +54,16 @@ export async function renderBackupPage(ctx) {
     const allTables = [...userTables, ...systemTables];
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'max-width:720px;padding:4px 0;';
+    wrap.className = 'admin-page';
 
-    const heading = document.createElement('h2');
-    heading.style.marginTop = '0';
-    heading.textContent = 'Backup Tables';
-    wrap.appendChild(heading);
-
-    const desc = document.createElement('p');
-    desc.style.color = '#64748B';
-    desc.innerHTML = 'Creates a copy of selected tables in the same schema using <code>CREATE TABLE prefix_name AS SELECT * FROM name</code>.'
+    wrap.appendChild(createPageHeader('Backup Tables',
+        'Creates a copy of selected tables in the same schema using <code>CREATE TABLE prefix_name AS SELECT * FROM name</code>.'
         + ' The prefix is the current date and time — e.g. <code>202604211709_tablename</code>.'
-        + ' Data and column structure are copied; indexes and constraints are not.';
-    wrap.appendChild(desc);
+        + ' Data and column structure are copied; indexes and constraints are not.'));
 
     if (allTables.length === 0) {
         const empty = document.createElement('p');
-        empty.style.color = '#64748B';
+        empty.style.color = 'var(--muted)';
         empty.textContent = 'No tables found. Configure the database connection and define tables in the Schema tab.';
         wrap.appendChild(empty);
         workspaceEl.innerHTML = '';
@@ -97,13 +92,13 @@ export async function renderBackupPage(ctx) {
 
     for (const [groupName, tables] of Object.entries(groups)) {
         const groupLabel = document.createElement('div');
-        groupLabel.style.cssText = 'font-weight:600;color:#64748B;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 6px;';
+        groupLabel.style.cssText = 'font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 6px;';
         groupLabel.textContent = groupName;
         wrap.appendChild(groupLabel);
 
         tables.forEach(t => {
             const label = document.createElement('label');
-            label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #CBD5E1;border-radius:4px;margin-bottom:4px;cursor:pointer;background:#fff;user-select:none;';
+            label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:4px;margin-bottom:4px;cursor:pointer;background:#fff;user-select:none;';
 
             const cb = document.createElement('input');
             cb.type = 'checkbox';
@@ -117,7 +112,7 @@ export async function renderBackupPage(ctx) {
             nameSpan.textContent = t.display !== t.name ? `${t.display}  (${t.name})` : t.name;
 
             const schemaTag = document.createElement('span');
-            schemaTag.style.cssText = 'font-size:11px;color:#64748B;font-family:monospace;';
+            schemaTag.style.cssText = 'font-size:11px;color:var(--muted);font-family:monospace;';
             schemaTag.textContent = t.schema;
 
             label.append(cb, nameSpan, schemaTag);
@@ -148,7 +143,7 @@ export async function renderBackupPage(ctx) {
             .map(cb => ({ name: cb.dataset.name, schema: cb.dataset.schema }));
 
         if (selected.length === 0) {
-            resultArea.innerHTML = '<p style="color:#ffc300;margin:0;">No tables selected.</p>';
+            resultArea.innerHTML = '<p style="color:var(--warn);margin:0;">No tables selected.</p>';
             return;
         }
 
@@ -175,9 +170,9 @@ export async function renderBackupPage(ctx) {
                     li.style.cssText = 'padding:8px 12px;border-radius:4px;margin-bottom:4px;font-size:13px;display:flex;gap:8px;align-items:baseline;';
                     if (r.status === 'success') {
                         li.style.background = 'rgba(43,147,72,0.12)';
-                        li.innerHTML = `<span style="color:#2b9348;font-weight:700;">✓</span>`
+                        li.innerHTML = `<span style="color:var(--ok);font-weight:700;">✓</span>`
                             + ` <strong>${esc(r.table)}</strong> → <code style="background:rgba(43,147,72,0.12);padding:1px 5px;border-radius:3px;">${esc(r.backup)}</code>`
-                            + ` <span style="color:#2b9348;font-size:11px;">(${esc(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
+                            + ` <span style="color:var(--ok);font-size:11px;">(${esc(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
                     } else {
                         li.style.background = 'rgba(208,0,0,0.08)';
                         li.innerHTML = `<span style="color:#a80000;font-weight:700;">✗</span>`
@@ -187,10 +182,10 @@ export async function renderBackupPage(ctx) {
                 });
                 resultArea.appendChild(ul);
             } else {
-                resultArea.innerHTML = `<p style="color:#d00000;margin:0;">Error: ${esc(data.error || 'Unknown error')}</p>`;
+                resultArea.innerHTML = `<p style="color:var(--danger);margin:0;">Error: ${esc(data.error || 'Unknown error')}</p>`;
             }
         } catch (e) {
-            resultArea.innerHTML = `<p style="color:#d00000;margin:0;">Request failed: ${esc(e.message)}</p>`;
+            resultArea.innerHTML = `<p style="color:var(--danger);margin:0;">Request failed: ${esc(e.message)}</p>`;
         }
 
         btnBackup.disabled = false;

@@ -8,35 +8,21 @@ declare(strict_types=1);
 // Records routed to PostgreSQL or MySQL gateway; every write does log_user_action() audit, snapshot_record(), and automations (automations.php)
 // All identifiers via pg_ident(), values parameterized; uses sys_table() for system tables
 
-require_once __DIR__ . '/../includes/session.php';
-start_session();
-// Block access without active session
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    exit(json_encode(['error' => 'Unauthorized']));
-}
+use App\Security\UserRole;
 
-// Hard session-lifetime + User-Agent enforcement (centralised in session.php).
-enforce_session_json();
+require_once __DIR__ . '/../includes/bootstrap.php';
+
+// Auth gate, staleness enforcement and header-CSRF for POST/PATCH/DELETE.
+// connect=false: the DB connection is opened per-branch below.
+os_api_bootstrap(['connect' => false]);
 
 $method = $_SERVER['REQUEST_METHOD'];
-$role = $_SESSION['role'] ?? 'viewer';
-// Validate CSRF token for all state-changing requests
-if (in_array($method, ['POST', 'PATCH', 'DELETE'], true)) {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        exit(json_encode(['error' => 'CSRF token mismatch.']));
-    }
-}
+$role = UserRole::fromSession();
 
 // Self-service profile actions — permitted for every authenticated user regardless of role
 $profileAction = $_GET['action'] ?? '';
 if (in_array($profileAction, ['update_avatar', 'change_password'], true)) {
-    header('Content-Type: application/json; charset=utf-8');
-    require __DIR__ . '/../includes/db.php';
     $conn = db_connect();
-    require __DIR__ . '/../includes/api_helpers.php';
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $uid  = (int)$_SESSION['user_id'];
 // POST: save chosen avatar (1-24) or clear it (null)
@@ -91,15 +77,14 @@ if (in_array($profileAction, ['update_avatar', 'change_password'], true)) {
         }
 
         $newSalt    = bin2hex(random_bytes(32));
-        $newOptions = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 2];
-        $newHash    = password_hash($newSalt . $new, PASSWORD_ARGON2ID, $newOptions);
+        $newHash    = password_hash($newSalt . $new, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
         $sqlUpd = 'UPDATE ' . sys_table('users')
             . ' SET password_hash = $1, salt = $2, password_algo = $3, password_params = $4 WHERE id = $5';
         $params = [
             $newHash,
             $newSalt,
             'argon2id',
-            json_encode(['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 2]),
+            json_encode(ARGON2_OPTIONS),
             $uid,
         ];
         $resUpd = @pg_query_params($conn, $sqlUpd, $params);
@@ -125,13 +110,13 @@ if ($profileAction === 'i18n_bundle' && $method === 'GET') {
 }
 
 // Admin role is restricted to the admin panel; block from frontend data API
-if ($role === 'admin') {
+if ($role === UserRole::Admin) {
     http_response_code(403);
     exit(json_encode(['error' => 'Forbidden: Admin accounts cannot access the frontend data API.']));
 }
 
 // Block data modification requests for viewer users
-if ($role === 'viewer' && in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+if ($role === UserRole::Viewer && in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
     http_response_code(403);
     exit(json_encode(['error' => 'Forbidden: Read-only access']));
 }
@@ -145,13 +130,9 @@ if ($schemaJson === false) {
     exit;
 }
 $schema = json_decode($schemaJson, true, 512, JSON_THROW_ON_ERROR);
-// Connect to DB and load helpers
-require __DIR__ . '/../includes/db.php';
+// Connect to DB (db.php + api_helpers.php are already loaded by the bootstrap)
 $conn = db_connect();
-require __DIR__ . '/../includes/api_helpers.php';
 require_once __DIR__ . '/../includes/automations.php';
-$method = $_SERVER['REQUEST_METHOD'];
-header('Content-Type: application/json; charset=utf-8');
 
 // ---------------------------------------------------------------------------
 // MySQL Gateway helpers — load routing config and create PDO once per request
@@ -177,6 +158,9 @@ require_once __DIR__ . '/../includes/mysql.php';
  * column against the table schema and binds values as parameters. The id
  * column is mapped back to its real MySQL primary key when aliased via
  * `mysql_pk`. Appended params are pushed onto $params by reference.
+ * $window selects the date range: 'current' for the active filter window,
+ * 'prev' for the equally long window directly before it (KPI trend deltas).
+ * Returns null for $window = 'prev' when no date filter applies to the widget.
  */
 function mysql_widget_where(
     array $tableCfg,
@@ -184,8 +168,9 @@ function mysql_widget_where(
     string $dateFilter,
     string $dateTarget,
     string $widgetTargetId,
-    array &$params
-): string {
+    array &$params,
+    string $window = 'current'
+): ?string {
     $idCol   = id_column();
     $mysqlPk = $tableCfg['mysql_pk'] ?? null;
     $realCol = fn(string $c): string => ($c === $idCol && $mysqlPk !== null) ? $mysqlPk : $c;
@@ -211,40 +196,50 @@ function mysql_widget_where(
         }
     }
 
-    $where = '';
+    // Parenthesise the whole condition group so an appended date-range AND
+    // cannot rebind a widget-level OR (AND binds tighter than OR in SQL).
+    $condSql = '';
     if (!empty($condParts)) {
         $built = $condParts[0][0];
         for ($i = 1, $n = count($condParts); $i < $n; $i++) {
             $built .= ' ' . $condParts[$i][1] . ' ' . $condParts[$i][0];
         }
-        $where = ' WHERE ' . $built;
+        $condSql = count($condParts) > 1 ? '(' . $built . ')' : $built;
     }
 
+    $dateSql = null;
     if ($dateFilter !== 'all' && ($dateTarget === 'all' || $dateTarget === $widgetTargetId)) {
-        $dateCol = null;
-        foreach ($tableCfg['columns'] as $cName => $cCfg) {
+        // First column that represents a date/time ('time' also matches 'timestamp')
+        $dateCol = array_find_key($tableCfg['columns'], static function (array $cCfg): bool {
             $cType = strtolower($cCfg['type'] ?? '');
-            if (str_contains($cType, 'date') || str_contains($cType, 'time') || str_contains($cType, 'timestamp')) {
-                $dateCol = $cName;
-                break;
-            }
-        }
+            return str_contains($cType, 'date') || str_contains($cType, 'time');
+        });
         if ($dateCol !== null) {
-            $dc     = mysql_bt($realCol($dateCol));
-            $prefix = $where === '' ? ' WHERE ' : ' AND ';
-            if ($dateFilter === 'today') {
-                $where .= $prefix . $dc . ' >= CURDATE()';
-            } elseif ($dateFilter === '7d') {
-                $where .= $prefix . $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
-            } elseif ($dateFilter === '30d') {
-                $where .= $prefix . $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-            } elseif ($dateFilter === 'this_month') {
-                $where .= $prefix . "DATE_FORMAT(" . $dc . ", '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')";
-            }
+            $dc = mysql_bt($realCol($dateCol));
+            $dateSql = $window === 'prev'
+                ? match ($dateFilter) {
+                    'today'      => '(' . $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND ' . $dc . ' < CURDATE())',
+                    '7d'         => '(' . $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND ' . $dc . ' < DATE_SUB(CURDATE(), INTERVAL 7 DAY))',
+                    '30d'        => '(' . $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 60 DAY) AND ' . $dc . ' < DATE_SUB(CURDATE(), INTERVAL 30 DAY))',
+                    'this_month' => "DATE_FORMAT(" . $dc . ", '%Y-%m') = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m')",
+                    default      => null,
+                }
+                : match ($dateFilter) {
+                    'today'      => $dc . ' >= CURDATE()',
+                    '7d'         => $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)',
+                    '30d'        => $dc . ' >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)',
+                    'this_month' => "DATE_FORMAT(" . $dc . ", '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')",
+                    default      => null,
+                };
         }
     }
 
-    return $where;
+    if ($window === 'prev' && $dateSql === null) {
+        return null;
+    }
+
+    $parts = array_values(array_filter([$condSql, $dateSql ?? '']));
+    return empty($parts) ? '' : ' WHERE ' . implode(' AND ', $parts);
 }
 
 try {
@@ -325,6 +320,9 @@ try {
                 $wTargetId = $widget['id'] ?? $widget['table'] ?? '';
                 $myParams  = [];
                 $myWhere   = mysql_widget_where($tableCfg, $conditions, $dfFilter, $dfTarget, $wTargetId, $myParams);
+                // Previous-period window for KPI trend deltas (null when no date filter applies)
+                $myParamsPrev = [];
+                $myWherePrev  = mysql_widget_where($tableCfg, $conditions, $dfFilter, $dfTarget, $wTargetId, $myParamsPrev, 'prev');
 
                 $data = null;
                 try {
@@ -334,6 +332,11 @@ try {
                             $stmt = $mysqlPdo->prepare('SELECT COUNT(' . mysql_bt($realColMy($col)) . ') AS count FROM ' . $myTable . $myWhere);
                             $stmt->execute($myParams);
                             $data = (int) $stmt->fetchColumn();
+                            if ($myWherePrev !== null) {
+                                $stmt = $mysqlPdo->prepare('SELECT COUNT(' . mysql_bt($realColMy($col)) . ') AS count FROM ' . $myTable . $myWherePrev);
+                                $stmt->execute($myParamsPrev);
+                                $widget['prev_data'] = (int) $stmt->fetchColumn();
+                            }
                         }
                     } elseif ($qType === 'sum') {
                         $col = $widget['query']['column'] ?? '';
@@ -342,6 +345,12 @@ try {
                             $stmt->execute($myParams);
                             $val  = (float) $stmt->fetchColumn();
                             $data = ($val == (int) $val) ? (int) $val : round($val, 2);
+                            if ($myWherePrev !== null) {
+                                $stmt = $mysqlPdo->prepare('SELECT COALESCE(SUM(' . mysql_bt($realColMy($col)) . '), 0) AS total FROM ' . $myTable . $myWherePrev);
+                                $stmt->execute($myParamsPrev);
+                                $valP = (float) $stmt->fetchColumn();
+                                $widget['prev_data'] = ($valP == (int) $valP) ? (int) $valP : round($valP, 2);
+                            }
                         }
                     } elseif ($qType === 'group_by') {
                         $grpCol  = $widget['query']['group_column'] ?? '';
@@ -435,41 +444,62 @@ try {
                     $condParts[] = [$colSql . ' ' . $op . " '" . pg_escape_string($conn, $val) . "'", $logic];
                 }
             }
+            // Parenthesise the whole condition group so the appended date-range AND
+            // cannot rebind a widget-level OR (AND binds tighter than OR in SQL).
+            $condSql = '';
             if (!empty($condParts)) {
                 $built = $condParts[0][0];
                 for ($i = 1; $i < count($condParts); $i++) {
                     $built .= ' ' . $condParts[$i][1] . ' ' . $condParts[$i][0];
                 }
-                $sqlWhere = ' WHERE ' . $built;
+                $condSql = count($condParts) > 1 ? '(' . $built . ')' : $built;
             }
 
-            // Apply Global Date Filter if requested and target matches
+            // Apply Global Date Filter if requested and target matches.
+            // $dateSqlPrev covers the equally long window directly before the
+            // current one and powers the previous-period delta on KPI cards.
             $dateFilter = $_GET['date_filter'] ?? 'all';
             $dateTarget = $_GET['date_target'] ?? 'all';
             $widgetTargetId = $widget['id'] ?? $widget['table'] ?? '';
+            $dateSqlCur  = null;
+            $dateSqlPrev = null;
             if ($dateFilter !== 'all' && ($dateTarget === 'all' || $dateTarget === $widgetTargetId)) {
-                $dateCol = null;
-            // Find the first column that represents a date or timestamp
-                foreach ($tableCfg['columns'] as $cName => $cCfg) {
+                // First column that represents a date/time ('time' also matches 'timestamp')
+                $dateCol = array_find_key($tableCfg['columns'], static function (array $cCfg): bool {
                     $cType = strtolower($cCfg['type'] ?? '');
-                    if (str_contains($cType, 'date') || str_contains($cType, 'time') || str_contains($cType, 'timestamp')) {
-                        $dateCol = $cName;
-                        break;
-                    }
-                }
+                    return str_contains($cType, 'date') || str_contains($cType, 'time');
+                });
 
                 if ($dateCol) {
-                    $prefix = $sqlWhere === '' ? ' WHERE ' : ' AND ';
-                    if ($dateFilter === 'today') {
-                        $sqlWhere .= $prefix . pg_ident($dateCol) . " >= CURRENT_DATE";
-                    } elseif ($dateFilter === '7d') {
-                        $sqlWhere .= $prefix . pg_ident($dateCol) . " >= CURRENT_DATE - INTERVAL '7 days'";
-                    } elseif ($dateFilter === '30d') {
-                        $sqlWhere .= $prefix . pg_ident($dateCol) . " >= CURRENT_DATE - INTERVAL '30 days'";
-                    } elseif ($dateFilter === 'this_month') {
-                        $sqlWhere .= $prefix . "DATE_TRUNC('month', " . pg_ident($dateCol) . ") = DATE_TRUNC('month', CURRENT_DATE)";
-                    }
+                    $dc = pg_ident($dateCol);
+                    [$dateSqlCur, $dateSqlPrev] = match ($dateFilter) {
+                        'today' => [
+                            $dc . ' >= CURRENT_DATE',
+                            '(' . $dc . " >= CURRENT_DATE - INTERVAL '1 day' AND " . $dc . ' < CURRENT_DATE)',
+                        ],
+                        '7d' => [
+                            $dc . " >= CURRENT_DATE - INTERVAL '7 days'",
+                            '(' . $dc . " >= CURRENT_DATE - INTERVAL '14 days' AND " . $dc . " < CURRENT_DATE - INTERVAL '7 days')",
+                        ],
+                        '30d' => [
+                            $dc . " >= CURRENT_DATE - INTERVAL '30 days'",
+                            '(' . $dc . " >= CURRENT_DATE - INTERVAL '60 days' AND " . $dc . " < CURRENT_DATE - INTERVAL '30 days')",
+                        ],
+                        'this_month' => [
+                            "DATE_TRUNC('month', " . $dc . ") = DATE_TRUNC('month', CURRENT_DATE)",
+                            "DATE_TRUNC('month', " . $dc . ") = DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'",
+                        ],
+                        default => [null, null],
+                    };
                 }
+            }
+
+            $whereParts = array_values(array_filter([$condSql, $dateSqlCur ?? '']));
+            $sqlWhere = empty($whereParts) ? '' : ' WHERE ' . implode(' AND ', $whereParts);
+            $sqlWherePrev = null;
+            if ($dateSqlPrev !== null) {
+                $prevParts = array_values(array_filter([$condSql, $dateSqlPrev]));
+                $sqlWherePrev = ' WHERE ' . implode(' AND ', $prevParts);
             }
 
             if ($qType === 'count') {
@@ -482,6 +512,15 @@ try {
                         $row = pg_fetch_assoc($res);
                         $data = (int)($row['count'] ?? 0);
                         pg_free_result($res);
+                        if ($sqlWherePrev !== null) {
+                            $sqlPrev = sprintf('SELECT COUNT(%s) AS count FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWherePrev);
+                            $resP = @pg_query($conn, $sqlPrev);
+                            if ($resP) {
+                                $rowP = pg_fetch_assoc($resP);
+                                $widget['prev_data'] = (int)($rowP['count'] ?? 0);
+                                pg_free_result($resP);
+                            }
+                        }
                     } else {
                         $widget['sql_error'] = 'Query failed.';
                     }
@@ -496,6 +535,16 @@ try {
                         $val = (float)($row['total'] ?? 0);
                         $data = ($val == (int)$val) ? (int)$val : round($val, 2);
                         pg_free_result($res);
+                        if ($sqlWherePrev !== null) {
+                            $sqlPrev = sprintf('SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWherePrev);
+                            $resP = @pg_query($conn, $sqlPrev);
+                            if ($resP) {
+                                $rowP = pg_fetch_assoc($resP);
+                                $valP = (float)($rowP['total'] ?? 0);
+                                $widget['prev_data'] = ($valP == (int)$valP) ? (int)$valP : round($valP, 2);
+                                pg_free_result($resP);
+                            }
+                        }
                     } else {
                         $widget['sql_error'] = 'Query failed.';
                     }
@@ -712,7 +761,7 @@ try {
             'status_column' => $boardCfg['status_column'] ?? '',
             'columns'       => [],
             'cards'         => [],
-            'can_edit'      => $role !== 'viewer',
+            'can_edit'      => $role !== UserRole::Viewer,
         ];
 
         $table     = $boardCfg['table'] ?? '';
@@ -1194,7 +1243,7 @@ try {
         $idCol = id_column();
 // POST: CALENDAR MOVE EVENT (Drag & Drop functionality)
         if ($method === 'POST' && ($body['api'] ?? '') === 'calendar' && ($body['action'] ?? '') === 'move_event') {
-            if ($role === 'viewer') {
+            if ($role === UserRole::Viewer) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Forbidden']);
                 exit;
@@ -1305,7 +1354,7 @@ try {
 
         // POST: BOARD MOVE CARD (Kanban drag & drop — changes the status column)
         if ($method === 'POST' && ($body['api'] ?? '') === 'board' && ($body['action'] ?? '') === 'move_card') {
-            if ($role === 'viewer') {
+            if ($role === UserRole::Viewer) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Forbidden']);
                 exit;
@@ -1470,6 +1519,14 @@ try {
                 $val = null;
             }
 
+            // Server-side validation_regexp enforcement — the client data-pattern
+            // check is advisory only and trivially bypassed with a direct request.
+            if (!str_contains($colType, 'bool') && ($regexpError = validate_column_regexp($tableCfg['columns'][$col], $val)) !== null) {
+                http_response_code(422);
+                echo json_encode(['error' => $regexpError]);
+                exit;
+            }
+
             // MySQL Gateway — UPDATE single cell
             if (in_array($table, mysql_gateway_tables(), true)) {
                 $mysqlPdo = mysql_pdo('api');
@@ -1498,6 +1555,9 @@ try {
                 exit;
             }
 
+            // Pre-update state for change-based automation conditions (changed_from/changed_to).
+            $oldRecord = auto_capture_old_record($conn, $schemaName, $table, $recordId);
+
             $sql = sprintf('UPDATE %s.%s SET %s = $1%s WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($col), $cast, pg_ident($idCol));
             $res = @pg_query_params($conn, $sql, [$val, $recordId]);
             if (!$res) {
@@ -1511,7 +1571,7 @@ try {
             if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
                 snapshot_record($conn, $schemaName, $table, (int) $body['id'], $logId);
             }
-            evaluate_automation_rules($conn, $schemaName, $table, (int)$body['id'], 'update', (int)$_SESSION['user_id']);
+            evaluate_automation_rules($conn, $schemaName, $table, (int)$body['id'], 'update', (int)$_SESSION['user_id'], $oldRecord);
             echo json_encode(['ok' => true]);
             exit;
         }
@@ -1538,6 +1598,13 @@ try {
                 $isNotNull = !empty($colCfg['not_null']);
                 if ($val === null && $isNotNull) {
                     $val = type_min_value($type);
+                }
+
+                // Server-side validation_regexp enforcement (client check is advisory)
+                if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($colCfg, $val)) !== null) {
+                    http_response_code(422);
+                    echo json_encode(['error' => $regexpError, 'column' => $colName]);
+                    exit;
                 }
 
                 if ($val !== null) {

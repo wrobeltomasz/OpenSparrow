@@ -53,7 +53,7 @@ if (!function_exists('client_ip')) {
 // Read a single key from config/settings.json, returning $default when absent.
 // The decoded file is cached for the request so repeated lookups read it once.
 if (!function_exists('settings_value')) {
-    function settings_value(string $key, $default = null)
+    function settings_value(string $key, mixed $default = null): mixed
     {
         static $settings = null;
         if ($settings === null) {
@@ -180,6 +180,11 @@ ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
     }
     define('IP_HASH_SALT', $stored);
 })();
+// Argon2id parameters used for every password hash in the application.
+// Centralised because login.php's password_needs_rehash() check and every
+// writer (setup, admin user management, change_password) must agree —
+// divergent options silently force a rehash of each password on next login.
+define('ARGON2_OPTIONS', ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1]);
 // Maximum number of failed login attempts allowed from a single IP address
 // within the lockout window before that IP is temporarily blocked.
 define('LOGIN_MAX_ATTEMPTS_PER_IP', (int) get_env('LOGIN_MAX_ATTEMPTS_PER_IP', '20'));
@@ -236,6 +241,17 @@ define('COMMENTS_PAGE_LIMIT_MAX', (int) get_env('COMMENTS_PAGE_LIMIT_MAX', '50')
 // Maximum number of notifications fetched for the dropdown bell menu.
 // Increasing this value affects header rendering time for every page load.
 define('NOTIFICATIONS_DROPDOWN_LIMIT', (int) get_env('NOTIFICATIONS_DROPDOWN_LIMIT', '10'));
+// From address for automation emails queued in spw_automation_emails and sent
+// by cron/cron_notifications.php. When empty, queued emails stay pending and
+// the cron logs a warning. Env var takes precedence over settings.json.
+define('AUTOMATION_EMAIL_FROM', (function (): string {
+    $env = get_env('AUTOMATION_EMAIL_FROM', '');
+    return $env !== '' ? $env : (string) settings_value('automation_email_from', '');
+})());
+// Maximum number of queued automation emails delivered per cron run.
+define('AUTOMATION_EMAIL_BATCH_LIMIT', (int) get_env('AUTOMATION_EMAIL_BATCH_LIMIT', '50'));
+// Delivery attempts per queued email before it is marked as permanently failed.
+define('AUTOMATION_EMAIL_MAX_ATTEMPTS', (int) get_env('AUTOMATION_EMAIL_MAX_ATTEMPTS', '3'));
 // -------------------------------------------------------------------------
 // Admin panel
 // -------------------------------------------------------------------------

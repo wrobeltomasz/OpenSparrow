@@ -1,19 +1,17 @@
 <?php
 
 // login.php — Login page and post-login landing resolver
-// First-run: redirects to setup.php if config/database.json is missing
+// Boots via includes/bootstrap.php: os_page_bootstrap(guest, setup check, 'login' CSP, no HSTS) — redirects to setup.php if config/database.json is missing
 // POST authenticates against sys_table('users') with password_verify (Argon2) + CSRF; brute-force throttling via sys_table('login_attempts') (per username + IP hash)
 // resolve_landing_page() walks the sidebar order (dashboard -> calendar -> files -> first table), skipping modules hidden in their JSON config; reads includes/VERSION
 
-require_once __DIR__ . '/../includes/session.php';
+use App\Security\UserRole;
 
-// First-run check: if database.json doesn't exist, redirect to setup wizard
-if (!file_exists(__DIR__ . '/../config/database.json')) {
-    header('Location: setup.php');
-    exit;
-}
+require_once __DIR__ . '/../includes/bootstrap.php';
 
-start_session();
+// Guest page: setup check, CSRF token, CSP nonce + 'login' headers (no HSTS) — no auth gate
+$page     = os_page_bootstrap(['guest' => true, 'setup_check' => true, 'csp' => 'login', 'hsts' => false]);
+$cspNonce = $page['nonce'];
 
 // Resolve the landing page after login by walking the sidebar order.
 // When an administrator hides a module from the sidebar (hidden: true in
@@ -57,20 +55,10 @@ if (is_file($versionFile)) {
     }
 }
 
-// Generate a unique nonce for Content Security Policy
-$cspNonce = bin2hex(random_bytes(16));
-
-send_security_headers($cspNonce, false, 'login');
-
 // Redirect if already authenticated
 if (isset($_SESSION['user_id'])) {
     header("Location: " . resolve_landing_page());
     exit;
-}
-
-// Generate CSRF token if it does not exist
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 $error = '';
@@ -148,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // (password_verify is skipped for a missing user, so without this a
                 // non-existent account returns measurably faster.)
                 if (!$user) {
-                    password_hash($password, PASSWORD_ARGON2ID, ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1]);
+                    password_hash($password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
                 }
 
                 $storedSalt = $user['salt'] ?? '';
@@ -166,14 +154,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_agent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
 
                     // Rehash on login if parameters changed; generate new salt when rehashing
-                    $newOptions = [
-                        'memory_cost' => 1 << 17,
-                        'time_cost' => 4,
-                        'threads' => 1
-                    ];
-                    if (password_needs_rehash($user['password_hash'], PASSWORD_ARGON2ID, $newOptions)) {
+                    if (password_needs_rehash($user['password_hash'], PASSWORD_ARGON2ID, ARGON2_OPTIONS)) {
                         $newSalt = bin2hex(random_bytes(32));
-                        $newHash = password_hash($newSalt . $password, PASSWORD_ARGON2ID, $newOptions);
+                        $newHash = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
                         $sqlUpdate = 'UPDATE ' . sys_table('users') . ' SET password_hash = $1, salt = $2 WHERE id = $3';
                         pg_query_params($conn, $sqlUpdate, [$newHash, $newSalt, $user['id']]);
                     }
@@ -182,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     session_write_close();
 
-                    if (($_SESSION['role'] ?? '') === 'admin') {
+                    if (UserRole::fromSession() === UserRole::Admin) {
                         header("Location: admin/");
                         exit;
                     }

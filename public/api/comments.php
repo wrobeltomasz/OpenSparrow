@@ -10,8 +10,10 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../includes/api_bootstrap.php';
-$conn = api_bootstrap();
+require_once __DIR__ . '/../../includes/bootstrap.php';
+
+// csrf=manual: mutating actions validate the body token via os_require_csrf() themselves
+$conn = os_api_bootstrap(['csrf' => 'manual']);
 // jsonError(), jsonSuccess(), requireLogin() and validatedTable() are shared via includes/api_helpers.php
 
 function requireWrite(): void
@@ -19,15 +21,6 @@ function requireWrite(): void
     requireLogin();
     if (($_SESSION['role'] ?? 'editor') !== 'editor') {
         jsonError('Forbidden: read-only access', 403);
-    }
-}
-
-function requireCsrf(array $body = []): void
-{
-    $token   = $_POST['csrf_token'] ?? $body['csrf_token'] ?? '';
-    $session = $_SESSION['csrf_token'] ?? '';
-    if (!$session || !hash_equals($session, (string)$token)) {
-        jsonError('Invalid CSRF token.', 403);
     }
 }
 
@@ -104,7 +97,7 @@ function actionList($conn): void
 function actionAdd($conn, array $body): void
 {
     requireWrite();
-    requireCsrf($body);
+    os_require_csrf('body', $body);
     $relatedTable = validatedTable(trim($body['related_table'] ?? ''), 'related_table');
     $relatedId    = (int)($body['related_id'] ?? 0);
     $rawBody      = trim($body['body'] ?? '');
@@ -153,7 +146,7 @@ function actionAdd($conn, array $body): void
 function actionDelete($conn, array $body): void
 {
     requireLogin();
-    requireCsrf($body);
+    os_require_csrf('body', $body);
     $id     = (int)($body['id'] ?? 0);
     $userId = (int)$_SESSION['user_id'];
     $role   = $_SESSION['role'] ?? 'editor';

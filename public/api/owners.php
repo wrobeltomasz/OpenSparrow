@@ -7,8 +7,10 @@ declare(strict_types=1);
 // match() action routing: get, history, editors, set, mass_set — keyed by (table_name, record_id), is_current flag
 // sys_table('record_owners'); parameterized queries; JSON via jsonError()/jsonSuccess()
 
-require_once __DIR__ . '/../../includes/api_bootstrap.php';
-$conn = api_bootstrap();
+require_once __DIR__ . '/../../includes/bootstrap.php';
+
+// csrf=manual: mutating actions validate the body token via os_require_csrf() themselves
+$conn = os_api_bootstrap(['csrf' => 'manual']);
 
 // jsonError(), jsonSuccess(), requireLogin() and validatedTable() are shared via includes/api_helpers.php
 
@@ -18,15 +20,6 @@ function requireWrite(): void
     $role = $_SESSION['role'] ?? '';
     if ($role !== 'editor' && $role !== 'admin') {
         jsonError('Forbidden: read-only access', 403);
-    }
-}
-
-function requireCsrf(array $body): void
-{
-    $token   = $body['csrf_token'] ?? '';
-    $session = $_SESSION['csrf_token'] ?? '';
-    if (!$session || !hash_equals($session, (string)$token)) {
-        jsonError('Invalid CSRF token.', 403);
     }
 }
 
@@ -165,7 +158,7 @@ function actionEditors($conn): void
 function actionMassSet($conn, array $body): void
 {
     requireWrite();
-    requireCsrf($body);
+    os_require_csrf('body', $body);
 
     $table   = validatedTable(trim($body['table'] ?? ''));
     $ownerId = (int)($body['owner_id'] ?? 0);
@@ -240,7 +233,7 @@ function actionMassSet($conn, array $body): void
 function actionSet($conn, array $body): void
 {
     requireWrite();
-    requireCsrf($body);
+    os_require_csrf('body', $body);
 
     $table    = validatedTable(trim($body['table'] ?? ''));
     $recordId = (int)($body['record_id'] ?? 0);

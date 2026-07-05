@@ -7,9 +7,14 @@
 #   - Cron service: notification worker (every minute)
 #
 # After deploy:
-#   1. Open the web service URL
-#   2. Go to /admin → Initialize System Tables
-#   3. Configure your schema in /admin → Schema
+#   1. Open the web service URL — you are redirected to the setup wizard
+#   2. Enter the database credentials from the Render dashboard
+#      (Database → Connections, internal hostname) and initialize
+#   3. Log in as admin and configure your schema in /admin → Schema
+#
+# Note: the free-tier filesystem is ephemeral — config/*.json is lost on
+# redeploy/spin-down and the setup wizard re-runs (data in PostgreSQL is
+# safe). For real use attach a persistent disk covering config/ as well.
 #
 # Persistent file uploads require a paid plan. Add a disk:
 #   disk:

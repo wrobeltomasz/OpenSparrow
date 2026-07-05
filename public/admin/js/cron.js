@@ -88,11 +88,10 @@ function buildManualRunSection() {
 
     const runBtn = document.createElement('button');
     runBtn.className = 'btn-action';
-    runBtn.style.cssText = 'padding:8px 20px; font-size:14px;';
     runBtn.textContent = 'Run Cron Now';
 
     const output = document.createElement('pre');
-    output.style.cssText = 'margin-top:14px; padding:12px; background:#F4F7F9; border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
+    output.style.cssText = 'margin-top:14px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
     runBtn.addEventListener('click', async () => {
         runBtn.disabled = true;
@@ -221,10 +220,10 @@ function buildStatsSection() {
             kpiGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:18px;';
 
             const kpis = [
-                ['Total Notifications', t.total ?? '—', '#64748B'],
-                ['Unread',              t.unread ?? '—', '#d00000'],
-                ['Due Today (unread)',  t.due_today ?? '—', '#ffc300'],
-                ['Upcoming Unread',     t.upcoming_unread ?? '—', '#64748B'],
+                ['Total Notifications', t.total ?? '—', 'var(--muted)'],
+                ['Unread',              t.unread ?? '—', 'var(--danger)'],
+                ['Due Today (unread)',  t.due_today ?? '—', 'var(--warn)'],
+                ['Upcoming Unread',     t.upcoming_unread ?? '—', 'var(--muted)'],
             ];
             kpis.forEach(([label, val, color]) => {
                 const kpi = document.createElement('div');
@@ -296,14 +295,14 @@ function buildSetupSection() {
 
     function guideBlock(heading, code, note) {
         const wrap = document.createElement('div');
-        wrap.style.cssText = 'background:#F4F7F9; border:1px solid var(--border); border-radius:6px; padding:14px;';
+        wrap.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:14px;';
 
         const h = document.createElement('strong');
         h.textContent = heading;
         h.style.cssText = 'display:block; margin-bottom:8px; font-size:13px;';
 
         const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0 0 6px; font-size:12px; background:#003366; color:#F0F6FA; padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
+        pre.style.cssText = 'margin:0 0 6px; font-size:12px; background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
         pre.textContent = code;
 
         wrap.append(h, pre);
@@ -409,7 +408,7 @@ function buildCleanupSection() {
             const data = await res.json();
             if (data.status === 'success') {
                 result.textContent = `Deleted ${data.deleted} log row(s).`;
-                result.style.color = '#2b9348';
+                result.style.color = 'var(--ok)';
             } else {
                 result.textContent = 'Error: ' + (data.error || 'unknown');
                 result.style.color = '#a80000';
