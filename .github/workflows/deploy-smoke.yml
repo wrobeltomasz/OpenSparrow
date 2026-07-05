@@ -43,7 +43,12 @@ jobs:
         # docker-compose.override.yml is auto-merged: APP_ENV=development,
         # SECURE_COOKIES=false (required — curl cannot return Secure cookies
         # over plain HTTP).
-        run: docker compose up -d
+        # --build forces app/cron to be built from the local Dockerfile instead
+        # of the wrobeltom/open-sparrow:latest tag on Docker Hub, which is only
+        # refreshed by docker-hub-build.yml — a separate workflow triggered by
+        # the same push, so it can still be stale (old PHP version, old code)
+        # when this job runs.
+        run: docker compose up -d --build
 
       - name: Run install smoke test
         env:

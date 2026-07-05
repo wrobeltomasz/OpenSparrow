@@ -2,6 +2,7 @@ services:
   # PHP-FPM Application Service
   app:
     image: wrobeltom/open-sparrow:latest
+    build: .
     restart: unless-stopped
     volumes:
       - .:/var/www/html
@@ -30,6 +31,7 @@ services:
   # Background Worker (Cron) Service
   cron:
     image: wrobeltom/open-sparrow:latest
+    build: .
     restart: unless-stopped
     volumes:
       - .:/var/www/html
