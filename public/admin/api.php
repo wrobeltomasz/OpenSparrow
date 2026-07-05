@@ -932,7 +932,7 @@ if ($action === 'export') {
     if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
         $configDir = __DIR__ . '/../../config/';
         // database.json excluded — contains plaintext DB credentials
-        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'board.json', 'security.json', 'workflows.json', 'files.json', 'views.json', 'automations.json'];
+        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'board.json', 'security.json', 'workflows.json', 'files.json', 'views.json', 'automations.json', 'menu.json', 'settings.json', 'anonymization.json', 'rag.json'];
         foreach ($filesToBackup as $f) {
             if (file_exists($configDir . $f)) {
                 $zip->addFile($configDir . $f, $f);
@@ -972,7 +972,7 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
     $zip = new ZipArchive();
     if ($zip->open($_FILES['backup_file']['tmp_name']) === true) {
         $extractPath = __DIR__ . '/../../config/';
-        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files', 'views', 'automations'];
+        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files', 'views', 'automations', 'menu', 'settings', 'anonymization', 'rag'];
         $validFiles = [];
 
         // Validate each file inside the archive
