@@ -441,7 +441,8 @@ ${_p(s.sLogo_desc)}
 ${_ul([
     `<strong>${s.sLogo_li1_label}:</strong> ${s.sLogo_li1}`,
     `<strong>${s.sLogo_li2_label}:</strong> ${s.sLogo_li2}`,
-    `<strong>${s.sLogo_li3_label}:</strong> ${s.sLogo_li3}`
+    `<strong>${s.sLogo_li3_label}:</strong> ${s.sLogo_li3}`,
+    `<strong>${s.sLogo_li4_label}:</strong> ${s.sLogo_li4}`
 ])}
 
 ${_h3('doc-14', 'Upgrading OpenSparrow')}

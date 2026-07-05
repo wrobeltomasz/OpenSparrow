@@ -230,6 +230,52 @@ export async function renderSettingsPage(ctx) {
     logoDesc.textContent = 'Replace the default OpenSparrow logo shown in the frontend header with your own image. PNG, JPEG or WEBP, up to 2 MB.';
     logoCard.appendChild(logoDesc);
 
+    const logoEnabledRow = document.createElement('label');
+    logoEnabledRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:var(--muted); margin-bottom:16px;';
+
+    const logoEnabledCb = document.createElement('input');
+    logoEnabledCb.type = 'checkbox';
+    logoEnabledCb.id = 'setting-logo-enabled';
+    logoEnabledCb.checked = !!(logoData.logo_enabled);
+    logoEnabledCb.style.cssText = 'width:16px; height:16px; cursor:pointer;';
+
+    logoEnabledRow.appendChild(logoEnabledCb);
+    logoEnabledRow.appendChild(document.createTextNode('Show logo in header (unchecked = no logo, as before this feature)'));
+    logoCard.appendChild(logoEnabledRow);
+
+    const logoEnabledSaveRow = document.createElement('div');
+    logoEnabledSaveRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:20px;';
+
+    const logoEnabledSaveBtn = document.createElement('button');
+    logoEnabledSaveBtn.textContent = 'Save';
+    logoEnabledSaveBtn.className = 'btn btn-primary';
+
+    const logoEnabledPillAnchor = document.createElement('span');
+
+    logoEnabledSaveBtn.addEventListener('click', async () => {
+        logoEnabledSaveBtn.disabled = true;
+        try {
+            const res = await fetch('api.php?action=set_logo_enabled', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+                body: JSON.stringify({ logo_enabled: logoEnabledCb.checked }),
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                showStatusPill(logoEnabledPillAnchor, 'Saved. Reload the app to see the change.', 'success');
+            } else {
+                showStatusPill(logoEnabledPillAnchor, result.error || 'Error saving setting.', 'error');
+            }
+        } catch (e) {
+            showStatusPill(logoEnabledPillAnchor, 'Request failed.', 'error');
+        }
+        logoEnabledSaveBtn.disabled = false;
+    });
+
+    logoEnabledSaveRow.appendChild(logoEnabledSaveBtn);
+    logoEnabledSaveRow.appendChild(logoEnabledPillAnchor);
+    logoCard.appendChild(logoEnabledSaveRow);
+
     const logoPreview = document.createElement('img');
     logoPreview.style.cssText = 'max-height:60px; max-width:220px; display:' + (logoData.logo_path ? 'block' : 'none') + '; border:1px solid var(--border); border-radius:4px; padding:6px; margin-bottom:16px;';
     if (logoData.logo_path) logoPreview.src = logoData.logo_path + '?t=' + Date.now();
@@ -277,7 +323,8 @@ export async function renderSettingsPage(ctx) {
                 logoPreview.style.display = 'block';
                 logoRemoveBtn.style.display = 'inline-block';
                 logoFileInput.value = '';
-                showStatusPill(logoPillAnchor, 'Logo uploaded. Reload the app to see the change.', 'success');
+                logoEnabledCb.checked = true;
+                showStatusPill(logoPillAnchor, 'Logo uploaded and enabled. Reload the app to see the change.', 'success');
             } else {
                 showStatusPill(logoPillAnchor, result.error || 'Error uploading logo.', 'error');
             }
@@ -299,6 +346,7 @@ export async function renderSettingsPage(ctx) {
             if (result.status === 'success') {
                 logoPreview.style.display = 'none';
                 logoRemoveBtn.style.display = 'none';
+                logoEnabledCb.checked = false;
                 showStatusPill(logoPillAnchor, 'Logo removed. Reload the app to see the change.', 'success');
             } else {
                 showStatusPill(logoPillAnchor, result.error || 'Error removing logo.', 'error');

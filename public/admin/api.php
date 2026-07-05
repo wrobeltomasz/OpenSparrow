@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete', 'anonymization_save', 'run_anonymization', 'anonymization_purge_log', 'upload_logo', 'remove_logo'];
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete', 'anonymization_save', 'run_anonymization', 'anonymization_purge_log', 'upload_logo', 'remove_logo', 'set_logo_enabled'];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);
@@ -1268,12 +1268,40 @@ if ($action === 'set_chat_bubble_setting') {
     exit;
 }
 
-// GET: return the current custom logo path (null when not set — the frontend falls back to the default logo)
+// GET: return the current custom logo path and whether the header logo is shown at all.
+// logo_enabled defaults to false — a fresh install shows no header logo, matching
+// the layout before this feature existed.
 if ($action === 'get_logo_setting') {
     header('Content-Type: application/json');
     $settings = admin_read_settings(__DIR__ . '/../../config/settings.json');
     $logoPath = $settings['custom_logo_path'] ?? null;
-    echo json_encode(['logo_path' => is_string($logoPath) ? $logoPath : null]);
+    echo json_encode([
+        'logo_path'    => is_string($logoPath) ? $logoPath : null,
+        'logo_enabled' => (bool) ($settings['logo_enabled'] ?? false),
+    ]);
+    exit;
+}
+
+// POST: toggle whether the header logo is shown at all (independent of the uploaded file)
+if ($action === 'set_logo_enabled') {
+    header('Content-Type: application/json');
+    require_not_demo();
+    $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $enabled = !empty($body['logo_enabled']);
+
+    $settingsFile = __DIR__ . '/../../config/settings.json';
+    $settings = admin_read_settings($settingsFile);
+    $settings['logo_enabled'] = $enabled;
+
+    $written = @file_put_contents(
+        $settingsFile,
+        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    );
+    if ($written === false) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+        exit;
+    }
+    echo json_encode(['status' => 'success', 'logo_enabled' => $enabled]);
     exit;
 }
 
@@ -1343,6 +1371,8 @@ if ($action === 'upload_logo') {
     }
 
     $settings['custom_logo_path'] = '/assets/img/uploads/' . $filename;
+    // Uploading a logo implies wanting it shown; the enable toggle can still turn it off later.
+    $settings['logo_enabled'] = true;
     $written = @file_put_contents(
         $settingsFile,
         json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
@@ -1352,7 +1382,7 @@ if ($action === 'upload_logo') {
         exit;
     }
 
-    echo json_encode(['status' => 'success', 'logo_path' => $settings['custom_logo_path']]);
+    echo json_encode(['status' => 'success', 'logo_path' => $settings['custom_logo_path'], 'logo_enabled' => true]);
     exit;
 }
 
@@ -1373,6 +1403,10 @@ if ($action === 'remove_logo') {
         }
     }
     unset($settings['custom_logo_path']);
+    // No custom image left to show — revert fully to the no-logo header, matching
+    // the layout before this feature existed, rather than silently falling back
+    // to the default OpenSparrow logo.
+    $settings['logo_enabled'] = false;
 
     $written = @file_put_contents(
         $settingsFile,
@@ -1383,7 +1417,7 @@ if ($action === 'remove_logo') {
         exit;
     }
 
-    echo json_encode(['status' => 'success']);
+    echo json_encode(['status' => 'success', 'logo_enabled' => false]);
     exit;
 }
 

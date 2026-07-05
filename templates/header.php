@@ -31,15 +31,23 @@ $vSidebarJs = @filemtime(__DIR__ . '/../public/assets/js/sidebar.js');
 $vNotifJs   = @filemtime(__DIR__ . '/../public/assets/js/notifications.js');
 $vAgentJs   = @filemtime(__DIR__ . '/../public/assets/js/agent-panel.js');
 
+// Logo is opt-in: a fresh install shows no logo (matches the header layout before
+// this feature existed). Admin → Settings → Custom Logo must enable it explicitly.
+$logoEnabled    = (bool) settings_value('logo_enabled', false);
 $customLogoPath = settings_value('custom_logo_path', null);
-$logoSrc = is_string($customLogoPath) && $customLogoPath !== ''
-    ? htmlspecialchars($customLogoPath, ENT_QUOTES, 'UTF-8')
-    : 'assets/img/logo-blue.png';
+$logoSrc        = null;
+if ($logoEnabled) {
+    $logoSrc = is_string($customLogoPath) && $customLogoPath !== ''
+        ? htmlspecialchars($customLogoPath, ENT_QUOTES, 'UTF-8')
+        : 'assets/img/logo-blue.png';
+}
 ?>
 <header>
+    <?php if ($logoSrc !== null) : ?>
     <a href="/" class="brand-logo">
         <img src="<?= $logoSrc ?>" alt="OpenSparrow Logo">
     </a>
+    <?php endif; ?>
     <button id="sidebarToggle" data-cy="sidebar-toggle" aria-label="<?= $tToggleSidebar ?>">&#9776;</button>
     <button class="header-search-toggle" id="searchToggle" aria-label="<?= $tToggleSearch ?>">
         <img class="header-search-icon" src="assets/icons/search.png" alt="">
