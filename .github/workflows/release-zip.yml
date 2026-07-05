@@ -28,7 +28,7 @@ jobs:
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Verify release tag matches OPENSPARROW_VERSION
         # Enforces the version-bump checklist: a release tag must equal the
