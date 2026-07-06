@@ -156,7 +156,7 @@ cd open-sparrow
 php -S localhost:8000 -t public
 ```
 
-Open **http://localhost:8000** — you are redirected to the **setup wizard**. For plain-HTTP local work set `SECURE_COOKIES=false` in your environment first, otherwise the session cookie will not stick.
+Open **http://localhost:8000** — you are redirected to the **setup wizard**. For plain-HTTP local work set `SECURE_COOKIES=false` in your environment first, otherwise the session cookie will not stick. If you plan to run the Cypress E2E suite against this server, also set `APP_ENV=development` — `cypress_seed.php` hard-404s unless it is set, since that endpoint is disabled in production.
 
 Using Apache/Nginx instead: point the virtual host's document root at `public/` (the shipped `nginx.conf` already does this) and open your local URL.
 
