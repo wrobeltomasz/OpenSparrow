@@ -17,9 +17,7 @@ const PRESET_TIMESTAMPS = [
     { name: 'updated_at', type: 'timestamp', not_null: true,  default: 'now()', index: '', comment: '', fk_table: '', fk_column: '' },
 ];
 
-function getCsrf() {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-}
+import { getCsrfToken as getCsrf } from '../../assets/js/util/csrf.js';
 
 function post(action, body) {
     return fetch('api.php?action=' + action, {

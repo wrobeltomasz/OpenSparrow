@@ -4,10 +4,7 @@ import { createTextInput, createSelectInput, createCheckbox, createColorInput, c
 import { showStatusPill, markDirty, isMysqlTable } from './app.js';
 
 // Utility function to escape HTML strings safely against XSS
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
+import { escHtml as escapeHtml } from '../../assets/js/util/esc.js';
 
 // Global grid settings form (page size, etc.)
 export function renderSchemaGlobalSettings(config, ctx) {

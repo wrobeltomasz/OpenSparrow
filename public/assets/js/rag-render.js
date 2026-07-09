@@ -4,11 +4,7 @@
 // block stays literal and is never turned into a link.
 
 // HTML-escape a string for safe insertion as text content.
-function escHtml(str) {
-    return String(str ?? '').replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
+import { escHtml } from './util/esc.js';
 
 // Build the anchor HTML for a validated record marker.
 function buildRecordLink(table, id, linkClass) {

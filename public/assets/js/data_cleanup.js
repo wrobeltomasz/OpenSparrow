@@ -28,10 +28,7 @@ function isTextCol(cfg) {
         && !t.startsWith('timestamp') && !t.startsWith('time') && !t.startsWith('date');
 }
 
-function esc(s) {
-    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { escHtml as esc } from './util/esc.js';
 
 function escRe(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

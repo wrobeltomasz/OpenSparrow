@@ -93,16 +93,10 @@ export function showStatusPill(anchor, message, variant = 'success') {
 }
 
 // Utility function to escape HTML strings safely against XSS
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
+import { escHtml as escapeHtml } from '../../assets/js/util/esc.js';
 
 // Retrieve the CSRF token from the meta tag
-function getCsrfToken() {
-    const meta = document.querySelector('meta[name="csrf-token"]');
-    return meta ? meta.getAttribute('content') : '';
-}
+import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     initDashboardUI();

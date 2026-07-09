@@ -13,16 +13,7 @@ require_once __DIR__ . '/../../includes/bootstrap.php';
 // csrf=manual: mutating actions validate the FormData/body token via os_require_csrf() themselves
 $conn = os_api_bootstrap(['csrf' => 'manual']);
 
-// jsonError(), jsonSuccess() and requireLogin() are shared via includes/api_helpers.php
-
-// Editor validation helper (upload/delete requires editor role)
-function requireEditor(): void
-{
-
-    if (($_SESSION['role'] ?? '') !== 'editor') {
-        jsonError('Forbidden', 403);
-    }
-}
+// jsonError(), jsonSuccess(), requireLogin() and requireWrite() are shared via includes/api_helpers.php
 
 // Load config from JSON with size guard and corruption check
 function loadConfig(): array
@@ -171,7 +162,7 @@ function actionList($conn): void
 function actionGetConfig(): void
 {
 
-    requireEditor();
+    requireWrite();
     jsonSuccess(['config' => loadConfig()]);
 }
 
@@ -189,10 +180,10 @@ function actionGetRelationsConfig(): void
 function actionUpload($conn): void
 {
 
-    // Uploading is a write operation — restrict to the editor role, matching
+    // Uploading is a write operation — restrict to write roles, matching
     // delete/save_config. Viewers are read-only; the UI hides the upload control
     // for them but the server must enforce it too.
-    requireEditor();
+    requireWrite();
     os_require_csrf('body');
     if (!isset($_FILES['file'])) {
         jsonError('No file received.', 400);
@@ -308,7 +299,7 @@ function actionUpload($conn): void
 function actionDelete($conn, array $body): void
 {
 
-    requireEditor();
+    requireWrite();
     os_require_csrf('body', $body);
     $uuid = trim($body['uuid'] ?? '');
     if (!$uuid) {
@@ -333,7 +324,7 @@ function actionDelete($conn, array $body): void
 function actionSaveConfig(array $body): void
 {
 
-    requireEditor();
+    requireWrite();
     os_require_csrf('body', $body);
     $current = loadConfig();
     if (isset($body['max_file_size_mb'])) {

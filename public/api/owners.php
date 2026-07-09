@@ -12,16 +12,8 @@ require_once __DIR__ . '/../../includes/bootstrap.php';
 // csrf=manual: mutating actions validate the body token via os_require_csrf() themselves
 $conn = os_api_bootstrap(['csrf' => 'manual']);
 
-// jsonError(), jsonSuccess(), requireLogin() and validatedTable() are shared via includes/api_helpers.php
-
-function requireWrite(): void
-{
-    requireLogin();
-    $role = $_SESSION['role'] ?? '';
-    if ($role !== 'editor' && $role !== 'admin') {
-        jsonError('Forbidden: read-only access', 403);
-    }
-}
+// jsonError(), jsonSuccess(), requireLogin(), requireWrite() and validatedTable()
+// are shared via includes/api_helpers.php
 
 try {
     $method = $_SERVER['REQUEST_METHOD'];

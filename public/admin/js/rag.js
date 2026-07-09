@@ -7,10 +7,7 @@ function ragEsc(str) {
     }[m]));
 }
 
-function ragCsrf() {
-    const m = document.querySelector('meta[name="csrf-token"]');
-    return m ? m.getAttribute('content') : '';
-}
+import { getCsrfToken as ragCsrf } from '../../assets/js/util/csrf.js';
 
 function ragCard(title, desc) {
     const card = document.createElement('div');

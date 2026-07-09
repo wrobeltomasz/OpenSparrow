@@ -1,9 +1,10 @@
-﻿// This file is part of OpenSparrow - https://opensparrow.org
+// This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 //
 // admin/js/settings.js — General settings page (renderSettingsPage): loads/saves app + chat-bubble + custom-logo settings via api.php (get/set_*_setting, upload_logo, remove_logo).
 import { showStatusPill } from './app.js';
 import { createPageHeader } from './ui.js';
+import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export async function renderSettingsPage(ctx) {
     const { workspaceEl } = ctx;
@@ -23,10 +24,6 @@ export async function renderSettingsPage(ctx) {
     } catch (e) {
         workspaceEl.innerHTML = '<h3 style="color:var(--danger);">Error loading settings. Check server logs.</h3>';
         return;
-    }
-
-    function getCsrfToken() {
-        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
     }
 
     workspaceEl.innerHTML = '';

@@ -15,11 +15,7 @@ const myId    = window.CURRENT_USER_ID ?? 0;
 const myRole  = window.USER_ROLE       ?? 'viewer';
 const isReadOnly = myRole !== 'editor';
 
-function csrfToken() {
-    return window.CSRF_TOKEN
-        ?? document.querySelector('meta[name="csrf-token"]')?.content
-        ?? '';
-}
+import { getCsrfToken as csrfToken } from './util/csrf.js';
 
 // ── Tiny markdown-like formatter (no external libs) ────────────────────────
 function formatBody(raw) {

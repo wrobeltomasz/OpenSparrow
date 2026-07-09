@@ -8,9 +8,7 @@ import { I18n } from './i18n.js';
 
 const AVATAR_COUNT = 24;
 
-function csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-}
+import { getCsrfToken as csrfToken } from './util/csrf.js';
 
 function apiFetch(action, body) {
     return fetch(`api.php?action=${action}`, {

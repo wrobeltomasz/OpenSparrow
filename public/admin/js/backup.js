@@ -2,7 +2,7 @@
 
 import { createPageHeader } from './ui.js';
 
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+import { escHtml as esc } from '../../assets/js/util/esc.js';
 
 export async function renderBackupPage(ctx) {
     const { workspaceEl } = ctx;

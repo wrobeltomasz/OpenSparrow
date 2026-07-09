@@ -3,6 +3,7 @@
 //
 // admin/js/audit.js — Audit-log settings editor (renderAuditEditor); reads/writes audit config via api.php.
 import { showStatusPill } from './app.js';
+import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export async function renderAuditEditor(ctx) {
     const { workspaceEl } = ctx;
@@ -27,10 +28,6 @@ export async function renderAuditEditor(ctx) {
     let enabled = data.enabled ?? false;
     const tableExists = data.table_exists ?? false;
     const snapshotCount = data.snapshot_count;
-
-    function getCsrfToken() {
-        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-    }
 
     workspaceEl.innerHTML = '';
 

@@ -1,6 +1,7 @@
-﻿// admin/js/ui.js — Shared admin UI toolkit
+// admin/js/ui.js — Shared admin UI toolkit
 // Reusable form-field builders (createTextInput/SelectInput/ColorInput/IconPicker/Checkbox/MultiSelect), inner tabs, menu preview, array/object reorder helpers, and field helpTexts. Imported across admin modules.
 
+import { getCsrfToken as getCsrf } from '../../assets/js/util/csrf.js';
 export const helpTexts = {
     display_name: "The name that will be shown to users in the interface.",
     icon: "Path to the icon image (e.g., assets/icons/my_icon.png) or emoji.",
@@ -326,11 +327,6 @@ export function createFullMenuPreview(config) {
     // ── state ──────────────────────────────────────────────────────────────
     let state = { items: [] };
     let saveTimer = null;
-
-    function getCsrf() {
-        const m = document.querySelector('meta[name="csrf-token"]');
-        return m ? m.getAttribute('content') : '';
-    }
 
     function scheduleSave() {
         clearTimeout(saveTimer);

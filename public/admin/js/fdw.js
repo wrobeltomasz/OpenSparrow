@@ -21,10 +21,7 @@ const ICONS = [
     'upload', 'user_attributes', 'warehouse', 'watch_screentime',
 ];
 
-function getCsrfToken() {
-    const meta = document.querySelector('meta[name="csrf-token"]');
-    return meta ? meta.getAttribute('content') : '';
-}
+import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 async function fdwApi(action, { method = 'GET', body = null } = {}) {
     const opts = { method, headers: {} };

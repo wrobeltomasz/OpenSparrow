@@ -32,9 +32,7 @@ const DEMOS = {
     },
 };
 
-function getCsrf() {
-    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-}
+import { getCsrfToken as getCsrf } from '../../assets/js/util/csrf.js';
 
 function apiPost(action, body) {
     return fetch(`api.php?action=${action}`, {

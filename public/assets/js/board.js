@@ -6,9 +6,7 @@
 // value of the configured status column. Dragging a card to another lane updates
 // that record's status via api.php (api=board). CSRF from meta tag; i18n via /api.php?action=i18n_bundle.
 
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
+import { getCsrfToken } from './util/csrf.js';
 
 // ── i18n bridge ──────────────────────────────────────────────────────────────
 let _i18nBundle = {};

@@ -2,9 +2,7 @@
 // Tabs over api.php performance_* actions (check, slow_queries, table_stats, db_health, unused_indexes, schema_warnings); severity badges.
 import { buildInnerTabs, createPageHeader } from './ui.js';
 
-function escHtml(str) {
-    return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
+import { escHtml } from '../../assets/js/util/esc.js';
 
 function severityBadge(sev) {
     const b = document.createElement('span');

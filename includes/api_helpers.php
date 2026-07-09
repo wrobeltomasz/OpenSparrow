@@ -264,6 +264,18 @@ function requireLogin(): void
     }
 }
 
+// Reject sessions whose role cannot write (403). Write access means editor or
+// admin; viewers are read-only. Pass a narrower list to restrict an action
+// further (e.g. ['editor']). Single source of truth for API write gates —
+// endpoints must not define their own copies.
+function requireWrite(array $roles = ['editor', 'admin']): void
+{
+    requireLogin();
+    if (!in_array($_SESSION['role'] ?? '', $roles, true)) {
+        jsonError('Forbidden: read-only access', 403);
+    }
+}
+
 // Server-side mirror of the client data-pattern check (assets/js/grid_actions.js):
 // unanchored match, skipped for NULL/empty values, fail-open on an invalid pattern
 // (logged) so a broken regexp in schema.json cannot lock editing. Returns the

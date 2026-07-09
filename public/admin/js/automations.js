@@ -7,10 +7,7 @@ function autoEsc(str) {
     }[m]));
 }
 
-function autoCsrf() {
-    const m = document.querySelector('meta[name="csrf-token"]');
-    return m ? m.getAttribute('content') : '';
-}
+import { getCsrfToken as autoCsrf } from '../../assets/js/util/csrf.js';
 
 function autoStatusPill(anchor, msg, type = 'success') {
     const prev = anchor.parentNode?.querySelector('.auto-status-pill');

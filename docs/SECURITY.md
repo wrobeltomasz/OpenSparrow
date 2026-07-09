@@ -23,6 +23,14 @@ already been verified, so audits are not repeated from scratch.
 - **DOM building** — pattern is "clear with `innerHTML = ''`, build with
   `createElement`/`textContent`". `innerHTML` with data is allowed only through the
   vetted escaping helpers listed in the audit below.
+- **Shared JS helpers (2026-07-09 consolidation)** — `assets/js/util/csrf.js`
+  (`getCsrfToken()`: `window.CSRF_TOKEN` first — edit.php/files.php have no meta tag —
+  then the `<meta name="csrf-token">`) and `assets/js/util/esc.js` (`escHtml()`:
+  escapes `& < > " '`, null-safe). They replaced 17 per-file CSRF wrappers and 9
+  per-file escape helpers; files keep their historical local names via import aliases.
+  New code must import these, never redefine them. Likewise PHP endpoints use the
+  shared `requireWrite()` in `includes/api_helpers.php` (editor+admin); the previous
+  per-endpoint copies had divergent semantics (comments/files blocked admin — fixed).
 - **Serialization** — external data is JSON only; `unserialize()` and `eval()` are
   banned and currently absent from the codebase (verified 2026-07-09).
 - **`exec()` is deliberately kept** — `public/admin/api.php` uses

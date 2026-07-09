@@ -1379,7 +1379,4 @@ function td(text, style) {
     return el;
 }
 
-function esc(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
+import { escHtml as esc } from '../../assets/js/util/esc.js';

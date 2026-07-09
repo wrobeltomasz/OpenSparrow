@@ -5,9 +5,7 @@ import { showToast } from './toast.js';
 import { loadTable } from './grid.js';
 import { state } from './grid/state.js';
 
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
+import { getCsrfToken } from './util/csrf.js';
 
 // Show errors in debug panel
 function debugError(message, data = {}) {

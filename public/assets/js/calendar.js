@@ -4,9 +4,7 @@
 // Filter bar: per-source visibility chips (window.CALENDAR_SOURCES) and enum value
 // dropdowns built from the public schema; state persisted in localStorage.
 
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
+import { getCsrfToken } from './util/csrf.js';
 
 // ── i18n bridge (calendar is a non-module script) ────────────────────────────
 let _i18nBundle = {};

@@ -505,9 +505,7 @@ function formatDate(iso) {
 }
 
 // Security HTML escape
-function esc(s) {
-    return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
+import { escHtml as esc } from '../../assets/js/util/esc.js';
 
 // String capitalization
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }

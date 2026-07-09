@@ -6,10 +6,7 @@ function cronEscHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
-function getCronCsrf() {
-    const m = document.querySelector('meta[name="csrf-token"]');
-    return m ? m.getAttribute('content') : '';
-}
+import { getCsrfToken as getCronCsrf } from '../../assets/js/util/csrf.js';
 
 function statusBadge(status) {
     const cls = { success: 'ok', error: 'danger', running: 'warn' }[status] ?? 'muted';

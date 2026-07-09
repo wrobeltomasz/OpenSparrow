@@ -11,10 +11,7 @@ function anonEsc(str) {
     return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 
-function getCsrf() {
-    const m = document.querySelector('meta[name="csrf-token"]');
-    return m ? m.getAttribute('content') : '';
-}
+import { getCsrfToken as getCsrf } from '../../assets/js/util/csrf.js';
 
 function mkSection(title, desc) {
     const card = document.createElement('div');

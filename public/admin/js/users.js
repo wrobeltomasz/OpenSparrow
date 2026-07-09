@@ -1,14 +1,8 @@
 ﻿// admin/js/users.js — User management (renderUsersEditor): list/add/toggle/change-role/change-password via api.php (users_* actions). CSRF from meta tag; HTML-escapes output.
 
-function escHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { escHtml } from '../../assets/js/util/esc.js';
 
-// Helper function to retrieve CSRF token from meta tag
-function getCsrfToken() {
-    const meta = document.querySelector('meta[name="csrf-token"]');
-    return meta ? meta.getAttribute('content') : '';
-}
+import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export async function renderUsersEditor(ctx) {
     const { workspaceEl } = ctx;
