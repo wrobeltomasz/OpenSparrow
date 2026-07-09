@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 env:
-  IMAGE_NAME: wrobeltom/open-sparrow
+  IMAGE_NAME: wrobeltom/opensparrow
 
 jobs:
   build-and-push:

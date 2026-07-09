@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Audit;
 
-use App\Persistence\ConnectionInterface;
+use App\Persistence\PgConnection;
 
-final readonly class DbAuditLogger implements AuditLoggerInterface
+final readonly class DbAuditLogger
 {
-    public function __construct(private ConnectionInterface $conn)
+    public function __construct(private PgConnection $conn)
     {
     }
 
-    #[\Override]
     public function log(int $userId, string $action, string $table, int $recordId): ?int
     {
         $sql = 'INSERT INTO ' . sys_table('users_log')

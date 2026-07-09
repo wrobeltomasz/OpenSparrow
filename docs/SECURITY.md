@@ -33,14 +33,15 @@ already been verified, so audits are not repeated from scratch.
   per-endpoint copies had divergent semantics (comments/files blocked admin — fixed).
 - **Serialization** — external data is JSON only; `unserialize()` and `eval()` are
   banned and currently absent from the codebase (verified 2026-07-09).
-- **`exec()` is deliberately kept** — `public/admin/api.php` uses
-  `exec(PHP_BINARY . ' ' . escapeshellarg(...))` to trigger cron workers from the
-  admin panel, with a graceful fallback when `disable_functions` blocks it. If
+- **`exec()` is deliberately kept** — the admin cron module (`includes/admin/cron.php`,
+  dispatched by `public/admin/api.php`) uses `exec(PHP_BINARY . ' ' . escapeshellarg(...))`
+  to trigger cron workers from the admin panel, with a graceful fallback when
+  `disable_functions` blocks it. If
   hardening `php.ini`, disable `system`/`passthru`/`shell_exec`/`proc_open` but keep
   `exec`, or accept losing the manual-run buttons.
 - **SSRF surface is admin-gated** — all outbound `curl_exec` targets (Ollama in
   `includes/rag_helpers.php`, workflow webhooks in `includes/automations.php`,
-  connection tests in `public/admin/api.php`) come from admin-controlled config.
+  connection tests in `includes/admin/rag.php`) come from admin-controlled config.
   **Condition:** if webhook/URL fields ever become editor-editable, add URL
   validation (block loopback/private ranges) in the same PR.
 - **Log monitoring is an infrastructure task** — the app writes everything needed

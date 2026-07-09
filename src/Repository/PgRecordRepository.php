@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Domain\Schema\SchemaRepositoryInterface;
+use App\Domain\Schema\JsonSchemaRepository;
 use App\Domain\Schema\TableConfig;
 use App\Form\RecordData;
-use App\Persistence\ConnectionInterface;
+use App\Persistence\PgConnection;
 use App\Persistence\Identifier;
 
 final readonly class PgRecordRepository implements RecordRepositoryInterface
 {
     public function __construct(
-        private ConnectionInterface $conn,
-        private SchemaRepositoryInterface $schemas,
+        private PgConnection $conn,
+        private JsonSchemaRepository $schemas,
         private FkOptionsLoader $fkLoader,
     ) {
     }

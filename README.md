@@ -14,11 +14,11 @@
     <a href="#"><img src="https://img.shields.io/badge/dependencies-none-brightgreen" alt="No dependencies" /></a>
   </p>
 
-  ![PHP Tests](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/php-tests.yml/badge.svg)
-  ![Vanilla Check](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/vanilla-check.yml/badge.svg)
-  ![CodeQL Analysis](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/codeql.yml/badge.svg)
-  ![Docker Lint](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/docker-lint.yml/badge.svg)
-  [![Release ZIP](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/release-zip.yml/badge.svg)](https://github.com/wrobeltomasz/open-sparrow/actions/workflows/release-zip.yml)
+  ![PHP Tests](https://github.com/wrobeltomasz/OpenSparrow/actions/workflows/php-tests.yml/badge.svg)
+  ![Vanilla Check](https://github.com/wrobeltomasz/OpenSparrow/actions/workflows/vanilla-check.yml/badge.svg)
+  ![CodeQL Analysis](https://github.com/wrobeltomasz/OpenSparrow/actions/workflows/codeql.yml/badge.svg)
+  ![Docker Lint](https://github.com/wrobeltomasz/OpenSparrow/actions/workflows/docker-lint.yml/badge.svg)
+  [![Release ZIP](https://github.com/wrobeltomasz/OpenSparrow/actions/workflows/release-zip.yml/badge.svg)](https://github.com/wrobeltomasz/OpenSparrow/actions/workflows/release-zip.yml)
 
 </div>
 
@@ -93,7 +93,7 @@ The fastest way to a running instance. Both configs build from `Dockerfile.stand
 
 **Render** — the repository ships a [`render.yaml`](render.yaml) Blueprint that creates a managed PostgreSQL database (free tier), the web service, and a cron worker for notifications:
 
-1. Open https://render.com/deploy?repo=https://github.com/wrobeltomasz/open-sparrow and confirm the Blueprint.
+1. Open https://render.com/deploy?repo=https://github.com/wrobeltomasz/OpenSparrow and confirm the Blueprint.
 2. When the web service is live, open its URL — you are redirected to the **setup wizard**. Enter the database credentials shown in the Render dashboard (Database → Connections, use the *internal* hostname), then follow the [wizard steps](#first-run-setup-wizard).
 
 > **Free-tier caveats:** the filesystem is ephemeral — `config/*.json` and uploaded files do not survive a redeploy or spin-down (the wizard will simply re-run; your data in PostgreSQL is safe). For real use, attach a persistent disk (see comments in `render.yaml`). The free database expires after 90 days.
@@ -110,8 +110,8 @@ The fastest way to a running instance. Both configs build from `Dockerfile.stand
 The bundled [`docker-compose.yml`](docker-compose.yml) starts the full stack: PHP-FPM + Nginx + PostgreSQL.
 
 ```bash
-git clone https://github.com/wrobeltomasz/open-sparrow.git
-cd open-sparrow
+git clone https://github.com/wrobeltomasz/OpenSparrow.git
+cd OpenSparrow
 docker compose up -d --build
 ```
 
@@ -136,7 +136,7 @@ No Git, no Docker, no command line on the server — just files over FTP. You ne
 
 Each release ZIP is built automatically by GitHub Actions and includes all PHP, JS, and CSS files ready to serve, `includes/VERSION` stamped with the release tag, `config/database.json.example`, and an empty `storage/files/` placeholder.
 
-1. Download `opensparrow-X.Y.zip` from the [Releases page](https://github.com/wrobeltomasz/open-sparrow/releases/latest) and extract it locally.
+1. Download `opensparrow-X.Y.zip` from the [Releases page](https://github.com/wrobeltomasz/OpenSparrow/releases/latest) and extract it locally.
 2. Upload the files via FTP and set your site's **document root** to the `public/` sub-directory (e.g. point your domain / `public_html` at `.../public/`). Backend folders (`includes/`, `config/`, `storage/`, …) stay above the document root and are never served over HTTP.
 
    > **Host doesn't let you change the document root?** Upload the *contents* of `public/` into your web root (e.g. `public_html/`) and the remaining folders (`includes/`, `config/`, `src/`, `storage/`, `templates/`, `cron/`, `languages/`) one level **above** it. The code references them via relative paths (`../includes`), so this layout works out of the box. As a last resort, uploading the whole tree into the web root also works on Apache — every backend folder ships a `Deny from all` `.htaccess` — but keeping backend folders outside the web root is strongly preferred.
@@ -149,8 +149,8 @@ Each release ZIP is built automatically by GitHub Actions and includes all PHP, 
 ### Path D — Local development (no Docker)
 
 ```bash
-git clone https://github.com/wrobeltomasz/open-sparrow.git
-cd open-sparrow
+git clone https://github.com/wrobeltomasz/OpenSparrow.git
+cd OpenSparrow
 
 # Serve the public/ directory (the document root) with the PHP built-in server
 php -S localhost:8000 -t public
@@ -194,7 +194,7 @@ All accounts are stored in `spw_users` and managed from **System → Users**. Th
 
 ## Updating via FTP
 
-1. Go to the [Releases page](https://github.com/wrobeltomasz/open-sparrow/releases/latest) and download the latest `opensparrow-X.Y.zip`.
+1. Go to the [Releases page](https://github.com/wrobeltomasz/OpenSparrow/releases/latest) and download the latest `opensparrow-X.Y.zip`.
 2. **Before uploading** — export your configuration from the admin panel: **Configuration → Export config files**. Keep this backup safe.
 3. Extract the ZIP and upload all files to your server via FTP, overwriting existing files.
 4. Your `config/*.json` files are **not included** in the ZIP, so your database connection, schema, dashboards, and all other settings are preserved automatically.

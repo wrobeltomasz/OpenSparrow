@@ -6,7 +6,7 @@ namespace App\Csrf;
 
 use App\Http\SessionInterface;
 
-final readonly class SessionCsrfTokenManager implements CsrfTokenManagerInterface
+final readonly class SessionCsrfTokenManager
 {
     private const string KEY = 'csrf_token';
 
@@ -14,7 +14,6 @@ final readonly class SessionCsrfTokenManager implements CsrfTokenManagerInterfac
     {
     }
 
-    #[\Override]
     public function token(): string
     {
         if (!$this->session->has(self::KEY)) {
@@ -23,7 +22,6 @@ final readonly class SessionCsrfTokenManager implements CsrfTokenManagerInterfac
         return (string)$this->session->get(self::KEY);
     }
 
-    #[\Override]
     public function isValid(string $given): bool
     {
         $stored = $this->session->get(self::KEY, '');

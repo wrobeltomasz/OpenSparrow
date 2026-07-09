@@ -14,6 +14,6 @@ We provide security updates only for the latest minor release on the current maj
 If you discover a potential security vulnerability, please do NOT create a public issue. Instead, please report it privately to the project maintainer:
 
 * **Email:** admin@opensparrow.org
-* **GitHub:** Create a [Private Vulnerability Report](https://github.com/wrobeltomasz/open-sparrow/security/advisories/new) (if enabled).
+* **GitHub:** Create a [Private Vulnerability Report](https://github.com/wrobeltomasz/OpenSparrow/security/advisories/new) (if enabled).
 
 We will acknowledge your report as soon as possible and work on a fix.

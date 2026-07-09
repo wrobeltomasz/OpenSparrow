@@ -41,7 +41,7 @@ services:
 
   # PHP-FPM Application Service
   app:
-    image: ${DOCKER_IMAGE:-wrobeltom/open-sparrow:latest}
+    image: ${DOCKER_IMAGE:-wrobeltom/opensparrow:latest}
     container_name: opensparrow_app
     restart: always
     depends_on:
@@ -102,7 +102,7 @@ services:
 
   # Background Worker (Cron) Service
   cron:
-    image: ${DOCKER_IMAGE:-wrobeltom/open-sparrow:latest}
+    image: ${DOCKER_IMAGE:-wrobeltom/opensparrow:latest}
     container_name: opensparrow_cron
     restart: always
     depends_on:

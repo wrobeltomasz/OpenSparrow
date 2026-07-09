@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schema;
 
-final class JsonSchemaRepository implements SchemaRepositoryInterface
+final class JsonSchemaRepository
 {
     private array $rawData;
     /** @var array<string, TableConfig> */
@@ -26,7 +26,6 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
         $this->mysqlTables = $this->loadMysqlTables($gatewayPath ?? dirname($path) . '/mysql_gateway.json');
     }
 
-    #[\Override]
     public function table(string $name): TableConfig
     {
         if (!$this->hasTable($name)) {
@@ -35,13 +34,11 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
         return $this->cache[$name] ??= $this->build($name, $this->rawData['tables'][$name]);
     }
 
-    #[\Override]
     public function hasTable(string $name): bool
     {
         return isset($this->rawData['tables'][$name]);
     }
 
-    #[\Override]
     public function all(): array
     {
         $result = [];
@@ -51,7 +48,6 @@ final class JsonSchemaRepository implements SchemaRepositoryInterface
         return $result;
     }
 
-    #[\Override]
     public function raw(): array
     {
         return $this->rawData;

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Domain\Schema\TableConfig;
-use App\Persistence\ConnectionInterface;
+use App\Persistence\PgConnection;
 use App\Persistence\Identifier;
 
 final readonly class FkOptionsLoader
 {
-    public function __construct(private ConnectionInterface $conn)
+    public function __construct(private PgConnection $conn)
     {
     }
 

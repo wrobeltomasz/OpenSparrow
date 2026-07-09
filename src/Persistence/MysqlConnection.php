@@ -7,7 +7,7 @@ namespace App\Persistence;
 /**
  * Thin PDO wrapper for the MySQL gateway, used by the src/ record-routing layer.
  *
- * Deliberately NOT a ConnectionInterface: that contract returns PgSql types.
+ * Deliberately NOT interchangeable with PgConnection, which returns PgSql types.
  * This wrapper exposes a small, driver-neutral surface (array rows) so the
  * MySQL record repository can route DML without touching PostgreSQL. The
  * connection recipe mirrors api.php::mysql_pdo_api().

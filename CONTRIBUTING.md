@@ -10,8 +10,8 @@ We welcome contributions of all kinds — bug reports, feature suggestions, docu
 ### 1. Fork the repository
 Click the **Fork** button on GitHub and clone your fork:
 
-    git clone https://github.com/YOUR-USERNAME/open-sparrow.git
-    cd open-sparrow
+    git clone https://github.com/YOUR-USERNAME/OpenSparrow.git
+    cd OpenSparrow
 
 ### 2. Requirements
 
@@ -30,7 +30,7 @@ Open http://localhost:8080 — on first run you are redirected to the setup wiza
 **Option B — your own web server:**
 
 - Place the project in your server directory  
-- Open http://localhost/open-sparrow/ in a browser  
+- Open http://localhost/OpenSparrow/ in a browser  
 
 In both cases the **setup wizard** (`setup.php`) walks you through the database
 connection and creates the `admin` account with a randomly generated password

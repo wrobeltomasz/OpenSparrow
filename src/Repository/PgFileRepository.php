@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Persistence\ConnectionInterface;
+use App\Persistence\PgConnection;
 
-final readonly class PgFileRepository implements FileRepositoryInterface
+final readonly class PgFileRepository
 {
-    public function __construct(private ConnectionInterface $conn)
+    public function __construct(private PgConnection $conn)
     {
     }
 
-    #[\Override]
     public function forRecord(string $table, string|int $id): array
     {
         $sql = 'SELECT uuid, display_name, name, type, size_bytes, created_at, tags

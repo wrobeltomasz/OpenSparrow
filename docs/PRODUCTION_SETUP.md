@@ -46,7 +46,7 @@ docker compose up -d
 | `POSTGRES_USER` | postgres | |
 | `POSTGRES_DB` | opensparrow | |
 | `PGSCHEMA` | app | |
-| `DOCKER_IMAGE` | wrobeltom/open-sparrow:latest | |
+| `DOCKER_IMAGE` | wrobeltom/opensparrow:latest | |
 | `APP_ENV` | production | |
 | `SECURE_COOKIES` | true | Set `false` only on plain HTTP. |
 | `SESSION_MAX_LIFETIME` | 28800 | Hard session expiry (seconds). |
@@ -110,7 +110,7 @@ tar -xzf storage_backup.tar.gz
 
 ```bash
 # 1. Update image version in .env (release tags follow X.Y format, no "v" prefix)
-DOCKER_IMAGE=wrobeltom/open-sparrow:2.8
+DOCKER_IMAGE=wrobeltom/opensparrow:2.8
 
 # 2. Pull & restart
 docker compose pull

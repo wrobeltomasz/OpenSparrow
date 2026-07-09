@@ -44,7 +44,7 @@ jobs:
         # SECURE_COOKIES=false (required — curl cannot return Secure cookies
         # over plain HTTP).
         # --build forces app/cron to be built from the local Dockerfile instead
-        # of the wrobeltom/open-sparrow:latest tag on Docker Hub, which is only
+        # of the wrobeltom/opensparrow:latest tag on Docker Hub, which is only
         # refreshed by docker-hub-build.yml — a separate workflow triggered by
         # the same push, so it can still be stale (old PHP version, old code)
         # when this job runs.
