@@ -1598,6 +1598,37 @@ footer {
   color: var(--muted);
   font-size: 13px;
 }
+.board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.board-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  cursor: pointer;
+  font-size: 13px;
+}
+.board-filter-chip:hover {
+  background: var(--border-light);
+}
+.board-filter-chip.off {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.board-filter-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
 .board-meta-by::before {
   content: "·";
   margin-right: 8px;

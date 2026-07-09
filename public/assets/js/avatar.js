@@ -32,9 +32,21 @@ export function renderAvatar(avatarId, username, size = 32) {
         svg.style.width  = `${size}px`;
         svg.style.height = `${size}px`;
     }
-    svg.innerHTML =
-        `<circle cx="16" cy="16" r="16" fill="#364B60"/>` +
-        `<text x="16" y="21" text-anchor="middle" fill="#fff" ` +
-        `font-size="14" font-family="Inter,sans-serif" font-weight="600">${initial}</text>`;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', '16');
+    circle.setAttribute('cy', '16');
+    circle.setAttribute('r', '16');
+    circle.setAttribute('fill', '#364B60');
+    svg.appendChild(circle);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', '16');
+    text.setAttribute('y', '21');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#fff');
+    text.setAttribute('font-size', '14');
+    text.setAttribute('font-family', 'Inter,sans-serif');
+    text.setAttribute('font-weight', '600');
+    text.textContent = initial;
+    svg.appendChild(text);
     return svg;
 }

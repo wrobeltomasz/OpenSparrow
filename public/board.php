@@ -4,6 +4,7 @@
 // Boots via includes/bootstrap.php: os_page_bootstrap('no-connect' CSP) — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
 // Exposes capability flags (canEdit/canExport) to the client instead of the raw role
 // Renders the board UI; card data and BOARD_MOVE handled by api.php
+// Filter bar: per-lane visibility chips (built from the board's status column values), state persisted in localStorage
 
 require_once __DIR__ . '/../includes/bootstrap.php';
 
@@ -20,6 +21,8 @@ ob_start();
         <h2 id="boardTitle"><?= htmlspecialchars(t('board.title'), ENT_QUOTES, 'UTF-8') ?></h2>
         <div class="board-meta" id="boardMeta"></div>
     </div>
+
+    <div id="boardFilters" class="board-filters"></div>
 
     <div id="boardContainer" class="board-grid">
         <div class="board-loading"><?= htmlspecialchars(t('common.loading'), ENT_QUOTES, 'UTF-8') ?></div>

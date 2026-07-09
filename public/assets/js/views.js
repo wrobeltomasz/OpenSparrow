@@ -4,8 +4,6 @@
 import { sortRows } from './grid/state.js';
 import { I18n } from './i18n.js';
 
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-
 /* ── colour rule engine ── */
 function applyColorRules(rawValue, rules) {
     if (!Array.isArray(rules) || rules.length === 0) return null;

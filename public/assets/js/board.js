@@ -32,10 +32,58 @@ let board = null;          // full payload from the API
 let cards = [];            // working copy of cards (status mutated optimistically)
 let canEdit = false;
 
+// ── Filters: lane visibility (chips) ──────────────────────────────────────────
+const FILTER_STORAGE_KEY = 'sparrow_board_filters';
+let hiddenLanes = new Set();
+
+function loadFilterState() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || '{}');
+        hiddenLanes = new Set(Array.isArray(saved.hiddenLanes) ? saved.hiddenLanes : []);
+    } catch (_) {
+        hiddenLanes = new Set();
+    }
+}
+
+function saveFilterState() {
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ hiddenLanes: [...hiddenLanes] }));
+}
+
+function buildLaneChip(lane) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'board-filter-chip' + (hiddenLanes.has(lane.value) ? ' off' : '');
+
+    const dot = document.createElement('span');
+    dot.className = 'board-filter-dot';
+    dot.style.backgroundColor = lane.color;
+    chip.appendChild(dot);
+    chip.appendChild(document.createTextNode(lane.label));
+
+    chip.addEventListener('click', () => {
+        if (hiddenLanes.has(lane.value)) {
+            hiddenLanes.delete(lane.value);
+        } else {
+            hiddenLanes.add(lane.value);
+        }
+        saveFilterState();
+        render();
+    });
+    return chip;
+}
+
+function renderFilterBar(lanes) {
+    const bar = document.getElementById('boardFilters');
+    if (!bar) return;
+    bar.innerHTML = '';
+    lanes.forEach(lane => bar.appendChild(buildLaneChip(lane)));
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     canEdit = !!(window.USER_CAPS && window.USER_CAPS.canEdit);
     await fetchI18n();
     await fetchBoard();
+    loadFilterState();
     render();
 });
 
@@ -57,9 +105,11 @@ function render() {
     const container = document.getElementById('boardContainer');
     const titleEl = document.getElementById('boardTitle');
     const metaEl = document.getElementById('boardMeta');
+    const filtersEl = document.getElementById('boardFilters');
     if (!container) return;
     container.innerHTML = '';
     metaEl.textContent = '';
+    if (filtersEl) filtersEl.innerHTML = '';
 
     if (!board) {
         renderNotice(container, t('board.load_error'));
@@ -94,18 +144,29 @@ function render() {
         (byStatus[key] = byStatus[key] || []).push(card);
     });
 
+    // Filter bar: one chip per configured lane, plus Uncategorized when it has cards.
+    const filterLanes = (board.columns || []).map(l => ({ value: l.value, label: l.label, color: l.color }));
+    const hasUnmatched = (byStatus[UNMATCHED] || []).length > 0;
+    if (hasUnmatched) {
+        filterLanes.push({ value: UNMATCHED, label: t('board.uncategorized'), color: '#94a3b8' });
+    }
+    renderFilterBar(filterLanes);
+
     (board.columns || []).forEach(lane => {
+        if (hiddenLanes.has(lane.value)) return;
         container.appendChild(buildLane(lane.value, lane.label, lane.color, byStatus[lane.value] || [], true));
     });
 
     // Records whose status matches no configured lane still need to be visible.
-    if ((byStatus[UNMATCHED] || []).length > 0) {
+    if (hasUnmatched && !hiddenLanes.has(UNMATCHED)) {
         container.appendChild(buildLane(UNMATCHED, t('board.uncategorized'), '#94a3b8', byStatus[UNMATCHED], false));
     }
 
     // A configured board can still produce zero lanes (status column with no
-    // lane values and no records) — never leave the container blank.
-    if (container.children.length === 0) {
+    // lane values and no records) — never leave the container blank. Only
+    // applies when there is genuinely nothing to show, not when the user has
+    // filtered every lane out via the chips.
+    if (container.children.length === 0 && filterLanes.length === 0) {
         renderNotice(container, t('board.not_configured'));
     }
 }
