@@ -1,5 +1,8 @@
 // assets/js/dashboard/index.js — Dashboard entry point
 // Imports all widget modules (they self-register into WidgetRegistry), loads i18n, then fetches dashboard.json widget data and renders #dashboardSection.
+// Header controls (rendered in the app header by dashboard.php):
+//   - #dashDateFilter: global period select (All time / Today / 7d / 30d / This month) — reloads all widgets
+//   - chips: per-widget visibility (built from the loaded config), state persisted in localStorage
 
 import { WidgetRegistry } from './registry.js';
 import { buildExportButton } from './export.js';
@@ -12,6 +15,85 @@ import './widgets/bar-chart.js';
 import './widgets/vertical-bar-chart.js';
 import './widgets/pie-chart.js';
 import './widgets/list.js';
+
+// ── Filters: widget visibility (chips in the app header) ─────────────────────
+const FILTER_STORAGE_KEY = 'sparrow_dashboard_filters';
+let hiddenWidgets = new Set();
+let lastConfig = null;
+
+function widgetKey(widget) {
+    return String(widget.id ?? widget.title ?? '');
+}
+
+function loadFilterState() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || '{}');
+        hiddenWidgets = new Set(Array.isArray(saved.hiddenWidgets) ? saved.hiddenWidgets : []);
+    } catch (_) {
+        hiddenWidgets = new Set();
+    }
+}
+
+function saveFilterState() {
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({ hiddenWidgets: [...hiddenWidgets] }));
+}
+
+function buildWidgetChip(widget, container) {
+    const key = widgetKey(widget);
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'filter-chip' + (hiddenWidgets.has(key) ? ' off' : '');
+
+    const dot = document.createElement('span');
+    dot.className = 'filter-dot';
+    dot.style.backgroundColor = widget.color || '#3b82f6';
+    chip.appendChild(dot);
+    chip.appendChild(document.createTextNode(widget.title || key));
+
+    chip.addEventListener('click', () => {
+        if (hiddenWidgets.has(key)) {
+            hiddenWidgets.delete(key);
+        } else {
+            hiddenWidgets.add(key);
+        }
+        saveFilterState();
+        renderFilterBar(container);
+        if (lastConfig) renderWidgets(container, lastConfig);
+    });
+    return chip;
+}
+
+function renderFilterBar(container) {
+    const bar = document.getElementById('dashboardFilters');
+    if (!bar) return;
+    bar.innerHTML = '';
+    (lastConfig?.widgets ?? []).forEach(w => bar.appendChild(buildWidgetChip(w, container)));
+}
+
+// ── Clear filters: header button unhides all widgets and resets the period ───
+function updateClearButton() {
+    const btn = document.getElementById('clearFilters');
+    if (!btn) return;
+    const dateSelect = document.getElementById('dashDateFilter');
+    btn.hidden = hiddenWidgets.size === 0 && (!dateSelect || dateSelect.value === 'all');
+}
+
+function initClearFilters(container) {
+    const btn = document.getElementById('clearFilters');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        hiddenWidgets.clear();
+        saveFilterState();
+        renderFilterBar(container);
+        const dateSelect = document.getElementById('dashDateFilter');
+        if (dateSelect && dateSelect.value !== 'all') {
+            dateSelect.value = 'all';
+            loadDashboardData(container, 'all', 'all');
+        } else if (lastConfig) {
+            renderWidgets(container, lastConfig);
+        }
+    });
+}
 
 async function initDashboard() {
     await I18n.load();
@@ -39,40 +121,18 @@ async function initDashboard() {
         return;
     }
 
-    container.before(buildFilterBar(container));
-    renderWidgets(container, globalConfig);
-}
-
-// Global period filter (All time / Today / 7d / 30d / This month) — reloads
-// all widgets via loadDashboardData; count/sum cards also get prev_data deltas.
-function buildFilterBar(container) {
-    const bar = document.createElement('div');
-    bar.className = 'dash-filter-bar';
-
-    const label = document.createElement('label');
-    label.className = 'dash-filter-label';
-    label.setAttribute('for', 'dashDateFilter');
-    label.textContent = I18n.t('dashboard.filter_label');
-
-    const select = document.createElement('select');
-    select.id = 'dashDateFilter';
-    const options = [
-        ['all', 'dashboard.filter_all'],
-        ['today', 'dashboard.filter_today'],
-        ['7d', 'dashboard.filter_7d'],
-        ['30d', 'dashboard.filter_30d'],
-        ['this_month', 'dashboard.filter_month'],
-    ];
-    for (const [value, key] of options) {
-        const opt = document.createElement('option');
-        opt.value = value;
-        opt.textContent = I18n.t(key);
-        select.appendChild(opt);
+    // Global period select rendered server-side in the header (dashboard.php);
+    // changing it reloads all widgets, count/sum cards also get prev_data deltas.
+    const dateSelect = document.getElementById('dashDateFilter');
+    if (dateSelect) {
+        dateSelect.addEventListener('change', () => loadDashboardData(container, dateSelect.value, 'all'));
     }
-    select.addEventListener('change', () => loadDashboardData(container, select.value, 'all'));
 
-    bar.append(label, select);
-    return bar;
+    lastConfig = globalConfig;
+    loadFilterState();
+    renderFilterBar(container);
+    initClearFilters(container);
+    renderWidgets(container, globalConfig);
 }
 
 async function loadDashboardData(container, dateFilter, targetWidget) {
@@ -88,6 +148,7 @@ async function loadDashboardData(container, dateFilter, targetWidget) {
         );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const config = await response.json();
+        lastConfig = config;
         renderWidgets(container, config);
     } catch (error) {
         console.error('Error loading dashboard:', error);
@@ -101,6 +162,7 @@ async function loadDashboardData(container, dateFilter, targetWidget) {
 
 function renderWidgets(container, config) {
     container.replaceChildren();
+    updateClearButton();
 
     if (!config?.widgets?.length) {
         const p = document.createElement('p');
@@ -114,6 +176,7 @@ function renderWidgets(container, config) {
     if (config.layout?.gap) container.style.gap = config.layout.gap;
 
     config.widgets.forEach(widget => {
+        if (hiddenWidgets.has(widgetKey(widget))) return;
         const widgetEl = document.createElement('div');
         widgetEl.className = 'dash-widget';
         widgetEl.dataset.w = widget.width  || 1;

@@ -55,6 +55,25 @@ function initSearch() {
     });
 }
 
+// ── Clear filters: header button resets the search box and all lane chips ────
+function updateClearButton() {
+    const btn = document.getElementById('clearFilters');
+    if (btn) btn.hidden = !searchTerm && hiddenLanes.size === 0;
+}
+
+function initClearFilters() {
+    const btn = document.getElementById('clearFilters');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        searchTerm = '';
+        const input = document.getElementById('boardSearch');
+        if (input) input.value = '';
+        hiddenLanes.clear();
+        saveFilterState();
+        render();
+    });
+}
+
 // ── Filters: lane visibility (chips) ──────────────────────────────────────────
 const FILTER_STORAGE_KEY = 'sparrow_board_filters';
 let hiddenLanes = new Set();
@@ -75,10 +94,10 @@ function saveFilterState() {
 function buildLaneChip(lane) {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'board-filter-chip' + (hiddenLanes.has(lane.value) ? ' off' : '');
+    chip.className = 'filter-chip' + (hiddenLanes.has(lane.value) ? ' off' : '');
 
     const dot = document.createElement('span');
-    dot.className = 'board-filter-dot';
+    dot.className = 'filter-dot';
     dot.style.backgroundColor = lane.color;
     chip.appendChild(dot);
     chip.appendChild(document.createTextNode(lane.label));
@@ -108,6 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchBoard();
     loadFilterState();
     initSearch();
+    initClearFilters();
     render();
 });
 
@@ -134,6 +154,7 @@ function render() {
     container.innerHTML = '';
     metaEl.textContent = '';
     if (filtersEl) filtersEl.innerHTML = '';
+    updateClearButton();
 
     if (!board) {
         renderNotice(container, t('board.load_error'));

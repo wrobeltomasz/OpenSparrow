@@ -3,6 +3,7 @@
 // files.php — Files module page (frontend HTML)
 // Boots via includes/bootstrap.php: os_page_bootstrap() — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
 // Exposes capability flags (canEdit/canExport) to the client
+// Search box + type filter render in the app header (via $headerControls, like the grid page)
 // Renders the file manager UI; data and uploads via api/files.php, downloads via file_download.php
 
 declare(strict_types=1);
@@ -14,6 +15,19 @@ $cspNonce = $page['nonce'];
 $userRole = $page['role'];
 $userCaps = $page['caps'];
 $pageTitle = 'OpenSparrow | Files';
+$headerControls = '<input type="search" id="fileSearch" placeholder="Search files by name or tag..."'
+    . ' aria-label="Search files by name or tag">'
+    . '<select id="fileTypeFilter">'
+    . '<option value="all">All File Types</option>'
+    . '<option value="image">Images</option>'
+    . '<option value="pdf">PDFs</option>'
+    . '<option value="doc">Documents</option>'
+    . '<option value="spreadsheet">Spreadsheets</option>'
+    . '<option value="archive">Archives</option>'
+    . '</select>'
+    . '<button id="clearFilters" hidden title="'
+    . htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8') . '">'
+    . htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8') . '</button>';
 ob_start();
 ?>
 
@@ -41,15 +55,6 @@ ob_start();
             </div>
 
             <div class="files-toolbar">
-                <input type="text" id="fileSearch" class="f-input f-search-input" placeholder="Search files by name or tag...">
-                <select id="fileTypeFilter" class="f-input f-filter-select">
-                    <option value="all">All File Types</option>
-                    <option value="image">Images</option>
-                    <option value="pdf">PDFs</option>
-                    <option value="doc">Documents</option>
-                    <option value="spreadsheet">Spreadsheets</option>
-                    <option value="archive">Archives</option>
-                </select>
                 <button id="btnRefreshFiles" class="f-btn f-btn-outline">Refresh List</button>
             </div>
 
@@ -104,6 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const tbody           = document.getElementById('fileTableBody');
     const searchInput     = document.getElementById('fileSearch');
     const typeFilter      = document.getElementById('fileTypeFilter');
+    const btnClearFilters = document.getElementById('clearFilters');
     const btnRefresh      = document.getElementById('btnRefreshFiles');
 
     const icons = {
@@ -133,6 +139,18 @@ document.addEventListener("DOMContentLoaded", () => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => { currentSearch = e.target.value; currentPage = 1; loadFiles(); }, 400);
     });
+
+    // Header clear button: reset the search box and the type filter
+    if (btnClearFilters) {
+        btnClearFilters.addEventListener('click', () => {
+            searchInput.value = '';
+            currentSearch = '';
+            typeFilter.value = 'all';
+            currentType = 'all';
+            currentPage = 1;
+            loadFiles();
+        });
+    }
 
     // Event delegation for delete buttons — avoids inline onclick handlers blocked by CSP
     // and keeps the delete function out of the global window scope
@@ -213,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Fetch paginated files
     async function loadFiles() {
+        if (btnClearFilters) btnClearFilters.hidden = !currentSearch && currentType === 'all';
         tbody.innerHTML = '<tr><td colspan="7" class="f-td-empty">Loading files...</td></tr>';
         try {
             const params = new URLSearchParams({ action: 'list', page: currentPage, limit: 20, type: currentType, search: currentSearch });

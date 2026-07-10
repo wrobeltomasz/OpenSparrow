@@ -3,8 +3,9 @@
 // calendar.php — Calendar page (frontend HTML)
 // Boots via includes/bootstrap.php: os_page_bootstrap('no-connect' CSP) — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
 // Exposes capability flags (canEdit/canExport) to the client instead of the raw role
-// Exposes CALENDAR_SOURCES (table + color per source from config/calendar.json) for the client-side filter bar
-// Renders the calendar UI (header, filter bar, grid); event data and CALENDAR_MOVE handled by api.php
+// Exposes CALENDAR_SOURCES (table + color per source from config/calendar.json) for the client-side filter chips
+// Search box + per-source visibility chips render in the app header (via $headerControls, like the grid page)
+// Renders the calendar UI (header, grid); event data and CALENDAR_MOVE handled by api.php
 
 require_once __DIR__ . '/../includes/bootstrap.php';
 
@@ -30,6 +31,12 @@ foreach (($calConfig['sources'] ?? []) as $src) {
 }
 
 $pageTitle = 'OpenSparrow | Calendar';
+$tSearchPh = htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
+$tClearF   = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
+$headerControls = '<input type="search" id="calendarSearch" placeholder="' . $tSearchPh . '"'
+    . ' aria-label="' . $tSearchPh . '">'
+    . '<div id="calendarFilters" class="calendar-filters"></div>'
+    . '<button id="clearFilters" hidden title="' . $tClearF . '">' . $tClearF . '</button>';
 ob_start();
 ?>
 <main id="calendarMain">
@@ -40,8 +47,6 @@ ob_start();
             <button id="btnNext"><?= t('calendar.next') ?></button>
         </div>
     </div>
-
-    <div id="calendarFilters" class="calendar-filters"></div>
 
     <div id="calendarContainer" class="calendar-grid"></div>
 </main>

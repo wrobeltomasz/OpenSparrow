@@ -72,8 +72,12 @@
 
     /* font-size:16px prevents iOS auto-zoom on input focus */
     .header-controls #globalSearch,
+    .header-controls input[type="search"],
     .header-controls #columnFilter,
-    .header-controls input.date-filter {
+    .header-controls #fileTypeFilter,
+    .header-controls #dashDateFilter,
+    .header-controls input.date-filter,
+    .header-controls input.num-filter {
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
@@ -81,7 +85,10 @@
         padding: 0.65rem 0.85rem;
     }
 
-    .header-controls #filterBar {
+    .header-controls #filterBar,
+    .header-controls .board-filters,
+    .header-controls .calendar-filters,
+    .header-controls .dashboard-filters {
         width: 100%;
         flex-wrap: wrap;
         gap: 8px;

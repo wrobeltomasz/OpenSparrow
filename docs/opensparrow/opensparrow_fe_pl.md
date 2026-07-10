@@ -406,6 +406,15 @@ Widok miesięczny rekordów z kolumną daty. Umożliwia przeglądanie i przecią
 - Dni spoza bieżącego miesiąca wyszarzone
 - Tydzień: poniedziałek - niedziela
 
+### Wyszukiwanie i filtrowanie
+
+Wyszukiwarka i filtry znajdują się na górnym (niebieskim) pasku aplikacji — tak samo jak na siatce danych i tablicy Kanban.
+
+- **Pole wyszukiwania**: wpisanie frazy ukrywa zdarzenia, które jej nie zawierają — dopasowanie sprawdzane jest w tytule zdarzenia, danych rekordu i identyfikatorze; wielkość liter nie ma znaczenia. Filtrowanie działa po stronie przeglądarki; wyczyszczenie pola przywraca pełny widok
+- **Chipy źródeł**: po jednym chipie (z kolorową kropką) na każde skonfigurowane źródło kalendarza; kliknięcie ukrywa/pokazuje zdarzenia z danej tabeli, stan zapamiętywany w przeglądarce (localStorage)
+- **Przycisk "Wyczyść filtry"**: pojawia się na pasku, gdy aktywna jest fraza wyszukiwania lub wyłączone jest któreś źródło; kliknięcie przywraca pełny widok
+- Na urządzeniach mobilnych kontrolki dostępne po rozwinięciu panelu wyszukiwania (ikona lupy w nagłówku)
+
 ### Zdarzenia
 
 - Zdarzenia jako kolorowe chipy w komórkach dni
@@ -457,7 +466,14 @@ Siatka 3-kolumnowa widgetów z zagregowanymi danymi. Konfigurowana przez admina.
 ### Interakcje
 
 - **Drill-down**: kliknięcie wiersza/wartości/segmentu w widgecie przekierowuje na siatkę z zastosowanym filtrem wybranej wartości
-- Globalny filtr daty (jeśli skonfigurowany) wpływa na wszystkie widgety jednocześnie
+
+### Filtrowanie
+
+Kontrolki filtrowania znajdują się na górnym (niebieskim) pasku aplikacji — tak samo jak na siatce danych, tablicy, w kalendarzu i menedżerze plików; na mobile dostępne po rozwinięciu panelu wyszukiwania (ikona lupy).
+
+- **Globalny filtr okresu**: lista rozwijana (Cały okres / Dziś / 7 dni / 30 dni / Ten miesiąc) — wpływa na wszystkie widgety jednocześnie; karty KPI/Stat pokazują wtedy wskaźnik trendu względem poprzedniego okresu
+- **Chipy widgetów**: po jednym chipie (z kropką w kolorze widgetu) na każdy skonfigurowany widget; kliknięcie ukrywa/pokazuje widget, stan zapamiętywany w przeglądarce (localStorage)
+- **Przycisk "Wyczyść filtry"**: pojawia się na pasku, gdy okres jest inny niż "Cały okres" lub któryś widget jest ukryty; kliknięcie przywraca domyślny widok
 
 ### Widgety warunkowe
 
@@ -482,11 +498,13 @@ Pola formularza:
 
 ### Przeglądarka plików
 
+- Wyszukiwarka (po nazwie lub tagu) i filtr typu pliku (obrazy, PDF, dokumenty, arkusze, archiwa) na górnym (niebieskim) pasku aplikacji — tak samo jak na siatce danych, tablicy i w kalendarzu; na mobile dostępne po rozwinięciu panelu wyszukiwania (ikona lupy)
+- Przycisk "Wyczyść filtry" na pasku: pojawia się, gdy aktywna jest fraza lub filtr typu; kliknięcie resetuje oba
 - Widok tabeli: nazwa, rozmiar, data uploadu, tagi, akcje
 - Filtrowanie po tabeli / rekordzie
-- Wyszukiwanie po nazwie lub tagu
 - Kliknięcie nazwy = pobieranie pliku
 - Przycisk usunięcia przy każdym pliku
+- Przycisk odświeżenia listy nad tabelą
 
 ---
 
@@ -1232,12 +1250,17 @@ Widok wizualizujący rekordy jednej tabeli jako przesuwalne karty rozłożone w 
 | Kliknięcie karty | Otwiera `edit.php` dla tego rekordu |
 | Przeciągnięcie karty do innego toru | Zmienia wartość kolumny statusu przez API |
 
-### Wyszukiwanie kart
+### Wyszukiwanie i filtrowanie kart
 
-- Pole wyszukiwania nad torami: wpisanie frazy ukrywa karty, które jej nie zawierają — widoczne pozostają tylko karty pasujące
+Wyszukiwarka i chipy torów znajdują się na górnym (niebieskim) pasku aplikacji — tak samo jak na siatce danych i w kalendarzu.
+
+- **Pole wyszukiwania**: wpisanie frazy ukrywa karty, które jej nie zawierają — widoczne pozostają tylko karty pasujące
 - Dopasowanie sprawdzane w tytule karty, polach szczegółowych i identyfikatorze rekordu (`#id`); wielkość liter nie ma znaczenia
 - Filtrowanie działa w całości po stronie przeglądarki (bez zapytań do serwera); liczniki kart w nagłówkach torów odzwierciedlają wynik wyszukiwania
 - Wyczyszczenie pola przywraca pełny widok tablicy
+- **Chipy torów**: po jednym chipie (z kolorową kropką) na każdy tor; kliknięcie ukrywa/pokazuje tor, stan zapamiętywany w przeglądarce (localStorage)
+- **Przycisk "Wyczyść filtry"**: pojawia się na pasku, gdy aktywna jest fraza wyszukiwania lub ukryty jest któryś tor; kliknięcie przywraca pełny widok tablicy
+- Na urządzeniach mobilnych kontrolki dostępne po rozwinięciu panelu wyszukiwania (ikona lupy w nagłówku)
 
 ### Przeciąganie kart (Drag & Drop)
 

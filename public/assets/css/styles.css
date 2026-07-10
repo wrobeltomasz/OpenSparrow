@@ -91,12 +91,13 @@ header h1 {
   white-space: nowrap;
 }
 
-/* SEARCH BAR */
-header #globalSearch {
+/* SEARCH BAR (grid #globalSearch, board #boardSearch, calendar #calendarSearch) */
+header #globalSearch,
+header input[type="search"] {
   flex: 1;
   max-width: 220px;
   padding: 0.45rem 0.85rem;
-  border-radius: var(--radius);
+  border-radius: 999px;
   border: 1px solid rgba(255,255,255,.25);
   background: rgba(255,255,255,.12);
   color: #fff;
@@ -104,8 +105,10 @@ header #globalSearch {
   transition: background var(--transition), border-color var(--transition);
 }
 
-header #globalSearch::placeholder { color: rgba(255,255,255,.55); }
-header #globalSearch:focus {
+header #globalSearch::placeholder,
+header input[type="search"]::placeholder { color: rgba(255,255,255,.55); }
+header #globalSearch:focus,
+header input[type="search"]:focus {
   outline: none;
   background: rgba(255,255,255,.22);
   border-color: rgba(255,255,255,.8);
@@ -114,7 +117,7 @@ header #globalSearch:focus {
 /* COLUMN FILTER DROPDOWN */
 header select {
   padding: 0.42rem 2rem 0.42rem 0.75rem;
-  border-radius: var(--radius);
+  border-radius: 999px;
   border: 1px solid rgba(255,255,255,.25);
   background: rgba(255,255,255,.12);
   color: #fff;
@@ -147,7 +150,7 @@ header input.date-filter {
   flex: 0 0 auto;
   width: 125px;
   padding: 0.42rem 0.65rem;
-  border-radius: var(--radius);
+  border-radius: 999px;
   border: 1px solid rgba(255,255,255,.25);
   background: rgba(255,255,255,.12);
   color: #fff;
@@ -167,6 +170,99 @@ header input.date-filter:focus {
   outline: none;
   background: rgba(255,255,255,.22);
   border-color: rgba(255,255,255,.8);
+}
+
+/* DYNAMIC COLUMN FILTER BAR (grid header) */
+#filterBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+header .filter-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+header .filter-range span {
+  color: #ffffff;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+header input.num-filter {
+  flex: 0 0 auto;
+  width: 80px;
+  padding: 0.42rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-size: 13px;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+header input.num-filter::placeholder { color: rgba(255,255,255,.55); }
+header input.num-filter:focus {
+  outline: none;
+  background: rgba(255,255,255,.22);
+  border-color: rgba(255,255,255,.8);
+}
+
+header #clearFilters {
+  padding: 0.42rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+/* The global `button { display: inline-flex }` rule would defeat the UA [hidden]
+   style — pages with a strict CSP toggle visibility via the hidden attribute */
+header #clearFilters[hidden] { display: none; }
+
+header #clearFilters:hover:not(:disabled) {
+  background: rgba(255,255,255,.22);
+  border-color: rgba(255,255,255,.8);
+  color: #fff;
+}
+
+/* Filter chips rendered inside the dark header (board lanes, calendar sources, dashboard widgets) */
+header .filter-chip {
+  border-color: rgba(255,255,255,.25);
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+
+header .filter-chip:hover {
+  background: rgba(255,255,255,.22);
+}
+
+/* Many chips must not wrap and grow the header — keep one line, scroll horizontally */
+header .board-filters,
+header .calendar-filters,
+header .dashboard-filters {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.35) transparent;
+}
+
+header .board-filters::-webkit-scrollbar,
+header .calendar-filters::-webkit-scrollbar,
+header .dashboard-filters::-webkit-scrollbar {
+  height: 5px;
+}
+
+header .board-filters::-webkit-scrollbar-thumb,
+header .calendar-filters::-webkit-scrollbar-thumb,
+header .dashboard-filters::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.35);
+  border-radius: 3px;
 }
 
 /* USER MENU */
@@ -1071,25 +1167,17 @@ footer {
   font-weight: 600;
 }
 
-/* Global period filter bar */
-.dash-filter-bar {
+/* Global period filter + widget chips (rendered in the app header) */
+header .dash-filter-label {
+  font-size: 13px;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.dashboard-filters {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
-}
-.dash-filter-label {
-  font-size: 13px;
-  color: var(--muted);
-}
-.dash-filter-bar select {
-  padding: 6px 10px;
-  border: 1px solid var(--border-light);
-  border-radius: 6px;
-  background: var(--panel);
-  color: var(--text);
-  font-size: 13px;
 }
 
 /* Previous-period trend badge on stat/KPI cards */
@@ -1526,17 +1614,11 @@ footer {
   font-weight: 600;
 }
 
-/* ===== CALENDAR FILTER BAR ===== */
-.calendar-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.calendar-filter-chip {
+/* ===== FILTER CHIPS (shared: calendar, board, grid pills) ===== */
+.filter-chip {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 6px;
   padding: 4px 12px;
   border: 1px solid var(--border);
@@ -1544,34 +1626,59 @@ footer {
   background: var(--panel);
   cursor: pointer;
   font-size: 13px;
+  white-space: nowrap;
 }
-.calendar-filter-chip:hover {
+.filter-chip:hover {
   background: var(--border-light);
 }
-.calendar-filter-chip.off {
+.filter-chip.off {
   opacity: 0.45;
   text-decoration: line-through;
 }
-.calendar-filter-dot {
+.filter-dot {
   display: inline-block;
   width: 10px;
   height: 10px;
   border-radius: 50%;
 }
-.calendar-filter-enum {
+/* Active-filter pills on the grid page (below the grid title) */
+#filterPills {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 1.25rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border-light);
+}
+#filterPills.active { display: flex; }
+.filter-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--accent-mid);
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent-dark);
   font-size: 13px;
-  color: var(--muted);
+  font-weight: 500;
 }
-.calendar-filter-enum select {
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--panel);
+.filter-pill-remove {
   cursor: pointer;
-  font-size: 13px;
+  color: var(--danger);
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  padding-left: 4px;
+}
+
+/* ===== CALENDAR FILTER BAR (rendered in the app header) ===== */
+.calendar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 /* ===== BOARD (KANBAN) VIEW ===== */
@@ -1598,54 +1705,11 @@ footer {
   color: var(--muted);
   font-size: 13px;
 }
-.board-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.board-search {
-  padding: 5px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel);
-  font-size: 13px;
-  min-width: 200px;
-}
-.board-search:focus {
-  outline: none;
-  border-color: var(--accent);
-}
 .board-filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-}
-.board-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel);
-  cursor: pointer;
-  font-size: 13px;
-}
-.board-filter-chip:hover {
-  background: var(--border-light);
-}
-.board-filter-chip.off {
-  opacity: 0.45;
-  text-decoration: line-through;
-}
-.board-filter-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
 }
 .board-meta-by::before {
   content: "·";
@@ -2650,9 +2714,7 @@ th.drag-over .th-label {
 .f-input-file { background: transparent; border: none; box-shadow: none; padding: 0; }
 .f-input-w200 { width: 200px; }
 .f-input-w280 { width: 280px; }
-.f-search-input { flex: 1; min-width: 250px; }
-.f-filter-select { min-width: 180px; }
-.files-toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: #fff; padding: 16px; border: 1px solid var(--f-border); border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+.files-toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
 .f-btn { padding: 10px 18px; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; transition: all var(--transition); display: inline-flex; align-items: center; justify-content: center; }
 .f-btn-primary { background: var(--f-primary); color: #fff; }
 .f-btn-primary:hover { background: var(--text); box-shadow: 0 4px 6px rgba(15, 23, 42, 0.2); }

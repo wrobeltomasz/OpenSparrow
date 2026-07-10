@@ -16,7 +16,10 @@ $viewName  = substr($_GET['view'] ?? '', 0, 64);
 
 $pageTitle      = 'OpenSparrow — Views';
 $extraCss       = '<link href="assets/css/views.css" rel="stylesheet">';
-$headerControls = '<input id="globalSearch" type="text" placeholder="' . htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8') . '" />';
+$tClearF = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
+$headerControls = '<input id="globalSearch" type="text" placeholder="'
+    . htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8') . '" />'
+    . '<button id="clearFilters" hidden title="' . $tClearF . '">' . $tClearF . '</button>';
 ob_start();
 ?>
 <main>

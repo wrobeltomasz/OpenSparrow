@@ -41,5 +41,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Added Data Anonymization module (GDPR/EDPB): admin panel UI for defining table/column anonymization rules, configurable run frequency, dictionary-based PII column suggestions, dry-run preview, and a CLI cron worker (cron/cron_anonymization.php). Each run records its status in spw_anonymization_log and writes a structured JSON execution report (report_id, execution_summary, per-rule details with EDPB residual-risk assessment) to the dedicated spw_anonymization_report table, viewable and downloadable from Run History. Run Initialize System Tables to create spw_anonymization_log and spw_anonymization_report. Internal cleanup: removed six single-implementation interfaces from the src/ (App\\) layer; type hints now use the concrete classes."
+    },
+    "3.0": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Menu accessibility and hardening: submenu toggles get screen-reader labels (new i18n key header.toggle_submenu in all 20 languages), active nav link marked with aria-current=page, collapsed-sidebar tooltips now work with keyboard focus (Tab). Behavior change: menu icons are restricted to local assets/ paths with an image-extension whitelist — external https:// icon URLs configured in dashboard/calendar/board/files/workflows/schema JSON are no longer rendered (offline policy); switch such icons to files under public/assets/icons/. UI standardization: search boxes and filters moved into the blue app header on all pages (grid, views, board, calendar, files, dashboard) with a unified pill/chip look (shared filter-chip classes); new calendar search box (per-enum dropdown filters removed as clutter); new dashboard per-widget visibility chips (state in localStorage); chip rows scroll horizontally instead of growing the header; every page gains a Clear-filters header button. See docs/MAINTENANCE.md and CLAUDE.md 'Search & filter UI standard'. No files or config keys removed; no new system tables."
     }
 }

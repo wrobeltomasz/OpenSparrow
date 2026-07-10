@@ -110,6 +110,80 @@ until deployments migrated.
 assistant (a `git remote set-url` was denied in-session) — update it manually:
 `git remote set-url origin https://github.com/wrobeltomasz/OpenSparrow.git`.
 
+## Search & filter UI standardization (2026-07-10)
+
+All page-level search and filter controls were unified into a single
+header-based standard and rolled out to every page: grid, views, board,
+calendar, files, dashboard. The **binding rules** live in CLAUDE.md →
+"Search & filter UI standard" (placement, shared classes, overflow, clear
+button, stable IDs); this section records the reasoning and gotchas so they
+are not re-derived or re-litigated.
+
+### Decisions
+
+- **Header placement ("variant A")** — controls render in the blue app header
+  via `$headerControls` (pattern: `templates/template.php`, `board.php`,
+  `calendar.php`, `dashboard.php`, `files.php`, `views.php`). Chosen over
+  moving the grid's controls into the page body because the header placement
+  carries the mobile search drawer (`sidebar.js` + `mobile.css`
+  `.header-controls`), the Cypress selectors, and the `grid/keyboard.js`
+  focus hook for free. Body toolbars for page-level filters were removed
+  (`.board-toolbar`, calendar's in-body bar, files' search/type row).
+- **One shared class family** — `filter-chip`/`off`/`filter-dot`,
+  `filter-pill`/`filter-pill-remove`, `filter-range`/`num-filter` replaced the
+  duplicated `board-filter-*`/`calendar-filter-*` CSS and all inline
+  `style.cssText` filter styling in `app.js`. Removing inline styles is also a
+  prerequisite for eventually dropping the grid page's `unsafe-style` CSP.
+  Chips inside the header auto-adapt via `header .filter-chip` (translucent
+  white on dark).
+- **Calendar per-enum dropdown filters were deleted** (UX decision: too
+  cluttered — one dropdown per enum column per source) in favor of a phrase
+  search box + source visibility chips. Old localStorage `enumFilters` state
+  is silently ignored. The now-unused i18n key `calendar.filter_all` was
+  deliberately **left** in all 20 language files (removal is a 21-file churn
+  gated by the parity test, zero user benefit).
+- **Dashboard** — the period select is rendered server-side in the header
+  (its `dashboard.filter_*` keys already existed in all 20 languages;
+  `buildFilterBar()` was deleted from `dashboard/index.js`, which also removes
+  the empty-bar flash before JS loads). New per-widget visibility chips are
+  keyed by `widget.id` (stable across reorder/rename; the API passes full
+  widget objects through), dot color = `widget.color`, state in localStorage
+  `sparrow_dashboard_filters`, filtering applied centrally in
+  `renderWidgets()`.
+- **Files** — search (`type="search"`) + type select moved to the header;
+  **Refresh List stays in the body** — it is an action, not a filter,
+  mirroring the grid's body action buttons. The page remains hardcoded
+  English (it has no i18n at all); one stray `t()` call was not introduced
+  for the placeholder.
+- **Header overflow** — chip containers are `flex-wrap: nowrap; min-width: 0;
+  overflow-x: auto` with a thin translucent scrollbar, so the fixed-height
+  (`--header-h`) bar never grows with many chips; the mobile drawer rules
+  (higher specificity, `.header-controls .x`) restore wrapping where the
+  layout is vertical.
+- **Clear-filters button on every page** — `#clearFilters`, label/title from
+  the pre-existing `grid.clear_filters` key, last header control, hidden
+  unless a filter/search is active; one click resets the page to defaults
+  (dashboard also resets the period to `all` and reloads only if it changed).
+- **Out of scope** — `rag.php` sidebar tag checkboxes are module-internal
+  filtering, not page-level; they intentionally do not follow this standard.
+
+### Gotchas verified during rollout
+
+- **CSP blocks inline `style=` attributes** on `no-connect`/default-CSP pages
+  (`style-src 'self' 'nonce-…'`, no `unsafe-inline`) — the clear button there
+  toggles the HTML `hidden` attribute instead of `style.display`. That needs
+  the author rule `header #clearFilters[hidden] { display: none }`, because
+  the global `button { display: inline-flex }` (author origin) beats the UA
+  `[hidden]` style regardless of specificity. The grid page alone keeps the
+  historical inline-style approach (its CSP is `unsafe-style`).
+- **`board.cy.js` asserts `#boardSearch` has `type="search"`** — search inputs
+  across pages are `type="search"` (native clear ×, shared
+  `header input[type="search"]` styling); keep ids page-specific but stable
+  (full contract list in CLAUDE.md).
+- `templates/layout.php` includes `header.php` in the same scope, so any page
+  can define `$headerControls` before the include — no template changes
+  needed per page.
+
 ## Menu / stylesheet review verification (2026-07-10)
 
 A 7-point external review of `templates/menu.php` + `public/assets/css/styles.css`

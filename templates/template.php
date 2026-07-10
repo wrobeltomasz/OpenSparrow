@@ -13,7 +13,7 @@ $jsonFlags          = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUO
 $headerControls = <<<HTML
     <input id="globalSearch" data-cy="search" type="text" placeholder="{$tSearchPlaceholder}" />
     <select id="columnFilter" data-cy="column-filter"><option value="">{$tAllColumns}</option></select>
-    <div id="filterBar" style="display:flex;gap:10px;"></div>
+    <div id="filterBar"></div>
     <button id="clearFilters" title="{$tClearFilters}" style="display:none;">{$tClearFilters}</button>
 HTML;
 $pageTitle = 'OpenSparrow | Open source | PHP + vanilla JS + Postgres';

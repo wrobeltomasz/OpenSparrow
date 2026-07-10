@@ -36,6 +36,19 @@ const containerEl  = document.getElementById('viewContainer');
 const searchEl     = document.getElementById('globalSearch');
 let exportBtn = null;
 
+/* ── Clear filters: header button empties the search box ── */
+const clearFiltersEl = document.getElementById('clearFilters');
+if (clearFiltersEl && searchEl) {
+    searchEl.addEventListener('input', () => {
+        clearFiltersEl.hidden = !searchEl.value;
+    });
+    clearFiltersEl.addEventListener('click', () => {
+        searchEl.value = '';
+        // Re-fires the per-view debounced search handler wired in renderView()
+        searchEl.dispatchEvent(new Event('input'));
+    });
+}
+
 /* ── fetch wrapper ── */
 async function apiFetch(url) {
     const res  = await fetch(url);

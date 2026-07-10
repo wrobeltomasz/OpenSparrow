@@ -82,7 +82,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (gridSection) {
                 const pillsContainer = document.createElement('div');
                 pillsContainer.id = 'filterPills';
-                pillsContainer.style.cssText = 'display: none; gap: 8px; flex-wrap: wrap; padding: 0 1.25rem; background: var(--panel); border-bottom: 1px solid var(--border-light);';
                 gridTitleEl.after(pillsContainer);
             }
 
@@ -199,19 +198,17 @@ function handleColumnFilterChange() {
         filterBar.appendChild(select);
     } else if (type.includes('date')) {
         const dateContainer = document.createElement('div');
-        dateContainer.style.cssText = 'display: flex; gap: 8px; align-items: center;';
-        
+        dateContainer.className = 'filter-range';
+
         const spanFrom = document.createElement('span');
         spanFrom.textContent = 'From:';
-        spanFrom.style.cssText = 'font-size: 13px; color: #ffffff;';
         const inputFrom = document.createElement('input');
         inputFrom.type = 'date';
         inputFrom.className = 'date-filter';
         if (existingFilter.from) inputFrom.value = existingFilter.from;
-        
+
         const spanTo = document.createElement('span');
         spanTo.textContent = 'To:';
-        spanTo.style.cssText = 'font-size: 13px; color: #ffffff;';
         const inputTo = document.createElement('input');
         inputTo.type = 'date';
         inputTo.className = 'date-filter';
@@ -234,24 +231,22 @@ function handleColumnFilterChange() {
         filterBar.appendChild(dateContainer);
     } else if (type.includes('int') || type.includes('dec') || type.includes('num') || type.includes('float')) {
         const numContainer = document.createElement('div');
-        numContainer.style.cssText = 'display: flex; gap: 8px; align-items: center;';
-        
+        numContainer.className = 'filter-range';
+
         const spanFrom = document.createElement('span');
         spanFrom.textContent = 'Min:';
-        spanFrom.style.cssText = 'font-size: 13px; color: #ffffff;';
         const inputFrom = document.createElement('input');
         inputFrom.type = 'number';
         inputFrom.placeholder = '0';
-        inputFrom.style.cssText = 'padding: 4px; border-radius: 4px; border: 1px solid #ccc; max-width: 80px;';
+        inputFrom.className = 'num-filter';
         if (existingFilter.min !== undefined) inputFrom.value = existingFilter.min;
-        
+
         const spanTo = document.createElement('span');
         spanTo.textContent = 'Max:';
-        spanTo.style.cssText = 'font-size: 13px; color: #ffffff;';
         const inputTo = document.createElement('input');
         inputTo.type = 'number';
         inputTo.placeholder = '100';
-        inputTo.style.cssText = 'padding: 4px; border-radius: 4px; border: 1px solid #ccc; max-width: 80px;';
+        inputTo.className = 'num-filter';
         if (existingFilter.max !== undefined) inputTo.value = existingFilter.max;
         
         const updateNumState = () => {
@@ -310,14 +305,14 @@ function renderFilterPills() {
     const createPill = (label, onRemove) => {
         hasPills = true;
         const pill = document.createElement('div');
-        pill.style.cssText = 'background: var(--accent-light); color: var(--accent-dark); border: 1px solid var(--accent-mid); border-radius: 12px; padding: 4px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; margin-top: 10px; margin-bottom: 10px;';
-        
+        pill.className = 'filter-pill';
+
         const textSpan = document.createElement('span');
         textSpan.textContent = label;
-        
+
         const closeBtn = document.createElement('span');
         closeBtn.textContent = '×';
-        closeBtn.style.cssText = 'cursor: pointer; color: var(--danger); font-size: 16px; font-weight: bold; line-height: 1; padding-left: 4px;';
+        closeBtn.className = 'filter-pill-remove';
         closeBtn.title = "Remove filter";
         closeBtn.onclick = () => {
             onRemove();
@@ -368,7 +363,7 @@ function renderFilterPills() {
         }
     }
 
-    pillsContainer.style.display = hasPills ? 'flex' : 'none';
+    pillsContainer.classList.toggle('active', hasPills);
 }
 
 // Apply only column filters to a row set (no text search). Used after server search

@@ -1,8 +1,9 @@
 // calendar.js — Calendar view (loaded as ES module by calendar.php)
 // Renders records of a table as events positioned by a date column; dragging an
 // event reschedules it via api.php (api=calendar). CSRF from meta tag; i18n via /api.php?action=i18n_bundle.
-// Filter bar: per-source visibility chips (window.CALENDAR_SOURCES) and enum value
-// dropdowns built from the public schema; state persisted in localStorage.
+// Header controls (rendered in the app header by calendar.php):
+//   - chips: per-source visibility (window.CALENDAR_SOURCES), state persisted in localStorage
+//   - search: client-side phrase filter — hides events whose title/fields/id do not contain the typed text
 
 import { getCsrfToken } from './util/csrf.js';
 
@@ -28,27 +29,22 @@ let currentYear = new Date().getFullYear();
 let eventsData = [];
 let appSchema = null;
 
-// ── Filters: source visibility (chips) + enum column values (dropdowns) ──────
+// ── Filters: source visibility (chips) ───────────────────────────────────────
 const FILTER_STORAGE_KEY = 'sparrow_calendar_filters';
 let hiddenTables = new Set();
-// Keyed "table|column" -> selected enum value; absent key means "all"
-let enumFilters = {};
 
 function loadFilterState() {
     try {
         const saved = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) || '{}');
         hiddenTables = new Set(Array.isArray(saved.hiddenTables) ? saved.hiddenTables : []);
-        enumFilters = (saved.enumFilters && typeof saved.enumFilters === 'object') ? saved.enumFilters : {};
     } catch (_) {
         hiddenTables = new Set();
-        enumFilters = {};
     }
 }
 
 function saveFilterState() {
     localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({
-        hiddenTables: [...hiddenTables],
-        enumFilters
+        hiddenTables: [...hiddenTables]
     }));
 }
 
@@ -60,33 +56,62 @@ function tableLabel(table) {
     return appSchema?.tables?.[table]?.display_name || table;
 }
 
-// Enum columns of a source table (type=enum with a non-empty options list)
-function enumColumnsFor(table) {
-    const cols = appSchema?.tables?.[table]?.columns || {};
-    return Object.entries(cols)
-        .filter(([, def]) => (def.type || '').toLowerCase() === 'enum'
-            && Array.isArray(def.options) && def.options.length > 0)
-        .map(([name, def]) => ({ name, def }));
+// ── Search: simple client-side phrase filter ─────────────────────────────────
+// Events whose title, record fields, or id do not contain the typed text are
+// hidden from the grid; clearing the box shows everything again.
+let searchTerm = '';
+
+function eventMatchesSearch(ev) {
+    if (!searchTerm) return true;
+    const parts = [ev.title, String(ev.id)];
+    for (const [key, val] of Object.entries(ev.rowData || {})) {
+        if (key.endsWith('__display') || val === null || val === undefined) continue;
+        parts.push(String(ev.rowData[key + '__display'] ?? val));
+    }
+    return parts.join(' ').toLowerCase().includes(searchTerm);
 }
 
-// Events that pass both the source chips and the enum dropdowns
-function visibleEvents() {
-    return eventsData.filter(ev => {
-        if (hiddenTables.has(ev.table)) return false;
-        return enumColumnsFor(ev.table).every(({ name }) => {
-            const selected = enumFilters[`${ev.table}|${name}`] ?? '';
-            return selected === '' || String(ev.rowData?.[name] ?? '') === selected;
-        });
+function initSearch() {
+    const input = document.getElementById('calendarSearch');
+    if (!input) return;
+    input.addEventListener('input', () => {
+        searchTerm = input.value.trim().toLowerCase();
+        renderCalendar();
     });
+}
+
+// ── Clear filters: header button resets the search box and all source chips ──
+function updateClearButton() {
+    const btn = document.getElementById('clearFilters');
+    if (btn) btn.hidden = !searchTerm && hiddenTables.size === 0;
+}
+
+function initClearFilters() {
+    const btn = document.getElementById('clearFilters');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        searchTerm = '';
+        const input = document.getElementById('calendarSearch');
+        if (input) input.value = '';
+        hiddenTables.clear();
+        saveFilterState();
+        renderFilterBar();
+        renderCalendar();
+    });
+}
+
+// Events that pass both the source chips and the search box
+function visibleEvents() {
+    return eventsData.filter(ev => !hiddenTables.has(ev.table) && eventMatchesSearch(ev));
 }
 
 function buildSourceChip(src) {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'calendar-filter-chip' + (hiddenTables.has(src.table) ? ' off' : '');
+    chip.className = 'filter-chip' + (hiddenTables.has(src.table) ? ' off' : '');
 
     const dot = document.createElement('span');
-    dot.className = 'calendar-filter-dot';
+    dot.className = 'filter-dot';
     dot.style.backgroundColor = src.color;
     chip.appendChild(dot);
     chip.appendChild(document.createTextNode(tableLabel(src.table)));
@@ -104,57 +129,11 @@ function buildSourceChip(src) {
     return chip;
 }
 
-function buildEnumSelect(table, name, def) {
-    const key = `${table}|${name}`;
-    const wrap = document.createElement('label');
-    wrap.className = 'calendar-filter-enum';
-
-    const caption = document.createElement('span');
-    caption.textContent = `${tableLabel(table)}: ${def.display_name || name}`;
-    wrap.appendChild(caption);
-
-    const select = document.createElement('select');
-    const allOpt = document.createElement('option');
-    allOpt.value = '';
-    allOpt.textContent = t('calendar.filter_all');
-    select.appendChild(allOpt);
-    def.options.forEach(val => {
-        const opt = document.createElement('option');
-        opt.value = String(val);
-        opt.textContent = String(val);
-        select.appendChild(opt);
-    });
-    select.value = enumFilters[key] ?? '';
-
-    select.addEventListener('change', () => {
-        if (select.value === '') {
-            delete enumFilters[key];
-        } else {
-            enumFilters[key] = select.value;
-        }
-        saveFilterState();
-        renderCalendar();
-    });
-    wrap.appendChild(select);
-    return wrap;
-}
-
 function renderFilterBar() {
     const bar = document.getElementById('calendarFilters');
     if (!bar) return;
     bar.innerHTML = '';
-
-    const sources = calendarSources();
-    sources.forEach(src => bar.appendChild(buildSourceChip(src)));
-
-    // Enum dropdowns only for sources that are currently visible
-    sources
-        .filter(src => !hiddenTables.has(src.table))
-        .forEach(src => {
-            enumColumnsFor(src.table).forEach(({ name, def }) => {
-                bar.appendChild(buildEnumSelect(src.table, name, def));
-            });
-        });
+    calendarSources().forEach(src => bar.appendChild(buildSourceChip(src)));
 }
 
 // Init calendar when DOM is ready
@@ -164,6 +143,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchEvents(currentYear, currentMonth + 1);
     loadFilterState();
     renderFilterBar();
+    initSearch();
+    initClearFilters();
     renderCalendar();
 
     document.getElementById('btnPrev').addEventListener('click', async () => {
@@ -224,6 +205,7 @@ function renderCalendar() {
     const container = document.getElementById('calendarContainer');
     const title = document.getElementById('calendarTitle');
     const monthEvents = visibleEvents();
+    updateClearButton();
     
     // Clear container safely
     container.innerHTML = '';
