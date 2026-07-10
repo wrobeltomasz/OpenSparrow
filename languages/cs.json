@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Přepnout postranní panel",
         "toggle_search": "Přepnout vyhledávání",
+        "toggle_submenu": "Přepnout podnabídku: {name}",
         "notifications": "Oznámení",
         "admin_panel": "Administrační panel",
         "user_menu": "Uživatelské menu",

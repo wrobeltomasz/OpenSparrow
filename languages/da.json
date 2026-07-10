@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Slå sidebjælke til/fra",
         "toggle_search": "Slå søgning til/fra",
+        "toggle_submenu": "Slå undermenu til/fra: {name}",
         "notifications": "Notifikationer",
         "admin_panel": "Adminpanel",
         "user_menu": "Brugermenu",

@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Comutare bara laterală",
         "toggle_search": "Comutare căutare",
+        "toggle_submenu": "Comutare submeniu: {name}",
         "notifications": "Notificări",
         "admin_panel": "Panou de administrare",
         "user_menu": "Meniu utilizator",

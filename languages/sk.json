@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Prepnúť bočný panel",
         "toggle_search": "Prepnúť vyhľadávanie",
+        "toggle_submenu": "Prepnúť podponuku: {name}",
         "notifications": "Oznámenia",
         "admin_panel": "Administrátorský panel",
         "user_menu": "Používateľské menu",

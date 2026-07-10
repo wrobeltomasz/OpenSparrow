@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Toggle sidebar",
         "toggle_search": "Toggle search",
+        "toggle_submenu": "Toggle submenu: {name}",
         "notifications": "Notifications",
         "admin_panel": "Admin panel",
         "user_menu": "User menu",

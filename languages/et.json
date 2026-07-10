@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Lülita külgriba",
         "toggle_search": "Lülita otsing",
+        "toggle_submenu": "Lülita alammenüü: {name}",
         "notifications": "Teavitused",
         "admin_panel": "Halduspaneel",
         "user_menu": "Kasutajamenüü",

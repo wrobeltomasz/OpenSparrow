@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Oldalsáv váltása",
         "toggle_search": "Keresés váltása",
+        "toggle_submenu": "Almenü váltása: {name}",
         "notifications": "Értesítések",
         "admin_panel": "Adminisztrációs panel",
         "user_menu": "Felhasználói menü",

@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Perjungti šoninę juostą",
         "toggle_search": "Perjungti paiešką",
+        "toggle_submenu": "Perjungti submeniu: {name}",
         "notifications": "Pranešimai",
         "admin_panel": "Administravimo skydelis",
         "user_menu": "Vartotojo meniu",

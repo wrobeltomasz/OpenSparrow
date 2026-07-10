@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Pārslēgt sānjoslu",
         "toggle_search": "Pārslēgt meklēšanu",
+        "toggle_submenu": "Pārslēgt apakšizvēlni: {name}",
         "notifications": "Paziņojumi",
         "admin_panel": "Administratora panelis",
         "user_menu": "Lietotāja izvēlne",

@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Przełącz menu boczne",
         "toggle_search": "Przełącz wyszukiwanie",
+        "toggle_submenu": "Przełącz podmenu: {name}",
         "notifications": "Powiadomienia",
         "admin_panel": "Panel administracyjny",
         "user_menu": "Menu użytkownika",

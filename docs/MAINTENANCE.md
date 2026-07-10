@@ -109,3 +109,45 @@ until deployments migrated.
 **Still open:** the local `git remote origin` URL was not changed by the
 assistant (a `git remote set-url` was denied in-session) — update it manually:
 `git remote set-url origin https://github.com/wrobeltomasz/OpenSparrow.git`.
+
+## Menu / stylesheet review verification (2026-07-10)
+
+A 7-point external review of `templates/menu.php` + `public/assets/css/styles.css`
+was verified point-by-point. Most claims were unfounded (the reviewer did not have
+the JS files); the real findings were adjacent to the reported ones. Recorded so
+the same nitpicks are not re-litigated.
+
+### Implemented the same day
+
+- **Submenu `<summary>` accessible name** — `aria-label` built from the new i18n
+  key `header.toggle_submenu` (`"Toggle submenu: {name}"`, added to all 20
+  `languages/*.json`); the `▾` glyph is `aria-hidden="true"`. The
+  `<details>`/`<summary>` disclosure pattern itself **stays** — deliberate no-JS
+  progressive enhancement; do not replace it with `button` + `aria-expanded`.
+- **`aria-current="page"`** on the active nav link (`renderMenuLink`), alongside
+  the existing `active` class.
+- **Collapsed-nav tooltip keyboard support** — `sidebar.js` shows `#nav-tip` on
+  `focusin` (mirroring `mouseover`) and hides on `focusout` only when focus
+  leaves the sidebar, so Tab users can read collapsed menu labels.
+- **Menu icon whitelist tightened** in both copies — decision and rationale in
+  `SECURITY.md` → "Menu icons: local `assets/` whitelist".
+
+### Verified fine — do NOT "fix"
+
+- **`.th-label { pointer-events: none }` is functional**, not leftover: it
+  guarantees `e.target` is the `th` for column sorting and drag-and-drop
+  (`grid/header/dnd.js`). Known harmless side effect: the `cursor: help` set in
+  `grid/header/render.js` on described columns never applies (the `title`
+  tooltip sits on the `th` and still works).
+- **Class naming is consistent**: kebab-case with short module prefixes
+  (`dash-`, `kg-`, `f-`) per CLAUDE.md — these are not "camelCase" violations.
+  camelCase appears only in IDs serving as JS hooks (`#sidebarToggle`,
+  `#dateFiltersContainer`, ~14 selectors) — a deliberate ID-vs-class split;
+  renaming would touch many JS files for zero gain.
+- **No global margin reset** (`h1, p, ul { margin: 0 }`) — the ~3.3k-line
+  stylesheet zeroes margins point-wise (~30 places, e.g. `.dash-title`); adding
+  a global reset late risks visual regressions with no benefit.
+- **The 12 `!important` uses** are mostly deliberate state overrides
+  (`cell-error`/`cell-success`, `tr:hover td`); only the pair in
+  `#dateFiltersContainer` (ID selector already wins) is removable cleanup when
+  that block is next touched.

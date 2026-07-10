@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Εναλλαγή πλαϊνής γραμμής",
         "toggle_search": "Εναλλαγή αναζήτησης",
+        "toggle_submenu": "Εναλλαγή υπομενού: {name}",
         "notifications": "Ειδοποιήσεις",
         "admin_panel": "Πίνακας διαχείρισης",
         "user_menu": "Μενού χρήστη",

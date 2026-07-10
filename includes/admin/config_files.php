@@ -27,7 +27,12 @@ $menuSanitizeIcon = static function (string $icon): string {
     if ($icon === '') {
         return '';
     }
-    if (preg_match('#^(https://[^\s<>"\']+|assets/[^\s<>"\']*)$#i', $icon)) {
+    // Local assets/ paths only — mirrors renderMenuIcon() in templates/menu.php
+    // (offline policy: no external URLs; no path traversal).
+    if (
+        !str_contains($icon, '..')
+        && preg_match('#^assets/[a-z0-9_\-/.]+\.(png|svg|gif|jpe?g|webp)$#i', $icon)
+    ) {
         return $icon;
     }
     return '';

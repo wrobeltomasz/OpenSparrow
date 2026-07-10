@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Basculer la barre latérale",
         "toggle_search": "Basculer la recherche",
+        "toggle_submenu": "Basculer le sous-menu : {name}",
         "notifications": "Notifications",
         "admin_panel": "Panneau d'administration",
         "user_menu": "Menu utilisateur",

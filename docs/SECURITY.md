@@ -48,6 +48,19 @@ already been verified, so audits are not repeated from scratch.
   (`spw_login_attempts` brute-force throttling, `*_log` audit tables, RAG rate
   limits); alerting/pattern analysis (fail2ban, log aggregation) belongs to the
   deployment, not application code.
+- **Menu icons: local `assets/` whitelist (2026-07-10)** — icon paths from
+  admin-editable config JSON must match
+  `#^assets/[a-z0-9_\-/.]+\.(png|svg|gif|jpe?g|webp)$#i` and contain no `..`;
+  the former `https://` branch was removed (offline/no-CDN policy). Two
+  synchronized copies exist and **must stay identical**: `renderMenuIcon()` in
+  `templates/menu.php` (render) and `$menuSanitizeIcon` in
+  `includes/admin/config_files.php` (admin save/preview) — tightening only one
+  makes admins save icons that silently render empty. Context for future
+  audits: the value only ever lands in a browser-resolved `<img src>` (no
+  server-side file read → no LFI/path traversal), and `config/` sits outside
+  the `public/` docroot, so the old loose pattern was not exploitable — the
+  tightening is defense-in-depth plus offline-policy enforcement, not a
+  vulnerability fix.
 
 ## Audit: `innerHTML` usage in `public/assets/js/` (2026-07-09)
 

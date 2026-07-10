@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Växla sidopanel",
         "toggle_search": "Växla sökning",
+        "toggle_submenu": "Växla undermeny: {name}",
         "notifications": "Aviseringar",
         "admin_panel": "Adminpanel",
         "user_menu": "Användarmeny",

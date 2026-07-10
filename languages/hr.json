@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Uključi/isključi bočnu traku",
         "toggle_search": "Uključi/isključi pretragu",
+        "toggle_submenu": "Uključi/isključi podizbornik: {name}",
         "notifications": "Obavijesti",
         "admin_panel": "Administratorska ploča",
         "user_menu": "Korisnički izbornik",

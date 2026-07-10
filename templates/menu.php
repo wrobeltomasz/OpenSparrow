@@ -46,12 +46,16 @@ if (!function_exists('loadMenuConfig')) {
     }
 }
 
-// Validates image URIs against a strict whitelist to block javascript: and data: payloads.
+// Validates icon paths against a local assets/ whitelist — blocks javascript:/data:
+// payloads, external URLs (offline policy) and path traversal.
 if (!function_exists('renderMenuIcon')) {
     function renderMenuIcon(string $icon): string
     {
         if (str_contains($icon, '/') || str_contains($icon, '.')) {
-            if (!preg_match('#^(https://[^\s<>"\']+|assets/[^\s<>"\']*)$#i', $icon)) {
+            if (
+                str_contains($icon, '..')
+                || !preg_match('#^assets/[a-z0-9_\-/.]+\.(png|svg|gif|jpe?g|webp)$#i', $icon)
+            ) {
                 return '';
             }
             return '<img src="' . htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') . '" alt="" />';
@@ -222,6 +226,9 @@ if (!function_exists('renderMenuLink')) {
             // No-emoji policy: fall back to a local PNG, never a Unicode glyph.
             $icon = '<img src="assets/icons/table_chart_view.png" alt="" />';
         }
+        if (!empty($item['active'])) {
+            $attrs .= ' aria-current="page"';
+        }
         $name = htmlspecialchars($item['name'] ?? '', ENT_QUOTES, 'UTF-8');
         return '<a href="' . $href . '" class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '"' . $attrs . ' data-tooltip="' . $name . '">'
              . $icon
@@ -249,6 +256,11 @@ if (!function_exists('renderMenuLink')) {
                     }
                 }
                 $isOpen = $anyChildActive || (!empty($item['active']));
+                $toggleLabel = htmlspecialchars(
+                    t('header.toggle_submenu', ['name' => $item['name'] ?? '']),
+                    ENT_QUOTES,
+                    'UTF-8'
+                );
                 ?>
                 <li class="menu-has-children">
                     <!-- Main link: navigates to grid/page -->
@@ -256,8 +268,8 @@ if (!function_exists('renderMenuLink')) {
                     
                     <!-- Details toggle: only arrow for expanding/collapsing submenu -->
                     <details class="menu-submenu-details"<?php echo $isOpen ? ' open' : ''; ?>>
-                        <summary class="menu-toggle-arrow">
-                            <span class="menu-arrow">▾</span>
+                        <summary class="menu-toggle-arrow" aria-label="<?php echo $toggleLabel; ?>">
+                            <span class="menu-arrow" aria-hidden="true">▾</span>
                         </summary>
                         <ul class="menu-submenu">
                             <?php foreach ($item['children'] as $child) : ?>

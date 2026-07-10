@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Preklopi stransko vrstico",
         "toggle_search": "Preklopi iskanje",
+        "toggle_submenu": "Preklopi podmeni: {name}",
         "notifications": "Obvestila",
         "admin_panel": "Skrbniška plošča",
         "user_menu": "Uporabniški meni",

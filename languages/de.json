@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Seitenleiste umschalten",
         "toggle_search": "Suche umschalten",
+        "toggle_submenu": "Untermenü umschalten: {name}",
         "notifications": "Benachrichtigungen",
         "admin_panel": "Adminbereich",
         "user_menu": "Benutzermenü",

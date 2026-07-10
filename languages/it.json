@@ -101,6 +101,7 @@
     "header": {
         "toggle_sidebar": "Attiva/disattiva barra laterale",
         "toggle_search": "Attiva/disattiva ricerca",
+        "toggle_submenu": "Attiva/disattiva sottomenu: {name}",
         "notifications": "Notifiche",
         "admin_panel": "Pannello di amministrazione",
         "user_menu": "Menu utente",

@@ -114,4 +114,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sidebar.addEventListener('mouseleave', hideNavTip);
     sidebar.addEventListener('click', hideNavTip);
+
+    /* Keyboard: mirror hover behavior so collapsed nav labels are reachable via Tab */
+    sidebar.addEventListener('focusin', (e) => {
+        const link = e.target.closest('.custom-nav-link');
+        if (link === tipTarget) return;
+        tipTarget = link;
+        if (link) showNavTip(link);
+        else hideNavTip();
+    });
+
+    sidebar.addEventListener('focusout', (e) => {
+        if (!sidebar.contains(e.relatedTarget)) hideNavTip();
+    });
 });
