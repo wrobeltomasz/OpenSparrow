@@ -218,7 +218,6 @@
         "loading": "Nézetek betöltése…",
         "error": "Hiba: {message}",
         "open": "Nézet megnyitása →",
-        "back": "◀ Vissza",
         "rows": {
             "one": "{count} sor",
             "other": "{count} sor"

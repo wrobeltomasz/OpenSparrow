@@ -218,7 +218,6 @@
         "loading": "Indlæser visninger…",
         "error": "Fejl: {message}",
         "open": "Åbn visning →",
-        "back": "◀ Tilbage",
         "rows": {
             "one": "{count} række",
             "other": "{count} rækker"

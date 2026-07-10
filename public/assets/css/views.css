@@ -110,28 +110,6 @@
   text-align: center;
 }
 
-/* Drill-up button — sits inside dark .vw-header */
-.vw-drill-up {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0.4rem 0.9rem;
-  border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.35);
-  background: rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.85);
-  font-size: 13px;
-  cursor: pointer;
-  box-shadow: none;
-  transition: all var(--transition);
-}
-
-.vw-drill-up:hover {
-  border-color: rgba(255,255,255,0.75);
-  color: #fff;
-  background: rgba(255,255,255,0.2);
-}
-
 /* Loading / empty / error */
 .vw-loading,
 .vw-empty,

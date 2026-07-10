@@ -133,21 +133,31 @@ if (!empty($wfCfg['workflows'])) {
     ];
 }
 
-$hasVisibleViews = false;
-foreach ($viewsCfg['views'] ?? [] as $vConfig) {
-    if (empty($vConfig['hidden'])) {
-        $hasVisibleViews = true;
-        break;
+// Each visible view becomes a submenu child under the Views module entry.
+$viewChildren = [];
+foreach ($viewsCfg['views'] ?? [] as $vName => $vConfig) {
+    if (!empty($vConfig['hidden'])) {
+        continue;
     }
-}
-if ($hasVisibleViews) {
-    $menuCatalog['views'] = [
-        'type'   => 'views',
-        'href'   => 'views.php',
-        'name'   => 'Views',
-        'icon'   => 'assets/icons/table_chart_view.png',
+    $vName          = (string) $vName;
+    $viewChildren[] = [
+        'type'   => 'view',
+        'href'   => 'views.php?view=' . urlencode($vName),
+        'name'   => $vConfig['menu_name'] ?? ($vConfig['display_name'] ?? $vName),
+        'icon'   => $vConfig['icon'] ?? '',
         'hidden' => false,
-        'active' => $currentPage === 'views.php',
+        'active' => $currentPage === 'views.php' && $currentView === $vName,
+    ];
+}
+if (!empty($viewChildren)) {
+    $menuCatalog['views'] = [
+        'type'     => 'views',
+        'href'     => 'views.php',
+        'name'     => 'Views',
+        'icon'     => 'assets/icons/table_chart_view.png',
+        'hidden'   => false,
+        'active'   => $currentPage === 'views.php' && $currentView === '',
+        'children' => $viewChildren,
     ];
 }
 
@@ -183,7 +193,8 @@ if ($menuJson !== null && isset($menuJson['items']) && is_array($menuJson['items
             continue;
         }
         $item             = $menuCatalog[$key];
-        $item['children'] = [];
+        // Preserve catalog-provided children (e.g. the Views submenu)
+        $item['children'] = $item['children'] ?? [];
         foreach ($entry['children'] ?? [] as $ce) {
             $ck = $ce['key'] ?? '';
             if ($ck === '' || !isset($menuCatalog[$ck])) {
@@ -197,13 +208,13 @@ if ($menuJson !== null && isset($menuJson['items']) && is_array($menuJson['items
     }
     foreach ($menuCatalog as $key => $entry) {
         if (!isset($menuPlaced[$key])) {
-            $entry['children'] = [];
+            $entry['children'] = $entry['children'] ?? [];
             $menuItems[]       = $entry;
         }
     }
 } else {
     foreach ($menuCatalog as $entry) {
-        $entry['children'] = [];
+        $entry['children'] = $entry['children'] ?? [];
         $menuItems[]       = $entry;
     }
 }

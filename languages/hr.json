@@ -221,7 +221,6 @@
         "loading": "Učitavanje prikaza…",
         "error": "Pogreška: {message}",
         "open": "Otvori prikaz →",
-        "back": "◀ Natrag",
         "rows": {
             "one": "{count} redak",
             "few": "{count} retka",

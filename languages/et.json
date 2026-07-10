@@ -218,7 +218,6 @@
         "loading": "Vaadete laadimine…",
         "error": "Viga: {message}",
         "open": "Ava vaade →",
-        "back": "◀ Tagasi",
         "rows": {
             "one": "{count} rida",
             "other": "{count} rida"

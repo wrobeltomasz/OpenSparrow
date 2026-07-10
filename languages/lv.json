@@ -218,7 +218,6 @@
         "loading": "Ielādē skatus…",
         "error": "Kļūda: {message}",
         "open": "Atvērt skatu →",
-        "back": "◀ Atpakaļ",
         "rows": {
             "one": "{count} rinda",
             "other": "{count} rindas"

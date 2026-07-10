@@ -224,7 +224,6 @@
         "loading": "Nalaganje pogledov…",
         "error": "Napaka: {message}",
         "open": "Odpri pogled →",
-        "back": "◀ Nazaj",
         "rows": {
             "one": "{count} vrstica",
             "two": "{count} vrstici",

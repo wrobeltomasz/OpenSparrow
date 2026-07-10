@@ -221,7 +221,6 @@
         "loading": "Kraunami rodiniai…",
         "error": "Klaida: {message}",
         "open": "Atidaryti rodinį →",
-        "back": "◀ Atgal",
         "rows": {
             "one": "{count} eilutė",
             "few": "{count} eilutės",

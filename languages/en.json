@@ -218,7 +218,6 @@
         "loading": "Loading views…",
         "error": "Error: {message}",
         "open": "Open View →",
-        "back": "◀ Back",
         "rows": {
             "one": "{count} row",
             "other": "{count} rows"

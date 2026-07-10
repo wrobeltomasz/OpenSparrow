@@ -218,7 +218,6 @@
         "loading": "Chargement des vues…",
         "error": "Erreur : {message}",
         "open": "Ouvrir la vue →",
-        "back": "◀ Retour",
         "rows": {
             "one": "{count} ligne",
             "other": "{count} lignes"

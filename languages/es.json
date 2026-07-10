@@ -218,7 +218,6 @@
         "loading": "Cargando vistas…",
         "error": "Error: {message}",
         "open": "Abrir vista →",
-        "back": "◀ Atrás",
         "rows": {
             "one": "{count} fila",
             "other": "{count} filas"

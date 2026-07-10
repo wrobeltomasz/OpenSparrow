@@ -218,7 +218,6 @@
         "loading": "Ansichten werden geladen…",
         "error": "Fehler: {message}",
         "open": "Ansicht öffnen →",
-        "back": "◀ Zurück",
         "rows": {
             "one": "{count} Zeile",
             "other": "{count} Zeilen"

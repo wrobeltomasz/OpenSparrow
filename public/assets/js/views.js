@@ -114,17 +114,6 @@ function drillDown(viewName, level, filterCol, filterVal, displayLabel) {
     loadView(viewName, level + 1, filterCol, filterVal);
 }
 
-/* ── drill up one level ── */
-function drillUp() {
-    if (drillStack.length > 1) {
-        drillStack.pop();
-        const entry = drillStack[drillStack.length - 1];
-        loadView(entry.viewName, entry.level, entry.filterCol, entry.filterVal);
-    } else {
-        showSelector();
-    }
-}
-
 /* ── load and render view data ── */
 async function loadView(viewName, level, filterCol, filterVal) {
     _clearHandlers();
@@ -175,13 +164,6 @@ function renderView(data) {
     meta.className   = 'vw-meta';
     meta.textContent = I18n.t('views.rows', { count: rows.length }, rows.length);
     hdr.appendChild(meta);
-
-    const backBtn = document.createElement('button');
-    backBtn.className        = 'vw-drill-up';
-    backBtn.style.marginLeft = 'auto';
-    backBtn.textContent      = I18n.t('views.back');
-    backBtn.addEventListener('click', drillUp);
-    hdr.appendChild(backBtn);
 
     containerEl.appendChild(hdr);
     renderBreadcrumb();

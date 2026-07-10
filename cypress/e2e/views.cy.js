@@ -87,6 +87,21 @@ describe('OpenSparrow – Views: Selector Loading', () => {
     });
   });
 
+  it('if views configured: sidebar lists views in a submenu under Views', () => {
+    cy.get('#viewContainer .vw-loading').should('not.exist');
+    cy.get('#viewContainer').then($el => {
+      if ($el.find('.vw-selector-card').length === 0) {
+        Cypress.log({ message: 'No views configured — skipping menu submenu test' });
+        return;
+      }
+      cy.get('#menu a[href^="views.php?view="]')
+        .should('have.length.gte', 1)
+        .first()
+        .closest('.menu-submenu')
+        .should('exist');
+    });
+  });
+
   it('if no views: shows empty state message', () => {
     // Wait for JS to finish rendering before checking state
     cy.get('#viewContainer .vw-loading').should('not.exist');
@@ -146,25 +161,12 @@ describe('OpenSparrow – Views: Open View', () => {
     });
   });
 
-  it('opened view has back (drill-up) button', () => {
+  it('opened view has no back button (navigation via sidebar menu)', () => {
     cy.get('#viewContainer').then($el => {
       if ($el.find('.vw-selector-card').length === 0) return;
       cy.get('.vw-selector-card').first().click();
-      cy.get('.vw-drill-up', { timeout: CypressHelpers.TIMEOUTS.long })
-        .should('exist');
-    });
-  });
-
-  it('back button returns to selector', () => {
-    cy.get('#viewContainer').then($el => {
-      if ($el.find('.vw-selector-card').length === 0) return;
-      cy.get('.vw-selector-card').first().click();
-      cy.get('.vw-drill-up', { timeout: CypressHelpers.TIMEOUTS.long }).click();
-      cy.get('#viewContainer', { timeout: CypressHelpers.TIMEOUTS.medium }).then($cnt => {
-        const backAtSelector = $cnt.find('.vw-selector-card').length > 0
-          || $cnt.find('.vw-empty').length > 0;
-        expect(backAtSelector).to.be.true;
-      });
+      cy.get('.vw-header', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+      cy.get('.vw-drill-up').should('not.exist');
     });
   });
 

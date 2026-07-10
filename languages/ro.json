@@ -221,7 +221,6 @@
         "loading": "Se încarcă vizualizările…",
         "error": "Eroare: {message}",
         "open": "Deschide vizualizarea →",
-        "back": "◀ Înapoi",
         "rows": {
             "one": "{count} rând",
             "few": "{count} rânduri",

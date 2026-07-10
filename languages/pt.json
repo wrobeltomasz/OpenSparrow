@@ -218,7 +218,6 @@
         "loading": "A carregar vistas…",
         "error": "Erro: {message}",
         "open": "Abrir vista →",
-        "back": "◀ Voltar",
         "rows": {
             "one": "{count} linha",
             "other": "{count} linhas"

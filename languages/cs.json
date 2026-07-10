@@ -221,7 +221,6 @@
         "loading": "Načítání pohledů…",
         "error": "Chyba: {message}",
         "open": "Otevřít pohled →",
-        "back": "◀ Zpět",
         "rows": {
             "one": "{count} řádek",
             "few": "{count} řádky",

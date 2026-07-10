@@ -566,6 +566,10 @@ Zapisane konfiguracje filtrów i układu kolumn.
 - Kliknięcie widoku: ładuje go (stosuje zapisane filtry, ewentualnie kolejność kolumn)
 - Tworzenie / edycja / usuwanie widoków dostępne dla roli Editor i Admin
 
+### Nawigacja z menu bocznego
+
+Wszystkie widoczne (nieukryte) widoki są wypisane w menu bocznym jako rozwijana lista podrzędna pod pozycją "Views" — ten sam wzorzec co podmenu tabel (strzałka ▾ rozwija/zwija listę). Kliknięcie pozycji podmenu otwiera dany widok bezpośrednio (`views.php?view=nazwa`), a kliknięcie samej pozycji "Views" otwiera stronę z kartami wszystkich widoków. W widoku nie ma osobnego przycisku "Wstecz" — powrót do listy widoków odbywa się przez menu boczne, a cofanie po poziomach drill-down przez okruszki (breadcrumb) nad tabelą.
+
 ### Źródło danych: PostgreSQL i MySQL
 
 Edytor Widoków w panelu administracyjnym (Admin › Views) ma dwie zakładki, analogicznie do sekcji "Schema":

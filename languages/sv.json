@@ -218,7 +218,6 @@
         "loading": "Laddar vyer…",
         "error": "Fel: {message}",
         "open": "Öppna vy →",
-        "back": "◀ Tillbaka",
         "rows": {
             "one": "{count} rad",
             "other": "{count} rader"

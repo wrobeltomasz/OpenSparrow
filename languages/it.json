@@ -218,7 +218,6 @@
         "loading": "Caricamento viste…",
         "error": "Errore: {message}",
         "open": "Apri vista →",
-        "back": "◀ Indietro",
         "rows": {
             "one": "{count} riga",
             "other": "{count} righe"
