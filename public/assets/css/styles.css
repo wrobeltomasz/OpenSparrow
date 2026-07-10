@@ -1026,6 +1026,21 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
   font-weight: 500;
   padding: 0 0.5rem;
 }
+.pagination .pag-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pagination .pag-size select {
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  background: var(--panel);
+}
 
 /* ===== DEBUG PANEL ===== */
 #debug {
@@ -2693,7 +2708,9 @@ th.drag-over .th-label {
   opacity: 0.5;
 }
 
-/* === files — aligned to the global palette (was a standalone blue/slate theme) === */
+/* === files — the table, actions bar and pagination reuse the grid's global styles
+   (table/thead th/tbody td/.th-label/.td-actions/.btn-icon); only the upload card
+   and type/tag badges keep module-specific rules === */
 :root {
   --f-primary: var(--accent-dark);
   --f-accent: var(--accent);
@@ -2703,59 +2720,49 @@ th.drag-over .th-label {
   --f-text-main: var(--text);
   --f-text-muted: var(--muted);
 }
-.files-container { max-width: 1400px; margin: 0 auto; color: var(--f-text-main); font-family: system-ui, -apple-system, sans-serif; }
-.f-card { background: #fff; border: 1px solid var(--f-border); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 24px; }
-.file-upload-box { border: 2px dashed var(--border); background: var(--f-bg-light); border-radius: 8px; padding: 30px 20px; text-align: center; transition: border-color var(--transition), background var(--transition); }
-.file-upload-box:hover { border-color: var(--f-accent); background: var(--accent-light); }
-.file-upload-inputs { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
-.f-input { padding: 10px 14px; border: 1px solid var(--f-border); border-radius: var(--radius); font-size: 14px; color: var(--f-text-main); outline: none; transition: all var(--transition); background: #fff; box-sizing: border-box; }
+#filesSection {
+  background: var(--panel);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+#filesGrid {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - var(--header-h) - 50px);
+}
+#filesGrid th[data-sort] { cursor: pointer; }
+/* Minimal single-row upload bar below the table — same proportions as the .actions bar */
+.f-upload-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg);
+}
+.f-upload-label { font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.f-input { padding: 0.42rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; color: var(--f-text-main); outline: none; transition: all var(--transition); background: var(--panel); box-sizing: border-box; }
 .f-input:focus { border-color: var(--f-accent); box-shadow: var(--focus-ring); }
 .f-input:disabled { background: #f1f5f9; cursor: not-allowed; color: #94a3b8; }
-.f-input-file { background: transparent; border: none; box-shadow: none; padding: 0; }
-.f-input-w200 { width: 200px; }
-.f-input-w280 { width: 280px; }
-.files-toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-.f-btn { padding: 10px 18px; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; transition: all var(--transition); display: inline-flex; align-items: center; justify-content: center; }
-.f-btn-primary { background: var(--f-primary); color: #fff; }
-.f-btn-primary:hover { background: var(--text); box-shadow: 0 4px 6px rgba(15, 23, 42, 0.2); }
-.f-btn-accent { background: var(--f-accent); color: #fff; }
-.f-btn-accent:hover { background: var(--accent-dark); }
-.f-btn-danger { background: var(--f-danger); color: #fff; }
-.f-btn-danger:hover { background: var(--danger); }
-.f-btn-outline { background: #fff; border: 1px solid var(--border); color: var(--f-text-main); }
-.f-btn-outline:hover { background: var(--f-bg-light); border-color: #94a3b8; }
-.f-btn-upload { margin-top: 10px; min-width: 150px; }
-.f-btn-sm { padding: 6px 12px; font-size: 13px; text-decoration: none; }
-.f-btn-sm-ml { margin-left: 6px; }
-.table-responsive { overflow-x: auto; border: 1px solid var(--f-border); border-radius: 8px; background: #fff; }
-.file-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; white-space: nowrap; }
-.file-table th { background: var(--f-bg-light); color: var(--f-text-muted); font-weight: 600; padding: 14px 16px; border-bottom: 2px solid var(--f-border); text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-.file-table td { padding: 14px 16px; border-bottom: 1px solid var(--f-border); color: var(--f-text-main); vertical-align: middle; }
-.file-table tbody tr { transition: background 0.15s; }
-.file-table tbody tr:hover { background: #f8fafc; }
-.file-table tbody tr:last-child td { border-bottom: none; }
-.f-td-type { padding: 10px 16px; }
+.f-input-file { background: transparent; border: none; box-shadow: none; padding: 0; max-width: 220px; }
+.f-input-w160 { width: 160px; }
+.f-input-w220 { width: 220px; }
 .f-type-cell { display: flex; align-items: center; gap: 8px; }
 .f-type-icon { width: 20px; height: 20px; opacity: 0.8; }
 .f-type-label { font-weight: bold; color: var(--muted); font-size: 12px; }
 .f-td-name { font-weight: 500; }
 .f-td-empty { text-align: center; padding: 30px; color: var(--muted); }
 .f-td-error { color: #ef4444; text-align: center; padding: 30px; }
-.file-icon { font-size: 12px; font-weight: 700; color: var(--f-text-muted); background: var(--border-light); padding: 4px 8px; border-radius: 4px; display: inline-block; width: 45px; text-align: center; margin-right: 10px; }
 .related-badge { background: #eff6ff; color: #1d4ed8; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; border: 1px solid #bfdbfe; display: inline-block; text-decoration: none; transition: background 0.2s; }
 .related-badge:hover { background: #dbeafe; }
-.f-title { margin-top: 0; color: var(--f-primary); font-size: 18px; margin-bottom: 16px; font-weight: 600; }
 .tag-badge { background: var(--border-light); color: #475569; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid var(--border); margin-right: 4px; display: inline-block; }
-.f-upload-status { margin-top: 15px; font-weight: 500; font-size: 14px; }
+.f-upload-status { font-weight: 500; font-size: 13px; }
 .f-status-success { color: #10b981; }
 .f-status-error   { color: var(--f-danger); }
 .f-status-neutral { color: var(--f-text-main); }
-.f-pagination { display: flex; gap: 8px; justify-content: center; margin-top: 24px; }
-.f-pagination button { padding: 8px 14px; border: 1px solid var(--f-border); background: #fff; border-radius: var(--radius); cursor: pointer; color: var(--f-text-main); transition: all var(--transition); font-weight: 500; font-size: 14px; }
-.f-pagination button:hover { background: var(--f-bg-light); border-color: var(--border); }
-.f-pagination button.active { background: var(--f-primary); color: #fff; border-color: var(--f-primary); }
-#filesSection { padding: 24px; }
-.f-hidden { display: none; }
 
 /* === dashboard === */
 #dashboardMain { padding: 20px; width: 100%; overflow-y: auto; }
@@ -2994,11 +3001,12 @@ th.drag-over .th-label {
     display: flex;
     align-items: center;
     gap: 14px;
-    background: var(--text);
+    /* Portal palette: same navy as the app header (shared by grid and files) */
+    background: var(--accent-dark);
     color: #f8fafc;
     padding: 12px 20px;
     border-radius: var(--radius-lg);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+    box-shadow: 0 8px 30px rgba(0, 51, 102, 0.4);
     z-index: 990;
     transition: bottom var(--transition);
     white-space: nowrap;

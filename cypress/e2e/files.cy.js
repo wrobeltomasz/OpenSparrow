@@ -104,8 +104,8 @@ describe('OpenSparrow – Files: List Loading', () => {
 
   it('files show download links if files exist', () => {
     cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.long }).then($tbody => {
-      if ($tbody.find('.f-btn-outline').length === 0) return;
-      cy.get('#fileTableBody .f-btn-outline').first()
+      if ($tbody.find('[data-action="download-file"]').length === 0) return;
+      cy.get('#fileTableBody [data-action="download-file"]').first()
         .should('have.attr', 'href')
         .and('include', 'file_download.php');
     });
@@ -263,6 +263,84 @@ describe('OpenSparrow – Files: Delete Guard', () => {
         cy.stub(win, 'confirm').as('deleteConfirm').returns(false);
         cy.get('[data-action="delete-file"]').first().click({ force: true });
         cy.get('@deleteConfirm').should('have.been.called');
+      });
+    });
+  });
+});
+
+// ============================================================================
+// Test Suite: Files Bulk Operations
+// ============================================================================
+
+describe('OpenSparrow – Files: Bulk Operations', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/files.php`);
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  it('shows selection checkboxes for write roles', () => {
+    cy.window().then(win => {
+      if (!win.USER_CAPS || !win.USER_CAPS.canEdit) {
+        Cypress.log({ message: 'Viewer role — no selection column, skipping' });
+        return;
+      }
+      cy.get('#filesGrid .select-all-cb').should('exist');
+    });
+  });
+
+  it('selecting a row shows the bulk bar; deselect hides it', () => {
+    cy.get('#fileTableBody').then($tbody => {
+      const $cbs = $tbody.find('.row-select-cb');
+      if ($cbs.length === 0) {
+        Cypress.log({ message: 'No selectable rows — viewer role or no files' });
+        return;
+      }
+      cy.wrap($cbs.first()).check();
+      cy.get('#fileBulkBar').should('have.class', 'active');
+      cy.get('#fileBulkBar .me-bar-clear-btn').click();
+      cy.get('#fileBulkBar').should('not.have.class', 'active');
+    });
+  });
+
+  it('bulk bar offers tag and delete actions', () => {
+    cy.get('#fileTableBody').then($tbody => {
+      const $cbs = $tbody.find('.row-select-cb');
+      if ($cbs.length === 0) return;
+      cy.wrap($cbs.first()).check();
+      cy.get('#fileBulkTagBtn').should('be.visible');
+      cy.get('#fileBulkDeleteBtn').should('be.visible');
+      cy.get('#fileBulkBar .me-bar-clear-btn').click();
+    });
+  });
+
+  it('Add Tags opens the bulk panel with tag input', () => {
+    cy.get('#fileTableBody').then($tbody => {
+      const $cbs = $tbody.find('.row-select-cb');
+      if ($cbs.length === 0) return;
+      cy.wrap($cbs.first()).check();
+      cy.get('#fileBulkTagBtn').click();
+      cy.get('#fileTagPanel').should('have.class', 'active');
+      cy.get('#fileBulkTagsInput').should('be.visible');
+      // Apply enables only after typing tags
+      cy.get('#fileTagPanel .bp-apply-btn').should('be.disabled');
+      cy.get('#fileBulkTagsInput').type('cypress-tag');
+      cy.get('#fileTagPanel .bp-apply-btn').should('not.be.disabled');
+      cy.get('#fileTagPanel .bp-close').click();
+      cy.get('#fileBulkBar .me-bar-clear-btn').click();
+    });
+  });
+
+  it('bulk delete asks for confirmation', () => {
+    cy.get('#fileTableBody').then($tbody => {
+      const $cbs = $tbody.find('.row-select-cb');
+      if ($cbs.length === 0) return;
+      cy.window().then(win => {
+        cy.stub(win, 'confirm').as('bulkDeleteConfirm').returns(false);
+        cy.wrap($cbs.first()).check();
+        cy.get('#fileBulkDeleteBtn').click();
+        cy.get('@bulkDeleteConfirm').should('have.been.called');
+        cy.get('#fileBulkBar .me-bar-clear-btn').click();
       });
     });
   });

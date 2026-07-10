@@ -161,28 +161,43 @@
     /* ===== GRID TABLE ===== */
 
     /* Horizontal scroll; inset right shadow signals there is content to scroll */
-    #grid {
+    #grid,
+    #filesGrid {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         box-shadow: inset -10px 0 14px -6px rgba(0, 0, 0, 0.09);
     }
 
-    #grid table {
+    #grid table,
+    #filesGrid table {
         min-width: 600px;
     }
 
     /* ===== ACTIONS BAR ===== */
 
-    #actions.actions {
+    #actions.actions,
+    #filesActions.actions {
         flex-direction: column;
         align-items: stretch;
         gap: 8px;
         padding: 10px 12px;
     }
 
-    #actions .left {
+    #actions .left,
+    #filesActions .left {
         flex-direction: column;
         gap: 8px;
+    }
+
+    /* Upload bar stacks vertically, full-width controls */
+    .f-upload-bar {
+        padding: 10px 12px;
+    }
+
+    .f-upload-bar .f-input,
+    .f-upload-bar #btnUpload {
+        width: 100%;
+        max-width: none;
     }
 
     /* Dropdown replaced by FAB + dedicated export button */

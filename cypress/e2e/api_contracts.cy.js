@@ -56,6 +56,19 @@ describe('OpenSparrow – API Contracts: Auth Gate', () => {
       expect(res.status).to.eq(401);
     });
   });
+
+  it('api/files.php bulk actions reject unauthenticated POST with 401', () => {
+    ['mass_delete', 'mass_tag'].forEach(action => {
+      cy.request({
+        method: 'POST',
+        url: `${BASE}/api/files.php`,
+        body: { action, uuids: ['00000000-0000-4000-8000-000000000000'], tags: 'x' },
+        failOnStatusCode: false,
+      }).then(res => {
+        expect(res.status, `${action} status`).to.eq(401);
+      });
+    });
+  });
 });
 
 // ============================================================================

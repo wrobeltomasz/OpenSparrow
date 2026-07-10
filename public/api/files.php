@@ -2,7 +2,8 @@
 
 // api/files.php — Files module API (upload, list, soft-delete, config)
 // Auth gate: session + UA enforcement; CSRF where applicable; JSON via jsonError()/jsonSuccess()
-// match() action routing: list, get_config, upload, delete, save_config, get_relations_config, get_related_records
+// match() action routing: list, get_config, upload, delete, mass_delete, mass_tag, save_config,
+// get_relations_config, get_related_records
 // Multipart upload with post_max_size-drop detection (-> 413); soft-delete (deleted_at); pagination
 // Parameterized queries; sys_table('files')
 
@@ -83,6 +84,8 @@ try {
         'get_config'           => actionGetConfig(),
         'upload'               => actionUpload($conn),
         'delete'               => actionDelete($conn, $body),
+        'mass_delete'          => actionMassDelete($conn, $body),
+        'mass_tag'             => actionMassTag($conn, $body),
         'save_config'          => actionSaveConfig($body),
         'get_relations_config' => actionGetRelationsConfig(),
         'get_related_records'  => actionGetRelatedRecords($conn),
@@ -103,6 +106,17 @@ function actionList($conn): void
     $offset = ($page - 1) * $limit;
     $type   = $_GET['type']   ?? 'all';
     $search = trim($_GET['search'] ?? '');
+    // Column sort (grid-parity) — identifiers come from a hardcoded whitelist, never from input
+    $sortMap = [
+        'type'       => 'f.type',
+        'name'       => "LOWER(COALESCE(NULLIF(f.display_name, ''), f.name))",
+        'tags'       => "array_to_string(f.tags, ' ')",
+        'size'       => 'f.size_bytes',
+        'related'    => 'f.related_table',
+        'created_at' => 'f.created_at',
+    ];
+    $orderExpr = $sortMap[$_GET['sort'] ?? 'created_at'] ?? 'f.created_at';
+    $orderDir  = strtolower($_GET['dir'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
     $where  = ['f.deleted_at IS NULL'];
     $params = [];
     if ($type !== 'all') {
@@ -134,7 +148,7 @@ function actionList($conn): void
         FROM " . sys_table('files') . " f
         LEFT JOIN " . sys_table('users') . " u ON u.id = f.uploaded_by
         WHERE {$whereSQL}
-        ORDER BY f.created_at DESC
+        ORDER BY {$orderExpr} {$orderDir}, f.id DESC
         LIMIT $" . (count($paramsList) + 1) . "
         OFFSET $" . (count($paramsList) + 2);
     $paramsList[] = $limit;
@@ -254,13 +268,8 @@ function actionUpload($conn): void
         }
     }
 
-    // Extract and format tags as PostgreSQL array — capped to prevent oversized payloads
-    $tagsInput   = mb_substr(trim($_POST['tags'] ?? ''), 0, 500);
-    $tagsPgArray = null;
-    if ($tagsInput !== '') {
-        $tagsList    = array_slice(array_map('trim', explode(',', $tagsInput)), 0, 20);
-        $tagsPgArray = '{' . implode(',', array_map(fn($t) => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $t) . '"', $tagsList)) . '}';
-    }
+    // Extract and format tags as PostgreSQL array — shared with mass_tag
+    $tagsPgArray = tagsToPgArray($_POST['tags'] ?? '');
 
     $sql = "
         INSERT INTO " . sys_table('files') . "
@@ -293,6 +302,88 @@ function actionUpload($conn): void
     $row = pg_fetch_assoc($res);
 // Return 201 Created on successful upload
     jsonSuccess(['file' => $row], 201);
+}
+
+// Validate a client-supplied UUID list and normalize it into a PG array literal.
+// Every element must match the canonical UUID format — this both rejects garbage
+// and guarantees the assembled literal needs no further escaping.
+function uuidListToPgArray(mixed $uuids): string
+{
+
+    if (!is_array($uuids) || count($uuids) === 0 || count($uuids) > 500) {
+        jsonError('uuids must be a non-empty array (max 500).', 400);
+    }
+    $clean = [];
+    foreach ($uuids as $u) {
+        if (!is_string($u) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $u)) {
+            jsonError('Invalid uuid in list.', 400);
+        }
+        $clean[] = strtolower($u);
+    }
+    return '{' . implode(',', array_unique($clean)) . '}';
+}
+
+// Normalize a comma-separated tag string into a PG text[] literal — capped to
+// prevent oversized payloads; empty entries dropped; quotes/backslashes escaped.
+function tagsToPgArray(string $tagsInput): ?string
+{
+
+    $tagsInput = mb_substr(trim($tagsInput), 0, 500);
+    if ($tagsInput === '') {
+        return null;
+    }
+    $tagsList = array_slice(
+        array_values(array_filter(array_map('trim', explode(',', $tagsInput)), fn($t) => $t !== '')),
+        0,
+        20
+    );
+    if (count($tagsList) === 0) {
+        return null;
+    }
+    return '{' . implode(',', array_map(fn($t) => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $t) . '"', $tagsList)) . '}';
+}
+
+// Handle bulk soft delete over a selection of files
+function actionMassDelete($conn, array $body): void
+{
+
+    requireWrite();
+    os_require_csrf('body', $body);
+    $pgUuids = uuidListToPgArray($body['uuids'] ?? null);
+    $sql = "UPDATE " . sys_table('files') . "
+            SET deleted_at = NOW()
+            WHERE uuid = ANY($1) AND deleted_at IS NULL
+            RETURNING id";
+    $res = pg_query_params($conn, $sql, [$pgUuids]);
+    if (!$res) {
+        error_log('api_files actionMassDelete failed: ' . pg_last_error($conn));
+        jsonError('Database error.', 500);
+    }
+    jsonSuccess(['deleted' => pg_num_rows($res)]);
+}
+
+// Handle bulk tagging — appends the given tags to each selected file (deduplicated)
+function actionMassTag($conn, array $body): void
+{
+
+    requireWrite();
+    os_require_csrf('body', $body);
+    $pgUuids = uuidListToPgArray($body['uuids'] ?? null);
+    $pgTags  = tagsToPgArray((string) ($body['tags'] ?? ''));
+    if ($pgTags === null) {
+        jsonError('tags is required.', 400);
+    }
+    $sql = "UPDATE " . sys_table('files') . "
+            SET tags = (SELECT array_agg(DISTINCT t) FROM unnest(COALESCE(tags, '{}') || $2::text[]) AS t),
+                updated_at = NOW()
+            WHERE uuid = ANY($1) AND deleted_at IS NULL
+            RETURNING id";
+    $res = pg_query_params($conn, $sql, [$pgUuids, $pgTags]);
+    if (!$res) {
+        error_log('api_files actionMassTag failed: ' . pg_last_error($conn));
+        jsonError('Database error.', 500);
+    }
+    jsonSuccess(['tagged' => pg_num_rows($res)]);
 }
 
 // Handle soft delete action

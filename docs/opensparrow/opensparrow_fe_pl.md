@@ -486,25 +486,34 @@ Widget może być ukryty lub pokazany na podstawie warunków konfigurowanych prz
 Adres: `files.php`  
 Centralny widok zarządzania plikami (niezależny od rekordów).
 
+### Przeglądarka plików
+
+- Wyszukiwarka (po nazwie lub tagu) i filtr typu pliku (obrazy, PDF, dokumenty, arkusze, archiwa) na górnym (niebieskim) pasku aplikacji — tak samo jak na siatce danych, tablicy i w kalendarzu; na mobile dostępne po rozwinięciu panelu wyszukiwania (ikona lupy)
+- Przycisk "Wyczyść filtry" na pasku: pojawia się, gdy aktywna jest fraza lub filtr typu; kliknięcie resetuje oba
+- Tabela w tym samym stylu co siatka danych: nagłówki-pigułki, naprzemienne tło wierszy, podświetlenie wiersza po najechaniu
+- Kolumny: typ (ikona typu pliku + etykieta), nazwa, tagi, rozmiar, powiązany rekord (odnośnik do edycji), data uploadu, akcje
+- Sortowanie po kliknięciu nagłówka kolumny — strzałka ↑/↓ jak na siatce; domyślnie data uploadu malejąco
+- Akcje przy każdym pliku jako przyciski-ikony (jak na siatce): pobieranie i usuwanie (usuwanie tylko dla ról z prawem zapisu)
+- Pasek akcji pod tabelą: przycisk odświeżenia listy oraz paginacja w stylu siatki — wybór liczby wierszy na stronę (10/25/50/100, zapamiętywany w przeglądarce), zakres wyświetlanych rekordów, przyciski Prev/Next
+
+### Operacje masowe
+
+Dla ról z prawem zapisu (editor) — mechanizm identyczny jak na siatce danych:
+- Kolumna checkboxów z lewej strony tabeli + checkbox "zaznacz wszystkie" w nagłówku (obejmuje bieżącą stronę); zaznaczenie przetrwa zmianę strony, sortowania i filtrów
+- Po zaznaczeniu co najmniej jednego pliku u dołu ekranu pojawia się pływający pasek zaznaczenia (w granatowej kolorystyce portalu, wspólny wygląd z siatką danych) z licznikiem i akcjami:
+  - **Add Tags** — wysuwany panel boczny z polem tagów (po przecinku); tagi są dopisywane do istniejących tagów zaznaczonych plików (bez duplikatów)
+  - **Delete** — masowe usunięcie zaznaczonych plików po potwierdzeniu (soft delete, jak pojedyncze usuwanie)
+  - **Deselect all** — czyści zaznaczenie i chowa pasek
+
 ### Upload
 
-Pola formularza:
+Minimalistyczny pasek uploadu (pojedynczy wiersz, w stylu paska akcji) pod tabelą plików. Pola:
 - Plik (kliknięcie lub drag & drop)
 - Opcjonalna wyświetlana nazwa
 - Opcjonalne tagi (po przecinku, np. "faktura, 2024")
 - Docelowa tabela (do której tabeli należy plik)
 - Docelowy rekord (lista rekordów po wyborze tabeli)
-- Przycisk Upload + pasek postępu + komunikat statusu
-
-### Przeglądarka plików
-
-- Wyszukiwarka (po nazwie lub tagu) i filtr typu pliku (obrazy, PDF, dokumenty, arkusze, archiwa) na górnym (niebieskim) pasku aplikacji — tak samo jak na siatce danych, tablicy i w kalendarzu; na mobile dostępne po rozwinięciu panelu wyszukiwania (ikona lupy)
-- Przycisk "Wyczyść filtry" na pasku: pojawia się, gdy aktywna jest fraza lub filtr typu; kliknięcie resetuje oba
-- Widok tabeli: nazwa, rozmiar, data uploadu, tagi, akcje
-- Filtrowanie po tabeli / rekordzie
-- Kliknięcie nazwy = pobieranie pliku
-- Przycisk usunięcia przy każdym pliku
-- Przycisk odświeżenia listy nad tabelą
+- Przycisk Upload + komunikat statusu
 
 ---
 
