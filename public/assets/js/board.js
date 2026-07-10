@@ -5,6 +5,7 @@
 // Visualises records of a single table as cards laid out in lanes, one lane per
 // value of the configured status column. Dragging a card to another lane updates
 // that record's status via api.php (api=board). CSRF from meta tag; i18n via /api.php?action=i18n_bundle.
+// A search box above the lanes filters cards client-side by typed phrase.
 
 import { getCsrfToken } from './util/csrf.js';
 
@@ -29,6 +30,30 @@ const UNMATCHED = '__unmatched__';
 let board = null;          // full payload from the API
 let cards = [];            // working copy of cards (status mutated optimistically)
 let canEdit = false;
+
+// ── Search: simple client-side phrase filter ─────────────────────────────────
+// Cards whose title, extra fields, or id do not contain the typed text are
+// hidden from the lanes; clearing the box shows everything again.
+let searchTerm = '';
+
+function cardMatchesSearch(card) {
+    if (!searchTerm) return true;
+    const haystack = [
+        card.title,
+        String(card.id),
+        ...(Array.isArray(card.fields) ? card.fields.map(f => f.value) : [])
+    ].join(' ').toLowerCase();
+    return haystack.includes(searchTerm);
+}
+
+function initSearch() {
+    const input = document.getElementById('boardSearch');
+    if (!input) return;
+    input.addEventListener('input', () => {
+        searchTerm = input.value.trim().toLowerCase();
+        render();
+    });
+}
 
 // ── Filters: lane visibility (chips) ──────────────────────────────────────────
 const FILTER_STORAGE_KEY = 'sparrow_board_filters';
@@ -82,6 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchI18n();
     await fetchBoard();
     loadFilterState();
+    initSearch();
     render();
 });
 
@@ -137,7 +163,7 @@ function render() {
     // Group cards by status value for quick lane population.
     const byStatus = {};
     const laneValues = new Set((board.columns || []).map(l => l.value));
-    cards.forEach(card => {
+    cards.filter(cardMatchesSearch).forEach(card => {
         const key = laneValues.has(card.status) ? card.status : UNMATCHED;
         (byStatus[key] = byStatus[key] || []).push(card);
     });

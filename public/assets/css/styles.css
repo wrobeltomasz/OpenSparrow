@@ -1598,12 +1598,30 @@ footer {
   color: var(--muted);
   font-size: 13px;
 }
+.board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.board-search {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  font-size: 13px;
+  min-width: 200px;
+}
+.board-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
 .board-filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
 }
 .board-filter-chip {
   display: inline-flex;

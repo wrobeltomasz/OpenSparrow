@@ -1232,6 +1232,13 @@ Widok wizualizujący rekordy jednej tabeli jako przesuwalne karty rozłożone w 
 | Kliknięcie karty | Otwiera `edit.php` dla tego rekordu |
 | Przeciągnięcie karty do innego toru | Zmienia wartość kolumny statusu przez API |
 
+### Wyszukiwanie kart
+
+- Pole wyszukiwania nad torami: wpisanie frazy ukrywa karty, które jej nie zawierają — widoczne pozostają tylko karty pasujące
+- Dopasowanie sprawdzane w tytule karty, polach szczegółowych i identyfikatorze rekordu (`#id`); wielkość liter nie ma znaczenia
+- Filtrowanie działa w całości po stronie przeglądarki (bez zapytań do serwera); liczniki kart w nagłówkach torów odzwierciedlają wynik wyszukiwania
+- Wyczyszczenie pola przywraca pełny widok tablicy
+
 ### Przeciąganie kart (Drag & Drop)
 
 - Dostępne tylko dla roli **editor** (viewer widzi tablicę w trybie tylko do odczytu)

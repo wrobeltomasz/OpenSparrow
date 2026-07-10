@@ -99,6 +99,46 @@ describe('OpenSparrow – Board: Lanes & Cards', () => {
 });
 
 // ============================================================================
+// Test Suite: Board Search
+// ============================================================================
+
+describe('OpenSparrow – Board: Search', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/board.php`);
+    cy.get('#boardContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  it('shows the search input above the lanes', () => {
+    cy.get('#boardSearch').should('exist').and('have.attr', 'type', 'search');
+  });
+
+  it('typing a phrase hides non-matching cards and clearing restores them', () => {
+    cy.get('body').then($body => {
+      const $cards = $body.find('.board-card');
+      if ($cards.length === 0) {
+        Cypress.log({ message: 'No cards on the board — skipping search test' });
+        return;
+      }
+      const total = $cards.length;
+      const firstTitle = $cards.first().find('.board-card-title').text().trim();
+
+      // A phrase from the first card keeps that card visible.
+      cy.get('#boardSearch').type(firstTitle);
+      cy.get('.board-card-title').should('contain.text', firstTitle);
+
+      // A phrase matching nothing hides every card.
+      cy.get('#boardSearch').clear().type('zzz-no-such-card-zzz');
+      cy.get('.board-card').should('have.length', 0);
+
+      // Clearing the box restores the full board.
+      cy.get('#boardSearch').clear();
+      cy.get('.board-card').should('have.length', total);
+    });
+  });
+});
+
+// ============================================================================
 // Test Suite: Board Mobile
 // ============================================================================
 
