@@ -221,7 +221,8 @@
         "print_button": "Stampa",
         "empty": "Nessuna stampa configurata. Chiedi a un amministratore di configurare i modelli di stampa.",
         "no_data": "Nessun dato trovato.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— tutti —"
     },
     "views": {
         "loading": "Caricamento viste…",

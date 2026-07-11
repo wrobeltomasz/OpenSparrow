@@ -11,6 +11,7 @@
 //                       api=list shape, action=i18n_bundle shape, api=board shape
 //  - api/notifications.php  get_count / get_list shapes
 //  - api/files.php      action=list shape
+//  - api/print.php      action=list/data/param_options shapes, unknown print/key 404s
 // ============================================================================
 
 const BASE = 'http://localhost:8080';
@@ -202,6 +203,110 @@ describe('OpenSparrow – API Contracts: Response Shapes', () => {
       // Currently surfaces as 500 via the global catch; any 4xx/5xx is a pass —
       // the contract is only that unknown tables never return data.
       expect(res.status, 'unknown table must be rejected').to.be.gte(400);
+    });
+  });
+});
+
+// ============================================================================
+// Test Suite: Print module (api/print.php)
+// ============================================================================
+// Print templates are admin-configured (config/print.json), so most tests below
+// look up whatever is actually configured via action=list/data first, and skip
+// with a logged message when the environment has none — same defensive pattern
+// used throughout cypress/e2e/print.cy.js.
+
+describe('OpenSparrow – API Contracts: Print Module', () => {
+  before(() => {
+    cy.seedDatabase();
+  });
+
+  beforeEach(() => {
+    loginAsTestUser();
+  });
+
+  it('action=list returns a prints array', () => {
+    cy.request(`${BASE}/api/print.php?action=list`).then(res => {
+      expect(res.status).to.eq(200);
+      const data = asJson(res.body);
+      expect(data.status, 'status').to.eq('ok');
+      expect(data.prints, 'prints').to.be.an('array');
+    });
+  });
+
+  it('action=data with an unknown print returns 404 with an error', () => {
+    cy.request({
+      url: `${BASE}/api/print.php?action=data&print=definitely_not_a_print`,
+      failOnStatusCode: false,
+    }).then(res => {
+      expect(res.status).to.eq(404);
+      expect(asJson(res.body).error, 'error message').to.be.a('string').and.not.be.empty;
+    });
+  });
+
+  it('action=param_options with an unknown print returns 404', () => {
+    cy.request({
+      url: `${BASE}/api/print.php?action=param_options&print=definitely_not_a_print&key=x`,
+      failOnStatusCode: false,
+    }).then(res => {
+      expect(res.status).to.eq(404);
+    });
+  });
+
+  it('action=data always includes params/applied_params, even without a filter applied', () => {
+    cy.request(`${BASE}/api/print.php?action=list`).then(listRes => {
+      const { prints } = asJson(listRes.body);
+      if (!prints || prints.length === 0) {
+        Cypress.log({ message: 'No print templates configured — skipping data shape check' });
+        return;
+      }
+      cy.request(`${BASE}/api/print.php?action=data&print=${encodeURIComponent(prints[0].name)}`).then(res => {
+        expect(res.status).to.eq(200);
+        const data = asJson(res.body);
+        expect(data.rows, 'rows').to.be.an('array');
+        expect(data.params, 'params').to.be.an('array');
+        expect(data.applied_params, 'applied_params').to.be.an('object');
+      });
+    });
+  });
+
+  it('action=param_options for a declared parameter returns an options array', () => {
+    cy.request(`${BASE}/api/print.php?action=list`).then(listRes => {
+      const { prints } = asJson(listRes.body);
+      if (!prints || prints.length === 0) {
+        Cypress.log({ message: 'No print templates configured — skipping param_options check' });
+        return;
+      }
+      cy.request(`${BASE}/api/print.php?action=data&print=${encodeURIComponent(prints[0].name)}`).then(dataRes => {
+        const { params } = asJson(dataRes.body);
+        if (!params || params.length === 0) {
+          Cypress.log({ message: 'Template declares no parameters — skipping param_options check' });
+          return;
+        }
+        cy.request(
+          `${BASE}/api/print.php?action=param_options&print=${encodeURIComponent(prints[0].name)}`
+            + `&key=${encodeURIComponent(params[0].key)}`
+        ).then(res => {
+          expect(res.status).to.eq(200);
+          const data = asJson(res.body);
+          expect(data.status, 'status').to.eq('ok');
+          expect(data.options, 'options').to.be.an('array');
+        });
+      });
+    });
+  });
+
+  it('action=data ignores a p_ filter that is not declared as a parameter on that template', () => {
+    cy.request(`${BASE}/api/print.php?action=list`).then(listRes => {
+      const { prints } = asJson(listRes.body);
+      if (!prints || prints.length === 0) {
+        Cypress.log({ message: 'No print templates configured — skipping unknown-param robustness check' });
+        return;
+      }
+      cy.request(
+        `${BASE}/api/print.php?action=data&print=${encodeURIComponent(prints[0].name)}&p_not_a_real_param=xyz`
+      ).then(res => {
+        expect(res.status).to.eq(200);
+      });
     });
   });
 });

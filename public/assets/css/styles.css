@@ -244,7 +244,8 @@ header .filter-chip:hover {
 /* Many chips must not wrap and grow the header — keep one line, scroll horizontally */
 header .board-filters,
 header .calendar-filters,
-header .dashboard-filters {
+header .dashboard-filters,
+header .print-filters {
   flex-wrap: nowrap;
   min-width: 0;
   overflow-x: auto;
@@ -254,15 +255,25 @@ header .dashboard-filters {
 
 header .board-filters::-webkit-scrollbar,
 header .calendar-filters::-webkit-scrollbar,
-header .dashboard-filters::-webkit-scrollbar {
+header .dashboard-filters::-webkit-scrollbar,
+header .print-filters::-webkit-scrollbar {
   height: 5px;
 }
 
 header .board-filters::-webkit-scrollbar-thumb,
 header .calendar-filters::-webkit-scrollbar-thumb,
-header .dashboard-filters::-webkit-scrollbar-thumb {
+header .dashboard-filters::-webkit-scrollbar-thumb,
+header .print-filters::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,.35);
   border-radius: 3px;
+}
+
+/* Report parameter selects (print.php) — same label + pill-select pattern as the
+   dashboard's period filter (header .dash-filter-label / header select) */
+header .print-filter-label {
+  font-size: 13px;
+  color: #ffffff;
+  white-space: nowrap;
 }
 
 /* USER MENU */
@@ -1721,6 +1732,14 @@ header .dash-filter-label {
   font-size: 13px;
 }
 .board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== PRINT (report parameter filters, rendered in the app header) ===== */
+.print-filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

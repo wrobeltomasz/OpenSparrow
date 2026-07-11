@@ -224,7 +224,8 @@
         "print_button": "Ispiši",
         "empty": "Nema konfiguriranih ispisa. Zamolite administratora da postavi predloške ispisa.",
         "no_data": "Nema pronađenih podataka.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— sve —"
     },
     "views": {
         "loading": "Učitavanje prikaza…",

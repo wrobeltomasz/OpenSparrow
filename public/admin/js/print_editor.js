@@ -28,7 +28,7 @@ export function renderPrintEditor(ctx) {
     hdrTitle.textContent = 'Printouts Configuration';
     const hdrDesc = document.createElement('p');
     hdrDesc.style.cssText = 'margin:0; font-size:13px; color:var(--muted);';
-    hdrDesc.textContent = 'Build printable report templates from simple blocks (header, text, table). Each template is bound to a PostgreSQL view from the Views module; its columns become the available {variables}.';
+    hdrDesc.textContent = 'Build printable report templates from simple blocks (header, text, table). Each template is bound to a PostgreSQL view from the Views module; its columns become the available {variables}. Optional parameters let users filter the report (e.g. by employee) before printing.';
     hdrText.appendChild(hdrTitle);
     hdrText.appendChild(hdrDesc);
     hdr.appendChild(hdrText);
@@ -253,6 +253,28 @@ export function renderPrintEditor(ctx) {
         let varsRow = buildVariablesRow([]);
         body.appendChild(varsRow);
 
+        /* Parameters — optional filters shown to the user before the report is generated,
+           e.g. "pick an employee". Each filters the report view by one column; the dropdown
+           options come either from a separate lookup view or from distinct values of that
+           column itself. */
+        const paramsHdr = document.createElement('h4');
+        paramsHdr.textContent = 'Report parameters';
+        body.appendChild(paramsHdr);
+
+        const paramsHint = document.createElement('p');
+        paramsHint.style.cssText = 'margin:0 0 10px; font-size:12px; color:var(--muted);';
+        paramsHint.textContent = 'Optional filters shown above the report before it is generated '
+            + '(e.g. "pick an employee"). Leave the lookup view empty to offer distinct values of '
+            + 'the filter column itself.';
+        body.appendChild(paramsHint);
+
+        const paramsList = document.createElement('div');
+        paramsList.style.cssText = 'display:flex; flex-direction:column; gap:10px; margin-bottom:12px;';
+        body.appendChild(paramsList);
+
+        if (!Array.isArray(prints[pName].params)) prints[pName].params = [];
+        const params = prints[pName].params;
+
         /* Blocks */
         const blkHdr = document.createElement('h4');
         blkHdr.textContent = 'Template blocks';
@@ -272,6 +294,7 @@ export function renderPrintEditor(ctx) {
             varsRow.replaceWith(fresh);
             varsRow = fresh;
             renderBlocks();
+            renderParams();
         }
 
         viewSel.addEventListener('change', () => {
@@ -451,6 +474,197 @@ export function renderPrintEditor(ctx) {
             return row;
         }
 
+        function renderParams() {
+            paramsList.innerHTML = '';
+            if (params.length === 0) {
+                const empty = document.createElement('p');
+                empty.style.cssText = 'color:var(--muted); font-size:13px; margin:0;';
+                empty.textContent = 'No parameters. Add one below to let users filter this report before printing.';
+                paramsList.appendChild(empty);
+                return;
+            }
+            params.forEach((param, idx) => paramsList.appendChild(buildParamRow(param, idx)));
+        }
+
+        function buildParamRow(param, idx) {
+            const row = document.createElement('div');
+            row.className = 'subtable-block';
+
+            const rowHdr = document.createElement('div');
+            rowHdr.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:8px;';
+
+            const titleSpan = document.createElement('strong');
+            titleSpan.style.cssText = 'font-size:13px; color:var(--text);';
+            titleSpan.textContent = `${idx + 1}. ${param.label || param.key || 'parameter'}`;
+            rowHdr.appendChild(titleSpan);
+
+            const spacer = document.createElement('span');
+            spacer.style.flex = '1';
+            rowHdr.appendChild(spacer);
+
+            const upBtn = document.createElement('button');
+            upBtn.className = 'item-order-btn';
+            upBtn.textContent = '^';
+            upBtn.disabled = idx === 0;
+            upBtn.addEventListener('click', () => {
+                [params[idx - 1], params[idx]] = [params[idx], params[idx - 1]];
+                renderParams();
+            });
+            const downBtn = document.createElement('button');
+            downBtn.className = 'item-order-btn';
+            downBtn.textContent = 'v';
+            downBtn.disabled = idx === params.length - 1;
+            downBtn.addEventListener('click', () => {
+                [params[idx + 1], params[idx]] = [params[idx], params[idx + 1]];
+                renderParams();
+            });
+            const rmBtn = document.createElement('button');
+            rmBtn.className = 'btn btn-danger btn-xs';
+            rmBtn.textContent = '✕';
+            rmBtn.addEventListener('click', () => {
+                params.splice(idx, 1);
+                renderParams();
+            });
+            rowHdr.appendChild(upBtn);
+            rowHdr.appendChild(downBtn);
+            rowHdr.appendChild(rmBtn);
+            row.appendChild(rowHdr);
+
+            row.appendChild(fg('Key (used as p_<key> in the report URL)', param.key ?? '', v => {
+                param.key = v.trim();
+                titleSpan.textContent = `${idx + 1}. ${param.label || param.key || 'parameter'}`;
+            }));
+            row.appendChild(fg('Label (shown to the user)', param.label ?? '', v => {
+                param.label = v;
+                titleSpan.textContent = `${idx + 1}. ${param.label || param.key || 'parameter'}`;
+            }));
+
+            /* Filter column — must belong to this template's own report view */
+            const colGrp = document.createElement('div');
+            colGrp.className = 'form-group';
+            const colLbl = document.createElement('label');
+            colLbl.textContent = 'Filter column (in the report view above)';
+            colGrp.appendChild(colLbl);
+            const colSel = document.createElement('select');
+            const colNone = document.createElement('option');
+            colNone.value = '';
+            colNone.textContent = '— select column —';
+            colSel.appendChild(colNone);
+            currentCols.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c.name;
+                o.textContent = c.name;
+                if ((param.column ?? '') === c.name) o.selected = true;
+                colSel.appendChild(o);
+            });
+            colSel.addEventListener('change', () => { param.column = colSel.value; });
+            colGrp.appendChild(colSel);
+            row.appendChild(colGrp);
+
+            const reqLabel = document.createElement('label');
+            reqLabel.style.cssText = 'display:flex; align-items:center; gap:6px; font-size:13px; '
+                + 'color:var(--text); cursor:pointer; font-weight:normal; margin-bottom:12px;';
+            const reqChk = document.createElement('input');
+            reqChk.type = 'checkbox';
+            reqChk.checked = !!param.required;
+            reqChk.style.cssText = 'width:14px; height:14px; accent-color:var(--accent); cursor:pointer;';
+            reqChk.addEventListener('change', () => { param.required = reqChk.checked; });
+            reqLabel.appendChild(reqChk);
+            reqLabel.appendChild(document.createTextNode('Required (hides the "— all —" option; user must pick a value)'));
+            row.appendChild(reqLabel);
+
+            /* Lookup view (optional) — a separate view supplying nicer value/label pairs
+               for the dropdown, e.g. v_employees.id / v_employees.full_name */
+            const srcGrp = document.createElement('div');
+            srcGrp.className = 'form-group';
+            const srcLbl = document.createElement('label');
+            srcLbl.textContent = 'Lookup view for dropdown options (optional)';
+            srcGrp.appendChild(srcLbl);
+            const srcSel = document.createElement('select');
+            const srcNone = document.createElement('option');
+            srcNone.value = '';
+            srcNone.textContent = '— use filter column values —';
+            srcSel.appendChild(srcNone);
+            dbViews.forEach(v => {
+                const o = document.createElement('option');
+                o.value = v;
+                o.textContent = v;
+                if ((param.source_view ?? '') === v) o.selected = true;
+                srcSel.appendChild(o);
+            });
+            srcGrp.appendChild(srcSel);
+            row.appendChild(srcGrp);
+
+            const valGrp = document.createElement('div');
+            valGrp.className = 'form-group';
+            const valLbl = document.createElement('label');
+            valLbl.textContent = 'Value column (filtered on)';
+            valGrp.appendChild(valLbl);
+            const valSel = document.createElement('select');
+            valGrp.appendChild(valSel);
+            row.appendChild(valGrp);
+
+            const labGrp = document.createElement('div');
+            labGrp.className = 'form-group';
+            const labLbl = document.createElement('label');
+            labLbl.textContent = 'Label column (shown in the dropdown)';
+            labGrp.appendChild(labLbl);
+            const labSel = document.createElement('select');
+            labGrp.appendChild(labSel);
+            row.appendChild(labGrp);
+
+            async function refreshSourceColumns() {
+                valSel.innerHTML = '';
+                labSel.innerHTML = '';
+                if (!srcSel.value) {
+                    valGrp.style.display = 'none';
+                    labGrp.style.display = 'none';
+                    return;
+                }
+                valGrp.style.display = '';
+                labGrp.style.display = '';
+                const cols = await fetchColumns(srcSel.value);
+                cols.forEach(c => {
+                    const ov = document.createElement('option');
+                    ov.value = c.name;
+                    ov.textContent = c.name;
+                    if ((param.value_column ?? '') === c.name) ov.selected = true;
+                    valSel.appendChild(ov);
+
+                    const ol = document.createElement('option');
+                    ol.value = c.name;
+                    ol.textContent = c.name;
+                    if ((param.label_column ?? '') === c.name) ol.selected = true;
+                    labSel.appendChild(ol);
+                });
+            }
+
+            srcSel.addEventListener('change', () => {
+                param.source_view = srcSel.value;
+                if (!srcSel.value) {
+                    delete param.value_column;
+                    delete param.label_column;
+                }
+                refreshSourceColumns();
+            });
+            valSel.addEventListener('change', () => { param.value_column = valSel.value; });
+            labSel.addEventListener('change', () => { param.label_column = labSel.value; });
+
+            refreshSourceColumns();
+
+            return row;
+        }
+
+        const addParamBtn = document.createElement('button');
+        addParamBtn.className = 'btn-add';
+        addParamBtn.style.cssText = 'margin:0 0 20px; padding:7px 12px; font-size:13px;';
+        addParamBtn.textContent = '+ Add parameter';
+        addParamBtn.addEventListener('click', () => {
+            params.push({ key: `param${params.length + 1}`, label: '', column: '', required: false });
+            renderParams();
+        });
+        paramsList.after(addParamBtn);
+
         /* add-block buttons */
         const addRow = document.createElement('div');
         addRow.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap;';
@@ -509,6 +723,7 @@ export function renderPrintEditor(ctx) {
             hidden: false,
             view: '',
             blocks: [],
+            params: [],
         };
         renderList();
         setStatus(`Printout "${key}" added. Configure it below, then click "Save printouts".`, 'ok');

@@ -22,6 +22,101 @@ function substitute(text, row) {
         row && Object.prototype.hasOwnProperty.call(row, key) ? String(row[key] ?? '') : match);
 }
 
+/* ── report parameters: p_<key>=value query args, read/written on the print.php URL
+   so a filtered report (e.g. one employee's assets) can be bookmarked/shared ── */
+function readParamsFromLocation() {
+    const values = {};
+    new URLSearchParams(window.location.search).forEach((val, key) => {
+        if (key.startsWith('p_') && val !== '') values[key.slice(2)] = val;
+    });
+    return values;
+}
+
+function buildParamsQuery(values) {
+    return Object.entries(values)
+        .filter(([, v]) => v !== '' && v != null)
+        .map(([k, v]) => `p_${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join('&');
+}
+
+function updateUrl(printName, values) {
+    const qs  = buildParamsQuery(values);
+    const url = `print.php?print=${encodeURIComponent(printName)}${qs ? `&${qs}` : ''}`;
+    window.history.replaceState(null, '', url);
+}
+
+async function fetchParamOptions(printName, key) {
+    try {
+        const data = await apiFetch(
+            `api/print.php?action=param_options&print=${encodeURIComponent(printName)}&key=${encodeURIComponent(key)}`
+        );
+        return data.options ?? [];
+    } catch {
+        return [];
+    }
+}
+
+/* ── parameter filter selects (rendered in the blue app header, same pattern as the
+   board/calendar/dashboard filter bars — see #printFilters in print.php). Each select
+   applies immediately on change, like every other header filter in the app; there is
+   no separate "generate" step. ── */
+let currentPrintName = null;
+
+function initClearFilters() {
+    const btn = document.getElementById('clearFilters');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        if (currentPrintName) loadPrint(currentPrintName, {});
+    });
+}
+
+async function renderParamsBar(printName, paramDefs, currentValues) {
+    const bar = document.getElementById('printFilters');
+    const clearBtn = document.getElementById('clearFilters');
+    if (!bar) return;
+    bar.replaceChildren();
+
+    if (!Array.isArray(paramDefs) || paramDefs.length === 0) {
+        if (clearBtn) clearBtn.hidden = true;
+        return;
+    }
+
+    for (const def of paramDefs) {
+        const select = document.createElement('select');
+        select.id = `printParam_${def.key}`;
+
+        const label = document.createElement('label');
+        label.className = 'print-filter-label';
+        label.htmlFor = select.id;
+        label.textContent = def.label || def.key;
+
+        if (!def.required) {
+            const optAll = document.createElement('option');
+            optAll.value = '';
+            optAll.textContent = I18n.t('print.params_all');
+            select.appendChild(optAll);
+        }
+
+        const options = await fetchParamOptions(printName, def.key);
+        options.forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt.value ?? '';
+            o.textContent = opt.label ?? opt.value ?? '';
+            if (String(currentValues[def.key] ?? '') === String(opt.value ?? '')) o.selected = true;
+            select.appendChild(o);
+        });
+
+        select.addEventListener('change', () => {
+            loadPrint(printName, { ...currentValues, [def.key]: select.value });
+        });
+
+        bar.appendChild(label);
+        bar.appendChild(select);
+    }
+
+    if (clearBtn) clearBtn.hidden = Object.values(currentValues).every(v => !v);
+}
+
 function showError(message) {
     containerEl.replaceChildren();
     const err = document.createElement('div');
@@ -165,8 +260,10 @@ function paginateSheet(sheet) {
     });
 }
 
-/* ── load and render one print template ── */
-async function loadPrint(printName) {
+/* ── load and render one print template. paramValues holds p_<key> filter values
+   already applied (from the URL on first load, or from a header select's change event) ── */
+async function loadPrint(printName, paramValues = {}) {
+    currentPrintName = printName;
     const loadEl = document.createElement('div');
     loadEl.className = 'pr-loading';
     loadEl.textContent = I18n.t('common.loading');
@@ -174,13 +271,16 @@ async function loadPrint(printName) {
 
     let data;
     try {
-        data = await apiFetch(`api/print.php?action=data&print=${encodeURIComponent(printName)}`);
+        const qs = buildParamsQuery(paramValues);
+        data = await apiFetch(`api/print.php?action=data&print=${encodeURIComponent(printName)}${qs ? `&${qs}` : ''}`);
     } catch (err) {
         showError(err.message);
         return;
     }
 
     containerEl.replaceChildren();
+    updateUrl(printName, data.applied_params ?? {});
+    await renderParamsBar(printName, data.params ?? [], data.applied_params ?? {});
 
     /* toolbar (hidden by @media print) */
     const toolbar = document.createElement('div');
@@ -304,9 +404,10 @@ async function loadSelector() {
 /* ── entry point ── */
 document.addEventListener('DOMContentLoaded', async () => {
     await I18n.load();
+    initClearFilters();
     const initial = window.PRINT_INITIAL;
     if (initial) {
-        loadPrint(initial);
+        loadPrint(initial, readParamsFromLocation());
     } else {
         loadSelector();
     }

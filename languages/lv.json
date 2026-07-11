@@ -221,7 +221,8 @@
         "print_button": "Drukāt",
         "empty": "Nav konfigurētu izdruku. Lūdziet administratoram iestatīt drukas veidnes.",
         "no_data": "Dati nav atrasti.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— visi —"
     },
     "views": {
         "loading": "Ielādē skatus…",

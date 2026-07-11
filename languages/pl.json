@@ -224,7 +224,8 @@
         "print_button": "Drukuj",
         "empty": "Brak skonfigurowanych wydruków. Poproś administratora o skonfigurowanie szablonów wydruku.",
         "no_data": "Nie znaleziono danych.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— wszystkie —"
     },
     "views": {
         "loading": "Ładowanie widoków…",

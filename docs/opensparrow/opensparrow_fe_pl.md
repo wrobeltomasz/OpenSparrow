@@ -1341,6 +1341,18 @@ Moduł raportów do wydruku zbudowanych z prostych bloków, zasilanych danymi z 
 - Nad arkuszem pasek narzędzi z nazwą raportu i przyciskiem **Drukuj** (`window.print()`); dedykowany arkusz `@media print` w `assets/css/print.css` ukrywa nagłówek aplikacji, menu boczne, stopkę i pasek narzędzi — drukowana jest wyłącznie treść raportu (nagłówki tabel powtarzane na kolejnych stronach, wiersze bez łamania w środku)
 - Wszystkie widoczne wydruki są wypisane w menu bocznym jako rozwijana lista podrzędna pod pozycją "Print" — dokładnie ten sam wzorzec co podmenu Widoków (strzałka ▾ rozwija/zwija listę)
 - **Numeracja stron** — raport jest automatycznie dzielony na strony w formacie A4 (`@page` 15mm marginesu), a na dole każdej strony pojawia się stopka `bieżąca / łącznie` (np. `1 / 3`); podział stron jest liczony po stronie przeglądarki na podstawie zmierzonej wysokości bloków i wierszy tabeli (nagłówek tabeli jest powtarzany na każdej stronie-fragmencie)
+- Jeśli szablon ma zdefiniowane **parametry** (patrz niżej), nad arkuszem pojawia się dodatkowy pasek filtrów, który trzeba wypełnić/zatwierdzić przed wygenerowaniem raportu
+
+### Parametry raportu (filtry)
+
+Szablon może opcjonalnie zdefiniować jeden lub więcej **parametrów** — pól filtrujących pokazywanych użytkownikowi przed wygenerowaniem raportu (np. „wybierz pracownika", żeby wydrukować tylko jego assety).
+
+- Każdy parametr renderuje się jako lista rozwijana nad arkuszem, z etykietą ustawioną przez administratora; przycisk **Generuj** ponownie pobiera dane raportu z zastosowanym filtrem
+- Parametr filtruje **jedną kolumnę** widoku, na którym oparty jest szablon (`WHERE kolumna = wybrana_wartość`)
+- Opcje na liście rozwijanej pochodzą albo z **odrębnego widoku wyszukiwania** (np. lista pracowników z osobnego widoku `v_employees`, żeby pokazać czytelne imię i nazwisko zamiast surowego identyfikatora), albo — gdy widok wyszukiwania nie jest ustawiony — z **unikalnych wartości** samej filtrowanej kolumny
+- Parametr może być oznaczony jako **wymagany** — wtedy lista nie ma opcji „— wszystkie —" i trzeba wybrać konkretną wartość, zanim przycisk Generuj zadziała (walidacja przeglądarki)
+- Puste/niewybrane parametry oznaczają brak filtra — raport pokazuje wszystkie wiersze, tak jak szablon bez parametrów
+- Wybrane wartości filtrów są zapisywane w adresie URL (`print.php?print=nazwa&p_klucz=wartość`), więc wygenerowany, przefiltrowany raport można zapisać w zakładkach lub przesłać dalej
 
 ### Bloki szablonu
 
@@ -1362,8 +1374,9 @@ Panel admina → Data Management → **Printouts** (szablony zapisywane w `confi
 - Ustawienia ogólne: nazwa wyświetlana, nazwa w menu, opis, ikona, widoczność
 - **Źródło danych** — lista rozwijana widoków SQL PostgreSQL zarejestrowanych w module Widoków (`config/views.json`); po wybraniu widoku lista **dostępnych zmiennych** (kolumn) jest pobierana automatycznie z bazy (information_schema) i pokazywana jako plakietki `{kolumna}` — użytkownik nie wpisuje ich ręcznie
 - Edytor bloków: dodawanie (nagłówek / tekst / tabela), zmiana kolejności (^ / v), usuwanie; w bloku tabeli kolumny widoku wybiera się checkboxami, a przy każdej zaznaczonej kolumnie dostępne jest pole szerokości (%) i lista wyrównania (lewo / środek / prawo)
-- **Save printouts** — zapis przez API (`api/print.php?action=save`) z walidacją po stronie serwera (whitelist typów bloków, widok musi istnieć w module Widoków, sanityzacja ikon i długości pól)
+- **Parametry raportu** — sekcja „Report parameters" (między źródłem danych a blokami szablonu): dodawanie/usuwanie/zmiana kolejności parametrów; dla każdego ustawia się klucz (używany jako `p_klucz` w adresie URL), etykietę widoczną dla użytkownika, kolumnę widoku do filtrowania, checkbox „Required" oraz opcjonalny **widok wyszukiwania** wraz z kolumną wartości i kolumną etykiety (obie listy kolumn pobierane automatycznie z bazy, tak jak zmienne bloków)
+- **Save printouts** — zapis przez API (`api/print.php?action=save`) z walidacją po stronie serwera (whitelist typów bloków i parametrów, widok oraz widok wyszukiwania muszą istnieć w module Widoków, sanityzacja ikon i długości pól)
 
 ---
 
-*Dokumentacja wygenerowana: 2026-07-01 | Pokrycie: wszystkie moduły FE OpenSparrow v2.9+*
+*Dokumentacja wygenerowana: 2026-07-12 | Pokrycie: wszystkie moduły FE OpenSparrow v2.9+*

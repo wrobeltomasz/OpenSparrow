@@ -224,7 +224,8 @@
         "print_button": "Tlačiť",
         "empty": "Nie sú nakonfigurované žiadne tlačové zostavy. Požiadajte administrátora o nastavenie šablón tlače.",
         "no_data": "Nenašli sa žiadne údaje.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— všetky —"
     },
     "views": {
         "loading": "Načítanie pohľadov…",

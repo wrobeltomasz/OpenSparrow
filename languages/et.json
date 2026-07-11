@@ -221,7 +221,8 @@
         "print_button": "Prindi",
         "empty": "Väljatrükke pole seadistatud. Paluge administraatoril prindimallid seadistada.",
         "no_data": "Andmeid ei leitud.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— kõik —"
     },
     "views": {
         "loading": "Vaadete laadimine…",

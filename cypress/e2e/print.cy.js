@@ -159,4 +159,131 @@ describe('OpenSparrow – Print: URL param', () => {
     cy.get('#printContainer .pr-error', { timeout: CypressHelpers.TIMEOUTS.long })
       .should('exist');
   });
+
+  it('an unknown p_ query arg is ignored instead of breaking an existing print', () => {
+    cy.get('#menu a[href^="print.php?print="]').then($links => {
+      if ($links.length === 0) {
+        Cypress.log({ message: 'No print templates configured — skipping robustness test' });
+        return;
+      }
+      const href = $links.first().attr('href');
+      cy.visit(`${BASE}/${href}&p_not_a_real_param=xyz`);
+      cy.get('#printContainer .pr-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
+      cy.get('#printSheet, .pr-error', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+    });
+  });
+});
+
+// ============================================================================
+// Test Suite: Report Parameters (filters rendered in the blue app header)
+// ============================================================================
+// These templates only exist when an admin has configured "params" on a print
+// (see admin/js/print_editor.js "Report parameters" section), so every test
+// here degrades gracefully to a logged skip when none are configured — same
+// defensive pattern as the selector/open-template suites above. Filters live in
+// #printFilters in the header (same pattern as #boardFilters/#dashboardFilters)
+// and apply immediately on change, like every other header filter in the app.
+
+describe('OpenSparrow – Print: Report Parameters', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/print.php`);
+    cy.get('#printContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  function openFirstPrint() {
+    cy.get('#printContainer .pr-loading').should('not.exist');
+    cy.get('.pr-selector-card').first().click();
+    cy.get('#printSheet, .pr-error', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  }
+
+  it('opened template shows parameter selects in the header only when the template declares params', () => {
+    cy.get('#printContainer').then($el => {
+      if ($el.find('.pr-selector-card').length === 0) {
+        Cypress.log({ message: 'No print templates configured — skipping parameters test' });
+        return;
+      }
+      openFirstPrint();
+      cy.get('#printFilters').then($bar => {
+        if ($bar.find('select').length === 0) {
+          Cypress.log({ message: 'Opened template declares no parameters — skipping' });
+          return;
+        }
+        cy.get('#printFilters select').should('have.length.gte', 1);
+        cy.get('#printFilters label').first().invoke('text').should('not.be.empty');
+      });
+    });
+  });
+
+  it('picking a parameter value filters the report immediately and updates the URL', () => {
+    cy.get('#printContainer').then($el => {
+      if ($el.find('.pr-selector-card').length === 0) {
+        Cypress.log({ message: 'No print templates configured — skipping parameters test' });
+        return;
+      }
+      openFirstPrint();
+      cy.get('#printFilters').then($bar => {
+        const $select = $bar.find('select').first();
+        if ($select.length === 0 || $select.find('option[value!=""]').length === 0) {
+          Cypress.log({ message: 'No selectable parameter options — skipping' });
+          return;
+        }
+        const value = $select.find('option[value!=""]').first().val();
+
+        cy.wrap($select).select(value);
+
+        cy.get('#printSheet', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+        cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'p_');
+        cy.get('#clearFilters').should('be.visible');
+      });
+    });
+  });
+
+  it('reloading a print URL with a p_ filter pre-selects that value in the header', () => {
+    cy.get('#printContainer').then($el => {
+      if ($el.find('.pr-selector-card').length === 0) {
+        Cypress.log({ message: 'No print templates configured — skipping parameters test' });
+        return;
+      }
+      openFirstPrint();
+      cy.get('#printFilters').then($bar => {
+        const $select = $bar.find('select').first();
+        if ($select.length === 0 || $select.find('option[value!=""]').length === 0) {
+          Cypress.log({ message: 'No selectable parameter options — skipping' });
+          return;
+        }
+        const value = $select.find('option[value!=""]').first().val();
+        cy.wrap($select).select(value);
+        cy.get('#printSheet', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+
+        cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).then(url => {
+          cy.visit(url);
+          cy.get('#printSheet', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+          cy.get('#printFilters select').first().should('have.value', value);
+        });
+      });
+    });
+  });
+
+  it('Clear filters resets the header selects and reloads the unfiltered report', () => {
+    cy.get('#printContainer').then($el => {
+      if ($el.find('.pr-selector-card').length === 0) {
+        Cypress.log({ message: 'No print templates configured — skipping parameters test' });
+        return;
+      }
+      openFirstPrint();
+      cy.get('#printFilters').then($bar => {
+        const $select = $bar.find('select').first();
+        if ($select.length === 0 || $select.find('option[value!=""]').length === 0) {
+          Cypress.log({ message: 'No selectable parameter options — skipping' });
+          return;
+        }
+        const value = $select.find('option[value!=""]').first().val();
+        cy.wrap($select).select(value);
+        cy.get('#clearFilters', { timeout: CypressHelpers.TIMEOUTS.long }).should('be.visible').click();
+        cy.get('#printSheet', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+        cy.get('#clearFilters').should('not.be.visible');
+      });
+    });
+  });
 });

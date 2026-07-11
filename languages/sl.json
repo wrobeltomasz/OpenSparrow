@@ -227,7 +227,8 @@
         "print_button": "Natisni",
         "empty": "Ni nastavljenih izpisov. Prosite skrbnika, da nastavi predloge za tiskanje.",
         "no_data": "Ni najdenih podatkov.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— vse —"
     },
     "views": {
         "loading": "Nalaganje pogledov…",

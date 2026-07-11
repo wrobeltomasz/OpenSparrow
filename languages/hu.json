@@ -221,7 +221,8 @@
         "print_button": "Nyomtatás",
         "empty": "Nincsenek beállított nyomtatások. Kérjen meg egy adminisztrátort a nyomtatási sablonok beállítására.",
         "no_data": "Nem található adat.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— összes —"
     },
     "views": {
         "loading": "Nézetek betöltése…",

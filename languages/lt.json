@@ -224,7 +224,8 @@
         "print_button": "Spausdinti",
         "empty": "Nėra sukonfigūruotų spaudinių. Paprašykite administratoriaus sukonfigūruoti spausdinimo šablonus.",
         "no_data": "Duomenų nerasta.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— visi —"
     },
     "views": {
         "loading": "Kraunami rodiniai…",

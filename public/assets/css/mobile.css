@@ -89,7 +89,8 @@
     .header-controls #filterBar,
     .header-controls .board-filters,
     .header-controls .calendar-filters,
-    .header-controls .dashboard-filters {
+    .header-controls .dashboard-filters,
+    .header-controls .print-filters {
         width: 100%;
         flex-wrap: wrap;
         gap: 8px;

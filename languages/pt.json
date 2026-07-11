@@ -221,7 +221,8 @@
         "print_button": "Imprimir",
         "empty": "Nenhuma impressão configurada. Peça a um administrador para configurar os modelos de impressão.",
         "no_data": "Nenhum dado encontrado.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— todos —"
     },
     "views": {
         "loading": "A carregar vistas…",

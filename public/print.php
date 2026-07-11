@@ -7,6 +7,8 @@ declare(strict_types=1);
 // UA/lifetime enforcement, CSRF token, CSP nonce + headers
 // ?print= selects the print template (max 64 chars)
 // Renders the print-template UI (print.css); data via api/print.php; window.print() to print
+// Report parameter selects render in the blue app header (via $headerControls, like the grid
+// page) into #printFilters — populated by print.js once the template's params are known
 
 require_once __DIR__ . '/../includes/bootstrap.php';
 
@@ -16,7 +18,9 @@ $printName = substr($_GET['print'] ?? '', 0, 64);
 
 $pageTitle      = 'OpenSparrow — Print';
 $extraCss       = '<link href="assets/css/print.css" rel="stylesheet">';
-$headerControls = '';
+$tClearF        = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
+$headerControls = '<div id="printFilters" class="print-filters"></div>'
+    . '<button id="clearFilters" hidden title="' . $tClearF . '">' . $tClearF . '</button>';
 ob_start();
 ?>
 <main>

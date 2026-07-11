@@ -221,7 +221,8 @@
         "print_button": "Skriv ut",
         "empty": "Inga utskrifter konfigurerade. Be en administratör att konfigurera utskriftsmallar.",
         "no_data": "Inga data hittades.",
-        "page_of": "{current} / {total}"
+        "page_of": "{current} / {total}",
+        "params_all": "— alla —"
     },
     "views": {
         "loading": "Laddar vyer…",

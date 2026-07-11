@@ -5,7 +5,9 @@ declare(strict_types=1);
 // api/print.php — Print templates API (print.php page + admin Printouts editor)
 // Auth gate: session + UA enforcement; CSRF on POST
 // actions: list (GET), config (GET, admin), columns (GET, admin — live column list of a
-// PostgreSQL view), data (GET — template blocks + view rows), save (POST, admin)
+// PostgreSQL view), data (GET — template blocks + view rows, optionally filtered by
+// p_<param key> query args), param_options (GET — dropdown values for one report
+// parameter), save (POST, admin)
 // Templates live in config/print.json (web-denied via config/.htaccess); each template is bound
 // to a PostgreSQL view registered in config/views.json — never to raw SQL from the client.
 
@@ -118,6 +120,49 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
         }
     }
 
+    $params    = [];
+    $paramKeys = [];
+    foreach (array_slice((array) ($tpl['params'] ?? []), 0, 20) as $prm) {
+        if (!is_array($prm)) {
+            return null;
+        }
+        $key = (string) ($prm['key'] ?? '');
+        if (!preg_match('/^[a-zA-Z0-9_]{1,64}$/', $key) || in_array($key, $paramKeys, true)) {
+            return null;
+        }
+        $column = (string) ($prm['column'] ?? '');
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $column)) {
+            return null;
+        }
+
+        $paramKeys[] = $key;
+        $entry       = [
+            'key'      => $key,
+            'label'    => mb_substr((string) ($prm['label'] ?? ''), 0, 120),
+            'type'     => 'select',
+            'column'   => $column,
+            'required' => !empty($prm['required']),
+        ];
+
+        // Optional lookup source (e.g. an employees view) for the dropdown options;
+        // falls back to DISTINCT values of the main view's own $column when absent.
+        $sourceView = (string) ($prm['source_view'] ?? '');
+        $valueCol   = (string) ($prm['value_column'] ?? '');
+        $labelCol   = (string) ($prm['label_column'] ?? '');
+        if (
+            $sourceView !== ''
+            && isset($availableViews[$sourceView])
+            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $valueCol)
+            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $labelCol)
+        ) {
+            $entry['source_view']  = $sourceView;
+            $entry['value_column'] = $valueCol;
+            $entry['label_column'] = $labelCol;
+        }
+
+        $params[] = $entry;
+    }
+
     return [
         'display_name' => mb_substr((string) ($tpl['display_name'] ?? ''), 0, 120),
         'menu_name'    => mb_substr((string) ($tpl['menu_name'] ?? ''), 0, 120),
@@ -126,6 +171,7 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
         'hidden'       => !empty($tpl['hidden']),
         'view'         => $view,
         'blocks'       => $blocks,
+        'params'       => $params,
     ];
 }
 
@@ -201,21 +247,41 @@ try {
             exit;
         }
 
-        $cfg      = $prints[$printName];
-        $views    = print_available_views();
-        $viewName = (string) ($cfg['view'] ?? '');
-        $rows     = [];
-        $viewCols = [];
+        $cfg           = $prints[$printName];
+        $views         = print_available_views();
+        $viewName      = (string) ($cfg['view'] ?? '');
+        $paramDefs     = $cfg['params'] ?? [];
+        $rows          = [];
+        $viewCols      = [];
+        $appliedParams = [];
 
         if ($viewName !== '' && isset($views[$viewName])) {
             $conn       = db_connect();
             $schemaName = $views[$viewName]['schema'] ?? sys_schema();
-            $sql        = sprintf(
-                'SELECT * FROM %s.%s LIMIT 1000',
-                pg_ident($schemaName),
-                pg_ident($viewName)
-            );
-            $res        = @pg_query_params($conn, $sql, []);
+
+            // Params are filtered server-side to those declared on this template — the
+            // column identifier comes only from print.json (admin-sanitized), never
+            // directly from the request; the value is always bound via pg_query_params.
+            $where       = [];
+            $queryParams = [];
+            foreach ($paramDefs as $p) {
+                $key = (string) ($p['key'] ?? '');
+                $val = $_GET['p_' . $key] ?? '';
+                if ($val === '' || $val === null) {
+                    continue;
+                }
+                $queryParams[]        = $val;
+                $where[]              = pg_ident($p['column']) . ' = $' . count($queryParams);
+                $appliedParams[$key]  = $val;
+            }
+
+            $sql = sprintf('SELECT * FROM %s.%s', pg_ident($schemaName), pg_ident($viewName));
+            if ($where) {
+                $sql .= ' WHERE ' . implode(' AND ', $where);
+            }
+            $sql .= ' LIMIT 1000';
+
+            $res = @pg_query_params($conn, $sql, $queryParams);
             if (!$res) {
                 error_log('[api_print][data] ' . pg_last_error($conn));
                 http_response_code(500);
@@ -228,15 +294,94 @@ try {
         }
 
         echo json_encode([
-            'status'       => 'ok',
-            'print'        => $printName,
-            'display_name' => $cfg['display_name'] ?? $printName,
-            'icon'         => $cfg['icon'] ?? '',
-            'view'         => $viewName,
-            'blocks'       => $cfg['blocks'] ?? [],
-            'rows'         => $rows,
-            'columns'      => $viewCols,
+            'status'         => 'ok',
+            'print'          => $printName,
+            'display_name'   => $cfg['display_name'] ?? $printName,
+            'icon'           => $cfg['icon'] ?? '',
+            'view'           => $viewName,
+            'blocks'         => $cfg['blocks'] ?? [],
+            'rows'           => $rows,
+            'columns'        => $viewCols,
+            'params'         => $paramDefs,
+            'applied_params' => $appliedParams,
         ]);
+        exit;
+    }
+
+    /* PARAM OPTIONS — selectable values for one report parameter's dropdown */
+    if ($action === 'param_options' && $method === 'GET') {
+        $printName = $_GET['print'] ?? '';
+        $paramKey  = $_GET['key'] ?? '';
+        if (!isset($prints[$printName])) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Print template not found']);
+            exit;
+        }
+
+        $cfg   = $prints[$printName];
+        $views = print_available_views();
+        $param = null;
+        foreach (($cfg['params'] ?? []) as $p) {
+            if (($p['key'] ?? '') === $paramKey) {
+                $param = $p;
+                break;
+            }
+        }
+        if ($param === null) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Parameter not found']);
+            exit;
+        }
+
+        $conn = db_connect();
+
+        if (!empty($param['source_view']) && isset($views[$param['source_view']])) {
+            // Lookup source: a separate registered view supplies value/label pairs
+            // (e.g. v_employees.id / v_employees.full_name for an employee picker).
+            $srcView    = $param['source_view'];
+            $schemaName = $views[$srcView]['schema'] ?? sys_schema();
+            $valueIdent = pg_ident($param['value_column']);
+            $labelIdent = pg_ident($param['label_column']);
+            $sql        = sprintf(
+                'SELECT DISTINCT %s AS value, %s AS label FROM %s.%s WHERE %s IS NOT NULL ORDER BY %s LIMIT 500',
+                $valueIdent,
+                $labelIdent,
+                pg_ident($schemaName),
+                pg_ident($srcView),
+                $valueIdent,
+                $labelIdent
+            );
+        } else {
+            // Self-source: distinct values of the template's own filter column.
+            $viewName = (string) ($cfg['view'] ?? '');
+            if ($viewName === '' || !isset($views[$viewName])) {
+                echo json_encode(['status' => 'ok', 'options' => []]);
+                exit;
+            }
+            $schemaName = $views[$viewName]['schema'] ?? sys_schema();
+            $colIdent   = pg_ident($param['column']);
+            $sql        = sprintf(
+                'SELECT DISTINCT %s AS value, %s AS label FROM %s.%s WHERE %s IS NOT NULL ORDER BY %s LIMIT 500',
+                $colIdent,
+                $colIdent,
+                pg_ident($schemaName),
+                pg_ident($viewName),
+                $colIdent,
+                $colIdent
+            );
+        }
+
+        $res = @pg_query_params($conn, $sql, []);
+        if (!$res) {
+            error_log('[api_print][param_options] ' . pg_last_error($conn));
+            http_response_code(500);
+            echo json_encode(['error' => 'Database error']);
+            exit;
+        }
+        $options = pg_fetch_all($res) ?: [];
+        pg_free_result($res);
+
+        echo json_encode(['status' => 'ok', 'options' => $options]);
         exit;
     }
 
