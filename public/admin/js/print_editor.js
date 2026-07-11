@@ -361,9 +361,17 @@ export function renderPrintEditor(ctx) {
                 colsLbl.style.cssText = 'display:block; margin-bottom:6px; font-weight:600; font-size:13px; color:var(--text);';
                 row.appendChild(colsLbl);
 
+                const colsHint = document.createElement('p');
+                colsHint.style.cssText = 'margin:0 0 8px; font-size:12px; color:var(--muted);';
+                colsHint.textContent = 'Width is a percentage of the table; leave blank to auto-size. Widths do not need to add up to 100. Alignment applies to data cells only — column headers are always centered.';
+                row.appendChild(colsHint);
+
                 if (!Array.isArray(block.columns)) block.columns = [];
+                // Normalize legacy bare-string entries to {name, align} objects.
+                block.columns = block.columns.map(c => (typeof c === 'string' ? { name: c, align: 'left' } : c));
+
                 const colsBox = document.createElement('div');
-                colsBox.style.cssText = 'display:flex; flex-wrap:wrap; gap:10px;';
+                colsBox.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
                 if (currentCols.length === 0) {
                     const none = document.createElement('span');
                     none.style.cssText = 'font-size:12px; color:var(--muted);';
@@ -371,22 +379,71 @@ export function renderPrintEditor(ctx) {
                     colsBox.appendChild(none);
                 }
                 currentCols.forEach(col => {
+                    let entry = block.columns.find(c => c.name === col.name);
+
+                    const rowWrap = document.createElement('div');
+                    rowWrap.style.cssText = 'display:flex; align-items:center; gap:10px;';
+
                     const lab = document.createElement('label');
-                    lab.style.cssText = 'display:flex; align-items:center; gap:5px; font-size:13px; color:var(--text); cursor:pointer; font-weight:normal;';
+                    lab.style.cssText = 'display:flex; align-items:center; gap:5px; font-size:13px; color:var(--text); cursor:pointer; font-weight:normal; min-width:160px;';
                     const chk = document.createElement('input');
                     chk.type = 'checkbox';
-                    chk.checked = block.columns.includes(col.name);
+                    chk.checked = !!entry;
                     chk.style.cssText = 'width:14px; height:14px; accent-color:var(--accent); cursor:pointer;';
-                    chk.addEventListener('change', () => {
-                        if (chk.checked) {
-                            if (!block.columns.includes(col.name)) block.columns.push(col.name);
-                        } else {
-                            block.columns = block.columns.filter(c => c !== col.name);
-                        }
-                    });
                     lab.appendChild(chk);
                     lab.appendChild(document.createTextNode(col.name));
-                    colsBox.appendChild(lab);
+                    rowWrap.appendChild(lab);
+
+                    const widthInp = document.createElement('input');
+                    widthInp.type = 'number';
+                    widthInp.min = '1';
+                    widthInp.max = '100';
+                    widthInp.placeholder = 'auto %';
+                    widthInp.style.cssText = 'width:80px;';
+                    widthInp.value = entry?.width ?? '';
+                    widthInp.disabled = !entry;
+                    rowWrap.appendChild(widthInp);
+
+                    const alignSel = document.createElement('select');
+                    alignSel.style.cssText = 'width:110px;';
+                    [['left', 'Left'], ['center', 'Center'], ['right', 'Right']].forEach(([v, l]) => {
+                        const o = document.createElement('option');
+                        o.value = v;
+                        o.textContent = l;
+                        if ((entry?.align ?? 'left') === v) o.selected = true;
+                        alignSel.appendChild(o);
+                    });
+                    alignSel.disabled = !entry;
+                    rowWrap.appendChild(alignSel);
+
+                    chk.addEventListener('change', () => {
+                        if (chk.checked) {
+                            entry = { name: col.name, align: alignSel.value };
+                            const w = parseInt(widthInp.value, 10);
+                            if (w >= 1 && w <= 100) entry.width = w;
+                            block.columns.push(entry);
+                        } else {
+                            block.columns = block.columns.filter(c => c.name !== col.name);
+                            entry = null;
+                        }
+                        widthInp.disabled = !entry;
+                        alignSel.disabled = !entry;
+                    });
+                    widthInp.addEventListener('input', () => {
+                        if (!entry) return;
+                        const w = parseInt(widthInp.value, 10);
+                        if (widthInp.value === '') {
+                            delete entry.width;
+                        } else if (w >= 1 && w <= 100) {
+                            entry.width = w;
+                        }
+                    });
+                    alignSel.addEventListener('change', () => {
+                        if (!entry) return;
+                        entry.align = alignSel.value;
+                    });
+
+                    colsBox.appendChild(rowWrap);
                 });
                 row.appendChild(colsBox);
             }

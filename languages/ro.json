@@ -223,7 +223,8 @@
         "open": "Deschide raportul →",
         "print_button": "Tipărește",
         "empty": "Nu există rapoarte de tipărit configurate. Cereți unui administrator să configureze șabloanele de tipărire.",
-        "no_data": "Nu s-au găsit date."
+        "no_data": "Nu s-au găsit date.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Se încarcă vizualizările…",

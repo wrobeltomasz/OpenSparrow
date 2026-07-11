@@ -220,7 +220,8 @@
         "open": "Öppna utskrift →",
         "print_button": "Skriv ut",
         "empty": "Inga utskrifter konfigurerade. Be en administratör att konfigurera utskriftsmallar.",
-        "no_data": "Inga data hittades."
+        "no_data": "Inga data hittades.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Laddar vyer…",

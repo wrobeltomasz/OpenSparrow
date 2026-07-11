@@ -223,7 +223,8 @@
         "open": "Otwórz wydruk →",
         "print_button": "Drukuj",
         "empty": "Brak skonfigurowanych wydruków. Poproś administratora o skonfigurowanie szablonów wydruku.",
-        "no_data": "Nie znaleziono danych."
+        "no_data": "Nie znaleziono danych.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Ładowanie widoków…",

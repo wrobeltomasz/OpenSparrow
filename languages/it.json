@@ -220,7 +220,8 @@
         "open": "Apri stampa →",
         "print_button": "Stampa",
         "empty": "Nessuna stampa configurata. Chiedi a un amministratore di configurare i modelli di stampa.",
-        "no_data": "Nessun dato trovato."
+        "no_data": "Nessun dato trovato.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Caricamento viste…",

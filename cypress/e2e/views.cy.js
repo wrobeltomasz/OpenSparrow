@@ -192,3 +192,131 @@ describe('OpenSparrow – Views: URL param', () => {
     });
   });
 });
+
+// ============================================================================
+// Test Suite: Views Column Filters (grid-style, added with row grouping)
+// ============================================================================
+
+describe('OpenSparrow – Views: Column Filters', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/views.php`);
+    cy.get('#viewContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  it('opening a view with data populates the column filter dropdown', () => {
+    cy.get('#viewContainer').then($el => {
+      if ($el.find('.vw-selector-card').length === 0) {
+        Cypress.log({ message: 'No views — skipping column filter tests' });
+        return;
+      }
+      cy.get('.vw-selector-card').first().click();
+      cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long }).then($state => {
+        if (!$state.hasClass('vw-table-wrap')) return;
+        cy.get('#columnFilter').should('not.have.attr', 'hidden');
+        cy.get('#columnFilter option').should('have.length.gte', 2); // default + at least one column
+      });
+    });
+  });
+
+  it('selecting a column renders a filter control and an active-filter pill', () => {
+    cy.get('#viewContainer').then($el => {
+      if ($el.find('.vw-selector-card').length === 0) return;
+      cy.get('.vw-selector-card').first().click();
+      cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long }).then($state => {
+        if (!$state.hasClass('vw-table-wrap')) return;
+        cy.get('#columnFilter option').its('length').then(len => {
+          if (len < 2) return;
+          cy.get('#columnFilter option').eq(1).invoke('val').then(val => {
+            cy.get('#columnFilter').select(val);
+            cy.get('#filterBar').children().should('have.length.gte', 1);
+            cy.get('#clearFilters').should('not.have.attr', 'hidden');
+          });
+        });
+      });
+    });
+  });
+
+  it('clear-filters button resets the column filter and hides itself', () => {
+    cy.get('#viewContainer').then($el => {
+      if ($el.find('.vw-selector-card').length === 0) return;
+      cy.get('.vw-selector-card').first().click();
+      cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long }).then($state => {
+        if (!$state.hasClass('vw-table-wrap')) return;
+        cy.get('#columnFilter option').its('length').then(len => {
+          if (len < 2) return;
+          cy.get('#columnFilter option').eq(1).invoke('val').then(val => {
+            cy.get('#columnFilter').select(val);
+            cy.get('#clearFilters').click();
+            cy.get('#columnFilter').should('have.value', '');
+            cy.get('#filterBar').children().should('have.length', 0);
+            cy.get('#clearFilters').should('have.attr', 'hidden');
+          });
+        });
+      });
+    });
+  });
+});
+
+// ============================================================================
+// Test Suite: Views Grouping (collapsible groups + subtotals)
+// ============================================================================
+
+describe('OpenSparrow – Views: Grouping', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/views.php`);
+    cy.get('#viewContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  it('opening a view with data populates the group-by dropdown', () => {
+    cy.get('#viewContainer').then($el => {
+      if ($el.find('.vw-selector-card').length === 0) return;
+      cy.get('.vw-selector-card').first().click();
+      cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long }).then($state => {
+        if (!$state.hasClass('vw-table-wrap')) return;
+        cy.get('#groupBy').should('not.have.attr', 'hidden');
+        cy.get('#groupBy option').should('have.length.gte', 2);
+      });
+    });
+  });
+
+  it('selecting a group-by column renders collapsible group headers', () => {
+    cy.get('#viewContainer').then($el => {
+      if ($el.find('.vw-selector-card').length === 0) return;
+      cy.get('.vw-selector-card').first().click();
+      cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long }).then($state => {
+        if (!$state.hasClass('vw-table-wrap')) return;
+        cy.get('#groupBy option').its('length').then(len => {
+          if (len < 2) return;
+          cy.get('#groupBy option').eq(1).invoke('val').then(val => {
+            cy.get('#groupBy').select(val);
+            cy.get('.vw-group-header').should('have.length.gte', 1);
+          });
+        });
+      });
+    });
+  });
+
+  it('clicking a group header collapses and re-expands its rows', () => {
+    cy.get('#viewContainer').then($el => {
+      if ($el.find('.vw-selector-card').length === 0) return;
+      cy.get('.vw-selector-card').first().click();
+      cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long }).then($state => {
+        if (!$state.hasClass('vw-table-wrap')) return;
+        cy.get('#groupBy option').its('length').then(len => {
+          if (len < 2) return;
+          cy.get('#groupBy option').eq(1).invoke('val').then(val => {
+            cy.get('#groupBy').select(val);
+            cy.get('.vw-group-header').first().find('.vw-group-arrow').invoke('text').then(before => {
+              cy.get('.vw-group-header').first().click();
+              cy.get('.vw-group-header').first().find('.vw-group-arrow')
+                .invoke('text')
+                .should('not.eq', before);
+            });
+          });
+        });
+      });
+    });
+  });
+});

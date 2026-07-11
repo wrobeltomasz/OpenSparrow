@@ -220,7 +220,8 @@
         "open": "Open Printout →",
         "print_button": "Print",
         "empty": "No printouts configured. Ask an administrator to set up print templates.",
-        "no_data": "No data found."
+        "no_data": "No data found.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Loading views…",

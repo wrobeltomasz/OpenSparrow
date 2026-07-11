@@ -190,6 +190,7 @@ h3.pr-block-header { font-size: 16px; margin-top: 14px; }
 .pr-block-table th {
   background: #f0f0f0;
   font-weight: 700;
+  text-align: center;
 }
 
 .pr-block-empty {
@@ -197,6 +198,24 @@ h3.pr-block-header { font-size: 16px; margin-top: 14px; }
   font-size: 13px;
   color: var(--muted);
   font-style: italic;
+}
+
+/* One physical page's worth of content, split by print.js pagination; the
+   dashed rule previews the page break on screen and is removed when printing. */
+.pr-page {
+  padding-bottom: 14mm;
+}
+
+.pr-page:not(:last-child) {
+  border-bottom: 1px dashed #ccc;
+  margin-bottom: 14mm;
+}
+
+.pr-page-footer {
+  font-size: 10px;
+  color: #777;
+  text-align: center;
+  padding-top: 4mm;
 }
 
 /* Loading / empty / error */
@@ -213,6 +232,13 @@ h3.pr-block-header { font-size: 16px; margin-top: 14px; }
 
 /* ===== PRINT LAYOUT ===== */
 @media print {
+  /* Fixes page geometry so print.js's height-based pagination math (print.js
+     PAGE_CONTENT_HEIGHT_PX) matches the paper the browser actually prints to. */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
   /* Only the sheet content is printed — chrome (header, sidebar, footer, toolbar) is hidden */
   body > header,
   nav#menu,
@@ -253,5 +279,19 @@ h3.pr-block-header { font-size: 16px; margin-top: 14px; }
 
   .pr-block-table thead {
     display: table-header-group;
+  }
+
+  .pr-page {
+    padding-bottom: 0;
+  }
+
+  .pr-page:not(:last-child) {
+    border-bottom: none;
+    margin-bottom: 0;
+    page-break-after: always;
+  }
+
+  .pr-page-footer {
+    padding-top: 6mm;
   }
 }

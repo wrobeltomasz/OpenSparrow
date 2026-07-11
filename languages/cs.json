@@ -223,7 +223,8 @@
         "open": "Otevřít sestavu →",
         "print_button": "Tisk",
         "empty": "Žádné tiskové sestavy nejsou nakonfigurovány. Požádejte administrátora o nastavení šablon tisku.",
-        "no_data": "Nebyla nalezena žádná data."
+        "no_data": "Nebyla nalezena žádná data.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Načítání pohledů…",

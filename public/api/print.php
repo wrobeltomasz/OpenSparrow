@@ -93,9 +93,24 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
         } elseif ($type === 'table') {
             $cols = [];
             foreach (array_slice((array) ($block['columns'] ?? []), 0, 50) as $col) {
-                if (is_string($col) && preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $col)) {
-                    $cols[] = $col;
+                // Accepts a legacy bare column-name string, or {name, width?, align?}.
+                $name = is_string($col) ? $col : (string) ($col['name'] ?? '');
+                if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $name)) {
+                    continue;
                 }
+                $entry = ['name' => $name, 'align' => 'left'];
+                if (is_array($col)) {
+                    if (in_array($col['align'] ?? '', ['left', 'center', 'right'], true)) {
+                        $entry['align'] = $col['align'];
+                    }
+                    if (isset($col['width']) && is_numeric($col['width'])) {
+                        $width = (int) $col['width'];
+                        if ($width >= 1 && $width <= 100) {
+                            $entry['width'] = $width;
+                        }
+                    }
+                }
+                $cols[] = $entry;
             }
             $blocks[] = ['type' => 'table', 'columns' => $cols];
         } else {

@@ -220,7 +220,8 @@
         "open": "Åbn udskrift →",
         "print_button": "Udskriv",
         "empty": "Ingen udskrifter konfigureret. Bed en administrator om at opsætte udskriftsskabeloner.",
-        "no_data": "Ingen data fundet."
+        "no_data": "Ingen data fundet.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Indlæser visninger…",

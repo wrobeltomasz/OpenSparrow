@@ -220,7 +220,8 @@
         "open": "Ava väljatrükk →",
         "print_button": "Prindi",
         "empty": "Väljatrükke pole seadistatud. Paluge administraatoril prindimallid seadistada.",
-        "no_data": "Andmeid ei leitud."
+        "no_data": "Andmeid ei leitud.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Vaadete laadimine…",

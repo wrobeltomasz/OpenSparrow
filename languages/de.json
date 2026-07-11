@@ -220,7 +220,8 @@
         "open": "Ausdruck öffnen →",
         "print_button": "Drucken",
         "empty": "Keine Ausdrucke konfiguriert. Bitten Sie einen Administrator, Druckvorlagen einzurichten.",
-        "no_data": "Keine Daten gefunden."
+        "no_data": "Keine Daten gefunden.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Ansichten werden geladen…",

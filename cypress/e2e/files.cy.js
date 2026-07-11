@@ -160,6 +160,59 @@ describe('OpenSparrow – Files: Search & Filter', () => {
 });
 
 // ============================================================================
+// Test Suite: Files Clear Filters
+// ============================================================================
+
+describe('OpenSparrow – Files: Clear Filters', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/files.php`);
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  it('clear-filters button is hidden until a filter is active', () => {
+    cy.get('#clearFilters').should('have.attr', 'hidden');
+  });
+
+  it('typing a search phrase reveals the clear-filters button', () => {
+    cy.get('#fileSearch').clear().type('zzz-no-such-file-zzz');
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .invoke('text')
+      .should('not.include', 'Loading');
+    cy.get('#clearFilters').should('not.have.attr', 'hidden');
+  });
+
+  it('changing the type filter reveals the clear-filters button', () => {
+    cy.get('#fileTypeFilter').select('image');
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .invoke('text')
+      .should('not.include', 'Loading');
+    cy.get('#clearFilters').should('not.have.attr', 'hidden');
+  });
+
+  it('clicking clear-filters resets the search box, type filter, and hides itself', () => {
+    cy.get('#fileSearch').clear().type('zzz-no-such-file-zzz');
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .invoke('text')
+      .should('not.include', 'Loading');
+    cy.get('#fileTypeFilter').select('image');
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .invoke('text')
+      .should('not.include', 'Loading');
+
+    cy.get('#clearFilters').should('not.have.attr', 'hidden');
+    cy.get('#clearFilters').click();
+
+    cy.get('#fileSearch').should('have.value', '');
+    cy.get('#fileTypeFilter').should('have.value', 'all');
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .invoke('text')
+      .should('not.include', 'Loading');
+    cy.get('#clearFilters').should('have.attr', 'hidden');
+  });
+});
+
+// ============================================================================
 // Test Suite: Files Upload Form Validation
 // ============================================================================
 

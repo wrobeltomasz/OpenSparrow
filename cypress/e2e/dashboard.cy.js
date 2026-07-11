@@ -99,6 +99,109 @@ describe('OpenSparrow – Dashboard: Widget Loading', () => {
 });
 
 // ============================================================================
+// Test Suite: Dashboard Period Filter
+// ============================================================================
+
+describe('OpenSparrow – Dashboard: Period Filter', () => {
+  beforeEach(() => {
+    cy.clearLocalStorage();
+    loginAsTestUser();
+    cy.visit(`${BASE}/dashboard.php`);
+    cy.get('#dashboardSection', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  it('shows the period select with the expected options', () => {
+    cy.get('#dashDateFilter').should('exist');
+    cy.get('#dashDateFilter option').should('have.length', 5);
+    ['all', 'today', '7d', '30d', 'this_month'].forEach(val => {
+      cy.get(`#dashDateFilter option[value="${val}"]`).should('exist');
+    });
+  });
+
+  it('clear-filters button is hidden until a filter is active', () => {
+    cy.get('#clearFilters').should('have.attr', 'hidden');
+  });
+
+  it('changing the period reloads the widgets and reveals the clear-filters button', () => {
+    cy.get('#dashDateFilter').select('7d');
+    cy.get('#dashboardSection .dash-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
+    cy.get('#clearFilters').should('not.have.attr', 'hidden');
+  });
+
+  it('clear-filters resets the period back to "all" and hides itself', () => {
+    cy.get('#dashDateFilter').select('7d');
+    cy.get('#dashboardSection .dash-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
+    cy.get('#clearFilters').click();
+    cy.get('#dashboardSection .dash-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
+    cy.get('#dashDateFilter').should('have.value', 'all');
+    cy.get('#clearFilters').should('have.attr', 'hidden');
+  });
+});
+
+// ============================================================================
+// Test Suite: Dashboard Widget Visibility Filters
+// ============================================================================
+
+describe('OpenSparrow – Dashboard: Widget Visibility Filters', () => {
+  beforeEach(() => {
+    cy.clearLocalStorage();
+    loginAsTestUser();
+    cy.visit(`${BASE}/dashboard.php`);
+    cy.get('#dashboardSection', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  it('renders a visibility chip per configured widget', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#dashboardFilters .filter-chip').length === 0) {
+        Cypress.log({ message: 'No widgets configured — skipping chip tests' });
+        return;
+      }
+      cy.get('#dashboardFilters .filter-chip').should('have.length.gte', 1);
+      cy.get('#dashboardFilters .filter-chip').first().find('.filter-dot').should('exist');
+    });
+  });
+
+  it('clicking a widget chip hides that widget and shows the clear-filters button', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#dashboardFilters .filter-chip').length === 0) return;
+      cy.get('.dash-widget').then($widgets => {
+        const total = $widgets.length;
+        cy.get('#dashboardFilters .filter-chip').first().click();
+        cy.get('#dashboardFilters .filter-chip').first().should('have.class', 'off');
+        cy.get('#clearFilters').should('not.have.attr', 'hidden');
+        cy.get('.dash-widget').should('have.length', total - 1);
+      });
+    });
+  });
+
+  it('clear-filters button restores every widget and hides itself', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#dashboardFilters .filter-chip').length === 0) return;
+      cy.get('.dash-widget').then($widgets => {
+        const total = $widgets.length;
+        cy.get('#dashboardFilters .filter-chip').first().click();
+        cy.get('#clearFilters').click();
+        cy.get('#dashboardFilters .filter-chip.off').should('have.length', 0);
+        cy.get('.dash-widget').should('have.length', total);
+        cy.get('#clearFilters').should('have.attr', 'hidden');
+      });
+    });
+  });
+
+  it('a hidden widget chip persists across reload via localStorage', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#dashboardFilters .filter-chip').length === 0) return;
+      cy.get('#dashboardFilters .filter-chip').first().click();
+      cy.reload();
+      cy.get('#dashboardSection', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+      cy.get('#dashboardFilters .filter-chip', { timeout: CypressHelpers.TIMEOUTS.long })
+        .first()
+        .should('have.class', 'off');
+    });
+  });
+});
+
+// ============================================================================
 // Test Suite: Dashboard Navigation
 // ============================================================================
 

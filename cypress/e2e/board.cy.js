@@ -139,6 +139,61 @@ describe('OpenSparrow – Board: Search', () => {
 });
 
 // ============================================================================
+// Test Suite: Board Filters
+// ============================================================================
+
+describe('OpenSparrow – Board: Filters', () => {
+  beforeEach(() => {
+    cy.clearLocalStorage();
+    loginAsTestUser();
+    cy.visit(`${BASE}/board.php`);
+    cy.get('#boardContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  it('clear-filters button is hidden until a filter is active', () => {
+    cy.get('#clearFilters').should('have.attr', 'hidden');
+  });
+
+  it('renders a visibility chip per lane', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#boardFilters .filter-chip').length === 0) {
+        Cypress.log({ message: 'Board not configured — skipping chip tests' });
+        return;
+      }
+      cy.get('#boardFilters .filter-chip').should('have.length.gte', 1);
+      cy.get('#boardFilters .filter-chip').first().find('.filter-dot').should('exist');
+    });
+  });
+
+  it('clicking a lane chip hides that lane and shows the clear-filters button', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#boardFilters .filter-chip').length === 0) return;
+      cy.get('.board-lane').then($lanes => {
+        const totalLanes = $lanes.length;
+        cy.get('#boardFilters .filter-chip').first().click();
+        cy.get('#boardFilters .filter-chip').first().should('have.class', 'off');
+        cy.get('#clearFilters').should('not.have.attr', 'hidden');
+        cy.get('.board-lane').should('have.length', totalLanes - 1);
+      });
+    });
+  });
+
+  it('clear-filters button restores every lane and hides itself', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#boardFilters .filter-chip').length === 0) return;
+      cy.get('.board-lane').then($lanes => {
+        const totalLanes = $lanes.length;
+        cy.get('#boardFilters .filter-chip').first().click();
+        cy.get('#clearFilters').click();
+        cy.get('#boardFilters .filter-chip.off').should('have.length', 0);
+        cy.get('.board-lane').should('have.length', totalLanes);
+        cy.get('#clearFilters').should('have.attr', 'hidden');
+      });
+    });
+  });
+});
+
+// ============================================================================
 // Test Suite: Board Mobile
 // ============================================================================
 

@@ -223,7 +223,8 @@
         "open": "Atidaryti spaudinį →",
         "print_button": "Spausdinti",
         "empty": "Nėra sukonfigūruotų spaudinių. Paprašykite administratoriaus sukonfigūruoti spausdinimo šablonus.",
-        "no_data": "Duomenų nerasta."
+        "no_data": "Duomenų nerasta.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Kraunami rodiniai…",

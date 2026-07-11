@@ -155,6 +155,71 @@ describe('OpenSparrow – Calendar: Events', () => {
 });
 
 // ============================================================================
+// Test Suite: Calendar Search & Filters
+// ============================================================================
+
+describe('OpenSparrow – Calendar: Search & Filters', () => {
+  beforeEach(() => {
+    cy.clearLocalStorage();
+    loginAsTestUser();
+    cy.visit(`${BASE}/calendar.php`);
+    cy.get('#calendarContainer', { timeout: CypressHelpers.TIMEOUTS.long })
+      .find('.calendar-day-name')
+      .should('have.length', 7);
+  });
+
+  it('shows the search input in the header', () => {
+    cy.get('#calendarSearch').should('exist').and('have.attr', 'type', 'search');
+  });
+
+  it('clear-filters button is hidden until a filter is active', () => {
+    cy.get('#clearFilters').should('have.attr', 'hidden');
+  });
+
+  it('typing a search phrase reveals the clear-filters button; clearing hides it again', () => {
+    cy.get('#calendarSearch').type('zzz-search-term');
+    cy.get('#clearFilters').should('not.have.attr', 'hidden');
+    cy.get('#clearFilters').click();
+    cy.get('#calendarSearch').should('have.value', '');
+    cy.get('#clearFilters').should('have.attr', 'hidden');
+  });
+
+  it('renders a visibility chip per configured calendar source', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#calendarFilters .filter-chip').length === 0) {
+        Cypress.log({ message: 'No calendar sources configured — skipping chip tests' });
+        return;
+      }
+      cy.get('#calendarFilters .filter-chip').should('have.length.gte', 1);
+      cy.get('#calendarFilters .filter-chip').first().find('.filter-dot').should('exist');
+    });
+  });
+
+  it('clicking a source chip toggles its off state and the clear-filters button', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#calendarFilters .filter-chip').length === 0) return;
+      cy.get('#calendarFilters .filter-chip').first().click();
+      cy.get('#calendarFilters .filter-chip').first().should('have.class', 'off');
+      cy.get('#clearFilters').should('not.have.attr', 'hidden');
+      cy.get('#clearFilters').click();
+      cy.get('#calendarFilters .filter-chip.off').should('have.length', 0);
+      cy.get('#clearFilters').should('have.attr', 'hidden');
+    });
+  });
+
+  it('a hidden source chip persists across reload via localStorage', () => {
+    cy.get('body').then($body => {
+      if ($body.find('#calendarFilters .filter-chip').length === 0) return;
+      cy.get('#calendarFilters .filter-chip').first().click();
+      cy.reload();
+      cy.get('#calendarContainer .calendar-day-name', { timeout: CypressHelpers.TIMEOUTS.long })
+        .should('have.length', 7);
+      cy.get('#calendarFilters .filter-chip').first().should('have.class', 'off');
+    });
+  });
+});
+
+// ============================================================================
 // Test Suite: Calendar Mobile
 // ============================================================================
 

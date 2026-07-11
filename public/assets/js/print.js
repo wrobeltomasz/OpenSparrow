@@ -50,9 +50,11 @@ function renderBlock(block, rows, columns) {
     }
 
     if (block.type === 'table') {
-        const cols = Array.isArray(block.columns) && block.columns.length > 0
+        // Column entries are {name, width?, align?}; older templates may still store bare name strings.
+        const cols = (Array.isArray(block.columns) && block.columns.length > 0
             ? block.columns
-            : Object.keys(rows[0] ?? {});
+            : Object.keys(rows[0] ?? {})
+        ).map(c => (typeof c === 'string' ? { name: c } : c));
 
         if (cols.length === 0 || rows.length === 0) {
             const empty = document.createElement('p');
@@ -68,7 +70,10 @@ function renderBlock(block, rows, columns) {
         const headTr = document.createElement('tr');
         cols.forEach(col => {
             const th = document.createElement('th');
-            th.textContent = columns[col]?.display_name ?? col;
+            th.textContent = columns[col.name]?.display_name ?? col.name;
+            if (col.width) th.style.width = `${col.width}%`;
+            // Header alignment is fixed (always centered, see .pr-block-table th in print.css);
+            // per-column align only applies to body cells.
             headTr.appendChild(th);
         });
         thead.appendChild(headTr);
@@ -79,7 +84,8 @@ function renderBlock(block, rows, columns) {
             const tr = document.createElement('tr');
             cols.forEach(col => {
                 const td = document.createElement('td');
-                td.textContent = row[col] ?? '';
+                td.textContent = row[col.name] ?? '';
+                if (col.align && col.align !== 'left') td.style.textAlign = col.align;
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
@@ -89,6 +95,74 @@ function renderBlock(block, rows, columns) {
     }
 
     return null;
+}
+
+/* ── pagination: split the rendered sheet into A4-sized .pr-page chunks with a
+   "current / total" footer on each. Browsers don't expose page count/breaks to
+   script or CSS (no @page margin-box counter support in Chromium/Firefox print),
+   so page boundaries are estimated here from measured element heights against
+   the @page geometry declared in print.css (size: A4; margin: 15mm). Table rows
+   are split across pages (repeating the header); other blocks are kept whole. ── */
+const MM_TO_PX = 96 / 25.4;
+const PAGE_CONTENT_HEIGHT_PX = 257 * MM_TO_PX; // 297mm A4 − 15mm×2 @page margin − ~10mm footer reserve
+
+function paginateSheet(sheet) {
+    const blocks = Array.from(sheet.children);
+    if (blocks.length === 0) return;
+
+    const pages = [[]];
+    let heightUsed = 0;
+    const newPage = () => { pages.push([]); heightUsed = 0; };
+
+    blocks.forEach(block => {
+        if (block.tagName === 'TABLE') {
+            const thead       = block.querySelector('thead');
+            const theadHeight = thead ? thead.getBoundingClientRect().height : 0;
+            const rowsEls     = Array.from(block.querySelectorAll('tbody > tr'));
+            let curTbody = null;
+
+            const startChunk = () => {
+                const chunk = block.cloneNode(false);
+                if (thead) chunk.appendChild(thead.cloneNode(true));
+                curTbody = document.createElement('tbody');
+                chunk.appendChild(curTbody);
+                pages[pages.length - 1].push(chunk);
+                heightUsed += theadHeight;
+            };
+
+            startChunk();
+            rowsEls.forEach(tr => {
+                const rowHeight = tr.getBoundingClientRect().height;
+                if (heightUsed + rowHeight > PAGE_CONTENT_HEIGHT_PX && curTbody.children.length > 0) {
+                    newPage();
+                    startChunk();
+                }
+                curTbody.appendChild(tr.cloneNode(true));
+                heightUsed += rowHeight;
+            });
+        } else {
+            const blockHeight = block.getBoundingClientRect().height;
+            if (heightUsed + blockHeight > PAGE_CONTENT_HEIGHT_PX && pages[pages.length - 1].length > 0) {
+                newPage();
+            }
+            pages[pages.length - 1].push(block.cloneNode(true));
+            heightUsed += blockHeight;
+        }
+    });
+
+    sheet.replaceChildren();
+    pages.forEach((nodes, i) => {
+        const pageEl = document.createElement('div');
+        pageEl.className = 'pr-page';
+        nodes.forEach(n => pageEl.appendChild(n));
+
+        const footer = document.createElement('div');
+        footer.className = 'pr-page-footer';
+        footer.textContent = I18n.t('print.page_of', { current: i + 1, total: pages.length });
+        pageEl.appendChild(footer);
+
+        sheet.appendChild(pageEl);
+    });
 }
 
 /* ── load and render one print template ── */
@@ -146,6 +220,8 @@ async function loadPrint(printName) {
     }
 
     containerEl.appendChild(sheet);
+    // Requires layout of the just-appended nodes, so pagination runs after the sheet is in the DOM.
+    paginateSheet(sheet);
 }
 
 /* ── selector cards (same pattern as the Views selector) ── */

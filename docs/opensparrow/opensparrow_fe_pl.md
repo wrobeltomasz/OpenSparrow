@@ -1340,6 +1340,7 @@ Moduł raportów do wydruku zbudowanych z prostych bloków, zasilanych danymi z 
 - Kliknięcie karty (lub pozycji podmenu) otwiera `print.php?print=nazwa` — wyrenderowany raport na białym "arkuszu" (format zbliżony do A4)
 - Nad arkuszem pasek narzędzi z nazwą raportu i przyciskiem **Drukuj** (`window.print()`); dedykowany arkusz `@media print` w `assets/css/print.css` ukrywa nagłówek aplikacji, menu boczne, stopkę i pasek narzędzi — drukowana jest wyłącznie treść raportu (nagłówki tabel powtarzane na kolejnych stronach, wiersze bez łamania w środku)
 - Wszystkie widoczne wydruki są wypisane w menu bocznym jako rozwijana lista podrzędna pod pozycją "Print" — dokładnie ten sam wzorzec co podmenu Widoków (strzałka ▾ rozwija/zwija listę)
+- **Numeracja stron** — raport jest automatycznie dzielony na strony w formacie A4 (`@page` 15mm marginesu), a na dole każdej strony pojawia się stopka `bieżąca / łącznie` (np. `1 / 3`); podział stron jest liczony po stronie przeglądarki na podstawie zmierzonej wysokości bloków i wierszy tabeli (nagłówek tabeli jest powtarzany na każdej stronie-fragmencie)
 
 ### Bloki szablonu
 
@@ -1349,7 +1350,7 @@ Szablon składa się z uporządkowanej listy bloków (bez surowego HTML od użyt
 |------|-----------|
 | **Nagłówek** | Tekst nagłówka (poziom H1–H3); obsługuje zmienne `{kolumna}` |
 | **Tekst** | Akapit tekstu ze zmiennymi `{kolumna}` — wartości podstawiane z **pierwszego wiersza** widoku |
-| **Tabela** | Tabela ze wszystkimi wierszami widoku; kolumny wybierane checkboxami (brak wyboru = wszystkie) |
+| **Tabela** | Tabela ze wszystkimi wierszami widoku; kolumny wybierane checkboxami (brak wyboru = wszystkie); dla każdej wybranej kolumny można ustawić **szerokość** (procent szerokości tabeli, opcjonalna — puste pole = automatyczny rozmiar, szerokości nie muszą sumować się do 100) i **wyrównanie** (lewo / środek / prawo) — wyrównanie dotyczy tylko komórek z danymi, nagłówki kolumn są zawsze wyśrodkowane |
 
 Każda wartość zmiennej i każda komórka tabeli jest osadzana bezpiecznie (programowe budowanie DOM / `textContent` — odpowiednik `htmlspecialchars`), więc dane z bazy nie mogą wstrzyknąć znaczników HTML.
 
@@ -1360,7 +1361,7 @@ Panel admina → Data Management → **Printouts** (szablony zapisywane w `confi
 - **+ Add printout** — nowy szablon z kluczem wewnętrznym (litery, cyfry, `_`, `-`)
 - Ustawienia ogólne: nazwa wyświetlana, nazwa w menu, opis, ikona, widoczność
 - **Źródło danych** — lista rozwijana widoków SQL PostgreSQL zarejestrowanych w module Widoków (`config/views.json`); po wybraniu widoku lista **dostępnych zmiennych** (kolumn) jest pobierana automatycznie z bazy (information_schema) i pokazywana jako plakietki `{kolumna}` — użytkownik nie wpisuje ich ręcznie
-- Edytor bloków: dodawanie (nagłówek / tekst / tabela), zmiana kolejności (^ / v), usuwanie; w bloku tabeli kolumny widoku wybiera się checkboxami
+- Edytor bloków: dodawanie (nagłówek / tekst / tabela), zmiana kolejności (^ / v), usuwanie; w bloku tabeli kolumny widoku wybiera się checkboxami, a przy każdej zaznaczonej kolumnie dostępne jest pole szerokości (%) i lista wyrównania (lewo / środek / prawo)
 - **Save printouts** — zapis przez API (`api/print.php?action=save`) z walidacją po stronie serwera (whitelist typów bloków, widok musi istnieć w module Widoków, sanityzacja ikon i długości pól)
 
 ---

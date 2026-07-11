@@ -220,7 +220,8 @@
         "open": "Ouvrir l'impression →",
         "print_button": "Imprimer",
         "empty": "Aucune impression configurée. Demandez à un administrateur de configurer les modèles d'impression.",
-        "no_data": "Aucune donnée trouvée."
+        "no_data": "Aucune donnée trouvée.",
+        "page_of": "{current} / {total}"
     },
     "views": {
         "loading": "Chargement des vues…",
