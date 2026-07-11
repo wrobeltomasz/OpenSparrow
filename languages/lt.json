@@ -221,12 +221,6 @@
         "loading": "Kraunami rodiniai…",
         "error": "Klaida: {message}",
         "open": "Atidaryti rodinį →",
-        "rows": {
-            "one": "{count} eilutė",
-            "few": "{count} eilutės",
-            "other": "{count} eilučių"
-        },
-        "rows_filtered": "(filtruota iš {total})",
         "fn_sum": "SUMA",
         "fn_avg": "VIDURKIS",
         "fn_min": "MIN",

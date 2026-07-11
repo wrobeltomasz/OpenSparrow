@@ -218,11 +218,6 @@
         "loading": "Indlæser visninger…",
         "error": "Fejl: {message}",
         "open": "Åbn visning →",
-        "rows": {
-            "one": "{count} række",
-            "other": "{count} rækker"
-        },
-        "rows_filtered": "(filtreret fra {total})",
         "fn_sum": "SUM",
         "fn_avg": "GNSN",
         "fn_min": "MIN",

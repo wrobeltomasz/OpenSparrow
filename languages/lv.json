@@ -218,11 +218,6 @@
         "loading": "Ielādē skatus…",
         "error": "Kļūda: {message}",
         "open": "Atvērt skatu →",
-        "rows": {
-            "one": "{count} rinda",
-            "other": "{count} rindas"
-        },
-        "rows_filtered": "(filtrēts no {total})",
         "fn_sum": "SUMMA",
         "fn_avg": "VIDĒJAIS",
         "fn_min": "MIN",

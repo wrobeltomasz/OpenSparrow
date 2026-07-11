@@ -221,12 +221,6 @@
         "loading": "Načítání pohledů…",
         "error": "Chyba: {message}",
         "open": "Otevřít pohled →",
-        "rows": {
-            "one": "{count} řádek",
-            "few": "{count} řádky",
-            "other": "{count} řádků"
-        },
-        "rows_filtered": "(filtrováno z {total})",
         "fn_sum": "SOUČET",
         "fn_avg": "PRŮMĚR",
         "fn_min": "MIN",

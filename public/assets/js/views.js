@@ -34,7 +34,8 @@ const VIEW_FN_KEYS = { sum: 'views.fn_sum', avg: 'views.fn_avg', min: 'views.fn_
 const breadcrumbEl = document.getElementById('viewBreadcrumb');
 const containerEl  = document.getElementById('viewContainer');
 const searchEl     = document.getElementById('globalSearch');
-let exportBtn = null;
+let exportBtn  = null;
+let actionsBar = null;
 
 /* ── Clear filters: header button empties the search box ── */
 const clearFiltersEl = document.getElementById('clearFilters');
@@ -89,7 +90,8 @@ function _clearHandlers() {
         searchEl.removeEventListener('input', _searchHandler);
         _searchHandler = null;
     }
-    if (exportBtn) { exportBtn.onclick = null; exportBtn.style.display = 'none'; }
+    if (exportBtn) { exportBtn.onclick = null; }
+    if (actionsBar) { actionsBar.style.display = 'none'; }
 }
 
 /* ── back to selector ── */
@@ -144,28 +146,8 @@ async function loadView(viewName, level, filterCol, filterVal) {
 /* ── render the view table (grid-identical structure) ── */
 function renderView(data) {
     containerEl.innerHTML = '';
-    const { view, display_name, level, max_level, group_by, drill_enabled, rows, columns, icon } = data;
+    const { view, level, max_level, group_by, drill_enabled, rows, columns } = data;
 
-    /* ── branded header bar ── */
-    const hdr = document.createElement('div');
-    hdr.className = 'vw-header';
-
-    if (icon) {
-        const img = document.createElement('img');
-        img.src = icon; img.alt = '';
-        hdr.appendChild(img);
-    }
-    const titleEl = document.createElement('h2');
-    titleEl.className   = 'vw-title';
-    titleEl.textContent = display_name;
-    hdr.appendChild(titleEl);
-
-    const meta = document.createElement('span');
-    meta.className   = 'vw-meta';
-    meta.textContent = I18n.t('views.rows', { count: rows.length }, rows.length);
-    hdr.appendChild(meta);
-
-    containerEl.appendChild(hdr);
     renderBreadcrumb();
 
     if (rows.length === 0) {
@@ -283,12 +265,17 @@ function renderView(data) {
     tableWrap.appendChild(table);
     containerEl.appendChild(tableWrap);
 
-    /* ── export button below table, left-aligned ── */
+    /* ── grid-style actions bar below the table ── */
+    actionsBar = document.createElement('div');
+    actionsBar.className = 'actions';
+    const actionsLeft = document.createElement('div');
+    actionsLeft.className = 'left';
     exportBtn = document.createElement('button');
-    exportBtn.id        = 'exportCsv';
-    exportBtn.className = 'vw-export-btn';
+    exportBtn.id          = 'exportCsv';
     exportBtn.textContent = I18n.t('grid.export_csv');
-    containerEl.appendChild(exportBtn);
+    actionsLeft.appendChild(exportBtn);
+    actionsBar.appendChild(actionsLeft);
+    containerEl.appendChild(actionsBar);
 
     /* ── filter + sort + populate tbody ── */
     function applyViewFilters() {
@@ -335,9 +322,6 @@ function renderView(data) {
             }
             tbody.appendChild(tr);
         });
-
-        const filteredCount = viewSearchTerm ? ' ' + I18n.t('views.rows_filtered', { total: rows.length }) : '';
-        meta.textContent = I18n.t('views.rows', { count: result.length }, result.length) + filteredCount;
     }
 
     /* ── wire #globalSearch ── */
@@ -355,7 +339,6 @@ function renderView(data) {
 
     /* ── wire #exportCsv ── */
     if (exportBtn) {
-        exportBtn.style.display = '';
         exportBtn.onclick = () => {
             const headers = allKeys.map(k => columns[k]?.display_name ?? k);
             const escape  = v => JSON.stringify(String(v ?? ''));

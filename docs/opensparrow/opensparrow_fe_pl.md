@@ -565,6 +565,7 @@ Zapisane konfiguracje filtrów i układu kolumn.
 - Lista kart widoków z nazwą i opisem
 - Kliknięcie widoku: ładuje go (stosuje zapisane filtry, ewentualnie kolejność kolumn)
 - Tworzenie / edycja / usuwanie widoków dostępne dla roli Editor i Admin
+- Tabela widoku wygląda identycznie jak siatka główna (moduł gridu): przyklejony nagłówek kolumn, naprzemienne tło wierszy, podświetlenie wiersza pod kursorem, sortowanie kliknięciem w nagłówek (strzałka ↑/↓), a pod tabelą pasek akcji z przyciskiem eksportu CSV — ten sam układ co w siatce i module plików
 
 ### Nawigacja z menu bocznego
 

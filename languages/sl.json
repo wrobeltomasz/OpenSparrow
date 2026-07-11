@@ -224,13 +224,6 @@
         "loading": "Nalaganje pogledov…",
         "error": "Napaka: {message}",
         "open": "Odpri pogled →",
-        "rows": {
-            "one": "{count} vrstica",
-            "two": "{count} vrstici",
-            "few": "{count} vrstice",
-            "other": "{count} vrstic"
-        },
-        "rows_filtered": "(filtrirano od {total})",
         "fn_sum": "VSOTA",
         "fn_avg": "POVPREČJE",
         "fn_min": "MIN",

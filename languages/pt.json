@@ -218,11 +218,6 @@
         "loading": "A carregar vistas…",
         "error": "Erro: {message}",
         "open": "Abrir vista →",
-        "rows": {
-            "one": "{count} linha",
-            "other": "{count} linhas"
-        },
-        "rows_filtered": "(filtrado de {total})",
         "fn_sum": "SOMA",
         "fn_avg": "MÉDIA",
         "fn_min": "MÍN",

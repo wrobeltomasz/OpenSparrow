@@ -126,26 +126,15 @@ describe('OpenSparrow – Views: Open View', () => {
     cy.get('#viewContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
   });
 
-  it('clicking a view card opens view with header', () => {
+  it('clicking a view card opens the view', () => {
     cy.get('#viewContainer').then($el => {
       if ($el.find('.vw-selector-card').length === 0) {
         Cypress.log({ message: 'No views — skipping open test' });
         return;
       }
       cy.get('.vw-selector-card').first().click();
-      cy.get('.vw-header', { timeout: CypressHelpers.TIMEOUTS.long })
+      cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long })
         .should('exist');
-    });
-  });
-
-  it('view header shows title', () => {
-    cy.get('#viewContainer').then($el => {
-      if ($el.find('.vw-selector-card').length === 0) return;
-      cy.get('.vw-selector-card').first().click();
-      cy.get('.vw-title', { timeout: CypressHelpers.TIMEOUTS.long })
-        .should('exist')
-        .invoke('text')
-        .should('not.be.empty');
     });
   });
 
@@ -165,7 +154,7 @@ describe('OpenSparrow – Views: Open View', () => {
     cy.get('#viewContainer').then($el => {
       if ($el.find('.vw-selector-card').length === 0) return;
       cy.get('.vw-selector-card').first().click();
-      cy.get('.vw-header', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+      cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
       cy.get('.vw-drill-up').should('not.exist');
     });
   });
@@ -198,7 +187,7 @@ describe('OpenSparrow – Views: URL param', () => {
     // Wait for loading to finish, then assert rendered state
     cy.get('#viewContainer .vw-loading').should('not.exist');
     cy.get('#viewContainer').should($el => {
-      const hasSomething = $el.find('.vw-error, .vw-selector-card, .vw-empty, .vw-header').length > 0;
+      const hasSomething = $el.find('.vw-error, .vw-selector-card, .vw-empty, .vw-table-wrap').length > 0;
       expect(hasSomething, 'view container rendered after load').to.be.true;
     });
   });

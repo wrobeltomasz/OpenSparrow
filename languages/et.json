@@ -218,11 +218,6 @@
         "loading": "Vaadete laadimine…",
         "error": "Viga: {message}",
         "open": "Ava vaade →",
-        "rows": {
-            "one": "{count} rida",
-            "other": "{count} rida"
-        },
-        "rows_filtered": "(filtreeritud {total} hulgast)",
         "fn_sum": "SUMMA",
         "fn_avg": "KESKMINE",
         "fn_min": "MIN",

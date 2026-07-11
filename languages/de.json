@@ -218,11 +218,6 @@
         "loading": "Ansichten werden geladen…",
         "error": "Fehler: {message}",
         "open": "Ansicht öffnen →",
-        "rows": {
-            "one": "{count} Zeile",
-            "other": "{count} Zeilen"
-        },
-        "rows_filtered": "(gefiltert aus {total})",
         "fn_sum": "SUMME",
         "fn_avg": "DURCHSCHN",
         "fn_min": "MIN",

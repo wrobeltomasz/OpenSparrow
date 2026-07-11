@@ -221,12 +221,6 @@
         "loading": "Ładowanie widoków…",
         "error": "Błąd: {message}",
         "open": "Otwórz widok →",
-        "rows": {
-            "one": "{count} wiersz",
-            "few": "{count} wiersze",
-            "many": "{count} wierszy"
-        },
-        "rows_filtered": "(odfiltrowano z {total})",
         "fn_sum": "Suma",
         "fn_avg": "Śr.",
         "fn_min": "Min.",

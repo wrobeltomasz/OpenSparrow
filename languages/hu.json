@@ -218,11 +218,6 @@
         "loading": "Nézetek betöltése…",
         "error": "Hiba: {message}",
         "open": "Nézet megnyitása →",
-        "rows": {
-            "one": "{count} sor",
-            "other": "{count} sor"
-        },
-        "rows_filtered": "({total}-ból szűrve)",
         "fn_sum": "ÖSSZEG",
         "fn_avg": "ÁTLAG",
         "fn_min": "MIN",

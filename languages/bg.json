@@ -218,11 +218,6 @@
         "loading": "Зареждане на изгледи…",
         "error": "Грешка: {message}",
         "open": "Отваряне на изглед →",
-        "rows": {
-            "one": "{count} ред",
-            "other": "{count} реда"
-        },
-        "rows_filtered": "(филтрирано от {total})",
         "fn_sum": "СУМА",
         "fn_avg": "СРЕДНО",
         "fn_min": "МИН",

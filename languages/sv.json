@@ -218,11 +218,6 @@
         "loading": "Laddar vyer…",
         "error": "Fel: {message}",
         "open": "Öppna vy →",
-        "rows": {
-            "one": "{count} rad",
-            "other": "{count} rader"
-        },
-        "rows_filtered": "(filtrerat från {total})",
         "fn_sum": "SUMMA",
         "fn_avg": "MEDEL",
         "fn_min": "MIN",

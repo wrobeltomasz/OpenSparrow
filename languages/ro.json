@@ -221,12 +221,6 @@
         "loading": "Se încarcă vizualizările…",
         "error": "Eroare: {message}",
         "open": "Deschide vizualizarea →",
-        "rows": {
-            "one": "{count} rând",
-            "few": "{count} rânduri",
-            "other": "{count} de rânduri"
-        },
-        "rows_filtered": "(filtrat din {total})",
         "fn_sum": "SUMĂ",
         "fn_avg": "MEDIE",
         "fn_min": "MIN",

@@ -221,12 +221,6 @@
         "loading": "Učitavanje prikaza…",
         "error": "Pogreška: {message}",
         "open": "Otvori prikaz →",
-        "rows": {
-            "one": "{count} redak",
-            "few": "{count} retka",
-            "other": "{count} redaka"
-        },
-        "rows_filtered": "(filtrirano od {total})",
         "fn_sum": "ZBROJ",
         "fn_avg": "PROSJEK",
         "fn_min": "MIN",

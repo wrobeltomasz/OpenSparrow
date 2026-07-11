@@ -218,11 +218,6 @@
         "loading": "Loading views…",
         "error": "Error: {message}",
         "open": "Open View →",
-        "rows": {
-            "one": "{count} row",
-            "other": "{count} rows"
-        },
-        "rows_filtered": "(filtered from {total})",
         "fn_sum": "SUM",
         "fn_avg": "AVG",
         "fn_min": "MIN",

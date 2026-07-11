@@ -218,11 +218,6 @@
         "loading": "Chargement des vues…",
         "error": "Erreur : {message}",
         "open": "Ouvrir la vue →",
-        "rows": {
-            "one": "{count} ligne",
-            "other": "{count} lignes"
-        },
-        "rows_filtered": "(filtré depuis {total})",
         "fn_sum": "SOMME",
         "fn_avg": "MOY",
         "fn_min": "MIN",
