@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 // api/views.php — Saved/custom views API (backed by MySQL gateway views)
 // Auth gate: session + UA enforcement; CSRF on POST
-// actions: list (GET), config (GET, admin), data (GET — runs the view SELECT / drill-down GROUP BY), sync (GET, admin — discovers MySQL information_schema.VIEWS), save (POST, admin)
+// actions: list (GET), config (GET, admin), data (GET — runs the view SELECT / drill-down GROUP BY),
+// schemas (GET, admin — lists PostgreSQL schemas + the configured search selection),
+// sync (GET, admin — discovers views via information_schema.VIEWS, scoped to
+// config/views.json "schemas" for postgres), save (POST, admin)
 // Reads/writes config/views.json; column names validated against schema, values parameterized
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
@@ -269,6 +272,35 @@ try {
         exit;
     }
 
+    /* SCHEMAS — list PostgreSQL schemas + the currently configured search selection (admin only) */
+    if ($action === 'schemas' && $method === 'GET' && $role === 'admin') {
+        $conn = db_connect();
+        $sql  = 'SELECT schema_name FROM information_schema.schemata '
+            . "WHERE schema_name NOT IN ('pg_catalog', 'information_schema') "
+            . "AND schema_name NOT LIKE 'pg\\_toast%' AND schema_name NOT LIKE 'pg\\_temp%' "
+            . 'ORDER BY schema_name';
+        $res = @pg_query($conn, $sql);
+        if (!$res) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Database error']);
+            exit;
+        }
+
+        $schemas = [];
+        while ($row = pg_fetch_assoc($res)) {
+            $schemas[] = $row['schema_name'];
+        }
+        pg_free_result($res);
+
+        $selected = is_array($viewsConfig['schemas'] ?? null) ? $viewsConfig['schemas'] : [];
+        if (empty($selected)) {
+            $selected = [sys_schema()];
+        }
+
+        echo json_encode(['status' => 'ok', 'schemas' => $schemas, 'selected' => $selected]);
+        exit;
+    }
+
     /* SYNC — read DB views list and column metadata (admin only) */
     if ($action === 'sync' && $method === 'GET' && $role === 'admin') {
         $source = ($_GET['source'] ?? 'postgres') === 'mysql' ? 'mysql' : 'postgres';
@@ -310,27 +342,36 @@ try {
             exit;
         }
 
-        $conn       = db_connect();
-        $schemaName = sys_schema();
+        $conn    = db_connect();
+        $schemas = is_array($viewsConfig['schemas'] ?? null) ? $viewsConfig['schemas'] : [];
+        $schemas = array_values(array_filter(array_map('strval', $schemas), fn($s) => $s !== ''));
+        if (empty($schemas)) {
+            $schemas = [sys_schema()];
+        }
 
-        $sql = 'SELECT table_name FROM information_schema.views WHERE table_schema = $1 ORDER BY table_name';
-        $res = @pg_query_params($conn, $sql, [$schemaName]);
+        $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($schemas)));
+        $sql          = "SELECT table_schema, table_name FROM information_schema.views "
+            . "WHERE table_schema IN ($placeholders) ORDER BY table_schema, table_name";
+        $res = @pg_query_params($conn, $sql, $schemas);
         if (!$res) {
             http_response_code(500);
             echo json_encode(['error' => 'Database error']);
             exit;
         }
 
-        $dbViews = [];
+        $dbViews     = [];
+        $viewSchemas = [];
         while ($row = pg_fetch_assoc($res)) {
-            $dbViews[] = $row['table_name'];
+            $dbViews[]                       = $row['table_name'];
+            $viewSchemas[$row['table_name']] = $row['table_schema'];
         }
         pg_free_result($res);
 
         $viewsColumns = [];
         foreach ($dbViews as $vName) {
-            $colSql = 'SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position';
-            $colRes = @pg_query_params($conn, $colSql, [$schemaName, $vName]);
+            $colSql = 'SELECT column_name, data_type FROM information_schema.columns '
+                . 'WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position';
+            $colRes = @pg_query_params($conn, $colSql, [$viewSchemas[$vName], $vName]);
             $cols   = [];
             if ($colRes) {
                 while ($col = pg_fetch_assoc($colRes)) {
@@ -342,10 +383,11 @@ try {
         }
 
         echo json_encode([
-            'status'   => 'ok',
-            'db_views' => $dbViews,
-            'columns'  => $viewsColumns,
-            'source'   => 'postgres',
+            'status'       => 'ok',
+            'db_views'     => $dbViews,
+            'columns'      => $viewsColumns,
+            'view_schemas' => $viewSchemas,
+            'source'       => 'postgres',
         ]);
         exit;
     }

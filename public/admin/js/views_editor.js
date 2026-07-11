@@ -13,6 +13,11 @@ export function renderViewsEditor(ctx) {
     }
     const views = currentConfig.views;
 
+    /* ensure schemas is a plain array (PostgreSQL schemas searched by sync) */
+    if (!Array.isArray(currentConfig.schemas)) {
+        currentConfig.schemas = [];
+    }
+
     /* migrate untagged views to the postgres source */
     Object.keys(views).forEach(v => {
         if (!views[v].source) views[v].source = 'postgres';
@@ -44,23 +49,28 @@ export function renderViewsEditor(ctx) {
     const tabBar = document.createElement('div');
     tabBar.style.cssText = 'display:flex; gap:4px; margin-bottom:18px; border-bottom:1px solid var(--border-light);';
 
-    const pgTab    = document.createElement('button');
-    const mysqlTab = document.createElement('button');
-    [pgTab, mysqlTab].forEach(t => {
+    const pgTab      = document.createElement('button');
+    const mysqlTab   = document.createElement('button');
+    const schemasTab = document.createElement('button');
+    [pgTab, mysqlTab, schemasTab].forEach(t => {
         t.style.cssText = 'background:none; border:none; border-bottom:2px solid transparent; padding:8px 16px; font-size:14px; cursor:pointer; color:var(--muted); box-shadow:none;';
     });
-    pgTab.textContent    = 'PostgreSQL Views';
-    mysqlTab.textContent = 'MySQL Views';
+    pgTab.textContent      = 'PostgreSQL Views';
+    mysqlTab.textContent   = 'MySQL Views';
+    schemasTab.textContent = 'Schemas';
     tabBar.appendChild(pgTab);
     tabBar.appendChild(mysqlTab);
+    tabBar.appendChild(schemasTab);
     wrap.appendChild(tabBar);
 
     function updateTabUi() {
         const active = 'border-bottom:2px solid var(--accent); color:var(--text); font-weight:600;';
         const idle   = 'border-bottom:2px solid transparent; color:var(--muted); font-weight:normal;';
-        pgTab.style.cssText    = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'postgres' ? active : idle);
-        mysqlTab.style.cssText = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'mysql' ? active : idle);
-        syncBtn.textContent = currentSource === 'mysql' ? '↻ Sync MySQL Views' : '↻ Sync PostgreSQL Views';
+        pgTab.style.cssText      = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'postgres' ? active : idle);
+        mysqlTab.style.cssText   = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'mysql' ? active : idle);
+        schemasTab.style.cssText = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'schemas' ? active : idle);
+        syncBtn.style.display = currentSource === 'schemas' ? 'none' : '';
+        syncBtn.textContent   = currentSource === 'mysql' ? '↻ Sync MySQL Views' : '↻ Sync PostgreSQL Views';
     }
 
     function switchSource(src) {
@@ -71,6 +81,7 @@ export function renderViewsEditor(ctx) {
     }
     pgTab.addEventListener('click', () => switchSource('postgres'));
     mysqlTab.addEventListener('click', () => switchSource('mysql'));
+    schemasTab.addEventListener('click', () => switchSource('schemas'));
 
     const statusEl = document.createElement('div');
     statusEl.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px;';
@@ -100,10 +111,12 @@ export function renderViewsEditor(ctx) {
             const res  = await fetch('../api/views.php?action=sync&source=' + currentSource);
             const data = await res.json();
             if (data.status !== 'ok') { setStatus('Sync failed: ' + (data.error ?? 'unknown'), 'error'); return; }
-            const synced = data.db_views ?? [];
+            const synced      = data.db_views ?? [];
+            const viewSchemas = data.view_schemas ?? {};
             Object.assign(dbColumns, data.columns ?? {});
 
             synced.forEach(vName => {
+                const vSchema = viewSchemas[vName];
                 if (!views[vName]) {
                     const cols = {};
                     Object.keys(dbColumns[vName] ?? {}).forEach(c => { cols[c] = { display_name: c, color_rules: [] }; });
@@ -114,6 +127,9 @@ export function renderViewsEditor(ctx) {
                         if (!views[vName].columns) views[vName].columns = {};
                         if (!views[vName].columns[c]) views[vName].columns[c] = { display_name: c, color_rules: [] };
                     });
+                }
+                if (currentSource === 'postgres' && vSchema) {
+                    views[vName].schema = vSchema;
                 }
             });
 
@@ -132,6 +148,10 @@ export function renderViewsEditor(ctx) {
 
     function renderList() {
         listEl.innerHTML = '';
+        if (currentSource === 'schemas') {
+            renderSchemasPanel();
+            return;
+        }
         const names = viewNamesForSource(currentSource);
         if (names.length === 0) {
             const label = currentSource === 'mysql' ? 'MySQL' : 'PostgreSQL';
@@ -139,6 +159,59 @@ export function renderViewsEditor(ctx) {
             return;
         }
         names.forEach(vName => listEl.appendChild(buildViewCard(vName, views[vName] ?? {})));
+    }
+
+    /* ---------- schemas panel (which PostgreSQL schemas sync searches) ---------- */
+    async function renderSchemasPanel() {
+        listEl.innerHTML = '<p style="color:var(--muted); padding:16px;">Loading schemas…</p>';
+        try {
+            const res  = await fetch('../api/views.php?action=schemas');
+            const data = await res.json();
+            if (data.status !== 'ok') {
+                listEl.innerHTML = `<p style="color:var(--danger); padding:16px;">Failed to load schemas: ${data.error ?? 'unknown'}</p>`;
+                return;
+            }
+
+            /* seed the selection from the server default only if nothing chosen yet */
+            if (currentConfig.schemas.length === 0) {
+                currentConfig.schemas = [...(data.selected ?? [])];
+            }
+
+            listEl.innerHTML = '';
+            const intro = document.createElement('p');
+            intro.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 14px;';
+            intro.textContent = 'Select which PostgreSQL schemas "↻ Sync PostgreSQL Views" searches for views. Unchecked schemas are skipped.';
+            listEl.appendChild(intro);
+
+            const list = document.createElement('div');
+            list.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
+            (data.schemas ?? []).forEach(schemaName => {
+                const row = document.createElement('label');
+                row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 12px; border:1px solid var(--border-light); border-radius:var(--radius); cursor:pointer;';
+
+                const cb = document.createElement('input');
+                cb.type    = 'checkbox';
+                cb.checked = currentConfig.schemas.includes(schemaName);
+                cb.addEventListener('change', () => {
+                    if (cb.checked) {
+                        if (!currentConfig.schemas.includes(schemaName)) currentConfig.schemas.push(schemaName);
+                    } else {
+                        currentConfig.schemas = currentConfig.schemas.filter(s => s !== schemaName);
+                    }
+                    markDirty();
+                });
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = schemaName;
+
+                row.appendChild(cb);
+                row.appendChild(nameSpan);
+                list.appendChild(row);
+            });
+            listEl.appendChild(list);
+        } catch (_) {
+            listEl.innerHTML = '<p style="color:var(--danger); padding:16px;">Network error while loading schemas.</p>';
+        }
     }
 
     /* ---------- single view card (column-block style) ---------- */

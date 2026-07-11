@@ -597,12 +597,22 @@ Wszystkie widoczne (nieukryte) widoki są wypisane w menu bocznym jako rozwijana
 
 ### Źródło danych: PostgreSQL i MySQL
 
-Edytor Widoków w panelu administracyjnym (Admin › Views) ma dwie zakładki, analogicznie do sekcji "Schema":
+Edytor Widoków w panelu administracyjnym (Admin › Views) ma trzy zakładki, analogicznie do sekcji "Schema":
 
 - **PostgreSQL Views** — wykrywa i konfiguruje widoki z bazy PostgreSQL
 - **MySQL Views** — wykrywa i konfiguruje widoki z zewnętrznej bazy MySQL (przez MySQL Gateway)
+- **Schemas** — wybór, które schematy PostgreSQL przeszukuje synchronizacja (patrz niżej)
 
-Każda zakładka ma własny przycisk synchronizacji ("↻ Sync PostgreSQL Views" / "↻ Sync MySQL Views"), który pobiera listę widoków i metadane kolumn z odpowiedniej bazy. Źródło każdego widoku jest zapisywane w `config/views.json` (pole `source`), dzięki czemu drill-down, reguły kolorów i agregacje działają identycznie niezależnie od bazy. Widoki MySQL są tylko do odczytu (jak natywne widoki SQL).
+Każda z dwóch pierwszych zakładek ma własny przycisk synchronizacji ("↻ Sync PostgreSQL Views" / "↻ Sync MySQL Views"), który pobiera listę widoków i metadane kolumn z odpowiedniej bazy. Źródło każdego widoku jest zapisywane w `config/views.json` (pole `source`), dzięki czemu drill-down, reguły kolorów i agregacje działają identycznie niezależnie od bazy. Widoki MySQL są tylko do odczytu (jak natywne widoki SQL).
+
+#### Wybór przeszukiwanych schematów (PostgreSQL)
+
+Domyślnie "↻ Sync PostgreSQL Views" przeszukuje wyłącznie schemat aplikacji skonfigurowany w `config/database.json` (`schema`) / zmiennej `PGSCHEMA` (domyślnie `app`). Jeśli widoki znajdują się w innym schemacie (np. `spw_crm` w demo CRM), trzeba go najpierw zaznaczyć w zakładce **Schemas**:
+
+- Lista schematów jest pobierana z bazy (`information_schema.schemata`, bez `pg_catalog`/`information_schema`/`pg_toast*`/`pg_temp*`)
+- Checkbox przy każdym schemacie włącza/wyłącza jego przeszukiwanie przez sync; wybór jest zapisywany w `config/views.json` (klucz `schemas`, lista nazw schematów) — trwale, do momentu zmiany
+- Widoki znalezione w schemacie innym niż domyślny mają zapisywane pole `schema` bezpośrednio w konfiguracji widoku (`config/views.json` → `views.<nazwa>.schema`), więc pobieranie danych widoku (`api/views.php?action=data`) trafia do właściwego schematu niezależnie od domyślnego schematu aplikacji
+- Brak zaznaczonych schematów = zachowanie domyślne (przeszukiwany tylko schemat aplikacji)
 
 ---
 
