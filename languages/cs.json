@@ -217,6 +217,14 @@
         "section_owner": "Vlastník záznamu",
         "section_history": "Historie přiřazení"
     },
+    "print": {
+        "loading": "Načítání tiskových sestav…",
+        "error": "Chyba: {message}",
+        "open": "Otevřít sestavu →",
+        "print_button": "Tisk",
+        "empty": "Žádné tiskové sestavy nejsou nakonfigurovány. Požádejte administrátora o nastavení šablon tisku.",
+        "no_data": "Nebyla nalezena žádná data."
+    },
     "views": {
         "loading": "Načítání pohledů…",
         "error": "Chyba: {message}",

@@ -178,6 +178,10 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/table_edit.png" alt="">
                         Menu Preview
                     </button>
+                    <button class="admin-tab" data-file="print">
+                        <img class="nav-item-icon" src="../assets/icons/picture_as_pdf.png" alt="">
+                        Printouts
+                    </button>
                     <button class="admin-tab" data-file="schema">
                         <img class="nav-item-icon" src="../assets/icons/data_table.png" alt="">
                         Schema
@@ -376,7 +380,8 @@ if (empty($_SESSION['csrf_token'])) {
         rag: 'RAG Documents',
         automations: 'Automations',
         fdw: 'External Databases',
-        anonymization: 'Data Anonymization'
+        anonymization: 'Data Anonymization',
+        print: 'Printouts'
     };
     var breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
     document.querySelectorAll('.admin-tab[data-file]').forEach(function(tab) {

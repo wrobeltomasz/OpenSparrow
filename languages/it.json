@@ -214,6 +214,14 @@
         "section_owner": "Proprietario del record",
         "section_history": "Cronologia assegnazioni"
     },
+    "print": {
+        "loading": "Caricamento delle stampe…",
+        "error": "Errore: {message}",
+        "open": "Apri stampa →",
+        "print_button": "Stampa",
+        "empty": "Nessuna stampa configurata. Chiedi a un amministratore di configurare i modelli di stampa.",
+        "no_data": "Nessun dato trovato."
+    },
     "views": {
         "loading": "Caricamento viste…",
         "error": "Errore: {message}",

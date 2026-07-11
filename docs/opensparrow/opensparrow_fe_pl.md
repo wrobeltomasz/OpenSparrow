@@ -66,6 +66,7 @@
 22. [Dostępność (WCAG 2.1)](#22-dostępność-wcag-21)
 23. [Przypadki użycia biznesowego](#23-przypadki-użycia-biznesowego)
 24. [Tablica (Board / Kanban)](#24-tablica-board--kanban)
+25. [Wydruki (Print)](#25-wydruki-print)
 
 ---
 
@@ -1317,6 +1318,40 @@ Panel admina → zakładka **Board**:
 - Kolumna tytułu karty oraz pola szczegółowe pokazywane na kartach
 - Domyślny kolor toru/karty
 - Ustawienia menu: nazwa, ikona, ukrycie w menu (tablica pojawia się w menu dopiero po ustawieniu tabeli i kolumny statusu)
+
+---
+
+## 25. Wydruki (Print)
+
+Adres: `print.php`  
+Moduł raportów do wydruku zbudowanych z prostych bloków, zasilanych danymi z widoków SQL (moduł Widoków).
+
+- Strona bez parametru pokazuje **karty wszystkich widocznych wydruków** (ikona, nazwa, opis) — ten sam wzorzec co selektor widoków
+- Kliknięcie karty (lub pozycji podmenu) otwiera `print.php?print=nazwa` — wyrenderowany raport na białym "arkuszu" (format zbliżony do A4)
+- Nad arkuszem pasek narzędzi z nazwą raportu i przyciskiem **Drukuj** (`window.print()`); dedykowany arkusz `@media print` w `assets/css/print.css` ukrywa nagłówek aplikacji, menu boczne, stopkę i pasek narzędzi — drukowana jest wyłącznie treść raportu (nagłówki tabel powtarzane na kolejnych stronach, wiersze bez łamania w środku)
+- Wszystkie widoczne wydruki są wypisane w menu bocznym jako rozwijana lista podrzędna pod pozycją "Print" — dokładnie ten sam wzorzec co podmenu Widoków (strzałka ▾ rozwija/zwija listę)
+
+### Bloki szablonu
+
+Szablon składa się z uporządkowanej listy bloków (bez surowego HTML od użytkownika):
+
+| Blok | Działanie |
+|------|-----------|
+| **Nagłówek** | Tekst nagłówka (poziom H1–H3); obsługuje zmienne `{kolumna}` |
+| **Tekst** | Akapit tekstu ze zmiennymi `{kolumna}` — wartości podstawiane z **pierwszego wiersza** widoku |
+| **Tabela** | Tabela ze wszystkimi wierszami widoku; kolumny wybierane checkboxami (brak wyboru = wszystkie) |
+
+Każda wartość zmiennej i każda komórka tabeli jest osadzana bezpiecznie (programowe budowanie DOM / `textContent` — odpowiednik `htmlspecialchars`), więc dane z bazy nie mogą wstrzyknąć znaczników HTML.
+
+### Konfiguracja przez admina
+
+Panel admina → Data Management → **Printouts** (szablony zapisywane w `config/print.json`, jak pozostałe pliki konfiguracyjne):
+
+- **+ Add printout** — nowy szablon z kluczem wewnętrznym (litery, cyfry, `_`, `-`)
+- Ustawienia ogólne: nazwa wyświetlana, nazwa w menu, opis, ikona, widoczność
+- **Źródło danych** — lista rozwijana widoków SQL PostgreSQL zarejestrowanych w module Widoków (`config/views.json`); po wybraniu widoku lista **dostępnych zmiennych** (kolumn) jest pobierana automatycznie z bazy (information_schema) i pokazywana jako plakietki `{kolumna}` — użytkownik nie wpisuje ich ręcznie
+- Edytor bloków: dodawanie (nagłówek / tekst / tabela), zmiana kolejności (^ / v), usuwanie; w bloku tabeli kolumny widoku wybiera się checkboxami
+- **Save printouts** — zapis przez API (`api/print.php?action=save`) z walidacją po stronie serwera (whitelist typów bloków, widok musi istnieć w module Widoków, sanityzacja ikon i długości pól)
 
 ---
 

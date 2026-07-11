@@ -214,6 +214,14 @@
         "section_owner": "Propriétaire de l'enregistrement",
         "section_history": "Historique des assignations"
     },
+    "print": {
+        "loading": "Chargement des impressions…",
+        "error": "Erreur : {message}",
+        "open": "Ouvrir l'impression →",
+        "print_button": "Imprimer",
+        "empty": "Aucune impression configurée. Demandez à un administrateur de configurer les modèles d'impression.",
+        "no_data": "Aucune donnée trouvée."
+    },
     "views": {
         "loading": "Chargement des vues…",
         "error": "Erreur : {message}",

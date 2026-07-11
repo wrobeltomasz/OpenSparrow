@@ -217,6 +217,14 @@
         "section_owner": "Właściciel rekordu",
         "section_history": "Historia przypisania"
     },
+    "print": {
+        "loading": "Ładowanie wydruków…",
+        "error": "Błąd: {message}",
+        "open": "Otwórz wydruk →",
+        "print_button": "Drukuj",
+        "empty": "Brak skonfigurowanych wydruków. Poproś administratora o skonfigurowanie szablonów wydruku.",
+        "no_data": "Nie znaleziono danych."
+    },
     "views": {
         "loading": "Ładowanie widoków…",
         "error": "Błąd: {message}",

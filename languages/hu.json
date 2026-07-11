@@ -214,6 +214,14 @@
         "section_owner": "Rekord tulajdonosa",
         "section_history": "Hozzárendelési előzmények"
     },
+    "print": {
+        "loading": "Nyomtatások betöltése…",
+        "error": "Hiba: {message}",
+        "open": "Nyomtatás megnyitása →",
+        "print_button": "Nyomtatás",
+        "empty": "Nincsenek beállított nyomtatások. Kérjen meg egy adminisztrátort a nyomtatási sablonok beállítására.",
+        "no_data": "Nem található adat."
+    },
     "views": {
         "loading": "Nézetek betöltése…",
         "error": "Hiba: {message}",

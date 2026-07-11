@@ -214,6 +214,14 @@
         "section_owner": "Postens ejer",
         "section_history": "Tildelingshistorik"
     },
+    "print": {
+        "loading": "Indlæser udskrifter…",
+        "error": "Fejl: {message}",
+        "open": "Åbn udskrift →",
+        "print_button": "Udskriv",
+        "empty": "Ingen udskrifter konfigureret. Bed en administrator om at opsætte udskriftsskabeloner.",
+        "no_data": "Ingen data fundet."
+    },
     "views": {
         "loading": "Indlæser visninger…",
         "error": "Fejl: {message}",

@@ -217,6 +217,14 @@
         "section_owner": "Įrašo savininkas",
         "section_history": "Paskyrimo istorija"
     },
+    "print": {
+        "loading": "Įkeliami spaudiniai…",
+        "error": "Klaida: {message}",
+        "open": "Atidaryti spaudinį →",
+        "print_button": "Spausdinti",
+        "empty": "Nėra sukonfigūruotų spaudinių. Paprašykite administratoriaus sukonfigūruoti spausdinimo šablonus.",
+        "no_data": "Duomenų nerasta."
+    },
     "views": {
         "loading": "Kraunami rodiniai…",
         "error": "Klaida: {message}",

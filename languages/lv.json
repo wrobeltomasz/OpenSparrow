@@ -214,6 +214,14 @@
         "section_owner": "Ieraksta īpašnieks",
         "section_history": "Iecelšanas vēsture"
     },
+    "print": {
+        "loading": "Notiek izdruku ielāde…",
+        "error": "Kļūda: {message}",
+        "open": "Atvērt izdruku →",
+        "print_button": "Drukāt",
+        "empty": "Nav konfigurētu izdruku. Lūdziet administratoram iestatīt drukas veidnes.",
+        "no_data": "Dati nav atrasti."
+    },
     "views": {
         "loading": "Ielādē skatus…",
         "error": "Kļūda: {message}",

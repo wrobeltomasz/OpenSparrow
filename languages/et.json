@@ -214,6 +214,14 @@
         "section_owner": "Kirje omanik",
         "section_history": "Määramise ajalugu"
     },
+    "print": {
+        "loading": "Väljatrükkide laadimine…",
+        "error": "Viga: {message}",
+        "open": "Ava väljatrükk →",
+        "print_button": "Prindi",
+        "empty": "Väljatrükke pole seadistatud. Paluge administraatoril prindimallid seadistada.",
+        "no_data": "Andmeid ei leitud."
+    },
     "views": {
         "loading": "Vaadete laadimine…",
         "error": "Viga: {message}",

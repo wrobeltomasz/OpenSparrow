@@ -217,6 +217,14 @@
         "section_owner": "Vlastník záznamu",
         "section_history": "História priradení"
     },
+    "print": {
+        "loading": "Načítavanie tlačových zostáv…",
+        "error": "Chyba: {message}",
+        "open": "Otvoriť zostavu →",
+        "print_button": "Tlačiť",
+        "empty": "Nie sú nakonfigurované žiadne tlačové zostavy. Požiadajte administrátora o nastavenie šablón tlače.",
+        "no_data": "Nenašli sa žiadne údaje."
+    },
     "views": {
         "loading": "Načítanie pohľadov…",
         "error": "Chyba: {message}",

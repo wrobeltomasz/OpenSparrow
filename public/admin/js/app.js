@@ -21,6 +21,7 @@ import { renderCronPage } from './cron.js';
 import { renderM2mPage } from './m2m.js';
 import { renderErdPage } from './erd.js';
 import { renderViewsEditor } from './views_editor.js';
+import { renderPrintEditor } from './print_editor.js';
 import { renderDemoPage } from './demo.js';
 import { renderSettingsPage } from './settings.js';
 import { renderCsvImportPage } from './csv_import.js';
@@ -57,7 +58,7 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'anonymization']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'anonymization', 'print']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
@@ -261,7 +262,7 @@ function getColumnMeta(tableName, colName) {
 }
 
 async function loadConfigFile(fileName) {
-    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'fdw' || fileName === 'anonymization') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'fdw' || fileName === 'anonymization' || fileName === 'print') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -369,7 +370,7 @@ function renderSidebar() {
     const fullPageTabs = new Set([
         'overview', 'database', 'security', 'health', 'docs', 'users', 'backup',
         'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron',
-        'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'fdw', 'board', 'anonymization',
+        'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'fdw', 'board', 'anonymization', 'print',
     ]);
 
     if (fullPageTabs.has(currentFile)) {
@@ -760,7 +761,7 @@ function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar };
     
-    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && key === 'EXTERNAL_TABLES')) {
+    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'automations', 'anonymization', 'print'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && key === 'EXTERNAL_TABLES')) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
@@ -786,6 +787,7 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'rag') return renderRagPage(ctx);
     if (currentFile === 'fdw') return renderFdwPage(ctx);
     if (currentFile === 'anonymization') return renderAnonymizationPage(ctx);
+    if (currentFile === 'print') return renderPrintEditor(ctx);
     if (currentFile === 'automations') {
         if (key === 'LAYOUT') {
             const msg = document.createElement('p');

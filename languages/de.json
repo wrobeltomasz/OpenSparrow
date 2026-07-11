@@ -214,6 +214,14 @@
         "section_owner": "Datensatzeigentümer",
         "section_history": "Zuweisungsverlauf"
     },
+    "print": {
+        "loading": "Ausdrucke werden geladen…",
+        "error": "Fehler: {message}",
+        "open": "Ausdruck öffnen →",
+        "print_button": "Drucken",
+        "empty": "Keine Ausdrucke konfiguriert. Bitten Sie einen Administrator, Druckvorlagen einzurichten.",
+        "no_data": "Keine Daten gefunden."
+    },
     "views": {
         "loading": "Ansichten werden geladen…",
         "error": "Fehler: {message}",

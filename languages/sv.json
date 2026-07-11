@@ -214,6 +214,14 @@
         "section_owner": "Postens ägare",
         "section_history": "Tilldelningshistorik"
     },
+    "print": {
+        "loading": "Läser in utskrifter…",
+        "error": "Fel: {message}",
+        "open": "Öppna utskrift →",
+        "print_button": "Skriv ut",
+        "empty": "Inga utskrifter konfigurerade. Be en administratör att konfigurera utskriftsmallar.",
+        "no_data": "Inga data hittades."
+    },
     "views": {
         "loading": "Laddar vyer…",
         "error": "Fel: {message}",

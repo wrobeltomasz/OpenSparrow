@@ -214,6 +214,14 @@
         "section_owner": "Propietario del registro",
         "section_history": "Historial de asignaciones"
     },
+    "print": {
+        "loading": "Cargando impresiones…",
+        "error": "Error: {message}",
+        "open": "Abrir impresión →",
+        "print_button": "Imprimir",
+        "empty": "No hay impresiones configuradas. Pida a un administrador que configure las plantillas de impresión.",
+        "no_data": "No se encontraron datos."
+    },
     "views": {
         "loading": "Cargando vistas…",
         "error": "Error: {message}",

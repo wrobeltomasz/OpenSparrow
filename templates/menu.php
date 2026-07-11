@@ -72,6 +72,7 @@ $tables       = safeReadJson($schemaPath)['tables'] ?? [];
 $currentPage  = basename($_SERVER['PHP_SELF']);
 $currentTable = substr($_GET['table'] ?? '', 0, 64);
 $currentView  = substr($_GET['view'] ?? '', 0, 64);
+$currentPrint = substr($_GET['print'] ?? '', 0, 64);
 $isWorkflows  = isset($_GET['workflows']);
 
 $dashCfg  = loadMenuConfig('dashboard', $includeDir);
@@ -158,6 +159,35 @@ if (!empty($viewChildren)) {
         'hidden'   => false,
         'active'   => $currentPage === 'views.php' && $currentView === '',
         'children' => $viewChildren,
+    ];
+}
+
+// Each visible print template becomes a submenu child under the Print module entry.
+$printCfg      = loadMenuConfig('print', $includeDir);
+$printChildren = [];
+foreach ($printCfg['prints'] ?? [] as $pName => $pConfig) {
+    if (!empty($pConfig['hidden'])) {
+        continue;
+    }
+    $pName           = (string) $pName;
+    $printChildren[] = [
+        'type'   => 'print',
+        'href'   => 'print.php?print=' . urlencode($pName),
+        'name'   => $pConfig['menu_name'] ?? ($pConfig['display_name'] ?? $pName),
+        'icon'   => $pConfig['icon'] ?? '',
+        'hidden' => false,
+        'active' => $currentPage === 'print.php' && $currentPrint === $pName,
+    ];
+}
+if (!empty($printChildren)) {
+    $menuCatalog['print'] = [
+        'type'     => 'print',
+        'href'     => 'print.php',
+        'name'     => 'Print',
+        'icon'     => 'assets/icons/picture_as_pdf.png',
+        'hidden'   => false,
+        'active'   => $currentPage === 'print.php' && $currentPrint === '',
+        'children' => $printChildren,
     ];
 }
 

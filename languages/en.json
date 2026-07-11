@@ -214,6 +214,14 @@
         "section_owner": "Record Owner",
         "section_history": "Assignment History"
     },
+    "print": {
+        "loading": "Loading printouts…",
+        "error": "Error: {message}",
+        "open": "Open Printout →",
+        "print_button": "Print",
+        "empty": "No printouts configured. Ask an administrator to set up print templates.",
+        "no_data": "No data found."
+    },
     "views": {
         "loading": "Loading views…",
         "error": "Error: {message}",

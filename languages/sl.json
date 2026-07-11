@@ -220,6 +220,14 @@
         "section_owner": "Lastnik zapisa",
         "section_history": "Zgodovina dodelitev"
     },
+    "print": {
+        "loading": "Nalaganje izpisov…",
+        "error": "Napaka: {message}",
+        "open": "Odpri izpis →",
+        "print_button": "Natisni",
+        "empty": "Ni nastavljenih izpisov. Prosite skrbnika, da nastavi predloge za tiskanje.",
+        "no_data": "Ni najdenih podatkov."
+    },
     "views": {
         "loading": "Nalaganje pogledov…",
         "error": "Napaka: {message}",

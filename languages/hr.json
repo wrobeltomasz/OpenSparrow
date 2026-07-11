@@ -217,6 +217,14 @@
         "section_owner": "Vlasnik zapisa",
         "section_history": "Povijest dodjela"
     },
+    "print": {
+        "loading": "Učitavanje ispisa…",
+        "error": "Greška: {message}",
+        "open": "Otvori ispis →",
+        "print_button": "Ispiši",
+        "empty": "Nema konfiguriranih ispisa. Zamolite administratora da postavi predloške ispisa.",
+        "no_data": "Nema pronađenih podataka."
+    },
     "views": {
         "loading": "Učitavanje prikaza…",
         "error": "Pogreška: {message}",

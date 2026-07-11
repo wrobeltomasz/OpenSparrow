@@ -214,6 +214,14 @@
         "section_owner": "Proprietário do registo",
         "section_history": "Histórico de atribuições"
     },
+    "print": {
+        "loading": "A carregar impressões…",
+        "error": "Erro: {message}",
+        "open": "Abrir impressão →",
+        "print_button": "Imprimir",
+        "empty": "Nenhuma impressão configurada. Peça a um administrador para configurar os modelos de impressão.",
+        "no_data": "Nenhum dado encontrado."
+    },
     "views": {
         "loading": "A carregar vistas…",
         "error": "Erro: {message}",

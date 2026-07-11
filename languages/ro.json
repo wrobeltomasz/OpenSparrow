@@ -217,6 +217,14 @@
         "section_owner": "Proprietarul înregistrării",
         "section_history": "Istoricul atribuirilor"
     },
+    "print": {
+        "loading": "Se încarcă rapoartele de tipărit…",
+        "error": "Eroare: {message}",
+        "open": "Deschide raportul →",
+        "print_button": "Tipărește",
+        "empty": "Nu există rapoarte de tipărit configurate. Cereți unui administrator să configureze șabloanele de tipărire.",
+        "no_data": "Nu s-au găsit date."
+    },
     "views": {
         "loading": "Se încarcă vizualizările…",
         "error": "Eroare: {message}",
