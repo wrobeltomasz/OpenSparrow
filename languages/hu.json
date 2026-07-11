@@ -222,7 +222,8 @@
         "fn_avg": "ÁTLAG",
         "fn_min": "MIN",
         "fn_max": "MAX",
-        "fn_count": "DARAB"
+        "fn_count": "DARAB",
+        "group_by": "Sorok csoportosítása…"
     },
     "data_cleanup": {
         "title": "Gyors adattisztítás",

@@ -133,6 +133,7 @@ function views_mysql_data(
         'rows'          => $rows,
         'columns'       => $cfg['columns'] ?? [],
         'drill_down'    => $cfg['drill_down'] ?? ['enabled' => false, 'levels' => []],
+        'group_rows'    => $cfg['group_rows'] ?? '',
         'icon'          => $cfg['icon'] ?? '',
         'source'        => 'mysql',
     ]);
@@ -262,6 +263,7 @@ try {
             'rows'         => $rows,
             'columns'      => $cfg['columns'] ?? [],
             'drill_down'   => $cfg['drill_down'] ?? ['enabled' => false, 'levels' => []],
+            'group_rows'   => $cfg['group_rows'] ?? '',
             'icon'         => $cfg['icon'] ?? '',
         ]);
         exit;

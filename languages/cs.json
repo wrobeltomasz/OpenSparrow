@@ -225,7 +225,8 @@
         "fn_avg": "PRŮMĚR",
         "fn_min": "MIN",
         "fn_max": "MAX",
-        "fn_count": "POČET"
+        "fn_count": "POČET",
+        "group_by": "Seskupit řádky…"
     },
     "data_cleanup": {
         "title": "Rychlé čištění dat",

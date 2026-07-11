@@ -225,7 +225,8 @@
         "fn_avg": "VIDURKIS",
         "fn_min": "MIN",
         "fn_max": "MAKS",
-        "fn_count": "SKAIČIUS"
+        "fn_count": "SKAIČIUS",
+        "group_by": "Grupuoti eilutes…"
     },
     "data_cleanup": {
         "title": "Greitas duomenų valymas",

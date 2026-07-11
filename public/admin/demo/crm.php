@@ -765,7 +765,9 @@ function demo_def_crm($conn): array
             'v_demo_crm_pipeline' => ['schema' => 'spw_crm', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => false, 'description' => 'Deal count & value by stage.', 'columns' => [
                 'stage'       => ['display_name' => 'Stage'],
                 'deal_count'  => ['display_name' => 'Deals',       'summary' => 'sum'],
-                'total_value' => ['display_name' => 'Total Value', 'summary' => 'sum'],
+                'total_value' => ['display_name' => 'Total Value', 'summary' => 'sum', 'color_rules' => [
+                    ['op' => '>', 'value' => 100000, 'color' => '#2b9348'],
+                ]],
             ], 'drill_down' => ['enabled' => false]],
             'v_demo_crm_leads_funnel' => ['schema' => 'spw_crm', 'display_name' => 'CRM Leads Funnel', 'menu_name' => 'Leads Funnel', 'icon' => 'assets/icons/account_tree.png', 'hidden' => false, 'description' => 'Lead count by qualification status.', 'columns' => [
                 'status'     => ['display_name' => 'Status'],
@@ -774,21 +776,33 @@ function demo_def_crm($conn): array
             'v_demo_crm_revenue' => ['schema' => 'spw_crm', 'display_name' => 'CRM Revenue', 'menu_name' => 'Revenue Summary', 'icon' => 'assets/icons/file_present.png', 'hidden' => false, 'description' => 'Invoice count & total by status.', 'columns' => [
                 'status'        => ['display_name' => 'Status'],
                 'invoice_count' => ['display_name' => 'Invoices',     'summary' => 'sum'],
-                'total'         => ['display_name' => 'Total Amount', 'summary' => 'sum'],
+                // SUMIF demo: total counted only for non-draft invoices
+                'total'         => ['display_name' => 'Total Amount', 'summary' => 'sum', 'summary_if' => [
+                    'column' => 'status', 'op' => '!=', 'value' => 'Draft',
+                ]],
             ], 'drill_down' => ['enabled' => false]],
             'v_demo_crm_assets_by_category' => ['schema' => 'spw_crm', 'display_name' => 'Assets by Category', 'menu_name' => 'Assets Summary', 'icon' => 'assets/icons/database.png', 'hidden' => false, 'description' => 'Asset count & book value by category.', 'columns' => [
                 'category'    => ['display_name' => 'Category'],
                 'asset_count' => ['display_name' => 'Assets',       'summary' => 'sum'],
-                'total_value' => ['display_name' => 'Total Value',  'summary' => 'sum'],
+                'total_value' => ['display_name' => 'Total Value',  'summary' => 'max'],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_revenue_by_period' => ['schema' => 'spw_crm', 'display_name' => 'Revenue by Period', 'menu_name' => 'Revenue by Period', 'icon' => 'assets/icons/file_present.png', 'hidden' => false, 'description' => 'Invoice revenue drilled by year → month → invoice.', 'columns' => [
+            // Showcase view: default row grouping (group_rows) with per-group subtotals,
+            // SUMIF (paid revenue), COUNTIF (unpaid invoices), AVG and color rules.
+            'v_demo_crm_revenue_by_period' => ['schema' => 'spw_crm', 'display_name' => 'Revenue by Period', 'menu_name' => 'Revenue by Period', 'icon' => 'assets/icons/file_present.png', 'hidden' => false, 'description' => 'Invoices grouped by month with subtotals, SUMIF (paid revenue) and COUNTIF (unpaid invoices).', 'group_rows' => 'year_month', 'columns' => [
                 'year'           => ['display_name' => 'Year'],
                 'year_month'     => ['display_name' => 'Month',      'aggregate' => ''],
-                'invoice_number' => ['display_name' => 'Invoice #',  'aggregate' => 'count', 'summary' => 'sum'],
-                'status'         => ['display_name' => 'Status',     'aggregate' => ''],
+                'invoice_number' => ['display_name' => 'Invoice #',  'aggregate' => 'count', 'summary' => 'count'],
+                'status'         => ['display_name' => 'Status',     'aggregate' => '', 'summary' => 'count', 'summary_if' => [
+                    'column' => 'paid', 'op' => '==', 'value' => 'No',
+                ]],
                 'amount_net'     => ['display_name' => 'Net',        'aggregate' => 'sum', 'summary' => 'sum'],
-                'amount_tax'     => ['display_name' => 'Tax',        'aggregate' => 'sum', 'summary' => 'sum'],
-                'amount_total'   => ['display_name' => 'Total',      'aggregate' => 'sum', 'summary' => 'sum'],
+                'amount_tax'     => ['display_name' => 'Tax',        'aggregate' => 'sum', 'summary' => 'avg'],
+                'amount_total'   => ['display_name' => 'Total',      'aggregate' => 'sum', 'summary' => 'sum', 'summary_if' => [
+                    'column' => 'paid', 'op' => '==', 'value' => 'Yes',
+                ], 'color_rules' => [
+                    ['op' => '>=', 'value' => 100000, 'color' => '#2b9348'],
+                    ['op' => '<',  'value' => 20000,  'color' => '#d00000'],
+                ]],
                 'issue_date'     => ['display_name' => 'Issue Date', 'aggregate' => ''],
                 'due_date'       => ['display_name' => 'Due Date',   'aggregate' => ''],
                 'paid'           => ['display_name' => 'Paid',       'aggregate' => ''],

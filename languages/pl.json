@@ -225,7 +225,8 @@
         "fn_avg": "Śr.",
         "fn_min": "Min.",
         "fn_max": "Maks.",
-        "fn_count": "Liczba"
+        "fn_count": "Liczba",
+        "group_by": "Grupuj wiersze…"
     },
     "data_cleanup": {
         "title": "Szybkie czyszczenie danych",

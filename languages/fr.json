@@ -222,7 +222,8 @@
         "fn_avg": "MOY",
         "fn_min": "MIN",
         "fn_max": "MAX",
-        "fn_count": "NB"
+        "fn_count": "NB",
+        "group_by": "Grouper les lignes…"
     },
     "data_cleanup": {
         "title": "Nettoyage rapide des données",

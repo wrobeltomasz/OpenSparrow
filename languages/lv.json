@@ -222,7 +222,8 @@
         "fn_avg": "VIDĒJAIS",
         "fn_min": "MIN",
         "fn_max": "MAKS",
-        "fn_count": "SKAITS"
+        "fn_count": "SKAITS",
+        "group_by": "Grupēt rindas…"
     },
     "data_cleanup": {
         "title": "Ātra datu tīrīšana",

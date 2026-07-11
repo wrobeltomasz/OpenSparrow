@@ -222,7 +222,8 @@
         "fn_avg": "AVG",
         "fn_min": "MIN",
         "fn_max": "MAX",
-        "fn_count": "COUNT"
+        "fn_count": "COUNT",
+        "group_by": "Group rows…"
     },
     "data_cleanup": {
         "title": "Quick Data Cleanup",

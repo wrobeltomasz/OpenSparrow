@@ -222,7 +222,8 @@
         "fn_avg": "PROM",
         "fn_min": "MÍN",
         "fn_max": "MÁX",
-        "fn_count": "CUENTA"
+        "fn_count": "CUENTA",
+        "group_by": "Agrupar filas…"
     },
     "data_cleanup": {
         "title": "Limpieza rápida de datos",

@@ -19,6 +19,9 @@ $extraCss       = '<link href="assets/css/views.css" rel="stylesheet">';
 $tClearF = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
 $headerControls = '<input id="globalSearch" type="text" placeholder="'
     . htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8') . '" />'
+    . '<select id="columnFilter" hidden><option value=""></option></select>'
+    . '<div id="filterBar"></div>'
+    . '<select id="groupBy" hidden><option value=""></option></select>'
     . '<button id="clearFilters" hidden title="' . $tClearF . '">' . $tClearF . '</button>';
 ob_start();
 ?>

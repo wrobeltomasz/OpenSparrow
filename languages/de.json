@@ -222,7 +222,8 @@
         "fn_avg": "DURCHSCHN",
         "fn_min": "MIN",
         "fn_max": "MAX",
-        "fn_count": "ANZAHL"
+        "fn_count": "ANZAHL",
+        "group_by": "Zeilen gruppieren…"
     },
     "data_cleanup": {
         "title": "Schnelle Datenbereinigung",

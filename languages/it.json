@@ -222,7 +222,8 @@
         "fn_avg": "MEDIA",
         "fn_min": "MIN",
         "fn_max": "MAX",
-        "fn_count": "CONTA"
+        "fn_count": "CONTA",
+        "group_by": "Raggruppa righe…"
     },
     "data_cleanup": {
         "title": "Pulizia rapida dei dati",

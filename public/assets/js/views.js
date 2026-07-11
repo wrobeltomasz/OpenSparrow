@@ -27,27 +27,364 @@ let viewSortState  = { column: null, asc: true };
 let viewSearchTerm = '';
 let searchTimer    = null;
 let _searchHandler = null;
+let colFilters     = {};         // col -> { type: 'dict'|'bool'|'date'|'number', ... } (grid-identical)
+let viewGroupBy    = '';         // column the rows are grouped by ('' = no grouping)
+let collapsedGroups = new Set(); // group keys collapsed by the user (per view load)
+let _applyFilters  = null;       // set per-view by renderView(); re-filters + re-renders rows
+let _curRows       = [];         // rows of the currently rendered view level
+let _curColumns    = {};         // columns config of the currently rendered view
 
 const VIEW_FN_KEYS = { sum: 'views.fn_sum', avg: 'views.fn_avg', min: 'views.fn_min', max: 'views.fn_max', count: 'views.fn_count' };
+
+/* ── conditional summary (SUMIF/COUNTIF): does a row match a summary_if condition? ── */
+function summaryCondMatch(row, cond) {
+    const raw = row[cond.column];
+    const op  = cond.op ?? '==';
+    if (op === 'contains') {
+        return String(raw ?? '').toLowerCase().includes(String(cond.value ?? '').toLowerCase());
+    }
+    if (op === '==' || op === '!=') {
+        const a  = parseFloat(raw);
+        const b  = parseFloat(cond.value);
+        const eq = (!isNaN(a) && !isNaN(b) && String(raw).trim() !== '' )
+            ? a === b
+            : String(raw ?? '') === String(cond.value ?? '');
+        return op === '==' ? eq : !eq;
+    }
+    const n = parseFloat(raw);
+    const v = parseFloat(cond.value);
+    if (isNaN(n) || isNaN(v)) return false;
+    if (op === '>')  return n > v;
+    if (op === '>=') return n >= v;
+    if (op === '<')  return n < v;
+    if (op === '<=') return n <= v;
+    return false;
+}
 
 /* ── DOM refs ── */
 const breadcrumbEl = document.getElementById('viewBreadcrumb');
 const containerEl  = document.getElementById('viewContainer');
-const searchEl     = document.getElementById('globalSearch');
+const searchEl       = document.getElementById('globalSearch');
+const columnFilterEl = document.getElementById('columnFilter');
+const filterBarEl    = document.getElementById('filterBar');
+const groupByEl      = document.getElementById('groupBy');
+
+/* Active-filter pills container — same id/classes as the grid page, above the table */
+const pillsEl = document.createElement('div');
+pillsEl.id = 'filterPills';
+breadcrumbEl.after(pillsEl);
 let exportBtn  = null;
 let actionsBar = null;
 
-/* ── Clear filters: header button empties the search box ── */
+/* ── Clear filters: header button resets search + column filters ── */
 const clearFiltersEl = document.getElementById('clearFilters');
+
+function syncClearBtn() {
+    if (clearFiltersEl) {
+        clearFiltersEl.hidden = !(searchEl && searchEl.value) && Object.keys(colFilters).length === 0;
+    }
+}
+
 if (clearFiltersEl && searchEl) {
-    searchEl.addEventListener('input', () => {
-        clearFiltersEl.hidden = !searchEl.value;
-    });
+    searchEl.addEventListener('input', syncClearBtn);
     clearFiltersEl.addEventListener('click', () => {
         searchEl.value = '';
-        // Re-fires the per-view debounced search handler wired in renderView()
-        searchEl.dispatchEvent(new Event('input'));
+        viewSearchTerm = '';
+        colFilters = {};
+        if (columnFilterEl) columnFilterEl.value = '';
+        if (filterBarEl) filterBarEl.replaceChildren();
+        if (_applyFilters) _applyFilters();
+        syncClearBtn();
     });
+}
+
+/* ── column type detection from the loaded rows (views have no schema types) ── */
+function detectColType(col) {
+    const vals = _curRows.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '');
+    if (vals.length === 0) return 'dict';
+    const boolSet = new Set(['true', 'false', 't', 'f']);
+    if (vals.every(v => typeof v === 'boolean' || boolSet.has(String(v).toLowerCase()))) return 'bool';
+    if (vals.every(v => !isNaN(parseFloat(v)) && isFinite(v))) return 'number';
+    if (vals.every(v => /^\d{4}-\d{2}-\d{2}/.test(String(v)))) return 'date';
+    return 'dict';
+}
+
+function colDisplayName(col) {
+    return _curColumns[col]?.display_name ?? col;
+}
+
+/* ── update cumulative filter state (grid-identical semantics) ── */
+function updateColumnFilterState(col, type, data) {
+    if (!data || data.empty) {
+        delete colFilters[col];
+    } else {
+        colFilters[col] = { type, ...data };
+    }
+}
+
+/* ── render the type-appropriate control into #filterBar for the selected column ── */
+function handleColumnFilterChange() {
+    if (!filterBarEl) return;
+    filterBarEl.replaceChildren();
+    const col = columnFilterEl ? columnFilterEl.value : '';
+    if (!col) return;
+
+    const type     = detectColType(col);
+    const existing = colFilters[col] || {};
+    const apply    = () => { if (_applyFilters) _applyFilters(); };
+
+    if (type === 'dict') {
+        const select = document.createElement('select');
+        select.id = 'dictFilter';
+
+        const optAll = document.createElement('option');
+        optAll.value = '';
+        optAll.textContent = `${colDisplayName(col)}: ${I18n.t('filter.all')}`;
+        select.appendChild(optAll);
+
+        const uniqueVals = [...new Set(
+            _curRows.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '')
+        )].sort();
+        uniqueVals.forEach(val => {
+            const o = document.createElement('option');
+            o.value = String(val);
+            o.textContent = String(val);
+            if (existing.val !== undefined && String(existing.val) === String(val)) o.selected = true;
+            select.appendChild(o);
+        });
+
+        select.addEventListener('change', () => {
+            const selectedText = select.options[select.selectedIndex].text;
+            updateColumnFilterState(col, 'dict', { val: select.value, label: selectedText, empty: select.value === '' });
+            apply();
+        });
+        filterBarEl.appendChild(select);
+    } else if (type === 'date') {
+        const dateContainer = document.createElement('div');
+        dateContainer.className = 'filter-range';
+
+        const spanFrom = document.createElement('span');
+        spanFrom.textContent = I18n.t('filter.from');
+        const inputFrom = document.createElement('input');
+        inputFrom.type = 'date';
+        inputFrom.className = 'date-filter';
+        if (existing.from) inputFrom.value = existing.from;
+
+        const spanTo = document.createElement('span');
+        spanTo.textContent = I18n.t('filter.to');
+        const inputTo = document.createElement('input');
+        inputTo.type = 'date';
+        inputTo.className = 'date-filter';
+        if (existing.to) inputTo.value = existing.to;
+
+        const updateDateState = () => {
+            updateColumnFilterState(col, 'date', {
+                from: inputFrom.value,
+                to: inputTo.value,
+                empty: !inputFrom.value && !inputTo.value,
+            });
+            apply();
+        };
+        inputFrom.addEventListener('change', updateDateState);
+        inputTo.addEventListener('change', updateDateState);
+
+        dateContainer.appendChild(spanFrom);
+        dateContainer.appendChild(inputFrom);
+        dateContainer.appendChild(spanTo);
+        dateContainer.appendChild(inputTo);
+        filterBarEl.appendChild(dateContainer);
+    } else if (type === 'number') {
+        const numContainer = document.createElement('div');
+        numContainer.className = 'filter-range';
+
+        const spanMin = document.createElement('span');
+        spanMin.textContent = I18n.t('filter.min');
+        const inputMin = document.createElement('input');
+        inputMin.type = 'number';
+        inputMin.className = 'num-filter';
+        if (existing.min !== undefined) inputMin.value = existing.min;
+
+        const spanMax = document.createElement('span');
+        spanMax.textContent = I18n.t('filter.max');
+        const inputMax = document.createElement('input');
+        inputMax.type = 'number';
+        inputMax.className = 'num-filter';
+        if (existing.max !== undefined) inputMax.value = existing.max;
+
+        const updateNumState = () => {
+            updateColumnFilterState(col, 'number', {
+                min: inputMin.value,
+                max: inputMax.value,
+                empty: inputMin.value === '' && inputMax.value === '',
+            });
+            apply();
+        };
+        inputMin.addEventListener('input', updateNumState);
+        inputMax.addEventListener('input', updateNumState);
+
+        numContainer.appendChild(spanMin);
+        numContainer.appendChild(inputMin);
+        numContainer.appendChild(spanMax);
+        numContainer.appendChild(inputMax);
+        filterBarEl.appendChild(numContainer);
+    } else {
+        const select = document.createElement('select');
+        select.id = 'boolFilter';
+
+        const optAll = document.createElement('option');
+        optAll.value = '';
+        optAll.textContent = I18n.t('filter.all');
+        const optTrue = document.createElement('option');
+        optTrue.value = 'true';
+        optTrue.textContent = I18n.t('filter.yes_true');
+        const optFalse = document.createElement('option');
+        optFalse.value = 'false';
+        optFalse.textContent = I18n.t('filter.no_false');
+        select.appendChild(optAll);
+        select.appendChild(optTrue);
+        select.appendChild(optFalse);
+        if (existing.val !== undefined) select.value = existing.val;
+
+        select.addEventListener('change', () => {
+            const selectedText = select.options[select.selectedIndex].text;
+            updateColumnFilterState(col, 'bool', { val: select.value, label: selectedText, empty: select.value === '' });
+            apply();
+        });
+        filterBarEl.appendChild(select);
+    }
+}
+
+if (columnFilterEl) columnFilterEl.addEventListener('change', handleColumnFilterChange);
+
+/* ── grouping: header dropdown selects the group-rows column ── */
+if (groupByEl) {
+    groupByEl.addEventListener('change', () => {
+        viewGroupBy = groupByEl.value;
+        collapsedGroups.clear();
+        if (_applyFilters) _applyFilters();
+    });
+}
+
+function populateGroupBy(allKeys) {
+    if (!groupByEl) return;
+    groupByEl.replaceChildren();
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = I18n.t('views.group_by');
+    groupByEl.appendChild(defaultOpt);
+    allKeys.forEach(col => {
+        const opt = document.createElement('option');
+        opt.value = col;
+        opt.textContent = colDisplayName(col);
+        groupByEl.appendChild(opt);
+    });
+    groupByEl.value  = viewGroupBy;
+    groupByEl.hidden = false;
+}
+
+/* ── active filters as removable pills (grid-identical) ── */
+function renderFilterPills() {
+    pillsEl.replaceChildren();
+    let hasPills = false;
+
+    const createPill = (label, onRemove) => {
+        hasPills = true;
+        const pill = document.createElement('div');
+        pill.className = 'filter-pill';
+
+        const textSpan = document.createElement('span');
+        textSpan.textContent = label;
+
+        const closeBtn = document.createElement('span');
+        closeBtn.textContent = '×';
+        closeBtn.className = 'filter-pill-remove';
+        closeBtn.title = I18n.t('grid.clear_filters');
+        closeBtn.addEventListener('click', () => {
+            onRemove();
+            handleColumnFilterChange();
+            if (_applyFilters) _applyFilters();
+        });
+
+        pill.appendChild(textSpan);
+        pill.appendChild(closeBtn);
+        pillsEl.appendChild(pill);
+    };
+
+    if (viewSearchTerm) {
+        createPill(`${I18n.t('grid.search_placeholder')}: "${viewSearchTerm}"`, () => {
+            viewSearchTerm = '';
+            if (searchEl) searchEl.value = '';
+        });
+    }
+
+    for (const [col, filter] of Object.entries(colFilters)) {
+        const colName = colDisplayName(col);
+        let label = '';
+        if (filter.type === 'dict' || filter.type === 'bool') {
+            label = `${colName}: ${filter.label}`;
+        } else if (filter.type === 'date') {
+            if (filter.from && filter.to) label = `${colName}: ${filter.from} – ${filter.to}`;
+            else if (filter.from) label = `${colName} ≥ ${filter.from}`;
+            else if (filter.to) label = `${colName} ≤ ${filter.to}`;
+        } else if (filter.type === 'number') {
+            if (filter.min !== '' && filter.max !== '') label = `${colName}: ${filter.min} - ${filter.max}`;
+            else if (filter.min !== '') label = `${colName} >= ${filter.min}`;
+            else if (filter.max !== '') label = `${colName} <= ${filter.max}`;
+        }
+
+        if (label) {
+            createPill(label, () => {
+                delete colFilters[col];
+                if (columnFilterEl && columnFilterEl.value === col) {
+                    if (filterBarEl) filterBarEl.replaceChildren();
+                    columnFilterEl.value = '';
+                }
+            });
+        }
+    }
+
+    pillsEl.classList.toggle('active', hasPills);
+}
+
+/* ── apply the cumulative column filters to a row (grid-identical semantics) ── */
+function rowPassesColFilters(row) {
+    for (const [col, filter] of Object.entries(colFilters)) {
+        if (filter.type === 'dict') {
+            if (String(row[col]) !== String(filter.val)) return false;
+        } else if (filter.type === 'bool') {
+            const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
+            if (rowBool !== (filter.val === 'true')) return false;
+        } else if (filter.type === 'date') {
+            const rowDateStr = String(row[col] || '').substring(0, 10);
+            if (!rowDateStr) return false;
+            const rowTime = new Date(rowDateStr).getTime();
+            if (filter.from && rowTime < new Date(filter.from).getTime()) return false;
+            if (filter.to && rowTime > new Date(filter.to).getTime()) return false;
+        } else if (filter.type === 'number') {
+            const rowNum = Number(row[col]);
+            if (isNaN(rowNum)) return false;
+            if (filter.min !== '' && rowNum < Number(filter.min)) return false;
+            if (filter.max !== '' && rowNum > Number(filter.max)) return false;
+        }
+    }
+    return true;
+}
+
+/* ── (re)populate the header column dropdown for the current view ── */
+function populateColumnFilter(allKeys) {
+    if (!columnFilterEl) return;
+    columnFilterEl.replaceChildren();
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = I18n.t('grid.select_column');
+    columnFilterEl.appendChild(defaultOpt);
+    allKeys.forEach(col => {
+        const opt = document.createElement('option');
+        opt.value = col;
+        opt.textContent = colDisplayName(col);
+        columnFilterEl.appendChild(opt);
+    });
+    columnFilterEl.hidden = false;
 }
 
 /* ── fetch wrapper ── */
@@ -92,6 +429,26 @@ function _clearHandlers() {
     }
     if (exportBtn) { exportBtn.onclick = null; }
     if (actionsBar) { actionsBar.style.display = 'none'; }
+    colFilters    = {};
+    _applyFilters = null;
+    _curRows      = [];
+    _curColumns   = {};
+    viewGroupBy   = '';
+    collapsedGroups.clear();
+    if (groupByEl) {
+        groupByEl.replaceChildren();
+        groupByEl.value  = '';
+        groupByEl.hidden = true;
+    }
+    if (columnFilterEl) {
+        columnFilterEl.replaceChildren();
+        columnFilterEl.value  = '';
+        columnFilterEl.hidden = true;
+    }
+    if (filterBarEl) filterBarEl.replaceChildren();
+    pillsEl.replaceChildren();
+    pillsEl.classList.remove('active');
+    syncClearBtn();
 }
 
 /* ── back to selector ── */
@@ -146,7 +503,7 @@ async function loadView(viewName, level, filterCol, filterVal) {
 /* ── render the view table (grid-identical structure) ── */
 function renderView(data) {
     containerEl.innerHTML = '';
-    const { view, level, max_level, group_by, drill_enabled, rows, columns } = data;
+    const { view, level, max_level, group_by, drill_enabled, rows, columns, group_rows } = data;
 
     renderBreadcrumb();
 
@@ -210,47 +567,65 @@ function renderView(data) {
     const tbody = document.createElement('tbody');
     table.appendChild(tbody);
 
+    /* ── summary engine (shared by the tfoot Σ row and per-group subtotal rows) ── */
+    const summaryFns   = {};
+    const summaryConds = {};   // key -> valid summary_if condition (SUMIF/COUNTIF), or absent
+    allKeys.forEach(key => {
+        const fn = (columns[key]?.summary ?? '').toLowerCase();
+        if (fn && fn !== 'none') summaryFns[key] = fn;
+        const cond = columns[key]?.summary_if;
+        if (cond && cond.column && allKeys.includes(cond.column)) summaryConds[key] = cond;
+    });
+    const hasSummary = Object.keys(summaryFns).length > 0;
+
+    function summaryValue(fn, rowsArr, key) {
+        const cond = summaryConds[key];
+        if (cond) rowsArr = rowsArr.filter(r => summaryCondMatch(r, cond));
+        if (fn === 'count') return rowsArr.length;
+        const nums = rowsArr.map(r => parseFloat(r[key])).filter(n => !isNaN(n));
+        if (!nums.length) return null;
+        if (fn === 'sum') return nums.reduce((a, b) => a + b, 0);
+        if (fn === 'avg') return nums.reduce((a, b) => a + b, 0) / nums.length;
+        if (fn === 'min') return Math.min(...nums);
+        if (fn === 'max') return Math.max(...nums);
+        return null;
+    }
+
+    function fillSummaryCell(td, fn, rowsArr, key) {
+        td.replaceChildren();
+        const value = summaryValue(fn, rowsArr, key);
+        if (value === null) {
+            td.textContent = '—';
+            return;
+        }
+        const strong = document.createElement('strong');
+        strong.textContent = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        const badge = document.createElement('span');
+        badge.className   = 'vw-summary-fn';
+        badge.textContent = VIEW_FN_KEYS[fn] ? I18n.t(VIEW_FN_KEYS[fn]) : fn.toUpperCase();
+        const cond = summaryConds[key];
+        if (cond) {
+            badge.classList.add('cond');
+            badge.textContent += ' ƒ';
+            td.title = `${badge.textContent.trim()}: ${colDisplayName(cond.column)} ${cond.op ?? '=='} ${cond.value ?? ''}`;
+        }
+        td.appendChild(strong);
+        td.appendChild(badge);
+    }
+
     /* ── summary tfoot ── */
     const tfoot         = document.createElement('tfoot');
     const summaryTr     = document.createElement('tr');
     summaryTr.className = 'vw-summary-row';
     const summaryUpdaters = {};
-    let hasSummary = false;
 
     allKeys.forEach((key, colIdx) => {
         const td = document.createElement('td');
-        const fn = (columns[key]?.summary ?? '').toLowerCase();
+        const fn = summaryFns[key];
 
-        if (fn && fn !== 'none') {
-            hasSummary = true;
+        if (fn) {
             td.className = 'vw-summary-cell';
-
-            summaryUpdaters[key] = (filteredRows) => {
-                td.innerHTML = '';
-                let value;
-                if (fn === 'count') {
-                    value = filteredRows.length;
-                } else {
-                    const nums = filteredRows.map(r => parseFloat(r[key])).filter(n => !isNaN(n));
-                    if (!nums.length) {
-                        td.textContent = '—';
-                        return;
-                    }
-                    if      (fn === 'sum') value = nums.reduce((a, b) => a + b, 0);
-                    else if (fn === 'avg') value = nums.reduce((a, b) => a + b, 0) / nums.length;
-                    else if (fn === 'min') value = Math.min(...nums);
-                    else if (fn === 'max') value = Math.max(...nums);
-                }
-                const strong = document.createElement('strong');
-                strong.textContent = typeof value === 'number'
-                    ? value.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                    : '—';
-                const badge = document.createElement('span');
-                badge.className   = 'vw-summary-fn';
-                badge.textContent = VIEW_FN_KEYS[fn] ? I18n.t(VIEW_FN_KEYS[fn]) : fn.toUpperCase();
-                td.appendChild(strong);
-                td.appendChild(badge);
-            };
+            summaryUpdaters[key] = (filteredRows) => fillSummaryCell(td, fn, filteredRows, key);
         } else if (colIdx === 0) {
             td.className   = 'vw-summary-label-cell';
             td.textContent = 'Σ';
@@ -286,12 +661,16 @@ function renderView(data) {
                 Object.values(row).some(v => String(v ?? '').toLowerCase().includes(term))
             );
         }
+        if (Object.keys(colFilters).length > 0) result = result.filter(rowPassesColFilters);
+        renderFilterPills();
+        syncClearBtn();
         result = sortRows(result, viewSortState);
         currentFilteredRows = result;
         Object.values(summaryUpdaters).forEach(fn => fn(result));
 
         tbody.innerHTML = '';
-        result.forEach(row => {
+
+        const makeRow = (row) => {
             const tr = document.createElement('tr');
             if (canDrillDown) tr.classList.add('vw-drillable');
 
@@ -320,8 +699,84 @@ function renderView(data) {
                     drillDown(view, level, group_by, drillVal, String(drillVal));
                 });
             }
-            tbody.appendChild(tr);
+            return tr;
+        };
+
+        if (!viewGroupBy || !allKeys.includes(viewGroupBy)) {
+            result.forEach(row => tbody.appendChild(makeRow(row)));
+            return;
+        }
+
+        /* ── grouped rendering: collapsible sections + per-group subtotals ── */
+        const groups = new Map();
+        result.forEach(row => {
+            const k = String(row[viewGroupBy] ?? '');
+            if (!groups.has(k)) groups.set(k, []);
+            groups.get(k).push(row);
         });
+        // No explicit sort → order groups by key; otherwise keep sort-derived appearance order
+        const groupKeys = [...groups.keys()];
+        if (!viewSortState.column) groupKeys.sort();
+
+        groupKeys.forEach(groupKey => {
+            const groupRows = groups.get(groupKey);
+            const collapsed = collapsedGroups.has(groupKey);
+
+            const headerTr = document.createElement('tr');
+            headerTr.className = 'vw-group-header';
+            const headerTd = document.createElement('td');
+            headerTd.colSpan = allKeys.length;
+
+            const arrow = document.createElement('span');
+            arrow.className   = 'vw-group-arrow';
+            arrow.textContent = collapsed ? '▸' : '▾';
+
+            const labelSpan = document.createElement('span');
+            labelSpan.className   = 'vw-group-label';
+            labelSpan.textContent = `${colDisplayName(viewGroupBy)}: ${groupKey === '' ? '—' : groupKey}`;
+
+            const countSpan = document.createElement('span');
+            countSpan.className   = 'vw-group-count';
+            countSpan.textContent = `(${groupRows.length})`;
+
+            headerTd.appendChild(arrow);
+            headerTd.appendChild(labelSpan);
+            headerTd.appendChild(countSpan);
+            headerTr.appendChild(headerTd);
+            headerTr.addEventListener('click', () => {
+                if (collapsedGroups.has(groupKey)) collapsedGroups.delete(groupKey);
+                else collapsedGroups.add(groupKey);
+                applyViewFilters();
+            });
+            tbody.appendChild(headerTr);
+
+            if (collapsed) {
+                // Collapsed: keep the subtotal visible so the group still reads as a summary line
+                if (hasSummary) tbody.appendChild(makeSubtotalRow(groupRows));
+                return;
+            }
+
+            groupRows.forEach(row => tbody.appendChild(makeRow(row)));
+            if (hasSummary) tbody.appendChild(makeSubtotalRow(groupRows));
+        });
+
+        function makeSubtotalRow(groupRows) {
+            const tr = document.createElement('tr');
+            tr.className = 'vw-group-subtotal';
+            allKeys.forEach((key, colIdx) => {
+                const td = document.createElement('td');
+                const fn = summaryFns[key];
+                if (fn) {
+                    td.className = 'vw-summary-cell';
+                    fillSummaryCell(td, fn, groupRows, key);
+                } else if (colIdx === 0) {
+                    td.className   = 'vw-summary-label-cell';
+                    td.textContent = 'Σ';
+                }
+                tr.appendChild(td);
+            });
+            return tr;
+        }
     }
 
     /* ── wire #globalSearch ── */
@@ -353,6 +808,19 @@ function renderView(data) {
             URL.revokeObjectURL(url);
         };
     }
+
+    /* ── wire header column filter to this view's data ── */
+    _curRows      = rows;
+    _curColumns   = columns;
+    _applyFilters = applyViewFilters;
+    populateColumnFilter(allKeys);
+    handleColumnFilterChange();
+
+    /* default grouping from config (views.json "group_rows"), only at the root level */
+    if (!viewGroupBy && level === 0 && group_rows && allKeys.includes(group_rows)) {
+        viewGroupBy = group_rows;
+    }
+    populateGroupBy(allKeys);
 
     applyViewFilters();
 }

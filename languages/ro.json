@@ -225,7 +225,8 @@
         "fn_avg": "MEDIE",
         "fn_min": "MIN",
         "fn_max": "MAX",
-        "fn_count": "NUMĂR"
+        "fn_count": "NUMĂR",
+        "group_by": "Grupează rândurile…"
     },
     "data_cleanup": {
         "title": "Curățare rapidă a datelor",

@@ -222,7 +222,8 @@
         "fn_avg": "GNSN",
         "fn_min": "MIN",
         "fn_max": "MAKS",
-        "fn_count": "ANTAL"
+        "fn_count": "ANTAL",
+        "group_by": "Gruppér rækker…"
     },
     "data_cleanup": {
         "title": "Hurtig datarensning",

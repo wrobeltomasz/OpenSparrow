@@ -567,6 +567,29 @@ Zapisane konfiguracje filtrów i układu kolumn.
 - Tworzenie / edycja / usuwanie widoków dostępne dla roli Editor i Admin
 - Tabela widoku wygląda identycznie jak siatka główna (moduł gridu): przyklejony nagłówek kolumn, naprzemienne tło wierszy, podświetlenie wiersza pod kursorem, sortowanie kliknięciem w nagłówek (strzałka ↑/↓), a pod tabelą pasek akcji z przyciskiem eksportu CSV — ten sam układ co w siatce i module plików
 
+### Filtry w nagłówku strony
+
+Filtrowanie działa identycznie jak na siatce głównej (grid). W niebieskim nagłówku, obok pola wyszukiwania, znajduje się lista rozwijana **"Wybierz kolumnę do filtrowania"** — po wybraniu kolumny pojawia się kontrolka dopasowana do typu danych (typ jest wykrywany automatycznie z wartości w kolumnie):
+
+- **Lista wartości** — dla kolumn tekstowych: rozwijana lista unikalnych wartości z kolumny (odpowiednik filtra słownikowego/FK na gridzie)
+- **Zakres liczbowy** (Min/Max) — dla kolumn liczbowych
+- **Zakres dat** (Od/Do) — dla kolumn z datami
+- **Tak/Nie** — dla kolumn logicznych
+
+Filtry z różnych kolumn kumulują się (AND) i łączą z wyszukiwaniem frazy oraz sortowaniem. Każdy aktywny filtr (i aktywne wyszukiwanie) jest pokazany jako **pigułka** nad tabelą — z etykietą kolumny i wartością oraz krzyżykiem `×` usuwającym pojedynczy filtr, tak samo jak na gridzie. Wiersz podsumowania (Σ) i eksport CSV uwzględniają tylko przefiltrowane wiersze. Przycisk **"Wyczyść filtry"** pojawia się przy dowolnym aktywnym filtrze/wyszukiwaniu i resetuje wszystko jednym kliknięciem. Filtry resetują się przy zmianie widoku oraz przy przejściu na inny poziom drill-down.
+
+### Grupowanie wierszy z sumami częściowymi
+
+W nagłówku strony, obok filtrów, znajduje się lista rozwijana **"Grupuj wiersze…"**. Wybranie kolumny dzieli tabelę na sekcje:
+
+- Każda grupa ma **nagłówek** (nazwa kolumny i wartość grupy oraz liczba wierszy w nawiasie) — kliknięcie nagłówka zwija/rozwija grupę (strzałka ▾/▸)
+- Pod wierszami każdej grupy renderowany jest **wiersz sum częściowych** (Σ) liczony tym samym mechanizmem co globalny wiersz podsumowania w stopce — funkcje `sum`/`avg`/`min`/`max`/`count` skonfigurowane per kolumna w edytorze widoków; grupa zwinięta nadal pokazuje swoje sumy częściowe, dzięki czemu widok działa jak raport zbiorczy
+- **Agregaty warunkowe (SUMIF/COUNTIF)** — administrator może przy funkcji podsumowania ustawić warunek (`summary_if` w `config/views.json`: kolumna + operator `== != > >= < <= contains` + wartość); agregat liczy wtedy wyłącznie wiersze spełniające warunek, np. suma kwot tylko dla statusu „paid" lub licznik wierszy przeterminowanych. Działa identycznie w stopce Σ i w sumach częściowych grup (odpowiednik SUMIFS per grupa). Znacznik warunkowego agregatu: symbol ƒ przy nazwie funkcji w kolorze akcentu, a pełna treść warunku w dymku (tooltip) komórki podsumowania
+- Grupowanie łączy się z wyszukiwaniem, filtrami kolumn i sortowaniem (sumy liczą się z przefiltrowanych wierszy); przy braku sortowania grupy są uporządkowane alfabetycznie po wartości, przy aktywnym sortowaniu — w kolejności wynikającej z sortowania
+- Globalny wiersz Σ w stopce tabeli pozostaje bez zmian; eksport CSV eksportuje płaskie, przefiltrowane wiersze (bez nagłówków grup)
+- Administrator może ustawić **domyślne grupowanie** widoku kluczem `"group_rows": "nazwa_kolumny"` na poziomie widoku w `config/views.json` (stosowane na poziomie głównym, przed drill-down); użytkownik może je zmienić lub wyłączyć dropdownem
+- Zmiana widoku lub poziomu drill-down resetuje grupowanie (jak filtry i sortowanie)
+
 ### Nawigacja z menu bocznego
 
 Wszystkie widoczne (nieukryte) widoki są wypisane w menu bocznym jako rozwijana lista podrzędna pod pozycją "Views" — ten sam wzorzec co podmenu tabel (strzałka ▾ rozwija/zwija listę). Kliknięcie pozycji podmenu otwiera dany widok bezpośrednio (`views.php?view=nazwa`), a kliknięcie samej pozycji "Views" otwiera stronę z kartami wszystkich widoków. W widoku nie ma osobnego przycisku "Wstecz" — powrót do listy widoków odbywa się przez menu boczne, a cofanie po poziomach drill-down przez okruszki (breadcrumb) nad tabelą.
@@ -914,6 +937,7 @@ Wbudowana dokumentacja systemu:
 - Lista zapisanych widoków
 - Tworzenie nowego widoku: nazwa, opis, filtry, kolejność kolumn
 - Edycja i usuwanie widoków
+- Per kolumna: funkcja podsumowania (SUM/AVG/MIN/MAX/COUNT) oraz opcjonalny **warunek podsumowania (SUMIF/COUNTIF)** — trzy pola: kolumna warunku, operator (`== != > >= < <= contains`), wartość; agregat liczy wtedy tylko wiersze spełniające warunek. Wybór „— no condition —" wyłącza warunek; ustawienie Summary na „None" usuwa też warunek
 
 ### 17.21 Systemy demo
 

@@ -222,7 +222,8 @@
         "fn_avg": "KESKMINE",
         "fn_min": "MIN",
         "fn_max": "MAKS",
-        "fn_count": "ARV"
+        "fn_count": "ARV",
+        "group_by": "Rühmita read…"
     },
     "data_cleanup": {
         "title": "Kiire andmepuhastus",

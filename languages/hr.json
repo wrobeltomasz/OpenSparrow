@@ -225,7 +225,8 @@
         "fn_avg": "PROSJEK",
         "fn_min": "MIN",
         "fn_max": "MAKS",
-        "fn_count": "BROJ"
+        "fn_count": "BROJ",
+        "group_by": "Grupiraj retke…"
     },
     "data_cleanup": {
         "title": "Brzo čišćenje podataka",

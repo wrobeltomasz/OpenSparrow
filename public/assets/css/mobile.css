@@ -74,6 +74,7 @@
     .header-controls #globalSearch,
     .header-controls input[type="search"],
     .header-controls #columnFilter,
+    .header-controls #groupBy,
     .header-controls #fileTypeFilter,
     .header-controls #dashDateFilter,
     .header-controls input.date-filter,

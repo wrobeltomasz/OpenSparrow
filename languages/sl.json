@@ -228,7 +228,8 @@
         "fn_avg": "POVPREČJE",
         "fn_min": "MIN",
         "fn_max": "MAKS",
-        "fn_count": "ŠTEVILO"
+        "fn_count": "ŠTEVILO",
+        "group_by": "Združi vrstice…"
     },
     "data_cleanup": {
         "title": "Hitro čiščenje podatkov",

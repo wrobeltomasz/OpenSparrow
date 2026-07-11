@@ -222,7 +222,8 @@
         "fn_avg": "MEDEL",
         "fn_min": "MIN",
         "fn_max": "MAX",
-        "fn_count": "ANTAL"
+        "fn_count": "ANTAL",
+        "group_by": "Gruppera rader…"
     },
     "data_cleanup": {
         "title": "Snabb datarensning",

@@ -317,12 +317,97 @@ export function renderViewsEditor(ctx) {
             });
             summarySel.addEventListener('change', () => {
                 const v = summarySel.value;
-                if (v === 'none') delete views[vName].columns[colName].summary;
-                else views[vName].columns[colName].summary = v;
+                if (v === 'none') {
+                    delete views[vName].columns[colName].summary;
+                    delete views[vName].columns[colName].summary_if;
+                    syncCondUi();
+                } else {
+                    views[vName].columns[colName].summary = v;
+                }
+                condGrp.style.display = v === 'none' ? 'none' : 'block';
                 markDirty();
             });
             summaryGrp.appendChild(summarySel);
             colBlock.appendChild(summaryGrp);
+
+            /* summary condition (SUMIF/COUNTIF): aggregate only rows matching column-op-value */
+            const condGrp = document.createElement('div');
+            condGrp.className = 'form-group';
+            condGrp.style.display = (colCfg.summary ?? 'none') === 'none' ? 'none' : 'block';
+            const condLbl = document.createElement('label');
+            condLbl.textContent = 'Summary condition (SUMIF / COUNTIF)';
+            condGrp.appendChild(condLbl);
+
+            const condRow = document.createElement('div');
+            condRow.style.cssText = 'display:flex; align-items:center; gap:8px;';
+
+            const condColSel = document.createElement('select');
+            condColSel.className = 'adm-input';
+            condColSel.style.flex = '1';
+            const condNone = document.createElement('option');
+            condNone.value = '';
+            condNone.textContent = '— no condition —';
+            condColSel.appendChild(condNone);
+            allCols.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c;
+                o.textContent = c;
+                if (colCfg.summary_if?.column === c) o.selected = true;
+                condColSel.appendChild(o);
+            });
+
+            const condOpSel = document.createElement('select');
+            condOpSel.className = 'adm-input';
+            condOpSel.style.width = '110px';
+            ['==', '!=', '>', '>=', '<', '<=', 'contains'].forEach(op => {
+                const o = document.createElement('option');
+                o.value = op;
+                o.textContent = op;
+                if ((colCfg.summary_if?.op ?? '==') === op) o.selected = true;
+                condOpSel.appendChild(o);
+            });
+
+            const condValInp = document.createElement('input');
+            condValInp.type        = 'text';
+            condValInp.className   = 'adm-input';
+            condValInp.style.flex  = '1';
+            condValInp.placeholder = 'Value';
+            condValInp.value       = colCfg.summary_if?.value ?? '';
+
+            function syncCondUi() {
+                const active = condColSel.value !== '';
+                condOpSel.disabled  = !active;
+                condValInp.disabled = !active;
+                if (!views[vName].columns[colName].summary_if) {
+                    condColSel.value = '';
+                    condOpSel.disabled  = true;
+                    condValInp.disabled = true;
+                }
+            }
+
+            function updateCond() {
+                if (condColSel.value === '') {
+                    delete views[vName].columns[colName].summary_if;
+                } else {
+                    views[vName].columns[colName].summary_if = {
+                        column: condColSel.value,
+                        op:     condOpSel.value,
+                        value:  condValInp.value,
+                    };
+                }
+                syncCondUi();
+                markDirty();
+            }
+            condColSel.addEventListener('change', updateCond);
+            condOpSel.addEventListener('change', updateCond);
+            condValInp.addEventListener('input', updateCond);
+            syncCondUi();
+
+            condRow.appendChild(condColSel);
+            condRow.appendChild(condOpSel);
+            condRow.appendChild(condValInp);
+            condGrp.appendChild(condRow);
+            colBlock.appendChild(condGrp);
 
             /* color rules */
             const rulesLabel = document.createElement('label');
