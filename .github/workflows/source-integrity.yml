@@ -90,3 +90,33 @@ jobs:
             exit 1
           fi
           echo "All migration entries have the required keys."
+
+  license-integrity:
+    name: Licence files unchanged
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # COPYING (GPL v3) and COPYING.LESSER (LGPL v3) must stay verbatim.
+      # The pinned hashes are the sha256 of the repo's canonical copies
+      # (wording verified identical to https://www.gnu.org/licenses/ texts;
+      # formatting follows the gnu.org HTML rendering). Any edit to either
+      # file fails this job — if a change is ever intentional, re-verify the
+      # wording against gnu.org and update the hashes here in the same PR.
+      - name: Verify COPYING and COPYING.LESSER checksums
+        run: |
+          set -euo pipefail
+          check() {
+            # CR-stripped so the result is identical regardless of the
+            # checkout's line-ending conversion (Windows autocrlf etc.).
+            ACTUAL=$(tr -d '\r' < "$2" | sha256sum | cut -d' ' -f1)
+            if [ "$ACTUAL" != "$1" ]; then
+              echo "::error file=$2::$2 differs from the pinned verbatim licence text (sha256 $ACTUAL, expected $1)"
+              exit 1
+            fi
+            echo "$2: OK"
+          }
+          check db577a83cb12a0be806cd166a31fa86335768c7981424181028a1a1bfbac0c62 COPYING
+          check dbcd19ea5a26de8ad07b566291bab225318cc218e0f1f0d522ce47baa1f3c319 COPYING.LESSER
+          echo "Licence files match their pinned checksums."

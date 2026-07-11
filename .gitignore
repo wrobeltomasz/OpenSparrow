@@ -1,6 +1,5 @@
-# Composer
+# Composer — composer.lock is committed so CI installs reproducible dev-dependency versions
 /vendor/
-composer.lock
 
 # Logs
 *.log
