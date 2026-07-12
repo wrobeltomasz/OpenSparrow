@@ -10,10 +10,12 @@
   --accent-light: #F0F6FA;
   --accent-mid:   #DDEAF4;
 
-  --danger:       #DC2626;
+  --danger:       #d00000;
+  --danger-dark:  #a80000;
   --danger-light: #FEF2F2;
-  --ok:           #16A34A;
-  --ok-dark:      #15803D;
+  --ok:           #2b9348;
+  --ok-dark:      #236e38;
+  --warn:         #ffc300;
 
   --border:       #CBD5E1;
   --border-light: #E2E8F0;
@@ -1516,47 +1518,8 @@ header .dash-filter-label {
 /* =========================================
    FORMS
 ========================================= */
-.btn-add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--ok);
-  color: #ffffff;
-  padding: 0.42rem 0.9rem;
-  border-radius: var(--radius);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all var(--transition);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid transparent;
-}
-
-.btn-add:hover {
-  background-color: var(--ok-dark);
-  transform: translateY(-1px);
-  color: #ffffff;
-  text-decoration: none;
-}
-
-.btn-action {
-  display: inline-block;
-  background-color: var(--accent);
-  color: #ffffff;
-  padding: 0.42rem 0.9rem;
-  border-radius: var(--radius);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  transition: background-color var(--transition);
-}
-
-.btn-action:hover {
-  background-color: var(--accent-dark);
-  color: #ffffff;
-  text-decoration: none;
-}
+/* .btn-add / .btn-action are defined in assets/css/buttons.css (shared
+   button component). */
 
 .password-container {
   position: relative;

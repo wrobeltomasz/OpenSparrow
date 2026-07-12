@@ -105,7 +105,6 @@ if ($action === 'test_connection') {
     $conn = @pg_connect($connStr);
 
     if (!$conn) {
-        $error = pg_last_error() ?: 'Unknown connection error';
         // Sanitize error message (don't expose internal PG details)
         $safeError = 'Connection failed. Check host, port, database name, username, or password.';
         echo json_encode([

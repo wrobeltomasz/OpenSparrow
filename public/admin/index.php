@@ -48,6 +48,7 @@ if (!$firstRun && ($_SESSION['role'] ?? '') !== 'admin') {
         <title>403 Forbidden</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="../assets/css/styles.css">
+        <link rel="stylesheet" href="../assets/css/buttons.css">
     </head>
     <body class="admin-403-page">
         <div class="admin-403-card">
@@ -78,6 +79,7 @@ if (empty($_SESSION['csrf_token'])) {
     <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>">
 
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/buttons.css">
     <link rel="stylesheet" href="style.css?v=<?php echo @filemtime('style.css'); ?>">
 </head>
 <body>

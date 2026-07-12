@@ -1,9 +1,10 @@
 /* admin/style.css */
 /* Modern UI configuration variables.
-   NOTE: index.php loads assets/css/styles.css (the app stylesheet) first, then
-   this file. These :root tokens and the button classes below intentionally
-   override the app's equivalents so the admin panel owns its own palette and
-   button sizing regardless of load order. Keep button classes defined here. */
+   NOTE: index.php loads assets/css/styles.css, then assets/css/buttons.css
+   (shared .btn component - see that file), then this file. These :root
+   tokens intentionally override the app's equivalents so the admin panel
+   owns its own palette regardless of load order. Do not redeclare .btn*
+   rules here - add admin-only button variants to buttons.css instead. */
 :root {
   --bg:           #F4F7F9;
   --panel:        #ffffff;
@@ -589,108 +590,10 @@ body {
     font-size: 15px;
 }
 
-/* ===== Utility buttons ===== */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--panel);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    text-decoration: none;
-    transition: background var(--transition), border-color var(--transition), color var(--transition);
-}
-.btn:hover {
-    background: var(--accent-light);
-    border-color: var(--accent);
-    color: var(--accent);
-}
-.btn-primary {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-}
-.btn.btn-primary:hover,
-.btn-primary:hover {
-    background: var(--accent-dark);
-    border-color: var(--accent-dark);
-    color: #fff;
-}
-.btn-secondary {
-    background: var(--panel);
-    color: var(--muted);
-    border-color: var(--border);
-}
-.btn-secondary:hover {
-    background: var(--accent-light);
-    border-color: var(--accent);
-    color: var(--accent);
-}
-.btn-danger {
-    background: var(--danger);
-    color: #fff;
-    border-color: var(--danger);
-}
-.btn.btn-danger:hover,
-.btn-danger:hover {
-    background: var(--danger-dark);
-    border-color: var(--danger-dark);
-    color: #fff;
-}
-.btn-success {
-    background: var(--ok);
-    color: #fff;
-    border-color: var(--ok);
-}
-.btn.btn-success:hover,
-.btn-success:hover {
-    background: var(--ok-dark);
-    border-color: var(--ok-dark);
-    color: #fff;
-}
-.btn-sm {
-    padding: 5px 10px;
-    font-size: 12px;
-}
-.btn-xs {
-    padding: 3px 8px;
-    font-size: 11px;
-}
-
-/* .btn-action — blue primary action. Defined here so the admin panel does not
-   silently depend on the app stylesheet (assets/css/styles.css) which also
-   declares it and loads first. Kept as an alias of .btn-primary's look. */
-.btn-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-    background: var(--accent);
-    color: #fff;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    text-decoration: none;
-    transition: background var(--transition), border-color var(--transition), color var(--transition);
-}
-.btn-action:hover {
-    background: var(--accent-dark);
-    border-color: var(--accent-dark);
-    color: #fff;
-    text-decoration: none;
-}
+/* Utility buttons: .btn / .btn-primary / .btn-secondary / .btn-danger /
+   .btn-success / .btn-sm / .btn-xs are defined in assets/css/buttons.css
+   (shared with the front-end app). .btn-action is an alias of .btn-primary
+   kept for backwards compatibility, defined in the same shared file. */
 
 /* ===== Utility inputs ===== */
 .adm-input,
