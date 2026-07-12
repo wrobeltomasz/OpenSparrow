@@ -4,7 +4,8 @@
 .gitattributes
 
 # Docker / deploy configuration — used to build or run containers, never needed
-# inside the image. docker-php-dev.ini is NOT excluded: the Dockerfile COPYs it.
+# inside the image. docker-php-dev.ini, nginx.standalone.conf, and
+# supervisord.standalone.conf are NOT excluded: Dockerfile.standalone COPYs them.
 Dockerfile
 Dockerfile.standalone
 docker-compose.yml
@@ -12,8 +13,6 @@ docker-compose.override.yml
 docker-compose-production.yml
 .dockerignore
 nginx.conf
-nginx.standalone.conf
-supervisord.standalone.conf
 railway.toml
 render.yaml
 
