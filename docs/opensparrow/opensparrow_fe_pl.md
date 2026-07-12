@@ -10,6 +10,7 @@
 
 1. [Architektura i role użytkowników](#1-architektura-i-role-użytkowników)
 2. [Logowanie i sesja](#2-logowanie-i-sesja)
+   - 2.1 [Pierwsza konfiguracja (Setup Wizard)](#21-pierwsza-konfiguracja-setup-wizard)
 3. [Menu boczne i nawigacja](#3-menu-boczne-i-nawigacja)
 4. [Siatka danych (Grid)](#4-siatka-danych-grid)
    - 4.1 [Wyświetlanie kolumn](#41-wyświetlanie-kolumn)
@@ -108,6 +109,14 @@ OpenSparrow to platforma schema-driven: administrator definiuje tabele, kolumny 
 - Token CSRF weryfikowany przy wszystkich żądaniach POST/PATCH/DELETE
 - Ciasteczka: HttpOnly, SameSite=Strict
 - Weryfikacja User-Agent hash (ochrona przed przechwyceniem sesji)
+
+### 2.1 Pierwsza konfiguracja (Setup Wizard)
+
+- Adres: `setup.php` - dostępny tylko dopóki nie istnieje `config/database.json`; po zainicjalizowaniu systemu endpoint zwraca 403 i przekierowuje na `login.php`
+- Kreator 4-etapowy: powitanie -> dane połączenia PostgreSQL (z testem połączenia) -> nazwa schematu -> podsumowanie i inicjalizacja
+- Inicjalizacja tworzy tabele systemowe `spw_*` w podanym schemacie oraz domyślne konto `admin`
+- Hasło konta `admin` jest losowo generowane po stronie serwera przy inicjalizacji i wyświetlane **jednorazowo** na ekranie końcowym kreatora - nie jest nigdzie logowane ani zapisywane w postaci jawnej, więc trzeba je od razu zapisać/skopiować
+- Po zalogowaniu należy niezwłocznie zmienić hasło admina w Panelu admina › Użytkownicy
 
 ---
 
