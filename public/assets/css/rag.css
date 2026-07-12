@@ -302,63 +302,8 @@
     align-items: center;
 }
 
-.rag-send-btn {
-    padding: 8px 22px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--transition);
-}
-
-.rag-send-btn:hover:not(:disabled) {
-    background: var(--accent-dark);
-}
-
-.rag-send-btn:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-}
-
-.rag-clear-btn {
-    padding: 8px 16px;
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 13px;
-    cursor: pointer;
-    transition: color var(--transition), border-color var(--transition);
-}
-
-.rag-clear-btn:hover {
-    color: var(--danger);
-    border-color: var(--danger);
-}
-
-.rag-stop-btn {
-    padding: 8px 16px;
-    background: transparent;
-    color: var(--danger);
-    border: 1px solid var(--danger);
-    border-radius: var(--radius);
-    font-size: 13px;
-    cursor: pointer;
-    transition: background var(--transition), color var(--transition), opacity var(--transition);
-}
-
-.rag-stop-btn:hover:not(:disabled) {
-    background: var(--danger);
-    color: #fff;
-}
-
-.rag-stop-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
+/* .rag-send-btn / .rag-clear-btn / .rag-stop-btn removed - rag.php now
+   uses the shared .btn.btn-primary / .btn.btn-secondary / .btn.btn-danger */
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 

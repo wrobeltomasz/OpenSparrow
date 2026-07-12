@@ -54,9 +54,9 @@ ob_start();
                         aria-label="Your question"
                     ></textarea>
                     <div class="rag-input-actions">
-                        <button id="ragSendBtn" class="rag-send-btn" type="button">Send</button>
-                        <button id="ragStopBtn" class="rag-stop-btn" type="button" disabled>Stop</button>
-                        <button id="ragClearBtn" class="rag-clear-btn" type="button">Clear history</button>
+                        <button id="ragSendBtn" class="btn btn-primary" type="button">Send</button>
+                        <button id="ragStopBtn" class="btn btn-danger" type="button" disabled>Stop</button>
+                        <button id="ragClearBtn" class="btn btn-secondary" type="button">Clear history</button>
                         <span id="ragMemoryPill" class="rag-memory-pill" hidden></span>
                     </div>
                 </div>

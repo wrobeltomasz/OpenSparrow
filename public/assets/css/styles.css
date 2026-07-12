@@ -2161,28 +2161,7 @@ th.drag-over .th-label {
   border-color: var(--accent);
 }
 
-.c-send-btn {
-  padding: 9px 18px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--transition);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.c-send-btn:hover {
-  background: var(--accent-dark);
-}
-
-.c-send-btn:disabled {
-  background: var(--muted);
-  cursor: not-allowed;
-}
+/* .c-send-btn removed - comments.js now uses the shared .btn.btn-primary */
 
 .c-toolbar {
   display: flex;
@@ -3418,43 +3397,8 @@ th.drag-over .th-label {
     margin-top: 8px;
     justify-content: flex-end;
 }
-.ag-send-btn {
-    padding: 6px 16px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius);
-    font-size: 13px;
-    cursor: pointer;
-    transition: background var(--transition);
-}
-.ag-send-btn:hover:not(:disabled) { background: var(--accent-dark); }
-.ag-send-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-.ag-stop-btn {
-    padding: 6px 12px;
-    background: none;
-    border: 1px solid var(--danger);
-    border-radius: var(--radius);
-    font-size: 13px;
-    cursor: pointer;
-    color: var(--danger);
-    transition: background var(--transition), color var(--transition), opacity var(--transition);
-}
-.ag-stop-btn:hover:not(:disabled) { background: var(--danger); color: #fff; }
-.ag-stop-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.ag-clear-btn {
-    padding: 6px 12px;
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 13px;
-    cursor: pointer;
-    color: var(--muted);
-    transition: background var(--transition);
-}
-.ag-clear-btn:hover { background: var(--accent-light); }
+/* .ag-send-btn / .ag-stop-btn / .ag-clear-btn removed - agent-panel.js now
+   uses the shared .btn.btn-primary / .btn.btn-danger / .btn.btn-secondary */
 
 @media (max-width: 768px) {
     .ag-panel { width: 100%; right: -100%; }

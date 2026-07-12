@@ -356,31 +356,8 @@
 .ve-drill-select { width: 150px; }
 .ve-drill-label  { width: 140px; }
 
-/* Buttons */
-.ve-btn {
-  padding: 0.42rem 0.9rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition);
-  white-space: nowrap;
-}
-
-.ve-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
-
-.ve-btn-primary  { background: var(--accent); color: #fff; border-color: var(--accent); }
-.ve-btn-primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
-
-.ve-btn-secondary { background: var(--panel); }
-
-.ve-btn-danger { border-color: #fca5a5; color: var(--danger); background: #fef2f2; }
-.ve-btn-danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
-
-.ve-btn-sm { padding: 0.25rem 0.6rem; font-size: 12px; }
+/* Buttons: views_editor.js uses the shared .btn/.btn-primary/.btn-danger/
+   .btn-add classes from assets/css/buttons.css. */
 
 .ve-muted { font-size: 12px; color: var(--muted); }
 
