@@ -120,7 +120,7 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                 <div class="admin-info">
                     <strong>Default Admin Account</strong>
                     <div>Username: <code>admin</code></div>
-                    <div>Password: <code>admin</code></div>
+                    <div>Password: a random password will be generated and shown after initialization</div>
                 </div>
 
                 <div style="background: var(--accent-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--accent); font-size: 13px; color: #003366;">
@@ -181,13 +181,13 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                 <div class="admin-info">
                     <strong>Admin Account Created</strong>
                     <div>Username: <code>admin</code></div>
-                    <div>Password: <code>admin</code></div>
+                    <div>Password: <code id="created-admin-password"></code></div>
                 </div>
 
                 <div style="background: #f0f6fa; padding: 12px; border-radius: var(--radius); border-left: 3px solid #0284c7; font-size: 13px; color: #003366; margin-bottom: 20px;">
                     <strong style="display: block; margin-bottom: 4px;">Next Steps</strong>
                     <ol style="margin: 0; padding-left: 16px;">
-                        <li>Log in with admin / admin</li>
+                        <li>Log in with admin and the password shown above</li>
                         <li>Go to Admin Panel &rarr; Users</li>
                         <li>Change the admin password immediately</li>
                     </ol>
@@ -338,6 +338,7 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
+                    document.getElementById('created-admin-password').textContent = data.admin_password || '';
                     currentStep = 5;
                     updateDisplay();
                 } else {
