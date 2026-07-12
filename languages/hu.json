@@ -274,7 +274,11 @@
         "month_oct": "Október",
         "month_nov": "November",
         "month_dec": "December",
-        "filter_all": "Összes"
+        "filter_all": "Összes",
+        "add_event": "Esemény hozzáadása",
+        "add_event_title": "Esemény hozzáadása — {date}",
+        "select_calendar": "Naptár",
+        "no_calendars_configured": "Nincs beállított naptár."
     },
     "board": {
         "title": "Tábla",

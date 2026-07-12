@@ -277,7 +277,11 @@
         "month_oct": "Październik",
         "month_nov": "Listopad",
         "month_dec": "Grudzień",
-        "filter_all": "Wszystkie"
+        "filter_all": "Wszystkie",
+        "add_event": "Dodaj wydarzenie",
+        "add_event_title": "Dodaj wydarzenie — {date}",
+        "select_calendar": "Kalendarz",
+        "no_calendars_configured": "Brak skonfigurowanych kalendarzy."
     },
     "board": {
         "title": "Tablica",

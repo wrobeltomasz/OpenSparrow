@@ -274,7 +274,11 @@
         "month_oct": "Οκτώβριος",
         "month_nov": "Νοέμβριος",
         "month_dec": "Δεκέμβριος",
-        "filter_all": "Όλα"
+        "filter_all": "Όλα",
+        "add_event": "Προσθήκη συμβάντος",
+        "add_event_title": "Προσθήκη συμβάντος — {date}",
+        "select_calendar": "Ημερολόγιο",
+        "no_calendars_configured": "Δεν έχουν διαμορφωθεί ημερολόγια."
     },
     "board": {
         "title": "Πίνακας",

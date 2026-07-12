@@ -280,7 +280,11 @@
         "month_oct": "Oktober",
         "month_nov": "November",
         "month_dec": "December",
-        "filter_all": "Vse"
+        "filter_all": "Vse",
+        "add_event": "Dodaj dogodek",
+        "add_event_title": "Dodaj dogodek — {date}",
+        "select_calendar": "Koledar",
+        "no_calendars_configured": "Ni konfiguriranih koledarjev."
     },
     "board": {
         "title": "Tabla",

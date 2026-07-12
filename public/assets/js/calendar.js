@@ -28,6 +28,7 @@ let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let eventsData = [];
 let appSchema = null;
+let canEdit = false;
 
 // ── Filters: source visibility (chips) ───────────────────────────────────────
 const FILTER_STORAGE_KEY = 'sparrow_calendar_filters';
@@ -138,6 +139,7 @@ function renderFilterBar() {
 
 // Init calendar when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
+    canEdit = !!(window.USER_CAPS && window.USER_CAPS.canEdit);
     await fetchI18n();
     await fetchSchema();
     await fetchEvents(currentYear, currentMonth + 1);
@@ -258,7 +260,23 @@ function renderCalendar() {
         dateNum.className = 'calendar-date-num';
         dateNum.textContent = i;
         cell.appendChild(dateNum);
-        
+
+        const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+
+        if (canEdit) {
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'calendar-add-btn';
+            addBtn.textContent = '+';
+            addBtn.title = t('calendar.add_event');
+            addBtn.setAttribute('aria-label', t('calendar.add_event'));
+            addBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openAddEventModal(dateString);
+            });
+            cell.appendChild(addBtn);
+        }
+
         const todayDate = new Date();
         if (i === todayDate.getDate() && 
             currentMonth === todayDate.getMonth() && 
@@ -266,8 +284,6 @@ function renderCalendar() {
             cell.classList.add('today');
         }
 
-        const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-        
         // Handle dragover required for dropping
         cell.addEventListener('dragover', (e) => {
             e.preventDefault(); 
@@ -470,5 +486,114 @@ function renderCalendar() {
         });
 
         container.appendChild(cell);
+    }
+}
+
+// ── Quick add: "+" on a day cell opens a calendar-picker modal, then
+// navigates to create.php with the date pre-filled and locked (same
+// GET-prefill mechanism the subtable "add" links use in edit.php).
+function openAddEventModal(dateString) {
+    const sources = calendarSources();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'cal-modal-backdrop';
+
+    const modal = document.createElement('div');
+    modal.className = 'cal-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'cal-modal-close';
+    closeBtn.textContent = '✕';
+    closeBtn.setAttribute('aria-label', t('common.cancel'));
+    modal.appendChild(closeBtn);
+
+    const title = document.createElement('h3');
+    title.className = 'cal-modal-title';
+    title.id = 'calModalTitle';
+    title.textContent = t('calendar.add_event_title', { date: dateString });
+    modal.setAttribute('aria-labelledby', title.id);
+    modal.appendChild(title);
+
+    let select = null;
+    let confirmBtn = null;
+
+    if (sources.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'cal-modal-empty';
+        empty.textContent = t('calendar.no_calendars_configured');
+        modal.appendChild(empty);
+    } else {
+        const label = document.createElement('label');
+        label.className = 'cal-modal-label';
+        label.setAttribute('for', 'calModalSelect');
+        label.textContent = t('calendar.select_calendar');
+        modal.appendChild(label);
+
+        select = document.createElement('select');
+        select.id = 'calModalSelect';
+        select.className = 'cal-modal-select';
+        sources.forEach(src => {
+            const opt = document.createElement('option');
+            opt.value = src.table;
+            opt.textContent = tableLabel(src.table);
+            select.appendChild(opt);
+        });
+        modal.appendChild(select);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'cal-modal-actions';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn-cancel';
+    cancelBtn.textContent = t('common.cancel');
+    actions.appendChild(cancelBtn);
+
+    if (sources.length > 0) {
+        confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.className = 'btn-save';
+        confirmBtn.textContent = t('common.add');
+        actions.appendChild(confirmBtn);
+    }
+
+    modal.appendChild(actions);
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    function close() {
+        document.removeEventListener('keydown', onKeydown);
+        backdrop.remove();
+    }
+
+    function onKeydown(e) {
+        if (e.key === 'Escape') close();
+    }
+
+    backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) close();
+    });
+    closeBtn.addEventListener('click', close);
+    cancelBtn.addEventListener('click', close);
+    document.addEventListener('keydown', onKeydown);
+
+    if (confirmBtn && select) {
+        confirmBtn.addEventListener('click', () => {
+            const table = select.value;
+            const src = sources.find(s => s.table === table);
+            if (!src) return;
+
+            const colType = (appSchema?.tables?.[table]?.columns?.[src.date_column]?.type || '').toLowerCase();
+            const value = colType === 'timestamp' ? `${dateString}T00:00:00` : dateString;
+
+            window.location.href = `create.php?table=${encodeURIComponent(table)}&${encodeURIComponent(src.date_column)}=${encodeURIComponent(value)}`;
+        });
+        select.focus();
+    } else {
+        closeBtn.focus();
     }
 }

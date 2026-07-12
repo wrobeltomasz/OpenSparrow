@@ -274,7 +274,11 @@
         "month_oct": "Oktobris",
         "month_nov": "Novembris",
         "month_dec": "Decembris",
-        "filter_all": "Visi"
+        "filter_all": "Visi",
+        "add_event": "Pievienot notikumu",
+        "add_event_title": "Pievienot notikumu — {date}",
+        "select_calendar": "Kalendārs",
+        "no_calendars_configured": "Nav konfigurēts neviens kalendārs."
     },
     "board": {
         "title": "Dēlis",

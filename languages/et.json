@@ -274,7 +274,11 @@
         "month_oct": "Oktoober",
         "month_nov": "November",
         "month_dec": "Detsember",
-        "filter_all": "Kõik"
+        "filter_all": "Kõik",
+        "add_event": "Lisa sündmus",
+        "add_event_title": "Lisa sündmus — {date}",
+        "select_calendar": "Kalender",
+        "no_calendars_configured": "Kalendreid pole seadistatud."
     },
     "board": {
         "title": "Tahvel",

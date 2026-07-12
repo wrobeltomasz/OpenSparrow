@@ -274,7 +274,11 @@
         "month_oct": "October",
         "month_nov": "November",
         "month_dec": "December",
-        "filter_all": "All"
+        "filter_all": "All",
+        "add_event": "Add event",
+        "add_event_title": "Add event — {date}",
+        "select_calendar": "Calendar",
+        "no_calendars_configured": "No calendars configured."
     },
     "board": {
         "title": "Board",

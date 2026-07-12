@@ -277,7 +277,11 @@
         "month_oct": "Octombrie",
         "month_nov": "Noiembrie",
         "month_dec": "Decembrie",
-        "filter_all": "Toate"
+        "filter_all": "Toate",
+        "add_event": "Adaugă eveniment",
+        "add_event_title": "Adaugă eveniment — {date}",
+        "select_calendar": "Calendar",
+        "no_calendars_configured": "Niciun calendar configurat."
     },
     "board": {
         "title": "Panou",

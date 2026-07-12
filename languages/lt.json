@@ -277,7 +277,11 @@
         "month_oct": "Spalis",
         "month_nov": "Lapkritis",
         "month_dec": "Gruodis",
-        "filter_all": "Visi"
+        "filter_all": "Visi",
+        "add_event": "Pridėti įvykį",
+        "add_event_title": "Pridėti įvykį — {date}",
+        "select_calendar": "Kalendorius",
+        "no_calendars_configured": "Nesukonfigūruotas nė vienas kalendorius."
     },
     "board": {
         "title": "Lenta",

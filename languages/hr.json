@@ -277,7 +277,11 @@
         "month_oct": "Listopad",
         "month_nov": "Studeni",
         "month_dec": "Prosinac",
-        "filter_all": "Sve"
+        "filter_all": "Sve",
+        "add_event": "Dodaj događaj",
+        "add_event_title": "Dodaj događaj — {date}",
+        "select_calendar": "Kalendar",
+        "no_calendars_configured": "Nema konfiguriranih kalendara."
     },
     "board": {
         "title": "Ploča",

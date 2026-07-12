@@ -277,7 +277,11 @@
         "month_oct": "Október",
         "month_nov": "November",
         "month_dec": "December",
-        "filter_all": "Všetky"
+        "filter_all": "Všetky",
+        "add_event": "Pridať udalosť",
+        "add_event_title": "Pridať udalosť — {date}",
+        "select_calendar": "Kalendár",
+        "no_calendars_configured": "Nie sú nakonfigurované žiadne kalendáre."
     },
     "board": {
         "title": "Nástenka",

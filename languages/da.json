@@ -274,7 +274,11 @@
         "month_oct": "Oktober",
         "month_nov": "November",
         "month_dec": "December",
-        "filter_all": "Alle"
+        "filter_all": "Alle",
+        "add_event": "Tilføj begivenhed",
+        "add_event_title": "Tilføj begivenhed — {date}",
+        "select_calendar": "Kalender",
+        "no_calendars_configured": "Ingen kalendere konfigureret."
     },
     "board": {
         "title": "Tavle",

@@ -22,10 +22,11 @@ $calConfig       = file_exists($calConfigPath)
     : [];
 $calendarSources = [];
 foreach (($calConfig['sources'] ?? []) as $src) {
-    if (!empty($src['table'])) {
+    if (!empty($src['table']) && !empty($src['date_column'])) {
         $calendarSources[] = [
-            'table' => $src['table'],
-            'color' => $src['color'] ?? '#3b82f6',
+            'table'       => $src['table'],
+            'color'       => $src['color'] ?? '#3b82f6',
+            'date_column' => $src['date_column'],
         ];
     }
 }

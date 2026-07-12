@@ -274,7 +274,11 @@
         "month_oct": "Octubre",
         "month_nov": "Noviembre",
         "month_dec": "Diciembre",
-        "filter_all": "Todos"
+        "filter_all": "Todos",
+        "add_event": "Añadir evento",
+        "add_event_title": "Añadir evento — {date}",
+        "select_calendar": "Calendario",
+        "no_calendars_configured": "No hay calendarios configurados."
     },
     "board": {
         "title": "Tablero",

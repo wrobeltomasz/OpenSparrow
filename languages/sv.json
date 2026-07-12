@@ -274,7 +274,11 @@
         "month_oct": "Oktober",
         "month_nov": "November",
         "month_dec": "December",
-        "filter_all": "Alla"
+        "filter_all": "Alla",
+        "add_event": "Lägg till händelse",
+        "add_event_title": "Lägg till händelse — {date}",
+        "select_calendar": "Kalender",
+        "no_calendars_configured": "Inga kalendrar konfigurerade."
     },
     "board": {
         "title": "Tavla",

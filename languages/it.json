@@ -274,7 +274,11 @@
         "month_oct": "Ottobre",
         "month_nov": "Novembre",
         "month_dec": "Dicembre",
-        "filter_all": "Tutti"
+        "filter_all": "Tutti",
+        "add_event": "Aggiungi evento",
+        "add_event_title": "Aggiungi evento — {date}",
+        "select_calendar": "Calendario",
+        "no_calendars_configured": "Nessun calendario configurato."
     },
     "board": {
         "title": "Bacheca",

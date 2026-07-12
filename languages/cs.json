@@ -277,7 +277,11 @@
         "month_oct": "Říjen",
         "month_nov": "Listopad",
         "month_dec": "Prosinec",
-        "filter_all": "Vše"
+        "filter_all": "Vše",
+        "add_event": "Přidat událost",
+        "add_event_title": "Přidat událost — {date}",
+        "select_calendar": "Kalendář",
+        "no_calendars_configured": "Nejsou nakonfigurovány žádné kalendáře."
     },
     "board": {
         "title": "Nástěnka",

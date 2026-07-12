@@ -274,7 +274,11 @@
         "month_oct": "Октомври",
         "month_nov": "Ноември",
         "month_dec": "Декември",
-        "filter_all": "Всички"
+        "filter_all": "Всички",
+        "add_event": "Добавяне на събитие",
+        "add_event_title": "Добавяне на събитие — {date}",
+        "select_calendar": "Календар",
+        "no_calendars_configured": "Не са конфигурирани календари."
     },
     "board": {
         "title": "Табло",
