@@ -9,7 +9,6 @@ import { buildExportButton } from './export.js';
 import { I18n } from '../i18n.js';
 
 // Import widgets so they self-register
-import './widgets/kpi-card.js';
 import './widgets/stat-card.js';
 import './widgets/bar-chart.js';
 import './widgets/vertical-bar-chart.js';
@@ -182,7 +181,7 @@ function renderWidgets(container, config) {
         widgetEl.dataset.w = widget.width  || 1;
         widgetEl.dataset.h = widget.height || 1;
 
-        if (widget.type !== 'kpi_card' && widget.type !== 'stat_card') {
+        if (widget.type !== 'stat_card') {
             const title = document.createElement('h3');
             title.className = 'dash-title';
             title.textContent = widget.title;

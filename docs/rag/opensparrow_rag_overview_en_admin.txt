@@ -52,7 +52,7 @@ Add Table:
   - Wizard for creating a new PostgreSQL table and registering it in the schema
 
 Dashboard:
-  - Add widgets: stat/KPI card, bar chart, pie chart, table (recent records list)
+  - Add widgets: stat card (COUNT/SUM/AVG aggregate), bar chart, pie chart, table (recent records list)
   - Per widget: title, source table, aggregate (COUNT/SUM/AVG/MIN/MAX), axis columns,
     group-by, filter conditions, width/height, color palette
   - Drag widgets to reorder in a 3-column grid; live preview while editing

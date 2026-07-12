@@ -457,7 +457,7 @@ try {
 
             // Apply Global Date Filter if requested and target matches.
             // $dateSqlPrev covers the equally long window directly before the
-            // current one and powers the previous-period delta on KPI cards.
+            // current one and powers the previous-period delta on stat cards.
             $dateFilter = $_GET['date_filter'] ?? 'all';
             $dateTarget = $_GET['date_target'] ?? 'all';
             $widgetTargetId = $widget['id'] ?? $widget['table'] ?? '';

@@ -332,7 +332,7 @@ async function loadConfigFile(fileName) {
 function addNewItem() {
     let newIndex = 0;
     if (currentFile === 'dashboard') {
-        currentConfig.widgets.push({ id: "widget_" + Date.now(), type: "kpi_card", title: "New Widget", table: "", query: { type: "count", column: "id" }, icon: "", color: "#64748B", display_columns: [] });
+        currentConfig.widgets.push({ id: "widget_" + Date.now(), type: "stat_card", title: "New Widget", table: "", query: { type: "count", column: "id" }, color: "#64748B", display_columns: [] });
         newIndex = currentConfig.widgets.length - 1;
     } else if (currentFile === 'calendar') {
         currentConfig.sources.push({ table: "", date_column: "", title_column: "", color: "#64748B", notify_before_days: 0, user_id_column: "", url_template: "" });

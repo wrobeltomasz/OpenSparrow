@@ -12,7 +12,7 @@ function csvCell(value) {
 function widgetRows(widget) {
     const data = widget.data;
     if (typeof data === 'number') {
-        // stat_card / kpi_card (count, sum) — single metric, optional previous period
+        // stat_card (count, sum, avg) — single metric, optional previous period
         const header = ['metric', 'value'];
         const row = [widget.title, data];
         if (typeof widget.prev_data === 'number') {

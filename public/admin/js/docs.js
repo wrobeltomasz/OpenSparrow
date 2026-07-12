@@ -158,7 +158,6 @@ ${_p(s.s3_desc)}
 ${_h4(s.s3_types_head)}
 ${_ul([
     `<strong>${s.s3_stat_label}:</strong> ${s.s3_stat}`,
-    `<strong>${s.s3_kpi_label}:</strong> ${s.s3_kpi}`,
     `<strong>${s.s3_bar_label}:</strong> ${s.s3_bar}`,
     `<strong>${s.s3_pie_label}:</strong> ${s.s3_pie}`,
     `<strong>${s.s3_list_label}:</strong> ${s.s3_list}`

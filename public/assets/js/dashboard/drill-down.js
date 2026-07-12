@@ -4,7 +4,7 @@ import { I18n } from '../i18n.js';
 
 /**
  * Returns first condition with op '=' from conditions array, or null.
- * Used by stat/kpi cards to navigate to pre-filtered table view.
+ * Used by stat cards to navigate to pre-filtered table view.
  */
 export function firstEqCondition(conditions) {
     if (!Array.isArray(conditions)) return null;

@@ -467,8 +467,7 @@ Siatka 3-kolumnowa widgetów z zagregowanymi danymi. Konfigurowana przez admina.
 
 | Typ | Opis |
 |-----|------|
-| KPI Card | Duża liczba z opcjonalnym wskaźnikiem trendu i warunkowym kolorowaniem |
-| Stat Card | Tytuł metryki + wartość z kolorowym kodowaniem zakresu |
+| Stat Card | Pojedyncza zagregowana wartość (COUNT / SUM / AVG) wybranej kolumny, z tytułem metryki i kolorowym tłem kafelka |
 | Bar Chart | Wykres słupkowy pionowy z etykietami osi X/Y i legendą |
 | Pie Chart | Wykres kołowy z kolorowymi segmentami i legendą |
 | List Widget | Tabela wielokolumnowa rekordów z linkami drill-down |
@@ -481,7 +480,7 @@ Siatka 3-kolumnowa widgetów z zagregowanymi danymi. Konfigurowana przez admina.
 
 Kontrolki filtrowania znajdują się na górnym (niebieskim) pasku aplikacji — tak samo jak na siatce danych, tablicy, w kalendarzu i menedżerze plików; na mobile dostępne po rozwinięciu panelu wyszukiwania (ikona lupy).
 
-- **Globalny filtr okresu**: lista rozwijana (Cały okres / Dziś / 7 dni / 30 dni / Ten miesiąc) — wpływa na wszystkie widgety jednocześnie; karty KPI/Stat pokazują wtedy wskaźnik trendu względem poprzedniego okresu
+- **Globalny filtr okresu**: lista rozwijana (Cały okres / Dziś / 7 dni / 30 dni / Ten miesiąc) — wpływa na wszystkie widgety jednocześnie; karty Stat pokazują wtedy wskaźnik trendu względem poprzedniego okresu
 - **Chipy widgetów**: po jednym chipie (z kropką w kolorze widgetu) na każdy skonfigurowany widget; kliknięcie ukrywa/pokazuje widget, stan zapamiętywany w przeglądarce (localStorage)
 - **Przycisk "Wyczyść filtry"**: pojawia się na pasku, gdy okres jest inny niż "Cały okres" lub któryś widget jest ukryty; kliknięcie przywraca domyślny widok
 

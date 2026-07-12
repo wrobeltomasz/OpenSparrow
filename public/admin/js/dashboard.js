@@ -1,10 +1,9 @@
 // admin/js/dashboard.js — Dashboard layout + widget editor
 // Imports the shared widget modules (self-register into WidgetRegistry) to live-preview widgets; edits dashboard.json widgets, queries and conditions.
-import { createTextInput, createSelectInput, createColorInput, createIconPicker, createCheckbox, renderGlobalSettings } from './ui.js';
+import { createTextInput, createSelectInput, createColorInput, createCheckbox, renderGlobalSettings } from './ui.js';
 import { WidgetRegistry } from '../../assets/js/dashboard/registry.js';
 
 // Import widgets so they self-register into WidgetRegistry
-import '../../assets/js/dashboard/widgets/kpi-card.js';
 import '../../assets/js/dashboard/widgets/stat-card.js';
 import '../../assets/js/dashboard/widgets/bar-chart.js';
 import '../../assets/js/dashboard/widgets/vertical-bar-chart.js';
@@ -133,7 +132,7 @@ function renderConditionsBuilder(q, colOptions) {
 // ── Widget Preview ───────────────────────────────────────────────────────────
 
 function getMockData(type, displayColumns) {
-    if (type === 'stat_card' || type === 'kpi_card') return 1337;
+    if (type === 'stat_card') return 1337;
     if (['bar_chart', 'vertical_bar_chart', 'pie_chart'].includes(type)) {
         return [
             { label: 'Category A', value: 42 },
@@ -179,7 +178,7 @@ function renderPreviewInto(container, widget) {
     widgetEl.dataset.h = widget.height || 1;
     widgetEl.style.pointerEvents = 'none';
 
-    if (!['kpi_card', 'stat_card'].includes(widget.type)) {
+    if (widget.type !== 'stat_card') {
         const title = document.createElement('h3');
         title.className = 'dash-title';
         title.textContent = widget.title || 'Widget Title';
@@ -194,8 +193,7 @@ function renderPreviewInto(container, widget) {
 
 // Added new widget types for vertical bar and pie charts
 export const WIDGET_TYPES = [
-    { value: 'kpi_card',          label: 'KPI Card' },
-    { value: 'stat_card',         label: 'Stat Card (Row Count)' },
+    { value: 'stat_card',         label: 'Stat Card' },
     { value: 'bar_chart',         label: 'Bar Chart (Horizontal)' },
     { value: 'vertical_bar_chart',label: 'Bar Chart (Vertical)' },
     { value: 'pie_chart',         label: 'Pie Chart' },
@@ -273,13 +271,10 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
     const q = itemData.query;
     const colOptions = getColumnOptionsForTable(itemData.table);
 
-    if (itemData.type === 'kpi_card') {
+    if (itemData.type === 'stat_card') {
         q.type = q.type || 'count'; q.column = q.column || 'id';
         queryBlock.appendChild(createSelectInput('q_type', 'Aggregation Function', [{ value: 'count', label: 'Count' }, { value: 'sum', label: 'Sum' }, { value: 'avg', label: 'Average' }], q.type, v => q.type = v));
         queryBlock.appendChild(createSelectInput('q_col', 'Target Column', colOptions, q.column, v => q.column = v));
-    } else if (itemData.type === 'stat_card') {
-        q.type = 'count';
-        q.column = q.column || 'id';
     } else if (['bar_chart', 'vertical_bar_chart', 'pie_chart'].includes(itemData.type)) {
         q.type = 'group_by';
         queryBlock.appendChild(createSelectInput('q_group', 'Group By Column', colOptions, q.group_column || '', v => q.group_column = v));
@@ -308,14 +303,6 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
         { value: 3, label: 'Large' },
     ], itemData.height || 1, v => { itemData.height = parseInt(v); }));
     workspaceEl.appendChild(sizeBlock);
-
-    // Icon only renders in kpi-card.js — hide it for widget types that don't consume it.
-    if (itemData.type === 'kpi_card') {
-        workspaceEl.appendChild(createIconPicker('icon', 'Icon Path', itemData.icon || '', v => {
-            if (v && v.trim() !== '') itemData.icon = v;
-            else delete itemData.icon;
-        }));
-    }
 
     // Color also drives the header visibility-filter chip dot for every widget type
     // (public/assets/js/dashboard/index.js), even though pie-chart.js ignores it for
