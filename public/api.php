@@ -159,7 +159,7 @@ require_once __DIR__ . '/../includes/mysql.php';
  * column is mapped back to its real MySQL primary key when aliased via
  * `mysql_pk`. Appended params are pushed onto $params by reference.
  * $window selects the date range: 'current' for the active filter window,
- * 'prev' for the equally long window directly before it (KPI trend deltas).
+ * 'prev' for the equally long window directly before it (stat card trend deltas).
  * Returns null for $window = 'prev' when no date filter applies to the widget.
  */
 function mysql_widget_where(
@@ -320,7 +320,7 @@ try {
                 $wTargetId = $widget['id'] ?? $widget['table'] ?? '';
                 $myParams  = [];
                 $myWhere   = mysql_widget_where($tableCfg, $conditions, $dfFilter, $dfTarget, $wTargetId, $myParams);
-                // Previous-period window for KPI trend deltas (null when no date filter applies)
+                // Previous-period window for stat card trend deltas (null when no date filter applies)
                 $myParamsPrev = [];
                 $myWherePrev  = mysql_widget_where($tableCfg, $conditions, $dfFilter, $dfTarget, $wTargetId, $myParamsPrev, 'prev');
 

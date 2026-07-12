@@ -744,7 +744,7 @@ Zarządzanie konfiguracją tabel i kolumn (`config/schema.json`).
 
 ### 17.2 Dashboard (Admin)
 
-- Dodaj widget: wybór typu (KPI / stat / wykres słupkowy / kołowy / lista)
+- Dodaj widget: wybór typu (stat / wykres słupkowy / kołowy / lista)
 - Konfiguracja widgetu: tytuł, tabela źródłowa, funkcja agregacji (SUM/COUNT/AVG), kolumny osi, grupowanie, warunki widoczności, szerokość/wysokość, paleta kolorów
 - Przeciąganie widgetów: zmiana kolejności w siatce 3-kolumnowej
 - Podgląd na żywo: dashboard odświeżany w czasie rzeczywistym podczas edycji
@@ -1120,7 +1120,7 @@ Krok 1: dostawca (FK select). Krok 2: pozycje dostawy (multi-record: produkt + i
 ### 23.3 Sprzedaż i raporty
 
 **Dashboard sprzedażowy:**  
-Karta KPI "Przychód miesięczny" z wartością i strzałką trendu. Karta "Liczba nowych klientów". Karta "Otwarte zlecenia". Wykres słupkowy sprzedaży per miesiąc. Jeden ekran = pełny obraz dla zarządu.
+Karta Stat "Przychód miesięczny" z wartością i strzałką trendu. Karta "Liczba nowych klientów". Karta "Otwarte zlecenia". Wykres słupkowy sprzedaży per miesiąc. Jeden ekran = pełny obraz dla zarządu.
 
 **Raport aktywności handlowców:**  
 Widget Lista: kolumny = handlowiec / liczba spotkań / wartość zamówień w miesiącu. Drill-down na handlowcu filtruje jego rekordy w siatce.

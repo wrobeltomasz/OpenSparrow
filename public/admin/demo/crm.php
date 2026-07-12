@@ -562,7 +562,7 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.product_contacts (product_id, contact_id, interested_at) VALUES (17, 1, NOW() - INTERVAL '7 days')",
             "INSERT INTO spw_crm.product_contacts (product_id, contact_id, interested_at) VALUES (18, 2, NOW() - INTERVAL '3 days')",
             // Spread created_at over past weeks/months so the dashboard period filter
-            // (Today/7d/30d) and KPI trend deltas have history to compare against.
+            // (Today/7d/30d) and stat card trend deltas have history to compare against.
             // The WHERE guard on leads keeps the intentionally stale GDPR-demo rows intact.
             "UPDATE spw_crm.companies SET created_at = NOW() - (id % 180) * INTERVAL '1 day'",
             "UPDATE spw_crm.contacts  SET created_at = NOW() - (id % 120) * INTERVAL '1 day'",
