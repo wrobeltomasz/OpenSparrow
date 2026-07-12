@@ -50,12 +50,12 @@ export async function renderSettingsPage(ctx) {
 
     const cardDesc = document.createElement('p');
     cardDesc.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 20px;';
-    cardDesc.textContent = 'Set the site-wide default language and which languages users can switch to. Language files live in languages/*.json.';
+    cardDesc.textContent = 'Set the site-wide default language. Language files live in languages/*.json.';
     card.appendChild(cardDesc);
 
     // Default language select
     const defRow = document.createElement('div');
-    defRow.style.cssText = 'margin-bottom:18px;';
+    defRow.style.cssText = 'margin-bottom:20px;';
 
     const defLabel = document.createElement('label');
     defLabel.htmlFor = 'setting-default-lang';
@@ -76,33 +76,6 @@ export async function renderSettingsPage(ctx) {
     defRow.appendChild(defSelect);
     card.appendChild(defRow);
 
-    // Available languages checkboxes
-    const availRow = document.createElement('div');
-    availRow.style.cssText = 'margin-bottom:20px;';
-
-    const availLabel = document.createElement('div');
-    availLabel.style.cssText = 'font-size:13px; font-weight:600; color:var(--muted); margin-bottom:8px;';
-    availLabel.textContent = 'Available languages';
-    availRow.appendChild(availLabel);
-
-    const checkboxes = [];
-    data.all_locales.forEach(loc => {
-        const row = document.createElement('label');
-        row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer; font-size:14px; color:var(--muted);';
-
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = loc.code;
-        cb.checked = data.available_languages.includes(loc.code);
-        cb.style.cssText = 'width:15px; height:15px; cursor:pointer;';
-
-        row.appendChild(cb);
-        row.appendChild(document.createTextNode(`${loc.name} (${loc.code})`));
-        availRow.appendChild(row);
-        checkboxes.push(cb);
-    });
-    card.appendChild(availRow);
-
     // Save button + status pill anchor
     const saveRow = document.createElement('div');
     saveRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
@@ -114,18 +87,6 @@ export async function renderSettingsPage(ctx) {
     const pillAnchor = document.createElement('span');
 
     saveBtn.addEventListener('click', async () => {
-        const chosenDefault = defSelect.value;
-        const chosenAvailable = checkboxes.filter(c => c.checked).map(c => c.value);
-
-        if (chosenAvailable.length === 0) {
-            showStatusPill(pillAnchor, 'Select at least one available language.', 'error');
-            return;
-        }
-        if (!chosenAvailable.includes(chosenDefault)) {
-            showStatusPill(pillAnchor, 'Default language must be in the available languages list.', 'error');
-            return;
-        }
-
         saveBtn.disabled = true;
         try {
             const res = await fetch('api.php?action=set_language_setting', {
@@ -135,8 +96,7 @@ export async function renderSettingsPage(ctx) {
                     'X-CSRF-Token': getCsrfToken(),
                 },
                 body: JSON.stringify({
-                    default_language:    chosenDefault,
-                    available_languages: chosenAvailable,
+                    default_language: defSelect.value,
                 }),
             });
             const result = await res.json();

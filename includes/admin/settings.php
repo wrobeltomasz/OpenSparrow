@@ -99,8 +99,7 @@ if ($action === 'get_language_setting') {
     $settingsFile = __DIR__ . '/../../config/settings.json';
     $settings = admin_read_settings($settingsFile);
 
-    $defaultLanguage    = is_string($settings['default_language'] ?? null) ? $settings['default_language'] : 'en';
-    $availableLanguages = is_array($settings['available_languages'] ?? null) ? $settings['available_languages'] : null;
+    $defaultLanguage = is_string($settings['default_language'] ?? null) ? $settings['default_language'] : 'en';
 
     $langDir    = __DIR__ . '/../../languages/';
     $allLocales = [];
@@ -113,13 +112,9 @@ if ($action === 'get_language_setting') {
         ];
     }
 
-    if ($availableLanguages === null) {
-        $availableLanguages = array_column($allLocales, 'code');
-    }
-
     echo json_encode([
         'default_language'    => $defaultLanguage,
-        'available_languages' => $availableLanguages,
+        'available_languages' => array_column($allLocales, 'code'),
         'all_locales'         => $allLocales,
     ]);
     exit;
@@ -135,17 +130,13 @@ if ($action === 'set_language_setting') {
         ? (string)$body['default_language']
         : 'en';
 
-    $available = array_values(array_filter(
-        array_map('strval', (array)($body['available_languages'] ?? [])),
-        static fn(string $l): bool => (bool)preg_match('/^[a-z]{2}(?:-[A-Z]{2})?$/', $l)
-    ));
-
-    if (empty($available)) {
-        echo json_encode(['status' => 'error', 'error' => 'At least one language must be available.']);
-        exit;
-    }
-    if (!in_array($defaultLang, $available, true)) {
-        echo json_encode(['status' => 'error', 'error' => 'Default language must be in the available languages list.']);
+    $langDir      = __DIR__ . '/../../languages/';
+    $installed    = array_map(
+        static fn(string $f): string => basename($f, '.json'),
+        glob($langDir . '*.json') ?: []
+    );
+    if (!in_array($defaultLang, $installed, true)) {
+        echo json_encode(['status' => 'error', 'error' => 'Default language must be an installed language.']);
         exit;
     }
 
@@ -157,8 +148,8 @@ if ($action === 'set_language_setting') {
     if (!isset($settings['locale_version'])) {
         $settings['locale_version'] = bin2hex(random_bytes(8));
     }
-    $settings['default_language']    = $defaultLang;
-    $settings['available_languages'] = $available;
+    $settings['default_language'] = $defaultLang;
+    unset($settings['available_languages']);
 
     $written = @file_put_contents(
         $settingsFile,
@@ -170,9 +161,8 @@ if ($action === 'set_language_setting') {
     }
 
     echo json_encode([
-        'status'             => 'success',
-        'default_language'   => $defaultLang,
-        'available_languages' => $available,
+        'status'           => 'success',
+        'default_language' => $defaultLang,
     ]);
     exit;
 }

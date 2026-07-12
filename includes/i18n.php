@@ -237,17 +237,11 @@ final class I18n
             return $cache;
         }
 
-        $langs = settings_value('available_languages');
-        if (is_array($langs)) {
-            return $cache = array_map('strval', $langs);
-        }
-
         $files = glob(self::LANGUAGES_DIR . '*.json') ?: [];
-        $cache = array_map(
+        return $cache = array_map(
             static fn(string $f): string => basename($f, '.json'),
             $files
         );
-        return $cache;
     }
 
     public static function sanitize(string $locale): string
