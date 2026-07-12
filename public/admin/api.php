@@ -167,6 +167,7 @@ $adminModules = [
     'set_chat_bubble_setting' => 'settings',
     'get_logo_setting' => 'settings',
     'set_logo_enabled' => 'settings',
+    'set_app_name' => 'settings',
     'upload_logo' => 'settings',
     'remove_logo' => 'settings',
     'menu_config' => 'config_files',

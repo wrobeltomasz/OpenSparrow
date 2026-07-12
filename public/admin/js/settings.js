@@ -3,7 +3,7 @@
 //
 // admin/js/settings.js — General settings page (renderSettingsPage): loads/saves app + chat-bubble + custom-logo settings via api.php (get/set_*_setting, upload_logo, remove_logo).
 import { showStatusPill } from './app.js';
-import { createPageHeader } from './ui.js';
+import { createPageHeader, buildInnerTabs } from './ui.js';
 import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export async function renderSettingsPage(ctx) {
@@ -29,6 +29,14 @@ export async function renderSettingsPage(ctx) {
     workspaceEl.innerHTML = '';
 
     workspaceEl.appendChild(createPageHeader('Application Settings'));
+
+    const tabsContainer = document.createElement('div');
+    workspaceEl.appendChild(tabsContainer);
+    const [languagePanel, chatBubblePanel, brandingPanel] = buildInnerTabs(tabsContainer, [
+        { label: 'Language' },
+        { label: 'Chat Bubble' },
+        { label: 'Branding' },
+    ]);
 
     // ── Language Settings card ─────────────────────────────────────────────
 
@@ -147,7 +155,7 @@ export async function renderSettingsPage(ctx) {
     saveRow.appendChild(pillAnchor);
     card.appendChild(saveRow);
 
-    workspaceEl.appendChild(card);
+    languagePanel.appendChild(card);
 
     // ── AI Chat Bubble card ────────────────────────────────────────────────
 
@@ -210,7 +218,7 @@ export async function renderSettingsPage(ctx) {
     bubbleSaveRow.appendChild(bubblePillAnchor);
     bubbleCard.appendChild(bubbleSaveRow);
 
-    workspaceEl.appendChild(bubbleCard);
+    chatBubblePanel.appendChild(bubbleCard);
 
     // ── Custom Logo card ────────────────────────────────────────────────────
 
@@ -226,6 +234,63 @@ export async function renderSettingsPage(ctx) {
     logoDesc.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 16px;';
     logoDesc.textContent = 'Replace the default OpenSparrow logo shown in the frontend header with your own image. PNG, JPEG or WEBP, up to 2 MB.';
     logoCard.appendChild(logoDesc);
+
+    // App name — shown as the heading on the login page in place of "OpenSparrow"
+    const appNameRow = document.createElement('div');
+    appNameRow.style.cssText = 'margin-bottom:20px;';
+
+    const appNameLabel = document.createElement('label');
+    appNameLabel.htmlFor = 'setting-app-name';
+    appNameLabel.style.cssText = 'display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;';
+    appNameLabel.textContent = 'Application name (shown on the login page)';
+    appNameRow.appendChild(appNameLabel);
+
+    const appNameInputRow = document.createElement('div');
+    appNameInputRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
+
+    const appNameInput = document.createElement('input');
+    appNameInput.type = 'text';
+    appNameInput.id = 'setting-app-name';
+    appNameInput.maxLength = 60;
+    appNameInput.value = logoData.app_name || 'OpenSparrow';
+    appNameInput.style.cssText = 'padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; width:260px;';
+    appNameInputRow.appendChild(appNameInput);
+
+    const appNameSaveBtn = document.createElement('button');
+    appNameSaveBtn.textContent = 'Save';
+    appNameSaveBtn.className = 'btn btn-primary';
+    appNameInputRow.appendChild(appNameSaveBtn);
+
+    const appNamePillAnchor = document.createElement('span');
+    appNameInputRow.appendChild(appNamePillAnchor);
+
+    appNameSaveBtn.addEventListener('click', async () => {
+        const chosenName = appNameInput.value.trim();
+        if (!chosenName) {
+            showStatusPill(appNamePillAnchor, 'App name cannot be empty.', 'error');
+            return;
+        }
+        appNameSaveBtn.disabled = true;
+        try {
+            const res = await fetch('api.php?action=set_app_name', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+                body: JSON.stringify({ app_name: chosenName }),
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                showStatusPill(appNamePillAnchor, 'Saved.', 'success');
+            } else {
+                showStatusPill(appNamePillAnchor, result.error || 'Error saving app name.', 'error');
+            }
+        } catch (e) {
+            showStatusPill(appNamePillAnchor, 'Request failed.', 'error');
+        }
+        appNameSaveBtn.disabled = false;
+    });
+
+    appNameRow.appendChild(appNameInputRow);
+    logoCard.appendChild(appNameRow);
 
     const logoEnabledRow = document.createElement('label');
     logoEnabledRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:var(--muted); margin-bottom:16px;';
@@ -359,7 +424,7 @@ export async function renderSettingsPage(ctx) {
     logoBtnRow.appendChild(logoPillAnchor);
     logoCard.appendChild(logoBtnRow);
 
-    workspaceEl.appendChild(logoCard);
+    brandingPanel.appendChild(logoCard);
 
     // ── Info card ──────────────────────────────────────────────────────────
 
@@ -374,5 +439,5 @@ export async function renderSettingsPage(ctx) {
         + '<li>Fallback: <code>en</code></li>'
         + '</ol>'
         + '<p style="margin:10px 0 0; color:var(--muted);">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
-    workspaceEl.appendChild(infoCard);
+    languagePanel.appendChild(infoCard);
 }

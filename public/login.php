@@ -61,6 +61,19 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Custom logo (Admin -> Settings -> Custom Logo) replaces the default login branding when enabled.
+$loginLogoSrc = 'assets/img/logo-brown.png';
+if ((bool) settings_value('logo_enabled', false)) {
+    $customLogoPath = settings_value('custom_logo_path', null);
+    if (is_string($customLogoPath) && $customLogoPath !== '') {
+        $loginLogoSrc = $customLogoPath;
+    }
+}
+
+// Custom application name (Admin -> Settings -> Custom Logo) replaces the "OpenSparrow" heading.
+$appNameRaw = settings_value('app_name', null);
+$appName    = is_string($appNameRaw) && $appNameRaw !== '' ? $appNameRaw : 'OpenSparrow';
+
 $error = '';
 
 // Process authentication request
@@ -186,15 +199,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>OpenSparrow | Login</title>
+    <title><?php echo htmlspecialchars($appName, ENT_QUOTES, 'UTF-8'); ?> | Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="assets/css/styles.css" rel="stylesheet" /> 
 </head>
 <body class="login-page">
     <div class="login-wrapper">
         <div class="login-box" data-cy="login-box">
-            <center><img src="assets/img/logo-brown.png" alt="Logo" class="footer-logo" height="48" /></center>
-            <h2>OpenSparrow</h2>
+            <center><img src="<?php echo htmlspecialchars($loginLogoSrc, ENT_QUOTES, 'UTF-8'); ?>" alt="Logo" class="footer-logo" height="48" /></center>
+            <h2><?php echo htmlspecialchars($appName, ENT_QUOTES, 'UTF-8'); ?></h2>
             <?php if ($error) : ?>
                 <div class="error" data-cy="login-error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>

@@ -216,10 +216,40 @@ if ($action === 'get_logo_setting') {
     header('Content-Type: application/json');
     $settings = admin_read_settings(__DIR__ . '/../../config/settings.json');
     $logoPath = $settings['custom_logo_path'] ?? null;
+    $appName  = $settings['app_name'] ?? null;
     echo json_encode([
         'logo_path'    => is_string($logoPath) ? $logoPath : null,
         'logo_enabled' => (bool) ($settings['logo_enabled'] ?? false),
+        'app_name'     => is_string($appName) && $appName !== '' ? $appName : 'OpenSparrow',
     ]);
+    exit;
+}
+
+// POST: save the custom application name shown on the login page and browser title
+if ($action === 'set_app_name') {
+    header('Content-Type: application/json');
+    require_not_demo();
+    $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $appName = trim((string) ($body['app_name'] ?? ''));
+
+    if ($appName === '' || mb_strlen($appName) > 60) {
+        echo json_encode(['status' => 'error', 'error' => 'App name must be 1-60 characters.']);
+        exit;
+    }
+
+    $settingsFile = __DIR__ . '/../../config/settings.json';
+    $settings = admin_read_settings($settingsFile);
+    $settings['app_name'] = $appName;
+
+    $written = @file_put_contents(
+        $settingsFile,
+        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    );
+    if ($written === false) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+        exit;
+    }
+    echo json_encode(['status' => 'success', 'app_name' => $appName]);
     exit;
 }
 
