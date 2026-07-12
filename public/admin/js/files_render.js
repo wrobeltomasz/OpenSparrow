@@ -43,8 +43,6 @@ export async function renderFilesEditor(ctx) {
     if (!_state.config.storage_path) _state.config.storage_path = 'storage/files/';
     if (!_state.config.allowed_types) _state.config.allowed_types = ['image', 'spreadsheet', 'archive', 'other'];
     if (!_state.config.allowed_extensions) _state.config.allowed_extensions = ["jpg", "jpeg", "png", "gif", "webp", "svg", "pdf", "doc", "docx", "odt", "rtf", "xls", "xlsx", "ods", "csv", "zip", "tar", "gz"];
-    if (!('public_access' in _state.config)) _state.config.public_access = false;
-    if (!('virus_scan' in _state.config)) _state.config.virus_scan = false;
     if (!_state.config.relations) _state.config.relations = [];
 
     workspaceEl.innerHTML = '';
@@ -71,15 +69,6 @@ function buildSkeleton() {
             <div class="form-group">
                 <label>Storage path <span class="help-text" style="display:inline">(relative to project root, must not be web-accessible)</span></label>
                 <input id="f-storage-path" type="text" style="max-width:340px">
-            </div>
-            
-            <div class="form-group" style="display:flex; gap:20px; margin-top:10px;">
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
-                    <input type="checkbox" id="f-public-access"> Public Access
-                </label>
-                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
-                    <input type="checkbox" id="f-virus-scan"> Virus Scan
-                </label>
             </div>
 
             <div class="form-group">
@@ -232,8 +221,6 @@ function fillConfigForm(cfg) {
     const maxEl  = document.getElementById('f-max-size');
     const pathEl = document.getElementById('f-storage-path');
     const extsEl = document.getElementById('f-allowed-exts');
-    const pubEl  = document.getElementById('f-public-access');
-    const virEl  = document.getElementById('f-virus-scan');
     const typesEl = document.getElementById('f-allowed-types');
 
     if (!maxEl) return;
@@ -241,8 +228,6 @@ function fillConfigForm(cfg) {
     maxEl.value  = cfg.max_file_size_mb;
     pathEl.value = cfg.storage_path;
     extsEl.value = (cfg.allowed_extensions || []).join(', ');
-    pubEl.checked = !!cfg.public_access;
-    virEl.checked = !!cfg.virus_scan;
 
     typesEl.innerHTML = ALL_TYPES.map(t => `
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:normal">
@@ -262,8 +247,6 @@ async function saveConfig() {
     const maxEl   = document.getElementById('f-max-size');
     const pathEl  = document.getElementById('f-storage-path');
     const extsEl  = document.getElementById('f-allowed-exts');
-    const pubEl   = document.getElementById('f-public-access');
-    const virEl   = document.getElementById('f-virus-scan');
     const checks  = document.querySelectorAll('#f-allowed-types input[type=checkbox]:checked');
     const msgEl   = document.getElementById('f-cfg-msg');
 
@@ -282,8 +265,6 @@ async function saveConfig() {
     _state.config.max_file_size_mb   = parseInt(maxEl?.value || '20', 10);
     _state.config.allowed_types      = [...checks].map(c => c.value);
     _state.config.allowed_extensions = extsArray;
-    _state.config.public_access      = pubEl.checked;
-    _state.config.virus_scan         = virEl.checked;
     _state.config.relations          = relations;
 
     try {

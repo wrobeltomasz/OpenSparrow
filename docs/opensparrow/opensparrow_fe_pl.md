@@ -935,9 +935,11 @@ Status `skipped` = warunki nie zostały spełnione. Dane przechowywane w `spw_au
 
 ### 17.17 Ustawienia globalne
 
-- Ustawienia aplikacji: motyw, nazwa systemu
-- Konfiguracja menu (widoczność, kolejność)
-- Ustawienia powiadomień
+Panel **Settings** dzieli się na trzy zakładki (styl `item-panel-items`, jak w innych sekcjach admina):
+
+- **Language** — wybór domyślnego języka aplikacji (`default_language`) z listy rozwijanej, zasilanej automatycznie plikami `languages/*.json`. Każdy zainstalowany plik językowy jest zawsze dostępny w przełączaniu języka (aplikacja nie ma osobnej listy "języków dopuszczonych" — to ograniczenie zostało usunięte, ponieważ nie miało realnego zastosowania: front-end nie ma widocznego przełącznika języka, a jedynym realnym mechanizmem wyboru jest ten parametr domyślny). Karta zawiera też opis kolejności wykrywania języka: `?lang=` w URL → sesja → preferencja użytkownika → język domyślny → nagłówek `Accept-Language` przeglądarki → `en`.
+- **Chat Bubble** — checkbox włączający pływający przycisk czatu AI w prawym dolnym rogu każdej strony aplikacji (alternatywa dla otwierania asystenta z menu użytkownika).
+- **Branding** — nazwa aplikacji wyświetlana na ekranie logowania oraz opcjonalne własne logo w nagłówku (PNG/JPEG/WEBP do 2 MB), z osobnym przełącznikiem widoczności logo.
 
 ### 17.18 Dokumentacja wbudowana (Docs)
 

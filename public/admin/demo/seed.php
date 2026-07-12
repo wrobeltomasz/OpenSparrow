@@ -230,12 +230,6 @@ if ($action === 'demo_install') {
                     'zip', 'tar', 'gz',
                 ];
             }
-            if (!isset($filesCfg['public_access'])) {
-                $filesCfg['public_access'] = false;
-            }
-            if (!isset($filesCfg['virus_scan'])) {
-                $filesCfg['virus_scan'] = false;
-            }
             if (!isset($filesCfg['relations']) || !is_array($filesCfg['relations'])) {
                 $filesCfg['relations'] = [];
             }

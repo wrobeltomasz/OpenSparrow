@@ -309,11 +309,17 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
     ], itemData.height || 1, v => { itemData.height = parseInt(v); }));
     workspaceEl.appendChild(sizeBlock);
 
-    workspaceEl.appendChild(createIconPicker('icon', 'Icon Path', itemData.icon || '', v => {
-        if (v && v.trim() !== '') itemData.icon = v;
-        else delete itemData.icon;
-    }));
+    // Icon only renders in kpi-card.js — hide it for widget types that don't consume it.
+    if (itemData.type === 'kpi_card') {
+        workspaceEl.appendChild(createIconPicker('icon', 'Icon Path', itemData.icon || '', v => {
+            if (v && v.trim() !== '') itemData.icon = v;
+            else delete itemData.icon;
+        }));
+    }
 
+    // Color also drives the header visibility-filter chip dot for every widget type
+    // (public/assets/js/dashboard/index.js), even though pie-chart.js ignores it for
+    // slice colors — so this control stays for all types.
     workspaceEl.appendChild(createColorInput('color', 'Accent Color', itemData.color, v => { itemData.color = v; refreshPreview(); }));
 
     if (itemData.type === 'list') {

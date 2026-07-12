@@ -165,9 +165,12 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!in_array($ck, $validKeys, true) || !in_array($ct, $validTypes, true)) {
                 continue;
             }
-            $children[] = ['type' => $ct, 'key' => $ck, 'children' => []];
+            // 'type' is only used above to validate the incoming item — the renderer
+            // (templates/menu.php) looks up the real type from $menuCatalog by key, so
+            // it is intentionally not persisted here.
+            $children[] = ['key' => $ck, 'children' => []];
         }
-        $sanitized[] = ['type' => $type, 'key' => $key, 'children' => $children];
+        $sanitized[] = ['key' => $key, 'children' => $children];
     }
 
     $payload  = json_encode(['items' => $sanitized], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
