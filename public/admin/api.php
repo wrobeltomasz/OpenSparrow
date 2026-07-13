@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete', 'anonymization_save', 'run_anonymization', 'anonymization_purge_log', 'upload_logo', 'remove_logo', 'set_logo_enabled'];
+$postActions = ['save', 'import', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete', 'anonymization_save', 'run_anonymization', 'anonymization_purge_log', 'upload_logo', 'remove_logo', 'set_logo_enabled', 'set_app_name', 'set_language_setting', 'set_chat_bubble_setting'];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);

@@ -352,6 +352,20 @@ try {
                                 $widget['prev_data'] = ($valP == (int) $valP) ? (int) $valP : round($valP, 2);
                             }
                         }
+                    } elseif ($qType === 'avg') {
+                        $col = $widget['query']['column'] ?? '';
+                        if (isset($tableCfg['columns'][$col])) {
+                            $stmt = $mysqlPdo->prepare('SELECT COALESCE(AVG(' . mysql_bt($realColMy($col)) . '), 0) AS total FROM ' . $myTable . $myWhere);
+                            $stmt->execute($myParams);
+                            $val  = (float) $stmt->fetchColumn();
+                            $data = ($val == (int) $val) ? (int) $val : round($val, 2);
+                            if ($myWherePrev !== null) {
+                                $stmt = $mysqlPdo->prepare('SELECT COALESCE(AVG(' . mysql_bt($realColMy($col)) . '), 0) AS total FROM ' . $myTable . $myWherePrev);
+                                $stmt->execute($myParamsPrev);
+                                $valP = (float) $stmt->fetchColumn();
+                                $widget['prev_data'] = ($valP == (int) $valP) ? (int) $valP : round($valP, 2);
+                            }
+                        }
                     } elseif ($qType === 'group_by') {
                         $grpCol  = $widget['query']['group_column'] ?? '';
                         $aggCol  = $widget['query']['agg_column'] ?? $idColMy;
@@ -537,6 +551,30 @@ try {
                         pg_free_result($res);
                         if ($sqlWherePrev !== null) {
                             $sqlPrev = sprintf('SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWherePrev);
+                            $resP = @pg_query($conn, $sqlPrev);
+                            if ($resP) {
+                                $rowP = pg_fetch_assoc($resP);
+                                $valP = (float)($rowP['total'] ?? 0);
+                                $widget['prev_data'] = ($valP == (int)$valP) ? (int)$valP : round($valP, 2);
+                                pg_free_result($resP);
+                            }
+                        }
+                    } else {
+                        $widget['sql_error'] = 'Query failed.';
+                    }
+                }
+            } elseif ($qType === 'avg') {
+                $col = $widget['query']['column'] ?? '';
+                if (isset($tableCfg['columns'][$col])) {
+                    $sql = sprintf('SELECT COALESCE(AVG(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
+                    $res = @pg_query($conn, $sql);
+                    if ($res) {
+                        $row = pg_fetch_assoc($res);
+                        $val = (float)($row['total'] ?? 0);
+                        $data = ($val == (int)$val) ? (int)$val : round($val, 2);
+                        pg_free_result($res);
+                        if ($sqlWherePrev !== null) {
+                            $sqlPrev = sprintf('SELECT COALESCE(AVG(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWherePrev);
                             $resP = @pg_query($conn, $sqlPrev);
                             if ($resP) {
                                 $rowP = pg_fetch_assoc($resP);
