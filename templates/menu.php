@@ -71,9 +71,10 @@ $tables       = safeReadJson($schemaPath)['tables'] ?? [];
 
 $currentPage  = basename($_SERVER['PHP_SELF']);
 $currentTable = substr($_GET['table'] ?? '', 0, 64);
-$currentView  = substr($_GET['view'] ?? '', 0, 64);
-$currentPrint = substr($_GET['print'] ?? '', 0, 64);
-$isWorkflows  = isset($_GET['workflows']);
+$currentView     = substr($_GET['view'] ?? '', 0, 64);
+$currentPrint    = substr($_GET['print'] ?? '', 0, 64);
+$currentWorkflow = substr($_GET['workflow'] ?? '', 0, 64);
+$isWorkflows     = isset($_GET['workflows']);
 
 $dashCfg  = loadMenuConfig('dashboard', $includeDir);
 $calCfg   = loadMenuConfig('calendar', $includeDir);
@@ -122,6 +123,23 @@ if (!empty($boardCfg['table']) && !empty($boardCfg['status_column'])) {
     ];
 }
 
+// Each defined workflow becomes a submenu child under the Workflows module entry.
+$workflowChildren = [];
+foreach ($wfCfg['workflows'] ?? [] as $wfItem) {
+    $wfId = (string) ($wfItem['id'] ?? '');
+    if ($wfId === '') {
+        continue;
+    }
+    $workflowChildren[] = [
+        'type'             => 'workflow',
+        'href'             => 'index.php?workflows=1&workflow=' . urlencode($wfId),
+        'name'             => $wfItem['title'] ?? $wfId,
+        'icon'             => $wfItem['icon'] ?? '',
+        'hidden'           => false,
+        'active'           => $isWorkflows && $currentPage === 'index.php' && $currentWorkflow === $wfId,
+        'data-workflow-id' => $wfId,
+    ];
+}
 if (!empty($wfCfg['workflows'])) {
     $menuCatalog['workflows'] = [
         'type'      => 'workflows',
@@ -129,8 +147,9 @@ if (!empty($wfCfg['workflows'])) {
         'name'      => $wfCfg['menu_name'] ?? 'Workflows',
         'icon'      => $wfCfg['menu_icon'] ?? '',
         'hidden'    => !empty($wfCfg['hidden']),
-        'active'    => $isWorkflows && $currentPage === 'index.php',
+        'active'    => $isWorkflows && $currentPage === 'index.php' && $currentWorkflow === '',
         'data-page' => 'workflows',
+        'children'  => $workflowChildren,
     ];
 }
 
@@ -262,6 +281,9 @@ if (!function_exists('renderMenuLink')) {
         if (!empty($item['data-page'])) {
             $attrs .= ' data-page="' . htmlspecialchars($item['data-page'], ENT_QUOTES, 'UTF-8') . '"';
         }
+        if (!empty($item['data-workflow-id'])) {
+            $attrs .= ' data-workflow-id="' . htmlspecialchars($item['data-workflow-id'], ENT_QUOTES, 'UTF-8') . '"';
+        }
         $icon = renderMenuIcon((string)($item['icon'] ?? ''));
         if ($icon === '') {
             // No-emoji policy: fall back to a local PNG, never a Unicode glyph.
@@ -282,7 +304,7 @@ if (!function_exists('renderMenuLink')) {
     <ul class="menu-list">
 
         <?php foreach ($menuItems as $item) : ?>
-            <?php if ($item['hidden'] && empty($item['children'])) {
+            <?php if ($item['hidden']) {
                 continue;
             } ?>
 

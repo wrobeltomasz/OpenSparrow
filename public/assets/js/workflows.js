@@ -64,26 +64,55 @@ export async function initWorkflows(menuListEl, containerEl, titleEl, appSchema)
     const menuRoot = menuListEl.closest('#menu') ?? menuListEl;
     const wfLink = menuRoot.querySelector('a[data-page="workflows"]');
 
+    const hideGridUi = () => {
+        const uiToHide = document.querySelectorAll('.actions, #filterBar, #globalSearch, #columnFilter, #clearFilters, #addRow');
+        uiToHide.forEach(el => el.style.display = 'none');
+    };
+
+    const activateLink = (link) => {
+        menuRoot.querySelectorAll('a').forEach(l => l.classList.remove('active'));
+        if (link) link.classList.add('active');
+    };
+
     if (wfLink) {
         wfLink.addEventListener('click', (e) => {
             e.preventDefault();
-            menuRoot.querySelectorAll('a').forEach(l => l.classList.remove('active'));
-            wfLink.classList.add('active');
-            const uiToHide = document.querySelectorAll('.actions, #filterBar, #globalSearch, #columnFilter, #clearFilters, #addRow');
-            uiToHide.forEach(el => el.style.display = 'none');
+            activateLink(wfLink);
+            hideGridUi();
             renderWorkflowsList(config.workflows, containerEl, titleEl, menuName, appSchema);
         });
     }
 
+    // Each submenu child (menu.php renders data-workflow-id) jumps straight into that workflow.
+    const wfChildLinks = menuRoot.querySelectorAll('a[data-workflow-id]');
+    wfChildLinks.forEach((link) => {
+        link.addEventListener('click', (e) => {
+            const wf = config.workflows.find(w => w.id === link.dataset.workflowId);
+            if (!wf) return;
+            e.preventDefault();
+            activateLink(link);
+            hideGridUi();
+            startWorkflow(wf, containerEl, titleEl, appSchema, config.workflows, menuName);
+        });
+    });
+
     // Auto-show workflows view when page was loaded with ?workflows in URL
-    if (new URLSearchParams(window.location.search).has('workflows')) {
-        if (wfLink) {
-            menuRoot.querySelectorAll('a').forEach(l => l.classList.remove('active'));
-            wfLink.classList.add('active');
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('workflows')) {
+        const workflowId = urlParams.get('workflow') || '';
+        const wf = workflowId ? config.workflows.find(w => w.id === workflowId) : null;
+        const matchingChildLink = wf
+            ? menuRoot.querySelector(`a[data-workflow-id="${CSS.escape(wf.id)}"]`)
+            : null;
+
+        activateLink(matchingChildLink || wfLink);
+        hideGridUi();
+
+        if (wf) {
+            startWorkflow(wf, containerEl, titleEl, appSchema, config.workflows, menuName);
+        } else {
+            renderWorkflowsList(config.workflows, containerEl, titleEl, menuName, appSchema);
         }
-        const uiToHide = document.querySelectorAll('.actions, #filterBar, #globalSearch, #columnFilter, #clearFilters, #addRow');
-        uiToHide.forEach(el => el.style.display = 'none');
-        renderWorkflowsList(config.workflows, containerEl, titleEl, menuName, appSchema);
         return true; // signals app.js to skip loadTable
     }
 
@@ -92,6 +121,12 @@ export async function initWorkflows(menuListEl, containerEl, titleEl, appSchema)
 
 // Render the beautiful grid list of available workflows
 function renderWorkflowsList(workflows, containerEl, titleEl, menuName, appSchema) {
+    // The step bar is inserted as containerEl's sibling (not its child), so
+    // clearing containerEl alone leaves it behind when navigating back to the
+    // list mid-workflow (e.g. clicking the main Workflows link).
+    const staleBar = document.getElementById('wf-step-bar');
+    if (staleBar) staleBar.remove();
+
     titleEl.textContent = menuName;
     containerEl.textContent = ''; // Safely clear container
 
