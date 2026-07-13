@@ -1,8 +1,0 @@
-{
-    "3.0": {
-        "removed_files": [],
-        "deprecated_files": [],
-        "removed_config_keys": [],
-        "notes": "Initial public baseline release. The full system-table schema is created by the single 3.0_baseline database migration (Admin → Migrations → Initialize System Tables); there is no earlier release to upgrade from, so no files or config keys are removed. Subsequent releases append their own file/config cleanup entries below this one."
-    }
-}

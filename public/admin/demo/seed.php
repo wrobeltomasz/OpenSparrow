@@ -282,6 +282,40 @@ if ($action === 'demo_install') {
             file_put_contents($autoPath, json_encode(['automations' => $rules], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         }
 
+        // print.json — merge demo print templates if provided (keyed by template name,
+        // same merge-by-key pattern as views.json above)
+        $printKeys = [];
+        if (!empty($demoData['prints']) && is_array($demoData['prints'])) {
+            $printPath = $configDir . '/print.json';
+            $printCfg  = file_exists($printPath) ? (json_decode(file_get_contents($printPath), true) ?? []) : [];
+            if (!isset($printCfg['prints']) || !is_array($printCfg['prints'])) {
+                $printCfg['prints'] = [];
+            }
+            foreach ($demoData['prints'] as $key => $def) {
+                $printKeys[] = $key;
+                $printCfg['prints'][$key] = $def;
+            }
+            file_put_contents($printPath, json_encode($printCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        }
+
+        // user_records.json — merge demo column-label mappings if provided (keyed by
+        // table name; the global "limit" setting is a user preference and is left
+        // untouched, only defaulted if the file didn't exist yet).
+        if (!empty($demoData['user_records']) && is_array($demoData['user_records'])) {
+            $urPath = $configDir . '/user_records.json';
+            $urCfg  = file_exists($urPath) ? (json_decode(file_get_contents($urPath), true) ?? []) : [];
+            if (!isset($urCfg['columns']) || !is_array($urCfg['columns'])) {
+                $urCfg['columns'] = [];
+            }
+            if (!isset($urCfg['limit'])) {
+                $urCfg['limit'] = 20;
+            }
+            foreach ($demoData['user_records'] as $tableName => $cols) {
+                $urCfg['columns'][$tableName] = $cols;
+            }
+            file_put_contents($urPath, json_encode($urCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        }
+
         // demo_meta.json
         $meta = [
             'type'           => $type,
@@ -294,6 +328,7 @@ if ($action === 'demo_install') {
             'view_names'     => $demoData['view_names'],
             'menu_keys'      => $menuKeys,
             'automation_ids' => $automationIds,
+            'print_keys'     => $printKeys,
             'board_table'    => $demoData['board']['table'] ?? null,
         ];
         file_put_contents(
@@ -510,6 +545,36 @@ if ($action === 'demo_uninstall') {
                 } else {
                     file_put_contents($autoPath, json_encode(['automations' => $rules], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
                 }
+            }
+        }
+
+        // Clean print.json (delete if empty)
+        $printPath = $configDir . '/print.json';
+        if (file_exists($printPath)) {
+            $cfg  = json_decode(file_get_contents($printPath), true) ?? [];
+            $keys = $meta['print_keys'] ?? [];
+            foreach ($keys as $k) {
+                unset($cfg['prints'][$k]);
+            }
+            if (empty($cfg['prints'])) {
+                @unlink($printPath);
+            } else {
+                file_put_contents($printPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            }
+        }
+
+        // Clean user_records.json (drop column mappings for demo tables; delete if none remain)
+        $urPath = $configDir . '/user_records.json';
+        if (file_exists($urPath)) {
+            $cfg  = json_decode(file_get_contents($urPath), true) ?? [];
+            $tbls = $meta['tables'] ?? [];
+            foreach ($tbls as $t) {
+                unset($cfg['columns'][$t]);
+            }
+            if (empty($cfg['columns'])) {
+                @unlink($urPath);
+            } else {
+                file_put_contents($urPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
             }
         }
 

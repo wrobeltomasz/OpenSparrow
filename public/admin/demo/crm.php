@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 // admin/demo/crm.php — CRM demo app definition (data only, no auth/routing)
 // demo_def_crm($conn): returns the spw_crm schema spec — DDL (companies, contacts, deals, activities, leads, products, quotes, invoices, assets), view names, seed data,
-// plus config payloads: dashboard widgets, calendar sources, Kanban board, workflows, views, menu, files relations, automations (incl. email action) and anonymization rules
+// plus config payloads: dashboard widgets, calendar sources, Kanban board, workflows, views, menu, files relations, automations (incl. email action), anonymization rules, print templates (Quote/Invoice documents) and User Records column mapping
 // Consumed by demo/seed.php during demo_install
 
 function demo_def_crm($conn): array
 {
     return [
         'pg_schema'  => 'spw_crm',
-        'view_names' => ['v_demo_crm_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_revenue', 'v_demo_crm_assets_by_category', 'v_demo_crm_revenue_by_period'],
+        'view_names' => ['v_demo_crm_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_revenue', 'v_demo_crm_assets_by_category', 'v_demo_crm_revenue_by_period', 'v_demo_crm_quote_doc', 'v_demo_crm_invoice_doc'],
         'ddl' => [
             'CREATE SCHEMA IF NOT EXISTS spw_crm',
             "CREATE TABLE IF NOT EXISTS spw_crm.companies (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, industry VARCHAR(100), website VARCHAR(255), phone VARCHAR(50), email VARCHAR(255), created_at TIMESTAMP DEFAULT NOW())",
@@ -29,6 +29,26 @@ function demo_def_crm($conn): array
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_revenue AS SELECT status, COUNT(*) AS invoice_count, COALESCE(SUM(amount_total), 0) AS total FROM spw_crm.invoices GROUP BY status ORDER BY status',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_assets_by_category AS SELECT category, COUNT(*) AS asset_count, COALESCE(SUM(current_value), 0) AS total_value FROM spw_crm.assets GROUP BY category ORDER BY category',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_revenue_by_period AS SELECT TO_CHAR(issue_date, \'YYYY\') AS year, TO_CHAR(issue_date, \'YYYY-MM\') AS year_month, invoice_number, status, amount_net, amount_tax, amount_total, issue_date, due_date, CASE WHEN paid_at IS NOT NULL THEN \'Yes\' ELSE \'No\' END AS paid FROM spw_crm.invoices',
+            // Document views for the Quote/Invoice print templates below — one row per
+            // quote/invoice, joined out to deal/company/contact for the printable header.
+            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_quote_doc AS '
+                . 'SELECT q.id, q.quote_number, q.status, q.valid_until, q.subtotal, q.tax, q.total, q.notes, q.created_at, '
+                . 'd.title AS deal_title, '
+                . 'c.name AS company_name, c.website AS company_website, c.phone AS company_phone, c.email AS company_email, '
+                . 'ct.first_name AS contact_first_name, ct.last_name AS contact_last_name, ct.email AS contact_email, ct.phone AS contact_phone '
+                . 'FROM spw_crm.quotes q '
+                . 'LEFT JOIN spw_crm.deals d ON d.id = q.deal_id '
+                . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
+                . 'LEFT JOIN spw_crm.contacts ct ON ct.id = d.contact_id',
+            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_invoice_doc AS '
+                . 'SELECT i.id, i.invoice_number, i.status, i.issue_date, i.due_date, i.amount_net, i.amount_tax, i.amount_total, i.paid_at, i.notes, i.created_at, '
+                . 'd.title AS deal_title, '
+                . 'c.name AS company_name, c.website AS company_website, c.phone AS company_phone, c.email AS company_email, '
+                . 'ct.first_name AS contact_first_name, ct.last_name AS contact_last_name, ct.email AS contact_email, ct.phone AS contact_phone '
+                . 'FROM spw_crm.invoices i '
+                . 'LEFT JOIN spw_crm.deals d ON d.id = i.deal_id '
+                . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
+                . 'LEFT JOIN spw_crm.contacts ct ON ct.id = d.contact_id',
         ],
         'seed_data' => [
             "INSERT INTO spw_crm.companies (name, industry, website, phone, email) VALUES ('Acme Corporation', 'Technology', 'acme.com', '+1-555-1001', 'sales@acme.com')",
@@ -810,8 +830,92 @@ function demo_def_crm($conn): array
                 ['group_by' => 'year',       'label' => 'Year'],
                 ['group_by' => 'year_month', 'label' => 'Month'],
             ]]],
+            // Document views backing the Quote/Invoice print templates — not meant to be
+            // browsed as reports, so hidden from the Views module listing.
+            'v_demo_crm_quote_doc' => ['schema' => 'spw_crm', 'display_name' => 'Quote Document', 'menu_name' => 'Quote Document', 'icon' => 'assets/icons/ballot.png', 'hidden' => true, 'description' => 'One row per quote with joined company/contact/deal fields for the Quote print template.', 'columns' => [
+                'quote_number' => ['display_name' => 'Quote #'],
+                'status'       => ['display_name' => 'Status'],
+                'valid_until'  => ['display_name' => 'Valid Until'],
+                'subtotal'     => ['display_name' => 'Subtotal'],
+                'tax'          => ['display_name' => 'Tax'],
+                'total'        => ['display_name' => 'Total'],
+            ], 'drill_down' => ['enabled' => false]],
+            'v_demo_crm_invoice_doc' => ['schema' => 'spw_crm', 'display_name' => 'Invoice Document', 'menu_name' => 'Invoice Document', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'One row per invoice with joined company/contact/deal fields for the Invoice print template.', 'columns' => [
+                'invoice_number' => ['display_name' => 'Invoice #'],
+                'status'         => ['display_name' => 'Status'],
+                'issue_date'     => ['display_name' => 'Issued'],
+                'due_date'       => ['display_name' => 'Due'],
+                'amount_net'     => ['display_name' => 'Net'],
+                'amount_tax'     => ['display_name' => 'Tax'],
+                'amount_total'   => ['display_name' => 'Total'],
+            ], 'drill_down' => ['enabled' => false]],
+        ],
+        'prints' => [
+            'crm_quote_offer' => [
+                'display_name' => 'Quote / Offer',
+                'menu_name'    => 'Quote / Offer',
+                'description'  => 'Printable offer document for a single quote, with company/contact details and totals.',
+                'icon'         => 'assets/icons/ballot.png',
+                'hidden'       => false,
+                'view'         => 'v_demo_crm_quote_doc',
+                'blocks'       => [
+                    ['type' => 'header', 'level' => 1, 'text' => 'Quote {quote_number}'],
+                    ['type' => 'text', 'text' => 'Company: {company_name} — {company_website} — {company_phone}'],
+                    ['type' => 'text', 'text' => 'Contact: {contact_first_name} {contact_last_name} ({contact_email})'],
+                    ['type' => 'text', 'text' => 'Regarding: {deal_title}'],
+                    ['type' => 'text', 'text' => 'Status: {status} | Valid until: {valid_until}'],
+                    ['type' => 'table', 'columns' => [
+                        ['name' => 'subtotal', 'align' => 'right'],
+                        ['name' => 'tax',      'align' => 'right'],
+                        ['name' => 'total',    'align' => 'right'],
+                    ]],
+                    ['type' => 'text', 'text' => 'Notes: {notes}'],
+                ],
+                'params' => [
+                    ['key' => 'quote_id', 'label' => 'Quote', 'type' => 'select', 'column' => 'id', 'required' => true, 'source_view' => 'v_demo_crm_quote_doc', 'value_column' => 'id', 'label_column' => 'quote_number'],
+                ],
+            ],
+            'crm_invoice' => [
+                'display_name' => 'Invoice',
+                'menu_name'    => 'Invoice',
+                'description'  => 'Printable invoice document for a single invoice, with company/contact details and amounts.',
+                'icon'         => 'assets/icons/file_present.png',
+                'hidden'       => false,
+                'view'         => 'v_demo_crm_invoice_doc',
+                'blocks'       => [
+                    ['type' => 'header', 'level' => 1, 'text' => 'Invoice {invoice_number}'],
+                    ['type' => 'text', 'text' => 'Company: {company_name} — {company_website} — {company_phone}'],
+                    ['type' => 'text', 'text' => 'Contact: {contact_first_name} {contact_last_name} ({contact_email})'],
+                    ['type' => 'text', 'text' => 'Regarding: {deal_title}'],
+                    ['type' => 'text', 'text' => 'Issued: {issue_date} | Due: {due_date} | Status: {status}'],
+                    ['type' => 'table', 'columns' => [
+                        ['name' => 'amount_net',   'align' => 'right'],
+                        ['name' => 'amount_tax',   'align' => 'right'],
+                        ['name' => 'amount_total', 'align' => 'right'],
+                    ]],
+                    ['type' => 'text', 'text' => 'Notes: {notes}'],
+                ],
+                'params' => [
+                    ['key' => 'invoice_id', 'label' => 'Invoice', 'type' => 'select', 'column' => 'id', 'required' => true, 'source_view' => 'v_demo_crm_invoice_doc', 'value_column' => 'id', 'label_column' => 'invoice_number'],
+                ],
+            ],
+        ],
+        // User Records ("My records" panel) column mapping — which columns are
+        // CONCAT_WS'd into each record's label when a user owns a record in that table.
+        'user_records' => [
+            'companies' => ['name'],
+            'contacts'  => ['first_name', 'last_name'],
+            'deals'     => ['title'],
+            'activities' => ['type'],
+            'leads'     => ['first_name', 'last_name'],
+            'products'  => ['name'],
+            'quotes'    => ['quote_number'],
+            'invoices'  => ['invoice_number'],
+            'assets'    => ['name'],
         ],
         'menu_items' => [
+            ['key' => 'dashboard'],
+            ['key' => 'calendar'],
             ['key' => 'companies', 'children' => [
                 ['key' => 'contacts'],
                 ['key' => 'leads'],
@@ -824,6 +928,7 @@ function demo_def_crm($conn): array
             ['key' => 'assets'],
             ['key' => 'activities'],
             ['key' => 'board'],
+            ['key' => 'files'],
         ],
         'files_relations' => [
             ['table' => 'companies', 'col1' => 'name', 'col2' => ''],
