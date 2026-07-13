@@ -1,60 +1,8 @@
 {
-    "2.4.0": {
-        "removed_files": [],
-        "deprecated_files": [],
-        "removed_config_keys": [],
-        "notes": "Added Release Migration Manager. No file or config cleanup required for this release."
-    },
-    "2.5.0": {
-        "removed_files": [],
-        "deprecated_files": [],
-        "removed_config_keys": [],
-        "notes": "Added Grid Keyboard Shortcuts module (arrow navigation, selection, clipboard, search highlight, help modal) and Quick Data Cleanup module (find/replace with accent support)."
-    },
-    "2.6.0": {
-        "removed_files": [],
-        "deprecated_files": [],
-        "removed_config_keys": [],
-        "notes": "Added local RAG module: knowledge base from .txt files, full-text search, tag filtering, Ollama integration, admin management panel, user chat interface."
-    },
-    "2.7": {
-        "removed_files": [],
-        "deprecated_files": [],
-        "removed_config_keys": [],
-        "notes": "Added Automations module (rule-based triggers on record create/update/delete with template variables), document chunking for precise chunk-level retrieval (spw_rag_chunks), and expanded query history with source attribution and full prompt snapshots (spw_rag_query_sources). Run Initialize System Tables to apply all new migrations."
-    },
-    "2.8": {
-        "removed_files": [],
-        "deprecated_files": [],
-        "removed_config_keys": [],
-        "notes": "Security hardening: ownership checks enforced on mass edit/delete/duplicate, data cleanup and calendar drag-and-drop; setup wizard now generates a random Argon2id admin password; storage/sessions directory protected from web access on Apache; demo-mode import guard added; pg_last_error no longer exposed to non-admin clients; hardcoded schema name in files module replaced with sys_schema(); tag array literal escaping fixed; storage_path constrained to storage/ subtree (prefix check tightened to block siblings like storage-pub); mass_duplicate now registers ownership rows for new records inside the same transaction; preview queries for mass edit and data cleanup now apply the same ownership filter as apply, so the displayed count matches what is actually changed. Added External Databases module: MySQL Gateway — PHP abstraction layer (DatabaseGatewayInterface / PostgresGateway / MysqlGateway / DatabaseFactory in includes/db/) routes queries to PostgreSQL or MySQL based on a configurable table-name list (config/mysql_gateway.json); MySQL connection configured via MYSQL_HOST / MYSQL_PORT / MYSQL_DB / MYSQL_USER / MYSQL_PASSWORD env vars; no new system tables required. Added Board (Kanban) view: visualises records of a configured table as draggable cards in lanes derived from a status column (enum recommended); dragging a card between lanes updates that column via api.php (api=board, action=move_card) with ownership and value-allowlist enforcement and audit logging (BOARD_MOVE); configured from the admin Board tab (config/board.json)."
-    },
-    "2.9": {
-        "removed_files": [
-            "src/Audit/AuditLoggerInterface.php",
-            "src/Csrf/CsrfTokenManagerInterface.php",
-            "src/Domain/Schema/SchemaRepositoryInterface.php",
-            "src/Http/RequestInterface.php",
-            "src/Persistence/ConnectionInterface.php",
-            "src/Repository/FileRepositoryInterface.php"
-        ],
-        "deprecated_files": [],
-        "removed_config_keys": [],
-        "notes": "Added Data Anonymization module (GDPR/EDPB): admin panel UI for defining table/column anonymization rules, configurable run frequency, dictionary-based PII column suggestions, dry-run preview, and a CLI cron worker (cron/cron_anonymization.php). Each run records its status in spw_anonymization_log and writes a structured JSON execution report (report_id, execution_summary, per-rule details with EDPB residual-risk assessment) to the dedicated spw_anonymization_report table, viewable and downloadable from Run History. Run Initialize System Tables to create spw_anonymization_log and spw_anonymization_report. Internal cleanup: removed six single-implementation interfaces from the src/ (App\\) layer; type hints now use the concrete classes."
-    },
     "3.0": {
-        "removed_files": [
-            "includes/deprecation.php",
-            "scripts/verify_licence.py"
-        ],
+        "removed_files": [],
         "deprecated_files": [],
-        "removed_config_keys": [
-            {"file": "settings.json", "path": "$.available_languages"},
-            {"file": "files.json", "path": "$.public_access"},
-            {"file": "files.json", "path": "$.virus_scan"},
-            {"file": "menu.json", "path": "$.items[*].type"},
-            {"file": "menu.json", "path": "$.items[*].children[*].type"}
-        ],
-        "notes": "Menu accessibility and hardening: submenu toggles get screen-reader labels (new i18n key header.toggle_submenu in all 20 languages), active nav link marked with aria-current=page, collapsed-sidebar tooltips now work with keyboard focus (Tab). Behavior change: menu icons are restricted to local assets/ paths with an image-extension whitelist — external https:// icon URLs configured in dashboard/calendar/board/files/workflows/schema JSON are no longer rendered (offline policy); switch such icons to files under public/assets/icons/. UI standardization: search boxes and filters moved into the blue app header on all pages (grid, views, board, calendar, files, dashboard) with a unified pill/chip look (shared filter-chip classes); new calendar search box (per-enum dropdown filters removed as clutter); new dashboard per-widget visibility chips (state in localStorage); chip rows scroll horizontally instead of growing the header; every page gains a Clear-filters header button. See docs/MAINTENANCE.md and CLAUDE.md 'Search & filter UI standard'. Repo housekeeping: removed unused includes/deprecation.php (deprecated_field() was never wired up) and scripts/verify_licence.py (replaced by the license-integrity checksum job in .github/workflows/source-integrity.yml); no config keys removed; no new system tables. Printouts module additions folded into this release: table block columns carry per-column width (percentage) and alignment (left/center/right), configurable in the admin Printouts editor alongside the existing column checkboxes; legacy templates with bare column-name strings keep working (auto-normalized on next save). print.php paginates the rendered report into A4-sized pages with a '{current} / {total}' page-number footer on each (new i18n key print.page_of in all 20 languages); print.css declares an explicit @page A4/15mm geometry so the pagination math matches what the browser actually prints. Templates can also declare report parameters — filters shown to the user before generating the report (e.g. pick an employee, print only their assets). Each parameter filters the template's bound view by one column; dropdown options come either from a separate lookup view (value/label columns) or from distinct values of the filter column itself, and can be marked required. Configured in the admin Printouts editor under a new 'Report parameters' section. api/print.php: action=data now accepts p_<key> filter args and returns params/applied_params; new action=param_options serves the dropdown values (all identifiers whitelisted against config/print.json and config/views.json, values always parametrized). Filtered reports are reflected in the print.php URL (p_<key>=value) so they can be bookmarked/shared. New i18n keys print.params_all / print.params_generate in all 20 languages. No config keys removed; no new system tables. Setup wizard fixes: test_connection no longer crashes with an empty response on PHP 8.4 when the database connection fails (removed a bare pg_last_error() call that throws when no connection was opened); the completion screen now displays the actual randomly generated admin password instead of a hardcoded placeholder. Admin Settings: removed the 'Available languages' checkbox restriction — all installed languages/*.json files are now always available; the corresponding available_languages key in config/settings.json is no longer read or written (stale keys from prior installs are dropped on next save). File Manager config: removed the 'Public Access' and 'Virus Scan' checkboxes — neither setting was ever read by any code path (no auth-gating logic and no antivirus integration existed), so they were UI controls with no functional effect; public_access and virus_scan keys are no longer written to config/files.json. Admin Menu Preview: menu.json items no longer persist a 'type' field — it was only ever used transiently to validate the incoming save payload; the renderer (templates/menu.php) has always looked up each item's real type from the schema/dashboard/calendar/etc. catalog by key, never from the stored value. Admin Dashboard widget editor: the Icon Path picker is now shown only for kpi_card widgets (the only widget renderer that reads widget.icon) instead of unconditionally for every widget type, where it previously had no visual effect."
+        "removed_config_keys": [],
+        "notes": "Initial public baseline release. The full system-table schema is created by the single 3.0_baseline database migration (Admin → Migrations → Initialize System Tables); there is no earlier release to upgrade from, so no files or config keys are removed. Subsequent releases append their own file/config cleanup entries below this one."
     }
 }

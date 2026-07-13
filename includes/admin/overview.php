@@ -138,13 +138,9 @@ if ($action === 'overview') {
                 $applied[$r[0]] = true;
             }
         }
+        // Keep in sync with the $migrations/$known registry in includes/admin/migrations.php.
         $knownMig = [
-            '2.0_baseline', '2.0_record_owners_changed_at', '2.3.1_csv_import_tables',
-            '2.4.0_release_migrations_table', '2.6.0_rag_files', '2.6.0_rag_queries',
-            '2.7_automations', '2.7_automation_runs',
-            '2.7_rag_chunks', '2.7_rag_queries_prompt', '2.7_rag_query_sources',
-            '2.7_rag_fts_english', '2.9_anonymization_log', '2.9_anonymization_report',
-            '2.9_automation_emails',
+            '3.0_baseline',
         ];
         $pendingMig = count(array_filter($knownMig, static fn($n) => !isset($applied[$n])));
 

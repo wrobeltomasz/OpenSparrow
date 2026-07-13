@@ -36,7 +36,13 @@ concentrated in a few places listed below.
   unmatched actions fall through to `demo/seed.php` — URLs and JSON contracts
   unchanged. The `$migrations`/`$known` registries stay together in
   `includes/admin/migrations.php` (release process depends on them — see
-  CLAUDE.md "Version bumps" steps 4–5). Only real code edit during the move:
+  CLAUDE.md "Version bumps" steps 4–5). A third copy of the migration-key
+  list lives in `includes/admin/overview.php` (`$knownMig`, drives the
+  dashboard pending count) and must be kept in sync with those two. As of 3.0
+  the pre-3.0 incremental migration history was collapsed into a single
+  append-only `3.0_baseline` entry (3.0 is the first shipped version), and
+  `config/migrations.json` was trimmed to only the `3.0` release entry. Only
+  real code edit during the move:
   `__DIR__ . '/../assets/...'` paths in the settings module became
   `__DIR__ . '/../../public/assets/...'`. New admin actions: add the block in the
   right module **and** register the action in the `$adminModules` map.
