@@ -109,6 +109,8 @@
         "choose_avatar": "Avatar auswählen",
         "use_initial": "Initial verwenden",
         "avatar_updated": "Avatar aktualisiert.",
+        "my_records": "Meine Datensätze",
+        "my_records_empty": "Ihnen sind keine Datensätze zugewiesen.",
         "close": "Schließen"
     },
     "admin": {

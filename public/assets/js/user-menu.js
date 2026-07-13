@@ -5,6 +5,7 @@
 
 import { showToast } from './toast.js';
 import { I18n } from './i18n.js';
+import { BulkPanel } from './bulk_panel.js';
 
 const AVATAR_COUNT = 24;
 
@@ -238,6 +239,74 @@ function closeModal(overlay) {
     document.getElementById('userAvatarBtn')?.focus();
 }
 
+// ── My records panel ────────────────────────────────────────────────────────
+
+let myRecordsPanel = null;
+
+function renderMyRecords(bodyEl, tables) {
+    bodyEl.textContent = '';
+
+    if (!tables.length) {
+        const empty = document.createElement('p');
+        empty.className = 'dc-empty';
+        empty.textContent = I18n.t('header.my_records_empty');
+        bodyEl.appendChild(empty);
+        return;
+    }
+
+    for (const group of tables) {
+        const heading = document.createElement('h4');
+        heading.textContent = `${group.display_name} (${group.records.length})`;
+        bodyEl.appendChild(heading);
+
+        const table = document.createElement('table');
+        table.className = 'bp-preview-table';
+        const tbody = document.createElement('tbody');
+
+        for (const record of group.records) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            const link = document.createElement('a');
+            link.href = 'edit.php?table=' + encodeURIComponent(group.table) + '&id=' + encodeURIComponent(record.id);
+            link.textContent = record.label;
+            td.appendChild(link);
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+        }
+
+        table.appendChild(tbody);
+        bodyEl.appendChild(table);
+    }
+}
+
+async function openMyRecordsPanel() {
+    if (!myRecordsPanel) {
+        myRecordsPanel = new BulkPanel({
+            id: 'myRecordsPanel',
+            title: I18n.t('header.my_records'),
+            showApply: false,
+        });
+    }
+
+    myRecordsPanel.open();
+    myRecordsPanel.clearStatus();
+    myRecordsPanel.setStatus(I18n.t('common.loading'));
+    myRecordsPanel.bodyEl.textContent = '';
+
+    try {
+        const res = await fetch('api/owners.php?action=mine', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
+
+        myRecordsPanel.clearStatus();
+        renderMyRecords(myRecordsPanel.bodyEl, data.tables ?? []);
+    } catch (err) {
+        myRecordsPanel.setStatus(err.message, true);
+    }
+}
+
 // ── Dropdown ──────────────────────────────────────────────────────────────
 
 function initUserMenu() {
@@ -282,6 +351,11 @@ function initUserMenu() {
     document.getElementById('changePasswordBtn')?.addEventListener('click', () => {
         toggle(false);
         openModal(buildPasswordModal());
+    });
+
+    document.getElementById('myRecordsBtn')?.addEventListener('click', () => {
+        toggle(false);
+        openMyRecordsPanel();
     });
 
     document.getElementById('logoutBtn')?.addEventListener('click', () => {

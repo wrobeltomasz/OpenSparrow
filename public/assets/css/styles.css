@@ -2926,6 +2926,7 @@ th.drag-over .th-label {
     flex-direction: column;
     gap: 14px;
 }
+.bp-body h4 { margin: 0 0 -8px; font-size: 13px; font-weight: 700; color: var(--text); }
 
 .dc-field, .bp-field { display: flex; flex-direction: column; gap: 5px; }
 .dc-field label, .bp-field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }

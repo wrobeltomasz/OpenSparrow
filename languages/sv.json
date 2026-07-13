@@ -109,6 +109,8 @@
         "choose_avatar": "Välj avatar",
         "use_initial": "Använd initial",
         "avatar_updated": "Avatar uppdaterad.",
+        "my_records": "Mina poster",
+        "my_records_empty": "Du har inga tilldelade poster.",
         "close": "Stäng"
     },
     "admin": {

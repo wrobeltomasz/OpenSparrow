@@ -21,6 +21,7 @@ import { renderCronPage } from './cron.js';
 import { renderM2mPage } from './m2m.js';
 import { renderErdPage } from './erd.js';
 import { renderViewsEditor } from './views_editor.js';
+import { renderUserRecordsEditor } from './user_records_editor.js';
 import { renderPrintEditor } from './print_editor.js';
 import { renderDemoPage } from './demo.js';
 import { renderSettingsPage } from './settings.js';
@@ -36,6 +37,10 @@ let currentFile = 'overview';
 let currentItemKey = null;
 let globalSchemaObj = null;
 let isDirty = false;
+// Set by a tab's render*() via ctx.setSaveHandler() when it needs #btnSave to
+// call its own validating endpoint instead of the generic config_files.php save.
+let activeSaveHandler = null;
+function setSaveHandler(fn) { activeSaveHandler = fn; }
 
 // Names of tables routed from external MySQL (config/mysql_gateway.json).
 // Used to keep PostgreSQL and external MySQL tables in separate admin tabs.
@@ -58,7 +63,7 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'anonymization', 'print']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'anonymization']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
@@ -262,6 +267,9 @@ function getColumnMeta(tableName, colName) {
 }
 
 async function loadConfigFile(fileName) {
+    // A prior tab may have registered its own save routine; every tab switch
+    // starts fresh so a stale handler can never fire for the wrong tab.
+    activeSaveHandler = null;
     if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'fdw' || fileName === 'anonymization' || fileName === 'print') {
         currentConfig = null;
         renderSidebar();
@@ -297,6 +305,13 @@ async function loadConfigFile(fileName) {
             if (!currentConfig.views || typeof currentConfig.views !== 'object' || Array.isArray(currentConfig.views)) {
                 currentConfig.views = {};
             }
+        } else if (fileName === 'user_records') {
+            if (!currentConfig.columns || typeof currentConfig.columns !== 'object' || Array.isArray(currentConfig.columns)) {
+                currentConfig.columns = {};
+            }
+            if (typeof currentConfig.limit !== 'number' || currentConfig.limit < 0) {
+                currentConfig.limit = 20;
+            }
         } else if (fileName === 'database') {
             if (!currentConfig.host) currentConfig = { host: 'localhost', port: '5432', dbname: '', user: 'postgres', password: '' };
         } else if (fileName === 'security') {
@@ -315,7 +330,7 @@ async function loadConfigFile(fileName) {
             currentItemKey = 'LAYOUT';
             renderSidebar();
             renderEditor('LAYOUT', null, false);
-        } else if (fileName === 'database' || fileName === 'security' || fileName === 'views' || fileName === 'board') {
+        } else if (fileName === 'database' || fileName === 'security' || fileName === 'views' || fileName === 'board' || fileName === 'user_records') {
             renderSidebar();
             renderEditor('SETTINGS', currentConfig, false);
         } else {
@@ -759,9 +774,9 @@ function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
 
 function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
-    const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar };
-    
-    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'automations', 'anonymization', 'print'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && key === 'EXTERNAL_TABLES')) {
+    const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
+
+    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'fdw', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && key === 'EXTERNAL_TABLES')) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
@@ -799,6 +814,7 @@ function renderEditor(key, itemData, isArray) {
         return renderAutomationsPage(ctx);
     }
     if (currentFile === 'views') return renderViewsEditor(ctx);
+    if (currentFile === 'user_records') return renderUserRecordsEditor(ctx);
     if (currentFile === 'board') return renderBoardEditor(ctx);
     if (currentFile === 'files' && key === 'MANAGER') return renderFilesEditor(ctx);
 
@@ -922,6 +938,21 @@ function validateWorkflowsConfig(config) {
 }
 
 btnSave.addEventListener('click', async () => {
+    if (activeSaveHandler) {
+        try {
+            const result = await activeSaveHandler();
+            if (result.status === 'success') {
+                markClean();
+                showStatusPill(btnSave, result.message || `${currentFile}.json saved`, 'success');
+            } else {
+                showStatusPill(btnSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } catch {
+            showStatusPill(btnSave, 'Failed to save changes.', 'error');
+        }
+        return;
+    }
+
     if (!currentConfig) return;
 
     if (currentFile === 'workflows') {

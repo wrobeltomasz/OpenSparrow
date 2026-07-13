@@ -4,7 +4,7 @@
  * BulkPanel — universal reusable slide-in drawer panel for bulk operations.
  *
  * Usage:
- *   const panel = new BulkPanel({ id, title, applyLabel });
+ *   const panel = new BulkPanel({ id, title, applyLabel, showApply });
  *   panel.onApply(handler);   // handler receives (panelInstance)
  *   panel.onClose(handler);   // optional
  *   panel.open();
@@ -13,14 +13,17 @@
  *   panel.setApplyDisabled(bool);
  *   panel.close();
  *
+ * Pass showApply: false for a read-only panel (no footer/Apply button).
+ *
  * CSS prefix: bp-
  */
 
 export class BulkPanel {
-    constructor({ id, title, applyLabel = 'Apply' }) {
+    constructor({ id, title, applyLabel = 'Apply', showApply = true }) {
         this._id          = id;
         this._title       = title;
         this._applyLabel  = applyLabel;
+        this._showApply   = showApply;
         this._panelEl     = null;
         this._overlayEl   = null;
         this._bodyEl      = null;
@@ -108,22 +111,25 @@ export class BulkPanel {
         this._statusEl = document.createElement('div');
         this._statusEl.className = 'bp-status';
 
-        const footer = document.createElement('div');
-        footer.className = 'bp-footer';
-
-        this._applyBtn = document.createElement('button');
-        this._applyBtn.className = 'bp-apply-btn';
-        this._applyBtn.textContent = this._applyLabel;
-        this._applyBtn.disabled = true;
-        this._applyBtn.onclick = () => {
-            if (this._applyHandler) this._applyHandler(this);
-        };
-        footer.appendChild(this._applyBtn);
-
         this._panelEl.appendChild(header);
         this._panelEl.appendChild(this._bodyEl);
         this._panelEl.appendChild(this._statusEl);
-        this._panelEl.appendChild(footer);
+
+        if (this._showApply) {
+            const footer = document.createElement('div');
+            footer.className = 'bp-footer';
+
+            this._applyBtn = document.createElement('button');
+            this._applyBtn.className = 'bp-apply-btn';
+            this._applyBtn.textContent = this._applyLabel;
+            this._applyBtn.disabled = true;
+            this._applyBtn.onclick = () => {
+                if (this._applyHandler) this._applyHandler(this);
+            };
+            footer.appendChild(this._applyBtn);
+
+            this._panelEl.appendChild(footer);
+        }
 
         document.body.appendChild(this._panelEl);
     }

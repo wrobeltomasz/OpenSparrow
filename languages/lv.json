@@ -109,6 +109,8 @@
         "choose_avatar": "Izvēlēties avatāru",
         "use_initial": "Izmantot iniciāli",
         "avatar_updated": "Avatārs atjaunināts.",
+        "my_records": "Mani ieraksti",
+        "my_records_empty": "Jums nav piešķirtu ierakstu.",
         "close": "Aizvērt"
     },
     "admin": {

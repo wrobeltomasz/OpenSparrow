@@ -192,6 +192,10 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
                         Schema Map
                     </button>
+                    <button class="admin-tab" data-file="user_records">
+                        <img class="nav-item-icon" src="../assets/icons/id_card.png" alt="">
+                        User Records
+                    </button>
                     <button class="admin-tab" data-file="views">
                         <img class="nav-item-icon" src="../assets/icons/table_chart_view.png" alt="">
                         Views

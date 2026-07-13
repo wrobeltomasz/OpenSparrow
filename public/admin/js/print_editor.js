@@ -3,12 +3,11 @@
    Each template is bound to a PostgreSQL view from the Views module; the available
    variables (columns) are fetched live from the database so the user never types them. */
 
-import { showStatusPill } from './app.js';
 import { createIconPicker } from './ui.js';
 import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export function renderPrintEditor(ctx) {
-    const { workspaceEl } = ctx;
+    const { workspaceEl, setSaveHandler } = ctx;
     workspaceEl.innerHTML = '';
 
     /* ---------- state ---------- */
@@ -39,14 +38,26 @@ export function renderPrintEditor(ctx) {
     addBtn.className = 'btn-add';
     addBtn.style.cssText = 'margin:0;';
     addBtn.textContent = '+ Add printout';
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'btn-add';
-    saveBtn.style.cssText = 'margin:0;';
-    saveBtn.textContent = 'Save printouts';
     hdrActions.appendChild(addBtn);
-    hdrActions.appendChild(saveBtn);
     hdr.appendChild(hdrActions);
     wrap.appendChild(hdr);
+
+    setSaveHandler(async () => {
+        const res = await fetch('../api/print.php?action=save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': getCsrfToken(),
+            },
+            body: JSON.stringify({ prints }),
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+            setStatus('Printouts saved to config/print.json.', 'ok');
+            return { status: 'success', message: 'print.json saved' };
+        }
+        return { status: 'error', error: data.error ?? 'unknown' };
+    });
 
     const statusEl = document.createElement('div');
     statusEl.style.cssText = 'display:none;';
@@ -702,7 +713,7 @@ export function renderPrintEditor(ctx) {
         names.forEach(pName => listEl.appendChild(buildPrintCard(pName, prints[pName] ?? {})));
     }
 
-    /* ---------- add / save ---------- */
+    /* ---------- add printout ---------- */
     addBtn.addEventListener('click', () => {
         const raw = prompt('Internal key of the new printout (letters, digits, _ or -):', '');
         if (raw === null) return;
@@ -726,29 +737,7 @@ export function renderPrintEditor(ctx) {
             params: [],
         };
         renderList();
-        setStatus(`Printout "${key}" added. Configure it below, then click "Save printouts".`, 'ok');
-    });
-
-    saveBtn.addEventListener('click', async () => {
-        try {
-            const res = await fetch('../api/print.php?action=save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': getCsrfToken(),
-                },
-                body: JSON.stringify({ prints }),
-            });
-            const data = await res.json();
-            if (data.status === 'ok') {
-                showStatusPill(saveBtn, 'print.json saved', 'success');
-                setStatus('Printouts saved to config/print.json.', 'ok');
-            } else {
-                setStatus('Save failed: ' + (data.error ?? 'unknown'), 'error');
-            }
-        } catch {
-            setStatus('Network error during save.', 'error');
-        }
+        setStatus(`Printout "${key}" added. Configure it below, then click Save config in the top right.`, 'ok');
     });
 
     /* ---------- init ---------- */

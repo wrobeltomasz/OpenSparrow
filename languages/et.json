@@ -109,6 +109,8 @@
         "choose_avatar": "Vali avatar",
         "use_initial": "Kasuta initsiaal",
         "avatar_updated": "Avatar uuendatud.",
+        "my_records": "Minu kirjed",
+        "my_records_empty": "Teile pole kirjeid määratud.",
         "close": "Sulge"
     },
     "admin": {

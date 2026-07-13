@@ -109,6 +109,8 @@
         "choose_avatar": "Vælg avatar",
         "use_initial": "Brug initial",
         "avatar_updated": "Avatar opdateret.",
+        "my_records": "Mine poster",
+        "my_records_empty": "Du har ingen tildelte poster.",
         "close": "Luk"
     },
     "admin": {

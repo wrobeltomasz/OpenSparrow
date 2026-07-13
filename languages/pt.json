@@ -109,6 +109,8 @@
         "choose_avatar": "Escolher avatar",
         "use_initial": "Usar inicial",
         "avatar_updated": "Avatar atualizado.",
+        "my_records": "Os meus registos",
+        "my_records_empty": "Não tem registos atribuídos.",
         "close": "Fechar"
     },
     "admin": {

@@ -109,6 +109,8 @@
         "choose_avatar": "Avatar kiválasztása",
         "use_initial": "Kezdőbetű használata",
         "avatar_updated": "Avatar frissítve.",
+        "my_records": "Saját rekordjaim",
+        "my_records_empty": "Nincsenek Önhöz rendelt rekordok.",
         "close": "Bezárás"
     },
     "admin": {

@@ -35,6 +35,7 @@ try {
         'get'      => actionGet($conn),
         'history'  => actionHistory($conn),
         'editors'  => actionEditors($conn),
+        'mine'     => actionMine($conn),
         'set'      => actionSet($conn, $body),
         'mass_set' => actionMassSet($conn, $body),
         default    => jsonError("Unknown action: {$action}", 400),
@@ -145,6 +146,132 @@ function actionEditors($conn): void
     }
 
     jsonSuccess(['users' => $users]);
+}
+
+// "My records" — cross-table list of records currently owned by the logged-in user,
+// grouped by table with a best-effort display label per record. Label columns and the
+// per-table record limit come from config/user_records.json (admin "User Records" tab).
+function actionMine($conn): void
+{
+    requireLogin();
+
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+
+    // Most-recently-assigned first, per table, so the per-table limit below keeps the
+    // freshest assignments.
+    $sql = "
+        SELECT table_name, record_id
+        FROM " . sys_table('record_owners') . "
+        WHERE owner_id = \$1 AND is_current = true
+        ORDER BY table_name, changed_at DESC, record_id DESC
+    ";
+
+    $res = pg_query_params($conn, $sql, [$userId]);
+    if (!$res) {
+        error_log('[api_owners actionMine] ' . pg_last_error($conn));
+        jsonError('Database error.', 500);
+    }
+
+    $userRecordsPath = __DIR__ . '/../../config/user_records.json';
+    $userRecordsCfg  = json_decode((string)file_get_contents($userRecordsPath), true) ?: [];
+    $configuredCols  = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
+    $limit           = (int)($userRecordsCfg['limit'] ?? 20);
+
+    $byTable = [];
+    while ($row = pg_fetch_assoc($res)) {
+        $tableName = $row['table_name'];
+        if ($limit > 0 && count($byTable[$tableName] ?? []) >= $limit) {
+            continue;
+        }
+        $byTable[$tableName][] = (int)$row['record_id'];
+    }
+
+    $schemaPath = __DIR__ . '/../../config/schema.json';
+    $schema     = json_decode((string)file_get_contents($schemaPath), true) ?: [];
+
+    $tables = [];
+    foreach ($byTable as $tableName => $ids) {
+        $tableCfg = $schema['tables'][$tableName] ?? null;
+        // Ownership rows can outlive their table (renamed/removed from schema.json).
+        if ($tableCfg === null || !empty($tableCfg['hidden'])) {
+            continue;
+        }
+
+        $labelCols = mine_label_columns($tableCfg, $configuredCols[$tableName] ?? []);
+        $pgSchema  = $tableCfg['schema'] ?? 'public';
+        $arrParam  = '{' . implode(',', $ids) . '}';
+
+        $escapedLabelCols = array_map('pg_ident', $labelCols);
+        $labelSql = count($escapedLabelCols) > 1
+            ? "CONCAT_WS(' - ', " . implode(', ', $escapedLabelCols) . ')'
+            : $escapedLabelCols[0];
+
+        $rowsSql = sprintf(
+            'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',
+            $labelSql,
+            pg_ident($pgSchema),
+            pg_ident($tableName)
+        );
+
+        $rowsRes = pg_query_params($conn, $rowsSql, [$arrParam]);
+        if (!$rowsRes) {
+            error_log('[api_owners actionMine] ' . pg_last_error($conn));
+            continue;
+        }
+
+        $records = [];
+        while ($r = pg_fetch_assoc($rowsRes)) {
+            $label = trim((string)($r['label'] ?? ''));
+            $records[] = [
+                'id'    => (int)$r['id'],
+                'label' => $label !== '' ? $label : ('#' . $r['id']),
+            ];
+        }
+        usort($records, fn($a, $b) => strnatcasecmp($a['label'], $b['label']));
+
+        $tables[] = [
+            'table'        => $tableName,
+            'display_name' => to_display_name($tableCfg),
+            'records'      => $records,
+        ];
+    }
+
+    usort($tables, fn($a, $b) => strnatcasecmp($a['display_name'], $b['display_name']));
+
+    jsonSuccess(['tables' => $tables]);
+}
+
+// Record label column(s), concatenated with CONCAT_WS() when there's more than one.
+// Prefers the admin-configured config/user_records.json columns for this table (set via
+// the admin "User Records" > "Column Mapping" tab); falls back to a best-effort guess
+// (first text column shown in the grid, else any grid column, else the id).
+function mine_label_columns(array $tableCfg, array $configured): array
+{
+    $cols = $tableCfg['columns'] ?? [];
+
+    if (!empty($configured)) {
+        $valid = array_values(array_filter(
+            $configured,
+            fn($c) => is_string($c) && isset($cols[$c]) && ($cols[$c]['type'] ?? '') !== 'virtual'
+        ));
+        if (!empty($valid)) {
+            return $valid;
+        }
+    }
+
+    $firstGridCol = null;
+    foreach ($cols as $colName => $colCfg) {
+        if (empty($colCfg['show_in_grid'])) {
+            continue;
+        }
+        if ($firstGridCol === null) {
+            $firstGridCol = $colName;
+        }
+        if (($colCfg['type'] ?? '') === 'text') {
+            return [$colName];
+        }
+    }
+    return [$firstGridCol ?? 'id'];
 }
 
 function actionMassSet($conn, array $body): void

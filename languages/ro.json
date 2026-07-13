@@ -109,6 +109,8 @@
         "choose_avatar": "Alege avatarul",
         "use_initial": "Folosește inițiala",
         "avatar_updated": "Avatar actualizat.",
+        "my_records": "Înregistrările mele",
+        "my_records_empty": "Nu aveți înregistrări atribuite.",
         "close": "Închide"
     },
     "admin": {

@@ -109,6 +109,8 @@
         "choose_avatar": "Vybrat avatar",
         "use_initial": "Použít iniciálu",
         "avatar_updated": "Avatar aktualizován.",
+        "my_records": "Moje záznamy",
+        "my_records_empty": "Nemáte přiřazené žádné záznamy.",
         "close": "Zavřít"
     },
     "admin": {

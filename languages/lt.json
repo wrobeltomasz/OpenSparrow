@@ -109,6 +109,8 @@
         "choose_avatar": "Pasirinkti avataras",
         "use_initial": "Naudoti inicialą",
         "avatar_updated": "Avataro atnaujintas.",
+        "my_records": "Mano įrašai",
+        "my_records_empty": "Jums nepriskirta jokių įrašų.",
         "close": "Uždaryti"
     },
     "admin": {

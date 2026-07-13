@@ -109,6 +109,8 @@
         "choose_avatar": "Izberi avatar",
         "use_initial": "Uporabi inicialko",
         "avatar_updated": "Avatar posodobljen.",
+        "my_records": "Moji zapisi",
+        "my_records_empty": "Nimate dodeljenih zapisov.",
         "close": "Zapri"
     },
     "admin": {

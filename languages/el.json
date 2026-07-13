@@ -109,6 +109,8 @@
         "choose_avatar": "Επιλογή avatar",
         "use_initial": "Χρήση αρχικού",
         "avatar_updated": "Το avatar ενημερώθηκε.",
+        "my_records": "Οι εγγραφές μου",
+        "my_records_empty": "Δεν σας έχουν ανατεθεί εγγραφές.",
         "close": "Κλείσιμο"
     },
     "admin": {
