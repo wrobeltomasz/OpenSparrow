@@ -7,7 +7,7 @@ export function buildExpandButton(row, schema, tr) {
     const tdExpand = document.createElement('td');
     const btn = document.createElement('button');
     btn.textContent = '>';
-    btn.style.cssText = 'background:none; border:none; cursor:pointer; font-size:14px; color:var(--accent); font-weight:bold;';
+    btn.className = 'c-expand-btn';
 
     const subtables = schema.tables[state.currentTable]?.subtables || [];
     const isReadOnly = window.USER_ROLE !== 'editor' && window.USER_ROLE !== 'admin';

@@ -1,4 +1,4 @@
-// assets/js/grid/body/subtable-counts.js — loadSubtableCounts(): fetches child-record counts (api.js) for the visible rows and shows them on the expand buttons.
+// assets/js/grid/body/subtable-counts.js — loadSubtableCounts(): fetches child-record counts (api.js) for the visible rows and highlights the expand buttons that have records via color + tooltip.
 
 import { debugLog } from '../../debug.js';
 import { fetchSubtableCounts } from '../api.js';
@@ -22,15 +22,11 @@ export async function loadSubtableCounts(pageRows, schema) {
             const td = document.querySelector(`[data-expand-row-id="${CSS.escape(rowId)}"]`);
             if (!td) continue;
 
-            const badge = document.createElement('span');
-            badge.className = 'c-count-badge';
-            badge.textContent = String(cnt);
-            badge.title = I18n.t('grid.drilldown_count', { count: cnt });
-            badge.addEventListener('click', () => {
-                const btn = td.querySelector('button');
-                if (btn) btn.click();
-            });
-            td.appendChild(badge);
+            const btn = td.querySelector('button');
+            if (!btn) continue;
+
+            btn.classList.add('has-records');
+            btn.title = I18n.t('grid.drilldown_count', { count: cnt });
         }
     } catch (err) {
         debugLog('subtable counts failed', err);

@@ -1408,6 +1408,23 @@ header .dash-filter-label {
   border-bottom: 2px solid var(--border-light);
 }
 
+.c-expand-btn {
+  background: none;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: bold;
+  padding: 2px 7px;
+}
+
+.c-expand-btn.has-records {
+  background: var(--accent-mid);
+  color: var(--accent-dark);
+  font-weight: 900;
+}
+
 .drilldown-container {
   background: var(--panel);
   border-left: 4px solid var(--accent);
