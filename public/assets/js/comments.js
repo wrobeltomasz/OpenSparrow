@@ -248,7 +248,7 @@ async function init() {
         textarea.maxLength = 4000;
 
         const sendBtn = document.createElement('button');
-        sendBtn.className = 'btn btn-primary';
+        sendBtn.className = 'btn btn-primary c-send-btn';
         sendBtn.type = 'button';
         sendBtn.textContent = I18n.t('comments.send');
 

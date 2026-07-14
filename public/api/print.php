@@ -303,7 +303,7 @@ try {
             'rows'           => $rows,
             'columns'        => $viewCols,
             'params'         => $paramDefs,
-            'applied_params' => $appliedParams,
+            'applied_params' => (object) $appliedParams,
         ]);
         exit;
     }

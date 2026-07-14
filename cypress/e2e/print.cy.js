@@ -161,7 +161,10 @@ describe('OpenSparrow – Print: URL param', () => {
   });
 
   it('an unknown p_ query arg is ignored instead of breaking an existing print', () => {
-    cy.get('#menu a[href^="print.php?print="]').then($links => {
+    cy.visit(`${BASE}/print.php`);
+    cy.get('#printContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+    cy.get('body').then($body => {
+      const $links = $body.find('#menu a[href^="print.php?print="]');
       if ($links.length === 0) {
         Cypress.log({ message: 'No print templates configured — skipping robustness test' });
         return;

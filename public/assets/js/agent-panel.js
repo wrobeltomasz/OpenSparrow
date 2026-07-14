@@ -90,11 +90,11 @@ function buildPanel() {
     const actions       = document.createElement('div');
     actions.className   = 'ag-actions';
     clearBtn            = document.createElement('button');
-    clearBtn.className  = 'btn btn-secondary';
+    clearBtn.className  = 'btn btn-secondary ag-clear-btn';
     clearBtn.type       = 'button';
     clearBtn.textContent = t('agent.clear');
     sendBtn             = document.createElement('button');
-    sendBtn.className   = 'btn btn-primary';
+    sendBtn.className   = 'btn btn-primary ag-send-btn';
     sendBtn.type        = 'button';
     sendBtn.textContent = t('agent.send');
     stopBtn             = document.createElement('button');
