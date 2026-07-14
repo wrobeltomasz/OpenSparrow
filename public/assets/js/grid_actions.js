@@ -25,6 +25,22 @@ function getCurrentTable() {
   return window.AppState?.currentTable;
 }
 
+// Shared fetch/parse for the row-mutation endpoints below; caller keeps its own
+// error logging/toast since that differs per action.
+async function postJson(url, method, body) {
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+    body: JSON.stringify(body)
+  });
+
+  let payload = null;
+  // Handle edge cases where server returns an empty or non-JSON response
+  try { payload = await res.json(); } catch {}
+
+  return { res, payload };
+}
+
 function normalizeValue(el) {
   if (el.type === 'checkbox') {
     return el.checked; 
@@ -84,15 +100,7 @@ async function performUpdate(el, table, id, column, value) {
   const td = el.closest('td');
 
   try {
-    const res = await fetch('index.php?api=update', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-      body: JSON.stringify({ table, id, column, value })
-    });
-
-    let payload = null;
-    // Handle edge cases where server returns an empty or non-JSON response
-    try { payload = await res.json(); } catch {}
+    const { res, payload } = await postJson('index.php?api=update', 'PATCH', { table, id, column, value });
 
     if (!res.ok || payload?.error) {
       console.error("Update failed", { status: res.status, payload });
@@ -187,14 +195,7 @@ export async function deleteRow(id) {
   if (!table || !id) return;
 
   try {
-    const res = await fetch('index.php?api=delete', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-      body: JSON.stringify({ table, id })
-    });
-
-    let payload = null;
-    try { payload = await res.json(); } catch {}
+    const { res, payload } = await postJson('index.php?api=delete', 'DELETE', { table, id });
 
     if (!res.ok || payload?.error) {
       console.error("Delete failed", { status: res.status, payload });
@@ -219,14 +220,7 @@ export async function duplicateRow(id) {
   if (!table || !id) return;
 
   try {
-    const res = await fetch('index.php?api=duplicate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-      body: JSON.stringify({ table, id, action: 'duplicate' })
-    });
-
-    let payload = null;
-    try { payload = await res.json(); } catch {}
+    const { res, payload } = await postJson('index.php?api=duplicate', 'POST', { table, id, action: 'duplicate' });
 
     if (!res.ok || payload?.error) {
       console.error("Duplicate failed", { status: res.status, payload });
@@ -247,14 +241,7 @@ export async function addRow() {
   if (!table) return;
 
   try {
-    const res = await fetch('index.php?api=insert', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-      body: JSON.stringify({ table, data: {} })
-    });
-
-    let payload = null;
-    try { payload = await res.json(); } catch {}
+    const { res, payload } = await postJson('index.php?api=insert', 'POST', { table, data: {} });
 
     if (!res.ok || payload?.error) {
       console.error("Insert failed", { status: res.status, payload });

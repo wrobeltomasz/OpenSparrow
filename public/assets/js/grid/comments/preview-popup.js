@@ -4,32 +4,24 @@ import { renderAvatar } from '../../avatar.js';
 import { fetchCommentPreview } from '../api.js';
 import { state } from '../state.js';
 import { I18n } from '../../i18n.js';
+import { createHoverPopup } from '../hover-popup.js';
 
 const previewCache = new Map();
 let popup = null;
-let timer = null;
 
 export function clearPreviewCache() {
     previewCache.clear();
 }
 
 export function initPreviewPopup() {
-    popup = document.createElement('div');
-    popup.className = 'c-preview-popup';
-    popup.hidden = true;
-    document.body.appendChild(popup);
-
-    popup.addEventListener('mouseenter', () => clearTimeout(timer));
-    popup.addEventListener('mouseleave', () => { popup.hidden = true; });
+    popup = createHoverPopup({ className: 'c-preview-popup', width: 360, verticalThreshold: 180 });
 
     document.addEventListener('mouseover', async e => {
         const badge = e.target.closest('.c-count-badge[data-row-id]');
         if (!badge) return;
 
-        clearTimeout(timer);
-        positionPopup(badge);
-        popup.replaceChildren(makeParagraph('c-preview-loading', 'Loading…'));
-        popup.hidden = false;
+        popup.el.replaceChildren(makeParagraph('c-preview-loading', 'Loading…'));
+        popup.show(badge);
 
         const rowId = badge.dataset.rowId;
         const cacheKey = `${state.currentTable}:${rowId}`;
@@ -40,43 +32,30 @@ export function initPreviewPopup() {
                 previewCache.set(cacheKey, comments);
             } catch {
                 // Do not cache on error — next hover will retry
-                if (!popup.hidden) renderContent([]);
+                if (!popup.el.hidden) renderContent([]);
                 return;
             }
         }
 
-        if (!popup.hidden) renderContent(previewCache.get(cacheKey) ?? []);
+        if (!popup.el.hidden) renderContent(previewCache.get(cacheKey) ?? []);
     });
 
     document.addEventListener('mouseout', e => {
         if (!e.target.closest('.c-count-badge[data-row-id]')) return;
-        timer = setTimeout(() => { popup.hidden = true; }, 150);
+        popup.scheduleHide();
     });
 }
 
-function positionPopup(anchor) {
-    const rect = anchor.getBoundingClientRect();
-    const left = Math.min(Math.max(8, rect.left), window.innerWidth - 360);
-    popup.style.left = `${left}px`;
-    if (window.innerHeight - rect.bottom >= 180 || rect.top < 180) {
-        popup.style.top = `${rect.bottom + 6}px`;
-        popup.style.bottom = '';
-    } else {
-        popup.style.top = '';
-        popup.style.bottom = `${window.innerHeight - rect.top + 6}px`;
-    }
-}
-
 function renderContent(comments) {
-    popup.replaceChildren();
+    popup.el.replaceChildren();
     const title = document.createElement('div');
     title.className = 'c-preview-title';
     title.textContent = I18n.t('grid.recent_comments');
-    popup.appendChild(title);
+    popup.el.appendChild(title);
 
     const visible = comments.filter(c => !c.deleted_at);
     if (visible.length === 0) {
-        popup.appendChild(makeParagraph('c-preview-empty', I18n.t('grid.no_comments')));
+        popup.el.appendChild(makeParagraph('c-preview-empty', I18n.t('grid.no_comments')));
         return;
     }
 
@@ -104,7 +83,7 @@ function renderContent(comments) {
 
         content.append(meta, body);
         item.appendChild(content);
-        popup.appendChild(item);
+        popup.el.appendChild(item);
     }
 }
 

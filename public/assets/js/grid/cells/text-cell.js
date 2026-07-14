@@ -4,6 +4,7 @@ import { attachCellEvents } from '../../grid_actions.js';
 import { highlightInto } from '../../util/html.js';
 import { state } from '../state.js';
 import { CellRenderer } from './registry.js';
+import { makeInlineLink } from '../dom.js';
 
 function renderTextCell({ row, col, colCfg, isReadOnly }) {
     const td = document.createElement('td');
@@ -24,24 +25,14 @@ function renderTextCell({ row, col, colCfg, isReadOnly }) {
     const strVal = String(value).trim();
 
     if (/^https?:\/\//i.test(strVal)) {
-        const a = document.createElement('a');
-        a.href = strVal;
-        a.target = '_blank';
-        a.textContent = strVal;
-        a.style.color = 'var(--accent)';
-        a.style.textDecoration = 'underline';
-        a.style.cursor = 'pointer';
-        a.addEventListener('click', e => { e.preventDefault(); window.open(strVal, '_blank'); });
-        td.appendChild(a);
+        td.appendChild(makeInlineLink(strVal, strVal, {
+            newTab: true,
+            onClick: e => { e.preventDefault(); window.open(strVal, '_blank'); },
+        }));
     } else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strVal)) {
-        const a = document.createElement('a');
-        a.href = `mailto:${strVal}`;
-        a.textContent = strVal;
-        a.style.color = 'var(--accent)';
-        a.style.textDecoration = 'underline';
-        a.style.cursor = 'pointer';
-        a.addEventListener('click', e => e.stopPropagation());
-        td.appendChild(a);
+        td.appendChild(makeInlineLink(`mailto:${strVal}`, strVal, {
+            onClick: e => e.stopPropagation(),
+        }));
     } else {
         highlightInto(td, value, state.searchTerm);
     }

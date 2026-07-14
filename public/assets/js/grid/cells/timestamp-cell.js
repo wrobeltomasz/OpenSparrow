@@ -1,7 +1,7 @@
 // assets/js/grid/cells/timestamp-cell.js — Timestamp cell: normalizes display (T->space, strips milliseconds + timezone); registers 'timestamp'.
 
-import { attachCellEvents } from '../../grid_actions.js';
 import { CellRenderer } from './registry.js';
+import { createInputCell } from './shared.js';
 
 function normalizeTimestampDisplay(value) {
     if (!value) return '';
@@ -19,24 +19,16 @@ function toDatetimeLocalValue(value) {
 }
 
 function renderTimestampCell({ row, col, colCfg, isReadOnly }) {
-    const td = document.createElement('td');
-    const rawVal = row[col + '__display'] ?? row[col] ?? '';
-
-    const input = document.createElement('input');
-    input.type = 'datetime-local';
-    input.step = '1';
-    input.value = toDatetimeLocalValue(rawVal);
-    input.dataset.column = col;
-    input.dataset.id = row['id'];
-
-    if (colCfg.readonly || isReadOnly) {
-        input.disabled = true;
-    } else {
-        attachCellEvents(input);
-    }
-
-    td.appendChild(input);
-    return td;
+    return createInputCell({
+        row, col, colCfg, isReadOnly,
+        makeControl: () => {
+            const input = document.createElement('input');
+            input.type = 'datetime-local';
+            input.step = '1';
+            input.value = toDatetimeLocalValue(row[col + '__display'] ?? row[col] ?? '');
+            return input;
+        },
+    });
 }
 
 CellRenderer.register('timestamp', renderTimestampCell);

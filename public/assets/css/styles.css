@@ -733,6 +733,13 @@ thead th {
 thead th:first-child { padding-left: 0.6rem; }
 thead th:last-child  { padding-right: 0.6rem; }
 
+/* Text-cell URL/email links */
+.cell-link {
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .th-m2m,
 .td-m2m {
   min-width: 80px;
@@ -765,8 +772,13 @@ thead th:last-child  { padding-right: 0.6rem; }
   color: var(--muted);
 }
 
-.m2m-popup {
+/* Shared "card" hover-popup shape (see .c-preview-popup); z-index differs intentionally per stacking context */
+.m2m-popup, .c-preview-popup {
   position: fixed;
+  pointer-events: auto;
+}
+
+.m2m-popup {
   z-index: 10001;
   background: #fff;
   border: 1px solid #ddd;
@@ -779,7 +791,6 @@ thead th:last-child  { padding-right: 0.6rem; }
   max-width: 280px;
   max-height: 320px;
   overflow-y: auto;
-  pointer-events: auto;
 }
 
 .m2m-popup-title {
@@ -801,12 +812,6 @@ thead th:last-child  { padding-right: 0.6rem; }
 
 .m2m-popup-item:last-child {
   border-bottom: none;
-}
-
-.th-icon {
-  width: 20px;
-  height: 20px;
-  display: block;
 }
 
 .th-actions {
@@ -1688,17 +1693,20 @@ header .dash-filter-label {
 }
 
 /* ===== FILTER CHIPS (shared: calendar, board, grid pills) ===== */
-.filter-chip {
+/* Shared pill shape with .filter-pill below; .filter-chip is the toggle-chip, .filter-pill the removable active-filter pill */
+.filter-chip, .filter-pill {
   display: inline-flex;
   align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.filter-chip {
   flex: 0 0 auto;
   gap: 6px;
-  padding: 4px 12px;
   border: 1px solid var(--border);
-  border-radius: 999px;
   background: var(--panel);
   cursor: pointer;
-  font-size: 13px;
   white-space: nowrap;
 }
 .filter-chip:hover {
@@ -1726,15 +1734,10 @@ header .dash-filter-label {
 }
 #filterPills.active { display: flex; }
 .filter-pill {
-  display: inline-flex;
-  align-items: center;
   gap: 8px;
-  padding: 4px 12px;
   border: 1px solid var(--accent-mid);
-  border-radius: 999px;
   background: var(--accent-light);
   color: var(--accent-dark);
-  font-size: 13px;
   font-weight: 500;
 }
 .filter-pill-remove {
@@ -1936,27 +1939,7 @@ header .dash-filter-label {
   font-family: monospace;
 }
 
-/* ===== GRID LOADER (Spinner Overlay) ===== */
-.grid-loader-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(244, 247, 249, 0.7);
-  backdrop-filter: blur(2px);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-  border-radius: var(--radius-lg);
-}
-
-.grid-loader-overlay.active {
-  opacity: 1;
-  visibility: visible;
-}
-
+/* ===== GRID LOADER (Spinner) ===== */
 .spinner {
   width: 40px;
   height: 40px;
@@ -2279,7 +2262,6 @@ th.drag-over .th-label {
    COMMENT PREVIEW POPUP (grid hover)
 ========================================= */
 .c-preview-popup {
-  position: fixed;
   z-index: 500;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -2288,7 +2270,6 @@ th.drag-over .th-label {
   padding: 12px 14px;
   min-width: 260px;
   max-width: 340px;
-  pointer-events: auto;
 }
 
 .c-preview-title {
@@ -3062,17 +3043,22 @@ th.drag-over .th-label {
 .me-bar-count { font-weight: 600; }
 .me-bar-actions { display: flex; gap: 8px; }
 
-/* Ghost buttons on the dark bar: dup/export/owner share one look, clear is the muted variant */
-.me-bar-dup-btn, .me-bar-export-btn, .me-bar-owner-btn, .me-bar-clear-btn {
-    background: rgba(255,255,255,0.12);
-    color: var(--border-light);
-    border: 1px solid rgba(255,255,255,0.25);
+/* Shared shape for every dark-bar action button; only background/color/border vary per variant */
+.me-bar-dup-btn, .me-bar-export-btn, .me-bar-owner-btn, .me-bar-clear-btn,
+.me-bar-edit-btn, .me-bar-delete-btn {
     border-radius: var(--radius);
     padding: 6px 14px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background var(--transition);
+}
+
+/* Ghost buttons on the dark bar: dup/export/owner share one look, clear is the muted variant */
+.me-bar-dup-btn, .me-bar-export-btn, .me-bar-owner-btn, .me-bar-clear-btn {
+    background: rgba(255,255,255,0.12);
+    color: var(--border-light);
+    border: 1px solid rgba(255,255,255,0.25);
 }
 .me-bar-dup-btn:hover, .me-bar-export-btn:hover, .me-bar-owner-btn:hover, .me-bar-clear-btn:hover {
     background: rgba(255,255,255,0.22);
@@ -3084,12 +3070,6 @@ th.drag-over .th-label {
     background: var(--accent);
     color: #fff;
     border: none;
-    border-radius: var(--radius);
-    padding: 6px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--transition);
 }
 .me-bar-edit-btn:hover { background: var(--accent-dark); }
 
@@ -3097,12 +3077,6 @@ th.drag-over .th-label {
     background: rgba(239,68,68,0.18);
     color: #fca5a5;
     border: 1px solid rgba(239,68,68,0.35);
-    border-radius: var(--radius);
-    padding: 6px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--transition);
 }
 .me-bar-delete-btn:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
 

@@ -22,6 +22,47 @@ function isEditableCol(name, cfg) {
     return !SKIP_TYPES.has((cfg.type ?? '').toLowerCase().split('(')[0].trim());
 }
 
+// Shared fetch/parse for the api/mass_edit.php CSRF-protected POST actions below;
+// caller keeps its own error handling since that differs (toast vs panel status).
+async function postMassEditJson(url, body) {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(body),
+    });
+    return res.json();
+}
+
+// Shared "<label> + control" field wrapper for panel bodies below.
+function makeField(className, labelText, forId, controlEl) {
+    const field = document.createElement('div');
+    field.className = className;
+    const label = document.createElement('label');
+    label.htmlFor = forId;
+    label.textContent = labelText;
+    field.appendChild(label);
+    if (controlEl) field.appendChild(controlEl);
+    return field;
+}
+
+// Shared "select all/none" quick button for the export column picker below.
+function makeColPickerQuickBtn(label, checked, body, panelInstance) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'me-col-picker-quick-btn';
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+        body.querySelectorAll('.me-col-picker-cb').forEach(cb => { cb.checked = checked; });
+        panelInstance.setApplyDisabled(!checked);
+    });
+    return btn;
+}
+
 // ─── Floating selection bar ───────────────────────────────────────────────────
 
 function getBar() {
@@ -110,22 +151,12 @@ async function massDuplicateSelected() {
 
     if (!confirm(I18n.t('mass_duplicate.confirm').replace('{n}', n))) return;
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     let data;
     try {
-        const res = await fetch('api/mass_edit.php?action=mass_duplicate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({
-                table:   state.currentTable,
-                row_ids: Array.from(state.selectedIds),
-            }),
+        data = await postMassEditJson('api/mass_edit.php?action=mass_duplicate', {
+            table:   state.currentTable,
+            row_ids: Array.from(state.selectedIds),
         });
-        data = await res.json();
     } catch {
         showToast(I18n.t('common.error_generic'), 'error');
         return;
@@ -152,22 +183,12 @@ async function massDeleteSelected() {
 
     if (!confirm(I18n.t('mass_delete.confirm').replace('{n}', n))) return;
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     let data;
     try {
-        const res = await fetch('api/mass_edit.php?action=mass_delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({
-                table:   state.currentTable,
-                row_ids: Array.from(state.selectedIds),
-            }),
+        data = await postMassEditJson('api/mass_edit.php?action=mass_delete', {
+            table:   state.currentTable,
+            row_ids: Array.from(state.selectedIds),
         });
-        data = await res.json();
     } catch {
         showToast(I18n.t('common.error_generic'), 'error');
         return;
@@ -319,11 +340,6 @@ async function buildMassEditBody(panelInstance) {
     body.appendChild(scopeEl);
 
     // Column select
-    const colField = document.createElement('div');
-    colField.className = 'bp-field';
-    const colLabel = document.createElement('label');
-    colLabel.htmlFor = 'me-column';
-    colLabel.textContent = I18n.t('mass_edit.column');
     const colSel = document.createElement('select');
     colSel.id = 'me-column';
 
@@ -335,17 +351,10 @@ async function buildMassEditBody(panelInstance) {
         colSel.appendChild(opt);
         if (!firstKey) firstKey = name;
     }
-    colField.appendChild(colLabel);
-    colField.appendChild(colSel);
-    body.appendChild(colField);
+    body.appendChild(makeField('bp-field', I18n.t('mass_edit.column'), 'me-column', colSel));
 
     // Value input
-    const valField = document.createElement('div');
-    valField.className = 'bp-field me-val-field';
-    const valLabel = document.createElement('label');
-    valLabel.htmlFor = 'me-value';
-    valLabel.textContent = I18n.t('mass_edit.new_value');
-    valField.appendChild(valLabel);
+    const valField = makeField('bp-field me-val-field', I18n.t('mass_edit.new_value'), 'me-value', null);
     if (firstKey) valField.appendChild(await buildValueInput(cols[firstKey] ?? {}, firstKey));
     body.appendChild(valField);
 
@@ -402,19 +411,9 @@ async function runPreview(panelInstance) {
     panelInstance.setStatus(I18n.t('common.loading'), false);
     previewArea.innerHTML = '';
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     let data;
     try {
-        const res = await fetch('api/mass_edit.php?action=mass_edit_preview', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify(payload),
-        });
-        data = await res.json();
+        data = await postMassEditJson('api/mass_edit.php?action=mass_edit_preview', payload);
     } catch {
         panelInstance.setStatus(I18n.t('common.error_generic'), true);
         previewBtn.disabled = false;
@@ -513,19 +512,9 @@ async function applyMassEdit(panelInstance) {
     panelInstance.setApplyDisabled(true);
     panelInstance.setStatus(I18n.t('common.loading'), false);
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     let data;
     try {
-        const res = await fetch('api/mass_edit.php?action=mass_edit_apply', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify(payload),
-        });
-        data = await res.json();
+        data = await postMassEditJson('api/mass_edit.php?action=mass_edit_apply', payload);
     } catch {
         panelInstance.setStatus(I18n.t('common.error_generic'), true);
         panelInstance.setApplyDisabled(false);
@@ -592,27 +581,8 @@ function buildExportBody(panelInstance) {
 
     const quickRow = document.createElement('div');
     quickRow.className = 'me-col-picker-quick';
-
-    const allBtn = document.createElement('button');
-    allBtn.type = 'button';
-    allBtn.className = 'me-col-picker-quick-btn';
-    allBtn.textContent = I18n.t('mass_edit.export_select_all');
-    allBtn.addEventListener('click', () => {
-        body.querySelectorAll('.me-col-picker-cb').forEach(cb => { cb.checked = true; });
-        panelInstance.setApplyDisabled(false);
-    });
-
-    const noneBtn = document.createElement('button');
-    noneBtn.type = 'button';
-    noneBtn.className = 'me-col-picker-quick-btn';
-    noneBtn.textContent = I18n.t('mass_edit.export_select_none');
-    noneBtn.addEventListener('click', () => {
-        body.querySelectorAll('.me-col-picker-cb').forEach(cb => { cb.checked = false; });
-        panelInstance.setApplyDisabled(true);
-    });
-
-    quickRow.appendChild(allBtn);
-    quickRow.appendChild(noneBtn);
+    quickRow.appendChild(makeColPickerQuickBtn(I18n.t('mass_edit.export_select_all'), true, body, panelInstance));
+    quickRow.appendChild(makeColPickerQuickBtn(I18n.t('mass_edit.export_select_none'), false, body, panelInstance));
     body.appendChild(quickRow);
 
     const list = document.createElement('div');
@@ -694,20 +664,13 @@ async function buildOwnerBody(panelInstance) {
     scopeEl.textContent = I18n.t('mass_owner.scope_info').replace('{n}', state.selectedIds.size);
     body.appendChild(scopeEl);
 
-    const field = document.createElement('div');
-    field.className = 'bp-field';
-    const label = document.createElement('label');
-    label.htmlFor = 'me-owner-sel';
-    label.textContent = I18n.t('mass_owner.select_user');
     const sel = document.createElement('select');
     sel.id = 'me-owner-sel';
     const blank = document.createElement('option');
     blank.value = '';
     blank.textContent = '— ' + I18n.t('mass_owner.select_user') + ' —';
     sel.appendChild(blank);
-    field.appendChild(label);
-    field.appendChild(sel);
-    body.appendChild(field);
+    body.appendChild(makeField('bp-field', I18n.t('mass_owner.select_user'), 'me-owner-sel', sel));
 
     panelInstance.setStatus(I18n.t('common.loading'), false);
 

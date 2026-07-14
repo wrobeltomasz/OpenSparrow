@@ -1,7 +1,7 @@
 // assets/js/grid/cells/date-cell.js — Date cell: <input type=date>; normalizes DB/ISO/dd.mm.yyyy values to yyyy-mm-dd; registers 'date'.
 
-import { attachCellEvents } from '../../grid_actions.js';
 import { CellRenderer } from './registry.js';
+import { createInputCell } from './shared.js';
 
 function normalizeDateValue(value) {
     if (!value) return '';
@@ -17,18 +17,15 @@ function normalizeDateValue(value) {
 }
 
 function renderDateCell({ row, col, colCfg, isReadOnly }) {
-    const td = document.createElement('td');
-    const input = document.createElement('input');
-    input.type = 'date';
-    input.value = normalizeDateValue(row[col + '__display'] ?? row[col] ?? '');
-    input.dataset.column = col;
-    input.dataset.id = row['id'];
-
-    if (colCfg.readonly || isReadOnly) input.disabled = true;
-    if (!isReadOnly) attachCellEvents(input);
-
-    td.appendChild(input);
-    return td;
+    return createInputCell({
+        row, col, colCfg, isReadOnly,
+        makeControl: () => {
+            const input = document.createElement('input');
+            input.type = 'date';
+            input.value = normalizeDateValue(row[col + '__display'] ?? row[col] ?? '');
+            return input;
+        },
+    });
 }
 
 CellRenderer.register('date', renderDateCell);

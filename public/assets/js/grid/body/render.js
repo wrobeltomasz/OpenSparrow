@@ -5,6 +5,7 @@ import { deleteRow, duplicateRow } from '../../grid_actions.js';
 import { state } from '../state.js';
 import { CellRenderer } from '../cells/registry.js';
 import { buildExpandButton } from './drilldown.js';
+import { makeIconButton } from '../dom.js';
 
 // Import cell renderers so they self-register
 import '../cells/fk-cell.js';
@@ -179,47 +180,36 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     tdActions.className = 'td-actions';
     tdActions.dataset.actionsRowId = String(row['id']);
 
-    const editBtn = document.createElement('button');
-    editBtn.className = 'btn-icon';
-    editBtn.dataset.cy = 'row-edit';
-    editBtn.title = I18n.t('common.edit');
-    const editImg = document.createElement('img');
-    editImg.src = 'assets/img/edit_square.png';
-    editImg.alt = I18n.t('common.edit');
-    editBtn.appendChild(editImg);
-    editBtn.addEventListener('click', () => {
-        window.location.href = `edit.php?table=${state.currentTable}&id=${row['id']}`;
-    });
-    tdActions.appendChild(editBtn);
+    tdActions.appendChild(makeIconButton({
+        cy: 'row-edit',
+        title: I18n.t('common.edit'),
+        icon: 'assets/img/edit_square.png',
+        onClick: () => {
+            window.location.href = `edit.php?table=${state.currentTable}&id=${row['id']}`;
+        },
+    }));
 
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'btn-icon';
-    copyBtn.dataset.cy = 'row-duplicate';
-    copyBtn.title = I18n.t('grid.duplicate');
-    const copyImg = document.createElement('img');
-    copyImg.src = 'assets/img/content_copy.png';
-    copyImg.alt = I18n.t('grid.duplicate');
-    copyBtn.appendChild(copyImg);
-    copyBtn.addEventListener('click', async () => {
-        const result = await duplicateRow(row['id']);
-        if (result?.ok) await onTableReload();
-    });
-    tdActions.appendChild(copyBtn);
+    tdActions.appendChild(makeIconButton({
+        cy: 'row-duplicate',
+        title: I18n.t('grid.duplicate'),
+        icon: 'assets/img/content_copy.png',
+        onClick: async () => {
+            const result = await duplicateRow(row['id']);
+            if (result?.ok) await onTableReload();
+        },
+    }));
 
-    const delBtn = document.createElement('button');
-    delBtn.className = 'btn-icon btn-icon-danger';
-    delBtn.dataset.cy = 'row-delete';
-    delBtn.title = I18n.t('common.delete');
-    const delImg = document.createElement('img');
-    delImg.src = 'assets/img/delete.png';
-    delImg.alt = I18n.t('common.delete');
-    delBtn.appendChild(delImg);
-    delBtn.addEventListener('click', async () => {
-        if (!confirm(I18n.t('common.confirm_delete'))) return;
-        const result = await deleteRow(row['id']);
-        if (result?.ok) await onTableReload();
-    });
-    tdActions.appendChild(delBtn);
+    tdActions.appendChild(makeIconButton({
+        cy: 'row-delete',
+        title: I18n.t('common.delete'),
+        icon: 'assets/img/delete.png',
+        className: 'btn-icon btn-icon-danger',
+        onClick: async () => {
+            if (!confirm(I18n.t('common.confirm_delete'))) return;
+            const result = await deleteRow(row['id']);
+            if (result?.ok) await onTableReload();
+        },
+    }));
 
     return tdActions;
 }

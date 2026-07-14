@@ -10,6 +10,48 @@ $tDataCleanup       = htmlspecialchars(t('data_cleanup.title'), ENT_QUOTES, 'UTF
 $tShortcutsHelp     = htmlspecialchars(t('shortcuts.help_title'), ENT_QUOTES, 'UTF-8');
 $tAdd               = htmlspecialchars(t('common.add'), ENT_QUOTES, 'UTF-8');
 $jsonFlags          = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+
+// Single source of truth for the grid actions row, rendered below into both
+// the mobile <select> and the desktop buttons so the role gate isn't repeated per target.
+$gridActions = [
+    [
+        'value' => 'add',
+        'optionLabel' => $tAddRow,
+        'role' => 'editor',
+        'button' => ['id' => 'addRow', 'cy' => 'add', 'class' => 'success', 'label' => $tAdd],
+    ],
+    [
+        'value' => 'export',
+        'optionLabel' => $tExportCsv,
+        'role' => null,
+        'button' => ['id' => 'exportCsv', 'cy' => 'export', 'class' => null, 'label' => $tExportCsv],
+    ],
+    [
+        'value' => 'refresh',
+        'optionLabel' => $tRefreshTable,
+        'role' => null,
+        'button' => null,
+    ],
+    [
+        'value' => 'data-cleanup',
+        'optionLabel' => $tDataCleanup,
+        'role' => 'editor',
+        'button' => ['id' => 'dataCleanupBtn', 'cy' => 'data-cleanup', 'class' => null, 'label' => $tDataCleanup],
+    ],
+    [
+        'value' => 'keyboard-help',
+        'optionLabel' => $tShortcutsHelp,
+        'role' => null,
+        'button' => [
+            'id' => 'kgHelpBtn',
+            'cy' => 'keyboard-help',
+            'class' => 'kg-help-btn',
+            'label' => '&#9000;',
+            'title' => $tShortcutsHelp,
+        ],
+    ],
+];
+$gridActionAllowed = fn ($a) => !$a['role'] || ($userRole ?? '') === $a['role'];
 $headerControls = <<<HTML
     <input id="globalSearch" data-cy="search" type="text" placeholder="{$tSearchPlaceholder}" />
     <select id="columnFilter" data-cy="column-filter"><option value="">{$tAllColumns}</option></select>
@@ -29,26 +71,25 @@ ob_start();
             <div class="left">
                 <select id="mobileActions">
                     <option value=""><?= $tChooseAction ?></option>
-                    <?php if (($userRole ?? '') === 'editor') : ?>
-                    <option value="add"><?= $tAddRow ?></option>
-                    <?php endif; ?>
-                    <option value="export"><?= $tExportCsv ?></option>
-                    <option value="refresh"><?= $tRefreshTable ?></option>
-                    <?php if (($userRole ?? '') === 'editor') : ?>
-                    <option value="data-cleanup"><?= $tDataCleanup ?></option>
-                    <?php endif; ?>
-                    <option value="keyboard-help"><?= $tShortcutsHelp ?></option>
+                    <?php foreach ($gridActions as $a) : ?>
+                        <?php if (!$gridActionAllowed($a)) {
+                            continue;
+                        } ?>
+                    <option value="<?= $a['value'] ?>"><?= $a['optionLabel'] ?></option>
+                    <?php endforeach; ?>
                 </select>
 
-                <?php if (($userRole ?? '') === 'editor') : ?>
-                <button id="addRow" data-cy="add" class="success"><?= $tAdd ?></button>
-                <?php endif; ?>
-                <button id="exportCsv" data-cy="export"><?= $tExportCsv ?></button>
-                <?php if (($userRole ?? '') === 'editor') : ?>
-                <button id="dataCleanupBtn" data-cy="data-cleanup"><?= $tDataCleanup ?></button>
-                <?php endif; ?>
-                <button id="kgHelpBtn" data-cy="keyboard-help" class="kg-help-btn"
-                        title="<?= $tShortcutsHelp ?>">&#9000;</button>
+                <?php foreach ($gridActions as $a) : ?>
+                    <?php if (!$a['button'] || !$gridActionAllowed($a)) {
+                        continue;
+                    } ?>
+                    <?php
+                    $b = $a['button'];
+                    $bAttrs = ($b['class'] ? ' class="' . $b['class'] . '"' : '')
+                        . (isset($b['title']) ? ' title="' . $b['title'] . '"' : '');
+                    ?>
+                <button id="<?= $b['id'] ?>" data-cy="<?= $b['cy'] ?>"<?= $bAttrs ?>><?= $b['label'] ?></button>
+                <?php endforeach; ?>
             </div>
 
             <div id="pagination" data-cy="pagination" class="pagination"></div>

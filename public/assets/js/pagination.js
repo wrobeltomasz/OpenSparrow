@@ -60,12 +60,12 @@ export function renderPagination(schema) {
     paginationEl.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
 
     // Rows-per-page selector — leftmost, standard best practice position
+    // (reuses the .pag-size class already styled for the Files module's own pagination)
     const sizeLabel = document.createElement('label');
-    sizeLabel.style.cssText = 'display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); margin-right:8px;';
+    sizeLabel.className = 'pag-size';
     sizeLabel.textContent = I18n.t('grid.rows_per_page') + ':';
 
     const sizeSelect = document.createElement('select');
-    sizeSelect.style.cssText = 'padding:3px 6px; border:1px solid var(--border); border-radius:4px; font-size:13px; background:var(--panel);';
     PAGE_SIZE_OPTIONS.forEach(n => {
         const opt = document.createElement('option');
         opt.value = n;

@@ -1,18 +1,12 @@
 // assets/js/grid/m2m/popup.js — Hover popup listing a row's many-to-many items (read from the m2m loader store).
 
 import { getM2mItems } from './loader.js';
+import { createHoverPopup } from '../hover-popup.js';
 
-let popup   = null;
-let hideTimer = null;
+let popup = null;
 
 export function initM2mPopup() {
-    popup = document.createElement('div');
-    popup.className = 'm2m-popup';
-    popup.hidden = true;
-    document.body.appendChild(popup);
-
-    popup.addEventListener('mouseenter', () => clearTimeout(hideTimer));
-    popup.addEventListener('mouseleave', () => { popup.hidden = true; });
+    popup = createHoverPopup({ className: 'm2m-popup', width: 260, verticalThreshold: 160 });
 
     document.addEventListener('mouseover', e => {
         const td = e.target.closest('[data-m2m-row-id]');
@@ -23,43 +17,28 @@ export function initM2mPopup() {
         const items = getM2mItems(rowId, mi);
         if (!items.length) return;
 
-        clearTimeout(hideTimer);
-        positionPopup(td);
         renderPopup(items, td.dataset.m2mLabel || 'Related');
-        popup.hidden = false;
+        popup.show(td);
     });
 
     document.addEventListener('mouseout', e => {
         if (!e.target.closest('[data-m2m-row-id]')) return;
-        hideTimer = setTimeout(() => { popup.hidden = true; }, 150);
+        popup.scheduleHide();
     });
 }
 
-function positionPopup(anchor) {
-    const rect = anchor.getBoundingClientRect();
-    const left = Math.min(Math.max(8, rect.left), window.innerWidth - 260);
-    popup.style.left = `${left}px`;
-    if (window.innerHeight - rect.bottom >= 160 || rect.top < 160) {
-        popup.style.top    = `${rect.bottom + 6}px`;
-        popup.style.bottom = '';
-    } else {
-        popup.style.top    = '';
-        popup.style.bottom = `${window.innerHeight - rect.top + 6}px`;
-    }
-}
-
 function renderPopup(items, label) {
-    popup.replaceChildren();
+    popup.el.replaceChildren();
 
     const title = document.createElement('div');
     title.className = 'm2m-popup-title';
     title.textContent = label;
-    popup.appendChild(title);
+    popup.el.appendChild(title);
 
     for (const text of items) {
         const item = document.createElement('div');
         item.className = 'm2m-popup-item';
         item.textContent = text;
-        popup.appendChild(item);
+        popup.el.appendChild(item);
     }
 }

@@ -139,6 +139,35 @@ function updateColumnFilterState(col, type, data) {
     }
 }
 
+// Shared "From/To" range-input pair (used for both date and number column filters).
+function buildRangeFilter({ fromLabel, toLabel, inputType, inputClass, placeholderFrom, placeholderTo, existingFrom, existingTo, changeEvent, onUpdate }) {
+    const container = document.createElement('div');
+    container.className = 'filter-range';
+
+    const spanFrom = document.createElement('span');
+    spanFrom.textContent = fromLabel;
+    const inputFrom = document.createElement('input');
+    inputFrom.type = inputType;
+    inputFrom.className = inputClass;
+    if (placeholderFrom !== undefined) inputFrom.placeholder = placeholderFrom;
+    if (existingFrom !== undefined) inputFrom.value = existingFrom;
+
+    const spanTo = document.createElement('span');
+    spanTo.textContent = toLabel;
+    const inputTo = document.createElement('input');
+    inputTo.type = inputType;
+    inputTo.className = inputClass;
+    if (placeholderTo !== undefined) inputTo.placeholder = placeholderTo;
+    if (existingTo !== undefined) inputTo.value = existingTo;
+
+    const handleUpdate = () => onUpdate(inputFrom.value, inputTo.value);
+    inputFrom.addEventListener(changeEvent, handleUpdate);
+    inputTo.addEventListener(changeEvent, handleUpdate);
+
+    container.append(spanFrom, inputFrom, spanTo, inputTo);
+    return container;
+}
+
 // Render dynamic filters based on column type
 function handleColumnFilterChange() {
     const { currentTable, fullData } = getState();
@@ -197,73 +226,35 @@ function handleColumnFilterChange() {
         
         filterBar.appendChild(select);
     } else if (type.includes('date')) {
-        const dateContainer = document.createElement('div');
-        dateContainer.className = 'filter-range';
-
-        const spanFrom = document.createElement('span');
-        spanFrom.textContent = 'From:';
-        const inputFrom = document.createElement('input');
-        inputFrom.type = 'date';
-        inputFrom.className = 'date-filter';
-        if (existingFilter.from) inputFrom.value = existingFilter.from;
-
-        const spanTo = document.createElement('span');
-        spanTo.textContent = 'To:';
-        const inputTo = document.createElement('input');
-        inputTo.type = 'date';
-        inputTo.className = 'date-filter';
-        if (existingFilter.to) inputTo.value = existingFilter.to;
-        
-        const updateDateState = () => {
-            const fromVal = inputFrom.value;
-            const toVal = inputTo.value;
-            updateColumnFilterState(col, 'date', { from: fromVal, to: toVal, empty: !fromVal && !toVal });
-            applySearch();
-        };
-        
-        inputFrom.addEventListener('change', updateDateState);
-        inputTo.addEventListener('change', updateDateState);
-        
-        dateContainer.appendChild(spanFrom);
-        dateContainer.appendChild(inputFrom);
-        dateContainer.appendChild(spanTo);
-        dateContainer.appendChild(inputTo);
-        filterBar.appendChild(dateContainer);
+        filterBar.appendChild(buildRangeFilter({
+            fromLabel: 'From:',
+            toLabel: 'To:',
+            inputType: 'date',
+            inputClass: 'date-filter',
+            existingFrom: existingFilter.from,
+            existingTo: existingFilter.to,
+            changeEvent: 'change',
+            onUpdate: (fromVal, toVal) => {
+                updateColumnFilterState(col, 'date', { from: fromVal, to: toVal, empty: !fromVal && !toVal });
+                applySearch();
+            },
+        }));
     } else if (type.includes('int') || type.includes('dec') || type.includes('num') || type.includes('float')) {
-        const numContainer = document.createElement('div');
-        numContainer.className = 'filter-range';
-
-        const spanFrom = document.createElement('span');
-        spanFrom.textContent = 'Min:';
-        const inputFrom = document.createElement('input');
-        inputFrom.type = 'number';
-        inputFrom.placeholder = '0';
-        inputFrom.className = 'num-filter';
-        if (existingFilter.min !== undefined) inputFrom.value = existingFilter.min;
-
-        const spanTo = document.createElement('span');
-        spanTo.textContent = 'Max:';
-        const inputTo = document.createElement('input');
-        inputTo.type = 'number';
-        inputTo.placeholder = '100';
-        inputTo.className = 'num-filter';
-        if (existingFilter.max !== undefined) inputTo.value = existingFilter.max;
-        
-        const updateNumState = () => {
-            const minVal = inputFrom.value;
-            const maxVal = inputTo.value;
-            updateColumnFilterState(col, 'number', { min: minVal, max: maxVal, empty: minVal === '' && maxVal === '' });
-            applySearch();
-        };
-        
-        inputFrom.addEventListener('input', updateNumState);
-        inputTo.addEventListener('input', updateNumState);
-        
-        numContainer.appendChild(spanFrom);
-        numContainer.appendChild(inputFrom);
-        numContainer.appendChild(spanTo);
-        numContainer.appendChild(inputTo);
-        filterBar.appendChild(numContainer);
+        filterBar.appendChild(buildRangeFilter({
+            fromLabel: 'Min:',
+            toLabel: 'Max:',
+            inputType: 'number',
+            inputClass: 'num-filter',
+            placeholderFrom: '0',
+            placeholderTo: '100',
+            existingFrom: existingFilter.min,
+            existingTo: existingFilter.max,
+            changeEvent: 'input',
+            onUpdate: (minVal, maxVal) => {
+                updateColumnFilterState(col, 'number', { min: minVal, max: maxVal, empty: minVal === '' && maxVal === '' });
+                applySearch();
+            },
+        }));
     } else if (type.includes('bool')) {
         const select = document.createElement('select');
         select.id = 'boolFilter';
@@ -366,31 +357,35 @@ function renderFilterPills() {
     pillsContainer.classList.toggle('active', hasPills);
 }
 
+// Shared column-filter predicate (dict/bool/date/number) — used by both
+// applyColumnFiltersOnly() below and the client-side branch of applySearch().
+function rowMatchesColumnFilters(row, filters) {
+    for (const [col, filter] of Object.entries(filters)) {
+        if (filter.type === 'dict') {
+            if (String(row[col]) !== String(filter.val)) return false;
+        } else if (filter.type === 'bool') {
+            const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
+            if (rowBool !== (filter.val === 'true')) return false;
+        } else if (filter.type === 'date') {
+            const rowDateStr = String(row[col] || '').substring(0, 10);
+            if (!rowDateStr) return false;
+            const rowTime = new Date(rowDateStr).getTime();
+            if (filter.from && rowTime < new Date(filter.from).getTime()) return false;
+            if (filter.to && rowTime > new Date(filter.to).getTime()) return false;
+        } else if (filter.type === 'number') {
+            const rowNum = Number(row[col]);
+            if (isNaN(rowNum)) return false;
+            if (filter.min !== '' && rowNum < Number(filter.min)) return false;
+            if (filter.max !== '' && rowNum > Number(filter.max)) return false;
+        }
+    }
+    return true;
+}
+
 // Apply only column filters to a row set (no text search). Used after server search
 // and after load-more to avoid re-triggering a server round-trip.
 function applyColumnFiltersOnly(rows) {
-    return rows.filter(row => {
-        for (const [col, filter] of Object.entries(activeFilters.columns)) {
-            if (filter.type === 'dict') {
-                if (String(row[col]) !== String(filter.val)) return false;
-            } else if (filter.type === 'bool') {
-                const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
-                if (rowBool !== (filter.val === 'true')) return false;
-            } else if (filter.type === 'date') {
-                const rowDateStr = String(row[col] || '').substring(0, 10);
-                if (!rowDateStr) return false;
-                const rowTime = new Date(rowDateStr).getTime();
-                if (filter.from && rowTime < new Date(filter.from).getTime()) return false;
-                if (filter.to && rowTime > new Date(filter.to).getTime()) return false;
-            } else if (filter.type === 'number') {
-                const rowNum = Number(row[col]);
-                if (isNaN(rowNum)) return false;
-                if (filter.min !== '' && rowNum < Number(filter.min)) return false;
-                if (filter.max !== '' && rowNum > Number(filter.max)) return false;
-            }
-        }
-        return true;
-    });
+    return rows.filter(row => rowMatchesColumnFilters(row, activeFilters.columns));
 }
 
 // Apply global search and column filters
@@ -416,25 +411,7 @@ async function applySearch() {
     // When serverSearchMode=true and q="", fullData holds whatever was last loaded
     // (original rows or server search results). Column filters work on that set.
     let rows = fullData.filter(row => {
-        for (const [col, filter] of Object.entries(activeFilters.columns)) {
-            if (filter.type === 'dict') {
-                if (String(row[col]) !== String(filter.val)) return false;
-            } else if (filter.type === 'bool') {
-                const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
-                if (rowBool !== (filter.val === 'true')) return false;
-            } else if (filter.type === 'date') {
-                const rowDateStr = String(row[col] || '').substring(0, 10);
-                if (!rowDateStr) return false;
-                const rowTime = new Date(rowDateStr).getTime();
-                if (filter.from && rowTime < new Date(filter.from).getTime()) return false;
-                if (filter.to && rowTime > new Date(filter.to).getTime()) return false;
-            } else if (filter.type === 'number') {
-                const rowNum = Number(row[col]);
-                if (isNaN(rowNum)) return false;
-                if (filter.min !== '' && rowNum < Number(filter.min)) return false;
-                if (filter.max !== '' && rowNum > Number(filter.max)) return false;
-            }
-        }
+        if (!rowMatchesColumnFilters(row, activeFilters.columns)) return false;
 
         if (q) {
             const matchesText = displayedColumns.some(colName => {
