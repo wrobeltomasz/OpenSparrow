@@ -136,9 +136,8 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
     $arrParam = pgIntArray($rowIds);
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $tOwners  = sys_table('record_owners');
         $uid      = (int)$_SESSION['user_id'];
-        $ownerSql = " AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro WHERE ro.table_name = \$2 AND ro.record_id = id AND ro.is_current = true AND ro.owner_id != \$3)";
+        $ownerSql = owner_restriction_sql('id', 2, 3);
 
         $countRes = @pg_query_params(
             $conn,
@@ -252,11 +251,11 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $tOwners = sys_table('record_owners');
-        $uid     = (int)$_SESSION['user_id'];
+        $uid      = (int)$_SESSION['user_id'];
+        $ownerSql = owner_restriction_sql('_t.id', 3, 4);
         $res = @pg_query_params(
             $conn,
-            "UPDATE {$tblSql} AS _t SET {$colSql} = \$2 WHERE _t.id = ANY(\$1::int[]) AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro WHERE ro.table_name = \$3 AND ro.record_id = _t.id AND ro.is_current = true AND ro.owner_id != \$4)",
+            "UPDATE {$tblSql} AS _t SET {$colSql} = \$2 WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
             [$arrParam, $value, $tableName, $uid]
         );
     } else {
@@ -331,14 +330,13 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $tOwners = sys_table('record_owners');
-        $uid     = (int)$_SESSION['user_id'];
+        $uid      = (int)$_SESSION['user_id'];
+        $ownerSql = owner_restriction_sql('_t.id', 2, 3);
         $res = @pg_query_params(
             $conn,
             "INSERT INTO {$tblSql} ({$colIdents})
              SELECT {$colIdents} FROM {$tblSql} AS _t
-             WHERE _t.id = ANY(\$1::int[])
-             AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro WHERE ro.table_name = \$2 AND ro.record_id = _t.id AND ro.is_current = true AND ro.owner_id != \$3)
+             WHERE _t.id = ANY(\$1::int[]){$ownerSql}
              RETURNING id",
             [$arrParam, $tableName, $uid]
         );
@@ -434,11 +432,11 @@ if ($action === 'mass_delete' && $method === 'POST') {
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $tOwners = sys_table('record_owners');
-        $uid     = (int)$_SESSION['user_id'];
+        $uid      = (int)$_SESSION['user_id'];
+        $ownerSql = owner_restriction_sql('_t.id', 2, 3);
         $res = @pg_query_params(
             $conn,
-            "DELETE FROM {$tblSql} AS _t WHERE _t.id = ANY(\$1::int[]) AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro WHERE ro.table_name = \$2 AND ro.record_id = _t.id AND ro.is_current = true AND ro.owner_id != \$3)",
+            "DELETE FROM {$tblSql} AS _t WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
             [$arrParam, $tableName, $uid]
         );
     } else {

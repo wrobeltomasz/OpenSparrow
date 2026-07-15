@@ -16,13 +16,14 @@ $viewName  = substr($_GET['view'] ?? '', 0, 64);
 
 $pageTitle      = 'OpenSparrow — Views';
 $extraCss       = '<link href="assets/css/views.css" rel="stylesheet">';
-$tClearF = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
+// #globalSearch keeps its historical grid markup (type="text", extra selects) —
+// Cypress and grid/keyboard.js depend on these exact ids.
 $headerControls = '<input id="globalSearch" type="text" placeholder="'
     . htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8') . '" />'
     . '<select id="columnFilter" hidden><option value=""></option></select>'
     . '<div id="filterBar"></div>'
     . '<select id="groupBy" hidden><option value=""></option></select>'
-    . '<button id="clearFilters" hidden title="' . $tClearF . '">' . $tClearF . '</button>';
+    . os_header_clear_filters();
 ob_start();
 ?>
 <main>
@@ -35,13 +36,10 @@ ob_start();
 </main>
 <?php
 $pageContent = ob_get_clean();
-ob_start();
-?>
-<script nonce="<?php echo $cspNonce; ?>">
-    window.VIEWS_INITIAL = <?php echo json_encode($viewName ?: null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-    window.CSRF_TOKEN    = <?php echo json_encode($_SESSION['csrf_token']); ?>;
-</script>
-<script type="module" src="assets/js/views.js?v=<?php echo @filemtime('assets/js/views.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
-<?php
-$extraScripts = ob_get_clean();
+
+$extraScripts = os_inline_globals([
+    'VIEWS_INITIAL' => $viewName ?: null,
+    'CSRF_TOKEN'    => $_SESSION['csrf_token'],
+], $cspNonce)
+    . os_module_script('assets/js/views.js', $cspNonce);
 include __DIR__ . '/../templates/layout.php';

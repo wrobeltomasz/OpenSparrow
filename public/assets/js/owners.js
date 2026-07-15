@@ -2,6 +2,7 @@
 // Shows the current owner + change history and lets editors reassign ownership via api/owners.php. Avatars via renderAvatar.
 
 import { I18n } from './i18n.js';
+import { apiFetch } from './util/api.js';
 
 const table    = window.EDIT_TABLE;
 const recordId = window.EDIT_ID;
@@ -125,10 +126,9 @@ async function saveOwner() {
     status.textContent = '';
 
     try {
-        const res  = await fetch('api/owners.php', {
+        const res  = await apiFetch('api/owners.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'set', table, record_id: recordId, owner_id: ownerId, csrf_token: csrf }),
+            body: { action: 'set', table, record_id: recordId, owner_id: ownerId, csrf_token: csrf },
         });
         const data = await res.json();
         if (data.success) {

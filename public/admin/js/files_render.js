@@ -1,5 +1,8 @@
 ﻿// admin/js/files_render.js — Files module UI (admin): lists/filters/paginates files via api/files.php (FILES_API). Text type tags ([IMG]/[PDF]/...), 25 per page.
 
+import { apiFetch } from '../../assets/js/util/api.js';
+import { getCsrfToken } from '../../assets/js/util/csrf.js';
+
 const FILES_API = '../api/files.php';
 
 // Text indicators for file types
@@ -268,13 +271,8 @@ async function saveConfig() {
     _state.config.relations          = relations;
 
     try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        const res  = await fetch('api.php?action=save&file=files', {
+        const res  = await apiFetch('api.php?action=save&file=files', {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
-            },
             body: JSON.stringify(_state.config),
         });
         const data = await res.json();
@@ -295,7 +293,7 @@ async function uploadFile() {
         return;
     }
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const csrfToken = getCsrfToken();
     const file = fileInput.files[0];
     const formData = new FormData();
     
@@ -311,9 +309,8 @@ async function uploadFile() {
     statusEl.style.color = '#64748B';
 
     try {
-        const res = await fetch(FILES_API, {
+        const res = await apiFetch(FILES_API, {
             method: 'POST',
-            headers: { 'X-CSRF-Token': csrfToken },
             body: formData
         });
         const data = await res.json();
@@ -346,7 +343,7 @@ async function loadList() {
     });
 
     try {
-        const res  = await fetch(`${FILES_API}?${params}`);
+        const res  = await apiFetch(`${FILES_API}?${params}`);
         const data = await res.json();
 
         if (!data.success) {
@@ -411,13 +408,9 @@ function renderTable(files) {
 async function deleteFile(uuid, name) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        const res  = await fetch(FILES_API, {
+        const csrfToken = getCsrfToken();
+        const res  = await apiFetch(FILES_API, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
-            },
             body: JSON.stringify({ action: 'delete', uuid, csrf_token: csrfToken }),
         });
         const data = await res.json();

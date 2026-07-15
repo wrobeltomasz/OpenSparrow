@@ -1,11 +1,11 @@
 // calendar.js — Calendar view (loaded as ES module by calendar.php)
 // Renders records of a table as events positioned by a date column; dragging an
-// event reschedules it via api.php (api=calendar). CSRF from meta tag; i18n via /api.php?action=i18n_bundle.
+// event reschedules it via api.php (api=calendar). CSRF via apiFetch(); i18n via /api.php?action=i18n_bundle.
 // Header controls (rendered in the app header by calendar.php):
 //   - chips: per-source visibility (window.CALENDAR_SOURCES), state persisted in localStorage
 //   - search: client-side phrase filter — hides events whose title/fields/id do not contain the typed text
 
-import { getCsrfToken } from './util/csrf.js';
+import { apiFetch } from './util/api.js';
 
 // ── i18n bridge (calendar is a non-module script) ────────────────────────────
 let _i18nBundle = {};
@@ -322,19 +322,15 @@ function renderCalendar() {
 
             // Dispatch fetch to update backend
             try {
-                const res = await fetch('api.php', {
+                const res = await apiFetch('api.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': getCsrfToken()
-                    },
-                    body: JSON.stringify({
+                    body: {
                         api: 'calendar',
                         action: 'move_event',
                         id: payload.id,
                         table: payload.table,
                         newDate: dateString
-                    })
+                    }
                 });
 
                 const data = await res.json();

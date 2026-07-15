@@ -1,5 +1,7 @@
 ﻿// admin/js/migrations.js — Migrations page (renderMigrationsPage): scan for schema drift and apply pending migrations via admin/api_migrations.php (scan/apply); inner tabs.
+import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs } from './ui.js';
+import { escHtml as escRelMig } from '../../assets/js/util/esc.js';
 
 export async function renderMigrationsPage(ctx) {
     const { workspaceEl } = ctx;
@@ -60,10 +62,8 @@ export async function renderMigrationsPage(ctx) {
         statusEl.textContent = '';
 
         try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            const res  = await fetch('api.php?action=init_db', {
+            const res  = await apiFetch('api.php?action=init_db', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
             });
             const data = await res.json();
 
@@ -94,7 +94,7 @@ async function loadMigrations(container) {
 
     let data;
     try {
-        const res = await fetch('api.php?action=migrations_list');
+        const res = await apiFetch('api.php?action=migrations_list');
         data = await res.json();
     } catch {
         container.innerHTML = '<p style="color:var(--danger); font-size:13px;">Failed to load migrations.</p>';
@@ -159,7 +159,7 @@ async function loadReleaseMigrations(container) {
 
     let data;
     try {
-        const res = await fetch('api_migrations.php?action=scan');
+        const res = await apiFetch('api_migrations.php?action=scan');
         data = await res.json();
     } catch {
         container.innerHTML = '<p style="color:var(--danger); font-size:13px;">Failed to load release migrations.</p>';
@@ -300,10 +300,8 @@ function renderVersionCard(v, container) {
             statusMsg.textContent = '';
 
             try {
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                const res  = await fetch('api_migrations.php?action=apply', {
+                const res  = await apiFetch('api_migrations.php?action=apply', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
                     body: JSON.stringify({ version: v.version, selected }),
                 });
                 const data = await res.json();
@@ -334,12 +332,4 @@ function renderVersionCard(v, container) {
     }
 
     container.appendChild(card);
-}
-
-function escRelMig(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
 }

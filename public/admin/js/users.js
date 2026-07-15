@@ -1,15 +1,15 @@
-﻿// admin/js/users.js — User management (renderUsersEditor): list/add/toggle/change-role/change-password via api.php (users_* actions). CSRF from meta tag; HTML-escapes output.
+﻿// admin/js/users.js — User management (renderUsersEditor): list/add/toggle/change-role/change-password via api.php (users_* actions). CSRF via apiFetch(); HTML-escapes output.
 
+import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 
-import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export async function renderUsersEditor(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = `<h3>System Users</h3><p>Loading users...</p>`;
     
     try {
-        const res = await fetch('api.php?action=users_list');
+        const res = await apiFetch('api.php?action=users_list');
         const data = await res.json();
         
         if (data.status !== 'success') {
@@ -104,12 +104,8 @@ export async function renderUsersEditor(ctx) {
                 if (!confirm(`Are you sure you want to ${currentlyActive ? 'deactivate' : 'activate'} this user?`)) return;
                 
                 try {
-                    const req = await fetch('api.php?action=users_toggle', {
+                    const req = await apiFetch('api.php?action=users_toggle', {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': getCsrfToken() 
-                        },
                         body: JSON.stringify({ id, is_active: !currentlyActive })
                     });
                     
@@ -132,12 +128,8 @@ export async function renderUsersEditor(ctx) {
                 const role = e.target.value;
                 
                 try {
-                    const req = await fetch('api.php?action=users_update_role', {
+                    const req = await apiFetch('api.php?action=users_update_role', {
                         method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': getCsrfToken() 
-                        },
                         body: JSON.stringify({ id, role })
                     });
                     
@@ -257,18 +249,16 @@ export async function renderUsersEditor(ctx) {
                         let res, data;
                         if (isSelf) {
                             // Own account — verify current password via frontend API
-                            res  = await fetch('../api.php?action=change_password', {
+                            res  = await apiFetch('../api.php?action=change_password', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
                                 body: JSON.stringify({ current_password: box.querySelector('#cpw-current').value, new_password: pwd }),
                             });
                             data = await res.json();
                             if (data.ok) { overlay.remove(); return; }
                         } else {
                             // Other user — admin override, no current password check
-                            res  = await fetch('api.php?action=users_change_password', {
+                            res  = await apiFetch('api.php?action=users_change_password', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
                                 body: JSON.stringify({ id, password: pwd }),
                             });
                             data = await res.json();
@@ -331,12 +321,8 @@ export async function renderUsersEditor(ctx) {
             }
 
             try {
-                const req = await fetch('api.php?action=users_add', {
+                const req = await apiFetch('api.php?action=users_add', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': getCsrfToken() 
-                    },
                     body: JSON.stringify({ username, password, role })
                 });
                 const resData = await req.json();

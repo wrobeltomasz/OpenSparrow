@@ -293,8 +293,7 @@ All web-served files below live under `public/` (the document root).
 - **`create.php` / `edit.php`** — record create/update forms.
 - **`api/schema.php`** — filtered schema endpoint for the frontend (hides backend-only structure).
 - **`api/fk.php`** — proxy endpoint for foreign-key dropdowns (never exposes internal relations).
-- **`api/rag.php`** — RAG knowledge base endpoint (`?action=tags` GET, `?action=query` POST).
-- **`rag.php`** — user-facing AI chat page (queries the local knowledge base via Ollama).
+- **`api/rag.php`** — RAG knowledge base endpoint (`?action=tags` GET, `?action=query` POST); consumed by the slide-in "Ask AI" panel (`assets/js/agent-panel.js`).
 - **`Dockerfile` / `docker-compose.yml`** — containerized deployment (dev stack). **`Dockerfile.standalone`** — single-container image (Nginx + PHP-FPM) used by Render / Railway. **`docker-compose-production.yml`** — hardened production stack.
 - **`render.yaml` / `railway.toml`** — one-click cloud deploy configs.
 - **`phpcs.xml`** — PSR-12 ruleset.

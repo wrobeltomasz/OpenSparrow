@@ -212,6 +212,20 @@ function check_record_ownership(\PgSql\Connection $conn, array $tableCfg, string
     }
 }
 
+// SQL predicate for bulk statements on owner-restricted tables: excludes rows whose
+// current owner is another user (unowned rows pass, matching can_access_record()).
+// $idExpr is the row-id reference in the outer query ('id' or an alias like '_t.id');
+// $tableParam and $ownerParam are the 1-based pg placeholder numbers the caller binds
+// the table name and user id to. Bulk counterpart of can_access_record() — keep the
+// two policies in sync.
+function owner_restriction_sql(string $idExpr, int $tableParam, int $ownerParam): string
+{
+    $tOwners = sys_table('record_owners');
+    return " AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro"
+        . " WHERE ro.table_name = \${$tableParam} AND ro.record_id = {$idExpr}"
+        . " AND ro.is_current = true AND ro.owner_id != \${$ownerParam})";
+}
+
 // Record ownership: mark previous current row inactive, insert new current row.
 function set_record_owner(\PgSql\Connection $conn, string $table, int $recordId, int $ownerId, int $changedBy): void
 {

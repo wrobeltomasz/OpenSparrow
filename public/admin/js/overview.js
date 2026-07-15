@@ -1,11 +1,7 @@
 // admin/js/overview.js — Admin home / overview page
 // Summary cards (record counts, DB size, etc.) via api.php (overview). Local HTML-escape + byte-format helpers.
 
-function ovEsc(str) {
-    return String(str ?? '').replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
+import { escHtml as ovEsc } from '../../assets/js/util/esc.js';
 
 function ovFmtBytes(bytes) {
     const b = Number(bytes);

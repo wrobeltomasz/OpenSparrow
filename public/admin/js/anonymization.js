@@ -2,16 +2,13 @@
 // 4 tabs: Rules, Schedule, Suggestions, Dictionary.
 // Persists config to config/anonymization.json via anonymization_save.
 // Cron worker: cron/cron_anonymization.php.
+import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs } from './ui.js';
 
 let anonConfig  = null;
 let schemaCache = null;
 
-function anonEsc(str) {
-    return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
-
-import { getCsrfToken as getCsrf } from '../../assets/js/util/csrf.js';
+import { escHtml as anonEsc } from '../../assets/js/util/esc.js';
 
 function mkSection(title, desc) {
     const card = document.createElement('div');
@@ -55,9 +52,8 @@ function showStatus(el, msg, ok) {
 async function saveConfig(partial, statusEl) {
     Object.assign(anonConfig, partial);
     try {
-        const res  = await fetch('api.php?action=anonymization_save', {
+        const res  = await apiFetch('api.php?action=anonymization_save', {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
             body:    JSON.stringify(anonConfig),
         });
         const data = await res.json();
@@ -78,7 +74,7 @@ function isDateType(type) {
 
 async function getSchema() {
     if (schemaCache) return schemaCache;
-    const res = await fetch('api.php?action=get&file=schema');
+    const res = await apiFetch('api.php?action=get&file=schema');
     schemaCache = await res.json();
     return schemaCache;
 }
@@ -198,9 +194,8 @@ function buildPreviewBlock(container) {
         out.textContent   = 'Please wait…';
         out.style.color   = '';
         try {
-            const res  = await fetch('api.php?action=preview_anonymization', {
+            const res  = await apiFetch('api.php?action=preview_anonymization', {
                 method:  'POST',
-                headers: { 'X-CSRF-Token': getCsrf() },
             });
             const data = await res.json();
             if (data.status === 'success') {
@@ -461,9 +456,8 @@ function buildScheduleTab() {
         output.textContent   = 'Please wait…';
         output.style.color   = '';
         try {
-            const res  = await fetch('api.php?action=run_anonymization', {
+            const res  = await apiFetch('api.php?action=run_anonymization', {
                 method:  'POST',
-                headers: { 'X-CSRF-Token': getCsrf() },
             });
             const data = await res.json();
             if (data.status === 'success') {
@@ -552,7 +546,7 @@ function buildSuggestionsTab() {
         container.innerHTML = '';
 
         try {
-            const res     = await fetch('api.php?action=get&file=schema');
+            const res     = await apiFetch('api.php?action=get&file=schema');
             const schema  = await res.json();
             const tables  = schema.tables || {};
             const keywords = (anonConfig.dictionary || []).map(w => w.toLowerCase().trim()).filter(Boolean);
@@ -846,9 +840,8 @@ function buildDictionaryTab() {
         purgeBtn.textContent = 'Purging…';
         purgeSt.style.display = 'none';
         try {
-            const res  = await fetch('api.php?action=anonymization_purge_log', {
+            const res  = await apiFetch('api.php?action=anonymization_purge_log', {
                 method:  'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
                 body:    JSON.stringify({ days }),
             });
             const data = await res.json();
@@ -970,7 +963,7 @@ function buildHistorySection() {
         loadBtn.textContent = 'Loading…';
         container.innerHTML = '';
         try {
-            const res  = await fetch('api.php?action=anonymization_log');
+            const res  = await apiFetch('api.php?action=anonymization_log');
             const data = await res.json();
             if (data.status !== 'success') {
                 container.textContent = 'Error: ' + (data.error || 'unknown');
@@ -1049,7 +1042,7 @@ export async function renderAnonymizationPage(ctx) {
     }
 
     try {
-        const res  = await fetch('api.php?action=anonymization_load');
+        const res  = await apiFetch('api.php?action=anonymization_load');
         const data = await res.json();
         if (data.status !== 'success') {
             workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Failed to load config: ' + anonEsc(data.error || 'unknown') + '</p>';

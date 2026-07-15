@@ -18,8 +18,6 @@ import { computeVirtual } from './cells/virtual-cell.js';
 export { getState, setFilteredData };
 export { clearSelection } from './state.js';
 
-export { buildMenu } from './menu.js';
-
 const userRole = window.USER_ROLE || 'viewer';
 const isReadOnly = userRole !== 'editor';
 

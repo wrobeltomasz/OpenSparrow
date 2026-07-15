@@ -16,18 +16,15 @@ const myRole  = window.USER_ROLE       ?? 'viewer';
 const isReadOnly = myRole !== 'editor';
 
 import { getCsrfToken as csrfToken } from './util/csrf.js';
+import { escHtml } from './util/esc.js';
+import { apiFetch } from './util/api.js';
 
 // ── Tiny markdown-like formatter (no external libs) ────────────────────────
 function formatBody(raw) {
     // Escape HTML first — including quotes, since the auto-linked URL below is
     // placed inside an href="" attribute. Without escaping " an attacker could
     // close the attribute and inject an event handler (stored XSS).
-    const esc = raw
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    const esc = escHtml(raw);
 
     return esc
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -123,19 +120,16 @@ async function fetchComments() {
 }
 
 async function postComment(body) {
-    const res = await fetch('api/comments.php', {
+    const res = await apiFetch('api/comments.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: {
             action: 'add',
             related_table: table,
             related_id: recordId,
             body,
             csrf_token: csrfToken(),
-        }),
+        },
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error ?? 'Failed to post comment.');
@@ -144,17 +138,14 @@ async function postComment(body) {
 
 async function deleteComment(id, msgEl) {
     if (!confirm(I18n.t('comments.delete_confirm'))) return;
-    const res = await fetch('api/comments.php', {
+    const res = await apiFetch('api/comments.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: {
             action: 'delete',
             id,
             csrf_token: csrfToken(),
-        }),
+        },
     });
     const data = await res.json();
     if (!data.success) {

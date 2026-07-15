@@ -1,13 +1,8 @@
 ﻿// admin/js/rag.js — RAG knowledge base management page
-// Upload/list/delete/rechunk documents, edit settings, test query and Ollama check via api.php (rag_* actions). CSRF from meta tag.
+// Upload/list/delete/rechunk documents, edit settings, test query and Ollama check via api.php (rag_* actions). CSRF via apiFetch().
 
-function ragEsc(str) {
-    return String(str ?? '').replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
-
-import { getCsrfToken as ragCsrf } from '../../assets/js/util/csrf.js';
+import { apiFetch } from '../../assets/js/util/api.js';
+import { escHtml as ragEsc } from '../../assets/js/util/esc.js';
 
 function ragCard(title, desc) {
     const card = document.createElement('div');
@@ -203,7 +198,7 @@ function ragBuildDocumentsTab(panel) {
     // Populate language dropdown from settings
     (async () => {
         try {
-            const res  = await fetch('api.php?action=get_language_setting');
+            const res  = await apiFetch('api.php?action=get_language_setting');
             const data = await res.json();
             (data.available_languages ?? []).forEach(code => {
                 const opt = document.createElement('option');
@@ -337,9 +332,8 @@ function ragBuildDocumentsTab(panel) {
         if (!confirm('Re-chunk all documents from scratch? Existing chunks will be replaced.')) return;
         rechunkAllBtn.disabled = true;
         try {
-            const res = await fetch('api.php?action=rag_rechunk_all', {
+            const res = await apiFetch('api.php?action=rag_rechunk_all', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
                 body: JSON.stringify({}),
             });
             const data = await res.json();
@@ -363,7 +357,7 @@ function ragBuildDocumentsTab(panel) {
 
     async function loadFiles() {
         try {
-            const res  = await fetch('api.php?action=rag_list');
+            const res  = await apiFetch('api.php?action=rag_list');
             const data = await res.json();
             if (data.status === 'error') {
                 tbody.innerHTML = '';
@@ -453,9 +447,8 @@ function ragBuildDocumentsTab(panel) {
             rechunkBtn.addEventListener('click', async () => {
                 rechunkBtn.disabled = true;
                 try {
-                    const r = await fetch('api.php?action=rag_rechunk', {
+                    const r = await apiFetch('api.php?action=rag_rechunk', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
                         body: JSON.stringify({ id: file.id }),
                     });
                     const d = await r.json();
@@ -480,9 +473,8 @@ function ragBuildDocumentsTab(panel) {
                 if (!confirm('Delete "' + ragEsc(file.filename) + '"?')) return;
                 delBtn.disabled = true;
                 try {
-                    const r = await fetch('api.php?action=rag_delete', {
+                    const r = await apiFetch('api.php?action=rag_delete', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
                         body: JSON.stringify({ id: file.id }),
                     });
                     const d = await r.json();
@@ -515,9 +507,8 @@ function ragBuildDocumentsTab(panel) {
         fd.append('tags', JSON.stringify(tags));
 
         try {
-            const res  = await fetch('api.php?action=rag_upload', {
+            const res  = await apiFetch('api.php?action=rag_upload', {
                 method: 'POST',
-                headers: { 'X-CSRF-Token': ragCsrf() },
                 body: fd,
             });
             const data = await res.json();
@@ -875,9 +866,8 @@ function ragBuildSettingsTab(panel) {
         statusLine.textContent   = 'Connecting to ' + url + '…';
 
         try {
-            const res  = await fetch('api.php?action=rag_ollama_check', {
+            const res  = await apiFetch('api.php?action=rag_ollama_check', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
                 body: JSON.stringify({ ollama_url: url, ssl_verify: sslChk.checked }),
             });
             const data = await res.json();
@@ -912,7 +902,7 @@ function ragBuildSettingsTab(panel) {
 
     (async () => {
         try {
-            const res  = await fetch('api.php?action=rag_settings');
+            const res  = await apiFetch('api.php?action=rag_settings');
             const data = await res.json();
             if (data.status === 'success' && data.settings) {
                 const s = data.settings;
@@ -961,9 +951,8 @@ function ragBuildSettingsTab(panel) {
             return;
         }
         try {
-            const res  = await fetch('api.php?action=rag_settings_save', {
+            const res  = await apiFetch('api.php?action=rag_settings_save', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
                 body: JSON.stringify(payload),
             });
             const data = await res.json();
@@ -999,7 +988,7 @@ function ragBuildTestTab(panel) {
     // Load available tags
     (async () => {
         try {
-            const res  = await fetch('../api/rag.php?action=tags');
+            const res  = await apiFetch('../api/rag.php?action=tags');
             const data = await res.json();
             tagChips.innerHTML = '';
             const tags = data.tags ?? [];
@@ -1042,7 +1031,7 @@ function ragBuildTestTab(panel) {
     // Populate language dropdown from settings
     (async () => {
         try {
-            const res  = await fetch('api.php?action=get_language_setting');
+            const res  = await apiFetch('api.php?action=get_language_setting');
             const data = await res.json();
             const available = data.available_languages ?? [];
             const current   = document.documentElement.lang || '';
@@ -1136,9 +1125,8 @@ function ragBuildTestTab(panel) {
         sourcesRow.innerHTML     = '';
 
         try {
-            const res  = await fetch('api.php?action=rag_test_query', {
+            const res  = await apiFetch('api.php?action=rag_test_query', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ragCsrf() },
                 body: JSON.stringify({ query: q, tags, language, return_prompt: true }),
                 signal: testAbortCtrl.signal,
             });
@@ -1261,7 +1249,7 @@ function ragBuildStatsTab(panel) {
     async function load() {
         refreshBtn.disabled = true;
         try {
-            const res  = await fetch('api.php?action=rag_stats');
+            const res  = await apiFetch('api.php?action=rag_stats');
             const data = await res.json();
             if (data.status !== 'success') {
                 throw new Error(data.error ?? 'Load failed.');

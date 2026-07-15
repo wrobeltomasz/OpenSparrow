@@ -15,13 +15,10 @@ $cspNonce = $page['nonce'];
 $userRole = $page['role'];
 $userCaps = $page['caps'];
 
-$pageTitle = 'OpenSparrow | Board';
-$tSearchPh = htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
-$tClearF   = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
-$headerControls = '<input type="search" id="boardSearch" placeholder="' . $tSearchPh . '"'
-    . ' aria-label="' . $tSearchPh . '">'
-    . '<div id="boardFilters" class="board-filters"></div>'
-    . '<button id="clearFilters" hidden title="' . $tClearF . '">' . $tClearF . '</button>';
+$pageTitle      = 'OpenSparrow | Board';
+$headerControls = os_header_search('boardSearch')
+    . os_header_filters('boardFilters', 'board-filters')
+    . os_header_clear_filters();
 ob_start();
 ?>
 <main id="boardMain">
@@ -36,12 +33,7 @@ ob_start();
 </main>
 <?php
 $pageContent = ob_get_clean();
-ob_start();
-?>
-<script nonce="<?php echo $cspNonce; ?>">
-    window.USER_CAPS = <?php echo json_encode($userCaps, JSON_THROW_ON_ERROR); ?>;
-</script>
-<script type="module" src="assets/js/board.js?v=<?php echo @filemtime('assets/js/board.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
-<?php
-$extraScripts = ob_get_clean();
+
+$extraScripts = os_inline_globals(['USER_CAPS' => $userCaps], $cspNonce)
+    . os_module_script('assets/js/board.js', $cspNonce);
 include __DIR__ . '/../templates/layout.php';

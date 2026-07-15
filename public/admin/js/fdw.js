@@ -1,5 +1,6 @@
 // admin/js/fdw.js — MySQL Gateway (FDW) configuration panel
 // Connect/test the external MySQL, pick gateway tables + per-table metadata/icons, and sync columns via admin/api_fdw.php (mysql_* actions).
+import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 
 const ICONS = [
@@ -21,16 +22,11 @@ const ICONS = [
     'upload', 'user_attributes', 'warehouse', 'watch_screentime',
 ];
 
-import { getCsrfToken } from '../../assets/js/util/csrf.js';
-
 async function fdwApi(action, { method = 'GET', body = null } = {}) {
-    const opts = { method, headers: {} };
-    if (method !== 'GET') opts.headers['X-CSRF-Token'] = getCsrfToken();
-    if (body !== null) {
-        opts.headers['Content-Type'] = 'application/json';
-        opts.body = JSON.stringify(body);
-    }
-    const res = await fetch('api_fdw.php?action=' + action, opts);
+    const res = await apiFetch('api_fdw.php?action=' + action, {
+        method,
+        body: body ?? undefined,
+    });
     return res.json();
 }
 

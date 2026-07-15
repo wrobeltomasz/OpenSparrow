@@ -29,6 +29,7 @@ function isTextCol(cfg) {
 }
 
 import { escHtml as esc } from './util/esc.js';
+import { apiFetch } from './util/api.js';
 
 function escRe(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -110,17 +111,12 @@ async function runPreview() {
     previewHash = null;
     updateApplyBtn();
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     let data;
     try {
-        const res = await fetch('api/data_cleanup.php?action=data_cleanup_preview', {
+        const res = await apiFetch('api/data_cleanup.php?action=data_cleanup_preview', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify(payload),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: payload,
         });
         data = await res.json();
     } catch {
@@ -191,17 +187,12 @@ async function applyChanges() {
     const confirmMsg = I18n.t('data_cleanup.confirm').replace('{n}', lastCount);
     if (!confirm(confirmMsg)) return;
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     let data;
     try {
-        const res = await fetch('api/data_cleanup.php?action=data_cleanup_apply', {
+        const res = await apiFetch('api/data_cleanup.php?action=data_cleanup_apply', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify(currentPayload),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: currentPayload,
         });
         data = await res.json();
     } catch {

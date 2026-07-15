@@ -1,13 +1,8 @@
 // admin/js/automations.js — Automation rules management UI
-// CRUD over config/automations.json via api.php (automations_list/save/delete) plus run history (automations_runs). HTML-escapes output; CSRF from meta tag.
+// CRUD over config/automations.json via api.php (automations_list/save/delete) plus run history (automations_runs). HTML-escapes output; CSRF via apiFetch().
 
-function autoEsc(str) {
-    return String(str ?? '').replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
-
-import { getCsrfToken as autoCsrf } from '../../assets/js/util/csrf.js';
+import { apiFetch } from '../../assets/js/util/api.js';
+import { escHtml as autoEsc } from '../../assets/js/util/esc.js';
 
 function autoStatusPill(anchor, msg, type = 'success') {
     const prev = anchor.parentNode?.querySelector('.auto-status-pill');
@@ -830,14 +825,14 @@ export async function renderAutomationsPage(ctx) {
     // ── Load schema ──────────────────────────────────────────────
     let schemaObj = {};
     try {
-        const sr = await fetch('api.php?action=get&file=schema');
+        const sr = await apiFetch('api.php?action=get&file=schema');
         const sd = await sr.json();
         schemaObj = sd.tables ?? {};
     } catch (_) {}
 
     let users = [];
     try {
-        const ur = await fetch('api.php?action=users_list');
+        const ur = await apiFetch('api.php?action=users_list');
         const ud = await ur.json();
         users = ud.users ?? [];
     } catch (_) {}
@@ -862,7 +857,7 @@ export async function renderAutomationsPage(ctx) {
     async function loadList() {
         listWrap.innerHTML = '';
         try {
-            const r    = await fetch('api.php?action=automations_list');
+            const r    = await apiFetch('api.php?action=automations_list');
             const data = await r.json();
             rules = data.automations ?? [];
         } catch (_) {
@@ -1027,7 +1022,7 @@ export async function renderAutomationsPage(ctx) {
         cardBody.appendChild(loading);
 
         try {
-            const r    = await fetch('api.php?action=automations_runs&rule_id=' + encodeURIComponent(rule.id));
+            const r    = await apiFetch('api.php?action=automations_runs&rule_id=' + encodeURIComponent(rule.id));
             const data = await r.json();
             loading.remove();
 
@@ -1109,9 +1104,8 @@ export async function renderAutomationsPage(ctx) {
 
     async function saveRulePayload(payload, anchorEl) {
         try {
-            const r    = await fetch('api.php?action=automations_save', {
+            const r    = await apiFetch('api.php?action=automations_save', {
                 method:  'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': autoCsrf() },
                 body:    JSON.stringify(payload),
             });
             const data = await r.json();
@@ -1129,12 +1123,8 @@ export async function renderAutomationsPage(ctx) {
     async function deleteRule(id, btn) {
         if (!confirm('Delete this automation?')) return;
         try {
-            const r    = await fetch('api.php?action=automations_delete', {
+            const r    = await apiFetch('api.php?action=automations_delete', {
                 method:  'POST',
-                headers: {
-                    'Content-Type':    'application/json',
-                    'X-CSRF-Token':    autoCsrf(),
-                },
                 body: JSON.stringify({ id }),
             });
             const data = await r.json();
@@ -1259,9 +1249,8 @@ export async function renderAutomationsPage(ctx) {
                 actions: parsed.actions,
             };
             try {
-                const r    = await fetch('api.php?action=automations_save', {
+                const r    = await apiFetch('api.php?action=automations_save', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': autoCsrf() },
                     body: JSON.stringify(payload),
                 });
                 const data = await r.json();

@@ -3,32 +3,13 @@
 declare(strict_types=1);
 
 // admin/api_csv_import.php — CSV import admin API
-// Auth gate: session + role === 'admin' (401); CSRF on POST
+// Auth/CSRF gate: os_api_bootstrap (401 guest / 403 non-admin, X-CSRF-Token on mutations)
 // actions: csv_import_upload (parse + preview), csv_import_execute (batched insert), csv_create_table (create table from CSV columns), csv_schemas, csv_import_config, csv_import_history/log
 // Limits: 500 MB max, 1000-row batches, 5 preview rows; parameterized inserts
 
-require_once __DIR__ . '/../../includes/session.php';
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-start_session();
-
-header('Content-Type: application/json');
-
-if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'error' => 'Unauthorized.']);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'CSRF token mismatch.']);
-        exit;
-    }
-}
+os_api_bootstrap(['connect' => false, 'role' => 'admin']);
 
 const CSV_MAX_BYTES   = 524288000; // 500 MB
 const CSV_BATCH_SIZE  = 1000;

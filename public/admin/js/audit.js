@@ -2,8 +2,8 @@
 // Licensed under LGPL v3. See LICENCE file for details.
 //
 // admin/js/audit.js — Audit-log settings editor (renderAuditEditor); reads/writes audit config via api.php.
+import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
-import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export async function renderAuditEditor(ctx) {
     const { workspaceEl } = ctx;
@@ -14,7 +14,7 @@ export async function renderAuditEditor(ctx) {
 
     let data;
     try {
-        const res = await fetch('api.php?action=get_snapshot_setting');
+        const res = await apiFetch('api.php?action=get_snapshot_setting');
         data = await res.json();
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
@@ -126,9 +126,8 @@ export async function renderAuditEditor(ctx) {
         const newVal = switchInput.checked;
         switchInput.disabled = true;
         try {
-            const res = await fetch('api.php?action=set_snapshot_setting', {
+            const res = await apiFetch('api.php?action=set_snapshot_setting', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
                 body: JSON.stringify({ enabled: newVal }),
             });
             const result = await res.json();

@@ -1,11 +1,11 @@
 // grid_actions.js — Inline cell editing + row actions for the data grid
-// attachCellEvents (PATCH edited cells to api.php), deleteRow, duplicateRow; toasts + debug-panel error logging; CSRF from meta tag.
+// attachCellEvents (PATCH edited cells to api.php), deleteRow, duplicateRow; toasts + debug-panel error logging; CSRF via apiFetch().
 import { debugLog } from './debug.js';
 import { showToast } from './toast.js';
 import { loadTable } from './grid.js';
 import { state } from './grid/state.js';
 
-import { getCsrfToken } from './util/csrf.js';
+import { apiFetch } from './util/api.js';
 
 // Show errors in debug panel
 function debugError(message, data = {}) {
@@ -28,11 +28,7 @@ function getCurrentTable() {
 // Shared fetch/parse for the row-mutation endpoints below; caller keeps its own
 // error logging/toast since that differs per action.
 async function postJson(url, method, body) {
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
-    body: JSON.stringify(body)
-  });
+  const res = await apiFetch(url, { method, body });
 
   let payload = null;
   // Handle edge cases where server returns an empty or non-JSON response

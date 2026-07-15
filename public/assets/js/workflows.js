@@ -2,12 +2,14 @@
 
 import { showToast } from './toast.js';
 import { I18n } from './i18n.js';
+import { getCsrfToken } from './util/csrf.js';
+import { apiFetch } from './util/api.js';
 
 // Fetch workflows configuration from backend
 async function fetchWorkflowsConfig() {
     try {
         // Add CSRF header to prevent cross-site request forgery
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const csrfToken = getCsrfToken();
         const res = await fetch('api.php?api=workflows', {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
@@ -329,7 +331,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         if (!activeSchema) {
             try {
                 // Add CSRF header to schema fetch
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                const csrfToken = getCsrfToken();
                 const res = await fetch('api.php?api=schema', {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -381,7 +383,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         // Pre-fetch FK options for all non-injected FK columns in parallel
         const fkOptionMap = {}; // { colName: [{value, label}] }
         const fkCfgMap = tableSchema.foreign_keys || {};
-        const csrfForFk = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const csrfForFk = getCsrfToken();
 
         await Promise.all(
             Object.entries(fkCfgMap).map(async ([colName, fkDef]) => {
@@ -418,7 +420,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
 
         // Re-fetch FK options for a column, optionally filtered by a master column value
         async function fetchFkOptions(colName, filterCol = '', filterVal = '') {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const csrf = getCsrfToken();
             let url = `api/fk.php?table=${encodeURIComponent(step.table)}&col=${encodeURIComponent(colName)}`;
             if (filterCol && filterVal !== '') {
                 url += `&filter_col=${encodeURIComponent(filterCol)}&filter_val=${encodeURIComponent(filterVal)}`;
@@ -757,19 +759,13 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             }
 
             try {
-                // Add CSRF header to API request
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                const response = await fetch('api.php', {
+                const response = await apiFetch('api.php', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-Token': csrfToken
-                    },
-                    body: JSON.stringify({
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: {
                         table: step.table,
                         data: payload
-                    })
+                    }
                 });
 
                 // Fetch raw text first to intercept server-side HTML errors

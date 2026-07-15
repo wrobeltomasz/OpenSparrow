@@ -1,7 +1,7 @@
 // This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 //
-// user-menu.js — Header user menu: avatar picker (1..24) and change-password, saved via api.php (update_avatar / change_password). CSRF from meta tag.
+// user-menu.js — Header user menu: avatar picker (1..24) and change-password, saved via api.php (update_avatar / change_password). CSRF via apiFetch().
 
 import { showToast } from './toast.js';
 import { I18n } from './i18n.js';
@@ -9,17 +9,13 @@ import { BulkPanel } from './bulk_panel.js';
 
 const AVATAR_COUNT = 24;
 
-import { getCsrfToken as csrfToken } from './util/csrf.js';
+import { apiFetch as sharedApiFetch } from './util/api.js';
 
 function apiFetch(action, body) {
-    return fetch(`api.php?action=${action}`, {
+    return sharedApiFetch(`api.php?action=${action}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken(),
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify(body),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body,
     });
 }
 

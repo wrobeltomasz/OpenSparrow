@@ -1,5 +1,6 @@
 ﻿// admin/js/app.js — Admin panel SPA controller / router (loaded by admin/index.php)
 // Builds the sidebar tabs and dispatches each to its render*() module (schema, dashboard, users, rag, performance, cron, ...); owns currentConfig, dirty-state tracking and the Save File action. Exports showStatusPill, markDirty, isMysqlTable.
+import { apiFetch } from '../../assets/js/util/api.js';
 import { moveArrayItem, moveObjectKey, renderGlobalSettings, createFullMenuPreview } from './ui.js';
 import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings, renderExternalTablesView } from './schema.js';
 import { renderDashboardLayout, renderDashboardEditor, initDashboardUI } from './dashboard.js';
@@ -49,7 +50,7 @@ export function isMysqlTable(name) { return mysqlTableSet.has(name); }
 
 async function refreshMysqlTableSet() {
     try {
-        const res = await fetch('api_fdw.php?action=mysql_status');
+        const res = await apiFetch('api_fdw.php?action=mysql_status');
         const data = await res.json();
         mysqlTableSet = new Set(data.mysql_tables || []);
     } catch {
@@ -102,7 +103,6 @@ export function showStatusPill(anchor, message, variant = 'success') {
 import { escHtml as escapeHtml } from '../../assets/js/util/esc.js';
 
 // Retrieve the CSRF token from the meta tag
-import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     initDashboardUI();
@@ -169,9 +169,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
         try {
-            const res = await fetch('api.php?action=run_cron_notifications', {
+            const res = await apiFetch('api.php?action=run_cron_notifications', {
                 method: 'POST',
-                headers: { 'X-CSRF-Token': getCsrfToken() }
             });
             const data = await res.json();
             if (data.status === 'success') {
@@ -203,9 +202,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         formData.append('backup_file', file);
 
         try {
-            const res = await fetch('api.php?action=import', {
+            const res = await apiFetch('api.php?action=import', {
                 method: 'POST',
-                headers: { 'X-CSRF-Token': getCsrfToken() },
                 body: formData
             });
             const data = await res.json();
@@ -225,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function fetchGlobalSchema() {
     try {
-        const res = await fetch('api.php?action=get&file=schema');
+        const res = await apiFetch('api.php?action=get&file=schema');
         globalSchemaObj = await res.json();
     } catch (e) { console.warn("Could not load global schema"); }
 }
@@ -278,7 +276,7 @@ async function loadConfigFile(fileName) {
     }
 
     try {
-        const response = await fetch(`api.php?action=get&file=${fileName}`);
+        const response = await apiFetch(`api.php?action=get&file=${fileName}`);
         currentConfig = await response.json();
 
         if (fileName === 'schema') {
@@ -832,7 +830,7 @@ function renderEditor(key, itemData, isArray) {
             const preview = createFullMenuPreview(null);
             workspaceEl.appendChild(preview.el);
             try {
-                const res = await fetch('api.php?action=menu_config');
+                const res = await apiFetch('api.php?action=menu_config');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
                 preview.update(data);
@@ -894,7 +892,7 @@ function renderEditor(key, itemData, isArray) {
 // Show pending-release-migrations banner if any versions are unresolved
 (async () => {
     try {
-        const res  = await fetch('api_migrations.php?action=scan');
+        const res  = await apiFetch('api_migrations.php?action=scan');
         const data = await res.json();
         if (data.status !== 'success') return;
         const pending = (data.versions || []).filter(v => v.status === 'pending');
@@ -964,12 +962,8 @@ btnSave.addEventListener('click', async () => {
     }
 
     try {
-        const response = await fetch(`api.php?action=save&file=${currentFile}`, {
+        const response = await apiFetch(`api.php?action=save&file=${currentFile}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': getCsrfToken()
-            },
             body: JSON.stringify(currentConfig)
         });
         const result = await response.json();

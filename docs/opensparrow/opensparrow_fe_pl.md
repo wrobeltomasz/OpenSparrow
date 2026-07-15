@@ -31,7 +31,7 @@
 9. [Kalendarz](#9-kalendarz)
 10. [Dashboard](#10-dashboard)
 11. [Menedżer plików](#11-menedżer-plików)
-12. [RAG - czat z dokumentami](#12-rag---czat-z-dokumentami)
+12. [RAG - asystent AI (panel "Zapytaj AI")](#12-rag---asystent-ai-panel-zapytaj-ai)
 13. [Widoki (Views)](#13-widoki-views)
 14. [Workflows - kreator kroków](#14-workflows---kreator-kroków)
 15. [Czyszczenie danych (Find & Replace)](#15-czyszczenie-danych-find--replace)
@@ -93,7 +93,6 @@ OpenSparrow to platforma schema-driven: administrator definiuje tabele, kolumny 
 | `calendar.php` | Widok kalendarza |
 | `dashboard.php` | Dashboard z widgetami |
 | `files.php` | Menedżer plików |
-| `rag.php` | Czat z bazą wiedzy (RAG) |
 | `views.php` | Zapisane widoki (filtry) |
 | `/admin/` | Panel administracyjny |
 
@@ -526,14 +525,15 @@ Minimalistyczny pasek uploadu (pojedynczy wiersz, w stylu paska akcji) pod tabel
 
 ---
 
-## 12. RAG - czat z dokumentami
+## 12. RAG - asystent AI (panel "Zapytaj AI")
 
-Adres: `rag.php`  
-Interfejs czatu do zadawania pytań o zaindeksowane dokumenty (Retrieval Augmented Generation z lokalnym Ollama).
+Lokalny asystent AI (Retrieval Augmented Generation z lokalnym Ollama) dostępny jako **wysuwany panel** w aplikacji — ikona czatu lub pozycja "Zapytaj AI" w menu awatara. Odpowiada na pytania na podstawie dokumentów zaindeksowanych przez administratora. Wszystkie źródła kontekstu wybiera się jawnie przez checkboxy.
 
 ### Interfejs
 
-- Lewy sidebar: checkboxy do filtrowania dokumentów po tagach (logika OR - odpowiedź z dowolnego zaznaczonego tagu)
+- Pasek kontekstu na górze: "Widok: `<tabela>`" wskazuje aktualnie przeglądaną tabelę
+- Checkbox "Dane z bieżącej tabeli": dołącza wiersze widocznej siatki do zapytania — wyłącznie gdy zaznaczony (nigdy automatycznie). Pojawia się tylko, gdy na stronie jest siatka z danymi
+- Checkboxy tagów: każdy tag dokumentu ma własny checkbox; domyślnie wszystkie odznaczone — dokumenty trafiają do kontekstu tylko po świadomym zaznaczeniu (logika OR)
 - Obszar konwersacji: przewijalny wątek wiadomości
 - Pole wejściowe: pytanie tekstowe + przycisk "Wyślij"
 - Przycisk "Wyczyść historię": usuwa wiadomości z widoku (nie z bazy)
@@ -543,26 +543,17 @@ Interfejs czatu do zadawania pytań o zaindeksowane dokumenty (Retrieval Augment
 - Wiadomości użytkownika: wyrównane do prawej, jasne tło
 - Odpowiedzi AI: wyrównane do lewej, ciemniejsze tło
 - Stan oczekiwania: placeholder "Myślę..." podczas ładowania
-- Poniżej odpowiedzi: chipy "Źródło: `<nazwa_pliku>`" jeśli odpowiedź cytuje dokumenty
+- Poniżej odpowiedzi: chipy "Źródło: `<nazwa_pliku>`" jeśli odpowiedź cytuje dokumenty, oraz sugerowane pytania
 - Błąd API: czerwony komunikat
 
 ### Zachowanie
 
 - Wysłanie: Enter lub kliknięcie "Wyślij"
+- Walidacja przed wysłaniem: jeśli nie zaznaczono żadnego checkboxa (ani tagu, ani danych tabeli), zapytanie nie jest wysyłane do modelu — pojawia się komunikat z prośbą o zaznaczenie co najmniej jednego źródła
 - Przycisk Wyślij nieaktywny podczas ładowania (brak duplikatów)
 - Pole pytania czyszczone po wysłaniu
 - Automatyczne przewijanie do najnowszej wiadomości
 - Zaznaczone tagi filtrów zawężają zakres przeszukiwanych dokumentów
-
-### Panel "Zapytaj AI" (siatka)
-
-Wysuwany panel asystenta dostępny w aplikacji (ikona czatu lub pozycja w menu awatara). Korzysta z tej samej bazy wiedzy co `rag.php`, ale wszystkie źródła kontekstu wybiera się jawnie przez checkboxy:
-
-- Pasek kontekstu na górze: "Widok: `<tabela>`" wskazuje aktualnie przeglądaną tabelę
-- Checkbox "Dane z bieżącej tabeli": dołącza wiersze widocznej siatki do zapytania — wyłącznie gdy zaznaczony (nigdy automatycznie). Pojawia się tylko, gdy na stronie jest siatka z danymi
-- Checkboxy tagów: każdy tag dokumentu ma własny checkbox; domyślnie wszystkie odznaczone — dokumenty trafiają do kontekstu tylko po świadomym zaznaczeniu
-- Walidacja przed wysłaniem: jeśli nie zaznaczono żadnego checkboxa (ani tagu, ani danych tabeli), zapytanie nie jest wysyłane do modelu — pojawia się komunikat z prośbą o zaznaczenie co najmniej jednego źródła
-- Odpowiedzi, chipy źródeł i sugerowane pytania renderowane tak samo jak w czacie `rag.php`
 
 ---
 

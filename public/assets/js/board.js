@@ -1,13 +1,13 @@
 // This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 //
-// board.js — Board (Kanban) view (non-module classic script)
+// board.js — Board (Kanban) view (ES module)
 // Visualises records of a single table as cards laid out in lanes, one lane per
 // value of the configured status column. Dragging a card to another lane updates
-// that record's status via api.php (api=board). CSRF from meta tag; i18n via /api.php?action=i18n_bundle.
+// that record's status via api.php (api=board). CSRF via apiFetch(); i18n via /api.php?action=i18n_bundle.
 // A search box above the lanes filters cards client-side by typed phrase.
 
-import { getCsrfToken } from './util/csrf.js';
+import { apiFetch } from './util/api.js';
 
 // ── i18n bridge ──────────────────────────────────────────────────────────────
 let _i18nBundle = {};
@@ -348,19 +348,15 @@ async function moveCard(id, newStatus, oldStatus) {
     render();
 
     try {
-        const res = await fetch('api.php', {
+        const res = await apiFetch('api.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': getCsrfToken()
-            },
-            body: JSON.stringify({
+            body: {
                 api: 'board',
                 action: 'move_card',
                 table: board.table,
                 id,
                 newStatus
-            })
+            }
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.error) {

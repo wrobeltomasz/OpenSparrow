@@ -1,4 +1,5 @@
 // admin/js/add_table.js — "Add Table" wizard: builds a new DB table from column definitions/presets and creates it via api.php (create_table). COLUMN_TYPES list.
+import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 
 const COLUMN_TYPES = [
@@ -17,12 +18,10 @@ const PRESET_TIMESTAMPS = [
     { name: 'updated_at', type: 'timestamp', not_null: true,  default: 'now()', index: '', comment: '', fk_table: '', fk_column: '' },
 ];
 
-import { getCsrfToken as getCsrf } from '../../assets/js/util/csrf.js';
 
 function post(action, body) {
-    return fetch('api.php?action=' + action, {
+    return apiFetch('api.php?action=' + action, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
         body: JSON.stringify(body),
     }).then(r => r.json());
 }

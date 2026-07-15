@@ -1,5 +1,6 @@
-﻿// admin/js/backup.js — Backup & restore page (renderBackupPage): per-table export/import and full backup via api.php (export / import / backup_tables). CSRF from meta tag.
+﻿// admin/js/backup.js — Backup & restore page (renderBackupPage): per-table export/import and full backup via api.php (export / import / backup_tables). CSRF via apiFetch().
 
+import { apiFetch } from '../../assets/js/util/api.js';
 import { createPageHeader } from './ui.js';
 
 import { escHtml as esc } from '../../assets/js/util/esc.js';
@@ -12,15 +13,14 @@ export async function renderBackupPage(ctx) {
     workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
     const myId = workspaceEl._renderId;
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     let userTables = [];
     let systemTables = [];
 
     try {
         const [schemaRes, sysRes] = await Promise.all([
-            fetch('api.php?action=get&file=schema'),
-            fetch('api.php?action=list_system_tables')
+            apiFetch('api.php?action=get&file=schema'),
+            apiFetch('api.php?action=list_system_tables')
         ]);
         const schemaData = await schemaRes.json();
         const sysData    = await sysRes.json();
@@ -152,12 +152,8 @@ export async function renderBackupPage(ctx) {
         resultArea.innerHTML = '';
 
         try {
-            const res = await fetch('api.php?action=backup_tables', {
+            const res = await apiFetch('api.php?action=backup_tables', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
                 body: JSON.stringify({ tables: selected })
             });
             const data = await res.json();

@@ -1,5 +1,6 @@
 ﻿// admin/js/m2m.js — Many-to-Many relationship builder wizard
-// Lists/creates/deletes junction tables via api.php (list_m2m / create_m2m / delete_m2m). CSRF from meta tag.
+// Lists/creates/deletes junction tables via api.php (list_m2m / create_m2m / delete_m2m). CSRF via apiFetch().
+import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 
 let _renderGen = 0;
@@ -9,14 +10,13 @@ export async function renderM2mPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.textContent = '';
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     // ── Fetch current state ────────────────────────────────────────────────────
     let tables = [];
     let relationships = [];
     try {
-        const res = await fetch('api.php?action=list_m2m', {
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf }
+        const res = await apiFetch('api.php?action=list_m2m', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const data = await res.json();
         if (myGen !== _renderGen) return;
@@ -186,9 +186,9 @@ export async function renderM2mPage(ctx) {
         btnCreate.textContent = 'Creating…';
 
         try {
-            const res = await fetch('api.php?action=create_m2m', {
+            const res = await apiFetch('api.php?action=create_m2m', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf },
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: JSON.stringify({ table_a: tableA, table_b: tableB, junction_table: junctionTable, self_fk: selfFk, other_fk: otherFk, label, display_column: displayCol })
             });
             const result = await res.json();
@@ -260,9 +260,9 @@ export async function renderM2mPage(ctx) {
             btnDel.textContent = 'Removing…';
 
             try {
-                const res = await fetch('api.php?action=delete_m2m', {
+                const res = await apiFetch('api.php?action=delete_m2m', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: JSON.stringify({ table_a: rel.table_a, m2m_index: rel.m2m_index, junction_table: rel.junction_table, drop_table: alsoDropTable })
                 });
                 const result = await res.json();

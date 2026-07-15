@@ -5,6 +5,8 @@ import { showToast } from '../toast.js';
 import { state, clearSelection } from './state.js';
 import { BulkPanel } from '../bulk_panel.js';
 import { loadTable, getState } from '../grid.js';
+import { getCsrfToken } from '../util/csrf.js';
+import { apiFetch } from '../util/api.js';
 
 let bar          = null;
 let panel        = null;
@@ -25,15 +27,10 @@ function isEditableCol(name, cfg) {
 // Shared fetch/parse for the api/mass_edit.php CSRF-protected POST actions below;
 // caller keeps its own error handling since that differs (toast vs panel status).
 async function postMassEditJson(url, body) {
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrf,
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify(body),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body,
     });
     return res.json();
 }
@@ -706,22 +703,18 @@ async function applyMassOwner(panelInstance) {
     panelInstance.setApplyDisabled(true);
     panelInstance.setStatus(I18n.t('common.loading'), false);
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     let data;
     try {
-        const res = await fetch('api/owners.php', {
+        const res = await apiFetch('api/owners.php', {
             method: 'POST',
-            headers: {
-                'Content-Type':    'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: {
                 action:     'mass_set',
                 table:      state.currentTable,
                 owner_id:   parseInt(sel.value, 10),
                 row_ids:    Array.from(state.selectedIds),
-                csrf_token: csrf,
-            }),
+                csrf_token: getCsrfToken(),
+            },
         });
         data = await res.json();
     } catch {

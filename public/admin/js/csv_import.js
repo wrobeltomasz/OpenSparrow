@@ -1,6 +1,8 @@
 // admin/js/csv_import.js — CSV import UI (delimiter/encoding/copy-mode persisted in localStorage)
 // Upload + preview, then execute import or create-table via admin/api_csv_import.php (csv_import_*, csv_create_table).
 
+import { apiFetch } from '../../assets/js/util/api.js';
+
 const LS_COPY_MODE  = 'csv_import_default_copy';
 const LS_DELIMITER  = 'csv_import_delimiter';
 const LS_ENCODING   = 'csv_import_encoding';
@@ -27,7 +29,6 @@ export async function renderCsvImportPage(ctx) {
     workspaceEl._csvImportGen = (workspaceEl._csvImportGen || 0) + 1;
     const myGen = workspaceEl._csvImportGen;
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     // ── Module state ──────────────────────────────────────────────────────────
     let csvHeaders          = [];
@@ -87,7 +88,7 @@ export async function renderCsvImportPage(ctx) {
     appendOpt(tableSelect, '', '— Select table —');
 
     try {
-        const res  = await fetch('api.php?action=get&file=schema');
+        const res  = await apiFetch('api.php?action=get&file=schema');
         const data = await res.json();
         if (data.tables) {
             for (const [name, cfg] of Object.entries(data.tables)) {
@@ -395,7 +396,7 @@ export async function renderCsvImportPage(ctx) {
 
     // Fetch live limits from server
     try {
-        const cfgRes  = await fetch('api_csv_import.php?action=csv_import_config');
+        const cfgRes  = await apiFetch('api_csv_import.php?action=csv_import_config');
         const cfgData = await cfgRes.json();
         if (cfgData.status === 'success') {
             addLimitRow('Max upload size', cfgData.max_upload_mb + ' MB', 'CSV_MAX_BYTES in api_csv_import.php');
@@ -558,7 +559,7 @@ export async function renderCsvImportPage(ctx) {
         if (schemaSelect.dataset.loaded === '1') return;
         schemaSelect.dataset.loaded = '1';
         try {
-            const res  = await fetch('api_csv_import.php?action=csv_schemas');
+            const res  = await apiFetch('api_csv_import.php?action=csv_schemas');
             const data = await res.json();
             if (data.status === 'success' && Array.isArray(data.schemas) && data.schemas.length) {
                 schemaSelect.innerHTML = '';
@@ -615,9 +616,8 @@ export async function renderCsvImportPage(ctx) {
         fd.append('csv_encoding', csvEncoding);
 
         try {
-            const res  = await fetch('api_csv_import.php?action=csv_import_upload', {
+            const res  = await apiFetch('api_csv_import.php?action=csv_import_upload', {
                 method: 'POST',
-                headers: { 'X-CSRF-Token': csrfToken },
                 body: fd,
             });
             const data = await res.json();
@@ -840,9 +840,8 @@ export async function renderCsvImportPage(ctx) {
         resultArea.innerHTML = '';
 
         try {
-            const res = await fetch('api_csv_import.php?action=csv_import_execute', {
+            const res = await apiFetch('api_csv_import.php?action=csv_import_execute', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 body: JSON.stringify({
                     tmp_name:        csvTmpName,
                     table:           selectedTable,
@@ -906,9 +905,8 @@ export async function renderCsvImportPage(ctx) {
                 fd.append('csv_file', csvFile);
                 fd.append('csv_delimiter', csvDelimiter);
                 fd.append('csv_encoding', csvEncoding);
-                const upRes  = await fetch('api_csv_import.php?action=csv_import_upload', {
+                const upRes  = await apiFetch('api_csv_import.php?action=csv_import_upload', {
                     method: 'POST',
-                    headers: { 'X-CSRF-Token': csrfToken },
                     body: fd,
                 });
                 const upData = await upRes.json();
@@ -918,9 +916,8 @@ export async function renderCsvImportPage(ctx) {
             }
 
             execBtn.textContent = 'Creating table…';
-            const ctRes  = await fetch('api_csv_import.php?action=csv_create_table', {
+            const ctRes  = await apiFetch('api_csv_import.php?action=csv_create_table', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 body: JSON.stringify({
                     table:        newTableName,
                     schema:       newTableSchema,
@@ -932,9 +929,8 @@ export async function renderCsvImportPage(ctx) {
             if (ctData.status !== 'success') throw new Error(ctData.error || 'Failed to create table.');
 
             execBtn.textContent = 'Importing…';
-            const impRes  = await fetch('api_csv_import.php?action=csv_import_execute', {
+            const impRes  = await apiFetch('api_csv_import.php?action=csv_import_execute', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 body: JSON.stringify({
                     tmp_name:        csvTmpName,
                     table:           newTableName,
@@ -1016,7 +1012,7 @@ export async function renderCsvImportPage(ctx) {
 
     async function appendRowLog(importId, container) {
         try {
-            const res  = await fetch(`api_csv_import.php?action=csv_import_log&id=${importId}`);
+            const res  = await apiFetch(`api_csv_import.php?action=csv_import_log&id=${importId}`);
             const data = await res.json();
             if (data.status !== 'success' || !data.rows.length) {
                 const note = document.createElement('p');
@@ -1068,7 +1064,7 @@ export async function renderCsvImportPage(ctx) {
     async function loadHistory() {
         histContainer.innerHTML = '<p style="color:#64748B;font-size:13px;padding:4px 0;">Loading…</p>';
         try {
-            const res  = await fetch('api_csv_import.php?action=csv_import_history');
+            const res  = await apiFetch('api_csv_import.php?action=csv_import_history');
             const data = await res.json();
 
             if (data.status !== 'success' || !data.imports.length) {

@@ -20,8 +20,7 @@ $userRole = $page['role'];
 $userCaps = $page['caps'];
 $pageTitle = 'OpenSparrow | Files';
 $canEdit   = !empty($userCaps['canEdit']);
-$headerControls = '<input type="search" id="fileSearch" placeholder="Search files by name or tag..."'
-    . ' aria-label="Search files by name or tag">'
+$headerControls = os_header_search('fileSearch', 'Search files by name or tag...')
     . '<select id="fileTypeFilter">'
     . '<option value="all">All File Types</option>'
     . '<option value="image">Images</option>'
@@ -30,9 +29,7 @@ $headerControls = '<input type="search" id="fileSearch" placeholder="Search file
     . '<option value="spreadsheet">Spreadsheets</option>'
     . '<option value="archive">Archives</option>'
     . '</select>'
-    . '<button id="clearFilters" hidden title="'
-    . htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8') . '">'
-    . htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8') . '</button>';
+    . os_header_clear_filters();
 ob_start();
 ?>
 
@@ -93,10 +90,10 @@ ob_start();
 $pageContent = ob_get_clean();
 ob_start();
 ?>
-<script nonce="<?php echo $cspNonce; ?>">
-    window.USER_CAPS  = <?php echo json_encode($userCaps, JSON_THROW_ON_ERROR); ?>;
-    window.CSRF_TOKEN = <?php echo json_encode($_SESSION['csrf_token'], JSON_THROW_ON_ERROR); ?>;
-</script>
+<?php echo os_inline_globals([
+    'USER_CAPS'  => $userCaps,
+    'CSRF_TOKEN' => $_SESSION['csrf_token'],
+], $cspNonce); ?>
 
 <script type="module" nonce="<?php echo $cspNonce; ?>">
 // Module script: reuses the grid's BulkPanel drawer and toast for bulk operations

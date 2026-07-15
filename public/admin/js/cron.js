@@ -1,12 +1,9 @@
 ﻿// admin/js/cron.js — Cron notifications management page
-// Shows run log/stats and lets the admin trigger or purge cron via api.php (cron_log, cron_stats, cron_purge_log, run_cron_notifications). CSRF from meta tag.
+// Shows run log/stats and lets the admin trigger or purge cron via api.php (cron_log, cron_stats, cron_purge_log, run_cron_notifications). CSRF via apiFetch().
+import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs } from './ui.js';
 
-function cronEscHtml(str) {
-    return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
-
-import { getCsrfToken as getCronCsrf } from '../../assets/js/util/csrf.js';
+import { escHtml as cronEscHtml } from '../../assets/js/util/esc.js';
 
 function statusBadge(status) {
     const cls = { success: 'ok', error: 'danger', running: 'warn' }[status] ?? 'muted';
@@ -98,9 +95,8 @@ function buildManualRunSection() {
         output.style.color = '';
 
         try {
-            const res = await fetch('api.php?action=run_cron_notifications', {
+            const res = await apiFetch('api.php?action=run_cron_notifications', {
                 method: 'POST',
-                headers: { 'X-CSRF-Token': getCronCsrf() }
             });
             const data = await res.json();
             if (data.status === 'success') {
@@ -140,7 +136,7 @@ function buildRunHistorySection() {
         container.textContent = '';
 
         try {
-            const res = await fetch('api.php?action=cron_log');
+            const res = await apiFetch('api.php?action=cron_log');
             const data = await res.json();
 
             if (data.status !== 'success') {
@@ -202,7 +198,7 @@ function buildStatsSection() {
         container.textContent = '';
 
         try {
-            const res = await fetch('api.php?action=cron_stats');
+            const res = await apiFetch('api.php?action=cron_stats');
             const data = await res.json();
 
             if (data.status !== 'success') {
@@ -394,12 +390,8 @@ function buildCleanupSection() {
         result.style.display = 'none';
 
         try {
-            const res = await fetch('api.php?action=cron_purge_log', {
+            const res = await apiFetch('api.php?action=cron_purge_log', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': getCronCsrf()
-                },
                 body: JSON.stringify({ days })
             });
             const data = await res.json();

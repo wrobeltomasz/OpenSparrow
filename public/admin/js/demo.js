@@ -1,6 +1,7 @@
 ﻿// admin/js/demo.js — Demo sample-apps catalog + install UI
 // DEMOS metadata (CRM/WMS/Tasks: labels, schemas, tables, feature lists); installs/uninstalls the demo apps via api.php (demo_install / demo_uninstall / demo_status).
 
+import { apiFetch } from '../../assets/js/util/api.js';
 import { createPageHeader } from './ui.js';
 
 const DEMOS = {
@@ -32,12 +33,10 @@ const DEMOS = {
     },
 };
 
-import { getCsrfToken as getCsrf } from '../../assets/js/util/csrf.js';
 
 function apiPost(action, body) {
-    return fetch(`api.php?action=${action}`, {
+    return apiFetch(`api.php?action=${action}`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
         body:    JSON.stringify(body),
     }).then(r => r.json());
 }
@@ -57,7 +56,7 @@ export function renderDemoPage({ workspaceEl }) {
     workspaceEl.innerHTML = '<p style="color:var(--muted);margin-top:0">Loading…</p>';
     (async () => {
         try {
-            const res = await fetch('api.php?action=demo_status');
+            const res = await apiFetch('api.php?action=demo_status');
             const d   = await res.json();
             if (d.installed) {
                 renderInstalled(workspaceEl, d.meta);

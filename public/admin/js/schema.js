@@ -1,5 +1,6 @@
 ﻿// admin/js/schema.js — Schema editor (tables, columns, FKs, grid settings)
 // Core editor for schema.json: renderSchemaEditor / renderSchemaGlobalSettings / renderExternalTablesView, syncSchemaTables. XSS-escapes output; integrates MySQL gateway tables.
+import { apiFetch } from '../../assets/js/util/api.js';
 import { createTextInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';
 import { showStatusPill, markDirty, isMysqlTable } from './app.js';
 
@@ -96,12 +97,8 @@ export function createAddTableButton(currentConfig, defaultSchema, onSuccess, on
         const formattedSchema = schemaInput.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
         try {
-            const response = await fetch('api.php?action=create_table', {
+            const response = await apiFetch('api.php?action=create_table', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-                },
                 // Send formatted schema and table name
                 body: JSON.stringify({ schema: formattedSchema, table: formattedName })
             });
@@ -136,13 +133,8 @@ export function createAddTableButton(currentConfig, defaultSchema, onSuccess, on
 // do not flag the request as SQL injection based on the query string.
 export async function syncSchemaTables(currentConfig, schemaName, onSuccess, onError) {
     try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        const res = await fetch('api.php?action=sync_schema', {
+        const res = await apiFetch('api.php?action=sync_schema', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
-            },
             body: JSON.stringify({ schema_name: schemaName })
         });
         const data = await res.json();
@@ -300,11 +292,9 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         // External MySQL tables are discovered via the FDW gateway, not the
         // PostgreSQL information_schema — route to the MySQL endpoint instead.
         if (isExternalMysql) {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             try {
-                const r = await fetch('api_fdw.php?action=mysql_columns_sync', {
+                const r = await apiFetch('api_fdw.php?action=mysql_columns_sync', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                     body: JSON.stringify({ table: tableName })
                 });
                 const d = await r.json();
@@ -328,13 +318,8 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         try {
             const schemaName = tableData.schema || 'app';
             // POST with JSON body — avoids WAF false positives on GET query strings.
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            const res = await fetch('api.php?action=get_db_columns', {
+            const res = await apiFetch('api.php?action=get_db_columns', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
                 body: JSON.stringify({ schema_name: schemaName, table: tableName })
             });
 
@@ -437,12 +422,8 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         if (!colType) return;
 
         try {
-            const response = await fetch('api.php?action=add_column', {
+            const response = await apiFetch('api.php?action=add_column', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-                },
                 // Pass schema context accurately to backend
                 body: JSON.stringify({ schema: tableData.schema || 'app', table: tableName, column: formattedColName, type: colType })
             });
@@ -1126,11 +1107,10 @@ export async function renderExternalTablesView(ctx) {
     sub.textContent = 'Tables routed from MySQL. Sync columns to rebuild the schema.json column definitions from the live database.';
     workspaceEl.appendChild(sub);
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     let statusData;
     try {
-        const res = await fetch('api_fdw.php?action=mysql_status');
+        const res = await apiFetch('api_fdw.php?action=mysql_status');
         statusData = await res.json();
     } catch (e) {
         const err = document.createElement('p');
@@ -1194,9 +1174,8 @@ export async function renderExternalTablesView(ctx) {
             btnSync.disabled = true;
             btnSync.textContent = 'Syncing...';
             try {
-                const r = await fetch('api_fdw.php?action=mysql_columns_sync', {
+                const r = await apiFetch('api_fdw.php?action=mysql_columns_sync', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                     body: JSON.stringify({ table: tableName })
                 });
                 const d = await r.json();

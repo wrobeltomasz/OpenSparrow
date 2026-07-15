@@ -28,9 +28,9 @@ foreach ($dashPeriods as $dashVal => $dashKey) {
     $headerControls .= '<option value="' . $dashVal . '">'
         . htmlspecialchars(t($dashKey), ENT_QUOTES, 'UTF-8') . '</option>';
 }
-$dashClearF = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
-$headerControls .= '</select><div id="dashboardFilters" class="dashboard-filters"></div>'
-    . '<button id="clearFilters" hidden title="' . $dashClearF . '">' . $dashClearF . '</button>';
+$headerControls .= '</select>'
+    . os_header_filters('dashboardFilters', 'dashboard-filters')
+    . os_header_clear_filters();
 ob_start();
 ?>
 <main id="dashboardMain">
@@ -39,12 +39,7 @@ ob_start();
 </main>
 <?php
 $pageContent = ob_get_clean();
-ob_start();
-?>
-<script nonce="<?php echo $cspNonce; ?>">
-    window.USER_CAPS = <?php echo json_encode($userCaps, JSON_THROW_ON_ERROR); ?>;
-</script>
-<script type="module" src="assets/js/dashboard.js?v=<?php echo @filemtime('assets/js/dashboard/drill-down.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
-<?php
-$extraScripts = ob_get_clean();
+
+$extraScripts = os_inline_globals(['USER_CAPS' => $userCaps], $cspNonce)
+    . os_module_script('assets/js/dashboard.js', $cspNonce, 'assets/js/dashboard/drill-down.js');
 include __DIR__ . '/../templates/layout.php';

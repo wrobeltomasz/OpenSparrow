@@ -3,8 +3,8 @@
    Each template is bound to a PostgreSQL view from the Views module; the available
    variables (columns) are fetched live from the database so the user never types them. */
 
+import { apiFetch } from '../../assets/js/util/api.js';
 import { createIconPicker } from './ui.js';
-import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export function renderPrintEditor(ctx) {
     const { workspaceEl, setSaveHandler } = ctx;
@@ -43,12 +43,8 @@ export function renderPrintEditor(ctx) {
     wrap.appendChild(hdr);
 
     setSaveHandler(async () => {
-        const res = await fetch('../api/print.php?action=save', {
+        const res = await apiFetch('../api/print.php?action=save', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': getCsrfToken(),
-            },
             body: JSON.stringify({ prints }),
         });
         const data = await res.json();
@@ -84,7 +80,7 @@ export function renderPrintEditor(ctx) {
         if (!viewName) return [];
         if (viewColumns[viewName]) return viewColumns[viewName];
         try {
-            const res  = await fetch('../api/print.php?action=columns&view=' + encodeURIComponent(viewName));
+            const res  = await apiFetch('../api/print.php?action=columns&view=' + encodeURIComponent(viewName));
             const data = await res.json();
             if (data.status !== 'ok') return [];
             viewColumns[viewName] = data.columns ?? [];
@@ -743,7 +739,7 @@ export function renderPrintEditor(ctx) {
     /* ---------- init ---------- */
     (async () => {
         try {
-            const res  = await fetch('../api/print.php?action=config');
+            const res  = await apiFetch('../api/print.php?action=config');
             const data = await res.json();
             if (data.status !== 'ok') {
                 setStatus('Failed to load configuration: ' + (data.error ?? 'unknown'), 'error');

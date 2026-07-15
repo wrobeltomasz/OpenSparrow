@@ -3,6 +3,7 @@
 
 import { sortRows } from './grid/state.js';
 import { I18n } from './i18n.js';
+import { apiJson as apiFetch } from './util/api.js';
 
 /* ── colour rule engine ── */
 function applyColorRules(rawValue, rules) {
@@ -385,14 +386,6 @@ function populateColumnFilter(allKeys) {
         columnFilterEl.appendChild(opt);
     });
     columnFilterEl.hidden = false;
-}
-
-/* ── fetch wrapper ── */
-async function apiFetch(url) {
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
-    return data;
 }
 
 /* ── breadcrumb (drillStack entries only, hidden at view root) ── */

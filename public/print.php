@@ -18,9 +18,8 @@ $printName = substr($_GET['print'] ?? '', 0, 64);
 
 $pageTitle      = 'OpenSparrow — Print';
 $extraCss       = '<link href="assets/css/print.css" rel="stylesheet">';
-$tClearF        = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
-$headerControls = '<div id="printFilters" class="print-filters"></div>'
-    . '<button id="clearFilters" hidden title="' . $tClearF . '">' . $tClearF . '</button>';
+$headerControls = os_header_filters('printFilters', 'print-filters')
+    . os_header_clear_filters();
 ob_start();
 ?>
 <main>
@@ -32,13 +31,10 @@ ob_start();
 </main>
 <?php
 $pageContent = ob_get_clean();
-ob_start();
-?>
-<script nonce="<?php echo $cspNonce; ?>">
-    window.PRINT_INITIAL = <?php echo json_encode($printName ?: null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-    window.CSRF_TOKEN    = <?php echo json_encode($_SESSION['csrf_token']); ?>;
-</script>
-<script type="module" src="assets/js/print.js?v=<?php echo @filemtime('assets/js/print.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
-<?php
-$extraScripts = ob_get_clean();
+
+$extraScripts = os_inline_globals([
+    'PRINT_INITIAL' => $printName ?: null,
+    'CSRF_TOKEN'    => $_SESSION['csrf_token'],
+], $cspNonce)
+    . os_module_script('assets/js/print.js', $cspNonce);
 include __DIR__ . '/../templates/layout.php';

@@ -4,36 +4,17 @@
 // Licensed under LGPL v3. See LICENCE file for details.
 //
 // admin/api_migrations.php — Schema migrations admin API
-// Auth gate: session + role === 'admin' (403); CSRF on POST
+// Auth/CSRF gate: os_api_bootstrap (401 guest / 403 non-admin, X-CSRF-Token on mutations)
 // actions: scan (detect drift between schema.json and the live DB) and apply (run the generated migration SQL)
 // Reversible migrations; parameterized/quoted identifiers
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../includes/session.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
-start_session();
-
-header('Content-Type: application/json');
-
-if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'error' => 'Unauthorized']);
-    exit;
-}
+os_api_bootstrap(['connect' => false, 'role' => 'admin']);
 
 $action = $_GET['action'] ?? '';
-
-// CSRF check for state-changing requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['csrf_token'] ?? '');
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'CSRF token mismatch.']);
-        exit;
-    }
-}
 
 if ($action === 'apply') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

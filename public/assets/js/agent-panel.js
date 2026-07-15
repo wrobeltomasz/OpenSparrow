@@ -2,13 +2,13 @@
 // This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 //
-// Slide-in AI assistant over the grid: sends the visible rows (max 50x12) as page context + the question to api/rag.php, renders answers via rag-render.js. Tag filter, conversation history, abort/stop, clear. CSRF from meta tag.
+// Slide-in AI assistant over the grid: sends the visible rows (max 50x12) as page context + the question to api/rag.php, renders answers via rag-render.js. Tag filter, conversation history, abort/stop, clear. CSRF via apiFetch().
 
 import { I18n } from './i18n.js';
 import { renderAnswer } from './rag-render.js';
+import { apiFetch } from './util/api.js';
 
 const API  = 'api/rag.php';
-const CSRF = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const t    = (k, v) => I18n.t(k, v);
 
 // Maximum grid rows and columns included in the page context sent to the model.
@@ -454,13 +454,9 @@ async function sendQuery() {
     const thinkWrap = appendThinking();
 
     try {
-        const res  = await fetch(API + '?action=query', {
+        const res  = await apiFetch(API + '?action=query', {
             method:  'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': CSRF(),
-            },
-            body: JSON.stringify({ query, tags, page_context: includeGrid ? readGridContext() : '', language: document.documentElement.lang || '' }),
+            body: { query, tags, page_context: includeGrid ? readGridContext() : '', language: document.documentElement.lang || '' },
             signal: currentAbortController.signal,
         });
 

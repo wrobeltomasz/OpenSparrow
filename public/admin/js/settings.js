@@ -2,9 +2,9 @@
 // Licensed under LGPL v3. See LICENCE file for details.
 //
 // admin/js/settings.js — General settings page (renderSettingsPage): loads/saves app + chat-bubble + custom-logo settings via api.php (get/set_*_setting, upload_logo, remove_logo).
+import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 import { createPageHeader, buildInnerTabs } from './ui.js';
-import { getCsrfToken } from '../../assets/js/util/csrf.js';
 
 export async function renderSettingsPage(ctx) {
     const { workspaceEl } = ctx;
@@ -13,9 +13,9 @@ export async function renderSettingsPage(ctx) {
     let data, bubbleData, logoData;
     try {
         const [langRes, bubbleRes, logoRes] = await Promise.all([
-            fetch('api.php?action=get_language_setting'),
-            fetch('api.php?action=get_chat_bubble_setting'),
-            fetch('api.php?action=get_logo_setting'),
+            apiFetch('api.php?action=get_language_setting'),
+            apiFetch('api.php?action=get_chat_bubble_setting'),
+            apiFetch('api.php?action=get_logo_setting'),
         ]);
         if (!langRes.ok) throw new Error('HTTP ' + langRes.status);
         data       = await langRes.json();
@@ -89,12 +89,8 @@ export async function renderSettingsPage(ctx) {
     saveBtn.addEventListener('click', async () => {
         saveBtn.disabled = true;
         try {
-            const res = await fetch('api.php?action=set_language_setting', {
+            const res = await apiFetch('api.php?action=set_language_setting', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': getCsrfToken(),
-                },
                 body: JSON.stringify({
                     default_language: defSelect.value,
                 }),
@@ -157,9 +153,8 @@ export async function renderSettingsPage(ctx) {
     bubbleSaveBtn.addEventListener('click', async () => {
         bubbleSaveBtn.disabled = true;
         try {
-            const res = await fetch('api.php?action=set_chat_bubble_setting', {
+            const res = await apiFetch('api.php?action=set_chat_bubble_setting', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
                 body: JSON.stringify({ chat_bubble_enabled: toggleCb.checked }),
             });
             const result = await res.json();
@@ -232,9 +227,8 @@ export async function renderSettingsPage(ctx) {
         }
         appNameSaveBtn.disabled = true;
         try {
-            const res = await fetch('api.php?action=set_app_name', {
+            const res = await apiFetch('api.php?action=set_app_name', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
                 body: JSON.stringify({ app_name: chosenName }),
             });
             const result = await res.json();
@@ -277,9 +271,8 @@ export async function renderSettingsPage(ctx) {
     logoEnabledSaveBtn.addEventListener('click', async () => {
         logoEnabledSaveBtn.disabled = true;
         try {
-            const res = await fetch('api.php?action=set_logo_enabled', {
+            const res = await apiFetch('api.php?action=set_logo_enabled', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
                 body: JSON.stringify({ logo_enabled: logoEnabledCb.checked }),
             });
             const result = await res.json();
@@ -334,9 +327,8 @@ export async function renderSettingsPage(ctx) {
 
         logoUploadBtn.disabled = true;
         try {
-            const res = await fetch('api.php?action=upload_logo', {
+            const res = await apiFetch('api.php?action=upload_logo', {
                 method: 'POST',
-                headers: { 'X-CSRF-Token': getCsrfToken() },
                 body: formData,
             });
             const result = await res.json();
@@ -359,9 +351,8 @@ export async function renderSettingsPage(ctx) {
     logoRemoveBtn.addEventListener('click', async () => {
         logoRemoveBtn.disabled = true;
         try {
-            const res = await fetch('api.php?action=remove_logo', {
+            const res = await apiFetch('api.php?action=remove_logo', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
                 body: JSON.stringify({}),
             });
             const result = await res.json();

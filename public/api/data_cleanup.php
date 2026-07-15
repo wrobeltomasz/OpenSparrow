@@ -168,10 +168,9 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
     // Param positions differ between count ($1=pattern) and row ($1=pattern,$2=safeReplace),
     // so the owner params land at $2/$3 vs $3/$4 respectively — separate branches required.
     if (!empty($tableCfg['owner_restricted'])) {
-        $tOwners  = sys_table('record_owners');
         $uid      = (int)$_SESSION['user_id'];
-        $ownerCnt = " AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro WHERE ro.table_name = \$2 AND ro.record_id = id AND ro.is_current = true AND ro.owner_id != \$3)";
-        $ownerRow = " AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro WHERE ro.table_name = \$3 AND ro.record_id = id AND ro.is_current = true AND ro.owner_id != \$4)";
+        $ownerCnt = owner_restriction_sql('id', 2, 3);
+        $ownerRow = owner_restriction_sql('id', 3, 4);
 
         $cntRes = @pg_query_params(
             $conn,
@@ -265,9 +264,8 @@ if ($action === 'data_cleanup_apply' && $method === 'POST') {
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $tOwners  = sys_table('record_owners');
         $uid      = (int)$_SESSION['user_id'];
-        $ownerSql = " AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro WHERE ro.table_name = \$3 AND ro.record_id = _t.id AND ro.is_current = true AND ro.owner_id != \$4)";
+        $ownerSql = owner_restriction_sql('_t.id', 3, 4);
         $res = @pg_query_params(
             $conn,
             "UPDATE {$tblSql} AS _t SET {$colSql} = {$replaceExp} WHERE {$whereSql}{$ownerSql}",

@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See LICENCE file for details.
 //
 // admin/api_fdw.php — MySQL gateway (FDW) configuration admin API
-// Auth gate: session + role === 'admin' (403); CSRF on POST
+// Auth/CSRF gate: os_api_bootstrap (401 guest / 403 non-admin, X-CSRF-Token on mutations)
 // actions: mysql_status, mysql_credentials_save, mysql_test, mysql_tables_save, mysql_preview, mysql_meta_save, mysql_columns_sync
 // Manages config/mysql_gateway.json and the external MySQL connection; uses DatabaseFactory/PostgresGateway/MysqlGateway
 
@@ -12,33 +12,13 @@ declare(strict_types=1);
 
 use OpenSparrow\Db\DatabaseFactory;
 
-require_once __DIR__ . '/../../includes/config.php';
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/session.php';
-require_once __DIR__ . '/../../includes/api_helpers.php';
+require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/db/DatabaseGatewayInterface.php';
 require_once __DIR__ . '/../../includes/db/PostgresGateway.php';
 require_once __DIR__ . '/../../includes/db/MysqlGateway.php';
 require_once __DIR__ . '/../../includes/db/DatabaseFactory.php';
 
-start_session();
-
-header('Content-Type: application/json');
-
-if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'error' => 'Unauthorized']);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_POST['csrf_token'] ?? '');
-    if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'CSRF token mismatch.']);
-        exit;
-    }
-}
+os_api_bootstrap(['connect' => false, 'role' => 'admin']);
 
 $action = $_GET['action'] ?? '';
 

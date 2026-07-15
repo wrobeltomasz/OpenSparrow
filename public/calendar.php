@@ -31,13 +31,10 @@ foreach (($calConfig['sources'] ?? []) as $src) {
     }
 }
 
-$pageTitle = 'OpenSparrow | Calendar';
-$tSearchPh = htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
-$tClearF   = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
-$headerControls = '<input type="search" id="calendarSearch" placeholder="' . $tSearchPh . '"'
-    . ' aria-label="' . $tSearchPh . '">'
-    . '<div id="calendarFilters" class="calendar-filters"></div>'
-    . '<button id="clearFilters" hidden title="' . $tClearF . '">' . $tClearF . '</button>';
+$pageTitle      = 'OpenSparrow | Calendar';
+$headerControls = os_header_search('calendarSearch')
+    . os_header_filters('calendarFilters', 'calendar-filters')
+    . os_header_clear_filters();
 ob_start();
 ?>
 <main id="calendarMain">
@@ -53,13 +50,10 @@ ob_start();
 </main>
 <?php
 $pageContent = ob_get_clean();
-ob_start();
-?>
-<script nonce="<?php echo $cspNonce; ?>">
-    window.USER_CAPS = <?php echo json_encode($userCaps, JSON_THROW_ON_ERROR); ?>;
-    window.CALENDAR_SOURCES = <?php echo json_encode($calendarSources, JSON_THROW_ON_ERROR); ?>;
-</script>
-<script type="module" src="assets/js/calendar.js?v=<?php echo @filemtime('assets/js/calendar.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
-<?php
-$extraScripts = ob_get_clean();
+
+$extraScripts = os_inline_globals([
+    'USER_CAPS'        => $userCaps,
+    'CALENDAR_SOURCES' => $calendarSources,
+], $cspNonce)
+    . os_module_script('assets/js/calendar.js', $cspNonce);
 include __DIR__ . '/../templates/layout.php';

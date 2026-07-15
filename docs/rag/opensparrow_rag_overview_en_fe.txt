@@ -88,10 +88,10 @@ record in another table. If a record changes "by itself" after saving, an automa
 rule did it.
 
 
-AI ASSISTANT (RAG, rag.php)
----------------------------
+AI ASSISTANT (RAG)
+------------------
 Local AI assistant — 100% offline, no external APIs.
-Ask questions at rag.php or via the "Ask AI" panel (avatar menu → Ask AI).
+Ask questions via the "Ask AI" panel (avatar menu → Ask AI, or the chat icon).
 Answers are based on documents uploaded by the admin; tag filtering narrows which
 documents are searched. The Ask AI panel automatically pre-selects the tag matching
 the table you are currently viewing (e.g. on ?table=deals → tag "deals").

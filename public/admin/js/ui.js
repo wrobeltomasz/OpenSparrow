@@ -1,7 +1,7 @@
 // admin/js/ui.js — Shared admin UI toolkit
 // Reusable form-field builders (createTextInput/SelectInput/ColorInput/IconPicker/Checkbox/MultiSelect), inner tabs, menu preview, array/object reorder helpers, and field helpTexts. Imported across admin modules.
 
-import { getCsrfToken as getCsrf } from '../../assets/js/util/csrf.js';
+import { apiFetch } from '../../assets/js/util/api.js';
 export const helpTexts = {
     display_name: "The name that will be shown to users in the interface.",
     icon: "Path to the icon image (e.g., assets/icons/my_icon.png) or emoji.",
@@ -116,7 +116,7 @@ export function createIconPicker(key, labelText, value, onChange) {
         grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;
         
         try {
-            const res = await fetch('api.php?action=list_icons');
+            const res = await apiFetch('api.php?action=list_icons');
             const data = await res.json();
             if (data.status === 'success' && data.icons.length > 0) {
                 data.icons.forEach(iconPath => {
@@ -338,9 +338,8 @@ export function createFullMenuPreview(config) {
                 })),
             };
             try {
-                await fetch('api.php?action=menu_config', {
+                await apiFetch('api.php?action=menu_config', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
                     body: JSON.stringify(payload),
                 });
             } catch (_) { /* silent */ }
