@@ -69,20 +69,20 @@ if ($action === 'demo_install') {
 
         $configDir = realpath(__DIR__ . '/../../../config');
 
-        // schema.json
-        $schemaPath = $configDir . '/schema.json';
-        $schemaCfg  = file_exists($schemaPath) ? (json_decode(file_get_contents($schemaPath), true) ?? []) : [];
+        // schema config (spw_config key "schema")
+        require_once __DIR__ . '/../../../includes/config_store.php';
+        $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $schemaCfg = config_get('schema') ?? [];
         if (!isset($schemaCfg['tables']) || !is_array($schemaCfg['tables'])) {
             $schemaCfg['tables'] = [];
         }
         foreach ($demoData['schema_tables'] as $key => $def) {
             $schemaCfg['tables'][$key] = $def;
         }
-        file_put_contents($schemaPath, json_encode($schemaCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        config_save('schema', $schemaCfg, null, $seedUserId);
 
-        // dashboard.json
-        $dashPath = $configDir . '/dashboard.json';
-        $dashCfg  = file_exists($dashPath) ? (json_decode(file_get_contents($dashPath), true) ?? []) : [];
+        // dashboard config (spw_config key "dashboard")
+        $dashCfg = config_get('dashboard') ?? [];
         if (!isset($dashCfg['widgets']) || !is_array($dashCfg['widgets'])) {
             $dashCfg['widgets'] = [];
         }
@@ -110,11 +110,10 @@ if ($action === 'demo_install') {
         if (isset($dashCfg['hidden'])) {
             $dashCfgOrdered['hidden'] = $dashCfg['hidden'];
         }
-        file_put_contents($dashPath, json_encode($dashCfgOrdered, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        config_save('dashboard', $dashCfgOrdered, null, $seedUserId);
 
-        // calendar.json
-        $calPath  = $configDir . '/calendar.json';
-        $calCfg   = file_exists($calPath) ? (json_decode(file_get_contents($calPath), true) ?? []) : [];
+        // calendar config (spw_config key "calendar")
+        $calCfg = config_get('calendar') ?? [];
         if (!isset($calCfg['sources']) || !is_array($calCfg['sources'])) {
             $calCfg['sources'] = [];
         }
@@ -131,21 +130,20 @@ if ($action === 'demo_install') {
             }
             $calCfg['sources'][] = $s;
         }
-        file_put_contents($calPath, json_encode($calCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        config_save('calendar', $calCfg, null, $seedUserId);
 
-        // board.json — single-config Kanban board, written only if the demo
+        // board config — single-config Kanban board, written only if the demo
         // defines one. Mirrors the structure produced by the admin Board editor.
         if (!empty($demoData['board']) && is_array($demoData['board'])) {
-            $boardPath = $configDir . '/board.json';
-            file_put_contents($boardPath, json_encode($demoData['board'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            config_save('board', $demoData['board'], null, $seedUserId);
         }
 
         // anonymization.json — merge demo GDPR rules if provided. Existing user
         // settings (enabled/frequency/dictionary) win; demo rules replace any
         // previous rules pointing at demo tables.
         if (!empty($demoData['anonymization']) && is_array($demoData['anonymization'])) {
-            $anonPath = $configDir . '/anonymization.json';
-            $anonCfg  = file_exists($anonPath) ? (json_decode(file_get_contents($anonPath), true) ?? []) : [];
+            require_once __DIR__ . '/../../../includes/config_store.php';
+            $anonCfg  = config_get('anonymization') ?? [];
             $demoAnon = $demoData['anonymization'];
             $anonCfg['enabled']    = $anonCfg['enabled']    ?? ($demoAnon['enabled']    ?? false);
             $anonCfg['frequency']  = $anonCfg['frequency']  ?? ($demoAnon['frequency']  ?? 'manual');
@@ -165,12 +163,12 @@ if ($action === 'demo_install') {
                 'dictionary' => $anonCfg['dictionary'],
                 'rules'      => $anonCfg['rules'],
             ];
-            file_put_contents($anonPath, json_encode($anonCfgOrdered, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+            config_save('anonymization', $anonCfgOrdered, null, $seedUserId);
         }
 
-        // workflows.json
-        $wfPath = $configDir . '/workflows.json';
-        $wfCfg  = file_exists($wfPath) ? (json_decode(file_get_contents($wfPath), true) ?? []) : [];
+        // workflows config (spw_config key "workflows")
+        $wfCfg = config_get('workflows') ?? [];
         if (!isset($wfCfg['workflows']) || !is_array($wfCfg['workflows'])) {
             $wfCfg['workflows'] = [];
         }
@@ -190,23 +188,21 @@ if ($action === 'demo_install') {
         }
         // Rebuild in correct order: workflows, menu_name, menu_icon
         $wfCfgOrdered = ['workflows' => $wfCfg['workflows'], 'menu_name' => $wfCfg['menu_name'], 'menu_icon' => $wfCfg['menu_icon']];
-        file_put_contents($wfPath, json_encode($wfCfgOrdered, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        config_save('workflows', $wfCfgOrdered, null, $seedUserId);
 
-        // views.json
-        $viewsPath = $configDir . '/views.json';
-        $viewsCfg  = file_exists($viewsPath) ? (json_decode(file_get_contents($viewsPath), true) ?? []) : [];
+        // views config (spw_config key "views")
+        $viewsCfg = config_get('views') ?? [];
         if (!isset($viewsCfg['views']) || !is_array($viewsCfg['views'])) {
             $viewsCfg['views'] = [];
         }
         foreach ($demoData['views'] as $key => $def) {
             $viewsCfg['views'][$key] = $def;
         }
-        file_put_contents($viewsPath, json_encode($viewsCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        config_save('views', $viewsCfg, null, $seedUserId);
 
-        // files.json — merge demo relations if provided
+        // files config (spw_config key "files") — merge demo relations if provided
         if (!empty($demoData['files_relations']) && is_array($demoData['files_relations'])) {
-            $filesPath = $configDir . '/files.json';
-            $filesCfg  = file_exists($filesPath) ? (json_decode(file_get_contents($filesPath), true) ?? []) : [];
+            $filesCfg = config_get('files') ?? [];
             if (!isset($filesCfg['menu_name'])) {
                 $filesCfg['menu_name'] = 'Files';
             }
@@ -239,14 +235,13 @@ if ($action === 'demo_install') {
                     $filesCfg['relations'][] = $rel;
                 }
             }
-            file_put_contents($filesPath, json_encode($filesCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            config_save('files', $filesCfg, null, $seedUserId);
         }
 
-        // menu.json — apply nested menu layout from demo definition
+        // menu config (spw_config key "menu") — apply nested menu layout from demo definition
         $menuKeys = [];
         if (!empty($demoData['menu_items']) && is_array($demoData['menu_items'])) {
-            $menuPath = $configDir . '/menu.json';
-            $menuCfg  = file_exists($menuPath) ? (json_decode(file_get_contents($menuPath), true) ?? []) : [];
+            $menuCfg = config_get('menu') ?? [];
             if (!isset($menuCfg['items']) || !is_array($menuCfg['items'])) {
                 $menuCfg['items'] = [];
             }
@@ -261,15 +256,14 @@ if ($action === 'demo_install') {
                 );
                 $menuCfg['items'][] = $entry;
             }
-            file_put_contents($menuPath, json_encode($menuCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            config_save('menu', $menuCfg, null, $seedUserId);
         }
 
-        // automations.json — merge demo automation rules if provided
+        // automations config (spw_config key "automations") — merge demo rules if provided
         $automationIds = [];
         if (!empty($demoData['automations']) && is_array($demoData['automations'])) {
-            $autoPath = $configDir . '/automations.json';
-            $rawAuto  = file_exists($autoPath) ? (json_decode(file_get_contents($autoPath), true) ?? []) : [];
-            $rules    = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
+            $rawAuto = config_get('automations') ?? [];
+            $rules   = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
             foreach ($demoData['automations'] as $rule) {
                 $rid = $rule['id'] ?? '';
                 if ($rid === '') {
@@ -279,15 +273,15 @@ if ($action === 'demo_install') {
                 $rules = array_values(array_filter($rules, fn($r) => ($r['id'] ?? '') !== $rid));
                 $rules[] = $rule;
             }
-            file_put_contents($autoPath, json_encode(['automations' => $rules], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            config_save('automations', ['automations' => $rules], null, $seedUserId);
         }
 
-        // print.json — merge demo print templates if provided (keyed by template name,
-        // same merge-by-key pattern as views.json above)
+        // print config (spw_config key "print") — merge demo print templates if provided
+        // (keyed by template name, same merge-by-key pattern as views.json above)
         $printKeys = [];
         if (!empty($demoData['prints']) && is_array($demoData['prints'])) {
-            $printPath = $configDir . '/print.json';
-            $printCfg  = file_exists($printPath) ? (json_decode(file_get_contents($printPath), true) ?? []) : [];
+            require_once __DIR__ . '/../../../includes/config_store.php';
+            $printCfg = config_get('print') ?? [];
             if (!isset($printCfg['prints']) || !is_array($printCfg['prints'])) {
                 $printCfg['prints'] = [];
             }
@@ -295,15 +289,16 @@ if ($action === 'demo_install') {
                 $printKeys[] = $key;
                 $printCfg['prints'][$key] = $def;
             }
-            file_put_contents($printPath, json_encode($printCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+            config_save('print', $printCfg, null, $seedUserId);
         }
 
         // user_records.json — merge demo column-label mappings if provided (keyed by
         // table name; the global "limit" setting is a user preference and is left
         // untouched, only defaulted if the file didn't exist yet).
         if (!empty($demoData['user_records']) && is_array($demoData['user_records'])) {
-            $urPath = $configDir . '/user_records.json';
-            $urCfg  = file_exists($urPath) ? (json_decode(file_get_contents($urPath), true) ?? []) : [];
+            require_once __DIR__ . '/../../../includes/config_store.php';
+            $urCfg = config_get('user_records') ?? [];
             if (!isset($urCfg['columns']) || !is_array($urCfg['columns'])) {
                 $urCfg['columns'] = [];
             }
@@ -313,7 +308,8 @@ if ($action === 'demo_install') {
             foreach ($demoData['user_records'] as $tableName => $cols) {
                 $urCfg['columns'][$tableName] = $cols;
             }
-            file_put_contents($urPath, json_encode($urCfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+            config_save('user_records', $urCfg, null, $seedUserId);
         }
 
         // demo_meta.json
@@ -391,10 +387,12 @@ if ($action === 'demo_uninstall') {
             @pg_query($conn, 'DROP VIEW IF EXISTS ' . pg_ident($appSchema) . '.' . pg_ident($vName));
         }
 
-        // Clean schema.json (delete if empty)
-        $schemaPath = $configDir . '/schema.json';
-        if (file_exists($schemaPath)) {
-            $cfg = json_decode(file_get_contents($schemaPath), true) ?? [];
+        require_once __DIR__ . '/../../../includes/config_store.php';
+        $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+
+        // Clean schema config (delete the key + legacy file if no tables remain)
+        $cfg = config_get('schema');
+        if (is_array($cfg)) {
             // Collect hidden junction tables referenced by demo tables before removing them
             $m2mJunctions = [];
             foreach ($meta['tables'] ?? [] as $t) {
@@ -424,157 +422,165 @@ if ($action === 'demo_uninstall') {
                 }
             }
             if (empty($cfg['tables'])) {
-                @unlink($schemaPath);
+                config_delete('schema', $cleanUserId);
+                @unlink($configDir . '/schema.json');
             } else {
-                file_put_contents($schemaPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('schema', $cfg, null, $cleanUserId);
             }
         }
 
-        // Clean dashboard.json (delete if empty)
-        $dashPath = $configDir . '/dashboard.json';
-        if (file_exists($dashPath)) {
-            $cfg = json_decode(file_get_contents($dashPath), true) ?? [];
+        // Clean dashboard config (delete the key + legacy file if no widgets remain)
+        $dashCfg = config_get('dashboard');
+        if (is_array($dashCfg)) {
             $ids = $meta['widget_ids'] ?? [];
-            $cfg['widgets'] = array_values(
-                array_filter($cfg['widgets'] ?? [], fn($w) => !in_array($w['id'] ?? '', $ids, true))
+            $dashCfg['widgets'] = array_values(
+                array_filter($dashCfg['widgets'] ?? [], fn($w) => !in_array($w['id'] ?? '', $ids, true))
             );
-            if (empty($cfg['widgets'])) {
-                @unlink($dashPath);
+            if (empty($dashCfg['widgets'])) {
+                config_delete('dashboard', $cleanUserId);
+                @unlink($configDir . '/dashboard.json');
             } else {
-                file_put_contents($dashPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('dashboard', $dashCfg, null, $cleanUserId);
             }
         }
 
-        // Clean calendar.json (delete if empty)
-        $calPath = $configDir . '/calendar.json';
-        if (file_exists($calPath)) {
-            $cfg  = json_decode(file_get_contents($calPath), true) ?? [];
+        // Clean calendar config (delete the key + legacy file if no sources remain)
+        $calCfg = config_get('calendar');
+        if (is_array($calCfg)) {
             $tbls = $meta['tables'] ?? [];
-            $cfg['sources'] = array_values(
-                array_filter($cfg['sources'] ?? [], fn($s) => !in_array($s['table'] ?? '', $tbls, true))
+            $calCfg['sources'] = array_values(
+                array_filter($calCfg['sources'] ?? [], fn($s) => !in_array($s['table'] ?? '', $tbls, true))
             );
-            if (empty($cfg['sources'])) {
-                @unlink($calPath);
+            if (empty($calCfg['sources'])) {
+                config_delete('calendar', $cleanUserId);
+                @unlink($configDir . '/calendar.json');
             } else {
-                file_put_contents($calPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('calendar', $calCfg, null, $cleanUserId);
             }
         }
 
-        // Clean board.json (remove only if it points at a demo table)
-        $boardPath = $configDir . '/board.json';
-        if (file_exists($boardPath)) {
-            $cfg     = json_decode(file_get_contents($boardPath), true) ?? [];
-            $tbls    = $meta['tables'] ?? [];
-            $bTable  = $cfg['table'] ?? ($meta['board_table'] ?? '');
+        // Clean board config (remove only if it points at a demo table)
+        $boardCfg = config_get('board');
+        if (is_array($boardCfg)) {
+            $tbls   = $meta['tables'] ?? [];
+            $bTable = $boardCfg['table'] ?? ($meta['board_table'] ?? '');
             if ($bTable !== '' && in_array($bTable, $tbls, true)) {
-                @unlink($boardPath);
+                config_delete('board', $cleanUserId);
+                @unlink($configDir . '/board.json');
             }
         }
 
-        // Clean anonymization.json (drop rules pointing at demo tables; delete if no rules remain)
-        $anonPath = $configDir . '/anonymization.json';
-        if (file_exists($anonPath)) {
-            $cfg  = json_decode(file_get_contents($anonPath), true) ?? [];
+        // Clean anonymization config (drop rules pointing at demo tables; delete the
+        // spw_config key — and the legacy file, so dual-read cannot resurrect it —
+        // if no rules remain)
+        $anonCfg = config_get('anonymization');
+        if (is_array($anonCfg)) {
             $tbls = $meta['tables'] ?? [];
-            $cfg['rules'] = array_values(
-                array_filter($cfg['rules'] ?? [], fn($r) => !in_array($r['table'] ?? '', $tbls, true))
+            $anonCfg['rules'] = array_values(
+                array_filter($anonCfg['rules'] ?? [], fn($r) => !in_array($r['table'] ?? '', $tbls, true))
             );
-            if (empty($cfg['rules'])) {
-                @unlink($anonPath);
+            if (empty($anonCfg['rules'])) {
+                config_delete('anonymization', $cleanUserId);
+                @unlink($configDir . '/anonymization.json');
             } else {
-                file_put_contents($anonPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('anonymization', $anonCfg, null, $cleanUserId);
             }
         }
 
-        // Clean workflows.json (delete if empty)
-        $wfPath = $configDir . '/workflows.json';
-        if (file_exists($wfPath)) {
-            $cfg = json_decode(file_get_contents($wfPath), true) ?? [];
+        // Clean workflows config (delete the key + legacy file if none remain)
+        $wfCfg = config_get('workflows');
+        if (is_array($wfCfg)) {
             $ids = $meta['workflow_ids'] ?? [];
-            $cfg['workflows'] = array_values(
-                array_filter($cfg['workflows'] ?? [], fn($w) => !in_array($w['id'] ?? '', $ids, true))
+            $wfCfg['workflows'] = array_values(
+                array_filter($wfCfg['workflows'] ?? [], fn($w) => !in_array($w['id'] ?? '', $ids, true))
             );
-            if (empty($cfg['workflows'])) {
-                @unlink($wfPath);
+            if (empty($wfCfg['workflows'])) {
+                config_delete('workflows', $cleanUserId);
+                @unlink($configDir . '/workflows.json');
             } else {
-                file_put_contents($wfPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('workflows', $wfCfg, null, $cleanUserId);
             }
         }
 
-        // Clean views.json (delete if empty)
-        $viewsPath = $configDir . '/views.json';
-        if (file_exists($viewsPath)) {
-            $cfg = json_decode(file_get_contents($viewsPath), true) ?? [];
+        // Clean views config (delete the key + legacy file if none remain)
+        $viewsCfg = config_get('views');
+        if (is_array($viewsCfg)) {
             foreach ($meta['view_keys'] ?? [] as $k) {
-                unset($cfg['views'][$k]);
+                unset($viewsCfg['views'][$k]);
             }
-            if (empty($cfg['views'])) {
-                @unlink($viewsPath);
+            if (empty($viewsCfg['views'])) {
+                config_delete('views', $cleanUserId);
+                @unlink($configDir . '/views.json');
             } else {
-                file_put_contents($viewsPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('views', $viewsCfg, null, $cleanUserId);
             }
         }
 
-        // Clean menu.json (delete if empty)
-        $menuPath = $configDir . '/menu.json';
-        if (file_exists($menuPath)) {
-            $cfg  = json_decode(file_get_contents($menuPath), true) ?? [];
+        // Clean menu config (delete the key + legacy file if no items remain)
+        $menuCfg = config_get('menu');
+        if (is_array($menuCfg)) {
             $keys = $meta['menu_keys'] ?? [];
-            if (!empty($keys) && isset($cfg['items']) && is_array($cfg['items'])) {
-                $cfg['items'] = array_values(
-                    array_filter($cfg['items'], fn($i) => !in_array($i['key'] ?? '', $keys, true))
+            if (!empty($keys) && isset($menuCfg['items']) && is_array($menuCfg['items'])) {
+                $menuCfg['items'] = array_values(
+                    array_filter($menuCfg['items'], fn($i) => !in_array($i['key'] ?? '', $keys, true))
                 );
             }
-            if (empty($cfg['items'])) {
-                @unlink($menuPath);
+            if (empty($menuCfg['items'])) {
+                config_delete('menu', $cleanUserId);
+                @unlink($configDir . '/menu.json');
             } else {
-                file_put_contents($menuPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('menu', $menuCfg, null, $cleanUserId);
             }
         }
 
-        // Clean automations.json (delete if empty)
-        $autoPath = $configDir . '/automations.json';
-        if (file_exists($autoPath)) {
-            $rawAuto = json_decode(file_get_contents($autoPath), true) ?? [];
-            $rules   = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
-            $ids     = $meta['automation_ids'] ?? [];
+        // Clean automations config (delete the key + legacy file if no rules remain)
+        $rawAuto = config_get('automations');
+        if (is_array($rawAuto)) {
+            $rules = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
+            $ids   = $meta['automation_ids'] ?? [];
             if (!empty($ids)) {
                 $rules = array_values(array_filter($rules, fn($r) => !in_array($r['id'] ?? '', $ids, true)));
                 if (empty($rules)) {
-                    @unlink($autoPath);
+                    config_delete('automations', $cleanUserId);
+                    @unlink($configDir . '/automations.json');
                 } else {
-                    file_put_contents($autoPath, json_encode(['automations' => $rules], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                    config_save('automations', ['automations' => $rules], null, $cleanUserId);
                 }
             }
         }
 
-        // Clean print.json (delete if empty)
-        $printPath = $configDir . '/print.json';
-        if (file_exists($printPath)) {
-            $cfg  = json_decode(file_get_contents($printPath), true) ?? [];
+        // Clean print config in the spw_config store (delete the key if no templates remain)
+        require_once __DIR__ . '/../../../includes/config_store.php';
+        $printCfg = config_get('print');
+        if (is_array($printCfg)) {
             $keys = $meta['print_keys'] ?? [];
             foreach ($keys as $k) {
-                unset($cfg['prints'][$k]);
+                unset($printCfg['prints'][$k]);
             }
-            if (empty($cfg['prints'])) {
-                @unlink($printPath);
+            $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+            if (empty($printCfg['prints'])) {
+                config_delete('print', $cleanUserId);
+                // Also drop the legacy file copy so the dual-read fallback cannot
+                // resurrect the deleted demo templates from disk.
+                @unlink($configDir . '/print.json');
             } else {
-                file_put_contents($printPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('print', $printCfg, null, $cleanUserId);
             }
         }
 
-        // Clean user_records.json (drop column mappings for demo tables; delete if none remain)
-        $urPath = $configDir . '/user_records.json';
-        if (file_exists($urPath)) {
-            $cfg  = json_decode(file_get_contents($urPath), true) ?? [];
+        // Clean user_records config (drop column mappings for demo tables; delete the
+        // spw_config key + legacy file if none remain)
+        $urCfg = config_get('user_records');
+        if (is_array($urCfg)) {
             $tbls = $meta['tables'] ?? [];
             foreach ($tbls as $t) {
-                unset($cfg['columns'][$t]);
+                unset($urCfg['columns'][$t]);
             }
-            if (empty($cfg['columns'])) {
-                @unlink($urPath);
+            if (empty($urCfg['columns'])) {
+                config_delete('user_records', $cleanUserId);
+                @unlink($configDir . '/user_records.json');
             } else {
-                file_put_contents($urPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+                config_save('user_records', $urCfg, null, $cleanUserId);
             }
         }
 

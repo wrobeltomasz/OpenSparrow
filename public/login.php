@@ -21,23 +21,20 @@ $cspNonce = $page['nonce'];
 // then the first table in the schema.
 function resolve_landing_page(): string
 {
-    $isHidden = static function (string $configFile): bool {
-        $path = __DIR__ . '/../config/' . $configFile;
-        if (!is_file($path)) {
+    require_once __DIR__ . '/../includes/config_store.php';
+    $isHidden = static function (string $configKey): bool {
+        try {
+            $cfg = config_get($configKey);
+        } catch (Throwable $e) {
             return false;
         }
-        $raw = @file_get_contents($path);
-        if ($raw === false) {
-            return false;
-        }
-        $cfg = json_decode($raw, true);
         return is_array($cfg) && !empty($cfg['hidden']);
     };
 
-    if (!$isHidden('dashboard.json')) {
+    if (!$isHidden('dashboard')) {
         return 'dashboard.php';
     }
-    if (!$isHidden('calendar.json')) {
+    if (!$isHidden('calendar')) {
         return 'calendar.php';
     }
     // Files module is always visible; index.php renders the first

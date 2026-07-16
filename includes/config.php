@@ -50,20 +50,23 @@ if (!function_exists('client_ip')) {
 
 }
 
-// Read a single key from config/settings.json, returning $default when absent.
-// The decoded file is cached for the request so repeated lookups read it once.
+// Read a single key from the "settings" config (spw_config store with legacy
+// config/settings.json fallback), returning $default when absent. Cached for
+// the request so repeated lookups resolve the config once.
 if (!function_exists('settings_value')) {
     function settings_value(string $key, mixed $default = null): mixed
     {
         static $settings = null;
         if ($settings === null) {
             $settings = [];
-            $f = __DIR__ . '/../config/settings.json';
-            if (is_file($f)) {
-                $decoded = @json_decode((string) file_get_contents($f), true);
+            try {
+                require_once __DIR__ . '/config_store.php';
+                $decoded = config_get('settings');
                 if (is_array($decoded)) {
                     $settings = $decoded;
                 }
+            } catch (Throwable $e) {
+                // Bootstrap must never fail on config lookup problems.
             }
         }
         return array_key_exists($key, $settings) ? $settings[$key] : $default;

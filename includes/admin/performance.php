@@ -17,10 +17,9 @@ if ($action === 'performance_check') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        $schemaJson   = @file_get_contents(__DIR__ . '/../../config/schema.json');
-        $dashJson     = @file_get_contents(__DIR__ . '/../../config/dashboard.json');
-        $schemaCfg    = $schemaJson  ? (json_decode($schemaJson, true) ?? []) : [];
-        $dashCfg      = $dashJson    ? (json_decode($dashJson, true) ?? []) : [];
+        require_once __DIR__ . '/../config_store.php';
+        $schemaCfg    = config_get('schema') ?? [];
+        $dashCfg      = config_get('dashboard') ?? [];
         $tables       = $schemaCfg['tables'] ?? [];
         $widgets      = $dashCfg['widgets']  ?? [];
 
@@ -200,8 +199,8 @@ if ($action === 'performance_table_stats') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        $schemaJson = @file_get_contents(__DIR__ . '/../../config/schema.json');
-        $schemaCfg  = $schemaJson ? (json_decode($schemaJson, true) ?? []) : [];
+        require_once __DIR__ . '/../config_store.php';
+        $schemaCfg  = config_get('schema') ?? [];
         $tables     = $schemaCfg['tables'] ?? [];
 
         // Build set of (pgSchema, tableName) pairs from schema.json
@@ -368,10 +367,9 @@ if ($action === 'performance_schema_warnings') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        $schemaJson  = @file_get_contents(__DIR__ . '/../../config/schema.json');
-        $dashJson    = @file_get_contents(__DIR__ . '/../../config/dashboard.json');
-        $schemaCfg   = $schemaJson ? (json_decode($schemaJson, true) ?? []) : [];
-        $dashCfg     = $dashJson   ? (json_decode($dashJson, true) ?? []) : [];
+        require_once __DIR__ . '/../config_store.php';
+        $schemaCfg   = config_get('schema') ?? [];
+        $dashCfg     = config_get('dashboard') ?? [];
         $tables      = $schemaCfg['tables'] ?? [];
         $widgets     = $dashCfg['widgets']  ?? [];
 

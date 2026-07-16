@@ -47,7 +47,8 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     // Build catalog: key → full display entry
     $catalog = [];
 
-    $dashRaw = $menuSafeReadJson($inc . '/dashboard.json') ?? [];
+    require_once __DIR__ . '/../config_store.php';
+    $dashRaw = config_get('dashboard') ?? [];
     $catalog['dashboard'] = [
         'type' => 'dashboard', 'key' => 'dashboard',
         'name'   => $dashRaw['menu_name'] ?? 'Dashboard',
@@ -56,7 +57,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         'children' => [],
     ];
 
-    $calRaw = $menuSafeReadJson($inc . '/calendar.json') ?? [];
+    $calRaw = config_get('calendar') ?? [];
     $catalog['calendar'] = [
         'type' => 'calendar', 'key' => 'calendar',
         'name'   => $calRaw['menu_name'] ?? 'Calendar',
@@ -65,7 +66,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         'children' => [],
     ];
 
-    $boardRaw = $menuSafeReadJson($inc . '/board.json') ?? [];
+    $boardRaw = config_get('board') ?? [];
     if (!empty($boardRaw['table']) && !empty($boardRaw['status_column'])) {
         $catalog['board'] = [
             'type' => 'board', 'key' => 'board',
@@ -76,7 +77,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         ];
     }
 
-    $filesRaw = $menuSafeReadJson($inc . '/files.json') ?? [];
+    $filesRaw = config_get('files') ?? [];
     $catalog['files'] = [
         'type' => 'files', 'key' => 'files',
         'name'   => $filesRaw['menu_name'] ?? 'Files',
@@ -85,7 +86,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         'children' => [],
     ];
 
-    $schemaRaw = $menuSafeReadJson($inc . '/schema.json') ?? [];
+    $schemaRaw = config_get('schema') ?? [];
     foreach ($schemaRaw['tables'] ?? [] as $tName => $tConfig) {
         $catalog[$tName] = [
             'type' => 'table', 'key' => $tName,
@@ -96,7 +97,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         ];
     }
 
-    $menuRaw = $menuSafeReadJson($inc . '/menu.json');
+    $menuRaw = config_get('menu');
     $items   = [];
     $placed  = [];
 
@@ -146,8 +147,8 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $inc       = __DIR__ . '/../../config';
-    $schemaRaw = $menuSafeReadJson($inc . '/schema.json') ?? [];
+    require_once __DIR__ . '/../config_store.php';
+    $schemaRaw = config_get('schema') ?? [];
     $validKeys  = array_merge(['dashboard', 'calendar', 'board', 'files'], array_keys($schemaRaw['tables'] ?? []));
     $validTypes = ['dashboard', 'calendar', 'board', 'files', 'table'];
 
@@ -173,15 +174,13 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $sanitized[] = ['key' => $key, 'children' => $children];
     }
 
-    $payload  = json_encode(['items' => $sanitized], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    $filePath = $inc . '/menu.json';
-    $tmp      = $filePath . '.tmp';
-    if (@file_put_contents($tmp, $payload, LOCK_EX) === false) {
+    $menuUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $menuResult = config_save('menu', ['items' => $sanitized], null, $menuUserId);
+    if ($menuResult['status'] !== 'ok') {
         http_response_code(500);
-        echo json_encode(['status' => 'error', 'error' => 'Write failed']);
+        echo json_encode(['status' => 'error', 'error' => $menuResult['error'] ?? 'Write failed']);
         exit;
     }
-    @rename($tmp, $filePath);
     echo json_encode(['status' => 'success']);
     exit;
 }
@@ -193,10 +192,21 @@ $allowedFiles = [
     'workflows', 'files', 'views', 'automations', 'user_records',
 ];
 
+// Keys served from the spw_config store instead of config/*.json (see
+// includes/config_store.php — reads still fall back to the legacy file until
+// the one-time init_db import has run). Extend as modules migrate.
+$dbBackedFiles = ['automations', 'board', 'calendar', 'dashboard', 'files', 'schema', 'user_records', 'views', 'workflows'];
+
 // Get content of a JSON config file
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
-    $filePath = __DIR__ . '/../../config/' . $file . '.json';
     header('Content-Type: application/json');
+    if (in_array($file, $dbBackedFiles, true)) {
+        require_once __DIR__ . '/../config_store.php';
+        $cfg = config_get($file);
+        echo $cfg !== null ? json_encode($cfg) : json_encode(new stdClass());
+        exit;
+    }
+    $filePath = __DIR__ . '/../../config/' . $file . '.json';
     if (file_exists($filePath)) {
         $fileContent = file_get_contents($filePath);
         // Mask sensitive data in Demo Mode
@@ -229,6 +239,22 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
     $filePath = __DIR__ . '/../../config/' . $file . '.json';
     header('Content-Type: application/json');
     $parsedData = json_decode($data, true);
+    if (in_array($file, $dbBackedFiles, true)) {
+        if (!is_array($parsedData)) {
+            echo json_encode(['status' => 'error', 'error' => 'Invalid JSON']);
+            exit;
+        }
+        require_once __DIR__ . '/../config_store.php';
+        // Generic editor has no version plumbing — last-write-wins (expected null).
+        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $result = config_save($file, $parsedData, null, $userId);
+        if ($result['status'] !== 'ok') {
+            echo json_encode(['status' => 'error', 'error' => $result['error'] ?? 'Save failed']);
+            exit;
+        }
+        echo json_encode(['status' => 'success']);
+        exit;
+    }
     if ($parsedData !== null) {
         if (!is_dir(__DIR__ . '/../../config/')) {
             mkdir(__DIR__ . '/../../config/', 0755, true);

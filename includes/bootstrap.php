@@ -193,7 +193,8 @@ function os_boot_app(): array
     $db              = new PgConnection($pgConn);
     $GLOBALS['conn'] = $pgConn; // backward-compat: raw PgSql\Connection for legacy api_helpers functions
 
-    $schemas  = new JsonSchemaRepository(__DIR__ . '/../config/schema.json');
+    require_once __DIR__ . '/config_store.php';
+    $schemas  = new JsonSchemaRepository(config_get('schema') ?? ['tables' => []]);
     $fkLoader = new FkOptionsLoader($db);
 
     $fieldRegistry = new FieldTypeRegistry([

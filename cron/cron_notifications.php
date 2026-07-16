@@ -65,28 +65,24 @@ function cron_mysql_pdo(): ?\PDO
 
 $triggeredBy = (isset($argv[1]) && $argv[1] === 'admin') ? 'admin' : 'cron';
 print_log("<h3>Start CRON - Diagnostics</h3>");
-$configFile = __DIR__ . '/../config/calendar.json';
-if (!file_exists($configFile)) {
-    print_log("<span style='color:red;'>Missing calendar.json file</span>");
+require_once __DIR__ . '/../includes/config_store.php';
+$config = config_get('calendar');
+if ($config === null) {
+    print_log("<span style='color:red;'>Missing calendar configuration</span>");
     exit;
 }
 
-$config = json_decode(file_get_contents($configFile), true);
 if (empty($config['sources'])) {
     print_log("<span style='color:red;'>No sources defined in calendar.</span>");
     exit;
 }
 
-print_log("Loaded calendar.json file. Number of sources: " . count($config['sources']) . "<br>");
+print_log("Loaded calendar configuration. Number of sources: " . count($config['sources']) . "<br>");
 
 // Table → PG schema map from schema.json; tables without an explicit schema
 // (or missing from schema.json) fall back to the system schema.
-$schemaFile   = __DIR__ . '/../config/schema.json';
-$schemaTables = [];
-if (file_exists($schemaFile)) {
-    $schemaCfg    = json_decode(file_get_contents($schemaFile), true) ?? [];
-    $schemaTables = is_array($schemaCfg['tables'] ?? null) ? $schemaCfg['tables'] : [];
-}
+$schemaCfg    = config_get('schema') ?? [];
+$schemaTables = is_array($schemaCfg['tables'] ?? null) ? $schemaCfg['tables'] : [];
 
 $mysqlGatewayPath   = __DIR__ . '/../config/mysql_gateway.json';
 $mysqlGatewayTables = [];

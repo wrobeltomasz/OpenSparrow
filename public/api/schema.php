@@ -19,21 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $userRole = $_SESSION['role'] ?? 'viewer';
-$schemaPath = __DIR__ . '/../../config/schema.json';
-if (!file_exists($schemaPath)) {
-    http_response_code(500);
-    exit;
-}
-
-// Read and validate schema JSON strictly
-$raw = file_get_contents($schemaPath);
-if ($raw === false) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Cannot read schema file']);
-    exit;
-}
-
-$schemaData = json_decode($raw, true);
+require_once __DIR__ . '/../../includes/config_store.php';
+$schemaData = config_get('schema');
 if (!is_array($schemaData) || !isset($schemaData['tables'])) {
     http_response_code(500);
     echo json_encode(['error' => 'Invalid schema format']);

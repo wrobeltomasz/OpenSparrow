@@ -105,8 +105,8 @@ ob_start();
 <script nonce="<?php echo $cspNonce ?? ''; ?>">
     window.USER_ROLE = <?php echo json_encode($userRole ?? 'viewer', $jsonFlags); ?>;
     <?php
-        $rawSchemaTpl = @file_get_contents(__DIR__ . '/../config/schema.json');
-        $decodedSchemaTpl = $rawSchemaTpl ? @json_decode($rawSchemaTpl, true) : null;
+        require_once __DIR__ . '/../includes/config_store.php';
+        $decodedSchemaTpl = config_get('schema');
         $schemaTableNames = is_array($decodedSchemaTpl['tables'] ?? null)
             ? array_keys($decodedSchemaTpl['tables'])
             : [];

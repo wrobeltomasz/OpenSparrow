@@ -43,6 +43,8 @@ if ($action === 'init_db') {
         $tAutomationEmails = sys_table('automation_emails');
         $tAnonLog          = sys_table('anonymization_log');
         $tAnonReport       = sys_table('anonymization_report');
+        $tConfig           = sys_table('config');
+        $tConfigLog        = sys_table('config_log');
 
         // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
@@ -145,6 +147,11 @@ if ($action === 'init_db') {
                 "CREATE TABLE IF NOT EXISTS $tAutomationEmails ( id serial4 NOT NULL, rule_id varchar(50) NOT NULL DEFAULT '', recipient varchar(255) NOT NULL, subject varchar(255) NOT NULL, body text NOT NULL DEFAULT '', source_table varchar(100) NOT NULL DEFAULT '', record_id int4 NOT NULL DEFAULT 0, created_by int4 NOT NULL DEFAULT 0, status varchar(20) NOT NULL DEFAULT 'pending', attempts int4 NOT NULL DEFAULT 0, error_msg text NULL, created_at timestamp DEFAULT now() NOT NULL, sent_at timestamp NULL, CONSTRAINT spw_automation_emails_pkey PRIMARY KEY (id) )",
                 "CREATE INDEX IF NOT EXISTS idx_spw_automation_emails_status ON $tAutomationEmails USING btree (status, created_at)",
                 "CREATE INDEX IF NOT EXISTS idx_spw_automation_emails_rule_id ON $tAutomationEmails USING btree (rule_id, created_at DESC)",
+                // spw_config — DB-backed configuration store (see includes/config_store.php)
+                "CREATE TABLE IF NOT EXISTS $tConfig ( config_key varchar(64) NOT NULL, value jsonb NOT NULL, version int4 DEFAULT 1 NOT NULL, updated_by int4 NULL, updated_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_config_pkey PRIMARY KEY (config_key), CONSTRAINT spw_config_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES $tUsers(id) ON DELETE SET NULL )",
+                // spw_config_log — audit trail of config changes (old/new snapshots)
+                "CREATE TABLE IF NOT EXISTS $tConfigLog ( id bigserial NOT NULL, config_key varchar(64) NOT NULL, old_value jsonb NULL, new_value jsonb NULL, changed_by int4 NULL, changed_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_config_log_pkey PRIMARY KEY (id), CONSTRAINT spw_config_log_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES $tUsers(id) ON DELETE SET NULL )",
+                "CREATE INDEX IF NOT EXISTS idx_spw_config_log_key ON $tConfigLog USING btree (config_key, changed_at DESC)",
             ],
 
             // Add future migrations below — never modify the 3.0_baseline entry above.
@@ -167,6 +174,37 @@ if ($action === 'init_db') {
                 admin_db_fail($conn, "init_db:record_migration:{$name}");
             }
             $applied_count++;
+        }
+
+        // One-time import of file-based configs into spw_config (idempotent: ON CONFLICT
+        // DO NOTHING — an existing DB row always wins over the legacy file copy).
+        // Append further keys here as modules move over to the config store.
+        $importKeys = [
+            'print', 'anonymization', 'user_records', 'board', 'calendar', 'dashboard',
+            'views', 'automations', 'workflows', 'files', 'settings', 'rag',
+            'schema', 'menu',
+        ];
+        foreach ($importKeys as $cfgKey) {
+            $cfgPath = __DIR__ . '/../../config/' . $cfgKey . '.json';
+            if (!file_exists($cfgPath)) {
+                continue;
+            }
+            $cfgDecoded = json_decode((string) @file_get_contents($cfgPath), true);
+            if (!is_array($cfgDecoded)) {
+                continue;
+            }
+            $resImport = @pg_query_params(
+                $conn,
+                "INSERT INTO $tConfig (config_key, value) VALUES (\$1, \$2::jsonb) ON CONFLICT (config_key) DO NOTHING",
+                [$cfgKey, json_encode($cfgDecoded, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]
+            );
+            if (!$resImport) {
+                admin_db_fail($conn, "init_db:import_config:{$cfgKey}");
+            }
+            // Drop any cached file-fallback copy so readers pick up the DB row at once.
+            if (function_exists('apcu_delete')) {
+                apcu_delete('spw_cfg:' . sys_schema() . ':' . $cfgKey);
+            }
         }
 
         // Prune migration rows no longer in the registry. The pre-3.0 incremental history was

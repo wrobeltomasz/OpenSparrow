@@ -16,35 +16,26 @@ $conn = os_api_bootstrap(['csrf' => 'manual']);
 
 // jsonError(), jsonSuccess(), requireLogin() and requireWrite() are shared via includes/api_helpers.php
 
-// Load config from JSON with size guard and corruption check
+// Files-module config via the spw_config store (key "files", legacy
+// config/files.json fallback built into the store).
+require_once __DIR__ . '/../../includes/config_store.php';
+
 function loadConfig(): array
 {
-
-    $path = __DIR__ . '/../../config/files.json';
-    if (!file_exists($path)) {
-        jsonError('files.json not found', 500);
-    }
-    // Guard against unexpectedly large or corrupt config files
-    if (filesize($path) > 524288) {
-        jsonError('Configuration file too large.', 500);
-    }
-    $content = file_get_contents($path);
-    $decoded = json_decode($content, true);
+    $decoded = config_get('files');
     if (!is_array($decoded)) {
-        jsonError('Configuration file is corrupt.', 500);
+        jsonError('Files configuration not found', 500);
     }
     return $decoded;
 }
 
-// Save config atomically via temp file + rename to prevent race conditions and partial writes
 function saveConfig(array $config): void
 {
-
-    $path    = __DIR__ . '/../../config/files.json';
-    $tmpPath = $path . '.tmp.' . bin2hex(random_bytes(4));
-    $json    = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-    file_put_contents($tmpPath, $json, LOCK_EX);
-    rename($tmpPath, $path);
+    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $result = config_save('files', $config, null, $userId);
+    if ($result['status'] !== 'ok') {
+        jsonError($result['error'] ?? 'Could not save files configuration.', 500);
+    }
 }
 
 // MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
@@ -503,11 +494,7 @@ function actionGetRelatedRecords($conn): void
         if ($pdo === null) {
             jsonSuccess(['records' => []]);
         }
-        $schemaCfg = [];
-        $spPath = __DIR__ . '/../../config/schema.json';
-        if (file_exists($spPath)) {
-            $schemaCfg = json_decode(file_get_contents($spPath), true) ?? [];
-        }
+        $schemaCfg = config_get('schema') ?? [];
         $mysqlPk = (string)($schemaCfg['tables'][$reqTable]['mysql_pk'] ?? 'id');
         try {
             $stmtCols = $pdo->prepare(

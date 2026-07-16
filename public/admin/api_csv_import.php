@@ -726,8 +726,8 @@ if ($action === 'csv_import_execute') {
     }
 
     // Load and validate schema
-    $schemaFile = __DIR__ . '/../../config/schema.json';
-    $schema     = json_decode((string) file_get_contents($schemaFile), true);
+    require_once __DIR__ . '/../../includes/config_store.php';
+    $schema = config_get('schema');
     if (!is_array($schema) || !isset($schema['tables'][$tableName])) {
         @unlink($csvPath);
         csv_fail("Table '{$tableName}' not found in schema configuration.");
@@ -920,10 +920,8 @@ if ($action === 'csv_create_table') {
             ];
         }
 
-        $schemaFile = __DIR__ . '/../../config/schema.json';
-        $schemaData = file_exists($schemaFile)
-            ? (json_decode((string) file_get_contents($schemaFile), true) ?? [])
-            : [];
+        require_once __DIR__ . '/../../includes/config_store.php';
+        $schemaData = config_get('schema') ?? [];
         if (!isset($schemaData['tables'])) {
             $schemaData['tables'] = [];
         }
@@ -937,9 +935,10 @@ if ($action === 'csv_create_table') {
             'icon'         => '',
         ];
 
-        $encoded = json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        if (file_put_contents($schemaFile, $encoded) === false) {
-            csv_fail('Table created in DB but failed to write schema.json. Run Sync Columns manually.');
+        $csvUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $csvResult = config_save('schema', $schemaData, null, $csvUserId);
+        if ($csvResult['status'] !== 'ok') {
+            csv_fail('Table created in DB but failed to save schema config. Run Sync Columns manually.');
         }
 
         echo json_encode(['status' => 'success']);

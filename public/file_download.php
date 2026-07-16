@@ -61,9 +61,9 @@ if ($row['deleted_at'] !== null) {
 $relatedTable = $row['related_table'] ?? null;
 $relatedId    = $row['related_id'] ?? null;
 if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
-    $schemaJson = @file_get_contents(__DIR__ . '/../config/schema.json');
-    $schema     = $schemaJson !== false ? json_decode($schemaJson, true) : null;
-    $tableCfg   = $schema['tables'][$relatedTable] ?? null;
+    require_once __DIR__ . '/../includes/config_store.php';
+    $schema   = config_get('schema');
+    $tableCfg = $schema['tables'][$relatedTable] ?? null;
     if (is_array($tableCfg)) {
         $uid  = (int) $_SESSION['user_id'];
         $role = $_SESSION['role'] ?? '';

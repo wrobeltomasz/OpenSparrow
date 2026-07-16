@@ -8,10 +8,12 @@ declare(strict_types=1);
 // PostgreSQL view), data (GET — template blocks + view rows, optionally filtered by
 // p_<param key> query args), param_options (GET — dropdown values for one report
 // parameter), save (POST, admin)
-// Templates live in config/print.json (web-denied via config/.htaccess); each template is bound
+// Templates live in the spw_config store under key "print" (legacy config/print.json is
+// read as a fallback until imported — see includes/config_store.php); each template is bound
 // to a PostgreSQL view registered in config/views.json — never to raw SQL from the client.
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/config_store.php';
 
 // Auth gate + header CSRF on POST; connect=false — actions open their own connection
 os_api_bootstrap(['connect' => false]);
@@ -20,29 +22,22 @@ $role   = $_SESSION['role'] ?? 'viewer';
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
-$printPath   = __DIR__ . '/../../config/print.json';
-$printConfig = [];
-if (file_exists($printPath)) {
-    $raw     = file_get_contents($printPath);
-    $decoded = json_decode($raw, true);
-    if (is_array($decoded)) {
-        $printConfig = $decoded;
-    }
-}
-$prints = $printConfig['prints'] ?? [];
+$printRow     = config_get_row('print');
+$printConfig  = $printRow['value'] ?? [];
+$printVersion = $printRow['version'] ?? 0;
+$prints       = $printConfig['prints'] ?? [];
 
 /**
- * PostgreSQL-sourced views registered in config/views.json — the only allowed
+ * PostgreSQL-sourced views registered in the "views" config — the only allowed
  * data sources for print templates. Returns name => view config.
  */
 function print_available_views(): array
 {
-    $viewsPath = __DIR__ . '/../../config/views.json';
-    if (!file_exists($viewsPath)) {
+    $decoded = config_get('views');
+    if ($decoded === null) {
         return [];
     }
-    $decoded = json_decode((string) file_get_contents($viewsPath), true);
-    $out     = [];
+    $out = [];
     foreach (($decoded['views'] ?? []) as $name => $cfg) {
         if (!is_array($cfg) || ($cfg['source'] ?? 'postgres') !== 'postgres') {
             continue;
@@ -200,8 +195,9 @@ try {
         echo json_encode([
             'status' => 'ok',
             // (object) keeps an empty map as {} in JSON — [] would become a JS array
-            'config' => ['prints' => (object) $prints],
-            'views'  => array_keys(print_available_views()),
+            'config'  => ['prints' => (object) $prints],
+            'version' => $printVersion,
+            'views'   => array_keys(print_available_views()),
         ]);
         exit;
     }
@@ -385,7 +381,7 @@ try {
         exit;
     }
 
-    /* SAVE CONFIG — persist config/print.json (admin only) */
+    /* SAVE CONFIG — persist to the spw_config store, key "print" (admin only) */
     if ($action === 'save' && $method === 'POST' && $role === 'admin') {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!is_array($body) || !isset($body['prints']) || !is_array($body['prints'])) {
@@ -393,6 +389,10 @@ try {
             echo json_encode(['error' => 'Invalid payload']);
             exit;
         }
+        // Optimistic lock: the editor echoes back the version it loaded; a stale
+        // version means someone else saved in the meantime — reject with 409.
+        $expectedVersion = isset($body['version']) && is_numeric($body['version'])
+            ? (int) $body['version'] : null;
 
         $views     = print_available_views();
         $sanitized = [];
@@ -411,22 +411,21 @@ try {
             $sanitized[$name] = $clean;
         }
 
-        $json = json_encode(['prints' => (object) $sanitized], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        if (strlen($json) > CONFIG_FILE_MAX_BYTES) {
-            http_response_code(413);
-            echo json_encode(['error' => 'Config too large']);
+        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $result = config_save('print', ['prints' => $sanitized], $expectedVersion, $userId);
+        if ($result['status'] === 'conflict') {
+            http_response_code(409);
+            echo json_encode(['error' => 'Config was modified by someone else — reload and retry']);
+            exit;
+        }
+        if ($result['status'] !== 'ok') {
+            $tooLarge = ($result['error'] ?? '') === 'Config too large';
+            http_response_code($tooLarge ? 413 : 500);
+            echo json_encode(['error' => $result['error'] ?? 'Write failed']);
             exit;
         }
 
-        $tmp = $printPath . '.tmp.' . bin2hex(random_bytes(4));
-        if (file_put_contents($tmp, $json, LOCK_EX) === false) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Write failed']);
-            exit;
-        }
-        rename($tmp, $printPath);
-
-        echo json_encode(['status' => 'ok']);
+        echo json_encode(['status' => 'ok', 'version' => $result['version']]);
         exit;
     }
 

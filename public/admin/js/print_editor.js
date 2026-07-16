@@ -11,7 +11,8 @@ export function renderPrintEditor(ctx) {
     workspaceEl.innerHTML = '';
 
     /* ---------- state ---------- */
-    let prints      = {};     // config/print.json "prints" object (working copy)
+    let prints      = {};     // "prints" object from the config store (working copy)
+    let cfgVersion  = 0;      // optimistic-lock version echoed back on save
     let dbViews     = [];     // selectable PostgreSQL view names (from config/views.json)
     let viewColumns = {};     // view -> [{name, data_type}] (lazy, from action=columns)
 
@@ -45,12 +46,16 @@ export function renderPrintEditor(ctx) {
     setSaveHandler(async () => {
         const res = await apiFetch('../api/print.php?action=save', {
             method: 'POST',
-            body: JSON.stringify({ prints }),
+            body: JSON.stringify({ prints, version: cfgVersion }),
         });
         const data = await res.json();
         if (data.status === 'ok') {
-            setStatus('Printouts saved to config/print.json.', 'ok');
-            return { status: 'success', message: 'print.json saved' };
+            cfgVersion = data.version ?? cfgVersion + 1;
+            setStatus('Printouts saved.', 'ok');
+            return { status: 'success', message: 'Printouts saved' };
+        }
+        if (res.status === 409) {
+            setStatus('Save rejected: configuration was changed by someone else. Reload the page and re-apply your edits.', 'error');
         }
         return { status: 'error', error: data.error ?? 'unknown' };
     });
@@ -745,7 +750,8 @@ export function renderPrintEditor(ctx) {
                 setStatus('Failed to load configuration: ' + (data.error ?? 'unknown'), 'error');
                 return;
             }
-            prints = data.config?.prints ?? {};
+            prints     = data.config?.prints ?? {};
+            cfgVersion = data.version ?? 0;
             /* PHP serializes an empty map as [] — normalize to a plain object, otherwise
                JSON.stringify drops named properties added onto the array on save */
             if (!prints || typeof prints !== 'object' || Array.isArray(prints)) {

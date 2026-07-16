@@ -22,8 +22,8 @@ if ($action === 'overview') {
         $uRow    = $uRes ? pg_fetch_assoc($uRes) : ['total' => 0, 'active' => 0];
 
         // -- Schema tables + per-table record counts --
-        $schemaPath  = __DIR__ . '/../../config/schema.json';
-        $schemaObj   = file_exists($schemaPath) ? @json_decode((string) file_get_contents($schemaPath), true) : null;
+        require_once __DIR__ . '/../config_store.php';
+        $schemaObj   = config_get('schema');
         $schemaTables = (is_array($schemaObj) && is_array($schemaObj['tables'] ?? null)) ? $schemaObj['tables'] : [];
 
         $mgOvPath   = __DIR__ . '/../../config/mysql_gateway.json';
@@ -79,8 +79,8 @@ if ($action === 'overview') {
         $ragCount = ($rRes && pg_num_rows($rRes) > 0) ? (int) pg_fetch_result($rRes, 0, 0) : 0;
 
         // -- Views (config-driven) --
-        $viewsPath = __DIR__ . '/../../config/views.json';
-        $viewsObj  = file_exists($viewsPath) ? @json_decode((string) file_get_contents($viewsPath), true) : null;
+        require_once __DIR__ . '/../config_store.php';
+        $viewsObj  = config_get('views');
         $viewCount = (is_array($viewsObj) && is_array($viewsObj['views'] ?? null)) ? count($viewsObj['views']) : 0;
 
         // -- Automations (config-driven) --

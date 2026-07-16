@@ -19,16 +19,9 @@ $role   = $_SESSION['role'] ?? 'viewer';
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
-$viewsPath   = __DIR__ . '/../../config/views.json';
-$viewsConfig = [];
-if (file_exists($viewsPath)) {
-    $raw     = file_get_contents($viewsPath);
-    $decoded = json_decode($raw, true);
-    if (is_array($decoded)) {
-        $viewsConfig = $decoded;
-    }
-}
-$views = $viewsConfig['views'] ?? [];
+require_once __DIR__ . '/../../includes/config_store.php';
+$viewsConfig = config_get('views') ?? [];
+$views       = $viewsConfig['views'] ?? [];
 
 // MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
 require_once __DIR__ . '/../../includes/mysql.php';
@@ -392,7 +385,7 @@ try {
         exit;
     }
 
-    /* SAVE CONFIG — persist views.json (admin only) */
+    /* SAVE CONFIG — persist to the spw_config store, key "views" (admin only) */
     if ($action === 'save' && $method === 'POST' && $role === 'admin') {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!is_array($body) || !isset($body['views'])) {
@@ -401,22 +394,21 @@ try {
             exit;
         }
 
+        // Preserve the top-level "schemas" selection (multi-schema sync scope) —
+        // this action only replaces the views map.
         $newConfig = ['views' => $body['views']];
-        $json      = json_encode($newConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-        if (strlen($json) > CONFIG_FILE_MAX_BYTES) {
-            http_response_code(413);
-            echo json_encode(['error' => 'Config too large']);
-            exit;
+        if (is_array($viewsConfig['schemas'] ?? null)) {
+            $newConfig['schemas'] = $viewsConfig['schemas'];
         }
 
-        $tmp = $viewsPath . '.tmp.' . bin2hex(random_bytes(4));
-        if (file_put_contents($tmp, $json, LOCK_EX) === false) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Write failed']);
+        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $result = config_save('views', $newConfig, null, $userId);
+        if ($result['status'] !== 'ok') {
+            $tooLarge = ($result['error'] ?? '') === 'Config too large';
+            http_response_code($tooLarge ? 413 : 500);
+            echo json_encode(['error' => $result['error'] ?? 'Write failed']);
             exit;
         }
-        rename($tmp, $viewsPath);
 
         echo json_encode(['status' => 'ok']);
         exit;

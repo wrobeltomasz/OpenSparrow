@@ -22,6 +22,13 @@ if (!function_exists('loadMenuConfig')) {
         if (!preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $baseName)) {
             return [];
         }
+        // Config-store keys first (spw_config with legacy-file fallback built in);
+        // the candidate loop below stays for configs not yet migrated to the store.
+        require_once __DIR__ . '/../includes/config_store.php';
+        $stored = config_get($baseName);
+        if ($stored !== null) {
+            return $stored;
+        }
         $realBase = realpath($includeDir);
         if ($realBase === false) {
             return [];
@@ -66,8 +73,8 @@ if (!function_exists('renderMenuIcon')) {
 }
 
 $includeDir   = __DIR__ . '/../config';
-$schemaPath   = $includeDir . '/schema.json';
-$tables       = safeReadJson($schemaPath)['tables'] ?? [];
+require_once __DIR__ . '/../includes/config_store.php';
+$tables       = (config_get('schema') ?? [])['tables'] ?? [];
 
 $currentPage  = basename($_SERVER['PHP_SELF']);
 $currentTable = substr($_GET['table'] ?? '', 0, 64);
@@ -231,7 +238,7 @@ foreach ($tables as $tName => $tConfig) {
 }
 
 // Build structured item list (from menu.json if it exists, else flat catalog order)
-$menuJson   = safeReadJson($includeDir . '/menu.json');
+$menuJson   = config_get('menu');
 $menuItems  = [];
 $menuPlaced = [];
 

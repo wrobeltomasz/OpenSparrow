@@ -212,11 +212,8 @@ if ($action === 'schema_add_table') {
         $colsObj[$cName] = $entry;
     }
 
-    $schemaFile = __DIR__ . '/../../config/schema.json';
-    $schemaData = [];
-    if (file_exists($schemaFile)) {
-        $schemaData = json_decode(file_get_contents($schemaFile), true) ?? [];
-    }
+    require_once __DIR__ . '/../config_store.php';
+    $schemaData = config_get('schema') ?? [];
     if (!isset($schemaData['tables'])) {
         $schemaData['tables'] = [];
     }
@@ -231,13 +228,12 @@ if ($action === 'schema_add_table') {
         'icon'         => '',
     ];
 
-    $encoded = json_encode($schemaData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    if (strlen($encoded) > CONFIG_FILE_MAX_BYTES) {
-        echo json_encode(['status' => 'error', 'error' => 'schema.json would exceed maximum allowed size.']);
+    $schemaUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $schemaResult = config_save('schema', $schemaData, null, $schemaUserId);
+    if ($schemaResult['status'] !== 'ok') {
+        echo json_encode(['status' => 'error', 'error' => $schemaResult['error'] ?? 'Could not save schema.']);
         exit;
     }
-
-    file_put_contents($schemaFile, $encoded);
     echo json_encode(['status' => 'success']);
     exit;
 }

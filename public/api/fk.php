@@ -13,23 +13,8 @@ os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none'])
 
 $table = $_GET['table'] ?? '';
 $col = $_GET['col'] ?? '';
-$schemaPath = __DIR__ . '/../../config/schema.json';
-// Check if schema file exists
-if (!file_exists($schemaPath)) {
-    header('Content-Type: application/json');
-    echo json_encode(['rows' => []]);
-    exit;
-}
-
-// Read schema file securely
-$raw = file_get_contents($schemaPath);
-if ($raw === false) {
-    header('Content-Type: application/json');
-    echo json_encode(['rows' => []]);
-    exit;
-}
-
-$schemaData = json_decode($raw, true);
+require_once __DIR__ . '/../../includes/config_store.php';
+$schemaData = config_get('schema');
 // Verify valid schema structure and check if relation exists
 if (!is_array($schemaData) || !isset($schemaData['tables'][$table]['foreign_keys'][$col])) {
     header('Content-Type: application/json');

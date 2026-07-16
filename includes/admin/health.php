@@ -28,7 +28,9 @@ if ($action === 'health') {
                     $pg_version = $m[1];
                 }
             }
-                        pg_close($conn);
+            // No pg_close(): db_connect() hands out a connection shared with the
+            // rest of the request (config_store caches it), so closing it here
+            // would break every later query.
         }
     } catch (Throwable $e) {
         $db_error = $e->getMessage();
@@ -81,8 +83,8 @@ if ($action === 'health') {
             return file_exists($f) && is_array(@json_decode(@file_get_contents($f), true));
         })(),
         'schema_json_ok' => (static function () {
-            $f = __DIR__ . '/../../config/schema.json';
-            return file_exists($f) && is_array(@json_decode(@file_get_contents($f), true));
+            require_once __DIR__ . '/../config_store.php';
+            return is_array(config_get('schema'));
         })(),
         'security_json_ok' => (static function () {
             $f = __DIR__ . '/../../config/security.json';

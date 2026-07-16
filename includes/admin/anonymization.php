@@ -13,21 +13,16 @@ declare(strict_types=1);
 
 if ($action === 'anonymization_load') {
     header('Content-Type: application/json');
-    $path = __DIR__ . '/../../config/anonymization.json';
+    require_once __DIR__ . '/../config_store.php';
     $defaults = [
         'enabled'    => false,
         'frequency'  => 'daily',
         'dictionary' => ['pesel', 'nip', 'email', 'phone', 'address', 'imie', 'nazwisko', 'name'],
         'rules'      => [],
     ];
-    if (is_file($path)) {
-        $raw    = @file_get_contents($path);
-        $parsed = $raw !== false ? @json_decode($raw, true) : null;
-        $config = is_array($parsed) ? array_merge($defaults, $parsed) : $defaults;
-    } else {
-        $config = $defaults;
-    }
-    echo json_encode(['status' => 'success', 'config' => $config]);
+    $row    = config_get_row('anonymization');
+    $config = is_array($row['value'] ?? null) ? array_merge($defaults, $row['value']) : $defaults;
+    echo json_encode(['status' => 'success', 'config' => $config, 'version' => $row['version'] ?? 0]);
     exit;
 }
 
@@ -70,15 +65,24 @@ if ($action === 'anonymization_save') {
             'replacement' => $r,
         ];
     }
-    $path = __DIR__ . '/../../config/anonymization.json';
-    $tmp  = $path . '.tmp';
-    $encoded = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    if (@file_put_contents($tmp, $encoded, LOCK_EX) === false) {
-        echo json_encode(['status' => 'error', 'error' => 'Failed to write config file.']);
+    require_once __DIR__ . '/../config_store.php';
+    // Optimistic lock: the editor echoes back the version it loaded (the field is
+    // stripped here — the whitelist rebuild above never copies it into $config).
+    $expectedVersion = isset($data['version']) && is_numeric($data['version']) ? (int) $data['version'] : null;
+    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $result = config_save('anonymization', $config, $expectedVersion, $userId);
+    if ($result['status'] === 'conflict') {
+        echo json_encode([
+            'status' => 'error',
+            'error'  => 'Config was modified by someone else — reload and retry.',
+        ]);
         exit;
     }
-    @rename($tmp, $path);
-    echo json_encode(['status' => 'success']);
+    if ($result['status'] !== 'ok') {
+        echo json_encode(['status' => 'error', 'error' => $result['error'] ?? 'Failed to save config.']);
+        exit;
+    }
+    echo json_encode(['status' => 'success', 'version' => $result['version']]);
     exit;
 }
 

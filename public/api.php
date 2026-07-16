@@ -11,6 +11,7 @@ declare(strict_types=1);
 use App\Security\UserRole;
 
 require_once __DIR__ . '/../includes/bootstrap.php';
+require_once __DIR__ . '/../includes/config_store.php';
 
 // Auth gate, staleness enforcement and header-CSRF for POST/PATCH/DELETE.
 // connect=false: the DB connection is opened per-branch below.
@@ -121,15 +122,14 @@ if ($role === UserRole::Viewer && in_array($method, ['POST', 'PUT', 'PATCH', 'DE
     exit(json_encode(['error' => 'Forbidden: Read-only access']));
 }
 
-// Load schema
-$schemaPath = __DIR__ . '/../config/schema.json';
-$schemaJson = file_get_contents($schemaPath);
-if ($schemaJson === false) {
+// Load schema (spw_config store, legacy config/schema.json fallback)
+$schema = config_get('schema');
+if ($schema === null) {
     http_response_code(500);
-    echo json_encode(['error' => 'Cannot read schema.json']);
+    echo json_encode(['error' => 'Cannot read schema configuration']);
     exit;
 }
-$schema = json_decode($schemaJson, true, 512, JSON_THROW_ON_ERROR);
+$schemaJson = json_encode($schema);
 // Connect to DB (db.php + api_helpers.php are already loaded by the bootstrap)
 $conn = db_connect();
 require_once __DIR__ . '/../includes/automations.php';
@@ -251,28 +251,23 @@ try {
 
     // GET: WORKFLOWS DATA
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'workflows') {
-        $wfPath = __DIR__ . '/../config/workflows.json';
-        if (!file_exists($wfPath)) {
+        $workflows = config_get('workflows');
+        if ($workflows === null) {
             echo json_encode(['menu_name' => 'Workflows', 'workflows' => []]);
             exit;
         }
 
-        $wfJson = file_get_contents($wfPath);
-        $workflows = json_decode($wfJson, true, 512, JSON_THROW_ON_ERROR);
         echo json_encode($workflows);
         exit;
     }
 
     // GET: DASHBOARD DATA
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'dashboard') {
-        $dashPath = __DIR__ . '/../config/dashboard.json';
-        if (!file_exists($dashPath)) {
+        $dashboard = config_get('dashboard');
+        if ($dashboard === null) {
             echo json_encode(['layout' => [], 'widgets' => []]);
             exit;
         }
-
-        $dashJson = file_get_contents($dashPath);
-        $dashboard = json_decode($dashJson, true, 512, JSON_THROW_ON_ERROR);
 // Include menu config so frontend can build the sidebar
         $response = [
             'menu_name' => $dashboard['menu_name'] ?? 'Dashboard',
@@ -649,8 +644,8 @@ try {
 
     // GET: CALENDAR DATA
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'calendar') {
-        $calPath = __DIR__ . '/../config/calendar.json';
-        if (!file_exists($calPath)) {
+        $calendar = config_get('calendar');
+        if ($calendar === null) {
             echo json_encode(['events' => []]);
             exit;
         }
@@ -668,8 +663,6 @@ try {
         $dateFrom = sprintf('%04d-%02d-01', $reqYear, $reqMonth);
         $dateTo   = date('Y-m-t', mktime(0, 0, 0, $reqMonth, 1, $reqYear));
 
-        $calJson = file_get_contents($calPath);
-        $calendar = json_decode($calJson, true, 512, JSON_THROW_ON_ERROR);
         $events = [];
         foreach ($calendar['sources'] ?? [] as $src) {
             $table = $src['table'] ?? '';
@@ -785,10 +778,7 @@ try {
     // Returns the board configuration plus its lanes (one per status value) and
     // the records of the configured table grouped client-side by their status.
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'board') {
-        $boardPath = __DIR__ . '/../config/board.json';
-        $boardCfg  = file_exists($boardPath)
-            ? json_decode(file_get_contents($boardPath), true, 512, JSON_THROW_ON_ERROR)
-            : [];
+        $boardCfg = config_get('board') ?? [];
 
         $meta = [
             'menu_name'     => $boardCfg['menu_name'] ?? 'Board',
@@ -1288,10 +1278,9 @@ try {
             }
 
             // Load calendar configuration to validate source tables
-            $calPath = __DIR__ . '/../config/calendar.json';
-            $calConfig = file_exists($calPath) ? json_decode(file_get_contents($calPath), true) : ['sources' => []];
+            $calConfig = config_get('calendar') ?? ['sources' => []];
             $sources = $calConfig['sources'] ?? [];
-// Whitelist payload table against calendar.json sources
+// Whitelist payload table against configured calendar sources
             $allowedTables = array_column($sources, 'table');
             if (!in_array($table, $allowedTables, true)) {
                 http_response_code(400);
@@ -1398,8 +1387,7 @@ try {
                 exit;
             }
 
-            $boardPath = __DIR__ . '/../config/board.json';
-            $boardCfg  = file_exists($boardPath) ? json_decode(file_get_contents($boardPath), true) : [];
+            $boardCfg  = config_get('board') ?? [];
             $cfgTable  = $boardCfg['table'] ?? '';
             $statusCol = $boardCfg['status_column'] ?? '';
 

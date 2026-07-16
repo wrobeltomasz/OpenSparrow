@@ -25,12 +25,9 @@ function auto_load_config(): array
     if ($cache !== null) {
         return $cache;
     }
-    $path = __DIR__ . '/../config/automations.json';
-    if (!file_exists($path)) {
-        return $cache = [];
-    }
-    $data = json_decode(file_get_contents($path), true);
-    return $cache = ($data['automations'] ?? []);
+    require_once __DIR__ . '/config_store.php';
+    $data = config_get('automations');
+    return $cache = (is_array($data) ? ($data['automations'] ?? []) : []);
 }
 
 /**
@@ -251,8 +248,8 @@ function auto_table_cfg(string $table): array
 {
     static $tables = null;
     if ($tables === null) {
-        $path   = __DIR__ . '/../config/schema.json';
-        $data   = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+        require_once __DIR__ . '/config_store.php';
+        $data   = config_get('schema');
         $tables = is_array($data['tables'] ?? null) ? $data['tables'] : [];
     }
     return is_array($tables[$table] ?? null) ? $tables[$table] : [];

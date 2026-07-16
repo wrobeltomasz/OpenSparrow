@@ -25,10 +25,27 @@ if ($action === 'export') {
     if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
         $configDir = __DIR__ . '/../../config/';
         // database.json excluded — contains plaintext DB credentials
-        $filesToBackup = ['schema.json', 'dashboard.json', 'calendar.json', 'board.json', 'security.json', 'workflows.json', 'files.json', 'views.json', 'automations.json', 'menu.json', 'settings.json', 'anonymization.json', 'rag.json'];
+        $filesToBackup = ['security.json'];
         foreach ($filesToBackup as $f) {
             if (file_exists($configDir . $f)) {
                 $zip->addFile($configDir . $f, $f);
+            }
+        }
+        // Keys migrated to the spw_config store are exported from the DB (with the
+        // legacy-file fallback built into config_get). Keep in sync with the store.
+        require_once __DIR__ . '/../config_store.php';
+        $dbBackedExport = [
+            'anonymization', 'print', 'user_records', 'board', 'calendar', 'dashboard',
+            'views', 'automations', 'workflows', 'files', 'settings', 'rag',
+            'schema', 'menu',
+        ];
+        foreach ($dbBackedExport as $dbKey) {
+            $cfg = config_get($dbKey);
+            if (is_array($cfg)) {
+                $zip->addFromString(
+                    $dbKey . '.json',
+                    (string) json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+                );
             }
         }
         $zip->close();
@@ -65,7 +82,13 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
     $zip = new ZipArchive();
     if ($zip->open($_FILES['backup_file']['tmp_name']) === true) {
         $extractPath = __DIR__ . '/../../config/';
-        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files', 'views', 'automations', 'menu', 'settings', 'anonymization', 'rag'];
+        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files', 'views', 'automations', 'menu', 'settings', 'anonymization', 'rag', 'print', 'user_records'];
+        // Keys stored in spw_config — imported via config_save, not extracted to disk.
+        $dbBackedImport = [
+            'anonymization', 'print', 'user_records', 'board', 'calendar', 'dashboard',
+            'views', 'automations', 'workflows', 'files', 'settings', 'rag',
+            'schema', 'menu',
+        ];
         $validFiles = [];
 
         // Validate each file inside the archive
@@ -122,6 +145,16 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
                 header('Content-Type: application/json');
                 echo json_encode(['error' => 'Invalid JSON content in archive: ' . $file]);
                 exit;
+            }
+            $importKey = substr($file, 0, -5);
+            if (in_array($importKey, $dbBackedImport, true)) {
+                require_once __DIR__ . '/../config_store.php';
+                $decoded = json_decode($jsonContent, true);
+                $userId  = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+                if (is_array($decoded)) {
+                    config_save($importKey, $decoded, null, $userId);
+                }
+                continue;
             }
             $zip->extractTo($extractPath, $file);
         }

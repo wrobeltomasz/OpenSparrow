@@ -233,17 +233,10 @@ if ($action === 'rag_settings_save') {
             }
         }
 
-        $configDir  = __DIR__ . '/../../config';
-        $configPath = $configDir . '/rag.json';
+        require_once __DIR__ . '/../config_store.php';
 
         // Preserve keys not exposed in the UI (chunk_size, chunk_overlap, etc.)
-        $existingCfg = [];
-        if (is_file($configPath)) {
-            $raw = @json_decode((string) @file_get_contents($configPath), true);
-            if (is_array($raw)) {
-                $existingCfg = $raw;
-            }
-        }
+        $existingCfg = config_get('rag') ?? [];
 
         $cfg = array_merge($existingCfg, [
             'ollama_url'         => $ollamaUrl,
@@ -256,12 +249,10 @@ if ($action === 'rag_settings_save') {
             'conversation_turns' => $convTurns,
             'chat_enabled'       => $chatEnabled,
         ]);
-        if (!is_dir($configDir)) {
-            throw new AdminApiMessage('Config directory not found.');
-        }
-        $written = file_put_contents($configPath, json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
-        if ($written === false) {
-            throw new AdminApiMessage('Could not write config/rag.json.');
+        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $result = config_save('rag', $cfg, null, $userId);
+        if ($result['status'] !== 'ok') {
+            throw new AdminApiMessage($result['error'] ?? 'Could not save RAG configuration.');
         }
         echo json_encode(['status' => 'success']);
     } catch (Throwable $e) {

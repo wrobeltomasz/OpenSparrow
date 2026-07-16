@@ -1,7 +1,8 @@
 <?php
 
 // cron/cron_anonymization.php — Data anonymization worker
-// CLI-only. Reads config/anonymization.json and runs UPDATE statements for each rule.
+// CLI-only. Reads the "anonymization" config (spw_config store, legacy
+// config/anonymization.json fallback) and runs UPDATE statements for each rule.
 // Logs each execution to spw_anonymization_log.
 // Usage: php cron_anonymization.php [admin]
 
@@ -62,21 +63,10 @@ if ($dryRun) {
 }
 anon_log('[anonymization] Starting (' . $triggeredBy . ')...');
 
-$configPath = __DIR__ . '/../config/anonymization.json';
-if (!is_file($configPath)) {
-    anon_log('[anonymization] Config file not found. Create it via Admin > Anonymization.');
-    exit(1);
-}
-
-$raw = @file_get_contents($configPath);
-if ($raw === false) {
-    anon_log('[anonymization] Cannot read config file.');
-    exit(1);
-}
-
-$config = @json_decode($raw, true);
+require_once __DIR__ . '/../includes/config_store.php';
+$config = config_get('anonymization');
 if (!is_array($config)) {
-    anon_log('[anonymization] Invalid JSON in anonymization.json.');
+    anon_log('[anonymization] Config not found. Create it via Admin > Anonymization.');
     exit(1);
 }
 
@@ -142,16 +132,12 @@ $rowsAnonymized = 0;
 $errorMessage   = null;
 $reportDetails  = []; // per-rule entries for the structured JSON report
 
-// Load schema.json once for per-table schema lookup.
-$schemaPath = __DIR__ . '/../config/schema.json';
-$schemaCfg  = [];
-if (is_file($schemaPath)) {
-    $schemaRaw = @file_get_contents($schemaPath);
-    if ($schemaRaw !== false) {
-        $decoded = @json_decode($schemaRaw, true);
-        if (is_array($decoded) && isset($decoded['tables'])) {
-            $schemaCfg = $decoded['tables'];
-        }
+// Load the schema config once for per-table schema lookup.
+$schemaCfg = [];
+{
+    $decoded = config_get('schema');
+    if (is_array($decoded) && isset($decoded['tables'])) {
+        $schemaCfg = $decoded['tables'];
     }
 }
 

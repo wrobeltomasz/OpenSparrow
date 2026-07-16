@@ -69,9 +69,9 @@ try {
 
     // ── Clean up cypress-created application records ──────────────────────────
     if ($action === 'seed' || $action === 'cleanup') {
-        $schemaPath = __DIR__ . '/../config/schema.json';
-        if (file_exists($schemaPath)) {
-            $schema = json_decode(file_get_contents($schemaPath), true) ?? [];
+        require_once __DIR__ . '/../includes/config_store.php';
+        $schema = config_get('schema');
+        if (is_array($schema)) {
             $appSchema = pg_ident(sys_schema());
             $cleaned = [];
 

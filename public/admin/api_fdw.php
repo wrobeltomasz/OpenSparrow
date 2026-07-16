@@ -319,9 +319,8 @@ if ($action === 'mysql_tables_save') {
         fdw_fail('Could not write config/mysql_gateway.json.', 500);
     }
 
-    $schemaPath = __DIR__ . '/../../config/schema.json';
-    $schemaRaw  = is_file($schemaPath) ? @file_get_contents($schemaPath) : false;
-    $schema     = ($schemaRaw !== false) ? json_decode($schemaRaw, true) : null;
+    require_once __DIR__ . '/../../includes/config_store.php';
+    $schema = config_get('schema');
 
     if (is_array($schema)) {
         foreach ($removed as $rt) {
@@ -345,10 +344,7 @@ if ($action === 'mysql_tables_save') {
                 $schema['tables'][$at] = $entry;
             }
         }
-        @file_put_contents(
-            $schemaPath,
-            json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-        );
+        config_save('schema', $schema, null, (int) ($_SESSION['user_id'] ?? 0) ?: null);
     }
 
     $conn   = db_connect();
@@ -420,12 +416,11 @@ if ($action === 'mysql_meta_save') {
         fdw_fail('Could not write config/mysql_gateway.json.', 500);
     }
 
-    // Propagate to schema.json so the frontend picks it up immediately
-    $schemaPath = __DIR__ . '/../../config/schema.json';
-    $schemaRaw  = is_file($schemaPath) ? @file_get_contents($schemaPath) : false;
-    $schema     = ($schemaRaw !== false) ? json_decode($schemaRaw, true) : null;
+    // Propagate to the schema config so the frontend picks it up immediately
+    require_once __DIR__ . '/../../includes/config_store.php';
+    $schema = config_get('schema');
     if (!is_array($schema)) {
-        fdw_fail('Cannot read config/schema.json.', 500);
+        fdw_fail('Cannot read schema configuration.', 500);
     }
     if (!isset($schema['tables'][$table])) {
         $schema['tables'][$table] = ['schema' => 'public', 'columns' => (object) []];
@@ -444,9 +439,8 @@ if ($action === 'mysql_meta_save') {
         unset($schema['tables'][$table]['hidden']);
     }
 
-    $newJson = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    if (@file_put_contents($schemaPath, $newJson) === false) {
-        fdw_fail('Could not write config/schema.json.', 500);
+    if (config_save('schema', $schema, null, (int) ($_SESSION['user_id'] ?? 0) ?: null)['status'] !== 'ok') {
+        fdw_fail('Could not save schema configuration.', 500);
     }
 
     $conn   = db_connect();
@@ -481,12 +475,11 @@ if ($action === 'mysql_columns_sync') {
 
     $disc = fdw_discover_columns($pdo, MYSQL_DB, $table);
 
-    $schemaPath = __DIR__ . '/../../config/schema.json';
-    $schemaRaw  = is_file($schemaPath) ? @file_get_contents($schemaPath) : false;
-    $schema     = ($schemaRaw !== false) ? json_decode($schemaRaw, true) : null;
+    require_once __DIR__ . '/../../includes/config_store.php';
+    $schema = config_get('schema');
 
     if (!is_array($schema)) {
-        fdw_fail('Cannot read config/schema.json.', 500);
+        fdw_fail('Cannot read schema configuration.', 500);
     }
 
     if (!isset($schema['tables'][$table])) {
@@ -504,9 +497,8 @@ if ($action === 'mysql_columns_sync') {
         unset($schema['tables'][$table]['mysql_pk']);
     }
 
-    $newJson = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    if (@file_put_contents($schemaPath, $newJson) === false) {
-        fdw_fail('Could not write config/schema.json.', 500);
+    if (config_save('schema', $schema, null, (int) ($_SESSION['user_id'] ?? 0) ?: null)['status'] !== 'ok') {
+        fdw_fail('Could not save schema configuration.', 500);
     }
 
     $conn   = db_connect();

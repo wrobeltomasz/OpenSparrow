@@ -45,7 +45,7 @@ if ($action === 'get_snapshot_setting') {
     if ($lockedByEnv) {
         $enabled = ($envVal === 'true');
     } else {
-        $s = admin_read_settings(__DIR__ . '/../../config/settings.json');
+        $s = admin_read_settings();
         $enabled = (bool) ($s['record_snapshots_enabled'] ?? false);
     }
 
@@ -81,12 +81,10 @@ if ($action === 'set_snapshot_setting') {
     }
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $enabled = (bool) ($body['enabled'] ?? false);
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings = admin_read_settings($settingsFile);
+    $settings = admin_read_settings();
     $settings['record_snapshots_enabled'] = $enabled;
-    $written = @file_put_contents($settingsFile, json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-    if ($written === false) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json. Check directory permissions.']);
+    if (!admin_write_settings($settings)) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
         exit;
     }
     echo json_encode(['status' => 'success', 'enabled' => $enabled]);
@@ -96,8 +94,7 @@ if ($action === 'set_snapshot_setting') {
 // GET: return language settings and all available locales from languages/*.json
 if ($action === 'get_language_setting') {
     header('Content-Type: application/json');
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings = admin_read_settings($settingsFile);
+    $settings = admin_read_settings();
 
     $defaultLanguage = is_string($settings['default_language'] ?? null) ? $settings['default_language'] : 'en';
 
@@ -140,8 +137,7 @@ if ($action === 'set_language_setting') {
         exit;
     }
 
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings = admin_read_settings($settingsFile);
+    $settings = admin_read_settings();
     if (($settings['default_language'] ?? null) !== $defaultLang) {
         $settings['locale_version'] = bin2hex(random_bytes(8));
     }
@@ -151,12 +147,8 @@ if ($action === 'set_language_setting') {
     $settings['default_language'] = $defaultLang;
     unset($settings['available_languages']);
 
-    $written = @file_put_contents(
-        $settingsFile,
-        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-    );
-    if ($written === false) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json. Check directory permissions.']);
+    if (!admin_write_settings($settings)) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
         exit;
     }
 
@@ -170,8 +162,7 @@ if ($action === 'set_language_setting') {
 // GET: return AI chat bubble setting
 if ($action === 'get_chat_bubble_setting') {
     header('Content-Type: application/json');
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings = admin_read_settings($settingsFile);
+    $settings = admin_read_settings();
     echo json_encode(['chat_bubble_enabled' => (bool) ($settings['chat_bubble_enabled'] ?? false)]);
     exit;
 }
@@ -183,16 +174,11 @@ if ($action === 'set_chat_bubble_setting') {
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $enabled = !empty($body['chat_bubble_enabled']);
 
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings = admin_read_settings($settingsFile);
+    $settings = admin_read_settings();
     $settings['chat_bubble_enabled'] = $enabled;
 
-    $written = @file_put_contents(
-        $settingsFile,
-        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-    );
-    if ($written === false) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+    if (!admin_write_settings($settings)) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
         exit;
     }
     echo json_encode(['status' => 'success', 'chat_bubble_enabled' => $enabled]);
@@ -204,7 +190,7 @@ if ($action === 'set_chat_bubble_setting') {
 // the layout before this feature existed.
 if ($action === 'get_logo_setting') {
     header('Content-Type: application/json');
-    $settings = admin_read_settings(__DIR__ . '/../../config/settings.json');
+    $settings = admin_read_settings();
     $logoPath = $settings['custom_logo_path'] ?? null;
     $appName  = $settings['app_name'] ?? null;
     echo json_encode([
@@ -227,16 +213,11 @@ if ($action === 'set_app_name') {
         exit;
     }
 
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings = admin_read_settings($settingsFile);
+    $settings = admin_read_settings();
     $settings['app_name'] = $appName;
 
-    $written = @file_put_contents(
-        $settingsFile,
-        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-    );
-    if ($written === false) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+    if (!admin_write_settings($settings)) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
         exit;
     }
     echo json_encode(['status' => 'success', 'app_name' => $appName]);
@@ -250,16 +231,11 @@ if ($action === 'set_logo_enabled') {
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $enabled = !empty($body['logo_enabled']);
 
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings = admin_read_settings($settingsFile);
+    $settings = admin_read_settings();
     $settings['logo_enabled'] = $enabled;
 
-    $written = @file_put_contents(
-        $settingsFile,
-        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-    );
-    if ($written === false) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+    if (!admin_write_settings($settings)) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
         exit;
     }
     echo json_encode(['status' => 'success', 'logo_enabled' => $enabled]);
@@ -318,8 +294,7 @@ if ($action === 'upload_logo') {
         exit;
     }
 
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings     = admin_read_settings($settingsFile);
+    $settings     = admin_read_settings();
 
     // Remove the previous custom logo file so uploads don't accumulate on disk.
     $oldPath   = $settings['custom_logo_path'] ?? null;
@@ -334,12 +309,8 @@ if ($action === 'upload_logo') {
     $settings['custom_logo_path'] = '/assets/img/uploads/' . $filename;
     // Uploading a logo implies wanting it shown; the enable toggle can still turn it off later.
     $settings['logo_enabled'] = true;
-    $written = @file_put_contents(
-        $settingsFile,
-        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-    );
-    if ($written === false) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+    if (!admin_write_settings($settings)) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
         exit;
     }
 
@@ -352,8 +323,7 @@ if ($action === 'remove_logo') {
     header('Content-Type: application/json');
     require_not_demo();
 
-    $settingsFile = __DIR__ . '/../../config/settings.json';
-    $settings     = admin_read_settings($settingsFile);
+    $settings     = admin_read_settings();
     $oldPath      = $settings['custom_logo_path'] ?? null;
 
     if (is_string($oldPath) && $oldPath !== '') {
@@ -369,12 +339,8 @@ if ($action === 'remove_logo') {
     // to the default OpenSparrow logo.
     $settings['logo_enabled'] = false;
 
-    $written = @file_put_contents(
-        $settingsFile,
-        json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-    );
-    if ($written === false) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not write config/settings.json.']);
+    if (!admin_write_settings($settings)) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
         exit;
     }
 

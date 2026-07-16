@@ -69,17 +69,21 @@ function require_not_demo(string $message = 'Action disabled in Demo Mode.', int
     exit;
 }
 
-// Read config/settings.json into an array, returning [] when missing or unreadable.
-function admin_read_settings(string $path): array
+// Settings config helpers (spw_config key "settings", legacy-file fallback via
+// the config store). The unused $path parameter is kept for call-site
+// compatibility within the settings module.
+function admin_read_settings(string $path = ''): array
 {
-    if (is_file($path)) {
-        $raw = @file_get_contents($path);
-        if ($raw !== false) {
-            $decoded = @json_decode($raw, true);
-            return is_array($decoded) ? $decoded : [];
-        }
-    }
-    return [];
+    require_once __DIR__ . '/../../includes/config_store.php';
+    return config_get('settings') ?? [];
+}
+
+function admin_write_settings(array $settings): bool
+{
+    require_once __DIR__ . '/../../includes/config_store.php';
+    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $result = config_save('settings', $settings, null, $userId);
+    return $result['status'] === 'ok';
 }
 
 // MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
@@ -104,30 +108,21 @@ if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POS
     exit;
 }
 
-// Automations config helpers (config/automations.json) — shared by the
-// automations and overview modules, so they live in the front controller.
-function auto_cfg_path(): string
-{
-    return __DIR__ . '/../../config/automations.json';
-}
+// Automations config helpers (spw_config key "automations", legacy-file fallback
+// via the config store) — shared by the automations and overview modules, so
+// they live in the front controller.
+require_once __DIR__ . '/../../includes/config_store.php';
 
 function auto_cfg_read(): array
 {
-    $path = auto_cfg_path();
-    if (!file_exists($path)) {
-        return [];
-    }
-    $data = json_decode(file_get_contents($path), true);
-    return $data['automations'] ?? [];
+    $data = config_get('automations');
+    return is_array($data) ? ($data['automations'] ?? []) : [];
 }
 
 function auto_cfg_write(array $automations): void
 {
-    $path    = auto_cfg_path();
-    $json    = json_encode(['automations' => array_values($automations)], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    $tmpPath = $path . '.tmp.' . bin2hex(random_bytes(4));
-    file_put_contents($tmpPath, $json, LOCK_EX);
-    rename($tmpPath, $path);
+    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    config_save('automations', ['automations' => array_values($automations)], null, $userId);
 }
 
 // ── Action → module dispatch ─────────────────────────────────────────────────

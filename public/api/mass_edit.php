@@ -15,8 +15,8 @@ $conn = os_api_bootstrap(['role' => 'editor']);
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
-$schemaJson = file_get_contents(__DIR__ . '/../../config/schema.json');
-$schema     = json_decode($schemaJson, true, 512, JSON_THROW_ON_ERROR);
+require_once __DIR__ . '/../../includes/config_store.php';
+$schema = config_get('schema') ?? ['tables' => []];
 
 $mysqlGatewayPath   = __DIR__ . '/../../config/mysql_gateway.json';
 $mysqlGatewayTables = [];

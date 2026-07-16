@@ -172,8 +172,8 @@ function actionMine($conn): void
         jsonError('Database error.', 500);
     }
 
-    $userRecordsPath = __DIR__ . '/../../config/user_records.json';
-    $userRecordsCfg  = json_decode((string)file_get_contents($userRecordsPath), true) ?: [];
+    require_once __DIR__ . '/../../includes/config_store.php';
+    $userRecordsCfg  = config_get('user_records') ?? [];
     $configuredCols  = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
     $limit           = (int)($userRecordsCfg['limit'] ?? 20);
 
@@ -186,8 +186,7 @@ function actionMine($conn): void
         $byTable[$tableName][] = (int)$row['record_id'];
     }
 
-    $schemaPath = __DIR__ . '/../../config/schema.json';
-    $schema     = json_decode((string)file_get_contents($schemaPath), true) ?: [];
+    $schema = config_get('schema') ?? [];
 
     $tables = [];
     foreach ($byTable as $tableName => $ids) {

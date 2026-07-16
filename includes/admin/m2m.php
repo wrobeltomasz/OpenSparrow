@@ -9,14 +9,11 @@ declare(strict_types=1);
 // / admin_db_fail() / require_not_demo() helpers defined by the front controller.
 // Every action block emits its own JSON response and exits.
 
+require_once __DIR__ . '/../config_store.php';
+
 if ($action === 'list_m2m') {
     header('Content-Type: application/json');
-    $schemaPath = realpath(__DIR__ . '/../../config/schema.json');
-    if (!$schemaPath) {
-        echo json_encode(['tables' => [], 'relationships' => []]);
-        exit;
-    }
-    $schema = json_decode(file_get_contents($schemaPath), true);
+    $schema = config_get('schema');
     if (!is_array($schema['tables'] ?? null)) {
         echo json_encode(['tables' => [], 'relationships' => []]);
         exit;
@@ -77,8 +74,7 @@ if ($action === 'create_m2m') {
         exit;
     }
 
-    $schemaPath = realpath(__DIR__ . '/../../config/schema.json');
-    $schema     = json_decode(file_get_contents($schemaPath), true);
+    $schema = config_get('schema') ?? [];
     if (!isset($schema['tables'][$tableA]) || !isset($schema['tables'][$tableB])) {
         echo json_encode(['status' => 'error', 'error' => 'One or both tables not found in schema.']);
         exit;
@@ -155,10 +151,10 @@ if ($action === 'create_m2m') {
             'display_column' => $displayCol,
         ];
 
-        // Save schema.json
-        $encoded = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if (file_put_contents($schemaPath, $encoded) === false) {
-            echo json_encode(['status' => 'error', 'error' => 'Failed to write schema.json.']);
+        $m2mUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $m2mResult = config_save('schema', $schema, null, $m2mUserId);
+        if ($m2mResult['status'] !== 'ok') {
+            echo json_encode(['status' => 'error', 'error' => $m2mResult['error'] ?? 'Failed to save schema.']);
             exit;
         }
 
@@ -184,8 +180,7 @@ if ($action === 'delete_m2m') {
         exit;
     }
 
-    $schemaPath = realpath(__DIR__ . '/../../config/schema.json');
-    $schema     = json_decode(file_get_contents($schemaPath), true);
+    $schema = config_get('schema') ?? [];
 
     if (!isset($schema['tables'][$tableA]['many_to_many'][$m2mIndex])) {
         echo json_encode(['status' => 'error', 'error' => 'M2M entry not found.']);
@@ -223,9 +218,10 @@ if ($action === 'delete_m2m') {
             }
         }
 
-        $encoded = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        if (file_put_contents($schemaPath, $encoded) === false) {
-            echo json_encode(['status' => 'error', 'error' => 'Failed to write schema.json.']);
+        $m2mUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $m2mResult = config_save('schema', $schema, null, $m2mUserId);
+        if ($m2mResult['status'] !== 'ok') {
+            echo json_encode(['status' => 'error', 'error' => $m2mResult['error'] ?? 'Failed to save schema.']);
             exit;
         }
 

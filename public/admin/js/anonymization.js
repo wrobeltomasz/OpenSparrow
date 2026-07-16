@@ -6,6 +6,7 @@ import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs } from './ui.js';
 
 let anonConfig  = null;
+let anonVersion = 0;   // optimistic-lock version echoed back on save
 let schemaCache = null;
 
 import { escHtml as anonEsc } from '../../assets/js/util/esc.js';
@@ -54,10 +55,11 @@ async function saveConfig(partial, statusEl) {
     try {
         const res  = await apiFetch('api.php?action=anonymization_save', {
             method:  'POST',
-            body:    JSON.stringify(anonConfig),
+            body:    JSON.stringify({ ...anonConfig, version: anonVersion }),
         });
         const data = await res.json();
         if (data.status === 'success') {
+            anonVersion = data.version ?? anonVersion + 1;
             if (statusEl) showStatus(statusEl, 'Saved.', true);
         } else {
             if (statusEl) showStatus(statusEl, 'Error: ' + (data.error || 'unknown'), false);
@@ -1048,7 +1050,8 @@ export async function renderAnonymizationPage(ctx) {
             workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Failed to load config: ' + anonEsc(data.error || 'unknown') + '</p>';
             return;
         }
-        anonConfig = data.config;
+        anonConfig  = data.config;
+        anonVersion = data.version ?? 0;
     } catch (e) {
         workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Request failed: ' + anonEsc(e.message) + '</p>';
         return;

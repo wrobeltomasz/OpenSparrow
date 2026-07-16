@@ -16,10 +16,8 @@ $userCaps = $page['caps'];
 
 // Expose configured calendar sources (table + color) so the client can build
 // the filter bar for all sources, not only those with events in the visible month.
-$calConfigPath   = __DIR__ . '/../config/calendar.json';
-$calConfig       = file_exists($calConfigPath)
-    ? json_decode((string)file_get_contents($calConfigPath), true)
-    : [];
+require_once __DIR__ . '/../includes/config_store.php';
+$calConfig = config_get('calendar') ?? [];
 $calendarSources = [];
 foreach (($calConfig['sources'] ?? []) as $src) {
     if (!empty($src['table']) && !empty($src['date_column'])) {

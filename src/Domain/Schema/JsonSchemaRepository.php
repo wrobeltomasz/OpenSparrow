@@ -12,18 +12,28 @@ final class JsonSchemaRepository
     /** @var list<string> Tables routed to the external MySQL gateway. */
     private array $mysqlTables;
 
-    public function __construct(string $path, ?string $gatewayPath = null)
+    /**
+     * @param string|array $source Path to a schema JSON file, or the already
+     *                             decoded schema config (e.g. from the spw_config store).
+     */
+    public function __construct(string|array $source, ?string $gatewayPath = null)
     {
-        $json = file_get_contents($path);
-        if ($json === false) {
-            throw new \RuntimeException("Cannot read schema file: {$path}");
-        }
-        $data = json_decode($json, true);
-        if (!is_array($data)) {
-            throw new \RuntimeException("Invalid schema JSON in: {$path}");
+        if (is_array($source)) {
+            $data = $source;
+            $gatewayPath ??= __DIR__ . '/../../../config/mysql_gateway.json';
+        } else {
+            $json = file_get_contents($source);
+            if ($json === false) {
+                throw new \RuntimeException("Cannot read schema file: {$source}");
+            }
+            $data = json_decode($json, true);
+            if (!is_array($data)) {
+                throw new \RuntimeException("Invalid schema JSON in: {$source}");
+            }
+            $gatewayPath ??= dirname($source) . '/mysql_gateway.json';
         }
         $this->rawData     = $data;
-        $this->mysqlTables = $this->loadMysqlTables($gatewayPath ?? dirname($path) . '/mysql_gateway.json');
+        $this->mysqlTables = $this->loadMysqlTables($gatewayPath);
     }
 
     public function table(string $name): TableConfig

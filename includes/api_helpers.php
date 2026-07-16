@@ -317,7 +317,8 @@ function validatedTable(string $table, string $field = 'table'): string
     if ($table === '') {
         jsonError($field . ' is required.', 400);
     }
-    $schema = json_decode((string)file_get_contents(__DIR__ . '/../config/schema.json'), true);
+    require_once __DIR__ . '/config_store.php';
+    $schema = config_get('schema');
     if (!isset($schema['tables'][$table])) {
         jsonError('Unknown table.', 400);
     }

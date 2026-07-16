@@ -29,12 +29,8 @@ function rag_config(): array
         'conversation_turns' => 0,
         'chat_enabled'       => true,
     ];
-    $path = __DIR__ . '/../config/rag.json';
-    if (!is_file($path)) {
-        $cfg = $defaults;
-        return $cfg;
-    }
-    $raw = @json_decode((string) file_get_contents($path), true);
+    require_once __DIR__ . '/config_store.php';
+    $raw = config_get('rag');
     $cfg = is_array($raw) ? array_merge($defaults, $raw) : $defaults;
     return $cfg;
 }
