@@ -84,7 +84,6 @@ ${_ul([
     `<strong>${s.s0b_data_label}:</strong> ${s.s0b_data}`,
     `<strong>${s.s0b_workflows_label}:</strong> ${s.s0b_workflows}`,
     `<strong>${s.s0b_system_label}:</strong> ${s.s0b_system}`,
-    `<strong>${s.s0b_config_label}:</strong> ${s.s0b_config}`,
     `<strong>${s.s0b_save_label}:</strong> ${s.s0b_save}`,
     `<strong>${s.s0b_guard_label}:</strong> ${s.s0b_guard}`,
     `<strong>${s.s0b_debug_label}:</strong> ${s.s0b_debug}`,
@@ -238,8 +237,7 @@ ${_h3('doc-9', s.s9_head)}
 ${_ul([
     `<strong>${s.s9_migrations_label}:</strong> ${s.s9_migrations}`,
     `<strong>${s.s9_diagnostics_label}:</strong> ${s.s9_diagnostics}`,
-    `<strong>${s.s9_cron_label}:</strong> ${s.s9_cron}`,
-    `<strong>${s.s9_exportimport_label}:</strong> ${s.s9_exportimport}`
+    `<strong>${s.s9_cron_label}:</strong> ${s.s9_cron}`
 ])}
 
 ${_h3('doc-9b', s.s9b_head)}

@@ -939,7 +939,9 @@ Prefiks to bieżąca data i godzina w formacie `RRRRMMDDGGMM`, np. `202604211709
 
 **Wynik** — lista pozycja po pozycji: `✓ tabela → nazwa_kopii (N wierszy)` przy sukcesie albo `✗ tabela: komunikat` przy błędzie. Każda tabela jest raportowana osobno, więc błąd jednej nie przerywa pozostałych.
 
-> Eksport i import konfiguracji (ZIP) to osobny mechanizm — przyciski **Export Config** / **Import Config** w nagłówku panelu admina, nie ta sekcja.
+W trybie demo akcja jest zablokowana (403).
+
+> Panel nie ma funkcji backupu konfiguracji — konfiguracja żyje w bazie (`spw_config`), więc obejmuje ją zwykły `pg_dump`.
 
 ### 17.17 Ustawienia globalne
 

@@ -103,33 +103,11 @@ describe('OpenSparrow – Admin Panel', () => {
 
   // ── Config Buttons ─────────────────────────────────────────────────────────
 
-  it('Export Config button is visible', () => {
-    cy.get('#btnExport').scrollIntoView().should('be.visible');
-  });
-
-  it('clicking Export Config does not crash the panel', () => {
-    cy.get('#btnExport').scrollIntoView().should('be.visible').click();
-    cy.get('#workspace').should('exist');
-  });
-
-  it('Import Config button is visible', () => {
-    cy.get('#btnImport').scrollIntoView().should('be.visible');
-  });
-
-  it('clicking Import Config reveals file input', () => {
-    cy.get('#btnImport').scrollIntoView().should('be.visible').click();
-    cy.get('#importFileInput').should('exist');
-  });
-
   it('Save Config button is clickable and panel survives', () => {
     cy.get('button.admin-tab[data-file="schema"]').click();
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     cy.get('#btnSave').should('be.visible').click();
     cy.get('#workspace').should('exist');
-  });
-
-  it('Run Notifications Cron button exists', () => {
-    cy.get('#btnRunCron').should('exist');
   });
 
   // ── Users Tab: add / list ──────────────────────────────────────────────────

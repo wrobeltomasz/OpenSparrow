@@ -296,29 +296,6 @@ if (empty($_SESSION['csrf_token'])) {
                 </div>
             </div>
 
-            <!-- CONFIGURATION -->
-            <div class="nav-section open">
-                <div class="nav-section-header">
-                    <img class="nav-section-icon" src="../assets/icons/table_edit.png" alt="">
-                    <span class="nav-section-label">Configuration</span>
-                    <span class="nav-chevron">▼</span>
-                </div>
-                <div class="nav-section-items">
-                    <button id="btnExport" type="button" class="nav-action-btn">
-                        <img class="nav-item-icon" src="../assets/icons/download.png" alt="">
-                        Export Config
-                    </button>
-                    <button id="btnImport" type="button" class="nav-action-btn">
-                        <img class="nav-item-icon" src="../assets/icons/upload.png" alt="">
-                        Import Config
-                    </button>
-                    <button id="btnRunCron" type="button" class="nav-action-btn">
-                        <img class="nav-item-icon" src="../assets/icons/manage_history.png" alt="">
-                        Run Notifications Cron
-                    </button>
-                </div>
-            </div>
-
         </div><!-- /nav-sections -->
     </nav><!-- /admin-nav -->
 
@@ -348,9 +325,6 @@ if (empty($_SESSION['csrf_token'])) {
     </div><!-- /admin-main -->
 
 </div><!-- /admin-layout -->
-
-<!-- Hidden file input for import (must remain in DOM) -->
-<input type="file" id="importFileInput" accept=".zip" style="display: none;">
 
 <script type="module" src="js/app.js?v=<?php echo @filemtime('js/app.js'); ?>"></script>
 <script>

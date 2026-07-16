@@ -261,8 +261,7 @@ body {
 }
 
 /* Nav item — admin-tab inside sidebar */
-.admin-nav .admin-tab,
-.admin-nav .nav-action-btn {
+.admin-nav .admin-tab {
     display: flex;
     align-items: center;
     gap: 9px;
@@ -280,8 +279,7 @@ body {
     white-space: nowrap;
 }
 
-.admin-nav .admin-tab:hover,
-.admin-nav .nav-action-btn:hover {
+.admin-nav .admin-tab:hover {
     background: var(--accent-light);
     color: var(--accent);
 }
@@ -303,8 +301,7 @@ body {
 }
 
 .admin-nav .admin-tab.active .nav-item-icon,
-.admin-nav .admin-tab:hover .nav-item-icon,
-.admin-nav .nav-action-btn:hover .nav-item-icon {
+.admin-nav .admin-tab:hover .nav-item-icon {
     opacity: 0.75;
 }
 

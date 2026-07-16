@@ -60,7 +60,7 @@ export function renderSchemaGlobalSettings(config, ctx) {
 
     const note = document.createElement('p');
     note.style.cssText = 'font-size:12px; color:var(--muted); margin-top:12px;';
-    note.textContent = 'Stored in the schema configuration as "default_page_size". Included in config export/import.';
+    note.textContent = 'Stored in the schema configuration as "default_page_size".';
     card.appendChild(note);
 
     workspaceEl.appendChild(card);

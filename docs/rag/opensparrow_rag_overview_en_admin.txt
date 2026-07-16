@@ -180,8 +180,6 @@ Users:
 
 CONFIGURATION
 -------------
-Export Config — download the whole application configuration as a single export.
-Import Config — upload a previously exported configuration.
 Run Notifications Cron — trigger the notification worker manually.
 
 
