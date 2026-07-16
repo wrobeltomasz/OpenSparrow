@@ -1,5 +1,5 @@
 /* admin/js/print_editor.js — Printouts module admin editor (renderPrintEditor):
-   edits config/print.json print templates via api/print.php (config / columns / save).
+   edits the "print" config templates via api/print.php (config / columns / save).
    Each template is bound to a PostgreSQL view from the Views module; the available
    variables (columns) are fetched live from the database so the user never types them. */
 
@@ -13,7 +13,7 @@ export function renderPrintEditor(ctx) {
     /* ---------- state ---------- */
     let prints      = {};     // "prints" object from the config store (working copy)
     let cfgVersion  = 0;      // optimistic-lock version echoed back on save
-    let dbViews     = [];     // selectable PostgreSQL view names (from config/views.json)
+    let dbViews     = [];     // selectable PostgreSQL view names (from the "views" config)
     let viewColumns = {};     // view -> [{name, data_type}] (lazy, from action=columns)
 
     /* ---------- root layout ---------- */

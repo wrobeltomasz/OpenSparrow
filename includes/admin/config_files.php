@@ -136,7 +136,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-// POST: save menu structure (order + nesting) to config/menu.json
+// POST: save menu structure (order + nesting) to the "menu" config
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
 

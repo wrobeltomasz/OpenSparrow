@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 // config_store.php — DB-backed configuration store (spw_config / spw_config_log)
+// spw_config is the sole source of truth: 3.0 is the first shipped version, so no instance
+// ever had file-based config to fall back to. config/database.json (and security.json) stay
+// files because they are read before a database connection exists.
 // config_get($key) returns the decoded config value; config_get_row($key) also returns
-// the optimistic-lock version. Reads fall back to config/{$key}.json while an instance
-// has not migrated that key into the database yet (dual-read, no dual-write).
+// the optimistic-lock version.
 // config_save() is transactional: SELECT ... FOR UPDATE, version check, UPDATE/INSERT,
 // audit row in spw_config_log. Caches per request (static) and in APCu when available.
 
@@ -43,8 +45,8 @@ function config_valid_key(string $key): bool
 }
 
 /**
- * Per-request + APCu cache access. $row is ['value' => array, 'version' => ?int,
- * 'source' => 'db'|'file'] or null (negative caching is request-scoped only).
+ * Per-request + APCu cache access. $row is ['value' => array, 'version' => int]
+ * or null (negative caching is request-scoped only — a key can appear at any time).
  */
 function config_cache(string $key, ?array $row = null, bool $write = false): ?array
 {
@@ -52,10 +54,8 @@ function config_cache(string $key, ?array $row = null, bool $write = false): ?ar
     $apcuKey = 'spw_cfg:' . sys_schema() . ':' . $key;
     if ($write) {
         $cache[$key] = $row;
-        // Only DB-sourced rows go into APCu: a cached file-fallback row (version 0)
-        // would outlive the one-time import into spw_config and make every save
-        // fail the optimistic-lock check until the TTL expired.
-        if ($row === null || $row['source'] !== 'db') {
+        // A missing key must not be cached across requests — it only means "not saved yet".
+        if ($row === null) {
             if (function_exists('apcu_delete')) {
                 apcu_delete($apcuKey);
             }
@@ -78,9 +78,8 @@ function config_cache(string $key, ?array $row = null, bool $write = false): ?ar
 }
 
 /**
- * Full row lookup: DB first, then config/{$key}.json fallback (pre-migration
- * instances). Returns ['value' => array, 'version' => ?int, 'source' => 'db'|'file']
- * or null when the key exists nowhere. Version is null for file-sourced rows.
+ * Full row lookup. Returns ['value' => array, 'version' => int] or null when the
+ * key has no row yet (callers treat that as "not configured" and use their defaults).
  */
 function config_get_row(string $key): ?array
 {
@@ -106,21 +105,10 @@ function config_get_row(string $key): ?array
             if ($dbRow !== false && $dbRow !== null) {
                 $decoded = json_decode((string) $dbRow['value'], true);
                 if (is_array($decoded)) {
-                    $row = ['value' => $decoded, 'version' => (int) $dbRow['version'], 'source' => 'db'];
+                    $row = ['value' => $decoded, 'version' => (int) $dbRow['version']];
                     return config_cache($key, $row, true);
                 }
             }
-        }
-        // Query failure (e.g. table not created yet) falls through to the file.
-    }
-
-    // File fallback — same read pattern the modules used before the config store.
-    $path = __DIR__ . '/../config/' . $key . '.json';
-    if (file_exists($path)) {
-        $decoded = json_decode((string) @file_get_contents($path), true);
-        if (is_array($decoded)) {
-            $row = ['value' => $decoded, 'version' => null, 'source' => 'file'];
-            return config_cache($key, $row, true);
         }
     }
     return null;
@@ -226,7 +214,7 @@ function config_save(string $key, array $data, ?int $expectedVersion = null, ?in
         return ['status' => 'error', 'error' => 'Database error'];
     }
 
-    config_cache($key, ['value' => $data, 'version' => $newVersion, 'source' => 'db'], true);
+    config_cache($key, ['value' => $data, 'version' => $newVersion], true);
     return ['status' => 'ok', 'version' => $newVersion];
 }
 

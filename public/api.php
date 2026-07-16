@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // api.php — Main CRUD/data REST API for the frontend (core data endpoint, largest file)
 // Auth gate: session + hard lifetime/UA enforcement + CSRF for POST/PATCH/DELETE; admin blocked, viewer read-only
-// Routes by HTTP method against config/schema.json tables; also self-service profile actions (update_avatar, change_password), i18n_bundle, calendar/board move, mass insert
+// Routes by HTTP method against the "schema" config tables; also self-service profile actions (update_avatar, change_password), i18n_bundle, calendar/board move, mass insert
 // Records routed to PostgreSQL or MySQL gateway; every write does log_user_action() audit, snapshot_record(), and automations (automations.php)
 // All identifiers via pg_ident(), values parameterized; uses sys_table() for system tables
 
@@ -122,7 +122,7 @@ if ($role === UserRole::Viewer && in_array($method, ['POST', 'PUT', 'PATCH', 'DE
     exit(json_encode(['error' => 'Forbidden: Read-only access']));
 }
 
-// Load schema (spw_config store, legacy config/schema.json fallback)
+// Load schema from the spw_config store
 $schema = config_get('schema');
 if ($schema === null) {
     http_response_code(500);

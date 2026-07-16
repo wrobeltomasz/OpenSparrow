@@ -1,7 +1,7 @@
 <?php
 
 // cron/cron_notifications.php — CLI cron: calendar-based in-app notifications + automation email delivery
-// Reads config/calendar.json sources and inserts spw_users_notifications rows (daily de-duplication)
+// Reads the "calendar" config sources and inserts spw_users_notifications rows (daily de-duplication)
 // Also delivers pending rows from spw_automation_emails (queued by the "email" automation action) via mail();
 // requires AUTOMATION_EMAIL_FROM, retries up to AUTOMATION_EMAIL_MAX_ATTEMPTS, header-injection safe
 declare(strict_types=1);

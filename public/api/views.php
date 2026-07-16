@@ -7,8 +7,8 @@ declare(strict_types=1);
 // actions: list (GET), config (GET, admin), data (GET — runs the view SELECT / drill-down GROUP BY),
 // schemas (GET, admin — lists PostgreSQL schemas + the configured search selection),
 // sync (GET, admin — discovers views via information_schema.VIEWS, scoped to
-// config/views.json "schemas" for postgres), save (POST, admin)
-// Reads/writes config/views.json; column names validated against schema, values parameterized
+// the "views" config "schemas" key for postgres), save (POST, admin)
+// Reads/writes the "views" config; column names validated against schema, values parameterized
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 

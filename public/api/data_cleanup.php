@@ -5,7 +5,7 @@ declare(strict_types=1);
 // api/data_cleanup.php — Bulk data-cleanup API (editor-only)
 // Auth gate: session + UA enforcement; requires editor role; CSRF on POST
 // POST actions: data_cleanup_preview (dry-run report), data_cleanup_apply (executes removal of orphaned/stale records based on schema relations)
-// Reads config/schema.json + config/mysql_gateway.json; parameterized queries; sys_table()
+// Reads the "schema" config + config/mysql_gateway.json; parameterized queries; sys_table()
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 

@@ -1,8 +1,8 @@
 <?php
 
 // cron/cron_anonymization.php — Data anonymization worker
-// CLI-only. Reads the "anonymization" config (spw_config store, legacy
-// config/anonymization.json fallback) and runs UPDATE statements for each rule.
+// CLI-only. Reads the "anonymization" config from the spw_config store and runs
+// UPDATE statements for each rule.
 // Logs each execution to spw_anonymization_log.
 // Usage: php cron_anonymization.php [admin]
 

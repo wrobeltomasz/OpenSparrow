@@ -1,5 +1,5 @@
-﻿// admin/js/demo.js — Demo sample-apps catalog + install UI
-// DEMOS metadata (CRM/WMS/Tasks: labels, schemas, tables, feature lists); installs/uninstalls the demo apps via api.php (demo_install / demo_uninstall / demo_status).
+﻿// admin/js/demo.js — Demo sample-app catalog + install UI
+// DEMOS metadata (CRM: label, schema, tables, feature list); installs/uninstalls the demo app via api.php (demo_install / demo_uninstall / demo_status).
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createPageHeader } from './ui.js';
@@ -14,22 +14,6 @@ const DEMOS = {
         icon:        'assets/icons/account_box.png',
         recommended: true,
         features:    ['10 dashboard widgets', '5 calendar sources + reminders', 'Kanban board: Deals by Stage', '2 workflows', '5 read-only views', '3 automations', 'M2M products ↔ contacts', 'file attachments'],
-    },
-    wms: {
-        label:       'WMS',
-        description: 'Warehouse Management System — warehouses, products, stock levels, and movements.',
-        schema:      'spw_wms',
-        tables:      ['warehouses', 'products', 'stock', 'movements'],
-        color:       'var(--warn)',
-        icon:        'assets/icons/box.png',
-    },
-    tasks: {
-        label:       'Task Management',
-        description: 'Project & task tracking — projects, tasks, and time logs.',
-        schema:      'spw_tasks',
-        tables:      ['projects', 'tasks', 'time_logs'],
-        color:       'var(--ok)',
-        icon:        'assets/icons/fact_check.png',
     },
 };
 
@@ -73,7 +57,7 @@ function renderInstallForm(workspaceEl) {
     workspaceEl.innerHTML = '';
 
     workspaceEl.appendChild(createPageHeader('Install Demo System',
-        'Choose a demo system. Installs a dedicated PostgreSQL schema, tables, and merges sample config into schema.json, dashboard.json, calendar.json, board.json, workflows.json, and views.json.'));
+        'Installs a dedicated PostgreSQL schema with tables and sample data, and merges the demo schema, dashboard, calendar, board, workflows, and views configuration into the app configuration.'));
 
     const grid = document.createElement('div');
     grid.className = 'demo-cards';
@@ -159,7 +143,7 @@ function renderInstallForm(workspaceEl) {
             confirmInput.value   = '';
             installBtn.disabled  = true;
             confirmSection.style.display = '';
-            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into schema.json, dashboard.json, calendar.json, board.json, workflows.json, views.json, and automations.json. Existing entries with the same keys/IDs will be overwritten.`;
+            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into the schema, dashboard, calendar, board, workflows, views, and automations configuration. Existing entries with the same keys/IDs will be overwritten.`;
         });
 
         grid.appendChild(card);

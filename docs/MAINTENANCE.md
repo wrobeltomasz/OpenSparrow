@@ -41,7 +41,11 @@ concentrated in a few places listed below.
   dashboard pending count) and must be kept in sync with those two. As of 3.0
   the pre-3.0 incremental migration history was collapsed into a single
   append-only `3.0_baseline` entry (3.0 is the first shipped version), and
-  `config/migrations.json` was trimmed to only the `3.0` release entry. Only
+  `config/migrations.json` was trimmed to only the `3.0` release entry. The
+  baseline's DDL body itself lives in `includes/system_tables.php`
+  (`system_tables_ddl()`), shared with the setup wizard (`public/setup_api.php`)
+  so the two entry points that create `spw_*` tables cannot drift apart — they
+  did, and fresh installs shipped without `spw_config` as a result. Only
   real code edit during the move:
   `__DIR__ . '/../assets/...'` paths in the settings module became
   `__DIR__ . '/../../public/assets/...'`. New admin actions: add the block in the
@@ -58,13 +62,29 @@ concentrated in a few places listed below.
   `PgConnection`, `SchemaRepositoryInterface`→`JsonSchemaRepository`,
   `CsrfTokenManagerInterface`, `RequestInterface`, `FileRepositoryInterface`;
   matching `#[\Override]` attributes removed — PHP 8.3+ fatals otherwise).
-  Recorded in `config/migrations.json` → `2.9.removed_files`. Deliberately
+  No `removed_files` entry is needed: this happened before 3.0, the first
+  shipped version, so no installation ever had those files. Deliberately
   KEPT: `SessionInterface` (the CSRF unit test implements it as an in-memory
   fake), `RecordRepositoryInterface` (three implementations — real
   polymorphism), `FieldTypeInterface` (registry polymorphism), and
   `Identifier`/`MysqlIdentifier` (concrete utility classes, misclassified in
   the original review). Do not add new interfaces to `src/` unless at least two
   real (non-test) implementations exist.
+
+- **Configuration store: `spw_config` is the single source of truth (implemented
+  2026-07-16)** — all 14 application config keys (schema, menu, settings,
+  dashboard, calendar, board, workflows, automations, views, files, print,
+  anonymization, user_records, rag) live in the `spw_config` table, one JSONB row
+  per key, with optimistic locking (`version`) and an audit trail in
+  `spw_config_log`. Everything goes through `includes/config_store.php`
+  (`config_get`/`config_get_row`/`config_save`/`config_delete`, per-request static
+  + APCu cache); ~15 scattered `file_get_contents`/`file_put_contents` patterns
+  are gone, and with them the last-write-wins race that affected every config
+  except `menu.json`. There is **no file fallback**: 3.0 is the first shipped
+  version, so no instance ever had file-based config to migrate. `database.json`
+  (and `security.json`) stay files permanently — they are read before a database
+  connection exists. Only `print` and `anonymization` plumb the version through
+  their JS; the generic editor is still last-write-wins (open item).
 
 ### Open items, in recommended order
 

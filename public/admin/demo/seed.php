@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 // admin/demo/seed.php — Demo sample-app handler (included at the end of admin/api.php, not called directly)
 // Relies on $action, $isDemoMode and DEMO_MODE from the parent; aborts 403 if DEMO_MODE undefined
-// actions: demo_status, demo_install, demo_uninstall — installs/removes ready-made CRM/Tasks/WMS schemas + seed data
-// Loads schema definitions from demo/crm.php / demo/wms.php / demo/tasks.php; writes config/demo_meta.json; install blocked when running in read-only demo mode
+// actions: demo_status, demo_install, demo_uninstall — installs/removes the ready-made CRM schema + seed data
+// Loads the schema definition from demo/crm.php; app config goes to spw_config via config_store;
+// writes config/demo_meta.json; install blocked when running in read-only demo mode
 
 if (!defined('DEMO_MODE')) {
     http_response_code(403);
@@ -37,7 +38,7 @@ if ($action === 'demo_install') {
     $type    = $body['type']    ?? '';
     $confirm = $body['confirm'] ?? '';
 
-    if (!in_array($type, ['crm', 'wms', 'tasks'], true)) {
+    if ($type !== 'crm') {
         echo json_encode(['status' => 'error', 'error' => 'Invalid demo type.']);
         exit;
     }
@@ -138,7 +139,7 @@ if ($action === 'demo_install') {
             config_save('board', $demoData['board'], null, $seedUserId);
         }
 
-        // anonymization.json — merge demo GDPR rules if provided. Existing user
+        // anonymization config — merge demo GDPR rules if provided. Existing user
         // settings (enabled/frequency/dictionary) win; demo rules replace any
         // previous rules pointing at demo tables.
         if (!empty($demoData['anonymization']) && is_array($demoData['anonymization'])) {
@@ -277,7 +278,7 @@ if ($action === 'demo_install') {
         }
 
         // print config (spw_config key "print") — merge demo print templates if provided
-        // (keyed by template name, same merge-by-key pattern as views.json above)
+        // (keyed by template name, same merge-by-key pattern as the views config above)
         $printKeys = [];
         if (!empty($demoData['prints']) && is_array($demoData['prints'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
@@ -293,7 +294,7 @@ if ($action === 'demo_install') {
             config_save('print', $printCfg, null, $seedUserId);
         }
 
-        // user_records.json — merge demo column-label mappings if provided (keyed by
+        // user_records config — merge demo column-label mappings if provided (keyed by
         // table name; the global "limit" setting is a user preference and is left
         // untouched, only defaulted if the file didn't exist yet).
         if (!empty($demoData['user_records']) && is_array($demoData['user_records'])) {
@@ -370,7 +371,7 @@ if ($action === 'demo_uninstall') {
 
         // Drop demo schema + all objects
         $pgSchema = $meta['schema'] ?? '';
-        if ($pgSchema && preg_match('/^spw_(crm|wms|tasks)$/', $pgSchema)) {
+        if ($pgSchema === 'spw_crm') {
             @pg_query($conn, 'DROP SCHEMA IF EXISTS ' . pg_ident($pgSchema) . ' CASCADE');
         }
 
@@ -423,7 +424,6 @@ if ($action === 'demo_uninstall') {
             }
             if (empty($cfg['tables'])) {
                 config_delete('schema', $cleanUserId);
-                @unlink($configDir . '/schema.json');
             } else {
                 config_save('schema', $cfg, null, $cleanUserId);
             }
@@ -438,7 +438,6 @@ if ($action === 'demo_uninstall') {
             );
             if (empty($dashCfg['widgets'])) {
                 config_delete('dashboard', $cleanUserId);
-                @unlink($configDir . '/dashboard.json');
             } else {
                 config_save('dashboard', $dashCfg, null, $cleanUserId);
             }
@@ -453,7 +452,6 @@ if ($action === 'demo_uninstall') {
             );
             if (empty($calCfg['sources'])) {
                 config_delete('calendar', $cleanUserId);
-                @unlink($configDir . '/calendar.json');
             } else {
                 config_save('calendar', $calCfg, null, $cleanUserId);
             }
@@ -466,7 +464,6 @@ if ($action === 'demo_uninstall') {
             $bTable = $boardCfg['table'] ?? ($meta['board_table'] ?? '');
             if ($bTable !== '' && in_array($bTable, $tbls, true)) {
                 config_delete('board', $cleanUserId);
-                @unlink($configDir . '/board.json');
             }
         }
 
@@ -481,7 +478,6 @@ if ($action === 'demo_uninstall') {
             );
             if (empty($anonCfg['rules'])) {
                 config_delete('anonymization', $cleanUserId);
-                @unlink($configDir . '/anonymization.json');
             } else {
                 config_save('anonymization', $anonCfg, null, $cleanUserId);
             }
@@ -496,7 +492,6 @@ if ($action === 'demo_uninstall') {
             );
             if (empty($wfCfg['workflows'])) {
                 config_delete('workflows', $cleanUserId);
-                @unlink($configDir . '/workflows.json');
             } else {
                 config_save('workflows', $wfCfg, null, $cleanUserId);
             }
@@ -510,7 +505,6 @@ if ($action === 'demo_uninstall') {
             }
             if (empty($viewsCfg['views'])) {
                 config_delete('views', $cleanUserId);
-                @unlink($configDir . '/views.json');
             } else {
                 config_save('views', $viewsCfg, null, $cleanUserId);
             }
@@ -527,7 +521,6 @@ if ($action === 'demo_uninstall') {
             }
             if (empty($menuCfg['items'])) {
                 config_delete('menu', $cleanUserId);
-                @unlink($configDir . '/menu.json');
             } else {
                 config_save('menu', $menuCfg, null, $cleanUserId);
             }
@@ -542,7 +535,6 @@ if ($action === 'demo_uninstall') {
                 $rules = array_values(array_filter($rules, fn($r) => !in_array($r['id'] ?? '', $ids, true)));
                 if (empty($rules)) {
                     config_delete('automations', $cleanUserId);
-                    @unlink($configDir . '/automations.json');
                 } else {
                     config_save('automations', ['automations' => $rules], null, $cleanUserId);
                 }
@@ -562,7 +554,6 @@ if ($action === 'demo_uninstall') {
                 config_delete('print', $cleanUserId);
                 // Also drop the legacy file copy so the dual-read fallback cannot
                 // resurrect the deleted demo templates from disk.
-                @unlink($configDir . '/print.json');
             } else {
                 config_save('print', $printCfg, null, $cleanUserId);
             }
@@ -578,7 +569,6 @@ if ($action === 'demo_uninstall') {
             }
             if (empty($urCfg['columns'])) {
                 config_delete('user_records', $cleanUserId);
-                @unlink($configDir . '/user_records.json');
             } else {
                 config_save('user_records', $urCfg, null, $cleanUserId);
             }
@@ -597,17 +587,9 @@ if ($action === 'demo_uninstall') {
 /* -- Demo: definition helper ----------------------------------------- */
 function demo_get_definition(string $type, $conn): array
 {
-    switch ($type) {
-        case 'crm':
-            require_once __DIR__ . '/crm.php';
-            return demo_def_crm($conn);
-        case 'wms':
-            require_once __DIR__ . '/wms.php';
-            return demo_def_wms($conn);
-        case 'tasks':
-            require_once __DIR__ . '/tasks.php';
-            return demo_def_tasks($conn);
-        default:
-            throw new \InvalidArgumentException("Unknown demo type: {$type}");
+    if ($type !== 'crm') {
+        throw new \InvalidArgumentException("Unknown demo type: {$type}");
     }
+    require_once __DIR__ . '/crm.php';
+    return demo_def_crm($conn);
 }

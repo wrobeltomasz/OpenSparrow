@@ -60,12 +60,12 @@ Pick the path that matches your environment. Every path ends at the same place: 
 ## Features
 
 - **First-run setup wizard** — guided `setup.php` wizard appears automatically on first launch (no `database.json` present). Collects PostgreSQL credentials, tests the connection, creates the schema, initializes all system tables, and seeds the default admin account in one flow.
-- **JSON-driven CRUD** — tables and forms generated from `schema.json` with nested relations, constraints, and enum color states.
+- **Config-driven CRUD** — tables and forms generated from the `schema` configuration with nested relations, constraints, and enum color states.
 - **Inline editing** — in-grid PATCH updates routed through a single `api.php` gateway.
-- **Dashboard engine** — COUNT / SUM / AVG / MIN / MAX / GROUP BY widgets defined in `dashboard.json`.
+- **Dashboard engine** — COUNT / SUM / AVG / MIN / MAX / GROUP BY widgets defined in the `dashboard` configuration.
 - **Calendar & notifications** — date-based records on a calendar view, with scheduled reminders via cron.
 - **Admin panel** — collapsible sidebar navigation with visual editors for schema, dashboards, calendar, workflows, files, and users at `/admin`. Unified login for all roles — no separate admin password.
-- **Visual table builder** — create PostgreSQL tables from the admin UI with per-column type, NOT NULL, default value, index (btree/hash/unique), column comment (`COMMENT ON COLUMN`), and foreign key constraints. Timestamps preset adds `created_at`/`updated_at` automatically. Tables are registered in `schema.json` in the same step.
+- **Visual table builder** — create PostgreSQL tables from the admin UI with per-column type, NOT NULL, default value, index (btree/hash/unique), column comment (`COMMENT ON COLUMN`), and foreign key constraints. Timestamps preset adds `created_at`/`updated_at` automatically. Tables are registered in the app schema configuration in the same step.
 - **Audit logging & record snapshots** — every write is logged to `spw_users_log`; an optional record-snapshot module saves a full JSONB copy of each record after INSERT/UPDATE to `spw_record_snapshots`, toggled from the admin panel or via env var.
 - **CSV export & pagination** — built-in grid utilities.
 - **Workflows builder** — multi-step wizards linking parent/child records across tables.
@@ -96,7 +96,7 @@ The fastest way to a running instance. Both configs build from `Dockerfile.stand
 1. Open https://render.com/deploy?repo=https://github.com/wrobeltomasz/OpenSparrow and confirm the Blueprint.
 2. When the web service is live, open its URL — you are redirected to the **setup wizard**. Enter the database credentials shown in the Render dashboard (Database → Connections, use the *internal* hostname), then follow the [wizard steps](#first-run-setup-wizard).
 
-> **Free-tier caveats:** the filesystem is ephemeral — `config/*.json` and uploaded files do not survive a redeploy or spin-down (the wizard will simply re-run; your data in PostgreSQL is safe). For real use, attach a persistent disk (see comments in `render.yaml`). The free database expires after 90 days.
+> **Free-tier caveats:** the filesystem is ephemeral — `config/database.json` and uploaded files do not survive a redeploy or spin-down (the wizard will simply re-run; your data and application configuration live in PostgreSQL and are safe). For real use, attach a persistent disk (see comments in `render.yaml`). The free database expires after 90 days.
 
 **Railway** — the repository ships a [`railway.toml`](railway.toml) read automatically on deploy:
 
@@ -144,7 +144,7 @@ Each release ZIP is built automatically by GitHub Actions and includes all PHP, 
 3. Make `config/` and `storage/files/` writable by the web server (typically `chmod 755` or `775`, depending on your host).
 4. Open your site in a browser — you are redirected to the **setup wizard**; follow the [wizard steps](#first-run-setup-wizard).
 
-> **Note:** The ZIP contains no pre-configured JSON files except `database.json.example`. Your `config/*.json` files are created on first setup and are never overwritten during updates — existing configuration is always preserved.
+> **Note:** The ZIP contains no pre-configured JSON files except `database.json.example`. Your `config/database.json` is created on first setup and is never overwritten during updates; all other configuration lives in the database (`spw_config`) — existing configuration is always preserved.
 
 ### Path D — Local development (no Docker)
 
@@ -195,9 +195,9 @@ All accounts are stored in `spw_users` and managed from **System → Users**. Th
 ## Updating via FTP
 
 1. Go to the [Releases page](https://github.com/wrobeltomasz/OpenSparrow/releases/latest) and download the latest `opensparrow-X.Y.zip`.
-2. **Before uploading** — export your configuration from the admin panel: **Configuration → Export config files**. Keep this backup safe.
+2. **Before uploading** — export your configuration from the admin panel: **Configuration → Export config**. Keep this backup safe.
 3. Extract the ZIP and upload all files to your server via FTP, overwriting existing files.
-4. Your `config/*.json` files are **not included** in the ZIP, so your database connection, schema, dashboards, and all other settings are preserved automatically.
+4. Your `config/database.json` is **not included** in the ZIP and your schema, dashboards, and all other settings live in the database — configuration is preserved automatically.
 5. Log in to `/admin` → **System Health** → **Initialize System Tables** to apply any new system table migrations.
 6. Check **System Health** — the version shown should match the release tag you just uploaded.
 
@@ -248,8 +248,8 @@ All variables are read by `includes/config.php` on every request — the single 
 |---|---|---|
 | `APP_ENV` | `production` | Runtime environment. |
 | `DEMO_MODE` | `false` | Set `true` to block all write operations in the admin API (safe for public demos). |
-| `RECORD_SNAPSHOTS_ENABLED` | `false` | Enable record snapshot capture after every INSERT/UPDATE. Overrides the admin panel toggle in `config/settings.json`. |
-| `FILES_MAX_SIZE_MB` | `20` | Default upload size limit when not set in `files.json`. |
+| `RECORD_SNAPSHOTS_ENABLED` | `false` | Enable record snapshot capture after every INSERT/UPDATE. Overrides the admin panel toggle stored in the `settings` configuration. |
+| `FILES_MAX_SIZE_MB` | `20` | Default upload size limit when not set in the `files` configuration. |
 | `THUMBNAIL_MAX_WIDTH` | `300` | Max thumbnail width in pixels. |
 | `NOTIFICATIONS_DROPDOWN_LIMIT` | `10` | Max items in the bell notification dropdown. |
 | `HSTS_MAX_AGE` | `31536000` | HSTS `max-age` in seconds (1 year). Set `0` to disable on plain HTTP. |
@@ -259,7 +259,7 @@ All variables are read by `includes/config.php` on every request — the single 
 | Variable | Default | Description |
 |---|---|---|
 | `OLLAMA_URL` | `http://localhost:11434` | Base URL of the local Ollama instance. Used by `api/rag.php` and admin RAG actions. |
-| `OLLAMA_MODEL` | `llama3` | Default Ollama model for RAG queries. Overridden by `config/rag.json` if present. |
+| `OLLAMA_MODEL` | `llama3` | Default Ollama model for RAG queries. Overridden by the `rag` configuration if present. |
 
 ---
 
@@ -275,7 +275,7 @@ the repository root, *outside* the document root, and cannot be reached over the
 - **`public/admin/`** — management panel (schema editor, dashboards, calendar, workflows, users, files, system health). Web-served; self-authenticated (requires role `admin`).
 - **`public/assets/`** — static frontend resources (`css/`, `js/`, `icons/`, `img/`).
 - **`includes/`** — backend helpers. `config.php` centralizes env-driven configuration; `db.php` centralizes PostgreSQL access; `api_helpers.php` holds request/response helpers; `autoload.php` registers the PSR-4 class loader; `bootstrap.php` wires all OOP dependencies.
-- **`config/`** — runtime JSON configuration files (`database.json`, `schema.json`, `menu.json`, `settings.json`, `dashboard.json`, `calendar.json`, `workflows.json`, `automations.json`, `files.json`, `rag.json`, `security.json`, `views.json`). All JSON in this folder is gitignored and, being outside the `public/` document root, is not web-reachable — except `migrations.json`, the distribution-tracked release manifest.
+- **`config/`** — bootstrap and distribution files only: `database.json` (connection details, read before any DB connection exists), `security.json`, `mysql_gateway.json` / `mysql_connection.json`, and `demo_meta.json`. All JSON in this folder is gitignored and, being outside the `public/` document root, is not web-reachable — except `migrations.json`, the distribution-tracked release manifest. Application configuration (schema, menu, settings, dashboard, calendar, board, workflows, automations, views, files, print, anonymization, user_records, rag) lives in the `spw_config` database table — see `includes/config_store.php`.
 - **`cron/`** — scheduled workers (e.g. `cron_notifications.php`).
 - **`templates/`** — layout wrappers (`template.php`).
 - **`storage/files/`** — user-uploaded files.

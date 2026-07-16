@@ -73,7 +73,7 @@
 
 ## 1. Architektura i role użytkowników
 
-OpenSparrow to platforma schema-driven: administrator definiuje tabele, kolumny i relacje w pliku konfiguracyjnym `config/schema.json`, a system generuje automatycznie interfejs CRUD, dashboard, kalendarz i inne widoki.
+OpenSparrow to platforma schema-driven: administrator definiuje tabele, kolumny i relacje w konfiguracji schematu (tabela `spw_config`, klucz `schema`), a system generuje automatycznie interfejs CRUD, dashboard, kalendarz i inne widoki.
 
 ### Role użytkowników
 
@@ -188,7 +188,7 @@ Typ filtru zależy od typu kolumny:
 - Przyciski: Poprzednia / Następna strona, Pierwsza / Ostatnia strona
 - Lista rozwijana "Wierszy na stronę": wartości 25 / 50 / 100
 - Wybór użytkownika zapisywany w `localStorage` (persists między sesjami)
-- Domyślna wartość ustawiana przez admina w `schema.json` (`default_page_size`)
+- Domyślna wartość ustawiana przez admina w konfiguracji schematu (`default_page_size`)
 
 ### 4.6 Edycja inline
 
@@ -584,10 +584,10 @@ W nagłówku strony, obok filtrów, znajduje się lista rozwijana **"Grupuj wier
 
 - Każda grupa ma **nagłówek** (nazwa kolumny i wartość grupy oraz liczba wierszy w nawiasie) — kliknięcie nagłówka zwija/rozwija grupę (strzałka ▾/▸)
 - Pod wierszami każdej grupy renderowany jest **wiersz sum częściowych** (Σ) liczony tym samym mechanizmem co globalny wiersz podsumowania w stopce — funkcje `sum`/`avg`/`min`/`max`/`count` skonfigurowane per kolumna w edytorze widoków; grupa zwinięta nadal pokazuje swoje sumy częściowe, dzięki czemu widok działa jak raport zbiorczy
-- **Agregaty warunkowe (SUMIF/COUNTIF)** — administrator może przy funkcji podsumowania ustawić warunek (`summary_if` w `config/views.json`: kolumna + operator `== != > >= < <= contains` + wartość); agregat liczy wtedy wyłącznie wiersze spełniające warunek, np. suma kwot tylko dla statusu „paid" lub licznik wierszy przeterminowanych. Działa identycznie w stopce Σ i w sumach częściowych grup (odpowiednik SUMIFS per grupa). Znacznik warunkowego agregatu: symbol ƒ przy nazwie funkcji w kolorze akcentu, a pełna treść warunku w dymku (tooltip) komórki podsumowania
+- **Agregaty warunkowe (SUMIF/COUNTIF)** — administrator może przy funkcji podsumowania ustawić warunek (`summary_if` w konfiguracji widoków: kolumna + operator `== != > >= < <= contains` + wartość); agregat liczy wtedy wyłącznie wiersze spełniające warunek, np. suma kwot tylko dla statusu „paid" lub licznik wierszy przeterminowanych. Działa identycznie w stopce Σ i w sumach częściowych grup (odpowiednik SUMIFS per grupa). Znacznik warunkowego agregatu: symbol ƒ przy nazwie funkcji w kolorze akcentu, a pełna treść warunku w dymku (tooltip) komórki podsumowania
 - Grupowanie łączy się z wyszukiwaniem, filtrami kolumn i sortowaniem (sumy liczą się z przefiltrowanych wierszy); przy braku sortowania grupy są uporządkowane alfabetycznie po wartości, przy aktywnym sortowaniu — w kolejności wynikającej z sortowania
 - Globalny wiersz Σ w stopce tabeli pozostaje bez zmian; eksport CSV eksportuje płaskie, przefiltrowane wiersze (bez nagłówków grup)
-- Administrator może ustawić **domyślne grupowanie** widoku kluczem `"group_rows": "nazwa_kolumny"` na poziomie widoku w `config/views.json` (stosowane na poziomie głównym, przed drill-down); użytkownik może je zmienić lub wyłączyć dropdownem
+- Administrator może ustawić **domyślne grupowanie** widoku kluczem `"group_rows": "nazwa_kolumny"` na poziomie widoku w konfiguracji widoków (stosowane na poziomie głównym, przed drill-down); użytkownik może je zmienić lub wyłączyć dropdownem
 - Zmiana widoku lub poziomu drill-down resetuje grupowanie (jak filtry i sortowanie)
 
 ### Nawigacja z menu bocznego
@@ -602,15 +602,15 @@ Edytor Widoków w panelu administracyjnym (Admin › Views) ma trzy zakładki, a
 - **MySQL Views** — wykrywa i konfiguruje widoki z zewnętrznej bazy MySQL (przez MySQL Gateway)
 - **Schemas** — wybór, które schematy PostgreSQL przeszukuje synchronizacja (patrz niżej)
 
-Każda z dwóch pierwszych zakładek ma własny przycisk synchronizacji ("↻ Sync PostgreSQL Views" / "↻ Sync MySQL Views"), który pobiera listę widoków i metadane kolumn z odpowiedniej bazy. Źródło każdego widoku jest zapisywane w `config/views.json` (pole `source`), dzięki czemu drill-down, reguły kolorów i agregacje działają identycznie niezależnie od bazy. Widoki MySQL są tylko do odczytu (jak natywne widoki SQL).
+Każda z dwóch pierwszych zakładek ma własny przycisk synchronizacji ("↻ Sync PostgreSQL Views" / "↻ Sync MySQL Views"), który pobiera listę widoków i metadane kolumn z odpowiedniej bazy. Źródło każdego widoku jest zapisywane w konfiguracji widoków (pole `source`), dzięki czemu drill-down, reguły kolorów i agregacje działają identycznie niezależnie od bazy. Widoki MySQL są tylko do odczytu (jak natywne widoki SQL).
 
 #### Wybór przeszukiwanych schematów (PostgreSQL)
 
 Domyślnie "↻ Sync PostgreSQL Views" przeszukuje wyłącznie schemat aplikacji skonfigurowany w `config/database.json` (`schema`) / zmiennej `PGSCHEMA` (domyślnie `app`). Jeśli widoki znajdują się w innym schemacie (np. `spw_crm` w demo CRM), trzeba go najpierw zaznaczyć w zakładce **Schemas**:
 
 - Lista schematów jest pobierana z bazy (`information_schema.schemata`, bez `pg_catalog`/`information_schema`/`pg_toast*`/`pg_temp*`)
-- Checkbox przy każdym schemacie włącza/wyłącza jego przeszukiwanie przez sync; wybór jest zapisywany w `config/views.json` (klucz `schemas`, lista nazw schematów) — trwale, do momentu zmiany
-- Widoki znalezione w schemacie innym niż domyślny mają zapisywane pole `schema` bezpośrednio w konfiguracji widoku (`config/views.json` → `views.<nazwa>.schema`), więc pobieranie danych widoku (`api/views.php?action=data`) trafia do właściwego schematu niezależnie od domyślnego schematu aplikacji
+- Checkbox przy każdym schemacie włącza/wyłącza jego przeszukiwanie przez sync; wybór jest zapisywany w konfiguracji widoków (klucz `schemas`, lista nazw schematów) — trwale, do momentu zmiany
+- Widoki znalezione w schemacie innym niż domyślny mają zapisywane pole `schema` bezpośrednio w konfiguracji widoku (`views.<nazwa>.schema`), więc pobieranie danych widoku (`api/views.php?action=data`) trafia do właściwego schematu niezależnie od domyślnego schematu aplikacji
 - Brak zaznaczonych schematów = zachowanie domyślne (przeszukiwany tylko schemat aplikacji)
 
 ---
@@ -704,7 +704,7 @@ Dostępny dla ról Admin i Editor.
 
 ### 17.1 Schemat (Tables & Columns)
 
-Zarządzanie konfiguracją tabel i kolumn (`config/schema.json`).
+Zarządzanie konfiguracją tabel i kolumn (klucz `schema` w `spw_config`).
 
 **Ustawienia globalne:** domyślny rozmiar strony siatki, inne opcje widoczności.
 
@@ -957,11 +957,9 @@ Jednym kliknięciem załaduj przykładowe dane do testowania:
 
 | System | Zawiera |
 |--------|---------|
-| CRM | Firmy, kontakty, szanse sprzedaży (deals), leady, produkty (M2M), oferty, faktury, aktywa; 10 widgetów dashboardu, 5 źródeł kalendarza z przypomnieniami dla instalującego admina, 2 workflows, 5 widoków, 3 automatyzacje (m.in. oferta zaakceptowana → automatyczna faktura robocza) |
-| WMS | Magazyny, inwentarz, wysyłki |
-| Tasks | Projekty, zadania, przypisania |
+| CRM | Firmy, kontakty, szanse sprzedaży (deals), leady, produkty (M2M), oferty, faktury, aktywa; 10 widgetów dashboardu, 5 źródeł kalendarza z przypomnieniami dla instalującego admina, tablica Kanban (Deals Board), 2 workflows, 7 widoków, 4 automatyzacje (m.in. oferta zaakceptowana → automatyczna faktura robocza), reguły anonimizacji RODO, 2 szablony wydruku |
 
-Przycisk "Reset" per system usuwa dane demo.
+Instalacja tworzy dedykowany schemat PostgreSQL `spw_crm` z danymi przykładowymi i scala konfigurację demo (schemat, dashboard, kalendarz, tablica, workflows, widoki, automatyzacje) z konfiguracją aplikacji w tabeli `spw_config`. Przycisk "Reset" usuwa dane demo: schemat jest kasowany (CASCADE), a wpisy konfiguracyjne czyszczone, jeśli zawierają wyłącznie treści demo.
 
 ### 17.22 Zewnętrzne bazy danych (MySQL Gateway)
 
@@ -983,13 +981,13 @@ Zakładka **External Databases** (sekcja Data Management) umożliwia skonfigurow
 
 Zakładka **Anonymization** (sekcja System) obsługuje automatyczną anonimizację danych osobowych zgodnie z wymogami RODO — prawdziwie zanonimizowane dane nie są danymi osobowymi i nie podlegają przepisom o ochronie danych UE. Moduł działa wyłącznie w panelu admina, cronie i bazie danych (brak wpływu na frontend).
 
-**Zakładka Rules:** definiuje reguły anonimizacji — dla każdej reguły wybierz tabelę, kolumnę typu data/znacznik czasu oraz próg wieku (anonimizowane są tylko rekordy starsze niż N dni liczonych od tej kolumny), kolumnę z danymi osobowymi i wartość zastępczą (np. `***ANONYMIZED***`). Przycisk **Preview (dry run)** wykonuje próbny przebieg: zlicza, ile wierszy obejmie każda reguła, **bez modyfikowania danych** — pozwala zweryfikować konfigurację przed nieodwracalnym nadpisaniem. Reguły przechowywane w `config/anonymization.json`. Historia wykonań widoczna w sekcji Run History (tabela `spw_anonymization_log`).
+**Zakładka Rules:** definiuje reguły anonimizacji — dla każdej reguły wybierz tabelę, kolumnę typu data/znacznik czasu oraz próg wieku (anonimizowane są tylko rekordy starsze niż N dni liczonych od tej kolumny), kolumnę z danymi osobowymi i wartość zastępczą (np. `***ANONYMIZED***`). Przycisk **Preview (dry run)** wykonuje próbny przebieg: zlicza, ile wierszy obejmie każda reguła, **bez modyfikowania danych** — pozwala zweryfikować konfigurację przed nieodwracalnym nadpisaniem. Reguły przechowywane w konfiguracji anonimizacji (klucz `anonymization` w `spw_config`). Historia wykonań widoczna w sekcji Run History (tabela `spw_anonymization_log`).
 
 **Raport wykonania (Report):** każdy przebieg generuje ustrukturyzowany raport JSON zapisywany w dedykowanej tabeli `spw_anonymization_report` (kolumna `report` typu `jsonb`, powiązana z przebiegiem przez `log_id`). Raport zawiera identyfikator zadania (`report_id`, np. `JOB-20260629-0042`), znacznik czasu UTC, podsumowanie wykonania (`execution_summary`: liczba przetworzonych reguł, liczba dotkniętych tabel, łączna liczba zanonimizowanych wierszy) oraz listę `details` z wpisem dla każdej reguły: tabela, kolumna, metoda (`static_replacement`), parametry (wartość zastępcza, kolumna daty, próg dni), informacja o nieodwracalności (`is_reversible: false`), liczba zmienionych wierszy oraz ocena ryzyka w stylu EDPB/RODO (`edpb_compliance`: ryzyko wyodrębnienia, powiązania i wnioskowania). W sekcji Run History (zakładka Rules) kolumna **Report** udostępnia przycisk **View** (rozwija sformatowany JSON pod wierszem) oraz **Download JSON** (pobranie raportu jako pliku `<report_id>.json`). Tryb próbny (Preview) nie generuje raportu — nie zapisuje wpisu w dzienniku.
 
 **Zakładka Schedule:** włączenie/wyłączenie modułu, wybór częstotliwości (Manual / Daily / Weekly / Monthly) egzekwowanej przez sam skrypt crona. Przycisk **Run Now** uruchamia `cron/cron_anonymization.php` natychmiast przez panel admina. Sekcja Cron Setup Guide zawiera gotowe polecenia dla Linux/macOS (crontab), Windows (Task Scheduler) i Docker.
 
-**Zakładka Suggestions:** przycisk **Scan Schema** przeszukuje `schema.json` pod kątem kolumn, których nazwy zawierają słowa kluczowe ze słownika. Znalezione kolumny wyświetlane są w tabeli; przycisk **+ Add Rule** dodaje regułę dla danej kolumny.
+**Zakładka Suggestions:** przycisk **Scan Schema** przeszukuje konfigurację schematu pod kątem kolumn, których nazwy zawierają słowa kluczowe ze słownika. Znalezione kolumny wyświetlane są w tabeli; przycisk **+ Add Rule** dodaje regułę dla danej kolumny.
 
 **Zakładka Dictionary:** lista słów kluczowych rozdzielona przecinkami (np. `PESEL, NIP, email, phone, address, imię, nazwisko`). Używana przez zakładkę Suggestions do dopasowania nazw kolumn (dopasowanie podciągu, bez rozróżniania wielkości liter). Sekcja Log Cleanup pozwala usunąć stare wpisy z `spw_anonymization_log` starsze niż N dni.
 
@@ -1369,11 +1367,11 @@ Każda wartość zmiennej i każda komórka tabeli jest osadzana bezpiecznie (pr
 
 ### Konfiguracja przez admina
 
-Panel admina → Data Management → **Printouts** (szablony zapisywane w `config/print.json`, jak pozostałe pliki konfiguracyjne):
+Panel admina → Data Management → **Printouts** (szablony zapisywane w `spw_config` pod kluczem `print`, jak pozostała konfiguracja aplikacji):
 
 - **+ Add printout** — nowy szablon z kluczem wewnętrznym (litery, cyfry, `_`, `-`)
 - Ustawienia ogólne: nazwa wyświetlana, nazwa w menu, opis, ikona, widoczność
-- **Źródło danych** — lista rozwijana widoków SQL PostgreSQL zarejestrowanych w module Widoków (`config/views.json`); po wybraniu widoku lista **dostępnych zmiennych** (kolumn) jest pobierana automatycznie z bazy (information_schema) i pokazywana jako plakietki `{kolumna}` — użytkownik nie wpisuje ich ręcznie
+- **Źródło danych** — lista rozwijana widoków SQL PostgreSQL zarejestrowanych w module Widoków; po wybraniu widoku lista **dostępnych zmiennych** (kolumn) jest pobierana automatycznie z bazy (information_schema) i pokazywana jako plakietki `{kolumna}` — użytkownik nie wpisuje ich ręcznie
 - Edytor bloków: dodawanie (nagłówek / tekst / tabela), zmiana kolejności (^ / v), usuwanie; w bloku tabeli kolumny widoku wybiera się checkboxami, a przy każdej zaznaczonej kolumnie dostępne jest pole szerokości (%) i lista wyrównania (lewo / środek / prawo)
 - **Parametry raportu** — sekcja „Report parameters" (między źródłem danych a blokami szablonu): dodawanie/usuwanie/zmiana kolejności parametrów; dla każdego ustawia się klucz (używany jako `p_klucz` w adresie URL), etykietę widoczną dla użytkownika, kolumnę widoku do filtrowania, checkbox „Required" oraz opcjonalny **widok wyszukiwania** wraz z kolumną wartości i kolumną etykiety (obie listy kolumn pobierane automatycznie z bazy, tak jak zmienne bloków)
 - **Save printouts** — zapis przez API (`api/print.php?action=save`) z walidacją po stronie serwera (whitelist typów bloków i parametrów, widok oraz widok wyszukiwania muszą istnieć w module Widoków, sanityzacja ikon i długości pól)

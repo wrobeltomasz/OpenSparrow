@@ -9,7 +9,7 @@ already been verified, so audits are not repeated from scratch.
 
 - **SQL** — two independent injection vectors, both must be covered: values via
   `pg_query_params()`, identifiers via `pg_ident()`. Identifiers are a first-class
-  vector here because table/column names come from editable `config/schema.json`.
+  vector here because table/column names come from the editable `schema` configuration.
 - **Output encoding** — `htmlspecialchars($x, ENT_QUOTES, 'UTF-8')`, not
   `htmlentities()` (over-encodes, double-encoding risk). PHP→JS values go through
   `json_encode()` with `JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT`.

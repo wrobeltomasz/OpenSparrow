@@ -2,7 +2,7 @@
 // Licensed under LGPL v3. See LICENCE file for details.
 //
 // admin/js/user_records_editor.js — User Records module admin editor (renderUserRecordsEditor):
-// edits config/user_records.json, which drives the front-end "My records" panel opened from the
+// edits the "user_records" config, which drives the front-end "My records" panel opened from the
 // avatar menu (public/assets/js/user-menu.js -> public/api/owners.php action=mine). Two tabs:
 // "Column Mapping" (per table, which columns are CONCAT_WS'd into each record's label) and
 // "Settings" (how many recently-assigned records are shown per table).

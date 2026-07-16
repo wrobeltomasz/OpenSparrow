@@ -1,5 +1,5 @@
 // admin/js/automations.js — Automation rules management UI
-// CRUD over config/automations.json via api.php (automations_list/save/delete) plus run history (automations_runs). HTML-escapes output; CSRF via apiFetch().
+// CRUD over the "automations" config via api.php (automations_list/save/delete) plus run history (automations_runs). HTML-escapes output; CSRF via apiFetch().
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml as autoEsc } from '../../assets/js/util/esc.js';

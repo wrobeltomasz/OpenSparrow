@@ -1,6 +1,6 @@
 // admin/js/anonymization.js — Data Anonymization admin module
 // 4 tabs: Rules, Schedule, Suggestions, Dictionary.
-// Persists config to config/anonymization.json via anonymization_save.
+// Persists the "anonymization" config via anonymization_save.
 // Cron worker: cron/cron_anonymization.php.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs } from './ui.js';

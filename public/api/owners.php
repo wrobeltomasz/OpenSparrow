@@ -150,7 +150,7 @@ function actionEditors($conn): void
 
 // "My records" — cross-table list of records currently owned by the logged-in user,
 // grouped by table with a best-effort display label per record. Label columns and the
-// per-table record limit come from config/user_records.json (admin "User Records" tab).
+// per-table record limit come from the "user_records" config (admin "User Records" tab).
 function actionMine($conn): void
 {
     requireLogin();
@@ -241,7 +241,7 @@ function actionMine($conn): void
 }
 
 // Record label column(s), concatenated with CONCAT_WS() when there's more than one.
-// Prefers the admin-configured config/user_records.json columns for this table (set via
+// Prefers the admin-configured "user_records" columns for this table (set via
 // the admin "User Records" > "Column Mapping" tab); falls back to a best-effort guess
 // (first text column shown in the grid, else any grid column, else the id).
 function mine_label_columns(array $tableCfg, array $configured): array

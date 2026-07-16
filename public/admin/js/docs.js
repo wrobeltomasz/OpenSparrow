@@ -266,7 +266,7 @@ ${_h3('doc-9e', s.s9e_head)}
 ${_ul([
     `<strong>${s.s9e_sort_label}:</strong> ${s.s9e_sort}`,
     `<strong>${s.s9e_limit_label}:</strong> ${s.s9e_limit}`,
-    `<strong>${s.s9e_stored_label}:</strong> <code>config/schema.json</code> ${s.s9e_stored}`
+    `<strong>${s.s9e_stored_label}:</strong> <code>spw_config.schema</code> ${s.s9e_stored}`
 ])}
 
 ${_h3('doc-9f', s.s9f_head)}
@@ -371,10 +371,6 @@ ${_ul([
 ])}
 ${_h4(s.s11b_demo1_head)}
 ${_p(s.s11b_demo1_text)}
-${_h4(s.s11b_demo2_head)}
-${_p(s.s11b_demo2_text)}
-${_h4(s.s11b_demo3_head)}
-${_p(s.s11b_demo3_text)}
 
 ${_h3('doc-11c', s.s11c_head)}
 ${_p(s.s11c_desc)}

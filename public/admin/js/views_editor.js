@@ -1,4 +1,4 @@
-/* admin/js/views_editor.js — Views module admin editor (renderViewsEditor): edits config/views.json saved views (source, columns, colour rules, icon). */
+/* admin/js/views_editor.js — Views module admin editor (renderViewsEditor): edits the "views" config saved views (source, columns, colour rules, icon). */
 
 import { markDirty } from './app.js';
 import { createIconPicker } from './ui.js';

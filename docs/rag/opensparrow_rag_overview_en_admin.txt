@@ -36,7 +36,7 @@ recent record activity, and recent cron runs.
 DATA MANAGEMENT
 ---------------
 Schema:
-  - Manage tables and columns (config/schema.json)
+  - Manage tables and columns ("schema" config key)
   - Global settings: default grid page size, visibility options
   - Per table: display name, icon, hidden flag (excludes from menu), default sort,
     initial load limit
@@ -68,17 +68,17 @@ CSV Import:
   - Import history tracked in spw_csv_import_log
 
 Files:
-  - File management settings: allowed types, size limits (config/files.json)
+  - File management settings: allowed types, size limits ("files" config key)
 
 Menu Preview:
-  - Sidebar navigation structure (config/menu.json): visibility, order, grouping
+  - Sidebar navigation structure ("menu" config key): visibility, order, grouping
 
 Schema Map (ERD):
   - Visual entity-relationship diagram: all tables with FK relations drawn as arrows
   - Click a table to jump to its schema editor; zoom and pan controls
 
 Views:
-  - Read-only PostgreSQL views exposed as grid pages (config/views.json)
+  - Read-only PostgreSQL views exposed as grid pages ("views" config key)
   - Create/edit/delete view definitions: name, description, filters, column order
   - Drill-down by group_by levels (e.g. Year → Month → Invoice)
 
@@ -142,10 +142,9 @@ Database:
 Demo Systems:
   - One-click install of a pre-built demo with its own PostgreSQL schema, sample data,
     dashboard widgets, calendar sources, workflows, and views
-  - Demos: CRM (recommended — companies, contacts, deals, activities, leads, products,
-    quotes, invoices, assets), WMS (warehouses, products, stock, movements),
-    Task Management (projects, tasks, time logs)
-  - Reset button per demo removes its data
+  - Demo: CRM (companies, contacts, deals, activities, leads, products,
+    quotes, invoices, assets) — installs into its own spw_crm schema
+  - Reset button removes the demo data and its configuration entries
 
 Health Check:
   - Database connection status, table bloat analysis, index advisor,
@@ -181,23 +180,40 @@ Users:
 
 CONFIGURATION
 -------------
-Export Config — download all config/*.json as a single export.
+Export Config — download the whole application configuration as a single export.
 Import Config — upload a previously exported configuration.
 Run Notifications Cron — trigger the notification worker manually.
 
 
+CONFIGURATION STORE (spw_config table)
+--------------------------------------
+Application configuration lives in the spw_config table (one JSONB row per key,
+optimistic locking via a version column, full change history in spw_config_log).
+Read and written through includes/config_store.php — never as files.
+
+  schema        — table/column definitions
+  menu          — sidebar navigation structure
+  settings      — app name, locale, feature toggles
+  dashboard     — widget layout
+  calendar      — calendar event sources
+  board         — Kanban board (table, status column, card columns)
+  workflows     — workflow step definitions
+  automations   — automation rules (triggers, conditions, actions)
+  views         — view definitions
+  files         — file upload settings (allowed types, size limits)
+  print         — printout templates
+  anonymization — GDPR anonymization rules and dictionary
+  user_records  — per-table owner column mapping and record limits
+  rag           — Ollama URL, model, max context files, file size limit, timeout
+
 CONFIGURATION FILES (config/*.json)
 ------------------------------------
-  database.json    — DB connection (host, port, dbname, user, password, schema)
-  schema.json      — table/column definitions
-  menu.json        — sidebar navigation structure
-  settings.json    — app name, locale, feature toggles
-  dashboard.json   — widget layout
-  calendar.json    — calendar event sources
-  workflows.json   — workflow step definitions
-  automations.json — automation rules (triggers, conditions, actions)
-  views.json       — view definitions
-  files.json       — file upload settings (allowed types, size limits)
-  security.json    — CORS, HSTS, CSP, IP whitelist, session and password policy
-  rag.json         — Ollama URL, model, max context files, file size limit, timeout
-  migrations.json  — release manifest (files/config keys removed per version)
+Only bootstrap and distribution files remain on disk:
+
+  database.json       — DB connection (host, port, dbname, user, password, schema);
+                        read before any database connection exists, so it cannot live in the DB
+  security.json       — CORS, HSTS, CSP, IP whitelist, session and password policy
+  mysql_gateway.json  — MySQL routing list (tables served from MySQL)
+  mysql_connection.json — MySQL Gateway credentials
+  migrations.json     — release manifest (files/config keys removed per version)
+  demo_meta.json      — installed demo metadata

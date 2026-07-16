@@ -70,7 +70,7 @@ if ($action === 'get_snapshot_setting') {
     exit;
 }
 
-// POST: toggle record-snapshot setting in config/settings.json
+// POST: toggle record-snapshot setting in the "settings" config
 if ($action === 'set_snapshot_setting') {
     header('Content-Type: application/json');
     require_not_demo();
@@ -117,7 +117,7 @@ if ($action === 'get_language_setting') {
     exit;
 }
 
-// POST: save language settings to config/settings.json
+// POST: save language settings to the "settings" config
 if ($action === 'set_language_setting') {
     header('Content-Type: application/json');
     require_not_demo();

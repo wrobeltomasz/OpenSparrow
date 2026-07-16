@@ -210,7 +210,7 @@ describe('OpenSparrow – API Contracts: Response Shapes', () => {
 // ============================================================================
 // Test Suite: Print module (api/print.php)
 // ============================================================================
-// Print templates are admin-configured (config/print.json), so most tests below
+// Print templates are admin-configured (spw_config key "print"), so most tests below
 // look up whatever is actually configured via action=list/data first, and skip
 // with a logged message when the environment has none — same defensive pattern
 // used throughout cypress/e2e/print.cy.js.

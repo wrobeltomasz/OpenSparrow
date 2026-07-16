@@ -8,9 +8,9 @@ declare(strict_types=1);
 // PostgreSQL view), data (GET — template blocks + view rows, optionally filtered by
 // p_<param key> query args), param_options (GET — dropdown values for one report
 // parameter), save (POST, admin)
-// Templates live in the spw_config store under key "print" (legacy config/print.json is
-// read as a fallback until imported — see includes/config_store.php); each template is bound
-// to a PostgreSQL view registered in config/views.json — never to raw SQL from the client.
+// Templates live in the spw_config store under key "print" (see includes/config_store.php);
+// each template is bound to a PostgreSQL view registered in the "views" config —
+// never to raw SQL from the client.
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/config_store.php';

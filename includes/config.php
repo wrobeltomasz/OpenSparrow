@@ -50,8 +50,8 @@ if (!function_exists('client_ip')) {
 
 }
 
-// Read a single key from the "settings" config (spw_config store with legacy
-// config/settings.json fallback), returning $default when absent. Cached for
+// Read a single key from the "settings" config (spw_config store),
+// returning $default when absent. Cached for
 // the request so repeated lookups resolve the config once.
 if (!function_exists('settings_value')) {
     function settings_value(string $key, mixed $default = null): mixed
@@ -214,7 +214,7 @@ define('DEMO_MODE', get_env('DEMO_MODE', 'false') === 'true');
 // -------------------------------------------------------------------------
 
 // Default maximum upload size in megabytes, used when the value is not
-// specified in the files module configuration (config/files.json).
+// specified in the files module configuration ("files" config key).
 define('FILES_MAX_SIZE_MB', (int) get_env('FILES_MAX_SIZE_MB', '20'));
 // Default number of file records returned per page in the file listing API.
 define('FILES_PAGE_LIMIT', (int) get_env('FILES_PAGE_LIMIT', '25'));
@@ -309,9 +309,9 @@ define('CHAT_BUBBLE_ENABLED', (function (): bool {
 // RAG (Retrieval-Augmented Generation)
 // -------------------------------------------------------------------------
 
-// Base URL of the local Ollama instance. Override via env or config/rag.json.
+// Base URL of the local Ollama instance. Override via env or the "rag" config.
 define('OLLAMA_URL', get_env('OLLAMA_URL', 'http://localhost:11434'));
-// Default Ollama model name. Override via env or config/rag.json.
+// Default Ollama model name. Override via env or the "rag" config.
 define('OLLAMA_MODEL', get_env('OLLAMA_MODEL', 'llama3'));
 // Maximum number of assistant queries a single user may submit per minute.
 // Set to 0 to disable per-user rate limiting.

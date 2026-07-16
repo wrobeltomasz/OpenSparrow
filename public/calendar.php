@@ -3,7 +3,7 @@
 // calendar.php — Calendar page (frontend HTML)
 // Boots via includes/bootstrap.php: os_page_bootstrap('no-connect' CSP) — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
 // Exposes capability flags (canEdit/canExport) to the client instead of the raw role
-// Exposes CALENDAR_SOURCES (table + color per source from config/calendar.json) for the client-side filter chips
+// Exposes CALENDAR_SOURCES (table + color per source from the "calendar" config) for the client-side filter chips
 // Search box + per-source visibility chips render in the app header (via $headerControls, like the grid page)
 // Renders the calendar UI (header, grid); event data and CALENDAR_MOVE handled by api.php
 

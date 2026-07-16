@@ -16,8 +16,7 @@ $conn = os_api_bootstrap(['csrf' => 'manual']);
 
 // jsonError(), jsonSuccess(), requireLogin() and requireWrite() are shared via includes/api_helpers.php
 
-// Files-module config via the spw_config store (key "files", legacy
-// config/files.json fallback built into the store).
+// Files-module config via the spw_config store (key "files").
 require_once __DIR__ . '/../../includes/config_store.php';
 
 function loadConfig(): array

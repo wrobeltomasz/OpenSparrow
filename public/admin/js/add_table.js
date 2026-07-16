@@ -352,7 +352,7 @@ export function renderAddTableEditor(ctx) {
 
     renderColumns();
 
-    // -- Register in schema.json -------------------------------------------
+    // -- Register in the app schema config -------------------------------------------
     const registerWrap = document.createElement('div');
     registerWrap.style.cssText = 'margin-top:24px;padding:16px;background:var(--accent-light);border-radius:var(--radius);border:1px solid var(--border-light);';
 
@@ -366,10 +366,10 @@ export function renderAddTableEditor(ctx) {
     const registerTextWrap = document.createElement('span');
     const registerStrong = document.createElement('strong');
     registerStrong.style.fontSize = '13px';
-    registerStrong.textContent = 'Register in schema.json';
+    registerStrong.textContent = 'Register in app schema';
     const registerDesc = document.createElement('span');
     registerDesc.style.cssText = 'display:block;font-size:12px;color:var(--muted);margin-top:2px;';
-    registerDesc.textContent = 'Adds the table to config/schema.json so it appears in the admin panel immediately.';
+    registerDesc.textContent = 'Adds the table to the app schema configuration so it appears in the admin panel immediately.';
     registerTextWrap.appendChild(registerStrong);
     registerTextWrap.appendChild(registerDesc);
     registerLabel.appendChild(registerCb);
@@ -429,7 +429,7 @@ export function renderAddTableEditor(ctx) {
                 }
             }
 
-            // 3. Register in schema.json if requested
+            // 3. Register in the app schema config if requested
             if (state.registerInSchema) {
                 const regData = await post('schema_add_table', {
                     table:        state.tableName,
@@ -446,7 +446,7 @@ export function renderAddTableEditor(ctx) {
                     })),
                 });
                 if (regData.status !== 'success') {
-                    showStatusPill(statusAnchor, `Table created but schema.json registration failed: ${regData.error}`, 'error');
+                    showStatusPill(statusAnchor, `Table created but schema registration failed: ${regData.error}`, 'error');
                     return;
                 }
             }

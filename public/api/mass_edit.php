@@ -5,7 +5,7 @@ declare(strict_types=1);
 // api/mass_edit.php — Mass record operations API (editor-only)
 // Auth gate: session + UA enforcement; requires editor role; CSRF on POST
 // POST actions: mass_edit_preview, mass_edit_apply, mass_duplicate, mass_delete — operate on a selected set of record IDs, preview before apply
-// Reads config/schema.json + config/mysql_gateway.json; parameterized queries; sys_table()
+// Reads the "schema" config + config/mysql_gateway.json; parameterized queries; sys_table()
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 

@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See LICENCE file for details.
 //
 // automations.php — Rule engine for automation triggers (update, notify, create_record, webhook, email)
-// Loads rules from config/automations.json; evaluates conditions (AND/OR groups, operators: =, !=, contains, is_empty,
+// Loads rules from the "automations" config; evaluates conditions (AND/OR groups, operators: =, !=, contains, is_empty,
 // comparisons >, <, >=, <= — numeric, then date, then string fallback — and change detection: changed, not_changed,
 // changed_from, changed_to — compare old vs new value on update events)
 // Old state comes from auto_capture_old_record() called by writers BEFORE the UPDATE
