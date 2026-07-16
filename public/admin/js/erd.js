@@ -1,4 +1,4 @@
-﻿// admin/js/erd.js — Schema Map: renders an SVG ERD of FK / subtable / many-to-many relationships from schema.json. Layout constants below (node width/height, row height, etc.).
+﻿// admin/js/erd.js — Schema Map: renders an SVG ERD of FK / subtable / many-to-many relationships from the "schema" config. Layout constants below (node width/height, row height, etc.).
 
 const NS  = 'http://www.w3.org/2000/svg';
 const NW  = 195;   // node width

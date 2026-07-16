@@ -31,8 +31,8 @@ if ($action === 'export') {
                 $zip->addFile($configDir . $f, $f);
             }
         }
-        // Keys migrated to the spw_config store are exported from the DB (with the
-        // legacy-file fallback built into config_get). Keep in sync with the store.
+        // Keys living in the spw_config store are exported from the DB. Keep in sync
+        // with $dbBackedImport below and with includes/config_store.php.
         require_once __DIR__ . '/../config_store.php';
         $dbBackedExport = [
             'anonymization', 'print', 'user_records', 'board', 'calendar', 'dashboard',
@@ -82,7 +82,10 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
     $zip = new ZipArchive();
     if ($zip->open($_FILES['backup_file']['tmp_name']) === true) {
         $extractPath = __DIR__ . '/../../config/';
-        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'database', 'security', 'workflows', 'files', 'views', 'automations', 'menu', 'settings', 'anonymization', 'rag', 'print', 'user_records'];
+        // 'database' is deliberately absent: export has never emitted database.json, so no
+        // archive legitimately contains it, and repointing the DB must not be a side effect
+        // of restoring a config backup. Connection settings are changed in Admin → Database.
+        $importAllowed = ['schema', 'dashboard', 'calendar', 'board', 'security', 'workflows', 'files', 'views', 'automations', 'menu', 'settings', 'anonymization', 'rag', 'print', 'user_records'];
         // Keys stored in spw_config — imported via config_save, not extracted to disk.
         $dbBackedImport = [
             'anonymization', 'print', 'user_records', 'board', 'calendar', 'dashboard',
@@ -95,6 +98,18 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $filename = $zip->getNameIndex($i);
             $basename = substr($filename, 0, -5); // strip .json suffix
+            // Called out separately from the generic rejection below — a hand-built archive
+            // carrying database.json deserves to know why, not "unknown config file".
+            if ($basename === 'database' && str_ends_with($filename, '.json')) {
+                $zip->close();
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'database.json cannot be imported — use Admin → Database to change '
+                        . 'connection settings. Remove it from the archive and retry.',
+                ]);
+                exit;
+            }
             // Reject any path separator (blocks subdirs and traversal), non-.json, or unknown config name
             if (
                 str_contains($filename, '/') || str_contains($filename, '\\')
@@ -118,9 +133,12 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
             exit;
         }
 
-        // Validate JSON content before writing. 512 KB per file is far above any real
-        // config; the cap prevents zip-bomb decompression from exhausting memory.
-        $maxFileBytes = 524288;
+        // Phase 1 — validate every entry before touching any config, so a bad file at
+        // the end of the archive cannot leave a half-applied import behind.
+        // The per-file cap prevents zip-bomb decompression from exhausting memory; it
+        // matches the store's own limit, since each file becomes one spw_config value.
+        $maxFileBytes = CONFIG_FILE_MAX_BYTES;
+        $decodedFiles = [];
         foreach ($validFiles as $file) {
             $jsonContent = $zip->getFromName($file);
             if ($jsonContent === false) {
@@ -138,7 +156,7 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
                 exit;
             }
             // json_validate() checks syntax without building the value tree —
-            // no allocation for archives at the 512 KB per-file cap.
+            // no allocation for archives at the per-file cap.
             if (!json_validate($jsonContent)) {
                 $zip->close();
                 http_response_code(400);
@@ -146,22 +164,59 @@ if ($action === 'import' && isset($_FILES['backup_file'])) {
                 echo json_encode(['error' => 'Invalid JSON content in archive: ' . $file]);
                 exit;
             }
+            // Every config is a JSON object/array — a bare scalar is valid JSON but
+            // never a valid config, and must not be silently skipped.
+            $decoded = json_decode($jsonContent, true);
+            if (!is_array($decoded)) {
+                $zip->close();
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Config must be a JSON object: ' . $file]);
+                exit;
+            }
+            $decodedFiles[$file] = $decoded;
+        }
+
+        // Phase 2 — apply. Failures are collected rather than ignored; a partial
+        // import must never be reported as success.
+        require_once __DIR__ . '/../config_store.php';
+        $userId   = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $imported = [];
+        $failed   = [];
+        foreach ($decodedFiles as $file => $decoded) {
             $importKey = substr($file, 0, -5);
             if (in_array($importKey, $dbBackedImport, true)) {
-                require_once __DIR__ . '/../config_store.php';
-                $decoded = json_decode($jsonContent, true);
-                $userId  = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-                if (is_array($decoded)) {
-                    config_save($importKey, $decoded, null, $userId);
+                // Whole-config restore — last-write-wins by design (expected version null).
+                $result = config_save($importKey, $decoded, null, $userId);
+                if ($result['status'] !== 'ok') {
+                    $failed[$file] = $result['error'] ?? 'Save failed';
+                    continue;
                 }
+                $imported[] = $file;
                 continue;
             }
-            $zip->extractTo($extractPath, $file);
+            if (!$zip->extractTo($extractPath, $file)) {
+                $failed[$file] = 'Could not write file';
+                continue;
+            }
+            $imported[] = $file;
         }
 
         $zip->close();
         header('Content-Type: application/json');
-        echo json_encode(['status' => 'success']);
+        if (!empty($failed)) {
+            http_response_code(500);
+            // The admin UI surfaces only "error", so name the failed configs there.
+            echo json_encode([
+                'error'    => 'Import incomplete — ' . count($failed) . ' of ' . count($decodedFiles)
+                    . ' configs failed to apply: ' . implode(', ', array_keys($failed))
+                    . '. Other configs were imported; re-run after fixing the cause.',
+                'failed'   => $failed,
+                'imported' => $imported,
+            ]);
+            exit;
+        }
+        echo json_encode(['status' => 'success', 'imported' => $imported]);
         exit;
     }
 

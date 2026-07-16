@@ -15,8 +15,8 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
 
 /**
- * Shared lazy connection for config reads/writes. Returns null when the
- * database is unreachable so callers can fall back to file-based config.
+ * Shared lazy connection for config reads/writes. Returns null when the database
+ * is unreachable — reads then behave as "not configured" and writes report an error.
  */
 function config_store_conn(): ?\PgSql\Connection
 {

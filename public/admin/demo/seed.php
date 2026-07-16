@@ -391,7 +391,7 @@ if ($action === 'demo_uninstall') {
         require_once __DIR__ . '/../../../includes/config_store.php';
         $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
 
-        // Clean schema config (delete the key + legacy file if no tables remain)
+        // Clean schema config (delete the key if no tables remain)
         $cfg = config_get('schema');
         if (is_array($cfg)) {
             // Collect hidden junction tables referenced by demo tables before removing them
@@ -429,7 +429,7 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean dashboard config (delete the key + legacy file if no widgets remain)
+        // Clean dashboard config (delete the key if no widgets remain)
         $dashCfg = config_get('dashboard');
         if (is_array($dashCfg)) {
             $ids = $meta['widget_ids'] ?? [];
@@ -443,7 +443,7 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean calendar config (delete the key + legacy file if no sources remain)
+        // Clean calendar config (delete the key if no sources remain)
         $calCfg = config_get('calendar');
         if (is_array($calCfg)) {
             $tbls = $meta['tables'] ?? [];
@@ -468,8 +468,7 @@ if ($action === 'demo_uninstall') {
         }
 
         // Clean anonymization config (drop rules pointing at demo tables; delete the
-        // spw_config key — and the legacy file, so dual-read cannot resurrect it —
-        // if no rules remain)
+        // spw_config key if no rules remain)
         $anonCfg = config_get('anonymization');
         if (is_array($anonCfg)) {
             $tbls = $meta['tables'] ?? [];
@@ -483,7 +482,7 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean workflows config (delete the key + legacy file if none remain)
+        // Clean workflows config (delete the key if none remain)
         $wfCfg = config_get('workflows');
         if (is_array($wfCfg)) {
             $ids = $meta['workflow_ids'] ?? [];
@@ -497,7 +496,7 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean views config (delete the key + legacy file if none remain)
+        // Clean views config (delete the key if none remain)
         $viewsCfg = config_get('views');
         if (is_array($viewsCfg)) {
             foreach ($meta['view_keys'] ?? [] as $k) {
@@ -510,7 +509,7 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean menu config (delete the key + legacy file if no items remain)
+        // Clean menu config (delete the key if no items remain)
         $menuCfg = config_get('menu');
         if (is_array($menuCfg)) {
             $keys = $meta['menu_keys'] ?? [];
@@ -526,7 +525,7 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean automations config (delete the key + legacy file if no rules remain)
+        // Clean automations config (delete the key if no rules remain)
         $rawAuto = config_get('automations');
         if (is_array($rawAuto)) {
             $rules = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
@@ -552,15 +551,13 @@ if ($action === 'demo_uninstall') {
             $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
             if (empty($printCfg['prints'])) {
                 config_delete('print', $cleanUserId);
-                // Also drop the legacy file copy so the dual-read fallback cannot
-                // resurrect the deleted demo templates from disk.
             } else {
                 config_save('print', $printCfg, null, $cleanUserId);
             }
         }
 
         // Clean user_records config (drop column mappings for demo tables; delete the
-        // spw_config key + legacy file if none remain)
+        // spw_config key if none remain)
         $urCfg = config_get('user_records');
         if (is_array($urCfg)) {
             $tbls = $meta['tables'] ?? [];

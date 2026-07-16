@@ -259,9 +259,9 @@ define('AUTOMATION_EMAIL_MAX_ATTEMPTS', (int) get_env('AUTOMATION_EMAIL_MAX_ATTE
 // Admin panel
 // -------------------------------------------------------------------------
 
-// Maximum allowed size in bytes for JSON configuration files read by the admin
-// panel (schema.json, menu.json, etc.). Prevents memory exhaustion from
-// unexpectedly large or corrupt files.
+// Maximum allowed size in bytes for a single configuration value (the serialized
+// JSON of a spw_config key such as "schema" or "menu"). Enforced by config_save();
+// prevents memory exhaustion from unexpectedly large or corrupt configuration.
 define('CONFIG_FILE_MAX_BYTES', (int) get_env('CONFIG_FILE_MAX_BYTES', '524288'));
 // Hard ceiling on the number of rows returned by the grid list API (api=list).
 // Prevents PHP memory exhaustion on very large tables. Per-table initial_limit

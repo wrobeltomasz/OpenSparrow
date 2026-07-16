@@ -1,5 +1,5 @@
 ﻿// admin/js/schema.js — Schema editor (tables, columns, FKs, grid settings)
-// Core editor for schema.json: renderSchemaEditor / renderSchemaGlobalSettings / renderExternalTablesView, syncSchemaTables. XSS-escapes output; integrates MySQL gateway tables.
+// Core editor for the "schema" config: renderSchemaEditor / renderSchemaGlobalSettings / renderExternalTablesView, syncSchemaTables. XSS-escapes output; integrates MySQL gateway tables.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createTextInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';
 import { showStatusPill, markDirty, isMysqlTable } from './app.js';
@@ -60,7 +60,7 @@ export function renderSchemaGlobalSettings(config, ctx) {
 
     const note = document.createElement('p');
     note.style.cssText = 'font-size:12px; color:var(--muted); margin-top:12px;';
-    note.textContent = 'Stored in schema.json as "default_page_size". Included in config export/import.';
+    note.textContent = 'Stored in the schema configuration as "default_page_size". Included in config export/import.';
     card.appendChild(note);
 
     workspaceEl.appendChild(card);
@@ -1104,7 +1104,7 @@ export async function renderExternalTablesView(ctx) {
 
     const sub = document.createElement('p');
     sub.style.cssText = 'color:var(--muted); font-size:14px; margin:0 0 20px;';
-    sub.textContent = 'Tables routed from MySQL. Sync columns to rebuild the schema.json column definitions from the live database.';
+    sub.textContent = 'Tables routed from MySQL. Sync columns to rebuild the schema column definitions from the live database.';
     workspaceEl.appendChild(sub);
 
 

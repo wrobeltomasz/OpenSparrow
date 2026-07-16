@@ -2,27 +2,15 @@
 
 declare(strict_types=1);
 
-// includes/admin/config_files.php — admin api.php module: menu_config GET/POST + whitelisted config/*.json editor
-// (get, save).
+// includes/admin/config_files.php — admin api.php module: menu_config GET/POST + whitelisted
+// raw-config editor (get, save) over the spw_config store, plus the database/security files.
 // Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
 // POST-method enforcement — never include or serve this file directly.
 // Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
 // / admin_db_fail() / require_not_demo() helpers defined by the front controller.
 // Every action block emits its own JSON response and exits.
 
-// Shared helpers for menu_config GET and POST
-$menuMaxBytes = CONFIG_FILE_MAX_BYTES;
-$menuSafeReadJson = static function (string $path) use ($menuMaxBytes): ?array {
-    if (!file_exists($path) || filesize($path) > $menuMaxBytes) {
-        return null;
-    }
-    $content = file_get_contents($path, false, null, 0, $menuMaxBytes);
-    if ($content === false) {
-        return null;
-    }
-    $decoded = json_decode($content, true);
-    return is_array($decoded) ? $decoded : null;
-};
+// Shared helper for menu_config GET
 $menuSanitizeIcon = static function (string $icon): string {
     if ($icon === '') {
         return '';
@@ -41,8 +29,6 @@ $menuSanitizeIcon = static function (string $icon): string {
 // GET: return structured (possibly nested) menu item list for the admin Menu Preview tab
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     header('Content-Type: application/json');
-
-    $inc = __DIR__ . '/../../config';
 
     // Build catalog: key → full display entry
     $catalog = [];
@@ -122,7 +108,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
             $items[]      = $item;
             $placed[$key] = true;
         }
-        // Append items added after menu.json was last saved
+        // Append items added after the menu config was last saved
         foreach ($catalog as $key => $entry) {
             if (!isset($placed[$key])) {
                 $items[] = $entry;
@@ -192,9 +178,9 @@ $allowedFiles = [
     'workflows', 'files', 'views', 'automations', 'user_records',
 ];
 
-// Keys served from the spw_config store instead of config/*.json (see
-// includes/config_store.php — reads still fall back to the legacy file until
-// the one-time init_db import has run). Extend as modules migrate.
+// Keys served from the spw_config store (see includes/config_store.php). Everything
+// in $allowedFiles is DB-backed except 'database' and 'security', which stay files
+// because they are read before a database connection exists.
 $dbBackedFiles = ['automations', 'board', 'calendar', 'dashboard', 'files', 'schema', 'user_records', 'views', 'workflows'];
 
 // Get content of a JSON config file

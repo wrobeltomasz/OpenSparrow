@@ -52,7 +52,7 @@
     - 17.13 [RAG baza wiedzy](#1713-rag-baza-wiedzy-admin)
     - 17.14 [Automatyzacje](#1714-automatyzacje)
     - 17.15 [Log audytu](#1715-log-audytu)
-    - 17.16 [Backup / Restore](#1716-backup--restore)
+    - 17.16 [Backup tabel](#1716-backup-tabel)
     - 17.17 [Ustawienia globalne](#1717-ustawienia-globalne)
     - 17.18 [Dokumentacja wbudowana (Docs)](#1718-dokumentacja-wbudowana-docs)
     - 17.19 [Edytor Workflows](#1719-edytor-workflows)
@@ -916,12 +916,30 @@ Status `skipped` = warunki nie zostały spełnione. Dane przechowywane w `spw_au
 - Filtrowanie po tabeli, użytkowniku, typie akcji
 - Podgląd migawki rekordu przed i po zmianie
 
-### 17.16 Backup / Restore
+### 17.16 Backup tabel
 
-- Przycisk ręcznego tworzenia backupu (zrzut SQL)
-- Lista backupów z timestampami
-- Pobieranie backupu (plik `.sql`)
-- Przywracanie z backupu (wymaga potwierdzenia)
+Panel **Backup Tables** kopiuje wybrane tabele wewnątrz PostgreSQL-a. Nie tworzy zrzutów `.sql`, nie pobiera plików i nie ma funkcji przywracania — kopia to zwykła tabela w tym samym schemacie, którą przywraca się ręcznie z poziomu SQL.
+
+**Lista tabel** — dwie grupy, każda pozycja to checkbox z nazwą wyświetlaną (i techniczną w nawiasie, jeśli się różni) oraz tagiem schematu:
+
+| Grupa | Źródło |
+|---|---|
+| Application Tables | tabele z konfiguracji `schema` |
+| System Tables (spw_*) | tabele systemowe (`list_system_tables`) |
+
+Przyciski **Select all** / **Deselect all** zaznaczają i odznaczają wszystko naraz.
+
+**Wykonanie** — przycisk **Backup selected tables** dla każdej zaznaczonej tabeli wykonuje:
+
+```sql
+CREATE TABLE <schemat>.<prefiks>_<tabela> AS SELECT * FROM <schemat>.<tabela>
+```
+
+Prefiks to bieżąca data i godzina w formacie `RRRRMMDDGGMM`, np. `202604211709_customers`. Kopiowane są **dane i struktura kolumn**; indeksy, klucze (główne i obce) oraz ograniczenia **nie są** kopiowane — kopia służy do odtworzenia zawartości, nie do przejęcia roli tabeli produkcyjnej.
+
+**Wynik** — lista pozycja po pozycji: `✓ tabela → nazwa_kopii (N wierszy)` przy sukcesie albo `✗ tabela: komunikat` przy błędzie. Każda tabela jest raportowana osobno, więc błąd jednej nie przerywa pozostałych.
+
+> Eksport i import konfiguracji (ZIP) to osobny mechanizm — przyciski **Export Config** / **Import Config** w nagłówku panelu admina, nie ta sekcja.
 
 ### 17.17 Ustawienia globalne
 

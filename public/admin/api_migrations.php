@@ -11,6 +11,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/config_store.php';
 
 os_api_bootstrap(['connect' => false, 'role' => 'admin']);
 
@@ -59,6 +60,18 @@ function rm_db_and_applied(): array
         }
     }
     return [$conn, $out];
+}
+
+// Manifest "file" fields name a spw_config key, historically spelled with the
+// legacy config/*.json file name ("schema.json" → key "schema"). Normalize both
+// spellings to the bare key; returns '' when the value is unusable.
+function rm_config_key(string $file): string
+{
+    $key = basename(trim($file));
+    if (str_ends_with(strtolower($key), '.json')) {
+        $key = substr($key, 0, -5);
+    }
+    return config_valid_key($key) ? $key : '';
 }
 
 // Remove a JSON key identified by a simple JSONPath expression.
@@ -159,13 +172,12 @@ if ($action === 'scan') {
         foreach ($entry['removed_config_keys'] ?? [] as $keyDef) {
             $file    = (string) ($keyDef['file'] ?? '');
             $jpath   = (string) ($keyDef['path'] ?? '');
-            $cfgPath = $root . '/config/' . basename($file);
+            $cfgKey  = rm_config_key($file);
             $present = false;
-            if (is_file($cfgPath)) {
-                $cfg = json_decode((string) @file_get_contents($cfgPath), true);
+            if ($cfgKey !== '' && $jpath !== '') {
+                $cfg = config_get($cfgKey);
                 if (is_array($cfg)) {
-                    $tmp     = $cfg;
-                    $present = rm_jsonpath_remove($tmp, $jpath) > 0;
+                    $present = rm_jsonpath_remove($cfg, $jpath) > 0;
                 }
             }
             $actions[] = [
@@ -279,6 +291,7 @@ if ($action === 'apply') {
 
     $versionSlug = preg_replace('/[^a-zA-Z0-9._-]/', '_', $version);
     $backupDir   = $root . '/storage/migrations_backup/' . $versionSlug;
+    $userId      = (int) ($_SESSION['user_id'] ?? 0);
     $log         = [];
     $warnings    = [];
 
@@ -316,61 +329,55 @@ if ($action === 'apply') {
                 'backup' => 'storage/migrations_backup/' . $versionSlug . '/' . ltrim($relPath, '/'),
             ];
         } elseif ($a['type'] === 'config_key_remove') {
-            $file   = basename($a['file']);
             $jpath  = $a['path'];
-            if ($file === '' || $jpath === '') {
+            $cfgKey = rm_config_key($a['file']);
+            if ($cfgKey === '' || $jpath === '') {
                 $warnings[] = 'Invalid config_key_remove entry.';
                 continue;
             }
-            $cfgPath = $root . '/config/' . $file;
-            if (!is_file($cfgPath)) {
+            // Read the row (not just the value) so the write can assert the version it
+            // scrubbed — a concurrent admin save must lose, not get silently overwritten.
+            $cfgRow = config_get_row($cfgKey);
+            if ($cfgRow === null) {
                 $log[] = [
                     'type'   => 'config_key_remove',
-                    'file'   => $file,
+                    'file'   => $cfgKey,
                     'path'   => $jpath,
                     'status' => 'skipped',
-                    'reason' => 'file_not_found',
+                    'reason' => 'config_key_not_found',
                 ];
                 continue;
             }
-            $raw = @file_get_contents($cfgPath);
-            if ($raw === false) {
-                $warnings[] = 'Cannot read: ' . $file;
-                continue;
-            }
-            $cfg = json_decode($raw, true);
-            if (!is_array($cfg)) {
-                $warnings[] = 'Invalid JSON in: ' . $file;
-                continue;
-            }
-            $backupCfg = $backupDir . '/config/' . $file;
-            if (!is_dir(dirname($backupCfg))) {
-                @mkdir(dirname($backupCfg), 0755, true);
-            }
-            @copy($cfgPath, $backupCfg);
+            $cfg     = $cfgRow['value'];
             $removed = rm_jsonpath_remove($cfg, $jpath);
             if ($removed === 0) {
                 $log[] = [
                     'type'   => 'config_key_remove',
-                    'file'   => $file,
+                    'file'   => $cfgKey,
                     'path'   => $jpath,
                     'status' => 'skipped',
                     'reason' => 'key_not_found',
                 ];
                 continue;
             }
-            $newJson = json_encode($cfg, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            if ($newJson === false || @file_put_contents($cfgPath, $newJson) === false) {
-                $warnings[] = 'Write failed for: ' . $file;
+            // config_save writes the pre-change value into spw_config_log, which is the
+            // backup for this action — no file copy under storage/migrations_backup.
+            $saved = config_save($cfgKey, $cfg, (int) $cfgRow['version'], $userId ?: null);
+            if ($saved['status'] === 'conflict') {
+                $warnings[] = 'Config changed concurrently, skipped: ' . $cfgKey;
+                continue;
+            }
+            if ($saved['status'] !== 'ok') {
+                $warnings[] = 'Write failed for config key: ' . $cfgKey;
                 continue;
             }
             $log[] = [
                 'type'          => 'config_key_remove',
-                'file'          => $file,
+                'file'          => $cfgKey,
                 'path'          => $jpath,
                 'status'        => 'done',
                 'removed_count' => $removed,
-                'backup'        => 'storage/migrations_backup/' . $versionSlug . '/config/' . $file,
+                'backup'        => 'spw_config_log:' . $cfgKey . ' (version ' . $cfgRow['version'] . ')',
             ];
         } elseif ($a['type'] === 'file_deprecated') {
             $log[] = ['type' => 'file_deprecated', 'path' => $a['path'], 'status' => 'info'];
@@ -379,7 +386,6 @@ if ($action === 'apply') {
 
     // Record in spw_release_migrations
     $tRelMig = sys_table('release_migrations');
-    $userId  = (int) ($_SESSION['user_id'] ?? 0);
     $actJson = (string) json_encode($log);
 
     $res = @pg_query_params(

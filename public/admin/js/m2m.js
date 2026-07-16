@@ -37,7 +37,7 @@ export async function renderM2mPage(ctx) {
 
     const sub = document.createElement('p');
     sub.style.cssText = 'color:var(--muted); font-size:14px; margin:0 0 32px;';
-    sub.textContent = 'Select two tables — the wizard creates the junction table in PostgreSQL and updates schema.json automatically.';
+    sub.textContent = 'Select two tables — the wizard creates the junction table in PostgreSQL and updates the schema configuration automatically.';
 
     workspaceEl.append(h2, sub);
 

@@ -278,7 +278,7 @@ function renderTableStats(body, data) {
     const rows = data.rows || [];
 
     if (!rows.length) {
-        setBodyEmpty(body, 'No table statistics found for schema.json tables.');
+        setBodyEmpty(body, 'No table statistics found for configured tables.');
         return;
     }
 

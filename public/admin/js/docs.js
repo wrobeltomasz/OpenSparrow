@@ -453,13 +453,13 @@ ${_ol([
 ${_h4('What Release Migrations do')}
 ${_ul([
     '<strong>Remove file</strong> — moves an obsolete file to <code>storage/migrations_backup/&lt;version&gt;/</code> then deletes it from the working tree.',
-    '<strong>Remove config key</strong> — removes a deprecated field from a <code>config/*.json</code> file; original saved to backup first.',
+    '<strong>Remove config key</strong> — removes a deprecated field from a configuration key in the <code>spw_config</code> store; the previous value is written to <code>spw_config_log</code> first. Skipped if an admin saved that config while the migration ran.',
     '<strong>Deprecated (info only)</strong> — no action taken; the file is still present but generates a warning in <code>storage/logs/deprecations.log</code> if accessed.',
 ])}
 ${_h4('Backups')}
-${_p('Every file and config snapshot is saved to <code>storage/migrations_backup/&lt;version&gt;/</code> before any change. The applied history in the Migrations tab shows the backup path for each action.')}
+${_p('Removed files are copied to <code>storage/migrations_backup/&lt;version&gt;/</code> before deletion. Config keys are DB-backed, so their pre-change value is kept in the <code>spw_config_log</code> audit trail instead. The applied history in the Migrations tab shows the backup location for each action.')}
 ${_h4('Adding a migration entry (for contributors)')}
-${_p('Every pull request that removes a file or a <code>config/*.json</code> key must add an entry to <code>config/migrations.json</code> in the same PR. Example:')}
+${_p('Every pull request that removes a file or a configuration key must add an entry to <code>config/migrations.json</code> in the same PR. In <code>removed_config_keys</code>, <code>file</code> names the <code>spw_config</code> key — the legacy <code>schema.json</code> spelling is still accepted and maps to key <code>schema</code>. Example:')}
 <pre style="background:#F4F7F9;padding:12px;border-radius:4px;font-size:12px;overflow-x:auto;">"2.5.0": {
   "removed_files": ["admin/old_feature.php"],
   "deprecated_files": [],

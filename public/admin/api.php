@@ -69,9 +69,9 @@ function require_not_demo(string $message = 'Action disabled in Demo Mode.', int
     exit;
 }
 
-// Settings config helpers (spw_config key "settings", legacy-file fallback via
-// the config store). The unused $path parameter is kept for call-site
-// compatibility within the settings module.
+// Settings config helpers (spw_config key "settings", via the config store).
+// The unused $path parameter is kept for call-site compatibility within the
+// settings module.
 function admin_read_settings(string $path = ''): array
 {
     require_once __DIR__ . '/../../includes/config_store.php';
@@ -108,9 +108,9 @@ if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POS
     exit;
 }
 
-// Automations config helpers (spw_config key "automations", legacy-file fallback
-// via the config store) — shared by the automations and overview modules, so
-// they live in the front controller.
+// Automations config helpers (spw_config key "automations", via the config
+// store) — shared by the automations and overview modules, so they live in
+// the front controller.
 require_once __DIR__ . '/../../includes/config_store.php';
 
 function auto_cfg_read(): array
