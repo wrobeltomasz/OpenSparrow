@@ -141,7 +141,7 @@ if (empty($_SESSION['csrf_token'])) {
             </div>
 
             <!-- DATA MANAGEMENT -->
-            <div class="nav-section open">
+            <div class="nav-section">
                 <div class="nav-section-header">
                     <img class="nav-section-icon" src="../assets/icons/data_table.png" alt="">
                     <span class="nav-section-label">Data Management</span>
@@ -204,7 +204,7 @@ if (empty($_SESSION['csrf_token'])) {
             </div>
 
             <!-- WORKFLOWS -->
-            <div class="nav-section open">
+            <div class="nav-section">
                 <div class="nav-section-header">
                     <img class="nav-section-icon" src="../assets/icons/build.png" alt="">
                     <span class="nav-section-label">Workflows</span>
@@ -223,7 +223,7 @@ if (empty($_SESSION['csrf_token'])) {
             </div>
 
             <!-- KNOWLEDGE BASE -->
-            <div class="nav-section open">
+            <div class="nav-section">
                 <div class="nav-section-header">
                     <img class="nav-section-icon" src="../assets/icons/menu_book.png" alt="">
                     <span class="nav-section-label">Knowledge Base</span>
@@ -238,7 +238,7 @@ if (empty($_SESSION['csrf_token'])) {
             </div>
 
             <!-- SYSTEM -->
-            <div class="nav-section open">
+            <div class="nav-section">
                 <div class="nav-section-header">
                     <img class="nav-section-icon" src="../assets/icons/database.png" alt="">
                     <span class="nav-section-label">System</span>
@@ -326,7 +326,15 @@ if (empty($_SESSION['csrf_token'])) {
 
 </div><!-- /admin-layout -->
 
-<script type="module" src="js/app.js?v=<?php echo @filemtime('js/app.js'); ?>"></script>
+<?php $appJsVer = @filemtime('js/app.js'); ?>
+<!-- Import map: modules import "./app.js" (no query) while the entry tag uses the
+     cache-busting "?v=" URL. Without this map the browser would treat those as two
+     different modules and instantiate app.js twice (duplicate listeners, split
+     state: lost saves, phantom dirty flags). Keep both URLs identical. -->
+<script type="importmap">
+    {"imports": {"./js/app.js": "./js/app.js?v=<?php echo $appJsVer; ?>"}}
+</script>
+<script type="module" src="js/app.js?v=<?php echo $appJsVer; ?>"></script>
 <script>
     // Collapsible nav sections
     document.querySelectorAll('.nav-section-header').forEach(function(header) {

@@ -334,8 +334,8 @@ function renderSidebar() {
                 (added) => {
                     if (added > 0) markDirty();
                     showStatusPill(btnSync, `Added ${added} new table${added === 1 ? '' : 's'}.`, added > 0 ? 'success' : 'info');
-                    renderSidebar();
                     fetchGlobalSchema();
+                    setTimeout(() => renderSidebar(), 900);
                 },
                 (err) => showStatusPill(btnSync, err, 'error'));
         };
@@ -863,46 +863,56 @@ function validateWorkflowsConfig(config) {
 }
 
 btnSave.addEventListener('click', async () => {
-    if (activeSaveHandler) {
+    // Guard against double-submission (double-click / slow network): a second
+    // request sent before the first resolves would echo the same now-stale
+    // optimistic-lock version and get rejected as a false-positive conflict.
+    if (btnSave.disabled) return;
+    btnSave.disabled = true;
+
+    try {
+        if (activeSaveHandler) {
+            try {
+                const result = await activeSaveHandler();
+                if (result.status === 'success') {
+                    markClean();
+                    showStatusPill(btnSave, result.message || `${currentFile}.json saved`, 'success');
+                } else {
+                    showStatusPill(btnSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch {
+                showStatusPill(btnSave, 'Failed to save changes.', 'error');
+            }
+            return;
+        }
+
+        if (!currentConfig) return;
+
+        if (currentFile === 'workflows') {
+            const err = validateWorkflowsConfig(currentConfig);
+            if (err) {
+                showStatusPill(btnSave, err, 'error');
+                return;
+            }
+        }
+
         try {
-            const result = await activeSaveHandler();
+            const response = await apiFetch(`api.php?action=save&file=${currentFile}`, {
+                method: 'POST',
+                body: JSON.stringify(currentConfig)
+            });
+            const result = await response.json();
+
             if (result.status === 'success') {
                 markClean();
-                showStatusPill(btnSave, result.message || `${currentFile}.json saved`, 'success');
+                showStatusPill(btnSave, `${currentFile}.json saved`, 'success');
+                fetchGlobalSchema();
             } else {
                 showStatusPill(btnSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
             }
-        } catch {
+        } catch (err) {
             showStatusPill(btnSave, 'Failed to save changes.', 'error');
         }
-        return;
-    }
-
-    if (!currentConfig) return;
-
-    if (currentFile === 'workflows') {
-        const err = validateWorkflowsConfig(currentConfig);
-        if (err) {
-            showStatusPill(btnSave, err, 'error');
-            return;
-        }
-    }
-
-    try {
-        const response = await apiFetch(`api.php?action=save&file=${currentFile}`, {
-            method: 'POST',
-            body: JSON.stringify(currentConfig)
-        });
-        const result = await response.json();
-
-        if (result.status === 'success') {
-            markClean();
-            showStatusPill(btnSave, `${currentFile}.json saved`, 'success');
-            fetchGlobalSchema();
-        } else {
-            showStatusPill(btnSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
-        }
-    } catch (err) {
-        showStatusPill(btnSave, 'Failed to save changes.', 'error');
+    } finally {
+        btnSave.disabled = false;
     }
 });
