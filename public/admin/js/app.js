@@ -1,5 +1,5 @@
 ﻿// admin/js/app.js — Admin panel SPA controller / router (loaded by admin/index.php)
-// Builds the sidebar tabs and dispatches each to its render*() module (schema, dashboard, users, rag, performance, cron, ...); owns currentConfig, dirty-state tracking and the Save File action. Exports showStatusPill, markDirty, isMysqlTable.
+// Builds the sidebar tabs and dispatches each to its render*() module (schema, dashboard, users, rag, performance, cron, ...); owns currentConfig, dirty-state tracking and the "Save config" action (#btnSave). Exports showStatusPill, markDirty, isMysqlTable.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { moveArrayItem, moveObjectKey, renderGlobalSettings, createFullMenuPreview } from './ui.js';
 import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings, renderExternalTablesView } from './schema.js';
@@ -300,7 +300,7 @@ function clearConfig() {
 
         markDirty();
         renderSidebar();
-        workspaceEl.innerHTML = `<h2>Configuration cleared. Click "Save File" to apply!</h2>`;
+        workspaceEl.innerHTML = `<h2>Configuration cleared. Click "Save config" to apply!</h2>`;
     }
 }
 
@@ -311,6 +311,7 @@ function renderSidebar() {
         'overview', 'database', 'security', 'health', 'docs', 'users', 'backup',
         'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron',
         'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'fdw', 'board', 'anonymization', 'print',
+        'user_records',
     ]);
 
     if (fullPageTabs.has(currentFile)) {
@@ -333,8 +334,14 @@ function renderSidebar() {
             if (schemaName) syncSchemaTables(currentConfig, schemaName,
                 (added) => {
                     if (added > 0) markDirty();
-                    showStatusPill(btnSync, `Added ${added} new table${added === 1 ? '' : 's'}.`, added > 0 ? 'success' : 'info');
+                    showStatusPill(btnSync, `Added ${added} new table${added === 1 ? '' : 's'}. Click "Save config" to persist.`, added > 0 ? 'success' : 'info');
                     fetchGlobalSchema();
+                    // Show the freshly-synced tables in the workspace. renderItemCards()
+                    // writes to workspaceEl only, so it does not wipe the status pill
+                    // (which lives in the sidebar). Defer renderSidebar() — it rebuilds
+                    // the sidebar and would remove the pill before it is seen.
+                    currentItemKey = null;
+                    renderItemCards();
                     setTimeout(() => renderSidebar(), 900);
                 },
                 (err) => showStatusPill(btnSync, err, 'error'));
@@ -804,7 +811,7 @@ function renderEditor(key, itemData, isArray) {
             else currentConfig.sources.splice(key, 1);
             currentItemKey = null;
             markDirty();
-            workspaceEl.innerHTML = '<h2>Item deleted. Save file to apply.</h2>';
+            workspaceEl.innerHTML = '<h2>Item deleted. Click "Save config" to apply.</h2>';
             renderSidebar();
         }
     };

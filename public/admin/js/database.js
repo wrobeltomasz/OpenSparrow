@@ -1,4 +1,4 @@
-﻿// admin/js/database.js — PostgreSQL connection settings editor (renderDatabaseEditor): edits config/database.json; user must Save File before testing the connection.
+﻿// admin/js/database.js — PostgreSQL connection settings editor (renderDatabaseEditor): edits config/database.json; user must click "Save config" before testing the connection.
 import { createTextInput } from './ui.js';
 
 export function renderDatabaseEditor(key, itemData, isArray, ctx) {
@@ -7,7 +7,7 @@ export function renderDatabaseEditor(key, itemData, isArray, ctx) {
     workspaceEl.innerHTML = `
         <h3>PostgreSQL Connection Settings</h3>
         <p style="color:#64748B; margin-bottom: 20px;">
-            Configure your database connection. <strong>Click "Save File" in the top right corner before testing!</strong>
+            Configure your database connection. <strong>Click "Save config" in the top right corner before testing!</strong>
         </p>
     `;
 
@@ -37,7 +37,7 @@ export function renderDatabaseEditor(key, itemData, isArray, ctx) {
                 alert('✓ Success! Successfully connected to the database.');
                 testBtn.style.background = '#2b9348';
             } else {
-                alert('✗ Connection failed:\n' + data.db_error + '\n\nDid you click "Save File" before testing?');
+                alert('✗ Connection failed:\n' + data.db_error + '\n\nDid you click "Save config" before testing?');
                 testBtn.style.background = '#d00000';
             }
         } catch (e) {

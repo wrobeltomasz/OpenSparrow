@@ -260,7 +260,7 @@ export const STRINGS = {
         s9j_how1: 'with two FK columns and a UNIQUE constraint.',
         s9j_how2_label: 'Configure the relationship',
         s9j_how2: 'Schema → parent table → <em>Many-to-Many Relationships</em> → <strong>+ Add Many-to-Many</strong>.',
-        s9j_how3_label: 'Save File',
+        s9j_how3_label: 'Save config',
         s9j_how3: '— the checkbox panel appears automatically.',
         s9j_config_head: 'Admin configuration fields',
         s9j_config_li: 'Display Label, Junction Table, Self FK, Other FK, Other Table, Display Column.',

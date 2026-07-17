@@ -39,7 +39,7 @@ export function renderUserRecordsEditor(ctx) {
     ]);
 
     renderColumnsPanel(columnsPanel, currentConfig);
-    renderSettingsPanel(settingsPanel, currentConfig);
+    renderSettingsPanel(settingsPanel, ctx);
 }
 
 function renderColumnsPanel(panel, currentConfig) {
@@ -166,7 +166,8 @@ function createColumnMultiSelect(options, selectedValues, onChange) {
     return container;
 }
 
-function renderSettingsPanel(panel, currentConfig) {
+function renderSettingsPanel(panel, ctx) {
+    const { currentConfig } = ctx;
     panel.style.cssText = 'padding-top:16px; max-width:420px;';
 
     const grp = document.createElement('div');
@@ -194,4 +195,33 @@ function renderSettingsPanel(panel, currentConfig) {
     grp.appendChild(help);
 
     panel.appendChild(grp);
+
+    // Reset action — replaces the old sidebar "Clear Entire Config" button. Mutates
+    // currentConfig in place (same reference app.js reads on save) so the cleared
+    // state persists once "Save config" is pressed.
+    const dangerGrp = document.createElement('div');
+    dangerGrp.className = 'form-group';
+    dangerGrp.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'btn-remove';
+    clearBtn.style.float = 'none';
+    clearBtn.textContent = 'Clear Entire Config';
+    clearBtn.addEventListener('click', () => {
+        if (!confirm('Are you sure you want to completely clear the User Records configuration?')) return;
+        currentConfig.columns = {};
+        currentConfig.limit = 20;
+        markDirty();
+        renderUserRecordsEditor(ctx);
+    });
+    dangerGrp.appendChild(clearBtn);
+
+    const clearHelp = document.createElement('span');
+    clearHelp.className = 'help-text';
+    clearHelp.textContent = 'Removes all column mappings and resets the limit to 20. '
+        + 'Press "Save config" in the top bar to apply.';
+    dangerGrp.appendChild(clearHelp);
+
+    panel.appendChild(dangerGrp);
 }

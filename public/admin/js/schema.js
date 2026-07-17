@@ -262,7 +262,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             if (ctx.currentConfig && ctx.currentConfig.tables) {
                 delete ctx.currentConfig.tables[tableName];
             }
-            workspaceEl.innerHTML = '<h3 style="color: #d00000;">Table removed from configuration. Please click "Save File" to apply changes.</h3>';
+            workspaceEl.innerHTML = '<h3 style="color: #d00000;">Table removed from configuration. Please click "Save config" to apply changes.</h3>';
             
             markDirty();
             if (typeof ctx.renderSidebar === 'function') {
@@ -385,7 +385,12 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                 });
                 if (added > 0) markDirty();
                 showStatusPill(btnSyncCols, `Added ${added} new column${added === 1 ? '' : 's'}.`, added > 0 ? 'success' : 'info');
-                renderEditor(tableName, tableData, false);
+                // renderEditor() rebuilds workspaceEl, which would wipe the status
+                // pill (anchored to btnSyncCols, also in workspaceEl) on the same
+                // tick — defer it so the "Added N columns" / "0 columns" feedback
+                // is actually visible. Matters most when added === 0, where the
+                // re-render is otherwise identical and looks like nothing happened.
+                setTimeout(() => renderEditor(tableName, tableData, false), 900);
             } else {
                 showStatusPill(btnSyncCols, 'API Error: ' + (data.error || 'Failed to sync columns.'), 'error');
             }
@@ -797,7 +802,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         };
 
         enumInput.addEventListener('input', (e) => {
-            // Keep the in-memory config in sync so that clicking "Save File"
+            // Keep the in-memory config in sync so that clicking "Save config"
             // mid-typing does not lose the current value.
             applyEnumValue(e.target.value);
         });

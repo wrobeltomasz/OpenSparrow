@@ -185,6 +185,6 @@ export function renderBoardEditor(ctx) {
 
     const note = document.createElement('p');
     note.style.cssText = 'color:var(--muted); font-size:12px; margin-top:8px;';
-    note.textContent = 'The board only appears in the sidebar once a table and status column are set. Remember to click "Save File".';
+    note.textContent = 'The board only appears in the sidebar once a table and status column are set. Remember to click "Save config".';
     workspaceEl.appendChild(note);
 }
