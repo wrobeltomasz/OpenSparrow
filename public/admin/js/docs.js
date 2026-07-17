@@ -46,7 +46,7 @@ function createLanguageBar(currentLang, ctx) {
         
         btn.textContent = l.toUpperCase();
         btn.dataset.lang = l;
-        btn.style.cssText = `padding:3px 10px; border-radius:4px; border:1px solid #CBD5E1; cursor:pointer; font-size:12px; font-weight:600; background:${isActive ? '#64748B' : '#DDEAF4'}; color:${isActive ? '#fff' : '#64748B'};`;
+        btn.className = 'btn btn-xs ' + (isActive ? 'btn-primary' : 'btn-secondary');
         
         // Handle language switch
         btn.addEventListener('click', () => {

@@ -46,14 +46,14 @@ export async function renderUsersEditor(ctx) {
                         </span>
                     </td>
                     <td style="padding: 10px;">
-                        <select class="select-user-role" data-id="${u.id}" style="padding: 5px; border-radius: 4px; border: 1px solid var(--accent-mid); background: #fff;">
+                        <select class="select-user-role adm-input" data-id="${u.id}">
                             <option value="admin"  ${u.role === 'admin'  ? 'selected' : ''}>Admin</option>
                             <option value="editor" ${u.role === 'editor' || !u.role ? 'selected' : ''}>Editor</option>
                             <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                         </select>
                     </td>
                     <td style="padding: 10px; display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn btn-xs btn-toggle-user" data-id="${u.id}" data-active="${u.is_active}" style="background:${u.is_active ? 'var(--warn)' : 'var(--muted)'}; color:${u.is_active ? 'var(--text)' : '#fff'}; border-color:${u.is_active ? 'var(--warn)' : 'var(--muted)'};">
+                        <button class="btn btn-xs btn-toggle-user ${u.is_active ? 'btn-warning' : 'btn-secondary'}" data-id="${u.id}" data-active="${u.is_active}">
                             ${u.is_active ? 'Deactivate' : 'Activate'}
                         </button>
                         <button class="btn btn-xs btn-secondary btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}">
@@ -178,7 +178,8 @@ export async function renderUsersEditor(ctx) {
                     currentInput.type = 'password';
                     currentInput.id = 'cpw-current';
                     currentInput.placeholder = 'Current password';
-                    currentInput.style.cssText = 'width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
+                    currentInput.className = 'adm-input w-full';
+                    currentInput.style.marginBottom = '8px';
                     box.appendChild(currentInput);
                 }
 
@@ -186,14 +187,16 @@ export async function renderUsersEditor(ctx) {
                 newInput.type = 'password';
                 newInput.id = 'cpw-new';
                 newInput.placeholder = 'New password (min 8 chars)';
-                newInput.style.cssText = 'width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:8px;';
+                newInput.className = 'adm-input w-full';
+                newInput.style.marginBottom = '8px';
                 box.appendChild(newInput);
 
                 const confirmInput = document.createElement('input');
                 confirmInput.type = 'password';
                 confirmInput.id = 'cpw-confirm';
                 confirmInput.placeholder = 'Confirm new password';
-                confirmInput.style.cssText = 'width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box;font-size:14px;margin-bottom:12px;';
+                confirmInput.className = 'adm-input w-full';
+                confirmInput.style.marginBottom = '12px';
                 box.appendChild(confirmInput);
 
                 const msgEl = document.createElement('p');
@@ -207,7 +210,7 @@ export async function renderUsersEditor(ctx) {
                 const cancelBtn = document.createElement('button');
                 cancelBtn.id = 'cpw-cancel';
                 cancelBtn.textContent = 'Cancel';
-                cancelBtn.style.cssText = 'padding:7px 16px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;';
+                cancelBtn.className = 'btn btn-secondary';
                 buttonDiv.appendChild(cancelBtn);
 
                 const saveBtn = document.createElement('button');

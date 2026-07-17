@@ -83,7 +83,7 @@ function renderInstallForm(workspaceEl) {
 
     const installBtn = document.createElement('button');
     installBtn.textContent = 'Install Demo';
-    installBtn.className   = 'btn-primary';
+    installBtn.className   = 'btn btn-primary';
     installBtn.style.marginTop = '12px';
     installBtn.disabled = true;
 
@@ -194,7 +194,7 @@ function renderInstalled(workspaceEl, meta) {
 
     const uninstallBtn = document.createElement('button');
     uninstallBtn.textContent = 'Uninstall Demo';
-    uninstallBtn.className   = 'btn-danger';
+    uninstallBtn.className   = 'btn btn-danger';
     uninstallBtn.style.marginTop = '12px';
     uninstallBtn.disabled = true;
 

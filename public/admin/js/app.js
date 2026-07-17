@@ -327,7 +327,7 @@ function renderSidebar() {
     if (currentFile === 'schema') {
         const btnSync = document.createElement('button');
         btnSync.type = 'button';
-        btnSync.className = 'btn-add';
+        btnSync.className = 'btn btn-success';
         btnSync.textContent = 'Sync DB Tables';
         btnSync.onclick = () => {
             const schemaName = prompt("Enter database schema name to sync:", "public");
@@ -348,23 +348,23 @@ function renderSidebar() {
         };
         actionsRow.appendChild(btnSync);
         const btnClear = document.createElement('button');
-        btnClear.type = 'button'; btnClear.className = 'btn-remove'; btnClear.style.float = 'none';
+        btnClear.type = 'button'; btnClear.className = 'btn btn-danger';
         btnClear.textContent = 'Clear Entire Config'; btnClear.onclick = clearConfig;
         actionsRow.appendChild(btnClear);
     } else if (currentFile === 'automations') {
         const btnNew = document.createElement('button');
-        btnNew.type = 'button'; btnNew.className = 'btn-add';
+        btnNew.type = 'button'; btnNew.className = 'btn btn-success';
         btnNew.textContent = '+ New Automation';
         btnNew.onclick = () => { if (autoActions.openNew) autoActions.openNew(null); };
         actionsRow.appendChild(btnNew);
     } else if (currentFile !== 'files') {
         const btnAdd = document.createElement('button');
-        btnAdd.type = 'button'; btnAdd.className = 'btn-add';
+        btnAdd.type = 'button'; btnAdd.className = 'btn btn-success';
         btnAdd.textContent = currentFile === 'dashboard' ? '+ Add New Widget' : currentFile === 'workflows' ? '+ Add New Workflow' : '+ Add New Source';
         btnAdd.onclick = addNewItem;
         actionsRow.appendChild(btnAdd);
         const btnClear = document.createElement('button');
-        btnClear.type = 'button'; btnClear.className = 'btn-remove'; btnClear.style.float = 'none';
+        btnClear.type = 'button'; btnClear.className = 'btn btn-danger';
         btnClear.textContent = 'Clear Entire Config'; btnClear.onclick = clearConfig;
         actionsRow.appendChild(btnClear);
     }
@@ -565,7 +565,7 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     const toggleBtn = document.createElement('button');
     toggleBtn.type = 'button';
     toggleBtn.textContent = '▶';
-    toggleBtn.style.cssText = 'background:none; border:none; font-size:11px; cursor:pointer; color:var(--muted); padding:0 2px; flex-shrink:0; line-height:1; box-shadow:none;';
+    toggleBtn.className = 'chevron-btn';
 
     const nameSpan = document.createElement('strong');
     nameSpan.style.cssText = 'font-size:14px; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
@@ -803,7 +803,7 @@ function renderEditor(key, itemData, isArray) {
     headerDiv.appendChild(title);
     
     const btnDelete = document.createElement('button');
-    btnDelete.className = 'btn-remove'; btnDelete.textContent = 'Delete this item';
+    btnDelete.className = 'btn btn-danger'; btnDelete.textContent = 'Delete this item';
     btnDelete.onclick = () => {
         if (confirm('Are you sure?')) {
             if (currentFile === 'dashboard') currentConfig.widgets.splice(key, 1);

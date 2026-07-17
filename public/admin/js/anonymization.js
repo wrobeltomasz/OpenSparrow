@@ -145,8 +145,8 @@ function buildRulesTab(ctx) {
                 const tdAct = document.createElement('td');
                 tdAct.className = 'adm-td';
                 const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-danger btn-xs';
                 delBtn.textContent = '✕ Remove';
-                delBtn.style.cssText = 'background:none; border:1px solid var(--danger); color:var(--danger); border-radius:4px; padding:3px 10px; font-size:12px; cursor:pointer;';
                 delBtn.addEventListener('click', async () => {
                     if (!confirm('Remove rule for ' + rule.table + '.' + rule.column + '?')) return;
                     anonConfig.rules.splice(idx, 1);
@@ -179,7 +179,7 @@ function buildPreviewBlock(container) {
     wrap.style.cssText = 'margin-bottom:20px;';
 
     const btn = document.createElement('button');
-    btn.className   = 'btn-action';
+    btn.className   = 'btn btn-primary';
     btn.textContent = 'Preview (dry run)';
 
     const hint = document.createElement('span');
@@ -320,7 +320,7 @@ function buildAddForm(container, tableOptions, onAdded) {
     refreshColumns();
 
     const addBtn = document.createElement('button');
-    addBtn.className   = 'btn-action';
+    addBtn.className   = 'btn btn-primary';
     addBtn.textContent = '+ Add Rule';
     addBtn.style.alignSelf = 'flex-end';
 
@@ -391,7 +391,7 @@ function buildScheduleTab() {
     enabledChk.type    = 'checkbox';
     enabledChk.id      = 'anon-enabled';
     enabledChk.checked = anonConfig.enabled;
-    enabledChk.style.width = '16px';
+    enabledChk.className = 'adm-check';
     const enabledLbl = document.createElement('label');
     enabledLbl.htmlFor     = 'anon-enabled';
     enabledLbl.textContent = 'Anonymization enabled';
@@ -408,8 +408,7 @@ function buildScheduleTab() {
     freqLabel.style.cssText = 'font-size:13px; color:var(--muted); white-space:nowrap;';
     const freqSelect = document.createElement('select');
     freqSelect.id        = 'anon-frequency';
-    freqSelect.className = 'adm-input';
-    freqSelect.style.width = '180px';
+    freqSelect.className = 'adm-input w-180';
     [
         { value: 'manual',  label: 'Manual only (admin panel)' },
         { value: 'daily',   label: 'Daily' },
@@ -428,7 +427,7 @@ function buildScheduleTab() {
     const saveSt = mkStatusEl();
 
     const saveBtn = document.createElement('button');
-    saveBtn.className   = 'btn-action';
+    saveBtn.className   = 'btn btn-primary';
     saveBtn.textContent = 'Save Schedule Settings';
     saveBtn.style.marginBottom = '24px';
     saveBtn.addEventListener('click', async () => {
@@ -445,7 +444,7 @@ function buildScheduleTab() {
     );
 
     const runBtn = document.createElement('button');
-    runBtn.className   = 'btn-action';
+    runBtn.className   = 'btn btn-primary';
     runBtn.textContent = 'Run Now';
 
     const output = document.createElement('pre');
@@ -536,7 +535,7 @@ function buildSuggestionsTab() {
     );
 
     const scanBtn = document.createElement('button');
-    scanBtn.className   = 'btn-action';
+    scanBtn.className   = 'btn btn-primary';
     scanBtn.textContent = 'Scan Schema';
 
     const container = document.createElement('div');
@@ -631,7 +630,7 @@ function buildSuggestionsTab() {
                 } else {
                     const addBtn = document.createElement('button');
                     addBtn.textContent = '+ Add Rule';
-                    addBtn.style.cssText = 'background:none; border:1px solid var(--accent); color:var(--accent); border-radius:4px; padding:3px 10px; font-size:12px; cursor:pointer;';
+                    addBtn.className = 'btn btn-secondary btn-xs';
                     addBtn.addEventListener('click', async () => {
                         addBtn.style.display = 'none';
 
@@ -647,7 +646,6 @@ function buildSuggestionsTab() {
 
                         const dateColSel = document.createElement('select');
                         dateColSel.className  = 'adm-input';
-                        dateColSel.style.fontSize = '12px';
 
                         try {
                             const schema   = await getSchema();
@@ -676,14 +674,12 @@ function buildSuggestionsTab() {
                         daysInp.type      = 'number';
                         daysInp.min       = '1';
                         daysInp.value     = '365';
-                        daysInp.className = 'adm-input';
-                        daysInp.style.cssText = 'font-size:12px; width:90px;';
+                        daysInp.className = 'adm-input w-90';
 
                         const replInp = document.createElement('input');
                         replInp.type      = 'text';
                         replInp.value     = '***ANONYMIZED***';
                         replInp.className = 'adm-input';
-                        replInp.style.fontSize = '12px';
 
                         const formSt = document.createElement('p');
                         formSt.style.cssText = 'margin:2px 0; font-size:11px; display:none;';
@@ -693,11 +689,11 @@ function buildSuggestionsTab() {
 
                         const saveBtn = document.createElement('button');
                         saveBtn.textContent  = 'Save';
-                        saveBtn.style.cssText = 'background:var(--accent); color:#fff; border:none; border-radius:4px; padding:3px 10px; font-size:12px; cursor:pointer;';
+                        saveBtn.className = 'btn btn-primary btn-xs';
 
                         const cancelBtn = document.createElement('button');
                         cancelBtn.textContent  = 'Cancel';
-                        cancelBtn.style.cssText = 'background:none; border:1px solid var(--border); border-radius:4px; padding:3px 10px; font-size:12px; cursor:pointer;';
+                        cancelBtn.className = 'btn btn-secondary btn-xs';
 
                         cancelBtn.addEventListener('click', () => {
                             form.remove();
@@ -728,8 +724,7 @@ function buildSuggestionsTab() {
                             addBtn.disabled = true;
                             addBtn.style.display = '';
                             addBtn.textContent = '✓ Added';
-                            addBtn.style.borderColor = 'var(--ok)';
-                            addBtn.style.color = 'var(--ok)';
+                            addBtn.className = 'btn btn-success btn-xs';
                         });
 
                         btnRow.append(saveBtn, cancelBtn);
@@ -771,9 +766,11 @@ function buildDictionaryTab() {
     );
 
     const textarea = document.createElement('textarea');
-    textarea.className = 'adm-input';
+    textarea.className = 'adm-input w-full mono';
     textarea.rows      = 6;
-    textarea.style.cssText = 'width:100%; max-width:600px; font-size:13px; font-family:monospace; margin-bottom:12px; resize:vertical;';
+    textarea.style.maxWidth = '600px';
+    textarea.style.marginBottom = '12px';
+    textarea.style.resize = 'vertical';
     textarea.value = (anonConfig.dictionary || []).join(', ');
 
     const hint = document.createElement('p');
@@ -781,7 +778,7 @@ function buildDictionaryTab() {
     hint.style.cssText = 'font-size:12px; color:var(--muted); margin-bottom:16px;';
 
     const saveBtn = document.createElement('button');
-    saveBtn.className   = 'btn-action';
+    saveBtn.className   = 'btn btn-primary';
     saveBtn.textContent = 'Save Dictionary';
 
     const st = mkStatusEl();
@@ -817,16 +814,14 @@ function buildDictionaryTab() {
     logInput.value = '90';
     logInput.min   = '1';
     logInput.max   = '3650';
-    logInput.className  = 'adm-input';
-    logInput.style.width = '80px';
+    logInput.className  = 'adm-input w-80';
 
     const logUnit = document.createElement('span');
     logUnit.textContent = 'days';
     logUnit.style.cssText = 'font-size:13px; color:var(--muted);';
 
     const purgeBtn = document.createElement('button');
-    purgeBtn.className   = 'btn-remove';
-    purgeBtn.style.cssText = 'padding:6px 16px; font-size:13px; float:none;';
+    purgeBtn.className   = 'btn btn-danger';
     purgeBtn.textContent = 'Purge Old Logs';
 
     const purgeSt = mkStatusEl();
@@ -891,7 +886,7 @@ function buildReportCell(r, tbody, colspan) {
 
     const viewBtn = document.createElement('button');
     viewBtn.textContent  = 'View';
-    viewBtn.style.cssText = 'background:none; border:1px solid var(--accent); color:var(--accent); border-radius:4px; padding:3px 10px; font-size:12px; cursor:pointer;';
+    viewBtn.className = 'btn btn-secondary btn-xs';
 
     let detailRow = null;
 
@@ -921,7 +916,7 @@ function buildReportCell(r, tbody, colspan) {
 
         const dlBtn = document.createElement('button');
         dlBtn.textContent  = 'Download JSON';
-        dlBtn.style.cssText = 'background:var(--accent); color:#fff; border:none; border-radius:4px; padding:3px 12px; font-size:12px; cursor:pointer;';
+        dlBtn.className = 'btn btn-primary btn-xs';
         dlBtn.addEventListener('click', () => {
             const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
             const url  = URL.createObjectURL(blob);
@@ -954,7 +949,7 @@ function buildHistorySection() {
     );
 
     const loadBtn = document.createElement('button');
-    loadBtn.className   = 'btn-action';
+    loadBtn.className   = 'btn btn-primary';
     loadBtn.textContent = 'Load History';
 
     const container = document.createElement('div');

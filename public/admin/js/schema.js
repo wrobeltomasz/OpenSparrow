@@ -184,8 +184,7 @@ function buildDefaultSortUI(tableData) {
             row.style.cssText = 'display:flex; align-items:center; gap:8px;';
 
             const colInput = document.createElement('select');
-            colInput.className = 'adm-input';
-            colInput.style.width = '160px';
+            colInput.className = 'adm-input w-160';
             const blankOpt = document.createElement('option');
             blankOpt.value = '';
             blankOpt.textContent = '— column —';
@@ -716,7 +715,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             addRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
 
             const colPicker = document.createElement('select');
-            colPicker.style.cssText = 'flex:1;font-size:13px;';
+            colPicker.className = 'adm-input flex-1';
             nonVirtualCols.forEach(opt => {
                 const o = document.createElement('option');
                 o.value = opt.value; o.textContent = opt.label;
@@ -726,7 +725,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             const addColBtn = document.createElement('button');
             addColBtn.type = 'button';
             addColBtn.textContent = '+ Add';
-            addColBtn.style.cssText = 'font-size:13px;padding:3px 10px;cursor:pointer;';
+            addColBtn.className = 'btn btn-secondary btn-sm';
             addColBtn.addEventListener('click', () => {
                 if (!colPicker.value) return;
                 if (!Array.isArray(f.cols)) f.cols = [];

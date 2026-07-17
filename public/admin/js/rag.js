@@ -148,12 +148,12 @@ function ragBuildDocumentsTab(panel) {
         const lbl = document.createElement('label');
         lbl.htmlFor = id;
         lbl.textContent = label;
-        lbl.style.cssText = 'display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+        lbl.className = 'adm-field-label';
         const inp = document.createElement('input');
         inp.type = 'text';
         inp.id = id;
         inp.placeholder = placeholder;
-        inp.style.cssText = 'width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;';
+        inp.className = 'adm-input w-full';
         group.appendChild(lbl);
         group.appendChild(inp);
         return { group, inp };
@@ -163,12 +163,12 @@ function ragBuildDocumentsTab(panel) {
     const fileLbl = document.createElement('label');
     fileLbl.htmlFor = 'rag-file-input';
     fileLbl.textContent = 'Text file (.txt)';
-    fileLbl.style.cssText = 'display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+    fileLbl.className = 'adm-field-label';
     const fileInp = document.createElement('input');
     fileInp.type = 'file';
     fileInp.id = 'rag-file-input';
     fileInp.accept = '.txt,text/plain';
-    fileInp.style.cssText = 'padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;cursor:pointer;';
+    fileInp.className = 'adm-input';
     fileWrap.appendChild(fileLbl);
     fileWrap.appendChild(fileInp);
 
@@ -180,10 +180,10 @@ function ragBuildDocumentsTab(panel) {
     const langUpLbl = document.createElement('label');
     langUpLbl.htmlFor    = 'rag-lang-select';
     langUpLbl.textContent = 'Language';
-    langUpLbl.style.cssText = 'display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+    langUpLbl.className = 'adm-field-label';
     const langUpSelect = document.createElement('select');
     langUpSelect.id = 'rag-lang-select';
-    langUpSelect.style.cssText = 'padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;';
+    langUpSelect.className = 'adm-input';
     const noneOpt = document.createElement('option');
     noneOpt.value = '';
     noneOpt.textContent = '— any —';
@@ -208,7 +208,8 @@ function ragBuildDocumentsTab(panel) {
     const uploadBtn = document.createElement('button');
     uploadBtn.type = 'button';
     uploadBtn.textContent = 'Upload';
-    uploadBtn.style.cssText = 'padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;height:36px;align-self:flex-end;';
+    uploadBtn.className = 'btn btn-primary';
+    uploadBtn.style.alignSelf = 'flex-end';
 
     uploadForm.appendChild(fileWrap);
     uploadForm.appendChild(tagsGroup);
@@ -321,7 +322,8 @@ function ragBuildDocumentsTab(panel) {
         const rechunkAllBtn = document.createElement('button');
     rechunkAllBtn.type = 'button';
     rechunkAllBtn.textContent = 'Re-chunk All';
-    rechunkAllBtn.style.cssText = 'padding:6px 14px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:4px;font-size:12px;cursor:pointer;margin-bottom:12px;';
+    rechunkAllBtn.className = 'btn btn-secondary btn-sm';
+    rechunkAllBtn.style.marginBottom = '12px';
     listBody.insertBefore(rechunkAllBtn, tableWrap);
 
     rechunkAllBtn.addEventListener('click', async () => {
@@ -439,7 +441,7 @@ function ragBuildDocumentsTab(panel) {
             const rechunkBtn = document.createElement('button');
             rechunkBtn.type = 'button';
             rechunkBtn.textContent = 'Re-chunk';
-            rechunkBtn.style.cssText = 'padding:4px 10px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:4px;font-size:11px;cursor:pointer;';
+            rechunkBtn.className = 'btn btn-secondary btn-xs';
             rechunkBtn.addEventListener('click', async () => {
                 rechunkBtn.disabled = true;
                 try {
@@ -464,7 +466,7 @@ function ragBuildDocumentsTab(panel) {
             const delBtn = document.createElement('button');
             delBtn.type      = 'button';
             delBtn.textContent = 'Delete';
-            delBtn.style.cssText = 'padding:4px 10px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:4px;font-size:11px;cursor:pointer;';
+            delBtn.className = 'btn btn-danger btn-xs';
             delBtn.addEventListener('click', async () => {
                 if (!confirm('Delete "' + ragEsc(file.filename) + '"?')) return;
                 delBtn.disabled = true;
@@ -582,7 +584,7 @@ function ragBuildSettingsTab(panel) {
     const urlLbl = document.createElement('label');
     urlLbl.htmlFor = 'rag-ollama-url';
     urlLbl.textContent = 'Ollama URL';
-    urlLbl.style.cssText = 'display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+    urlLbl.className = 'adm-field-label';
 
     const urlRow = document.createElement('div');
     urlRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:16px;';
@@ -591,12 +593,13 @@ function ragBuildSettingsTab(panel) {
     urlInp.type        = 'text';
     urlInp.id          = 'rag-ollama-url';
     urlInp.placeholder = 'http://localhost:11434';
-    urlInp.style.cssText = 'flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;';
+    urlInp.className = 'adm-input flex-1';
 
     const checkBtn = document.createElement('button');
     checkBtn.type      = 'button';
     checkBtn.textContent = 'Test & load models';
-    checkBtn.style.cssText = 'white-space:nowrap;padding:8px 14px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;flex-shrink:0;';
+    checkBtn.className = 'btn btn-secondary';
+    checkBtn.style.flexShrink = '0';
 
     urlRow.appendChild(urlInp);
     urlRow.appendChild(checkBtn);
@@ -612,14 +615,14 @@ function ragBuildSettingsTab(panel) {
     const modelLbl = document.createElement('label');
     modelLbl.htmlFor = 'rag-model-select';
     modelLbl.textContent = 'Model';
-    modelLbl.style.cssText = 'display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+    modelLbl.className = 'adm-field-label';
 
     const modelRow = document.createElement('div');
     modelRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:16px;';
 
     const modelSelect = document.createElement('select');
     modelSelect.id = 'rag-model-select';
-    modelSelect.style.cssText = 'flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;';
+    modelSelect.className = 'adm-input flex-1';
     const placeholderOpt = document.createElement('option');
     placeholderOpt.value       = '';
     placeholderOpt.textContent = '— click "Test & load models" to populate —';
@@ -629,12 +632,14 @@ function ragBuildSettingsTab(panel) {
     modelManualInp.type        = 'text';
     modelManualInp.id          = 'rag-model-manual';
     modelManualInp.placeholder = 'or type model name manually';
-    modelManualInp.style.cssText = 'flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;display:none;';
+    modelManualInp.className = 'adm-input flex-1';
+    modelManualInp.style.display = 'none';
 
     const toggleManualBtn = document.createElement('button');
     toggleManualBtn.type = 'button';
     toggleManualBtn.textContent = 'Type manually';
-    toggleManualBtn.style.cssText = 'white-space:nowrap;padding:7px 12px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:4px;font-size:12px;cursor:pointer;flex-shrink:0;';
+    toggleManualBtn.className = 'btn btn-secondary btn-sm';
+    toggleManualBtn.style.flexShrink = '0';
 
     let manualMode = false;
     toggleManualBtn.addEventListener('click', () => {
@@ -690,12 +695,12 @@ function ragBuildSettingsTab(panel) {
         const lbl = document.createElement('label');
         lbl.htmlFor = id;
         lbl.textContent = label;
-        lbl.style.cssText = 'display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+        lbl.className = 'adm-field-label';
         const inp = document.createElement('input');
         inp.type = 'text';
         inp.id = id;
         inp.placeholder = placeholder;
-        inp.style.cssText = 'width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;';
+        inp.className = 'adm-input w-full';
         group.appendChild(lbl);
         group.appendChild(inp);
         return { group, inp };
@@ -744,7 +749,7 @@ function ragBuildSettingsTab(panel) {
     const saveBtn = document.createElement('button');
     saveBtn.type = 'button';
     saveBtn.textContent = 'Save Settings';
-    saveBtn.style.cssText = 'padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;';
+    saveBtn.className = 'btn btn-primary';
     connBody.appendChild(saveBtn);
 
     const pullHint = document.createElement('p');
@@ -1016,7 +1021,7 @@ function ragBuildTestTab(panel) {
     langLbl.style.cssText = 'font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;';
     langRow.appendChild(langLbl);
     const langSelect = document.createElement('select');
-    langSelect.style.cssText = 'padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;min-width:180px;';
+    langSelect.className = 'adm-input w-180';
     const langNoneOpt = document.createElement('option');
     langNoneOpt.value = '';
     langNoneOpt.textContent = '— auto-detect —';
@@ -1047,16 +1052,17 @@ function ragBuildTestTab(panel) {
     const queryInp = document.createElement('input');
     queryInp.type = 'text';
     queryInp.placeholder = 'Enter test question…';
-    queryInp.style.cssText = 'flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;';
+    queryInp.className = 'adm-input flex-1';
     const runBtn = document.createElement('button');
     runBtn.type = 'button';
     runBtn.textContent = 'Run';
-    runBtn.style.cssText = 'padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;';
+    runBtn.className = 'btn btn-primary';
     const testStopBtn = document.createElement('button');
     testStopBtn.type = 'button';
     testStopBtn.textContent = 'Stop';
     testStopBtn.disabled = true;
-    testStopBtn.style.cssText = 'padding:8px 16px;background:transparent;color:var(--danger);border:1px solid var(--danger);border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;opacity:0.35;transition:opacity .15s,background .15s,color .15s;';
+    testStopBtn.className = 'btn btn-danger';
+    testStopBtn.style.opacity = '0.35';
     queryRow.appendChild(queryInp);
     queryRow.appendChild(runBtn);
     queryRow.appendChild(testStopBtn);
@@ -1239,7 +1245,8 @@ function ragBuildStatsTab(panel) {
     const refreshBtn = document.createElement('button');
     refreshBtn.type = 'button';
     refreshBtn.textContent = 'Refresh';
-    refreshBtn.style.cssText = 'margin-top:14px;padding:7px 16px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:4px;font-size:12px;cursor:pointer;font-weight:600;';
+    refreshBtn.className = 'btn btn-secondary btn-sm';
+    refreshBtn.style.marginTop = '14px';
     recentBody.appendChild(refreshBtn);
 
     async function load() {

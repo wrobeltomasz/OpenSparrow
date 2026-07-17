@@ -91,6 +91,17 @@
   color: #fff;
 }
 
+.btn-warning {
+  background: var(--warn);
+  color: var(--text);
+  border-color: var(--warn);
+}
+.btn-warning:hover:not(:disabled) {
+  background: #e6b000;
+  border-color: #e6b000;
+  color: var(--text);
+}
+
 .btn-sm {
   padding: 5px 10px;
   font-size: 12px;

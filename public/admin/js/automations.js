@@ -108,8 +108,7 @@ function buildConditionsSection(parsed, getColumns) {
         matchLbl.style.cssText = 'font-size:12px;color:var(--muted);';
 
         const typeToggle = document.createElement('select');
-        typeToggle.className = 'form-input';
-        typeToggle.style.cssText = 'width:70px;font-size:12px;font-weight:700;padding:2px 6px;';
+        typeToggle.className = 'adm-input w-70';
         ['AND', 'OR'].forEach(t => {
             const o = document.createElement('option');
             o.value = t; o.text = t;
@@ -643,7 +642,7 @@ function renderWebhookBody(bodyEl, action) {
     const reqRow = document.createElement('div');
     reqRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
     const methodSel = makeSelect(AUTO_WEBHOOK_METHODS, action.method, (v) => { action.method = v; });
-    methodSel.style.width = '90px';
+    methodSel.classList.add('w-90');
     const urlInp = document.createElement('input');
     urlInp.type        = 'url';
     urlInp.className   = 'form-input';
@@ -886,7 +885,7 @@ export async function renderAutomationsPage(ctx) {
             const toggleBtn = document.createElement('button');
             toggleBtn.type = 'button';
             toggleBtn.textContent = '▶';
-            toggleBtn.style.cssText = 'background:none; border:none; font-size:11px; cursor:pointer; color:var(--muted); padding:0 2px; flex-shrink:0; line-height:1; box-shadow:none;';
+            toggleBtn.className = 'chevron-btn';
 
             const nameSpan = document.createElement('strong');
             nameSpan.style.cssText = 'font-size:14px; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
@@ -933,7 +932,7 @@ export async function renderAutomationsPage(ctx) {
             btnDel.type = 'button';
             btnDel.title = 'Delete';
             btnDel.textContent = '✕';
-            btnDel.style.cssText = 'background:none; border:none; cursor:pointer; font-size:13px; padding:2px 5px; color:var(--danger); flex-shrink:0; box-shadow:none;';
+            btnDel.className = 'icon-btn icon-btn-danger';
             btnDel.addEventListener('click', e => { e.stopPropagation(); deleteRule(rule.id, btnDel); });
 
             hdr.appendChild(toggleBtn);

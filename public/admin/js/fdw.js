@@ -158,14 +158,13 @@ function renderConnectionTab(panel, status) {
     }
 
     const grid = el('div', 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;');
-    const inputStyle = (locked) => `width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #CBD5E1;border-radius:5px;font-size:13px;font-family:monospace;background:${locked ? '#F1F5F9' : '#fff'};`;
-    const labelStyle = 'display:block;font-size:12px;font-weight:600;color:#64748B;margin-bottom:3px;';
-
     function inputGroup(labelText, fieldName, value, placeholder, type = 'text') {
         const g = document.createElement('div');
-        const lbl = el('label', labelStyle);
+        const lbl = el('label');
+        lbl.className = 'adm-field-label';
         lbl.textContent = labelText;
-        const inp = el('input', inputStyle(isEnv));
+        const inp = el('input');
+        inp.className = 'adm-input w-full mono';
         inp.type = type;
         inp.value = value;
         inp.placeholder = placeholder;
@@ -182,9 +181,11 @@ function renderConnectionTab(panel, status) {
 
     const pwGroup = document.createElement('div');
     pwGroup.style.gridColumn = '1 / -1';
-    const pwLbl = el('label', labelStyle);
+    const pwLbl = el('label');
+    pwLbl.className = 'adm-field-label';
     pwLbl.textContent = 'Password';
-    const pwInp = el('input', inputStyle(isEnv));
+    const pwInp = el('input');
+    pwInp.className = 'adm-input w-full mono';
     pwInp.type = 'password';
     pwInp.placeholder = status.has_password ? '(leave blank to keep current password)' : 'enter password';
     pwInp.disabled = isEnv;
@@ -198,7 +199,8 @@ function renderConnectionTab(panel, status) {
     const badge = connectionBadge(status.connected, status.configured);
 
     if (!isEnv) {
-        const saveBtn = el('button', 'padding:7px 18px;background:#1E293B;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:600;', 'Save & Test');
+        const saveBtn = el('button', '', 'Save & Test');
+        saveBtn.className = 'btn btn-primary';
         saveBtn.addEventListener('click', async () => {
             const val = (name) => { const i = grid.querySelector(`[data-field="${name}"]`); return i ? i.value : ''; };
             const payload = {
@@ -224,7 +226,8 @@ function renderConnectionTab(panel, status) {
         });
         actionRow.appendChild(saveBtn);
     } else {
-        const testBtn = el('button', 'padding:7px 14px;background:#1E293B;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px;', 'Test connection');
+        const testBtn = el('button', '', 'Test connection');
+        testBtn.className = 'btn btn-primary';
         testBtn.addEventListener('click', async () => {
             try {
                 const r = await fdwApi('mysql_test', { method: 'POST', body: {} });
@@ -247,7 +250,7 @@ function makeIconSelect(currentIcon) {
     const wrap = el('div', 'display:flex;align-items:center;gap:8px;');
 
     const sel = document.createElement('select');
-    sel.style.cssText = 'flex:1;padding:6px 8px;border:1px solid #CBD5E1;border-radius:5px;font-size:13px;background:#fff;';
+    sel.className = 'adm-input flex-1';
 
     const noneOpt = document.createElement('option');
     noneOpt.value = '';
@@ -293,7 +296,8 @@ function renderTableCard(container, tableName, meta, onRemove) {
     nameCode.textContent = tableName;
     hdr.appendChild(nameCode);
 
-    const rmBtn = el('button', 'padding:4px 12px;background:none;border:1px solid #CBD5E1;border-radius:4px;cursor:pointer;font-size:12px;color:#64748B;', 'Remove');
+    const rmBtn = el('button', '', 'Remove');
+    rmBtn.className = 'btn btn-secondary btn-sm';
     rmBtn.addEventListener('click', () => onRemove(rmBtn));
     hdr.appendChild(rmBtn);
     card.appendChild(hdr);
@@ -301,13 +305,12 @@ function renderTableCard(container, tableName, meta, onRemove) {
     // Body — metadata form
     const body = el('div', 'padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;');
 
-    const labelStyle = 'display:block;font-size:12px;font-weight:600;color:#64748B;margin-bottom:4px;';
-    const inputStyle = 'width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #CBD5E1;border-radius:5px;font-size:13px;background:#fff;';
-
     // Display Name
     const nameGroup = document.createElement('div');
-    const nameLbl = el('label', labelStyle, 'Display Name');
-    const nameInp = el('input', inputStyle);
+    const nameLbl = el('label', '', 'Display Name');
+    nameLbl.className = 'adm-field-label';
+    const nameInp = el('input');
+    nameInp.className = 'adm-input w-full';
     nameInp.type = 'text';
     nameInp.value = meta.display_name || '';
     nameInp.placeholder = tableName;
@@ -316,7 +319,9 @@ function renderTableCard(container, tableName, meta, onRemove) {
 
     // Icon
     const iconGroup = document.createElement('div');
-    iconGroup.appendChild(el('label', labelStyle, 'Menu Icon'));
+    const iconLbl = el('label', '', 'Menu Icon');
+    iconLbl.className = 'adm-field-label';
+    iconGroup.appendChild(iconLbl);
     const { wrap: iconWrap, sel: iconSel } = makeIconSelect(meta.icon || '');
     iconGroup.appendChild(iconWrap);
     body.appendChild(iconGroup);
@@ -328,17 +333,18 @@ function renderTableCard(container, tableName, meta, onRemove) {
     hiddenCb.type = 'checkbox';
     hiddenCb.id = hiddenId;
     hiddenCb.checked = !!meta.hidden;
-    hiddenCb.style.cssText = 'width:15px;height:15px;cursor:pointer;';
+    hiddenCb.className = 'adm-check';
     const hiddenLbl = document.createElement('label');
     hiddenLbl.htmlFor = hiddenId;
-    hiddenLbl.style.cssText = 'font-size:13px;color:#1E293B;cursor:pointer;';
+    hiddenLbl.style.cursor = 'pointer';
     hiddenLbl.textContent = 'Hide from menu';
     hiddenGroup.append(hiddenCb, hiddenLbl);
     body.appendChild(hiddenGroup);
 
     // Save row
     const saveRow = el('div', 'grid-column:1/-1;display:flex;justify-content:flex-end;padding-top:4px;');
-    const saveBtn = el('button', 'padding:6px 18px;background:#2b9348;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:600;', 'Save');
+    const saveBtn = el('button', '', 'Save');
+    saveBtn.className = 'btn btn-success';
     saveBtn.addEventListener('click', async () => {
         try {
             const r = await fdwApi('mysql_meta_save', {
@@ -372,10 +378,12 @@ function renderTablesTab(panel, status) {
 
     // Add row — placed above the card list so new tables are easy to add
     const addRow = el('div', 'display:flex;gap:8px;margin-bottom:16px;');
-    const inp = el('input', 'flex:1;padding:6px 10px;border:1px solid #CBD5E1;border-radius:5px;font-size:13px;font-family:monospace;');
+    const inp = el('input', '', '');
+    inp.className = 'adm-input flex-1 mono';
     inp.type = 'text';
     inp.placeholder = 'table_or_view_name';
-    const addBtn = el('button', 'padding:6px 14px;background:#1E293B;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px;', 'Add');
+    const addBtn = el('button', '', 'Add');
+    addBtn.className = 'btn btn-primary';
     addRow.append(inp, addBtn);
     panel.appendChild(addRow);
 

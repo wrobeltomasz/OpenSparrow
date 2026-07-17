@@ -59,6 +59,45 @@ export function createTextInput(key, labelText, value, onChange) {
     return wrapper;
 }
 
+export function createNumberInput(key, labelText, value, onChange) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'form-group';
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    wrapper.appendChild(label);
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.value = (value === undefined || value === null) ? '' : value;
+    input.addEventListener('input', (e) => onChange(e.target.value));
+    wrapper.appendChild(input);
+    if (helpTexts[key]) {
+        const help = document.createElement('span');
+        help.className = 'help-text';
+        help.textContent = helpTexts[key];
+        wrapper.appendChild(help);
+    }
+    return wrapper;
+}
+
+export function createTextarea(key, labelText, value, onChange) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'form-group';
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    wrapper.appendChild(label);
+    const ta = document.createElement('textarea');
+    ta.value = value || '';
+    ta.addEventListener('input', (e) => onChange(e.target.value));
+    wrapper.appendChild(ta);
+    if (helpTexts[key]) {
+        const help = document.createElement('span');
+        help.className = 'help-text';
+        help.textContent = helpTexts[key];
+        wrapper.appendChild(help);
+    }
+    return wrapper;
+}
+
 export function createDatalistInput(key, labelText, listId, value, onChange) {
     const wrapper = document.createElement('div');
     wrapper.className = 'form-group';
@@ -83,13 +122,12 @@ export function createIconPicker(key, labelText, value, onChange) {
     wrapper.appendChild(label);
 
     const inputGroup = document.createElement('div');
-    inputGroup.style.display = 'flex';
-    inputGroup.style.gap = '10px';
+    inputGroup.className = 'field-inline-group';
 
     const input = document.createElement('input');
     input.type = 'text';
     input.value = value || '';
-    input.style.flex = '1';
+    input.classList.add('flex-1');
     input.addEventListener('input', (e) => onChange(e.target.value));
 
     const btn = document.createElement('button');
@@ -199,27 +237,23 @@ export function createColorInput(key, labelText, value, onChange) {
 
 export function createCheckbox(key, labelText, value, onChange, defaultValue = true) {
     const wrapper = document.createElement('div');
-    wrapper.className = 'form-group';
-    wrapper.style.display = 'flex';
-    wrapper.style.alignItems = 'center';
-    
+    wrapper.className = 'form-group checkbox-row';
+
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.checked = (value !== undefined && value !== null) ? value : defaultValue;
     if (value === undefined || value === null) onChange(defaultValue);
     input.addEventListener('change', (e) => onChange(e.target.checked));
-    
+
     const label = document.createElement('label');
     label.textContent = labelText;
-    label.style.marginBottom = '0';
-    label.style.cursor = 'pointer';
     label.onclick = () => input.click();
-    
+
     wrapper.appendChild(input);
     wrapper.appendChild(label);
-    
+
     const container = document.createElement('div');
-    container.style.marginBottom = '15px';
+    container.className = 'field-checkbox-wrap';
     container.appendChild(wrapper);
     return container;
 }
@@ -624,23 +658,24 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
     wrapper.appendChild(label);
 
     const container = document.createElement('div');
-    container.style.cssText = 'max-height: 150px; overflow-y: auto; border: 1px solid #DDEAF4; padding: 10px; border-radius: 4px; background: #fff;';
+    container.className = 'multiselect-box';
 
     const safeValues = Array.isArray(selectedValues) ? [...selectedValues] : [];
 
     if (options.length === 0) {
-        container.innerHTML = '<span style="color:#64748B; font-size:13px;">No options available</span>';
+        const empty = document.createElement('span');
+        empty.className = 'c-muted';
+        empty.textContent = 'No options available';
+        container.appendChild(empty);
     } else {
         options.forEach(opt => {
             const lbl = document.createElement('label');
-            lbl.style.cssText = 'display: flex; align-items: center; margin-bottom: 5px; cursor: pointer; font-weight: normal;';
-            
+
             const chk = document.createElement('input');
             chk.type = 'checkbox';
             chk.value = opt.value;
             const optValNum = Number(opt.value);
             chk.checked = safeValues.includes(opt.value) || safeValues.includes(String(opt.value)) || safeValues.includes(optValNum);
-            chk.style.marginRight = '8px';
 
             chk.addEventListener('change', () => {
                 let current = [...safeValues];

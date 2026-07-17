@@ -522,6 +522,10 @@ body {
 .form-group input[type="text"],
 .form-group input[type="password"],
 .form-group input[type="number"],
+.form-group input[type="search"],
+.form-group input[type="email"],
+.form-group input[type="url"],
+.form-group input[type="date"],
 .form-group select,
 .form-group textarea {
     width: 100%;
@@ -539,6 +543,10 @@ body {
 .form-group input[type="text"]:focus,
 .form-group input[type="password"]:focus,
 .form-group input[type="number"]:focus,
+.form-group input[type="search"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="url"]:focus,
+.form-group input[type="date"]:focus,
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
@@ -594,8 +602,13 @@ body {
    kept for backwards compatibility, defined in the same shared file. */
 
 /* ===== Utility inputs ===== */
+/* Compact field for inline rows / tables. Single source of truth for the
+   compact input look; .form-input is a kept-for-compat alias. Regulate width
+   with the .w-* helpers below, never with inline styles. */
 .adm-input,
-.form-input {
+.form-input,
+select.adm-input,
+textarea.adm-input {
     padding: 8px 10px;
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -612,49 +625,131 @@ body {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-mid);
 }
+.adm-input:disabled,
+.form-input:disabled {
+    background: var(--bg);
+    color: var(--muted);
+    cursor: default;
+}
+
+/* Field width helpers — use instead of inline width on compact inputs/selects. */
+.w-60  { width: 60px;  }
+.w-64  { width: 64px;  }
+.w-70  { width: 70px;  }
+.w-80  { width: 80px;  }
+.w-90  { width: 90px;  }
+.w-100 { width: 100px; }
+.w-110 { width: 110px; }
+.w-160 { width: 160px; }
+.w-180 { width: 180px; }
+.w-200 { width: 200px; }
+.w-220 { width: 220px; }
+.w-260 { width: 260px; }
+.w-full  { width: 100%; }
+.flex-1  { flex: 1; }
+.mono    { font-family: monospace; }
+
+/* Compact color-swatch input for inline rule rows. */
+.adm-color {
+    width: 44px;
+    height: 34px;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    cursor: pointer;
+}
+
+/* Bare chevron/expander toggle button (no button chrome). Shared by the
+   collapsible card headers across app/print/views/automations editors. */
+.chevron-btn {
+    background: none;
+    border: none;
+    box-shadow: none;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+.chevron-btn:hover { color: var(--accent); }
+
+/* Borderless icon-only button (e.g. ✕ delete in a card header row). */
+.icon-btn {
+    background: none;
+    border: none;
+    box-shadow: none;
+    cursor: pointer;
+    padding: 2px 5px;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+.icon-btn:hover { color: var(--accent); }
+.icon-btn-danger { color: var(--danger); }
+.icon-btn-danger:hover { color: var(--danger-dark); }
+
+/* Compact uppercase field label (for inline field groups outside .form-group). */
+.adm-field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 6px;
+}
+
+/* Field layout helpers — replace inline flex on ui.js field factories. */
+.field-inline-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.field-checkbox-wrap { margin-bottom: 15px; }
+/* Standalone checkbox (outside .form-group) — consistent 16x16 accent box. */
+.adm-check {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.checkbox-row label {
+    margin-bottom: 0;
+    cursor: pointer;
+    font-weight: 600;
+}
+.multiselect-box {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: var(--radius);
+    background: var(--panel);
+}
+.multiselect-box label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    font-weight: normal;
+}
 
 /* ===== Legacy section buttons ===== */
-/* Sized to match the .btn box model (padding/font/border) so green "add" and
-   red "remove" buttons are identical in size to .btn-success / .btn-danger.
-   Colours and the legacy .btn-add bottom spacing are preserved. */
-.btn-add {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--ok);
-    color: white;
-    border: 1px solid var(--ok);
-    padding: 8px 14px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    margin-bottom: 15px;
-    font-weight: 500;
-    font-size: 13px;
-    white-space: nowrap;
-    transition: background var(--transition), border-color var(--transition), transform 100ms;
-}
-
-.btn-add:hover { background: var(--ok-dark); border-color: var(--ok-dark); }
-.btn-add:active { transform: scale(0.98); }
-
-.btn-remove {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--danger);
-    color: white;
-    border: 1px solid var(--danger);
-    padding: 8px 14px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 13px;
-    white-space: nowrap;
-    transition: background var(--transition), border-color var(--transition), transform 100ms;
-}
-
-.btn-remove:hover { background: var(--danger-dark); border-color: var(--danger-dark); }
-.btn-remove:active { transform: scale(0.98); }
+/* The .btn-add / .btn-remove box model (padding/font/border/colour) is the single
+   shared definition in assets/css/buttons.css — do NOT redeclare it here. Admin
+   only preserves the legacy bottom spacing on standalone "add" buttons; the
+   .item-panel-actions override above removes it inside action rows. */
+.btn-add { margin-bottom: 15px; }
 
 /* ===== Data tables ===== */
 .admin-table {

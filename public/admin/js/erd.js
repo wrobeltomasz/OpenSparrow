@@ -40,7 +40,7 @@ export async function renderErdPage(ctx) {
     const searchEl = document.createElement('input');
     searchEl.type = 'search';
     searchEl.placeholder = 'Search tables…';
-    searchEl.style.cssText = 'padding:4px 8px;font-size:12px;border:1px solid #CBD5E1;border-radius:4px;width:140px;outline:none;';
+    searchEl.className = 'adm-input w-160';
     right.appendChild(searchEl);
 
     const hiddenLbl = document.createElement('label');
@@ -53,13 +53,13 @@ export async function renderErdPage(ctx) {
 
     const resetBtn = document.createElement('button');
     resetBtn.textContent = '⤢ Fit View';
-    resetBtn.style.cssText = 'padding:4px 10px;font-size:12px;cursor:pointer;border:1px solid #CBD5E1;background:#fff;border-radius:4px;';
+    resetBtn.className = 'btn btn-secondary btn-sm';
     right.appendChild(resetBtn);
 
     const exportBtn = document.createElement('button');
     exportBtn.textContent = '↓ PNG';
     exportBtn.title = 'Export full diagram as PNG';
-    exportBtn.style.cssText = 'padding:4px 10px;font-size:12px;cursor:pointer;border:1px solid #CBD5E1;background:#fff;border-radius:4px;';
+    exportBtn.className = 'btn btn-secondary btn-sm';
     right.appendChild(exportBtn);
 
     tb.appendChild(right);

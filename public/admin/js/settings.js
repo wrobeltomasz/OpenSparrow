@@ -59,13 +59,13 @@ export async function renderSettingsPage(ctx) {
 
     const defLabel = document.createElement('label');
     defLabel.htmlFor = 'setting-default-lang';
-    defLabel.style.cssText = 'display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;';
+    defLabel.className = 'adm-field-label';
     defLabel.textContent = 'Default language';
     defRow.appendChild(defLabel);
 
     const defSelect = document.createElement('select');
     defSelect.id = 'setting-default-lang';
-    defSelect.style.cssText = 'padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; width:220px; background:white;';
+    defSelect.className = 'adm-input w-220';
     data.all_locales.forEach(loc => {
         const opt = document.createElement('option');
         opt.value = loc.code;
@@ -196,7 +196,7 @@ export async function renderSettingsPage(ctx) {
 
     const appNameLabel = document.createElement('label');
     appNameLabel.htmlFor = 'setting-app-name';
-    appNameLabel.style.cssText = 'display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;';
+    appNameLabel.className = 'adm-field-label';
     appNameLabel.textContent = 'Application name (shown on the login page)';
     appNameRow.appendChild(appNameLabel);
 
@@ -208,7 +208,7 @@ export async function renderSettingsPage(ctx) {
     appNameInput.id = 'setting-app-name';
     appNameInput.maxLength = 60;
     appNameInput.value = logoData.app_name || 'OpenSparrow';
-    appNameInput.style.cssText = 'padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; width:260px;';
+    appNameInput.className = 'adm-input w-260';
     appNameInputRow.appendChild(appNameInput);
 
     const appNameSaveBtn = document.createElement('button');

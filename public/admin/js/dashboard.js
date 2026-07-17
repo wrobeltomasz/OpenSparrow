@@ -45,7 +45,7 @@ function renderConditionsBuilder(q, colOptions) {
             // AND/OR logic selector (hidden for first condition)
             if (idx > 0) {
                 const logicSel = document.createElement('select');
-                logicSel.style.cssText = 'width:70px;font-size:13px;';
+                logicSel.className = 'adm-input w-70';
                 ['AND', 'OR'].forEach(l => {
                     const o = document.createElement('option');
                     o.value = l; o.textContent = l;
@@ -63,7 +63,7 @@ function renderConditionsBuilder(q, colOptions) {
 
             // Column select
             const colSel = document.createElement('select');
-            colSel.style.cssText = 'flex:1;min-width:100px;font-size:13px;';
+            colSel.className = 'adm-input flex-1';
             colOptions.forEach(opt => {
                 const o = document.createElement('option');
                 o.value = opt.value; o.textContent = opt.label;
@@ -75,7 +75,7 @@ function renderConditionsBuilder(q, colOptions) {
 
             // Operator select
             const opSel = document.createElement('select');
-            opSel.style.cssText = 'flex:1;min-width:80px;font-size:13px;';
+            opSel.className = 'adm-input flex-1';
             CONDITION_OPS.forEach(opt => {
                 const o = document.createElement('option');
                 o.value = opt.value; o.textContent = opt.label;
@@ -92,7 +92,7 @@ function renderConditionsBuilder(q, colOptions) {
                 valIn.type = 'text';
                 valIn.placeholder = 'value';
                 valIn.value = cond.val || '';
-                valIn.style.cssText = 'flex:1;min-width:80px;font-size:13px;';
+                valIn.className = 'adm-input flex-1';
                 valIn.addEventListener('input', e => { cond.val = e.target.value; });
                 row.appendChild(valIn);
             }
@@ -101,7 +101,7 @@ function renderConditionsBuilder(q, colOptions) {
             const rmBtn = document.createElement('button');
             rmBtn.type = 'button';
             rmBtn.textContent = '✕';
-            rmBtn.style.cssText = 'background:var(--danger,#d00000);color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:13px;';
+            rmBtn.className = 'btn btn-danger btn-xs';
             rmBtn.addEventListener('click', () => {
                 q.conditions.splice(idx, 1);
                 rebuildList();
@@ -118,7 +118,7 @@ function renderConditionsBuilder(q, colOptions) {
     const addBtn = document.createElement('button');
     addBtn.type = 'button';
     addBtn.textContent = '+ Add condition';
-    addBtn.style.cssText = 'font-size:13px;padding:4px 10px;cursor:pointer;';
+    addBtn.className = 'btn btn-secondary btn-sm';
     addBtn.addEventListener('click', () => {
         const firstCol = colOptions[0]?.value || '';
         q.conditions.push({ col: firstCol, op: '=', val: '' });

@@ -205,8 +205,7 @@ function renderSettingsPanel(panel, ctx) {
 
     const clearBtn = document.createElement('button');
     clearBtn.type = 'button';
-    clearBtn.className = 'btn-remove';
-    clearBtn.style.float = 'none';
+    clearBtn.className = 'btn btn-danger';
     clearBtn.textContent = 'Clear Entire Config';
     clearBtn.addEventListener('click', () => {
         if (!confirm('Are you sure you want to completely clear the User Records configuration?')) return;

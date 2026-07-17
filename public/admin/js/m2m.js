@@ -62,12 +62,12 @@ export async function renderM2mPage(ctx) {
 
     function makeTableSelect(labelText) {
         const wrap = document.createElement('div');
-        wrap.style.flex = '1';
+        wrap.className = 'flex-1';
         const lbl = document.createElement('label');
-        lbl.style.cssText = 'display:block; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px;';
+        lbl.className = 'adm-field-label';
         lbl.textContent = labelText;
         const sel = document.createElement('select');
-        sel.style.cssText = 'width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; background:#fff;';
+        sel.className = 'adm-input w-full';
         const blank = document.createElement('option');
         blank.value = '';
         blank.textContent = '— select table —';
@@ -97,12 +97,12 @@ export async function renderM2mPage(ctx) {
     function makeField(labelText, placeholder, hint) {
         const wrap = document.createElement('div');
         const lbl = document.createElement('label');
-        lbl.style.cssText = 'display:block; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:5px;';
+        lbl.className = 'adm-field-label';
         lbl.textContent = labelText;
         const inp = document.createElement('input');
         inp.type = 'text';
         inp.placeholder = placeholder;
-        inp.style.cssText = 'width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; box-sizing:border-box;';
+        inp.className = 'adm-input w-full';
         if (hint) {
             const h = document.createElement('div');
             h.style.cssText = 'font-size:11px; color:var(--muted); margin-top:4px;';

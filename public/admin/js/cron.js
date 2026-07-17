@@ -81,7 +81,7 @@ function buildManualRunSection() {
     const { card, body } = cronMakeSection('cron-section-0', 'Manual Run', 'Trigger the notification cron immediately outside the scheduler.');
 
     const runBtn = document.createElement('button');
-    runBtn.className = 'btn-action';
+    runBtn.className = 'btn btn-primary';
     runBtn.textContent = 'Run Cron Now';
 
     const output = document.createElement('pre');
@@ -124,7 +124,7 @@ function buildRunHistorySection() {
     const { card, body } = cronMakeSection('cron-section-1', 'Run History', 'Last 50 cron executions from spw_users_notifications_log.');
 
     const loadBtn = document.createElement('button');
-    loadBtn.className = 'btn-action';
+    loadBtn.className = 'btn btn-primary';
     loadBtn.textContent = 'Load History';
 
     const container = document.createElement('div');
@@ -186,7 +186,7 @@ function buildStatsSection() {
     const { card, body } = cronMakeSection('cron-section-2', 'Notification Stats', 'Current totals from spw_users_notifications, top unread per user.');
 
     const loadBtn = document.createElement('button');
-    loadBtn.className = 'btn-action';
+    loadBtn.className = 'btn btn-primary';
     loadBtn.textContent = 'Load Stats';
 
     const container = document.createElement('div');
@@ -359,16 +359,14 @@ function buildCleanupSection() {
     input.value = '30';
     input.min = '1';
     input.max = '3650';
-    input.className = 'adm-input';
-    input.style.width = '80px';
+    input.className = 'adm-input w-80';
 
     const unit = document.createElement('span');
     unit.textContent = 'days';
     unit.style.cssText = 'font-size:13px; color:var(--muted);';
 
     const btn = document.createElement('button');
-    btn.className = 'btn-remove';
-    btn.style.cssText = 'padding:6px 16px; font-size:13px; float:none;';
+    btn.className = 'btn btn-danger';
     btn.textContent = 'Purge Old Logs';
 
     const result = document.createElement('p');

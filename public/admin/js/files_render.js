@@ -90,7 +90,7 @@ function buildSkeleton() {
                 <button id="f-add-relation-btn" type="button" class="btn btn-primary btn-xs" style="margin-top:10px;">+ Add Relation</button>
             </div>
 
-            <button type="button" id="f-save-cfg" class="btn-add" style="margin:0">Save configuration</button>
+            <button type="button" id="f-save-cfg" class="btn btn-success">Save configuration</button>
             <span id="f-cfg-msg" style="margin-left:12px;font-size:13px"></span>
         </div>
 
@@ -105,7 +105,7 @@ function buildSkeleton() {
                     <label>Display name (optional)</label>
                     <input type="text" id="f-upload-name" placeholder="Leave empty to use original">
                 </div>
-                <button type="button" id="f-upload-btn" class="btn-add" style="margin:0">Upload</button>
+                <button type="button" id="f-upload-btn" class="btn btn-success">Upload</button>
             </div>
             <div id="f-upload-status" style="margin-top:8px;font-size:13px"></div>
         </div>
@@ -113,12 +113,12 @@ function buildSkeleton() {
         <div class="column-block" id="files-lib-block" style="margin-top: 20px">
             <h4>File Library</h4>
             <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-                <input id="f-search" type="text" placeholder="Search by name" style="flex:1;min-width:160px;max-width:300px">
-                <select id="f-type-filter" style="width:160px">
+                <input id="f-search" type="search" placeholder="Search by name" class="adm-input flex-1" style="min-width:160px;max-width:300px">
+                <select id="f-type-filter" class="adm-input w-160">
                     <option value="all">All types</option>
                     ${ALL_TYPES.map(t => `<option value="${t}">${cap(t)}</option>`).join('')}
                 </select>
-                <button type="button" id="f-refresh" class="btn-add" style="margin:0;padding:6px 14px">Refresh</button>
+                <button type="button" id="f-refresh" class="btn btn-success btn-sm">Refresh</button>
             </div>
             <div id="f-status" style="font-size:13px;color:#64748B;margin-bottom:8px"></div>
             <table style="width:100%;border-collapse:collapse;font-size:13px" id="f-table">
@@ -182,15 +182,15 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     row.innerHTML = `
         <div style="flex:1">
             <label style="font-size:11px; display:block; margin-bottom:4px;">Table</label>
-            <select class="rel-table" style="width:100%">${tableOpts}</select>
+            <select class="rel-table adm-input w-full">${tableOpts}</select>
         </div>
         <div style="flex:1">
             <label style="font-size:11px; display:block; margin-bottom:4px;">Col 1</label>
-            <select class="rel-col1" style="width:100%"></select>
+            <select class="rel-col1 adm-input w-full"></select>
         </div>
         <div style="flex:1">
             <label style="font-size:11px; display:block; margin-bottom:4px;">Col 2 (Opt)</label>
-            <select class="rel-col2" style="width:100%"></select>
+            <select class="rel-col2 adm-input w-full"></select>
         </div>
         <button type="button" class="btn btn-danger btn-xs btn-del-rel">✕</button>
     `;
@@ -392,7 +392,7 @@ function renderTable(files) {
             <td style="padding:7px 6px">${esc(f.uploaded_by_username || '-')}</td>
             <td style="padding:7px 6px;white-space:nowrap">${formatDate(f.created_at)}</td>
             <td style="padding:7px 6px">
-                <button class="btn-remove" style="float:none;font-size:11px;padding:3px 8px" data-del="${esc(f.uuid)}" data-name="${esc(f.display_name || f.name)}">Del</button>
+                <button class="btn btn-danger btn-xs" data-del="${esc(f.uuid)}" data-name="${esc(f.display_name || f.name)}">Del</button>
             </td>
         </tr>
     `).join('');
@@ -434,7 +434,7 @@ function renderPager() {
     let html = '';
     for (let p = 1; p <= pages; p++) {
         if (p === 1 || p === pages || (p >= page - 2 && p <= page + 2)) {
-            html += `<button data-p="${p}" style="padding:4px 10px;border:1px solid #CBD5E1;border-radius:4px;cursor:pointer;background:${p === page ? 'var(--accent,#64748B)' : '#fff'};color:${p === page ? '#fff' : '#64748B'}">${p}</button>`;
+            html += `<button data-p="${p}" class="btn btn-xs ${p === page ? 'btn-primary' : 'btn-secondary'}">${p}</button>`;
         } else if (p === page - 3 || p === page + 3) {
             html += `<span style="padding:4px 4px;color:#64748B">...</span>`;
         }

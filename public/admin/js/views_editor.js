@@ -40,8 +40,8 @@ export function renderViewsEditor(ctx) {
         </div>
     `;
     const syncBtn = document.createElement('button');
-    syncBtn.className   = 'btn-add';
-    syncBtn.style.cssText = 'margin:0; flex-shrink:0;';
+    syncBtn.className   = 'btn btn-success';
+    syncBtn.style.flexShrink = '0';
     hdr.appendChild(syncBtn);
     wrap.appendChild(hdr);
 
@@ -225,8 +225,8 @@ export function renderViewsEditor(ctx) {
         cardHdr.style.cssText = 'display:flex; align-items:center; gap:10px; padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--border-light); cursor:default;';
 
         const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'chevron-btn';
         toggleBtn.textContent = '▶';
-        toggleBtn.style.cssText = 'background:none; border:none; font-size:12px; cursor:pointer; color:var(--muted); padding:0 4px; box-shadow:none;';
 
         const nameSpan = document.createElement('strong');
         nameSpan.style.cssText = 'font-size:15px; color:var(--text);';
@@ -241,7 +241,7 @@ export function renderViewsEditor(ctx) {
         const visibleChk = document.createElement('input');
         visibleChk.type    = 'checkbox';
         visibleChk.checked = !cfg.hidden;
-        visibleChk.style.cssText = 'width:15px; height:15px; accent-color:var(--accent); cursor:pointer;';
+        visibleChk.className = 'adm-check';
         visibleChk.addEventListener('change', e => {
             views[vName].hidden = !e.target.checked;
             card.style.opacity = views[vName].hidden ? '0.6' : '1';
@@ -429,8 +429,7 @@ export function renderViewsEditor(ctx) {
             });
 
             const condOpSel = document.createElement('select');
-            condOpSel.className = 'adm-input';
-            condOpSel.style.width = '110px';
+            condOpSel.className = 'adm-input w-110';
             ['==', '!=', '>', '>=', '<', '<=', 'contains'].forEach(op => {
                 const o = document.createElement('option');
                 o.value = op;
@@ -501,8 +500,7 @@ export function renderViewsEditor(ctx) {
             renderRules();
 
             const addRuleBtn = document.createElement('button');
-            addRuleBtn.className   = 'btn-add';
-            addRuleBtn.style.cssText = 'margin:0; padding:7px 12px; font-size:13px;';
+            addRuleBtn.className   = 'btn btn-success btn-sm';
             addRuleBtn.textContent = '+ Add color rule';
             addRuleBtn.addEventListener('click', () => {
                 rules.push({ op: '>', value: 0, color: '#d00000' });
@@ -523,8 +521,7 @@ export function renderViewsEditor(ctx) {
         row.style.cssText = 'display:flex; align-items:center; gap:8px;';
 
         const opSel = document.createElement('select');
-        opSel.className = 'adm-input';
-        opSel.style.width = '64px';
+        opSel.className = 'adm-input w-64';
         ['>', '>=', '<', '<=', '=='].forEach(op => {
             const o = document.createElement('option');
             o.value = op; o.textContent = op;
@@ -535,14 +532,13 @@ export function renderViewsEditor(ctx) {
 
         const valInp = document.createElement('input');
         valInp.type  = 'number';
-        valInp.className = 'adm-input';
-        valInp.style.width = '100px';
+        valInp.className = 'adm-input w-100';
         valInp.value = rule.value ?? 0;
         valInp.addEventListener('input', () => { rules[idx].value = parseFloat(valInp.value) || 0; });
 
         const colorInp = document.createElement('input');
         colorInp.type  = 'color';
-        colorInp.style.cssText = 'width:44px; height:36px; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; padding:1px;';
+        colorInp.className = 'adm-color';
         colorInp.value = rule.color ?? '#d00000';
         colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; });
 
@@ -627,8 +623,7 @@ export function renderViewsEditor(ctx) {
         renderLevels();
 
         const addLvlBtn = document.createElement('button');
-        addLvlBtn.className   = 'btn-add';
-        addLvlBtn.style.cssText = 'margin:0; padding:7px 12px; font-size:13px;';
+        addLvlBtn.className   = 'btn btn-success btn-sm';
         addLvlBtn.textContent = '+ Add level';
         addLvlBtn.addEventListener('click', () => {
             if (!dd.levels) dd.levels = [];

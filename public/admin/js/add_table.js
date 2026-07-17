@@ -200,7 +200,7 @@ export function renderAddTableEditor(ctx) {
             colNum.textContent = col.name ? `Column: ${col.name}` : `Column ${index + 1}`;
             const removeBtn = document.createElement('button');
             removeBtn.textContent = 'Remove';
-            removeBtn.style.cssText = 'background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;font-weight:600;';
+            removeBtn.className = 'btn btn-secondary btn-sm';
             removeBtn.addEventListener('click', () => { state.columns.splice(index, 1); renderColumns(); });
             blockHead.appendChild(colNum);
             blockHead.appendChild(removeBtn);
@@ -338,7 +338,7 @@ export function renderAddTableEditor(ctx) {
 
         // + Add Column
         const addColBtn = document.createElement('button');
-        addColBtn.className = 'btn-add';
+        addColBtn.className = 'btn btn-success';
         addColBtn.textContent = '+ Add Column';
         addColBtn.style.marginTop = '8px';
         addColBtn.addEventListener('click', () => {
@@ -381,8 +381,7 @@ export function renderAddTableEditor(ctx) {
     const submitWrap = document.createElement('div');
     submitWrap.style.marginTop = '32px';
     const submitBtn = document.createElement('button');
-    submitBtn.className = 'btn-add';
-    submitBtn.style.cssText = 'background:var(--accent);font-size:15px;padding:11px 28px;';
+    submitBtn.className = 'btn btn-primary';
     submitBtn.textContent = 'Create Table';
     const statusAnchor = document.createElement('span');
     submitWrap.appendChild(submitBtn);

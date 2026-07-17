@@ -84,7 +84,7 @@ export async function renderCsvImportPage(ctx) {
     tableLabel.style.minWidth = '110px';
 
     const tableSelect = document.createElement('select');
-    tableSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;min-width:220px;';
+    tableSelect.className = 'adm-input w-220';
     appendOpt(tableSelect, '', '— Select table —');
 
     try {
@@ -106,7 +106,7 @@ export async function renderCsvImportPage(ctx) {
     const createChk = document.createElement('input');
     createChk.type  = 'checkbox';
     createChk.id    = 'csv-create-table-chk';
-    createChk.style.cssText = 'width:16px;height:16px;cursor:pointer;flex-shrink:0;';
+    createChk.className = 'adm-check';
     const createChkLabel = buildLabel('Create new table from CSV');
     createChkLabel.htmlFor = 'csv-create-table-chk';
     createChkLabel.style.cursor = 'pointer';
@@ -118,7 +118,7 @@ export async function renderCsvImportPage(ctx) {
     const delimLabel = buildLabel('Delimiter:');
     delimLabel.style.minWidth = '80px';
     const delimSelect = document.createElement('select');
-    delimSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;';
+    delimSelect.className = 'adm-input';
     DELIMITERS.forEach(({ value, label }) => {
         const opt = appendOpt(delimSelect, value, label);
         if (value === csvDelimiter) opt.selected = true;
@@ -131,7 +131,7 @@ export async function renderCsvImportPage(ctx) {
     const encLabel = buildLabel('Encoding:');
     encLabel.style.minWidth = '80px';
     const encSelect = document.createElement('select');
-    encSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;min-width:260px;';
+    encSelect.className = 'adm-input w-260';
     ENCODINGS.forEach(({ value, label }) => {
         const opt = appendOpt(encSelect, value, label);
         if (value === csvEncoding) opt.selected = true;
@@ -146,7 +146,7 @@ export async function renderCsvImportPage(ctx) {
     const schemaLabel = buildLabel('Schema:');
 
     const schemaSelect = document.createElement('select');
-    schemaSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;width:100%;';
+    schemaSelect.className = 'adm-input w-full';
     appendOpt(schemaSelect, 'public', 'public');
     schemaSelect.dataset.loaded = '0';
 
@@ -154,13 +154,13 @@ export async function renderCsvImportPage(ctx) {
     const nameInput = document.createElement('input');
     nameInput.type        = 'text';
     nameInput.placeholder = 'e.g. my_customers';
-    nameInput.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;width:100%;box-sizing:border-box;';
+    nameInput.className = 'adm-input w-full';
 
     const dispLabel = buildLabel('Display name:');
     const dispInput = document.createElement('input');
     dispInput.type        = 'text';
     dispInput.placeholder = 'e.g. My Customers (optional)';
-    dispInput.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;width:100%;box-sizing:border-box;';
+    dispInput.className = 'adm-input w-full';
 
     newTableForm.append(schemaLabel, schemaSelect, nameLabel, nameInput, dispLabel, dispInput);
     card1.el.appendChild(newTableForm);
@@ -210,7 +210,7 @@ export async function renderCsvImportPage(ctx) {
     conflictLabel.style.minWidth = '140px';
 
     const conflictSelect = document.createElement('select');
-    conflictSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;min-width:200px;';
+    conflictSelect.className = 'adm-input w-200';
     appendOpt(conflictSelect, '', '— None (insert only) —');
 
     const conflictNote = document.createElement('span');
@@ -331,7 +331,7 @@ export async function renderCsvImportPage(ctx) {
     delimCard.el.appendChild(delimDesc);
 
     const cfgDelimSelect = document.createElement('select');
-    cfgDelimSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;';
+    cfgDelimSelect.className = 'adm-input';
     DELIMITERS.forEach(({ value, label }) => {
         const opt = appendOpt(cfgDelimSelect, value, label);
         if (value === csvDelimiter) opt.selected = true;
@@ -356,7 +356,7 @@ export async function renderCsvImportPage(ctx) {
     encCard.el.appendChild(encDesc);
 
     const cfgEncSelect = document.createElement('select');
-    cfgEncSelect.style.cssText = 'padding:7px 10px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;min-width:260px;';
+    cfgEncSelect.className = 'adm-input w-260';
     ENCODINGS.forEach(({ value, label }) => {
         const opt = appendOpt(cfgEncSelect, value, label);
         if (value === csvEncoding) opt.selected = true;
@@ -700,8 +700,7 @@ export async function renderCsvImportPage(ctx) {
                 const nameInp = document.createElement('input');
                 nameInp.type  = 'text';
                 nameInp.value = defaultColName;
-                nameInp.className = 'col-name-input';
-                nameInp.style.cssText = 'padding:5px 8px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;width:100%;box-sizing:border-box;font-family:monospace;';
+                nameInp.className = 'col-name-input adm-input w-full mono';
                 nameInp.addEventListener('input', () => {
                     nameInp.value = nameInp.value.toLowerCase().replace(/[^a-z0-9_]/g, '_');
                 });
@@ -710,8 +709,7 @@ export async function renderCsvImportPage(ctx) {
                 const tdT = document.createElement('td');
                 tdT.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;';
                 const typeSelect = document.createElement('select');
-                typeSelect.className = 'col-type-select';
-                typeSelect.style.cssText = 'padding:5px 8px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;width:100%;';
+                typeSelect.className = 'col-type-select adm-input w-full';
                 const guessedType = guessColType(csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== ''));
                 typeOptions.forEach(({ value, label }) => {
                     const opt = appendOpt(typeSelect, value, label);
@@ -770,7 +768,7 @@ export async function renderCsvImportPage(ctx) {
             tdC.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;';
             const sel  = document.createElement('select');
             sel.dataset.header = hdr;
-            sel.style.cssText  = 'padding:5px 8px;border:1px solid #CBD5E1;border-radius:4px;font-size:13px;width:100%;';
+            sel.className = 'adm-input w-full';
             appendOpt(sel, '', '— Skip —');
             dbCols.forEach(col => {
                 const cfg = tableColumns[col] || {};
@@ -1127,7 +1125,7 @@ export async function renderCsvImportPage(ctx) {
                     const logBtn = document.createElement('button');
                     logBtn.type      = 'button';
                     logBtn.textContent = 'Log';
-                    logBtn.style.cssText = 'padding:3px 10px;font-size:12px;border:1px solid #CBD5E1;border-radius:4px;cursor:pointer;background:#fff;';
+                    logBtn.className = 'btn btn-secondary btn-xs';
                     logBtn.addEventListener('click', async () => {
                         const existing = tr.nextElementSibling;
                         if (existing && existing.dataset.logForId === String(row.id)) {

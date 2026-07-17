@@ -36,8 +36,7 @@ export function renderPrintEditor(ctx) {
     const hdrActions = document.createElement('div');
     hdrActions.style.cssText = 'display:flex; gap:8px; flex-shrink:0;';
     const addBtn = document.createElement('button');
-    addBtn.className = 'btn-add';
-    addBtn.style.cssText = 'margin:0;';
+    addBtn.className = 'btn btn-success';
     addBtn.textContent = '+ Add printout';
     hdrActions.appendChild(addBtn);
     hdr.appendChild(hdrActions);
@@ -158,7 +157,7 @@ export function renderPrintEditor(ctx) {
 
         const toggleBtn = document.createElement('button');
         toggleBtn.textContent = '▶';
-        toggleBtn.style.cssText = 'background:none; border:none; font-size:12px; cursor:pointer; color:var(--muted); padding:0 4px; box-shadow:none;';
+        toggleBtn.className = 'chevron-btn';
 
         const nameSpan = document.createElement('strong');
         nameSpan.style.cssText = 'font-size:15px; color:var(--text);';
@@ -434,13 +433,13 @@ export function renderPrintEditor(ctx) {
                     widthInp.min = '1';
                     widthInp.max = '100';
                     widthInp.placeholder = 'auto %';
-                    widthInp.style.cssText = 'width:80px;';
+                    widthInp.className = 'adm-input w-80';
                     widthInp.value = entry?.width ?? '';
                     widthInp.disabled = !entry;
                     rowWrap.appendChild(widthInp);
 
                     const alignSel = document.createElement('select');
-                    alignSel.style.cssText = 'width:110px;';
+                    alignSel.className = 'adm-input w-110';
                     [['left', 'Left'], ['center', 'Center'], ['right', 'Right']].forEach(([v, l]) => {
                         const o = document.createElement('option');
                         o.value = v;
@@ -668,8 +667,8 @@ export function renderPrintEditor(ctx) {
         }
 
         const addParamBtn = document.createElement('button');
-        addParamBtn.className = 'btn-add';
-        addParamBtn.style.cssText = 'margin:0 0 20px; padding:7px 12px; font-size:13px;';
+        addParamBtn.className = 'btn btn-success btn-sm';
+        addParamBtn.style.marginBottom = '20px';
         addParamBtn.textContent = '+ Add parameter';
         addParamBtn.addEventListener('click', () => {
             params.push({ key: `param${params.length + 1}`, label: '', column: '', required: false });
@@ -686,8 +685,7 @@ export function renderPrintEditor(ctx) {
             { label: '+ Table block',  make: () => ({ type: 'table', columns: [] }) },
         ].forEach(def => {
             const b = document.createElement('button');
-            b.className = 'btn-add';
-            b.style.cssText = 'margin:0; padding:7px 12px; font-size:13px;';
+            b.className = 'btn btn-success btn-sm';
             b.textContent = def.label;
             b.addEventListener('click', () => {
                 blocks.push(def.make());

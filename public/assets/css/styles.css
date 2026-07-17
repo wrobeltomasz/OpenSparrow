@@ -2512,17 +2512,23 @@ th.drag-over .th-label {
   gap: 20px 36px;
 }
 
-.form-group {
+/* Scoped to the record editor and setup wizard so the flex-column layout and
+   uppercase labels do NOT leak onto the admin panel's own .form-group (which is
+   styled block-level in admin/style.css). */
+.editor-form .form-group,
+.setup-card .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.form-group.span-2 {
+.editor-form .form-group.span-2,
+.setup-card .form-group.span-2 {
   grid-column: span 2;
 }
 
-.form-group > label {
+.editor-form .form-group > label,
+.setup-card .form-group > label {
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
@@ -2530,7 +2536,8 @@ th.drag-over .th-label {
   letter-spacing: 0.06em;
 }
 
-.form-group > label .required {
+.editor-form .form-group > label .required,
+.setup-card .form-group > label .required {
   color: #e53e3e;
   margin-left: 2px;
 }
@@ -2950,7 +2957,7 @@ th.drag-over .th-label {
 
 .dc-toggles { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: #f8fafc; border-radius: var(--radius); border: 1px solid var(--border-light); }
 .dc-toggle-row { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
-.dc-toggle-row input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
+.dc-toggle-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); flex-shrink: 0; }
 .dc-toggle-label { font-size: 13px; color: #475569; }
 
 .dc-status, .bp-status { font-size: 13px; color: #475569; min-height: 18px; }
