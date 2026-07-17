@@ -87,7 +87,6 @@ export function renderViewsEditor(ctx) {
     wrap.appendChild(statusEl);
 
     const listEl = document.createElement('div');
-    listEl.style.cssText = 'display:flex; flex-direction:column; gap:16px;';
     wrap.appendChild(listEl);
 
     workspaceEl.appendChild(wrap);
@@ -216,28 +215,28 @@ export function renderViewsEditor(ctx) {
     /* ---------- single view card (column-block style) ---------- */
     function buildViewCard(vName, cfg) {
         const card = document.createElement('div');
-        card.className = 'column-block';
+        card.className = 'column-block collapsed';
         card.dataset.view = vName;
         if (cfg.hidden) card.style.opacity = '0.6';
 
         /* header: view name + collapse + visible toggle */
         const cardHdr = document.createElement('div');
-        cardHdr.style.cssText = 'display:flex; align-items:center; gap:10px; padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--border-light); cursor:default;';
+        cardHdr.className = 'block-header';
 
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'chevron-btn';
-        toggleBtn.textContent = '▶';
+        const chevron = document.createElement('span');
+        chevron.className = 'block-chevron';
+        chevron.textContent = '▶';
 
         const nameSpan = document.createElement('strong');
-        nameSpan.style.cssText = 'font-size:15px; color:var(--text);';
+        nameSpan.className = 'block-title';
         nameSpan.textContent = cfg.display_name ?? vName;
-
         const dbSpan = document.createElement('span');
-        dbSpan.style.cssText = 'font-size:12px; color:var(--muted);';
-        dbSpan.textContent = `(${vName})`;
+        dbSpan.className = 'block-key';
+        dbSpan.textContent = ` (${vName})`;
+        nameSpan.appendChild(dbSpan);
 
         const visibleLabel = document.createElement('label');
-        visibleLabel.style.cssText = 'display:flex; align-items:center; gap:6px; margin-left:auto; font-size:13px; color:var(--muted); cursor:pointer; font-weight:normal;';
+        visibleLabel.className = 'block-vis';
         const visibleChk = document.createElement('input');
         visibleChk.type    = 'checkbox';
         visibleChk.checked = !cfg.hidden;
@@ -249,22 +248,34 @@ export function renderViewsEditor(ctx) {
         visibleLabel.appendChild(visibleChk);
         visibleLabel.appendChild(document.createTextNode('Visible'));
 
-        cardHdr.appendChild(toggleBtn);
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.title = 'Delete';
+        delBtn.textContent = '✕';
+        delBtn.className = 'icon-btn icon-btn-danger';
+        delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!confirm(`Remove view "${cfg.display_name ?? vName}" from the configuration? It reappears on the next sync if it still exists in the database.`)) return;
+            delete views[vName];
+            markDirty();
+            renderList();
+        });
+
+        cardHdr.appendChild(chevron);
         cardHdr.appendChild(nameSpan);
-        cardHdr.appendChild(dbSpan);
         cardHdr.appendChild(visibleLabel);
+        cardHdr.appendChild(delBtn);
         card.appendChild(cardHdr);
 
         /* collapsible body */
         const body = document.createElement('div');
-        body.style.display = 'none';
+        body.className = 'block-body';
         body.appendChild(buildCardBody(vName, cfg));
         card.appendChild(body);
 
-        toggleBtn.addEventListener('click', () => {
-            const open = body.style.display === 'block';
-            body.style.display = open ? 'none' : 'block';
-            toggleBtn.textContent = open ? '▶' : '▼';
+        cardHdr.addEventListener('click', (e) => {
+            if (e.target.closest('button, input, label')) return;
+            card.classList.toggle('collapsed');
         });
 
         return card;

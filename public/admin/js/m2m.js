@@ -224,40 +224,40 @@ export async function renderM2mPage(ctx) {
     }
 
     const list = document.createElement('div');
-    list.style.cssText = 'display:flex; flex-direction:column; gap:10px; max-width:680px;';
+    list.style.cssText = 'max-width:680px;';
 
     relationships.forEach(rel => {
-        const row = document.createElement('div');
-        row.style.cssText = 'display:flex; align-items:center; gap:14px; padding:14px 18px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);';
+        const card = document.createElement('div');
+        card.className = 'column-block collapsed';
 
-        const dot = document.createElement('div');
-        dot.style.cssText = 'width:10px; height:10px; border-radius:50%; background:#005A9E; flex-shrink:0;';
+        const header = document.createElement('div');
+        header.className = 'block-header';
+        header.addEventListener('click', (e) => {
+            if (e.target.closest('button, input, label')) return;
+            card.classList.toggle('collapsed');
+        });
 
-        const info = document.createElement('div');
-        info.style.flex = '1';
+        const chevron = document.createElement('span');
+        chevron.className = 'block-chevron';
+        chevron.textContent = '▶';
 
-        const title = document.createElement('div');
-        title.style.cssText = 'font-weight:600; font-size:14px;';
+        const title = document.createElement('strong');
+        title.className = 'block-title';
         title.textContent = `${rel.table_a_display} ↔ ${rel.table_b_display}`;
-
-        const meta = document.createElement('div');
-        meta.style.cssText = 'font-size:12px; color:var(--muted); margin-top:3px;';
-        meta.textContent = `via ${rel.junction_table}  ·  Label: "${rel.label}"  ·  Display: ${rel.display_column}`;
-
-        info.append(title, meta);
 
         const btnDel = document.createElement('button');
         btnDel.type = 'button';
-        btnDel.style.cssText = 'padding:5px 14px; background:none; border:1px solid #d00000; color:#d00000; border-radius:var(--radius); cursor:pointer; font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0;';
-        btnDel.textContent = 'Remove';
+        btnDel.title = 'Remove';
+        btnDel.textContent = '✕';
+        btnDel.className = 'icon-btn icon-btn-danger';
 
-        btnDel.addEventListener('click', async () => {
+        btnDel.addEventListener('click', async (e) => {
+            e.stopPropagation();
             if (!confirm(`Remove relationship "${rel.table_a_display} ↔ ${rel.table_b_display}"?\n\nThis removes the configuration entry. The junction table "${rel.junction_table}" stays in the database unless you choose to drop it next.`)) return;
 
             const alsoDropTable = confirm(`Also DROP TABLE "${rel.junction_table}" from PostgreSQL?\n\nWARNING: This permanently deletes all relationship data.`);
 
             btnDel.disabled = true;
-            btnDel.textContent = 'Removing…';
 
             try {
                 const res = await apiFetch('api.php?action=delete_m2m', {
@@ -267,22 +267,44 @@ export async function renderM2mPage(ctx) {
                 });
                 const result = await res.json();
                 if (result.status === 'success') {
-                    row.style.opacity = '0.4';
-                    setTimeout(() => row.remove(), 300);
+                    card.style.opacity = '0.4';
+                    setTimeout(() => card.remove(), 300);
                 } else {
                     showStatusPill(btnDel, result.error || 'Failed.', 'error');
                     btnDel.disabled = false;
-                    btnDel.textContent = 'Remove';
                 }
             } catch {
                 showStatusPill(btnDel, 'Network error.', 'error');
                 btnDel.disabled = false;
-                btnDel.textContent = 'Remove';
             }
         });
 
-        row.append(dot, info, btnDel);
-        list.appendChild(row);
+        header.append(chevron, title, btnDel);
+        card.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'block-body';
+        [
+            ['Junction table', rel.junction_table],
+            ['Label in form', rel.label],
+            ['Display column', rel.display_column],
+            ['Table A', rel.table_a_display],
+            ['Table B', rel.table_b_display],
+        ].forEach(([k, v]) => {
+            const detail = document.createElement('div');
+            detail.style.cssText = 'font-size:13px; margin-bottom:6px;';
+            const kEl = document.createElement('span');
+            kEl.style.cssText = 'color:var(--muted); display:inline-block; min-width:130px;';
+            kEl.textContent = k;
+            const vEl = document.createElement('span');
+            vEl.style.color = 'var(--text)';
+            vEl.textContent = (v === undefined || v === null || v === '') ? '—' : v;
+            detail.append(kEl, vEl);
+            body.appendChild(detail);
+        });
+        card.appendChild(body);
+
+        list.appendChild(card);
     });
 
     workspaceEl.appendChild(list);

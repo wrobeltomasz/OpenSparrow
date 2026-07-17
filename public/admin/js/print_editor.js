@@ -148,31 +148,31 @@ export function renderPrintEditor(ctx) {
     /* ---------- single template card ---------- */
     function buildPrintCard(pName, cfg) {
         const card = document.createElement('div');
-        card.className = 'column-block';
+        card.className = 'column-block collapsed';
         card.dataset.print = pName;
         if (cfg.hidden) card.style.opacity = '0.6';
 
         const cardHdr = document.createElement('div');
-        cardHdr.style.cssText = 'display:flex; align-items:center; gap:10px; padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--border-light);';
+        cardHdr.className = 'block-header';
 
-        const toggleBtn = document.createElement('button');
-        toggleBtn.textContent = '▶';
-        toggleBtn.className = 'chevron-btn';
+        const chevron = document.createElement('span');
+        chevron.className = 'block-chevron';
+        chevron.textContent = '▶';
 
         const nameSpan = document.createElement('strong');
-        nameSpan.style.cssText = 'font-size:15px; color:var(--text);';
+        nameSpan.className = 'block-title';
         nameSpan.textContent = cfg.display_name || pName;
-
         const keySpan = document.createElement('span');
-        keySpan.style.cssText = 'font-size:12px; color:var(--muted); font-family:monospace;';
-        keySpan.textContent = `(${pName})`;
+        keySpan.className = 'block-key';
+        keySpan.textContent = ` (${pName})`;
+        nameSpan.appendChild(keySpan);
 
         const visibleLabel = document.createElement('label');
-        visibleLabel.style.cssText = 'display:flex; align-items:center; gap:6px; margin-left:auto; font-size:13px; color:var(--muted); cursor:pointer; font-weight:normal;';
+        visibleLabel.className = 'block-vis';
         const visibleChk = document.createElement('input');
         visibleChk.type = 'checkbox';
         visibleChk.checked = !cfg.hidden;
-        visibleChk.style.cssText = 'width:15px; height:15px; accent-color:var(--accent); cursor:pointer;';
+        visibleChk.className = 'adm-check';
         visibleChk.addEventListener('change', e => {
             prints[pName].hidden = !e.target.checked;
             card.style.opacity = prints[pName].hidden ? '0.6' : '1';
@@ -181,31 +181,33 @@ export function renderPrintEditor(ctx) {
         visibleLabel.appendChild(document.createTextNode('Visible'));
 
         const delBtn = document.createElement('button');
-        delBtn.className = 'btn btn-danger btn-xs';
-        delBtn.textContent = '✕ Delete';
-        delBtn.addEventListener('click', () => {
+        delBtn.type = 'button';
+        delBtn.className = 'icon-btn icon-btn-danger';
+        delBtn.title = 'Delete';
+        delBtn.textContent = '✕';
+        delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (!confirm(`Delete printout "${pName}"?`)) return;
             delete prints[pName];
             renderList();
         });
 
-        cardHdr.appendChild(toggleBtn);
+        cardHdr.appendChild(chevron);
         cardHdr.appendChild(nameSpan);
-        cardHdr.appendChild(keySpan);
         cardHdr.appendChild(visibleLabel);
         cardHdr.appendChild(delBtn);
         card.appendChild(cardHdr);
 
         const body = document.createElement('div');
-        body.style.display = 'none';
+        body.className = 'block-body';
         card.appendChild(body);
 
         let rendered = false;
-        toggleBtn.addEventListener('click', async () => {
-            const open = body.style.display === 'block';
-            body.style.display = open ? 'none' : 'block';
-            toggleBtn.textContent = open ? '▶' : '▼';
-            if (!open && !rendered) {
+        cardHdr.addEventListener('click', async (e) => {
+            if (e.target.closest('button, input, label')) return;
+            const willOpen = card.classList.contains('collapsed');
+            card.classList.toggle('collapsed');
+            if (willOpen && !rendered) {
                 rendered = true;
                 await buildCardBody(pName, cfg, body, nameSpan);
             }
@@ -225,7 +227,8 @@ export function renderPrintEditor(ctx) {
 
         body.appendChild(fg('Display name', cfg.display_name ?? pName, v => {
             prints[pName].display_name = v;
-            nameSpan.textContent = v || pName;
+            // firstChild is the name text node; keep the trailing .block-key span intact.
+            nameSpan.firstChild.nodeValue = v || pName;
         }));
         body.appendChild(fg('Menu name', cfg.menu_name ?? pName, v => { prints[pName].menu_name = v; }));
         body.appendChild(fgArea('Description', cfg.description ?? '', v => { prints[pName].description = v; }));

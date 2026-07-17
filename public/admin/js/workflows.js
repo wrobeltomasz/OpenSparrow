@@ -27,30 +27,34 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
             const incomplete = !step.title || step.title.trim() === '' || !step.table || step.table.trim() === '';
 
             const block = document.createElement('div');
-            block.className = 'column-block';
-            block.style.borderLeft = incomplete ? '4px solid var(--danger)' : '4px solid #64748B';
-            block.style.marginBottom = '20px';
-            block.style.padding = '15px';
-            block.style.background = '#DDEAF4';
+            block.className = 'column-block collapsed';
 
             const header = document.createElement('div');
-            header.style.display = 'flex';
-            header.style.justifyContent = 'space-between';
-            header.style.marginBottom = '10px';
+            header.className = 'block-header';
+            header.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                block.classList.toggle('collapsed');
+            });
+
+            const chevron = document.createElement('span');
+            chevron.className = 'block-chevron';
+            chevron.textContent = '▶';
 
             const h4 = document.createElement('h4');
             h4.textContent = incomplete ? `Step ${index + 1} — incomplete` : `Step ${index + 1}`;
-            h4.style.margin = '0';
             if (incomplete) h4.style.color = 'var(--danger)';
 
             const delBtn = document.createElement('button');
-            delBtn.textContent = 'Delete Step';
-            delBtn.style.cssText = 'background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;';
+            delBtn.type = 'button';
+            delBtn.title = 'Delete Step';
+            delBtn.textContent = '✕';
+            delBtn.className = 'icon-btn icon-btn-danger';
             delBtn.onclick = () => {
                 itemData.steps.splice(index, 1);
                 renderSteps();
             };
 
+            header.appendChild(chevron);
             header.appendChild(h4);
             header.appendChild(delBtn);
             block.appendChild(header);
@@ -88,6 +92,12 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
                 
                 block.appendChild(createSelectInput('link_to_step', 'Link to ID from Step', prevSteps, (step.link_to_step !== undefined ? step.link_to_step.toString() : ''), v => step.link_to_step = parseInt(v)));
             }
+
+            // Wrap everything after the header into the collapsible body.
+            const bodyDiv = document.createElement('div');
+            bodyDiv.className = 'block-body';
+            while (block.children.length > 1) bodyDiv.appendChild(block.children[1]);
+            block.appendChild(bodyDiv);
 
             stepsContainer.appendChild(block);
         });

@@ -5,7 +5,7 @@
 // edits the "user_records" config, which drives the front-end "My records" panel opened from the
 // avatar menu (public/assets/js/user-menu.js -> public/api/owners.php action=mine). Two tabs:
 // "Column Mapping" (per table, which columns are CONCAT_WS'd into each record's label) and
-// "Settings" (how many recently-assigned records are shown per table).
+// "Global Settings" (how many recently-assigned records are shown per table).
 import { markDirty } from './app.js';
 import { createPageHeader, buildInnerTabs } from './ui.js';
 
@@ -35,7 +35,7 @@ export function renderUserRecordsEditor(ctx) {
 
     const [columnsPanel, settingsPanel] = buildInnerTabs(tabsContainer, [
         { label: 'Column Mapping' },
-        { label: 'Settings' },
+        { label: 'Global Settings' },
     ]);
 
     renderColumnsPanel(columnsPanel, currentConfig);
@@ -93,10 +93,7 @@ function buildTableBlock(tableName, tableCfg, currentConfig) {
 
     const h4 = document.createElement('h4');
     h4.textContent = tableCfg.display_name || tableName;
-    h4.style.cssText = 'margin:0; border-bottom:none; flex:1;';
 
-    headerDiv.style.cssText = 'display:flex; align-items:center; gap:8px; '
-        + 'border-bottom:1px solid #DDEAF4; padding-bottom:5px; margin-bottom:15px;';
     headerDiv.appendChild(chevron);
     headerDiv.appendChild(h4);
     block.appendChild(headerDiv);

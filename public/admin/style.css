@@ -451,15 +451,63 @@ body {
 }
 
 /* ===== Collapsible column / subtable blocks ===== */
+/* Canonical collapsible-card header — used by EVERY admin module that renders a
+   collapsible block/card (schema, user_records, print, views, automations, …).
+   All header layout lives here so every card looks identical before expansion. */
 .block-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
     cursor: pointer;
     user-select: none;
+}
+
+/* Title inside a block header — flex:1 pushes any right-side controls to the end.
+   The .column-block prefix on the h4 selector raises specificity above the generic
+   ".column-block h4" section-heading rule below, which would otherwise re-add a
+   border-bottom under the title in modules that use an <h4> (Schema, User Records). */
+.column-block .block-header h4,
+.block-header .block-title {
+    margin: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.block-key {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: monospace;
+    flex-shrink: 0;
+}
+
+/* Right-aligned visibility toggle in a block header. */
+.block-vis {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    font-weight: normal;
+    flex-shrink: 0;
 }
 
 .block-chevron {
     display: inline-block;
     font-size: 11px;
     flex-shrink: 0;
+    color: var(--muted);
     transition: transform var(--transition);
 }
 
@@ -469,6 +517,13 @@ body {
 
 .column-block.collapsed .block-body {
     display: none;
+}
+
+/* Collapsed card = just the title row: drop the header divider and its spacing. */
+.column-block.collapsed .block-header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 /* ===== Main workspace area ===== */

@@ -872,23 +872,22 @@ export async function renderAutomationsPage(ctx) {
         }
 
         const cardList = document.createElement('div');
-        cardList.style.cssText = 'display:flex; flex-direction:column; gap:8px; max-width:900px;';
+        cardList.style.cssText = 'max-width:900px;';
 
         for (const rule of rules) {
             const card = document.createElement('div');
-            card.style.cssText = 'border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;';
+            card.className = 'column-block collapsed';
 
             // Header
             const hdr = document.createElement('div');
-            hdr.style.cssText = 'display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--panel); cursor:pointer;';
+            hdr.className = 'block-header';
 
-            const toggleBtn = document.createElement('button');
-            toggleBtn.type = 'button';
-            toggleBtn.textContent = '▶';
-            toggleBtn.className = 'chevron-btn';
+            const chevron = document.createElement('span');
+            chevron.className = 'block-chevron';
+            chevron.textContent = '▶';
 
             const nameSpan = document.createElement('strong');
-            nameSpan.style.cssText = 'font-size:14px; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+            nameSpan.className = 'block-title';
             nameSpan.textContent = rule.name;
 
             const tableMeta = document.createElement('span');
@@ -935,7 +934,7 @@ export async function renderAutomationsPage(ctx) {
             btnDel.className = 'icon-btn icon-btn-danger';
             btnDel.addEventListener('click', e => { e.stopPropagation(); deleteRule(rule.id, btnDel); });
 
-            hdr.appendChild(toggleBtn);
+            hdr.appendChild(chevron);
             hdr.appendChild(nameSpan);
             hdr.appendChild(tableMeta);
             hdr.appendChild(badge);
@@ -946,34 +945,29 @@ export async function renderAutomationsPage(ctx) {
 
             // Body (lazy render)
             const body = document.createElement('div');
-            body.style.cssText = 'display:none; padding:20px; border-top:1px solid var(--border);';
+            body.className = 'block-body';
             card.appendChild(body);
 
             let rendered = false;
 
             function openCard() {
-                body.style.display = 'block';
-                toggleBtn.textContent = '▼';
+                card.classList.remove('collapsed');
                 if (!rendered) {
                     rendered = true;
                     buildFormContent(body, rule, async () => {
-                        body.style.display = 'none';
-                        toggleBtn.textContent = '▶';
+                        card.classList.add('collapsed');
                         rendered = false;
                         await loadList();
                     }, () => {
-                        body.style.display = 'none';
-                        toggleBtn.textContent = '▶';
+                        card.classList.add('collapsed');
                     });
                 }
             }
 
-            toggleBtn.addEventListener('click', e => {
-                e.stopPropagation();
-                body.style.display === 'block' ? (body.style.display = 'none', toggleBtn.textContent = '▶') : openCard();
-            });
-            hdr.addEventListener('click', () => {
-                body.style.display === 'block' ? (body.style.display = 'none', toggleBtn.textContent = '▶') : openCard();
+            hdr.addEventListener('click', e => {
+                if (e.target.closest('button, input, label')) return;
+                if (card.classList.contains('collapsed')) openCard();
+                else card.classList.add('collapsed');
             });
 
             cardList.appendChild(card);

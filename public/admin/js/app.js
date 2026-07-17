@@ -304,6 +304,30 @@ function clearConfig() {
     }
 }
 
+// Appends the "Clear Entire Config" danger action to the bottom of a Global
+// Settings panel. Replaces the old top-row action button so the destructive
+// action lives with the section's global config (mirrors user_records editor).
+function appendClearConfigButton(ctx) {
+    const { workspaceEl } = ctx;
+    const dangerGrp = document.createElement('div');
+    dangerGrp.className = 'form-group';
+    dangerGrp.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'btn btn-danger';
+    clearBtn.textContent = 'Clear Entire Config';
+    clearBtn.onclick = clearConfig;
+    dangerGrp.appendChild(clearBtn);
+
+    const clearHelp = document.createElement('span');
+    clearHelp.className = 'help-text';
+    clearHelp.textContent = 'Removes the entire configuration for this section. Press "Save config" in the top bar to apply.';
+    dangerGrp.appendChild(clearHelp);
+
+    workspaceEl.appendChild(dangerGrp);
+}
+
 function renderSidebar() {
     itemPanelEl.innerHTML = '';
 
@@ -347,10 +371,7 @@ function renderSidebar() {
                 (err) => showStatusPill(btnSync, err, 'error'));
         };
         actionsRow.appendChild(btnSync);
-        const btnClear = document.createElement('button');
-        btnClear.type = 'button'; btnClear.className = 'btn btn-danger';
-        btnClear.textContent = 'Clear Entire Config'; btnClear.onclick = clearConfig;
-        actionsRow.appendChild(btnClear);
+        // "Clear Entire Config" moved into the Global Grid Settings tab (see appendClearConfigButton).
     } else if (currentFile === 'automations') {
         const btnNew = document.createElement('button');
         btnNew.type = 'button'; btnNew.className = 'btn btn-success';
@@ -363,10 +384,7 @@ function renderSidebar() {
         btnAdd.textContent = currentFile === 'dashboard' ? '+ Add New Widget' : currentFile === 'workflows' ? '+ Add New Workflow' : '+ Add New Source';
         btnAdd.onclick = addNewItem;
         actionsRow.appendChild(btnAdd);
-        const btnClear = document.createElement('button');
-        btnClear.type = 'button'; btnClear.className = 'btn btn-danger';
-        btnClear.textContent = 'Clear Entire Config'; btnClear.onclick = clearConfig;
-        actionsRow.appendChild(btnClear);
+        // "Clear Entire Config" moved into the Global Settings tab (see appendClearConfigButton).
     }
 
     if (actionsRow.children.length > 0) {
@@ -520,7 +538,7 @@ function renderItemCards() {
     }
 
     const list = document.createElement('div');
-    list.style.cssText = 'display:flex; flex-direction:column; gap:8px; max-width:900px;';
+    list.style.cssText = 'max-width:900px;';
     workspaceEl.appendChild(list);
 
     function redraw() {
@@ -556,39 +574,38 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     const isWorkflows = currentFile === 'workflows';
 
     const card = document.createElement('div');
-    card.style.cssText = 'border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;';
+    card.className = 'column-block collapsed';
 
     // ── Header ───────────────────────────────────────────────────────────────
     const hdr = document.createElement('div');
-    hdr.style.cssText = 'display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--panel); cursor:pointer;';
+    hdr.className = 'block-header';
 
-    const toggleBtn = document.createElement('button');
-    toggleBtn.type = 'button';
-    toggleBtn.textContent = '▶';
-    toggleBtn.className = 'chevron-btn';
+    const chevron = document.createElement('span');
+    chevron.className = 'block-chevron';
+    chevron.textContent = '▶';
 
     const nameSpan = document.createElement('strong');
-    nameSpan.style.cssText = 'font-size:14px; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+    nameSpan.className = 'block-title';
     nameSpan.textContent = isSchema    ? (item.display_name || key)
                          : isDashboard ? (item.title || `Widget ${key}`)
                          : isWorkflows ? (item.title || `Workflow ${key}`)
                          : (item.table || `Source ${key}`);
 
-    hdr.appendChild(toggleBtn);
-    hdr.appendChild(nameSpan);
-
     if (isSchema) {
         const keySpan = document.createElement('span');
-        keySpan.style.cssText = 'font-size:11px; color:var(--muted); font-family:monospace; flex-shrink:0;';
-        keySpan.textContent = `(${key})`;
-        hdr.appendChild(keySpan);
+        keySpan.className = 'block-key';
+        keySpan.textContent = ` (${key})`;
+        nameSpan.appendChild(keySpan);
     }
+
+    hdr.appendChild(chevron);
+    hdr.appendChild(nameSpan);
 
     const btnUp = document.createElement('button');
     btnUp.type = 'button';
     btnUp.title = 'Move up';
     btnUp.textContent = '▲';
-    btnUp.style.cssText = 'background:none; border:none; cursor:pointer; font-size:11px; padding:2px 5px; color:var(--muted); flex-shrink:0; box-shadow:none;';
+    btnUp.className = 'icon-btn';
     if (index === 0) { btnUp.disabled = true; btnUp.style.opacity = '0.3'; }
     btnUp.onclick = e => {
         e.stopPropagation();
@@ -602,7 +619,7 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     btnDown.type = 'button';
     btnDown.title = 'Move down';
     btnDown.textContent = '▼';
-    btnDown.style.cssText = 'background:none; border:none; cursor:pointer; font-size:11px; padding:2px 5px; color:var(--muted); flex-shrink:0; box-shadow:none;';
+    btnDown.className = 'icon-btn';
     if (index === total - 1) { btnDown.disabled = true; btnDown.style.opacity = '0.3'; }
     btnDown.onclick = e => {
         e.stopPropagation();
@@ -612,46 +629,42 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
         redraw();
     };
 
-    // Delete — all card tabs except schema (which has its own delete button inside the editor)
-    if (!isSchema) {
-        const btnDel = document.createElement('button');
-        btnDel.type = 'button';
-        btnDel.title = 'Delete';
-        btnDel.textContent = '✕';
-        btnDel.style.cssText = 'background:none; border:none; cursor:pointer; font-size:13px; padding:2px 5px; color:var(--danger); flex-shrink:0; box-shadow:none;';
-        btnDel.onclick = e => {
-            e.stopPropagation();
-            const label = isDashboard ? (item.title || `Widget ${key}`)
-                        : isWorkflows ? (item.title || `Workflow ${key}`)
-                        : (item.table || `Source ${key}`);
-            if (!confirm(`Delete "${label}"?`)) return;
-            if (isDashboard)      currentConfig.widgets.splice(key, 1);
-            else if (isWorkflows) currentConfig.workflows.splice(key, 1);
-            else                  currentConfig.sources.splice(key, 1);
-            markDirty();
-            redraw();
-        };
-        hdr.appendChild(btnUp);
-        hdr.appendChild(btnDown);
-        hdr.appendChild(btnDel);
-    } else {
-        hdr.appendChild(btnUp);
-        hdr.appendChild(btnDown);
-    }
+    // Delete — every card tab. Removes the entry from the config (reversible: a
+    // re-sync / re-add brings it back; the DB object itself is never touched).
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.title = 'Delete';
+    btnDel.textContent = '✕';
+    btnDel.className = 'icon-btn icon-btn-danger';
+    btnDel.onclick = e => {
+        e.stopPropagation();
+        const label = isSchema    ? (item.display_name || key)
+                    : isDashboard ? (item.title || `Widget ${key}`)
+                    : isWorkflows ? (item.title || `Workflow ${key}`)
+                    : (item.table || `Source ${key}`);
+        if (!confirm(`Delete "${label}"?`)) return;
+        if (isSchema)         delete currentConfig.tables[key];
+        else if (isDashboard) currentConfig.widgets.splice(key, 1);
+        else if (isWorkflows) currentConfig.workflows.splice(key, 1);
+        else                  currentConfig.sources.splice(key, 1);
+        markDirty();
+        redraw();
+    };
+    hdr.appendChild(btnUp);
+    hdr.appendChild(btnDown);
+    hdr.appendChild(btnDel);
 
     card.appendChild(hdr);
 
     // ── Body ─────────────────────────────────────────────────────────────────
     const body = document.createElement('div');
-    body.style.cssText = 'display:none; padding:20px; border-top:1px solid var(--border);';
+    body.className = 'block-body';
     card.appendChild(body);
 
     let rendered = false;
 
     function openCard() {
-        body.style.display = 'block';
-        toggleBtn.textContent = '▼';
-        hdr.style.borderBottom = 'none';
+        card.classList.remove('collapsed');
         if (!rendered) {
             rendered = true;
             renderEditorIntoCard(key, item, isArray, body, nameSpan, redraw);
@@ -659,17 +672,12 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     }
 
     function closeCard() {
-        body.style.display = 'none';
-        toggleBtn.textContent = '▶';
+        card.classList.add('collapsed');
     }
 
-    toggleBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        body.style.display === 'block' ? closeCard() : openCard();
-    });
-
-    hdr.addEventListener('click', () => {
-        body.style.display === 'block' ? closeCard() : openCard();
+    hdr.addEventListener('click', (e) => {
+        if (e.target.closest('button, input, label')) return;
+        card.classList.contains('collapsed') ? openCard() : closeCard();
     });
 
     return card;
@@ -780,20 +788,24 @@ function renderEditor(key, itemData, isArray) {
     }
 
     if (key === 'LAYOUT') {
-        if (currentFile === 'dashboard') return renderDashboardLayout(ctx);
+        if (currentFile === 'dashboard') { renderDashboardLayout(ctx); appendClearConfigButton(ctx); return; }
         if (currentFile === 'calendar') {
-            return renderGlobalSettings(ctx, { title: 'Calendar Global Settings', defaultMenuName: 'Calendar' });
+            renderGlobalSettings(ctx, { title: 'Calendar Global Settings', defaultMenuName: 'Calendar' });
+            appendClearConfigButton(ctx);
+            return;
         }
         if (currentFile === 'workflows') {
-            return renderGlobalSettings(ctx, { title: 'Workflows Global Settings', defaultMenuName: 'Workflows' });
+            renderGlobalSettings(ctx, { title: 'Workflows Global Settings', defaultMenuName: 'Workflows' });
+            appendClearConfigButton(ctx);
+            return;
         }
         if (currentFile === 'files') {
             return renderGlobalSettings(ctx, { title: 'Files Global Settings', defaultMenuName: 'Files' });
         }
     }
-    
+
     if (currentFile === 'schema' && key === 'EXTERNAL_TABLES') return renderExternalTablesView(ctx);
-    if (currentFile === 'schema' && key === 'GLOBAL_SCHEMA') return renderSchemaGlobalSettings(currentConfig, ctx);
+    if (currentFile === 'schema' && key === 'GLOBAL_SCHEMA') { renderSchemaGlobalSettings(currentConfig, ctx); appendClearConfigButton(ctx); return; }
     if (currentFile === 'schema') return renderSchemaEditor(key, itemData, ctx);
 
     const headerDiv = document.createElement('div');

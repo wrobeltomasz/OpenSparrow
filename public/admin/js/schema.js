@@ -241,38 +241,12 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     
     workspaceEl.innerHTML = '';
 
-    // Create header with title and delete button
-    const headerContainer = document.createElement('div');
-    headerContainer.style.display = 'flex';
-    headerContainer.style.justifyContent = 'space-between';
-    headerContainer.style.alignItems = 'center';
-    headerContainer.style.marginBottom = '20px';
-
+    // Table title. Deletion is handled by the red ✕ in the card header (buildItemCard),
+    // consistent with every other card tab — no separate in-editor delete button.
     const titleEl = document.createElement('h3');
     titleEl.innerHTML = `Table Properties: ${escapeHtml(tableName)}`;
-    titleEl.style.margin = '0';
-
-    const btnDeleteTable = document.createElement('button');
-    btnDeleteTable.type = 'button';
-    btnDeleteTable.textContent = 'Delete Table';
-    btnDeleteTable.className = 'btn btn-danger btn-sm';
-    btnDeleteTable.onclick = () => {
-        if (confirm('Are you sure you want to remove this table from the configuration?')) {
-            if (ctx.currentConfig && ctx.currentConfig.tables) {
-                delete ctx.currentConfig.tables[tableName];
-            }
-            workspaceEl.innerHTML = '<h3 style="color: #d00000;">Table removed from configuration. Please click "Save config" to apply changes.</h3>';
-            
-            markDirty();
-            if (typeof ctx.renderSidebar === 'function') {
-                ctx.renderSidebar();
-            }
-        }
-    };
-
-    headerContainer.appendChild(titleEl);
-    headerContainer.appendChild(btnDeleteTable);
-    workspaceEl.appendChild(headerContainer);
+    titleEl.style.margin = '0 0 20px';
+    workspaceEl.appendChild(titleEl);
 
     if (!tableData.columns || Array.isArray(tableData.columns)) tableData.columns = {};
     if (!tableData.foreign_keys || Array.isArray(tableData.foreign_keys)) tableData.foreign_keys = {};
@@ -567,12 +541,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
         const headerDiv = document.createElement('div');
         headerDiv.className = 'block-header';
-        headerDiv.style.display = 'flex';
-        headerDiv.style.alignItems = 'center';
-        headerDiv.style.gap = '8px';
-        headerDiv.style.borderBottom = '1px solid #DDEAF4';
-        headerDiv.style.paddingBottom = '5px';
-        headerDiv.style.marginBottom = '15px';
         headerDiv.addEventListener('click', (e) => {
             if (e.target.closest('button')) return;
             block.classList.toggle('collapsed');
@@ -584,18 +552,15 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
         const h4 = document.createElement('h4');
         h4.textContent = `Column: ${colName}`;
-        h4.style.margin = '0';
-        h4.style.borderBottom = 'none';
-        h4.style.flex = '1';
 
         const moveControls = document.createElement('div');
         
         const btnUp = document.createElement('button');
         btnUp.type = 'button';
-        btnUp.innerHTML = 'Up'; 
+        btnUp.textContent = '▲';
         btnUp.title = 'Move Up';
-        btnUp.style.cssText = 'background:none; border:none; cursor:pointer; font-size:14px; margin-right:10px; text-decoration: underline;';
-        if (index === 0) { btnUp.disabled = true; btnUp.style.opacity = '0.3'; btnUp.style.cursor = 'default'; }
+        btnUp.className = 'icon-btn';
+        if (index === 0) { btnUp.disabled = true; btnUp.style.opacity = '0.3'; }
         btnUp.onclick = () => {
             tableData.columns = moveObjectKey(tableData.columns, colName, -1);
             renderEditor(tableName, tableData, false);
@@ -603,10 +568,10 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
         const btnDown = document.createElement('button');
         btnDown.type = 'button';
-        btnDown.innerHTML = 'Down'; 
+        btnDown.textContent = '▼';
         btnDown.title = 'Move Down';
-        btnDown.style.cssText = 'background:none; border:none; cursor:pointer; font-size:14px; text-decoration: underline;';
-        if (index === colKeys.length - 1) { btnDown.disabled = true; btnDown.style.opacity = '0.3'; btnDown.style.cursor = 'default'; }
+        btnDown.className = 'icon-btn';
+        if (index === colKeys.length - 1) { btnDown.disabled = true; btnDown.style.opacity = '0.3'; }
         btnDown.onclick = () => {
             tableData.columns = moveObjectKey(tableData.columns, colName, 1);
             renderEditor(tableName, tableData, false);
@@ -929,14 +894,9 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         tableData.subtables.forEach((subCfg, index) => {
             const block = document.createElement('div');
             block.className = 'column-block collapsed';
-            block.style.borderLeft = '4px solid #2b9348';
 
             const headerDiv = document.createElement('div');
             headerDiv.className = 'block-header';
-            headerDiv.style.display = 'flex';
-            headerDiv.style.alignItems = 'center';
-            headerDiv.style.gap = '8px';
-            headerDiv.style.marginBottom = '15px';
             headerDiv.addEventListener('click', (e) => {
                 if (e.target.closest('button')) return;
                 block.classList.toggle('collapsed');
@@ -948,13 +908,12 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
             const h4 = document.createElement('h4');
             h4.textContent = `Subtable #${index + 1}`;
-            h4.style.margin = '0';
-            h4.style.flex = '1';
 
             const btnDel = document.createElement('button');
             btnDel.type = 'button';
-            btnDel.textContent = 'Delete';
-            btnDel.style.cssText = 'background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; text-decoration: underline;';
+            btnDel.title = 'Delete';
+            btnDel.textContent = '✕';
+            btnDel.className = 'icon-btn icon-btn-danger';
             btnDel.onclick = () => {
                 tableData.subtables.splice(index, 1);
                 renderSubtables();
@@ -1017,11 +976,9 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         tableData.many_to_many.forEach((cfg, index) => {
             const block = document.createElement('div');
             block.className = 'column-block collapsed';
-            block.style.borderLeft = '4px solid #64748B';
 
             const headerDiv = document.createElement('div');
             headerDiv.className = 'block-header';
-            headerDiv.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:15px;';
             headerDiv.addEventListener('click', (e) => {
                 if (e.target.closest('button')) return;
                 block.classList.toggle('collapsed');
@@ -1032,13 +989,13 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             chevron.textContent = '▶';
 
             const h4 = document.createElement('h4');
-            h4.style.cssText = 'margin:0; flex:1;';
             h4.textContent = cfg.label || `M2M #${index + 1}`;
 
             const btnDel = document.createElement('button');
             btnDel.type = 'button';
-            btnDel.textContent = 'Delete';
-            btnDel.style.cssText = 'background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; text-decoration:underline;';
+            btnDel.title = 'Delete';
+            btnDel.textContent = '✕';
+            btnDel.className = 'icon-btn icon-btn-danger';
             btnDel.onclick = () => { tableData.many_to_many.splice(index, 1); markDirty(); renderM2m(); };
 
             headerDiv.append(chevron, h4, btnDel);
