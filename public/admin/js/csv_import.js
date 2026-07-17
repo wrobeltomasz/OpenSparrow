@@ -1285,7 +1285,7 @@ function guessColType(samples) {
 
 function buildCsvTabs(wrap, tabs) {
     const bar = document.createElement('div');
-    bar.style.cssText = 'display:flex;gap:0;border-bottom:2px solid var(--border,#CBD5E1);margin-bottom:24px;';
+    bar.className = 'item-panel-items';
 
     const panels = {};
     const btns   = {};
@@ -1294,9 +1294,7 @@ function buildCsvTabs(wrap, tabs) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.dataset.tab = id;
-        btn.style.cssText = 'display:flex;align-items:center;gap:7px;padding:10px 20px;background:none;border:none;'
-            + 'border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;font-size:13px;font-weight:600;'
-            + 'color:var(--muted,#64748B);transition:color .15s,border-color .15s;';
+        btn.className = 'item-btn';
         if (icon) {
             const img = document.createElement('img');
             img.src = '../assets/icons/' + icon;
@@ -1317,9 +1315,7 @@ function buildCsvTabs(wrap, tabs) {
 
     function activate(id) {
         Object.entries(btns).forEach(([k, b]) => {
-            const active = k === id;
-            b.style.color       = active ? 'var(--accent,#1E6FC0)' : 'var(--muted,#64748B)';
-            b.style.borderColor = active ? 'var(--accent,#1E6FC0)' : 'transparent';
+            b.classList.toggle('active', k === id);
         });
         Object.entries(panels).forEach(([k, p]) => {
             p.style.display = k === id ? '' : 'none';

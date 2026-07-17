@@ -47,13 +47,14 @@ export function renderViewsEditor(ctx) {
 
     /* ---------- source tabs ---------- */
     const tabBar = document.createElement('div');
-    tabBar.style.cssText = 'display:flex; gap:4px; margin-bottom:18px; border-bottom:1px solid var(--border-light);';
+    tabBar.className = 'item-panel-items';
 
     const pgTab      = document.createElement('button');
     const mysqlTab   = document.createElement('button');
     const schemasTab = document.createElement('button');
     [pgTab, mysqlTab, schemasTab].forEach(t => {
-        t.style.cssText = 'background:none; border:none; border-bottom:2px solid transparent; padding:8px 16px; font-size:14px; cursor:pointer; color:var(--muted); box-shadow:none;';
+        t.type = 'button';
+        t.className = 'item-btn';
     });
     pgTab.textContent      = 'PostgreSQL Views';
     mysqlTab.textContent   = 'MySQL Views';
@@ -64,11 +65,9 @@ export function renderViewsEditor(ctx) {
     wrap.appendChild(tabBar);
 
     function updateTabUi() {
-        const active = 'border-bottom:2px solid var(--accent); color:var(--text); font-weight:600;';
-        const idle   = 'border-bottom:2px solid transparent; color:var(--muted); font-weight:normal;';
-        pgTab.style.cssText      = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'postgres' ? active : idle);
-        mysqlTab.style.cssText   = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'mysql' ? active : idle);
-        schemasTab.style.cssText = 'background:none; border:none; padding:8px 16px; font-size:14px; cursor:pointer; box-shadow:none; ' + (currentSource === 'schemas' ? active : idle);
+        pgTab.classList.toggle('active', currentSource === 'postgres');
+        mysqlTab.classList.toggle('active', currentSource === 'mysql');
+        schemasTab.classList.toggle('active', currentSource === 'schemas');
         syncBtn.style.display = currentSource === 'schemas' ? 'none' : '';
         syncBtn.textContent   = currentSource === 'mysql' ? '↻ Sync MySQL Views' : '↻ Sync PostgreSQL Views';
     }

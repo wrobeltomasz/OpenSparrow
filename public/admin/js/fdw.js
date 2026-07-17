@@ -41,7 +41,7 @@ function el(tag, css, text) {
 
 function buildTabs(wrap, tabs) {
     const bar = document.createElement('div');
-    bar.style.cssText = 'display:flex;gap:0;border-bottom:2px solid #CBD5E1;margin-bottom:24px;';
+    bar.className = 'item-panel-items';
 
     const panels = {};
     const btns   = {};
@@ -49,9 +49,7 @@ function buildTabs(wrap, tabs) {
     tabs.forEach(({ id, label }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.style.cssText = 'padding:10px 22px;background:none;border:none;'
-            + 'border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;'
-            + 'font-size:13px;font-weight:600;color:#64748B;transition:color .15s,border-color .15s;';
+        btn.className = 'item-btn';
         btn.textContent = label;
         bar.appendChild(btn);
         btns[id] = btn;
@@ -66,9 +64,7 @@ function buildTabs(wrap, tabs) {
 
     function activate(id) {
         Object.entries(btns).forEach(([k, b]) => {
-            const active = k === id;
-            b.style.color       = active ? '#1E293B' : '#64748B';
-            b.style.borderColor = active ? '#1E293B' : 'transparent';
+            b.classList.toggle('active', k === id);
         });
         Object.entries(panels).forEach(([k, p]) => {
             p.style.display = k === id ? '' : 'none';

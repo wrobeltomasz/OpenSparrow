@@ -85,7 +85,7 @@ function ragParseTags(pgArray) {
 
 function ragBuildTabs(wrap, tabs) {
     const bar = document.createElement('div');
-    bar.style.cssText = 'display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px;';
+    bar.className = 'item-panel-items';
 
     const panels = {};
     const btns   = {};
@@ -93,9 +93,7 @@ function ragBuildTabs(wrap, tabs) {
     tabs.forEach(({ id, label, icon }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.style.cssText = 'display:flex;align-items:center;gap:7px;padding:10px 20px;background:none;border:none;'
-            + 'border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;font-size:13px;font-weight:600;'
-            + 'color:var(--muted);transition:color .15s,border-color .15s;';
+        btn.className = 'item-btn';
         if (icon) {
             const img = document.createElement('img');
             img.src   = '../assets/icons/' + icon;
@@ -116,9 +114,7 @@ function ragBuildTabs(wrap, tabs) {
 
     function activate(id) {
         Object.entries(btns).forEach(([k, b]) => {
-            const active = k === id;
-            b.style.color        = active ? 'var(--accent)' : 'var(--muted)';
-            b.style.borderColor  = active ? 'var(--accent)' : 'transparent';
+            b.classList.toggle('active', k === id);
         });
         Object.entries(panels).forEach(([k, p]) => {
             p.style.display = k === id ? '' : 'none';

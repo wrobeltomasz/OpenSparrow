@@ -408,6 +408,7 @@ body {
 .item-btn {
     display: flex;
     align-items: center;
+    gap: 7px;
     padding: 10px 20px;
     background: none;
     border: none;
