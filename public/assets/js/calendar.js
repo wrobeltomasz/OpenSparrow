@@ -6,6 +6,7 @@
 //   - search: client-side phrase filter — hides events whose title/fields/id do not contain the typed text
 
 import { apiFetch } from './util/api.js';
+import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/record-tooltip.js';
 
 // ── i18n bridge (calendar is a non-module script) ────────────────────────────
 let _i18nBundle = {};
@@ -212,15 +213,6 @@ function renderCalendar() {
     // Clear container safely
     container.innerHTML = '';
 
-    // Initialize floating tooltip container
-    let tooltip = document.getElementById('calendar-event-tooltip');
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'calendar-event-tooltip';
-        tooltip.style.cssText = 'position: absolute; display: none; background: #fff; border: 1px solid #ddd; padding: 12px; border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-size: 13px; z-index: 10000; pointer-events: none; min-width: 220px; color: #333;';
-        document.body.appendChild(tooltip);
-    }
-    
     const monthNames = [
         t('calendar.month_jan'), t('calendar.month_feb'), t('calendar.month_mar'),
         t('calendar.month_apr'), t('calendar.month_may'), t('calendar.month_jun'),
@@ -402,81 +394,15 @@ function renderCalendar() {
                 window.location.href = `edit.php?table=${encodeURIComponent(ev.table)}&id=${encodeURIComponent(ev.id)}`;
             });
 
-            // Handle tooltip hover event safely
-            evEl.addEventListener('mouseenter', (e) => {
-                tooltip.innerHTML = '';
-                
-                const headerDiv = document.createElement('div');
-                headerDiv.style.cssText = 'font-weight: bold; font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;';
-                headerDiv.textContent = ev.title;
-                tooltip.appendChild(headerDiv);
-                
-                if (ev.rowData) {
-                    for (const [key, val] of Object.entries(ev.rowData)) {
-                        // Skip raw IDs and foreign key base names
-                        if (key.endsWith('__display')) continue;
-                        if (key === 'id') continue; 
-
-                        let displayVal = ev.rowData[key + '__display'] ?? val;
-                        
-                        if (displayVal !== null && displayVal !== '') {
-                            let label = key;
-                            
-                            // Get friendly name from schema
-                            if (appSchema && appSchema.tables[ev.table]?.columns?.[key]) {
-                                label = appSchema.tables[ev.table].columns[key].display_name || key;
-                            }
-
-                            // Build tooltip row safely
-                            const rowDiv = document.createElement('div');
-                            rowDiv.style.marginBottom = '4px';
-
-                            const strong = document.createElement('strong');
-                            strong.style.color = '#555';
-                            strong.textContent = `${label}: `;
-
-                            const colDef = appSchema?.tables[ev.table]?.columns?.[key] || {};
-                            const enumColor = (colDef.type || '').toLowerCase() === 'enum'
-                                ? (colDef.enum_colors?.[String(displayVal)] ?? null)
-                                : null;
-
-                            if (enumColor) {
-                                const swatch = document.createElement('span');
-                                swatch.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:2px;background:${enumColor};margin-right:4px;vertical-align:middle;`;
-                                rowDiv.appendChild(strong);
-                                rowDiv.appendChild(swatch);
-                            } else {
-                                rowDiv.appendChild(strong);
-                            }
-
-                            const spanVal = document.createElement('span');
-                            spanVal.style.color = '#111';
-                            spanVal.textContent = displayVal;
-
-                            rowDiv.appendChild(spanVal);
-                            tooltip.appendChild(rowDiv);
-                        }
-                    }
-                }
-                
-                tooltip.style.display = 'block';
-
-                const rect = evEl.getBoundingClientRect();
-                
-                // Position tooltip below or above the element dynamically
-                let topPos = rect.bottom + window.scrollY + 5;
-                if (topPos + tooltip.offsetHeight > window.innerHeight + window.scrollY) {
-                    topPos = rect.top + window.scrollY - tooltip.offsetHeight - 5;
-                }
-                
-                tooltip.style.left = (rect.left + window.scrollX) + 'px';
-                tooltip.style.top = topPos + 'px';
+            // Hover tooltip: shared floating record tooltip (grid/calendar/board).
+            evEl.addEventListener('mouseenter', () => {
+                const columns = appSchema?.tables?.[ev.table]?.columns || {};
+                showRecordTooltip(evEl, {
+                    title: ev.title,
+                    rows: rowsFromRecord(ev.rowData || {}, columns)
+                });
             });
-
-            // Hide tooltip on mouseleave
-            evEl.addEventListener('mouseleave', () => {
-                tooltip.style.display = 'none';
-            });
+            evEl.addEventListener('mouseleave', hideRecordTooltip);
 
             cell.appendChild(evEl);
         });

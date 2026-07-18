@@ -8,6 +8,7 @@
 // A search box above the lanes filters cards client-side by typed phrase.
 
 import { apiFetch } from './util/api.js';
+import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/record-tooltip.js';
 
 // ── i18n bridge ──────────────────────────────────────────────────────────────
 let _i18nBundle = {};
@@ -30,6 +31,7 @@ const UNMATCHED = '__unmatched__';
 let board = null;          // full payload from the API
 let cards = [];            // working copy of cards (status mutated optimistically)
 let canEdit = false;
+let appSchema = null;      // secure schema, for tooltip labels + enum colors
 
 // ── Search: simple client-side phrase filter ─────────────────────────────────
 // Cards whose title, extra fields, or id do not contain the typed text are
@@ -124,12 +126,26 @@ function renderFilterBar(lanes) {
 document.addEventListener('DOMContentLoaded', async () => {
     canEdit = !!(window.USER_CAPS && window.USER_CAPS.canEdit);
     await fetchI18n();
+    await fetchSchema();
     await fetchBoard();
     loadFilterState();
     initSearch();
     initClearFilters();
     render();
 });
+
+// Secure schema definition — used to label and color the hover tooltip rows the
+// same way the grid does (display names, enum swatches).
+async function fetchSchema() {
+    try {
+        const res = await fetch('api/schema.php', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (res.ok) appSchema = await res.json();
+    } catch (err) {
+        console.error('Failed to load schema for board', err);
+    }
+}
 
 async function fetchBoard() {
     try {
@@ -334,6 +350,19 @@ function buildCard(card, laneColor) {
     el.addEventListener('click', () => {
         window.location.href = `edit.php?table=${encodeURIComponent(board.table)}&id=${encodeURIComponent(card.id)}`;
     });
+
+    // Hover tooltip: shared floating record tooltip (grid/calendar/board). Shows
+    // the full record — all columns with display names and enum swatches — from
+    // the card's rowData, falling back to the compact card fields when the
+    // schema/rowData are unavailable.
+    el.addEventListener('mouseenter', () => {
+        const columns = appSchema?.tables?.[board.table]?.columns || {};
+        const rows = card.rowData
+            ? rowsFromRecord(card.rowData, columns)
+            : (Array.isArray(card.fields) ? card.fields.map(f => ({ label: f.label, value: f.value, color: null })) : []);
+        showRecordTooltip(el, { title: card.title, rows });
+    });
+    el.addEventListener('mouseleave', hideRecordTooltip);
 
     return el;
 }

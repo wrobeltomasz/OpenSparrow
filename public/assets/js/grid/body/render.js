@@ -6,6 +6,7 @@ import { state } from '../state.js';
 import { CellRenderer } from '../cells/registry.js';
 import { buildExpandButton } from './drilldown.js';
 import { makeIconButton } from '../dom.js';
+import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from '../../util/record-tooltip.js';
 
 // Import cell renderers so they self-register
 import '../cells/fk-cell.js';
@@ -27,86 +28,17 @@ function resolveCellType(colCfg, hasFk) {
     return 'text';
 }
 
-function initRowTooltip() {
-    let tooltip = document.getElementById('grid-row-tooltip');
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'grid-row-tooltip';
-        tooltip.style.cssText = 'position:absolute;display:none;background:#fff;border:1px solid #ddd;padding:12px;border-radius:6px;box-shadow:0 5px 15px rgba(0,0,0,0.2);font-size:13px;z-index:10000;pointer-events:none;min-width:220px;max-width:340px;max-height:400px;overflow-y:auto;color:#333;';
-        document.body.appendChild(tooltip);
-    }
-    return tooltip;
-}
-
 function attachRowTooltip(td, row, schema) {
-    const tooltip = initRowTooltip();
-    const tableCfg = schema.tables[state.currentTable] || {};
-    const columns = tableCfg.columns || {};
-
+    const columns = schema.tables[state.currentTable]?.columns || {};
     td.style.cursor = 'default';
 
     td.addEventListener('mouseenter', () => {
-        tooltip.innerHTML = '';
-
         const firstCol = state.displayedColumns[0];
-        const titleVal = firstCol ? (row[firstCol + '__display'] ?? row[firstCol] ?? '') : '';
-        if (titleVal !== '') {
-            const headerDiv = document.createElement('div');
-            headerDiv.style.cssText = 'font-weight:bold;font-size:14px;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:5px;';
-            headerDiv.textContent = String(titleVal);
-            tooltip.appendChild(headerDiv);
-        }
-
-        for (const [key, colCfg] of Object.entries(columns)) {
-            if (key === 'id') continue;
-
-            const val = row[key + '__display'] ?? row[key];
-            if (val === null || val === undefined || val === '') continue;
-
-            const label = colCfg.display_name || key;
-
-            const rowDiv = document.createElement('div');
-            rowDiv.style.marginBottom = '4px';
-
-            const strong = document.createElement('strong');
-            strong.style.color = '#555';
-            strong.textContent = label + ': ';
-
-            const enumColor = (colCfg.type || '').toLowerCase() === 'enum'
-                ? (colCfg.enum_colors?.[String(val)] ?? null)
-                : null;
-
-            if (enumColor) {
-                const swatch = document.createElement('span');
-                swatch.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:2px;background:${enumColor};margin-right:4px;vertical-align:middle;`;
-                rowDiv.appendChild(strong);
-                rowDiv.appendChild(swatch);
-            } else {
-                rowDiv.appendChild(strong);
-            }
-
-            const spanVal = document.createElement('span');
-            spanVal.style.color = '#111';
-            spanVal.textContent = String(val);
-
-            rowDiv.appendChild(spanVal);
-            tooltip.appendChild(rowDiv);
-        }
-
-        tooltip.style.display = 'block';
-
-        const rect = td.getBoundingClientRect();
-        let topPos = rect.bottom + window.scrollY + 5;
-        if (topPos + tooltip.offsetHeight > window.innerHeight + window.scrollY) {
-            topPos = rect.top + window.scrollY - tooltip.offsetHeight - 5;
-        }
-        tooltip.style.left = (rect.left + window.scrollX) + 'px';
-        tooltip.style.top = topPos + 'px';
+        const title = firstCol ? (row[firstCol + '__display'] ?? row[firstCol] ?? '') : '';
+        showRecordTooltip(td, { title, rows: rowsFromRecord(row, columns) });
     });
 
-    td.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
-    });
+    td.addEventListener('mouseleave', hideRecordTooltip);
 }
 
 export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload) {

@@ -935,10 +935,11 @@ try {
                 $fields[] = ['label' => $label, 'value' => $value];
             }
             $cards[] = [
-                'id'     => $r[$idCol],
-                'status' => (string)($r[$statusCol] ?? ''),
-                'title'  => $r[$titleCol . '__display'] ?? $r[$titleCol] ?? ('#' . $r[$idCol]),
-                'fields' => $fields,
+                'id'      => $r[$idCol],
+                'status'  => (string)($r[$statusCol] ?? ''),
+                'title'   => $r[$titleCol . '__display'] ?? $r[$titleCol] ?? ('#' . $r[$idCol]),
+                'fields'  => $fields,
+                'rowData' => $r,
             ];
         }
 

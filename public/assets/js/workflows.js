@@ -461,40 +461,36 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             selectEl.value = options.some(o => String(o.value) === prev) ? prev : '';
         }
 
-        const form = document.createElement('form');
-        // Center the form and remove boxy styling to eliminate "white space" nesting
-        form.style.maxWidth = '500px';
-        form.style.margin = '8px auto 40px';
-        form.style.width = '100%';
-        form.style.padding = '0 20px 40px 20px';
+        // Mirror edit.php's record-form layout: a centered .form-page holding a
+        // heading, an optional description, and a .form-wrapper card around the
+        // .editor-form. Styling comes entirely from the shared classes in
+        // styles.css so the workflow step looks identical to the edit screen.
+        const page = document.createElement('div');
+        page.className = 'form-page wf-form-page';
 
-        // Render step title prominently inside the form
+        // Render step title prominently, like edit.php's <h2> page heading
         if (step.title && step.title.trim() !== '') {
             const stepTitleEl = document.createElement('h2');
-            stepTitleEl.style.marginTop = '0';
-            stepTitleEl.style.marginBottom = '8px';
-            stepTitleEl.style.color = 'var(--accent-dark)';
-            stepTitleEl.style.fontSize = '22px';
             stepTitleEl.textContent = step.title;
-            form.appendChild(stepTitleEl);
+            page.appendChild(stepTitleEl);
         }
 
         // Render step description if provided in admin
         if (step.description && step.description.trim() !== '') {
             const descEl = document.createElement('p');
-            descEl.style.color = 'var(--muted)';
-            descEl.style.fontSize = '14px';
-            descEl.style.marginTop = '0';
-            descEl.style.marginBottom = '24px';
-            descEl.style.lineHeight = '1.5';
+            descEl.className = 'wf-step-desc';
             descEl.textContent = step.description;
-            form.appendChild(descEl);
-        } else {
-            // Add some spacing if there is no description but there is a title
-            const spacer = document.createElement('div');
-            spacer.style.height = '16px';
-            form.appendChild(spacer);
+            page.appendChild(descEl);
         }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'form-wrapper';
+
+        const form = document.createElement('form');
+        form.className = 'editor-form';
+
+        const grid = document.createElement('div');
+        grid.className = 'form-grid';
 
         // Track virtual column display elements for live recalculation
         const virtualFields = {}; // { colName: { el, formula } }
@@ -531,31 +527,29 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             }
 
             const formGroup = document.createElement('div');
-            formGroup.style.marginBottom = '18px';
+            formGroup.className = 'form-group';
 
             const label = document.createElement('label');
             label.textContent = colDef.display_name || colName;
-            label.style.display = 'block';
-            label.style.marginBottom = '6px';
-            label.style.fontWeight = '500';
-            label.style.color = 'var(--text)';
-            label.style.fontSize = '13.5px';
 
             let input;
-            let isVirtual = false;
             const type = (colDef.type || '').toLowerCase();
+
+            // Required marker, mirroring edit.php (skipped for virtual/readonly fields)
+            if (colDef.not_null && type !== 'virtual' && !colDef.readonly) {
+                const req = document.createElement('span');
+                req.className = 'required';
+                req.textContent = ' *';
+                label.appendChild(req);
+            }
 
             // Render virtual column as live-calculated readonly display
             if (type === 'virtual') {
-                isVirtual = true;
                 input = document.createElement('input');
                 input.type = 'text';
                 input.readOnly = true;
                 input.tabIndex = -1;
                 input.dataset.virtual = colName;
-                input.style.background = '#f1f5f9';
-                input.style.color = 'var(--muted)';
-                input.style.cursor = 'default';
                 virtualFields[colName] = { el: input, formula: colDef.formula || {} };
             // Render FK column as searchable select using schema FK config
             } else if (Object.prototype.hasOwnProperty.call(fkOptionMap, colName)) {
@@ -596,35 +590,29 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             }
 
             input.name = colName;
-            input.style.width = '100%';
-            input.style.padding = '10px 12px';
-            input.style.boxSizing = 'border-box';
-            input.style.border = '1px solid var(--border)';
-            input.style.borderRadius = 'var(--radius)';
-            input.style.fontSize = '14px';
-            if (!isVirtual) {
-                input.style.color = 'var(--text)';
-                input.style.transition = 'border-color var(--transition), box-shadow var(--transition)';
-                input.style.background = '#fff';
-                input.addEventListener('focus', () => {
-                    input.style.borderColor = 'var(--accent)';
-                    input.style.outline = 'none';
-                    input.style.boxShadow = '0 0 0 2px var(--accent-light)';
-                });
-                input.addEventListener('blur', () => {
-                    input.style.borderColor = 'var(--border)';
-                    input.style.boxShadow = 'none';
-                });
+            // Focus/hover/readonly styling is inherited from the shared
+            // .editor-form input/select rules in styles.css. Checkboxes get the
+            // dedicated class so they render inline instead of full-width.
+            if (type.includes('bool')) {
+                input.classList.add('wf-checkbox');
             }
 
-            if (type.includes('bool')) {
-                input.style.width = 'auto';
+            // Enforce required fields client-side, mirroring edit.php's field
+            // registry (TextField/EnumField/ForeignKeyField/DateField all set the
+            // native `required` attribute on not_null, non-locked columns). Without
+            // this the ` *` marker was purely cosmetic and empty required fields
+            // slipped through to the next step. Booleans are excluded — a not_null
+            // checkbox defaults to false and is never "empty".
+            if (colDef.not_null && type !== 'virtual' && !colDef.readonly && !type.includes('bool')) {
+                input.required = true;
             }
 
             formGroup.appendChild(label);
             formGroup.appendChild(input);
-            form.appendChild(formGroup);
+            grid.appendChild(formGroup);
         }
+
+        form.appendChild(grid);
 
         // Detect FK linkages: for each FK select, check if referenced table has a FK
         // column that also appears in this form → enable "Show related only" checkbox.
@@ -653,10 +641,10 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             if (!selectEl || !masterEl) continue;
 
             const filterRow = document.createElement('label');
-            filterRow.style.cssText = 'display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none;';
+            filterRow.className = 'wf-related-toggle';
             const filterCb = document.createElement('input');
             filterCb.type = 'checkbox';
-            filterCb.style.cssText = 'cursor:pointer; margin:0;';
+            filterCb.className = 'wf-checkbox';
             const filterLbl = document.createElement('span');
             filterLbl.textContent = I18n.t('workflow.show_related');
             filterRow.appendChild(filterCb);
@@ -682,19 +670,15 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             refreshVirtuals(); // initial render with empty values = 0
         }
 
-        // Add action buttons
+        // Add action buttons — .form-actions / .btn-save / .btn-cancel mirror edit.php
         const btnContainer = document.createElement('div');
-        btnContainer.style.marginTop = '24px';
-        btnContainer.style.display = 'flex';
-        btnContainer.style.gap = '12px';
+        btnContainer.className = 'form-actions';
 
         const submitBtn = document.createElement('button');
         submitBtn.type = 'submit';
+        submitBtn.className = 'btn-save';
         submitBtn.dataset.action = step.allow_multiple ? 'add' : 'continue';
         submitBtn.textContent = step.allow_multiple ? I18n.t('form.save_add_another') : I18n.t('form.next_step');
-        submitBtn.style.cssText = 'padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 600; box-shadow: var(--shadow-sm); transition: background var(--transition);';
-        submitBtn.addEventListener('mouseenter', () => submitBtn.style.background = 'var(--accent-dark)');
-        submitBtn.addEventListener('mouseleave', () => submitBtn.style.background = 'var(--accent)');
         btnContainer.appendChild(submitBtn);
 
         // For multi-record steps: "Save & Exit" saves current entry (or skips if empty) then advances
@@ -702,11 +686,9 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         if (step.allow_multiple) {
             continueBtn = document.createElement('button');
             continueBtn.type = 'submit';
+            continueBtn.className = 'btn-cancel';
             continueBtn.dataset.action = 'continue';
             continueBtn.textContent = I18n.t('form.save_exit');
-            continueBtn.style.cssText = 'padding: 10px 20px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-weight: 600; transition: all var(--transition);';
-            continueBtn.addEventListener('mouseenter', () => { continueBtn.style.color = 'var(--text)'; continueBtn.style.borderColor = 'var(--muted)'; continueBtn.style.background = '#f8fafc'; });
-            continueBtn.addEventListener('mouseleave', () => { continueBtn.style.color = 'var(--muted)'; continueBtn.style.borderColor = 'var(--border)'; continueBtn.style.background = 'transparent'; });
             btnContainer.appendChild(continueBtn);
         }
         const finishBtn = continueBtn; // alias kept for error-reset reference below
@@ -714,15 +696,34 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         form.appendChild(btnContainer);
 
         const msgBox = document.createElement('div');
-        msgBox.style.marginTop = '15px';
-        msgBox.style.fontSize = '14px';
-        msgBox.style.fontWeight = '500';
+        msgBox.className = 'wf-form-msg';
         form.appendChild(msgBox);
 
         // Handle form submission and data saving
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const action = e.submitter?.dataset?.action || 'continue';
+
+            // A multi-record step's "Save & Exit" may be used to skip the step
+            // entirely when nothing was entered — advance without saving (and
+            // without tripping required-field validation on an empty form).
+            const hasAnyValue = Array.from(form.querySelectorAll('[name]')).some((el) => {
+                if (el.type === 'checkbox') return el.checked;
+                return String(el.value ?? '').trim() !== '';
+            });
+            if (action === 'continue' && step.allow_multiple && !hasAnyValue) {
+                currentStepIndex++;
+                renderCurrentStep();
+                return;
+            }
+
+            // Enforce required fields before saving. reportValidity() shows the
+            // browser's native (localized) prompt and focuses the first offending
+            // field, so an empty required field can no longer advance the workflow.
+            if (!form.reportValidity()) {
+                return;
+            }
+
             submitBtn.disabled = true;
             if (continueBtn) continueBtn.disabled = true;
             e.submitter.textContent = I18n.t('workflow.saving');
@@ -814,7 +815,9 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             }
         });
 
-        containerEl.appendChild(form);
+        wrapper.appendChild(form);
+        page.appendChild(wrapper);
+        containerEl.appendChild(page);
     }
 
     // Render the final success screen centered using DOM methods

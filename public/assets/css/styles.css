@@ -3435,6 +3435,28 @@ th.drag-over .th-label {
 .form-alert.error   { color: var(--danger);  border-color: var(--danger); background: var(--danger-light); }
 .form-alert.success { color: var(--ok-dark); border-color: var(--ok); background: var(--ok-light); padding: 10px 14px; }
 
+/* Workflow step form — reuses the record-editor form classes (.form-page,
+   .form-wrapper, .editor-form, .form-grid, .form-group, .form-actions) so a
+   workflow step looks identical to edit.php. These are the only workflow-only
+   bits: a step description, inline checkboxes, the "show related" toggle, and
+   the save-status message line. */
+.wf-form-page { max-width: 760px; }
+.wf-step-desc { color: var(--muted); margin: 0 0 20px; line-height: 1.5; }
+.editor-form .form-group > .wf-checkbox { align-self: flex-start; width: auto; }
+.editor-form .form-group > .wf-related-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+  cursor: pointer;
+  user-select: none;
+}
+.wf-form-msg { margin-top: 15px; font-weight: 500; }
+
 /* Many-to-many checkbox block */
 .m2m-block { border-top: 1px solid var(--border-light); margin: 20px 0 4px; padding-top: 18px; }
 .m2m-group { margin-bottom: 18px; }

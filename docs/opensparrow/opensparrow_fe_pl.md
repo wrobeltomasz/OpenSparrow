@@ -629,7 +629,8 @@ Dostępny przez link "Workflows" w menu bocznym.
 - Pasek postępu na górze ekranu ("Krok X z Y")
 - Tytuł bieżącego kroku
 - Pola formularza specyficzne dla kroku (FK select, pola tekstowe itd.)
-- Tryb wielu rekordów: przycisk "Dodaj kolejny wiersz" dla powtarzalnych kroków
+- Pola wymagane oznaczone gwiazdką `*` (kolumny `not_null`) muszą zostać wypełnione przed przejściem dalej — próba zapisu z pustym polem wymaganym jest blokowana, a przeglądarka wyświetla komunikat i ustawia kursor w pierwszym niewypełnionym polu (identycznie jak w formularzu edycji rekordu). Pola typu logicznego (checkbox) nie są traktowane jako wymagane.
+- Tryb wielu rekordów: przycisk "Dodaj kolejny wiersz" dla powtarzalnych kroków. W tym trybie "Zapisz i Wyjdź" na pustym formularzu pomija krok (bez zapisu i bez walidacji pól wymaganych)
 
 Przyciski nawigacji:
 
@@ -1316,7 +1317,10 @@ Widok wizualizujący rekordy jednej tabeli jako przesuwalne karty rozłożone w 
 | Akcja | Efekt |
 |-------|-------|
 | Kliknięcie karty | Otwiera `edit.php` dla tego rekordu |
+| Najechanie kursorem na kartę | Floating tooltip z pełnymi danymi rekordu |
 | Przeciągnięcie karty do innego toru | Zmienia wartość kolumny statusu przez API |
+
+Tooltip po najechaniu pokazuje tytuł karty jako nagłówek, a pod nim **wszystkie kolumny rekordu** (nie tylko pola szczegółowe widoczne na karcie) jako pary etykieta–wartość, z przyjaznymi nazwami kolumn i próbkami koloru dla wartości enum. Pozycjonuje się pod kartą (lub nad nią, jeśli brakuje miejsca). Jest to **ten sam mechanizm** co tooltip wiersza w siatce danych i tooltip zdarzenia w kalendarzu — jeden współdzielony komponent (`assets/js/util/record-tooltip.js`) zapewnia spójny wygląd i zachowanie we wszystkich trzech widokach.
 
 ### Wyszukiwanie i filtrowanie kart
 
