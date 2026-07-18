@@ -1570,7 +1570,8 @@ header .dash-filter-label {
   color: #fff;
 }
 .calendar-event {
-  padding: 4px 6px;
+  position: relative;
+  padding: 4px 22px 4px 6px;
   margin-bottom: 4px;
   border-radius: 4px;
   color: white;
@@ -1580,6 +1581,36 @@ header .dash-filter-label {
   text-overflow: ellipsis;
 }
 .calendar-event:hover { opacity: 0.9; }
+
+/* Small red ✕ delete button on each calendar event (editors only) */
+.calendar-event-del {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  line-height: 13px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+.calendar-event:hover .calendar-event-del,
+.calendar-event-del:focus-visible {
+  opacity: 1;
+}
+.calendar-event-del:hover,
+.calendar-event-del:focus-visible {
+  background: var(--danger);
+  color: #fff;
+}
 #calendarMain { padding: 20px; width: 100%; overflow-y: auto; }
 
 .calendar-cell.today {
@@ -3456,6 +3487,33 @@ th.drag-over .th-label {
   user-select: none;
 }
 .wf-form-msg { margin-top: 15px; font-weight: 500; }
+
+/* Deferred-save workflow: buffered multi-record list + review screen */
+.wf-buffered-list { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 4px; }
+.wf-buffered-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--panel-2, var(--panel));
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+}
+.wf-review-card { margin-bottom: 18px; }
+.wf-review-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.wf-review-head h3 { margin: 0; }
+.wf-review-empty { color: var(--muted); margin: 8px 0 0; }
+.wf-review-fields {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 4px 16px;
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border-light);
+}
+.wf-review-fields dt { color: var(--muted); font-weight: 600; }
+.wf-review-fields dd { margin: 0; word-break: break-word; }
 
 /* Many-to-many checkbox block */
 .m2m-block { border-top: 1px solid var(--border-light); margin: 20px 0 4px; padding-top: 18px; }

@@ -283,7 +283,9 @@
         "add_event": "Dodaj wydarzenie",
         "add_event_title": "Dodaj wydarzenie — {date}",
         "select_calendar": "Kalendarz",
-        "no_calendars_configured": "Brak skonfigurowanych kalendarzy."
+        "no_calendars_configured": "Brak skonfigurowanych kalendarzy.",
+        "delete_event": "Usuń wydarzenie",
+        "delete_confirm": "Usunąć to wydarzenie?"
     },
     "board": {
         "title": "Tablica",

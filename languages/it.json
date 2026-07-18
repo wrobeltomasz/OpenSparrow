@@ -280,7 +280,9 @@
         "add_event": "Aggiungi evento",
         "add_event_title": "Aggiungi evento — {date}",
         "select_calendar": "Calendario",
-        "no_calendars_configured": "Nessun calendario configurato."
+        "no_calendars_configured": "Nessun calendario configurato.",
+        "delete_event": "Elimina evento",
+        "delete_confirm": "Eliminare questo evento?"
     },
     "board": {
         "title": "Bacheca",

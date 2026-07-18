@@ -283,7 +283,9 @@
         "add_event": "Dodaj događaj",
         "add_event_title": "Dodaj događaj — {date}",
         "select_calendar": "Kalendar",
-        "no_calendars_configured": "Nema konfiguriranih kalendara."
+        "no_calendars_configured": "Nema konfiguriranih kalendara.",
+        "delete_event": "Izbriši događaj",
+        "delete_confirm": "Izbrisati ovaj događaj?"
     },
     "board": {
         "title": "Ploča",

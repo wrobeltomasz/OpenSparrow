@@ -406,7 +406,7 @@ Otwierany z akcji "Edytuj" w siatce lub bezpośrednio przez URL.
 ## 9. Kalendarz
 
 Adres: `calendar.php`  
-Widok miesięczny rekordów z kolumną daty. Umożliwia przeglądanie i przeciąganie zdarzeń.
+Widok miesięczny rekordów z kolumną daty. Umożliwia przeglądanie, przeciąganie i usuwanie zdarzeń.
 
 ### Nawigacja
 
@@ -438,6 +438,15 @@ Wyszukiwarka i filtry znajdują się na górnym (niebieskim) pasku aplikacji —
 | Najechanie kursorem | Floating tooltip z pełnymi danymi rekordu |
 | Kliknięcie chipu | Otwiera `edit.php` dla tego rekordu |
 | Przeciągnięcie chipu na inny dzień | Zmienia datę rekordu przez API |
+| Mały czerwony ✕ na chipie | Usuwa rekord (po potwierdzeniu) — tylko dla edytorów |
+
+### Usuwanie zdarzeń
+
+- Na każdym chipie zdarzenia widoczny jest mały czerwony przycisk ✕ (pojawia się po najechaniu kursorem na chip); dostępny tylko dla użytkowników z prawem edycji (rola edytora/admina — dla przeglądających ukryty)
+- Kliknięcie ✕ nie otwiera formularza (zdarzenie nie propaguje się do kliknięcia chipu) i najpierw prosi o potwierdzenie
+- Optymistyczny UI: po potwierdzeniu rekord znika natychmiast z kalendarza
+- Jeśli usunięcie po stronie API się nie powiedzie (błąd, brak uprawnień, brak własności rekordu): zdarzenie automatycznie wraca na swoje miejsce
+- Backend sprawdza własność rekordu i loguje operację w dzienniku audytu; usunięcie może też wyzwolić reguły automatyzacji (`delete`)
 
 ### Przeciąganie zdarzeń (Drag & Drop)
 
@@ -628,20 +637,27 @@ Dostępny przez link "Workflows" w menu bocznym.
 
 - Pasek postępu na górze ekranu ("Krok X z Y")
 - Tytuł bieżącego kroku
-- Pola formularza specyficzne dla kroku (FK select, pola tekstowe itd.)
-- Pola wymagane oznaczone gwiazdką `*` (kolumny `not_null`) muszą zostać wypełnione przed przejściem dalej — próba zapisu z pustym polem wymaganym jest blokowana, a przeglądarka wyświetla komunikat i ustawia kursor w pierwszym niewypełnionym polu (identycznie jak w formularzu edycji rekordu). Pola typu logicznego (checkbox) nie są traktowane jako wymagane.
-- Tryb wielu rekordów: przycisk "Dodaj kolejny wiersz" dla powtarzalnych kroków. W tym trybie "Zapisz i Wyjdź" na pustym formularzu pomija krok (bez zapisu i bez walidacji pól wymaganych)
+- Pola formularza specyficzne dla kroku (FK select, pola tekstowe itd.). Pola typu data mają natywny wybór daty (kalendarz), a data i czas — natywny wybór daty i godziny, identycznie jak w formularzach edycji/tworzenia rekordu.
+- Pola wymagane oznaczone gwiazdką `*` (kolumny `not_null`) muszą zostać wypełnione przed przejściem dalej — przeglądarka wyświetla komunikat i ustawia kursor w pierwszym niewypełnionym polu (identycznie jak w formularzu edycji rekordu). Pola typu logicznego (checkbox) nie są traktowane jako wymagane.
+- Tryb wielu rekordów: przycisk "Dodaj rekord" dopisuje bieżący formularz do listy rekordów kroku (z możliwością usunięcia każdego pozycji), a formularz jest czyszczony do wprowadzenia kolejnego. Pusty formularz przy przejściu "Dalej" pomija krok (bez walidacji pól wymaganych).
 
-Przyciski nawigacji:
+**Zapis dopiero na końcu (model odroczony):** dane każdego kroku są buforowane w przeglądarce, a nic **nie jest zapisywane do bazy** w trakcie przechodzenia przez kroki. Dzięki temu można swobodnie cofać się i poprawiać wcześniejsze kroki bez tworzenia duplikatów.
+
+Przyciski nawigacji w kroku:
 
 | Przycisk | Akcja |
 |----------|-------|
-| Zapisz i Dalej | Zapisuje krok, przechodzi do następnego |
-| Zapisz i Wróć | Zapisuje krok, przechodzi do poprzedniego |
-| Zapisz i Wyjdź | Zapisuje krok, zamyka workflow |
-| Zapisz i Dodaj kolejny | Zapisuje, dodaje kolejny rekord dla tego samego kroku |
+| Wstecz | Przechodzi do poprzedniego kroku (dane bieżącego kroku są zachowane) |
+| Dodaj rekord | (tryb wielu rekordów) Dopisuje bieżący formularz do listy kroku |
+| Dalej | Buforuje krok i przechodzi do następnego; na ostatnim kroku — do podsumowania |
 
-- Błędy walidacji wyświetlane per krok
+### Podsumowanie i zapis
+
+- Po ostatnim kroku pojawia się ekran podsumowania ze wszystkimi krokami i zbuforowanymi rekordami
+- Każdy krok ma przycisk "Edytuj", który cofa do tego kroku; po jego ponownym zatwierdzeniu następuje powrót prosto do podsumowania
+- Przycisk "Zapisz" zapisuje wszystkie rekordy po kolei. Klucze obce (powiązania między krokami) są uzupełniane realnymi ID rekordów zapisanych we wcześniejszych krokach
+- Zapis **nie jest transakcyjny** — rekordy zapisane przed ewentualnym błędem w połowie pozostają w bazie (tak samo jak w poprzednim modelu zapisu krok po kroku). Ponowna próba zapisu nie duplikuje rekordów już zapisanych
+- Błędy zapisu sygnalizowane są powiadomieniem (toast)
 
 ---
 

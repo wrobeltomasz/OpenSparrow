@@ -283,7 +283,9 @@
         "add_event": "Přidat událost",
         "add_event_title": "Přidat událost — {date}",
         "select_calendar": "Kalendář",
-        "no_calendars_configured": "Nejsou nakonfigurovány žádné kalendáře."
+        "no_calendars_configured": "Nejsou nakonfigurovány žádné kalendáře.",
+        "delete_event": "Smazat událost",
+        "delete_confirm": "Smazat tuto událost?"
     },
     "board": {
         "title": "Nástěnka",

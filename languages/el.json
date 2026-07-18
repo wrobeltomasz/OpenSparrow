@@ -280,7 +280,9 @@
         "add_event": "Προσθήκη συμβάντος",
         "add_event_title": "Προσθήκη συμβάντος — {date}",
         "select_calendar": "Ημερολόγιο",
-        "no_calendars_configured": "Δεν έχουν διαμορφωθεί ημερολόγια."
+        "no_calendars_configured": "Δεν έχουν διαμορφωθεί ημερολόγια.",
+        "delete_event": "Διαγραφή συμβάντος",
+        "delete_confirm": "Διαγραφή αυτού του συμβάντος;"
     },
     "board": {
         "title": "Πίνακας",

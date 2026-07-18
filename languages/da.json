@@ -280,7 +280,9 @@
         "add_event": "Tilføj begivenhed",
         "add_event_title": "Tilføj begivenhed — {date}",
         "select_calendar": "Kalender",
-        "no_calendars_configured": "Ingen kalendere konfigureret."
+        "no_calendars_configured": "Ingen kalendere konfigureret.",
+        "delete_event": "Slet begivenhed",
+        "delete_confirm": "Slet denne begivenhed?"
     },
     "board": {
         "title": "Tavle",

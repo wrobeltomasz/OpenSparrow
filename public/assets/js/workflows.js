@@ -262,7 +262,73 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
     workflow = { ...workflow, steps: (workflow.steps || []).filter(s => s && s.table) };
 
     let currentStepIndex = 0;
+    // Deferred-save model: nothing is written to the database until the final
+    // review screen. stepData[i] holds an array of raw form snapshots for step i
+    // (length 1 for single-record steps, N for allow_multiple). stepMeta[i]
+    // caches the resolved tableSchema so the final save can build payloads
+    // without re-fetching. stepResults maps step index → the first saved record
+    // id, used to inject foreign keys during the final save. savedRecords tracks
+    // already-persisted snapshots so a retry after a mid-save failure does not
+    // duplicate the records that already went in.
+    const stepData = [];
+    const stepMeta = [];
     const stepResults = {};
+    const savedRecords = new Set();
+    // When editing a single step from the review screen, jump straight back to
+    // the review instead of walking forward through every later step again.
+    let returnToReview = false;
+
+    // Navigate to a step index; anything past the last step is the review screen.
+    function goToStep(i) {
+        currentStepIndex = i;
+        if (currentStepIndex >= workflow.steps.length) {
+            renderReview();
+        } else {
+            renderCurrentStep();
+        }
+    }
+
+    // Snapshot every named input's raw value (checkboxes as booleans).
+    function readForm(form) {
+        const snap = {};
+        form.querySelectorAll('[name]').forEach((el) => {
+            snap[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+        });
+        return snap;
+    }
+
+    // Restore a snapshot into a freshly rebuilt form.
+    function writeForm(form, snap) {
+        if (!snap) return;
+        Object.entries(snap).forEach(([name, val]) => {
+            const el = form.querySelector(`[name="${CSS.escape(name)}"]`);
+            if (!el) return;
+            if (el.type === 'checkbox') el.checked = !!val;
+            else el.value = val ?? '';
+        });
+    }
+
+    // Build the API payload for one buffered record, applying the same value
+    // conversions as edit.php (checkbox → bool, datetime-local → PostgreSQL
+    // timestamp, drop empty strings) and skipping id/readonly/virtual columns and
+    // the foreign key that gets injected from a previous step.
+    function buildPayload(tableSchema, step, snap) {
+        const payload = {};
+        for (const [colName, colDef] of Object.entries(tableSchema.columns)) {
+            const type = (colDef.type || '').toLowerCase();
+            if (colName === 'id' || colDef.readonly || type === 'virtual') continue;
+            if (step.foreign_key === colName && step.link_to_step !== undefined && step.link_to_step !== '') continue;
+            const raw = snap[colName];
+            if (type.includes('bool')) {
+                payload[colName] = !!raw;
+            } else if (raw !== undefined && raw !== '') {
+                payload[colName] = (type.includes('timestamp') || type.includes('datetime'))
+                    ? String(raw).replace('T', ' ')
+                    : raw;
+            }
+        }
+        return payload;
+    }
 
     // Step progress indicator above the form
     function renderStepBar() {
@@ -308,9 +374,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
     // Render a single step of the workflow
     async function renderCurrentStep() {
         if (currentStepIndex >= workflow.steps.length) {
-            const bar = document.getElementById('wf-step-bar');
-            if (bar) bar.remove();
-            renderSuccessScreen();
+            renderReview();
             return;
         }
 
@@ -379,6 +443,10 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             containerEl.appendChild(errorMsg);
             return;
         }
+
+        // Cache the resolved schema so the final save can build payloads without
+        // re-fetching (the form is long gone by then).
+        stepMeta[currentStepIndex] = { tableSchema };
 
         // Pre-fetch FK options for all non-injected FK columns in parallel
         const fkOptionMap = {}; // { colName: [{value, label}] }
@@ -581,6 +649,14 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             } else if (type.includes('bool')) {
                 input = document.createElement('input');
                 input.type = 'checkbox';
+            // Timestamp (Date + Time) → native datetime-local picker, mirroring
+            // edit.php's TimestampField. Checked before 'date' since a plain date
+            // column has no time component. 'timestamp' has no 'date' substring,
+            // so without this it fell through to a plain text input with no picker.
+            } else if (type.includes('timestamp') || type.includes('datetime')) {
+                input = document.createElement('input');
+                input.type = 'datetime-local';
+                input.step = '1';
             } else if (type.includes('date')) {
                 input = document.createElement('input');
                 input.type = 'date';
@@ -670,154 +746,300 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             refreshVirtuals(); // initial render with empty values = 0
         }
 
-        // Add action buttons — .form-actions / .btn-save / .btn-cancel mirror edit.php
+        // ---- Deferred-save navigation (no database write until the review) ----
+
+        // For allow_multiple steps, render the list of records already buffered
+        // for this step, each with a remove button. Single-record steps instead
+        // repopulate the form from the buffer when the step is revisited.
+        const bufferedRecords = stepData[currentStepIndex] || [];
+        let multiListEl = null;
+
+        function labelForRecord(snap) {
+            // Short human label from the first couple of non-empty text values.
+            const parts = [];
+            for (const [colName, colDef] of Object.entries(tableSchema.columns)) {
+                const t = (colDef.type || '').toLowerCase();
+                if (colName === 'id' || t === 'virtual' || t.includes('bool')) continue;
+                const v = snap[colName];
+                if (v !== undefined && String(v).trim() !== '') parts.push(String(v));
+                if (parts.length >= 2) break;
+            }
+            return parts.join(' — ') || I18n.t('workflow.select_blank');
+        }
+
+        function renderMultiList() {
+            if (!multiListEl) return;
+            multiListEl.textContent = '';
+            const records = stepData[currentStepIndex] || [];
+            records.forEach((snap, ri) => {
+                const row = document.createElement('div');
+                row.className = 'wf-buffered-row';
+                const txt = document.createElement('span');
+                txt.textContent = `${ri + 1}. ${labelForRecord(snap)}`;
+                const rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'icon-btn icon-btn-danger';
+                rm.textContent = '✕';
+                rm.title = I18n.t('common.delete');
+                rm.addEventListener('click', () => {
+                    stepData[currentStepIndex].splice(ri, 1);
+                    renderMultiList();
+                });
+                row.appendChild(txt);
+                row.appendChild(rm);
+                multiListEl.appendChild(row);
+            });
+        }
+
+        if (step.allow_multiple) {
+            multiListEl = document.createElement('div');
+            multiListEl.className = 'wf-buffered-list';
+            form.appendChild(multiListEl);
+            renderMultiList();
+        } else if (bufferedRecords.length > 0) {
+            writeForm(form, bufferedRecords[0]);
+            refreshVirtuals();
+        }
+
+        // Action buttons — Back / (Add to list) / Next. Nothing is saved here.
         const btnContainer = document.createElement('div');
         btnContainer.className = 'form-actions';
 
-        const submitBtn = document.createElement('button');
-        submitBtn.type = 'submit';
-        submitBtn.className = 'btn-save';
-        submitBtn.dataset.action = step.allow_multiple ? 'add' : 'continue';
-        submitBtn.textContent = step.allow_multiple ? I18n.t('form.save_add_another') : I18n.t('form.next_step');
-        btnContainer.appendChild(submitBtn);
-
-        // For multi-record steps: "Save & Exit" saves current entry (or skips if empty) then advances
-        let continueBtn = null;
-        if (step.allow_multiple) {
-            continueBtn = document.createElement('button');
-            continueBtn.type = 'submit';
-            continueBtn.className = 'btn-cancel';
-            continueBtn.dataset.action = 'continue';
-            continueBtn.textContent = I18n.t('form.save_exit');
-            btnContainer.appendChild(continueBtn);
+        if (currentStepIndex > 0) {
+            const backBtn = document.createElement('button');
+            backBtn.type = 'button';
+            backBtn.className = 'btn-cancel';
+            backBtn.textContent = I18n.t('pagination.prev');
+            backBtn.addEventListener('click', () => {
+                // Preserve whatever is currently entered before stepping back.
+                if (!step.allow_multiple) {
+                    stepData[currentStepIndex] = [readForm(form)];
+                }
+                goToStep(currentStepIndex - 1);
+            });
+            btnContainer.appendChild(backBtn);
         }
-        const finishBtn = continueBtn; // alias kept for error-reset reference below
+
+        if (step.allow_multiple) {
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'btn-cancel';
+            addBtn.textContent = I18n.t('form.add_record');
+            addBtn.addEventListener('click', () => {
+                if (!form.reportValidity()) return;
+                if (!stepData[currentStepIndex]) stepData[currentStepIndex] = [];
+                stepData[currentStepIndex].push(readForm(form));
+                form.reset();
+                refreshVirtuals();
+                renderMultiList();
+            });
+            btnContainer.appendChild(addBtn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.type = 'submit';
+        nextBtn.className = 'btn-save';
+        // "Save" when returning from the review after an edit; otherwise advance.
+        nextBtn.textContent = returnToReview ? I18n.t('form.save') : I18n.t('form.next_step');
+        btnContainer.appendChild(nextBtn);
 
         form.appendChild(btnContainer);
 
-        const msgBox = document.createElement('div');
-        msgBox.className = 'wf-form-msg';
-        form.appendChild(msgBox);
-
-        // Handle form submission and data saving
-        form.addEventListener('submit', async (e) => {
+        // Advance to the next step (or the review), buffering the current form.
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const action = e.submitter?.dataset?.action || 'continue';
 
-            // A multi-record step's "Save & Exit" may be used to skip the step
-            // entirely when nothing was entered — advance without saving (and
-            // without tripping required-field validation on an empty form).
-            const hasAnyValue = Array.from(form.querySelectorAll('[name]')).some((el) => {
-                if (el.type === 'checkbox') return el.checked;
-                return String(el.value ?? '').trim() !== '';
-            });
-            if (action === 'continue' && step.allow_multiple && !hasAnyValue) {
-                currentStepIndex++;
-                renderCurrentStep();
-                return;
+            if (step.allow_multiple) {
+                // Fold any half-entered record into the buffer, mirroring the old
+                // "Save & Exit": if the form holds values, validate and add them;
+                // an empty form simply advances (the step may be skipped).
+                const hasAnyValue = Array.from(form.querySelectorAll('[name]')).some((el) =>
+                    el.type === 'checkbox' ? el.checked : String(el.value ?? '').trim() !== '');
+                if (hasAnyValue) {
+                    if (!form.reportValidity()) return;
+                    if (!stepData[currentStepIndex]) stepData[currentStepIndex] = [];
+                    stepData[currentStepIndex].push(readForm(form));
+                }
+            } else {
+                // Enforce required fields before buffering. reportValidity() shows
+                // the browser's native (localized) prompt and focuses the first
+                // offending field.
+                if (!form.reportValidity()) return;
+                stepData[currentStepIndex] = [readForm(form)];
             }
 
-            // Enforce required fields before saving. reportValidity() shows the
-            // browser's native (localized) prompt and focuses the first offending
-            // field, so an empty required field can no longer advance the workflow.
-            if (!form.reportValidity()) {
-                return;
-            }
-
-            submitBtn.disabled = true;
-            if (continueBtn) continueBtn.disabled = true;
-            e.submitter.textContent = I18n.t('workflow.saving');
-            msgBox.textContent = '';
-
-            const payload = {};
-            
-            // Extract values from the form inputs securely
-            for (const [colName, colDef] of Object.entries(tableSchema.columns)) {
-                if (colName === 'id' || colDef.readonly || (colDef.type || '').toLowerCase() === 'virtual') continue;
-
-                if (step.foreign_key === colName && step.link_to_step !== undefined && step.link_to_step !== "") {
-                    continue;
-                }
-                
-                const inputEl = form.querySelector(`[name="${colName}"]`);
-                if (!inputEl) continue;
-
-                if (inputEl.type === 'checkbox') {
-                    payload[colName] = inputEl.checked;
-                } else {
-                    if (inputEl.value !== "") {
-                        payload[colName] = inputEl.value;
-                    }
-                }
-            }
-
-            // Automatically inject the foreign key from a previous step if required
-            if (step.foreign_key && step.link_to_step !== undefined && step.link_to_step !== "") {
-                const linkIndex = parseInt(step.link_to_step, 10);
-                if (stepResults[linkIndex]) {
-                    payload[step.foreign_key] = stepResults[linkIndex];
-                }
-            }
-
-            try {
-                const response = await apiFetch('api.php', {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    body: {
-                        table: step.table,
-                        data: payload
-                    }
-                });
-
-                // Fetch raw text first to intercept server-side HTML errors
-                const rawText = await response.text();
-                let result;
-
-                try {
-                    result = JSON.parse(rawText);
-                } catch (parseError) {
-                    console.error("RAW SERVER RESPONSE:", rawText);
-                    const cleanError = rawText.replace(/<\/?[^>]+(>|$)/g, "").trim();
-                    throw new Error(`Server Error (PHP/SQL): \n\n${cleanError.substring(0, 150)}... \n\n(Check F12 console for full log)`);
-                }
-                
-                const isSuccess = result.ok === true || result.status === 'success' || result.success === true;
-
-                if (isSuccess && result.id) {
-                    if (!stepResults[currentStepIndex]) {
-                        stepResults[currentStepIndex] = result.id;
-                    }
-
-                    if (action === 'add') {
-                        form.reset();
-                        refreshVirtuals();
-                        const successSpan = document.createElement('span');
-                        successSpan.style.color = 'var(--ok)';
-                        successSpan.textContent = I18n.t('workflow.record_saved_next');
-                        msgBox.appendChild(successSpan);
-                        submitBtn.disabled = false;
-                        if (continueBtn) continueBtn.disabled = false;
-                        submitBtn.textContent = I18n.t('form.save_add_another');
-                    } else {
-                        currentStepIndex++;
-                        renderCurrentStep();
-                    }
-                } else {
-                    throw new Error(result.error || result.message || 'Unknown error occurred while saving.');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast(`Error saving data: ${err.message}`, 'error');
-                submitBtn.disabled = false;
-                if (continueBtn) continueBtn.disabled = false;
-                submitBtn.textContent = step.allow_multiple ? I18n.t('form.save_add_another') : I18n.t('form.next_step');
-                if (e.submitter) e.submitter.textContent = e.submitter.dataset.action === 'add' ? I18n.t('form.save_add_another') : (step.allow_multiple ? I18n.t('form.save_exit') : I18n.t('form.next_step'));
+            if (returnToReview) {
+                returnToReview = false;
+                goToStep(workflow.steps.length);
+            } else {
+                goToStep(currentStepIndex + 1);
             }
         });
 
         wrapper.appendChild(form);
         page.appendChild(wrapper);
         containerEl.appendChild(page);
+    }
+
+    // Review screen: shows every buffered step and its records, lets the user
+    // jump back to edit any step, and performs the actual save on confirm.
+    function renderReview() {
+        renderStepBar();
+        titleEl.textContent = workflow.title;
+        containerEl.textContent = '';
+
+        const page = document.createElement('div');
+        page.className = 'form-page wf-form-page';
+
+        workflow.steps.forEach((step, i) => {
+            const records = stepData[i] || [];
+            const meta = stepMeta[i];
+
+            const card = document.createElement('div');
+            card.className = 'form-wrapper wf-review-card';
+
+            const head = document.createElement('div');
+            head.className = 'wf-review-head';
+            const h3 = document.createElement('h3');
+            h3.textContent = step.title || `Step ${i + 1}`;
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'btn btn-sm';
+            editBtn.textContent = I18n.t('common.edit');
+            editBtn.addEventListener('click', () => {
+                returnToReview = true;
+                goToStep(i);
+            });
+            head.appendChild(h3);
+            head.appendChild(editBtn);
+            card.appendChild(head);
+
+            if (records.length === 0) {
+                const p = document.createElement('p');
+                p.className = 'wf-review-empty';
+                p.textContent = I18n.t('form.no_records');
+                card.appendChild(p);
+            } else {
+                records.forEach((snap) => {
+                    const dl = document.createElement('dl');
+                    dl.className = 'wf-review-fields';
+                    const cols = meta?.tableSchema?.columns || {};
+                    for (const [colName, colDef] of Object.entries(cols)) {
+                        const type = (colDef.type || '').toLowerCase();
+                        if (colName === 'id' || colDef.readonly || type === 'virtual') continue;
+                        if (step.foreign_key === colName && step.link_to_step !== undefined && step.link_to_step !== '') continue;
+                        let val = snap[colName];
+                        if (type.includes('bool')) {
+                            val = val ? '✓' : '✗';
+                        } else if (val === undefined || val === '') {
+                            continue;
+                        }
+                        const dt = document.createElement('dt');
+                        dt.textContent = colDef.display_name || colName;
+                        const dd = document.createElement('dd');
+                        dd.textContent = String(val);
+                        dl.appendChild(dt);
+                        dl.appendChild(dd);
+                    }
+                    card.appendChild(dl);
+                });
+            }
+            page.appendChild(card);
+        });
+
+        const actions = document.createElement('div');
+        actions.className = 'form-actions';
+
+        const backBtn = document.createElement('button');
+        backBtn.type = 'button';
+        backBtn.className = 'btn-cancel';
+        backBtn.textContent = I18n.t('pagination.prev');
+        backBtn.addEventListener('click', () => goToStep(workflow.steps.length - 1));
+
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'btn-save';
+        saveBtn.textContent = I18n.t('form.save');
+
+        const msg = document.createElement('div');
+        msg.className = 'wf-form-msg';
+
+        saveBtn.addEventListener('click', () => saveAll(saveBtn, backBtn, msg));
+
+        actions.appendChild(backBtn);
+        actions.appendChild(saveBtn);
+        page.appendChild(actions);
+        page.appendChild(msg);
+        containerEl.appendChild(page);
+    }
+
+    // Persist every buffered record in step order. Foreign keys that link to a
+    // previous step are injected from that step's first saved id. This is NOT
+    // atomic — records saved before a mid-run failure remain (same as the old
+    // per-step model). savedRecords guards against re-inserting them on retry.
+    async function saveAll(saveBtn, backBtn, msgEl) {
+        saveBtn.disabled = true;
+        if (backBtn) backBtn.disabled = true;
+        saveBtn.textContent = I18n.t('workflow.saving');
+        msgEl.textContent = '';
+
+        try {
+            for (let i = 0; i < workflow.steps.length; i++) {
+                const step = workflow.steps[i];
+                const meta = stepMeta[i];
+                const records = stepData[i] || [];
+                if (!meta || records.length === 0) continue;
+
+                for (const snap of records) {
+                    if (savedRecords.has(snap)) continue;
+
+                    const payload = buildPayload(meta.tableSchema, step, snap);
+
+                    // Inject the foreign key from a previous step's saved id.
+                    if (step.foreign_key && step.link_to_step !== undefined && step.link_to_step !== '') {
+                        const linkIndex = parseInt(step.link_to_step, 10);
+                        if (stepResults[linkIndex] !== undefined) {
+                            payload[step.foreign_key] = stepResults[linkIndex];
+                        }
+                    }
+
+                    const response = await apiFetch('api.php', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: { table: step.table, data: payload }
+                    });
+
+                    // Read raw text first to intercept server-side HTML errors.
+                    const rawText = await response.text();
+                    let result;
+                    try {
+                        result = JSON.parse(rawText);
+                    } catch {
+                        console.error('RAW SERVER RESPONSE:', rawText);
+                        const cleanError = rawText.replace(/<\/?[^>]+(>|$)/g, '').trim();
+                        throw new Error(`Server Error (PHP/SQL): ${cleanError.substring(0, 150)}`);
+                    }
+
+                    const isSuccess = result.ok === true || result.status === 'success' || result.success === true;
+                    if (!isSuccess || !result.id) {
+                        throw new Error(result.error || result.message || 'Unknown error occurred while saving.');
+                    }
+
+                    savedRecords.add(snap);
+                    if (stepResults[i] === undefined) stepResults[i] = result.id;
+                }
+            }
+
+            const bar = document.getElementById('wf-step-bar');
+            if (bar) bar.remove();
+            renderSuccessScreen();
+        } catch (err) {
+            console.error(err);
+            showToast(`Error saving data: ${err.message}`, 'error');
+            saveBtn.disabled = false;
+            if (backBtn) backBtn.disabled = false;
+            saveBtn.textContent = I18n.t('form.save');
+        }
     }
 
     // Render the final success screen centered using DOM methods

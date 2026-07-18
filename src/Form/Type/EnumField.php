@@ -63,7 +63,12 @@ final class EnumField implements FieldTypeInterface
         foreach ($col->options as $opt) {
             $optStr   = (string)$opt;
             $selected = $val === $optStr ? 'selected' : '';
-            $html    .= '<option value="' . htmlspecialchars($optStr, ENT_QUOTES, 'UTF-8') . '" ' . $selected . '>'
+            $optBg    = $col->enumColors[$optStr] ?? '';
+            $optStyle = $optBg
+                ? ' style="background:' . htmlspecialchars($optBg, ENT_QUOTES, 'UTF-8') . ';"'
+                : '';
+            $html    .= '<option value="' . htmlspecialchars($optStr, ENT_QUOTES, 'UTF-8') . '"'
+                      . $optStyle . ' ' . $selected . '>'
                       . htmlspecialchars($optStr, ENT_QUOTES, 'UTF-8')
                       . '</option>';
         }

@@ -283,7 +283,9 @@
         "add_event": "Pridať udalosť",
         "add_event_title": "Pridať udalosť — {date}",
         "select_calendar": "Kalendár",
-        "no_calendars_configured": "Nie sú nakonfigurované žiadne kalendáre."
+        "no_calendars_configured": "Nie sú nakonfigurované žiadne kalendáre.",
+        "delete_event": "Odstrániť udalosť",
+        "delete_confirm": "Odstrániť túto udalosť?"
     },
     "board": {
         "title": "Nástenka",

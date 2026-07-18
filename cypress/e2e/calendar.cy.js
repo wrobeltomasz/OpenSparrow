@@ -155,6 +155,105 @@ describe('OpenSparrow – Calendar: Events', () => {
 });
 
 // ============================================================================
+// Test Suite: Calendar Event Deletion (red ✕ on each chip)
+// ============================================================================
+// The test user has the editor role, so the delete button renders. All tests
+// stub the DELETE request via cy.intercept so the real (seeded) records are
+// never mutated — we only assert the client behaviour (fire, optimistic remove,
+// rollback, no navigation).
+
+describe('OpenSparrow – Calendar: Event Deletion', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/calendar.php`);
+    cy.get('#calendarContainer', { timeout: CypressHelpers.TIMEOUTS.long })
+      .find('.calendar-day-name')
+      .should('have.length', 7);
+  });
+
+  // Runs `fn` only when at least one event chip is present, otherwise logs a skip.
+  const withEvents = (fn) => {
+    cy.get('body').then($body => {
+      if ($body.find('.calendar-event').length === 0) {
+        Cypress.log({ message: 'No calendar events — skipping deletion test' });
+        return;
+      }
+      fn();
+    });
+  };
+
+  it('renders a delete button on each event chip for editors', () => {
+    withEvents(() => {
+      cy.get('.calendar-event').each($chip => {
+        cy.wrap($chip).find('.calendar-event-del').should('exist');
+      });
+      cy.get('.calendar-event').first()
+        .find('.calendar-event-del')
+        .should('have.text', '✕')
+        .and('have.attr', 'aria-label');
+    });
+  });
+
+  it('cancelling the confirm dialog fires no request and keeps the event', () => {
+    withEvents(() => {
+      cy.intercept('DELETE', '**/api.php*', cy.spy().as('deleteReq'));
+      cy.on('window:confirm', () => false); // user clicks "Cancel"
+
+      cy.get('.calendar-event').then($chips => {
+        const before = $chips.length;
+        cy.get('.calendar-event').first().find('.calendar-event-del').click({ force: true });
+        cy.get('.calendar-event').should('have.length', before);
+        cy.get('@deleteReq').should('not.have.been.called');
+      });
+    });
+  });
+
+  it('confirming the delete fires a DELETE to api.php and removes the chip optimistically', () => {
+    withEvents(() => {
+      cy.intercept('DELETE', '**/api.php*', { statusCode: 200, body: { ok: true } }).as('del');
+      cy.on('window:confirm', () => true); // user accepts
+
+      cy.get('.calendar-event').then($chips => {
+        const before = $chips.length;
+        cy.get('.calendar-event').first().find('.calendar-event-del').click({ force: true });
+
+        cy.wait('@del').its('request.body').should(body => {
+          expect(body).to.have.property('table');
+          expect(body).to.have.property('id');
+        });
+        cy.get('.calendar-event').should('have.length', before - 1);
+      });
+    });
+  });
+
+  it('rolls the event back into view when the DELETE fails', () => {
+    withEvents(() => {
+      cy.intercept('DELETE', '**/api.php*', { statusCode: 403, body: { error: 'Forbidden' } }).as('delFail');
+      cy.on('window:confirm', () => true);
+
+      cy.get('.calendar-event').then($chips => {
+        const before = $chips.length;
+        cy.get('.calendar-event').first().find('.calendar-event-del').click({ force: true });
+        cy.wait('@delFail');
+        // Optimistically removed, then restored on the failure response.
+        cy.get('.calendar-event').should('have.length', before);
+      });
+    });
+  });
+
+  it('clicking the delete button does not navigate to edit.php', () => {
+    withEvents(() => {
+      cy.intercept('DELETE', '**/api.php*', { statusCode: 200, body: { ok: true } }).as('del');
+      cy.on('window:confirm', () => true);
+
+      cy.get('.calendar-event').first().find('.calendar-event-del').click({ force: true });
+      cy.wait('@del');
+      cy.url().should('include', 'calendar.php').and('not.include', 'edit.php');
+    });
+  });
+});
+
+// ============================================================================
 // Test Suite: Calendar Search & Filters
 // ============================================================================
 

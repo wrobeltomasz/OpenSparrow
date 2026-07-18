@@ -283,7 +283,9 @@
         "add_event": "Pridėti įvykį",
         "add_event_title": "Pridėti įvykį — {date}",
         "select_calendar": "Kalendorius",
-        "no_calendars_configured": "Nesukonfigūruotas nė vienas kalendorius."
+        "no_calendars_configured": "Nesukonfigūruotas nė vienas kalendorius.",
+        "delete_event": "Ištrinti įvykį",
+        "delete_confirm": "Ištrinti šį įvykį?"
     },
     "board": {
         "title": "Lenta",

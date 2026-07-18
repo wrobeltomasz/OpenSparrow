@@ -280,7 +280,9 @@
         "add_event": "Esemény hozzáadása",
         "add_event_title": "Esemény hozzáadása — {date}",
         "select_calendar": "Naptár",
-        "no_calendars_configured": "Nincs beállított naptár."
+        "no_calendars_configured": "Nincs beállított naptár.",
+        "delete_event": "Esemény törlése",
+        "delete_confirm": "Törli ezt az eseményt?"
     },
     "board": {
         "title": "Tábla",

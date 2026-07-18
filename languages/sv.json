@@ -280,7 +280,9 @@
         "add_event": "Lägg till händelse",
         "add_event_title": "Lägg till händelse — {date}",
         "select_calendar": "Kalender",
-        "no_calendars_configured": "Inga kalendrar konfigurerade."
+        "no_calendars_configured": "Inga kalendrar konfigurerade.",
+        "delete_event": "Ta bort händelse",
+        "delete_confirm": "Ta bort den här händelsen?"
     },
     "board": {
         "title": "Tavla",

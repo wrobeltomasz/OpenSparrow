@@ -280,7 +280,9 @@
         "add_event": "Termin hinzufügen",
         "add_event_title": "Termin hinzufügen — {date}",
         "select_calendar": "Kalender",
-        "no_calendars_configured": "Keine Kalender konfiguriert."
+        "no_calendars_configured": "Keine Kalender konfiguriert.",
+        "delete_event": "Termin löschen",
+        "delete_confirm": "Diesen Termin löschen?"
     },
     "board": {
         "title": "Board",

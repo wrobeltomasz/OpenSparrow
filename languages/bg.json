@@ -280,7 +280,9 @@
         "add_event": "Добавяне на събитие",
         "add_event_title": "Добавяне на събитие — {date}",
         "select_calendar": "Календар",
-        "no_calendars_configured": "Не са конфигурирани календари."
+        "no_calendars_configured": "Не са конфигурирани календари.",
+        "delete_event": "Изтриване на събитие",
+        "delete_confirm": "Изтриване на това събитие?"
     },
     "board": {
         "title": "Табло",

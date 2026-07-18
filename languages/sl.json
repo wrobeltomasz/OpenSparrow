@@ -286,7 +286,9 @@
         "add_event": "Dodaj dogodek",
         "add_event_title": "Dodaj dogodek — {date}",
         "select_calendar": "Koledar",
-        "no_calendars_configured": "Ni konfiguriranih koledarjev."
+        "no_calendars_configured": "Ni konfiguriranih koledarjev.",
+        "delete_event": "Izbriši dogodek",
+        "delete_confirm": "Izbrišem ta dogodek?"
     },
     "board": {
         "title": "Tabla",

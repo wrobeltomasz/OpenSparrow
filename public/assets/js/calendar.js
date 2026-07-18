@@ -388,11 +388,27 @@ function renderCalendar() {
             // Append title safely
             const titleText = document.createTextNode(ev.title);
             evEl.appendChild(titleText);
-            
+
             // Securely encode URL parameters
             evEl.addEventListener('click', () => {
                 window.location.href = `edit.php?table=${encodeURIComponent(ev.table)}&id=${encodeURIComponent(ev.id)}`;
             });
+
+            // Small red ✕ delete button (editors only) — confirm, then remove
+            // the record via api.php with optimistic UI + rollback on failure.
+            if (canEdit) {
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'calendar-event-del';
+                delBtn.textContent = '✕';
+                delBtn.title = t('calendar.delete_event');
+                delBtn.setAttribute('aria-label', t('calendar.delete_event'));
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteEvent(ev);
+                });
+                evEl.appendChild(delBtn);
+            }
 
             // Hover tooltip: shared floating record tooltip (grid/calendar/board).
             evEl.addEventListener('mouseenter', () => {
@@ -408,6 +424,41 @@ function renderCalendar() {
         });
 
         container.appendChild(cell);
+    }
+}
+
+// ── Delete: red ✕ on an event removes the record via api.php. Confirms first,
+// removes optimistically, then rolls back (re-inserting at the original index)
+// if the backend rejects the delete or the network fails.
+async function deleteEvent(ev) {
+    hideRecordTooltip();
+    if (!window.confirm(t('calendar.delete_confirm'))) return;
+
+    const eventIndex = eventsData.findIndex(e => e.id === ev.id && e.table === ev.table);
+    if (eventIndex === -1) return;
+    const removed = eventsData[eventIndex];
+
+    // Optimistic removal
+    eventsData.splice(eventIndex, 1);
+    renderCalendar();
+
+    try {
+        const res = await apiFetch('api.php', {
+            method: 'DELETE',
+            body: { table: ev.table, id: ev.id }
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || data.error) {
+            // Rollback: re-insert at the original position
+            eventsData.splice(eventIndex, 0, removed);
+            renderCalendar();
+            console.error('Failed to delete event:', data.error ?? res.status);
+        }
+    } catch (err) {
+        eventsData.splice(eventIndex, 0, removed);
+        renderCalendar();
+        console.error('Network error during event delete:', err);
     }
 }
 

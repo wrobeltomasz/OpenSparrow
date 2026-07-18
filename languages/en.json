@@ -280,7 +280,9 @@
         "add_event": "Add event",
         "add_event_title": "Add event — {date}",
         "select_calendar": "Calendar",
-        "no_calendars_configured": "No calendars configured."
+        "no_calendars_configured": "No calendars configured.",
+        "delete_event": "Delete event",
+        "delete_confirm": "Delete this event?"
     },
     "board": {
         "title": "Board",
