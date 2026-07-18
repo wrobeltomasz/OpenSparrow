@@ -95,11 +95,11 @@ $pageTitle = 'OpenSparrow | Add Record - ' . $tableCfg->displayName;
 ob_start();
 ?>
 
-<main style="padding: 20px; max-width: 1060px; margin: 0 auto;">
+<main class="form-page">
     <h2><?= htmlspecialchars(t('form.add_new_record', ['table' => $tableCfg->displayName])) ?></h2>
 
     <?php if ($error) : ?>
-        <div style="color: red; margin-bottom: 15px; padding: 10px; border: 1px solid red; background: #fee; border-radius: 6px;">
+        <div class="form-alert error">
             Error: <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
@@ -129,19 +129,19 @@ ob_start();
             </div>
 
             <?php if (!empty($m2mConfigs)) : ?>
-            <div style="border-top:1px solid var(--border-light); margin:20px 0 4px; padding-top:18px;">
+            <div class="m2m-block">
                 <?php foreach ($m2mConfigs as $mi => $m2mCfg) : ?>
                     <?php $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema); ?>
-                <div style="margin-bottom:18px;">
-                    <div style="font-weight:600; font-size:13px; color:var(--text); margin-bottom:10px;">
+                <div class="m2m-group">
+                    <div class="m2m-group-label">
                         <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
                     </div>
                     <?php if (empty($m2mOpts)) : ?>
-                        <p style="color:var(--muted); font-size:13px; margin:0;">No options available.</p>
+                        <p class="m2m-empty">No options available.</p>
                     <?php else : ?>
-                    <div style="display:flex; flex-wrap:wrap; gap:8px 24px;">
+                    <div class="m2m-options">
                         <?php foreach ($m2mOpts as $opt) : ?>
-                        <label style="display:flex; align-items:center; gap:6px; font-size:14px; color:var(--text); cursor:pointer;">
+                        <label class="m2m-option">
                             <input type="checkbox"
                                 name="m2m_<?php echo (int)$mi; ?>[]"
                                 value="<?php echo htmlspecialchars($opt['id'], ENT_QUOTES, 'UTF-8'); ?>"

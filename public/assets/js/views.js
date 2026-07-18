@@ -595,7 +595,7 @@ function renderView(data) {
         strong.textContent = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
         const badge = document.createElement('span');
         badge.className   = 'vw-summary-fn';
-        badge.textContent = VIEW_FN_KEYS[fn] ? I18n.t(VIEW_FN_KEYS[fn]) : fn.toUpperCase();
+        badge.textContent = VIEW_FN_KEYS[fn] ? I18n.t(VIEW_FN_KEYS[fn]) : (fn.charAt(0).toUpperCase() + fn.slice(1));
         const cond = summaryConds[key];
         if (cond) {
             badge.classList.add('cond');

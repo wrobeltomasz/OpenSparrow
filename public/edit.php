@@ -117,17 +117,17 @@ $pageTitle = 'OpenSparrow | Edit Record - ' . $tableCfg->displayName;
 ob_start();
 ?>
 
-<main style="padding: 20px; max-width: 1060px; margin: 0 auto;">
+<main class="form-page">
     <h2><?= htmlspecialchars(t('form.edit_record', ['table' => $tableCfg->displayName])) ?></h2>
 
     <?php if ($request->query('saved') === '1') : ?>
-        <div style="color: #166534; margin-bottom: 15px; padding: 10px 14px; border: 1px solid #86efac; background: #dcfce7; border-radius: 6px; font-weight: 500;">
+        <div class="form-alert success">
             <?= t('form.saved_ok') ?>
         </div>
     <?php endif; ?>
 
     <?php if ($error) : ?>
-        <div style="color: red; margin-bottom: 15px; padding: 10px; border: 1px solid red; background: #fee; border-radius: 6px;">
+        <div class="form-alert error">
             Error: <?php echo htmlspecialchars($error); ?>
         </div>
     <?php endif; ?>
@@ -197,22 +197,22 @@ ob_start();
             </div>
 
             <?php if (!empty($m2mConfigs)) : ?>
-            <div style="border-top:1px solid var(--border-light); margin:20px 0 4px; padding-top:18px;">
+            <div class="m2m-block">
                 <?php foreach ($m2mConfigs as $mi => $m2mCfg) : ?>
                     <?php
                     $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema);
                     $m2mSel  = m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema);
                     ?>
-                <div style="margin-bottom:18px;">
-                    <div style="font-weight:600; font-size:13px; color:var(--text); margin-bottom:10px;">
+                <div class="m2m-group">
+                    <div class="m2m-group-label">
                         <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
                     </div>
                     <?php if (empty($m2mOpts)) : ?>
-                        <p style="color:var(--muted); font-size:13px; margin:0;">No options available.</p>
+                        <p class="m2m-empty">No options available.</p>
                     <?php else : ?>
-                    <div style="display:flex; flex-wrap:wrap; gap:8px 24px;">
+                    <div class="m2m-options">
                         <?php foreach ($m2mOpts as $opt) : ?>
-                        <label style="display:flex; align-items:center; gap:6px; font-size:14px; color:var(--text); cursor:pointer;">
+                        <label class="m2m-option">
                             <input type="checkbox"
                                 name="m2m_<?php echo (int)$mi; ?>[]"
                                 value="<?php echo htmlspecialchars($opt['id'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -255,7 +255,7 @@ ob_start();
         ?>
     <div class="tab-panel" id="tab-sub-<?php echo (int)$si; ?>" role="tabpanel">
         <div class="subtable-container" style="margin-top: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="ef-panel-head">
                 <h3><?php echo htmlspecialchars($siLabel); ?></h3>
                 <?php if (!$isReadOnly) : ?>
                     <a href="create.php?table=<?php echo urlencode($sTable); ?>&<?php echo urlencode($sFk); ?>=<?php echo urlencode((string)$id); ?>" class="btn-add">
@@ -265,7 +265,7 @@ ob_start();
             </div>
 
             <?php if (empty($sd['rows'])) : ?>
-                <p style="color: var(--muted); font-size: 14px; margin-top: 10px;">No records found.</p>
+                <p class="ef-empty">No records found.</p>
             <?php else : ?>
                 <div class="edit-subtable-wrapper">
                     <table>
@@ -303,15 +303,15 @@ ob_start();
 
     <div class="tab-panel" id="tab-files" role="tabpanel">
     <div class="subtable-container" style="margin-top: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="color: #0f172a; margin: 0;"><?= t('form.attached_files') ?></h3>
+        <div class="ef-panel-head">
+            <h3 class="ef-panel-title"><?= t('form.attached_files') ?></h3>
         </div>
 
         <?php if (!$isReadOnly) : ?>
-            <div style="background: #f8fafc; padding: 15px; border: 1px dashed #cbd5e1; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <input type="file" id="inlineFileInput" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff;" />
-                <input type="text" id="inlineFileName" placeholder="Optional display name" style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 180px;" />
-                <input type="text" id="inlineFileTags" placeholder="Tags (comma separated)" style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 180px;" list="tagSuggestions" />
+            <div class="ef-upload-bar">
+                <input type="file" id="inlineFileInput" class="ef-upload-input" />
+                <input type="text" id="inlineFileName" placeholder="Optional display name" class="ef-upload-text" />
+                <input type="text" id="inlineFileTags" placeholder="Tags (comma separated)" class="ef-upload-text" list="tagSuggestions" />
 
                 <datalist id="tagSuggestions">
                     <option value="Invoice">
@@ -320,22 +320,22 @@ ob_start();
                     <option value="Report">
                 </datalist>
 
-                <button type="button" id="btnInlineUpload" class="btn-action" style="background: #0ea5e9; padding: 7px 16px; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-weight: bold;"><?= t('form.upload_file') ?></button>
-                <span id="inlineUploadStatus" style="font-size: 13px; font-weight: 500; margin-left: 10px;"></span>
+                <button type="button" id="btnInlineUpload" class="btn-action ef-upload-btn"><?= t('form.upload_file') ?></button>
+                <span id="inlineUploadStatus" class="ef-upload-status"></span>
             </div>
         <?php endif; ?>
 
         <?php if (!empty($relatedFiles)) : ?>
             <div class="edit-subtable-wrapper">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <table class="ef-files-table">
                     <thead>
-                        <tr style="border-bottom: 2px solid #e2e8f0; background: #f8fafc;">
-                            <th style="padding: 10px;">Type</th>
-                            <th style="padding: 10px;">Name</th>
-                            <th style="padding: 10px;">Tags</th>
-                            <th style="padding: 10px;">Size</th>
-                            <th style="padding: 10px;">Date</th>
-                            <th style="padding: 10px; width: 100px;">Actions</th>
+                        <tr>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Tags</th>
+                            <th>Size</th>
+                            <th>Date</th>
+                            <th class="ef-col-actions">Actions</th>
                         </tr>
                     </thead>
                     <?php
@@ -360,27 +360,27 @@ ob_start();
                                 $tagsArr = explode(',', str_replace('"', '', $rawTags));
                             }
                             ?>
-                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 10px; font-weight: bold; color: #64748b; font-size: 12px;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <img src="<?php echo htmlspecialchars($iconPath); ?>" alt="icon" style="width: 20px; height: 20px; opacity: 0.8;">
-                                        <?php echo htmlspecialchars(strtoupper($rf['type'])); ?>
+                            <tr>
+                                <td class="ef-file-type">
+                                    <div class="ef-file-type-inner">
+                                        <img src="<?php echo htmlspecialchars($iconPath); ?>" alt="icon" class="ef-file-icon">
+                                        <?php echo htmlspecialchars(ucfirst($rf['type'])); ?>
                                     </div>
                                 </td>
-                                <td style="padding: 10px; font-weight: 500;"><?php echo htmlspecialchars($rf['display_name'] ?: $rf['name']); ?></td>
-                                <td style="padding: 10px;">
+                                <td><?php echo htmlspecialchars($rf['display_name'] ?: $rf['name']); ?></td>
+                                <td>
                                     <?php if (!empty($tagsArr)) : ?>
                                         <?php foreach ($tagsArr as $t) : ?>
                                             <span class="tag-badge"><?php echo htmlspecialchars(trim($t)); ?></span>
                                         <?php endforeach; ?>
                                     <?php else : ?>
-                                        <span style="color:#cbd5e1">-</span>
+                                        <span class="ef-file-dash">-</span>
                                     <?php endif; ?>
                                 </td>
-                                <td style="padding: 10px; color: #64748b;"><?php echo ByteFormatter::humanize((int)$rf['size_bytes']); ?></td>
-                                <td style="padding: 10px; color: #64748b;"><?php echo htmlspecialchars(date('Y-m-d', strtotime($rf['created_at']))); ?></td>
-                                <td style="padding: 10px;">
-                                    <a href="file_download.php?uuid=<?php echo urlencode($rf['uuid']); ?>" target="_blank" class="btn-action" style="background: #0ea5e9; padding: 4px 10px; border-radius: 4px; color: #fff; text-decoration: none; font-size: 12px; display: inline-block;">Download</a>
+                                <td class="ef-file-meta"><?php echo ByteFormatter::humanize((int)$rf['size_bytes']); ?></td>
+                                <td class="ef-file-meta"><?php echo htmlspecialchars(date('Y-m-d', strtotime($rf['created_at']))); ?></td>
+                                <td>
+                                    <a href="file_download.php?uuid=<?php echo urlencode($rf['uuid']); ?>" target="_blank" class="btn-action ef-download-btn">Download</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -388,7 +388,7 @@ ob_start();
                 </table>
             </div>
         <?php else : ?>
-            <p style="color: #64748b; font-size: 14px; margin-top: 10px;"><?= t('form.no_files') ?></p>
+            <p class="ef-empty"><?= t('form.no_files') ?></p>
         <?php endif; ?>
     </div>
     </div><!-- /tab-panel#tab-files -->
@@ -398,18 +398,18 @@ ob_start();
     </div><!-- /tab-panel#tab-comments -->
 
     <div class="tab-panel" id="tab-history" role="tabpanel">
-        <div id="ow-panel" class="owner-panel" style="margin-top: 20px; padding: 16px 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
-            <h3 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;"><?= t('owners.section_owner') ?></h3>
-            <div id="ow-current" style="font-size: 14px; color: #0f172a; margin-bottom: 12px;">Loading…</div>
-            <div id="ow-change" hidden style="align-items: center; gap: 10px; flex-wrap: wrap;">
-                <select id="ow-select" style="padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: #fff;"></select>
+        <div id="ow-panel" class="owner-panel ow-panel">
+            <h3 class="ow-section-title"><?= t('owners.section_owner') ?></h3>
+            <div id="ow-current" class="ow-current">Loading…</div>
+            <div id="ow-change" class="ow-change" hidden>
+                <select id="ow-select" class="ow-select"></select>
                 <button id="ow-save" type="button" class="btn-action">Change Owner</button>
-                <span id="ow-status" style="font-size: 13px;"></span>
+                <span id="ow-status"></span>
             </div>
         </div>
-        <div id="ow-history" style="margin-top: 20px;">
-            <h3 style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;"><?= t('owners.section_history') ?></h3>
-            <div id="ow-history-body" style="font-size: 14px; color: #64748b;">Loading…</div>
+        <div id="ow-history" class="ow-history-wrap">
+            <h3 class="ow-section-title"><?= t('owners.section_history') ?></h3>
+            <div id="ow-history-body" class="ow-history-body">Loading…</div>
         </div>
     </div><!-- /tab-panel#tab-history -->
 
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!fileInput.files || !fileInput.files.length) {
                 statusEl.textContent = 'Please select a file to upload.';
-                statusEl.style.color = 'red';
+                statusEl.style.color = 'var(--danger)';
                 return;
             }
 
@@ -511,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('related_id',    <?php echo json_encode($id); ?>);
 
             statusEl.textContent = 'Uploading...';
-            statusEl.style.color = '#334155';
+            statusEl.style.color = 'var(--text)';
             btnUpload.disabled   = true;
 
             try {
@@ -519,16 +519,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await res.json();
                 if (data.success) {
                     statusEl.textContent = 'Uploaded successfully! Refreshing...';
-                    statusEl.style.color = '#10b981';
+                    statusEl.style.color = 'var(--ok)';
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
                     statusEl.textContent = 'Error: ' + (data.error || 'Upload failed');
-                    statusEl.style.color = 'red';
+                    statusEl.style.color = 'var(--danger)';
                     btnUpload.disabled   = false;
                 }
             } catch (err) {
                 statusEl.textContent = 'Network error during upload.';
-                statusEl.style.color = 'red';
+                statusEl.style.color = 'var(--danger)';
                 btnUpload.disabled   = false;
             }
         });

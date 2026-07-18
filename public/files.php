@@ -577,7 +577,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>
                         <div class="f-type-cell">
                             <img src="${escapeHtml(iconPath)}" alt="" class="f-type-icon">
-                            <span class="f-type-label">${escapeHtml(f.type.toUpperCase())}</span>
+                            <span class="f-type-label">${escapeHtml(f.type.charAt(0).toUpperCase() + f.type.slice(1))}</span>
                         </div>
                     </td>
                     <td class="f-td-name">${escapeHtml(f.display_name || f.name)}</td>

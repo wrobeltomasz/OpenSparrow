@@ -374,7 +374,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
 
         if (!tableSchema) {
             const errorMsg = document.createElement('p');
-            errorMsg.style.cssText = 'color: red; text-align: center; margin-top: 40px;';
+            errorMsg.style.cssText = 'color: var(--danger); text-align: center; margin-top: 40px;';
             errorMsg.textContent = `Error: Schema for table '${step.table}' not found.`;
             containerEl.appendChild(errorMsg);
             return;
