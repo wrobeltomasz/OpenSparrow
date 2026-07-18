@@ -11,10 +11,10 @@ function renderPieChart(widget) {
     wrapper.className = 'dash-pie-wrapper';
 
     const data = widget.data || [];
-    if (data.length === 0) { wrapper.textContent = 'No data'; return wrapper; }
+    if (data.length === 0) { wrapper.textContent = window.I18n.t('dashboard.no_data'); return wrapper; }
 
     const total = data.reduce((sum, d) => sum + parseFloat(d.value), 0);
-    if (total === 0) { wrapper.textContent = 'Sum is zero'; return wrapper; }
+    if (total === 0) { wrapper.textContent = window.I18n.t('dashboard.sum_zero'); return wrapper; }
 
     const groupCol = widget.query?.group_column;
     const columnType = widget.column_type;

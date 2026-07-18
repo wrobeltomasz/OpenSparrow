@@ -261,13 +261,13 @@ function handleColumnFilterChange() {
         
         const optAll = document.createElement('option');
         optAll.value = '';
-        optAll.textContent = 'All';
+        optAll.textContent = I18n.t('filter.all');
         const optTrue = document.createElement('option');
         optTrue.value = 'true';
-        optTrue.textContent = 'Yes / True';
+        optTrue.textContent = I18n.t('filter.yes_true');
         const optFalse = document.createElement('option');
         optFalse.value = 'false';
-        optFalse.textContent = 'No / False';
+        optFalse.textContent = I18n.t('filter.no_false');
         
         select.appendChild(optAll);
         select.appendChild(optTrue);
@@ -304,7 +304,7 @@ function renderFilterPills() {
         const closeBtn = document.createElement('span');
         closeBtn.textContent = '×';
         closeBtn.className = 'filter-pill-remove';
-        closeBtn.title = "Remove filter";
+        closeBtn.title = I18n.t('common.remove_filter');
         closeBtn.onclick = () => {
             onRemove();
             handleColumnFilterChange();

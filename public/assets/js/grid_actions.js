@@ -6,6 +6,7 @@ import { loadTable } from './grid.js';
 import { state } from './grid/state.js';
 
 import { apiFetch } from './util/api.js';
+import { I18n } from './i18n.js';
 
 // Show errors in debug panel
 function debugError(message, data = {}) {
@@ -199,7 +200,7 @@ export async function deleteRow(id) {
         status: res.status,
         error: payload?.error || "Unknown error"
       });
-      showToast(`Delete failed (${res.status})`, 'error');
+      showToast(I18n.t('grid.delete_failed', { status: res.status }), 'error');
       return;
     }
 
@@ -245,7 +246,7 @@ export async function addRow() {
         status: res.status,
         error: payload?.error || "Unknown error"
       });
-      showToast(`Insert failed (${res.status})`, 'error');
+      showToast(I18n.t('grid.insert_failed', { status: res.status }), 'error');
       return;
     }
 

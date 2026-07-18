@@ -53,8 +53,8 @@ concentrated in a few places listed below.
 
 - **`src/` (App\) layer: FROZEN (decided 2026-07-09)** — the OOP layer stays
   scoped to what it serves today: the form pages' object graph (`os_boot_app()`
-  in `includes/bootstrap.php` — create.php/edit.php) and record routing
-  (Pg/Mysql/RoutingRecordRepository used by the MySQL gateway). It will not be
+  in `includes/bootstrap.php` — create.php/edit.php) and PostgreSQL record
+  persistence (`PgRecordRepository`). It will not be
   extended to the rest of the codebase; **new backend code goes into the
   procedural `includes/` helper layer**. Six single-implementation interfaces
   with no consumer were deleted, and their type hints inlined to the concrete
@@ -65,11 +65,10 @@ concentrated in a few places listed below.
   No `removed_files` entry is needed: this happened before 3.0, the first
   shipped version, so no installation ever had those files. Deliberately
   KEPT: `SessionInterface` (the CSRF unit test implements it as an in-memory
-  fake), `RecordRepositoryInterface` (three implementations — real
-  polymorphism), `FieldTypeInterface` (registry polymorphism), and
-  `Identifier`/`MysqlIdentifier` (concrete utility classes, misclassified in
-  the original review). Do not add new interfaces to `src/` unless at least two
-  real (non-test) implementations exist.
+  fake), `RecordRepositoryInterface` (implemented by `PgRecordRepository`),
+  `FieldTypeInterface` (registry polymorphism), and `Identifier` (concrete
+  utility class, misclassified in the original review). Do not add new
+  interfaces to `src/` unless at least two real (non-test) implementations exist.
 
 - **Configuration store: `spw_config` is the single source of truth (implemented
   2026-07-16)** — all 14 application config keys (schema, menu, settings,

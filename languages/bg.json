@@ -20,7 +20,8 @@
         "boolean": {
             "true": "Да",
             "false": "Не"
-        }
+        },
+        "logo_alt": "Logo"
     },
     "grid": {
         "title": "Таблица",
@@ -55,7 +56,16 @@
         "drilldown_count": "{count} свързани",
         "load_more": "Зареди още",
         "total_in_db": "общо в таблицата",
-        "truncated_notice": "Показани първите {loaded} от {total} записа. Използвайте търсене или \"Зареди още\" (остават {remaining})."
+        "truncated_notice": "Показани първите {loaded} от {total} записа. Използвайте търсене или \"Зареди още\" (остават {remaining}).",
+        "cannot_load_table": "Cannot load table \"{table}\". {msg}",
+        "error_loading_table": "Error loading \"{table}\"",
+        "cannot_load_more": "Cannot load more rows. {msg}",
+        "search_failed": "Search failed. {msg}",
+        "delete_failed": "Delete failed ({status})",
+        "insert_failed": "Insert failed ({status})",
+        "select_all_rows": "Select all rows",
+        "select_all_toggle": "Select / deselect all",
+        "id_badge": "id: {id}"
     },
     "form": {
         "add_record": "Добавяне на запис",
@@ -80,7 +90,8 @@
         "no_files": "Няма прикачени файлове към този запис.",
         "no_records": "Няма намерени записи.",
         "add_subtable": "+ Добавяне на {label}",
-        "attached_files": "Прикачени файлове"
+        "attached_files": "Прикачени файлове",
+        "no_options": "No options available."
     },
     "auth": {
         "login": "Вход",
@@ -96,7 +107,8 @@
         "passwords_no_match": "Паролите не съвпадат.",
         "password_too_short": "Паролата трябва да е поне 8 знака.",
         "password_changed": "Паролата е сменена.",
-        "change_avatar": "Смяна на аватара"
+        "change_avatar": "Смяна на аватара",
+        "error_changing_password": "Error changing password."
     },
     "header": {
         "toggle_sidebar": "Превключване на страничната лента",
@@ -111,7 +123,10 @@
         "avatar_updated": "Аватарът е актуализиран.",
         "my_records": "Моите записи",
         "my_records_empty": "Нямате назначени записи.",
-        "close": "Затваряне"
+        "close": "Затваряне",
+        "avatar_option": "Avatar {n}",
+        "avatar_options": "Avatar options",
+        "error_saving_avatar": "Error saving avatar."
     },
     "admin": {
         "title": "Администрация",
@@ -152,7 +167,53 @@
         "tip_tags": "Етикети за търсене и групиране — щракнете върху клетката за редактиране (разделени със запетаи)",
         "tip_size": "Размер на файла на диска",
         "tip_related": "Запис, към който е свързан файлът — щракнете върху баджа, за да го отворите",
-        "tip_uploaded": "Дата на качване на файла"
+        "tip_uploaded": "Дата на качване на файла",
+        "filter_all_types": "All File Types",
+        "filter_images": "Images",
+        "filter_pdfs": "PDFs",
+        "filter_documents": "Documents",
+        "filter_spreadsheets": "Spreadsheets",
+        "filter_archives": "Archives",
+        "select_all_files": "Select all files",
+        "select_all_toggle": "Select / deselect all",
+        "col_type": "Type",
+        "col_name": "File Name",
+        "col_display": "Name",
+        "col_tags": "Tags",
+        "col_size": "Size",
+        "col_related": "Related To",
+        "col_uploaded": "Uploaded Date",
+        "loading": "Loading files...",
+        "refresh": "Refresh List",
+        "upload_new": "Upload new file:",
+        "choose_file": "Choose file to upload",
+        "ph_display_name": "Optional display name",
+        "ph_tags": "Tags (comma separated)",
+        "opt_target_table": "-- Target table --",
+        "opt_select_table_first": "-- Select table first --",
+        "go_to_record": "Go to record",
+        "edit_tags": "Click to edit tags",
+        "select_file": "Select file",
+        "delete_error": "Delete error: {error}",
+        "network_error": "Network error.",
+        "save_error": "Save error: {error}",
+        "name_empty": "Name cannot be empty.",
+        "name_updated": "Name updated.",
+        "tags_updated": "Tags updated.",
+        "deleted_n": "Deleted {n} file(s)",
+        "tagged_n": "Tagged {n} file(s)",
+        "unknown": "Unknown",
+        "failed": "Failed",
+        "no_files_match": "No files found matching your criteria.",
+        "search_placeholder": "Search files by name or tag...",
+        "bulk_add_tags": "Add Tags",
+        "bulk_apply": "Apply",
+        "bulk_deselect_all": "Deselect all",
+        "bulk_n_selected": "{n} selected",
+        "bulk_tags_scope": "Tags will be added to {n} selected file(s).",
+        "ph_tags_example": "e.g. invoice, 2026",
+        "applying": "Applying...",
+        "error_generic": "Error: {error}"
     },
     "notifications": {
         "mark_read": "Маркиране като прочетено",
@@ -175,7 +236,14 @@
         "filter_7d": "Последните 7 дни",
         "filter_30d": "Последните 30 дни",
         "filter_month": "Този месец",
-        "vs_prev": "спрямо предходния период ({prev})"
+        "vs_prev": "спрямо предходния период ({prev})",
+        "no_widgets": "No widgets configured.",
+        "unknown_widget_type": "Unknown widget type: {type}",
+        "list_misconfigured": "List widget misconfigured: missing display_columns.",
+        "no_data": "No data",
+        "sum_zero": "Sum is zero",
+        "click_edit_record": "Click to edit record",
+        "title": "Dashboard"
     },
     "workflow": {
         "steps": {
@@ -192,7 +260,12 @@
         "saving": "Запазване…",
         "completed_title": "Работният процес е завършен",
         "success_before": "Всички стъпки на",
-        "success_after": "работния процес бяха успешно завършени."
+        "success_after": "работния процес бяха успешно завършени.",
+        "no_description": "No description provided for this workflow.",
+        "schema_not_found": "Error: Schema for table '{table}' not found.",
+        "unknown_save_error": "Unknown error occurred while saving.",
+        "save_error": "Error saving data: {msg}",
+        "server_error": "Server Error (PHP/SQL): {msg}"
     },
     "comments": {
         "delete": "Изтриване",
@@ -202,7 +275,10 @@
         "none": "Все още няма коментари. Бъдете първи.",
         "send": "Изпращане",
         "placeholder": "Напишете коментар… (**удебелен**, *курсив*, URL адресите се свързват автоматично)",
-        "deleted_text": "Коментарът е изтрит."
+        "deleted_text": "Коментарът е изтрит.",
+        "bold_title": "Bold (**text**)",
+        "italic_title": "Italic (*text*)",
+        "unknown_author": "Unknown"
     },
     "owners": {
         "error_load": "Грешка при зареждане на собственика.",
@@ -242,7 +318,10 @@
         "fn_min": "МИН",
         "fn_max": "МАКС",
         "fn_count": "БРОЙ",
-        "group_by": "Групиране на редове…"
+        "group_by": "Групиране на редове…",
+        "no_data": "No data found.",
+        "click_sort": "Click to sort",
+        "click_open": "Click to open this view."
     },
     "data_cleanup": {
         "title": "Бързо почистване на данни",
@@ -381,6 +460,65 @@
         "tag_fallback": "Няма резултати за избраните тагове — показвам резултати от всички документи.",
         "context_table": "Преглед: {table}",
         "use_grid_data": "Данни от текущата таблица",
-        "select_one": "Изберете поне един етикет на документ или данните от текущата таблица преди изпращане."
+        "select_one": "Изберете поне един етикет на документ или данните от текущата таблица преди изпращане.",
+        "error_prefix": "Error: {msg}"
+    },
+    "setup": {
+        "title": "OpenSparrow Setup",
+        "subtitle": "Configure your database and initialize the system",
+        "step_of": "Step {current} of 4",
+        "complete_short": "Complete!",
+        "welcome_title": "Welcome to OpenSparrow",
+        "welcome_intro": "This wizard will help you configure your database connection and initialize the system.",
+        "welcome_need": "You'll need:",
+        "welcome_need_db": "PostgreSQL 14+ server details (host, port, database, user, password)",
+        "welcome_need_admin": "Administrator password (to be set after initialization)",
+        "welcome_go": "Let's get started!",
+        "next": "Next",
+        "back": "Back",
+        "db_conn_title": "Database Connection",
+        "lbl_host": "Host",
+        "help_host": "PostgreSQL server hostname",
+        "lbl_port": "Port",
+        "lbl_dbname": "Database Name",
+        "help_dbname": "Name of the PostgreSQL database",
+        "lbl_user": "Username",
+        "help_user": "PostgreSQL user with CREATE privileges",
+        "lbl_password": "Password",
+        "test_conn": "Test Connection",
+        "checking": "Checking connection...",
+        "schema_title": "Schema Configuration",
+        "lbl_schema": "Schema Name",
+        "help_schema": "PostgreSQL schema for system tables (default: app)",
+        "create_schema": "Create schema if it doesn't exist",
+        "admin_default": "Default Admin Account",
+        "username_colon": "Username:",
+        "password_colon": "Password:",
+        "admin_pwd_note": "a random password will be generated and shown after initialization",
+        "important": "Important",
+        "important_text": "You can change the admin password after logging into the admin panel. Please change it immediately for security.",
+        "review_title": "Review & Initialize",
+        "sum_host": "Host",
+        "sum_port": "Port",
+        "sum_db": "Database",
+        "sum_user": "User",
+        "sum_schema": "Schema",
+        "init_btn": "Initialize System Tables",
+        "complete_title": "Setup Complete!",
+        "complete_sub": "Your database has been initialized successfully.",
+        "admin_created": "Admin Account Created",
+        "next_steps": "Next Steps",
+        "next_step_1": "Log in with admin and the password shown above",
+        "next_step_2": "Go to Admin Panel → Users",
+        "next_step_3": "Change the admin password immediately",
+        "go_login": "Go to Login",
+        "test_first": "Please test the connection first",
+        "fill_required": "Please fill in all required fields",
+        "conn_success": "Connection successful!",
+        "conn_failed": "Connection failed",
+        "network_error": "Network error",
+        "network_error_msg": "Network error: {msg}",
+        "initializing": "Initializing...",
+        "init_failed": "Initialization failed"
     }
 }

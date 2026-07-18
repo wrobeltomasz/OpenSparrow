@@ -20,7 +20,8 @@
         "boolean": {
             "true": "Taip",
             "false": "Ne"
-        }
+        },
+        "logo_alt": "Logo"
     },
     "grid": {
         "title": "Lentelė",
@@ -55,7 +56,16 @@
         "drilldown_count": "{count} susiję",
         "load_more": "Įkelti daugiau",
         "total_in_db": "iš viso lentelėje",
-        "truncated_notice": "Rodomi pirmieji {loaded} iš {total} įrašų. Naudokite paiešką arba \"Įkelti daugiau\" (liko {remaining})."
+        "truncated_notice": "Rodomi pirmieji {loaded} iš {total} įrašų. Naudokite paiešką arba \"Įkelti daugiau\" (liko {remaining}).",
+        "cannot_load_table": "Cannot load table \"{table}\". {msg}",
+        "error_loading_table": "Error loading \"{table}\"",
+        "cannot_load_more": "Cannot load more rows. {msg}",
+        "search_failed": "Search failed. {msg}",
+        "delete_failed": "Delete failed ({status})",
+        "insert_failed": "Insert failed ({status})",
+        "select_all_rows": "Select all rows",
+        "select_all_toggle": "Select / deselect all",
+        "id_badge": "id: {id}"
     },
     "form": {
         "add_record": "Pridėti įrašą",
@@ -80,7 +90,8 @@
         "no_files": "Prie šio įrašo nepridėta jokių failų.",
         "no_records": "Įrašų nerasta.",
         "add_subtable": "+ Pridėti {label}",
-        "attached_files": "Pridėti failai"
+        "attached_files": "Pridėti failai",
+        "no_options": "No options available."
     },
     "auth": {
         "login": "Prisijungti",
@@ -96,7 +107,8 @@
         "passwords_no_match": "Slaptažodžiai nesutampa.",
         "password_too_short": "Slaptažodis turi būti bent 8 simbolių.",
         "password_changed": "Slaptažodis pakeistas.",
-        "change_avatar": "Keisti avataras"
+        "change_avatar": "Keisti avataras",
+        "error_changing_password": "Error changing password."
     },
     "header": {
         "toggle_sidebar": "Perjungti šoninę juostą",
@@ -111,7 +123,10 @@
         "avatar_updated": "Avataro atnaujintas.",
         "my_records": "Mano įrašai",
         "my_records_empty": "Jums nepriskirta jokių įrašų.",
-        "close": "Uždaryti"
+        "close": "Uždaryti",
+        "avatar_option": "Avatar {n}",
+        "avatar_options": "Avatar options",
+        "error_saving_avatar": "Error saving avatar."
     },
     "admin": {
         "title": "Administravimas",
@@ -153,7 +168,53 @@
         "tip_tags": "Žymos paieškai ir grupavimui — spustelėkite langelį redaguoti (atskirtos kableliais)",
         "tip_size": "Failo dydis diske",
         "tip_related": "Įrašas, su kuriuo susietas failas — spustelėkite ženklelį, kad atidarytumėte",
-        "tip_uploaded": "Failo įkėlimo data"
+        "tip_uploaded": "Failo įkėlimo data",
+        "filter_all_types": "All File Types",
+        "filter_images": "Images",
+        "filter_pdfs": "PDFs",
+        "filter_documents": "Documents",
+        "filter_spreadsheets": "Spreadsheets",
+        "filter_archives": "Archives",
+        "select_all_files": "Select all files",
+        "select_all_toggle": "Select / deselect all",
+        "col_type": "Type",
+        "col_name": "File Name",
+        "col_display": "Name",
+        "col_tags": "Tags",
+        "col_size": "Size",
+        "col_related": "Related To",
+        "col_uploaded": "Uploaded Date",
+        "loading": "Loading files...",
+        "refresh": "Refresh List",
+        "upload_new": "Upload new file:",
+        "choose_file": "Choose file to upload",
+        "ph_display_name": "Optional display name",
+        "ph_tags": "Tags (comma separated)",
+        "opt_target_table": "-- Target table --",
+        "opt_select_table_first": "-- Select table first --",
+        "go_to_record": "Go to record",
+        "edit_tags": "Click to edit tags",
+        "select_file": "Select file",
+        "delete_error": "Delete error: {error}",
+        "network_error": "Network error.",
+        "save_error": "Save error: {error}",
+        "name_empty": "Name cannot be empty.",
+        "name_updated": "Name updated.",
+        "tags_updated": "Tags updated.",
+        "deleted_n": "Deleted {n} file(s)",
+        "tagged_n": "Tagged {n} file(s)",
+        "unknown": "Unknown",
+        "failed": "Failed",
+        "no_files_match": "No files found matching your criteria.",
+        "search_placeholder": "Search files by name or tag...",
+        "bulk_add_tags": "Add Tags",
+        "bulk_apply": "Apply",
+        "bulk_deselect_all": "Deselect all",
+        "bulk_n_selected": "{n} selected",
+        "bulk_tags_scope": "Tags will be added to {n} selected file(s).",
+        "ph_tags_example": "e.g. invoice, 2026",
+        "applying": "Applying...",
+        "error_generic": "Error: {error}"
     },
     "notifications": {
         "mark_read": "Pažymėti kaip skaitytą",
@@ -177,7 +238,14 @@
         "filter_7d": "Paskutinės 7 dienos",
         "filter_30d": "Paskutinės 30 dienų",
         "filter_month": "Šį mėnesį",
-        "vs_prev": "palyginti su ankstesniu laikotarpiu ({prev})"
+        "vs_prev": "palyginti su ankstesniu laikotarpiu ({prev})",
+        "no_widgets": "No widgets configured.",
+        "unknown_widget_type": "Unknown widget type: {type}",
+        "list_misconfigured": "List widget misconfigured: missing display_columns.",
+        "no_data": "No data",
+        "sum_zero": "Sum is zero",
+        "click_edit_record": "Click to edit record",
+        "title": "Dashboard"
     },
     "workflow": {
         "steps": {
@@ -195,7 +263,12 @@
         "saving": "Saugoma…",
         "completed_title": "Darbo eiga baigta",
         "success_before": "Visi",
-        "success_after": "darbo eigos žingsniai sėkmingai baigti."
+        "success_after": "darbo eigos žingsniai sėkmingai baigti.",
+        "no_description": "No description provided for this workflow.",
+        "schema_not_found": "Error: Schema for table '{table}' not found.",
+        "unknown_save_error": "Unknown error occurred while saving.",
+        "save_error": "Error saving data: {msg}",
+        "server_error": "Server Error (PHP/SQL): {msg}"
     },
     "comments": {
         "delete": "Ištrinti",
@@ -205,7 +278,10 @@
         "none": "Komentarų dar nėra. Būkite pirmas.",
         "send": "Siųsti",
         "placeholder": "Rašykite komentarą… (**paryškintas**, *kursyvas*, URL automatiškai susieti)",
-        "deleted_text": "Komentaras ištrintas."
+        "deleted_text": "Komentaras ištrintas.",
+        "bold_title": "Bold (**text**)",
+        "italic_title": "Italic (*text*)",
+        "unknown_author": "Unknown"
     },
     "owners": {
         "error_load": "Klaida įkeliant savininką.",
@@ -245,7 +321,10 @@
         "fn_min": "MIN",
         "fn_max": "MAKS",
         "fn_count": "SKAIČIUS",
-        "group_by": "Grupuoti eilutes…"
+        "group_by": "Grupuoti eilutes…",
+        "no_data": "No data found.",
+        "click_sort": "Click to sort",
+        "click_open": "Click to open this view."
     },
     "data_cleanup": {
         "title": "Greitas duomenų valymas",
@@ -384,6 +463,65 @@
         "tag_fallback": "Nėra rezultatų pasirinktoms žymoms — rodomi rezultatai iš visų dokumentų.",
         "context_table": "Rodoma: {table}",
         "use_grid_data": "Dabartinės lentelės duomenys",
-        "select_one": "Prieš siųsdami pasirinkite bent vieną dokumento žymą arba dabartinės lentelės duomenis."
+        "select_one": "Prieš siųsdami pasirinkite bent vieną dokumento žymą arba dabartinės lentelės duomenis.",
+        "error_prefix": "Error: {msg}"
+    },
+    "setup": {
+        "title": "OpenSparrow Setup",
+        "subtitle": "Configure your database and initialize the system",
+        "step_of": "Step {current} of 4",
+        "complete_short": "Complete!",
+        "welcome_title": "Welcome to OpenSparrow",
+        "welcome_intro": "This wizard will help you configure your database connection and initialize the system.",
+        "welcome_need": "You'll need:",
+        "welcome_need_db": "PostgreSQL 14+ server details (host, port, database, user, password)",
+        "welcome_need_admin": "Administrator password (to be set after initialization)",
+        "welcome_go": "Let's get started!",
+        "next": "Next",
+        "back": "Back",
+        "db_conn_title": "Database Connection",
+        "lbl_host": "Host",
+        "help_host": "PostgreSQL server hostname",
+        "lbl_port": "Port",
+        "lbl_dbname": "Database Name",
+        "help_dbname": "Name of the PostgreSQL database",
+        "lbl_user": "Username",
+        "help_user": "PostgreSQL user with CREATE privileges",
+        "lbl_password": "Password",
+        "test_conn": "Test Connection",
+        "checking": "Checking connection...",
+        "schema_title": "Schema Configuration",
+        "lbl_schema": "Schema Name",
+        "help_schema": "PostgreSQL schema for system tables (default: app)",
+        "create_schema": "Create schema if it doesn't exist",
+        "admin_default": "Default Admin Account",
+        "username_colon": "Username:",
+        "password_colon": "Password:",
+        "admin_pwd_note": "a random password will be generated and shown after initialization",
+        "important": "Important",
+        "important_text": "You can change the admin password after logging into the admin panel. Please change it immediately for security.",
+        "review_title": "Review & Initialize",
+        "sum_host": "Host",
+        "sum_port": "Port",
+        "sum_db": "Database",
+        "sum_user": "User",
+        "sum_schema": "Schema",
+        "init_btn": "Initialize System Tables",
+        "complete_title": "Setup Complete!",
+        "complete_sub": "Your database has been initialized successfully.",
+        "admin_created": "Admin Account Created",
+        "next_steps": "Next Steps",
+        "next_step_1": "Log in with admin and the password shown above",
+        "next_step_2": "Go to Admin Panel → Users",
+        "next_step_3": "Change the admin password immediately",
+        "go_login": "Go to Login",
+        "test_first": "Please test the connection first",
+        "fill_required": "Please fill in all required fields",
+        "conn_success": "Connection successful!",
+        "conn_failed": "Connection failed",
+        "network_error": "Network error",
+        "network_error_msg": "Network error: {msg}",
+        "initializing": "Initializing...",
+        "init_failed": "Initialization failed"
     }
 }

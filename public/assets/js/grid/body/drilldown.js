@@ -86,7 +86,7 @@ async function buildSubtableBlock(sub, row) {
                 textSpan.textContent = cols.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || I18n.t('grid.drilldown_no_title');
                 const badge = document.createElement('span');
                 badge.className = 'badge';
-                badge.textContent = `id: ${r.id}`;
+                badge.textContent = I18n.t('grid.id_badge', { id: r.id });
                 li.appendChild(textSpan);
                 li.appendChild(badge);
                 li.addEventListener('click', () => {

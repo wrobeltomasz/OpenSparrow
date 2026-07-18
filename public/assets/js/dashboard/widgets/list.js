@@ -10,12 +10,12 @@ function renderList(widget) {
 
     const cols = Array.isArray(widget.display_columns) ? widget.display_columns : [];
     if (cols.length === 0) {
-        wrapper.textContent = 'List widget misconfigured: missing display_columns.';
+        wrapper.textContent = window.I18n.t('dashboard.list_misconfigured');
         return wrapper;
     }
 
     const data = widget.data || [];
-    if (data.length === 0) { wrapper.textContent = 'No data'; return wrapper; }
+    if (data.length === 0) { wrapper.textContent = window.I18n.t('dashboard.no_data'); return wrapper; }
 
     const colTypes = widget.column_types || {};
     const ul = document.createElement('ul');
@@ -29,7 +29,7 @@ function renderList(widget) {
         li.textContent = displayParts.join(' - ');
         if (row.id) {
             li.style.cursor = 'pointer';
-            li.title = 'Click to edit record';
+            li.title = window.I18n.t('dashboard.click_edit_record');
             li.addEventListener('click', () => {
                 window.location.href = `edit.php?table=${encodeURIComponent(widget.table)}&id=${row.id}`;
             });

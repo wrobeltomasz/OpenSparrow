@@ -478,6 +478,7 @@ Siatka 3-kolumnowa widgetów z zagregowanymi danymi. Konfigurowana przez admina.
 | Stat Card | Pojedyncza zagregowana wartość (COUNT / SUM / AVG) wybranej kolumny, z tytułem metryki i kolorowym tłem kafelka |
 | Bar Chart | Wykres słupkowy pionowy z etykietami osi X/Y i legendą |
 | Pie Chart | Wykres kołowy z kolorowymi segmentami i legendą |
+| Line Chart (szereg czasowy) | Wykres liniowy trendu w czasie: oś X = okres (dzień / tydzień / miesiąc / rok), oś Y = zagregowana wartość (COUNT / SUM / AVG). Opcjonalne wypełnienie obszaru pod linią (wykres obszarowy). Punkty danych mają dymki (etykieta okresu + wartość) i drill-down. Wyłącznie źródła PostgreSQL |
 | List Widget | Tabela wielokolumnowa rekordów z linkami drill-down |
 
 ### Interakcje
@@ -756,8 +757,9 @@ Zarządzanie konfiguracją tabel i kolumn (klucz `schema` w `spw_config`).
 
 ### 17.2 Dashboard (Admin)
 
-- Dodaj widget: wybór typu (stat / wykres słupkowy / kołowy / lista)
+- Dodaj widget: wybór typu (stat / wykres słupkowy / kołowy / liniowy-szereg czasowy / lista)
 - Konfiguracja widgetu: tytuł, tabela źródłowa, funkcja agregacji (SUM/COUNT/AVG), kolumny osi, grupowanie, warunki widoczności, szerokość/wysokość, paleta kolorów
+- Wykres liniowy: dodatkowo kolumna osi czasu (X), granulacja (dzień / tydzień / miesiąc / rok) oraz przełącznik "wypełnij obszar pod linią" (tryb obszarowy)
 - Przeciąganie widgetów: zmiana kolejności w siatce 3-kolumnowej
 - Podgląd na żywo: dashboard odświeżany w czasie rzeczywistym podczas edycji
 
@@ -998,7 +1000,7 @@ Jednym kliknięciem załaduj przykładowe dane do testowania:
 
 | System | Zawiera |
 |--------|---------|
-| CRM | Firmy, kontakty, szanse sprzedaży (deals), leady, produkty (M2M), oferty, faktury, aktywa; 10 widgetów dashboardu, 5 źródeł kalendarza z przypomnieniami dla instalującego admina, tablica Kanban (Deals Board), 2 workflows, 7 widoków, 4 automatyzacje (m.in. oferta zaakceptowana → automatyczna faktura robocza), reguły anonimizacji RODO, 2 szablony wydruku |
+| CRM | Firmy, kontakty, szanse sprzedaży (deals), leady, produkty (M2M), oferty, faktury, aktywa; 12 widgetów dashboardu (w tym 2 wykresy liniowe/obszarowe: wartość dealów w czasie i aktywności w czasie), 5 źródeł kalendarza z przypomnieniami dla instalującego admina, tablica Kanban (Deals Board), 2 workflows, 7 widoków, 4 automatyzacje (m.in. oferta zaakceptowana → automatyczna faktura robocza), reguły anonimizacji RODO, 2 szablony wydruku |
 
 Instalacja tworzy dedykowany schemat PostgreSQL `spw_crm` z danymi przykładowymi i scala konfigurację demo (schemat, dashboard, kalendarz, tablica, workflows, widoki, automatyzacje) z konfiguracją aplikacji w tabeli `spw_config`. Przycisk "Reset" usuwa dane demo: schemat jest kasowany (CASCADE), a wpisy konfiguracyjne czyszczone, jeśli zawierają wyłącznie treści demo.
 
@@ -1125,6 +1127,9 @@ Tabela z kolumnami: nazwa firmy, NIP, miasto, województwo, status, opiekun hand
 
 **Wykres kołowy - podział klientów wg województwa:**  
 Widget Pie Chart: wymiar = województwo, wartość = COUNT(klientów). Raport pokazuje z których regionów pochodzi baza klientów. Drill-down: kliknięcie segmentu filtruje siatkę do klientów z danego województwa.
+
+**Wykres liniowy - trend sprzedaży w czasie:**  
+Widget Line Chart na tabeli faktur: oś X = kolumna daty wystawienia z granulacją miesięczną, oś Y = SUM(kwota netto). Z włączonym wypełnieniem obszaru daje czytelny obraz dynamiki przychodów miesiąc do miesiąca. Zmiana granulacji na "dzień" pokazuje szczegóły bieżącego okresu, a globalny filtr okresu na pasku zawęża serię (np. ostatnie 30 dni). Drill-down z punktu prowadzi do rekordów danego okresu.
 
 **Spotkania z klientami w kalendarzu:**  
 Tabela "Spotkania" z kolumną daty, tytułem, opiekunem. Kalendarz pokazuje kto ma spotkanie kiedy. Przeciągnięcie zdarzenia = zmiana terminu bez otwierania formularza. Kliknięcie = szczegóły i notatki.

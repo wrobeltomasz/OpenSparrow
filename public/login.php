@@ -203,16 +203,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="login-page">
     <div class="login-wrapper">
         <div class="login-box" data-cy="login-box">
-            <center><img src="<?php echo htmlspecialchars($loginLogoSrc, ENT_QUOTES, 'UTF-8'); ?>" alt="Logo" class="footer-logo" height="48" /></center>
+            <center><img src="<?php echo htmlspecialchars($loginLogoSrc, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(t('common.logo_alt'), ENT_QUOTES, 'UTF-8'); ?>" class="footer-logo" height="48" /></center>
             <h2><?php echo htmlspecialchars($appName, ENT_QUOTES, 'UTF-8'); ?></h2>
             <?php if ($error) : ?>
                 <div class="error" data-cy="login-error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
-                <input type="text" name="username" data-cy="username" placeholder="Login" required autofocus autocomplete="username" />
+                <input type="text" name="username" data-cy="username" placeholder="<?php echo htmlspecialchars(t('auth.username'), ENT_QUOTES, 'UTF-8'); ?>" required autofocus autocomplete="username" />
                 <div class="password-container">
-                    <input type="password" id="password" name="password" data-cy="password" placeholder="Password" required autocomplete="current-password" />
+                    <input type="password" id="password" name="password" data-cy="password" placeholder="<?php echo htmlspecialchars(t('auth.password'), ENT_QUOTES, 'UTF-8'); ?>" required autocomplete="current-password" />
                     <span id="togglePassword" class="toggle-password">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -220,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </svg>
                     </span>
                 </div>
-                <button type="submit" data-cy="loginBtn">Submit</button>
+                <button type="submit" data-cy="loginBtn"><?php echo htmlspecialchars(t('auth.login'), ENT_QUOTES, 'UTF-8'); ?></button>
             </form>
             <div class="login-info">
                 <span>v<?php echo htmlspecialchars($version); ?></span>

@@ -20,7 +20,8 @@
         "boolean": {
             "true": "Jah",
             "false": "Ei"
-        }
+        },
+        "logo_alt": "Logo"
     },
     "grid": {
         "title": "Tabel",
@@ -55,7 +56,16 @@
         "drilldown_count": "{count} seotud",
         "load_more": "Laadi rohkem",
         "total_in_db": "kokku tabelis",
-        "truncated_notice": "Näidatakse esimest {loaded} kirjet {total}-st. Kasutage otsingut või \"Laadi rohkem\" (jäänud {remaining})."
+        "truncated_notice": "Näidatakse esimest {loaded} kirjet {total}-st. Kasutage otsingut või \"Laadi rohkem\" (jäänud {remaining}).",
+        "cannot_load_table": "Cannot load table \"{table}\". {msg}",
+        "error_loading_table": "Error loading \"{table}\"",
+        "cannot_load_more": "Cannot load more rows. {msg}",
+        "search_failed": "Search failed. {msg}",
+        "delete_failed": "Delete failed ({status})",
+        "insert_failed": "Insert failed ({status})",
+        "select_all_rows": "Select all rows",
+        "select_all_toggle": "Select / deselect all",
+        "id_badge": "id: {id}"
     },
     "form": {
         "add_record": "Lisa kirje",
@@ -80,7 +90,8 @@
         "no_files": "Selle kirjega pole faile seotud.",
         "no_records": "Kirjeid ei leitud.",
         "add_subtable": "+ Lisa {label}",
-        "attached_files": "Manustatud failid"
+        "attached_files": "Manustatud failid",
+        "no_options": "No options available."
     },
     "auth": {
         "login": "Logi sisse",
@@ -96,7 +107,8 @@
         "passwords_no_match": "Paroolid ei kattu.",
         "password_too_short": "Parool peab olema vähemalt 8 tähemärki.",
         "password_changed": "Parool vahetatud.",
-        "change_avatar": "Vaheta avatar"
+        "change_avatar": "Vaheta avatar",
+        "error_changing_password": "Error changing password."
     },
     "header": {
         "toggle_sidebar": "Lülita külgriba",
@@ -111,7 +123,10 @@
         "avatar_updated": "Avatar uuendatud.",
         "my_records": "Minu kirjed",
         "my_records_empty": "Teile pole kirjeid määratud.",
-        "close": "Sulge"
+        "close": "Sulge",
+        "avatar_option": "Avatar {n}",
+        "avatar_options": "Avatar options",
+        "error_saving_avatar": "Error saving avatar."
     },
     "admin": {
         "title": "Haldus",
@@ -152,7 +167,53 @@
         "tip_tags": "Sildid otsimiseks ja rühmitamiseks — klõpsake lahtril muutmiseks (komadega eraldatud)",
         "tip_size": "Faili suurus kettal",
         "tip_related": "Kirje, millega fail on seotud — klõpsake avamiseks märgil",
-        "tip_uploaded": "Faili üleslaadimise kuupäev"
+        "tip_uploaded": "Faili üleslaadimise kuupäev",
+        "filter_all_types": "All File Types",
+        "filter_images": "Images",
+        "filter_pdfs": "PDFs",
+        "filter_documents": "Documents",
+        "filter_spreadsheets": "Spreadsheets",
+        "filter_archives": "Archives",
+        "select_all_files": "Select all files",
+        "select_all_toggle": "Select / deselect all",
+        "col_type": "Type",
+        "col_name": "File Name",
+        "col_display": "Name",
+        "col_tags": "Tags",
+        "col_size": "Size",
+        "col_related": "Related To",
+        "col_uploaded": "Uploaded Date",
+        "loading": "Loading files...",
+        "refresh": "Refresh List",
+        "upload_new": "Upload new file:",
+        "choose_file": "Choose file to upload",
+        "ph_display_name": "Optional display name",
+        "ph_tags": "Tags (comma separated)",
+        "opt_target_table": "-- Target table --",
+        "opt_select_table_first": "-- Select table first --",
+        "go_to_record": "Go to record",
+        "edit_tags": "Click to edit tags",
+        "select_file": "Select file",
+        "delete_error": "Delete error: {error}",
+        "network_error": "Network error.",
+        "save_error": "Save error: {error}",
+        "name_empty": "Name cannot be empty.",
+        "name_updated": "Name updated.",
+        "tags_updated": "Tags updated.",
+        "deleted_n": "Deleted {n} file(s)",
+        "tagged_n": "Tagged {n} file(s)",
+        "unknown": "Unknown",
+        "failed": "Failed",
+        "no_files_match": "No files found matching your criteria.",
+        "search_placeholder": "Search files by name or tag...",
+        "bulk_add_tags": "Add Tags",
+        "bulk_apply": "Apply",
+        "bulk_deselect_all": "Deselect all",
+        "bulk_n_selected": "{n} selected",
+        "bulk_tags_scope": "Tags will be added to {n} selected file(s).",
+        "ph_tags_example": "e.g. invoice, 2026",
+        "applying": "Applying...",
+        "error_generic": "Error: {error}"
     },
     "notifications": {
         "mark_read": "Märgi loetuks",
@@ -175,7 +236,14 @@
         "filter_7d": "Viimased 7 päeva",
         "filter_30d": "Viimased 30 päeva",
         "filter_month": "See kuu",
-        "vs_prev": "võrreldes eelmise perioodiga ({prev})"
+        "vs_prev": "võrreldes eelmise perioodiga ({prev})",
+        "no_widgets": "No widgets configured.",
+        "unknown_widget_type": "Unknown widget type: {type}",
+        "list_misconfigured": "List widget misconfigured: missing display_columns.",
+        "no_data": "No data",
+        "sum_zero": "Sum is zero",
+        "click_edit_record": "Click to edit record",
+        "title": "Dashboard"
     },
     "workflow": {
         "steps": {
@@ -192,7 +260,12 @@
         "saving": "Salvestamine…",
         "completed_title": "Töövoog lõpetatud",
         "success_before": "Kõik",
-        "success_after": "töövoo sammud on edukalt lõpetatud."
+        "success_after": "töövoo sammud on edukalt lõpetatud.",
+        "no_description": "No description provided for this workflow.",
+        "schema_not_found": "Error: Schema for table '{table}' not found.",
+        "unknown_save_error": "Unknown error occurred while saving.",
+        "save_error": "Error saving data: {msg}",
+        "server_error": "Server Error (PHP/SQL): {msg}"
     },
     "comments": {
         "delete": "Kustuta",
@@ -202,7 +275,10 @@
         "none": "Kommentaare veel pole. Ole esimene.",
         "send": "Saada",
         "placeholder": "Kirjuta kommentaar… (**paksus kirjas**, *kaldkirjas*, URL-id lingitakse automaatselt)",
-        "deleted_text": "Kommentaar kustutatud."
+        "deleted_text": "Kommentaar kustutatud.",
+        "bold_title": "Bold (**text**)",
+        "italic_title": "Italic (*text*)",
+        "unknown_author": "Unknown"
     },
     "owners": {
         "error_load": "Viga omaniku laadimisel.",
@@ -242,7 +318,10 @@
         "fn_min": "MIN",
         "fn_max": "MAKS",
         "fn_count": "ARV",
-        "group_by": "Rühmita read…"
+        "group_by": "Rühmita read…",
+        "no_data": "No data found.",
+        "click_sort": "Click to sort",
+        "click_open": "Click to open this view."
     },
     "data_cleanup": {
         "title": "Kiire andmepuhastus",
@@ -381,6 +460,65 @@
         "tag_fallback": "Valitud siltide jaoks tulemused puuduvad — näitan tulemusi kõigist dokumentidest.",
         "context_table": "Vaade: {table}",
         "use_grid_data": "Praeguse tabeli andmed",
-        "select_one": "Valige enne saatmist vähemalt üks dokumendisilt või praeguse tabeli andmed."
+        "select_one": "Valige enne saatmist vähemalt üks dokumendisilt või praeguse tabeli andmed.",
+        "error_prefix": "Error: {msg}"
+    },
+    "setup": {
+        "title": "OpenSparrow Setup",
+        "subtitle": "Configure your database and initialize the system",
+        "step_of": "Step {current} of 4",
+        "complete_short": "Complete!",
+        "welcome_title": "Welcome to OpenSparrow",
+        "welcome_intro": "This wizard will help you configure your database connection and initialize the system.",
+        "welcome_need": "You'll need:",
+        "welcome_need_db": "PostgreSQL 14+ server details (host, port, database, user, password)",
+        "welcome_need_admin": "Administrator password (to be set after initialization)",
+        "welcome_go": "Let's get started!",
+        "next": "Next",
+        "back": "Back",
+        "db_conn_title": "Database Connection",
+        "lbl_host": "Host",
+        "help_host": "PostgreSQL server hostname",
+        "lbl_port": "Port",
+        "lbl_dbname": "Database Name",
+        "help_dbname": "Name of the PostgreSQL database",
+        "lbl_user": "Username",
+        "help_user": "PostgreSQL user with CREATE privileges",
+        "lbl_password": "Password",
+        "test_conn": "Test Connection",
+        "checking": "Checking connection...",
+        "schema_title": "Schema Configuration",
+        "lbl_schema": "Schema Name",
+        "help_schema": "PostgreSQL schema for system tables (default: app)",
+        "create_schema": "Create schema if it doesn't exist",
+        "admin_default": "Default Admin Account",
+        "username_colon": "Username:",
+        "password_colon": "Password:",
+        "admin_pwd_note": "a random password will be generated and shown after initialization",
+        "important": "Important",
+        "important_text": "You can change the admin password after logging into the admin panel. Please change it immediately for security.",
+        "review_title": "Review & Initialize",
+        "sum_host": "Host",
+        "sum_port": "Port",
+        "sum_db": "Database",
+        "sum_user": "User",
+        "sum_schema": "Schema",
+        "init_btn": "Initialize System Tables",
+        "complete_title": "Setup Complete!",
+        "complete_sub": "Your database has been initialized successfully.",
+        "admin_created": "Admin Account Created",
+        "next_steps": "Next Steps",
+        "next_step_1": "Log in with admin and the password shown above",
+        "next_step_2": "Go to Admin Panel → Users",
+        "next_step_3": "Change the admin password immediately",
+        "go_login": "Go to Login",
+        "test_first": "Please test the connection first",
+        "fill_required": "Please fill in all required fields",
+        "conn_success": "Connection successful!",
+        "conn_failed": "Connection failed",
+        "network_error": "Network error",
+        "network_error_msg": "Network error: {msg}",
+        "initializing": "Initializing...",
+        "init_failed": "Initialization failed"
     }
 }

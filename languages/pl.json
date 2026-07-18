@@ -20,7 +20,8 @@
         "boolean": {
             "true": "Tak",
             "false": "Nie"
-        }
+        },
+        "logo_alt": "Logo"
     },
     "grid": {
         "title": "Tabela",
@@ -55,7 +56,16 @@
         "drilldown_count": "{count} powiązanych",
         "load_more": "Załaduj więcej",
         "total_in_db": "łącznie w tabeli",
-        "truncated_notice": "Wyświetlono pierwsze {loaded} z {total} rekordów. Użyj wyszukiwarki lub \"Załaduj więcej\" (pozostało {remaining})."
+        "truncated_notice": "Wyświetlono pierwsze {loaded} z {total} rekordów. Użyj wyszukiwarki lub \"Załaduj więcej\" (pozostało {remaining}).",
+        "cannot_load_table": "Nie można wczytać tabeli \"{table}\". {msg}",
+        "error_loading_table": "Błąd wczytywania \"{table}\"",
+        "cannot_load_more": "Nie można wczytać kolejnych wierszy. {msg}",
+        "search_failed": "Wyszukiwanie nie powiodło się. {msg}",
+        "delete_failed": "Usuwanie nie powiodło się ({status})",
+        "insert_failed": "Wstawianie nie powiodło się ({status})",
+        "select_all_rows": "Zaznacz wszystkie wiersze",
+        "select_all_toggle": "Zaznacz / odznacz wszystko",
+        "id_badge": "id: {id}"
     },
     "form": {
         "add_record": "Dodaj rekord",
@@ -80,7 +90,8 @@
         "no_files": "Brak plików dołączonych do rekordu.",
         "no_records": "Brak rekordów.",
         "add_subtable": "+ Dodaj {label}",
-        "attached_files": "Dołączone pliki"
+        "attached_files": "Dołączone pliki",
+        "no_options": "Brak dostępnych opcji."
     },
     "auth": {
         "login": "Zaloguj się",
@@ -96,7 +107,8 @@
         "passwords_no_match": "Hasła nie są identyczne.",
         "password_too_short": "Hasło musi mieć co najmniej 8 znaków.",
         "password_changed": "Hasło zmienione.",
-        "change_avatar": "Zmień awatar"
+        "change_avatar": "Zmień awatar",
+        "error_changing_password": "Błąd zmiany hasła."
     },
     "header": {
         "toggle_sidebar": "Przełącz menu boczne",
@@ -111,7 +123,10 @@
         "avatar_updated": "Awatar zaktualizowany.",
         "my_records": "Moje rekordy",
         "my_records_empty": "Nie masz przypisanych rekordów.",
-        "close": "Zamknij"
+        "close": "Zamknij",
+        "avatar_option": "Awatar {n}",
+        "avatar_options": "Opcje awatara",
+        "error_saving_avatar": "Błąd zapisu awatara."
     },
     "admin": {
         "title": "Administracja",
@@ -153,7 +168,53 @@
         "tip_tags": "Etykiety do wyszukiwania i grupowania — kliknij komórkę, aby edytować (po przecinku)",
         "tip_size": "Rozmiar pliku na dysku",
         "tip_related": "Rekord, do którego przypisano plik — kliknij znacznik, aby go otworzyć",
-        "tip_uploaded": "Data przesłania pliku"
+        "tip_uploaded": "Data przesłania pliku",
+        "filter_all_types": "Wszystkie typy plików",
+        "filter_images": "Obrazy",
+        "filter_pdfs": "Pliki PDF",
+        "filter_documents": "Dokumenty",
+        "filter_spreadsheets": "Arkusze kalkulacyjne",
+        "filter_archives": "Archiwa",
+        "select_all_files": "Zaznacz wszystkie pliki",
+        "select_all_toggle": "Zaznacz / odznacz wszystko",
+        "col_type": "Typ",
+        "col_name": "Nazwa pliku",
+        "col_display": "Nazwa",
+        "col_tags": "Tagi",
+        "col_size": "Rozmiar",
+        "col_related": "Powiązany z",
+        "col_uploaded": "Data przesłania",
+        "loading": "Wczytywanie plików...",
+        "refresh": "Odśwież listę",
+        "upload_new": "Prześlij nowy plik:",
+        "choose_file": "Wybierz plik do przesłania",
+        "ph_display_name": "Opcjonalna nazwa wyświetlana",
+        "ph_tags": "Tagi (oddzielone przecinkami)",
+        "opt_target_table": "-- Tabela docelowa --",
+        "opt_select_table_first": "-- Najpierw wybierz tabelę --",
+        "go_to_record": "Przejdź do rekordu",
+        "edit_tags": "Kliknij, aby edytować tagi",
+        "select_file": "Zaznacz plik",
+        "delete_error": "Błąd usuwania: {error}",
+        "network_error": "Błąd sieci.",
+        "save_error": "Błąd zapisu: {error}",
+        "name_empty": "Nazwa nie może być pusta.",
+        "name_updated": "Nazwa zaktualizowana.",
+        "tags_updated": "Tagi zaktualizowane.",
+        "deleted_n": "Usunięto plików: {n}",
+        "tagged_n": "Otagowano plików: {n}",
+        "unknown": "Nieznany",
+        "failed": "Niepowodzenie",
+        "no_files_match": "Nie znaleziono plików spełniających kryteria.",
+        "search_placeholder": "Szukaj plików po nazwie lub tagu...",
+        "bulk_add_tags": "Dodaj tagi",
+        "bulk_apply": "Zastosuj",
+        "bulk_deselect_all": "Odznacz wszystko",
+        "bulk_n_selected": "Zaznaczono: {n}",
+        "bulk_tags_scope": "Tagi zostaną dodane do zaznaczonych plików: {n}.",
+        "ph_tags_example": "np. faktura, 2026",
+        "applying": "Stosowanie...",
+        "error_generic": "Błąd: {error}"
     },
     "notifications": {
         "mark_read": "Oznacz jako przeczytane",
@@ -177,7 +238,14 @@
         "filter_7d": "Ostatnie 7 dni",
         "filter_30d": "Ostatnie 30 dni",
         "filter_month": "Bieżący miesiąc",
-        "vs_prev": "względem poprzedniego okresu ({prev})"
+        "vs_prev": "względem poprzedniego okresu ({prev})",
+        "no_widgets": "Nie skonfigurowano widżetów.",
+        "unknown_widget_type": "Nieznany typ widżetu: {type}",
+        "list_misconfigured": "Błędna konfiguracja widżetu listy: brak display_columns.",
+        "no_data": "Brak danych",
+        "sum_zero": "Suma wynosi zero",
+        "click_edit_record": "Kliknij, aby edytować rekord",
+        "title": "Pulpit"
     },
     "workflow": {
         "steps": {
@@ -195,7 +263,12 @@
         "saving": "Zapisywanie…",
         "completed_title": "Workflow zakończony",
         "success_before": "Wszystkie kroki workflow",
-        "success_after": "zostały zakończone pomyślnie."
+        "success_after": "zostały zakończone pomyślnie.",
+        "no_description": "Nie podano opisu tego przepływu pracy.",
+        "schema_not_found": "Błąd: Nie znaleziono schematu dla tabeli '{table}'.",
+        "unknown_save_error": "Wystąpił nieznany błąd podczas zapisu.",
+        "save_error": "Błąd zapisu danych: {msg}",
+        "server_error": "Błąd serwera (PHP/SQL): {msg}"
     },
     "comments": {
         "delete": "Usuń",
@@ -205,7 +278,10 @@
         "none": "Brak komentarzy. Bądź pierwszą osobą, która doda komentarz.",
         "send": "Wyślij",
         "placeholder": "Napisz komentarz… (**pogrubienie**, *kursywa*, linki automatycznie)",
-        "deleted_text": "Komentarz usunięty."
+        "deleted_text": "Komentarz usunięty.",
+        "bold_title": "Pogrubienie (**tekst**)",
+        "italic_title": "Kursywa (*tekst*)",
+        "unknown_author": "Nieznany"
     },
     "owners": {
         "error_load": "Błąd ładowania właściciela.",
@@ -245,7 +321,10 @@
         "fn_min": "Min.",
         "fn_max": "Maks.",
         "fn_count": "Liczba",
-        "group_by": "Grupuj wiersze…"
+        "group_by": "Grupuj wiersze…",
+        "no_data": "Nie znaleziono danych.",
+        "click_sort": "Kliknij, aby posortować",
+        "click_open": "Kliknij, aby otworzyć ten widok."
     },
     "data_cleanup": {
         "title": "Szybkie czyszczenie danych",
@@ -384,6 +463,65 @@
         "tag_fallback": "Brak wyników dla wybranych tagów — wyświetlam wyniki ze wszystkich dokumentów.",
         "context_table": "Widok: {table}",
         "use_grid_data": "Dane z bieżącej tabeli",
-        "select_one": "Wybierz co najmniej jeden tag dokumentu lub dane z bieżącej tabeli przed wysłaniem."
+        "select_one": "Wybierz co najmniej jeden tag dokumentu lub dane z bieżącej tabeli przed wysłaniem.",
+        "error_prefix": "Błąd: {msg}"
+    },
+    "setup": {
+        "title": "Konfiguracja OpenSparrow",
+        "subtitle": "Skonfiguruj bazę danych i zainicjuj system",
+        "step_of": "Krok {current} z 4",
+        "complete_short": "Gotowe!",
+        "welcome_title": "Witamy w OpenSparrow",
+        "welcome_intro": "Ten kreator pomoże Ci skonfigurować połączenie z bazą danych i zainicjować system.",
+        "welcome_need": "Będziesz potrzebować:",
+        "welcome_need_db": "danych serwera PostgreSQL 14+ (host, port, baza, użytkownik, hasło)",
+        "welcome_need_admin": "hasła administratora (ustawianego po inicjalizacji)",
+        "welcome_go": "Zaczynajmy!",
+        "next": "Dalej",
+        "back": "Wstecz",
+        "db_conn_title": "Połączenie z bazą danych",
+        "lbl_host": "Host",
+        "help_host": "Nazwa hosta serwera PostgreSQL",
+        "lbl_port": "Port",
+        "lbl_dbname": "Nazwa bazy danych",
+        "help_dbname": "Nazwa bazy danych PostgreSQL",
+        "lbl_user": "Nazwa użytkownika",
+        "help_user": "Użytkownik PostgreSQL z uprawnieniami CREATE",
+        "lbl_password": "Hasło",
+        "test_conn": "Testuj połączenie",
+        "checking": "Sprawdzanie połączenia...",
+        "schema_title": "Konfiguracja schematu",
+        "lbl_schema": "Nazwa schematu",
+        "help_schema": "Schemat PostgreSQL dla tabel systemowych (domyślnie: app)",
+        "create_schema": "Utwórz schemat, jeśli nie istnieje",
+        "admin_default": "Domyślne konto administratora",
+        "username_colon": "Nazwa użytkownika:",
+        "password_colon": "Hasło:",
+        "admin_pwd_note": "losowe hasło zostanie wygenerowane i pokazane po inicjalizacji",
+        "important": "Ważne",
+        "important_text": "Hasło administratora możesz zmienić po zalogowaniu do panelu administracyjnego. Zmień je niezwłocznie ze względów bezpieczeństwa.",
+        "review_title": "Przegląd i inicjalizacja",
+        "sum_host": "Host",
+        "sum_port": "Port",
+        "sum_db": "Baza danych",
+        "sum_user": "Użytkownik",
+        "sum_schema": "Schemat",
+        "init_btn": "Zainicjuj tabele systemowe",
+        "complete_title": "Konfiguracja zakończona!",
+        "complete_sub": "Twoja baza danych została pomyślnie zainicjowana.",
+        "admin_created": "Utworzono konto administratora",
+        "next_steps": "Następne kroki",
+        "next_step_1": "Zaloguj się jako admin, używając hasła pokazanego powyżej",
+        "next_step_2": "Przejdź do Panelu administracyjnego → Użytkownicy",
+        "next_step_3": "Niezwłocznie zmień hasło administratora",
+        "go_login": "Przejdź do logowania",
+        "test_first": "Najpierw przetestuj połączenie",
+        "fill_required": "Wypełnij wszystkie wymagane pola",
+        "conn_success": "Połączenie udane!",
+        "conn_failed": "Połączenie nie powiodło się",
+        "network_error": "Błąd sieci",
+        "network_error_msg": "Błąd sieci: {msg}",
+        "initializing": "Inicjalizacja...",
+        "init_failed": "Inicjalizacja nie powiodła się"
     }
 }

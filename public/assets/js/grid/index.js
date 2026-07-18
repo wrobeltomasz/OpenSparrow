@@ -87,9 +87,15 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
 
         const filterCol = urlParams.get('filter_col');
         const filterVal = urlParams.get('filter_val');
+        const filterFrom = urlParams.get('filter_from');
+        const filterTo = urlParams.get('filter_to');
         let displayTitle = data.table?.display_name || table;
-        if (urlParams.get('table') === table && filterCol && filterVal !== null) {
-            displayTitle += ` (Filtered by ${filterCol}: ${filterVal})`;
+        if (urlParams.get('table') === table && filterCol) {
+            if (filterVal !== null) {
+                displayTitle += ` (Filtered by ${filterCol}: ${filterVal})`;
+            } else if (filterFrom !== null || filterTo !== null) {
+                displayTitle += ` (Filtered by ${filterCol}: ${filterFrom ?? ''}…${filterTo ?? ''})`;
+            }
         }
         gridTitleEl.textContent = displayTitle;
 
@@ -109,8 +115,8 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         document.dispatchEvent(new Event('tableLoaded'));
     } catch (err) {
         console.error('Failed to load table data:', err);
-        showToast(`Cannot load table "${table}". ${err.message}`, 'error');
-        if (gridTitleEl) gridTitleEl.textContent = `Error loading "${table}"`;
+        showToast(I18n.t('grid.cannot_load_table', { table, msg: err.message }), 'error');
+        if (gridTitleEl) gridTitleEl.textContent = I18n.t('grid.error_loading_table', { table });
     }
 }
 
@@ -180,7 +186,7 @@ export async function appendMoreRows(schema, search = '') {
         await renderGrid(schema);
     } catch (err) {
         console.error('Failed to load more rows:', err);
-        showToast(`Cannot load more rows. ${err.message}`, 'error');
+        showToast(I18n.t('grid.cannot_load_more', { msg: err.message }), 'error');
     }
 }
 
@@ -200,7 +206,7 @@ export async function serverSearchRows(schema, search) {
         await renderGrid(schema);
     } catch (err) {
         console.error('Server search failed:', err);
-        showToast(`Search failed. ${err.message}`, 'error');
+        showToast(I18n.t('grid.search_failed', { msg: err.message }), 'error');
     }
 }
 

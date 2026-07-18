@@ -1349,6 +1349,62 @@ header .dash-filter-label {
   flex-shrink: 0;
 }
 
+/* Line / Area Chart (time series) */
+.dash-line-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+  width: 100%;
+}
+.dash-line-empty {
+  color: var(--muted);
+  padding: 16px;
+  text-align: center;
+}
+.dash-line-svg {
+  width: 100%;
+  height: 200px;
+  overflow: visible;
+}
+.dash-line-baseline {
+  stroke: var(--border-light);
+  stroke-width: 1;
+}
+.dash-line-path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.dash-line-area {
+  opacity: 0.15;
+  stroke: none;
+}
+.dash-line-point {
+  stroke: var(--card-bg, #fff);
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+.dash-line-point:hover {
+  r: 6;
+}
+.dash-line-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  gap: 4px;
+}
+.dash-line-tick {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Dashboard error / loading states */
 .dash-error {
   grid-column: 1 / -1;

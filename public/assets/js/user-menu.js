@@ -26,14 +26,14 @@ function buildAvatarModal(currentId) {
     overlay.className = 'um-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', 'Change avatar');
+    overlay.setAttribute('aria-label', I18n.t('header.change_avatar'));
 
     const box = document.createElement('div');
     box.className = 'um-box';
     box.innerHTML = `
-        <button class="um-close" aria-label="Close">&times;</button>
+        <button class="um-close" aria-label="${I18n.t('header.close')}">&times;</button>
         <h3>${I18n.t('header.choose_avatar')}</h3>
-        <div class="um-picker" role="group" aria-label="Avatar options"></div>
+        <div class="um-picker" role="group" aria-label="${I18n.t('header.avatar_options')}"></div>
         <div class="um-actions">
             <button class="um-btn um-btn-secondary" id="umAvatarClear">${I18n.t('header.use_initial')}</button>
             <button class="um-btn um-btn-primary" id="umAvatarSave" disabled>${I18n.t('common.save')}</button>
@@ -45,10 +45,10 @@ function buildAvatarModal(currentId) {
     for (let i = 1; i <= AVATAR_COUNT; i++) {
         const btn = document.createElement('button');
         btn.className = 'um-picker-btn' + (i === selected ? ' selected' : '');
-        btn.setAttribute('aria-label', `Avatar ${i}`);
+        btn.setAttribute('aria-label', I18n.t('header.avatar_option', { n: i }));
         btn.setAttribute('aria-pressed', String(i === selected));
         btn.dataset.id = String(i);
-        btn.innerHTML = `<img class="avatar" src="assets/img/avatar-${i}.png" alt="Avatar ${i}" />`;
+        btn.innerHTML = `<img class="avatar" src="assets/img/avatar-${i}.png" alt="${I18n.t('header.avatar_option', { n: i })}" />`;
         btn.addEventListener('click', () => {
             picker.querySelectorAll('.um-picker-btn').forEach(b => {
                 b.classList.remove('selected');
@@ -90,7 +90,7 @@ async function saveAvatar(overlay, avatarId) {
     try {
         const res = await apiFetch('update_avatar', { avatar_id: avatarId });
         const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error ?? 'Error saving avatar.');
+        if (!res.ok || !data.ok) throw new Error(data.error ?? I18n.t('header.error_saving_avatar'));
         showToast(I18n.t('header.avatar_updated'), 'success');
         closeModal(overlay);
         updateHeaderAvatar(avatarId);
@@ -112,7 +112,7 @@ function updateHeaderAvatar(avatarId) {
         const img = document.createElement('img');
         img.className = 'avatar avatar-border';
         img.src = `assets/img/avatar-${avatarId}.png`;
-        img.alt = `Avatar ${avatarId}`;
+        img.alt = I18n.t('header.avatar_option', { n: avatarId });
         existing.replaceWith(img);
     } else {
         // Fallback to initial circle SVG — built via DOM API to avoid innerHTML XSS (CodeQL js/xss-through-dom)
@@ -151,12 +151,12 @@ function buildPasswordModal() {
     overlay.className = 'um-overlay';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', 'Change password');
+    overlay.setAttribute('aria-label', I18n.t('auth.change_password'));
 
     const box = document.createElement('div');
     box.className = 'um-box';
     box.innerHTML = `
-        <button class="um-close" aria-label="Close">&times;</button>
+        <button class="um-close" aria-label="${I18n.t('header.close')}">&times;</button>
         <h3>${I18n.t('auth.change_password')}</h3>
         <p class="um-error" id="umPwdError"></p>
         <form class="um-form" id="umPwdForm" autocomplete="off">
@@ -204,7 +204,7 @@ function buildPasswordModal() {
         try {
             const res  = await apiFetch('change_password', { current_password: current, new_password: newPwd });
             const data = await res.json();
-            if (!res.ok || !data.ok) throw new Error(data.error ?? 'Error changing password.');
+            if (!res.ok || !data.ok) throw new Error(data.error ?? I18n.t('auth.error_changing_password'));
             showToast(I18n.t('auth.password_changed'), 'success');
             closeModal(overlay);
         } catch (err) {

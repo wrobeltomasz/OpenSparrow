@@ -11,12 +11,19 @@ export function firstEqCondition(conditions) {
     return conditions.find(c => c.op === '=' && c.col && c.val !== undefined && c.val !== null) ?? null;
 }
 
-export function applyDrillDown(element, table, filterCol = null, filterVal = null) {
+// range (optional) = { from, to } — when set, drills down to a half-open period
+// [from, to) instead of an exact-value match. Used by the time-series line chart,
+// whose bucket labels never equal the raw stored timestamps.
+export function applyDrillDown(element, table, filterCol = null, filterVal = null, range = null) {
     element.style.cursor = 'pointer';
     element.title = I18n.t('dashboard.click_details');
     element.addEventListener('click', () => {
         let url = `index.php?table=${encodeURIComponent(table)}`;
-        if (filterCol) {
+        if (filterCol && range && (range.from || range.to)) {
+            url += `&filter_col=${encodeURIComponent(filterCol)}`;
+            if (range.from) url += `&filter_from=${encodeURIComponent(range.from)}`;
+            if (range.to) url += `&filter_to=${encodeURIComponent(range.to)}`;
+        } else if (filterCol) {
             const val = filterVal !== null && filterVal !== undefined ? filterVal : '';
             url += `&filter_col=${encodeURIComponent(filterCol)}&filter_val=${encodeURIComponent(val)}`;
         }

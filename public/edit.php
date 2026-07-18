@@ -44,13 +44,8 @@ $error      = '';
 // Row-level authorization gate, applied before any read or write. Records the user
 // may not access return the same 404 as missing records, so existence is never
 // disclosed. Covers both the POST update path below and the GET render path.
-// Row-level ownership lives in PostgreSQL; MySQL gateway tables get basic CRUD
-// only, so the gate is skipped for them.
 $rawTableCfg = $rawSchema['tables'][$table] ?? [];
-if (
-    !$tableCfg->isMysql()
-    && !can_access_record($GLOBALS['conn'], $rawTableCfg, $table, (int)$id, $session->userId(), $session->role())
-) {
+if (!can_access_record($GLOBALS['conn'], $rawTableCfg, $table, (int)$id, $session->userId(), $session->role())) {
     http_response_code(404);
     die('Record not found.');
 }
@@ -63,22 +58,16 @@ if ($request->isPost()) {
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
         // Pre-update state for change-based automation conditions (changed_from/changed_to).
-        $oldRecord = $tableCfg->isMysql()
-            ? null
-            : auto_capture_old_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id);
+        $oldRecord = auto_capture_old_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id);
         $records->update($tableCfg, $id, $data);
         $logId = $audit->log($session->userId(), 'UPDATE', $tableCfg->name, (int)$id);
-        // Snapshots, automations and m2m sync are PostgreSQL-side features; skip
-        // them for MySQL gateway tables (basic field CRUD only).
-        if (!$tableCfg->isMysql()) {
-            if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-                snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
-            }
-            evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId(), $oldRecord);
-            foreach ($m2mConfigs as $mi => $m2mCfg) {
-                $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
-                m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
-            }
+        if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
+            snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
+        }
+        evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId(), $oldRecord);
+        foreach ($m2mConfigs as $mi => $m2mCfg) {
+            $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
+            m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
         }
         if (($request->post('_save_action') ?? 'exit') === 'stay') {
             header('Location: edit.php?table=' . urlencode($table) . '&id=' . urlencode((string)$id) . '&saved=1');
@@ -102,8 +91,7 @@ if ($row === null) {
 }
 
 $subtablesData = $records->subtables($tableCfg, $id);
-// File attachments are stored against PostgreSQL records; not offered for MySQL tables.
-$relatedFiles  = $tableCfg->isMysql() ? [] : $files->forRecord($tableCfg->name, $id);
+$relatedFiles  = $files->forRecord($tableCfg->name, $id);
 
 // Pre-load FK options for all FK columns — eliminates N+1 queries in the template.
 $fkOptions  = [];
@@ -208,7 +196,7 @@ ob_start();
                         <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
                     </div>
                     <?php if (empty($m2mOpts)) : ?>
-                        <p class="m2m-empty">No options available.</p>
+                        <p class="m2m-empty"><?php echo htmlspecialchars(t('form.no_options'), ENT_QUOTES, 'UTF-8'); ?></p>
                     <?php else : ?>
                     <div class="m2m-options">
                         <?php foreach ($m2mOpts as $opt) : ?>
@@ -268,7 +256,7 @@ ob_start();
             </div>
 
             <?php if (empty($sd['rows'])) : ?>
-                <p class="ef-empty">No records found.</p>
+                <p class="ef-empty"><?php echo htmlspecialchars(t('form.no_records'), ENT_QUOTES, 'UTF-8'); ?></p>
             <?php else : ?>
                 <div class="edit-subtable-wrapper">
                     <table>
@@ -313,8 +301,8 @@ ob_start();
         <?php if (!$isReadOnly) : ?>
             <div class="ef-upload-bar">
                 <input type="file" id="inlineFileInput" class="ef-upload-input" />
-                <input type="text" id="inlineFileName" placeholder="Optional display name" class="ef-upload-text" />
-                <input type="text" id="inlineFileTags" placeholder="Tags (comma separated)" class="ef-upload-text" list="tagSuggestions" />
+                <input type="text" id="inlineFileName" placeholder="<?php echo htmlspecialchars(t('files.ph_display_name'), ENT_QUOTES, 'UTF-8'); ?>" class="ef-upload-text" />
+                <input type="text" id="inlineFileTags" placeholder="<?php echo htmlspecialchars(t('files.ph_tags'), ENT_QUOTES, 'UTF-8'); ?>" class="ef-upload-text" list="tagSuggestions" />
 
                 <datalist id="tagSuggestions">
                     <option value="Invoice">
@@ -333,12 +321,12 @@ ob_start();
                 <table class="ef-files-table">
                     <thead>
                         <tr>
-                            <th>Type</th>
-                            <th>Name</th>
-                            <th>Tags</th>
-                            <th>Size</th>
-                            <th>Date</th>
-                            <th class="ef-col-actions">Actions</th>
+                            <th><?php echo htmlspecialchars(t('files.col_type'), ENT_QUOTES, 'UTF-8'); ?></th>
+                            <th><?php echo htmlspecialchars(t('files.col_display'), ENT_QUOTES, 'UTF-8'); ?></th>
+                            <th><?php echo htmlspecialchars(t('files.col_tags'), ENT_QUOTES, 'UTF-8'); ?></th>
+                            <th><?php echo htmlspecialchars(t('files.col_size'), ENT_QUOTES, 'UTF-8'); ?></th>
+                            <th><?php echo htmlspecialchars(t('owners.col_date'), ENT_QUOTES, 'UTF-8'); ?></th>
+                            <th class="ef-col-actions"><?php echo htmlspecialchars(t('common.actions'), ENT_QUOTES, 'UTF-8'); ?></th>
                         </tr>
                     </thead>
                     <?php
@@ -403,10 +391,10 @@ ob_start();
     <div class="tab-panel" id="tab-history" role="tabpanel">
         <div id="ow-panel" class="owner-panel ow-panel">
             <h3 class="ow-section-title"><?= t('owners.section_owner') ?></h3>
-            <div id="ow-current" class="ow-current">Loading…</div>
+            <div id="ow-current" class="ow-current"><?php echo htmlspecialchars(t('common.loading'), ENT_QUOTES, 'UTF-8'); ?></div>
             <div id="ow-change" class="ow-change" hidden>
                 <select id="ow-select" class="ow-select"></select>
-                <button id="ow-save" type="button" class="btn-action">Change Owner</button>
+                <button id="ow-save" type="button" class="btn-action"><?php echo htmlspecialchars(t('owners.change_owner'), ENT_QUOTES, 'UTF-8'); ?></button>
                 <span id="ow-status"></span>
             </div>
         </div>

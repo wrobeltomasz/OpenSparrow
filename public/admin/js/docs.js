@@ -325,24 +325,6 @@ ${_ul([
     `<strong>${s.s9k_controls_label}:</strong> ${s.s9k_controls}`
 ])}
 
-${_h3('doc-9l', s.s9l_head)}
-${_warn(s.s9l_warn_strong, s.s9l_warn_text)}
-${_p(s.s9l_desc)}
-${_h4(s.s9l_conn_head)}
-${_p(s.s9l_conn)}
-${_h4(s.s9l_tables_head)}
-${_ul([s.s9l_tables, s.s9l_remove])}
-${_h4(s.s9l_meta_head)}
-${_p(s.s9l_meta)}
-${_h4(s.s9l_sync_head)}
-${_p(s.s9l_sync)}
-${_h4(s.s9l_seps_head)}
-${_ul([s.s9l_seps_tabs, s.s9l_seps_sync, s.s9l_seps_inline])}
-${_p(s.s9l_crud)}
-${_h4(s.s9l_views_head)}
-${_p(s.s9l_views_desc)}
-${_ul([s.s9l_views_tabs, s.s9l_views_sync])}
-
 ${_h3('doc-10', s.s10_head)}
 ${_p(s.s10_desc)}
 ${_ul([

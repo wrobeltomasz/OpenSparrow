@@ -34,7 +34,7 @@ $headerControls .= '</select>'
 ob_start();
 ?>
 <main id="dashboardMain">
-    <h2 id="gridTitle">Dashboard</h2>
+    <h2 id="gridTitle"><?php echo htmlspecialchars(t('dashboard.title'), ENT_QUOTES, 'UTF-8'); ?></h2>
     <section id="dashboardSection" class="dashboard-grid"></section>
 </main>
 <?php

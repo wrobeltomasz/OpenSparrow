@@ -421,7 +421,7 @@ function replaceWithError(wrap, msg) {
     wrap.innerHTML = '';
     const el       = document.createElement('div');
     el.className   = 'ag-msg-error';
-    el.textContent = 'Error: ' + msg;
+    el.textContent = I18n.t('agent.error_prefix', { msg });
     wrap.appendChild(el);
     scrollDown();
 }

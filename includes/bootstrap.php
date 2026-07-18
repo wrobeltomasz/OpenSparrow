@@ -29,13 +29,10 @@ use App\Form\Type\TextField;
 use App\Form\UpdateMapper;
 use App\Http\PhpRequest;
 use App\Http\PhpSession;
-use App\Persistence\MysqlConnection;
 use App\Persistence\PgConnection;
 use App\Repository\FkOptionsLoader;
-use App\Repository\MysqlRecordRepository;
 use App\Repository\PgFileRepository;
 use App\Repository\PgRecordRepository;
-use App\Repository\RoutingRecordRepository;
 use App\Security\UserRole;
 
 // Redirect to the first-run wizard when the app has not been configured yet.
@@ -206,18 +203,7 @@ function os_boot_app(): array
         new TextField(), // universal fallback — must be last
     ]);
 
-    // Records go through a router: PostgreSQL by default, MySQL for tables listed in
-    // config/mysql_gateway.json. The MySQL connection is built lazily — it opens
-    // only when a MySQL-routed table is actually accessed, so PostgreSQL-only pages
-    // never open (or stall on) the external MySQL gateway. When MySQL is not
-    // configured, PostgreSQL tables keep working and only MySQL tables error.
-    $records = new RoutingRecordRepository(
-        new PgRecordRepository($db, $schemas, $fkLoader),
-        static function (): ?MysqlRecordRepository {
-            $conn = MysqlConnection::fromConfig();
-            return $conn !== null ? new MysqlRecordRepository($conn) : null;
-        }
-    );
+    $records = new PgRecordRepository($db, $schemas, $fkLoader);
 
     return [
         'session'       => $session,

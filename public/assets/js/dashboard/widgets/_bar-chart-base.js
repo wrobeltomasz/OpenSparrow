@@ -7,7 +7,7 @@ export function renderBars(widget, orientation) {
     const data = widget.data || [];
     if (data.length === 0) {
         const p = document.createElement('p');
-        p.textContent = 'No data';
+        p.textContent = window.I18n.t('dashboard.no_data');
         return p;
     }
 

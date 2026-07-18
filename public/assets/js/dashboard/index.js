@@ -13,6 +13,7 @@ import './widgets/stat-card.js';
 import './widgets/bar-chart.js';
 import './widgets/vertical-bar-chart.js';
 import './widgets/pie-chart.js';
+import './widgets/line-chart.js';
 import './widgets/list.js';
 
 // ── Filters: widget visibility (chips in the app header) ─────────────────────
@@ -115,7 +116,7 @@ async function initDashboard() {
         container.replaceChildren();
         const msg = document.createElement('p');
         msg.className = 'dash-error';
-        msg.textContent = 'Cannot load dashboard configuration. Try refreshing.';
+        msg.textContent = I18n.t('dashboard.error_config');
         container.appendChild(msg);
         return;
     }
@@ -137,7 +138,7 @@ async function initDashboard() {
 async function loadDashboardData(container, dateFilter, targetWidget) {
     const loading = document.createElement('div');
     loading.className = 'dash-loading';
-    loading.textContent = 'Loading data...';
+    loading.textContent = I18n.t('dashboard.loading');
     container.replaceChildren(loading);
 
     try {
@@ -154,7 +155,7 @@ async function loadDashboardData(container, dateFilter, targetWidget) {
         container.replaceChildren();
         const err = document.createElement('p');
         err.className = 'dash-error';
-        err.textContent = 'Error occurred while loading dashboard data.';
+        err.textContent = I18n.t('dashboard.error_load');
         container.appendChild(err);
     }
 }
@@ -166,7 +167,7 @@ function renderWidgets(container, config) {
     if (!config?.widgets?.length) {
         const p = document.createElement('p');
         p.style.gridColumn = '1/-1';
-        p.textContent = 'No widgets configured.';
+        p.textContent = I18n.t('dashboard.no_widgets');
         container.appendChild(p);
         return;
     }

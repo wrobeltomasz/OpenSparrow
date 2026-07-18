@@ -586,9 +586,14 @@ function demo_def_crm($conn): array
             // The WHERE guard on leads keeps the intentionally stale GDPR-demo rows intact.
             "UPDATE spw_crm.companies SET created_at = NOW() - (id % 180) * INTERVAL '1 day'",
             "UPDATE spw_crm.contacts  SET created_at = NOW() - (id % 120) * INTERVAL '1 day'",
-            "UPDATE spw_crm.deals     SET created_at = NOW() - (id % 90)  * INTERVAL '1 day'",
+            // Deals spread across ~3 months (id * 3, capped at 90 days) so the
+            // "Deals Value Over Time" line chart shows several monthly buckets.
+            "UPDATE spw_crm.deals     SET created_at = NOW() - ((id * 3) % 90) * INTERVAL '1 day'",
             "UPDATE spw_crm.products  SET created_at = NOW() - (id % 300) * INTERVAL '1 day'",
             "UPDATE spw_crm.leads     SET created_at = NOW() - (id % 60)  * INTERVAL '1 day' WHERE created_at >= NOW() - INTERVAL '7 days'",
+            // Activities spread across ~2 months so the weekly "Activities Over Time"
+            // line chart has history; scheduled_at (calendar) is left untouched.
+            "UPDATE spw_crm.activities SET created_at = NOW() - (id % 75) * INTERVAL '1 day'",
         ],
         'schema_tables' => [
             'companies' => ['display_name' => 'Companies', 'schema' => 'spw_crm', 'icon' => 'assets/icons/apartment.png', 'columns' => [
@@ -746,6 +751,11 @@ function demo_def_crm($conn): array
             ['id' => 'demo_crm_006', 'type' => 'stat_card', 'title' => 'Active Leads',         'table' => 'leads',      'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => [['col' => 'status', 'op' => '!=', 'val' => 'Lost']]], 'icon' => 'assets/icons/person_text.png', 'color' => '#bb53d0', 'display_columns' => []],
             ['id' => 'demo_crm_009', 'type' => 'stat_card', 'title' => 'Outstanding Invoices', 'table' => 'invoices',   'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => [['col' => 'status', 'op' => '=', 'val' => 'Sent'], ['col' => 'status', 'op' => '=', 'val' => 'Overdue', 'logic' => 'OR']]], 'icon' => 'assets/icons/file_present.png', 'color' => '#d71919', 'display_columns' => []],
             ['id' => 'demo_crm_010', 'type' => 'stat_card', 'title' => 'Active Assets',        'table' => 'assets',     'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => [['col' => 'status', 'op' => '=', 'val' => 'Active']]], 'icon' => 'assets/icons/database.png', 'color' => '#2563eb', 'display_columns' => []],
+            // Time-series line/area charts — one row (1/3 + 2/3). Both read a spread
+            // created_at (see the UPDATE ... created_at seed statements) so the axis
+            // covers the last few months.
+            ['id' => 'demo_crm_011', 'type' => 'line_chart', 'title' => 'Deals Value Over Time', 'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'month', 'agg_column' => 'value', 'agg_type' => 'sum',   'area' => true, 'conditions' => []], 'icon' => 'assets/icons/point_of_sale.png', 'color' => '#289f6f', 'display_columns' => []],
+            ['id' => 'demo_crm_012', 'type' => 'line_chart', 'title' => 'Activities Over Time',  'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'week',  'agg_column' => 'id',    'agg_type' => 'count', 'area' => true, 'conditions' => []], 'icon' => 'assets/icons/calendar.png',      'color' => '#553eb1', 'display_columns' => []],
         ],
         'calendar_sources' => [
             ['table' => 'activities', 'date_column' => 'scheduled_at', 'title_column' => 'type', 'color' => '#93c5fd', 'notify_before_days' => 1, 'url_template' => 'edit.php?table=activities&id={id}', 'icon' => 'assets/icons/calendar.png', 'notified_users' => []],

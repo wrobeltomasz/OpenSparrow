@@ -20,7 +20,8 @@
         "boolean": {
             "true": "Ja",
             "false": "Nej"
-        }
+        },
+        "logo_alt": "Logo"
     },
     "grid": {
         "title": "Tabell",
@@ -55,7 +56,16 @@
         "drilldown_count": "{count} länkade",
         "load_more": "Ladda mer",
         "total_in_db": "totalt i tabellen",
-        "truncated_notice": "Visar de första {loaded} av {total} poster. Använd sökning eller \"Ladda mer\" ({remaining} kvar)."
+        "truncated_notice": "Visar de första {loaded} av {total} poster. Använd sökning eller \"Ladda mer\" ({remaining} kvar).",
+        "cannot_load_table": "Cannot load table \"{table}\". {msg}",
+        "error_loading_table": "Error loading \"{table}\"",
+        "cannot_load_more": "Cannot load more rows. {msg}",
+        "search_failed": "Search failed. {msg}",
+        "delete_failed": "Delete failed ({status})",
+        "insert_failed": "Insert failed ({status})",
+        "select_all_rows": "Select all rows",
+        "select_all_toggle": "Select / deselect all",
+        "id_badge": "id: {id}"
     },
     "form": {
         "add_record": "Lägg till post",
@@ -80,7 +90,8 @@
         "no_files": "Inga filer bifogade till den här posten.",
         "no_records": "Inga poster hittades.",
         "add_subtable": "+ Lägg till {label}",
-        "attached_files": "Bifogade filer"
+        "attached_files": "Bifogade filer",
+        "no_options": "No options available."
     },
     "auth": {
         "login": "Logga in",
@@ -96,7 +107,8 @@
         "passwords_no_match": "Lösenorden matchar inte.",
         "password_too_short": "Lösenordet måste ha minst 8 tecken.",
         "password_changed": "Lösenord ändrat.",
-        "change_avatar": "Byt avatar"
+        "change_avatar": "Byt avatar",
+        "error_changing_password": "Error changing password."
     },
     "header": {
         "toggle_sidebar": "Växla sidopanel",
@@ -111,7 +123,10 @@
         "avatar_updated": "Avatar uppdaterad.",
         "my_records": "Mina poster",
         "my_records_empty": "Du har inga tilldelade poster.",
-        "close": "Stäng"
+        "close": "Stäng",
+        "avatar_option": "Avatar {n}",
+        "avatar_options": "Avatar options",
+        "error_saving_avatar": "Error saving avatar."
     },
     "admin": {
         "title": "Administration",
@@ -152,7 +167,53 @@
         "tip_tags": "Etiketter för sökning och gruppering — klicka på cellen för att redigera (kommaseparerade)",
         "tip_size": "Filstorlek på disken",
         "tip_related": "Post som filen är kopplad till — klicka på märket för att öppna den",
-        "tip_uploaded": "Datum då filen laddades upp"
+        "tip_uploaded": "Datum då filen laddades upp",
+        "filter_all_types": "All File Types",
+        "filter_images": "Images",
+        "filter_pdfs": "PDFs",
+        "filter_documents": "Documents",
+        "filter_spreadsheets": "Spreadsheets",
+        "filter_archives": "Archives",
+        "select_all_files": "Select all files",
+        "select_all_toggle": "Select / deselect all",
+        "col_type": "Type",
+        "col_name": "File Name",
+        "col_display": "Name",
+        "col_tags": "Tags",
+        "col_size": "Size",
+        "col_related": "Related To",
+        "col_uploaded": "Uploaded Date",
+        "loading": "Loading files...",
+        "refresh": "Refresh List",
+        "upload_new": "Upload new file:",
+        "choose_file": "Choose file to upload",
+        "ph_display_name": "Optional display name",
+        "ph_tags": "Tags (comma separated)",
+        "opt_target_table": "-- Target table --",
+        "opt_select_table_first": "-- Select table first --",
+        "go_to_record": "Go to record",
+        "edit_tags": "Click to edit tags",
+        "select_file": "Select file",
+        "delete_error": "Delete error: {error}",
+        "network_error": "Network error.",
+        "save_error": "Save error: {error}",
+        "name_empty": "Name cannot be empty.",
+        "name_updated": "Name updated.",
+        "tags_updated": "Tags updated.",
+        "deleted_n": "Deleted {n} file(s)",
+        "tagged_n": "Tagged {n} file(s)",
+        "unknown": "Unknown",
+        "failed": "Failed",
+        "no_files_match": "No files found matching your criteria.",
+        "search_placeholder": "Search files by name or tag...",
+        "bulk_add_tags": "Add Tags",
+        "bulk_apply": "Apply",
+        "bulk_deselect_all": "Deselect all",
+        "bulk_n_selected": "{n} selected",
+        "bulk_tags_scope": "Tags will be added to {n} selected file(s).",
+        "ph_tags_example": "e.g. invoice, 2026",
+        "applying": "Applying...",
+        "error_generic": "Error: {error}"
     },
     "notifications": {
         "mark_read": "Markera som läst",
@@ -175,7 +236,14 @@
         "filter_7d": "Senaste 7 dagarna",
         "filter_30d": "Senaste 30 dagarna",
         "filter_month": "Denna månad",
-        "vs_prev": "jämfört med föregående period ({prev})"
+        "vs_prev": "jämfört med föregående period ({prev})",
+        "no_widgets": "No widgets configured.",
+        "unknown_widget_type": "Unknown widget type: {type}",
+        "list_misconfigured": "List widget misconfigured: missing display_columns.",
+        "no_data": "No data",
+        "sum_zero": "Sum is zero",
+        "click_edit_record": "Click to edit record",
+        "title": "Dashboard"
     },
     "workflow": {
         "steps": {
@@ -192,7 +260,12 @@
         "saving": "Sparar…",
         "completed_title": "Arbetsflöde slutfört",
         "success_before": "Alla steg i",
-        "success_after": "arbetsflödet har slutförts."
+        "success_after": "arbetsflödet har slutförts.",
+        "no_description": "No description provided for this workflow.",
+        "schema_not_found": "Error: Schema for table '{table}' not found.",
+        "unknown_save_error": "Unknown error occurred while saving.",
+        "save_error": "Error saving data: {msg}",
+        "server_error": "Server Error (PHP/SQL): {msg}"
     },
     "comments": {
         "delete": "Ta bort",
@@ -202,7 +275,10 @@
         "none": "Inga kommentarer ännu. Var den första.",
         "send": "Skicka",
         "placeholder": "Skriv en kommentar… (**fet**, *kursiv*, URL:er länkas automatiskt)",
-        "deleted_text": "Kommentar borttagen."
+        "deleted_text": "Kommentar borttagen.",
+        "bold_title": "Bold (**text**)",
+        "italic_title": "Italic (*text*)",
+        "unknown_author": "Unknown"
     },
     "owners": {
         "error_load": "Fel vid laddning av ägare.",
@@ -242,7 +318,10 @@
         "fn_min": "MIN",
         "fn_max": "MAX",
         "fn_count": "ANTAL",
-        "group_by": "Gruppera rader…"
+        "group_by": "Gruppera rader…",
+        "no_data": "No data found.",
+        "click_sort": "Click to sort",
+        "click_open": "Click to open this view."
     },
     "data_cleanup": {
         "title": "Snabb datarensning",
@@ -381,6 +460,65 @@
         "tag_fallback": "Inga resultat för valda taggar — visar resultat från alla dokument.",
         "context_table": "Visas: {table}",
         "use_grid_data": "Aktuell tabelldata",
-        "select_one": "Välj minst en dokumenttagg eller aktuell tabelldata innan du skickar."
+        "select_one": "Välj minst en dokumenttagg eller aktuell tabelldata innan du skickar.",
+        "error_prefix": "Error: {msg}"
+    },
+    "setup": {
+        "title": "OpenSparrow Setup",
+        "subtitle": "Configure your database and initialize the system",
+        "step_of": "Step {current} of 4",
+        "complete_short": "Complete!",
+        "welcome_title": "Welcome to OpenSparrow",
+        "welcome_intro": "This wizard will help you configure your database connection and initialize the system.",
+        "welcome_need": "You'll need:",
+        "welcome_need_db": "PostgreSQL 14+ server details (host, port, database, user, password)",
+        "welcome_need_admin": "Administrator password (to be set after initialization)",
+        "welcome_go": "Let's get started!",
+        "next": "Next",
+        "back": "Back",
+        "db_conn_title": "Database Connection",
+        "lbl_host": "Host",
+        "help_host": "PostgreSQL server hostname",
+        "lbl_port": "Port",
+        "lbl_dbname": "Database Name",
+        "help_dbname": "Name of the PostgreSQL database",
+        "lbl_user": "Username",
+        "help_user": "PostgreSQL user with CREATE privileges",
+        "lbl_password": "Password",
+        "test_conn": "Test Connection",
+        "checking": "Checking connection...",
+        "schema_title": "Schema Configuration",
+        "lbl_schema": "Schema Name",
+        "help_schema": "PostgreSQL schema for system tables (default: app)",
+        "create_schema": "Create schema if it doesn't exist",
+        "admin_default": "Default Admin Account",
+        "username_colon": "Username:",
+        "password_colon": "Password:",
+        "admin_pwd_note": "a random password will be generated and shown after initialization",
+        "important": "Important",
+        "important_text": "You can change the admin password after logging into the admin panel. Please change it immediately for security.",
+        "review_title": "Review & Initialize",
+        "sum_host": "Host",
+        "sum_port": "Port",
+        "sum_db": "Database",
+        "sum_user": "User",
+        "sum_schema": "Schema",
+        "init_btn": "Initialize System Tables",
+        "complete_title": "Setup Complete!",
+        "complete_sub": "Your database has been initialized successfully.",
+        "admin_created": "Admin Account Created",
+        "next_steps": "Next Steps",
+        "next_step_1": "Log in with admin and the password shown above",
+        "next_step_2": "Go to Admin Panel → Users",
+        "next_step_3": "Change the admin password immediately",
+        "go_login": "Go to Login",
+        "test_first": "Please test the connection first",
+        "fill_required": "Please fill in all required fields",
+        "conn_success": "Connection successful!",
+        "conn_failed": "Connection failed",
+        "network_error": "Network error",
+        "network_error_msg": "Network error: {msg}",
+        "initializing": "Initializing...",
+        "init_failed": "Initialization failed"
     }
 }

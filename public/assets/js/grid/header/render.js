@@ -1,6 +1,7 @@
 // assets/js/grid/header/render.js — renderThead(): builds the header row (select-all + columns) and wires per-column sort, resize and drag-and-drop reordering.
 
 import { state } from '../state.js';
+import { I18n } from '../../i18n.js';
 import { toggleSortState } from './sort.js';
 import { initColumnResize } from './resize.js';
 import { initColumnDnD } from './dnd.js';
@@ -16,8 +17,8 @@ export function renderThead(schema, isReadOnly, onRerender) {
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.className = 'select-all-cb';
-        cb.setAttribute('aria-label', 'Select all rows');
-        cb.title = 'Select / deselect all';
+        cb.setAttribute('aria-label', I18n.t('grid.select_all_rows'));
+        cb.title = I18n.t('grid.select_all_toggle');
         cb.addEventListener('change', e => {
             const allIds = state.filteredData.map(r => r.id);
             if (e.target.checked) {

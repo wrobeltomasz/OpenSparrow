@@ -8,8 +8,13 @@ export async function fetchTableData(table, urlParams, { offset = 0, search = ''
     let url = `api.php?api=list&table=${encodeURIComponent(table)}`;
     const filterCol = urlParams.get('filter_col');
     const filterVal = urlParams.get('filter_val');
-    if (urlParams.get('table') === table && filterCol && filterVal !== null) {
-        url += `&filter_col=${encodeURIComponent(filterCol)}&filter_val=${encodeURIComponent(filterVal)}`;
+    const filterFrom = urlParams.get('filter_from');
+    const filterTo = urlParams.get('filter_to');
+    if (urlParams.get('table') === table && filterCol && (filterVal !== null || filterFrom !== null || filterTo !== null)) {
+        url += `&filter_col=${encodeURIComponent(filterCol)}`;
+        if (filterVal !== null) url += `&filter_val=${encodeURIComponent(filterVal)}`;
+        if (filterFrom !== null) url += `&filter_from=${encodeURIComponent(filterFrom)}`;
+        if (filterTo !== null) url += `&filter_to=${encodeURIComponent(filterTo)}`;
     }
     if (offset > 0) url += `&offset=${offset}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;

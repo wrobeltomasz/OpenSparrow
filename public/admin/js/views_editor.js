@@ -50,26 +50,22 @@ export function renderViewsEditor(ctx) {
     tabBar.className = 'item-panel-items';
 
     const pgTab      = document.createElement('button');
-    const mysqlTab   = document.createElement('button');
     const schemasTab = document.createElement('button');
-    [pgTab, mysqlTab, schemasTab].forEach(t => {
+    [pgTab, schemasTab].forEach(t => {
         t.type = 'button';
         t.className = 'item-btn';
     });
     pgTab.textContent      = 'PostgreSQL Views';
-    mysqlTab.textContent   = 'MySQL Views';
     schemasTab.textContent = 'Schemas';
     tabBar.appendChild(pgTab);
-    tabBar.appendChild(mysqlTab);
     tabBar.appendChild(schemasTab);
     wrap.appendChild(tabBar);
 
     function updateTabUi() {
         pgTab.classList.toggle('active', currentSource === 'postgres');
-        mysqlTab.classList.toggle('active', currentSource === 'mysql');
         schemasTab.classList.toggle('active', currentSource === 'schemas');
         syncBtn.style.display = currentSource === 'schemas' ? 'none' : '';
-        syncBtn.textContent   = currentSource === 'mysql' ? '↻ Sync MySQL Views' : '↻ Sync PostgreSQL Views';
+        syncBtn.textContent   = '↻ Sync PostgreSQL Views';
     }
 
     function switchSource(src) {
@@ -79,7 +75,6 @@ export function renderViewsEditor(ctx) {
         renderList();
     }
     pgTab.addEventListener('click', () => switchSource('postgres'));
-    mysqlTab.addEventListener('click', () => switchSource('mysql'));
     schemasTab.addEventListener('click', () => switchSource('schemas'));
 
     const statusEl = document.createElement('div');
@@ -103,10 +98,10 @@ export function renderViewsEditor(ctx) {
 
     /* ---------- sync from DB ---------- */
     async function syncFromDb() {
-        const label = currentSource === 'mysql' ? 'MySQL' : 'PostgreSQL';
+        const label = 'PostgreSQL';
         setStatus(`Syncing ${label} views…`, 'info');
         try {
-            const res  = await fetch('../api/views.php?action=sync&source=' + currentSource);
+            const res  = await fetch('../api/views.php?action=sync');
             const data = await res.json();
             if (data.status !== 'ok') { setStatus('Sync failed: ' + (data.error ?? 'unknown'), 'error'); return; }
             const synced      = data.db_views ?? [];
@@ -152,7 +147,7 @@ export function renderViewsEditor(ctx) {
         }
         const names = viewNamesForSource(currentSource);
         if (names.length === 0) {
-            const label = currentSource === 'mysql' ? 'MySQL' : 'PostgreSQL';
+            const label = 'PostgreSQL';
             listEl.innerHTML = `<p style=" text-align:center; padding:32px;">No ${label} views found. Click "${syncBtn.textContent}" to discover views.</p>`;
             return;
         }

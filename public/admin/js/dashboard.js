@@ -8,6 +8,7 @@ import '../../assets/js/dashboard/widgets/stat-card.js';
 import '../../assets/js/dashboard/widgets/bar-chart.js';
 import '../../assets/js/dashboard/widgets/vertical-bar-chart.js';
 import '../../assets/js/dashboard/widgets/pie-chart.js';
+import '../../assets/js/dashboard/widgets/line-chart.js';
 import '../../assets/js/dashboard/widgets/list.js';
 
 const CONDITION_OPS = [
@@ -141,6 +142,16 @@ function getMockData(type, displayColumns) {
             { label: 'Other',      value: 8  },
         ];
     }
+    if (type === 'line_chart') {
+        return [
+            { label: '2026-01-01', value: 12 },
+            { label: '2026-02-01', value: 19 },
+            { label: '2026-03-01', value: 14 },
+            { label: '2026-04-01', value: 27 },
+            { label: '2026-05-01', value: 22 },
+            { label: '2026-06-01', value: 31 },
+        ];
+    }
     if (type === 'list') {
         const cols = Array.isArray(displayColumns) && displayColumns.length
             ? displayColumns
@@ -197,6 +208,7 @@ export const WIDGET_TYPES = [
     { value: 'bar_chart',         label: 'Bar Chart (Horizontal)' },
     { value: 'vertical_bar_chart',label: 'Bar Chart (Vertical)' },
     { value: 'pie_chart',         label: 'Pie Chart' },
+    { value: 'line_chart',        label: 'Line Chart (Time Series)' },
     { value: 'list',              label: 'Data List' },
 ];
 
@@ -280,6 +292,18 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
         queryBlock.appendChild(createSelectInput('q_group', 'Group By Column', colOptions, q.group_column || '', v => q.group_column = v));
         queryBlock.appendChild(createSelectInput('q_agg_col', 'Aggregation Column', colOptions, q.agg_column || 'id', v => q.agg_column = v));
         queryBlock.appendChild(createSelectInput('q_agg_type', 'Aggregation Function', [{ value: 'count', label: 'Count' }, { value: 'sum', label: 'Sum' }], q.agg_type || 'count', v => q.agg_type = v));
+    } else if (itemData.type === 'line_chart') {
+        q.type = 'time_series';
+        queryBlock.appendChild(createSelectInput('q_x_col', 'Time Axis Column (X)', colOptions, q.x_column || '', v => q.x_column = v));
+        queryBlock.appendChild(createSelectInput('q_granularity', 'Time Granularity', [
+            { value: 'day',   label: 'Day' },
+            { value: 'week',  label: 'Week' },
+            { value: 'month', label: 'Month' },
+            { value: 'year',  label: 'Year' },
+        ], q.granularity || 'month', v => q.granularity = v));
+        queryBlock.appendChild(createSelectInput('q_agg_col', 'Aggregation Column (Y)', colOptions, q.agg_column || 'id', v => q.agg_column = v));
+        queryBlock.appendChild(createSelectInput('q_agg_type', 'Aggregation Function', [{ value: 'count', label: 'Count' }, { value: 'sum', label: 'Sum' }, { value: 'avg', label: 'Average' }], q.agg_type || 'count', v => q.agg_type = v));
+        queryBlock.appendChild(createCheckbox('q_area', 'Fill area under line', q.area, v => q.area = v, false));
     } else if (itemData.type === 'list') {
         queryBlock.appendChild(createTextInput('q_limit', 'Limit Rows', q.limit || 5, v => q.limit = parseInt(v) || 5));
         queryBlock.appendChild(createSelectInput('q_order', 'Order By Column', colOptions, q.order_by || 'id', v => q.order_by = v));

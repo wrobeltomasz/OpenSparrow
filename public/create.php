@@ -49,18 +49,14 @@ if ($request->isPost()) {
         $newId  = $records->insert($tableCfg, $data);
         $userId = $session->userId();
         $logId  = $audit->log($userId, 'INSERT', $tableCfg->name, (int)$newId);
-        // Snapshots, ownership, automations and m2m sync are PostgreSQL-side
-        // features; skip them for MySQL gateway tables (basic field CRUD only).
-        if (!$tableCfg->isMysql()) {
-            if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-                snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, $logId);
-            }
-            set_record_owner($GLOBALS['conn'], $tableCfg->name, (int)$newId, $userId, $userId);
-            evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, 'create', $userId);
-            foreach ($m2mConfigs as $mi => $m2mCfg) {
-                $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
-                m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$newId, $selected, $rawSchema);
-            }
+        if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
+            snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, $logId);
+        }
+        set_record_owner($GLOBALS['conn'], $tableCfg->name, (int)$newId, $userId, $userId);
+        evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, 'create', $userId);
+        foreach ($m2mConfigs as $mi => $m2mCfg) {
+            $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
+            m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$newId, $selected, $rawSchema);
         }
         header('Location: index.php?table=' . urlencode($table));
         exit;
@@ -137,7 +133,7 @@ ob_start();
                         <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
                     </div>
                     <?php if (empty($m2mOpts)) : ?>
-                        <p class="m2m-empty">No options available.</p>
+                        <p class="m2m-empty"><?php echo htmlspecialchars(t('form.no_options'), ENT_QUOTES, 'UTF-8'); ?></p>
                     <?php else : ?>
                     <div class="m2m-options">
                         <?php foreach ($m2mOpts as $opt) : ?>

@@ -5,7 +5,7 @@ declare(strict_types=1);
 // api/data_cleanup.php — Bulk data-cleanup API (editor-only)
 // Auth gate: session + UA enforcement; requires editor role; CSRF on POST
 // POST actions: data_cleanup_preview (dry-run report), data_cleanup_apply (executes removal of orphaned/stale records based on schema relations)
-// Reads the "schema" config + config/mysql_gateway.json; parameterized queries; sys_table()
+// Reads the "schema" config; parameterized queries; sys_table()
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
@@ -17,13 +17,6 @@ $action = $_GET['action'] ?? '';
 
 require_once __DIR__ . '/../../includes/config_store.php';
 $schema = config_get('schema') ?? ['tables' => []];
-
-$mysqlGatewayPath   = __DIR__ . '/../../config/mysql_gateway.json';
-$mysqlGatewayTables = [];
-if (file_exists($mysqlGatewayPath)) {
-    $mgCfg              = json_decode(file_get_contents($mysqlGatewayPath), true);
-    $mysqlGatewayTables = is_array($mgCfg) ? ($mgCfg['mysql_tables'] ?? []) : [];
-}
 
 // Escape a string for use as a POSIX ERE literal (all metacharacters neutralised).
 function pgRegexEscape(string $s): string
@@ -148,11 +141,6 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
 
     [$tableCfg, , $tableName, $colSql, $tblSql] = validateInput($body, $schema, $conn);
 
-    if (in_array($tableName, $mysqlGatewayTables, true)) {
-        http_response_code(422);
-        exit(json_encode(['error' => 'Data Cleanup is not supported for external MySQL tables']));
-    }
-
     [$pattern, $flags, $whereOp, $safeReplace] = buildExpressions(
         $find,
         $replace,
@@ -244,11 +232,6 @@ if ($action === 'data_cleanup_apply' && $method === 'POST') {
     }
 
     [$tableCfg, , $tableName, $colSql, $tblSql] = validateInput($body, $schema, $conn);
-
-    if (in_array($tableName, $mysqlGatewayTables, true)) {
-        http_response_code(422);
-        exit(json_encode(['error' => 'Data Cleanup is not supported for external MySQL tables']));
-    }
 
     [$pattern, $flags, $whereOp, $safeReplace] = buildExpressions(
         $find,

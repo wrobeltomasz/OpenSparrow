@@ -11,7 +11,7 @@ export const WidgetRegistry = {
         const fn = renderers.get(widget.type);
         if (!fn) {
             const err = document.createElement('p');
-            err.textContent = `Unknown widget type: ${widget.type}`;
+            err.textContent = window.I18n.t('dashboard.unknown_widget_type', { type: widget.type });
             return err;
         }
         return fn(widget);

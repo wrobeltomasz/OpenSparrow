@@ -488,7 +488,7 @@ async function loadView(viewName, level, filterCol, filterVal) {
         containerEl.innerHTML = '';
         const errDiv1 = document.createElement('div');
         errDiv1.className = 'vw-error';
-        errDiv1.textContent = `Error: ${err.message}`;
+        errDiv1.textContent = I18n.t('views.error', { message: err.message });
         containerEl.appendChild(errDiv1);
     }
 }
@@ -501,7 +501,7 @@ function renderView(data) {
     renderBreadcrumb();
 
     if (rows.length === 0) {
-        containerEl.insertAdjacentHTML('beforeend', '<div class="vw-empty">No data found.</div>');
+        containerEl.insertAdjacentHTML('beforeend', `<div class="vw-empty">${I18n.t('views.no_data')}</div>`);
         return;
     }
 
@@ -533,7 +533,7 @@ function renderView(data) {
         const th = document.createElement('th');
         th.dataset.col  = key;
         th.style.cursor = 'pointer';
-        th.title        = 'Click to sort';
+        th.title        = I18n.t('views.click_sort');
 
         const thLabel = document.createElement('span');
         thLabel.className   = 'th-label';
@@ -836,7 +836,7 @@ async function loadViewSelector() {
         containerEl.innerHTML = '';
         const errDiv2 = document.createElement('div');
         errDiv2.className = 'vw-error';
-        errDiv2.textContent = `Error: ${err.message}`;
+        errDiv2.textContent = I18n.t('views.error', { message: err.message });
         containerEl.appendChild(errDiv2);
     }
 }
@@ -876,7 +876,7 @@ function renderSelector(views) {
 
         const cardDesc = document.createElement('p');
         cardDesc.style.cssText = 'color:var(--muted); font-size:14px; margin:0 0 20px; line-height:1.5; flex-grow:1;';
-        cardDesc.textContent = v.description || 'Click to open this view.';
+        cardDesc.textContent = v.description || I18n.t('views.click_open');
 
         const footer = document.createElement('div');
         footer.style.cssText = 'display:flex; align-items:center; justify-content:flex-end; margin-top:auto; padding-top:16px; border-top:1px solid var(--border-light);';

@@ -86,8 +86,6 @@ function admin_write_settings(array $settings): bool
     return $result['status'] === 'ok';
 }
 
-// MySQL Gateway PDO + identifier quoting live in the shared includes/mysql.php module
-require_once __DIR__ . '/../../includes/mysql.php';
 // CSRF Protection for state-changing POST requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';

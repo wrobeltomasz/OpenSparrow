@@ -63,7 +63,7 @@ function buildMsg(c) {
 
     const author = document.createElement('span');
     author.className = 'c-msg-author';
-    author.textContent = c.username ?? 'Unknown';
+    author.textContent = c.username ?? I18n.t('comments.unknown_author');
 
     const time = document.createElement('span');
     time.textContent = formatTime(c.created_at);
@@ -216,14 +216,14 @@ async function init() {
         boldBtn.className = 'c-toolbar-btn';
         boldBtn.type = 'button';
         boldBtn.textContent = 'B';
-        boldBtn.title = 'Bold (**text**)';
+        boldBtn.title = I18n.t('comments.bold_title');
 
         const italicBtn = document.createElement('button');
         italicBtn.className = 'c-toolbar-btn';
         italicBtn.type = 'button';
         italicBtn.style.fontStyle = 'italic';
         italicBtn.textContent = 'I';
-        italicBtn.title = 'Italic (*text*)';
+        italicBtn.title = I18n.t('comments.italic_title');
 
         toolbarWrap.appendChild(boldBtn);
         toolbarWrap.appendChild(italicBtn);

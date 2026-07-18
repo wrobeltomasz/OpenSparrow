@@ -9,18 +9,15 @@ final class JsonSchemaRepository
     private array $rawData;
     /** @var array<string, TableConfig> */
     private array $cache = [];
-    /** @var list<string> Tables routed to the external MySQL gateway. */
-    private array $mysqlTables;
 
     /**
      * @param string|array $source Path to a schema JSON file, or the already
      *                             decoded schema config (e.g. from the spw_config store).
      */
-    public function __construct(string|array $source, ?string $gatewayPath = null)
+    public function __construct(string|array $source)
     {
         if (is_array($source)) {
             $data = $source;
-            $gatewayPath ??= __DIR__ . '/../../../config/mysql_gateway.json';
         } else {
             $json = file_get_contents($source);
             if ($json === false) {
@@ -30,10 +27,8 @@ final class JsonSchemaRepository
             if (!is_array($data)) {
                 throw new \RuntimeException("Invalid schema JSON in: {$source}");
             }
-            $gatewayPath ??= dirname($source) . '/mysql_gateway.json';
         }
-        $this->rawData     = $data;
-        $this->mysqlTables = $this->loadMysqlTables($gatewayPath);
+        $this->rawData = $data;
     }
 
     public function table(string $name): TableConfig
@@ -89,31 +84,6 @@ final class JsonSchemaRepository
             subtables: $cfg['subtables'] ?? [],
             primaryKey: 'id',
             icon: $cfg['icon'] ?? '',
-            source: in_array($name, $this->mysqlTables, true) ? DataSource::Mysql : DataSource::Postgres,
-            mysqlPk: $cfg['mysql_pk'] ?? 'id',
         );
-    }
-
-    /**
-     * Read the gateway routing list (config/mysql_gateway.json -> mysql_tables).
-     * Missing/invalid file degrades to no MySQL tables — same tolerant behaviour
-     * as api.php::mysql_gateway_tables().
-     *
-     * @return list<string>
-     */
-    private function loadMysqlTables(string $path): array
-    {
-        if (!is_file($path)) {
-            return [];
-        }
-        $json = file_get_contents($path);
-        if ($json === false) {
-            return [];
-        }
-        $data = json_decode($json, true);
-        if (!is_array($data) || !isset($data['mysql_tables']) || !is_array($data['mysql_tables'])) {
-            return [];
-        }
-        return array_values(array_filter($data['mysql_tables'], 'is_string'));
     }
 }

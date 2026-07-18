@@ -213,7 +213,7 @@ function renderWorkflowsList(workflows, containerEl, titleEl, menuName, appSchem
         cardDesc.style.margin = '0 0 20px 0';
         cardDesc.style.lineHeight = '1.5';
         cardDesc.style.flexGrow = '1';
-        cardDesc.textContent = wf.description || 'No description provided for this workflow.';
+        cardDesc.textContent = wf.description || I18n.t('workflow.no_description');
 
         const footer = document.createElement('div');
         footer.style.display = 'flex';
@@ -439,7 +439,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         if (!tableSchema) {
             const errorMsg = document.createElement('p');
             errorMsg.style.cssText = 'color: var(--danger); text-align: center; margin-top: 40px;';
-            errorMsg.textContent = `Error: Schema for table '${step.table}' not found.`;
+            errorMsg.textContent = I18n.t('workflow.schema_not_found', { table: step.table });
             containerEl.appendChild(errorMsg);
             return;
         }
@@ -1095,12 +1095,12 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
                     } catch {
                         console.error('RAW SERVER RESPONSE:', rawText);
                         const cleanError = rawText.replace(/<\/?[^>]+(>|$)/g, '').trim();
-                        throw new Error(`Server Error (PHP/SQL): ${cleanError.substring(0, 150)}`);
+                        throw new Error(I18n.t('workflow.server_error', { msg: cleanError.substring(0, 150) }));
                     }
 
                     const isSuccess = result.ok === true || result.status === 'success' || result.success === true;
                     if (!isSuccess || !result.id) {
-                        throw new Error(result.error || result.message || 'Unknown error occurred while saving.');
+                        throw new Error(result.error || result.message || I18n.t('workflow.unknown_save_error'));
                     }
 
                     savedRecords.add(snap);
@@ -1113,7 +1113,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             renderSuccessScreen();
         } catch (err) {
             console.error(err);
-            showToast(`Error saving data: ${err.message}`, 'error');
+            showToast(I18n.t('workflow.save_error', { msg: err.message }), 'error');
             saveBtn.disabled = false;
             if (backBtn) backBtn.disabled = false;
             saveBtn.textContent = I18n.t('form.save');

@@ -20,7 +20,8 @@
         "boolean": {
             "true": "Sì",
             "false": "No"
-        }
+        },
+        "logo_alt": "Logo"
     },
     "grid": {
         "title": "Tabella",
@@ -55,7 +56,16 @@
         "drilldown_count": "{count} collegati",
         "load_more": "Carica altro",
         "total_in_db": "totale nella tabella",
-        "truncated_notice": "Mostrati i primi {loaded} di {total} record. Usa la ricerca o \"Carica altro\" (rimanenti {remaining})."
+        "truncated_notice": "Mostrati i primi {loaded} di {total} record. Usa la ricerca o \"Carica altro\" (rimanenti {remaining}).",
+        "cannot_load_table": "Cannot load table \"{table}\". {msg}",
+        "error_loading_table": "Error loading \"{table}\"",
+        "cannot_load_more": "Cannot load more rows. {msg}",
+        "search_failed": "Search failed. {msg}",
+        "delete_failed": "Delete failed ({status})",
+        "insert_failed": "Insert failed ({status})",
+        "select_all_rows": "Select all rows",
+        "select_all_toggle": "Select / deselect all",
+        "id_badge": "id: {id}"
     },
     "form": {
         "add_record": "Aggiungi record",
@@ -80,7 +90,8 @@
         "no_files": "Nessun file allegato a questo record.",
         "no_records": "Nessun record trovato.",
         "add_subtable": "+ Aggiungi {label}",
-        "attached_files": "File allegati"
+        "attached_files": "File allegati",
+        "no_options": "No options available."
     },
     "auth": {
         "login": "Accedi",
@@ -96,7 +107,8 @@
         "passwords_no_match": "Le password non corrispondono.",
         "password_too_short": "La password deve avere almeno 8 caratteri.",
         "password_changed": "Password cambiata.",
-        "change_avatar": "Cambia avatar"
+        "change_avatar": "Cambia avatar",
+        "error_changing_password": "Error changing password."
     },
     "header": {
         "toggle_sidebar": "Attiva/disattiva barra laterale",
@@ -111,7 +123,10 @@
         "avatar_updated": "Avatar aggiornato.",
         "my_records": "I miei record",
         "my_records_empty": "Non hai record assegnati.",
-        "close": "Chiudi"
+        "close": "Chiudi",
+        "avatar_option": "Avatar {n}",
+        "avatar_options": "Avatar options",
+        "error_saving_avatar": "Error saving avatar."
     },
     "admin": {
         "title": "Amministrazione",
@@ -152,7 +167,53 @@
         "tip_tags": "Etichette per ricerca e raggruppamento — clicca la cella per modificare (separate da virgole)",
         "tip_size": "Dimensione del file su disco",
         "tip_related": "Record a cui è collegato il file — clicca il badge per aprirlo",
-        "tip_uploaded": "Data di caricamento del file"
+        "tip_uploaded": "Data di caricamento del file",
+        "filter_all_types": "All File Types",
+        "filter_images": "Images",
+        "filter_pdfs": "PDFs",
+        "filter_documents": "Documents",
+        "filter_spreadsheets": "Spreadsheets",
+        "filter_archives": "Archives",
+        "select_all_files": "Select all files",
+        "select_all_toggle": "Select / deselect all",
+        "col_type": "Type",
+        "col_name": "File Name",
+        "col_display": "Name",
+        "col_tags": "Tags",
+        "col_size": "Size",
+        "col_related": "Related To",
+        "col_uploaded": "Uploaded Date",
+        "loading": "Loading files...",
+        "refresh": "Refresh List",
+        "upload_new": "Upload new file:",
+        "choose_file": "Choose file to upload",
+        "ph_display_name": "Optional display name",
+        "ph_tags": "Tags (comma separated)",
+        "opt_target_table": "-- Target table --",
+        "opt_select_table_first": "-- Select table first --",
+        "go_to_record": "Go to record",
+        "edit_tags": "Click to edit tags",
+        "select_file": "Select file",
+        "delete_error": "Delete error: {error}",
+        "network_error": "Network error.",
+        "save_error": "Save error: {error}",
+        "name_empty": "Name cannot be empty.",
+        "name_updated": "Name updated.",
+        "tags_updated": "Tags updated.",
+        "deleted_n": "Deleted {n} file(s)",
+        "tagged_n": "Tagged {n} file(s)",
+        "unknown": "Unknown",
+        "failed": "Failed",
+        "no_files_match": "No files found matching your criteria.",
+        "search_placeholder": "Search files by name or tag...",
+        "bulk_add_tags": "Add Tags",
+        "bulk_apply": "Apply",
+        "bulk_deselect_all": "Deselect all",
+        "bulk_n_selected": "{n} selected",
+        "bulk_tags_scope": "Tags will be added to {n} selected file(s).",
+        "ph_tags_example": "e.g. invoice, 2026",
+        "applying": "Applying...",
+        "error_generic": "Error: {error}"
     },
     "notifications": {
         "mark_read": "Segna come letto",
@@ -175,7 +236,14 @@
         "filter_7d": "Ultimi 7 giorni",
         "filter_30d": "Ultimi 30 giorni",
         "filter_month": "Questo mese",
-        "vs_prev": "rispetto al periodo precedente ({prev})"
+        "vs_prev": "rispetto al periodo precedente ({prev})",
+        "no_widgets": "No widgets configured.",
+        "unknown_widget_type": "Unknown widget type: {type}",
+        "list_misconfigured": "List widget misconfigured: missing display_columns.",
+        "no_data": "No data",
+        "sum_zero": "Sum is zero",
+        "click_edit_record": "Click to edit record",
+        "title": "Dashboard"
     },
     "workflow": {
         "steps": {
@@ -192,7 +260,12 @@
         "saving": "Salvataggio…",
         "completed_title": "Workflow completato",
         "success_before": "Tutti i passaggi del",
-        "success_after": "workflow sono stati completati con successo."
+        "success_after": "workflow sono stati completati con successo.",
+        "no_description": "No description provided for this workflow.",
+        "schema_not_found": "Error: Schema for table '{table}' not found.",
+        "unknown_save_error": "Unknown error occurred while saving.",
+        "save_error": "Error saving data: {msg}",
+        "server_error": "Server Error (PHP/SQL): {msg}"
     },
     "comments": {
         "delete": "Elimina",
@@ -202,7 +275,10 @@
         "none": "Nessun commento ancora. Sii il primo.",
         "send": "Invia",
         "placeholder": "Scrivi un commento… (**grassetto**, *corsivo*, URL collegati automaticamente)",
-        "deleted_text": "Commento eliminato."
+        "deleted_text": "Commento eliminato.",
+        "bold_title": "Bold (**text**)",
+        "italic_title": "Italic (*text*)",
+        "unknown_author": "Unknown"
     },
     "owners": {
         "error_load": "Errore nel caricamento del proprietario.",
@@ -242,7 +318,10 @@
         "fn_min": "MIN",
         "fn_max": "MAX",
         "fn_count": "CONTA",
-        "group_by": "Raggruppa righe…"
+        "group_by": "Raggruppa righe…",
+        "no_data": "No data found.",
+        "click_sort": "Click to sort",
+        "click_open": "Click to open this view."
     },
     "data_cleanup": {
         "title": "Pulizia rapida dei dati",
@@ -381,6 +460,65 @@
         "tag_fallback": "Nessun risultato per i tag selezionati — mostro i risultati da tutti i documenti.",
         "context_table": "Visualizzazione: {table}",
         "use_grid_data": "Dati della tabella corrente",
-        "select_one": "Seleziona almeno un tag di documento o i dati della tabella corrente prima di inviare."
+        "select_one": "Seleziona almeno un tag di documento o i dati della tabella corrente prima di inviare.",
+        "error_prefix": "Error: {msg}"
+    },
+    "setup": {
+        "title": "OpenSparrow Setup",
+        "subtitle": "Configure your database and initialize the system",
+        "step_of": "Step {current} of 4",
+        "complete_short": "Complete!",
+        "welcome_title": "Welcome to OpenSparrow",
+        "welcome_intro": "This wizard will help you configure your database connection and initialize the system.",
+        "welcome_need": "You'll need:",
+        "welcome_need_db": "PostgreSQL 14+ server details (host, port, database, user, password)",
+        "welcome_need_admin": "Administrator password (to be set after initialization)",
+        "welcome_go": "Let's get started!",
+        "next": "Next",
+        "back": "Back",
+        "db_conn_title": "Database Connection",
+        "lbl_host": "Host",
+        "help_host": "PostgreSQL server hostname",
+        "lbl_port": "Port",
+        "lbl_dbname": "Database Name",
+        "help_dbname": "Name of the PostgreSQL database",
+        "lbl_user": "Username",
+        "help_user": "PostgreSQL user with CREATE privileges",
+        "lbl_password": "Password",
+        "test_conn": "Test Connection",
+        "checking": "Checking connection...",
+        "schema_title": "Schema Configuration",
+        "lbl_schema": "Schema Name",
+        "help_schema": "PostgreSQL schema for system tables (default: app)",
+        "create_schema": "Create schema if it doesn't exist",
+        "admin_default": "Default Admin Account",
+        "username_colon": "Username:",
+        "password_colon": "Password:",
+        "admin_pwd_note": "a random password will be generated and shown after initialization",
+        "important": "Important",
+        "important_text": "You can change the admin password after logging into the admin panel. Please change it immediately for security.",
+        "review_title": "Review & Initialize",
+        "sum_host": "Host",
+        "sum_port": "Port",
+        "sum_db": "Database",
+        "sum_user": "User",
+        "sum_schema": "Schema",
+        "init_btn": "Initialize System Tables",
+        "complete_title": "Setup Complete!",
+        "complete_sub": "Your database has been initialized successfully.",
+        "admin_created": "Admin Account Created",
+        "next_steps": "Next Steps",
+        "next_step_1": "Log in with admin and the password shown above",
+        "next_step_2": "Go to Admin Panel → Users",
+        "next_step_3": "Change the admin password immediately",
+        "go_login": "Go to Login",
+        "test_first": "Please test the connection first",
+        "fill_required": "Please fill in all required fields",
+        "conn_success": "Connection successful!",
+        "conn_failed": "Connection failed",
+        "network_error": "Network error",
+        "network_error_msg": "Network error: {msg}",
+        "initializing": "Initializing...",
+        "init_failed": "Initialization failed"
     }
 }

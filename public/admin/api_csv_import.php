@@ -737,16 +737,6 @@ if ($action === 'csv_import_execute') {
     $tableSchema = (string) ($tableConfig['schema'] ?? 'public');
     $schemaCols  = $tableConfig['columns'] ?? [];
 
-    $mgCsvPath = __DIR__ . '/../../config/mysql_gateway.json';
-    if (file_exists($mgCsvPath)) {
-        $mgCsvRaw    = json_decode((string) file_get_contents($mgCsvPath), true);
-        $mgCsvTables = is_array($mgCsvRaw) ? ($mgCsvRaw['mysql_tables'] ?? []) : [];
-        if (in_array($tableName, $mgCsvTables, true)) {
-            @unlink($csvPath);
-            csv_fail('CSV import is not supported for external MySQL tables.');
-        }
-    }
-
     foreach ($mapping as $csvHeader => $dbCol) {
         if ($dbCol !== null && $dbCol !== '' && !isset($schemaCols[$dbCol])) {
             @unlink($csvPath);

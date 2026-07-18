@@ -88,7 +88,7 @@ async function loadHistory() {
         historyEl.textContent = '';
         historyEl.appendChild(table_);
     } catch {
-        historyEl.textContent = 'Error loading history.';
+        historyEl.textContent = I18n.t('owners.error_history');
     }
 }
 

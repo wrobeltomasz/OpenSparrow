@@ -168,10 +168,6 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/ballot.png" alt="">
                         Dashboard
                     </button>
-                    <button class="admin-tab" data-file="fdw">
-                        <img class="nav-item-icon" src="../assets/icons/database.png" alt="">
-                        External Databases
-                    </button>
                     <button class="admin-tab" data-file="files">
                         <img class="nav-item-icon" src="../assets/icons/upload.png" alt="">
                         Files
@@ -367,7 +363,6 @@ if (empty($_SESSION['csrf_token'])) {
         csv_import: 'CSV Import',
         rag: 'RAG Documents',
         automations: 'Automations',
-        fdw: 'External Databases',
         anonymization: 'Data Anonymization',
         print: 'Printouts'
     };

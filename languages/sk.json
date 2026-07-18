@@ -20,7 +20,8 @@
         "boolean": {
             "true": "Áno",
             "false": "Nie"
-        }
+        },
+        "logo_alt": "Logo"
     },
     "grid": {
         "title": "Tabuľka",
@@ -55,7 +56,16 @@
         "drilldown_count": "{count} prepojených",
         "load_more": "Načítať viac",
         "total_in_db": "celkom v tabuľke",
-        "truncated_notice": "Zobrazených prvých {loaded} z {total} záznamov. Použite vyhľadávanie alebo \"Načítať viac\" (zostáva {remaining})."
+        "truncated_notice": "Zobrazených prvých {loaded} z {total} záznamov. Použite vyhľadávanie alebo \"Načítať viac\" (zostáva {remaining}).",
+        "cannot_load_table": "Cannot load table \"{table}\". {msg}",
+        "error_loading_table": "Error loading \"{table}\"",
+        "cannot_load_more": "Cannot load more rows. {msg}",
+        "search_failed": "Search failed. {msg}",
+        "delete_failed": "Delete failed ({status})",
+        "insert_failed": "Insert failed ({status})",
+        "select_all_rows": "Select all rows",
+        "select_all_toggle": "Select / deselect all",
+        "id_badge": "id: {id}"
     },
     "form": {
         "add_record": "Pridať záznam",
@@ -80,7 +90,8 @@
         "no_files": "K tomuto záznamu nie sú priložené žiadne súbory.",
         "no_records": "Nenašli sa žiadne záznamy.",
         "add_subtable": "+ Pridať {label}",
-        "attached_files": "Priložené súbory"
+        "attached_files": "Priložené súbory",
+        "no_options": "No options available."
     },
     "auth": {
         "login": "Prihlásiť sa",
@@ -96,7 +107,8 @@
         "passwords_no_match": "Heslá sa nezhodujú.",
         "password_too_short": "Heslo musí mať aspoň 8 znakov.",
         "password_changed": "Heslo zmenené.",
-        "change_avatar": "Zmeniť avatar"
+        "change_avatar": "Zmeniť avatar",
+        "error_changing_password": "Error changing password."
     },
     "header": {
         "toggle_sidebar": "Prepnúť bočný panel",
@@ -111,7 +123,10 @@
         "avatar_updated": "Avatar aktualizovaný.",
         "my_records": "Moje záznamy",
         "my_records_empty": "Nemáte pridelené žiadne záznamy.",
-        "close": "Zatvoriť"
+        "close": "Zatvoriť",
+        "avatar_option": "Avatar {n}",
+        "avatar_options": "Avatar options",
+        "error_saving_avatar": "Error saving avatar."
     },
     "admin": {
         "title": "Správa",
@@ -153,7 +168,53 @@
         "tip_tags": "Štítky na vyhľadávanie a zoskupovanie — kliknite na bunku pre úpravu (oddelené čiarkami)",
         "tip_size": "Veľkosť súboru na disku",
         "tip_related": "Záznam, ku ktorému je súbor pripojený — kliknite na odznak pre otvorenie",
-        "tip_uploaded": "Dátum nahratia súboru"
+        "tip_uploaded": "Dátum nahratia súboru",
+        "filter_all_types": "All File Types",
+        "filter_images": "Images",
+        "filter_pdfs": "PDFs",
+        "filter_documents": "Documents",
+        "filter_spreadsheets": "Spreadsheets",
+        "filter_archives": "Archives",
+        "select_all_files": "Select all files",
+        "select_all_toggle": "Select / deselect all",
+        "col_type": "Type",
+        "col_name": "File Name",
+        "col_display": "Name",
+        "col_tags": "Tags",
+        "col_size": "Size",
+        "col_related": "Related To",
+        "col_uploaded": "Uploaded Date",
+        "loading": "Loading files...",
+        "refresh": "Refresh List",
+        "upload_new": "Upload new file:",
+        "choose_file": "Choose file to upload",
+        "ph_display_name": "Optional display name",
+        "ph_tags": "Tags (comma separated)",
+        "opt_target_table": "-- Target table --",
+        "opt_select_table_first": "-- Select table first --",
+        "go_to_record": "Go to record",
+        "edit_tags": "Click to edit tags",
+        "select_file": "Select file",
+        "delete_error": "Delete error: {error}",
+        "network_error": "Network error.",
+        "save_error": "Save error: {error}",
+        "name_empty": "Name cannot be empty.",
+        "name_updated": "Name updated.",
+        "tags_updated": "Tags updated.",
+        "deleted_n": "Deleted {n} file(s)",
+        "tagged_n": "Tagged {n} file(s)",
+        "unknown": "Unknown",
+        "failed": "Failed",
+        "no_files_match": "No files found matching your criteria.",
+        "search_placeholder": "Search files by name or tag...",
+        "bulk_add_tags": "Add Tags",
+        "bulk_apply": "Apply",
+        "bulk_deselect_all": "Deselect all",
+        "bulk_n_selected": "{n} selected",
+        "bulk_tags_scope": "Tags will be added to {n} selected file(s).",
+        "ph_tags_example": "e.g. invoice, 2026",
+        "applying": "Applying...",
+        "error_generic": "Error: {error}"
     },
     "notifications": {
         "mark_read": "Označiť ako prečítané",
@@ -177,7 +238,14 @@
         "filter_7d": "Posledných 7 dní",
         "filter_30d": "Posledných 30 dní",
         "filter_month": "Tento mesiac",
-        "vs_prev": "oproti predchádzajúcemu obdobiu ({prev})"
+        "vs_prev": "oproti predchádzajúcemu obdobiu ({prev})",
+        "no_widgets": "No widgets configured.",
+        "unknown_widget_type": "Unknown widget type: {type}",
+        "list_misconfigured": "List widget misconfigured: missing display_columns.",
+        "no_data": "No data",
+        "sum_zero": "Sum is zero",
+        "click_edit_record": "Click to edit record",
+        "title": "Dashboard"
     },
     "workflow": {
         "steps": {
@@ -195,7 +263,12 @@
         "saving": "Ukladanie…",
         "completed_title": "Pracovný postup dokončený",
         "success_before": "Všetky kroky",
-        "success_after": "pracovného postupu boli úspešne dokončené."
+        "success_after": "pracovného postupu boli úspešne dokončené.",
+        "no_description": "No description provided for this workflow.",
+        "schema_not_found": "Error: Schema for table '{table}' not found.",
+        "unknown_save_error": "Unknown error occurred while saving.",
+        "save_error": "Error saving data: {msg}",
+        "server_error": "Server Error (PHP/SQL): {msg}"
     },
     "comments": {
         "delete": "Zmazať",
@@ -205,7 +278,10 @@
         "none": "Zatiaľ žiadne komentáre. Buďte prvý.",
         "send": "Odoslať",
         "placeholder": "Napíšte komentár… (**tučne**, *kurzívou*, URL automaticky prepojené)",
-        "deleted_text": "Komentár zmazaný."
+        "deleted_text": "Komentár zmazaný.",
+        "bold_title": "Bold (**text**)",
+        "italic_title": "Italic (*text*)",
+        "unknown_author": "Unknown"
     },
     "owners": {
         "error_load": "Chyba pri načítaní vlastníka.",
@@ -245,7 +321,10 @@
         "fn_min": "MIN",
         "fn_max": "MAX",
         "fn_count": "POČET",
-        "group_by": "Zoskupiť riadky…"
+        "group_by": "Zoskupiť riadky…",
+        "no_data": "No data found.",
+        "click_sort": "Click to sort",
+        "click_open": "Click to open this view."
     },
     "data_cleanup": {
         "title": "Rýchle čistenie dát",
@@ -384,6 +463,65 @@
         "tag_fallback": "Žiadne výsledky pre vybrané štítky — zobrazujem výsledky zo všetkých dokumentov.",
         "context_table": "Zobrazenie: {table}",
         "use_grid_data": "Údaje aktuálnej tabuľky",
-        "select_one": "Pred odoslaním vyberte aspoň jeden štítok dokumentu alebo údaje aktuálnej tabuľky."
+        "select_one": "Pred odoslaním vyberte aspoň jeden štítok dokumentu alebo údaje aktuálnej tabuľky.",
+        "error_prefix": "Error: {msg}"
+    },
+    "setup": {
+        "title": "OpenSparrow Setup",
+        "subtitle": "Configure your database and initialize the system",
+        "step_of": "Step {current} of 4",
+        "complete_short": "Complete!",
+        "welcome_title": "Welcome to OpenSparrow",
+        "welcome_intro": "This wizard will help you configure your database connection and initialize the system.",
+        "welcome_need": "You'll need:",
+        "welcome_need_db": "PostgreSQL 14+ server details (host, port, database, user, password)",
+        "welcome_need_admin": "Administrator password (to be set after initialization)",
+        "welcome_go": "Let's get started!",
+        "next": "Next",
+        "back": "Back",
+        "db_conn_title": "Database Connection",
+        "lbl_host": "Host",
+        "help_host": "PostgreSQL server hostname",
+        "lbl_port": "Port",
+        "lbl_dbname": "Database Name",
+        "help_dbname": "Name of the PostgreSQL database",
+        "lbl_user": "Username",
+        "help_user": "PostgreSQL user with CREATE privileges",
+        "lbl_password": "Password",
+        "test_conn": "Test Connection",
+        "checking": "Checking connection...",
+        "schema_title": "Schema Configuration",
+        "lbl_schema": "Schema Name",
+        "help_schema": "PostgreSQL schema for system tables (default: app)",
+        "create_schema": "Create schema if it doesn't exist",
+        "admin_default": "Default Admin Account",
+        "username_colon": "Username:",
+        "password_colon": "Password:",
+        "admin_pwd_note": "a random password will be generated and shown after initialization",
+        "important": "Important",
+        "important_text": "You can change the admin password after logging into the admin panel. Please change it immediately for security.",
+        "review_title": "Review & Initialize",
+        "sum_host": "Host",
+        "sum_port": "Port",
+        "sum_db": "Database",
+        "sum_user": "User",
+        "sum_schema": "Schema",
+        "init_btn": "Initialize System Tables",
+        "complete_title": "Setup Complete!",
+        "complete_sub": "Your database has been initialized successfully.",
+        "admin_created": "Admin Account Created",
+        "next_steps": "Next Steps",
+        "next_step_1": "Log in with admin and the password shown above",
+        "next_step_2": "Go to Admin Panel → Users",
+        "next_step_3": "Change the admin password immediately",
+        "go_login": "Go to Login",
+        "test_first": "Please test the connection first",
+        "fill_required": "Please fill in all required fields",
+        "conn_success": "Connection successful!",
+        "conn_failed": "Connection failed",
+        "network_error": "Network error",
+        "network_error_msg": "Network error: {msg}",
+        "initializing": "Initializing...",
+        "init_failed": "Initialization failed"
     }
 }

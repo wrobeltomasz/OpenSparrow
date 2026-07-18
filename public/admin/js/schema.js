@@ -1,8 +1,8 @@
 ﻿// admin/js/schema.js — Schema editor (tables, columns, FKs, grid settings)
-// Core editor for the "schema" config: renderSchemaEditor / renderSchemaGlobalSettings / renderExternalTablesView, syncSchemaTables. XSS-escapes output; integrates MySQL gateway tables.
+// Core editor for the "schema" config: renderSchemaEditor / renderSchemaGlobalSettings, syncSchemaTables. XSS-escapes output.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createTextInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';
-import { showStatusPill, markDirty, isMysqlTable } from './app.js';
+import { showStatusPill, markDirty } from './app.js';
 
 // Utility function to escape HTML strings safely against XSS
 import { escHtml as escapeHtml } from '../../assets/js/util/esc.js';
@@ -256,38 +256,9 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     btnSyncCols.type = 'button';
     btnSyncCols.className = 'btn btn-sm';
     btnSyncCols.innerHTML = 'Sync Columns from DB';
-    
-    const isExternalMysql = isMysqlTable(tableName) || Boolean(tableData.mysql_pk);
-    if (isExternalMysql) btnSyncCols.innerHTML = 'Sync Columns from MySQL';
 
     // Fetch and sync columns from database
     btnSyncCols.onclick = async () => {
-        // External MySQL tables are discovered via the FDW gateway, not the
-        // PostgreSQL information_schema — route to the MySQL endpoint instead.
-        if (isExternalMysql) {
-            try {
-                const r = await apiFetch('api_fdw.php?action=mysql_columns_sync', {
-                    method: 'POST',
-                    body: JSON.stringify({ table: tableName })
-                });
-                const d = await r.json();
-                if (d.status === 'success') {
-                    tableData.columns = d.columns || {};
-                    if (d.mysql_pk) tableData.mysql_pk = d.mysql_pk;
-                    else delete tableData.mysql_pk;
-                    const n = Object.keys(tableData.columns).length;
-                    markDirty();
-                    showStatusPill(btnSyncCols, `Synced ${n} column${n === 1 ? '' : 's'} from MySQL.`, 'success');
-                    renderEditor(tableName, tableData, false);
-                } else {
-                    showStatusPill(btnSyncCols, 'API Error: ' + (d.error || 'Failed to sync columns.'), 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showStatusPill(btnSyncCols, 'Communication error. Check console.', 'error');
-            }
-            return;
-        }
         try {
             const schemaName = tableData.schema || 'app';
             // POST with JSON body — avoids WAF false positives on GET query strings.
@@ -453,18 +424,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     workspaceEl.appendChild(createTextInput('display_name', 'Display Name', tableData.display_name, (val) => {
         tableData.display_name = val;
     }));
-    if (isExternalMysql) {
-        // External MySQL tables are not addressed by a PostgreSQL schema — the
-        // routing uses the configured MySQL database. Stop showing the MySQL
-        // database name in the PG "schema" slot; normalize it to 'public'.
-        if (tableData.schema !== 'public') { tableData.schema = 'public'; markDirty(); }
-        const schemaField = createTextInput('schema', 'Source', 'External MySQL database', () => {});
-        const schemaInput = schemaField.querySelector('input');
-        if (schemaInput) { schemaInput.disabled = true; schemaInput.readOnly = true; }
-        workspaceEl.appendChild(schemaField);
-    } else {
-        workspaceEl.appendChild(createTextInput('schema', 'Database Schema', tableData.schema || 'app', (val) => tableData.schema = val));
-    }
+    workspaceEl.appendChild(createTextInput('schema', 'Database Schema', tableData.schema || 'app', (val) => tableData.schema = val));
 
     workspaceEl.appendChild(createIconPicker('icon', 'Icon Path', tableData.icon, (val) => {
         if (val) tableData.icon = val;
@@ -1052,130 +1012,4 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     };
 
     renderM2m();
-}
-
-export async function renderExternalTablesView(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '';
-
-    const h3 = document.createElement('h3');
-    h3.style.marginBottom = '4px';
-    h3.textContent = 'External Tables — MySQL';
-    workspaceEl.appendChild(h3);
-
-    const sub = document.createElement('p');
-    sub.style.cssText = '  margin:0 0 20px;';
-    sub.textContent = 'Tables routed from MySQL. Sync columns to rebuild the schema column definitions from the live database.';
-    workspaceEl.appendChild(sub);
-
-
-    let statusData;
-    try {
-        const res = await apiFetch('api_fdw.php?action=mysql_status');
-        statusData = await res.json();
-    } catch (e) {
-        const err = document.createElement('p');
-        err.style.color = 'var(--danger, #d00)';
-        err.textContent = 'Could not reach MySQL status endpoint.';
-        workspaceEl.appendChild(err);
-        return;
-    }
-
-    if (!statusData.connected) {
-        const banner = document.createElement('p');
-        banner.style.cssText = 'padding:12px; background:#fff3cd; border:1px solid #ffc107; border-radius:4px; color:#856404;';
-        banner.textContent = 'MySQL is not connected. Configure credentials in the External Databases admin.';
-        workspaceEl.appendChild(banner);
-        return;
-    }
-
-    const tables = statusData.mysql_tables || [];
-    if (tables.length === 0) {
-        const p = document.createElement('p');
-        p.textContent = 'No MySQL tables registered. Add tables in External Databases admin.';
-        workspaceEl.appendChild(p);
-        return;
-    }
-
-    const grid = document.createElement('div');
-    grid.style.cssText = 'display:flex; flex-direction:column; gap:12px;';
-    workspaceEl.appendChild(grid);
-
-    tables.forEach(tableName => {
-        const tableData = (ctx.currentConfig && ctx.currentConfig.tables && ctx.currentConfig.tables[tableName]) || {};
-        const colCount = Object.keys(tableData.columns || {}).length;
-        const displayName = tableData.display_name || tableName;
-
-        const card = document.createElement('div');
-        card.style.cssText = 'padding:14px 16px; background:white; border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; gap:16px;';
-
-        const info = document.createElement('div');
-        info.style.flex = '1';
-
-        const nameEl = document.createElement('strong');
-        nameEl.style.display = 'block';
-        nameEl.textContent = displayName;
-
-        const metaEl = document.createElement('span');
-        metaEl.style.cssText = ' ';
-        let metaText = 'Key: ' + tableName + ' · ' + colCount + ' column' + (colCount !== 1 ? 's' : '');
-        if (tableData.mysql_pk) {
-            metaText += ' · PK: ' + tableData.mysql_pk + ' → id';
-        }
-        metaEl.textContent = metaText;
-
-        info.appendChild(nameEl);
-        info.appendChild(metaEl);
-
-        const btnSync = document.createElement('button');
-        btnSync.type = 'button';
-        btnSync.className = 'btn btn-sm';
-        btnSync.textContent = 'Sync from MySQL';
-        btnSync.onclick = async () => {
-            btnSync.disabled = true;
-            btnSync.textContent = 'Syncing...';
-            try {
-                const r = await apiFetch('api_fdw.php?action=mysql_columns_sync', {
-                    method: 'POST',
-                    body: JSON.stringify({ table: tableName })
-                });
-                const d = await r.json();
-                if (d.status === 'success') {
-                    if (ctx.currentConfig && ctx.currentConfig.tables && ctx.currentConfig.tables[tableName]) {
-                        ctx.currentConfig.tables[tableName].columns = d.columns || {};
-                        if (d.mysql_pk) {
-                            ctx.currentConfig.tables[tableName].mysql_pk = d.mysql_pk;
-                        } else {
-                            delete ctx.currentConfig.tables[tableName].mysql_pk;
-                        }
-                    }
-                    renderExternalTablesView(ctx);
-                } else {
-                    btnSync.disabled = false;
-                    btnSync.textContent = 'Sync from MySQL';
-                    metaEl.textContent = 'Error: ' + (d.error || 'sync failed');
-                    metaEl.style.color = 'var(--danger, #d00)';
-                }
-            } catch (e) {
-                btnSync.disabled = false;
-                btnSync.textContent = 'Sync from MySQL';
-            }
-        };
-
-        const btnEdit = document.createElement('button');
-        btnEdit.type = 'button';
-        btnEdit.className = 'btn btn-sm';
-        btnEdit.style.marginLeft = '6px';
-        btnEdit.textContent = 'Edit Schema';
-        btnEdit.onclick = () => {
-            if (ctx.currentConfig && ctx.currentConfig.tables && ctx.currentConfig.tables[tableName]) {
-                ctx.renderEditor(tableName, ctx.currentConfig.tables[tableName], false);
-            }
-        };
-
-        card.appendChild(info);
-        card.appendChild(btnSync);
-        card.appendChild(btnEdit);
-        grid.appendChild(card);
-    });
 }

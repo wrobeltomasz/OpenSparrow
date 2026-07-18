@@ -26,39 +26,13 @@ if ($action === 'overview') {
         $schemaObj   = config_get('schema');
         $schemaTables = (is_array($schemaObj) && is_array($schemaObj['tables'] ?? null)) ? $schemaObj['tables'] : [];
 
-        $mgOvPath   = __DIR__ . '/../../config/mysql_gateway.json';
-        $mgOvTables = [];
-        if (file_exists($mgOvPath)) {
-            $mgOvRaw    = json_decode((string) file_get_contents($mgOvPath), true);
-            $mgOvTables = is_array($mgOvRaw) ? ($mgOvRaw['mysql_tables'] ?? []) : [];
-        }
-        $mysqlPdoOv = null;
-
         $tables   = [];
         $totalRec = 0;
         foreach ($schemaTables as $tableName => $tableDef) {
             $tableSchema = $tableDef['schema'] ?? 'public';
-            if (in_array($tableName, $mgOvTables, true)) {
-                if ($mysqlPdoOv === null) {
-                    $mysqlPdoOv = mysql_pdo('admin');
-                }
-                $count = 0;
-                if ($mysqlPdoOv !== null) {
-                    try {
-                        $stmtOv = $mysqlPdoOv->query(
-                            'SELECT COUNT(*) FROM '
-                            . mysql_bt(MYSQL_DB) . '.' . mysql_bt((string) $tableName)
-                        );
-                        $count = $stmtOv ? (int) $stmtOv->fetchColumn() : 0;
-                    } catch (\PDOException $e) {
-                        error_log('[admin][overview][mysql] ' . $e->getMessage());
-                    }
-                }
-            } else {
-                $safeTable = sprintf('%s.%s', pg_ident($tableSchema), pg_ident((string) $tableName));
-                $cRes  = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$safeTable}");
-                $count = $cRes ? (int) pg_fetch_result($cRes, 0, 0) : 0;
-            }
+            $safeTable = sprintf('%s.%s', pg_ident($tableSchema), pg_ident((string) $tableName));
+            $cRes  = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$safeTable}");
+            $count = $cRes ? (int) pg_fetch_result($cRes, 0, 0) : 0;
             $totalRec += $count;
             $tables[] = [
                 'name'  => $tableName,
