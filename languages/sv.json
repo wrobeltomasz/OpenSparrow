@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} fil",
             "other": "{count} filer"
-        }
+        },
+        "tip_type": "Filkategori som identifierats från filändelsen (bild, PDF, dokument, kalkylark, arkiv)",
+        "tip_name": "Det uppladdade filens ursprungliga namn — oföränderligt, kan inte ändras",
+        "tip_display": "Redigerbar visningsetikett — klicka på cellen för att byta namn (ändrar inte filnamnet)",
+        "tip_tags": "Etiketter för sökning och gruppering — klicka på cellen för att redigera (kommaseparerade)",
+        "tip_size": "Filstorlek på disken",
+        "tip_related": "Post som filen är kopplad till — klicka på märket för att öppna den",
+        "tip_uploaded": "Datum då filen laddades upp"
     },
     "notifications": {
         "mark_read": "Markera som läst",

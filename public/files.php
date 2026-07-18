@@ -8,6 +8,8 @@
 // grid-style pagination (rows-per-page persisted in localStorage). A slim single-row upload bar
 // (styled like the actions bar) sits below the table.
 // Bulk operations (delete, tagging) over row-checkbox selection — same me-bar/BulkPanel UI as the grid.
+// Grid-parity inline editing: the immutable File Name and an editable display Name sit side by side,
+// and per-row Tags are edited in place (click-to-edit). Single-file edits go to api/files.php update_meta.
 // Renders the file manager UI; data and uploads via api/files.php, downloads via file_download.php
 
 declare(strict_types=1);
@@ -46,17 +48,33 @@ ob_start();
                                    title="Select / deselect all">
                         </th>
                         <?php endif; ?>
-                        <th data-sort="type" data-label="Type"><span class="th-label">Type</span></th>
-                        <th data-sort="name" data-label="File Name"><span class="th-label">File Name</span></th>
-                        <th data-sort="tags" data-label="Tags"><span class="th-label">Tags</span></th>
-                        <th data-sort="size" data-label="Size"><span class="th-label">Size</span></th>
-                        <th data-sort="related" data-label="Related To"><span class="th-label">Related To</span></th>
-                        <th data-sort="created_at" data-label="Uploaded Date"><span class="th-label">Uploaded Date</span></th>
+                        <?php
+                        $thTips = [
+                            'type'    => t('files.tip_type'),
+                            'name'    => t('files.tip_name'),
+                            'display' => t('files.tip_display'),
+                            'tags'    => t('files.tip_tags'),
+                            'size'    => t('files.tip_size'),
+                            'related' => t('files.tip_related'),
+                            'created' => t('files.tip_uploaded'),
+                        ];
+                        $th = fn(string $sort, string $tipKey, string $label): string =>
+                            '<th data-sort="' . $sort . '" data-label="' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '"'
+                            . ' title="' . htmlspecialchars($thTips[$tipKey], ENT_QUOTES, 'UTF-8') . '">'
+                            . '<span class="th-label th-tip">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span></th>';
+                        echo $th('type', 'type', 'Type');
+                        echo $th('name', 'name', 'File Name');
+                        echo $th('display', 'display', 'Name');
+                        echo $th('tags', 'tags', 'Tags');
+                        echo $th('size', 'size', 'Size');
+                        echo $th('related', 'related', 'Related To');
+                        echo $th('created_at', 'created', 'Uploaded Date');
+                        ?>
                         <th class="th-actions"></th>
                     </tr>
                 </thead>
                 <tbody id="fileTableBody">
-                    <tr><td colspan="<?php echo $canEdit ? 8 : 7; ?>" class="f-td-empty">Loading files...</td></tr>
+                    <tr><td colspan="<?php echo $canEdit ? 9 : 8; ?>" class="f-td-empty">Loading files...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -107,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const LS_PAGE_SIZE = 'sparrow_files_page_size';
     const canEdit = !!(window.USER_CAPS && window.USER_CAPS.canEdit);
     // Extra leading select column for write roles
-    const COLSPAN = canEdit ? 8 : 7;
+    const COLSPAN = canEdit ? 9 : 8;
 
     let currentPage = 1;
     let currentSearch = '';
@@ -230,6 +248,119 @@ document.addEventListener("DOMContentLoaded", () => {
             alert('Network error.');
         }
     });
+
+    // ─── Inline editing (grid-parity: editable display Name + click-to-edit Tags) ───
+
+    // Parse a PostgreSQL text[] literal ({tag1,"tag 2"}) into a plain array of tags.
+    function tagsToArray(raw) {
+        if (!raw || raw === '{}') return [];
+        return raw.replace(/(^{|}$)/g, '').replace(/"/g, '').split(',').map(t => t.trim()).filter(Boolean);
+    }
+
+    function tagsBadgesHtml(arr) {
+        if (arr.length) return arr.map(t => `<span class="tag-badge">${escapeHtml(t)}</span>`).join(' ');
+        return canEdit ? '<span class="f-tag-add">+ Add tags</span>' : '-';
+    }
+
+    function renderTagsCell(cell, raw) {
+        cell.dataset.tags = raw || '{}';
+        cell.innerHTML = tagsBadgesHtml(tagsToArray(raw));
+    }
+
+    // Persist a single-file metadata patch (display_name and/or tags) via update_meta.
+    async function saveMeta(uuid, patch) {
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'update_meta', uuid, ...patch, csrf_token: window.CSRF_TOKEN })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                showToast('Save error: ' + (data.error || 'Failed'), 'error');
+                return null;
+            }
+            return data.file;
+        } catch (err) {
+            showToast('Network error.', 'error');
+            return null;
+        }
+    }
+
+    async function commitDisplay(cell) {
+        if (cell.dataset.saving) return;
+        const newVal = cell.textContent.trim();
+        const orig   = cell.dataset.orig || '';
+        if (newVal === orig) { cell.textContent = orig; return; }
+        if (newVal === '') { cell.textContent = orig; showToast('Name cannot be empty.', 'error'); return; }
+        cell.dataset.saving = '1';
+        const file = await saveMeta(cell.dataset.uuid, { display_name: newVal });
+        delete cell.dataset.saving;
+        if (file) {
+            cell.dataset.orig = file.display_name;
+            cell.textContent  = file.display_name;
+            showToast('Name updated.', 'success');
+        } else {
+            cell.textContent = orig;
+        }
+    }
+
+    async function commitTags(input) {
+        const cell = input.closest('td.f-td-tags');
+        if (!cell || cell.dataset.saving) return;
+        const value = input.value.trim();
+        const orig  = tagsToArray(cell.dataset.tags || '').join(', ');
+        if (value === orig) { renderTagsCell(cell, cell.dataset.tags || ''); return; }
+        cell.dataset.saving = '1';
+        const file = await saveMeta(cell.dataset.uuid, { tags: value });
+        delete cell.dataset.saving;
+        renderTagsCell(cell, file ? (file.tags || '{}') : (cell.dataset.tags || ''));
+        if (file) showToast('Tags updated.', 'success');
+    }
+
+    if (canEdit) {
+        // Click a tags cell to switch it into an inline text input pre-filled with the tag list.
+        tbody.addEventListener('click', (e) => {
+            const cell = e.target.closest('td.f-td-tags');
+            if (!cell || cell.querySelector('input')) return;
+            const arr   = tagsToArray(cell.dataset.tags || '');
+            const input = document.createElement('input');
+            input.type        = 'text';
+            input.className   = 'f-input f-tag-edit';
+            input.value       = arr.join(', ');
+            input.placeholder = 'Tags (comma separated)';
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+        });
+
+        // Commit on blur for both the display-name cell and the tags input.
+        tbody.addEventListener('focusout', (e) => {
+            const tagInput = e.target.closest('input.f-tag-edit');
+            if (tagInput) { commitTags(tagInput); return; }
+            const nameCell = e.target.closest('td[data-edit="display"]');
+            if (nameCell) commitDisplay(nameCell);
+        });
+
+        // Enter commits (blur), Escape cancels and restores the original value.
+        tbody.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (e.target.closest('input.f-tag-edit') || e.target.closest('td[data-edit="display"]')) {
+                    e.preventDefault();
+                    e.target.blur();
+                }
+            } else if (e.key === 'Escape') {
+                const tagInput = e.target.closest('input.f-tag-edit');
+                if (tagInput) {
+                    const cell = tagInput.closest('td.f-td-tags');
+                    renderTagsCell(cell, cell.dataset.tags || '');
+                    return;
+                }
+                const nameCell = e.target.closest('td[data-edit="display"]');
+                if (nameCell) { nameCell.textContent = nameCell.dataset.orig || ''; nameCell.blur(); }
+            }
+        });
+    }
 
     // ─── Bulk selection (grid-parity: row checkboxes + select-all + floating me-bar) ───
 
@@ -551,12 +682,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
             }
 
-            // Parse PostgreSQL array syntax {tag1,tag2}
-            let tagsHtml = '-';
-            if (f.tags && f.tags !== '{}') {
-                const rawTags = f.tags.replace(/(^{|}$)/g, '').replace(/"/g, '').split(',');
-                tagsHtml = rawTags.map(t => `<span class="tag-badge">${escapeHtml(t.trim())}</span>`).join(' ');
-            }
+            // File Name is immutable (physical file), the display Name is inline-editable.
+            const displayVal  = f.display_name || '';
+            const displayCell = canEdit
+                ? `<td class="f-td-display editable" data-edit="display" data-uuid="${escapeHtml(f.uuid)}" data-orig="${escapeHtml(displayVal)}" contenteditable="true">${escapeHtml(displayVal)}</td>`
+                : `<td class="f-td-display">${escapeHtml(displayVal || '-')}</td>`;
+
+            // Tags cell: read-view badges; click-to-edit (comma-separated input) for write roles.
+            const tagsArr  = tagsToArray(f.tags);
+            const tagsCell = canEdit
+                ? `<td class="f-td-tags editable-tags" data-uuid="${escapeHtml(f.uuid)}" data-tags="${escapeHtml(f.tags || '{}')}" title="Click to edit tags">${tagsBadgesHtml(tagsArr)}</td>`
+                : `<td class="f-td-tags">${tagsArr.length ? tagsBadgesHtml(tagsArr) : '-'}</td>`;
 
             // Actions use the grid's icon buttons; delete relies on data-uuid + event
             // delegation — no inline onclick, no global function
@@ -580,8 +716,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             <span class="f-type-label">${escapeHtml(f.type.charAt(0).toUpperCase() + f.type.slice(1))}</span>
                         </div>
                     </td>
-                    <td class="f-td-name">${escapeHtml(f.display_name || f.name)}</td>
-                    <td>${tagsHtml}</td>
+                    <td class="f-td-name">${escapeHtml(f.name)}</td>
+                    ${displayCell}
+                    ${tagsCell}
                     <td>${size}</td>
                     <td>${relatedBadge}</td>
                     <td>${date}</td>

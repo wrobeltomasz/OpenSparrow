@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} archivo",
             "other": "{count} archivos"
-        }
+        },
+        "tip_type": "Categoría de archivo detectada por la extensión (imagen, PDF, documento, hoja de cálculo, archivo comprimido)",
+        "tip_name": "Nombre original del archivo subido — inmutable, no se puede cambiar",
+        "tip_display": "Etiqueta de visualización editable — haz clic en la celda para renombrar (no cambia el nombre del archivo)",
+        "tip_tags": "Etiquetas para buscar y agrupar — haz clic en la celda para editar (separadas por comas)",
+        "tip_size": "Tamaño del archivo en disco",
+        "tip_related": "Registro al que está vinculado el archivo — haz clic en la insignia para abrirlo",
+        "tip_uploaded": "Fecha de subida del archivo"
     },
     "notifications": {
         "mark_read": "Marcar como leído",

@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} fil",
             "other": "{count} filer"
-        }
+        },
+        "tip_type": "Filkategori registreret ud fra filtypen (billede, PDF, dokument, regneark, arkiv)",
+        "tip_name": "Det oprindelige navn på den uploadede fil — uforanderligt, kan ikke ændres",
+        "tip_display": "Redigerbar visningsetiket — klik på cellen for at omdøbe (ændrer ikke filnavnet)",
+        "tip_tags": "Etiketter til søgning og gruppering — klik på cellen for at redigere (kommaseparerede)",
+        "tip_size": "Filstørrelse på disken",
+        "tip_related": "Post som filen er knyttet til — klik på mærket for at åbne den",
+        "tip_uploaded": "Dato for upload af filen"
     },
     "notifications": {
         "mark_read": "Markér som læst",

@@ -2,8 +2,8 @@
 
 // api/files.php — Files module API (upload, list, soft-delete, config)
 // Auth gate: session + UA enforcement; CSRF where applicable; JSON via jsonError()/jsonSuccess()
-// match() action routing: list, get_config, upload, delete, mass_delete, mass_tag, save_config,
-// get_relations_config, get_related_records
+// match() action routing: list, get_config, upload, delete, mass_delete, mass_tag, update_meta,
+// save_config, get_relations_config, get_related_records
 // Multipart upload with post_max_size-drop detection (-> 413); soft-delete (deleted_at); pagination
 // Parameterized queries; sys_table('files')
 
@@ -76,6 +76,7 @@ try {
         'delete'               => actionDelete($conn, $body),
         'mass_delete'          => actionMassDelete($conn, $body),
         'mass_tag'             => actionMassTag($conn, $body),
+        'update_meta'          => actionUpdateMeta($conn, $body),
         'save_config'          => actionSaveConfig($body),
         'get_relations_config' => actionGetRelationsConfig(),
         'get_related_records'  => actionGetRelatedRecords($conn),
@@ -99,7 +100,8 @@ function actionList($conn): void
     // Column sort (grid-parity) — identifiers come from a hardcoded whitelist, never from input
     $sortMap = [
         'type'       => 'f.type',
-        'name'       => "LOWER(COALESCE(NULLIF(f.display_name, ''), f.name))",
+        'name'       => 'LOWER(f.name)',
+        'display'    => "LOWER(COALESCE(NULLIF(f.display_name, ''), f.name))",
         'tags'       => "array_to_string(f.tags, ' ')",
         'size'       => 'f.size_bytes',
         'related'    => 'f.related_table',
@@ -374,6 +376,58 @@ function actionMassTag($conn, array $body): void
         jsonError('Database error.', 500);
     }
     jsonSuccess(['tagged' => pg_num_rows($res)]);
+}
+
+// Handle single-file inline metadata edit (grid-parity: editable display name + tags).
+// The physical file name (f.name) is immutable and is never modified here — only the
+// display_name label and the tag list are editable, matching the frontend affordances.
+function actionUpdateMeta($conn, array $body): void
+{
+
+    requireWrite();
+    os_require_csrf('body', $body);
+    $uuid = trim($body['uuid'] ?? '');
+    if (!$uuid || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
+        jsonError('Valid uuid is required.', 400);
+    }
+
+    $sets   = [];
+    $params = [];
+    $idx    = 1;
+
+    // Rename the display label only — the underlying file name stays fixed.
+    if (array_key_exists('display_name', $body)) {
+        $displayName = mb_substr(trim((string) $body['display_name']), 0, 255);
+        if ($displayName === '') {
+            jsonError('Display name cannot be empty.', 400);
+        }
+        $sets[]   = 'display_name = $' . $idx++;
+        $params[] = $displayName;
+    }
+
+    // Replace the whole tag list (tagsToPgArray returns null for an empty string → clears tags).
+    if (array_key_exists('tags', $body)) {
+        $sets[]   = 'tags = $' . $idx++ . '::text[]';
+        $params[] = tagsToPgArray((string) $body['tags']);
+    }
+
+    if (count($sets) === 0) {
+        jsonError('Nothing to update.', 400);
+    }
+
+    $sets[]   = 'updated_at = NOW()';
+    $params[] = $uuid;
+    $sql = "UPDATE " . sys_table('files') . " SET " . implode(', ', $sets)
+        . " WHERE uuid = $" . $idx . " AND deleted_at IS NULL RETURNING uuid, name, display_name, tags";
+    $res = pg_query_params($conn, $sql, $params);
+    if (!$res) {
+        error_log('api_files actionUpdateMeta failed: ' . pg_last_error($conn));
+        jsonError('Database error.', 500);
+    }
+    if (pg_num_rows($res) === 0) {
+        jsonError('File not found or already deleted.', 404);
+    }
+    jsonSuccess(['file' => pg_fetch_assoc($res)]);
 }
 
 // Handle soft delete action

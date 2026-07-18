@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} fichier",
             "other": "{count} fichiers"
-        }
+        },
+        "tip_type": "Catégorie de fichier détectée d'après l'extension (image, PDF, document, feuille de calcul, archive)",
+        "tip_name": "Nom d'origine du fichier téléversé — immuable, non modifiable",
+        "tip_display": "Libellé d'affichage modifiable — cliquez sur la cellule pour renommer (ne change pas le nom du fichier)",
+        "tip_tags": "Étiquettes pour la recherche et le regroupement — cliquez sur la cellule pour modifier (séparées par des virgules)",
+        "tip_size": "Taille du fichier sur le disque",
+        "tip_related": "Enregistrement auquel ce fichier est lié — cliquez sur le badge pour l'ouvrir",
+        "tip_uploaded": "Date de téléversement du fichier"
     },
     "notifications": {
         "mark_read": "Marquer comme lu",

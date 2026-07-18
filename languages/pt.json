@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} ficheiro",
             "other": "{count} ficheiros"
-        }
+        },
+        "tip_type": "Categoria do ficheiro detetada pela extensão (imagem, PDF, documento, folha de cálculo, arquivo)",
+        "tip_name": "Nome original do ficheiro carregado — imutável, não pode ser alterado",
+        "tip_display": "Rótulo de exibição editável — clique na célula para renomear (não altera o nome do ficheiro)",
+        "tip_tags": "Etiquetas para pesquisa e agrupamento — clique na célula para editar (separadas por vírgulas)",
+        "tip_size": "Tamanho do ficheiro no disco",
+        "tip_related": "Registo ao qual o ficheiro está associado — clique no crachá para abrir",
+        "tip_uploaded": "Data de carregamento do ficheiro"
     },
     "notifications": {
         "mark_read": "Marcar como lido",

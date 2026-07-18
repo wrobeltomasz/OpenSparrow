@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} file",
             "other": "{count} file"
-        }
+        },
+        "tip_type": "Categoria del file rilevata dall'estensione (immagine, PDF, documento, foglio di calcolo, archivio)",
+        "tip_name": "Nome originale del file caricato — immutabile, non modificabile",
+        "tip_display": "Etichetta visualizzata modificabile — clicca la cella per rinominare (non cambia il nome del file)",
+        "tip_tags": "Etichette per ricerca e raggruppamento — clicca la cella per modificare (separate da virgole)",
+        "tip_size": "Dimensione del file su disco",
+        "tip_related": "Record a cui è collegato il file — clicca il badge per aprirlo",
+        "tip_uploaded": "Data di caricamento del file"
     },
     "notifications": {
         "mark_read": "Segna come letto",

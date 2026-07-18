@@ -146,7 +146,14 @@
             "one": "{count} súbor",
             "few": "{count} súbory",
             "other": "{count} súborov"
-        }
+        },
+        "tip_type": "Kategória súboru zistená z prípony (obrázok, PDF, dokument, tabuľka, archív)",
+        "tip_name": "Pôvodný názov nahraného súboru — nemenný, nedá sa zmeniť",
+        "tip_display": "Upraviteľný zobrazovaný názov — kliknite na bunku pre premenovanie (nemení názov súboru)",
+        "tip_tags": "Štítky na vyhľadávanie a zoskupovanie — kliknite na bunku pre úpravu (oddelené čiarkami)",
+        "tip_size": "Veľkosť súboru na disku",
+        "tip_related": "Záznam, ku ktorému je súbor pripojený — kliknite na odznak pre otvorenie",
+        "tip_uploaded": "Dátum nahratia súboru"
     },
     "notifications": {
         "mark_read": "Označiť ako prečítané",

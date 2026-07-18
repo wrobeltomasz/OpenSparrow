@@ -146,7 +146,14 @@
             "one": "{count} failas",
             "few": "{count} failai",
             "other": "{count} failų"
-        }
+        },
+        "tip_type": "Failo kategorija, nustatyta pagal plėtinį (paveikslėlis, PDF, dokumentas, skaičiuoklė, archyvas)",
+        "tip_name": "Pradinis įkelto failo pavadinimas — nekintamas, negalima keisti",
+        "tip_display": "Redaguojama rodoma etiketė — spustelėkite langelį, kad pervadintumėte (nekeičia failo pavadinimo)",
+        "tip_tags": "Žymos paieškai ir grupavimui — spustelėkite langelį redaguoti (atskirtos kableliais)",
+        "tip_size": "Failo dydis diske",
+        "tip_related": "Įrašas, su kuriuo susietas failas — spustelėkite ženklelį, kad atidarytumėte",
+        "tip_uploaded": "Failo įkėlimo data"
     },
     "notifications": {
         "mark_read": "Pažymėti kaip skaitytą",

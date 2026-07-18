@@ -508,8 +508,12 @@ Centralny widok zarządzania plikami (niezależny od rekordów).
 - Wyszukiwarka (po nazwie lub tagu) i filtr typu pliku (obrazy, PDF, dokumenty, arkusze, archiwa) na górnym (niebieskim) pasku aplikacji — tak samo jak na siatce danych, tablicy i w kalendarzu; na mobile dostępne po rozwinięciu panelu wyszukiwania (ikona lupy)
 - Przycisk "Wyczyść filtry" na pasku: pojawia się, gdy aktywna jest fraza lub filtr typu; kliknięcie resetuje oba
 - Tabela w tym samym stylu co siatka danych: nagłówki-pigułki, naprzemienne tło wierszy, podświetlenie wiersza po najechaniu
-- Kolumny: typ (ikona typu pliku + etykieta), nazwa, tagi, rozmiar, powiązany rekord (odnośnik do edycji), data uploadu, akcje
-- Sortowanie po kliknięciu nagłówka kolumny — strzałka ↑/↓ jak na siatce; domyślnie data uploadu malejąco
+- Kolumny: typ (ikona typu pliku + etykieta), **nazwa pliku** (fizyczna, niezmienialna), **nazwa** (wyświetlana etykieta, edytowalna), tagi, rozmiar, powiązany rekord (odnośnik do edycji), data uploadu, akcje
+- Sortowanie po kliknięciu nagłówka kolumny — strzałka ↑/↓ jak na siatce; domyślnie data uploadu malejąco. Nazwa pliku i nazwa wyświetlana sortują się niezależnie
+- Nagłówki kolumn mają podkreślenie kropkowane i po najechaniu pokazują dymek z opisem kolumny (tak jak na siatce danych)
+- **Edycja bezpośrednio w tabeli** (dla ról z prawem zapisu, tak jak na siatce danych):
+  - **Nazwa** (wyświetlana etykieta) — komórka edytowalna w miejscu; Enter lub kliknięcie poza polem zapisuje, Escape anuluje. Nazwa fizyczna pliku pozostaje niezmieniona
+  - **Tagi** — kliknięcie komórki zamienia ją na pole tekstowe (tagi po przecinku); Enter/klik poza polem zapisuje całą listę, Escape anuluje. Puste pole usuwa wszystkie tagi
 - Akcje przy każdym pliku jako przyciski-ikony (jak na siatce): pobieranie i usuwanie (usuwanie tylko dla ról z prawem zapisu)
 - Pasek akcji pod tabelą: przycisk odświeżenia listy oraz paginacja w stylu siatki — wybór liczby wierszy na stronę (10/25/50/100, zapamiętywany w przeglądarce), zakres wyświetlanych rekordów, przyciski Prev/Next
 

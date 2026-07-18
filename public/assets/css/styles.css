@@ -2769,6 +2769,10 @@ th.drag-over .th-label {
 .related-badge { background: #eff6ff; color: #1d4ed8; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; border: 1px solid #bfdbfe; display: inline-block; text-decoration: none; transition: background 0.2s; }
 .related-badge:hover { background: #dbeafe; }
 .tag-badge { background: var(--border-light); color: var(--muted); padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid var(--border); margin-right: 4px; display: inline-block; }
+.th-tip { border-bottom: 1px dotted currentColor; cursor: help; }
+.editable-tags { cursor: pointer; }
+.f-tag-add { color: var(--muted); font-style: italic; font-size: 12px; }
+.f-tag-edit { width: 100%; min-width: 140px; }
 .f-status-success { color: var(--ok); }
 .f-status-error   { color: var(--f-danger); }
 .f-status-neutral { color: var(--f-text-main); }

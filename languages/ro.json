@@ -146,7 +146,14 @@
             "one": "{count} fișier",
             "few": "{count} fișiere",
             "other": "{count} de fișiere"
-        }
+        },
+        "tip_type": "Categoria fișierului detectată după extensie (imagine, PDF, document, foaie de calcul, arhivă)",
+        "tip_name": "Numele original al fișierului încărcat — imuabil, nu poate fi modificat",
+        "tip_display": "Etichetă de afișare editabilă — faceți clic pe celulă pentru redenumire (nu schimbă numele fișierului)",
+        "tip_tags": "Etichete pentru căutare și grupare — faceți clic pe celulă pentru editare (separate prin virgulă)",
+        "tip_size": "Dimensiunea fișierului pe disc",
+        "tip_related": "Înregistrarea la care este legat fișierul — faceți clic pe insignă pentru a o deschide",
+        "tip_uploaded": "Data încărcării fișierului"
     },
     "notifications": {
         "mark_read": "Marchează ca citit",

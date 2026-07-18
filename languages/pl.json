@@ -146,7 +146,14 @@
             "one": "{count} plik",
             "few": "{count} pliki",
             "many": "{count} plików"
-        }
+        },
+        "tip_type": "Kategoria pliku wykryta z rozszerzenia (obraz, PDF, dokument, arkusz, archiwum)",
+        "tip_name": "Oryginalna nazwa przesłanego pliku — niezmienna, nie można jej zmienić",
+        "tip_display": "Edytowalna etykieta wyświetlana — kliknij komórkę, aby zmienić nazwę (nie zmienia nazwy pliku)",
+        "tip_tags": "Etykiety do wyszukiwania i grupowania — kliknij komórkę, aby edytować (po przecinku)",
+        "tip_size": "Rozmiar pliku na dysku",
+        "tip_related": "Rekord, do którego przypisano plik — kliknij znacznik, aby go otworzyć",
+        "tip_uploaded": "Data przesłania pliku"
     },
     "notifications": {
         "mark_read": "Oznacz jako przeczytane",

@@ -146,7 +146,14 @@
             "one": "{count} soubor",
             "few": "{count} soubory",
             "other": "{count} souborů"
-        }
+        },
+        "tip_type": "Kategorie souboru zjištěná z přípony (obrázek, PDF, dokument, tabulka, archiv)",
+        "tip_name": "Původní název nahraného souboru — neměnný, nelze změnit",
+        "tip_display": "Upravitelný zobrazovaný název — klikněte na buňku pro přejmenování (nemění název souboru)",
+        "tip_tags": "Štítky pro vyhledávání a seskupování — klikněte na buňku pro úpravu (oddělené čárkami)",
+        "tip_size": "Velikost souboru na disku",
+        "tip_related": "Záznam, k němuž je soubor připojen — klikněte na odznak pro otevření",
+        "tip_uploaded": "Datum nahrání souboru"
     },
     "notifications": {
         "mark_read": "Označit jako přečtené",

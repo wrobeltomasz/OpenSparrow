@@ -146,7 +146,14 @@
             "one": "{count} datoteka",
             "few": "{count} datoteke",
             "other": "{count} datoteka"
-        }
+        },
+        "tip_type": "Kategorija datoteke otkrivena iz nastavka (slika, PDF, dokument, proračunska tablica, arhiva)",
+        "tip_name": "Izvorni naziv učitane datoteke — nepromjenjiv, ne može se mijenjati",
+        "tip_display": "Uredljiva prikazana oznaka — kliknite ćeliju za preimenovanje (ne mijenja naziv datoteke)",
+        "tip_tags": "Oznake za pretraživanje i grupiranje — kliknite ćeliju za uređivanje (odvojene zarezima)",
+        "tip_size": "Veličina datoteke na disku",
+        "tip_related": "Zapis s kojim je datoteka povezana — kliknite značku za otvaranje",
+        "tip_uploaded": "Datum učitavanja datoteke"
     },
     "notifications": {
         "mark_read": "Označi kao pročitano",

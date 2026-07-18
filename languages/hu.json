@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} fájl",
             "other": "{count} fájl"
-        }
+        },
+        "tip_type": "A kiterjesztésből felismert fájlkategória (kép, PDF, dokumentum, táblázat, archívum)",
+        "tip_name": "A feltöltött fájl eredeti neve — nem módosítható",
+        "tip_display": "Szerkeszthető megjelenített címke — kattintson a cellára az átnevezéshez (nem változtatja meg a fájlnevet)",
+        "tip_tags": "Címkék kereséshez és csoportosításhoz — kattintson a cellára a szerkesztéshez (vesszővel elválasztva)",
+        "tip_size": "Fájlméret a lemezen",
+        "tip_related": "Rekord, amelyhez a fájl kapcsolódik — kattintson a jelvényre a megnyitáshoz",
+        "tip_uploaded": "A fájl feltöltésének dátuma"
     },
     "notifications": {
         "mark_read": "Megjelölés olvasottként",

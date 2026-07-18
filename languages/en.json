@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} file",
             "other": "{count} files"
-        }
+        },
+        "tip_type": "File category detected from the extension (image, PDF, document, spreadsheet, archive)",
+        "tip_name": "Original name of the uploaded file — immutable, cannot be changed",
+        "tip_display": "Editable display label — click the cell to rename (does not change the file name)",
+        "tip_tags": "Labels for searching and grouping — click the cell to edit (comma-separated)",
+        "tip_size": "File size on disk",
+        "tip_related": "Record this file is linked to — click the badge to open it",
+        "tip_uploaded": "Date the file was uploaded"
     },
     "notifications": {
         "mark_read": "Mark as read",

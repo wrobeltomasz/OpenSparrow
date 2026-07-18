@@ -147,7 +147,14 @@
             "two": "{count} datoteki",
             "few": "{count} datoteke",
             "other": "{count} datotek"
-        }
+        },
+        "tip_type": "Kategorija datoteke, zaznana iz končnice (slika, PDF, dokument, preglednica, arhiv)",
+        "tip_name": "Izvirno ime naložene datoteke — nespremenljivo, ni ga mogoče spremeniti",
+        "tip_display": "Urejljiva prikazana oznaka — kliknite celico za preimenovanje (ne spremeni imena datoteke)",
+        "tip_tags": "Oznake za iskanje in razvrščanje — kliknite celico za urejanje (ločene z vejicami)",
+        "tip_size": "Velikost datoteke na disku",
+        "tip_related": "Zapis, s katerim je datoteka povezana — kliknite značko za odpiranje",
+        "tip_uploaded": "Datum nalaganja datoteke"
     },
     "notifications": {
         "mark_read": "Označi kot prebrano",

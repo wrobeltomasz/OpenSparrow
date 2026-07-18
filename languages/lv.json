@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} fails",
             "other": "{count} faili"
-        }
+        },
+        "tip_type": "Faila kategorija, kas noteikta pēc paplašinājuma (attēls, PDF, dokuments, izklājlapa, arhīvs)",
+        "tip_name": "Augšupielādētā faila sākotnējais nosaukums — nemainīgs, to nevar mainīt",
+        "tip_display": "Rediģējama parādāmā etiķete — noklikšķiniet uz šūnas, lai pārdēvētu (nemaina faila nosaukumu)",
+        "tip_tags": "Birkas meklēšanai un grupēšanai — noklikšķiniet uz šūnas, lai rediģētu (atdalītas ar komatiem)",
+        "tip_size": "Faila izmērs diskā",
+        "tip_related": "Ieraksts, ar kuru fails ir saistīts — noklikšķiniet uz nozīmes, lai to atvērtu",
+        "tip_uploaded": "Faila augšupielādes datums"
     },
     "notifications": {
         "mark_read": "Atzīmēt kā lasītu",

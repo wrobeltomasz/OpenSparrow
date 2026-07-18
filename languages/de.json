@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} Datei",
             "other": "{count} Dateien"
-        }
+        },
+        "tip_type": "Dateikategorie anhand der Erweiterung erkannt (Bild, PDF, Dokument, Tabelle, Archiv)",
+        "tip_name": "Ursprünglicher Name der hochgeladenen Datei — unveränderlich",
+        "tip_display": "Bearbeitbare Anzeigebezeichnung — Zelle anklicken zum Umbenennen (ändert den Dateinamen nicht)",
+        "tip_tags": "Schlagwörter zum Suchen und Gruppieren — Zelle anklicken zum Bearbeiten (durch Komma getrennt)",
+        "tip_size": "Dateigröße auf der Festplatte",
+        "tip_related": "Datensatz, mit dem die Datei verknüpft ist — auf das Abzeichen klicken zum Öffnen",
+        "tip_uploaded": "Datum des Uploads"
     },
     "notifications": {
         "mark_read": "Als gelesen markieren",

@@ -145,7 +145,14 @@
         "count": {
             "one": "{count} fail",
             "other": "{count} faili"
-        }
+        },
+        "tip_type": "Faili kategooria, mis on tuvastatud laiendi järgi (pilt, PDF, dokument, tabel, arhiiv)",
+        "tip_name": "Üleslaaditud faili algne nimi — muutumatu, seda ei saa muuta",
+        "tip_display": "Muudetav kuvatav silt — klõpsake lahtril ümbernimetamiseks (ei muuda faili nime)",
+        "tip_tags": "Sildid otsimiseks ja rühmitamiseks — klõpsake lahtril muutmiseks (komadega eraldatud)",
+        "tip_size": "Faili suurus kettal",
+        "tip_related": "Kirje, millega fail on seotud — klõpsake avamiseks märgil",
+        "tip_uploaded": "Faili üleslaadimise kuupäev"
     },
     "notifications": {
         "mark_read": "Märgi loetuks",
