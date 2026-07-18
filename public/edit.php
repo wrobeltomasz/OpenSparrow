@@ -241,6 +241,9 @@ ob_start();
                     <button type="submit" class="btn-cancel" data-save-action="exit"><?= t('form.save_exit') ?></button>
                 <?php endif; ?>
                 <button type="button" class="btn-cancel" data-nav="index.php?table=<?php echo htmlspecialchars(urlencode($table), ENT_QUOTES, 'UTF-8'); ?>"><?= t('common.cancel') ?></button>
+                <?php if (!$isReadOnly) : ?>
+                    <button type="button" class="btn-delete" id="btnDeleteRecord"><?= t('common.delete') ?></button>
+                <?php endif; ?>
             </div>
         </form>
     </div>
@@ -461,6 +464,38 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('[data-nav]').forEach(btn => {
         btn.addEventListener('click', () => { window.location.href = btn.dataset.nav; });
     });
+
+    // Delete record
+    const btnDelete = document.getElementById('btnDeleteRecord');
+    if (btnDelete) {
+        btnDelete.addEventListener('click', async () => {
+            if (!window.confirm(<?php echo json_encode(t('common.confirm_delete'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>)) {
+                return;
+            }
+            btnDelete.disabled = true;
+            try {
+                const res = await fetch('index.php?api=delete', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': window.CSRF_TOKEN
+                    },
+                    body: JSON.stringify({ table: window.EDIT_TABLE, id: window.EDIT_ID })
+                });
+                let payload = null;
+                try { payload = await res.json(); } catch (e) {}
+                if (!res.ok || (payload && payload.error)) {
+                    window.alert((payload && payload.error) || ('Delete failed (' + res.status + ')'));
+                    btnDelete.disabled = false;
+                    return;
+                }
+                window.location.href = 'index.php?table=' + encodeURIComponent(window.EDIT_TABLE);
+            } catch (err) {
+                window.alert('Network error during delete.');
+                btnDelete.disabled = false;
+            }
+        });
+    }
 
     // Enum select color update
     document.querySelectorAll('select[data-enum-colors]').forEach(sel => {

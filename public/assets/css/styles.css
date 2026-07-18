@@ -2598,6 +2598,25 @@ th.drag-over .th-label {
   color: var(--text);
 }
 
+.btn-delete {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.42rem 0.9rem;
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition), box-shadow var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-delete:hover {
+  background: var(--danger-dark);
+  box-shadow: var(--shadow-md);
+}
+
 .tab-btn .tab-icon {
   width: 14px;
   height: 14px;
