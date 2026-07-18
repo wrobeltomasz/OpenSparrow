@@ -536,10 +536,30 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         const page = document.createElement('div');
         page.className = 'form-page wf-form-page';
 
-        // Render step title prominently, like edit.php's <h2> page heading
+        // Render step title prominently, like edit.php's <h2> page heading.
+        // Prefix it with the icon configured for this step's table (schema
+        // `icon`), rendered as an <img> for a path/filename or inline text for
+        // an emoji — mirroring the calendar/menu icon handling.
         if (step.title && step.title.trim() !== '') {
             const stepTitleEl = document.createElement('h2');
-            stepTitleEl.textContent = step.title;
+            stepTitleEl.className = 'wf-step-title';
+            const tableIcon = tableSchema.icon;
+            if (tableIcon) {
+                if (tableIcon.includes('/') || tableIcon.includes('.')) {
+                    const iconImg = document.createElement('img');
+                    iconImg.src = tableIcon;
+                    iconImg.alt = '';
+                    iconImg.className = 'wf-step-title-icon';
+                    iconImg.onerror = () => iconImg.remove();
+                    stepTitleEl.appendChild(iconImg);
+                } else {
+                    const iconSpan = document.createElement('span');
+                    iconSpan.className = 'wf-step-title-icon';
+                    iconSpan.textContent = tableIcon;
+                    stepTitleEl.appendChild(iconSpan);
+                }
+            }
+            stepTitleEl.appendChild(document.createTextNode(step.title));
             page.appendChild(stepTitleEl);
         }
 
@@ -753,6 +773,13 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         // repopulate the form from the buffer when the step is revisited.
         const bufferedRecords = stepData[currentStepIndex] || [];
         let multiListEl = null;
+        // Index of the buffered record currently loaded into the form for
+        // in-place editing (allow_multiple only); null means the form adds a new
+        // record. addBtn/cancelEditBtn are assigned when the buttons are built
+        // below and toggled by enter/exitEditMode.
+        let editingIndex = null;
+        let addBtn = null;
+        let cancelEditBtn = null;
 
         function labelForRecord(snap) {
             // Short human label from the first couple of non-empty text values.
@@ -773,9 +800,14 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             const records = stepData[currentStepIndex] || [];
             records.forEach((snap, ri) => {
                 const row = document.createElement('div');
-                row.className = 'wf-buffered-row';
+                row.className = 'wf-buffered-row' + (ri === editingIndex ? ' active' : '');
+                // Clicking the label loads this record's values back into the
+                // form for editing (update-in-place), instead of only adding new.
                 const txt = document.createElement('span');
+                txt.className = 'wf-buffered-label';
                 txt.textContent = `${ri + 1}. ${labelForRecord(snap)}`;
+                txt.title = I18n.t('common.edit');
+                txt.addEventListener('click', () => enterEditMode(ri));
                 const rm = document.createElement('button');
                 rm.type = 'button';
                 rm.className = 'icon-btn icon-btn-danger';
@@ -783,12 +815,38 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
                 rm.title = I18n.t('common.delete');
                 rm.addEventListener('click', () => {
                     stepData[currentStepIndex].splice(ri, 1);
-                    renderMultiList();
+                    // Removing a row shifts indices; drop any in-progress edit
+                    // and re-render from a clean "add new" state.
+                    if (editingIndex !== null) exitEditMode();
+                    else renderMultiList();
                 });
                 row.appendChild(txt);
                 row.appendChild(rm);
                 multiListEl.appendChild(row);
             });
+        }
+
+        // Load a buffered record into the form for editing; the Add button
+        // becomes "Update Record" and a Cancel button appears.
+        function enterEditMode(ri) {
+            editingIndex = ri;
+            form.reset();
+            writeForm(form, (stepData[currentStepIndex] || [])[ri]);
+            refreshVirtuals();
+            if (addBtn) addBtn.textContent = I18n.t('form.update_record');
+            if (cancelEditBtn) cancelEditBtn.hidden = false;
+            renderMultiList();
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Return to "add new" mode: clear the form and restore button labels.
+        function exitEditMode() {
+            editingIndex = null;
+            form.reset();
+            refreshVirtuals();
+            if (addBtn) addBtn.textContent = I18n.t('form.add_record');
+            if (cancelEditBtn) cancelEditBtn.hidden = true;
+            renderMultiList();
         }
 
         if (step.allow_multiple) {
@@ -821,19 +879,32 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         }
 
         if (step.allow_multiple) {
-            const addBtn = document.createElement('button');
+            addBtn = document.createElement('button');
             addBtn.type = 'button';
             addBtn.className = 'btn-cancel';
             addBtn.textContent = I18n.t('form.add_record');
             addBtn.addEventListener('click', () => {
                 if (!form.reportValidity()) return;
                 if (!stepData[currentStepIndex]) stepData[currentStepIndex] = [];
-                stepData[currentStepIndex].push(readForm(form));
-                form.reset();
-                refreshVirtuals();
-                renderMultiList();
+                if (editingIndex !== null) {
+                    // Replace the record being edited instead of appending.
+                    stepData[currentStepIndex][editingIndex] = readForm(form);
+                } else {
+                    stepData[currentStepIndex].push(readForm(form));
+                }
+                // exitEditMode clears the form, restores labels and re-renders.
+                exitEditMode();
             });
+
+            cancelEditBtn = document.createElement('button');
+            cancelEditBtn.type = 'button';
+            cancelEditBtn.className = 'btn-cancel';
+            cancelEditBtn.textContent = I18n.t('common.cancel');
+            cancelEditBtn.hidden = true;
+            cancelEditBtn.addEventListener('click', () => exitEditMode());
+
             btnContainer.appendChild(addBtn);
+            btnContainer.appendChild(cancelEditBtn);
         }
 
         const nextBtn = document.createElement('button');
@@ -850,15 +921,22 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             e.preventDefault();
 
             if (step.allow_multiple) {
-                // Fold any half-entered record into the buffer, mirroring the old
-                // "Save & Exit": if the form holds values, validate and add them;
-                // an empty form simply advances (the step may be skipped).
+                // Records are committed via the "Add Record" button, which
+                // validates each one. Next just advances — never block on a
+                // required field here. As a convenience, if the form still holds
+                // a *complete, valid* record, fold it into the buffer so it is
+                // not silently lost; a half-entered (invalid) form is discarded
+                // via checkValidity() (no blocking prompt) and advancing proceeds.
                 const hasAnyValue = Array.from(form.querySelectorAll('[name]')).some((el) =>
                     el.type === 'checkbox' ? el.checked : String(el.value ?? '').trim() !== '');
-                if (hasAnyValue) {
-                    if (!form.reportValidity()) return;
+                if (hasAnyValue && form.checkValidity()) {
                     if (!stepData[currentStepIndex]) stepData[currentStepIndex] = [];
-                    stepData[currentStepIndex].push(readForm(form));
+                    if (editingIndex !== null) {
+                        // Mid-edit: commit the change in place, not as a duplicate.
+                        stepData[currentStepIndex][editingIndex] = readForm(form);
+                    } else {
+                        stepData[currentStepIndex].push(readForm(form));
+                    }
                 }
             } else {
                 // Enforce required fields before buffering. reportValidity() shows
