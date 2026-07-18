@@ -31,6 +31,7 @@ import { renderRagPage } from './rag.js';
 import { renderAutomationsPage, autoActions } from './automations.js';
 import { renderOverviewPage } from './overview.js';
 import { renderAnonymizationPage } from './anonymization.js';
+import { renderEtlPage } from './etl.js';
 
 let currentConfig = null;
 let currentFile = 'overview';
@@ -48,7 +49,7 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'anonymization']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
@@ -179,7 +180,7 @@ async function loadConfigFile(fileName) {
     // A prior tab may have registered its own save routine; every tab switch
     // starts fresh so a stale handler can never fire for the wrong tab.
     activeSaveHandler = null;
-    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'anonymization' || fileName === 'print') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -317,7 +318,7 @@ function renderSidebar() {
     const fullPageTabs = new Set([
         'overview', 'database', 'security', 'health', 'docs', 'users', 'backup',
         'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron',
-        'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'board', 'anonymization', 'print',
+        'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'board', 'etl', 'anonymization', 'print',
         'user_records',
     ]);
 
@@ -684,7 +685,7 @@ function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
 
-    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
+    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
@@ -709,6 +710,7 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'csv_import') return renderCsvImportPage(ctx);
     if (currentFile === 'rag') return renderRagPage(ctx);
     if (currentFile === 'anonymization') return renderAnonymizationPage(ctx);
+    if (currentFile === 'etl') return renderEtlPage(ctx);
     if (currentFile === 'print') return renderPrintEditor(ctx);
     if (currentFile === 'automations') {
         if (key === 'LAYOUT') {
