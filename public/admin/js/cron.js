@@ -59,10 +59,10 @@ function cronMakeSection(id, title, description) {
 
     const h3 = document.createElement('h3');
     h3.textContent = title;
-    h3.style.cssText = 'margin:0 0 4px; font-size:15px;';
+    h3.style.cssText = 'margin:0 0 4px; ';
     const desc = document.createElement('p');
     desc.textContent = description;
-    desc.style.cssText = 'margin:0; font-size:13px;';
+    desc.style.cssText = 'margin:0; ';
     desc.className = 'c-muted';
 
     hdr.append(h3, desc);
@@ -85,7 +85,7 @@ function buildManualRunSection() {
     runBtn.textContent = 'Run Cron Now';
 
     const output = document.createElement('pre');
-    output.style.cssText = 'margin-top:14px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
+    output.style.cssText = 'margin-top:14px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;  line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
     runBtn.addEventListener('click', async () => {
         runBtn.disabled = true;
@@ -223,10 +223,10 @@ function buildStatsSection() {
                 kpi.style.cssText = `padding:14px 16px; border-left:4px solid ${color}; background:#fff; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.07);`;
                 const num = document.createElement('div');
                 num.textContent = val;
-                num.style.cssText = `font-size:26px; font-weight:700; color:${color};`;
+                num.style.cssText = ` font-weight:700; color:${color};`;
                 const lbl = document.createElement('div');
                 lbl.textContent = label;
-                lbl.style.cssText = 'font-size:12px; color:var(--muted); margin-top:2px;';
+                lbl.style.cssText = '  margin-top:2px;';
                 kpi.append(num, lbl);
                 kpiGrid.appendChild(kpi);
             });
@@ -234,7 +234,7 @@ function buildStatsSection() {
 
             if (lastRun) {
                 const lastRunEl = document.createElement('p');
-                lastRunEl.style.cssText = 'font-size:13px; color:var(--muted); margin-bottom:14px;';
+                lastRunEl.style.cssText = '  margin-bottom:14px;';
                 const badge = statusBadge(lastRun.status);
                 badge.style.marginLeft = '6px';
                 lastRunEl.textContent = 'Last run: ' + (lastRun.started_at || '').substring(0, 19).replace('T', ' ') + ' ';
@@ -245,7 +245,7 @@ function buildStatsSection() {
             if (data.per_user && data.per_user.length > 0) {
                 const h4 = document.createElement('h4');
                 h4.textContent = 'Top Unread per User';
-                h4.style.cssText = 'margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);';
+                h4.style.cssText = 'margin:0 0 10px;    ';
                 container.appendChild(h4);
 
                 const tbl = cronMkTable();
@@ -261,7 +261,6 @@ function buildStatsSection() {
             } else {
                 const p = document.createElement('p');
                 p.textContent = 'No unread notifications found.';
-                p.style.color = 'var(--muted)';
                 container.appendChild(p);
             }
         } catch (e) {
@@ -292,10 +291,10 @@ function buildSetupSection() {
 
         const h = document.createElement('strong');
         h.textContent = heading;
-        h.style.cssText = 'display:block; margin-bottom:8px; font-size:13px;';
+        h.style.cssText = 'display:block; margin-bottom:8px; ';
 
         const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0 0 6px; font-size:12px; background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
+        pre.style.cssText = 'margin:0 0 6px;  background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
         pre.textContent = code;
 
         wrap.append(h, pre);
@@ -303,7 +302,7 @@ function buildSetupSection() {
         if (note) {
             const p = document.createElement('p');
             p.textContent = note;
-            p.style.cssText = 'margin:6px 0 0; font-size:12px; color:var(--muted);';
+            p.style.cssText = 'margin:6px 0 0;  ';
             wrap.appendChild(p);
         }
 
@@ -335,7 +334,7 @@ function buildSetupSection() {
     ));
 
     const note = document.createElement('p');
-    note.style.cssText = 'font-size:13px; color:var(--muted); margin-top:4px;';
+    note.style.cssText = '  margin-top:4px;';
     note.textContent = 'The script logs each run to spw_users_notifications_log. Use Manual Run (above) to test immediately.';
 
     body.append(content, note);
@@ -351,7 +350,7 @@ function buildCleanupSection() {
     row.style.cssText = 'display:flex; align-items:center; gap:12px; flex-wrap:wrap;';
 
     const label = document.createElement('label');
-    label.style.cssText = 'font-size:13px; color:var(--muted);';
+    label.style.cssText = ' ';
     label.textContent = 'Delete runs older than';
 
     const input = document.createElement('input');
@@ -363,14 +362,14 @@ function buildCleanupSection() {
 
     const unit = document.createElement('span');
     unit.textContent = 'days';
-    unit.style.cssText = 'font-size:13px; color:var(--muted);';
+    unit.style.cssText = ' ';
 
     const btn = document.createElement('button');
     btn.className = 'btn btn-danger';
     btn.textContent = 'Purge Old Logs';
 
     const result = document.createElement('p');
-    result.style.cssText = 'margin-top:12px; font-size:13px; display:none;';
+    result.style.cssText = 'margin-top:12px;  display:none;';
 
     btn.addEventListener('click', async () => {
         const days = parseInt(input.value, 10);

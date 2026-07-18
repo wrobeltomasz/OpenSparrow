@@ -8,7 +8,7 @@ import { escHtml as esc } from '../../assets/js/util/esc.js';
 export async function renderBackupPage(ctx) {
     const { workspaceEl } = ctx;
 
-    workspaceEl.innerHTML = '<p style="color:var(--muted);padding:20px;">Loading tables…</p>';
+    workspaceEl.innerHTML = '<p style="padding:20px;">Loading tables…</p>';
 
     workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
     const myId = workspaceEl._renderId;
@@ -63,7 +63,6 @@ export async function renderBackupPage(ctx) {
 
     if (allTables.length === 0) {
         const empty = document.createElement('p');
-        empty.style.color = 'var(--muted)';
         empty.textContent = 'No tables found. Configure the database connection and define tables in the Schema tab.';
         wrap.appendChild(empty);
         workspaceEl.innerHTML = '';
@@ -92,7 +91,7 @@ export async function renderBackupPage(ctx) {
 
     for (const [groupName, tables] of Object.entries(groups)) {
         const groupLabel = document.createElement('div');
-        groupLabel.style.cssText = 'font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 6px;';
+        groupLabel.style.cssText = 'font-weight:600;margin:18px 0 6px;';
         groupLabel.textContent = groupName;
         wrap.appendChild(groupLabel);
 
@@ -112,7 +111,7 @@ export async function renderBackupPage(ctx) {
             nameSpan.textContent = t.display !== t.name ? `${t.display}  (${t.name})` : t.name;
 
             const schemaTag = document.createElement('span');
-            schemaTag.style.cssText = 'font-size:11px;color:var(--muted);font-family:monospace;';
+            schemaTag.style.cssText = 'font-family:monospace;';
             schemaTag.textContent = t.schema;
 
             label.append(cb, nameSpan, schemaTag);
@@ -163,12 +162,12 @@ export async function renderBackupPage(ctx) {
                 ul.style.cssText = 'list-style:none;padding:0;margin:0;';
                 data.results.forEach(r => {
                     const li = document.createElement('li');
-                    li.style.cssText = 'padding:8px 12px;border-radius:4px;margin-bottom:4px;font-size:13px;display:flex;gap:8px;align-items:baseline;';
+                    li.style.cssText = 'padding:8px 12px;border-radius:4px;margin-bottom:4px;display:flex;gap:8px;align-items:baseline;';
                     if (r.status === 'success') {
                         li.style.background = 'rgba(43,147,72,0.12)';
                         li.innerHTML = `<span style="color:var(--ok);font-weight:700;">✓</span>`
                             + ` <strong>${esc(r.table)}</strong> → <code style="background:rgba(43,147,72,0.12);padding:1px 5px;border-radius:3px;">${esc(r.backup)}</code>`
-                            + ` <span style="color:var(--ok);font-size:11px;">(${esc(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
+                            + ` <span style="color:var(--ok);">(${esc(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
                     } else {
                         li.style.background = 'rgba(208,0,0,0.08)';
                         li.innerHTML = `<span style="color:#a80000;font-weight:700;">✗</span>`

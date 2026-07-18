@@ -26,7 +26,7 @@ function createColumnMultiSelect(labelText, options, selectedValues, onChange) {
     const selected = Array.isArray(selectedValues) ? [...selectedValues] : [];
 
     if (options.length === 0) {
-        container.innerHTML = '<span style="color:var(--muted); font-size:13px;">No columns available</span>';
+        container.innerHTML = '<span style=" ">No columns available</span>';
     } else {
         options.forEach(opt => {
             const lbl = document.createElement('label');
@@ -77,7 +77,7 @@ export function renderBoardEditor(ctx) {
     workspaceEl.appendChild(heading);
 
     const intro = document.createElement('p');
-    intro.style.cssText = 'color:var(--muted); font-size:13px; margin-top:0; max-width:640px;';
+    intro.style.cssText = '  margin-top:0; max-width:640px;';
     intro.textContent = 'Pick a table and the status column whose values become the board lanes '
         + '(e.g. "To Do", "In Progress", "Done"). Users drag cards between lanes to update that '
         + 'column instantly. An enum column is recommended so lanes and their colors are well defined.';
@@ -107,7 +107,7 @@ export function renderBoardEditor(ctx) {
 
         if (!hasEnum) {
             const warn = document.createElement('p');
-            warn.style.cssText = 'color:#a16207; font-size:12px; margin:-6px 0 14px; max-width:640px;';
+            warn.style.cssText = 'color:#a16207;  margin:-6px 0 14px; max-width:640px;';
             warn.textContent = 'This table has no enum columns. Lanes will be derived from the distinct '
                 + 'values currently in the chosen column, and all lanes use the default color below. '
                 + 'For a proper status workflow, define an enum column in the Schema editor.';
@@ -121,7 +121,7 @@ export function renderBoardEditor(ctx) {
                 const previewWrap = document.createElement('div');
                 previewWrap.style.cssText = 'margin:-4px 0 18px;';
                 const lbl = document.createElement('label');
-                lbl.style.cssText = 'display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--text);';
+                lbl.style.cssText = 'display:block;  font-weight:600; margin-bottom:6px; color:var(--text);';
                 lbl.textContent = 'Lane preview';
                 previewWrap.appendChild(lbl);
 
@@ -131,7 +131,7 @@ export function renderBoardEditor(ctx) {
                     const color = (meta.enum_colors && meta.enum_colors[opt]) || currentConfig.color || '#005A9E';
                     const chip = document.createElement('span');
                     chip.style.cssText = 'display:inline-flex; align-items:center; gap:6px; padding:4px 10px; '
-                        + 'border:1px solid var(--border); border-radius:999px; font-size:12px; background:var(--panel);';
+                        + 'border:1px solid var(--border); border-radius:999px;  background:var(--panel);';
                     const dot = document.createElement('span');
                     dot.style.cssText = `width:10px; height:10px; border-radius:50%; background:${color};`;
                     chip.appendChild(dot);
@@ -184,7 +184,7 @@ export function renderBoardEditor(ctx) {
     }, false));
 
     const note = document.createElement('p');
-    note.style.cssText = 'color:var(--muted); font-size:12px; margin-top:8px;';
+    note.style.cssText = '  margin-top:8px;';
     note.textContent = 'The board only appears in the sidebar once a table and status column are set. Remember to click "Save config".';
     workspaceEl.appendChild(note);
 }

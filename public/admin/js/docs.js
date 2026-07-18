@@ -12,7 +12,7 @@ const _h4 = (t, c = '#DDEAF4') => `<h4 style="color:#64748B;margin-top:20px;bord
 const _p = (t, style = '') => style ? `<p style="${style}">${t}</p>` : `<p>${t}</p>`;
 const _ul = (items) => `<ul style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
 const _ol = (items) => `<ol style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ol>`;
-const _warn = (s, t) => `<p style="background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;font-size:14px;"><strong>${s}</strong> ${t}</p>`;
+const _warn = (s, t) => `<p style="background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;"><strong>${s}</strong> ${t}</p>`;
 
 export function renderDocumentation(ctx) {
     // Guard against missing context
@@ -71,7 +71,7 @@ function createContentArea(s) {
 function buildContent(s) {
     return `<div>
 ${_h2(s.title)}
-<p style="font-size:15px;color:#64748B;margin-bottom:30px;">${s.subtitle}</p>
+<p style="color:#64748B;margin-bottom:30px;">${s.subtitle}</p>
 
 ${_h3('doc-0', s.s0_head)}
 ${_warn(s.s0_warn_strong, s.s0_warn_text)}
@@ -418,7 +418,7 @@ ${_h4(s.s14_vars_label)}
 ${_p(s.s14_vars)}
 ${_h4(s.s14_history_label)}
 ${_p(s.s14_history)}
-${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;font-size:14px;')}
+${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;')}
 
 ${_h3('doc-9m', s.s9m_head)}
 ${_p(s.s9m_desc)}
@@ -458,7 +458,7 @@ ${_h4('Backups')}
 ${_p('Removed files are copied to <code>storage/migrations_backup/&lt;version&gt;/</code> before deletion. Config keys are DB-backed, so their pre-change value is kept in the <code>spw_config_log</code> audit trail instead. The applied history in the Migrations tab shows the backup location for each action.')}
 ${_h4('Adding a migration entry (for contributors)')}
 ${_p('Every pull request that removes a file or a configuration key must add an entry to <code>config/migrations.json</code> in the same PR. In <code>removed_config_keys</code>, <code>file</code> names the <code>spw_config</code> key — the legacy <code>schema.json</code> spelling is still accepted and maps to key <code>schema</code>. Example:')}
-<pre style="background:#F4F7F9;padding:12px;border-radius:4px;font-size:12px;overflow-x:auto;">"2.5.0": {
+<pre style="background:#F4F7F9;padding:12px;border-radius:4px;overflow-x:auto;">"2.5.0": {
   "removed_files": ["admin/old_feature.php"],
   "deprecated_files": [],
   "removed_config_keys": [
@@ -470,7 +470,7 @@ ${_p('Every pull request that removes a file or a configuration key must add an 
 ${_h3('doc-12', s.s12_head)}
 ${_ul([s.s12_li1, s.s12_li2, s.s12_li3, s.s12_li4])}
 ${_h4(s.s12_env_head)}
-<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">
+<table style="width:100%;border-collapse:collapse;margin-top:10px;">
     <thead><tr style="background:#F4F7F9;">
         <th style="text-align:left;padding:6px 10px;border:1px solid #CBD5E1;">${s.s12_th_var}</th>
         <th style="text-align:left;padding:6px 10px;border:1px solid #CBD5E1;">${s.s12_th_default}</th>

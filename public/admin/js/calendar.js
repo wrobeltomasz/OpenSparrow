@@ -40,7 +40,7 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
 
     // Async block for loading active users from database
     const usersWrapper = document.createElement('div');
-    usersWrapper.innerHTML = '<p style="color:#64748B; font-size:13px;">Loading active users...</p>';
+    usersWrapper.innerHTML = '<p style="color:#64748B; ">Loading active users...</p>';
     workspaceEl.appendChild(usersWrapper);
 
     fetch('api.php?action=users_list')
@@ -62,13 +62,13 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
                 ));
             } else {
                 const errP = document.createElement('p');
-                errP.style.cssText = 'color:var(--danger);font-size:13px;';
+                errP.style.cssText = 'color:var(--danger);';
                 errP.textContent = `Error loading users: ${data.error}`;
                 usersWrapper.appendChild(errP);
             }
         })
         .catch(() => {
-            usersWrapper.innerHTML = '<p style="color:var(--danger); font-size:13px;">Network error while fetching users.</p>';
+            usersWrapper.innerHTML = '<p style="color:var(--danger); ">Network error while fetching users.</p>';
         });
 
     workspaceEl.appendChild(createTextInput('url_template', 'URL Template', itemData.url_template, v => itemData.url_template = v));

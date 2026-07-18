@@ -28,6 +28,7 @@
   --header-h:     56px;
   --nav-w:        260px;
   --transition:   150ms ease;
+  --admin-font-size: 14px;
 }
 
 /* ===== Base ===== */
@@ -38,8 +39,23 @@ body {
     background-color: var(--bg);
     color: var(--text);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: var(--admin-font-size);
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
+
+/* ===== Uniform admin typography ===== */
+/* Content area uses a single font size + colour + style. Differentiate only
+   with font-weight:700 or italic. EXEMPT: the left nav (.admin-nav) keeps its
+   own sizing; monospace (.mono/.block-key/code/SQL) and semantic status colours
+   (.adm-badge-*, .ov-badge-*, .c-ok/.c-danger/.c-warn) are deliberate exceptions.
+   The .admin-nav rule below re-asserts the menu's own font-size after inheritance. */
+.admin-nav,
+.admin-nav * {
+    font-size: 13px;
+}
+.admin-nav .nav-section-label { font-size: 11px; }
+.admin-nav .nav-chevron { font-size: 10px; }
 
 /* ===== First-run banner ===== */
 .first-run-banner {
@@ -322,24 +338,22 @@ body {
     padding: 9px 24px;
     background: var(--panel);
     border-bottom: 1px solid var(--border-light);
-    font-size: 13px;
-    color: var(--muted);
+    color: var(--text);
     flex-shrink: 0;
 }
 
 .breadcrumb-root {
-    color: var(--accent);
-    font-weight: 500;
+    color: var(--text);
+    font-weight: 700;
 }
 
 .breadcrumb-sep {
     color: var(--border);
-    font-size: 15px;
 }
 
 .breadcrumb-current {
     color: var(--text);
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* Editor area: workspace */
@@ -415,19 +429,20 @@ body {
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     cursor: pointer;
-    font-size: 13px;
     font-weight: 600;
-    color: var(--muted);
+    color: var(--text);
     transition: color .15s, border-color .15s;
     white-space: nowrap;
 }
 
 .item-btn:hover {
-    color: var(--accent);
+    color: var(--text);
+    border-color: var(--border);
 }
 
 .item-btn.active {
-    color: var(--accent);
+    color: var(--text);
+    font-weight: 700;
     border-color: var(--accent);
 }
 
@@ -435,9 +450,8 @@ body {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 11px;
     padding: 0 3px 11px;
-    color: var(--muted);
+    color: var(--text);
     line-height: 1;
 }
 
@@ -476,7 +490,6 @@ body {
     border-bottom: none;
     flex: 1;
     min-width: 0;
-    font-size: 15px;
     font-weight: 700;
     color: var(--text);
     overflow: hidden;
@@ -485,8 +498,7 @@ body {
 }
 
 .block-key {
-    font-size: 12px;
-    color: var(--muted);
+    color: var(--text);
     font-family: monospace;
     flex-shrink: 0;
 }
@@ -496,8 +508,7 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
-    color: var(--muted);
+    color: var(--text);
     cursor: pointer;
     font-weight: normal;
     flex-shrink: 0;
@@ -543,14 +554,12 @@ body {
 }
 .admin-page-title {
     margin: 0 0 4px;
-    font-size: 20px;
     font-weight: 700;
     color: var(--text);
 }
 .admin-page-desc {
     margin: 0 0 20px;
-    font-size: 14px;
-    color: var(--muted);
+    color: var(--text);
     line-height: 1.5;
 }
 
@@ -563,14 +572,13 @@ body {
     display: block;
     margin-bottom: 6px;
     font-weight: 600;
-    font-size: 14px;
     color: var(--text);
 }
 
 .help-text {
     display: block;
-    font-size: 12px;
-    color: var(--muted);
+    font-style: italic;
+    color: var(--text);
     margin-top: 6px;
 }
 
@@ -591,7 +599,6 @@ body {
     color: var(--text);
     border-radius: var(--radius);
     font-family: inherit;
-    font-size: 14px;
     transition: border-color var(--transition), box-shadow var(--transition);
 }
 
@@ -648,7 +655,7 @@ body {
     color: var(--text);
     border-bottom: 1px solid var(--border-light);
     padding-bottom: 12px;
-    font-size: 15px;
+    font-weight: 700;
 }
 
 /* Utility buttons: .btn / .btn-primary / .btn-secondary / .btn-danger /
@@ -670,7 +677,6 @@ textarea.adm-input {
     background: var(--panel);
     color: var(--text);
     font-family: inherit;
-    font-size: 13px;
     box-sizing: border-box;
     transition: border-color var(--transition), box-shadow var(--transition);
 }
@@ -749,11 +755,8 @@ textarea.adm-input {
 /* Compact uppercase field label (for inline field groups outside .form-group). */
 .adm-field-label {
     display: block;
-    font-size: 12px;
     font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: .5px;
+    color: var(--text);
     margin-bottom: 6px;
 }
 
@@ -829,7 +832,7 @@ textarea.adm-input {
 .admin-table td {
     padding: 12px;
     border-bottom: 1px solid var(--border-light);
-    color: var(--muted);
+    color: var(--text);
 }
 
 /* ===== Menu Preview tab ===== */
@@ -864,8 +867,7 @@ textarea.adm-input {
 }
 
 .menu-preview-info {
-    color: var(--muted);
-    font-size: 13px;
+    color: var(--text);
     padding: 8px 0;
     margin: 0;
 }
@@ -950,13 +952,11 @@ textarea.adm-input {
 
 .demo-card-title {
     font-weight: 700;
-    font-size: 16px;
     margin-bottom: 8px;
 }
 
 .demo-card-desc {
-    font-size: 13px;
-    color: var(--muted);
+    color: var(--text);
     margin-bottom: 12px;
     line-height: 1.5;
 }
@@ -978,8 +978,7 @@ textarea.adm-input {
 }
 
 .demo-card-tables {
-    font-size: 11px;
-    color: var(--muted);
+    color: var(--text);
 }
 
 .demo-card-features {
@@ -1031,7 +1030,6 @@ textarea.adm-input {
     color: var(--text);
     border-radius: 6px;
     padding: 12px 16px;
-    font-size: 13px;
     line-height: 1.5;
     margin-bottom: 4px;
 }
@@ -1048,7 +1046,6 @@ textarea.adm-input {
     padding: 8px 12px;
     border: 1px solid var(--border);
     border-radius: 6px;
-    font-size: 14px;
     width: 220px;
     background: var(--panel);
     color: var(--text);
@@ -1073,20 +1070,17 @@ textarea.adm-input {
 }
 
 .demo-installed-meta {
-    font-size: 13px;
-    color: var(--muted);
+    color: var(--text);
     margin-top: 4px;
 }
 
 .demo-installed-tables {
-    font-size: 12px;
-    color: var(--muted);
+    color: var(--text);
     margin-top: 4px;
 }
 
 .demo-status-msg {
     margin-top: 12px;
-    font-size: 13px;
 }
 
 /* ── Admin utility: badges ─────────────────────────────────────────── */
@@ -1107,17 +1101,14 @@ textarea.adm-input {
 .adm-badge-low    { background: var(--border-light);   color: var(--muted); }
 
 /* ── Admin utility: tables ─────────────────────────────────────────── */
-.adm-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.adm-tbl { width: 100%; border-collapse: collapse; }
 .adm-th  {
     text-align: left;
     padding: 8px 12px;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 11px;
+    color: var(--text);
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
     white-space: nowrap;
 }
 .adm-th-sm { padding: 6px 10px; }
@@ -1151,8 +1142,7 @@ textarea.adm-input {
 
 /* ── Overview dashboard ─────────────────────────────────────────────── */
 .ov-loading {
-    color: var(--muted);
-    font-size: 14px;
+    color: var(--text);
     padding: 24px 0;
 }
 .ov-welcome-bar {
@@ -1168,7 +1158,6 @@ textarea.adm-input {
 }
 .ov-welcome-title {
     margin: 0;
-    font-size: 20px;
     font-weight: 700;
     color: var(--text);
 }
@@ -1208,21 +1197,16 @@ textarea.adm-input {
 }
 .ov-stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ov-stat-value {
-    font-size: 22px;
     font-weight: 700;
     color: var(--text);
     line-height: 1.1;
 }
 .ov-stat-label {
-    font-size: 12px;
     font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: .04em;
+    color: var(--text);
 }
 .ov-stat-sub {
-    font-size: 11px;
-    color: var(--muted);
+    color: var(--text);
 }
 .ov-mid-row {
     display: grid;
@@ -1242,11 +1226,8 @@ textarea.adm-input {
 }
 .ov-tables-panel { margin-bottom: 0; }
 .ov-section-title {
-    font-size: 11px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-    color: var(--muted);
+    color: var(--text);
     margin-bottom: 12px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-light);
@@ -1257,19 +1238,18 @@ textarea.adm-input {
     gap: 8px;
     padding: 5px 0;
     border-bottom: 1px solid var(--border-light);
-    font-size: 12px;
     min-width: 0;
 }
 .ov-feed-row:last-child { border-bottom: none; }
 .ov-feed-time {
-    color: var(--muted);
+    color: var(--text);
     white-space: nowrap;
     flex-shrink: 0;
     min-width: 110px;
 }
 .ov-feed-user {
     font-weight: 600;
-    color: var(--accent);
+    color: var(--text);
     flex-shrink: 0;
     min-width: 60px;
     overflow: hidden;
@@ -1281,11 +1261,10 @@ textarea.adm-input {
     flex-shrink: 0;
 }
 .ov-feed-table {
-    color: var(--muted);
+    color: var(--text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 11px;
 }
 .ov-status-row {
     display: flex;
@@ -1293,7 +1272,6 @@ textarea.adm-input {
     gap: 8px;
     padding: 6px 0;
     border-bottom: 1px solid var(--border-light);
-    font-size: 12px;
 }
 .ov-status-row:last-child { border-bottom: none; }
 .ov-status-badge {
@@ -1307,7 +1285,7 @@ textarea.adm-input {
 .ov-badge-ok   { background: rgba(43,147,72,.12); color: #2b9348; }
 .ov-badge-warn { background: rgba(208,0,0,.08);   color: var(--danger-dark); }
 .ov-status-label  { flex: 1; color: var(--text); }
-.ov-status-detail { color: var(--muted); font-size: 11px; }
+.ov-status-detail { color: var(--text); }
 .ov-tables-grid {
     display: flex;
     flex-direction: column;
@@ -1318,7 +1296,6 @@ textarea.adm-input {
     grid-template-columns: 160px 1fr 60px;
     align-items: center;
     gap: 10px;
-    font-size: 12px;
 }
 .ov-table-name {
     color: var(--text);
@@ -1341,12 +1318,10 @@ textarea.adm-input {
     transition: width .3s ease;
 }
 .ov-table-count {
-    color: var(--muted);
+    color: var(--text);
     text-align: right;
-    font-size: 11px;
 }
 .ov-empty {
-    color: var(--muted);
-    font-size: 13px;
+    color: var(--text);
     margin: 4px 0 0;
 }

@@ -91,7 +91,7 @@ function buildSkeleton() {
             </div>
 
             <button type="button" id="f-save-cfg" class="btn btn-success">Save configuration</button>
-            <span id="f-cfg-msg" style="margin-left:12px;font-size:13px"></span>
+            <span id="f-cfg-msg" style="margin-left:12px;"></span>
         </div>
 
         <div class="column-block" id="files-upload-block" style="margin-top: 20px">
@@ -107,7 +107,7 @@ function buildSkeleton() {
                 </div>
                 <button type="button" id="f-upload-btn" class="btn btn-success">Upload</button>
             </div>
-            <div id="f-upload-status" style="margin-top:8px;font-size:13px"></div>
+            <div id="f-upload-status" style="margin-top:8px;"></div>
         </div>
 
         <div class="column-block" id="files-lib-block" style="margin-top: 20px">
@@ -120,8 +120,8 @@ function buildSkeleton() {
                 </select>
                 <button type="button" id="f-refresh" class="btn btn-success btn-sm">Refresh</button>
             </div>
-            <div id="f-status" style="font-size:13px;color:#64748B;margin-bottom:8px"></div>
-            <table style="width:100%;border-collapse:collapse;font-size:13px" id="f-table">
+            <div id="f-status" style="color:#64748B;margin-bottom:8px"></div>
+            <table style="width:100%;border-collapse:collapse;" id="f-table">
                 <thead>
                     <tr style="background:#F4F7F9;text-align:left">
                         <th style="padding:8px 6px;width:40px"></th>
@@ -181,15 +181,15 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
 
     row.innerHTML = `
         <div style="flex:1">
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Table</label>
+            <label style=" display:block; margin-bottom:4px;">Table</label>
             <select class="rel-table adm-input w-full">${tableOpts}</select>
         </div>
         <div style="flex:1">
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Col 1</label>
+            <label style=" display:block; margin-bottom:4px;">Col 1</label>
             <select class="rel-col1 adm-input w-full"></select>
         </div>
         <div style="flex:1">
-            <label style="font-size:11px; display:block; margin-bottom:4px;">Col 2 (Opt)</label>
+            <label style=" display:block; margin-bottom:4px;">Col 2 (Opt)</label>
             <select class="rel-col2 adm-input w-full"></select>
         </div>
         <button type="button" class="btn btn-danger btn-xs btn-del-rel">✕</button>
@@ -235,7 +235,7 @@ function fillConfigForm(cfg) {
     typesEl.innerHTML = ALL_TYPES.map(t => `
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:normal">
             <input type="checkbox" value="${t}" ${(cfg.allowed_types || []).includes(t) ? 'checked' : ''}>
-            <span style="font-size:11px;font-weight:bold;color:#64748B">${TYPE_ICONS[t]}</span> ${cap(t)}
+            <span style="font-weight:bold;color:#64748B">${TYPE_ICONS[t]}</span> ${cap(t)}
         </label>
     `).join('');
 
@@ -375,7 +375,7 @@ function renderTable(files) {
 
     const rows = files.map(f => `
         <tr style="border-bottom:1px solid #CBD5E1" data-uuid="${esc(f.uuid)}">
-            <td style="padding:7px 6px;font-size:12px;font-weight:bold;text-align:center;color:#64748B">${TYPE_ICONS[f.type] ?? TYPE_ICONS.other}</td>
+            <td style="padding:7px 6px;font-weight:bold;text-align:center;color:#64748B">${TYPE_ICONS[f.type] ?? TYPE_ICONS.other}</td>
             <td style="padding:7px 6px">
                 ${f.type === 'image'
                     ? `<img src="../file_download.php?uuid=${esc(f.uuid)}&thumb=1" alt="" style="height:32px;width:32px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px">`
@@ -383,11 +383,11 @@ function renderTable(files) {
                 <a href="../file_download.php?uuid=${esc(f.uuid)}" target="_blank" style="color:var(--accent,#64748B)">${esc(f.display_name || f.name)}</a>
             </td>
             <td style="padding:7px 6px">
-                <span style="background:#F4F7F9;padding:2px 7px;border-radius:10px;font-size:11px">${esc(f.type)}</span>
+                <span style="background:#F4F7F9;padding:2px 7px;border-radius:10px;">${esc(f.type)}</span>
             </td>
             <td style="padding:7px 6px;white-space:nowrap">${formatBytes(f.size_bytes)}</td>
             <td style="padding:7px 6px">
-                ${f.related_table ? `<span style="background:#F4F7F9;color:#1E293B;padding:2px 6px;border-radius:4px;font-size:11px">${esc(f.related_table)} #${f.related_id}</span>` : '-'}
+                ${f.related_table ? `<span style="background:#F4F7F9;color:#1E293B;padding:2px 6px;border-radius:4px;">${esc(f.related_table)} #${f.related_id}</span>` : '-'}
             </td>
             <td style="padding:7px 6px">${esc(f.uploaded_by_username || '-')}</td>
             <td style="padding:7px 6px;white-space:nowrap">${formatDate(f.created_at)}</td>

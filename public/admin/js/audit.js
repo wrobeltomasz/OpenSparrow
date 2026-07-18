@@ -37,7 +37,7 @@ export async function renderAuditEditor(ctx) {
     workspaceEl.appendChild(h3);
 
     const desc = document.createElement('p');
-    desc.style.cssText = 'color:#64748B; font-size:14px; margin-bottom:24px;';
+    desc.style.cssText = 'color:#64748B;  margin-bottom:24px;';
     desc.textContent = 'When enabled, every INSERT, UPDATE, and DELETE on user data tables saves a full JSONB snapshot of the record to spw_record_snapshots, linked to the audit log entry in spw_users_log.';
     workspaceEl.appendChild(desc);
 
@@ -48,14 +48,14 @@ export async function renderAuditEditor(ctx) {
     const statusCard = (title, isOk, msg) => {
         const div = document.createElement('div');
         div.style.cssText = `padding:12px 16px; border-left:4px solid ${isOk ? '#2b9348' : '#d00000'}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
-        div.innerHTML = `<strong style="font-size:14px; display:block; margin-bottom:4px; color:${isOk ? '#2b9348' : '#d00000'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong><span style="color:#64748B; font-size:13px;">${msg}</span>`;
+        div.innerHTML = `<strong style=" display:block; margin-bottom:4px; color:${isOk ? '#2b9348' : '#d00000'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong><span style="color:#64748B; ">${msg}</span>`;
         return div;
     };
 
     const infoCard = (title, msg) => {
         const div = document.createElement('div');
         div.style.cssText = 'padding:12px 16px; border-left:4px solid #005A9E; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;';
-        div.innerHTML = `<strong style="font-size:14px; display:block; margin-bottom:4px; color:#1E293B;">[INFO] ${title}</strong><span style="color:#64748B; font-size:13px;">${msg}</span>`;
+        div.innerHTML = `<strong style=" display:block; margin-bottom:4px; color:#1E293B;">[INFO] ${title}</strong><span style="color:#64748B; ">${msg}</span>`;
         return div;
     };
 
@@ -85,10 +85,10 @@ export async function renderAuditEditor(ctx) {
 
     const labelGroup = document.createElement('div');
     const labelTitle = document.createElement('strong');
-    labelTitle.style.cssText = 'display:block; font-size:15px; margin-bottom:4px;';
+    labelTitle.style.cssText = 'display:block;  margin-bottom:4px;';
     labelTitle.textContent = 'Record Snapshots';
     const labelDesc = document.createElement('span');
-    labelDesc.style.cssText = 'color:#64748B; font-size:13px;';
+    labelDesc.style.cssText = 'color:#64748B; ';
     labelDesc.textContent = 'Capture full record state on every write operation and store it in spw_record_snapshots.';
     labelGroup.appendChild(labelTitle);
     labelGroup.appendChild(labelDesc);
@@ -157,8 +157,8 @@ export async function renderAuditEditor(ctx) {
     const schemaSection = document.createElement('div');
     schemaSection.style.cssText = 'padding:16px 20px; background:#F4F7F9; border:1px solid #CBD5E1; border-radius:8px;';
     schemaSection.innerHTML = `
-        <h4 style="margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:#64748B;">Table: spw_record_snapshots</h4>
-        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <h4 style="margin:0 0 10px;    color:#64748B;">Table: spw_record_snapshots</h4>
+        <table style="width:100%; border-collapse:collapse; ">
             <thead>
                 <tr style="text-align:left; color:#64748B; border-bottom:1px solid #CBD5E1;">
                     <th style="padding:4px 8px 6px;">Column</th>

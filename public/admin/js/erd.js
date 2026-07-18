@@ -22,19 +22,19 @@ export async function renderErdPage(ctx) {
 
     const h2 = document.createElement('h2');
     h2.textContent = 'Schema Map';
-    h2.style.cssText = 'margin:0;font-size:18px;color:#1E293B;';
+    h2.style.cssText = 'margin:0;color:#1E293B;';
     tb.appendChild(h2);
 
     const hint = document.createElement('span');
     hint.textContent = 'Drag canvas to pan · Scroll to zoom · Click table to highlight · Drag table to reposition';
-    hint.style.cssText = 'font-size:11px;color:#64748B;';
+    hint.style.cssText = 'color:#64748B;';
     tb.appendChild(hint);
 
     const right = document.createElement('div');
     right.style.cssText = 'margin-left:auto;display:flex;gap:10px;align-items:center;';
 
     const statsEl = document.createElement('span');
-    statsEl.style.cssText = 'font-size:12px;color:#64748B;';
+    statsEl.style.cssText = 'color:#64748B;';
     right.appendChild(statsEl);
 
     const searchEl = document.createElement('input');
@@ -44,7 +44,7 @@ export async function renderErdPage(ctx) {
     right.appendChild(searchEl);
 
     const hiddenLbl = document.createElement('label');
-    hiddenLbl.style.cssText = 'font-size:12px;color:#64748B;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;';
+    hiddenLbl.style.cssText = 'color:#64748B;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;';
     const hiddenChk = document.createElement('input');
     hiddenChk.type = 'checkbox';
     hiddenLbl.appendChild(hiddenChk);
@@ -67,7 +67,7 @@ export async function renderErdPage(ctx) {
 
     const loadEl = document.createElement('p');
     loadEl.textContent = 'Loading schema…';
-    loadEl.style.cssText = 'color:#64748B;font-size:14px;';
+    loadEl.style.cssText = 'color:#64748B;';
     wrap.appendChild(loadEl);
 
     let rawSchema;
@@ -378,9 +378,9 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
 
     // Legend overlay
     const leg = document.createElement('div');
-    leg.style.cssText = 'position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.95);border:1px solid #CBD5E1;border-radius:6px;padding:8px 12px;font-size:11px;line-height:2;pointer-events:none;z-index:5;';
+    leg.style.cssText = 'position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.95);border:1px solid #CBD5E1;border-radius:6px;padding:8px 12px;line-height:2;pointer-events:none;z-index:5;';
     leg.innerHTML = [
-        '<b style="font-size:12px;color:#64748B;display:block;margin-bottom:2px;">Legend</b>',
+        '<b style="color:#64748B;display:block;margin-bottom:2px;">Legend</b>',
         '<div><span style="display:inline-block;width:22px;height:2px;background:#005A9E;vertical-align:middle;margin-right:6px;"></span>Foreign key</div>',
         '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dashed #2b9348;vertical-align:middle;margin-right:6px;"></span>Subtable</div>',
         '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dotted #64748B;vertical-align:middle;margin-right:6px;"></span>Many-to-many</div>',

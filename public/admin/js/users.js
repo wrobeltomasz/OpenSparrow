@@ -41,7 +41,7 @@ export async function renderUsersEditor(ctx) {
                     <td style="padding: 10px;">${escHtml(u.id)}</td>
                     <td style="padding: 10px;"><strong>${escHtml(u.username)}</strong></td>
                     <td style="padding: 10px;">
-                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; color: white; background: ${u.is_active ? 'var(--ok)' : 'var(--danger)'};">
+                        <span style="padding: 4px 8px; border-radius: 4px;  color: white; background: ${u.is_active ? 'var(--ok)' : 'var(--danger)'};">
                             ${u.is_active ? 'Active' : 'Inactive'}
                         </span>
                     </td>
@@ -80,7 +80,7 @@ export async function renderUsersEditor(ctx) {
                     <div id="passwordStrengthBar" style="height: 6px; background: var(--accent-mid); border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
                         <div id="passwordStrengthFill" style="height: 100%; width: 0%; transition: width 0.3s, background 0.3s;"></div>
                     </div>
-                    <small id="passwordStrengthLabel" style="color:var(--muted); display: block; margin-top: 4px;"></small>
+                    <small id="passwordStrengthLabel" style=" display: block; margin-top: 4px;"></small>
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Role</label>
@@ -166,7 +166,7 @@ export async function renderUsersEditor(ctx) {
                 box.appendChild(h3);
 
                 const userP = document.createElement('p');
-                userP.style.cssText = 'margin:0 0 16px;font-size:13px;color:var(--muted);';
+                userP.style.cssText = 'margin:0 0 16px;';
                 userP.textContent = 'User: ';
                 const userStrong = document.createElement('strong');
                 userStrong.textContent = username;
@@ -201,7 +201,7 @@ export async function renderUsersEditor(ctx) {
 
                 const msgEl = document.createElement('p');
                 msgEl.id = 'cpw-msg';
-                msgEl.style.cssText = 'font-size:13px;min-height:18px;margin:0 0 12px;';
+                msgEl.style.cssText = 'min-height:18px;margin:0 0 12px;';
                 box.appendChild(msgEl);
 
                 const buttonDiv = document.createElement('div');
@@ -246,7 +246,6 @@ export async function renderUsersEditor(ctx) {
                         msgEl.textContent = 'Passwords do not match.';
                         return;
                     }
-                    msgEl.style.color = 'var(--muted)';
                     msgEl.textContent = 'Saving…';
                     try {
                         let res, data;

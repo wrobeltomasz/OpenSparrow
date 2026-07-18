@@ -56,7 +56,7 @@ function renderConditionsBuilder(q, colOptions) {
                 row.appendChild(logicSel);
             } else {
                 const spacer = document.createElement('span');
-                spacer.style.cssText = 'width:70px;font-size:12px;color:var(--muted);text-align:center;';
+                spacer.style.cssText = 'width:70px;text-align:center;';
                 spacer.textContent = 'WHERE';
                 row.appendChild(spacer);
             }
@@ -155,13 +155,13 @@ function renderPreviewInto(container, widget) {
     container.replaceChildren();
 
     const hdr = document.createElement('div');
-    hdr.style.cssText = 'font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600;border-bottom:1px solid var(--border-light);padding-bottom:6px;margin-bottom:12px;';
+    hdr.style.cssText = 'font-weight:600;border-bottom:1px solid var(--border-light);padding-bottom:6px;margin-bottom:12px;';
     hdr.textContent = 'Live Preview';
     container.appendChild(hdr);
 
     if (!widget.type) {
         const ph = document.createElement('p');
-        ph.style.cssText = 'color:var(--muted);font-size:13px;';
+        ph.style.cssText = '';
         ph.textContent = 'Select a widget type to preview.';
         container.appendChild(ph);
         return;

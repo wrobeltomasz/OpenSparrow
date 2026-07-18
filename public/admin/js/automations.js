@@ -17,7 +17,7 @@ function autoStatusPill(anchor, msg, type = 'success') {
     pill.textContent = msg;
     pill.style.cssText = `display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:4px 10px;`
         + `background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`
-        + `border-radius:999px;font-size:12px;font-weight:600;transition:opacity .3s;`;
+        + `border-radius:999px;font-weight:600;transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
     setTimeout(() => { pill.style.opacity = '0'; setTimeout(() => pill.remove(), 300); },
         type === 'error' ? 6000 : 3000);
@@ -86,7 +86,7 @@ function makeSelect(options, current, onChange) {
 function buildConditionsSection(parsed, getColumns) {
     const el = document.createElement('div');
     const lbl = document.createElement('div');
-    lbl.style.cssText = 'font-weight:600;margin-bottom:8px;font-size:13px;';
+    lbl.style.cssText = 'font-weight:600;margin-bottom:8px;';
     lbl.textContent   = 'Conditions';
     el.appendChild(lbl);
 
@@ -105,7 +105,7 @@ function buildConditionsSection(parsed, getColumns) {
 
         const matchLbl = document.createElement('span');
         matchLbl.textContent = 'Match';
-        matchLbl.style.cssText = 'font-size:12px;color:var(--muted);';
+        matchLbl.style.cssText = '';
 
         const typeToggle = document.createElement('select');
         typeToggle.className = 'adm-input w-70';
@@ -218,7 +218,6 @@ function buildConditionsSection(parsed, getColumns) {
         const btnAddGroup = document.createElement('button');
         btnAddGroup.className   = 'btn btn-sm';
         btnAddGroup.textContent = '+ Group';
-        btnAddGroup.style.color = 'var(--muted)';
         btnAddGroup.addEventListener('click', () => {
             group.rules.push({ type: 'AND', rules: [] });
             rerenderRows();
@@ -241,7 +240,7 @@ function buildConditionsSection(parsed, getColumns) {
 function buildActionsSection(parsed, tableOptions, getColumns, users) {
     const el = document.createElement('div');
     const lbl = document.createElement('div');
-    lbl.style.cssText = 'font-weight:600;margin-bottom:8px;font-size:13px;';
+    lbl.style.cssText = 'font-weight:600;margin-bottom:8px;';
     lbl.textContent   = 'Actions';
     el.appendChild(lbl);
 
@@ -361,7 +360,7 @@ function renderUpdateBody(bodyEl, action, triggerTable, getColumns) {
 
             const eq = document.createElement('span');
             eq.textContent   = '=';
-            eq.style.cssText = 'color:var(--muted);font-weight:600;';
+            eq.style.cssText = 'font-weight:600;';
 
             const valInp = document.createElement('input');
             valInp.type        = 'text';
@@ -411,7 +410,7 @@ function renderNotifyBody(bodyEl, action, users) {
     // ── Recipients label ─────────────────────────────────────────
     const recipientsLbl = document.createElement('div');
     recipientsLbl.textContent = 'Recipients';
-    recipientsLbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;';
+    recipientsLbl.style.cssText = 'font-weight:600;margin-bottom:4px;';
     bodyEl.appendChild(recipientsLbl);
 
     // ── Selected chips ───────────────────────────────────────────
@@ -430,7 +429,7 @@ function renderNotifyBody(bodyEl, action, users) {
         if (action.user_ids.length === 0) {
             const empty = document.createElement('span');
             empty.textContent = 'No recipients selected';
-            empty.style.cssText = 'font-size:12px;color:var(--muted);line-height:26px;';
+            empty.style.cssText = 'line-height:26px;';
             chipsEl.appendChild(empty);
             return;
         }
@@ -438,14 +437,14 @@ function renderNotifyBody(bodyEl, action, users) {
             const opt = allOptions.find(o => o.id === String(uid)) ?? { label: String(uid) };
             const chip = document.createElement('span');
             chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px;'
-                + 'background:var(--accent-subtle,#DDEAF4);border-radius:999px;font-size:12px;';
+                + 'background:var(--accent-subtle,#DDEAF4);border-radius:999px;';
             const txt = document.createElement('span');
             txt.textContent = opt.label;
             const rm = document.createElement('button');
             rm.type = 'button';
             rm.textContent = '×';
             rm.style.cssText = 'border:none;background:none;cursor:pointer;padding:0 2px;'
-                + 'font-size:14px;line-height:1;color:var(--muted);';
+                + 'line-height:1;';
             rm.addEventListener('click', () => {
                 action.user_ids.splice(i, 1);
                 renderChips();
@@ -485,7 +484,6 @@ function renderNotifyBody(bodyEl, action, users) {
 
             const lbl = document.createElement('span');
             lbl.textContent = opt.label;
-            lbl.style.fontSize = '13px';
 
             row.appendChild(cb);
             row.appendChild(lbl);
@@ -505,7 +503,7 @@ function renderNotifyBody(bodyEl, action, users) {
         wrap.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
         const lbl = document.createElement('span');
         lbl.textContent = label;
-        lbl.style.cssText = 'font-size:12px;font-weight:600;min-width:60px;color:var(--muted);';
+        lbl.style.cssText = 'font-weight:600;min-width:60px;';
         const inp = document.createElement('input');
         inp.type        = 'text';
         inp.className   = 'form-input';
@@ -530,7 +528,7 @@ function renderCreateRecordBody(bodyEl, action, tableOptions, getColumns) {
     tblRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
     const tblLbl = document.createElement('span');
     tblLbl.textContent = 'Into table';
-    tblLbl.style.cssText = 'font-size:12px;font-weight:600;min-width:70px;color:var(--muted);';
+    tblLbl.style.cssText = 'font-weight:600;min-width:70px;';
 
     const tblSel = makeSelect(tableOptions, action.target_table ?? '', (v) => {
         action.target_table = v;
@@ -574,7 +572,7 @@ function renderCreateRecordBody(bodyEl, action, tableOptions, getColumns) {
 
             const eq = document.createElement('span');
             eq.textContent   = '=';
-            eq.style.cssText = 'color:var(--muted);font-weight:600;';
+            eq.style.cssText = 'font-weight:600;';
 
             const valInp = document.createElement('input');
             valInp.type        = 'text';
@@ -606,7 +604,7 @@ function renderCreateRecordBody(bodyEl, action, tableOptions, getColumns) {
 function autoHintText(text) {
     const hint = document.createElement('div');
     hint.textContent = text;
-    hint.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:8px;';
+    hint.style.cssText = 'margin-bottom:8px;';
     return hint;
 }
 
@@ -615,7 +613,7 @@ function autoLabeledInput(bodyEl, label, placeholder, value, onInput) {
     wrap.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
     const lbl = document.createElement('span');
     lbl.textContent = label;
-    lbl.style.cssText = 'font-size:12px;font-weight:600;min-width:80px;color:var(--muted);';
+    lbl.style.cssText = 'font-weight:600;min-width:80px;';
     const inp = document.createElement('input');
     inp.type        = 'text';
     inp.className   = 'form-input';
@@ -665,7 +663,7 @@ function renderWebhookBody(bodyEl, action) {
     // Payload mapping: free-text JSON key -> template value
     const mapLbl = document.createElement('div');
     mapLbl.textContent = 'Payload fields';
-    mapLbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;';
+    mapLbl.style.cssText = 'font-weight:600;margin-bottom:4px;';
     bodyEl.appendChild(mapLbl);
 
     const mapRows = document.createElement('div');
@@ -710,7 +708,7 @@ function renderWebhookBody(bodyEl, action) {
 
             const eq = document.createElement('span');
             eq.textContent   = '=';
-            eq.style.cssText = 'color:var(--muted);font-weight:600;';
+            eq.style.cssText = 'font-weight:600;';
 
             const valInp = document.createElement('input');
             valInp.type        = 'text';
@@ -772,7 +770,7 @@ function renderEmailBody(bodyEl, action) {
     bodyLblRow.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;';
     const bodyLbl = document.createElement('span');
     bodyLbl.textContent = 'Message';
-    bodyLbl.style.cssText = 'font-size:12px;font-weight:600;min-width:80px;color:var(--muted);padding-top:6px;';
+    bodyLbl.style.cssText = 'font-weight:600;min-width:80px;padding-top:6px;';
     const bodyTa = document.createElement('textarea');
     bodyTa.className   = 'form-input';
     bodyTa.rows        = 4;
@@ -866,7 +864,6 @@ export async function renderAutomationsPage(ctx) {
         if (rules.length === 0) {
             const empty = document.createElement('p');
             empty.textContent = 'No automations yet. Create one to get started.';
-            empty.style.color = 'var(--muted)';
             listWrap.appendChild(empty);
             return;
         }
@@ -891,7 +888,7 @@ export async function renderAutomationsPage(ctx) {
             nameSpan.textContent = rule.name;
 
             const tableMeta = document.createElement('span');
-            tableMeta.style.cssText = 'font-size:12px; color:var(--muted); flex-shrink:0;';
+            tableMeta.style.cssText = '  flex-shrink:0;';
             tableMeta.textContent = (schemaObj[rule.trigger_table]?.display_name || rule.trigger_table)
                 + ' · ' + (AUTO_EVENTS.find(e => e.value === rule.trigger_event)?.label ?? rule.trigger_event);
 
@@ -1011,7 +1008,6 @@ export async function renderAutomationsPage(ctx) {
 
         const loading = document.createElement('p');
         loading.textContent = 'Loading...';
-        loading.style.color = 'var(--muted)';
         cardBody.appendChild(loading);
 
         try {
@@ -1023,7 +1019,6 @@ export async function renderAutomationsPage(ctx) {
             if (runs.length === 0) {
                 const empty = document.createElement('p');
                 empty.textContent = 'No runs recorded for this automation yet.';
-                empty.style.color = 'var(--muted)';
                 cardBody.appendChild(empty);
                 return;
             }
@@ -1063,7 +1058,7 @@ export async function renderAutomationsPage(ctx) {
                         const badge = document.createElement('span');
                         badge.textContent = run.status;
                         badge.style.cssText = `display:inline-block;padding:2px 8px;border-radius:999px;`
-                            + `font-size:11px;font-weight:600;background:${clr.bg};color:${clr.fg};`;
+                            + `font-weight:600;background:${clr.bg};color:${clr.fg};`;
                         td.appendChild(badge);
                     } else {
                         td.textContent = text;
@@ -1282,7 +1277,7 @@ export async function renderAutomationsPage(ctx) {
     function autoField(label, inputFactory) {
         const wrap = document.createElement('div');
         const lbl  = document.createElement('label');
-        lbl.style.cssText = 'display:block;font-size:13px;font-weight:600;margin-bottom:4px;';
+        lbl.style.cssText = 'display:block;font-weight:600;margin-bottom:4px;';
         lbl.textContent   = label;
         wrap.appendChild(lbl);
         wrap.appendChild(inputFactory());
@@ -1292,7 +1287,7 @@ export async function renderAutomationsPage(ctx) {
     function autoSelect(label, options, current, onChange) {
         const wrap = document.createElement('div');
         const lbl  = document.createElement('label');
-        lbl.style.cssText = 'display:block;font-size:13px;font-weight:600;margin-bottom:4px;';
+        lbl.style.cssText = 'display:block;font-weight:600;margin-bottom:4px;';
         lbl.textContent   = label;
         wrap.appendChild(lbl);
         wrap.appendChild(makeSelect(options, current, onChange));

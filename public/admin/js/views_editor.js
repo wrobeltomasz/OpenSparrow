@@ -35,8 +35,8 @@ export function renderViewsEditor(ctx) {
     hdr.style.cssText = 'display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:20px; flex-wrap:wrap;';
     hdr.innerHTML = `
         <div>
-            <h2 style="margin:0 0 4px; font-size:1.2rem; font-weight:700;">Views Configuration</h2>
-            <p style="margin:0; font-size:13px; color:var(--muted);">Sync to discover PostgreSQL views, configure display names, column colors, and drill-down. Use "Save config" in the top bar to persist.</p>
+            <h2 style="margin:0 0 4px;  font-weight:700;">Views Configuration</h2>
+            <p style="margin:0;  ">Sync to discover PostgreSQL views, configure display names, column colors, and drill-down. Use "Save config" in the top bar to persist.</p>
         </div>
     `;
     const syncBtn = document.createElement('button');
@@ -83,7 +83,7 @@ export function renderViewsEditor(ctx) {
     schemasTab.addEventListener('click', () => switchSource('schemas'));
 
     const statusEl = document.createElement('div');
-    statusEl.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px;';
+    statusEl.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px;';
     wrap.appendChild(statusEl);
 
     const listEl = document.createElement('div');
@@ -97,7 +97,7 @@ export function renderViewsEditor(ctx) {
             ok:    'background:rgba(43,147,72,0.08); color:var(--ok);',
             error: 'background:rgba(208,0,0,0.08); color:var(--danger);',
         };
-        statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px; ${styles[type] ?? styles.info}`;
+        statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
         statusEl.textContent = msg;
     }
 
@@ -153,7 +153,7 @@ export function renderViewsEditor(ctx) {
         const names = viewNamesForSource(currentSource);
         if (names.length === 0) {
             const label = currentSource === 'mysql' ? 'MySQL' : 'PostgreSQL';
-            listEl.innerHTML = `<p style="color:var(--muted); text-align:center; padding:32px;">No ${label} views found. Click "${syncBtn.textContent}" to discover views.</p>`;
+            listEl.innerHTML = `<p style=" text-align:center; padding:32px;">No ${label} views found. Click "${syncBtn.textContent}" to discover views.</p>`;
             return;
         }
         names.forEach(vName => listEl.appendChild(buildViewCard(vName, views[vName] ?? {})));
@@ -161,7 +161,7 @@ export function renderViewsEditor(ctx) {
 
     /* ---------- schemas panel (which PostgreSQL schemas sync searches) ---------- */
     async function renderSchemasPanel() {
-        listEl.innerHTML = '<p style="color:var(--muted); padding:16px;">Loading schemas…</p>';
+        listEl.innerHTML = '<p style=" padding:16px;">Loading schemas…</p>';
         try {
             const res  = await fetch('../api/views.php?action=schemas');
             const data = await res.json();
@@ -177,7 +177,7 @@ export function renderViewsEditor(ctx) {
 
             listEl.innerHTML = '';
             const intro = document.createElement('p');
-            intro.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 14px;';
+            intro.style.cssText = '  margin:0 0 14px;';
             intro.textContent = 'Select which PostgreSQL schemas "↻ Sync PostgreSQL Views" searches for views. Unchecked schemas are skipped.';
             listEl.appendChild(intro);
 
@@ -354,7 +354,7 @@ export function renderViewsEditor(ctx) {
         const allCols = dbCols.length > 0 ? dbCols : Object.keys(colsCfg);
 
         if (allCols.length === 0) {
-            wrap.innerHTML = '<p style="color:var(--muted); font-size:13px;">Sync from DB to see columns.</p>';
+            wrap.innerHTML = '<p style=" ">Sync from DB to see columns.</p>';
             return wrap;
         }
 
@@ -375,7 +375,7 @@ export function renderViewsEditor(ctx) {
             if (dtype) {
                 const badge = document.createElement('span');
                 badge.textContent = dtype;
-                badge.style.cssText = 'font-size:11px; font-weight:400; color:var(--muted); background:var(--border-light); padding:1px 6px; border-radius:10px;';
+                badge.style.cssText = ' font-weight:400;  background:var(--border-light); padding:1px 6px; border-radius:10px;';
                 colHdr.appendChild(badge);
             }
             colBlock.appendChild(colHdr);
@@ -494,7 +494,7 @@ export function renderViewsEditor(ctx) {
             /* color rules */
             const rulesLabel = document.createElement('label');
             rulesLabel.textContent = 'Color rules';
-            rulesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600; font-size:14px; color:var(--text);';
+            rulesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
             colBlock.appendChild(rulesLabel);
 
             const rulesList = document.createElement('div');
@@ -583,7 +583,7 @@ export function renderViewsEditor(ctx) {
 
         const levelsLabel = document.createElement('label');
         levelsLabel.textContent = 'Levels (ordered)';
-        levelsLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600; font-size:14px; color:var(--text);';
+        levelsLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
         wrap.appendChild(levelsLabel);
 
         const levelsList = document.createElement('div');
@@ -600,7 +600,7 @@ export function renderViewsEditor(ctx) {
                 lvlRow.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg); border:1px solid var(--border-light); border-radius:var(--radius);';
 
                 const idxSpan = document.createElement('span');
-                idxSpan.style.cssText = 'font-size:12px; color:var(--muted); min-width:52px;';
+                idxSpan.style.cssText = '  min-width:52px;';
                 idxSpan.textContent = `Level ${idx}:`;
 
                 const gbSel = document.createElement('select');

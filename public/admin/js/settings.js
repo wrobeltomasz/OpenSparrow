@@ -44,12 +44,12 @@ export async function renderSettingsPage(ctx) {
     card.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
 
     const cardTitle = document.createElement('h4');
-    cardTitle.style.cssText = 'margin:0 0 4px; font-size:15px;';
+    cardTitle.style.cssText = 'margin:0 0 4px; ';
     cardTitle.textContent = 'Language Settings';
     card.appendChild(cardTitle);
 
     const cardDesc = document.createElement('p');
-    cardDesc.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 20px;';
+    cardDesc.style.cssText = '  margin:0 0 20px;';
     cardDesc.textContent = 'Set the site-wide default language. Language files live in languages/*.json.';
     card.appendChild(cardDesc);
 
@@ -119,17 +119,17 @@ export async function renderSettingsPage(ctx) {
     bubbleCard.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
 
     const bubbleTitle = document.createElement('h4');
-    bubbleTitle.style.cssText = 'margin:0 0 4px; font-size:15px;';
+    bubbleTitle.style.cssText = 'margin:0 0 4px; ';
     bubbleTitle.textContent = 'AI Chat Bubble';
     bubbleCard.appendChild(bubbleTitle);
 
     const bubbleDesc = document.createElement('p');
-    bubbleDesc.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 20px;';
+    bubbleDesc.style.cssText = '  margin:0 0 20px;';
     bubbleDesc.textContent = 'Show a floating chat button in the bottom-right corner of every app page. Users can click it to open the AI assistant without going through the user menu.';
     bubbleCard.appendChild(bubbleDesc);
 
     const toggleRow = document.createElement('label');
-    toggleRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:var(--muted); margin-bottom:20px;';
+    toggleRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer;   margin-bottom:20px;';
 
     const toggleCb = document.createElement('input');
     toggleCb.type    = 'checkbox';
@@ -181,12 +181,12 @@ export async function renderSettingsPage(ctx) {
     logoCard.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
 
     const logoTitle = document.createElement('h4');
-    logoTitle.style.cssText = 'margin:0 0 4px; font-size:15px;';
+    logoTitle.style.cssText = 'margin:0 0 4px; ';
     logoTitle.textContent = 'Custom Logo';
     logoCard.appendChild(logoTitle);
 
     const logoDesc = document.createElement('p');
-    logoDesc.style.cssText = 'color:var(--muted); font-size:13px; margin:0 0 16px;';
+    logoDesc.style.cssText = '  margin:0 0 16px;';
     logoDesc.textContent = 'Replace the default OpenSparrow logo shown in the frontend header with your own image. PNG, JPEG or WEBP, up to 2 MB.';
     logoCard.appendChild(logoDesc);
 
@@ -247,7 +247,7 @@ export async function renderSettingsPage(ctx) {
     logoCard.appendChild(appNameRow);
 
     const logoEnabledRow = document.createElement('label');
-    logoEnabledRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; font-size:14px; color:var(--muted); margin-bottom:16px;';
+    logoEnabledRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer;   margin-bottom:16px;';
 
     const logoEnabledCb = document.createElement('input');
     logoEnabledCb.type = 'checkbox';
@@ -380,8 +380,8 @@ export async function renderSettingsPage(ctx) {
     // ── Info card ──────────────────────────────────────────────────────────
 
     const infoCard = document.createElement('div');
-    infoCard.style.cssText = 'padding:14px 18px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:13px; color:var(--muted); max-width:540px;';
-    infoCard.innerHTML = '<strong style="display:block; margin-bottom:6px; color:var(--muted);">How language detection works</strong>'
+    infoCard.style.cssText = 'padding:14px 18px; background:var(--bg); border:1px solid var(--border); border-radius:8px;   max-width:540px;';
+    infoCard.innerHTML = '<strong style="display:block; margin-bottom:6px; ">How language detection works</strong>'
         + '<ol style="margin:0; padding-left:18px; line-height:1.8;">'
         + '<li>User selects language via URL <code>?lang=xx</code> → stored in session</li>'
         + '<li>User\'s personal preference from <code>spw_users.locale</code> (if set)</li>'
@@ -389,6 +389,6 @@ export async function renderSettingsPage(ctx) {
         + '<li><strong>Default language</strong> from this settings page</li>'
         + '<li>Fallback: <code>en</code></li>'
         + '</ol>'
-        + '<p style="margin:10px 0 0; color:var(--muted);">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
+        + '<p style="margin:10px 0 0; ">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
     languagePanel.appendChild(infoCard);
 }

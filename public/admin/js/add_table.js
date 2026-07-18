@@ -53,7 +53,7 @@ export function renderAddTableEditor(ctx) {
     workspaceEl.appendChild(h2);
 
     const intro = document.createElement('p');
-    intro.style.cssText = 'color:var(--muted);font-size:14px;margin-bottom:28px;';
+    intro.style.cssText = 'margin-bottom:28px;';
     intro.textContent = 'Creates the table in the database. An id serial primary key column is always added automatically.';
     workspaceEl.appendChild(intro);
 
@@ -134,7 +134,7 @@ export function renderAddTableEditor(ctx) {
     presetsWrap.style.cssText = 'margin-top:24px;padding:16px;background:var(--accent-light);border-radius:var(--radius);border:1px solid var(--border-light);';
 
     const presetsTitle = document.createElement('h4');
-    presetsTitle.style.cssText = 'margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);';
+    presetsTitle.style.cssText = 'margin:0 0 12px;';
     presetsTitle.textContent = 'Column Presets';
     presetsWrap.appendChild(presetsTitle);
 
@@ -147,10 +147,9 @@ export function renderAddTableEditor(ctx) {
         cb.addEventListener('change', () => onChange(cb.checked));
         const textWrap = document.createElement('span');
         const strong = document.createElement('strong');
-        strong.style.fontSize = '13px';
         strong.textContent = labelText;
         const desc = document.createElement('span');
-        desc.style.cssText = 'display:block;font-size:12px;color:var(--muted);margin-top:2px;';
+        desc.style.cssText = 'display:block;margin-top:2px;';
         desc.textContent = description;
         textWrap.appendChild(strong);
         textWrap.appendChild(desc);
@@ -184,7 +183,7 @@ export function renderAddTableEditor(ctx) {
         const idRow = document.createElement('div');
         idRow.className = 'column-block';
         idRow.style.cssText = 'border-left:4px solid var(--muted);opacity:.7;display:flex;align-items:center;gap:16px;padding:12px 16px;';
-        idRow.innerHTML = '<strong style="min-width:80px;">id</strong><span style="font-size:13px;color:var(--muted);">serial PRIMARY KEY — added automatically</span>';
+        idRow.innerHTML = '<strong style="min-width:80px;">id</strong><span style="">serial PRIMARY KEY — added automatically</span>';
         columnsWrap.appendChild(idRow);
 
         state.columns.forEach((col, index) => {
@@ -244,7 +243,7 @@ export function renderAddTableEditor(ctx) {
                 cb.checked = !!col.not_null;
                 cb.addEventListener('change', () => { col.not_null = cb.checked; });
                 const lbl = document.createElement('span');
-                lbl.style.cssText = 'font-size:13px;color:var(--muted);';
+                lbl.style.cssText = '';
                 lbl.textContent = 'Requires a Default value if the table already has rows.';
                 wrap.appendChild(cb);
                 wrap.appendChild(lbl);
@@ -365,10 +364,9 @@ export function renderAddTableEditor(ctx) {
     registerCb.addEventListener('change', () => { state.registerInSchema = registerCb.checked; });
     const registerTextWrap = document.createElement('span');
     const registerStrong = document.createElement('strong');
-    registerStrong.style.fontSize = '13px';
     registerStrong.textContent = 'Register in app schema';
     const registerDesc = document.createElement('span');
-    registerDesc.style.cssText = 'display:block;font-size:12px;color:var(--muted);margin-top:2px;';
+    registerDesc.style.cssText = 'display:block;margin-top:2px;';
     registerDesc.textContent = 'Adds the table to the app schema configuration so it appears in the admin panel immediately.';
     registerTextWrap.appendChild(registerStrong);
     registerTextWrap.appendChild(registerDesc);

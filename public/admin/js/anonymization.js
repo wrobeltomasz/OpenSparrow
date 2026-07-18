@@ -21,11 +21,11 @@ function mkSection(title, desc) {
 
     const h3 = document.createElement('h3');
     h3.textContent = title;
-    h3.style.cssText = 'margin:0 0 4px; font-size:15px;';
+    h3.style.cssText = 'margin:0 0 4px; ';
 
     const p = document.createElement('p');
     p.textContent = desc;
-    p.style.cssText = 'margin:0; font-size:13px;';
+    p.style.cssText = 'margin:0; ';
     p.className = 'c-muted';
 
     hdr.append(h3, p);
@@ -40,7 +40,7 @@ function mkSection(title, desc) {
 
 function mkStatusEl() {
     const el = document.createElement('p');
-    el.style.cssText = 'margin-top:10px; font-size:13px; display:none;';
+    el.style.cssText = 'margin-top:10px;  display:none;';
     return el;
 }
 
@@ -163,7 +163,7 @@ function buildRulesTab(ctx) {
         } else {
             const empty = document.createElement('p');
             empty.textContent = 'No rules configured yet. Use the form below to add one.';
-            empty.style.cssText = 'color:var(--muted); margin-bottom:16px;';
+            empty.style.cssText = ' margin-bottom:16px;';
             body.appendChild(empty);
         }
 
@@ -184,10 +184,10 @@ function buildPreviewBlock(container) {
 
     const hint = document.createElement('span');
     hint.textContent = 'Counts how many rows each rule would anonymize — no data is modified.';
-    hint.style.cssText = 'margin-left:12px; font-size:12px; color:var(--muted);';
+    hint.style.cssText = 'margin-left:12px;  ';
 
     const out = document.createElement('pre');
-    out.style.cssText = 'margin-top:12px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
+    out.style.cssText = 'margin-top:12px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;  line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
     btn.addEventListener('click', async () => {
         btn.disabled    = true;
@@ -224,7 +224,7 @@ function buildAddForm(container, tableOptions, onAdded) {
 
     const title = document.createElement('strong');
     title.textContent = 'Add Rule';
-    title.style.cssText = 'display:block; margin-bottom:12px; font-size:13px;';
+    title.style.cssText = 'display:block; margin-bottom:12px; ';
     formCard.appendChild(title);
 
     const row = document.createElement('div');
@@ -235,7 +235,7 @@ function buildAddForm(container, tableOptions, onAdded) {
         wrap.style.cssText = 'display:flex; flex-direction:column; gap:4px;';
         const lbl = document.createElement('label');
         lbl.textContent = labelText;
-        lbl.style.cssText = 'font-size:12px; color:var(--muted);';
+        lbl.style.cssText = ' ';
         el.className = 'adm-input';
         if (width) el.style.width = width;
         wrap.append(lbl, el);
@@ -395,7 +395,7 @@ function buildScheduleTab() {
     const enabledLbl = document.createElement('label');
     enabledLbl.htmlFor     = 'anon-enabled';
     enabledLbl.textContent = 'Anonymization enabled';
-    enabledLbl.style.cssText = 'font-size:14px; cursor:pointer;';
+    enabledLbl.style.cssText = ' cursor:pointer;';
     enabledRow.append(enabledChk, enabledLbl);
     body.appendChild(enabledRow);
 
@@ -405,7 +405,7 @@ function buildScheduleTab() {
     const freqLabel = document.createElement('label');
     freqLabel.htmlFor     = 'anon-frequency';
     freqLabel.textContent = 'Frequency:';
-    freqLabel.style.cssText = 'font-size:13px; color:var(--muted); white-space:nowrap;';
+    freqLabel.style.cssText = '  white-space:nowrap;';
     const freqSelect = document.createElement('select');
     freqSelect.id        = 'anon-frequency';
     freqSelect.className = 'adm-input w-180';
@@ -448,7 +448,7 @@ function buildScheduleTab() {
     runBtn.textContent = 'Run Now';
 
     const output = document.createElement('pre');
-    output.style.cssText = 'margin-top:14px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
+    output.style.cssText = 'margin-top:14px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;  line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
     runBtn.addEventListener('click', async () => {
         runBtn.disabled    = true;
@@ -491,15 +491,15 @@ function buildScheduleTab() {
         wrap.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:14px; margin-bottom:12px;';
         const h = document.createElement('strong');
         h.textContent = heading;
-        h.style.cssText = 'display:block; margin-bottom:8px; font-size:13px;';
+        h.style.cssText = 'display:block; margin-bottom:8px; ';
         const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0 0 6px; font-size:12px; background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
+        pre.style.cssText = 'margin:0 0 6px;  background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
         pre.textContent = code;
         wrap.append(h, pre);
         if (note) {
             const pn = document.createElement('p');
             pn.textContent = note;
-            pn.style.cssText = 'margin:6px 0 0; font-size:12px; color:var(--muted);';
+            pn.style.cssText = 'margin:6px 0 0;  ';
             wrap.appendChild(pn);
         }
         return wrap;
@@ -555,7 +555,6 @@ function buildSuggestionsTab() {
             if (keywords.length === 0) {
                 const msg = document.createElement('p');
                 msg.textContent = 'Dictionary is empty. Add keywords in the Dictionary tab first.';
-                msg.style.color = 'var(--muted)';
                 container.appendChild(msg);
                 return;
             }
@@ -577,14 +576,13 @@ function buildSuggestionsTab() {
             if (matches.length === 0) {
                 const msg = document.createElement('p');
                 msg.textContent = 'No columns matched the current dictionary keywords.';
-                msg.style.color = 'var(--muted)';
                 container.appendChild(msg);
                 return;
             }
 
             const count = document.createElement('p');
             count.textContent = matches.length + ' potential PII column(s) found:';
-            count.style.cssText = 'font-size:13px; color:var(--muted); margin-bottom:12px;';
+            count.style.cssText = '  margin-bottom:12px;';
             container.appendChild(count);
 
             const tbl   = document.createElement('table');
@@ -625,7 +623,7 @@ function buildSuggestionsTab() {
                 if (alreadyHas) {
                     const badge = document.createElement('span');
                     badge.textContent = '✓ Rule exists';
-                    badge.style.cssText = 'font-size:12px; color:var(--ok);';
+                    badge.style.cssText = ' color:var(--ok);';
                     tdA.appendChild(badge);
                 } else {
                     const addBtn = document.createElement('button');
@@ -640,7 +638,7 @@ function buildSuggestionsTab() {
                         function fLbl(text) {
                             const l = document.createElement('label');
                             l.textContent = text;
-                            l.style.cssText = 'font-size:11px; color:var(--muted);';
+                            l.style.cssText = ' ';
                             return l;
                         }
 
@@ -682,7 +680,7 @@ function buildSuggestionsTab() {
                         replInp.className = 'adm-input';
 
                         const formSt = document.createElement('p');
-                        formSt.style.cssText = 'margin:2px 0; font-size:11px; display:none;';
+                        formSt.style.cssText = 'margin:2px 0;  display:none;';
 
                         const btnRow = document.createElement('div');
                         btnRow.style.cssText = 'display:flex; gap:6px; margin-top:2px;';
@@ -775,7 +773,7 @@ function buildDictionaryTab() {
 
     const hint = document.createElement('p');
     hint.textContent = 'Example: PESEL, NIP, email, phone, address, imię, nazwisko, ID number';
-    hint.style.cssText = 'font-size:12px; color:var(--muted); margin-bottom:16px;';
+    hint.style.cssText = '  margin-bottom:16px;';
 
     const saveBtn = document.createElement('button');
     saveBtn.className   = 'btn btn-primary';
@@ -807,7 +805,7 @@ function buildDictionaryTab() {
 
     const logLabel = document.createElement('label');
     logLabel.textContent = 'Delete runs older than';
-    logLabel.style.cssText = 'font-size:13px; color:var(--muted);';
+    logLabel.style.cssText = ' ';
 
     const logInput = document.createElement('input');
     logInput.type  = 'number';
@@ -818,7 +816,7 @@ function buildDictionaryTab() {
 
     const logUnit = document.createElement('span');
     logUnit.textContent = 'days';
-    logUnit.style.cssText = 'font-size:13px; color:var(--muted);';
+    logUnit.style.cssText = ' ';
 
     const purgeBtn = document.createElement('button');
     purgeBtn.className   = 'btn btn-danger';
@@ -880,7 +878,6 @@ function buildReportCell(r, tbody, colspan) {
 
     if (!report) {
         cell.textContent = '—';
-        cell.style.color = 'var(--muted)';
         return cell;
     }
 
@@ -912,7 +909,7 @@ function buildReportCell(r, tbody, colspan) {
 
         const idLbl = document.createElement('strong');
         idLbl.textContent = report.report_id || 'Report';
-        idLbl.style.cssText = 'font-size:13px; font-family:monospace;';
+        idLbl.style.cssText = ' font-family:monospace;';
 
         const dlBtn = document.createElement('button');
         dlBtn.textContent  = 'Download JSON';
@@ -932,7 +929,7 @@ function buildReportCell(r, tbody, colspan) {
         bar.append(idLbl, dlBtn);
 
         const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0; padding:12px; background:#fff; border:1px solid var(--border); border-radius:4px; font-size:12px; line-height:1.5; max-height:360px; overflow:auto; white-space:pre-wrap;';
+        pre.style.cssText = 'margin:0; padding:12px; background:#fff; border:1px solid var(--border); border-radius:4px;  line-height:1.5; max-height:360px; overflow:auto; white-space:pre-wrap;';
         pre.textContent = JSON.stringify(report, null, 2);
 
         dtd.append(bar, pre);
@@ -1031,7 +1028,7 @@ function buildHistorySection() {
 
 export async function renderAnonymizationPage(ctx) {
     const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '<p style="color:var(--muted);padding:20px;">Loading configuration…</p>';
+    workspaceEl.innerHTML = '<p style="padding:20px;">Loading configuration…</p>';
 
     // Expose column options for the add-rule form.
     if (ctx.getColumnOptionsForTable) {

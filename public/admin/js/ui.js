@@ -148,7 +148,7 @@ export function createIconPicker(key, labelText, value, onChange) {
         closeBtn.onclick = () => modal.remove();
         content.appendChild(closeBtn);
         
-        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:#64748B; font-size:13px;">Icons are loaded from <code>assets/icons/</code> and <code>assets/img/</code>.</p>';
+        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:#64748B; ">Icons are loaded from <code>assets/icons/</code> and <code>assets/img/</code>.</p>';
         
         const grid = document.createElement('div');
         grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;
@@ -271,7 +271,7 @@ export function createMenuPreview() {
 
     const item = document.createElement('div');
     item.className = 'menu-preview-item';
-    item.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; background:#003366; color:#F0F6FA; border-radius:6px; font-size:14px; min-width:220px; max-width:320px; transition:opacity .15s;';
+    item.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; background:#003366; color:#F0F6FA; border-radius:6px;  min-width:220px; max-width:320px; transition:opacity .15s;';
 
     const iconEl = document.createElement('span');
     iconEl.style.cssText = 'width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;';
@@ -281,7 +281,7 @@ export function createMenuPreview() {
 
     const badgeEl = document.createElement('span');
     badgeEl.textContent = 'HIDDEN';
-    badgeEl.style.cssText = 'font-size:10px; background:#d00000; color:#fff; padding:2px 6px; border-radius:3px; display:none; letter-spacing:.5px;';
+    badgeEl.style.cssText = ' background:#d00000; color:#fff; padding:2px 6px; border-radius:3px; display:none; ';
 
     item.appendChild(iconEl);
     item.appendChild(nameEl);

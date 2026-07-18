@@ -24,10 +24,10 @@ export function renderPrintEditor(ctx) {
     hdr.style.cssText = 'display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:20px; flex-wrap:wrap;';
     const hdrText = document.createElement('div');
     const hdrTitle = document.createElement('h2');
-    hdrTitle.style.cssText = 'margin:0 0 4px; font-size:1.2rem; font-weight:700;';
+    hdrTitle.style.cssText = 'margin:0 0 4px;  font-weight:700;';
     hdrTitle.textContent = 'Printouts Configuration';
     const hdrDesc = document.createElement('p');
-    hdrDesc.style.cssText = 'margin:0; font-size:13px; color:var(--muted);';
+    hdrDesc.style.cssText = 'margin:0;  ';
     hdrDesc.textContent = 'Build printable report templates from simple blocks (header, text, table). Each template is bound to a PostgreSQL view from the Views module; its columns become the available {variables}. Optional parameters let users filter the report (e.g. by employee) before printing.';
     hdrText.appendChild(hdrTitle);
     hdrText.appendChild(hdrDesc);
@@ -75,7 +75,7 @@ export function renderPrintEditor(ctx) {
             ok:    'background:rgba(43,147,72,0.08); color:var(--ok);',
             error: 'background:rgba(208,0,0,0.08); color:var(--danger);',
         };
-        statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius); font-size:13px; margin-bottom:16px; ${styles[type] ?? styles.info}`;
+        statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
         statusEl.textContent = msg;
     }
 
@@ -130,14 +130,14 @@ export function renderPrintEditor(ctx) {
         box.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;';
         if (cols.length === 0) {
             const none = document.createElement('span');
-            none.style.cssText = 'font-size:12px; color:var(--muted);';
+            none.style.cssText = ' ';
             none.textContent = 'Select a view to load its variables.';
             box.appendChild(none);
             return box;
         }
         cols.forEach(col => {
             const badge = document.createElement('span');
-            badge.style.cssText = 'font-size:11px; font-family:monospace; color:var(--accent-dark); background:var(--accent-light); padding:2px 8px; border-radius:10px;';
+            badge.style.cssText = ' font-family:monospace; color:var(--accent-dark); background:var(--accent-light); padding:2px 8px; border-radius:10px;';
             badge.textContent = `{${col.name}}`;
             badge.title = col.data_type || '';
             box.appendChild(badge);
@@ -261,7 +261,7 @@ export function renderPrintEditor(ctx) {
 
         const varsLbl = document.createElement('label');
         varsLbl.textContent = 'Available variables (columns of the view)';
-        varsLbl.style.cssText = 'display:block; margin-bottom:8px; font-weight:600; font-size:14px; color:var(--text);';
+        varsLbl.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
         body.appendChild(varsLbl);
 
         let varsRow = buildVariablesRow([]);
@@ -276,7 +276,7 @@ export function renderPrintEditor(ctx) {
         body.appendChild(paramsHdr);
 
         const paramsHint = document.createElement('p');
-        paramsHint.style.cssText = 'margin:0 0 10px; font-size:12px; color:var(--muted);';
+        paramsHint.style.cssText = 'margin:0 0 10px;  ';
         paramsHint.textContent = 'Optional filters shown above the report before it is generated '
             + '(e.g. "pick an employee"). Leave the lookup view empty to offer distinct values of '
             + 'the filter column itself.';
@@ -320,7 +320,7 @@ export function renderPrintEditor(ctx) {
             blocksList.innerHTML = '';
             if (blocks.length === 0) {
                 const empty = document.createElement('p');
-                empty.style.cssText = 'color:var(--muted); font-size:13px; margin:0;';
+                empty.style.cssText = '  margin:0;';
                 empty.textContent = 'No blocks yet. Add a header, text or table block below.';
                 blocksList.appendChild(empty);
                 return;
@@ -336,7 +336,7 @@ export function renderPrintEditor(ctx) {
             rowHdr.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:8px;';
 
             const typeSpan = document.createElement('strong');
-            typeSpan.style.cssText = 'font-size:13px; color:var(--text); text-transform:capitalize;';
+            typeSpan.style.cssText = ' color:var(--text); text-transform:capitalize;';
             typeSpan.textContent = `${idx + 1}. ${block.type}`;
             rowHdr.appendChild(typeSpan);
 
@@ -395,11 +395,11 @@ export function renderPrintEditor(ctx) {
             } else if (block.type === 'table') {
                 const colsLbl = document.createElement('label');
                 colsLbl.textContent = 'Columns (all rows of the view are printed)';
-                colsLbl.style.cssText = 'display:block; margin-bottom:6px; font-weight:600; font-size:13px; color:var(--text);';
+                colsLbl.style.cssText = 'display:block; margin-bottom:6px; font-weight:600;  color:var(--text);';
                 row.appendChild(colsLbl);
 
                 const colsHint = document.createElement('p');
-                colsHint.style.cssText = 'margin:0 0 8px; font-size:12px; color:var(--muted);';
+                colsHint.style.cssText = 'margin:0 0 8px;  ';
                 colsHint.textContent = 'Width is a percentage of the table; leave blank to auto-size. Widths do not need to add up to 100. Alignment applies to data cells only — column headers are always centered.';
                 row.appendChild(colsHint);
 
@@ -411,7 +411,7 @@ export function renderPrintEditor(ctx) {
                 colsBox.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
                 if (currentCols.length === 0) {
                     const none = document.createElement('span');
-                    none.style.cssText = 'font-size:12px; color:var(--muted);';
+                    none.style.cssText = ' ';
                     none.textContent = 'Select a view first to choose columns (empty = all columns).';
                     colsBox.appendChild(none);
                 }
@@ -422,11 +422,11 @@ export function renderPrintEditor(ctx) {
                     rowWrap.style.cssText = 'display:flex; align-items:center; gap:10px;';
 
                     const lab = document.createElement('label');
-                    lab.style.cssText = 'display:flex; align-items:center; gap:5px; font-size:13px; color:var(--text); cursor:pointer; font-weight:normal; min-width:160px;';
+                    lab.style.cssText = 'display:flex; align-items:center; gap:5px;  color:var(--text); cursor:pointer; font-weight:normal; min-width:160px;';
                     const chk = document.createElement('input');
                     chk.type = 'checkbox';
                     chk.checked = !!entry;
-                    chk.style.cssText = 'width:14px; height:14px; accent-color:var(--accent); cursor:pointer;';
+                    chk.style.cssText = 'width:14px; height:14px; accent- cursor:pointer;';
                     lab.appendChild(chk);
                     lab.appendChild(document.createTextNode(col.name));
                     rowWrap.appendChild(lab);
@@ -492,7 +492,7 @@ export function renderPrintEditor(ctx) {
             paramsList.innerHTML = '';
             if (params.length === 0) {
                 const empty = document.createElement('p');
-                empty.style.cssText = 'color:var(--muted); font-size:13px; margin:0;';
+                empty.style.cssText = '  margin:0;';
                 empty.textContent = 'No parameters. Add one below to let users filter this report before printing.';
                 paramsList.appendChild(empty);
                 return;
@@ -508,7 +508,7 @@ export function renderPrintEditor(ctx) {
             rowHdr.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:8px;';
 
             const titleSpan = document.createElement('strong');
-            titleSpan.style.cssText = 'font-size:13px; color:var(--text);';
+            titleSpan.style.cssText = ' color:var(--text);';
             titleSpan.textContent = `${idx + 1}. ${param.label || param.key || 'parameter'}`;
             rowHdr.appendChild(titleSpan);
 
@@ -576,12 +576,12 @@ export function renderPrintEditor(ctx) {
             row.appendChild(colGrp);
 
             const reqLabel = document.createElement('label');
-            reqLabel.style.cssText = 'display:flex; align-items:center; gap:6px; font-size:13px; '
+            reqLabel.style.cssText = 'display:flex; align-items:center; gap:6px;  '
                 + 'color:var(--text); cursor:pointer; font-weight:normal; margin-bottom:12px;';
             const reqChk = document.createElement('input');
             reqChk.type = 'checkbox';
             reqChk.checked = !!param.required;
-            reqChk.style.cssText = 'width:14px; height:14px; accent-color:var(--accent); cursor:pointer;';
+            reqChk.style.cssText = 'width:14px; height:14px; accent- cursor:pointer;';
             reqChk.addEventListener('change', () => { param.required = reqChk.checked; });
             reqLabel.appendChild(reqChk);
             reqLabel.appendChild(document.createTextNode('Required (hides the "— all —" option; user must pick a value)'));
@@ -707,7 +707,7 @@ export function renderPrintEditor(ctx) {
         const names = Object.keys(prints);
         if (names.length === 0) {
             const empty = document.createElement('p');
-            empty.style.cssText = 'color:var(--muted); text-align:center; padding:32px;';
+            empty.style.cssText = ' text-align:center; padding:32px;';
             empty.textContent = 'No printouts yet. Click "+ Add printout" to create the first template.';
             listEl.appendChild(empty);
             return;

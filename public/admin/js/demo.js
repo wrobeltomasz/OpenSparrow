@@ -37,7 +37,7 @@ function statusMsg(container, type, text) {
 }
 
 export function renderDemoPage({ workspaceEl }) {
-    workspaceEl.innerHTML = '<p style="color:var(--muted);margin-top:0">Loading…</p>';
+    workspaceEl.innerHTML = '<p style="margin-top:0">Loading…</p>';
     (async () => {
         try {
             const res = await apiFetch('api.php?action=demo_status');

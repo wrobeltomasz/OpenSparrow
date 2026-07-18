@@ -89,7 +89,7 @@ export function showStatusPill(anchor, message, variant = 'success') {
         error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
         info:    { bg: '#DDEAF4', fg: '#1E293B', border: '#CBD5E1' },
     }[variant] || { bg: '#DDEAF4', fg: '#1E293B', border: '#CBD5E1' };
-    pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px; font-size:12px; font-weight:600; transition:opacity .3s;`;
+    pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px;  font-weight:600; transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
 
     const ttl = variant === 'error' ? 6000 : 3000;
@@ -552,7 +552,7 @@ function renderItemCards() {
         list.innerHTML = '';
         if (freshKeys.length === 0) {
             const empty = document.createElement('p');
-            empty.style.cssText = 'color:var(--muted); text-align:center; padding:40px;';
+            empty.style.cssText = ' text-align:center; padding:40px;';
             empty.textContent = isSchema    ? 'No tables defined. Use "Sync DB Tables" to get started.'
                               : isDashboard ? 'No widgets yet. Click "+ Add New Widget".'
                               : isWorkflows ? 'No workflows yet. Click "+ Add New Workflow".'
@@ -746,7 +746,7 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'automations') {
         if (key === 'LAYOUT') {
             const msg = document.createElement('p');
-            msg.style.cssText = 'color:var(--muted); padding:20px;';
+            msg.style.cssText = ' padding:20px;';
             msg.textContent = 'Automations have no global configuration settings.';
             workspaceEl.appendChild(msg);
             return;
@@ -766,7 +766,7 @@ function renderEditor(key, itemData, isArray) {
             h3.textContent = 'Menu Preview';
             workspaceEl.appendChild(h3);
             const desc = document.createElement('p');
-            desc.style.cssText = 'color:var(--muted); font-size:14px; margin-bottom:20px;';
+            desc.style.cssText = '  margin-bottom:20px;';
             desc.textContent = 'Drag to reorder. Drop onto an item to nest it (1 level). Changes save automatically.';
             workspaceEl.appendChild(desc);
             const preview = createFullMenuPreview(null);

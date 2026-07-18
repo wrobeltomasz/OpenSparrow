@@ -81,7 +81,7 @@ function buildTabs(wrap, tabs) {
 export async function renderFdwPage(/* ctx */) {
     const workspace = document.getElementById('editorForm');
     workspace.innerHTML = '';
-    workspace.appendChild(el('p', 'color:#64748B;font-size:13px;', 'Loading...'));
+    workspace.appendChild(el('p', 'color:#64748B;', 'Loading...'));
 
     let status;
     try {
@@ -93,7 +93,7 @@ export async function renderFdwPage(/* ctx */) {
     }
 
     workspace.innerHTML = '';
-    workspace.appendChild(el('h2', 'margin:0 0 20px;font-size:18px;font-weight:700;', 'External Databases — MySQL Gateway'));
+    workspace.appendChild(el('h2', 'margin:0 0 20px;font-weight:700;', 'External Databases — MySQL Gateway'));
 
     const { panels } = buildTabs(workspace, [
         { id: 'connection', label: 'Connection' },
@@ -115,7 +115,7 @@ function connectionBadge(connected, configured) {
     } else {
         bg = '#F1F5F9'; fg = '#64748B'; border = '#CBD5E1'; label = 'Not configured';
     }
-    const b = el('span', `display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:600;background:${bg};color:${fg};border:1px solid ${border};`, label);
+    const b = el('span', `display:inline-block;padding:4px 12px;border-radius:999px;font-weight:600;background:${bg};color:${fg};border:1px solid ${border};`, label);
     b.dataset.badge = 'conn';
     return b;
 }
@@ -141,18 +141,18 @@ function renderConnectionTab(panel, status) {
     const card = el('div', 'background:#F4F7F9;border:1px solid #CBD5E1;border-radius:8px;padding:20px;');
 
     const hdr = el('div', 'display:flex;align-items:center;gap:10px;margin-bottom:14px;');
-    hdr.appendChild(el('h3', 'margin:0;font-size:15px;font-weight:600;', 'MySQL Connection'));
+    hdr.appendChild(el('h3', 'margin:0;font-weight:600;', 'MySQL Connection'));
     const srcStyles = {
         env:  ['from env vars', '#DDEAF4', '#1E293B'],
         file: ['from config file', '#F0FDF4', '#166534'],
         none: ['not configured', '#FEF9C3', '#854D0E'],
     };
     const [srcLabel, srcBg, srcFg] = srcStyles[status.source] || ['unknown', '#F1F5F9', '#64748B'];
-    hdr.appendChild(el('span', `padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${srcBg};color:${srcFg};`, srcLabel));
+    hdr.appendChild(el('span', `padding:2px 8px;border-radius:999px;font-weight:600;background:${srcBg};color:${srcFg};`, srcLabel));
     card.appendChild(hdr);
 
     if (isEnv) {
-        const note = el('div', 'margin-bottom:14px;padding:8px 12px;background:#DDEAF4;border-left:3px solid #3B82F6;border-radius:4px;font-size:12px;color:#1E293B;');
+        const note = el('div', 'margin-bottom:14px;padding:8px 12px;background:#DDEAF4;border-left:3px solid #3B82F6;border-radius:4px;color:#1E293B;');
         note.textContent = 'Credentials are set via MYSQL_* environment variables and take precedence over this form. Remove those env vars to use file-based credentials.';
         card.appendChild(note);
     }
@@ -292,7 +292,7 @@ function renderTableCard(container, tableName, meta, onRemove) {
 
     // Header
     const hdr = el('div', 'display:flex;align-items:center;gap:10px;padding:12px 16px;background:#F4F7F9;border-bottom:1px solid #CBD5E1;');
-    const nameCode = el('code', 'flex:1;font-size:13px;font-weight:600;color:#1E293B;');
+    const nameCode = el('code', 'flex:1;font-weight:600;color:#1E293B;');
     nameCode.textContent = tableName;
     hdr.appendChild(nameCode);
 
@@ -372,8 +372,8 @@ function renderTablesTab(panel, status) {
     let currentTables = [...(status.mysql_tables || [])];
     const tableMeta   = status.table_meta || {};
 
-    panel.appendChild(el('h3', 'margin:0 0 4px;font-size:15px;font-weight:600;', 'MySQL Table Routing'));
-    panel.appendChild(el('p', 'margin:0 0 16px;font-size:13px;color:#64748B;',
+    panel.appendChild(el('h3', 'margin:0 0 4px;font-weight:600;', 'MySQL Table Routing'));
+    panel.appendChild(el('p', 'margin:0 0 16px;color:#64748B;',
         'Tables listed here are served from MySQL by the Gateway. Configure each table\'s display name, icon, and menu visibility below.'));
 
     // Add row — placed above the card list so new tables are easy to add
@@ -403,7 +403,7 @@ function renderTablesTab(panel, status) {
     function refreshCards() {
         cardsEl.innerHTML = '';
         if (currentTables.length === 0) {
-            cardsEl.appendChild(el('p', 'color:#94A3B8;font-size:13px;margin:0;', 'No MySQL tables configured.'));
+            cardsEl.appendChild(el('p', 'color:#94A3B8;margin:0;', 'No MySQL tables configured.'));
             return;
         }
         for (const t of currentTables) {

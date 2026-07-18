@@ -36,7 +36,7 @@ export async function renderM2mPage(ctx) {
     h2.textContent = 'Many-to-Many Relationship Builder';
 
     const sub = document.createElement('p');
-    sub.style.cssText = 'color:var(--muted); font-size:14px; margin:0 0 32px;';
+    sub.style.cssText = '  margin:0 0 32px;';
     sub.textContent = 'Select two tables — the wizard creates the junction table in PostgreSQL and updates the schema configuration automatically.';
 
     workspaceEl.append(h2, sub);
@@ -48,10 +48,10 @@ export async function renderM2mPage(ctx) {
     const cardHeader = document.createElement('div');
     cardHeader.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:22px;';
     const cardBadge = document.createElement('div');
-    cardBadge.style.cssText = 'width:32px; height:32px; border-radius:50%; background:#005A9E; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; line-height:1;';
+    cardBadge.style.cssText = 'width:32px; height:32px; border-radius:50%; background:#005A9E; color:#fff; display:flex; align-items:center; justify-content:center;  flex-shrink:0; line-height:1;';
     cardBadge.textContent = '↔';
     const cardH3 = document.createElement('h3');
-    cardH3.style.cssText = 'margin:0; font-size:16px;';
+    cardH3.style.cssText = 'margin:0; ';
     cardH3.textContent = 'Create New Relationship';
     cardHeader.append(cardBadge, cardH3);
     card.appendChild(cardHeader);
@@ -84,7 +84,7 @@ export async function renderM2mPage(ctx) {
 
     const { wrap: wrapA, sel: selA } = makeTableSelect('Table A — parent (has many)');
     const arrowEl = document.createElement('div');
-    arrowEl.style.cssText = 'font-size:20px; color:var(--muted); padding-bottom:9px; flex-shrink:0;';
+    arrowEl.style.cssText = '  padding-bottom:9px; flex-shrink:0;';
     arrowEl.textContent = '↔';
     const { wrap: wrapB, sel: selB } = makeTableSelect('Table B — related entity');
     selectRow.append(wrapA, arrowEl, wrapB);
@@ -105,7 +105,7 @@ export async function renderM2mPage(ctx) {
         inp.className = 'adm-input w-full';
         if (hint) {
             const h = document.createElement('div');
-            h.style.cssText = 'font-size:11px; color:var(--muted); margin-top:4px;';
+            h.style.cssText = '  margin-top:4px;';
             h.textContent = hint;
             wrap.append(lbl, inp, h);
         } else {
@@ -149,7 +149,7 @@ export async function renderM2mPage(ctx) {
 
     // Preview pill (shows what will be created) ────────────────────────────────
     const preview = document.createElement('div');
-    preview.style.cssText = 'font-size:12px; color:var(--muted); margin:6px 0 20px; min-height:18px;';
+    preview.style.cssText = '  margin:6px 0 20px; min-height:18px;';
 
     function updatePreview() {
         const a = selA.value; const b = selB.value;
@@ -165,7 +165,7 @@ export async function renderM2mPage(ctx) {
     const btnCreate = document.createElement('button');
     btnCreate.type = 'button';
     btnCreate.className = 'btn btn-primary';
-    btnCreate.innerHTML = '<span style="font-size:18px;font-weight:300;line-height:1;">+</span> Create Relationship';
+    btnCreate.innerHTML = '<span style="font-weight:300;line-height:1;">+</span> Create Relationship';
     card.appendChild(btnCreate);
 
     btnCreate.addEventListener('click', async () => {
@@ -198,7 +198,7 @@ export async function renderM2mPage(ctx) {
             } else {
                 showStatusPill(btnCreate, result.error || 'Failed.', 'error');
                 btnCreate.disabled = false;
-                btnCreate.innerHTML = '<span style="font-size:18px;font-weight:300;line-height:1;">+</span> Create Relationship';
+                btnCreate.innerHTML = '<span style="font-weight:300;line-height:1;">+</span> Create Relationship';
             }
         } catch {
             showStatusPill(btnCreate, 'Network error.', 'error');
@@ -217,7 +217,7 @@ export async function renderM2mPage(ctx) {
 
     if (relationships.length === 0) {
         const empty = document.createElement('p');
-        empty.style.cssText = 'color:var(--muted); font-size:14px;';
+        empty.style.cssText = ' ';
         empty.textContent = 'No many-to-many relationships configured yet.';
         workspaceEl.appendChild(empty);
         return;
@@ -292,9 +292,9 @@ export async function renderM2mPage(ctx) {
             ['Table B', rel.table_b_display],
         ].forEach(([k, v]) => {
             const detail = document.createElement('div');
-            detail.style.cssText = 'font-size:13px; margin-bottom:6px;';
+            detail.style.cssText = ' margin-bottom:6px;';
             const kEl = document.createElement('span');
-            kEl.style.cssText = 'color:var(--muted); display:inline-block; min-width:130px;';
+            kEl.style.cssText = ' display:inline-block; min-width:130px;';
             kEl.textContent = k;
             const vEl = document.createElement('span');
             vEl.style.color = 'var(--text)';

@@ -121,7 +121,6 @@ function ovCronRow(entry) {
     const badge = document.createElement('span');
     const isOk = entry.status === 'success';
     badge.className = 'ov-status-badge ' + (isOk ? 'ov-badge-ok' : 'ov-badge-warn');
-    badge.style.fontSize = '10px';
     badge.textContent = (entry.status ?? '').toUpperCase();
     row.appendChild(badge);
 

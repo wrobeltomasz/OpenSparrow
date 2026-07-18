@@ -13,13 +13,13 @@ function ragCard(title, desc) {
 
     const h3 = document.createElement('h3');
     h3.textContent = title;
-    h3.style.cssText = 'margin:0 0 4px;font-size:15px;';
+    h3.style.cssText = 'margin:0 0 4px;';
     hdr.appendChild(h3);
 
     if (desc) {
         const p = document.createElement('p');
         p.textContent = desc;
-        p.style.cssText = 'margin:0;color:var(--muted);font-size:13px;';
+        p.style.cssText = 'margin:0;';
         hdr.appendChild(p);
     }
     card.appendChild(hdr);
@@ -44,7 +44,7 @@ function ragStatusPill(anchor, msg, type = 'success') {
     pill.textContent = msg;
     pill.style.cssText = `display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:4px 10px;`
         + `background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`
-        + `border-radius:999px;font-size:12px;font-weight:600;transition:opacity .3s;`;
+        + `border-radius:999px;font-weight:600;transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
     setTimeout(() => {
         pill.style.opacity = '0';
@@ -224,11 +224,11 @@ function ragBuildDocumentsTab(panel) {
     const guideHdr = document.createElement('div');
     guideHdr.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;';
     const guideLbl = document.createElement('span');
-    guideLbl.style.cssText = 'font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;';
+    guideLbl.style.cssText = 'font-weight:700;';
     guideLbl.textContent = 'Document preparation guidelines';
     const guideArrow = document.createElement('span');
     guideArrow.textContent = '▾';
-    guideArrow.style.cssText = 'font-size:11px;color:var(--muted);display:inline-block;transition:transform .15s;';
+    guideArrow.style.cssText = 'display:inline-block;transition:transform .15s;';
     guideHdr.appendChild(guideLbl);
     guideHdr.appendChild(guideArrow);
 
@@ -275,12 +275,12 @@ function ragBuildDocumentsTab(panel) {
         const secWrap = document.createElement('div');
         secWrap.style.cssText = 'margin-bottom:10px;';
         const secTitle = document.createElement('div');
-        secTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;';
+        secTitle.style.cssText = 'font-weight:700;margin-bottom:4px;';
         secTitle.textContent = sec.title;
         secWrap.appendChild(secTitle);
         sec.items.forEach(item => {
             const line = document.createElement('div');
-            line.style.cssText = 'font-size:12px;color:var(--text);line-height:1.65;padding-left:10px;';
+            line.style.cssText = 'color:var(--text);line-height:1.65;padding-left:10px;';
             line.textContent = '– ' + item;
             secWrap.appendChild(line);
         });
@@ -306,7 +306,7 @@ function ragBuildDocumentsTab(panel) {
     listBody.appendChild(tableWrap);
 
     const table = document.createElement('table');
-    table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+    table.style.cssText = 'width:100%;border-collapse:collapse;';
     const thead = table.createTHead();
     const hdr   = thead.insertRow();
     ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', ''].forEach(col => {
@@ -350,7 +350,7 @@ function ragBuildDocumentsTab(panel) {
 
     // Stats bar above table
     const statsBar = document.createElement('div');
-    statsBar.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px;';
+    statsBar.style.cssText = 'margin-bottom:12px;';
     listBody.insertBefore(statsBar, tableWrap);
 
     async function loadFiles() {
@@ -385,7 +385,7 @@ function ragBuildDocumentsTab(panel) {
             const td  = row.insertCell();
             td.colSpan = 6;
             td.textContent = 'No documents uploaded yet.';
-            td.style.cssText = 'padding:16px;color:var(--muted);text-align:center;font-style:italic;';
+            td.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
             return;
         }
 
@@ -413,24 +413,23 @@ function ragBuildDocumentsTab(panel) {
                     chip.textContent = tag;
                     chip.style.cssText = 'display:inline-block;margin:0 3px 3px 0;padding:1px 8px;'
                         + 'background:var(--accent-light);border:1px solid var(--accent-mid);'
-                        + 'border-radius:999px;font-size:11px;font-weight:600;color:var(--accent-dark);';
+                        + 'border-radius:999px;font-weight:600;color:var(--accent-dark);';
                     td2.appendChild(chip);
                 });
             } else {
                 td2.textContent = '—';
-                td2.style.color = 'var(--muted)';
             }
 
             const td3 = row.insertCell();
-            td3.style.cssText = tdStyle + 'color:var(--muted);';
+            td3.style.cssText = tdStyle + '';
             td3.textContent   = ragFmtSize(file.file_size);
 
             const tdChunks = row.insertCell();
-            tdChunks.style.cssText = tdStyle + 'text-align:center;color:var(--muted);';
+            tdChunks.style.cssText = tdStyle + 'text-align:center;';
             tdChunks.textContent   = file.chunk_count > 0 ? file.chunk_count : '—';
 
             const td5 = row.insertCell();
-            td5.style.cssText = tdStyle + 'color:var(--muted);font-size:12px;';
+            td5.style.cssText = tdStyle + '';
             td5.textContent   = ragFmtDate(file.created_at);
 
             const td6 = row.insertCell();
@@ -560,11 +559,11 @@ function ragBuildSettingsTab(panel) {
     chatTextWrap.style.cssText = 'cursor:pointer;';
 
     const chatTitle = document.createElement('div');
-    chatTitle.style.cssText = 'font-size:13px;font-weight:600;';
+    chatTitle.style.cssText = 'font-weight:600;';
     chatTitle.textContent = 'Enable AI chat on the front end';
 
     const chatDesc = document.createElement('div');
-    chatDesc.style.cssText = 'font-size:12px;color:var(--muted);margin-top:2px;';
+    chatDesc.style.cssText = 'margin-top:2px;';
     chatDesc.textContent = 'When unchecked, the chat input and send button are hidden for all users. The document list remains visible. Useful when Ollama is not yet set up or during maintenance.';
 
     chatTextWrap.appendChild(chatTitle);
@@ -608,7 +607,7 @@ function ragBuildSettingsTab(panel) {
 
     // Status badge line
     const statusLine = document.createElement('div');
-    statusLine.style.cssText = 'display:none;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;';
+    statusLine.style.cssText = 'display:none;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;';
     connBody.appendChild(statusLine);
 
     // Model row — select (populated after check) + manual fallback input
@@ -676,11 +675,11 @@ function ragBuildSettingsTab(panel) {
     sslTextWrap.style.cssText = 'cursor:pointer;';
 
     const sslTitle = document.createElement('div');
-    sslTitle.style.cssText = 'font-size:13px;font-weight:600;';
+    sslTitle.style.cssText = 'font-weight:600;';
     sslTitle.textContent = 'Verify SSL certificate';
 
     const sslDesc = document.createElement('div');
-    sslDesc.style.cssText = 'font-size:12px;color:var(--muted);margin-top:2px;';
+    sslDesc.style.cssText = 'margin-top:2px;';
     sslDesc.textContent = 'Disable only when using a tunnel (e.g. Serveo, ngrok) that presents a certificate your server cannot verify. Never disable in production.';
 
     sslTextWrap.appendChild(sslTitle);
@@ -733,11 +732,11 @@ function ragBuildSettingsTab(panel) {
     chunksTextWrap.style.cssText = 'cursor:pointer;';
 
     const chunksTitle = document.createElement('div');
-    chunksTitle.style.cssText = 'font-size:13px;font-weight:600;';
+    chunksTitle.style.cssText = 'font-weight:600;';
     chunksTitle.textContent = 'Use document chunking';
 
     const chunksDesc = document.createElement('div');
-    chunksDesc.style.cssText = 'font-size:12px;color:var(--muted);margin-top:2px;';
+    chunksDesc.style.cssText = 'margin-top:2px;';
     chunksDesc.textContent = 'When enabled, uploaded documents are split into overlapping chunks for fine-grained retrieval. Disable to send full file content directly — better for small documents.';
 
     chunksTextWrap.appendChild(chunksTitle);
@@ -753,7 +752,7 @@ function ragBuildSettingsTab(panel) {
     connBody.appendChild(saveBtn);
 
     const pullHint = document.createElement('p');
-    pullHint.style.cssText = 'margin:14px 0 0;font-size:12px;color:var(--muted);';
+    pullHint.style.cssText = 'margin:14px 0 0;';
     pullHint.innerHTML = 'Pull a model: <code>ollama pull llama3</code> &nbsp;|&nbsp; '
         + 'Popular: <code>llama3</code>, <code>mistral</code>, <code>gemma3</code>, <code>phi3</code>, <code>qwen2.5</code>';
     connBody.appendChild(pullHint);
@@ -794,20 +793,20 @@ function ragBuildSettingsTab(panel) {
         modelsTable.style.display = '';
 
         const hdr = document.createElement('div');
-        hdr.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;';
+        hdr.style.cssText = 'font-weight:700;margin-bottom:8px;';
         hdr.textContent = 'Available local models' + (version ? ' · Ollama ' + version : '');
         modelsTable.appendChild(hdr);
 
         if (models.length === 0) {
             const none = document.createElement('div');
-            none.style.cssText = 'font-size:13px;color:var(--muted);font-style:italic;padding:8px 0;';
+            none.style.cssText = 'font-style:italic;padding:8px 0;';
             none.textContent = 'No models found. Pull one with: ollama pull llama3';
             modelsTable.appendChild(none);
             return;
         }
 
         const tbl = document.createElement('table');
-        tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+        tbl.style.cssText = 'width:100%;border-collapse:collapse;';
 
         const thead = tbl.createTHead();
         const hr    = thead.insertRow();
@@ -828,11 +827,11 @@ function ragBuildSettingsTab(panel) {
             td1.textContent   = m.name;
 
             const td2 = row.insertCell();
-            td2.style.cssText = tdStyle + 'color:var(--muted);';
+            td2.style.cssText = tdStyle + '';
             td2.textContent   = ragFmtModelSize(m.size) || '—';
 
             const td3 = row.insertCell();
-            td3.style.cssText = tdStyle + 'color:var(--muted);font-size:12px;';
+            td3.style.cssText = tdStyle + '';
             td3.textContent   = m.modified ? new Date(m.modified).toLocaleDateString() : '—';
 
             // Click to select
@@ -863,7 +862,7 @@ function ragBuildSettingsTab(panel) {
         checkBtn.disabled    = true;
         checkBtn.textContent = 'Connecting…';
         statusLine.style.display = 'block';
-        statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(255,195,0,0.12);color:#64748B;border:1px solid #ffc300;';
+        statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:rgba(255,195,0,0.12);color:#64748B;border:1px solid #ffc300;';
         statusLine.textContent   = 'Connecting to ' + url + '…';
 
         try {
@@ -875,7 +874,7 @@ function ragBuildSettingsTab(panel) {
 
             if (data.status === 'success') {
                 const n = (data.models ?? []).length;
-                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(43,147,72,0.12);color:#2b9348;border:1px solid #CBD5E1;';
+                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:rgba(43,147,72,0.12);color:#2b9348;border:1px solid #CBD5E1;';
                 statusLine.textContent   = '✓ Connected · ' + n + ' model' + (n !== 1 ? 's' : '') + ' available'
                     + (data.version ? ' · Ollama ' + data.version : '');
 
@@ -883,12 +882,12 @@ function ragBuildSettingsTab(panel) {
                 populateModelSelect(data.models ?? [], currentModel);
                 renderModelsTable(data.models ?? [], data.version ?? '');
             } else {
-                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(208,0,0,0.08);color:#a80000;border:1px solid #d00000;';
+                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:rgba(208,0,0,0.08);color:#a80000;border:1px solid #d00000;';
                 statusLine.textContent   = '✗ ' + (data.error ?? 'Connection failed');
                 modelsTable.style.display = 'none';
             }
         } catch (e) {
-            statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-size:13px;font-weight:600;background:rgba(208,0,0,0.08);color:#a80000;border:1px solid #d00000;';
+            statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:rgba(208,0,0,0.08);color:#a80000;border:1px solid #d00000;';
             statusLine.textContent   = '✗ Request failed: ' + e.message;
             modelsTable.style.display = 'none';
         } finally {
@@ -978,11 +977,11 @@ function ragBuildTestTab(panel) {
     tagRow.style.cssText = 'margin-bottom:14px;';
     const tagLbl = document.createElement('div');
     tagLbl.textContent = 'Filter by tag (optional):';
-    tagLbl.style.cssText = 'font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;';
+    tagLbl.style.cssText = 'font-weight:700;margin-bottom:8px;';
     tagRow.appendChild(tagLbl);
     const tagChips = document.createElement('div');
     tagChips.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;min-height:28px;';
-    tagChips.innerHTML = '<span style="font-size:12px;color:var(--muted);font-style:italic;">Loading tags…</span>';
+    tagChips.innerHTML = '<span style="font-style:italic;">Loading tags…</span>';
     tagRow.appendChild(tagChips);
     testBody.appendChild(tagRow);
 
@@ -994,11 +993,11 @@ function ragBuildTestTab(panel) {
             tagChips.innerHTML = '';
             const tags = data.tags ?? [];
             if (tags.length === 0) {
-                tagChips.innerHTML = '<span style="font-size:12px;color:var(--muted);font-style:italic;">No tags yet.</span>';
+                tagChips.innerHTML = '<span style="font-style:italic;">No tags yet.</span>';
             } else {
                 tags.forEach(tag => {
                     const lbl = document.createElement('label');
-                    lbl.style.cssText = 'display:flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;cursor:pointer;background:#fff;';
+                    lbl.style.cssText = 'display:flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;background:#fff;';
                     const cb = document.createElement('input');
                     cb.type  = 'checkbox';
                     cb.value = tag;
@@ -1009,7 +1008,7 @@ function ragBuildTestTab(panel) {
                 });
             }
         } catch (_) {
-            tagChips.innerHTML = '<span style="font-size:12px;color:var(--danger);">Could not load tags.</span>';
+            tagChips.innerHTML = '<span style="color:var(--danger);">Could not load tags.</span>';
         }
     })();
 
@@ -1018,7 +1017,7 @@ function ragBuildTestTab(panel) {
     langRow.style.cssText = 'margin-bottom:14px;';
     const langLbl = document.createElement('div');
     langLbl.textContent = 'Response language (optional):';
-    langLbl.style.cssText = 'font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;';
+    langLbl.style.cssText = 'font-weight:700;margin-bottom:8px;';
     langRow.appendChild(langLbl);
     const langSelect = document.createElement('select');
     langSelect.className = 'adm-input w-180';
@@ -1077,14 +1076,14 @@ function ragBuildTestTab(panel) {
 
     const answerLabel = document.createElement('div');
     answerLabel.textContent = 'Answer';
-    answerLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+    answerLabel.style.cssText = 'font-weight:700;margin-bottom:6px;';
 
     const answerBox = document.createElement('div');
-    answerBox.style.cssText = 'padding:14px;background:#F4F7F9;border:1px solid var(--border);border-radius:4px;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;margin-bottom:12px;';
+    answerBox.style.cssText = 'padding:14px;background:#F4F7F9;border:1px solid var(--border);border-radius:4px;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;margin-bottom:12px;';
 
     const sourcesLabel = document.createElement('div');
     sourcesLabel.textContent = 'Sources used';
-    sourcesLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+    sourcesLabel.style.cssText = 'font-weight:700;margin-bottom:6px;';
 
     const sourcesRow = document.createElement('div');
     sourcesRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
@@ -1102,7 +1101,7 @@ function ragBuildTestTab(panel) {
     panel.appendChild(promptCard);
 
     const promptBox = document.createElement('pre');
-    promptBox.style.cssText = 'margin:0;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:var(--muted);font-style:italic;';
+    promptBox.style.cssText = 'margin:0;line-height:1.6;white-space:pre-wrap;word-break:break-word;font-style:italic;';
     promptBox.textContent = 'Run a query above to see the prompt.';
     promptBody.appendChild(promptBox);
 
@@ -1123,7 +1122,6 @@ function ragBuildTestTab(panel) {
         testStopBtn.style.opacity = '1';
         resultWrap.style.display = '';
         answerBox.textContent    = 'Querying…';
-        answerBox.style.color    = 'var(--muted)';
         sourcesRow.innerHTML     = '';
 
         try {
@@ -1148,13 +1146,13 @@ function ragBuildTestTab(panel) {
                 if (srcs.length === 0) {
                     const none = document.createElement('span');
                     none.textContent  = 'No documents matched — answered from model knowledge.';
-                    none.style.cssText = 'font-size:12px;color:var(--muted);font-style:italic;';
+                    none.style.cssText = 'font-style:italic;';
                     sourcesRow.appendChild(none);
                 } else {
                     srcs.forEach(s => {
                         const chip = document.createElement('span');
                         chip.textContent = s.filename;
-                        chip.style.cssText = 'padding:2px 10px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-size:12px;font-weight:600;color:var(--accent-dark);';
+                        chip.style.cssText = 'padding:2px 10px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-weight:600;color:var(--accent-dark);';
                         sourcesRow.appendChild(chip);
                     });
                 }
@@ -1202,10 +1200,10 @@ function ragBuildStatsTab(panel) {
         const box = document.createElement('div');
         box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:#F4F7F9;';
         const v = document.createElement('div');
-        v.style.cssText = 'font-size:28px;font-weight:700;color:var(--accent);margin-bottom:4px;';
+        v.style.cssText = 'font-weight:700;margin-bottom:4px;';
         v.textContent = '—';
         const l = document.createElement('div');
-        l.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;';
+        l.style.cssText = 'font-weight:700;';
         l.textContent = label;
         box.appendChild(v);
         box.appendChild(l);
@@ -1229,7 +1227,7 @@ function ragBuildStatsTab(panel) {
     recentBody.appendChild(tableWrap);
 
     const tbl   = document.createElement('table');
-    tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+    tbl.style.cssText = 'width:100%;border-collapse:collapse;';
     const thead = tbl.createTHead();
     const hr    = thead.insertRow();
     ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)', 'Sources'].forEach(col => {
@@ -1270,7 +1268,7 @@ function ragBuildStatsTab(panel) {
                 const td  = row.insertCell();
                 td.colSpan = 9;
                 td.textContent = 'No queries recorded yet.';
-                td.style.cssText = 'padding:16px;color:var(--muted);text-align:center;font-style:italic;';
+                td.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
                 return;
             }
             const tdStyle = 'padding:8px 10px;border-bottom:1px solid #CBD5E1;vertical-align:middle;';
@@ -1282,7 +1280,7 @@ function ragBuildStatsTab(panel) {
                 row.addEventListener('mouseout',  () => { if (!row.dataset.expanded) row.style.background = ''; });
 
                 const td1 = row.insertCell();
-                td1.style.cssText = tdStyle + 'font-size:12px;color:var(--muted);white-space:nowrap;';
+                td1.style.cssText = tdStyle + 'white-space:nowrap;';
                 td1.textContent   = ragFmtDate(r.created_at);
 
                 const td2 = row.insertCell();
@@ -1297,28 +1295,27 @@ function ragBuildStatsTab(panel) {
                     tags.forEach(tag => {
                         const chip = document.createElement('span');
                         chip.textContent = tag;
-                        chip.style.cssText = 'display:inline-block;margin:0 2px 2px 0;padding:1px 7px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-size:11px;font-weight:600;color:var(--accent-dark);white-space:nowrap;';
+                        chip.style.cssText = 'display:inline-block;margin:0 2px 2px 0;padding:1px 7px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-weight:600;color:var(--accent-dark);white-space:nowrap;';
                         td3.appendChild(chip);
                     });
                 } else {
                     td3.textContent = '—';
-                    td3.style.color = 'var(--muted)';
                 }
 
                 const td4 = row.insertCell();
-                td4.style.cssText = tdStyle + 'text-align:center;color:var(--muted);';
+                td4.style.cssText = tdStyle + 'text-align:center;';
                 td4.textContent   = r.matched_files;
 
                 const td5 = row.insertCell();
-                td5.style.cssText = tdStyle + 'font-size:12px;color:var(--muted);white-space:nowrap;';
+                td5.style.cssText = tdStyle + 'white-space:nowrap;';
                 td5.textContent   = r.model || '—';
 
                 const td6 = row.insertCell();
-                td6.style.cssText = tdStyle + 'text-align:right;color:var(--muted);';
+                td6.style.cssText = tdStyle + 'text-align:right;';
                 td6.textContent   = r.prompt_tokens ? (parseInt(r.prompt_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
 
                 const td7 = row.insertCell();
-                td7.style.cssText = tdStyle + 'text-align:right;color:var(--muted);';
+                td7.style.cssText = tdStyle + 'text-align:right;';
                 td7.textContent   = r.completion_tokens ? (parseInt(r.completion_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
 
                 const td8 = row.insertCell();
@@ -1332,11 +1329,10 @@ function ragBuildStatsTab(panel) {
                     const chunkCount = srcs.filter(s => s.source_type === 'chunk').length;
                     const badge = document.createElement('span');
                     badge.textContent = srcs.length + (chunkCount > 0 ? ' chunk' : ' file') + (srcs.length !== 1 ? 's' : '');
-                    badge.style.cssText = 'display:inline-block;padding:1px 8px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-size:11px;font-weight:600;color:var(--accent-dark);';
+                    badge.style.cssText = 'display:inline-block;padding:1px 8px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-weight:600;color:var(--accent-dark);';
                     td9.appendChild(badge);
                 } else {
                     td9.textContent = '—';
-                    td9.style.color = 'var(--muted)';
                 }
 
                 let detailRow = null;
@@ -1360,7 +1356,7 @@ function ragBuildStatsTab(panel) {
                     if (srcs.length > 0) {
                         const srcHdr = document.createElement('div');
                         srcHdr.textContent = 'Sources used (' + srcs.length + ')';
-                        srcHdr.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;';
+                        srcHdr.style.cssText = 'font-weight:700;margin-bottom:8px;';
                         dtd.appendChild(srcHdr);
 
                         const srcGrid = document.createElement('div');
@@ -1369,13 +1365,13 @@ function ragBuildStatsTab(panel) {
                             const card = document.createElement('div');
                             card.style.cssText = 'padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:#fff;';
                             const title = document.createElement('div');
-                            title.style.cssText = 'font-size:12px;font-weight:600;margin-bottom:4px;';
+                            title.style.cssText = 'font-weight:600;margin-bottom:4px;';
                             const chunkLabel = s.source_type === 'chunk' && parseInt(s.chunk_index, 10) >= 0
                                 ? '  [chunk #' + s.chunk_index + ']'
                                 : '  [full file]';
                             title.textContent = (s.filename || '—') + chunkLabel;
                             const snippet = document.createElement('div');
-                            snippet.style.cssText = 'font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-word;line-height:1.5;';
+                            snippet.style.cssText = 'white-space:pre-wrap;word-break:break-word;line-height:1.5;';
                             const snipText = s.snippet || '';
                             snippet.textContent = snipText.length > 350 ? snipText.slice(0, 350) + '…' : snipText;
                             card.appendChild(title);
@@ -1389,16 +1385,16 @@ function ragBuildStatsTab(panel) {
                         const promptToggle = document.createElement('div');
                         promptToggle.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px;user-select:none;';
                         const promptLbl = document.createElement('span');
-                        promptLbl.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;';
+                        promptLbl.style.cssText = 'font-weight:700;';
                         promptLbl.textContent = 'Full prompt sent to Ollama';
                         const promptArrow = document.createElement('span');
                         promptArrow.textContent = '▾';
-                        promptArrow.style.cssText = 'font-size:12px;color:var(--muted);transition:transform .15s;display:inline-block;';
+                        promptArrow.style.cssText = 'transition:transform .15s;display:inline-block;';
                         promptToggle.appendChild(promptLbl);
                         promptToggle.appendChild(promptArrow);
 
                         const promptBox = document.createElement('pre');
-                        promptBox.style.cssText = 'display:none;margin:0;padding:12px;background:#F0F4F8;border:1px solid var(--border);border-radius:4px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto;color:var(--text);';
+                        promptBox.style.cssText = 'display:none;margin:0;padding:12px;background:#F0F4F8;border:1px solid var(--border);border-radius:4px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto;color:var(--text);';
                         promptBox.textContent = r.prompt_snapshot;
 
                         promptToggle.addEventListener('click', e => {
@@ -1413,7 +1409,7 @@ function ragBuildStatsTab(panel) {
                     } else if (srcs.length === 0) {
                         const noData = document.createElement('div');
                         noData.textContent = 'No detail data recorded for this query (pre-2.10.0 entry).';
-                        noData.style.cssText = 'font-size:12px;color:var(--muted);font-style:italic;';
+                        noData.style.cssText = 'font-style:italic;';
                         dtd.appendChild(noData);
                     }
                 });
@@ -1449,7 +1445,7 @@ export async function renderRagPage(ctx) {
 
     const intro = document.createElement('p');
     intro.textContent = 'Upload .txt documents, configure Ollama, and test retrieval-augmented queries.';
-    intro.style.cssText = 'color:var(--muted);margin-bottom:24px;font-size:14px;';
+    intro.style.cssText = 'margin-bottom:24px;';
 
     wrap.appendChild(heading);
     wrap.appendChild(intro);

@@ -22,7 +22,7 @@ export function renderSchemaGlobalSettings(config, ctx) {
     h3.style.cssText = 'margin:0 0 6px;';
     h3.textContent = 'Global Grid Settings';
     const sub = document.createElement('p');
-    sub.style.cssText = 'color:var(--muted); font-size:14px; margin:0 0 24px;';
+    sub.style.cssText = '  margin:0 0 24px;';
     sub.textContent = 'Settings that apply to all data grids in the frontend application.';
     card.append(h3, sub);
 
@@ -33,10 +33,10 @@ export function renderSchemaGlobalSettings(config, ctx) {
     const labelWrap = document.createElement('div');
     labelWrap.style.flex = '1';
     const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:block; font-weight:600; font-size:14px; margin-bottom:4px;';
+    lbl.style.cssText = 'display:block; font-weight:600;  margin-bottom:4px;';
     lbl.textContent = 'Default Page Size';
     const hint = document.createElement('span');
-    hint.style.cssText = 'font-size:12px; color:var(--muted);';
+    hint.style.cssText = ' ';
     hint.textContent = 'Records shown per page. Users can override this per-session from the grid pagination bar.';
     labelWrap.append(lbl, hint);
 
@@ -59,7 +59,7 @@ export function renderSchemaGlobalSettings(config, ctx) {
     card.appendChild(row);
 
     const note = document.createElement('p');
-    note.style.cssText = 'font-size:12px; color:var(--muted); margin-top:12px;';
+    note.style.cssText = '  margin-top:12px;';
     note.textContent = 'Stored in the schema configuration as "default_page_size".';
     card.appendChild(note);
 
@@ -169,7 +169,7 @@ function buildDefaultSortUI(tableData) {
     wrapper.style.cssText = 'margin-bottom:15px;';
 
     const label = document.createElement('label');
-    label.style.cssText = 'display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:600;';
+    label.style.cssText = 'display:block;   margin-bottom:6px; font-weight:600;';
     label.textContent = 'Default Sort Order';
     wrapper.appendChild(label);
 
@@ -640,7 +640,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             colsContainer.style.cssText = 'margin-top:4px;';
 
             const colsLabel = document.createElement('label');
-            colsLabel.style.cssText = 'font-size:13px;font-weight:600;display:block;margin-bottom:6px;';
+            colsLabel.style.cssText = 'font-weight:600;display:block;margin-bottom:6px;';
             colsLabel.textContent = 'Source Columns (in order)';
             colsContainer.appendChild(colsLabel);
 
@@ -654,7 +654,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                     row.style.cssText = 'display:flex;gap:6px;align-items:center;';
 
                     const lbl = document.createElement('span');
-                    lbl.style.cssText = 'flex:1;font-size:13px;background:var(--bg);padding:3px 8px;border-radius:4px;border:1px solid var(--border-light);';
+                    lbl.style.cssText = 'flex:1;background:var(--bg);padding:3px 8px;border-radius:4px;border:1px solid var(--border-light);';
                     lbl.textContent = nonVirtualCols.find(o => o.value === c)?.label ?? c;
 
                     const rmBtn = document.createElement('button');
@@ -963,7 +963,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     workspaceEl.appendChild(m2mTitle);
 
     const m2mHint = document.createElement('p');
-    m2mHint.style.cssText = 'color:var(--muted); font-size:13px; margin:-8px 0 14px;';
+    m2mHint.style.cssText = '  margin:-8px 0 14px;';
     m2mHint.textContent = 'Checkbox panels shown in edit/create forms. Each entry links this table to another via a junction table.';
     workspaceEl.appendChild(m2mHint);
 
@@ -1064,7 +1064,7 @@ export async function renderExternalTablesView(ctx) {
     workspaceEl.appendChild(h3);
 
     const sub = document.createElement('p');
-    sub.style.cssText = 'color:var(--muted); font-size:14px; margin:0 0 20px;';
+    sub.style.cssText = '  margin:0 0 20px;';
     sub.textContent = 'Tables routed from MySQL. Sync columns to rebuild the schema column definitions from the live database.';
     workspaceEl.appendChild(sub);
 
@@ -1117,7 +1117,7 @@ export async function renderExternalTablesView(ctx) {
         nameEl.textContent = displayName;
 
         const metaEl = document.createElement('span');
-        metaEl.style.cssText = 'font-size:12px; color:var(--muted);';
+        metaEl.style.cssText = ' ';
         let metaText = 'Key: ' + tableName + ' · ' + colCount + ' column' + (colCount !== 1 ? 's' : '');
         if (tableData.mysql_pk) {
             metaText += ' · PK: ' + tableData.mysql_pk + ' → id';

@@ -135,7 +135,7 @@ function createColumnMultiSelect(options, selectedValues, onChange) {
     const selected = Array.isArray(selectedValues) ? [...selectedValues] : [];
 
     if (options.length === 0) {
-        container.innerHTML = '<span style="color:var(--muted); font-size:13px;">No columns available</span>';
+        container.innerHTML = '<span style=" ">No columns available</span>';
         return container;
     }
 

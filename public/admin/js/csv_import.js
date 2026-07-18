@@ -70,7 +70,7 @@ export async function renderCsvImportPage(ctx) {
     // ── TAB 1: Import ─────────────────────────────────────────────────────────
 
     const desc = document.createElement('p');
-    desc.style.cssText = 'color:#64748B;margin:0 0 20px;font-size:14px;';
+    desc.style.cssText = 'color:#64748B;margin:0 0 20px;';
     desc.textContent = 'Import rows from a CSV file into an existing table, or create a new table directly from CSV headers.';
     importPanel.appendChild(desc);
 
@@ -175,11 +175,11 @@ export async function renderCsvImportPage(ctx) {
     uploadIcon.style.cssText = 'width:36px;height:36px;margin-bottom:8px;pointer-events:none;opacity:0.5;';
 
     const uploadMsg = document.createElement('div');
-    uploadMsg.style.cssText = 'font-size:14px;color:var(--muted,#64748B);margin-bottom:4px;pointer-events:none;';
+    uploadMsg.style.cssText = 'color:var(--muted,#64748B);margin-bottom:4px;pointer-events:none;';
     uploadMsg.textContent = 'Click to select a CSV file or drag & drop here';
 
     const uploadHint = document.createElement('div');
-    uploadHint.style.cssText = 'font-size:12px;color:var(--muted,#64748B);pointer-events:none;';
+    uploadHint.style.cssText = 'color:var(--muted,#64748B);pointer-events:none;';
     uploadHint.textContent = '.csv only · max 500 MB';
 
     const fileInput = document.createElement('input');
@@ -214,11 +214,11 @@ export async function renderCsvImportPage(ctx) {
     appendOpt(conflictSelect, '', '— None (insert only) —');
 
     const conflictNote = document.createElement('span');
-    conflictNote.style.cssText = 'font-size:12px;color:#64748B;';
+    conflictNote.style.cssText = 'color:#64748B;';
     conflictNote.textContent = 'Matching rows will be updated instead of rejected (requires unique constraint).';
 
     const conflictWarn = document.createElement('div');
-    conflictWarn.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:rgba(255,195,0,0.12);border:1px solid #ffc300;border-radius:4px;font-size:12px;color:#64748B;';
+    conflictWarn.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:rgba(255,195,0,0.12);border:1px solid #ffc300;border-radius:4px;color:#64748B;';
 
     conflictRow.append(conflictLabel, conflictSelect, conflictNote);
     card2.el.appendChild(conflictRow);
@@ -234,7 +234,7 @@ export async function renderCsvImportPage(ctx) {
     copyModeChk.checked = localStorage.getItem(LS_COPY_MODE) === '1';
     const copyModeLabel = document.createElement('label');
     copyModeLabel.htmlFor = 'csv-copy-mode-chk';
-    copyModeLabel.style.cssText = 'font-size:13px;color:#64748B;cursor:pointer;';
+    copyModeLabel.style.cssText = 'color:#64748B;cursor:pointer;';
     copyModeLabel.textContent = 'Fast COPY mode';
     modeRow.append(copyModeChk, copyModeLabel);
     card2.el.appendChild(modeRow);
@@ -256,7 +256,7 @@ export async function renderCsvImportPage(ctx) {
     // ── TAB 2: Configuration ──────────────────────────────────────────────────
 
     const cfgHeading = document.createElement('h3');
-    cfgHeading.style.cssText = 'margin:0 0 20px;font-size:15px;';
+    cfgHeading.style.cssText = 'margin:0 0 20px;';
     cfgHeading.textContent = 'Import Settings';
     configPanel.appendChild(cfgHeading);
 
@@ -265,7 +265,7 @@ export async function renderCsvImportPage(ctx) {
     configPanel.appendChild(modeCard.el);
 
     const modeDesc = document.createElement('p');
-    modeDesc.style.cssText = 'font-size:13px;color:#64748B;margin:0 0 16px;';
+    modeDesc.style.cssText = 'color:#64748B;margin:0 0 16px;';
     modeDesc.textContent = 'Choose the default mode used when running imports. You can override this per-import in Step 2.';
     modeCard.el.appendChild(modeDesc);
 
@@ -283,10 +283,10 @@ export async function renderCsvImportPage(ctx) {
         radio.style.cssText = 'margin-top:3px;flex-shrink:0;width:15px;height:15px;cursor:pointer;';
         const txt = document.createElement('div');
         const strong = document.createElement('strong');
-        strong.style.cssText = 'font-size:13px;display:block;margin-bottom:2px;';
+        strong.style.cssText = 'display:block;margin-bottom:2px;';
         strong.textContent = labelText;
         const small = document.createElement('span');
-        small.style.cssText = 'font-size:12px;color:#64748B;';
+        small.style.cssText = 'color:#64748B;';
         small.textContent = descText;
         txt.append(strong, small);
         row.append(radio, txt);
@@ -326,7 +326,7 @@ export async function renderCsvImportPage(ctx) {
     configPanel.appendChild(delimCard.el);
 
     const delimDesc = document.createElement('p');
-    delimDesc.style.cssText = 'font-size:13px;color:#64748B;margin:0 0 14px;';
+    delimDesc.style.cssText = 'color:#64748B;margin:0 0 14px;';
     delimDesc.textContent = 'Column separator used when parsing CSV files. Override per-import in Step 1.';
     delimCard.el.appendChild(delimDesc);
 
@@ -351,7 +351,7 @@ export async function renderCsvImportPage(ctx) {
     configPanel.appendChild(encCard.el);
 
     const encDesc = document.createElement('p');
-    encDesc.style.cssText = 'font-size:13px;color:#64748B;margin:0 0 14px;';
+    encDesc.style.cssText = 'color:#64748B;margin:0 0 14px;';
     encDesc.textContent = 'Character encoding of the source CSV file. Override per-import in Step 1. Files are converted to UTF-8 before inserting into PostgreSQL.';
     encCard.el.appendChild(encDesc);
 
@@ -376,12 +376,12 @@ export async function renderCsvImportPage(ctx) {
     configPanel.appendChild(limitsCard.el);
 
     const limitsNote = document.createElement('p');
-    limitsNote.style.cssText = 'font-size:13px;color:#64748B;margin:0 0 14px;';
+    limitsNote.style.cssText = 'color:#64748B;margin:0 0 14px;';
     limitsNote.textContent = 'Current server configuration. To change these values, edit docker-php-dev.ini and nginx.conf, then restart the container.';
     limitsCard.el.appendChild(limitsNote);
 
     const limitsGrid = document.createElement('div');
-    limitsGrid.style.cssText = 'display:grid;grid-template-columns:max-content 1fr;gap:6px 20px;font-size:13px;';
+    limitsGrid.style.cssText = 'display:grid;grid-template-columns:max-content 1fr;gap:6px 20px;';
     limitsCard.el.appendChild(limitsGrid);
 
     function addLimitRow(label, value, note) {
@@ -406,7 +406,7 @@ export async function renderCsvImportPage(ctx) {
         }
     } catch (_) {
         const err = document.createElement('p');
-        err.style.cssText = 'font-size:13px;color:#d00000;';
+        err.style.cssText = 'color:#d00000;';
         err.textContent = 'Could not load server limits.';
         limitsCard.el.appendChild(err);
     }
@@ -414,7 +414,7 @@ export async function renderCsvImportPage(ctx) {
     // ── TAB 3: History ────────────────────────────────────────────────────────
 
     const histTitle = document.createElement('h3');
-    histTitle.style.cssText = 'font-size:15px;margin:0 0 12px;';
+    histTitle.style.cssText = 'margin:0 0 12px;';
     histTitle.textContent = 'Import History';
 
     const histContainer = document.createElement('div');
@@ -659,12 +659,12 @@ export async function renderCsvImportPage(ctx) {
             ];
 
             const note = document.createElement('p');
-            note.style.cssText = 'font-size:13px;color:#64748B;margin:0 0 12px;';
+            note.style.cssText = 'color:#64748B;margin:0 0 12px;';
             note.textContent = `Rename ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to database column names. The table will be created with an auto-increment id column plus these columns.`;
             mappingContainer.appendChild(note);
 
             const tbl = document.createElement('table');
-            tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+            tbl.style.cssText = 'width:100%;border-collapse:collapse;';
 
             const thead = document.createElement('thead');
             const hrow  = document.createElement('tr');
@@ -690,7 +690,7 @@ export async function renderCsvImportPage(ctx) {
                 tdH.textContent = hdr;
 
                 const tdS = document.createElement('td');
-                tdS.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;color:#64748B;font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                tdS.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;color:#64748B;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                 const samples = csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== '').slice(0, 3);
                 tdS.textContent = samples.length ? samples.join(', ') : '(empty)';
                 tdS.title = samples.join(' | ');
@@ -729,12 +729,12 @@ export async function renderCsvImportPage(ctx) {
         if (!selectedTable) return;
 
         const note = document.createElement('p');
-        note.style.cssText = 'font-size:13px;color:#64748B;margin:0 0 12px;';
+        note.style.cssText = 'color:#64748B;margin:0 0 12px;';
         note.textContent   = `Map ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to "${esc(selectedTable)}" columns. Leave "— Skip —" to ignore a CSV column.`;
         mappingContainer.appendChild(note);
 
         const tbl   = document.createElement('table');
-        tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+        tbl.style.cssText = 'width:100%;border-collapse:collapse;';
 
         const thead = document.createElement('thead');
         const hrow  = document.createElement('tr');
@@ -759,7 +759,7 @@ export async function renderCsvImportPage(ctx) {
             tdH.textContent = hdr;
 
             const tdS = document.createElement('td');
-            tdS.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;color:#64748B;font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            tdS.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;color:#64748B;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
             const samples = csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== '').slice(0, 3);
             tdS.textContent = samples.length ? samples.join(', ') : '(empty)';
             tdS.title       = samples.join(' | ');
@@ -963,13 +963,13 @@ export async function renderCsvImportPage(ctx) {
         resultEl.style.cssText = `padding:18px 20px;border-radius:8px;background:${bg};border:1px solid ${bdr};margin-bottom:8px;`;
 
         const title = document.createElement('div');
-        title.style.cssText = `font-weight:700;font-size:15px;margin-bottom:8px;color:${ok ? '#1a6b35' : '#64748B'};`;
+        title.style.cssText = `font-weight:700;margin-bottom:8px;color:${ok ? '#1a6b35' : '#64748B'};`;
         title.textContent = ok
             ? `✓ Import complete`
             : `⚠ Import finished with issues`;
 
         const stats = document.createElement('div');
-        stats.style.cssText = 'display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin-bottom:4px;';
+        stats.style.cssText = 'display:flex;gap:20px;flex-wrap:wrap;margin-bottom:4px;';
 
         const stat = (label, value, accent) => {
             const s = document.createElement('span');
@@ -994,7 +994,7 @@ export async function renderCsvImportPage(ctx) {
         if (data.has_errors && data.import_id) {
             const logLink = document.createElement('a');
             logLink.href  = '#';
-            logLink.style.cssText = 'display:inline-block;margin-top:8px;font-size:13px;color:#64748B;';
+            logLink.style.cssText = 'display:inline-block;margin-top:8px;color:#64748B;';
             logLink.textContent = 'View skipped row details ↓';
             logLink.addEventListener('click', async (e) => {
                 e.preventDefault();
@@ -1014,7 +1014,7 @@ export async function renderCsvImportPage(ctx) {
             const data = await res.json();
             if (data.status !== 'success' || !data.rows.length) {
                 const note = document.createElement('p');
-                note.style.cssText = 'font-size:13px;color:#64748B;margin-top:8px;';
+                note.style.cssText = 'color:#64748B;margin-top:8px;';
                 note.textContent = 'No row-level errors logged.';
                 container.appendChild(note);
                 return;
@@ -1028,7 +1028,7 @@ export async function renderCsvImportPage(ctx) {
         wrapEl.style.cssText = 'margin-top:12px;max-height:320px;overflow-y:auto;border:1px solid #CBD5E1;border-radius:4px;';
 
         const tbl = document.createElement('table');
-        tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
+        tbl.style.cssText = 'width:100%;border-collapse:collapse;';
 
         const thead = document.createElement('thead');
         const hrow  = document.createElement('tr');
@@ -1048,7 +1048,7 @@ export async function renderCsvImportPage(ctx) {
 
             const tdN = td(String(row.row_number), 'padding:5px 10px;border:1px solid #CBD5E1;white-space:nowrap;');
             const tdE = td(row.error_message || '', 'padding:5px 10px;border:1px solid #CBD5E1;color:#d00000;');
-            const tdR = td(row.raw_data || '', 'padding:5px 10px;border:1px solid #CBD5E1;font-family:monospace;font-size:11px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
+            const tdR = td(row.raw_data || '', 'padding:5px 10px;border:1px solid #CBD5E1;font-family:monospace;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
             tdR.title = row.raw_data || '';
 
             tr.append(tdN, tdE, tdR);
@@ -1060,18 +1060,18 @@ export async function renderCsvImportPage(ctx) {
     }
 
     async function loadHistory() {
-        histContainer.innerHTML = '<p style="color:#64748B;font-size:13px;padding:4px 0;">Loading…</p>';
+        histContainer.innerHTML = '<p style="color:#64748B;padding:4px 0;">Loading…</p>';
         try {
             const res  = await apiFetch('api_csv_import.php?action=csv_import_history');
             const data = await res.json();
 
             if (data.status !== 'success' || !data.imports.length) {
-                histContainer.innerHTML = '<p style="color:#64748B;font-size:13px;">No imports yet.</p>';
+                histContainer.innerHTML = '<p style="color:#64748B;">No imports yet.</p>';
                 return;
             }
 
             const tbl = document.createElement('table');
-            tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+            tbl.style.cssText = 'width:100%;border-collapse:collapse;';
 
             const thead = document.createElement('thead');
             const hrow  = document.createElement('tr');
@@ -1104,13 +1104,13 @@ export async function renderCsvImportPage(ctx) {
                     [row.skipped_rows  ?? 0,        'padding:8px 10px;border:1px solid #CBD5E1;text-align:right;'],
                     [row.username || '—',           'padding:8px 10px;border:1px solid #CBD5E1;'],
                     [(row.started_at || '').slice(0, 16), 'padding:8px 10px;border:1px solid #CBD5E1;white-space:nowrap;'],
-                    [fmtDuration(row.started_at, row.finished_at), 'padding:8px 10px;border:1px solid #CBD5E1;white-space:nowrap;text-align:right;color:#64748B;font-size:12px;'],
+                    [fmtDuration(row.started_at, row.finished_at), 'padding:8px 10px;border:1px solid #CBD5E1;white-space:nowrap;text-align:right;color:#64748B;'],
                 ]) {
                     const cell = document.createElement('td');
                     cell.style.cssText = style;
                     if (val === null) {
                         const badge = document.createElement('span');
-                        badge.style.cssText = `padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:${statusCfg.bg};color:${statusCfg.fg};`;
+                        badge.style.cssText = `padding:2px 8px;border-radius:12px;font-weight:600;background:${statusCfg.bg};color:${statusCfg.fg};`;
                         badge.textContent = row.status;
                         cell.appendChild(badge);
                     } else {
@@ -1151,7 +1151,7 @@ export async function renderCsvImportPage(ctx) {
             histContainer.innerHTML = '';
             histContainer.appendChild(tbl);
         } catch (_) {
-            histContainer.innerHTML = '<p style="color:#d00000;font-size:13px;">Failed to load history.</p>';
+            histContainer.innerHTML = '<p style="color:#d00000;">Failed to load history.</p>';
         }
     }
 
@@ -1191,7 +1191,7 @@ export async function renderCsvImportPage(ctx) {
             error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
         }[type] ?? { bg: '#DDEAF4', fg: '#1E293B', border: '#DDEAF4' };
         const div = document.createElement('div');
-        div.style.cssText = `padding:10px 14px;border-radius:6px;background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};font-size:13px;`;
+        div.style.cssText = `padding:10px 14px;border-radius:6px;background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`;
         div.textContent = msg;
         container.innerHTML = '';
         container.appendChild(div);
@@ -1335,7 +1335,7 @@ function buildCard(title) {
     const el = document.createElement('div');
     el.style.cssText = 'background:#F4F7F9;border:1px solid #CBD5E1;border-radius:8px;padding:20px;margin-bottom:20px;';
     const h = document.createElement('h3');
-    h.style.cssText = 'margin:0 0 16px;font-size:15px;color:#1E293B;';
+    h.style.cssText = 'margin:0 0 16px;color:#1E293B;';
     h.textContent = title;
     el.appendChild(h);
     return { el };
@@ -1349,7 +1349,7 @@ function buildRow() {
 
 function buildLabel(text) {
     const lbl = document.createElement('label');
-    lbl.style.cssText = 'font-size:13px;font-weight:600;color:#64748B;';
+    lbl.style.cssText = 'font-weight:600;color:#64748B;';
     lbl.textContent = text;
     return lbl;
 }

@@ -70,10 +70,10 @@ function makeSection(title, description) {
     const hdrLeft = document.createElement('div');
     const h3 = document.createElement('h3');
     h3.textContent = title;
-    h3.style.cssText = 'margin:0 0 4px; font-size:15px;';
+    h3.style.cssText = 'margin:0 0 4px; ';
     const desc = document.createElement('p');
     desc.textContent = description;
-    desc.style.cssText = 'margin:0; font-size:12px; color:var(--muted);';
+    desc.style.cssText = 'margin:0;  ';
     hdrLeft.appendChild(h3);
     hdrLeft.appendChild(desc);
 
@@ -89,7 +89,7 @@ function makeSection(title, description) {
     body.className = 'adm-sec-body';
     const placeholder = document.createElement('p');
     placeholder.className = 'c-muted';
-    placeholder.style.cssText = 'font-size:13px; margin:0;';
+    placeholder.style.cssText = ' margin:0;';
     placeholder.textContent = 'Click Scan to run analysis.';
     body.appendChild(placeholder);
     card.appendChild(body);
@@ -100,7 +100,7 @@ function makeSection(title, description) {
 function setBodyLoading(body) {
     body.replaceChildren();
     const p = document.createElement('p');
-    p.style.cssText = 'color:var(--muted); font-size:13px; margin:0;';
+    p.style.cssText = '  margin:0;';
     p.textContent = 'Scanning…';
     body.appendChild(p);
 }
@@ -108,7 +108,7 @@ function setBodyLoading(body) {
 function setBodyError(body, msg) {
     body.replaceChildren();
     const p = document.createElement('p');
-    p.style.cssText = 'color:var(--danger); font-size:13px; margin:0;';
+    p.style.cssText = 'color:var(--danger);  margin:0;';
     p.textContent = msg;
     body.appendChild(p);
 }
@@ -116,7 +116,7 @@ function setBodyError(body, msg) {
 function setBodyEmpty(body, msg) {
     body.replaceChildren();
     const p = document.createElement('p');
-    p.style.cssText = 'color:var(--ok); font-weight:600; font-size:13px; margin:0;';
+    p.style.cssText = 'color:var(--ok); font-weight:600;  margin:0;';
     p.textContent = '✓ ' + msg;
     body.appendChild(p);
 }
@@ -136,7 +136,7 @@ function renderIndexAdvisor(body, data) {
     row.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:14px;';
     const high = suggestions.filter(s => s.priority === 'high').length;
     const sum = document.createElement('span');
-    sum.style.cssText = 'font-size:13px;';
+    sum.style.cssText = '';
     sum.textContent = `${suggestions.length} suggestion${suggestions.length !== 1 ? 's' : ''} · ${high} high priority`;
     row.appendChild(sum);
     row.appendChild(copyBtn(() => suggestions.map(s => s.sql).join('\n'), 'Copy All SQL', false));
@@ -154,7 +154,7 @@ function renderIndexAdvisor(body, data) {
         grp.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
 
         const gh = document.createElement('div');
-        gh.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace; font-size:13px; font-weight:600;';
+        gh.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace;  font-weight:600;';
         const ghText = document.createElement('span');
         ghText.textContent = tableKey;
         gh.appendChild(ghText);
@@ -172,7 +172,7 @@ function renderIndexAdvisor(body, data) {
             const codeTd = document.createElement('td');
             codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:340px;';
             const code = document.createElement('code');
-            code.style.cssText = 'font-size:11px; background:var(--bg); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
+            code.style.cssText = ' background:var(--bg); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
             code.textContent = s.sql;
             codeTd.appendChild(code);
             tr.appendChild(codeTd);
@@ -195,7 +195,7 @@ function renderUnusedIndexes(body, data) {
     }
 
     const warn = document.createElement('p');
-    warn.style.cssText = 'font-size:13px; color:var(--muted); background:rgba(255,195,0,0.12); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
+    warn.style.cssText = '  background:rgba(255,195,0,0.12); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
     warn.textContent = `⚠ ${rows.length} unused index${rows.length !== 1 ? 'es' : ''} found. Unused indexes waste storage and slow down writes. Verify before dropping.`;
     body.appendChild(warn);
 
@@ -214,7 +214,7 @@ function renderUnusedIndexes(body, data) {
         const codeTd = document.createElement('td');
         codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:300px;';
         const code = document.createElement('code');
-        code.style.cssText = 'font-size:11px; background:rgba(208,0,0,0.08); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
+        code.style.cssText = ' background:rgba(208,0,0,0.08); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
         code.textContent = r.drop_sql;
         codeTd.appendChild(code);
         tr.appendChild(codeTd);
@@ -231,10 +231,10 @@ function renderSlowQueries(body, data) {
 
     if (data.status === 'unavailable') {
         const p = document.createElement('p');
-        p.style.cssText = 'font-size:13px; color:var(--muted);';
+        p.style.cssText = ' ';
         p.textContent = data.message;
         const code = document.createElement('code');
-        code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:var(--bg); border-radius:4px; font-size:12px;';
+        code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:var(--bg); border-radius:4px; ';
         code.textContent = 'CREATE EXTENSION pg_stat_statements;';
         body.appendChild(p);
         body.appendChild(code);
@@ -261,7 +261,7 @@ function renderSlowQueries(body, data) {
         const qtd = document.createElement('td');
         qtd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:420px;';
         const code = document.createElement('code');
-        code.style.cssText = 'font-size:11px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);';
+        code.style.cssText = ' display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);';
         code.title = r.query;
         code.textContent = r.query;
         qtd.appendChild(code);
@@ -328,16 +328,16 @@ function renderDbHealth(body, data) {
         const card = document.createElement('div');
         card.style.cssText = 'border:1px solid var(--border); border-radius:6px; padding:14px 16px;';
         const v = document.createElement('div');
-        v.style.cssText = `font-size:22px; font-weight:700; color:${color};`;
+        v.style.cssText = ` font-weight:700; color:${color};`;
         v.textContent = value;
         const l = document.createElement('div');
-        l.style.cssText = 'font-size:12px; color:var(--muted); margin-top:2px;';
+        l.style.cssText = '  margin-top:2px;';
         l.textContent = label;
         card.appendChild(v);
         card.appendChild(l);
         if (sub) {
             const s = document.createElement('div');
-            s.style.cssText = 'font-size:11px; color:var(--muted); margin-top:4px;';
+            s.style.cssText = '  margin-top:4px;';
             s.textContent = sub;
             card.appendChild(s);
         }
@@ -370,7 +370,7 @@ function renderDbHealth(body, data) {
 
     if (data.pg_version) {
         const ver = document.createElement('p');
-        ver.style.cssText = 'font-size:12px; color:var(--muted); margin:0;';
+        ver.style.cssText = '  margin:0;';
         ver.textContent = data.pg_version;
         body.appendChild(ver);
     }
@@ -388,7 +388,7 @@ function renderSchemaWarnings(body, data) {
     }
 
     const sum = document.createElement('p');
-    sum.style.cssText = 'font-size:13px; margin-bottom:12px;';
+    sum.style.cssText = ' margin-bottom:12px;';
     sum.textContent = `${warnings.length} warning${warnings.length !== 1 ? 's' : ''} found.`;
     body.appendChild(sum);
 
