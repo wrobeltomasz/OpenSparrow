@@ -2,54 +2,73 @@
 
 declare(strict_types=1);
 
-// includes/etl_engine.php — ETL engine: extract rows from a MySQL source and load
-// them into a PostgreSQL target table. Pure procedural helpers, reused by the admin
-// preview action and the cron worker. Builds its own MySQL PDO from the "etl" config
-// connection block (independent of the removed MySQL Gateway / MYSQL_* constants).
+// includes/etl_engine.php — ETL engine: extract rows from an external source database
+// (MySQL, PostgreSQL; extensible to Oracle/DB2/SQL Server) and load them into a local
+// PostgreSQL target table. Pure procedural helpers, reused by the admin preview action
+// and the cron worker. Builds its own source PDO from the "etl" config connection block
+// (independent of the removed MySQL Gateway / MYSQL_* constants).
 //
-// Security: all SQL identifiers via pg_ident()/etl_bt(); all values as bound params.
+// Security: all target identifiers via pg_ident(); all values as bound params.
 // The source query is restricted to a single read-only SELECT.
 
 require_once __DIR__ . '/db.php';
 
-// Backtick-quote a MySQL identifier (strips embedded backticks).
-function etl_bt(string $name): string
+// Supported source drivers → default port. Add oracle ('oci' 1521), db2 ('ibm' 50000),
+// sqlserver ('sqlsrv' 1433) here (plus a DSN case in etl_source_pdo) when those PDO
+// extensions are available in the target environment.
+function etl_source_drivers(): array
 {
-    return '`' . str_replace('`', '', $name) . '`';
+    return ['mysql' => 3306, 'pgsql' => 5432];
 }
 
 /**
- * Build a MySQL PDO from an "etl" config connection block. Returns null when the
- * connection is not configured. Timeout-bounded and fail-safe.
+ * Build a source-database PDO from an "etl" config connection block, dispatching on
+ * $conn['driver']. Returns null when the connection is not configured or the driver
+ * is unsupported. Timeout-bounded and fail-safe.
  *
- * @param array<string,mixed> $conn host/port/database/user/password
+ * @param array<string,mixed> $conn driver/host/port/database/user/password
  */
-function etl_mysql_pdo(array $conn, string $logTag = 'etl'): ?\PDO
+function etl_source_pdo(array $conn, string $logTag = 'etl'): ?\PDO
 {
-    $host = trim((string)($conn['host'] ?? ''));
-    $db   = trim((string)($conn['database'] ?? ''));
-    $user = trim((string)($conn['user'] ?? ''));
+    $driver = strtolower(trim((string)($conn['driver'] ?? 'mysql')));
+    $host   = trim((string)($conn['host'] ?? ''));
+    $db     = trim((string)($conn['database'] ?? ''));
+    $user   = trim((string)($conn['user'] ?? ''));
     if ($host === '' || $db === '' || $user === '') {
         return null;
     }
-    $port    = (int)($conn['port'] ?? 3306) ?: 3306;
+    $defaultPorts = etl_source_drivers();
+    if (!isset($defaultPorts[$driver])) {
+        error_log('[' . $logTag . '][etl] Unsupported source driver: ' . $driver);
+        return null;
+    }
+    $port    = (int)($conn['port'] ?? 0) ?: $defaultPorts[$driver];
     $pass    = (string)($conn['password'] ?? '');
     $timeout = 5;
     try {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
-            $host,
-            $port,
-            $db,
-            $timeout
-        );
+        $dsn = match ($driver) {
+            'mysql' => sprintf(
+                'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
+                $host,
+                $port,
+                $db,
+                $timeout
+            ),
+            'pgsql' => sprintf(
+                'pgsql:host=%s;port=%d;dbname=%s;connect_timeout=%d',
+                $host,
+                $port,
+                $db,
+                $timeout
+            ),
+        };
         return new \PDO($dsn, $user, $pass, [
             \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
             \PDO::ATTR_TIMEOUT            => $timeout,
         ]);
     } catch (\PDOException $e) {
-        error_log('[' . $logTag . '][etl][mysql] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
+        error_log('[' . $logTag . '][etl][' . $driver . '] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
         return null;
     }
 }
@@ -147,9 +166,9 @@ function etl_run_job(\PgSql\Connection $pgConn, array $job, array $connCfg, bool
         return $out;
     }
 
-    $pdo = etl_mysql_pdo($connCfg, 'etl:' . $name);
+    $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
     if ($pdo === null) {
-        $out['error'] = 'MySQL source connection is not configured or unavailable.';
+        $out['error'] = 'Source connection is not configured or unavailable.';
         return $out;
     }
 

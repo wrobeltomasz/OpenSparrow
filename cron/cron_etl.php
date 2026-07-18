@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // cron/cron_etl.php — ETL worker
 // CLI-only. Reads the "etl" config from the spw_config store and runs each enabled
-// job (extract from MySQL source → load into PostgreSQL target). Logs each job run
+// job (extract from an external source → load into PostgreSQL target). Logs each job run
 // to spw_etl_log (best-effort — tolerates the table being absent).
 // Usage:
 //   php cron_etl.php                 — run all scheduled jobs (respects frequency guard)

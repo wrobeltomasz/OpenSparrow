@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// includes/admin/etl.php — admin api.php module: ETL (MySQL → PostgreSQL import).
+// includes/admin/etl.php — admin api.php module: ETL (external source → PostgreSQL import).
 // Actions: etl_load, etl_save, etl_test_connection, etl_preview, run_etl,
 // etl_log, etl_purge_log.
 // Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
@@ -16,7 +16,7 @@ if ($action === 'etl_load') {
     $defaults = [
         'enabled'    => false,
         'frequency'  => 'daily',
-        'connection' => ['host' => '', 'port' => 3306, 'database' => '', 'user' => '', 'password' => ''],
+        'connection' => ['driver' => 'mysql', 'host' => '', 'port' => 3306, 'database' => '', 'user' => '', 'password' => ''],
         'jobs'       => [],
     ];
     $row    = config_get_row('etl');
@@ -48,13 +48,20 @@ if ($action === 'etl_save') {
     if ($newPass === '********') {
         $newPass = $prevPass;
     }
+    require_once __DIR__ . '/../etl_engine.php';
+    $validDrivers = array_keys(etl_source_drivers());
+    $driver = strtolower(trim((string)($conn['driver'] ?? 'mysql')));
+    if (!in_array($driver, $validDrivers, true)) {
+        $driver = 'mysql';
+    }
 
     $config = [
         'enabled'   => (bool)($data['enabled'] ?? false),
         'frequency' => in_array($data['frequency'] ?? '', $validFrequencies, true) ? $data['frequency'] : 'daily',
         'connection' => [
+            'driver'   => $driver,
             'host'     => trim((string)($conn['host'] ?? '')),
-            'port'     => (int)($conn['port'] ?? 3306) ?: 3306,
+            'port'     => (int)($conn['port'] ?? 0) ?: etl_source_drivers()[$driver],
             'database' => trim((string)($conn['database'] ?? '')),
             'user'     => trim((string)($conn['user'] ?? '')),
             'password' => $newPass,
@@ -113,9 +120,9 @@ if ($action === 'etl_test_connection') {
         $stored = config_get('etl');
         $conn['password'] = (string)($stored['connection']['password'] ?? '');
     }
-    $pdo = etl_mysql_pdo($conn, 'etl:test');
+    $pdo = etl_source_pdo($conn, 'etl:test');
     if ($pdo === null) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not connect — check host, database, user and password.']);
+        echo json_encode(['status' => 'error', 'error' => 'Could not connect — check driver, host, database, user and password.']);
         exit;
     }
     echo json_encode(['status' => 'success', 'message' => 'Connection OK.']);
@@ -137,9 +144,9 @@ if ($action === 'etl_preview') {
         echo json_encode(['status' => 'error', 'error' => $err]);
         exit;
     }
-    $pdo = etl_mysql_pdo($connIn, 'etl:preview');
+    $pdo = etl_source_pdo($connIn, 'etl:preview');
     if ($pdo === null) {
-        echo json_encode(['status' => 'error', 'error' => 'MySQL source connection is not configured or unavailable.']);
+        echo json_encode(['status' => 'error', 'error' => 'Source connection is not configured or unavailable.']);
         exit;
     }
     try {

@@ -1,4 +1,4 @@
-// admin/js/etl.js — ETL admin module (MySQL → PostgreSQL import)
+// admin/js/etl.js — ETL admin module (external source → PostgreSQL import; MySQL, PostgreSQL)
 // 4 tabs: Connection, Jobs, Schedule, History.
 // Persists the "etl" config via etl_save (optimistic-lock version).
 // Cron worker: cron/cron_etl.php.
@@ -56,15 +56,41 @@ async function saveConfig(statusEl) {
     return false;
 }
 
+const DRIVER_PORTS = { mysql: 3306, pgsql: 5432 };
+const DRIVER_LABELS = [
+    ['mysql', 'MySQL'],
+    ['pgsql', 'PostgreSQL'],
+];
+
 /* ---------- Connection tab ---------- */
 function renderConnectionTab(panel) {
     const conn = etlConfig.connection;
+    if (!conn.driver) conn.driver = 'mysql';
     const status = mkStatus();
+
+    const driver = document.createElement('select');
+    driver.className = 'adm-input';
+    DRIVER_LABELS.forEach(([v, lbl]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = lbl;
+        if (conn.driver === v) o.selected = true;
+        driver.appendChild(o);
+    });
 
     const host = input(conn.host);
     host.oninput = () => { conn.host = host.value; };
-    const port = input(String(conn.port ?? 3306), 'number');
-    port.oninput = () => { conn.port = parseInt(port.value, 10) || 3306; };
+    const port = input(String(conn.port ?? DRIVER_PORTS[conn.driver] ?? 3306), 'number');
+    port.oninput = () => { conn.port = parseInt(port.value, 10) || (DRIVER_PORTS[conn.driver] ?? 3306); };
+
+    driver.onchange = () => {
+        const oldDefault = DRIVER_PORTS[conn.driver];
+        conn.driver = driver.value;
+        // Only auto-swap the port if it still held the previous driver's default.
+        if (!port.value || parseInt(port.value, 10) === oldDefault) {
+            port.value = String(DRIVER_PORTS[conn.driver] ?? '');
+            conn.port = DRIVER_PORTS[conn.driver];
+        }
+    };
     const db = input(conn.database);
     db.oninput = () => { conn.database = db.value; };
     const user = input(conn.user);
@@ -74,6 +100,7 @@ function renderConnectionTab(panel) {
     pass.oninput = () => { conn.password = pass.value; };
 
     panel.append(
+        fg('Source type', driver),
         fg('Host', host),
         fg('Port', port),
         fg('Database', db),
@@ -217,7 +244,7 @@ function buildJobCard(job, idx, redraw, status) {
 
     body.append(
         fg('Name', name),
-        fg('Source query (MySQL, read-only SELECT)', query),
+        fg('Source query (read-only SELECT)', query),
         fg('Target table (PostgreSQL)', target),
         fg('Load mode', mode),
         keyGrp,
@@ -393,8 +420,8 @@ export async function renderEtlPage(ctx) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'padding:20px 24px; max-width:900px;';
     const intro = document.createElement('div');
-    intro.innerHTML = '<h2 style="margin:0 0 4px;">ETL — MySQL → PostgreSQL import</h2>'
-        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from an external MySQL source and load it into PostgreSQL tables. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
+    intro.innerHTML = '<h2 style="margin:0 0 4px;">ETL — external source → PostgreSQL import</h2>'
+        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from an external source database (MySQL, PostgreSQL) and load it into PostgreSQL tables. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
     wrap.appendChild(intro);
     workspaceEl.appendChild(wrap);
 
