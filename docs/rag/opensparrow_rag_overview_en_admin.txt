@@ -92,10 +92,13 @@ Views:
     tab selects which PostgreSQL schemas beyond the default app schema are searched
 
 Board (Kanban):
-  - Configure a source table, a status column (its enum options/colors become the
-    board's lanes), card title column, and detail fields shown on each card ("board"
-    config key)
-  - Board appears in the sidebar menu only once a table and status column are set
+  - Configure one or more boards, each as its own card: a source table, a status column
+    (its enum options/colors become the board's lanes), card title column, detail fields
+    shown on each card, and its own menu name/icon/visibility ("board" config key, a
+    "boards" list — one entry per board)
+  - Each board appears as its own item nested under one "Board" entry in the sidebar
+    menu, the same way Views and Print templates each get a sidebar item under one
+    parent — a board only appears once its table and status column are set
 
 Print Templates:
   - Printable report templates bound to a PostgreSQL view ("print" config key)

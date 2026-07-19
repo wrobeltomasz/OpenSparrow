@@ -149,7 +149,8 @@ async function fetchSchema() {
 
 async function fetchBoard() {
     try {
-        const res = await fetch('api.php?api=board', {
+        const boardId = window.BOARD_INITIAL || '';
+        const res = await fetch('api.php?api=board&board=' + encodeURIComponent(boardId), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         if (res.ok) {
@@ -382,6 +383,7 @@ async function moveCard(id, newStatus, oldStatus) {
             body: {
                 api: 'board',
                 action: 'move_card',
+                board: window.BOARD_INITIAL || '',
                 table: board.table,
                 id,
                 newStatus

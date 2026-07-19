@@ -30,11 +30,13 @@ export async function renderSettingsPage(ctx) {
 
     workspaceEl.innerHTML = '';
 
-    workspaceEl.appendChild(createPageHeader('Application Settings'));
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
+    workspaceEl.appendChild(wrap);
 
-    const tabsContainer = document.createElement('div');
-    workspaceEl.appendChild(tabsContainer);
-    const [languagePanel, chatBubblePanel, brandingPanel, databasePanel, auditPanel] = buildInnerTabs(tabsContainer, [
+    wrap.appendChild(createPageHeader('Application Settings'));
+
+    const [languagePanel, chatBubblePanel, brandingPanel, databasePanel, auditPanel] = buildInnerTabs(wrap, [
         { label: 'Language', icon: 'menu_book.png' },
         { label: 'Chat Bubble', icon: 'comment.png' },
         { label: 'Branding', icon: 'image.png' },

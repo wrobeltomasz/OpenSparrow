@@ -80,6 +80,7 @@ $currentPage  = basename($_SERVER['PHP_SELF']);
 $currentTable = substr($_GET['table'] ?? '', 0, 64);
 $currentView     = substr($_GET['view'] ?? '', 0, 64);
 $currentPrint    = substr($_GET['print'] ?? '', 0, 64);
+$currentBoard    = substr($_GET['board'] ?? '', 0, 64);
 $currentWorkflow = substr($_GET['workflow'] ?? '', 0, 64);
 $isWorkflows     = isset($_GET['workflows']);
 
@@ -118,15 +119,36 @@ $menuCatalog = [
     ],
 ];
 
-// Board appears in the sidebar only once an admin has bound it to a table+status.
-if (!empty($boardCfg['table']) && !empty($boardCfg['status_column'])) {
-    $menuCatalog['board'] = [
+// Each configured board (bound to a table+status column) becomes a submenu
+// child under the Board module entry — mirrors Workflows below (configurable
+// parent name/icon via the admin "Global Settings" tab, one child per board).
+$boardChildren = [];
+foreach ($boardCfg['boards'] ?? [] as $bItem) {
+    if (empty($bItem['table']) || empty($bItem['status_column']) || !empty($bItem['hidden'])) {
+        continue;
+    }
+    $bId             = (string) ($bItem['id'] ?? '');
+    if ($bId === '') {
+        continue;
+    }
+    $boardChildren[] = [
         'type'   => 'board',
-        'href'   => 'board.php',
-        'name'   => $boardCfg['menu_name'] ?? 'Board',
-        'icon'   => $boardCfg['menu_icon'] ?? 'assets/icons/account_tree.png',
-        'hidden' => !empty($boardCfg['hidden']),
-        'active' => $currentPage === 'board.php',
+        'href'   => 'board.php?board=' . urlencode($bId),
+        'name'   => $bItem['menu_name'] ?? 'Board',
+        'icon'   => $bItem['menu_icon'] ?? '',
+        'hidden' => false,
+        'active' => $currentPage === 'board.php' && $currentBoard === $bId,
+    ];
+}
+if (!empty($boardChildren)) {
+    $menuCatalog['board'] = [
+        'type'     => 'board',
+        'href'     => $boardChildren[0]['href'],
+        'name'     => $boardCfg['menu_name'] ?? 'Board',
+        'icon'     => $boardCfg['menu_icon'] ?? 'assets/icons/account_tree.png',
+        'hidden'   => !empty($boardCfg['hidden']),
+        'active'   => $currentPage === 'board.php',
+        'children' => $boardChildren,
     ];
 }
 

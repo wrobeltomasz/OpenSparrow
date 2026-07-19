@@ -133,10 +133,22 @@ if ($action === 'demo_install') {
         }
         config_save('calendar', $calCfg, null, $seedUserId);
 
-        // board config — single-config Kanban board, written only if the demo
-        // defines one. Mirrors the structure produced by the admin Board editor.
-        if (!empty($demoData['board']) && is_array($demoData['board'])) {
-            config_save('board', $demoData['board'], null, $seedUserId);
+        // board config — a named list (boards[]), mirrors the structure produced
+        // by the admin Board editor. Merge in any demo-defined boards without
+        // disturbing boards the user already configured for their own tables.
+        if (!empty($demoData['board']['boards']) && is_array($demoData['board']['boards'])) {
+            require_once __DIR__ . '/../../../includes/config_store.php';
+            $boardCfg = config_get('board') ?? [];
+            if (!isset($boardCfg['boards']) || !is_array($boardCfg['boards'])) {
+                $boardCfg['boards'] = [];
+            }
+            $boardCfg['boards'] = array_values(
+                array_filter($boardCfg['boards'], fn($b) => !in_array($b['table'] ?? '', $demoTbls, true))
+            );
+            foreach ($demoData['board']['boards'] as $b) {
+                $boardCfg['boards'][] = $b;
+            }
+            config_save('board', $boardCfg, null, $seedUserId);
         }
 
         // anonymization config — merge demo GDPR rules if provided. Existing user
@@ -326,7 +338,7 @@ if ($action === 'demo_install') {
             'menu_keys'      => $menuKeys,
             'automation_ids' => $automationIds,
             'print_keys'     => $printKeys,
-            'board_table'    => $demoData['board']['table'] ?? null,
+            'board_ids'      => array_column($demoData['board']['boards'] ?? [], 'id'),
         ];
         file_put_contents(
             $configDir . '/demo_meta.json',
@@ -457,13 +469,21 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean board config (remove only if it points at a demo table)
+        // Clean board config (remove only the demo-added board entries, keeping
+        // any boards the user configured for their own tables)
         $boardCfg = config_get('board');
-        if (is_array($boardCfg)) {
-            $tbls   = $meta['tables'] ?? [];
-            $bTable = $boardCfg['table'] ?? ($meta['board_table'] ?? '');
-            if ($bTable !== '' && in_array($bTable, $tbls, true)) {
+        if (is_array($boardCfg) && !empty($boardCfg['boards'])) {
+            $tbls = $meta['tables'] ?? [];
+            $ids  = $meta['board_ids'] ?? [];
+            $boardCfg['boards'] = array_values(array_filter(
+                $boardCfg['boards'],
+                fn($b) => !in_array($b['id'] ?? '', $ids, true)
+                    && !in_array($b['table'] ?? '', $tbls, true)
+            ));
+            if (empty($boardCfg['boards'])) {
                 config_delete('board', $cleanUserId);
+            } else {
+                config_save('board', $boardCfg, null, $cleanUserId);
             }
         }
 

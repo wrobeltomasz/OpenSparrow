@@ -445,9 +445,6 @@ export function renderPerformancePage(ctx) {
     topRow.appendChild(btnAll);
     wrap.appendChild(topRow);
 
-    const tabContainer = document.createElement('div');
-    wrap.appendChild(tabContainer);
-
     const sections = [
         {
             label:  'Index Advisor',
@@ -499,7 +496,7 @@ export function renderPerformancePage(ctx) {
         },
     ];
 
-    const panels = buildInnerTabs(tabContainer, sections);
+    const panels = buildInnerTabs(wrap, sections);
 
     const built = sections.map((s, i) => {
         const { card, btn, body } = makeSection(s.title, s.desc);

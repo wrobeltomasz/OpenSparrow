@@ -21,7 +21,9 @@ export function renderUserRecordsEditor(ctx) {
     }
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'padding: 20px 24px; max-width: 900px;';
+    wrap.className = 'admin-page';
+    workspaceEl.appendChild(wrap);
+
     wrap.appendChild(createPageHeader(
         'User Records Configuration',
         'Controls the "My records" panel every user opens from the avatar menu: which columns '
@@ -29,11 +31,7 @@ export function renderUserRecordsEditor(ctx) {
         + 'Use "Save config" in the top bar to persist.'
     ));
 
-    const tabsContainer = document.createElement('div');
-    wrap.appendChild(tabsContainer);
-    workspaceEl.appendChild(wrap);
-
-    const [columnsPanel, settingsPanel] = buildInnerTabs(tabsContainer, [
+    const [columnsPanel, settingsPanel] = buildInnerTabs(wrap, [
         { label: 'Column Mapping', icon: 'table_edit.png' },
         { label: 'Global Settings', icon: 'car_gear.png' },
     ]);

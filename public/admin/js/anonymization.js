@@ -1060,19 +1060,21 @@ export async function renderAnonymizationPage(ctx) {
         'Scrub or mask personal data in aging records on a schedule — configure rules, review PII suggestions, and manage the replacement dictionary.'
     ));
 
-    const [p0, p1, p2, p3] = buildInnerTabs(wrap, [
+    const [p0, p1, p2, p3, p4] = buildInnerTabs(wrap, [
         { label: 'Rules', icon: 'checklist_rtl.png' },
         { label: 'Schedule', icon: 'calendar_check.png' },
         { label: 'Suggestions', icon: 'fact_check.png' },
         { label: 'Dictionary', icon: 'menu_book.png' },
+        { label: 'History', icon: 'manage_history.png' },
     ]);
 
     p0.appendChild(buildRulesTab(ctx));
-    p0.appendChild(buildHistorySection());
 
     p1.appendChild(buildScheduleTab());
 
     p2.appendChild(buildSuggestionsTab());
 
     p3.appendChild(buildDictionaryTab());
+
+    p4.appendChild(buildHistorySection());
 }

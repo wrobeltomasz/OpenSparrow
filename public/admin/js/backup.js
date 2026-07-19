@@ -1,76 +1,25 @@
 ﻿// admin/js/backup.js — Backup & restore page (renderBackupPage): per-table export/import and full backup via api.php (export / import / backup_tables). CSRF via apiFetch().
 
 import { apiFetch } from '../../assets/js/util/api.js';
-import { createPageHeader } from './ui.js';
+import { buildInnerTabs, createPageHeader } from './ui.js';
 
 import { escHtml as esc } from '../../assets/js/util/esc.js';
 
-export async function renderBackupPage(ctx) {
-    const { workspaceEl } = ctx;
+// spw_config holds the whole application configuration (schema, menu, dashboard,
+// workflows, ...) as one JSONB row per key — treated as "Global Settings" rather
+// than a regular system table, and pulled out of the System Tables (spw_*) group.
+const GLOBAL_SETTINGS_TABLES = ['spw_config', 'spw_config_log'];
 
-    workspaceEl.innerHTML = '<p style="padding:20px;">Loading tables…</p>';
-
-    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
-    const myId = workspaceEl._renderId;
-
-
-    let userTables = [];
-    let systemTables = [];
-
-    try {
-        const [schemaRes, sysRes] = await Promise.all([
-            apiFetch('api.php?action=get&file=schema'),
-            apiFetch('api.php?action=list_system_tables')
-        ]);
-        const schemaData = await schemaRes.json();
-        const sysData    = await sysRes.json();
-
-        if (schemaData.tables) {
-            for (const [name, cfg] of Object.entries(schemaData.tables)) {
-                userTables.push({
-                    name,
-                    schema:  cfg.schema || 'public',
-                    display: cfg.display_name || name,
-                    group:   'Application Tables'
-                });
-            }
-        }
-        if (sysData.status === 'success') {
-            sysData.tables.forEach(t => systemTables.push({
-                name:    t.name,
-                schema:  t.schema,
-                display: t.name,
-                group:   'System Tables (spw_*)'
-            }));
-        }
-    } catch (e) {
-        if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<p style="color:var(--danger);padding:20px;">Failed to load tables.</p>';
-        return;
-    }
-
-    if (workspaceEl._renderId !== myId) return;
-
-    const allTables = [...userTables, ...systemTables];
-
-    const wrap = document.createElement('div');
-    wrap.className = 'admin-page';
-
-    wrap.appendChild(createPageHeader('Backup Tables',
-        'Creates a copy of selected tables in the same schema using <code>CREATE TABLE prefix_name AS SELECT * FROM name</code>.'
-        + ' The prefix is the current date and time — e.g. <code>202604211709_tablename</code>.'
-        + ' Data and column structure are copied; indexes and constraints are not.'));
-
-    if (allTables.length === 0) {
+// Renders one tab's worth of table checkboxes + its own select-all/backup controls.
+function buildGroupPanel(panel, tables) {
+    if (tables.length === 0) {
         const empty = document.createElement('p');
-        empty.textContent = 'No tables found. Configure the database connection and define tables in the Schema tab.';
-        wrap.appendChild(empty);
-        workspaceEl.innerHTML = '';
-        workspaceEl.appendChild(wrap);
+        empty.className = 'c-muted';
+        empty.textContent = 'No tables in this group.';
+        panel.appendChild(empty);
         return;
     }
 
-    // Select-all / deselect-all controls
     const selRow = document.createElement('div');
     selRow.style.cssText = 'margin-bottom:14px;display:flex;gap:10px;';
     const btnAll  = document.createElement('button');
@@ -78,46 +27,32 @@ export async function renderBackupPage(ctx) {
     btnAll.type  = 'button'; btnAll.textContent  = 'Select all';   btnAll.className  = 'btn btn-xs';
     btnNone.type = 'button'; btnNone.textContent = 'Deselect all'; btnNone.className = 'btn btn-xs';
     selRow.append(btnAll, btnNone);
-    wrap.appendChild(selRow);
-
-    // Group → table checkboxes
-    const groups = {};
-    allTables.forEach(t => {
-        if (!groups[t.group]) groups[t.group] = [];
-        groups[t.group].push(t);
-    });
+    panel.appendChild(selRow);
 
     const checkboxes = [];
 
-    for (const [groupName, tables] of Object.entries(groups)) {
-        const groupLabel = document.createElement('div');
-        groupLabel.style.cssText = 'font-weight:600;margin:18px 0 6px;';
-        groupLabel.textContent = groupName;
-        wrap.appendChild(groupLabel);
+    tables.forEach(t => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:4px;margin-bottom:4px;cursor:pointer;background:#fff;user-select:none;';
 
-        tables.forEach(t => {
-            const label = document.createElement('label');
-            label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:4px;margin-bottom:4px;cursor:pointer;background:#fff;user-select:none;';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.name   = t.name;
+        cb.dataset.schema = t.schema;
+        cb.style.cssText  = 'width:15px;height:15px;flex-shrink:0;cursor:pointer;';
+        checkboxes.push(cb);
 
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.dataset.name   = t.name;
-            cb.dataset.schema = t.schema;
-            cb.style.cssText  = 'width:15px;height:15px;flex-shrink:0;cursor:pointer;';
-            checkboxes.push(cb);
+        const nameSpan = document.createElement('span');
+        nameSpan.style.flex = '1';
+        nameSpan.textContent = t.display !== t.name ? `${t.display}  (${t.name})` : t.name;
 
-            const nameSpan = document.createElement('span');
-            nameSpan.style.flex = '1';
-            nameSpan.textContent = t.display !== t.name ? `${t.display}  (${t.name})` : t.name;
+        const schemaTag = document.createElement('span');
+        schemaTag.style.cssText = 'font-family:monospace;';
+        schemaTag.textContent = t.schema;
 
-            const schemaTag = document.createElement('span');
-            schemaTag.style.cssText = 'font-family:monospace;';
-            schemaTag.textContent = t.schema;
-
-            label.append(cb, nameSpan, schemaTag);
-            wrap.appendChild(label);
-        });
-    }
+        label.append(cb, nameSpan, schemaTag);
+        panel.appendChild(label);
+    });
 
     btnAll.addEventListener('click',  () => checkboxes.forEach(cb => cb.checked = true));
     btnNone.addEventListener('click', () => checkboxes.forEach(cb => cb.checked = false));
@@ -130,11 +65,11 @@ export async function renderBackupPage(ctx) {
     btnBackup.textContent = 'Backup selected tables';
     btnBackup.className = 'btn btn-primary';
     actionRow.appendChild(btnBackup);
-    wrap.appendChild(actionRow);
+    panel.appendChild(actionRow);
 
     const resultArea = document.createElement('div');
     resultArea.style.marginTop = '16px';
-    wrap.appendChild(resultArea);
+    panel.appendChild(resultArea);
 
     btnBackup.addEventListener('click', async () => {
         const selected = checkboxes
@@ -186,6 +121,73 @@ export async function renderBackupPage(ctx) {
         btnBackup.disabled = false;
         btnBackup.textContent = 'Backup selected tables';
     });
+}
+
+export async function renderBackupPage(ctx) {
+    const { workspaceEl } = ctx;
+
+    workspaceEl.innerHTML = '<p style="padding:20px;">Loading tables…</p>';
+
+    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
+    const myId = workspaceEl._renderId;
+
+
+    let userTables = [];
+    let systemTables = [];
+    let globalSettingsTables = [];
+
+    try {
+        const [schemaRes, sysRes] = await Promise.all([
+            apiFetch('api.php?action=get&file=schema'),
+            apiFetch('api.php?action=list_system_tables')
+        ]);
+        const schemaData = await schemaRes.json();
+        const sysData    = await sysRes.json();
+
+        if (schemaData.tables) {
+            for (const [name, cfg] of Object.entries(schemaData.tables)) {
+                userTables.push({
+                    name,
+                    schema:  cfg.schema || 'public',
+                    display: cfg.display_name || name,
+                });
+            }
+        }
+        if (sysData.status === 'success') {
+            sysData.tables.forEach(t => {
+                const entry = { name: t.name, schema: t.schema, display: t.name };
+                if (GLOBAL_SETTINGS_TABLES.includes(t.name)) {
+                    globalSettingsTables.push(entry);
+                } else {
+                    systemTables.push(entry);
+                }
+            });
+        }
+    } catch (e) {
+        if (workspaceEl._renderId !== myId) return;
+        workspaceEl.innerHTML = '<p style="color:var(--danger);padding:20px;">Failed to load tables.</p>';
+        return;
+    }
+
+    if (workspaceEl._renderId !== myId) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
+
+    wrap.appendChild(createPageHeader('Backup Tables',
+        'Creates a copy of selected tables in the same schema using <code>CREATE TABLE prefix_name AS SELECT * FROM name</code>.'
+        + ' The prefix is the current date and time — e.g. <code>202604211709_tablename</code>.'
+        + ' Data and column structure are copied; indexes and constraints are not.'));
+
+    const [appPanel, sysPanel, globalPanel] = buildInnerTabs(wrap, [
+        { label: 'Application Tables', icon: 'data_table.png' },
+        { label: 'System Tables (spw_*)', icon: 'database.png' },
+        { label: 'Global Settings', icon: 'settings.png' },
+    ]);
+
+    buildGroupPanel(appPanel, userTables);
+    buildGroupPanel(sysPanel, systemTables);
+    buildGroupPanel(globalPanel, globalSettingsTables);
 
     workspaceEl.innerHTML = '';
     workspaceEl.appendChild(wrap);

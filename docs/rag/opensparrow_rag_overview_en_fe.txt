@@ -121,6 +121,10 @@ another lane updates the record's status immediately (editor role only; viewer s
 read-only board). Card title, detail fields and lane colors are configured by the admin.
 Hovering a card shows the same floating tooltip used by the grid row and calendar event.
 Search and lane-visibility chips live in the same blue header bar as the grid/calendar.
+Multiple boards can be configured (each bound to its own table), appearing as separate
+items nested under one "Board" entry in the sidebar menu — the same way saved Views and
+Print templates each get their own sidebar item under one parent (?board= selects which
+one board.php shows).
 
 
 PRINT (print.php)

@@ -209,7 +209,29 @@ async function loadConfigFile(fileName) {
             if (!currentConfig.sources || !Array.isArray(currentConfig.sources)) currentConfig.sources = [];
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Calendar';
         } else if (fileName === 'board') {
-            if (!Array.isArray(currentConfig.card_columns)) currentConfig.card_columns = [];
+            // Legacy installs stored a single board directly on the config root;
+            // fold it into boards[0] once so it keeps appearing in the sidebar.
+            if (!Array.isArray(currentConfig.boards)) {
+                currentConfig.boards = currentConfig.table ? [{
+                    id: 'brd_' + Date.now().toString(36),
+                    menu_name: currentConfig.menu_name || 'Board',
+                    menu_icon: currentConfig.menu_icon || '',
+                    hidden: !!currentConfig.hidden,
+                    table: currentConfig.table,
+                    status_column: currentConfig.status_column || '',
+                    title_column: currentConfig.title_column || '',
+                    card_columns: Array.isArray(currentConfig.card_columns) ? currentConfig.card_columns : [],
+                    color: currentConfig.color || '#005A9E',
+                }] : [];
+                delete currentConfig.table;
+                delete currentConfig.status_column;
+                delete currentConfig.title_column;
+                delete currentConfig.card_columns;
+                delete currentConfig.color;
+                delete currentConfig.menu_icon;
+                delete currentConfig.hidden;
+                currentConfig.menu_name = 'Board';
+            }
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Board';
         } else if (fileName === 'workflows') {
             if (!currentConfig.workflows || !Array.isArray(currentConfig.workflows)) currentConfig.workflows = [];
@@ -233,7 +255,7 @@ async function loadConfigFile(fileName) {
             currentConfig = {};
         }
 
-        if (fileName === 'schema' || fileName === 'dashboard' || fileName === 'calendar' || fileName === 'workflows') {
+        if (fileName === 'schema' || fileName === 'dashboard' || fileName === 'calendar' || fileName === 'workflows' || fileName === 'board') {
             currentItemKey = null;
             renderSidebar();
             renderItemCards();
@@ -245,7 +267,7 @@ async function loadConfigFile(fileName) {
             currentItemKey = 'LAYOUT';
             renderSidebar();
             renderEditor('LAYOUT', null, false);
-        } else if (fileName === 'security' || fileName === 'views' || fileName === 'board' || fileName === 'user_records') {
+        } else if (fileName === 'security' || fileName === 'views' || fileName === 'user_records') {
             renderSidebar();
             renderEditor('SETTINGS', currentConfig, false);
         } else {
@@ -270,13 +292,16 @@ function addNewItem() {
     } else if (currentFile === 'workflows') {
         currentConfig.workflows.push({ id: "wf_" + Date.now(), title: "New Workflow", icon: "", steps: [] });
         newIndex = currentConfig.workflows.length - 1;
+    } else if (currentFile === 'board') {
+        currentConfig.boards.push({ id: "brd_" + Date.now(), menu_name: "New Board", menu_icon: "", hidden: false, table: "", status_column: "", title_column: "", card_columns: [], color: "#005A9E" });
+        newIndex = currentConfig.boards.length - 1;
     }
-    
+
     currentItemKey = newIndex;
     markDirty();
     renderSidebar();
 
-    const items = currentFile === 'dashboard' ? currentConfig.widgets : currentFile === 'workflows' ? currentConfig.workflows : currentConfig.sources;
+    const items = currentFile === 'dashboard' ? currentConfig.widgets : currentFile === 'workflows' ? currentConfig.workflows : currentFile === 'board' ? currentConfig.boards : currentConfig.sources;
     renderEditor(newIndex, items[newIndex], true);
 }
 
@@ -286,6 +311,7 @@ function clearConfig() {
         else if (currentFile === 'dashboard') currentConfig = { layout: { columns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }, widgets: [], menu_name: 'Dashboard' };
         else if (currentFile === 'calendar') currentConfig = { sources: [], menu_name: 'Calendar' };
         else if (currentFile === 'workflows') currentConfig = { workflows: [], menu_name: 'Workflows' };
+        else if (currentFile === 'board') currentConfig = { boards: [], menu_name: 'Board' };
         else if (currentFile === 'files') currentConfig = { menu_name: 'Files' };
 
         markDirty();
@@ -336,6 +362,7 @@ function itemTabIcon() {
                : currentFile === 'dashboard' ? 'bar_chart.png'
                : currentFile === 'calendar'  ? 'calendar.png'
                : currentFile === 'workflows' ? 'build.png'
+               : currentFile === 'board'     ? 'account_tree.png'
                : 'file_present.png';
     return tabIcon(name);
 }
@@ -351,6 +378,7 @@ const CARD_MODULE_HEADER = {
     calendar:  ['Calendar', 'Define one or more calendar sources — each maps a table\'s date column to calendar events.'],
     workflows: ['Workflows', 'Multi-step guided workflows that walk users through a sequence of record edits.'],
     files:     ['Files', 'Upload, browse, and configure file storage — max size, allowed types/extensions, and record-relation auto-linking.'],
+    board:     ['Board', 'Define one or more Kanban boards — each maps a table\'s status column to lanes; users drag cards between lanes to update that column.'],
 };
 
 function renderSidebar() {
@@ -359,7 +387,7 @@ function renderSidebar() {
     const fullPageTabs = new Set([
         'overview', 'security', 'health', 'docs', 'users', 'backup',
         'migrations', 'performance', 'cron',
-        'demo', 'settings', 'csv_import', 'rag', 'views', 'board', 'etl', 'anonymization', 'print',
+        'demo', 'settings', 'csv_import', 'rag', 'views', 'etl', 'anonymization', 'print',
         'user_records',
     ]);
 
@@ -367,7 +395,7 @@ function renderSidebar() {
         return;
     }
 
-    const isCardTab = currentFile === 'schema' || currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows';
+    const isCardTab = currentFile === 'schema' || currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board';
 
     // ── Tab bar — appended first so DOM order matches ETL: tabs, then title/desc ──
     const itemsRow = document.createElement('div');
@@ -424,7 +452,7 @@ function renderSidebar() {
         itemsRow.appendChild(mapBtn);
     }
 
-    if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'files' || currentFile === 'automations') {
+    if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board' || currentFile === 'files' || currentFile === 'automations') {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
@@ -452,6 +480,7 @@ function renderSidebar() {
                        : currentFile === 'dashboard'    ? 'dashboard.png'
                        : currentFile === 'workflows'    ? 'build.png'
                        : currentFile === 'automations'  ? 'automation.png'
+                       : currentFile === 'board'        ? 'account_tree.png'
                        : 'calendar.png';
         const allLabel = currentFile === 'schema'       ? 'All PostgreSQL tables'
                            : currentFile === 'dashboard'    ? 'All Widgets'
@@ -473,8 +502,8 @@ function renderSidebar() {
         return;
     }
 
-    // Calendar sources: tab bar with up/down reorder buttons
-    let itemsToIterate = (currentConfig.sources || []);
+    // Calendar sources / boards: tab bar with up/down reorder buttons
+    let itemsToIterate = currentFile === 'board' ? (currentConfig.boards || []) : (currentConfig.sources || []);
     const isArray = Array.isArray(itemsToIterate);
     const keys = isArray ? itemsToIterate.map((_, i) => i) : Object.keys(itemsToIterate);
 
@@ -486,7 +515,9 @@ function renderSidebar() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'item-btn' + (String(currentItemKey) === String(key) ? ' active' : '');
-        const itemLabel = currentFile === 'workflows' ? (item.title || `Workflow ${key}`) : (item.table || `Source ${key}`);
+        const itemLabel = currentFile === 'workflows' ? (item.title || `Workflow ${key}`)
+                         : currentFile === 'board'     ? (item.menu_name || `Board ${key}`)
+                         : (item.table || `Source ${key}`);
         btn.append(itemTabIcon(), document.createTextNode(itemLabel));
         btn.onclick = () => { currentItemKey = key; renderSidebar(); renderEditor(key, item, isArray); };
         wrapper.appendChild(btn);
@@ -534,10 +565,12 @@ function renderItemCards() {
     const isSchema    = currentFile === 'schema';
     const isDashboard = currentFile === 'dashboard';
     const isWorkflows = currentFile === 'workflows';
+    const isBoard     = currentFile === 'board';
 
     const rawItems    = isSchema    ? (currentConfig.tables    || {})
                       : isDashboard ? (currentConfig.widgets   || [])
                       : isWorkflows ? (currentConfig.workflows || [])
+                      : isBoard     ? (currentConfig.boards    || [])
                       : (currentConfig.sources || []);
     const isArray     = Array.isArray(rawItems);
 
@@ -572,7 +605,7 @@ function renderItemCards() {
         const btnAdd = document.createElement('button');
         btnAdd.type = 'button';
         btnAdd.className = 'btn btn-success';
-        btnAdd.textContent = isDashboard ? '+ Add New Widget' : isWorkflows ? '+ Add New Workflow' : '+ Add New Source';
+        btnAdd.textContent = isDashboard ? '+ Add New Widget' : isWorkflows ? '+ Add New Workflow' : isBoard ? '+ Add New Board' : '+ Add New Source';
         btnAdd.onclick = addNewItem;
         bar.appendChild(btnAdd);
     }
@@ -586,6 +619,7 @@ function renderItemCards() {
         const fresh    = isSchema    ? (currentConfig.tables    || {})
                        : isDashboard ? (currentConfig.widgets   || [])
                        : isWorkflows ? (currentConfig.workflows || [])
+                       : isBoard     ? (currentConfig.boards    || [])
                        : (currentConfig.sources || []);
         const freshKeys = getKeys(fresh);
         list.innerHTML = '';
@@ -595,6 +629,7 @@ function renderItemCards() {
             empty.textContent = isSchema    ? 'No tables defined. Use "Sync DB Tables" to get started.'
                               : isDashboard ? 'No widgets yet. Click "+ Add New Widget".'
                               : isWorkflows ? 'No workflows yet. Click "+ Add New Workflow".'
+                              : isBoard     ? 'No boards yet. Click "+ Add New Board".'
                               : 'No sources yet. Click "+ Add New Source".';
             list.appendChild(empty);
             return;
@@ -611,6 +646,7 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     const isSchema    = currentFile === 'schema';
     const isDashboard = currentFile === 'dashboard';
     const isWorkflows = currentFile === 'workflows';
+    const isBoard     = currentFile === 'board';
 
     const card = document.createElement('div');
     card.className = 'column-block collapsed';
@@ -628,6 +664,7 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     nameSpan.textContent = isSchema    ? (item.display_name || key)
                          : isDashboard ? (item.title || `Widget ${key}`)
                          : isWorkflows ? (item.title || `Workflow ${key}`)
+                         : isBoard     ? (item.menu_name || `Board ${key}`)
                          : (item.table || `Source ${key}`);
 
     if (isSchema) {
@@ -680,11 +717,13 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
         const label = isSchema    ? (item.display_name || key)
                     : isDashboard ? (item.title || `Widget ${key}`)
                     : isWorkflows ? (item.title || `Workflow ${key}`)
+                    : isBoard     ? (item.menu_name || `Board ${key}`)
                     : (item.table || `Source ${key}`);
         if (!confirm(`Delete "${label}"?`)) return;
         if (isSchema)         delete currentConfig.tables[key];
         else if (isDashboard) currentConfig.widgets.splice(key, 1);
         else if (isWorkflows) currentConfig.workflows.splice(key, 1);
+        else if (isBoard)     currentConfig.boards.splice(key, 1);
         else                  currentConfig.sources.splice(key, 1);
         markDirty();
         redraw();
@@ -726,12 +765,15 @@ function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
     const isSchema    = currentFile === 'schema';
     const isDashboard = currentFile === 'dashboard';
     const isWorkflows = currentFile === 'workflows';
+    const isBoard     = currentFile === 'board';
 
     const cardCtx = {
         workspaceEl: bodyEl,
         currentConfig,
         getTableOptions,
         getColumnOptionsForTable,
+        getEnumColumnsForTable,
+        getColumnMeta,
         renderEditor: (k, d, arr) => {
             bodyEl.innerHTML = '';
             renderEditorIntoCard(k, d, arr !== undefined ? arr : isArray, bodyEl, nameSpan, redraw);
@@ -741,6 +783,7 @@ function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
             : () => {
                 nameSpan.textContent = isDashboard ? (item.title || `Widget ${key}`)
                                      : isWorkflows ? (item.title || `Workflow ${key}`)
+                                     : isBoard     ? (item.menu_name || `Board ${key}`)
                                      : (item.table || `Source ${key}`);
             },
     };
@@ -748,6 +791,7 @@ function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
     if (isSchema)         renderSchemaEditor(key, item, cardCtx);
     else if (isDashboard) renderDashboardEditor(key, item, isArray, cardCtx);
     else if (isWorkflows) renderWorkflowsEditor(key, item, isArray, cardCtx);
+    else if (isBoard)     renderBoardEditor(key, item, isArray, cardCtx);
     else                  renderCalendarEditor(key, item, isArray, cardCtx);
 }
 
@@ -820,7 +864,6 @@ function renderEditor(key, itemData, isArray) {
     }
     if (currentFile === 'views') return renderViewsEditor(ctx);
     if (currentFile === 'user_records') return renderUserRecordsEditor(ctx);
-    if (currentFile === 'board') return renderBoardEditor(ctx);
     if (currentFile === 'files' && key === 'MANAGER') return renderFilesEditor(ctx);
 
     if (currentFile === 'schema' && key === 'MENU_PREVIEW') {
@@ -855,6 +898,11 @@ function renderEditor(key, itemData, isArray) {
         if (currentFile === 'files') {
             return renderGlobalSettings(ctx, { title: 'Files Global Settings', defaultMenuName: 'Files' });
         }
+        if (currentFile === 'board') {
+            renderGlobalSettings(ctx, { title: 'Board Global Settings', defaultMenuName: 'Board' });
+            appendClearConfigButton(ctx);
+            return;
+        }
     }
 
     if (currentFile === 'schema' && key === 'GLOBAL_SCHEMA') { renderSchemaGlobalSettings(currentConfig, ctx); appendClearConfigButton(ctx); return; }
@@ -872,6 +920,7 @@ function renderEditor(key, itemData, isArray) {
         if (confirm('Are you sure?')) {
             if (currentFile === 'dashboard') currentConfig.widgets.splice(key, 1);
             else if (currentFile === 'workflows') currentConfig.workflows.splice(key, 1);
+            else if (currentFile === 'board') currentConfig.boards.splice(key, 1);
             else currentConfig.sources.splice(key, 1);
             currentItemKey = null;
             markDirty();
@@ -885,6 +934,7 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'dashboard') renderDashboardEditor(key, itemData, isArray, ctx);
     else if (currentFile === 'calendar') renderCalendarEditor(key, itemData, isArray, ctx);
     else if (currentFile === 'workflows') renderWorkflowsEditor(key, itemData, isArray, ctx);
+    else if (currentFile === 'board') renderBoardEditor(key, itemData, isArray, ctx);
 }
 
 // Show pending-release-migrations banner if any versions are unresolved

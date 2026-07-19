@@ -766,15 +766,21 @@ function demo_def_crm($conn): array
         ],
         // Kanban board — Deals grouped by their sales Stage. Dragging a card
         // between lanes moves the deal along the pipeline (updates deals.stage).
+        // "board" holds a named list (boards[]) — each entry is its own sidebar item.
         'board' => [
-            'menu_name'     => 'Deals Board',
-            'menu_icon'     => 'assets/icons/account_tree.png',
-            'hidden'        => false,
-            'table'         => 'deals',
-            'status_column' => 'stage',
-            'title_column'  => 'title',
-            'card_columns'  => ['company_id', 'value', 'expected_close'],
-            'color'         => '#005A9E',
+            'boards' => [
+                [
+                    'id'             => 'demo_crm_deals_board',
+                    'menu_name'     => 'Deals Board',
+                    'menu_icon'     => 'assets/icons/account_tree.png',
+                    'hidden'        => false,
+                    'table'         => 'deals',
+                    'status_column' => 'stage',
+                    'title_column'  => 'title',
+                    'card_columns'  => ['company_id', 'value', 'expected_close'],
+                    'color'         => '#005A9E',
+                ],
+            ],
         ],
         'workflows' => [
             ['id' => 'wf_demo_crm_001', 'title' => 'New CRM Deal', 'icon' => 'assets/icons/apartment.png', 'description' => 'CRM: add company → contact → deal → activity.', 'steps' => [

@@ -520,8 +520,21 @@ try {
     // GET: BOARD (KANBAN) DATA
     // Returns the board configuration plus its lanes (one per status value) and
     // the records of the configured table grouped client-side by their status.
+    // Boards are a named list (config key "board" -> "boards": [...]); ?board=
+    // selects which one, falling back to the first configured board.
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'board') {
-        $boardCfg = config_get('board') ?? [];
+        $boardsCfg = config_get('board') ?? [];
+        $boardId   = substr($_GET['board'] ?? '', 0, 64);
+        $boardCfg  = null;
+        foreach (($boardsCfg['boards'] ?? []) as $b) {
+            if (($b['id'] ?? '') === $boardId) {
+                $boardCfg = $b;
+                break;
+            }
+        }
+        if ($boardCfg === null) {
+            $boardCfg = $boardsCfg['boards'][0] ?? [];
+        }
 
         $meta = [
             'menu_name'     => $boardCfg['menu_name'] ?? 'Board',
@@ -998,11 +1011,20 @@ try {
                 exit;
             }
 
-            $boardCfg  = config_get('board') ?? [];
+            $boardsCfg = config_get('board') ?? [];
+            $boardId   = substr($body['board'] ?? '', 0, 64);
+            $boardCfg  = null;
+            foreach (($boardsCfg['boards'] ?? []) as $b) {
+                if (($b['id'] ?? '') === $boardId) {
+                    $boardCfg = $b;
+                    break;
+                }
+            }
+            $boardCfg  = $boardCfg ?? [];
             $cfgTable  = $boardCfg['table'] ?? '';
             $statusCol = $boardCfg['status_column'] ?? '';
 
-            // The board is bound to a single configured table — reject anything else.
+            // Each board is bound to a single configured table — reject anything else.
             if ($cfgTable === '' || $statusCol === '' || $table !== $cfgTable) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid board table']);

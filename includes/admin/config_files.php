@@ -52,16 +52,10 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         'children' => [],
     ];
 
-    $boardRaw = config_get('board') ?? [];
-    if (!empty($boardRaw['table']) && !empty($boardRaw['status_column'])) {
-        $catalog['board'] = [
-            'type' => 'board', 'key' => 'board',
-            'name'   => $boardRaw['menu_name'] ?? 'Board',
-            'icon'   => $menuSanitizeIcon((string)($boardRaw['menu_icon'] ?? 'assets/icons/account_tree.png')),
-            'hidden' => !empty($boardRaw['hidden']),
-            'children' => [],
-        ];
-    }
+    // Board is now a named list (like Views/Print/Workflows) rendering as a
+    // parent + per-board children directly in templates/menu.php — it is
+    // deliberately excluded from this simpler draggable catalog, same as
+    // those other multi-item modules.
 
     $filesRaw = config_get('files') ?? [];
     $catalog['files'] = [
@@ -135,8 +129,8 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     require_once __DIR__ . '/../config_store.php';
     $schemaRaw = config_get('schema') ?? [];
-    $validKeys  = array_merge(['dashboard', 'calendar', 'board', 'files'], array_keys($schemaRaw['tables'] ?? []));
-    $validTypes = ['dashboard', 'calendar', 'board', 'files', 'table'];
+    $validKeys  = array_merge(['dashboard', 'calendar', 'files'], array_keys($schemaRaw['tables'] ?? []));
+    $validTypes = ['dashboard', 'calendar', 'files', 'table'];
 
     $sanitized = [];
     foreach ($body['items'] as $entry) {
