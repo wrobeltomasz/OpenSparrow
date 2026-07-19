@@ -215,10 +215,19 @@ function actionUpload($conn): void
         jsonError('File type category is not allowed.', 415);
     }
 
+    // Read the REAL content type and reject any file whose bytes do not match the
+    // extension the client claimed. Extension/category checks above are trivially
+    // spoofable (rename virus.html -> photo.jpg); this closes both the spoofing gap
+    // and a stored-content vector where a text/html payload named .jpg would later be
+    // served inline by file_download.php. Only enforced when finfo is available.
     $mimeType = 'application/octet-stream';
     if (class_exists('finfo')) {
         $finfo    = new finfo(FILEINFO_MIME_TYPE);
         $mimeType = $finfo->file($file['tmp_name']) ?: 'application/octet-stream';
+        if (!mimeMatchesExtension($ext, $mimeType)) {
+            unlink($file['tmp_name']);
+            jsonError('File content does not match its extension.', 415);
+        }
     }
 
     $uuid        = generateUuid();
@@ -587,6 +596,42 @@ function actionGetRelatedRecords($conn): void
     }
 
     jsonSuccess(['records' => $records]);
+}
+
+// Verify that the finfo-detected MIME type is consistent with the claimed extension.
+// Each extension maps to the set of MIME types finfo legitimately reports for it
+// (finfo is conservative and sometimes generic, e.g. application/octet-stream for
+// modern Office/archive formats), so the allowlist is intentionally permissive on the
+// generic side but still blocks the dangerous mismatches (text/html, scripts, executables
+// masquerading as images). An unknown extension has no entry and is rejected.
+function mimeMatchesExtension(string $ext, string $mime): bool
+{
+
+    $mime = strtolower(trim($mime));
+    $octet = 'application/octet-stream';
+    $map = [
+        'jpg'  => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png'  => ['image/png'],
+        'gif'  => ['image/gif'],
+        'webp' => ['image/webp'],
+        'pdf'  => ['application/pdf'],
+        'doc'  => ['application/msword', $octet],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', $octet],
+        'odt'  => ['application/vnd.oasis.opendocument.text', 'application/zip', $octet],
+        'rtf'  => ['application/rtf', 'text/rtf', 'text/plain'],
+        'xls'  => ['application/vnd.ms-excel', $octet],
+        'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip', $octet],
+        'ods'  => ['application/vnd.oasis.opendocument.spreadsheet', 'application/zip', $octet],
+        'csv'  => ['text/csv', 'text/plain', $octet],
+        'zip'  => ['application/zip', $octet],
+        'tar'  => ['application/x-tar', $octet],
+        'gz'   => ['application/gzip', 'application/x-gzip', $octet],
+    ];
+    if (!isset($map[$ext])) {
+        return false;
+    }
+    return in_array($mime, $map[$ext], true);
 }
 
 // File type detection logic

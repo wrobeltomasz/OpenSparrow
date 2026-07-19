@@ -98,14 +98,17 @@ if ($thumb && str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml') {
 
 // Clean and encode filename safely using RFC 5987
 $safeName = rawurlencode(basename(str_replace(["\r","\n","\0"], '', $name)));
-// Force download for SVG to prevent XSS execution
-if ($mime === 'image/svg+xml') {
-    header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . $safeName . '"');
-} else {
-// Set headers for standard file download or inline preview
+// Only raster images are served inline for in-browser preview. Everything else —
+// including SVG (script-capable) and any file whose stored MIME turned out to be
+// text/html or another renderable type — is forced as an attachment, so the browser
+// downloads it instead of rendering it in the app origin.
+$inlineSafe = str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml';
+if ($inlineSafe) {
     header('Content-Type: ' . $mime);
     header('Content-Disposition: inline; filename*=UTF-8\'\'' . $safeName);
+} else {
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="' . $safeName . '"');
 }
 
 header('Content-Length: ' . filesize($realFile));
