@@ -85,6 +85,21 @@ if ($action === 'etl_load') {
             $config['jobs'][$i]['target_schema'] = sys_schema();
         }
     }
+    // Backfill empty source ids from a past etl_save bug (empty string survived the
+    // `?? bin2hex(...)` fallback, since `??` only triggers on null/unset). Jobs that
+    // pointed at that blank id are relinked so they keep working after the id is fixed.
+    foreach ($config['sources'] as $i => $src) {
+        if (is_array($src) && trim((string)($src['id'] ?? '')) === '') {
+            $oldId = (string)($src['id'] ?? '');
+            $newId = bin2hex(random_bytes(8));
+            $config['sources'][$i]['id'] = $newId;
+            foreach ($config['jobs'] as $j => $job) {
+                if (is_array($job) && (string)($job['source_id'] ?? '') === $oldId) {
+                    $config['jobs'][$j]['source_id'] = $newId;
+                }
+            }
+        }
+    }
     // Never echo stored passwords back to the client.
     foreach ($config['sources'] as $i => $src) {
         if (isset($src['password'])) {
@@ -127,7 +142,10 @@ if ($action === 'etl_save') {
         if ($name === '') {
             continue;
         }
-        $id     = (string)($src['id'] ?? bin2hex(random_bytes(8)));
+        $id     = trim((string)($src['id'] ?? ''));
+        if ($id === '') {
+            $id = bin2hex(random_bytes(8));
+        }
         $driver = strtolower(trim((string)($src['driver'] ?? 'mysql')));
         if (!in_array($driver, $validDrivers, true)) {
             $driver = 'mysql';
@@ -190,7 +208,10 @@ if ($action === 'etl_save') {
         if ($name === '' || $target === '' || $schema === '') {
             continue;
         }
-        $id = (string)($job['id'] ?? bin2hex(random_bytes(8)));
+        $id = trim((string)($job['id'] ?? ''));
+        if ($id === '') {
+            $id = bin2hex(random_bytes(8));
+        }
 
         $sourceId = trim((string)($job['source_id'] ?? ''));
         if (!in_array($sourceId, $validSourceIds, true)) {
