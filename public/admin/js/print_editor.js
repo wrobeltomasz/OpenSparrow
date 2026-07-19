@@ -4,7 +4,7 @@
    variables (columns) are fetched live from the database so the user never types them. */
 
 import { apiFetch } from '../../assets/js/util/api.js';
-import { createIconPicker } from './ui.js';
+import { createIconPicker, buildInnerTabs } from './ui.js';
 
 export function renderPrintEditor(ctx) {
     const { workspaceEl, setSaveHandler } = ctx;
@@ -20,27 +20,38 @@ export function renderPrintEditor(ctx) {
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
 
-    const hdr = document.createElement('div');
-    hdr.style.cssText = 'display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap;';
-    const hdrText = document.createElement('div');
     const hdrTitle = document.createElement('h2');
     hdrTitle.className = 'admin-page-title';
-    hdrTitle.textContent = 'Printouts Configuration';
+    hdrTitle.textContent = 'Printouts';
     const hdrDesc = document.createElement('p');
     hdrDesc.className = 'admin-page-desc';
     hdrDesc.textContent = 'Build printable report templates from simple blocks (header, text, table). Each template is bound to a PostgreSQL view from the Views module; its columns become the available {variables}. Optional parameters let users filter the report (e.g. by employee) before printing.';
-    hdrText.appendChild(hdrTitle);
-    hdrText.appendChild(hdrDesc);
-    hdr.appendChild(hdrText);
+    wrap.appendChild(hdrTitle);
+    wrap.appendChild(hdrDesc);
 
-    const hdrActions = document.createElement('div');
-    hdrActions.style.cssText = 'display:flex; gap:8px; flex-shrink:0;';
+    const [listPanel, globalPanel] = buildInnerTabs(wrap, [
+        { label: 'All Printouts', icon: 'picture_as_pdf.png' },
+        { label: 'Global Settings', icon: 'car_gear.png' },
+    ]);
+
+    /* ---------- Global Settings tab ---------- */
+    const globalHeading = document.createElement('h3');
+    globalHeading.textContent = 'Global Settings';
+    const globalDesc = document.createElement('p');
+    globalDesc.style.cssText = '  margin:0;';
+    globalDesc.textContent = 'Printouts have no module-wide settings yet — each template configures its own view, parameters and blocks below. Use "All Printouts" to add and edit templates.';
+    globalPanel.appendChild(globalHeading);
+    globalPanel.appendChild(globalDesc);
+
+    /* ---------- action bar (same placement/style as Schema's "Sync DB Tables") ---------- */
+    const bar = document.createElement('div');
+    bar.style.marginBottom = '12px';
     const addBtn = document.createElement('button');
+    addBtn.type = 'button';
     addBtn.className = 'btn btn-success';
     addBtn.textContent = '+ Add printout';
-    hdrActions.appendChild(addBtn);
-    hdr.appendChild(hdrActions);
-    wrap.appendChild(hdr);
+    bar.appendChild(addBtn);
+    listPanel.appendChild(bar);
 
     setSaveHandler(async () => {
         const res = await apiFetch('../api/print.php?action=save', {
@@ -61,11 +72,11 @@ export function renderPrintEditor(ctx) {
 
     const statusEl = document.createElement('div');
     statusEl.style.cssText = 'display:none;';
-    wrap.appendChild(statusEl);
+    listPanel.appendChild(statusEl);
 
     const listEl = document.createElement('div');
     listEl.style.cssText = 'display:flex; flex-direction:column; gap:16px;';
-    wrap.appendChild(listEl);
+    listPanel.appendChild(listEl);
 
     workspaceEl.appendChild(wrap);
 

@@ -5,6 +5,8 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 import { createPageHeader, buildInnerTabs } from './ui.js';
+import { renderDatabaseSection } from './database.js';
+import { renderAuditEditor } from './audit.js';
 
 export async function renderSettingsPage(ctx) {
     const { workspaceEl } = ctx;
@@ -32,11 +34,16 @@ export async function renderSettingsPage(ctx) {
 
     const tabsContainer = document.createElement('div');
     workspaceEl.appendChild(tabsContainer);
-    const [languagePanel, chatBubblePanel, brandingPanel] = buildInnerTabs(tabsContainer, [
+    const [languagePanel, chatBubblePanel, brandingPanel, databasePanel, auditPanel] = buildInnerTabs(tabsContainer, [
         { label: 'Language', icon: 'menu_book.png' },
         { label: 'Chat Bubble', icon: 'comment.png' },
         { label: 'Branding', icon: 'image.png' },
+        { label: 'Database', icon: 'database.png' },
+        { label: 'Audit & Snapshots', icon: 'fact_check.png' },
     ]);
+
+    renderDatabaseSection(databasePanel);
+    renderAuditEditor({ workspaceEl: auditPanel });
 
     // ── Language Settings card ─────────────────────────────────────────────
 

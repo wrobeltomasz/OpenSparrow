@@ -148,10 +148,6 @@ if (empty($_SESSION['csrf_token'])) {
                     <span class="nav-chevron">▼</span>
                 </div>
                 <div class="nav-section-items">
-                    <button class="admin-tab" data-file="add_table">
-                        <img class="nav-item-icon" src="../assets/icons/build.png" alt="">
-                        Add Table
-                    </button>
                     <button class="admin-tab" data-file="board">
                         <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
                         Board
@@ -175,10 +171,6 @@ if (empty($_SESSION['csrf_token'])) {
                     <button class="admin-tab" data-file="files">
                         <img class="nav-item-icon" src="../assets/icons/upload.png" alt="">
                         Files
-                    </button>
-                    <button class="admin-tab" data-file="menu">
-                        <img class="nav-item-icon" src="../assets/icons/table_edit.png" alt="">
-                        Menu Preview
                     </button>
                     <button class="admin-tab" data-file="print">
                         <img class="nav-item-icon" src="../assets/icons/picture_as_pdf.png" alt="">
@@ -249,10 +241,6 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/fact_check.png" alt="">
                         Anonymization
                     </button>
-                    <button class="admin-tab" data-file="audit">
-                        <img class="nav-item-icon" src="../assets/icons/fact_check.png" alt="">
-                        Audit &amp; Snapshots
-                    </button>
                     <button class="admin-tab" data-file="backup">
                         <img class="nav-item-icon" src="../assets/icons/inventory.png" alt="">
                         Backup Tables
@@ -261,10 +249,6 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/manage_history.png" alt="">
                         Cron Notifications
                     </button>
-                    <button class="admin-tab" data-file="database">
-                        <img class="nav-item-icon" src="../assets/icons/database.png" alt="">
-                        Database
-                    </button>
                     <button class="admin-tab" data-file="demo">
                         <img class="nav-item-icon" src="../assets/icons/playground.png" alt="">
                         Demo Systems
@@ -272,10 +256,6 @@ if (empty($_SESSION['csrf_token'])) {
                     <button class="admin-tab" data-file="health">
                         <img class="nav-item-icon" src="../assets/icons/health_and_safety.png" alt="">
                         Health Check
-                    </button>
-                    <button class="admin-tab" data-file="m2m">
-                        <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
-                        M2M Builder
                     </button>
                     <button class="admin-tab" data-file="migrations">
                         <img class="nav-item-icon" src="../assets/icons/database.png" alt="">
@@ -358,9 +338,9 @@ if (empty($_SESSION['csrf_token'])) {
     // Breadcrumb: update on tab click
     var breadcrumbLabels = {
         schema: 'Schema', dashboard: 'Dashboard', calendar: 'Calendar',
-        files: 'Files', menu: 'Menu Preview', workflows: 'Workflows',
-        database: 'Database', users: 'Users', health: 'Health Check',
-        backup: 'Backup Tables', audit: 'Audit & Snapshots', docs: 'Documentation',
+        files: 'Files', workflows: 'Workflows',
+        users: 'Users', health: 'Health Check',
+        backup: 'Backup Tables', docs: 'Documentation',
         performance: 'Performance',
         cron: 'Cron Notifications',
         views: 'Views',

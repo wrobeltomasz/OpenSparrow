@@ -62,9 +62,6 @@ function buildSkeleton() {
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
     wrap.innerHTML = `
-        <h2 class="admin-page-title">Files</h2>
-        <p class="admin-page-desc">Upload, browse, and configure file storage — max size, allowed types/extensions, and record-relation auto-linking.</p>
-
         <div class="adm-sec-card" id="files-cfg-block">
             <div class="adm-sec-hdr" style="display:block;"><h3 style="margin:0;">Configuration</h3></div>
             <div class="adm-sec-body">

@@ -6,7 +6,6 @@ import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings } from
 import { renderDashboardLayout, renderDashboardEditor, initDashboardUI } from './dashboard.js';
 import { renderCalendarEditor } from './calendar.js';
 import { renderBoardEditor } from './board.js';
-import { renderDatabaseEditor } from './database.js';
 import { renderSecurityEditor } from './security.js';
 import { renderHealthDashboard } from './health.js';
 import { renderDocumentation } from './docs.js';
@@ -14,7 +13,6 @@ import { renderUsersEditor } from './users.js';
 import { renderWorkflowsEditor } from './workflows.js';
 import { renderFilesEditor } from './files_render.js';
 import { renderBackupPage } from './backup.js';
-import { renderAuditEditor } from './audit.js';
 import { renderAddTableEditor } from './add_table.js';
 import { renderMigrationsPage } from './migrations.js';
 import { renderPerformancePage } from './performance.js';
@@ -49,11 +47,20 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'database', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization']);
+
+// Sub-views of a config-backed tab that manage their own state/save flow and
+// must never trip the generic "unsaved changes" dirty tracking (Menu Preview
+// autosaves on drag; Add Table / M2M Builder post directly and reset their own form).
+const NON_CONFIG_SCHEMA_KEYS = new Set(['MENU_PREVIEW', 'ADD_TABLE', 'M2M_BUILDER']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
-export function markDirty() { if (!NON_CONFIG_TABS.has(currentFile)) isDirty = true; }
+export function markDirty() {
+    if (NON_CONFIG_TABS.has(currentFile)) return;
+    if (currentFile === 'schema' && NON_CONFIG_SCHEMA_KEYS.has(currentItemKey)) return;
+    isDirty = true;
+}
 export function markClean() { isDirty = false; }
 function confirmDiscard() {
     return !isDirty || confirm('You have unsaved changes that will be lost. Continue?');
@@ -180,7 +187,7 @@ async function loadConfigFile(fileName) {
     // A prior tab may have registered its own save routine; every tab switch
     // starts fresh so a stale handler can never fire for the wrong tab.
     activeSaveHandler = null;
-    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'menu' || fileName === 'audit' || fileName === 'add_table' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'm2m' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -221,8 +228,6 @@ async function loadConfigFile(fileName) {
             if (typeof currentConfig.limit !== 'number' || currentConfig.limit < 0) {
                 currentConfig.limit = 20;
             }
-        } else if (fileName === 'database') {
-            if (!currentConfig.host) currentConfig = { host: 'localhost', port: '5432', dbname: '', user: 'postgres', password: '' };
         } else if (fileName === 'security') {
             currentConfig = {};
         }
@@ -239,7 +244,7 @@ async function loadConfigFile(fileName) {
             currentItemKey = 'LAYOUT';
             renderSidebar();
             renderEditor('LAYOUT', null, false);
-        } else if (fileName === 'database' || fileName === 'security' || fileName === 'views' || fileName === 'board' || fileName === 'user_records') {
+        } else if (fileName === 'security' || fileName === 'views' || fileName === 'board' || fileName === 'user_records') {
             renderSidebar();
             renderEditor('SETTINGS', currentConfig, false);
         } else {
@@ -344,15 +349,16 @@ const CARD_MODULE_HEADER = {
     dashboard: ['Dashboard', 'Build the dashboard from stat, bar, pie, and list widgets bound to your tables.'],
     calendar:  ['Calendar', 'Define one or more calendar sources — each maps a table\'s date column to calendar events.'],
     workflows: ['Workflows', 'Multi-step guided workflows that walk users through a sequence of record edits.'],
+    files:     ['Files', 'Upload, browse, and configure file storage — max size, allowed types/extensions, and record-relation auto-linking.'],
 };
 
 function renderSidebar() {
     itemPanelEl.innerHTML = '';
 
     const fullPageTabs = new Set([
-        'overview', 'database', 'security', 'health', 'docs', 'users', 'backup',
-        'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron',
-        'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'board', 'etl', 'anonymization', 'print',
+        'overview', 'security', 'health', 'docs', 'users', 'backup',
+        'migrations', 'performance', 'cron',
+        'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'board', 'etl', 'anonymization', 'print',
         'user_records',
     ]);
 
@@ -387,6 +393,27 @@ function renderSidebar() {
         btn.append(tabIcon('car_gear.png'), document.createTextNode('Global Grid Settings'));
         btn.onclick = () => { currentItemKey = 'GLOBAL_SCHEMA'; renderSidebar(); renderEditor('GLOBAL_SCHEMA', null, false); };
         itemsRow.appendChild(btn);
+
+        const menuBtn = document.createElement('button');
+        menuBtn.type = 'button';
+        menuBtn.className = 'item-btn' + (currentItemKey === 'MENU_PREVIEW' ? ' active' : '');
+        menuBtn.append(tabIcon('table_edit.png'), document.createTextNode('Menu Preview'));
+        menuBtn.onclick = () => { currentItemKey = 'MENU_PREVIEW'; renderSidebar(); renderEditor('MENU_PREVIEW', null, false); };
+        itemsRow.appendChild(menuBtn);
+
+        const addTableBtn = document.createElement('button');
+        addTableBtn.type = 'button';
+        addTableBtn.className = 'item-btn' + (currentItemKey === 'ADD_TABLE' ? ' active' : '');
+        addTableBtn.append(tabIcon('build.png'), document.createTextNode('Add New Table'));
+        addTableBtn.onclick = () => { currentItemKey = 'ADD_TABLE'; renderSidebar(); renderEditor('ADD_TABLE', null, false); };
+        itemsRow.appendChild(addTableBtn);
+
+        const m2mBtn = document.createElement('button');
+        m2mBtn.type = 'button';
+        m2mBtn.className = 'item-btn' + (currentItemKey === 'M2M_BUILDER' ? ' active' : '');
+        m2mBtn.append(tabIcon('account_tree.png'), document.createTextNode('M2M Builder'));
+        m2mBtn.onclick = () => { currentItemKey = 'M2M_BUILDER'; renderSidebar(); renderEditor('M2M_BUILDER', null, false); };
+        itemsRow.appendChild(m2mBtn);
     }
 
     if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'files' || currentFile === 'automations') {
@@ -716,29 +743,56 @@ function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
     else                  renderCalendarEditor(key, item, isArray, cardCtx);
 }
 
+// Full drag-and-drop FE menu preview — surfaced as the Schema "Menu Preview" tab
+// (it reflects every module's menu entry, not just tables, so it lives under Schema).
+function renderMenuPreview(ctx) {
+    const { workspaceEl } = ctx;
+    (async () => {
+        workspaceEl.innerHTML = '';
+        const h3 = document.createElement('h3');
+        h3.style.marginTop = '0';
+        h3.textContent = 'Menu Preview';
+        workspaceEl.appendChild(h3);
+        const desc = document.createElement('p');
+        desc.style.cssText = '  margin-bottom:20px;';
+        desc.textContent = 'Drag to reorder. Drop onto an item to nest it (1 level). Changes save automatically.';
+        workspaceEl.appendChild(desc);
+        const preview = createFullMenuPreview(null);
+        workspaceEl.appendChild(preview.el);
+        try {
+            const res = await apiFetch('api.php?action=menu_config');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            preview.update(data);
+        } catch (err) {
+            preview.el.remove();
+            const msg = document.createElement('p');
+            msg.style.color = 'var(--danger)';
+            msg.textContent = 'Failed to load menu config: ' + escapeHtml(err.message);
+            workspaceEl.appendChild(msg);
+        }
+    })();
+}
+
 function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
 
-    if (['overview', 'health', 'docs', 'users', 'backup', 'menu', 'audit', 'add_table', 'migrations', 'performance', 'cron', 'm2m', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER')) {
+    if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER'))) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
     }
 
     if (currentFile === 'overview') return renderOverviewPage(ctx);
-    if (currentFile === 'database') return renderDatabaseEditor(key, itemData, isArray, ctx);
     if (currentFile === 'security') return renderSecurityEditor(key, itemData, isArray, ctx);
     if (currentFile === 'health') return renderHealthDashboard(ctx);
     if (currentFile === 'docs') return renderDocumentation(ctx);
     if (currentFile === 'users') return renderUsersEditor(ctx);
     if (currentFile === 'backup') return renderBackupPage(ctx);
-    if (currentFile === 'audit') return renderAuditEditor(ctx);
-    if (currentFile === 'add_table') return renderAddTableEditor(ctx);
     if (currentFile === 'migrations') return renderMigrationsPage(ctx);
     if (currentFile === 'performance') return renderPerformancePage(ctx);
     if (currentFile === 'cron') return renderCronPage(ctx);
-    if (currentFile === 'm2m')  return renderM2mPage(ctx);
     if (currentFile === 'erd')  return renderErdPage(ctx);
     if (currentFile === 'demo') return renderDemoPage(ctx);
     if (currentFile === 'settings') return renderSettingsPage(ctx);
@@ -762,32 +816,16 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'board') return renderBoardEditor(ctx);
     if (currentFile === 'files' && key === 'MANAGER') return renderFilesEditor(ctx);
 
-    if (currentFile === 'menu') {
-        (async () => {
-            workspaceEl.innerHTML = '';
-            const h3 = document.createElement('h3');
-            h3.style.marginTop = '0';
-            h3.textContent = 'Menu Preview';
-            workspaceEl.appendChild(h3);
-            const desc = document.createElement('p');
-            desc.style.cssText = '  margin-bottom:20px;';
-            desc.textContent = 'Drag to reorder. Drop onto an item to nest it (1 level). Changes save automatically.';
-            workspaceEl.appendChild(desc);
-            const preview = createFullMenuPreview(null);
-            workspaceEl.appendChild(preview.el);
-            try {
-                const res = await apiFetch('api.php?action=menu_config');
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
-                preview.update(data);
-            } catch (err) {
-                preview.el.remove();
-                const msg = document.createElement('p');
-                msg.style.color = 'var(--danger)';
-                msg.textContent = 'Failed to load menu config: ' + escapeHtml(err.message);
-                workspaceEl.appendChild(msg);
-            }
-        })();
+    if (currentFile === 'schema' && key === 'MENU_PREVIEW') {
+        renderMenuPreview(ctx);
+        return;
+    }
+    if (currentFile === 'schema' && key === 'ADD_TABLE') {
+        renderAddTableEditor(ctx);
+        return;
+    }
+    if (currentFile === 'schema' && key === 'M2M_BUILDER') {
+        renderM2mPage(ctx);
         return;
     }
 
