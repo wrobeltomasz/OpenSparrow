@@ -4,6 +4,7 @@
 // admin/js/audit.js — Audit-log settings editor (renderAuditEditor); reads/writes audit config via api.php.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
+import { createPageHeader } from './ui.js';
 
 export async function renderAuditEditor(ctx) {
     const { workspaceEl } = ctx;
@@ -31,15 +32,14 @@ export async function renderAuditEditor(ctx) {
 
     workspaceEl.innerHTML = '';
 
-    const h3 = document.createElement('h3');
-    h3.style.marginTop = '0';
-    h3.textContent = 'Audit & Record Snapshots';
-    workspaceEl.appendChild(h3);
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
+    workspaceEl.appendChild(wrap);
 
-    const desc = document.createElement('p');
-    desc.style.cssText = 'color:#64748B;  margin-bottom:24px;';
-    desc.textContent = 'When enabled, every INSERT, UPDATE, and DELETE on user data tables saves a full JSONB snapshot of the record to spw_record_snapshots, linked to the audit log entry in spw_users_log.';
-    workspaceEl.appendChild(desc);
+    wrap.appendChild(createPageHeader(
+        'Audit & Record Snapshots',
+        'When enabled, every INSERT, UPDATE, and DELETE on user data tables saves a full JSONB snapshot of the record to spw_record_snapshots, linked to the audit log entry in spw_users_log.'
+    ));
 
     // --- Status cards ---
     const grid = document.createElement('div');
@@ -74,11 +74,15 @@ export async function renderAuditEditor(ctx) {
         ));
     }
 
-    workspaceEl.appendChild(grid);
+    wrap.appendChild(grid);
 
     // --- Toggle ---
     const toggleSection = document.createElement('div');
-    toggleSection.style.cssText = 'padding:20px; background:white; border:1px solid #CBD5E1; border-radius:8px; margin-bottom:24px;';
+    toggleSection.className = 'adm-sec-card';
+
+    const toggleBody = document.createElement('div');
+    toggleBody.className = 'adm-sec-body';
+    toggleSection.appendChild(toggleBody);
 
     const toggleRow = document.createElement('div');
     toggleRow.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:16px;';
@@ -149,32 +153,36 @@ export async function renderAuditEditor(ctx) {
 
     toggleRow.appendChild(labelGroup);
     toggleRow.appendChild(switchLabel);
-    toggleSection.appendChild(toggleRow);
-    toggleSection.appendChild(pillAnchor);
-    workspaceEl.appendChild(toggleSection);
+    toggleBody.appendChild(toggleRow);
+    toggleBody.appendChild(pillAnchor);
+    wrap.appendChild(toggleSection);
 
     // --- Schema info ---
     const schemaSection = document.createElement('div');
-    schemaSection.style.cssText = 'padding:16px 20px; background:#F4F7F9; border:1px solid #CBD5E1; border-radius:8px;';
+    schemaSection.className = 'adm-sec-card';
     schemaSection.innerHTML = `
-        <h4 style="margin:0 0 10px;    color:#64748B;">Table: spw_record_snapshots</h4>
-        <table style="width:100%; border-collapse:collapse; ">
-            <thead>
-                <tr style="text-align:left; color:#64748B; border-bottom:1px solid #CBD5E1;">
-                    <th style="padding:4px 8px 6px;">Column</th>
-                    <th style="padding:4px 8px 6px;">Type</th>
-                    <th style="padding:4px 8px 6px;">Description</th>
-                </tr>
-            </thead>
-            <tbody style="color:#1E293B;">
-                <tr><td style="padding:4px 8px;">id</td><td style="padding:4px 8px;">serial</td><td style="padding:4px 8px;">Primary key</td></tr>
-                <tr style="background:#E2EAF0;"><td style="padding:4px 8px;">log_id</td><td style="padding:4px 8px;">int4</td><td style="padding:4px 8px;">FK to spw_users_log.id (CASCADE DELETE)</td></tr>
-                <tr><td style="padding:4px 8px;">table_name</td><td style="padding:4px 8px;">varchar(100)</td><td style="padding:4px 8px;">Name of the affected table</td></tr>
-                <tr><td style="padding:4px 8px;">record_id</td><td style="padding:4px 8px;">int4</td><td style="padding:4px 8px;">PK of the affected record</td></tr>
-                <tr style="background:#E2EAF0;"><td style="padding:4px 8px;">snapshot</td><td style="padding:4px 8px;">jsonb</td><td style="padding:4px 8px;">Full record as JSON (row_to_json)</td></tr>
-                <tr><td style="padding:4px 8px;">created_at</td><td style="padding:4px 8px;">timestamp</td><td style="padding:4px 8px;">When the snapshot was saved</td></tr>
-            </tbody>
-        </table>
+        <div class="adm-sec-hdr" style="display:block;">
+            <h3 style="margin:0;">Table: spw_record_snapshots</h3>
+        </div>
+        <div class="adm-sec-body">
+            <table class="adm-tbl">
+                <thead>
+                    <tr>
+                        <th class="adm-th">Column</th>
+                        <th class="adm-th">Type</th>
+                        <th class="adm-th">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="adm-td">id</td><td class="adm-td">serial</td><td class="adm-td">Primary key</td></tr>
+                    <tr><td class="adm-td">log_id</td><td class="adm-td">int4</td><td class="adm-td">FK to spw_users_log.id (CASCADE DELETE)</td></tr>
+                    <tr><td class="adm-td">table_name</td><td class="adm-td">varchar(100)</td><td class="adm-td">Name of the affected table</td></tr>
+                    <tr><td class="adm-td">record_id</td><td class="adm-td">int4</td><td class="adm-td">PK of the affected record</td></tr>
+                    <tr><td class="adm-td">snapshot</td><td class="adm-td">jsonb</td><td class="adm-td">Full record as JSON (row_to_json)</td></tr>
+                    <tr><td class="adm-td">created_at</td><td class="adm-td">timestamp</td><td class="adm-td">When the snapshot was saved</td></tr>
+                </tbody>
+            </table>
+        </div>
     `;
-    workspaceEl.appendChild(schemaSection);
+    wrap.appendChild(schemaSection);
 }

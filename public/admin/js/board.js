@@ -6,6 +6,7 @@ import {
     createColorInput,
     createIconPicker,
     createCheckbox,
+    createPageHeader,
 } from './ui.js';
 
 // String-preserving multi-select. ui.js's createMultiSelect coerces option
@@ -71,20 +72,19 @@ export function renderBoardEditor(ctx) {
 
     workspaceEl.innerHTML = '';
 
-    const heading = document.createElement('h3');
-    heading.style.marginTop = '0';
-    heading.textContent = 'Board (Kanban) Configuration';
-    workspaceEl.appendChild(heading);
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
+    workspaceEl.appendChild(wrap);
 
-    const intro = document.createElement('p');
-    intro.style.cssText = '  margin-top:0; max-width:640px;';
-    intro.textContent = 'Pick a table and the status column whose values become the board lanes '
+    wrap.appendChild(createPageHeader(
+        'Board (Kanban) Configuration',
+        'Pick a table and the status column whose values become the board lanes '
         + '(e.g. "To Do", "In Progress", "Done"). Users drag cards between lanes to update that '
-        + 'column instantly. An enum column is recommended so lanes and their colors are well defined.';
-    workspaceEl.appendChild(intro);
+        + 'column instantly. An enum column is recommended so lanes and their colors are well defined.'
+    ));
 
     // ── Source table ───────────────────────────────────────────────────────────
-    workspaceEl.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), currentConfig.table || '', v => {
+    wrap.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), currentConfig.table || '', v => {
         currentConfig.table = v;
         currentConfig.status_column = '';
         currentConfig.title_column = '';
@@ -100,7 +100,7 @@ export function renderBoardEditor(ctx) {
         const statusOptions = [{ value: '', label: '-- Select Status Column --' }]
             .concat(hasEnum ? enumCols : getColumnOptionsForTable(currentConfig.table).filter(o => o.value !== ''));
 
-        workspaceEl.appendChild(createSelectInput('status_column', 'Status Column (defines lanes)', statusOptions, currentConfig.status_column || '', v => {
+        wrap.appendChild(createSelectInput('status_column', 'Status Column (defines lanes)', statusOptions, currentConfig.status_column || '', v => {
             currentConfig.status_column = v;
             renderEditor('SETTINGS', currentConfig, false);
         }));
@@ -111,7 +111,7 @@ export function renderBoardEditor(ctx) {
             warn.textContent = 'This table has no enum columns. Lanes will be derived from the distinct '
                 + 'values currently in the chosen column, and all lanes use the default color below. '
                 + 'For a proper status workflow, define an enum column in the Schema editor.';
-            workspaceEl.appendChild(warn);
+            wrap.appendChild(warn);
         }
 
         // Lane preview for enum status columns — shows the lanes and their colors.
@@ -139,22 +139,22 @@ export function renderBoardEditor(ctx) {
                     chips.appendChild(chip);
                 });
                 previewWrap.appendChild(chips);
-                workspaceEl.appendChild(previewWrap);
+                wrap.appendChild(previewWrap);
             }
         }
 
         // ── Card content ───────────────────────────────────────────────────────
-        workspaceEl.appendChild(createSelectInput('title_column', 'Card Title Column', getColumnOptionsForTable(currentConfig.table), currentConfig.title_column || '', v => {
+        wrap.appendChild(createSelectInput('title_column', 'Card Title Column', getColumnOptionsForTable(currentConfig.table), currentConfig.title_column || '', v => {
             currentConfig.title_column = v;
         }));
 
         const fieldOpts = getColumnOptionsForTable(currentConfig.table)
             .filter(o => o.value !== '' && o.value !== currentConfig.status_column);
-        workspaceEl.appendChild(createColumnMultiSelect('Card Detail Fields (shown on each card)', fieldOpts, currentConfig.card_columns || [], v => {
+        wrap.appendChild(createColumnMultiSelect('Card Detail Fields (shown on each card)', fieldOpts, currentConfig.card_columns || [], v => {
             currentConfig.card_columns = v;
         }));
 
-        workspaceEl.appendChild(createColorInput('color', 'Default Lane / Card Color', currentConfig.color || '#005A9E', v => {
+        wrap.appendChild(createColorInput('color', 'Default Lane / Card Color', currentConfig.color || '#005A9E', v => {
             currentConfig.color = v;
         }));
     }
@@ -162,23 +162,23 @@ export function renderBoardEditor(ctx) {
     // ── Menu / sidebar settings ────────────────────────────────────────────────
     const hr = document.createElement('hr');
     hr.style.cssText = 'border:none; border-top:1px solid var(--border); margin:24px 0 18px;';
-    workspaceEl.appendChild(hr);
+    wrap.appendChild(hr);
 
     const menuHeading = document.createElement('h4');
     menuHeading.style.cssText = 'margin:0 0 12px;';
     menuHeading.textContent = 'Menu Settings';
-    workspaceEl.appendChild(menuHeading);
+    wrap.appendChild(menuHeading);
 
-    workspaceEl.appendChild(createTextInput('menu_name', 'Menu Display Name', currentConfig.menu_name || 'Board', v => {
+    wrap.appendChild(createTextInput('menu_name', 'Menu Display Name', currentConfig.menu_name || 'Board', v => {
         currentConfig.menu_name = v;
     }));
 
-    workspaceEl.appendChild(createIconPicker('menu_icon', 'Menu Icon', currentConfig.menu_icon || '', v => {
+    wrap.appendChild(createIconPicker('menu_icon', 'Menu Icon', currentConfig.menu_icon || '', v => {
         if (v && v.trim() !== '') currentConfig.menu_icon = v;
         else delete currentConfig.menu_icon;
     }));
 
-    workspaceEl.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu', currentConfig.hidden, v => {
+    wrap.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu', currentConfig.hidden, v => {
         if (v) currentConfig.hidden = true;
         else delete currentConfig.hidden;
     }, false));
@@ -186,5 +186,5 @@ export function renderBoardEditor(ctx) {
     const note = document.createElement('p');
     note.style.cssText = '  margin-top:8px;';
     note.textContent = 'The board only appears in the sidebar once a table and status column are set. Remember to click "Save config".';
-    workspaceEl.appendChild(note);
+    wrap.appendChild(note);
 }

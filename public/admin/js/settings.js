@@ -33,9 +33,9 @@ export async function renderSettingsPage(ctx) {
     const tabsContainer = document.createElement('div');
     workspaceEl.appendChild(tabsContainer);
     const [languagePanel, chatBubblePanel, brandingPanel] = buildInnerTabs(tabsContainer, [
-        { label: 'Language' },
-        { label: 'Chat Bubble' },
-        { label: 'Branding' },
+        { label: 'Language', icon: 'menu_book.png' },
+        { label: 'Chat Bubble', icon: 'comment.png' },
+        { label: 'Branding', icon: 'image.png' },
     ]);
 
     // ── Language Settings card ─────────────────────────────────────────────

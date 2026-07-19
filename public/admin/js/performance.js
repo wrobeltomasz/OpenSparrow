@@ -430,7 +430,11 @@ export function renderPerformancePage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.replaceChildren();
 
-    workspaceEl.appendChild(createPageHeader('Performance'));
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
+    workspaceEl.appendChild(wrap);
+
+    wrap.appendChild(createPageHeader('Performance', 'Scan for missing/unused indexes, slow queries, table bloat, database health, and schema configuration warnings.'));
 
     const topRow = document.createElement('div');
     topRow.style.cssText = 'display:flex; align-items:center; gap:14px; margin-bottom:20px;';
@@ -439,14 +443,15 @@ export function renderPerformancePage(ctx) {
     btnAll.className = 'btn btn-primary';
     btnAll.textContent = 'Run All';
     topRow.appendChild(btnAll);
-    workspaceEl.appendChild(topRow);
+    wrap.appendChild(topRow);
 
     const tabContainer = document.createElement('div');
-    workspaceEl.appendChild(tabContainer);
+    wrap.appendChild(tabContainer);
 
     const sections = [
         {
             label:  'Index Advisor',
+            icon:   'search.png',
             title:  '1. Missing Index Advisor',
             desc:   'Detects columns needing indexes: foreign keys, subtable joins, default sort, widget filters.',
             action: 'performance_check',
@@ -454,6 +459,7 @@ export function renderPerformancePage(ctx) {
         },
         {
             label:  'Unused Indexes',
+            icon:   'data_thresholding.png',
             title:  '2. Unused Indexes',
             desc:   'Finds existing indexes with zero scans — candidates for removal to speed up writes.',
             action: 'performance_unused_indexes',
@@ -461,6 +467,7 @@ export function renderPerformancePage(ctx) {
         },
         {
             label:  'Slow Queries',
+            icon:   'watch_screentime.png',
             title:  '3. Slow Query Analyzer',
             desc:   'Top 15 slowest queries by avg execution time (requires pg_stat_statements extension).',
             action: 'performance_slow_queries',
@@ -468,6 +475,7 @@ export function renderPerformancePage(ctx) {
         },
         {
             label:  'Table Stats',
+            icon:   'data_table.png',
             title:  '4. Table Statistics & Bloat',
             desc:   'Dead row ratio, seq vs index scans, last vacuum/analyze per table.',
             action: 'performance_table_stats',
@@ -475,6 +483,7 @@ export function renderPerformancePage(ctx) {
         },
         {
             label:  'DB Health',
+            icon:   'health_and_safety.png',
             title:  '5. Database Health',
             desc:   'Cache hit ratio, connection usage, deadlocks, committed transactions.',
             action: 'performance_db_health',
@@ -482,6 +491,7 @@ export function renderPerformancePage(ctx) {
         },
         {
             label:  'Schema Warnings',
+            icon:   'checklist_rtl.png',
             title:  '6. Schema Configuration Warnings',
             desc:   'Tables missing load limits, widgets without row caps, subtables without column lists.',
             action: 'performance_schema_warnings',

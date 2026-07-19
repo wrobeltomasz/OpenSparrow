@@ -385,6 +385,14 @@ ${_ul([
     `<strong>${s.s11d_log_label}:</strong> ${s.s11d_log}`
 ])}
 
+${_h3('doc-11e', s.s11e_head)}
+${_p(s.s11e_desc)}
+${_ul([
+    `<strong>${s.s11e_run_label}:</strong> ${s.s11e_run}`,
+    `<strong>${s.s11e_schedule_label}:</strong> ${s.s11e_schedule}`,
+    `<strong>${s.s11e_log_label}:</strong> ${s.s11e_log}`
+])}
+
 ${_h3('doc-13', s.s13_head)}
 ${_p(s.s13_desc)}
 ${_h4(s.s13_config_head)}
@@ -483,27 +491,27 @@ ${_p('Every pull request that removes a file or a configuration key must add an 
 ${_h3('doc-12', s.s12_head)}
 ${_ul([s.s12_li1, s.s12_li2, s.s12_li3, s.s12_li4])}
 ${_h4(s.s12_env_head)}
-<table style="width:100%;border-collapse:collapse;margin-top:10px;">
-    <thead><tr style="background:#F4F7F9;">
-        <th style="text-align:left;padding:6px 10px;border:1px solid #CBD5E1;">${s.s12_th_var}</th>
-        <th style="text-align:left;padding:6px 10px;border:1px solid #CBD5E1;">${s.s12_th_default}</th>
-        <th style="text-align:left;padding:6px 10px;border:1px solid #CBD5E1;">${s.s12_th_desc}</th>
+<table class="adm-tbl" style="margin-top:10px;">
+    <thead><tr>
+        <th class="adm-th">${s.s12_th_var}</th>
+        <th class="adm-th">${s.s12_th_default}</th>
+        <th class="adm-th">${s.s12_th_desc}</th>
     </tr></thead>
     <tbody>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>APP_ENV</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>production</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_appenv}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>DB_HOST</code> / <code>PGHOST</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>localhost</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_dbhost}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>DB_PORT</code> / <code>PGPORT</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>5432</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_dbport}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>APP_TIMEZONE</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>Europe/Warsaw</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_timezone}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>SECURE_COOKIES</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>true</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_cookies}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>SESSION_MAX_LIFETIME</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>28800</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_session}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>IP_HASH_SALT</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><em>${s.env_none}</em></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><strong>${s.env_iphash_req}</strong> ${s.env_iphash}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>LOGIN_MAX_ATTEMPTS_PER_IP</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_ip_attempts}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>LOGIN_MAX_ATTEMPTS_PER_USERNAME</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>5</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_user_attempts}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>LOGIN_LOCKOUT_MINUTES</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>15</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_lockout}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>DEMO_MODE</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_demo}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>FILES_MAX_SIZE_MB</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>20</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_files}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>RECORD_SNAPSHOTS_ENABLED</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>false</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_snapshots}</td></tr>
-        <tr><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>PGSCHEMA</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;"><code>app</code></td><td style="padding:5px 10px;border:1px solid #CBD5E1;">${s.env_pgschema}</td></tr>
+        <tr><td class="adm-td"><code>APP_ENV</code></td><td class="adm-td"><code>production</code></td><td class="adm-td">${s.env_appenv}</td></tr>
+        <tr><td class="adm-td"><code>DB_HOST</code> / <code>PGHOST</code></td><td class="adm-td"><code>localhost</code></td><td class="adm-td">${s.env_dbhost}</td></tr>
+        <tr><td class="adm-td"><code>DB_PORT</code> / <code>PGPORT</code></td><td class="adm-td"><code>5432</code></td><td class="adm-td">${s.env_dbport}</td></tr>
+        <tr><td class="adm-td"><code>APP_TIMEZONE</code></td><td class="adm-td"><code>Europe/Warsaw</code></td><td class="adm-td">${s.env_timezone}</td></tr>
+        <tr><td class="adm-td"><code>SECURE_COOKIES</code></td><td class="adm-td"><code>true</code></td><td class="adm-td">${s.env_cookies}</td></tr>
+        <tr><td class="adm-td"><code>SESSION_MAX_LIFETIME</code></td><td class="adm-td"><code>28800</code></td><td class="adm-td">${s.env_session}</td></tr>
+        <tr><td class="adm-td"><code>IP_HASH_SALT</code></td><td class="adm-td"><em>${s.env_none}</em></td><td class="adm-td"><strong>${s.env_iphash_req}</strong> ${s.env_iphash}</td></tr>
+        <tr><td class="adm-td"><code>LOGIN_MAX_ATTEMPTS_PER_IP</code></td><td class="adm-td"><code>20</code></td><td class="adm-td">${s.env_ip_attempts}</td></tr>
+        <tr><td class="adm-td"><code>LOGIN_MAX_ATTEMPTS_PER_USERNAME</code></td><td class="adm-td"><code>5</code></td><td class="adm-td">${s.env_user_attempts}</td></tr>
+        <tr><td class="adm-td"><code>LOGIN_LOCKOUT_MINUTES</code></td><td class="adm-td"><code>15</code></td><td class="adm-td">${s.env_lockout}</td></tr>
+        <tr><td class="adm-td"><code>DEMO_MODE</code></td><td class="adm-td"><code>false</code></td><td class="adm-td">${s.env_demo}</td></tr>
+        <tr><td class="adm-td"><code>FILES_MAX_SIZE_MB</code></td><td class="adm-td"><code>20</code></td><td class="adm-td">${s.env_files}</td></tr>
+        <tr><td class="adm-td"><code>RECORD_SNAPSHOTS_ENABLED</code></td><td class="adm-td"><code>false</code></td><td class="adm-td">${s.env_snapshots}</td></tr>
+        <tr><td class="adm-td"><code>PGSCHEMA</code></td><td class="adm-td"><code>app</code></td><td class="adm-td">${s.env_pgschema}</td></tr>
     </tbody>
 </table>
 </div>`;

@@ -1,11 +1,13 @@
 // admin/js/etl.js — ETL admin module (external source → PostgreSQL import; MySQL,
 // MariaDB, PostgreSQL, SQLite)
-// 4 tabs: Sources (2+ named source connections), Jobs (each picks a source), Schedule, History.
+// 5 tabs: Sources (2+ named source connections), Jobs (each picks a source), Schedule,
+// History, Flows (ordered chains of existing jobs — see etl_flow.js).
 // Persists the "etl" config via etl_save (optimistic-lock version).
 // Cron worker: cron/cron_etl.php.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs } from './ui.js';
 import { escHtml } from '../../assets/js/util/esc.js';
+import { renderFlowsTab } from './etl_flow.js';
 
 let etlConfig  = null;
 let etlVersion = 0;
@@ -678,24 +680,61 @@ async function renderHistoryTab(panel) {
             if (data.status !== 'success') { tableWrap.textContent = data.error || 'Failed to load.'; return; }
             if (data.note && (!data.rows || data.rows.length === 0)) { tableWrap.textContent = data.note; return; }
             if (!data.rows || data.rows.length === 0) { tableWrap.textContent = 'No runs yet.'; return; }
-            tableWrap.innerHTML = buildHistoryTable(data.rows);
+            tableWrap.innerHTML = '';
+            tableWrap.appendChild(buildHistoryTable(data.rows));
         } catch (_) { tableWrap.textContent = 'Network error.'; }
     }
     load();
 }
 
 function buildHistoryTable(rows) {
-    const head = ['Started', 'Job', 'Trigger', 'Status', 'Read', 'Written', 'Duration (s)', 'Error']
-        .map(h => `<th>${escHtml(h)}</th>`).join('');
-    const body = rows.map(r => {
+    const tbl = document.createElement('table');
+    tbl.className = 'adm-tbl';
+
+    const thead = tbl.createTHead();
+    const hr = thead.insertRow();
+    ['Started', 'Job', 'Trigger', 'Status', 'Read', 'Written', 'Duration (s)', 'Error'].forEach(h => {
+        const th = document.createElement('th');
+        th.className = 'adm-th';
+        th.textContent = h;
+        hr.appendChild(th);
+    });
+
+    const tbody = tbl.createTBody();
+    const clsMap = { success: 'ok', error: 'danger', running: 'warn' };
+    rows.forEach(r => {
+        const tr = tbody.insertRow();
+        function td(text, css) {
+            const el = document.createElement('td');
+            el.className = 'adm-td';
+            if (css) el.style.cssText = css;
+            el.textContent = text ?? '—';
+            return el;
+        }
+        const badge = document.createElement('span');
+        badge.className = 'adm-badge adm-badge-' + (clsMap[r.status] || 'muted');
+        badge.textContent = r.status || '';
+        const tdSt = document.createElement('td');
+        tdSt.className = 'adm-td';
+        tdSt.appendChild(badge);
+
         const dur = r.duration_sec != null ? Math.round(parseFloat(r.duration_sec)) : '';
-        const cells = [
-            r.started_at || '', r.job_name || '', r.triggered_by || '', r.status || '',
-            r.rows_read || '0', r.rows_written || '0', dur, r.error_message || '',
-        ];
-        return '<tr>' + cells.map(c => `<td>${escHtml(String(c))}</td>`).join('') + '</tr>';
-    }).join('');
-    return `<div style="overflow-x:auto"><table class="adm-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+        tr.append(
+            td(r.started_at || ''),
+            td(r.job_name || ''),
+            td(r.triggered_by || ''),
+            tdSt,
+            td(r.rows_read || '0'),
+            td(r.rows_written || '0'),
+            td(dur),
+            td(r.error_message || '', 'color:var(--danger); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
+        );
+    });
+
+    const wrap = document.createElement('div');
+    wrap.style.overflowX = 'auto';
+    wrap.appendChild(tbl);
+    return wrap;
 }
 
 /* ---------- entry ---------- */
@@ -722,18 +761,21 @@ export async function renderEtlPage(ctx) {
 
     workspaceEl.innerHTML = '';
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'padding:20px 24px; max-width:900px;';
-    const intro = document.createElement('div');
-    intro.innerHTML = '<h2 style="margin:0 0 4px;">ETL — external source → PostgreSQL import</h2>'
-        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from one or more external source databases (MySQL, MariaDB, PostgreSQL, SQLite) or a CSV file fetched from an FTP/FTPS server, and load it into PostgreSQL tables. Each job picks which source it reads from. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
-    wrap.appendChild(intro);
+    wrap.className = 'admin-page';
+    wrap.innerHTML = '<h2 class="admin-page-title">ETL — external source → PostgreSQL import</h2>'
+        + '<p class="admin-page-desc">Extract data from one or more external source databases (MySQL, MariaDB, PostgreSQL, SQLite) or a CSV file fetched from an FTP/FTPS server, and load it into PostgreSQL tables. Each job picks which source it reads from. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
     workspaceEl.appendChild(wrap);
 
-    const [sourcesPanel, jobsPanel, schedPanel, histPanel] = buildInnerTabs(wrap, [
-        { label: 'Sources' }, { label: 'Jobs' }, { label: 'Schedule' }, { label: 'History' },
+    const [sourcesPanel, jobsPanel, schedPanel, histPanel, flowsPanel] = buildInnerTabs(wrap, [
+        { label: 'Sources', icon: 'database.png' },
+        { label: 'Jobs', icon: 'checklist_rtl.png' },
+        { label: 'Schedule', icon: 'calendar_check.png' },
+        { label: 'History', icon: 'manage_history.png' },
+        { label: 'Flows', icon: 'arrow_split.png' },
     ]);
     renderSourcesTab(sourcesPanel);
     renderJobsTab(jobsPanel);
     renderScheduleTab(schedPanel);
     renderHistoryTab(histPanel);
+    renderFlowsTab(flowsPanel);
 }

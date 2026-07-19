@@ -3,7 +3,7 @@
 // Persists the "anonymization" config via anonymization_save.
 // Cron worker: cron/cron_anonymization.php.
 import { apiFetch } from '../../assets/js/util/api.js';
-import { buildInnerTabs } from './ui.js';
+import { buildInnerTabs, createPageHeader } from './ui.js';
 
 let anonConfig  = null;
 let anonVersion = 0;   // optimistic-lock version echoed back on save
@@ -1052,13 +1052,19 @@ export async function renderAnonymizationPage(ctx) {
     workspaceEl.innerHTML = '';
 
     const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
     workspaceEl.appendChild(wrap);
 
+    wrap.appendChild(createPageHeader(
+        'Data Anonymization',
+        'Scrub or mask personal data in aging records on a schedule — configure rules, review PII suggestions, and manage the replacement dictionary.'
+    ));
+
     const [p0, p1, p2, p3] = buildInnerTabs(wrap, [
-        { label: 'Rules' },
-        { label: 'Schedule' },
-        { label: 'Suggestions' },
-        { label: 'Dictionary' },
+        { label: 'Rules', icon: 'checklist_rtl.png' },
+        { label: 'Schedule', icon: 'calendar_check.png' },
+        { label: 'Suggestions', icon: 'fact_check.png' },
+        { label: 'Dictionary', icon: 'menu_book.png' },
     ]);
 
     p0.appendChild(buildRulesTab(ctx));

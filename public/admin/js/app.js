@@ -28,7 +28,7 @@ import { renderDemoPage } from './demo.js';
 import { renderSettingsPage } from './settings.js';
 import { renderCsvImportPage } from './csv_import.js';
 import { renderRagPage } from './rag.js';
-import { renderAutomationsPage, autoActions } from './automations.js';
+import { renderAutomationsPage } from './automations.js';
 import { renderOverviewPage } from './overview.js';
 import { renderAnonymizationPage } from './anonymization.js';
 import { renderEtlPage } from './etl.js';
@@ -312,6 +312,40 @@ function appendClearConfigButton(ctx) {
     workspaceEl.appendChild(dangerGrp);
 }
 
+// Icon for the fixed (non-dynamic) item-panel-items tab bar buttons — matches the
+// buildInnerTabs()/module-tab icon convention (15x15, opacity .6) so this tab bar
+// looks identical to every other tab strip in the admin panel.
+function tabIcon(name) {
+    const img = document.createElement('img');
+    img.src = '../assets/icons/' + name;
+    img.alt = '';
+    img.style.cssText = 'width:15px;height:15px;opacity:.6;';
+    return img;
+}
+
+// Icon for a dynamic per-item tab button (one per schema table / dashboard widget /
+// calendar source / workflow), based on the current module.
+function itemTabIcon() {
+    const name = currentFile === 'schema'    ? 'data_table.png'
+               : currentFile === 'dashboard' ? 'bar_chart.png'
+               : currentFile === 'calendar'  ? 'calendar.png'
+               : currentFile === 'workflows' ? 'build.png'
+               : 'file_present.png';
+    return tabIcon(name);
+}
+
+// Page title/description for modules whose content is entirely built by the shared
+// itemPanel/renderItemCards() system (they own no header of their own — unlike ETL,
+// RAG, Board, etc. which build their own admin-page-title). Kept out of the loop for
+// 'automations'/'files': those already render their own admin-page-title in their
+// respective module file.
+const CARD_MODULE_HEADER = {
+    schema:    ['Schema', 'Define PostgreSQL tables, columns, and grid behavior. Use "Sync DB Tables" to discover existing tables, or add columns manually.'],
+    dashboard: ['Dashboard', 'Build the dashboard from stat, bar, pie, and list widgets bound to your tables.'],
+    calendar:  ['Calendar', 'Define one or more calendar sources — each maps a table\'s date column to calendar events.'],
+    workflows: ['Workflows', 'Multi-step guided workflows that walk users through a sequence of record edits.'],
+};
+
 function renderSidebar() {
     itemPanelEl.innerHTML = '';
 
@@ -328,62 +362,29 @@ function renderSidebar() {
 
     const isCardTab = currentFile === 'schema' || currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows';
 
-    // ── Action buttons row ───────────────────────────────────────────────────
-    const actionsRow = document.createElement('div');
-    actionsRow.className = 'item-panel-actions';
-
-    if (currentFile === 'schema') {
-        const btnSync = document.createElement('button');
-        btnSync.type = 'button';
-        btnSync.className = 'btn btn-success';
-        btnSync.textContent = 'Sync DB Tables';
-        btnSync.onclick = () => {
-            const schemaName = prompt("Enter database schema name to sync:", "public");
-            if (schemaName) syncSchemaTables(currentConfig, schemaName,
-                (added) => {
-                    if (added > 0) markDirty();
-                    showStatusPill(btnSync, `Added ${added} new table${added === 1 ? '' : 's'}. Click "Save config" to persist.`, added > 0 ? 'success' : 'info');
-                    fetchGlobalSchema();
-                    // Show the freshly-synced tables in the workspace. renderItemCards()
-                    // writes to workspaceEl only, so it does not wipe the status pill
-                    // (which lives in the sidebar). Defer renderSidebar() — it rebuilds
-                    // the sidebar and would remove the pill before it is seen.
-                    currentItemKey = null;
-                    renderItemCards();
-                    setTimeout(() => renderSidebar(), 900);
-                },
-                (err) => showStatusPill(btnSync, err, 'error'));
-        };
-        actionsRow.appendChild(btnSync);
-        // "Clear Entire Config" moved into the Global Grid Settings tab (see appendClearConfigButton).
-    } else if (currentFile === 'automations') {
-        const btnNew = document.createElement('button');
-        btnNew.type = 'button'; btnNew.className = 'btn btn-success';
-        btnNew.textContent = '+ New Automation';
-        btnNew.onclick = () => { if (autoActions.openNew) autoActions.openNew(null); };
-        actionsRow.appendChild(btnNew);
-    } else if (currentFile !== 'files') {
-        const btnAdd = document.createElement('button');
-        btnAdd.type = 'button'; btnAdd.className = 'btn btn-success';
-        btnAdd.textContent = currentFile === 'dashboard' ? '+ Add New Widget' : currentFile === 'workflows' ? '+ Add New Workflow' : '+ Add New Source';
-        btnAdd.onclick = addNewItem;
-        actionsRow.appendChild(btnAdd);
-        // "Clear Entire Config" moved into the Global Settings tab (see appendClearConfigButton).
-    }
-
-    if (actionsRow.children.length > 0) {
-        itemPanelEl.appendChild(actionsRow);
-    }
-
-    // ── Tab bar ──────────────────────────────────────────────────────────────
+    // ── Tab bar — appended first so DOM order matches ETL: tabs, then title/desc ──
     const itemsRow = document.createElement('div');
     itemsRow.className = 'item-panel-items';
+    itemPanelEl.appendChild(itemsRow);
+
+    // ── Page header (title + description), same template as ETL ───────────────
+    if (CARD_MODULE_HEADER[currentFile]) {
+        const [title, desc] = CARD_MODULE_HEADER[currentFile];
+        const h2 = document.createElement('h2');
+        h2.className = 'admin-page-title';
+        h2.textContent = title;
+        const p = document.createElement('p');
+        p.className = 'admin-page-desc';
+        p.textContent = desc;
+        itemPanelEl.appendChild(h2);
+        itemPanelEl.appendChild(p);
+    }
 
     if (currentFile === 'schema') {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'item-btn' + (currentItemKey === 'GLOBAL_SCHEMA' ? ' active' : '');
-        btn.textContent = 'Global Grid Settings';
+        btn.append(tabIcon('car_gear.png'), document.createTextNode('Global Grid Settings'));
         btn.onclick = () => { currentItemKey = 'GLOBAL_SCHEMA'; renderSidebar(); renderEditor('GLOBAL_SCHEMA', null, false); };
         itemsRow.appendChild(btn);
     }
@@ -392,7 +393,7 @@ function renderSidebar() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
-        btn.textContent = 'Global Settings';
+        btn.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
         btn.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
         itemsRow.appendChild(btn);
     }
@@ -401,10 +402,9 @@ function renderSidebar() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'item-btn' + (currentItemKey === 'MANAGER' ? ' active' : '');
-        btn.textContent = 'File Explorer';
+        btn.append(tabIcon('folder_open.png'), document.createTextNode('File Explorer'));
         btn.onclick = () => { currentItemKey = 'MANAGER'; renderSidebar(); renderEditor('MANAGER', null, false); };
         itemsRow.appendChild(btn);
-        itemPanelEl.appendChild(itemsRow);
         return;
     }
 
@@ -413,11 +413,17 @@ function renderSidebar() {
         const btnAll = document.createElement('button');
         btnAll.type = 'button';
         btnAll.className = 'item-btn' + (currentItemKey === null ? ' active' : '');
-        btnAll.textContent = currentFile === 'schema'       ? 'All PostgreSQL tables'
+        const allIcon = currentFile === 'schema'       ? 'data_table.png'
+                       : currentFile === 'dashboard'    ? 'dashboard.png'
+                       : currentFile === 'workflows'    ? 'build.png'
+                       : currentFile === 'automations'  ? 'automation.png'
+                       : 'calendar.png';
+        const allLabel = currentFile === 'schema'       ? 'All PostgreSQL tables'
                            : currentFile === 'dashboard'    ? 'All Widgets'
                            : currentFile === 'workflows'    ? 'All Workflows'
                            : currentFile === 'automations'  ? 'All Automations'
                            : 'All Sources';
+        btnAll.append(tabIcon(allIcon), document.createTextNode(allLabel));
         btnAll.onclick = () => {
             currentItemKey = null;
             renderSidebar();
@@ -425,13 +431,10 @@ function renderSidebar() {
             else renderItemCards();
         };
         itemsRow.insertBefore(btnAll, itemsRow.firstChild);
-
-        itemPanelEl.appendChild(itemsRow);
         return;
     }
 
     if (!currentConfig) {
-        itemPanelEl.appendChild(itemsRow);
         return;
     }
 
@@ -448,7 +451,8 @@ function renderSidebar() {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'item-btn' + (String(currentItemKey) === String(key) ? ' active' : '');
-        btn.textContent = currentFile === 'workflows' ? (item.title || `Workflow ${key}`) : (item.table || `Source ${key}`);
+        const itemLabel = currentFile === 'workflows' ? (item.title || `Workflow ${key}`) : (item.table || `Source ${key}`);
+        btn.append(itemTabIcon(), document.createTextNode(itemLabel));
         btn.onclick = () => { currentItemKey = key; renderSidebar(); renderEditor(key, item, isArray); };
         wrapper.appendChild(btn);
 
@@ -482,8 +486,6 @@ function renderSidebar() {
         wrapper.appendChild(btnDown);
         itemsRow.appendChild(wrapper);
     });
-
-    itemPanelEl.appendChild(itemsRow);
 }
 
 // ── Card-based item list (schema / dashboard / calendar) ─────────────────────
@@ -507,6 +509,39 @@ function renderItemCards() {
     function getKeys(items) {
         return isArray ? items.map((_, i) => i) : Object.keys(items);
     }
+
+    // ── Action bar (Sync / Add New) — same placement as ETL's "+ Add source" bar ──
+    const bar = document.createElement('div');
+    bar.style.marginBottom = '12px';
+
+    if (isSchema) {
+        const btnSync = document.createElement('button');
+        btnSync.type = 'button';
+        btnSync.className = 'btn btn-success';
+        btnSync.textContent = 'Sync DB Tables';
+        btnSync.onclick = () => {
+            const schemaName = prompt('Enter database schema name to sync:', 'public');
+            if (schemaName) syncSchemaTables(currentConfig, schemaName,
+                (added) => {
+                    if (added > 0) markDirty();
+                    showStatusPill(btnSync, `Added ${added} new table${added === 1 ? '' : 's'}. Click "Save config" to persist.`, added > 0 ? 'success' : 'info');
+                    fetchGlobalSchema();
+                    currentItemKey = null;
+                    renderItemCards();
+                    setTimeout(() => renderSidebar(), 900);
+                },
+                (err) => showStatusPill(btnSync, err, 'error'));
+        };
+        bar.appendChild(btnSync);
+    } else {
+        const btnAdd = document.createElement('button');
+        btnAdd.type = 'button';
+        btnAdd.className = 'btn btn-success';
+        btnAdd.textContent = isDashboard ? '+ Add New Widget' : isWorkflows ? '+ Add New Workflow' : '+ Add New Source';
+        btnAdd.onclick = addNewItem;
+        bar.appendChild(btnAdd);
+    }
+    workspaceEl.appendChild(bar);
 
     const list = document.createElement('div');
     list.style.cssText = 'max-width:900px;';

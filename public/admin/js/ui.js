@@ -708,7 +708,8 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
 }
 
 // ── Shared inner-tab builder ──────────────────────────────────────────────────
-// tabs = [{label}] — returns array of panel divs (caller fills each panel).
+// tabs = [{label, icon}] — icon is a filename under assets/icons/ (optional).
+// Returns array of panel divs (caller fills each panel).
 // Emits the same .item-panel-items / .item-btn markup as the schema item panel
 // (see admin/style.css) so every inner-tab strip in the panel looks identical.
 export function buildInnerTabs(container, tabs) {
@@ -718,11 +719,18 @@ export function buildInnerTabs(container, tabs) {
     const panels = [];
     const btns   = [];
 
-    tabs.forEach(({ label }) => {
+    tabs.forEach(({ label, icon }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'item-btn';
-        btn.textContent = label;
+        if (icon) {
+            const img = document.createElement('img');
+            img.src = '../assets/icons/' + icon;
+            img.alt = '';
+            img.style.cssText = 'width:15px;height:15px;opacity:.6;';
+            btn.appendChild(img);
+        }
+        btn.appendChild(document.createTextNode(label));
         bar.appendChild(btn);
         btns.push(btn);
 

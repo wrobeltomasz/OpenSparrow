@@ -18,16 +18,16 @@ export function renderPrintEditor(ctx) {
 
     /* ---------- root layout ---------- */
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'padding: 20px 24px; max-width: 900px;';
+    wrap.className = 'admin-page';
 
     const hdr = document.createElement('div');
-    hdr.style.cssText = 'display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:20px; flex-wrap:wrap;';
+    hdr.style.cssText = 'display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap;';
     const hdrText = document.createElement('div');
     const hdrTitle = document.createElement('h2');
-    hdrTitle.style.cssText = 'margin:0 0 4px;  font-weight:700;';
+    hdrTitle.className = 'admin-page-title';
     hdrTitle.textContent = 'Printouts Configuration';
     const hdrDesc = document.createElement('p');
-    hdrDesc.style.cssText = 'margin:0;  ';
+    hdrDesc.className = 'admin-page-desc';
     hdrDesc.textContent = 'Build printable report templates from simple blocks (header, text, table). Each template is bound to a PostgreSQL view from the Views module; its columns become the available {variables}. Optional parameters let users filter the report (e.g. by employee) before printing.';
     hdrText.appendChild(hdrTitle);
     hdrText.appendChild(hdrDesc);

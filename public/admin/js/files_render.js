@@ -60,18 +60,21 @@ export async function renderFilesEditor(ctx) {
 // Skeleton HTML construction
 function buildSkeleton() {
     const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
     wrap.innerHTML = `
-        <h2 style="margin-top:0">Files</h2>
+        <h2 class="admin-page-title">Files</h2>
+        <p class="admin-page-desc">Upload, browse, and configure file storage — max size, allowed types/extensions, and record-relation auto-linking.</p>
 
-        <div class="column-block" id="files-cfg-block">
-            <h4>Configuration</h4>
+        <div class="adm-sec-card" id="files-cfg-block">
+            <div class="adm-sec-hdr" style="display:block;"><h3 style="margin:0;">Configuration</h3></div>
+            <div class="adm-sec-body">
             <div class="form-group">
                 <label>Max file size (MB)</label>
-                <input id="f-max-size" type="number" min="1" max="500" style="width:120px">
+                <input id="f-max-size" type="number" min="1" max="500" class="adm-input" style="width:120px">
             </div>
             <div class="form-group">
                 <label>Storage path <span class="help-text" style="display:inline">(relative to project root, must not be web-accessible)</span></label>
-                <input id="f-storage-path" type="text" style="max-width:340px">
+                <input id="f-storage-path" type="text" class="adm-input" style="max-width:340px">
             </div>
 
             <div class="form-group">
@@ -81,21 +84,23 @@ function buildSkeleton() {
 
             <div class="form-group">
                 <label>Allowed Extensions (comma separated)</label>
-                <input id="f-allowed-exts" type="text" style="width:100%" placeholder="jpg, png, pdf, zip">
+                <input id="f-allowed-exts" type="text" class="adm-input w-full" placeholder="jpg, png, pdf, zip">
             </div>
-            
-            <div class="form-group" style="margin-top:20px; padding-top:15px; border-top:1px solid #DDEAF4;">
-                <label style="font-weight:bold; color:#1E293B;">Allowed Record Relations (Auto-Link)</label>
+
+            <div class="form-group" style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border-light);">
+                <label style="font-weight:bold;">Allowed Record Relations (Auto-Link)</label>
                 <div id="f-relations-list" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;"></div>
                 <button id="f-add-relation-btn" type="button" class="btn btn-primary btn-xs" style="margin-top:10px;">+ Add Relation</button>
             </div>
 
             <button type="button" id="f-save-cfg" class="btn btn-success">Save configuration</button>
             <span id="f-cfg-msg" style="margin-left:12px;"></span>
+            </div>
         </div>
 
-        <div class="column-block" id="files-upload-block" style="margin-top: 20px">
-            <h4>Upload File</h4>
+        <div class="adm-sec-card" id="files-upload-block" style="margin-top: 20px">
+            <div class="adm-sec-hdr" style="display:block;"><h3 style="margin:0;">Upload File</h3></div>
+            <div class="adm-sec-body">
             <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
                 <div class="form-group" style="margin-bottom:0">
                     <label>Select file</label>
@@ -103,15 +108,17 @@ function buildSkeleton() {
                 </div>
                 <div class="form-group" style="margin-bottom:0">
                     <label>Display name (optional)</label>
-                    <input type="text" id="f-upload-name" placeholder="Leave empty to use original">
+                    <input type="text" id="f-upload-name" class="adm-input" placeholder="Leave empty to use original">
                 </div>
                 <button type="button" id="f-upload-btn" class="btn btn-success">Upload</button>
             </div>
             <div id="f-upload-status" style="margin-top:8px;"></div>
+            </div>
         </div>
 
-        <div class="column-block" id="files-lib-block" style="margin-top: 20px">
-            <h4>File Library</h4>
+        <div class="adm-sec-card" id="files-lib-block" style="margin-top: 20px">
+            <div class="adm-sec-hdr" style="display:block;"><h3 style="margin:0;">File Library</h3></div>
+            <div class="adm-sec-body">
             <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
                 <input id="f-search" type="search" placeholder="Search by name" class="adm-input flex-1" style="min-width:160px;max-width:300px">
                 <select id="f-type-filter" class="adm-input w-160">
@@ -120,25 +127,26 @@ function buildSkeleton() {
                 </select>
                 <button type="button" id="f-refresh" class="btn btn-success btn-sm">Refresh</button>
             </div>
-            <div id="f-status" style="color:#64748B;margin-bottom:8px"></div>
-            <table style="width:100%;border-collapse:collapse;" id="f-table">
+            <div id="f-status" style="color:var(--muted);margin-bottom:8px"></div>
+            <table class="adm-tbl" id="f-table">
                 <thead>
-                    <tr style="background:#F4F7F9;text-align:left">
-                        <th style="padding:8px 6px;width:40px"></th>
-                        <th style="padding:8px 6px">Name</th>
-                        <th style="padding:8px 6px">Type</th>
-                        <th style="padding:8px 6px">Size</th>
-                        <th style="padding:8px 6px">Related To</th>
-                        <th style="padding:8px 6px">Uploaded by</th>
-                        <th style="padding:8px 6px">Date</th>
-                        <th style="padding:8px 6px;width:70px">Actions</th>
+                    <tr>
+                        <th class="adm-th" style="width:40px"></th>
+                        <th class="adm-th">Name</th>
+                        <th class="adm-th">Type</th>
+                        <th class="adm-th">Size</th>
+                        <th class="adm-th">Related To</th>
+                        <th class="adm-th">Uploaded by</th>
+                        <th class="adm-th">Date</th>
+                        <th class="adm-th" style="width:70px">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="f-tbody">
-                    <tr><td colspan="8" style="padding:16px;color:#64748B">Loading...</td></tr>
+                    <tr><td colspan="8" class="adm-td" style="color:var(--muted)">Loading...</td></tr>
                 </tbody>
             </table>
             <div id="f-pages" style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
         </div>
     `;
 
@@ -332,7 +340,7 @@ async function uploadFile() {
 async function loadList() {
     if (_state.loading) return;
     _state.loading = true;
-    setTbody('<tr><td colspan="8" style="padding:16px;color:#64748B">Loading...</td></tr>');
+    setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--muted)">Loading...</td></tr>');
 
     const params = new URLSearchParams({
         action: 'list',
@@ -347,7 +355,7 @@ async function loadList() {
         const data = await res.json();
 
         if (!data.success) {
-            setTbody(`<tr><td colspan="8" style="color:#d00000;padding:12px">${esc(data.error || 'Failed to load')}</td></tr>`);
+            setTbody(`<tr><td colspan="8" class="adm-td" style="color:var(--danger)">${esc(data.error || 'Failed to load')}</td></tr>`);
             return;
         }
 
@@ -360,7 +368,7 @@ async function loadList() {
         const statusEl = document.getElementById('f-status');
         if (statusEl) statusEl.textContent = `${_state.total} file${_state.total !== 1 ? 's' : ''} found`;
     } catch (e) {
-        setTbody('<tr><td colspan="8" style="color:#d00000;padding:12px">Network error</td></tr>');
+        setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--danger)">Network error</td></tr>');
     } finally {
         _state.loading = false;
     }
@@ -369,29 +377,29 @@ async function loadList() {
 // Render table structure
 function renderTable(files) {
     if (!files.length) {
-        setTbody('<tr><td colspan="8" style="padding:16px;color:#64748B">No files found.</td></tr>');
+        setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--muted)">No files found.</td></tr>');
         return;
     }
 
     const rows = files.map(f => `
-        <tr style="border-bottom:1px solid #CBD5E1" data-uuid="${esc(f.uuid)}">
-            <td style="padding:7px 6px;font-weight:bold;text-align:center;color:#64748B">${TYPE_ICONS[f.type] ?? TYPE_ICONS.other}</td>
-            <td style="padding:7px 6px">
+        <tr data-uuid="${esc(f.uuid)}">
+            <td class="adm-td" style="font-weight:bold;text-align:center;color:var(--muted)">${TYPE_ICONS[f.type] ?? TYPE_ICONS.other}</td>
+            <td class="adm-td">
                 ${f.type === 'image'
                     ? `<img src="../file_download.php?uuid=${esc(f.uuid)}&thumb=1" alt="" style="height:32px;width:32px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px">`
                     : ''}
-                <a href="../file_download.php?uuid=${esc(f.uuid)}" target="_blank" style="color:var(--accent,#64748B)">${esc(f.display_name || f.name)}</a>
+                <a href="../file_download.php?uuid=${esc(f.uuid)}" target="_blank">${esc(f.display_name || f.name)}</a>
             </td>
-            <td style="padding:7px 6px">
-                <span style="background:#F4F7F9;padding:2px 7px;border-radius:10px;">${esc(f.type)}</span>
+            <td class="adm-td">
+                <span class="adm-badge adm-badge-muted">${esc(f.type)}</span>
             </td>
-            <td style="padding:7px 6px;white-space:nowrap">${formatBytes(f.size_bytes)}</td>
-            <td style="padding:7px 6px">
-                ${f.related_table ? `<span style="background:#F4F7F9;color:#1E293B;padding:2px 6px;border-radius:4px;">${esc(f.related_table)} #${f.related_id}</span>` : '-'}
+            <td class="adm-td" style="white-space:nowrap">${formatBytes(f.size_bytes)}</td>
+            <td class="adm-td">
+                ${f.related_table ? `<span class="adm-badge adm-badge-muted">${esc(f.related_table)} #${f.related_id}</span>` : '-'}
             </td>
-            <td style="padding:7px 6px">${esc(f.uploaded_by_username || '-')}</td>
-            <td style="padding:7px 6px;white-space:nowrap">${formatDate(f.created_at)}</td>
-            <td style="padding:7px 6px">
+            <td class="adm-td">${esc(f.uploaded_by_username || '-')}</td>
+            <td class="adm-td" style="white-space:nowrap">${formatDate(f.created_at)}</td>
+            <td class="adm-td">
                 <button class="btn btn-danger btn-xs" data-del="${esc(f.uuid)}" data-name="${esc(f.display_name || f.name)}">Del</button>
             </td>
         </tr>

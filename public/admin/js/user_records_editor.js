@@ -34,8 +34,8 @@ export function renderUserRecordsEditor(ctx) {
     workspaceEl.appendChild(wrap);
 
     const [columnsPanel, settingsPanel] = buildInnerTabs(tabsContainer, [
-        { label: 'Column Mapping' },
-        { label: 'Global Settings' },
+        { label: 'Column Mapping', icon: 'table_edit.png' },
+        { label: 'Global Settings', icon: 'car_gear.png' },
     ]);
 
     renderColumnsPanel(columnsPanel, currentConfig);

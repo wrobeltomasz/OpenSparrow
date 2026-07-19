@@ -783,26 +783,28 @@ function renderEmailBody(bodyEl, action) {
     bodyEl.appendChild(bodyLblRow);
 }
 
-// ── Shared action handle (set by renderAutomationsPage, used by item panel) ────
-export const autoActions = { openNew: null };
-
 // ── Main page ─────────────────────────────────────────────────────
 export async function renderAutomationsPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '';
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'max-width:900px;';
+    wrap.className = 'admin-page';
     workspaceEl.appendChild(wrap);
 
     // ── Header ──────────────────────────────────────────────────
     const hdr = document.createElement('div');
-    hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;';
+    hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
     const h2 = document.createElement('h2');
     h2.textContent = 'Automations';
-    h2.style.margin = '0';
+    h2.className = 'admin-page-title';
     hdr.appendChild(h2);
     wrap.appendChild(hdr);
+
+    const autoDesc = document.createElement('p');
+    autoDesc.className = 'admin-page-desc';
+    autoDesc.textContent = 'Trigger workflow-style rules automatically on record changes — configure conditions, actions, and review run history.';
+    wrap.appendChild(autoDesc);
 
     // ── Panels ──────────────────────────────────────────────────
     const listWrap = document.createElement('div');
@@ -853,6 +855,18 @@ export async function renderAutomationsPage(ctx) {
     // ── List ────────────────────────────────────────────────────
     async function loadList() {
         listWrap.innerHTML = '';
+
+        // Action bar — same placement as ETL's "+ Add source" bar.
+        const bar = document.createElement('div');
+        bar.style.marginBottom = '12px';
+        const btnNew = document.createElement('button');
+        btnNew.type = 'button';
+        btnNew.className = 'btn btn-success';
+        btnNew.textContent = '+ New Automation';
+        btnNew.onclick = () => openForm(null);
+        bar.appendChild(btnNew);
+        listWrap.appendChild(bar);
+
         try {
             const r    = await apiFetch('api.php?action=automations_list');
             const data = await r.json();
@@ -981,11 +995,10 @@ export async function renderAutomationsPage(ctx) {
         histWrap.innerHTML = '';
 
         const card = document.createElement('div');
-        card.style.cssText = 'border:1px solid var(--border);border-radius:8px;overflow:hidden;';
+        card.className = 'adm-sec-card';
 
         const cardHdr = document.createElement('div');
-        cardHdr.style.cssText = 'padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);'
-            + 'display:flex;align-items:center;justify-content:space-between;';
+        cardHdr.className = 'adm-sec-hdr';
         const cardTitle = document.createElement('h3');
         cardTitle.textContent = 'Run History: ' + rule.name;
         cardTitle.style.margin = '0';
@@ -1002,7 +1015,7 @@ export async function renderAutomationsPage(ctx) {
         card.appendChild(cardHdr);
 
         const cardBody = document.createElement('div');
-        cardBody.style.cssText = 'padding:18px;';
+        cardBody.className = 'adm-sec-body';
         card.appendChild(cardBody);
         histWrap.appendChild(card);
 
@@ -1293,8 +1306,6 @@ export async function renderAutomationsPage(ctx) {
         wrap.appendChild(makeSelect(options, current, onChange));
         return wrap;
     }
-
-    autoActions.openNew = openForm;
 
     await loadList();
 }

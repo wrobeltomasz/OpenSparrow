@@ -49,10 +49,11 @@ export async function renderCsvImportPage(ctx) {
 
     // ── Root ──────────────────────────────────────────────────────────────────
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'max-width:960px;padding-bottom:60px;';
+    wrap.className = 'admin-page';
+    wrap.style.paddingBottom = '60px';
 
     const heading = document.createElement('h2');
-    heading.style.marginTop = '0';
+    heading.className = 'admin-page-title';
     heading.textContent = 'CSV Import';
     wrap.appendChild(heading);
 
@@ -99,7 +100,7 @@ export async function renderCsvImportPage(ctx) {
     } catch (_) { /* schema unavailable */ }
 
     tableRow.append(tableLabel, tableSelect);
-    card1.el.appendChild(tableRow);
+    card1.body.appendChild(tableRow);
 
     // "Create new table" checkbox
     const createToggleRow = buildRow();
@@ -111,7 +112,7 @@ export async function renderCsvImportPage(ctx) {
     createChkLabel.htmlFor = 'csv-create-table-chk';
     createChkLabel.style.cursor = 'pointer';
     createToggleRow.append(createChk, createChkLabel);
-    card1.el.appendChild(createToggleRow);
+    card1.body.appendChild(createToggleRow);
 
     // Delimiter selector
     const delimRow = buildRow();
@@ -124,7 +125,7 @@ export async function renderCsvImportPage(ctx) {
         if (value === csvDelimiter) opt.selected = true;
     });
     delimRow.append(delimLabel, delimSelect);
-    card1.el.appendChild(delimRow);
+    card1.body.appendChild(delimRow);
 
     // Encoding selector
     const encRow = buildRow();
@@ -137,7 +138,7 @@ export async function renderCsvImportPage(ctx) {
         if (value === csvEncoding) opt.selected = true;
     });
     encRow.append(encLabel, encSelect);
-    card1.el.appendChild(encRow);
+    card1.body.appendChild(encRow);
 
     // New-table form — stacked grid: label column | input column
     const newTableForm = document.createElement('div');
@@ -163,7 +164,7 @@ export async function renderCsvImportPage(ctx) {
     dispInput.className = 'adm-input w-full';
 
     newTableForm.append(schemaLabel, schemaSelect, nameLabel, nameInput, dispLabel, dispInput);
-    card1.el.appendChild(newTableForm);
+    card1.body.appendChild(newTableForm);
 
     // Upload drop zone
     const dropZone = document.createElement('div');
@@ -188,7 +189,7 @@ export async function renderCsvImportPage(ctx) {
     fileInput.style.display = 'none';
 
     dropZone.append(uploadIcon, uploadMsg, uploadHint, fileInput);
-    card1.el.appendChild(dropZone);
+    card1.body.appendChild(dropZone);
 
     // Step 2 card
     const card2 = buildCard('Step 2 — Map Columns & Execute');
@@ -200,7 +201,7 @@ export async function renderCsvImportPage(ctx) {
     importPanel.appendChild(resultArea);
 
     const mappingContainer = document.createElement('div');
-    card2.el.appendChild(mappingContainer);
+    card2.body.appendChild(mappingContainer);
 
     // Conflict column row
     const conflictRow = buildRow();
@@ -221,8 +222,8 @@ export async function renderCsvImportPage(ctx) {
     conflictWarn.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:rgba(255,195,0,0.12);border:1px solid #ffc300;border-radius:4px;color:#64748B;';
 
     conflictRow.append(conflictLabel, conflictSelect, conflictNote);
-    card2.el.appendChild(conflictRow);
-    card2.el.appendChild(conflictWarn);
+    card2.body.appendChild(conflictRow);
+    card2.body.appendChild(conflictWarn);
 
     // Import mode indicator (reads default from config tab / localStorage)
     const modeRow = buildRow();
@@ -237,18 +238,18 @@ export async function renderCsvImportPage(ctx) {
     copyModeLabel.style.cssText = 'color:#64748B;cursor:pointer;';
     copyModeLabel.textContent = 'Fast COPY mode';
     modeRow.append(copyModeChk, copyModeLabel);
-    card2.el.appendChild(modeRow);
+    card2.body.appendChild(modeRow);
 
     const execBtn = document.createElement('button');
     execBtn.type      = 'button';
     execBtn.textContent = 'Execute Import';
     execBtn.className = 'btn btn-primary';
     execBtn.style.marginTop = '20px';
-    card2.el.appendChild(execBtn);
+    card2.body.appendChild(execBtn);
 
     const execStatus = document.createElement('div');
     execStatus.style.marginTop = '14px';
-    card2.el.appendChild(execStatus);
+    card2.body.appendChild(execStatus);
 
     if (workspaceEl._csvImportGen !== myGen) return;
     workspaceEl.appendChild(wrap);
@@ -267,7 +268,7 @@ export async function renderCsvImportPage(ctx) {
     const modeDesc = document.createElement('p');
     modeDesc.style.cssText = 'color:#64748B;margin:0 0 16px;';
     modeDesc.textContent = 'Choose the default mode used when running imports. You can override this per-import in Step 2.';
-    modeCard.el.appendChild(modeDesc);
+    modeCard.body.appendChild(modeDesc);
 
     const savedCopy = localStorage.getItem(LS_COPY_MODE) === '1';
 
@@ -290,7 +291,7 @@ export async function renderCsvImportPage(ctx) {
         small.textContent = descText;
         txt.append(strong, small);
         row.append(radio, txt);
-        modeCard.el.appendChild(row);
+        modeCard.body.appendChild(row);
         return radio;
     }
 
@@ -328,7 +329,7 @@ export async function renderCsvImportPage(ctx) {
     const delimDesc = document.createElement('p');
     delimDesc.style.cssText = 'color:#64748B;margin:0 0 14px;';
     delimDesc.textContent = 'Column separator used when parsing CSV files. Override per-import in Step 1.';
-    delimCard.el.appendChild(delimDesc);
+    delimCard.body.appendChild(delimDesc);
 
     const cfgDelimSelect = document.createElement('select');
     cfgDelimSelect.className = 'adm-input';
@@ -336,7 +337,7 @@ export async function renderCsvImportPage(ctx) {
         const opt = appendOpt(cfgDelimSelect, value, label);
         if (value === csvDelimiter) opt.selected = true;
     });
-    delimCard.el.appendChild(cfgDelimSelect);
+    delimCard.body.appendChild(cfgDelimSelect);
 
     cfgDelimSelect.addEventListener('change', () => {
         csvDelimiter = cfgDelimSelect.value;
@@ -353,7 +354,7 @@ export async function renderCsvImportPage(ctx) {
     const encDesc = document.createElement('p');
     encDesc.style.cssText = 'color:#64748B;margin:0 0 14px;';
     encDesc.textContent = 'Character encoding of the source CSV file. Override per-import in Step 1. Files are converted to UTF-8 before inserting into PostgreSQL.';
-    encCard.el.appendChild(encDesc);
+    encCard.body.appendChild(encDesc);
 
     const cfgEncSelect = document.createElement('select');
     cfgEncSelect.className = 'adm-input w-260';
@@ -361,7 +362,7 @@ export async function renderCsvImportPage(ctx) {
         const opt = appendOpt(cfgEncSelect, value, label);
         if (value === csvEncoding) opt.selected = true;
     });
-    encCard.el.appendChild(cfgEncSelect);
+    encCard.body.appendChild(cfgEncSelect);
 
     cfgEncSelect.addEventListener('change', () => {
         csvEncoding = cfgEncSelect.value;
@@ -378,11 +379,11 @@ export async function renderCsvImportPage(ctx) {
     const limitsNote = document.createElement('p');
     limitsNote.style.cssText = 'color:#64748B;margin:0 0 14px;';
     limitsNote.textContent = 'Current server configuration. To change these values, edit docker-php-dev.ini and nginx.conf, then restart the container.';
-    limitsCard.el.appendChild(limitsNote);
+    limitsCard.body.appendChild(limitsNote);
 
     const limitsGrid = document.createElement('div');
     limitsGrid.style.cssText = 'display:grid;grid-template-columns:max-content 1fr;gap:6px 20px;';
-    limitsCard.el.appendChild(limitsGrid);
+    limitsCard.body.appendChild(limitsGrid);
 
     function addLimitRow(label, value, note) {
         const lbl = document.createElement('span');
@@ -408,7 +409,7 @@ export async function renderCsvImportPage(ctx) {
         const err = document.createElement('p');
         err.style.cssText = 'color:#d00000;';
         err.textContent = 'Could not load server limits.';
-        limitsCard.el.appendChild(err);
+        limitsCard.body.appendChild(err);
     }
 
     // ── TAB 3: History ────────────────────────────────────────────────────────
@@ -664,39 +665,38 @@ export async function renderCsvImportPage(ctx) {
             mappingContainer.appendChild(note);
 
             const tbl = document.createElement('table');
-            tbl.style.cssText = 'width:100%;border-collapse:collapse;';
+            tbl.className = 'adm-tbl';
 
-            const thead = document.createElement('thead');
-            const hrow  = document.createElement('tr');
+            const thead = tbl.createTHead();
+            const hrow  = thead.insertRow();
             for (const h of ['CSV Header', 'Sample values', 'DB column name', 'Type']) {
                 const th = document.createElement('th');
-                th.style.cssText = 'text-align:left;padding:8px 12px;background:#F4F7F9;border:1px solid #CBD5E1;font-weight:600;color:#64748B;';
+                th.className = 'adm-th';
                 th.textContent = h;
                 hrow.appendChild(th);
             }
-            thead.appendChild(hrow);
-            tbl.appendChild(thead);
 
-            const tbody = document.createElement('tbody');
+            const tbody = tbl.createTBody();
             csvHeaders.forEach((hdr, idx) => {
                 const defaultColName = hdr.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || ('col_' + idx);
 
-                const tr = document.createElement('tr');
+                const tr = tbody.insertRow();
                 tr.dataset.csvHeader = hdr;
-                tr.style.background  = idx % 2 === 0 ? '#fff' : '#DDEAF4';
 
                 const tdH = document.createElement('td');
-                tdH.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;font-family:monospace;color:#1E293B;white-space:nowrap;';
+                tdH.className = 'adm-td mono';
+                tdH.style.cssText = 'white-space:nowrap;';
                 tdH.textContent = hdr;
 
                 const tdS = document.createElement('td');
-                tdS.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;color:#64748B;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                tdS.className = 'adm-td';
+                tdS.style.cssText = 'color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                 const samples = csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== '').slice(0, 3);
                 tdS.textContent = samples.length ? samples.join(', ') : '(empty)';
                 tdS.title = samples.join(' | ');
 
                 const tdN = document.createElement('td');
-                tdN.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;';
+                tdN.className = 'adm-td';
                 const nameInp = document.createElement('input');
                 nameInp.type  = 'text';
                 nameInp.value = defaultColName;
@@ -707,7 +707,7 @@ export async function renderCsvImportPage(ctx) {
                 tdN.appendChild(nameInp);
 
                 const tdT = document.createElement('td');
-                tdT.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;';
+                tdT.className = 'adm-td';
                 const typeSelect = document.createElement('select');
                 typeSelect.className = 'col-type-select adm-input w-full';
                 const guessedType = guessColType(csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== ''));
@@ -718,10 +718,8 @@ export async function renderCsvImportPage(ctx) {
                 tdT.appendChild(typeSelect);
 
                 tr.append(tdH, tdS, tdN, tdT);
-                tbody.appendChild(tr);
             });
 
-            tbl.appendChild(tbody);
             mappingContainer.appendChild(tbl);
             return;
         }
@@ -734,38 +732,37 @@ export async function renderCsvImportPage(ctx) {
         mappingContainer.appendChild(note);
 
         const tbl   = document.createElement('table');
-        tbl.style.cssText = 'width:100%;border-collapse:collapse;';
+        tbl.className = 'adm-tbl';
 
-        const thead = document.createElement('thead');
-        const hrow  = document.createElement('tr');
+        const thead = tbl.createTHead();
+        const hrow  = thead.insertRow();
         for (const h of ['CSV Header', 'Sample values', 'Target column']) {
             const th = document.createElement('th');
-            th.style.cssText = 'text-align:left;padding:8px 12px;background:#F4F7F9;border:1px solid #CBD5E1;font-weight:600;color:#64748B;';
+            th.className = 'adm-th';
             th.textContent = h;
             hrow.appendChild(th);
         }
-        thead.appendChild(hrow);
-        tbl.appendChild(thead);
 
-        const tbody   = document.createElement('tbody');
+        const tbody   = tbl.createTBody();
         const dbCols  = Object.keys(tableColumns).filter(c => (tableColumns[c]?.type ?? '') !== 'virtual');
 
-        csvHeaders.forEach((hdr, idx) => {
-            const tr = document.createElement('tr');
-            tr.style.background = idx % 2 === 0 ? '#fff' : '#DDEAF4';
+        csvHeaders.forEach((hdr) => {
+            const tr = tbody.insertRow();
 
             const tdH = document.createElement('td');
-            tdH.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;font-family:monospace;color:#1E293B;white-space:nowrap;';
+            tdH.className = 'adm-td mono';
+            tdH.style.cssText = 'white-space:nowrap;';
             tdH.textContent = hdr;
 
             const tdS = document.createElement('td');
-            tdS.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;color:#64748B;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            tdS.className = 'adm-td';
+            tdS.style.cssText = 'color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
             const samples = csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== '').slice(0, 3);
             tdS.textContent = samples.length ? samples.join(', ') : '(empty)';
             tdS.title       = samples.join(' | ');
 
             const tdC  = document.createElement('td');
-            tdC.style.cssText = 'padding:8px 12px;border:1px solid #CBD5E1;';
+            tdC.className = 'adm-td';
             const sel  = document.createElement('select');
             sel.dataset.header = hdr;
             sel.className = 'adm-input w-full';
@@ -778,10 +775,8 @@ export async function renderCsvImportPage(ctx) {
             tdC.appendChild(sel);
 
             tr.append(tdH, tdS, tdC);
-            tbody.appendChild(tr);
         });
 
-        tbl.appendChild(tbody);
         mappingContainer.appendChild(tbl);
         rebuildConflictOptions();
         validateConflict();
@@ -1025,36 +1020,34 @@ export async function renderCsvImportPage(ctx) {
 
     function buildRowLogTable(rows) {
         const wrapEl = document.createElement('div');
-        wrapEl.style.cssText = 'margin-top:12px;max-height:320px;overflow-y:auto;border:1px solid #CBD5E1;border-radius:4px;';
+        wrapEl.style.cssText = 'margin-top:12px;max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;';
 
         const tbl = document.createElement('table');
-        tbl.style.cssText = 'width:100%;border-collapse:collapse;';
+        tbl.className = 'adm-tbl';
 
-        const thead = document.createElement('thead');
-        const hrow  = document.createElement('tr');
+        const thead = tbl.createTHead();
+        const hrow  = thead.insertRow();
         for (const h of ['Row #', 'Error', 'Raw data (JSON)']) {
             const th = document.createElement('th');
-            th.style.cssText = 'text-align:left;padding:6px 10px;background:#F4F7F9;border:1px solid #CBD5E1;white-space:nowrap;font-weight:600;';
+            th.className = 'adm-th adm-th-sm';
             th.textContent = h;
             hrow.appendChild(th);
         }
-        thead.appendChild(hrow);
-        tbl.appendChild(thead);
 
-        const tbody = document.createElement('tbody');
-        rows.forEach((row, idx) => {
-            const tr = document.createElement('tr');
-            tr.style.background = idx % 2 === 0 ? '#fff' : '#DDEAF4';
+        const tbody = tbl.createTBody();
+        rows.forEach((row) => {
+            const tr = tbody.insertRow();
 
-            const tdN = td(String(row.row_number), 'padding:5px 10px;border:1px solid #CBD5E1;white-space:nowrap;');
-            const tdE = td(row.error_message || '', 'padding:5px 10px;border:1px solid #CBD5E1;color:#d00000;');
-            const tdR = td(row.raw_data || '', 'padding:5px 10px;border:1px solid #CBD5E1;font-family:monospace;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
+            const tdN = td(String(row.row_number), 'white-space:nowrap;');
+            const tdE = td(row.error_message || '', 'color:var(--danger);');
+            const tdR = td(row.raw_data || '', 'font-family:monospace;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
+            tdN.className = 'adm-td adm-td-sm';
+            tdE.className = 'adm-td adm-td-sm';
+            tdR.className = 'adm-td adm-td-sm';
             tdR.title = row.raw_data || '';
 
             tr.append(tdN, tdE, tdR);
-            tbody.appendChild(tr);
         });
-        tbl.appendChild(tbody);
         wrapEl.appendChild(tbl);
         return wrapEl;
     }
@@ -1071,46 +1064,39 @@ export async function renderCsvImportPage(ctx) {
             }
 
             const tbl = document.createElement('table');
-            tbl.style.cssText = 'width:100%;border-collapse:collapse;';
+            tbl.className = 'adm-tbl';
 
-            const thead = document.createElement('thead');
-            const hrow  = document.createElement('tr');
+            const thead = tbl.createTHead();
+            const hrow  = thead.insertRow();
             for (const h of ['#', 'File', 'Table', 'Status', 'Imported', 'Skipped', 'By', 'Started', 'Duration']) {
                 const th = document.createElement('th');
-                th.style.cssText = 'text-align:left;padding:8px 10px;background:#F4F7F9;border:1px solid #CBD5E1;white-space:nowrap;font-weight:600;color:#64748B;';
+                th.className = 'adm-th';
                 th.textContent = h;
                 hrow.appendChild(th);
             }
-            thead.appendChild(hrow);
-            tbl.appendChild(thead);
 
-            const tbody = document.createElement('tbody');
-            data.imports.forEach((row, idx) => {
-                const tr = document.createElement('tr');
-                tr.style.background = idx % 2 === 0 ? '#fff' : '#DDEAF4';
-
-                const statusCfg = {
-                    done:    { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348' },
-                    failed:  { bg: 'rgba(208,0,0,0.08)', fg: '#a80000' },
-                    running: { bg: 'rgba(255,195,0,0.12)', fg: '#64748B' },
-                }[row.status] ?? { bg: '#DDEAF4', fg: '#64748B' };
+            const tbody = tbl.createTBody();
+            const clsMap = { done: 'ok', failed: 'danger', running: 'warn' };
+            data.imports.forEach((row) => {
+                const tr = tbody.insertRow();
 
                 for (const [val, style] of [
-                    [row.id,                        'padding:8px 10px;border:1px solid #CBD5E1;white-space:nowrap;'],
-                    [row.filename,                  'padding:8px 10px;border:1px solid #CBD5E1;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'],
-                    [row.target_table,              'padding:8px 10px;border:1px solid #CBD5E1;'],
-                    [null,                          'padding:8px 10px;border:1px solid #CBD5E1;'],
-                    [row.imported_rows ?? 0,        'padding:8px 10px;border:1px solid #CBD5E1;text-align:right;'],
-                    [row.skipped_rows  ?? 0,        'padding:8px 10px;border:1px solid #CBD5E1;text-align:right;'],
-                    [row.username || '—',           'padding:8px 10px;border:1px solid #CBD5E1;'],
-                    [(row.started_at || '').slice(0, 16), 'padding:8px 10px;border:1px solid #CBD5E1;white-space:nowrap;'],
-                    [fmtDuration(row.started_at, row.finished_at), 'padding:8px 10px;border:1px solid #CBD5E1;white-space:nowrap;text-align:right;color:#64748B;'],
+                    [row.id,                        'white-space:nowrap;'],
+                    [row.filename,                  'max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'],
+                    [row.target_table,              ''],
+                    [null,                          ''],
+                    [row.imported_rows ?? 0,        'text-align:right;'],
+                    [row.skipped_rows  ?? 0,        'text-align:right;'],
+                    [row.username || '—',           ''],
+                    [(row.started_at || '').slice(0, 16), 'white-space:nowrap;'],
+                    [fmtDuration(row.started_at, row.finished_at), 'white-space:nowrap;text-align:right;color:var(--muted);'],
                 ]) {
                     const cell = document.createElement('td');
-                    cell.style.cssText = style;
+                    cell.className = 'adm-td';
+                    if (style) cell.style.cssText = style;
                     if (val === null) {
                         const badge = document.createElement('span');
-                        badge.style.cssText = `padding:2px 8px;border-radius:12px;font-weight:600;background:${statusCfg.bg};color:${statusCfg.fg};`;
+                        badge.className = 'adm-badge adm-badge-' + (clsMap[row.status] || 'muted');
                         badge.textContent = row.status;
                         cell.appendChild(badge);
                     } else {
@@ -1120,7 +1106,7 @@ export async function renderCsvImportPage(ctx) {
                 }
 
                 const tdAct = document.createElement('td');
-                tdAct.style.cssText = 'padding:8px 10px;border:1px solid #CBD5E1;';
+                tdAct.className = 'adm-td';
                 if ((row.skipped_rows ?? 0) > 0) {
                     const logBtn = document.createElement('button');
                     logBtn.type      = 'button';
@@ -1144,10 +1130,8 @@ export async function renderCsvImportPage(ctx) {
                     tdAct.appendChild(logBtn);
                 }
                 tr.appendChild(tdAct);
-                tbody.appendChild(tr);
             });
 
-            tbl.appendChild(tbody);
             histContainer.innerHTML = '';
             histContainer.appendChild(tbl);
         } catch (_) {
@@ -1333,12 +1317,22 @@ function buildCsvTabs(wrap, tabs) {
 
 function buildCard(title) {
     const el = document.createElement('div');
-    el.style.cssText = 'background:#F4F7F9;border:1px solid #CBD5E1;border-radius:8px;padding:20px;margin-bottom:20px;';
+    el.className = 'adm-sec-card';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'adm-sec-hdr';
+    hdr.style.display = 'block';
     const h = document.createElement('h3');
-    h.style.cssText = 'margin:0 0 16px;color:#1E293B;';
+    h.style.margin = '0';
     h.textContent = title;
-    el.appendChild(h);
-    return { el };
+    hdr.appendChild(h);
+    el.appendChild(hdr);
+
+    const body = document.createElement('div');
+    body.className = 'adm-sec-body';
+    el.appendChild(body);
+
+    return { el, body };
 }
 
 function buildRow() {
@@ -1364,8 +1358,9 @@ function appendOpt(select, value, label) {
 
 function td(text, style) {
     const el = document.createElement('td');
-    el.style.cssText = style;
-    el.textContent   = text;
+    el.className = 'adm-td';
+    if (style) el.style.cssText = style;
+    el.textContent = text;
     return el;
 }
 

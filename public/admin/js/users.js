@@ -22,37 +22,37 @@ export async function renderUsersEditor(ctx) {
             <p class="admin-page-desc">
                 Manage user accounts and roles. Roles: <strong>Admin</strong> – admin panel only; <strong>Editor</strong> – full frontend CRUD; <strong>Viewer</strong> – read-only frontend.
             </p>
-            <table style="width:100%; border-collapse: collapse; margin-bottom: 30px; text-align: left;">
+            <table class="adm-tbl" style="margin-bottom: 30px;">
                 <thead>
-                    <tr style="border-bottom: 2px solid var(--accent-mid);">
-                        <th style="padding: 10px;">ID</th>
-                        <th style="padding: 10px;">Username</th>
-                        <th style="padding: 10px;">Status</th>
-                        <th style="padding: 10px;">Role</th>
-                        <th style="padding: 10px;">Actions</th>
+                    <tr>
+                        <th class="adm-th">ID</th>
+                        <th class="adm-th">Username</th>
+                        <th class="adm-th">Status</th>
+                        <th class="adm-th">Role</th>
+                        <th class="adm-th">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
-        
+
         data.users.forEach(u => {
             html += `
-                <tr style="border-bottom: 1px solid var(--accent-mid);">
-                    <td style="padding: 10px;">${escHtml(u.id)}</td>
-                    <td style="padding: 10px;"><strong>${escHtml(u.username)}</strong></td>
-                    <td style="padding: 10px;">
-                        <span style="padding: 4px 8px; border-radius: 4px;  color: white; background: ${u.is_active ? 'var(--ok)' : 'var(--danger)'};">
+                <tr>
+                    <td class="adm-td">${escHtml(u.id)}</td>
+                    <td class="adm-td"><strong>${escHtml(u.username)}</strong></td>
+                    <td class="adm-td">
+                        <span class="adm-badge ${u.is_active ? 'adm-badge-ok' : 'adm-badge-danger'}">
                             ${u.is_active ? 'Active' : 'Inactive'}
                         </span>
                     </td>
-                    <td style="padding: 10px;">
+                    <td class="adm-td">
                         <select class="select-user-role adm-input" data-id="${u.id}">
                             <option value="admin"  ${u.role === 'admin'  ? 'selected' : ''}>Admin</option>
                             <option value="editor" ${u.role === 'editor' || !u.role ? 'selected' : ''}>Editor</option>
                             <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                         </select>
                     </td>
-                    <td style="padding: 10px; display:flex; gap:6px; flex-wrap:wrap;">
+                    <td class="adm-td" style="display:flex; gap:6px; flex-wrap:wrap;">
                         <button class="btn btn-xs btn-toggle-user ${u.is_active ? 'btn-warning' : 'btn-secondary'}" data-id="${u.id}" data-active="${u.is_active}">
                             ${u.is_active ? 'Deactivate' : 'Activate'}
                         </button>
@@ -63,11 +63,11 @@ export async function renderUsersEditor(ctx) {
                 </tr>
             `;
         });
-        
+
         html += `
                 </tbody>
             </table>
-            
+
             <div style="background: var(--accent-mid); padding: 20px; border-radius: 6px; border: 1px solid var(--accent-mid);">
                 <h4 style="margin-top: 0; margin-bottom: 15px;">Add New User</h4>
                 <div style="margin-bottom: 15px;">

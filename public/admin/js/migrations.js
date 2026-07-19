@@ -1,6 +1,6 @@
 ﻿// admin/js/migrations.js — Migrations page (renderMigrationsPage): scan for schema drift and apply pending migrations via admin/api_migrations.php (scan/apply); inner tabs.
 import { apiFetch } from '../../assets/js/util/api.js';
-import { buildInnerTabs } from './ui.js';
+import { buildInnerTabs, createPageHeader } from './ui.js';
 import { escHtml as escRelMig } from '../../assets/js/util/esc.js';
 
 export async function renderMigrationsPage(ctx) {
@@ -12,9 +12,14 @@ export async function renderMigrationsPage(ctx) {
     outer.className = 'admin-page';
     workspaceEl.appendChild(outer);
 
+    outer.appendChild(createPageHeader(
+        'Migrations',
+        'Scan for schema drift and apply pending database migrations, or review release migrations from upgrades.'
+    ));
+
     const [panel0, panel1] = buildInnerTabs(outer, [
-        { label: 'Database Migrations' },
-        { label: 'Release Migrations' },
+        { label: 'Database Migrations', icon: 'database.png' },
+        { label: 'Release Migrations', icon: 'box.png' },
     ]);
 
     // --- Tab 0: DB migrations ---
@@ -110,22 +115,21 @@ async function loadMigrations(container) {
     const applied    = migrations.filter(m => m.status === 'applied');
 
     const table = document.createElement('table');
-    table.style.cssText = 'width:100%; border-collapse:collapse; ';
+    table.className = 'adm-tbl';
 
-    const thead = document.createElement('thead');
-    thead.innerHTML = `
-        <tr style="border-bottom:2px solid var(--accent-mid); background:var(--bg); text-align:left;">
-            <th style="padding:10px 12px; ">Migration</th>
-            <th style="padding:10px 12px; ">Status</th>
-            <th style="padding:10px 12px; ">Applied at</th>
-        </tr>`;
-    table.appendChild(thead);
+    const thead = table.createTHead();
+    const hrow = thead.insertRow();
+    ['Migration', 'Status', 'Applied at'].forEach(h => {
+        const th = document.createElement('th');
+        th.className = 'adm-th';
+        th.textContent = h;
+        hrow.appendChild(th);
+    });
 
-    const tbody = document.createElement('tbody');
+    const tbody = table.createTBody();
 
     migrations.forEach(m => {
-        const tr = document.createElement('tr');
-        tr.style.cssText = 'border-bottom:1px solid var(--border);';
+        const tr = tbody.insertRow();
 
         const isPending = m.status === 'pending';
         const badge = isPending
@@ -137,13 +141,10 @@ async function loadMigrations(container) {
             : '—';
 
         tr.innerHTML = `
-            <td style="padding:10px 12px; font-family:monospace; color:var(--text);">${m.name}</td>
-            <td style="padding:10px 12px;">${badge}</td>
-            <td style="padding:10px 12px; ">${appliedAt}</td>`;
-        tbody.appendChild(tr);
+            <td class="adm-td mono">${escRelMig(m.name)}</td>
+            <td class="adm-td">${badge}</td>
+            <td class="adm-td">${escRelMig(appliedAt)}</td>`;
     });
-
-    table.appendChild(tbody);
 
     const summary = document.createElement('p');
     summary.style.cssText = '  margin-top:12px;';

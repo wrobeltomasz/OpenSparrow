@@ -200,6 +200,13 @@ ETL:
     (for CSV/FTP sources, also confirms the configured file exists)
   - Schedule: manual / daily / weekly / monthly, run by cron/cron_etl.php; run
     history (rows read/written, duration, errors) in spw_etl_log
+  - Flows tab: chains existing ETL jobs into an ordered sequence via a tile-based
+    builder (start, job, job, ..., end tiles; steps reference job ids from the Jobs
+    tab and can be reordered/removed). Runs strictly in order and stops immediately
+    at the first failing step. Same manual/daily/weekly/monthly schedule model,
+    guarded per flow, run by cron/cron_etl_flow.php; run history (overall status,
+    failed step) in spw_etl_flow_run_log plus per-step detail in
+    spw_etl_flow_step_log
 
 Anonymization (GDPR):
   - Rules per column: table, a date/timestamp column, an age threshold (anonymize
@@ -261,6 +268,8 @@ Read and written through includes/config_store.php — never as files.
   user_records  — per-table owner column mapping and record limits
   rag           — Ollama URL, model, max context files, file size limit, timeout
   etl           — external source connection and import job definitions
+  etl_flows     — ordered chains ("flows") of existing ETL job ids, run
+                  sequentially, stopping on the first step failure
 
 CONFIGURATION FILES (config/*.json)
 ------------------------------------

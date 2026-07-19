@@ -752,6 +752,55 @@ textarea.adm-input {
 .icon-btn-danger { color: var(--danger); }
 .icon-btn-danger:hover { color: var(--danger-dark); }
 
+/* ETL Flow step builder: start -> job -> job -> ... -> end tile strip. */
+.flow-tile-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+.flow-tile {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    border-radius: var(--radius-lg);
+    padding: 8px 14px;
+    font-weight: 700;
+}
+.flow-tile-start,
+.flow-tile-end {
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    color: var(--muted);
+}
+.flow-tile-job {
+    background: var(--panel);
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+}
+.flow-tile-job select {
+    min-width: 160px;
+}
+.flow-tile-btns {
+    display: flex;
+    gap: 2px;
+}
+.flow-tile-add {
+    background: none;
+    border: 1px dashed var(--border-light);
+    color: var(--muted);
+    cursor: pointer;
+}
+.flow-tile-add:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
 /* Compact uppercase field label (for inline field groups outside .form-group). */
 .adm-field-label {
     display: block;

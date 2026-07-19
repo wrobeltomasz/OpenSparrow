@@ -6,10 +6,11 @@ import { escHtml as ragEsc } from '../../assets/js/util/esc.js';
 
 function ragCard(title, desc) {
     const card = document.createElement('div');
-    card.style.cssText = 'border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px;';
+    card.className = 'adm-sec-card';
 
     const hdr = document.createElement('div');
-    hdr.style.cssText = 'padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);';
+    hdr.className = 'adm-sec-hdr';
+    hdr.style.display = 'block';
 
     const h3 = document.createElement('h3');
     h3.textContent = title;
@@ -25,7 +26,7 @@ function ragCard(title, desc) {
     card.appendChild(hdr);
 
     const body = document.createElement('div');
-    body.style.cssText = 'padding:18px;';
+    body.className = 'adm-sec-body';
     card.appendChild(body);
 
     return { card, body };
@@ -306,7 +307,7 @@ function ragBuildDocumentsTab(panel) {
     listBody.appendChild(tableWrap);
 
     const table = document.createElement('table');
-    table.style.cssText = 'width:100%;border-collapse:collapse;';
+    table.className = 'adm-tbl';
     const thead = table.createTHead();
     const hdr   = thead.insertRow();
     ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', ''].forEach(col => {
@@ -806,7 +807,7 @@ function ragBuildSettingsTab(panel) {
         }
 
         const tbl = document.createElement('table');
-        tbl.style.cssText = 'width:100%;border-collapse:collapse;';
+        tbl.className = 'adm-tbl';
 
         const thead = tbl.createTHead();
         const hr    = thead.insertRow();
@@ -1227,7 +1228,7 @@ function ragBuildStatsTab(panel) {
     recentBody.appendChild(tableWrap);
 
     const tbl   = document.createElement('table');
-    tbl.style.cssText = 'width:100%;border-collapse:collapse;';
+    tbl.className = 'adm-tbl';
     const thead = tbl.createTHead();
     const hr    = thead.insertRow();
     ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)', 'Sources'].forEach(col => {
@@ -1437,15 +1438,16 @@ export async function renderRagPage(ctx) {
     workspaceEl.innerHTML = '';
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'max-width:960px;padding-bottom:60px;';
+    wrap.className = 'admin-page';
+    wrap.style.paddingBottom = '60px';
 
     const heading = document.createElement('h2');
     heading.textContent = 'Centrum AI';
-    heading.style.cssText = 'margin-top:0;margin-bottom:4px;';
+    heading.className = 'admin-page-title';
 
     const intro = document.createElement('p');
     intro.textContent = 'Upload .txt documents, configure Ollama, and test retrieval-augmented queries.';
-    intro.style.cssText = 'margin-bottom:24px;';
+    intro.className = 'admin-page-desc';
 
     wrap.appendChild(heading);
     wrap.appendChild(intro);

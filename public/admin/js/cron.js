@@ -1,7 +1,7 @@
 ﻿// admin/js/cron.js — Cron notifications management page
 // Shows run log/stats and lets the admin trigger or purge cron via api.php (cron_log, cron_stats, cron_purge_log, run_cron_notifications). CSRF via apiFetch().
 import { apiFetch } from '../../assets/js/util/api.js';
-import { buildInnerTabs } from './ui.js';
+import { buildInnerTabs, createPageHeader } from './ui.js';
 
 import { escHtml as cronEscHtml } from '../../assets/js/util/esc.js';
 
@@ -422,14 +422,20 @@ export function renderCronPage(ctx) {
     workspaceEl.innerHTML = '';
 
     const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
     workspaceEl.appendChild(wrap);
 
+    wrap.appendChild(createPageHeader(
+        'Cron & Notifications',
+        'Run scheduled notification jobs, review run history and statistics, and manage cleanup of old log entries.'
+    ));
+
     const [p0, p1, p2, p3, p4] = buildInnerTabs(wrap, [
-        { label: 'Run' },
-        { label: 'History' },
-        { label: 'Statistics' },
-        { label: 'Setup' },
-        { label: 'Cleanup' },
+        { label: 'Run', icon: 'autorenew.png' },
+        { label: 'History', icon: 'manage_history.png' },
+        { label: 'Statistics', icon: 'bar_chart.png' },
+        { label: 'Setup', icon: 'car_gear.png' },
+        { label: 'Cleanup', icon: 'folder_zip.png' },
     ]);
 
     p0.appendChild(buildManualRunSection());

@@ -29,23 +29,9 @@ export function renderViewsEditor(ctx) {
 
     /* ---------- root layout ---------- */
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'padding: 20px 24px; max-width: 900px;';
+    wrap.className = 'admin-page';
 
-    const hdr = document.createElement('div');
-    hdr.style.cssText = 'display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:20px; flex-wrap:wrap;';
-    hdr.innerHTML = `
-        <div>
-            <h2 style="margin:0 0 4px;  font-weight:700;">Views Configuration</h2>
-            <p style="margin:0;  ">Sync to discover PostgreSQL views, configure display names, column colors, and drill-down. Use "Save config" in the top bar to persist.</p>
-        </div>
-    `;
-    const syncBtn = document.createElement('button');
-    syncBtn.className   = 'btn btn-success';
-    syncBtn.style.flexShrink = '0';
-    hdr.appendChild(syncBtn);
-    wrap.appendChild(hdr);
-
-    /* ---------- source tabs ---------- */
+    /* ---------- source tabs (first, same DOM order as ETL's buildInnerTabs) ---------- */
     const tabBar = document.createElement('div');
     tabBar.className = 'item-panel-items';
 
@@ -55,11 +41,25 @@ export function renderViewsEditor(ctx) {
         t.type = 'button';
         t.className = 'item-btn';
     });
-    pgTab.textContent      = 'PostgreSQL Views';
-    schemasTab.textContent = 'Schemas';
+    function tabIcon(name) {
+        const img = document.createElement('img');
+        img.src = '../assets/icons/' + name;
+        img.alt = '';
+        img.style.cssText = 'width:15px;height:15px;opacity:.6;';
+        return img;
+    }
+    pgTab.append(tabIcon('table_chart_view.png'), document.createTextNode('PostgreSQL Views'));
+    schemasTab.append(tabIcon('database.png'), document.createTextNode('Schemas'));
     tabBar.appendChild(pgTab);
     tabBar.appendChild(schemasTab);
     wrap.appendChild(tabBar);
+
+    const hdr = document.createElement('div');
+    hdr.innerHTML = `
+        <h2 class="admin-page-title">Views Configuration</h2>
+        <p class="admin-page-desc">Sync to discover PostgreSQL views, configure display names, column colors, and drill-down. Use "Save config" in the top bar to persist.</p>
+    `;
+    wrap.appendChild(hdr);
 
     function updateTabUi() {
         pgTab.classList.toggle('active', currentSource === 'postgres');
@@ -80,6 +80,14 @@ export function renderViewsEditor(ctx) {
     const statusEl = document.createElement('div');
     statusEl.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px;';
     wrap.appendChild(statusEl);
+
+    // Action bar — same placement as ETL's "+ Add source" bar.
+    const bar = document.createElement('div');
+    bar.style.marginBottom = '12px';
+    const syncBtn = document.createElement('button');
+    syncBtn.className = 'btn btn-success';
+    bar.appendChild(syncBtn);
+    wrap.appendChild(bar);
 
     const listEl = document.createElement('div');
     wrap.appendChild(listEl);
