@@ -171,8 +171,10 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// Allowed config files for read and write operations
-// Dodałem 'files' do autoryzowanych konfiguracji
+// Allowed config files for read and write operations via this generic raw-JSON
+// editor. Deliberately excludes 'settings', 'print', 'anonymization', 'rag' and
+// 'menu' — those spw_config keys have dedicated admin tabs with purpose-built
+// editors and are not exposed through this generic passthrough.
 $allowedFiles = [
     'schema', 'dashboard', 'calendar', 'board', 'database', 'security',
     'workflows', 'files', 'views', 'automations', 'user_records',

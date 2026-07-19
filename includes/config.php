@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See LICENCE file for details.
 //
 // config.php — Central configuration loader (environment variables + JSON files)
-// Defines constants for DB, session, security, rate limiting, file uploads, comments, notifications, snapshots, chat bubble, RAG, MySQL gateway
+// Defines constants for DB, session, security, rate limiting, file uploads, comments, notifications, snapshots, chat bubble, RAG, MySQL (ETL source)
 // Sets session.save_path to absolute path under project root; configures session.gc_maxlifetime; detects HTTPS behind reverse proxies
 // Generates IP_HASH_SALT for login throttling if not set via env; resolves TRUST_PROXY_HEADERS for client_ip()
 // Includes version.php and defines OPENSPARROW_CONFIG_LOADED guard to prevent double inclusion
@@ -324,7 +324,7 @@ define('RAG_MAX_CONCURRENT', (int) get_env('RAG_MAX_CONCURRENT', '2'));
 // client sending an oversized payload.
 define('RAG_PAGE_CONTEXT_MAX_CHARS', (int) get_env('RAG_PAGE_CONTEXT_MAX_CHARS', '12000'));
 // -------------------------------------------------------------------------
-// MySQL Gateway (External Databases)
+// MySQL (ETL source connection)
 // -------------------------------------------------------------------------
 
 // Credentials resolved from env vars first, then config/mysql_connection.json
@@ -353,7 +353,7 @@ define('RAG_PAGE_CONTEXT_MAX_CHARS', (int) get_env('RAG_PAGE_CONTEXT_MAX_CHARS',
     define('MYSQL_PASSWORD', $envPass !== '' ? $envPass : (string) ($file['password'] ?? ''));
 })();
 
-// Strict connect timeout (seconds) applied to every MySQL gateway PDO connection
+// Strict connect timeout (seconds) applied to every MySQL (ETL source) PDO connection
 // (both the DSN connect_timeout and PDO::ATTR_TIMEOUT). Kept deliberately low so a
 // firewalled, hung, or dead MySQL host fails fast instead of tying up a PHP worker
 // long enough to starve the core PostgreSQL request path. Floor of 1s — never 0,

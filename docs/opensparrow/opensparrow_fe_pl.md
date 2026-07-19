@@ -58,8 +58,7 @@
     - 17.19 [Edytor Workflows](#1719-edytor-workflows)
     - 17.20 [Edytor Widoków](#1720-edytor-widoków)
     - 17.21 [Systemy demo](#1721-systemy-demo)
-    - 17.22 [Zewnętrzne bazy danych (MySQL Gateway)](#1722-zewnętrzne-bazy-danych-mysql-gateway)
-    - 17.23 [Anonimizacja danych](#1723-anonimizacja-danych)
+    - 17.22 [Anonimizacja danych](#1722-anonimizacja-danych)
 18. [Responsywność i mobile](#18-responsywność-i-mobile)
 19. [Powiadomienia i feedback](#19-powiadomienia-i-feedback)
 20. [Internacjonalizacja (i18n)](#20-internacjonalizacja-i18n)
@@ -608,15 +607,14 @@ W nagłówku strony, obok filtrów, znajduje się lista rozwijana **"Grupuj wier
 
 Wszystkie widoczne (nieukryte) widoki są wypisane w menu bocznym jako rozwijana lista podrzędna pod pozycją "Views" — ten sam wzorzec co podmenu tabel (strzałka ▾ rozwija/zwija listę). Kliknięcie pozycji podmenu otwiera dany widok bezpośrednio (`views.php?view=nazwa`), a kliknięcie samej pozycji "Views" otwiera stronę z kartami wszystkich widoków. W widoku nie ma osobnego przycisku "Wstecz" — powrót do listy widoków odbywa się przez menu boczne, a cofanie po poziomach drill-down przez okruszki (breadcrumb) nad tabelą.
 
-### Źródło danych: PostgreSQL i MySQL
+### Źródło danych: PostgreSQL
 
-Edytor Widoków w panelu administracyjnym (Admin › Views) ma trzy zakładki, analogicznie do sekcji "Schema":
+Edytor Widoków w panelu administracyjnym (Admin › Views) ma dwie zakładki, analogicznie do sekcji "Schema":
 
 - **PostgreSQL Views** — wykrywa i konfiguruje widoki z bazy PostgreSQL
-- **MySQL Views** — wykrywa i konfiguruje widoki z zewnętrznej bazy MySQL (przez MySQL Gateway)
 - **Schemas** — wybór, które schematy PostgreSQL przeszukuje synchronizacja (patrz niżej)
 
-Każda z dwóch pierwszych zakładek ma własny przycisk synchronizacji ("↻ Sync PostgreSQL Views" / "↻ Sync MySQL Views"), który pobiera listę widoków i metadane kolumn z odpowiedniej bazy. Źródło każdego widoku jest zapisywane w konfiguracji widoków (pole `source`), dzięki czemu drill-down, reguły kolorów i agregacje działają identycznie niezależnie od bazy. Widoki MySQL są tylko do odczytu (jak natywne widoki SQL).
+Zakładka "PostgreSQL Views" ma własny przycisk synchronizacji ("↻ Sync PostgreSQL Views"), który pobiera listę widoków i metadane kolumn z bazy. Źródło każdego widoku jest zapisywane w konfiguracji widoków (pole `source`).
 
 #### Wybór przeszukiwanych schematów (PostgreSQL)
 
@@ -1004,23 +1002,7 @@ Jednym kliknięciem załaduj przykładowe dane do testowania:
 
 Instalacja tworzy dedykowany schemat PostgreSQL `spw_crm` z danymi przykładowymi i scala konfigurację demo (schemat, dashboard, kalendarz, tablica, workflows, widoki, automatyzacje) z konfiguracją aplikacji w tabeli `spw_config`. Przycisk "Reset" usuwa dane demo: schemat jest kasowany (CASCADE), a wpisy konfiguracyjne czyszczone, jeśli zawierają wyłącznie treści demo.
 
-### 17.22 Zewnętrzne bazy danych (MySQL Gateway)
-
-Zakładka **External Databases** (sekcja Data Management) umożliwia skonfigurowanie routingu zapytań bazy danych między PostgreSQL a MySQL na poziomie aplikacji PHP — bez zmian we frontendzie. Moduł implementuje wzorzec Factory Method w warstwie `includes/db/`.
-
-**Status połączenia MySQL:** górna karta pokazuje skonfigurowane zmienne środowiskowe (`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`, `MYSQL_USER`) oraz aktualny stan połączenia (etykieta Connected / Not connected / Not configured). Przycisk **Test connection** weryfikuje połączenie na żądanie.
-
-**Konfiguracja zmiennych środowiskowych:** składana sekcja instrukcji pokazuje przykładowy fragment `docker-compose.override.yml` do ustawienia zmiennych `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`, `MYSQL_USER`, `MYSQL_PASSWORD`.
-
-**Routing tabel MySQL:** lista nazw tabel kierowanych do MySQL zamiast PostgreSQL. Tabele spoza listy trafiają domyślnie do PostgreSQL. Konfiguracja przechowywana jest w `config/mysql_gateway.json`.
-
-**Warstwa abstrakcji (`includes/db/`):**
-- `DatabaseGatewayInterface` — kontrakt `fetchAll(string $table): array`.
-- `PostgresGateway` — implementacja przez natywne funkcje `pg_*`.
-- `MysqlGateway` — implementacja przez PDO.
-- `DatabaseFactory::make($table, $pgConn, $mysqlPdo)` — wybiera implementację na podstawie listy tabel MySQL; akcja `mysql_preview` w `admin/api_fdw.php` demonstruje integrację.
-
-### 17.23 Anonimizacja danych
+### 17.22 Anonimizacja danych
 
 Zakładka **Anonymization** (sekcja System) obsługuje automatyczną anonimizację danych osobowych zgodnie z wymogami RODO — prawdziwie zanonimizowane dane nie są danymi osobowymi i nie podlegają przepisom o ochronie danych UE. Moduł działa wyłącznie w panelu admina, cronie i bazie danych (brak wpływu na frontend).
 
@@ -1288,17 +1270,7 @@ Diagram ER w panelu admina pokazuje wszystkie tabele i relacje FK jednym rzutem 
 
 ---
 
-### 23.13 Integracja z istniejącą bazą MySQL (MySQL Gateway)
-
-**Stopniowa migracja z systemu legacy:**  
-Firma ma starą aplikację na MySQL i chce korzystać z interfejsu OpenSparrow bez przepisywania danych. Admin w zakładce External Databases rejestruje nazwy tabel MySQL (np. `klienci`, `zamowienia`). Warstwa `DatabaseFactory` automatycznie kieruje zapytania do MySQL dla tych tabel — handlowcy pracują w OpenSparrow, a dane pozostają w bazie MySQL, bez okna przestoju.
-
-**Architektura warstwowa bez zmian we frontendzie:**  
-`DatabaseFactory::make($table, $pgConn, $mysqlPdo)` zwraca `MysqlGateway` dla tabel z listy i `PostgresGateway` dla pozostałych. Obie implementują `DatabaseGatewayInterface` — logika frontendu pozostaje niezmieniona.
-
----
-
-### 23.14 Anonimizacja danych osobowych (RODO)
+### 23.13 Anonimizacja danych osobowych (RODO)
 
 **Wygasłe leady:**  
 Leady starsze niż 2 lata nie wymagają już pełnych danych. Słownik zawiera "email, phone, imię, nazwisko". Scan Suggestions wskazuje kolumny `email`, `phone`, `first_name`, `last_name` w tabeli `leads`. Reguły ustawione z wartością `USUNIĘTO`. Cron działa miesięcznie — co 30 dni wszystkie pasujące rekordy są zanonimizowane, dane nadal istnieją w bazie (audit log), ale nie są już danymi osobowymi.

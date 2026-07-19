@@ -1,0 +1,10 @@
+# Deny all direct web access to this directory. Holds live bootstrap
+# secrets (database.json) read before any DB connection exists.
+# Covers both Apache 2.4+ (mod_authz_core) and 2.2 (mod_access_compat / mod_authz_host).
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

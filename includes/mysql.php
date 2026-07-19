@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// mysql.php — MySQL Gateway access helpers (single source of truth)
+// mysql.php — MySQL source access helpers for the ETL module (single source of truth)
 // Keeps MySQL strictly isolated from the PostgreSQL layer in db.php
 // mysql_pdo($logTag) lazily opens a guarded, timeout-bounded PDO connection or returns null
 // mysql_bt($name) backtick-quotes a MySQL identifier
@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 
-// Lazy MySQL PDO connection; returns null when the gateway is not configured
+// Lazy MySQL PDO connection; returns null when the MySQL source is not configured
 // $logTag identifies the calling endpoint in error_log entries
 function mysql_pdo(string $logTag = 'api'): ?\PDO
 {

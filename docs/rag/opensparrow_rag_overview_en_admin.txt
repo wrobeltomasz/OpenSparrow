@@ -211,7 +211,6 @@ Only bootstrap and distribution files remain on disk:
   database.json       — DB connection (host, port, dbname, user, password, schema);
                         read before any database connection exists, so it cannot live in the DB
   security.json       — CORS, HSTS, CSP, IP whitelist, session and password policy
-  mysql_gateway.json  — MySQL routing list (tables served from MySQL)
-  mysql_connection.json — MySQL Gateway credentials
+  mysql_connection.json — MySQL source connection credentials (ETL module)
   migrations.json     — release manifest (files/config keys removed per version)
   demo_meta.json      — installed demo metadata
