@@ -180,10 +180,6 @@ if (empty($_SESSION['csrf_token'])) {
                         <img class="nav-item-icon" src="../assets/icons/data_table.png" alt="">
                         Schema
                     </button>
-                    <button class="admin-tab" data-file="erd">
-                        <img class="nav-item-icon" src="../assets/icons/account_tree.png" alt="">
-                        Schema Map
-                    </button>
                     <button class="admin-tab" data-file="user_records">
                         <img class="nav-item-icon" src="../assets/icons/id_card.png" alt="">
                         User Records

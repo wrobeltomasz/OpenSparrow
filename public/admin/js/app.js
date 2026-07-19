@@ -47,12 +47,13 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization']);
 
 // Sub-views of a config-backed tab that manage their own state/save flow and
 // must never trip the generic "unsaved changes" dirty tracking (Menu Preview
-// autosaves on drag; Add Table / M2M Builder post directly and reset their own form).
-const NON_CONFIG_SCHEMA_KEYS = new Set(['MENU_PREVIEW', 'ADD_TABLE', 'M2M_BUILDER']);
+// autosaves on drag; Add Table / M2M Builder post directly and reset their own form;
+// Schema Map is a read-only diagram).
+const NON_CONFIG_SCHEMA_KEYS = new Set(['MENU_PREVIEW', 'ADD_TABLE', 'M2M_BUILDER', 'SCHEMA_MAP']);
 
 // Dirty-state guards: every edit marks the config dirty; navigation and reload
 // refuse to drop pending changes silently.
@@ -187,7 +188,7 @@ async function loadConfigFile(fileName) {
     // A prior tab may have registered its own save routine; every tab switch
     // starts fresh so a stale handler can never fire for the wrong tab.
     activeSaveHandler = null;
-    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'erd' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -358,7 +359,7 @@ function renderSidebar() {
     const fullPageTabs = new Set([
         'overview', 'security', 'health', 'docs', 'users', 'backup',
         'migrations', 'performance', 'cron',
-        'erd', 'demo', 'settings', 'csv_import', 'rag', 'views', 'board', 'etl', 'anonymization', 'print',
+        'demo', 'settings', 'csv_import', 'rag', 'views', 'board', 'etl', 'anonymization', 'print',
         'user_records',
     ]);
 
@@ -414,6 +415,13 @@ function renderSidebar() {
         m2mBtn.append(tabIcon('account_tree.png'), document.createTextNode('M2M Builder'));
         m2mBtn.onclick = () => { currentItemKey = 'M2M_BUILDER'; renderSidebar(); renderEditor('M2M_BUILDER', null, false); };
         itemsRow.appendChild(m2mBtn);
+
+        const mapBtn = document.createElement('button');
+        mapBtn.type = 'button';
+        mapBtn.className = 'item-btn' + (currentItemKey === 'SCHEMA_MAP' ? ' active' : '');
+        mapBtn.append(tabIcon('account_tree.png'), document.createTextNode('Schema Map'));
+        mapBtn.onclick = () => { currentItemKey = 'SCHEMA_MAP'; renderSidebar(); renderEditor('SCHEMA_MAP', null, false); };
+        itemsRow.appendChild(mapBtn);
     }
 
     if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'files' || currentFile === 'automations') {
@@ -778,7 +786,7 @@ function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
 
-    if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'erd', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER'))) {
+    if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER' || key === 'SCHEMA_MAP'))) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';
@@ -793,7 +801,6 @@ function renderEditor(key, itemData, isArray) {
     if (currentFile === 'migrations') return renderMigrationsPage(ctx);
     if (currentFile === 'performance') return renderPerformancePage(ctx);
     if (currentFile === 'cron') return renderCronPage(ctx);
-    if (currentFile === 'erd')  return renderErdPage(ctx);
     if (currentFile === 'demo') return renderDemoPage(ctx);
     if (currentFile === 'settings') return renderSettingsPage(ctx);
     if (currentFile === 'csv_import') return renderCsvImportPage(ctx);
@@ -826,6 +833,10 @@ function renderEditor(key, itemData, isArray) {
     }
     if (currentFile === 'schema' && key === 'M2M_BUILDER') {
         renderM2mPage(ctx);
+        return;
+    }
+    if (currentFile === 'schema' && key === 'SCHEMA_MAP') {
+        renderErdPage(ctx);
         return;
     }
 

@@ -72,7 +72,7 @@ describe('OpenSparrow – Admin Panel', () => {
   // Note: the nav has overflow-y:auto — tabs below the fold must be scrolled
   // into view first, otherwise Cypress treats them as hidden.
 
-  ['schema', 'dashboard', 'calendar', 'files', 'menu', 'add_table', 'erd', 'views', 'csv_import'].forEach(tab => {
+  ['schema', 'dashboard', 'calendar', 'files', 'menu', 'add_table', 'views', 'csv_import'].forEach(tab => {
     it(`navigates to data tab: ${tab}`, () => {
       clickAdminTab(tab);
       cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
