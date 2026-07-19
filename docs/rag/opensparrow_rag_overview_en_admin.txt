@@ -5,7 +5,7 @@ tables, forms, dashboards, calendars, workflows, automations, users, and system 
 Available to the admin role (and partially to editor). All configuration is stored as JSON
 files in config/ — no code changes required.
 
-Current version: 2.8.
+Current version: 3.0.
 Stack: PHP 8.4+, PostgreSQL 14+, vanilla JavaScript (ES6+). No npm, no composer required.
 License: LGPL v3. Self-hosted, works fully offline.
 
@@ -73,6 +73,13 @@ Files:
 Menu Preview:
   - Sidebar navigation structure ("menu" config key): visibility, order, grouping
 
+User Records:
+  - Configures the "My records" panel every user opens from the avatar menu
+    ("user_records" config key)
+  - Column Mapping tab: per table, which columns are concatenated into each
+    assigned record's label
+  - Global Settings tab: how many recently-assigned records are shown per table
+
 Schema Map (ERD):
   - Visual entity-relationship diagram: all tables with FK relations drawn as arrows
   - Click a table to jump to its schema editor; zoom and pan controls
@@ -81,6 +88,22 @@ Views:
   - Read-only PostgreSQL views exposed as grid pages ("views" config key)
   - Create/edit/delete view definitions: name, description, filters, column order
   - Drill-down by group_by levels (e.g. Year → Month → Invoice)
+  - Sync discovers views (and column metadata) in the searched schema(s); a Schemas
+    tab selects which PostgreSQL schemas beyond the default app schema are searched
+
+Board (Kanban):
+  - Configure a source table, a status column (its enum options/colors become the
+    board's lanes), card title column, and detail fields shown on each card ("board"
+    config key)
+  - Board appears in the sidebar menu only once a table and status column are set
+
+Print Templates:
+  - Printable report templates bound to a PostgreSQL view ("print" config key)
+  - Block editor: heading, text, and table blocks with {column} variables pulled
+    from the bound view; optional report parameters (dropdown filters, e.g. by
+    employee) resolved either from the column's distinct values or a lookup view
+  - Rendered at print.php with automatic A4 pagination and a dedicated print
+    stylesheet; saved/validated via api/print.php
 
 
 WORKFLOWS
@@ -154,6 +177,26 @@ M2M Builder:
   - Visual builder for many-to-many relations: left/right FK tables, junction table
     name, display columns
 
+ETL:
+  - Scheduled or on-demand batch import from an external MySQL or PostgreSQL source
+    database into a local PostgreSQL target table (driver-based, extensible to
+    Oracle/DB2/SQL Server); independent of the removed MySQL Gateway feature
+  - Jobs: a read-only source SELECT/WITH query, target table, optional column map,
+    and a load mode — full refresh (truncate+insert), append, or upsert (ON CONFLICT)
+  - Incremental loading via a {{watermark}} placeholder substituted with the last
+    seen value of an incremental column
+  - Preview shows sample rows before saving; Test connection verifies reachability
+  - Schedule: manual / daily / weekly / monthly, run by cron/cron_etl.php; run
+    history (rows read/written, duration, errors) in spw_etl_log
+
+Anonymization (GDPR):
+  - Rules per column: table, a date/timestamp column, an age threshold (anonymize
+    records older than N days), the PII column, and a replacement value
+  - Preview (dry run) counts affected rows without modifying data
+  - Schedule: manual / daily / weekly / monthly via cron/cron_anonymization.php
+  - Scan Schema suggests PII columns by matching column names against a keyword
+    dictionary; run history in spw_anonymization_log
+
 Migrations:
   - Database migrations tab: list of system migrations (pending / applied),
     "Apply pending migrations" button
@@ -168,6 +211,8 @@ Performance:
 
 Settings:
   - Application settings: system name, theme, menu configuration, notification settings
+  - Custom Logo: replace the default frontend header logo (PNG/JPEG/WEBP, up to 2 MB);
+    independent show/hide toggle
   - Security configuration stored in config/security.json: CORS, HSTS, CSP modes,
     optional IP whitelist, session timeout, password policy
 
@@ -203,6 +248,7 @@ Read and written through includes/config_store.php — never as files.
   anonymization — GDPR anonymization rules and dictionary
   user_records  — per-table owner column mapping and record limits
   rag           — Ollama URL, model, max context files, file size limit, timeout
+  etl           — external source connection and import job definitions
 
 CONFIGURATION FILES (config/*.json)
 ------------------------------------

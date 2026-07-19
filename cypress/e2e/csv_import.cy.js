@@ -32,6 +32,14 @@ function openCsvImportTab() {
   // content later replaces the CSV workspace mid-test.
   cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.long })
     .should('contain.text', 'Admin Overview');
+  // The csv_import button lives in the "Data Management" collapsible
+  // nav-section, which is closed by default — expand it first.
+  cy.get('button.admin-tab[data-file="csv_import"]').then($btn => {
+    const $section = $btn.closest('.nav-section');
+    if ($section.length && !$section.hasClass('open')) {
+      cy.wrap($section.find('.nav-section-header')).click();
+    }
+  });
   cy.get('button.admin-tab[data-file="csv_import"]')
     .scrollIntoView()
     .should('be.visible')

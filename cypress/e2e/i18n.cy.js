@@ -263,6 +263,14 @@ describe('OpenSparrow – i18n: Admin Settings Panel', () => {
       .should($el => {
         expect($el.children().length, 'admin JS rendered initial tab').to.be.gte(1);
       });
+    // The settings button lives in the "System" collapsible nav-section,
+    // which is closed by default — expand it first.
+    cy.get('button.admin-tab[data-file="settings"]').then($btn => {
+      const $section = $btn.closest('.nav-section');
+      if ($section.length && !$section.hasClass('open')) {
+        cy.wrap($section.find('.nav-section-header')).click();
+      }
+    });
     cy.get('button.admin-tab[data-file="settings"]')
       .scrollIntoView()
       .should('be.visible')

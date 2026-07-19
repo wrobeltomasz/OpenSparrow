@@ -332,6 +332,15 @@ ${_ul([
     `<strong>${s.s10_relations_label}:</strong> ${s.s10_relations}`
 ])}
 
+${_h3('doc-10b', s.s10b_head)}
+${_p(s.s10b_desc)}
+${_ul([
+    `<strong>${s.s10b_sync_label}:</strong> ${s.s10b_sync}`,
+    `<strong>${s.s10b_schemas_label}:</strong> ${s.s10b_schemas}`,
+    `<strong>${s.s10b_display_label}:</strong> ${s.s10b_display}`,
+    `<strong>${s.s10b_readonly_label}:</strong> ${s.s10b_readonly}`
+])}
+
 ${_h3('doc-11', s.s11_head)}
 ${_p(s.s11_desc)}
 ${_h4(s.s11_dnd_head)}
@@ -362,6 +371,18 @@ ${_ul([
     `<strong>${s.s11c_errors_label}:</strong> ${s.s11c_errors}`,
     `<strong>${s.s11c_tables_label}:</strong> ${s.s11c_tables}`,
     `<strong>${s.s11c_history_label}:</strong> ${s.s11c_history}`
+])}
+
+${_h3('doc-11d', s.s11d_head)}
+${_p(s.s11d_desc)}
+${_ul([
+    `<strong>${s.s11d_conn_label}:</strong> ${s.s11d_conn}`,
+    `<strong>${s.s11d_jobs_label}:</strong> ${s.s11d_jobs}`,
+    `<strong>${s.s11d_modes_label}:</strong> ${s.s11d_modes}`,
+    `<strong>${s.s11d_incremental_label}:</strong> ${s.s11d_incremental}`,
+    `<strong>${s.s11d_preview_label}:</strong> ${s.s11d_preview}`,
+    `<strong>${s.s11d_schedule_label}:</strong> ${s.s11d_schedule}`,
+    `<strong>${s.s11d_log_label}:</strong> ${s.s11d_log}`
 ])}
 
 ${_h3('doc-13', s.s13_head)}
@@ -401,6 +422,16 @@ ${_p(s.s14_vars)}
 ${_h4(s.s14_history_label)}
 ${_p(s.s14_history)}
 ${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;')}
+
+${_h3('doc-13-print', s.sPrint_head)}
+${_p(s.sPrint_desc)}
+${_ul([
+    `<strong>${s.sPrint_source_label}:</strong> ${s.sPrint_source}`,
+    `<strong>${s.sPrint_layout_label}:</strong> ${s.sPrint_layout}`,
+    `<strong>${s.sPrint_pagination_label}:</strong> ${s.sPrint_pagination}`,
+    `<strong>${s.sPrint_access_label}:</strong> ${s.sPrint_access}`,
+    `<strong>${s.sPrint_config_label}:</strong> ${s.sPrint_config}`
+])}
 
 ${_h3('doc-9m', s.s9m_head)}
 ${_p(s.s9m_desc)}

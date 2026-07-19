@@ -69,6 +69,13 @@ if ($action === 'etl_save') {
         'jobs' => [],
     ];
 
+    $existingJobsById = [];
+    foreach ((array)($existing['jobs'] ?? []) as $ej) {
+        if (is_array($ej) && ($ej['id'] ?? '') !== '') {
+            $existingJobsById[(string)$ej['id']] = $ej;
+        }
+    }
+
     $validModes = ['full_refresh', 'append', 'upsert'];
     foreach ((array)($data['jobs'] ?? []) as $job) {
         if (!is_array($job)) {
@@ -80,17 +87,38 @@ if ($action === 'etl_save') {
         if ($name === '' || $query === '' || $target === '') {
             continue;
         }
+        $id = (string)($job['id'] ?? bin2hex(random_bytes(8)));
+
+        $columnMap = [];
+        foreach ((array)($job['column_map'] ?? []) as $m) {
+            if (!is_array($m)) {
+                continue;
+            }
+            $src = trim((string)($m['source'] ?? ''));
+            $tgt = trim((string)($m['target'] ?? ''));
+            if ($src !== '' && $tgt !== '') {
+                $columnMap[] = ['source' => $src, 'target' => $tgt];
+            }
+        }
+
         $config['jobs'][] = [
-            'id'           => (string)($job['id'] ?? bin2hex(random_bytes(8))),
-            'name'         => $name,
-            'source_query' => $query,
-            'target_table' => $target,
-            'load_mode'    => in_array($job['load_mode'] ?? '', $validModes, true) ? $job['load_mode'] : 'full_refresh',
-            'upsert_key'   => array_values(array_filter(array_map(
+            'id'                        => $id,
+            'name'                      => $name,
+            'source_query'              => $query,
+            'target_table'              => $target,
+            'load_mode'                 => in_array($job['load_mode'] ?? '', $validModes, true) ? $job['load_mode'] : 'full_refresh',
+            'upsert_key'                => array_values(array_filter(array_map(
                 static fn($k) => trim((string)$k),
                 (array)($job['upsert_key'] ?? [])
             ), static fn($k) => $k !== '')),
-            'enabled'      => (bool)($job['enabled'] ?? true),
+            'enabled'                   => (bool)($job['enabled'] ?? true),
+            'batch_size'                => max(50, min(5000, (int)($job['batch_size'] ?? 500) ?: 500)),
+            'incremental_column'        => trim((string)($job['incremental_column'] ?? '')),
+            'incremental_initial_value' => trim((string)($job['incremental_initial_value'] ?? '')),
+            'column_map'                => $columnMap,
+            // Watermark progress is written by the cron worker, never by the admin form —
+            // always carry the previously-stored value forward so a config edit can't reset it.
+            'last_watermark'            => $existingJobsById[$id]['last_watermark'] ?? null,
         ];
     }
 

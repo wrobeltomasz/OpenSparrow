@@ -5,7 +5,6 @@ Upload via **Admin → RAG Documents**.
 
 | File | Tag | Contents |
 |------|-----|----------|
-| opensparrow_overview.txt | `opensparrow` | Full platform feature overview |
 | crm_overview.txt | `crm` | CRM tables, relationships, workflows |
 | crm_deals.txt | `deals` | Deal stages, pipeline, calendar |
 | crm_leads.txt | `leads` | Lead sources, statuses, conversion workflow |

@@ -35,3 +35,15 @@ LEADS FUNNEL VIEW:
 Menu → Leads Funnel shows lead count per status.
 Dashboard widget "Lead Sources" shows a pie chart by source.
 Dashboard widget "Active Leads" counts all leads where status is not Lost.
+
+AUTOMATIONS ON LEADS:
+- "New Web Lead — Auto Contact": any new lead captured with source = Web is automatically
+  marked status = Contacted, since a web form submission already counts as first contact.
+- "New Lead — Welcome Email": any new lead that has an email address automatically
+  receives a "Thank you for your interest" welcome email from the sales team.
+
+DATA RETENTION (GDPR ANONYMIZATION):
+Stale leads are subject to automatic anonymization: any lead older than 365 days (by
+created_at) has its email, phone, first name and last name replaced with placeholder
+values. This runs on a manual/scheduled basis from Admin → Anonymization — use
+Preview (dry run) there to see which leads would be affected before running it.

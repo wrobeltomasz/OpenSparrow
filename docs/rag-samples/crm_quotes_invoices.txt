@@ -17,12 +17,23 @@ Fields:
 Quote lifecycle:
 1. Draft — being prepared
 2. Sent — delivered to client
-3. Accepted — client agreed (triggers invoice creation)
+3. Accepted — client agreed
 4. Rejected — client declined
 5. Expired — valid_until date passed without response
 
 Calendar: Quotes appear on calendar by valid_until date (purple, 7 days advance warning).
 Dashboard widget "Quotes by Status" shows a bar chart.
+
+AUTOMATION — "Quote Accepted — Generate Draft Invoice":
+As soon as a quote's status is set to Accepted, a Draft invoice is created automatically:
+it links back to the same deal and quote, copies the quote's net/tax/total amounts, and
+its due_date is set to the quote's valid_until date. No manual re-entry of amounts is
+needed — the invoice only needs to be reviewed and moved from Draft to Sent.
+
+PRINTING QUOTES:
+A "Quote" print template renders a quote as a printable/PDF-ready document (company,
+contact, deal, and line-item details) via the Print module (Menu → Print). The Quote
+Document view backs this template.
 
 INVOICES
 --------
@@ -50,3 +61,8 @@ Calendar: Invoices appear on calendar by due_date (red, 7 days advance warning).
 Dashboard: "Outstanding Invoices" widget counts Sent + Overdue invoices.
 Revenue Summary view shows invoice count and total by status.
 Revenue by Period view drills down by year → month with totals.
+
+PRINTING INVOICES:
+An "Invoice" print template renders an invoice as a printable/PDF-ready document (company,
+contact, deal, and line-item details) via the Print module (Menu → Print). The Invoice
+Document view backs this template.

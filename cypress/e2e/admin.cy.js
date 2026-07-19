@@ -7,6 +7,21 @@
 
 const BASE = 'http://localhost:8080';
 
+/**
+ * Click a sidebar admin-tab button, first expanding its parent .nav-section
+ * (collapsible groups default to closed — only "Overview" starts open) so the
+ * button is actually visible/clickable.
+ */
+function clickAdminTab(dataFile) {
+  cy.get(`button.admin-tab[data-file="${dataFile}"]`).then($btn => {
+    const $section = $btn.closest('.nav-section');
+    if ($section.length && !$section.hasClass('open')) {
+      cy.wrap($section.find('.nav-section-header')).click();
+    }
+  });
+  cy.get(`button.admin-tab[data-file="${dataFile}"]`).scrollIntoView().should('be.visible').click();
+}
+
 // ============================================================================
 // Test Suite: Admin Panel Navigation
 // ============================================================================
@@ -38,7 +53,7 @@ describe('OpenSparrow – Admin Panel', () => {
     // On the Overview landing tab the Save button is hidden by design
     cy.get('#btnSave').should('exist').and('not.be.visible');
     // It appears once a config-editing tab (e.g. schema) is opened
-    cy.get('button.admin-tab[data-file="schema"]').scrollIntoView().click();
+    clickAdminTab('schema');
     cy.get('#btnSave', { timeout: CypressHelpers.TIMEOUTS.medium })
       .should('be.visible')
       .and('not.be.disabled');
@@ -59,10 +74,7 @@ describe('OpenSparrow – Admin Panel', () => {
 
   ['schema', 'dashboard', 'calendar', 'files', 'menu', 'add_table', 'erd', 'views', 'csv_import'].forEach(tab => {
     it(`navigates to data tab: ${tab}`, () => {
-      cy.get(`button.admin-tab[data-file="${tab}"]`)
-        .scrollIntoView()
-        .should('be.visible')
-        .click();
+      clickAdminTab(tab);
       cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     });
   });
@@ -71,10 +83,7 @@ describe('OpenSparrow – Admin Panel', () => {
 
   ['database', 'users', 'health', 'backup', 'audit', 'migrations', 'performance', 'cron', 'demo', 'settings'].forEach(tab => {
     it(`navigates to system tab: ${tab}`, () => {
-      cy.get(`button.admin-tab[data-file="${tab}"]`)
-        .scrollIntoView()
-        .should('be.visible')
-        .click();
+      clickAdminTab(tab);
       cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     });
   });
@@ -83,28 +92,25 @@ describe('OpenSparrow – Admin Panel', () => {
 
   ['workflows', 'automations', 'rag'].forEach(tab => {
     it(`navigates to advanced tab: ${tab}`, () => {
-      cy.get(`button.admin-tab[data-file="${tab}"]`)
-        .scrollIntoView()
-        .should('be.visible')
-        .click();
+      clickAdminTab(tab);
       cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     });
   });
 
   it('navigates to Docs tab', () => {
-    cy.get('button.admin-tab[data-file="docs"]').should('exist').click();
+    clickAdminTab('docs');
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
   });
 
   it('navigates to Overview tab', () => {
-    cy.get('button.admin-tab[data-file="overview"]').should('exist').click();
+    clickAdminTab('overview');
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
   });
 
   // ── Config Buttons ─────────────────────────────────────────────────────────
 
   it('Save Config button is clickable and panel survives', () => {
-    cy.get('button.admin-tab[data-file="schema"]').click();
+    clickAdminTab('schema');
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     cy.get('#btnSave').should('be.visible').click();
     cy.get('#workspace').should('exist');
@@ -113,7 +119,7 @@ describe('OpenSparrow – Admin Panel', () => {
   // ── Users Tab: add / list ──────────────────────────────────────────────────
 
   it('Users tab lists existing users', () => {
-    cy.get('button.admin-tab[data-file="users"]').scrollIntoView().click();
+    clickAdminTab('users');
     // The seeded testadmin account must appear in the user list
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.long })
       .should('contain.text', 'testadmin');

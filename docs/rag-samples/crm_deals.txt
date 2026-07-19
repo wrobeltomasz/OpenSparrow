@@ -19,10 +19,25 @@ DEAL STAGES (in order):
 6. Lost — Deal did not proceed
 
 HOW TO PROGRESS A DEAL:
-- Move stage manually in the grid or edit form
+- Move stage manually in the grid or edit form, or drag its card between lanes on the
+  Deals Board (Kanban view, Menu → Deals Board) — dragging a card updates the deal's
+  stage the same way as editing the field directly
 - Log activities (calls, meetings, emails) to track communication
 - Attach quotes under the Quotes subtable
-- Once quote is accepted, generate an invoice
+- Once a quote is marked Accepted, a draft invoice is generated automatically (see
+  "Automations" below) — no manual invoice creation needed
+
+DEALS BOARD (Kanban):
+Menu → Deals Board shows one lane per stage (To Do-style columns: Lead, Qualified,
+Proposal, Negotiation, Won, Lost). Each card shows the deal title, linked company, value
+and expected close date. Dragging a card to another lane moves the deal to that stage.
+
+AUTOMATIONS ON DEALS:
+- "Deal Won — Close Notification": when a deal's stage is set to Won, the user who made
+  the change gets an in-app notification linking back to the deal.
+- "Quote Accepted — Generate Draft Invoice" (see CRM Quotes and Invoices doc): when a
+  quote linked to a deal is marked Accepted, a Draft invoice is created automatically,
+  copying the quote's amounts and linking it back to both the deal and the quote.
 
 RELATED RECORDS:
 - Activities: scheduled calls, meetings, tasks linked to this deal

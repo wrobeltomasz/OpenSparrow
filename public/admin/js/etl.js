@@ -154,6 +154,7 @@ function renderJobsTab(panel) {
         etlConfig.jobs.push({
             id: '', name: 'New job', source_query: '', target_table: '',
             load_mode: 'full_refresh', upsert_key: [], enabled: true,
+            batch_size: 500, incremental_column: '', incremental_initial_value: '', column_map: [],
         });
         redraw();
     };
@@ -242,12 +243,48 @@ function buildJobCard(job, idx, redraw, status) {
     enabledLbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
     enabledLbl.append(enabled, document.createTextNode('Enabled (runs on schedule)'));
 
+    const batchSize = input(String(job.batch_size ?? 500), 'number');
+    batchSize.min = '50'; batchSize.max = '5000';
+    batchSize.oninput = () => { job.batch_size = Math.max(50, Math.min(5000, parseInt(batchSize.value, 10) || 500)); };
+
+    const incCol = input(job.incremental_column || '');
+    incCol.placeholder = 'e.g. updated_at (leave empty to disable)';
+    incCol.oninput = () => { job.incremental_column = incCol.value.trim(); };
+
+    const incInit = input(job.incremental_initial_value || '');
+    incInit.placeholder = 'e.g. 1970-01-01 or 0';
+    incInit.oninput = () => { job.incremental_initial_value = incInit.value.trim(); };
+
+    const incHint = document.createElement('p');
+    incHint.className = 'c-muted';
+    incHint.style.cssText = 'margin:4px 0 0; font-size:12px;';
+    incHint.textContent = 'Use the {{watermark}} placeholder in the source query, e.g. "WHERE updated_at > {{watermark}}". The watermark auto-advances to the max value seen after each successful run.';
+
+    const colMap = input((job.column_map || []).map(m => `${m.source}:${m.target}`).join(', '));
+    colMap.placeholder = 'source_col:target_col, source_col2:target_col2';
+    colMap.oninput = () => {
+        job.column_map = colMap.value.split(',').map(s => s.trim()).filter(Boolean).map(pair => {
+            const [source, target] = pair.split(':').map(x => (x || '').trim());
+            return { source, target: target || source };
+        }).filter(m => m.source);
+    };
+    const colMapHint = document.createElement('p');
+    colMapHint.className = 'c-muted';
+    colMapHint.style.cssText = 'margin:4px 0 0; font-size:12px;';
+    colMapHint.textContent = 'Optional. Leave empty to match columns by identical name (default behavior).';
+
     body.append(
         fg('Name', name),
         fg('Source query (read-only SELECT)', query),
         fg('Target table (PostgreSQL)', target),
         fg('Load mode', mode),
         keyGrp,
+        fg('Batch size (rows per INSERT chunk)', batchSize),
+        fg('Incremental column (source, optional)', incCol),
+        fg('Incremental initial value', incInit),
+        incHint,
+        fg('Column mapping (optional)', colMap),
+        colMapHint,
         fg('', enabledLbl),
     );
 
