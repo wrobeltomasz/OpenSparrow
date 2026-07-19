@@ -384,17 +384,6 @@ function etl_validate_source_query(string $sql): ?string
 }
 
 /**
- * Resolve the PostgreSQL schema for a target table from the "schema" config,
- * falling back to the system schema.
- */
-function etl_target_schema(string $table): string
-{
-    $cfg = config_get('schema');
-    $s   = $cfg['tables'][$table]['schema'] ?? '';
-    return ($s !== '') ? (string)$s : sys_schema();
-}
-
-/**
  * Return the real column names of a PostgreSQL table (excludes generated columns).
  *
  * @return list<string>
@@ -439,6 +428,7 @@ function etl_run_job(
     $name       = (string)($job['name'] ?? ($job['id'] ?? 'job'));
     $sourceSql  = (string)($job['source_query'] ?? '');
     $target     = trim((string)($job['target_table'] ?? ''));
+    $schema     = trim((string)($job['target_schema'] ?? '')) ?: sys_schema();
     $loadMode   = (string)($job['load_mode'] ?? 'full_refresh');
     $upsertKey  = array_values(array_filter(array_map(
         static fn($k) => trim((string)$k),
@@ -469,6 +459,10 @@ function etl_run_job(
     }
     if ($target === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $target)) {
         $out['error'] = 'Invalid or missing target table.';
+        return $out;
+    }
+    if ($schema === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $schema)) {
+        $out['error'] = 'Invalid or missing target schema.';
         return $out;
     }
     if (!in_array($loadMode, ['full_refresh', 'append', 'upsert'], true)) {
@@ -542,7 +536,6 @@ function etl_run_job(
         }
     }
 
-    $schema     = etl_target_schema($target);
     $targetCols = etl_pg_columns($pgConn, $schema, $target);
     if (empty($targetCols)) {
         $out['error'] = "Target table '{$schema}.{$target}' not found or has no columns.";

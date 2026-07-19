@@ -189,9 +189,11 @@ ETL:
     mode — no true SSH/SFTP support (requires ext-ssh2/phpseclib, not bundled)
   - Jobs: each job picks one of the configured sources. Database-source jobs supply
     a read-only source SELECT/WITH query; CSV/FTP-source jobs import the whole file
-    on every run (no query). All jobs share target table, optional column map
-    (source column → target column), and a load mode — full refresh
-    (truncate+insert), append, or upsert (ON CONFLICT)
+    on every run (no query). The target is a schema picked from a dropdown (any
+    non-system PostgreSQL schema) followed by a table dropdown populated
+    dynamically from that schema's tables (spw_* system tables excluded). All jobs
+    share an optional column map (source column → target column) and a load
+    mode — full refresh (truncate+insert), append, or upsert (ON CONFLICT)
   - Incremental loading via a {{watermark}} placeholder substituted with the last
     seen value of an incremental column (database sources only)
   - Preview shows sample rows before saving; Test connection verifies reachability

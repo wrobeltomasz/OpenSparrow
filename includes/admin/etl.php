@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 // includes/admin/etl.php — admin api.php module: ETL (external source → PostgreSQL import).
-// Actions: etl_load, etl_save, etl_test_connection, etl_preview, run_etl,
-// etl_log, etl_purge_log.
+// Actions: etl_load, etl_save, etl_test_connection, etl_preview, etl_target_schemas,
+// etl_target_tables, run_etl, etl_log, etl_purge_log.
 // Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
 // POST-method enforcement — never include or serve this file directly.
 // Uses $action / $isDemoMode and require_not_demo() / admin_db_fail() /
@@ -78,6 +78,13 @@ if ($action === 'etl_load') {
     $row    = config_get_row('etl');
     $config = is_array($row['value'] ?? null) ? array_merge($defaults, $row['value']) : $defaults;
     $config = etl_migrate_legacy_connection($config);
+    // Backfill target_schema on jobs saved before schema selection existed.
+    require_once __DIR__ . '/../db.php';
+    foreach ($config['jobs'] as $i => $job) {
+        if (is_array($job) && trim((string)($job['target_schema'] ?? '')) === '') {
+            $config['jobs'][$i]['target_schema'] = sys_schema();
+        }
+    }
     // Never echo stored passwords back to the client.
     foreach ($config['sources'] as $i => $src) {
         if (isset($src['password'])) {
@@ -179,7 +186,8 @@ if ($action === 'etl_save') {
         }
         $name   = trim((string)($job['name'] ?? ''));
         $target = trim((string)($job['target_table'] ?? ''));
-        if ($name === '' || $target === '') {
+        $schema = trim((string)($job['target_schema'] ?? ''));
+        if ($name === '' || $target === '' || $schema === '') {
             continue;
         }
         $id = (string)($job['id'] ?? bin2hex(random_bytes(8)));
@@ -214,6 +222,7 @@ if ($action === 'etl_save') {
             'name'                      => $name,
             'source_id'                 => $sourceId,
             'source_query'              => $query,
+            'target_schema'             => $schema,
             'target_table'              => $target,
             'load_mode'                 => in_array($job['load_mode'] ?? '', $validModes, true) ? $job['load_mode'] : 'full_refresh',
             'upsert_key'                => array_values(array_filter(array_map(
@@ -337,6 +346,64 @@ if ($action === 'etl_preview') {
     }
     $columns = empty($rows) ? [] : array_keys($rows[0]);
     echo json_encode(['status' => 'success', 'columns' => $columns, 'rows' => $rows]);
+    exit;
+}
+
+if ($action === 'etl_target_schemas') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../../includes/db.php';
+        $conn = db_connect();
+        $sql  = 'SELECT schema_name FROM information_schema.schemata '
+            . "WHERE schema_name NOT IN ('pg_catalog', 'information_schema') "
+            . "AND schema_name NOT LIKE 'pg\\_toast%' AND schema_name NOT LIKE 'pg\\_temp%' "
+            . 'ORDER BY schema_name';
+        $res = @pg_query($conn, $sql);
+        if (!$res) {
+            admin_db_fail($conn, 'etl_target_schemas');
+        }
+        $schemas = [];
+        while ($row = pg_fetch_assoc($res)) {
+            $schemas[] = $row['schema_name'];
+        }
+        echo json_encode(['status' => 'success', 'schemas' => $schemas]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    }
+    exit;
+}
+
+if ($action === 'etl_target_tables') {
+    header('Content-Type: application/json');
+    try {
+        require_once __DIR__ . '/../../includes/db.php';
+        $conn   = db_connect();
+        $schema = trim((string)($_GET['schema'] ?? ''));
+        if ($schema === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $schema)) {
+            echo json_encode(['status' => 'error', 'error' => 'Invalid schema.']);
+            exit;
+        }
+        // Excludes spw_* system tables — the ETL target picker is for application
+        // data tables, not the internal schema/config/audit tables.
+        $res = @pg_query_params(
+            $conn,
+            "SELECT table_name FROM information_schema.tables "
+                . "WHERE table_schema = $1 AND table_type = 'BASE TABLE' "
+                . "AND table_name NOT LIKE 'spw\\_%' ESCAPE '\\' "
+                . 'ORDER BY table_name',
+            [$schema]
+        );
+        if (!$res) {
+            admin_db_fail($conn, 'etl_target_tables');
+        }
+        $tables = [];
+        while ($row = pg_fetch_assoc($res)) {
+            $tables[] = $row['table_name'];
+        }
+        echo json_encode(['status' => 'success', 'tables' => $tables]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    }
     exit;
 }
 

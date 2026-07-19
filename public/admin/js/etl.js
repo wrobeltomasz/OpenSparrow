@@ -10,6 +10,29 @@ import { escHtml } from '../../assets/js/util/esc.js';
 let etlConfig  = null;
 let etlVersion = 0;
 
+let schemasPromise = null;
+function fetchTargetSchemas() {
+    if (!schemasPromise) {
+        schemasPromise = apiFetch('api.php?action=etl_target_schemas')
+            .then(res => res.json())
+            .then(data => (data.status === 'success' ? data.schemas : []))
+            .catch(() => []);
+    }
+    return schemasPromise;
+}
+
+const tablesCache = new Map();
+function fetchTargetTables(schema) {
+    if (!schema) return Promise.resolve([]);
+    if (!tablesCache.has(schema)) {
+        tablesCache.set(schema, apiFetch('api.php?action=etl_target_tables&schema=' + encodeURIComponent(schema))
+            .then(res => res.json())
+            .then(data => (data.status === 'success' ? data.tables : []))
+            .catch(() => []));
+    }
+    return tablesCache.get(schema);
+}
+
 function mkStatus() {
     const el = document.createElement('p');
     el.style.cssText = 'margin-top:10px; display:none;';
@@ -304,7 +327,8 @@ function renderJobsTab(panel) {
     btnAdd.textContent = '+ Add job';
     btnAdd.onclick = () => {
         etlConfig.jobs.push({
-            id: '', name: 'New job', source_id: (etlConfig.sources[0] || {}).id || '', source_query: '', target_table: '',
+            id: '', name: 'New job', source_id: (etlConfig.sources[0] || {}).id || '', source_query: '',
+            target_schema: '', target_table: '',
             load_mode: 'full_refresh', upsert_key: [], enabled: true,
             batch_size: 500, incremental_column: '', incremental_initial_value: '', column_map: [],
         });
@@ -399,8 +423,57 @@ function buildJobCard(job, idx, redraw, status) {
     }
     source.onchange = () => { job.source_id = source.value; applySourceKindVisibility(); };
 
-    const target = input(job.target_table);
-    target.oninput = () => { job.target_table = target.value; };
+    const targetSchema = document.createElement('select');
+    targetSchema.className = 'adm-input';
+    const targetSchemaGrp = fg('Target schema (PostgreSQL)', targetSchema);
+
+    const targetTable = document.createElement('select');
+    targetTable.className = 'adm-input';
+    const targetTableGrp = fg('Target table (PostgreSQL)', targetTable);
+
+    function populateTableOptions(tables) {
+        targetTable.innerHTML = '';
+        if (tables.length === 0) {
+            const o = document.createElement('option');
+            o.value = ''; o.textContent = '(no tables found in this schema)';
+            targetTable.appendChild(o);
+            return;
+        }
+        tables.forEach((t) => {
+            const o = document.createElement('option');
+            o.value = t; o.textContent = t;
+            if (job.target_table === t) o.selected = true;
+            targetTable.appendChild(o);
+        });
+        // Keep the stored value if it's still present; otherwise default to the first table.
+        if (!tables.includes(job.target_table)) {
+            job.target_table = tables[0];
+        }
+        targetTable.value = job.target_table;
+    }
+
+    async function reloadTargetTables() {
+        const tables = await fetchTargetTables(job.target_schema);
+        populateTableOptions(tables);
+    }
+
+    targetSchema.onchange = () => { job.target_schema = targetSchema.value; reloadTargetTables(); };
+    targetTable.onchange = () => { job.target_table = targetTable.value; };
+
+    fetchTargetSchemas().then((schemas) => {
+        targetSchema.innerHTML = '';
+        schemas.forEach((s) => {
+            const o = document.createElement('option');
+            o.value = s; o.textContent = s;
+            if (job.target_schema === s) o.selected = true;
+            targetSchema.appendChild(o);
+        });
+        if (!schemas.includes(job.target_schema)) {
+            job.target_schema = schemas[0] || '';
+            targetSchema.value = job.target_schema;
+        }
+        reloadTargetTables();
+    });
 
     const mode = document.createElement('select');
     mode.className = 'adm-input';
@@ -466,7 +539,8 @@ function buildJobCard(job, idx, redraw, status) {
         fg('Source', source),
         queryGrp,
         queryNote,
-        fg('Target table (PostgreSQL)', target),
+        targetSchemaGrp,
+        targetTableGrp,
         fg('Load mode', mode),
         keyGrp,
         fg('Batch size (rows per INSERT chunk)', batchSize),
