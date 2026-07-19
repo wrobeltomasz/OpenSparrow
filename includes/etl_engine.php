@@ -195,6 +195,26 @@ function etl_persist_watermark(string $jobId, string $newWatermark, string $logT
 }
 
 /**
+ * Resolve a job's source connection config from the "sources" list by id.
+ * Returns null when the source id is unset or no longer exists (e.g. the source
+ * was deleted after the job was created).
+ *
+ * @param array<int,array<string,mixed>> $sources the etl config "sources" array
+ */
+function etl_resolve_source(array $sources, string $sourceId): ?array
+{
+    if ($sourceId === '') {
+        return null;
+    }
+    foreach ($sources as $src) {
+        if (is_array($src) && (string)($src['id'] ?? '') === $sourceId) {
+            return $src;
+        }
+    }
+    return null;
+}
+
+/**
  * Validate that a source query is a single read-only SELECT. Returns an error
  * string, or null when the query is acceptable.
  */

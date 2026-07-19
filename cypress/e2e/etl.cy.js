@@ -42,29 +42,40 @@ describe('OpenSparrow – Admin ETL', () => {
   // ── Navigation ──────────────────────────────────────────────────────────
 
   it('shows all four ETL tabs', () => {
-    ['Connection', 'Jobs', 'Schedule', 'History'].forEach(label => {
+    ['Sources', 'Jobs', 'Schedule', 'History'].forEach(label => {
       cy.contains('#workspace .item-btn', label).should('be.visible');
     });
   });
 
-  // ── Connection tab ──────────────────────────────────────────────────────
+  // ── Sources tab ─────────────────────────────────────────────────────────
 
-  it('Connection tab: fills fields and switches driver default port', () => {
-    etlTab('Connection');
-    cy.get('#workspace select').first().select('pgsql');
-    cy.get('#workspace input[type="number"]').first().should('have.value', '5432');
+  function addSource() {
+    cy.contains('button', '+ Add source').click();
+    cy.get('#workspace .column-block').last().within(() => {
+      cy.get('.block-header').click();
+    });
+    return cy.get('#workspace .column-block').last();
+  }
 
-    cy.get('#workspace select').first().select('mysql');
-    cy.get('#workspace input[type="number"]').first().should('have.value', '3306');
+  it('Sources tab: adds a source, switches driver default port', () => {
+    etlTab('Sources');
+    addSource().within(() => {
+      cy.get('select').first().select('pgsql');
+      cy.get('input[type="number"]').first().should('have.value', '5432');
+
+      cy.get('select').first().select('mysql');
+      cy.get('input[type="number"]').first().should('have.value', '3306');
+    });
   });
 
-  it('Connection tab: Test connection reports failure for an unreachable host', () => {
-    etlTab('Connection');
-    cy.get('#workspace').within(() => {
-      cy.get('input').eq(0).clear().type('nonexistent-host.invalid');
+  it('Sources tab: Test connection reports failure for an unreachable host', () => {
+    etlTab('Sources');
+    cy.get('#workspace .column-block').first().within(() => {
+      cy.get('.block-header').click();
+      cy.get('input').eq(1).clear().type('nonexistent-host.invalid');
       cy.get('input[type="number"]').clear().type('3306');
-      cy.get('input').eq(1).clear().type('nonexistent_db');
-      cy.get('input').eq(2).clear().type('nonexistent_user');
+      cy.get('input').eq(2).clear().type('nonexistent_db');
+      cy.get('input').eq(3).clear().type('nonexistent_user');
       cy.get('input[type="password"]').clear().type('wrong-password');
       cy.contains('button', 'Test connection').click();
     });
@@ -73,20 +84,30 @@ describe('OpenSparrow – Admin ETL', () => {
       .and('not.contain.text', 'Connection OK');
   });
 
-  it('Connection tab: Save configuration persists the connection', () => {
-    etlTab('Connection');
-    cy.get('#workspace').within(() => {
-      cy.get('input').eq(0).clear().type('cypress-host');
-      cy.get('input').eq(1).clear().type('cypress_db');
-      cy.get('input').eq(2).clear().type('cypress_user');
-      cy.contains('button', 'Save configuration').click();
+  it('Sources tab: Save configuration persists the source', () => {
+    etlTab('Sources');
+    cy.get('#workspace .column-block').first().within(() => {
+      cy.get('.block-header').click();
+      cy.get('input').eq(0).clear().type('Cypress source');
+      cy.get('input').eq(1).clear().type('cypress-host');
+      cy.get('input').eq(2).clear().type('cypress_db');
+      cy.get('input').eq(3).clear().type('cypress_user');
     });
+    cy.contains('#workspace button', 'Save configuration').click();
     cy.get('#workspace p').should('contain.text', 'saved');
 
     // Reload and confirm persistence.
     openEtlTab();
-    etlTab('Connection');
-    cy.get('#workspace input').eq(0).should('have.value', 'cypress-host');
+    etlTab('Sources');
+    cy.get('#workspace .column-block .block-title').should('contain.text', 'Cypress source');
+  });
+
+  it('Sources tab: supports 2+ sources at once', () => {
+    etlTab('Sources');
+    addSource();
+    cy.contains('#workspace button', 'Save configuration').click();
+    cy.get('#workspace p').should('contain.text', 'saved');
+    cy.get('#workspace .column-block').should('have.length.gte', 2);
   });
 
   // ── Jobs tab ────────────────────────────────────────────────────────────
@@ -105,8 +126,9 @@ describe('OpenSparrow – Admin ETL', () => {
       cy.get('textarea').clear().type('SELECT id, name FROM customers');
       cy.get('input').eq(1).clear().type('customers');
 
-      // Switch to upsert — the key-column field must appear.
-      cy.get('select').select('upsert');
+      // Switch to upsert — the key-column field must appear. select(0) is the
+      // source picker; select(1) is the load-mode dropdown.
+      cy.get('select').eq(1).select('upsert');
       cy.contains('label, div', 'Upsert key').should('be.visible');
       cy.get('input').eq(2).clear().type('id');
 

@@ -10,20 +10,73 @@ declare(strict_types=1);
 // Uses $action / $isDemoMode and require_not_demo() / admin_db_fail() /
 // admin_error_message() defined by the front controller. Each block emits JSON and exits.
 
+// Upgrade a pre-multi-source config (single top-level "connection" block) into the
+// "sources" list shape, tagging any job without a source_id onto the migrated source.
+// Idempotent — a no-op once "sources" already exists. Not persisted by etl_load itself;
+// the shape sticks once the admin saves the config again.
+function etl_migrate_legacy_connection(array $config): array
+{
+    if (!empty($config['sources']) || empty($config['connection'])) {
+        unset($config['connection']);
+        $config['sources'] = is_array($config['sources'] ?? null) ? $config['sources'] : [];
+        $config['jobs']    = is_array($config['jobs'] ?? null) ? $config['jobs'] : [];
+        return $config;
+    }
+    $legacy = (array) $config['connection'];
+    $source = [
+        'id'       => 'legacy',
+        'name'     => 'Default source',
+        'driver'   => $legacy['driver'] ?? 'mysql',
+        'host'     => $legacy['host'] ?? '',
+        'port'     => $legacy['port'] ?? 3306,
+        'database' => $legacy['database'] ?? '',
+        'user'     => $legacy['user'] ?? '',
+        'password' => $legacy['password'] ?? '',
+    ];
+    $config['sources'] = [$source];
+    foreach ((array)($config['jobs'] ?? []) as $i => $job) {
+        if (is_array($job) && empty($job['source_id'])) {
+            $config['jobs'][$i]['source_id'] = 'legacy';
+        }
+    }
+    unset($config['connection']);
+    return $config;
+}
+
+// Look up the stored password for a source id, for resolving a masked '********'
+// value sent back by the admin UI (test/preview against an already-saved source).
+function etl_stored_source_password(string $sourceId): string
+{
+    if ($sourceId === '') {
+        return '';
+    }
+    require_once __DIR__ . '/../config_store.php';
+    $stored = etl_migrate_legacy_connection(config_get('etl') ?: []);
+    foreach ((array)($stored['sources'] ?? []) as $src) {
+        if (is_array($src) && (string)($src['id'] ?? '') === $sourceId) {
+            return (string)($src['password'] ?? '');
+        }
+    }
+    return '';
+}
+
 if ($action === 'etl_load') {
     header('Content-Type: application/json');
     require_once __DIR__ . '/../config_store.php';
     $defaults = [
-        'enabled'    => false,
-        'frequency'  => 'daily',
-        'connection' => ['driver' => 'mysql', 'host' => '', 'port' => 3306, 'database' => '', 'user' => '', 'password' => ''],
-        'jobs'       => [],
+        'enabled'   => false,
+        'frequency' => 'daily',
+        'sources'   => [],
+        'jobs'      => [],
     ];
     $row    = config_get_row('etl');
     $config = is_array($row['value'] ?? null) ? array_merge($defaults, $row['value']) : $defaults;
-    // Never echo the stored password back to the client.
-    if (isset($config['connection']['password'])) {
-        $config['connection']['password'] = ($config['connection']['password'] !== '') ? '********' : '';
+    $config = etl_migrate_legacy_connection($config);
+    // Never echo stored passwords back to the client.
+    foreach ($config['sources'] as $i => $src) {
+        if (isset($src['password'])) {
+            $config['sources'][$i]['password'] = ($src['password'] !== '') ? '********' : '';
+        }
     }
     echo json_encode(['status' => 'success', 'config' => $config, 'version' => $row['version'] ?? 0]);
     exit;
@@ -38,35 +91,57 @@ if ($action === 'etl_save') {
         exit;
     }
     require_once __DIR__ . '/../config_store.php';
-    $existing = config_get('etl');
-    $prevPass = (string)($existing['connection']['password'] ?? '');
+    require_once __DIR__ . '/../etl_engine.php';
+    $existing = etl_migrate_legacy_connection(config_get('etl') ?: []);
+
+    $existingPassById = [];
+    foreach ((array)($existing['sources'] ?? []) as $es) {
+        if (is_array($es) && ($es['id'] ?? '') !== '') {
+            $existingPassById[(string)$es['id']] = (string)($es['password'] ?? '');
+        }
+    }
 
     $validFrequencies = ['manual', 'daily', 'weekly', 'monthly'];
-    $conn = (array)($data['connection'] ?? []);
-    // Password: a masked value ('********') means "keep the stored one".
-    $newPass = (string)($conn['password'] ?? '');
-    if ($newPass === '********') {
-        $newPass = $prevPass;
-    }
-    require_once __DIR__ . '/../etl_engine.php';
-    $validDrivers = array_keys(etl_source_drivers());
-    $driver = strtolower(trim((string)($conn['driver'] ?? 'mysql')));
-    if (!in_array($driver, $validDrivers, true)) {
-        $driver = 'mysql';
+    $validDrivers      = array_keys(etl_source_drivers());
+
+    $sources     = [];
+    $validSourceIds = [];
+    foreach ((array)($data['sources'] ?? []) as $src) {
+        if (!is_array($src)) {
+            continue;
+        }
+        $name = trim((string)($src['name'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+        $id     = (string)($src['id'] ?? bin2hex(random_bytes(8)));
+        $driver = strtolower(trim((string)($src['driver'] ?? 'mysql')));
+        if (!in_array($driver, $validDrivers, true)) {
+            $driver = 'mysql';
+        }
+        // Password: a masked value ('********') means "keep the stored one" for this source id.
+        $newPass = (string)($src['password'] ?? '');
+        if ($newPass === '********') {
+            $newPass = $existingPassById[$id] ?? '';
+        }
+        $sources[] = [
+            'id'       => $id,
+            'name'     => $name,
+            'driver'   => $driver,
+            'host'     => trim((string)($src['host'] ?? '')),
+            'port'     => (int)($src['port'] ?? 0) ?: etl_source_drivers()[$driver],
+            'database' => trim((string)($src['database'] ?? '')),
+            'user'     => trim((string)($src['user'] ?? '')),
+            'password' => $newPass,
+        ];
+        $validSourceIds[] = $id;
     }
 
     $config = [
         'enabled'   => (bool)($data['enabled'] ?? false),
         'frequency' => in_array($data['frequency'] ?? '', $validFrequencies, true) ? $data['frequency'] : 'daily',
-        'connection' => [
-            'driver'   => $driver,
-            'host'     => trim((string)($conn['host'] ?? '')),
-            'port'     => (int)($conn['port'] ?? 0) ?: etl_source_drivers()[$driver],
-            'database' => trim((string)($conn['database'] ?? '')),
-            'user'     => trim((string)($conn['user'] ?? '')),
-            'password' => $newPass,
-        ],
-        'jobs' => [],
+        'sources'   => $sources,
+        'jobs'      => [],
     ];
 
     $existingJobsById = [];
@@ -89,6 +164,11 @@ if ($action === 'etl_save') {
         }
         $id = (string)($job['id'] ?? bin2hex(random_bytes(8)));
 
+        $sourceId = trim((string)($job['source_id'] ?? ''));
+        if (!in_array($sourceId, $validSourceIds, true)) {
+            $sourceId = $validSourceIds[0] ?? '';
+        }
+
         $columnMap = [];
         foreach ((array)($job['column_map'] ?? []) as $m) {
             if (!is_array($m)) {
@@ -104,6 +184,7 @@ if ($action === 'etl_save') {
         $config['jobs'][] = [
             'id'                        => $id,
             'name'                      => $name,
+            'source_id'                 => $sourceId,
             'source_query'              => $query,
             'target_table'              => $target,
             'load_mode'                 => in_array($job['load_mode'] ?? '', $validModes, true) ? $job['load_mode'] : 'full_refresh',
@@ -143,10 +224,10 @@ if ($action === 'etl_test_connection') {
     require_once __DIR__ . '/../config_store.php';
     $data = json_decode((string) file_get_contents('php://input'), true);
     $conn = is_array($data['connection'] ?? null) ? $data['connection'] : [];
-    // Resolve a masked/empty password to the stored one so "Test" works without re-entry.
+    // Resolve a masked/empty password to the stored one (matched by source id) so
+    // "Test" works without re-entering it for an already-saved source.
     if (($conn['password'] ?? '') === '********' || ($conn['password'] ?? '') === '') {
-        $stored = config_get('etl');
-        $conn['password'] = (string)($stored['connection']['password'] ?? '');
+        $conn['password'] = etl_stored_source_password((string)($conn['id'] ?? ''));
     }
     $pdo = etl_source_pdo($conn, 'etl:test');
     if ($pdo === null) {
@@ -165,8 +246,7 @@ if ($action === 'etl_preview') {
     $connIn   = is_array($data['connection'] ?? null) ? $data['connection'] : [];
     $query    = trim((string)($data['source_query'] ?? ''));
     if (($connIn['password'] ?? '') === '********' || ($connIn['password'] ?? '') === '') {
-        $stored = config_get('etl');
-        $connIn['password'] = (string)($stored['connection']['password'] ?? '');
+        $connIn['password'] = etl_stored_source_password((string)($connIn['id'] ?? ''));
     }
     if (($err = etl_validate_source_query($query)) !== null) {
         echo json_encode(['status' => 'error', 'error' => $err]);

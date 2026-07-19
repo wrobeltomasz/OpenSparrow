@@ -1,5 +1,5 @@
 // admin/js/etl.js — ETL admin module (external source → PostgreSQL import; MySQL, PostgreSQL)
-// 4 tabs: Connection, Jobs, Schedule, History.
+// 4 tabs: Sources (2+ named source connections), Jobs (each picks a source), Schedule, History.
 // Persists the "etl" config via etl_save (optimistic-lock version).
 // Cron worker: cron/cron_etl.php.
 import { apiFetch } from '../../assets/js/util/api.js';
@@ -62,44 +62,111 @@ const DRIVER_LABELS = [
     ['pgsql', 'PostgreSQL'],
 ];
 
-/* ---------- Connection tab ---------- */
-function renderConnectionTab(panel) {
-    const conn = etlConfig.connection;
-    if (!conn.driver) conn.driver = 'mysql';
+function sourceLabel(src) {
+    return (src.name || '(unnamed source)') + ' — ' + (src.driver || 'mysql') + '://' + (src.host || '?');
+}
+
+/* ---------- Sources tab ---------- */
+function renderSourcesTab(panel) {
     const status = mkStatus();
+    const list = document.createElement('div');
+
+    function redraw() {
+        list.innerHTML = '';
+        etlConfig.sources.forEach((src, idx) => list.appendChild(buildSourceCard(src, idx, redraw, status)));
+    }
+
+    const btnAdd = document.createElement('button');
+    btnAdd.className = 'btn btn-success';
+    btnAdd.textContent = '+ Add source';
+    btnAdd.onclick = () => {
+        etlConfig.sources.push({
+            id: '', name: 'New source', driver: 'mysql', host: '', port: 3306,
+            database: '', user: '', password: '',
+        });
+        redraw();
+    };
+
+    const btnSave = document.createElement('button');
+    btnSave.className = 'btn';
+    btnSave.textContent = 'Save configuration';
+    btnSave.style.marginLeft = '8px';
+    btnSave.onclick = () => saveConfig(status);
+
+    const bar = document.createElement('div');
+    bar.style.marginBottom = '12px';
+    bar.append(btnAdd, btnSave);
+    panel.append(bar, status, list);
+    redraw();
+}
+
+function buildSourceCard(src, idx, redraw, status) {
+    const card = document.createElement('div');
+    card.className = 'column-block';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'block-header';
+    const chevron = document.createElement('span');
+    chevron.className = 'block-chevron';
+    chevron.textContent = '▶';
+    const title = document.createElement('strong');
+    title.className = 'block-title';
+    title.textContent = src.name || '(unnamed source)';
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'icon-btn icon-btn-danger';
+    del.title = 'Delete';
+    del.textContent = '✕';
+    del.onclick = (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete source "${src.name}"? Jobs using it will need a new source assigned.`)) return;
+        etlConfig.sources.splice(idx, 1);
+        redraw();
+    };
+    hdr.append(chevron, title, del);
+    hdr.onclick = (e) => { if (!e.target.closest('button')) card.classList.toggle('collapsed'); };
+    card.appendChild(hdr);
+    card.classList.add('collapsed');
+
+    const body = document.createElement('div');
+    body.className = 'block-body';
+
+    const name = input(src.name);
+    name.oninput = () => { src.name = name.value; title.textContent = src.name || '(unnamed source)'; };
 
     const driver = document.createElement('select');
     driver.className = 'adm-input';
     DRIVER_LABELS.forEach(([v, lbl]) => {
         const o = document.createElement('option');
         o.value = v; o.textContent = lbl;
-        if (conn.driver === v) o.selected = true;
+        if ((src.driver || 'mysql') === v) o.selected = true;
         driver.appendChild(o);
     });
 
-    const host = input(conn.host);
-    host.oninput = () => { conn.host = host.value; };
-    const port = input(String(conn.port ?? DRIVER_PORTS[conn.driver] ?? 3306), 'number');
-    port.oninput = () => { conn.port = parseInt(port.value, 10) || (DRIVER_PORTS[conn.driver] ?? 3306); };
+    const host = input(src.host);
+    host.oninput = () => { src.host = host.value; };
+    const port = input(String(src.port ?? DRIVER_PORTS[src.driver] ?? 3306), 'number');
+    port.oninput = () => { src.port = parseInt(port.value, 10) || (DRIVER_PORTS[src.driver] ?? 3306); };
 
     driver.onchange = () => {
-        const oldDefault = DRIVER_PORTS[conn.driver];
-        conn.driver = driver.value;
-        // Only auto-swap the port if it still held the previous driver's default.
+        const oldDefault = DRIVER_PORTS[src.driver];
+        src.driver = driver.value;
         if (!port.value || parseInt(port.value, 10) === oldDefault) {
-            port.value = String(DRIVER_PORTS[conn.driver] ?? '');
-            conn.port = DRIVER_PORTS[conn.driver];
+            port.value = String(DRIVER_PORTS[src.driver] ?? '');
+            src.port = DRIVER_PORTS[src.driver];
         }
     };
-    const db = input(conn.database);
-    db.oninput = () => { conn.database = db.value; };
-    const user = input(conn.user);
-    user.oninput = () => { conn.user = user.value; };
-    const pass = input(conn.password || '', 'password');
-    pass.placeholder = conn.password === '********' ? 'Leave to keep current' : '';
-    pass.oninput = () => { conn.password = pass.value; };
+    const db = input(src.database);
+    db.oninput = () => { src.database = db.value; };
+    const user = input(src.user);
+    user.oninput = () => { src.user = user.value; };
+    const pass = input(src.password || '', 'password');
+    pass.placeholder = src.password === '********' ? 'Leave to keep current' : '';
+    pass.oninput = () => { src.password = pass.value; };
 
-    panel.append(
+    body.append(
+        fg('Name', name),
         fg('Source type', driver),
         fg('Host', host),
         fg('Port', port),
@@ -108,33 +175,30 @@ function renderConnectionTab(panel) {
         fg('Password', pass),
     );
 
+    const testStatus = mkStatus();
     const btnTest = document.createElement('button');
     btnTest.className = 'btn';
     btnTest.textContent = 'Test connection';
     btnTest.onclick = async () => {
-        showStatus(status, 'Testing…', true);
+        showStatus(testStatus, 'Testing…', true);
         try {
             const res  = await apiFetch('api.php?action=etl_test_connection', {
                 method: 'POST',
-                body: JSON.stringify({ connection: conn }),
+                body: JSON.stringify({ connection: src }),
             });
             const data = await res.json();
-            showStatus(status, data.status === 'success' ? (data.message || 'Connection OK.') : (data.error || 'Failed.'), data.status === 'success');
+            showStatus(testStatus, data.status === 'success' ? (data.message || 'Connection OK.') : (data.error || 'Failed.'), data.status === 'success');
         } catch (_) {
-            showStatus(status, 'Network error.', false);
+            showStatus(testStatus, 'Network error.', false);
         }
     };
+    const btnBar = document.createElement('div');
+    btnBar.style.marginTop = '10px';
+    btnBar.append(btnTest);
+    body.append(btnBar, testStatus);
 
-    const btnSave = document.createElement('button');
-    btnSave.className = 'btn btn-success';
-    btnSave.textContent = 'Save configuration';
-    btnSave.style.marginLeft = '8px';
-    btnSave.onclick = () => saveConfig(status);
-
-    const bar = document.createElement('div');
-    bar.style.marginTop = '12px';
-    bar.append(btnTest, btnSave);
-    panel.append(bar, status);
+    card.appendChild(body);
+    return card;
 }
 
 /* ---------- Jobs tab ---------- */
@@ -152,7 +216,7 @@ function renderJobsTab(panel) {
     btnAdd.textContent = '+ Add job';
     btnAdd.onclick = () => {
         etlConfig.jobs.push({
-            id: '', name: 'New job', source_query: '', target_table: '',
+            id: '', name: 'New job', source_id: (etlConfig.sources[0] || {}).id || '', source_query: '', target_table: '',
             load_mode: 'full_refresh', upsert_key: [], enabled: true,
             batch_size: 500, incremental_column: '', incremental_initial_value: '', column_map: [],
         });
@@ -206,6 +270,21 @@ function buildJobCard(job, idx, redraw, status) {
 
     const name = input(job.name);
     name.oninput = () => { job.name = name.value; title.textContent = job.name || '(unnamed job)'; };
+
+    const source = document.createElement('select');
+    source.className = 'adm-input';
+    if (etlConfig.sources.length === 0) {
+        const o = document.createElement('option');
+        o.value = ''; o.textContent = '(no sources configured — add one in the Sources tab)';
+        source.appendChild(o);
+    }
+    etlConfig.sources.forEach((src) => {
+        const o = document.createElement('option');
+        o.value = src.id; o.textContent = sourceLabel(src);
+        if (job.source_id === src.id) o.selected = true;
+        source.appendChild(o);
+    });
+    source.onchange = () => { job.source_id = source.value; };
 
     const query = document.createElement('textarea');
     query.className = 'adm-input';
@@ -275,6 +354,7 @@ function buildJobCard(job, idx, redraw, status) {
 
     body.append(
         fg('Name', name),
+        fg('Source', source),
         fg('Source query (read-only SELECT)', query),
         fg('Target table (PostgreSQL)', target),
         fg('Load mode', mode),
@@ -296,12 +376,14 @@ function buildJobCard(job, idx, redraw, status) {
     btnPreview.className = 'btn';
     btnPreview.textContent = 'Preview';
     btnPreview.onclick = async () => {
+        const src = etlConfig.sources.find(s => s.id === job.source_id);
+        if (!src) { out.style.display = ''; out.textContent = 'No source assigned to this job.'; return; }
         out.style.display = '';
         out.textContent = 'Loading preview…';
         try {
             const res  = await apiFetch('api.php?action=etl_preview', {
                 method: 'POST',
-                body: JSON.stringify({ connection: etlConfig.connection, source_query: job.source_query }),
+                body: JSON.stringify({ connection: src, source_query: job.source_query }),
             });
             const data = await res.json();
             if (data.status !== 'success') { out.textContent = 'Error: ' + (data.error || 'preview failed'); return; }
@@ -450,7 +532,7 @@ export async function renderEtlPage(ctx) {
         return;
     }
 
-    if (!etlConfig.connection) etlConfig.connection = { host: '', port: 3306, database: '', user: '', password: '' };
+    if (!Array.isArray(etlConfig.sources)) etlConfig.sources = [];
     if (!Array.isArray(etlConfig.jobs)) etlConfig.jobs = [];
 
     workspaceEl.innerHTML = '';
@@ -458,14 +540,14 @@ export async function renderEtlPage(ctx) {
     wrap.style.cssText = 'padding:20px 24px; max-width:900px;';
     const intro = document.createElement('div');
     intro.innerHTML = '<h2 style="margin:0 0 4px;">ETL — external source → PostgreSQL import</h2>'
-        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from an external source database (MySQL, PostgreSQL) and load it into PostgreSQL tables. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
+        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from one or more external source databases (MySQL, PostgreSQL) and load it into PostgreSQL tables. Each job picks which source it reads from. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
     wrap.appendChild(intro);
     workspaceEl.appendChild(wrap);
 
-    const [connPanel, jobsPanel, schedPanel, histPanel] = buildInnerTabs(wrap, [
-        { label: 'Connection' }, { label: 'Jobs' }, { label: 'Schedule' }, { label: 'History' },
+    const [sourcesPanel, jobsPanel, schedPanel, histPanel] = buildInnerTabs(wrap, [
+        { label: 'Sources' }, { label: 'Jobs' }, { label: 'Schedule' }, { label: 'History' },
     ]);
-    renderConnectionTab(connPanel);
+    renderSourcesTab(sourcesPanel);
     renderJobsTab(jobsPanel);
     renderScheduleTab(schedPanel);
     renderHistoryTab(histPanel);

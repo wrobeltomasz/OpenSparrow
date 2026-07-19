@@ -55,8 +55,7 @@ function etl_run_single_job(
     string $triggeredBy,
     bool $dryRun
 ): bool {
-    $connCfg = (array)($config['connection'] ?? []);
-    $job     = null;
+    $job = null;
     foreach ((array)($config['jobs'] ?? []) as $j) {
         if (is_array($j) && (string)($j['id'] ?? '') === $jobId) {
             $job = $j;
@@ -68,6 +67,12 @@ function etl_run_single_job(
         return false;
     }
     $jobName = (string)($job['name'] ?? $jobId);
+
+    $connCfg = etl_resolve_source((array)($config['sources'] ?? []), (string)($job['source_id'] ?? ''));
+    if ($connCfg === null) {
+        etl_cli_log("[etl] Job '{$jobName}' has no valid source configured.");
+        return false;
+    }
 
     etl_cli_log("[etl] Job '{$jobName}' → {$job['target_table']} (" . ($job['load_mode'] ?? 'full_refresh') . ')...');
 

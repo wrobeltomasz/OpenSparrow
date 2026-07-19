@@ -178,11 +178,14 @@ M2M Builder:
     name, display columns
 
 ETL:
-  - Scheduled or on-demand batch import from an external MySQL or PostgreSQL source
-    database into a local PostgreSQL target table (driver-based, extensible to
-    Oracle/DB2/SQL Server); independent of the removed MySQL Gateway feature
-  - Jobs: a read-only source SELECT/WITH query, target table, optional column map,
-    and a load mode — full refresh (truncate+insert), append, or upsert (ON CONFLICT)
+  - Scheduled or on-demand batch import from one or more external MySQL/PostgreSQL
+    source databases into local PostgreSQL target tables (driver-based, extensible
+    to Oracle/DB2/SQL Server); independent of the removed MySQL Gateway feature
+  - Sources tab: define 2+ named source connections (name, driver, host, port,
+    database, user, password), each with its own Test connection
+  - Jobs: each job picks one of the configured sources, plus a read-only source
+    SELECT/WITH query, target table, optional column map, and a load mode —
+    full refresh (truncate+insert), append, or upsert (ON CONFLICT)
   - Incremental loading via a {{watermark}} placeholder substituted with the last
     seen value of an incremental column
   - Preview shows sample rows before saving; Test connection verifies reachability
