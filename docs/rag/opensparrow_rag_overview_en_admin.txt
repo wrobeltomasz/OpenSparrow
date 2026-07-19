@@ -178,9 +178,10 @@ M2M Builder:
     name, display columns
 
 ETL:
-  - Scheduled or on-demand batch import from one or more external MySQL/PostgreSQL
-    source databases into local PostgreSQL target tables (driver-based, extensible
-    to Oracle/DB2/SQL Server); independent of the removed MySQL Gateway feature
+  - Scheduled or on-demand batch import from one or more external source databases
+    (MySQL, MariaDB, PostgreSQL, SQLite) into local PostgreSQL target tables
+    (driver-based, extensible to Oracle/DB2/SQL Server); independent of the removed
+    MySQL Gateway feature
   - Sources tab: define 2+ named source connections (name, driver, host, port,
     database, user, password), each with its own Test connection
   - Jobs: each job picks one of the configured sources, plus a read-only source

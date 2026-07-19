@@ -1,4 +1,5 @@
-// admin/js/etl.js — ETL admin module (external source → PostgreSQL import; MySQL, PostgreSQL)
+// admin/js/etl.js — ETL admin module (external source → PostgreSQL import; MySQL,
+// MariaDB, PostgreSQL, SQLite)
 // 4 tabs: Sources (2+ named source connections), Jobs (each picks a source), Schedule, History.
 // Persists the "etl" config via etl_save (optimistic-lock version).
 // Cron worker: cron/cron_etl.php.
@@ -56,14 +57,18 @@ async function saveConfig(statusEl) {
     return false;
 }
 
-const DRIVER_PORTS = { mysql: 3306, pgsql: 5432 };
+const DRIVER_PORTS = { mysql: 3306, mariadb: 3306, pgsql: 5432, sqlite: 0 };
 const DRIVER_LABELS = [
     ['mysql', 'MySQL'],
+    ['mariadb', 'MariaDB'],
     ['pgsql', 'PostgreSQL'],
+    ['sqlite', 'SQLite'],
 ];
+const FILE_DRIVERS = ['sqlite'];
 
 function sourceLabel(src) {
-    return (src.name || '(unnamed source)') + ' — ' + (src.driver || 'mysql') + '://' + (src.host || '?');
+    const where = FILE_DRIVERS.includes(src.driver) ? (src.database || '?') : (src.host || '?');
+    return (src.name || '(unnamed source)') + ' — ' + (src.driver || 'mysql') + '://' + where;
 }
 
 /* ---------- Sources tab ---------- */
@@ -148,15 +153,6 @@ function buildSourceCard(src, idx, redraw, status) {
     host.oninput = () => { src.host = host.value; };
     const port = input(String(src.port ?? DRIVER_PORTS[src.driver] ?? 3306), 'number');
     port.oninput = () => { src.port = parseInt(port.value, 10) || (DRIVER_PORTS[src.driver] ?? 3306); };
-
-    driver.onchange = () => {
-        const oldDefault = DRIVER_PORTS[src.driver];
-        src.driver = driver.value;
-        if (!port.value || parseInt(port.value, 10) === oldDefault) {
-            port.value = String(DRIVER_PORTS[src.driver] ?? '');
-            src.port = DRIVER_PORTS[src.driver];
-        }
-    };
     const db = input(src.database);
     db.oninput = () => { src.database = db.value; };
     const user = input(src.user);
@@ -165,15 +161,42 @@ function buildSourceCard(src, idx, redraw, status) {
     pass.placeholder = src.password === '********' ? 'Leave to keep current' : '';
     pass.oninput = () => { src.password = pass.value; };
 
+    const hostGrp = fg('Host', host);
+    const portGrp = fg('Port', port);
+    const dbGrp   = fg('Database', db);
+    const userGrp = fg('User', user);
+    const passGrp = fg('Password', pass);
+
+    function applyDriverVisibility() {
+        const isFile = FILE_DRIVERS.includes(src.driver);
+        hostGrp.style.display = isFile ? 'none' : '';
+        portGrp.style.display = isFile ? 'none' : '';
+        userGrp.style.display = isFile ? 'none' : '';
+        passGrp.style.display = isFile ? 'none' : '';
+        dbGrp.querySelector('label').textContent = isFile ? 'Database file path' : 'Database';
+        db.placeholder = isFile ? '/path/to/database.sqlite' : '';
+    }
+
+    driver.onchange = () => {
+        const oldDefault = DRIVER_PORTS[src.driver];
+        src.driver = driver.value;
+        if (!port.value || parseInt(port.value, 10) === oldDefault) {
+            port.value = String(DRIVER_PORTS[src.driver] ?? '');
+            src.port = DRIVER_PORTS[src.driver];
+        }
+        applyDriverVisibility();
+    };
+
     body.append(
         fg('Name', name),
         fg('Source type', driver),
-        fg('Host', host),
-        fg('Port', port),
-        fg('Database', db),
-        fg('User', user),
-        fg('Password', pass),
+        hostGrp,
+        portGrp,
+        dbGrp,
+        userGrp,
+        passGrp,
     );
+    applyDriverVisibility();
 
     const testStatus = mkStatus();
     const btnTest = document.createElement('button');
@@ -540,7 +563,7 @@ export async function renderEtlPage(ctx) {
     wrap.style.cssText = 'padding:20px 24px; max-width:900px;';
     const intro = document.createElement('div');
     intro.innerHTML = '<h2 style="margin:0 0 4px;">ETL — external source → PostgreSQL import</h2>'
-        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from one or more external source databases (MySQL, PostgreSQL) and load it into PostgreSQL tables. Each job picks which source it reads from. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
+        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from one or more external source databases (MySQL, MariaDB, PostgreSQL, SQLite) and load it into PostgreSQL tables. Each job picks which source it reads from. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
     wrap.appendChild(intro);
     workspaceEl.appendChild(wrap);
 

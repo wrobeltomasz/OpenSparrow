@@ -3,22 +3,31 @@
 declare(strict_types=1);
 
 // includes/etl_engine.php — ETL engine: extract rows from an external source database
-// (MySQL, PostgreSQL; extensible to Oracle/DB2/SQL Server) and load them into a local
-// PostgreSQL target table. Pure procedural helpers, reused by the admin preview action
-// and the cron worker. Builds its own source PDO from the "etl" config connection block
-// (independent of the removed MySQL Gateway / MYSQL_* constants).
+// (MySQL, MariaDB, PostgreSQL, SQLite; extensible to Oracle/DB2/SQL Server) and load
+// them into a local PostgreSQL target table. Pure procedural helpers, reused by the
+// admin preview action and the cron worker. Builds its own source PDO from the "etl"
+// config connection block (independent of the removed MySQL Gateway / MYSQL_* constants).
 //
 // Security: all target identifiers via pg_ident(); all values as bound params.
 // The source query is restricted to a single read-only SELECT.
 
 require_once __DIR__ . '/db.php';
 
-// Supported source drivers → default port. Add oracle ('oci' 1521), db2 ('ibm' 50000),
-// sqlserver ('sqlsrv' 1433) here (plus a DSN case in etl_source_pdo) when those PDO
-// extensions are available in the target environment.
+// Drivers that connect over host/port/user/password. SQLite is file-based and handled
+// separately (see etl_source_is_file_driver()) — it has no meaningful port.
+// Add oracle ('oci' 1521), db2 ('ibm' 50000), sqlserver ('sqlsrv' 1433) here (plus a
+// DSN case in etl_source_pdo) when those PDO extensions are available in the target
+// environment.
 function etl_source_drivers(): array
 {
-    return ['mysql' => 3306, 'pgsql' => 5432];
+    return ['mysql' => 3306, 'mariadb' => 3306, 'pgsql' => 5432, 'sqlite' => 0];
+}
+
+// Whether $driver is a file-based source (no host/port/user/password — just a path
+// stored in the "database" field).
+function etl_source_is_file_driver(string $driver): bool
+{
+    return $driver === 'sqlite';
 }
 
 // Retry policy for transient source-DB errors (connection drops, lock/timeout waits):
@@ -84,24 +93,39 @@ function etl_with_retry(callable $fn, string $logTag)
 function etl_source_pdo(array $conn, string $logTag = 'etl'): ?\PDO
 {
     $driver = strtolower(trim((string)($conn['driver'] ?? 'mysql')));
-    $host   = trim((string)($conn['host'] ?? ''));
     $db     = trim((string)($conn['database'] ?? ''));
-    $user   = trim((string)($conn['user'] ?? ''));
-    if ($host === '' || $db === '' || $user === '') {
-        return null;
-    }
-    $defaultPorts = etl_source_drivers();
-    if (!isset($defaultPorts[$driver])) {
+    if (!isset(etl_source_drivers()[$driver])) {
         error_log('[' . $logTag . '][etl] Unsupported source driver: ' . $driver);
         return null;
     }
-    $port    = (int)($conn['port'] ?? 0) ?: $defaultPorts[$driver];
+
+    if (etl_source_is_file_driver($driver)) {
+        if ($db === '' || !is_readable($db)) {
+            return null;
+        }
+        try {
+            return new \PDO('sqlite:' . $db, null, null, [
+                \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            ]);
+        } catch (\PDOException $e) {
+            error_log('[' . $logTag . '][etl][sqlite] ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    $host = trim((string)($conn['host'] ?? ''));
+    $user = trim((string)($conn['user'] ?? ''));
+    if ($host === '' || $db === '' || $user === '') {
+        return null;
+    }
+    $port    = (int)($conn['port'] ?? 0) ?: etl_source_drivers()[$driver];
     $pass    = (string)($conn['password'] ?? '');
     $timeout = 5;
     try {
         return etl_with_retry(static function () use ($driver, $host, $port, $db, $user, $pass, $timeout) {
             $dsn = match ($driver) {
-                'mysql' => sprintf(
+                'mysql', 'mariadb' => sprintf(
                     'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
                     $host,
                     $port,
