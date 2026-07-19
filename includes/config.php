@@ -120,6 +120,40 @@ if ($_envSessPath !== '') {
     unset($_absPath);
 }
 unset($_projectRoot, $_envSessPath);
+
+// Soft fallback for the system temp directory (mirrors the session.save_path
+// handling above). On locked-down shared hosts the default /tmp is often blocked
+// (open_basedir / 403 on home.pl), which breaks app-level temp operations that go
+// through sys_get_temp_dir() — tempnam()/tmpfile(), GD thumbnail buffers, etc.
+// Pointing them at storage/tmp inside the project keeps those working everywhere.
+//
+// NOTE: this does NOT redirect PHP's *file-upload* temp dir. That is governed by
+// upload_tmp_dir (PHP_INI_SYSTEM), resolved before any script runs, so it cannot be
+// changed here — a host with a broken /tmp will still emit UPLOAD_ERR_NO_TMP_DIR
+// until upload_tmp_dir is set in .user.ini / the hosting panel. See docs.
+// Priority: SYS_TEMP_DIR env var > project storage/tmp fallback.
+$_projectRoot = realpath(__DIR__ . '/..');
+$_envTmpPath  = get_env('SYS_TEMP_DIR', '');
+if ($_envTmpPath !== '') {
+    ini_set('sys_temp_dir', $_envTmpPath);
+    putenv('TMPDIR=' . $_envTmpPath);
+} elseif ($_projectRoot !== false) {
+    $_absTmp = $_projectRoot . '/storage/tmp';
+    if (!is_dir($_absTmp)) {
+        @mkdir($_absTmp, 0700, true);
+    }
+    if (is_dir($_absTmp) && is_writable($_absTmp)) {
+        ini_set('sys_temp_dir', $_absTmp);
+        putenv('TMPDIR=' . $_absTmp);
+        $_htaccess = $_absTmp . '/.htaccess';
+        if (!is_file($_htaccess)) {
+            @file_put_contents($_htaccess, "Require all denied\n");
+        }
+        unset($_htaccess);
+    }
+    unset($_absTmp);
+}
+unset($_projectRoot, $_envTmpPath);
 // -------------------------------------------------------------------------
 // Runtime environment
 // -------------------------------------------------------------------------

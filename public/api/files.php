@@ -194,7 +194,7 @@ function actionUpload($conn): void
 
     $file = $_FILES['file'];
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        jsonError('Upload failed with PHP error code: ' . $file['error'], 400);
+        jsonError(uploadErrorMessage((int) $file['error']), 400);
     }
 
     $config = loadConfig();
@@ -632,6 +632,26 @@ function mimeMatchesExtension(string $ext, string $mime): bool
         return false;
     }
     return in_array($mime, $map[$ext], true);
+}
+
+// Translate a PHP $_FILES error code into an actionable message. The raw numeric
+// code (esp. 6 = UPLOAD_ERR_NO_TMP_DIR, common on locked-down shared hosts where
+// /tmp is blocked) is meaningless to an admin; these point at the actual cause.
+function uploadErrorMessage(int $code): string
+{
+
+    return match ($code) {
+        UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
+            'File is too large (exceeds the server upload limit).',
+        UPLOAD_ERR_PARTIAL   => 'File was only partially uploaded — please retry.',
+        UPLOAD_ERR_NO_FILE   => 'No file was uploaded.',
+        UPLOAD_ERR_NO_TMP_DIR =>
+            'Server temporary directory is missing or misconfigured '
+            . '(set upload_tmp_dir to a writable path in .user.ini / the hosting panel).',
+        UPLOAD_ERR_CANT_WRITE => 'Server could not write the uploaded file to disk (check temp dir permissions).',
+        UPLOAD_ERR_EXTENSION  => 'A PHP extension blocked the upload.',
+        default               => 'Upload failed (PHP error code ' . $code . ').',
+    };
 }
 
 // File type detection logic
