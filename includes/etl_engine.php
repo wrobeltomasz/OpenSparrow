@@ -14,13 +14,15 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 
 // Drivers that connect over host/port/user/password. SQLite is file-based and handled
-// separately (see etl_source_is_file_driver()) — it has no meaningful port.
+// separately (see etl_source_is_file_driver()) — it has no meaningful port. csv_ftp is a
+// remote-file source (see etl_source_is_remote_file_driver()) — it fetches a CSV file over
+// FTP/FTPS rather than querying a database (see etl_fetch_csv_rows()).
 // Add oracle ('oci' 1521), db2 ('ibm' 50000), sqlserver ('sqlsrv' 1433) here (plus a
 // DSN case in etl_source_pdo) when those PDO extensions are available in the target
 // environment.
 function etl_source_drivers(): array
 {
-    return ['mysql' => 3306, 'mariadb' => 3306, 'pgsql' => 5432, 'sqlite' => 0];
+    return ['mysql' => 3306, 'mariadb' => 3306, 'pgsql' => 5432, 'sqlite' => 0, 'csv_ftp' => 21];
 }
 
 // Whether $driver is a file-based source (no host/port/user/password — just a path
@@ -28,6 +30,125 @@ function etl_source_drivers(): array
 function etl_source_is_file_driver(string $driver): bool
 {
     return $driver === 'sqlite';
+}
+
+// Whether $driver fetches a CSV file over FTP/FTPS instead of querying a database.
+// Such sources have no source_query / PDO connection — see etl_fetch_csv_rows().
+function etl_source_is_remote_file_driver(string $driver): bool
+{
+    return $driver === 'csv_ftp';
+}
+
+/**
+ * Open and log into an FTP/FTPS connection for a csv_ftp source. Returns null on any
+ * failure (missing ext-ftp, connect/login/chdir failure). Sets passive mode per
+ * $conn['passive_mode'] (default true — required behind most NAT/firewalls).
+ *
+ * @param array<string,mixed> $conn host/port/user/password/protocol/remote_dir/passive_mode
+ * @return resource|null
+ */
+function etl_ftp_connect(array $conn, string $logTag = 'etl')
+{
+    if (!function_exists('ftp_connect')) {
+        error_log('[' . $logTag . '][etl][csv_ftp] PHP ext-ftp is not available on this server.');
+        return null;
+    }
+    $host     = trim((string)($conn['host'] ?? ''));
+    $user     = trim((string)($conn['user'] ?? ''));
+    if ($host === '' || $user === '') {
+        return null;
+    }
+    $port     = (int)($conn['port'] ?? 0) ?: 21;
+    $pass     = (string)($conn['password'] ?? '');
+    $protocol = strtolower(trim((string)($conn['protocol'] ?? 'ftp')));
+    $timeout  = 10;
+
+    $ftp = ($protocol === 'ftps' && function_exists('ftp_ssl_connect'))
+        ? @ftp_ssl_connect($host, $port, $timeout)
+        : @ftp_connect($host, $port, $timeout);
+    if ($ftp === false) {
+        error_log('[' . $logTag . '][etl][csv_ftp] Could not connect to ' . $host . ':' . $port);
+        return null;
+    }
+    if (!@ftp_login($ftp, $user, $pass)) {
+        error_log('[' . $logTag . '][etl][csv_ftp] Login failed for user ' . $user);
+        @ftp_close($ftp);
+        return null;
+    }
+    @ftp_pasv($ftp, ($conn['passive_mode'] ?? true) !== false);
+
+    $remoteDir = trim((string)($conn['remote_dir'] ?? ''));
+    if ($remoteDir !== '' && !@ftp_chdir($ftp, $remoteDir)) {
+        error_log('[' . $logTag . '][etl][csv_ftp] Could not change to directory ' . $remoteDir);
+        @ftp_close($ftp);
+        return null;
+    }
+    return $ftp;
+}
+
+/**
+ * Download the configured CSV file from a csv_ftp source and parse it into an array of
+ * associative rows keyed by header column name (or "0", "1", … when csv_has_header is
+ * false). Returns null on any connection/download/parse failure. $limit caps the number
+ * of parsed rows (used by the admin preview action) — null reads the whole file.
+ *
+ * @param array<string,mixed> $conn host/port/user/password/protocol/remote_dir/file_name/
+ *                                   csv_delimiter/csv_has_header/passive_mode
+ * @return ?list<array<string,mixed>>
+ */
+function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = null): ?array
+{
+    $fileName = trim((string)($conn['file_name'] ?? ''));
+    if ($fileName === '') {
+        error_log('[' . $logTag . '][etl][csv_ftp] No file name configured.');
+        return null;
+    }
+    $ftp = etl_ftp_connect($conn, $logTag);
+    if ($ftp === null) {
+        return null;
+    }
+    $tmp = tempnam(sys_get_temp_dir(), 'etl_csv_');
+    if ($tmp === false || !@ftp_get($ftp, $tmp, $fileName, FTP_BINARY)) {
+        error_log('[' . $logTag . '][etl][csv_ftp] Could not download file ' . $fileName);
+        @ftp_close($ftp);
+        if ($tmp !== false) {
+            @unlink($tmp);
+        }
+        return null;
+    }
+    @ftp_close($ftp);
+
+    $delimiter = (string)($conn['csv_delimiter'] ?? ',');
+    $delimiter = ($delimiter !== '') ? $delimiter[0] : ',';
+    $hasHeader = ($conn['csv_has_header'] ?? true) !== false;
+
+    $handle = @fopen($tmp, 'r');
+    if ($handle === false) {
+        @unlink($tmp);
+        return null;
+    }
+    $rows   = [];
+    $header = null;
+    while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+        if ($header === null) {
+            if ($hasHeader) {
+                $header = array_map(static fn($h) => trim((string)$h), $data);
+                continue;
+            }
+            $header = array_map('strval', array_keys($data));
+        }
+        $row = [];
+        foreach ($header as $i => $col) {
+            $row[$col] = $data[$i] ?? null;
+        }
+        $rows[] = $row;
+        if ($limit !== null && count($rows) >= $limit) {
+            break;
+        }
+    }
+    fclose($handle);
+    @unlink($tmp);
+    return $rows;
 }
 
 // Retry policy for transient source-DB errors (connection drops, lock/timeout waits):
@@ -339,7 +460,10 @@ function etl_run_job(
 
     $out = ['status' => 'error', 'rows_read' => 0, 'rows_written' => 0, 'error' => null, 'new_watermark' => null];
 
-    if (($err = etl_validate_source_query($sourceSql)) !== null) {
+    $driver       = strtolower(trim((string)($connCfg['driver'] ?? 'mysql')));
+    $isRemoteFile = etl_source_is_remote_file_driver($driver);
+
+    if (!$isRemoteFile && ($err = etl_validate_source_query($sourceSql)) !== null) {
         $out['error'] = $err;
         return $out;
     }
@@ -352,43 +476,54 @@ function etl_run_job(
         return $out;
     }
 
-    $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
-    if ($pdo === null) {
-        $out['error'] = 'Source connection is not configured or unavailable.';
-        return $out;
-    }
+    if ($isRemoteFile) {
+        // File sources have no SQL query or watermark placeholder to substitute — the
+        // whole CSV file is read on every run (incremental_column, if set, still marks
+        // the highest value seen for display/history, but does not filter the fetch).
+        $rows = etl_fetch_csv_rows($connCfg, 'etl:' . $name);
+        if ($rows === null) {
+            $out['error'] = 'Could not fetch/parse the source CSV file — check connection, path and file name.';
+            return $out;
+        }
+    } else {
+        $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
+        if ($pdo === null) {
+            $out['error'] = 'Source connection is not configured or unavailable.';
+            return $out;
+        }
 
-    // Incremental: substitute the {{watermark}} placeholder with the last-seen value,
-    // quoted for the source driver. Falls back to incremental_initial_value, then '0'.
-    if ($incCol !== '' && str_contains($sourceSql, '{{watermark}}')) {
-        $wm = $watermark ?? (string)($job['incremental_initial_value'] ?? '0');
-        $sourceSql = str_replace('{{watermark}}', $pdo->quote($wm), $sourceSql);
-    }
+        // Incremental: substitute the {{watermark}} placeholder with the last-seen value,
+        // quoted for the source driver. Falls back to incremental_initial_value, then '0'.
+        if ($incCol !== '' && str_contains($sourceSql, '{{watermark}}')) {
+            $wm = $watermark ?? (string)($job['incremental_initial_value'] ?? '0');
+            $sourceSql = str_replace('{{watermark}}', $pdo->quote($wm), $sourceSql);
+        }
 
-    // Extract. Reconnects and retries on a transient error (dropped connection, lock
-    // wait timeout, deadlock); a permanent error (bad SQL, unknown column) fails immediately.
-    $attempts = count(ETL_RETRY_DELAYS) + 1;
-    $rows     = null;
-    for ($i = 0; $i < $attempts; $i++) {
-        try {
-            $stmt = $pdo->query($sourceSql);
-            $rows = $stmt->fetchAll();
-            break;
-        } catch (\PDOException $e) {
-            $isLast = ($i === $attempts - 1);
-            if ($isLast || !etl_is_transient_pdo_error($e)) {
-                error_log('[etl][' . $name . '] extract failed: ' . $e->getMessage());
-                $out['error'] = 'Source query failed.';
-                return $out;
-            }
-            $delay = ETL_RETRY_DELAYS[$i];
-            error_log('[etl][' . $name . '] extract transient error (attempt ' . ($i + 1) . '/' . $attempts . '): '
-                . $e->getMessage() . ' — retrying in ' . $delay . 's');
-            sleep($delay);
-            $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
-            if ($pdo === null) {
-                $out['error'] = 'Source connection is not configured or unavailable.';
-                return $out;
+        // Extract. Reconnects and retries on a transient error (dropped connection, lock
+        // wait timeout, deadlock); a permanent error (bad SQL, unknown column) fails immediately.
+        $attempts = count(ETL_RETRY_DELAYS) + 1;
+        $rows     = null;
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                $stmt = $pdo->query($sourceSql);
+                $rows = $stmt->fetchAll();
+                break;
+            } catch (\PDOException $e) {
+                $isLast = ($i === $attempts - 1);
+                if ($isLast || !etl_is_transient_pdo_error($e)) {
+                    error_log('[etl][' . $name . '] extract failed: ' . $e->getMessage());
+                    $out['error'] = 'Source query failed.';
+                    return $out;
+                }
+                $delay = ETL_RETRY_DELAYS[$i];
+                error_log('[etl][' . $name . '] extract transient error (attempt ' . ($i + 1) . '/' . $attempts . '): '
+                    . $e->getMessage() . ' — retrying in ' . $delay . 's');
+                sleep($delay);
+                $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
+                if ($pdo === null) {
+                    $out['error'] = 'Source connection is not configured or unavailable.';
+                    return $out;
+                }
             }
         }
     }

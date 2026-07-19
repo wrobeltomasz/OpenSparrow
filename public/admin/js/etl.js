@@ -57,16 +57,21 @@ async function saveConfig(statusEl) {
     return false;
 }
 
-const DRIVER_PORTS = { mysql: 3306, mariadb: 3306, pgsql: 5432, sqlite: 0 };
+const DRIVER_PORTS = { mysql: 3306, mariadb: 3306, pgsql: 5432, sqlite: 0, csv_ftp: 21 };
 const DRIVER_LABELS = [
     ['mysql', 'MySQL'],
     ['mariadb', 'MariaDB'],
     ['pgsql', 'PostgreSQL'],
     ['sqlite', 'SQLite'],
+    ['csv_ftp', 'CSV file (FTP/FTPS)'],
 ];
 const FILE_DRIVERS = ['sqlite'];
+const REMOTE_FILE_DRIVERS = ['csv_ftp'];
 
 function sourceLabel(src) {
+    if (REMOTE_FILE_DRIVERS.includes(src.driver)) {
+        return (src.name || '(unnamed source)') + ' — ' + (src.protocol || 'ftp') + '://' + (src.host || '?') + '/' + (src.file_name || '?');
+    }
     const where = FILE_DRIVERS.includes(src.driver) ? (src.database || '?') : (src.host || '?');
     return (src.name || '(unnamed source)') + ' — ' + (src.driver || 'mysql') + '://' + where;
 }
@@ -88,6 +93,8 @@ function renderSourcesTab(panel) {
         etlConfig.sources.push({
             id: '', name: 'New source', driver: 'mysql', host: '', port: 3306,
             database: '', user: '', password: '',
+            protocol: 'ftp', remote_dir: '', file_name: '', csv_delimiter: ',',
+            csv_has_header: true, passive_mode: true,
         });
         redraw();
     };
@@ -161,18 +168,70 @@ function buildSourceCard(src, idx, redraw, status) {
     pass.placeholder = src.password === '********' ? 'Leave to keep current' : '';
     pass.oninput = () => { src.password = pass.value; };
 
-    const hostGrp = fg('Host', host);
-    const portGrp = fg('Port', port);
-    const dbGrp   = fg('Database', db);
-    const userGrp = fg('User', user);
-    const passGrp = fg('Password', pass);
+    const protocol = document.createElement('select');
+    protocol.className = 'adm-input';
+    [['ftp', 'FTP'], ['ftps', 'FTPS (FTP over TLS)']].forEach(([v, lbl]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = lbl;
+        if ((src.protocol || 'ftp') === v) o.selected = true;
+        protocol.appendChild(o);
+    });
+    protocol.onchange = () => { src.protocol = protocol.value; };
+
+    const remoteDir = input(src.remote_dir || '');
+    remoteDir.placeholder = '/exports (leave empty for the login directory)';
+    remoteDir.oninput = () => { src.remote_dir = remoteDir.value; };
+
+    const fileName = input(src.file_name || '');
+    fileName.placeholder = 'export.csv';
+    fileName.oninput = () => { src.file_name = fileName.value; };
+
+    const csvDelimiter = input(src.csv_delimiter || ',');
+    csvDelimiter.maxLength = 1;
+    csvDelimiter.oninput = () => { src.csv_delimiter = csvDelimiter.value.slice(0, 1) || ','; };
+
+    const csvHasHeader = input('', 'checkbox');
+    csvHasHeader.className = 'adm-check';
+    csvHasHeader.checked = src.csv_has_header !== false;
+    csvHasHeader.onchange = () => { src.csv_has_header = csvHasHeader.checked; };
+    const csvHasHeaderLbl = document.createElement('label');
+    csvHasHeaderLbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
+    csvHasHeaderLbl.append(csvHasHeader, document.createTextNode('First row is a header row'));
+
+    const passiveMode = input('', 'checkbox');
+    passiveMode.className = 'adm-check';
+    passiveMode.checked = src.passive_mode !== false;
+    passiveMode.onchange = () => { src.passive_mode = passiveMode.checked; };
+    const passiveModeLbl = document.createElement('label');
+    passiveModeLbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
+    passiveModeLbl.append(passiveMode, document.createTextNode('Passive mode (usually required behind NAT/firewalls)'));
+
+    const hostGrp          = fg('Host', host);
+    const portGrp           = fg('Port', port);
+    const dbGrp              = fg('Database', db);
+    const userGrp           = fg('User', user);
+    const passGrp           = fg('Password', pass);
+    const protocolGrp       = fg('Protocol', protocol);
+    const remoteDirGrp      = fg('Remote directory', remoteDir);
+    const fileNameGrp       = fg('CSV file name', fileName);
+    const csvDelimiterGrp   = fg('Column delimiter', csvDelimiter);
+    const csvHasHeaderGrp   = fg('', csvHasHeaderLbl);
+    const passiveModeGrp    = fg('', passiveModeLbl);
 
     function applyDriverVisibility() {
-        const isFile = FILE_DRIVERS.includes(src.driver);
+        const isFile   = FILE_DRIVERS.includes(src.driver);
+        const isRemote = REMOTE_FILE_DRIVERS.includes(src.driver);
         hostGrp.style.display = isFile ? 'none' : '';
         portGrp.style.display = isFile ? 'none' : '';
         userGrp.style.display = isFile ? 'none' : '';
         passGrp.style.display = isFile ? 'none' : '';
+        dbGrp.style.display   = isRemote ? 'none' : '';
+        protocolGrp.style.display     = isRemote ? '' : 'none';
+        remoteDirGrp.style.display    = isRemote ? '' : 'none';
+        fileNameGrp.style.display     = isRemote ? '' : 'none';
+        csvDelimiterGrp.style.display = isRemote ? '' : 'none';
+        csvHasHeaderGrp.style.display = isRemote ? '' : 'none';
+        passiveModeGrp.style.display  = isRemote ? '' : 'none';
         dbGrp.querySelector('label').textContent = isFile ? 'Database file path' : 'Database';
         db.placeholder = isFile ? '/path/to/database.sqlite' : '';
     }
@@ -192,6 +251,12 @@ function buildSourceCard(src, idx, redraw, status) {
         fg('Source type', driver),
         hostGrp,
         portGrp,
+        protocolGrp,
+        remoteDirGrp,
+        fileNameGrp,
+        csvDelimiterGrp,
+        csvHasHeaderGrp,
+        passiveModeGrp,
         dbGrp,
         userGrp,
         passGrp,
@@ -307,14 +372,32 @@ function buildJobCard(job, idx, redraw, status) {
         if (job.source_id === src.id) o.selected = true;
         source.appendChild(o);
     });
-    source.onchange = () => { job.source_id = source.value; };
-
     const query = document.createElement('textarea');
     query.className = 'adm-input';
     query.rows = 4;
     query.style.resize = 'vertical';
     query.value = job.source_query || '';
     query.oninput = () => { job.source_query = query.value; };
+
+    const queryGrp = fg('Source query (read-only SELECT)', query);
+    const queryNote = document.createElement('p');
+    queryNote.className = 'c-muted';
+    queryNote.style.cssText = 'margin:4px 0 12px; font-size:12px; display:none;';
+    queryNote.textContent = 'This source reads a CSV file — the whole file is imported on every run, no query needed.';
+
+    function isRemoteFileSource() {
+        const src = etlConfig.sources.find(s => s.id === job.source_id);
+        return !!src && REMOTE_FILE_DRIVERS.includes(src.driver);
+    }
+    function applySourceKindVisibility() {
+        const isRemote = isRemoteFileSource();
+        queryGrp.style.display = isRemote ? 'none' : '';
+        queryNote.style.display = isRemote ? '' : 'none';
+        incColGrp.style.display = isRemote ? 'none' : '';
+        incInitGrp.style.display = isRemote ? 'none' : '';
+        incHint.style.display = isRemote ? 'none' : '';
+    }
+    source.onchange = () => { job.source_id = source.value; applySourceKindVisibility(); };
 
     const target = input(job.target_table);
     target.oninput = () => { job.target_table = target.value; };
@@ -357,6 +440,9 @@ function buildJobCard(job, idx, redraw, status) {
     incInit.placeholder = 'e.g. 1970-01-01 or 0';
     incInit.oninput = () => { job.incremental_initial_value = incInit.value.trim(); };
 
+    const incColGrp = fg('Incremental column (source, optional)', incCol);
+    const incInitGrp = fg('Incremental initial value', incInit);
+
     const incHint = document.createElement('p');
     incHint.className = 'c-muted';
     incHint.style.cssText = 'margin:4px 0 0; font-size:12px;';
@@ -378,18 +464,20 @@ function buildJobCard(job, idx, redraw, status) {
     body.append(
         fg('Name', name),
         fg('Source', source),
-        fg('Source query (read-only SELECT)', query),
+        queryGrp,
+        queryNote,
         fg('Target table (PostgreSQL)', target),
         fg('Load mode', mode),
         keyGrp,
         fg('Batch size (rows per INSERT chunk)', batchSize),
-        fg('Incremental column (source, optional)', incCol),
-        fg('Incremental initial value', incInit),
+        incColGrp,
+        incInitGrp,
         incHint,
         fg('Column mapping (optional)', colMap),
         colMapHint,
         fg('', enabledLbl),
     );
+    applySourceKindVisibility();
 
     const out = document.createElement('pre');
     out.className = 'adm-input';
@@ -563,7 +651,7 @@ export async function renderEtlPage(ctx) {
     wrap.style.cssText = 'padding:20px 24px; max-width:900px;';
     const intro = document.createElement('div');
     intro.innerHTML = '<h2 style="margin:0 0 4px;">ETL — external source → PostgreSQL import</h2>'
-        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from one or more external source databases (MySQL, MariaDB, PostgreSQL, SQLite) and load it into PostgreSQL tables. Each job picks which source it reads from. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
+        + '<p class="c-muted" style="margin:0 0 16px;">Extract data from one or more external source databases (MySQL, MariaDB, PostgreSQL, SQLite) or a CSV file fetched from an FTP/FTPS server, and load it into PostgreSQL tables. Each job picks which source it reads from. Data lands natively in PostgreSQL — external tables are not shown live.</p>';
     wrap.appendChild(intro);
     workspaceEl.appendChild(wrap);
 

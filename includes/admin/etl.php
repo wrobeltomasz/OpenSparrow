@@ -24,14 +24,20 @@ function etl_migrate_legacy_connection(array $config): array
     }
     $legacy = (array) $config['connection'];
     $source = [
-        'id'       => 'legacy',
-        'name'     => 'Default source',
-        'driver'   => $legacy['driver'] ?? 'mysql',
-        'host'     => $legacy['host'] ?? '',
-        'port'     => $legacy['port'] ?? 3306,
-        'database' => $legacy['database'] ?? '',
-        'user'     => $legacy['user'] ?? '',
-        'password' => $legacy['password'] ?? '',
+        'id'             => 'legacy',
+        'name'           => 'Default source',
+        'driver'         => $legacy['driver'] ?? 'mysql',
+        'host'           => $legacy['host'] ?? '',
+        'port'           => $legacy['port'] ?? 3306,
+        'database'       => $legacy['database'] ?? '',
+        'user'           => $legacy['user'] ?? '',
+        'password'       => $legacy['password'] ?? '',
+        'protocol'       => 'ftp',
+        'remote_dir'     => '',
+        'file_name'      => '',
+        'csv_delimiter'  => ',',
+        'csv_has_header' => true,
+        'passive_mode'   => true,
     ];
     $config['sources'] = [$source];
     foreach ((array)($config['jobs'] ?? []) as $i => $job) {
@@ -124,15 +130,25 @@ if ($action === 'etl_save') {
         if ($newPass === '********') {
             $newPass = $existingPassById[$id] ?? '';
         }
+        $protocol = strtolower(trim((string)($src['protocol'] ?? 'ftp')));
+        $csvDelim = (string)($src['csv_delimiter'] ?? ',');
+        $csvDelim = ($csvDelim !== '') ? substr($csvDelim, 0, 1) : ',';
         $sources[] = [
-            'id'       => $id,
-            'name'     => $name,
-            'driver'   => $driver,
-            'host'     => trim((string)($src['host'] ?? '')),
-            'port'     => (int)($src['port'] ?? 0) ?: etl_source_drivers()[$driver],
-            'database' => trim((string)($src['database'] ?? '')),
-            'user'     => trim((string)($src['user'] ?? '')),
-            'password' => $newPass,
+            'id'             => $id,
+            'name'           => $name,
+            'driver'         => $driver,
+            'host'           => trim((string)($src['host'] ?? '')),
+            'port'           => (int)($src['port'] ?? 0) ?: etl_source_drivers()[$driver],
+            'database'       => trim((string)($src['database'] ?? '')),
+            'user'           => trim((string)($src['user'] ?? '')),
+            'password'       => $newPass,
+            // csv_ftp-only fields; harmless (ignored) for database drivers.
+            'protocol'       => in_array($protocol, ['ftp', 'ftps'], true) ? $protocol : 'ftp',
+            'remote_dir'     => trim((string)($src['remote_dir'] ?? '')),
+            'file_name'      => trim((string)($src['file_name'] ?? '')),
+            'csv_delimiter'  => $csvDelim,
+            'csv_has_header' => (bool)($src['csv_has_header'] ?? true),
+            'passive_mode'   => (bool)($src['passive_mode'] ?? true),
         ];
         $validSourceIds[] = $id;
     }
@@ -151,15 +167,19 @@ if ($action === 'etl_save') {
         }
     }
 
+    $sourceDriverById = [];
+    foreach ($sources as $s) {
+        $sourceDriverById[$s['id']] = $s['driver'];
+    }
+
     $validModes = ['full_refresh', 'append', 'upsert'];
     foreach ((array)($data['jobs'] ?? []) as $job) {
         if (!is_array($job)) {
             continue;
         }
         $name   = trim((string)($job['name'] ?? ''));
-        $query  = trim((string)($job['source_query'] ?? ''));
         $target = trim((string)($job['target_table'] ?? ''));
-        if ($name === '' || $query === '' || $target === '') {
+        if ($name === '' || $target === '') {
             continue;
         }
         $id = (string)($job['id'] ?? bin2hex(random_bytes(8)));
@@ -167,6 +187,14 @@ if ($action === 'etl_save') {
         $sourceId = trim((string)($job['source_id'] ?? ''));
         if (!in_array($sourceId, $validSourceIds, true)) {
             $sourceId = $validSourceIds[0] ?? '';
+        }
+
+        // Remote-file (csv_ftp) sources have no SQL query — the whole file is read.
+        // Database sources require a non-empty read-only SELECT.
+        $isRemoteFileJob = etl_source_is_remote_file_driver($sourceDriverById[$sourceId] ?? '');
+        $query = trim((string)($job['source_query'] ?? ''));
+        if (!$isRemoteFileJob && $query === '') {
+            continue;
         }
 
         $columnMap = [];
@@ -229,6 +257,33 @@ if ($action === 'etl_test_connection') {
     if (($conn['password'] ?? '') === '********' || ($conn['password'] ?? '') === '') {
         $conn['password'] = etl_stored_source_password((string)($conn['id'] ?? ''));
     }
+
+    if (etl_source_is_remote_file_driver(strtolower(trim((string)($conn['driver'] ?? ''))))) {
+        $ftp = etl_ftp_connect($conn, 'etl:test');
+        if ($ftp === null) {
+            echo json_encode([
+                'status' => 'error',
+                'error'  => 'Could not connect — check host, port, protocol, directory, user and password.',
+            ]);
+            exit;
+        }
+        $fileName = trim((string)($conn['file_name'] ?? ''));
+        $fileExists = ($fileName === '')
+            || @ftp_size($ftp, $fileName) !== -1
+            || in_array($fileName, (array)@ftp_nlist($ftp, '.'), true);
+        if (!$fileExists) {
+            @ftp_close($ftp);
+            echo json_encode([
+                'status' => 'error',
+                'error'  => 'Connected, but the file "' . $fileName . '" was not found in the configured directory.',
+            ]);
+            exit;
+        }
+        @ftp_close($ftp);
+        echo json_encode(['status' => 'success', 'message' => 'Connection OK.']);
+        exit;
+    }
+
     $pdo = etl_source_pdo($conn, 'etl:test');
     if ($pdo === null) {
         echo json_encode(['status' => 'error', 'error' => 'Could not connect — check driver, host, database, user and password.']);
@@ -248,6 +303,21 @@ if ($action === 'etl_preview') {
     if (($connIn['password'] ?? '') === '********' || ($connIn['password'] ?? '') === '') {
         $connIn['password'] = etl_stored_source_password((string)($connIn['id'] ?? ''));
     }
+
+    if (etl_source_is_remote_file_driver(strtolower(trim((string)($connIn['driver'] ?? ''))))) {
+        $rows = etl_fetch_csv_rows($connIn, 'etl:preview', 20);
+        if ($rows === null) {
+            echo json_encode([
+                'status' => 'error',
+                'error'  => 'Could not fetch/parse the source CSV file — check connection, path and file name.',
+            ]);
+            exit;
+        }
+        $columns = empty($rows) ? [] : array_keys($rows[0]);
+        echo json_encode(['status' => 'success', 'columns' => $columns, 'rows' => $rows]);
+        exit;
+    }
+
     if (($err = etl_validate_source_query($query)) !== null) {
         echo json_encode(['status' => 'error', 'error' => $err]);
         exit;

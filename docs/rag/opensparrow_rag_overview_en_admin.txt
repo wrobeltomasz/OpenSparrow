@@ -179,17 +179,23 @@ M2M Builder:
 
 ETL:
   - Scheduled or on-demand batch import from one or more external source databases
-    (MySQL, MariaDB, PostgreSQL, SQLite) into local PostgreSQL target tables
-    (driver-based, extensible to Oracle/DB2/SQL Server); independent of the removed
-    MySQL Gateway feature
+    (MySQL, MariaDB, PostgreSQL, SQLite) or a CSV file fetched from an FTP/FTPS
+    server, into local PostgreSQL target tables (driver-based, extensible to
+    Oracle/DB2/SQL Server); independent of the removed MySQL Gateway feature
   - Sources tab: define 2+ named source connections (name, driver, host, port,
-    database, user, password), each with its own Test connection
-  - Jobs: each job picks one of the configured sources, plus a read-only source
-    SELECT/WITH query, target table, optional column map, and a load mode —
-    full refresh (truncate+insert), append, or upsert (ON CONFLICT)
+    database, user, password), each with its own Test connection. A "CSV file
+    (FTP/FTPS)" source instead configures protocol (FTP or FTPS), remote directory,
+    CSV file name, column delimiter, whether the first row is a header, and passive
+    mode — no true SSH/SFTP support (requires ext-ssh2/phpseclib, not bundled)
+  - Jobs: each job picks one of the configured sources. Database-source jobs supply
+    a read-only source SELECT/WITH query; CSV/FTP-source jobs import the whole file
+    on every run (no query). All jobs share target table, optional column map
+    (source column → target column), and a load mode — full refresh
+    (truncate+insert), append, or upsert (ON CONFLICT)
   - Incremental loading via a {{watermark}} placeholder substituted with the last
-    seen value of an incremental column
+    seen value of an incremental column (database sources only)
   - Preview shows sample rows before saving; Test connection verifies reachability
+    (for CSV/FTP sources, also confirms the configured file exists)
   - Schedule: manual / daily / weekly / monthly, run by cron/cron_etl.php; run
     history (rows read/written, duration, errors) in spw_etl_log
 
