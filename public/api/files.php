@@ -532,9 +532,15 @@ function actionGetRelatedRecords($conn): void
     $col1 = $relConfig['col1'] ?: 'id';
     $col2 = $relConfig['col2'] ?: '';
 
+    // Resolve the table's actual PostgreSQL schema from the schema config (tables can live
+    // outside the default app schema, e.g. a demo app's own schema) — mirrors the
+    // $tableCfg['schema'] ?? 'public' pattern used across api.php/mass_edit.php/etc.
+    $schemaCfg  = config_get('schema');
+    $pgSchema   = (is_array($schemaCfg) ? ($schemaCfg['tables'][$reqTable]['schema'] ?? null) : null) ?? sys_schema();
+
 // Validate columns directly from database schema
     $sqlCols = "SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2";
-    $resCols = pg_query_params($conn, $sqlCols, [sys_schema(), $reqTable]);
+    $resCols = pg_query_params($conn, $sqlCols, [$pgSchema, $reqTable]);
     if (!$resCols) {
         error_log('api_files actionGetRelatedRecords schema check failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
@@ -543,6 +549,10 @@ function actionGetRelatedRecords($conn): void
     $validCols = [];
     while ($r = pg_fetch_assoc($resCols)) {
         $validCols[] = $r['column_name'];
+    }
+
+    if (!$validCols) {
+        jsonSuccess(['records' => []]);
     }
 
     if (!in_array($col1, $validCols, true)) {
@@ -558,7 +568,7 @@ function actionGetRelatedRecords($conn): void
     $quotedTable = '"' . str_replace('"', '""', $reqTable) . '"';
     $quotedCol1  = '"' . str_replace('"', '""', $col1) . '"';
     $sel2        = $col2 ? ', "' . str_replace('"', '""', $col2) . '"' : '';
-    $quotedSchema = '"' . str_replace('"', '""', sys_schema()) . '"';
+    $quotedSchema = '"' . str_replace('"', '""', $pgSchema) . '"';
     $sql = "SELECT id, {$quotedCol1} AS val1 {$sel2} FROM {$quotedSchema}.{$quotedTable} ORDER BY id DESC LIMIT 500";
     $res = pg_query($conn, $sql);
     if (!$res) {

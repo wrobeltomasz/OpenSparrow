@@ -182,7 +182,7 @@ export async function renderBackupPage(ctx) {
     const [appPanel, sysPanel, globalPanel] = buildInnerTabs(wrap, [
         { label: 'Application Tables', icon: 'data_table.png' },
         { label: 'System Tables (spw_*)', icon: 'database.png' },
-        { label: 'Global Settings', icon: 'settings.png' },
+        { label: 'Global Settings', icon: 'car_gear.png' },
     ]);
 
     buildGroupPanel(appPanel, userTables);
