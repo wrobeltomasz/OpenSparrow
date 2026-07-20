@@ -42,6 +42,7 @@
         "error_loading": "Fehler beim Laden von {table}",
         "cannot_load": "Tabelle kann nicht geladen werden",
         "duplicate": "Duplizieren",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplizieren fehlgeschlagen: Spalte \"{col}\" muss eindeutig sein. Im neuen Datensatz bearbeiten.",
         "duplicate_conflict": "Duplizieren fehlgeschlagen: Konflikt bei eindeutiger Spalte. Wert im neuen Datensatz bearbeiten.",
         "search_label": "Suche: \"{term}\"",

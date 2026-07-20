@@ -351,14 +351,25 @@ function rag_extract_suggestions(string $response): array
     return ['answer' => $answer, 'suggestions' => $suggestions];
 }
 
-function rag_call_ollama(string $ollamaUrl, string $model, string $prompt, int $timeout = 120, bool $sslVerify = true): array
-{
+function rag_call_ollama(
+    string $ollamaUrl,
+    string $model,
+    string $prompt,
+    int $timeout = 120,
+    bool $sslVerify = true,
+    ?string $apiKey = null
+): array {
     if (!function_exists('curl_init')) {
         throw new RuntimeException('cURL extension is required for Ollama integration.');
     }
 
     $url     = rtrim($ollamaUrl, '/') . '/api/generate';
     $payload = json_encode(['model' => $model, 'prompt' => $prompt, 'stream' => false]);
+
+    $headers = ['Content-Type: application/json'];
+    if ($apiKey !== null && $apiKey !== '') {
+        $headers[] = 'Authorization: Bearer ' . $apiKey;
+    }
 
     $ch = curl_init($url);
     if ($ch === false) {
@@ -368,7 +379,7 @@ function rag_call_ollama(string $ollamaUrl, string $model, string $prompt, int $
         CURLOPT_RETURNTRANSFER  => true,
         CURLOPT_POST            => true,
         CURLOPT_POSTFIELDS      => $payload,
-        CURLOPT_HTTPHEADER      => ['Content-Type: application/json'],
+        CURLOPT_HTTPHEADER      => $headers,
         CURLOPT_TIMEOUT         => $timeout,
         CURLOPT_CONNECTTIMEOUT  => 10,
         CURLOPT_SSL_VERIFYPEER  => $sslVerify,

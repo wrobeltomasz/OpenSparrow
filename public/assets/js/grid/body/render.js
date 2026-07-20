@@ -112,7 +112,25 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     tdActions.className = 'td-actions';
     tdActions.dataset.actionsRowId = String(row['id']);
 
-    tdActions.appendChild(makeIconButton({
+    const menu = document.createElement('div');
+    menu.className = 'td-actions-menu';
+
+    const trigger = makeIconButton({
+        cy: 'row-actions-toggle',
+        title: I18n.t('grid.more_actions'),
+        icon: 'assets/img/more_vert.png',
+        onClick: e => {
+            e.stopPropagation();
+            closeAllActionMenus(menu);
+            menu.classList.toggle('open');
+        },
+    });
+    menu.appendChild(trigger);
+
+    const panel = document.createElement('div');
+    panel.className = 'td-actions-panel';
+
+    panel.appendChild(makeIconButton({
         cy: 'row-edit',
         title: I18n.t('common.edit'),
         icon: 'assets/img/edit_square.png',
@@ -121,7 +139,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
         },
     }));
 
-    tdActions.appendChild(makeIconButton({
+    panel.appendChild(makeIconButton({
         cy: 'row-duplicate',
         title: I18n.t('grid.duplicate'),
         icon: 'assets/img/content_copy.png',
@@ -131,7 +149,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
         },
     }));
 
-    tdActions.appendChild(makeIconButton({
+    panel.appendChild(makeIconButton({
         cy: 'row-delete',
         title: I18n.t('common.delete'),
         icon: 'assets/img/delete.png',
@@ -143,5 +161,16 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
         },
     }));
 
+    menu.appendChild(panel);
+    tdActions.appendChild(menu);
+
     return tdActions;
 }
+
+function closeAllActionMenus(except) {
+    document.querySelectorAll('.td-actions-menu.open').forEach(el => {
+        if (el !== except) el.classList.remove('open');
+    });
+}
+
+document.addEventListener('click', () => closeAllActionMenus());

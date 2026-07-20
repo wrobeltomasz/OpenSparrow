@@ -45,6 +45,9 @@ includes/php.ini
 # Auto-generated IP hash salt — host-specific secret, must not be committed
 includes/.secret_salt
 
+# Auto-generated symmetric encryption key for secrets stored in spw_config
+includes/.secret_key
+
 # CodeSniffer
 phpcs.phar
 phpcbf.phar

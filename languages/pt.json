@@ -42,6 +42,7 @@
         "error_loading": "Erro ao carregar {table}",
         "cannot_load": "Não é possível carregar a tabela",
         "duplicate": "Duplicar",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplicação falhou: a coluna \"{col}\" deve ser única. Edite-a no novo registo.",
         "duplicate_conflict": "Duplicação falhou: conflito de coluna única. Edite o valor no novo registo.",
         "search_label": "Pesquisa: \"{term}\"",

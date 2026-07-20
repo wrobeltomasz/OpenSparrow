@@ -42,6 +42,7 @@
         "error_loading": "Error loading {table}",
         "cannot_load": "Cannot load table",
         "duplicate": "Duplicate",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplicate failed: column \"{col}\" must be unique. Edit it in the new record.",
         "duplicate_conflict": "Duplicate failed: a unique column conflict occurred. Edit the value in the new record.",
         "search_label": "Search: \"{term}\"",

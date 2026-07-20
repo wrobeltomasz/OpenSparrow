@@ -184,7 +184,8 @@ if ($action === 'query' && $method === 'POST') {
             (string) $cfg['ollama_model'],
             $prompt,
             (int) ($cfg['ollama_timeout'] ?? 120),
-            (bool) ($cfg['ollama_ssl_verify'] ?? true)
+            (bool) ($cfg['ollama_ssl_verify'] ?? true),
+            secret_decrypt((string) ($cfg['ollama_api_key_enc'] ?? ''))
         );
 
         $seen    = [];

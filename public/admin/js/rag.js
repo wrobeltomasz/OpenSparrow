@@ -689,6 +689,52 @@ function ragBuildSettingsTab(panel) {
     sslRow.appendChild(sslTextWrap);
     connBody.appendChild(sslRow);
 
+    // Ollama Cloud API key (write-only — never populated from stored data)
+    const apiKeyLbl = document.createElement('label');
+    apiKeyLbl.htmlFor = 'rag-ollama-api-key';
+    apiKeyLbl.textContent = 'Ollama Cloud API key';
+    apiKeyLbl.className = 'adm-field-label';
+
+    const apiKeyRow = document.createElement('div');
+    apiKeyRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+
+    const apiKeyInp = document.createElement('input');
+    apiKeyInp.type        = 'password';
+    apiKeyInp.id          = 'rag-ollama-api-key';
+    apiKeyInp.placeholder = 'Leave blank to keep the current key';
+    apiKeyInp.autocomplete = 'new-password';
+    apiKeyInp.className = 'adm-input flex-1';
+
+    const apiKeyClearBtn = document.createElement('button');
+    apiKeyClearBtn.type = 'button';
+    apiKeyClearBtn.textContent = 'Clear key';
+    apiKeyClearBtn.className = 'btn btn-secondary btn-sm';
+    apiKeyClearBtn.style.flexShrink = '0';
+
+    apiKeyRow.appendChild(apiKeyInp);
+    apiKeyRow.appendChild(apiKeyClearBtn);
+    connBody.appendChild(apiKeyLbl);
+    connBody.appendChild(apiKeyRow);
+
+    const apiKeyStatus = document.createElement('div');
+    apiKeyStatus.style.cssText = 'margin-bottom:16px;';
+    connBody.appendChild(apiKeyStatus);
+
+    let apiKeyClearRequested = false;
+    function renderApiKeyStatus(configured) {
+        apiKeyStatus.textContent = configured ? 'API key configured.' : 'No API key set.';
+    }
+    apiKeyClearBtn.addEventListener('click', () => {
+        apiKeyClearRequested = true;
+        apiKeyInp.value = '';
+        renderApiKeyStatus(false);
+    });
+    apiKeyInp.addEventListener('input', () => {
+        if (apiKeyInp.value !== '') {
+            apiKeyClearRequested = false;
+        }
+    });
+
         // Other settings grid
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
@@ -916,6 +962,7 @@ function ragBuildSettingsTab(panel) {
                 if (s.use_chunks !== undefined) chunksChk.checked = !!s.use_chunks;
                 if (s.conversation_turns !== undefined) memInp.value = s.conversation_turns;
                 if (s.chat_enabled !== undefined) chatChk.checked = !!s.chat_enabled;
+                renderApiKeyStatus(!!s.ollama_api_key_configured);
 
                 // Pre-populate select with saved model as single option
                 if (s.ollama_model) {
@@ -947,6 +994,11 @@ function ragBuildSettingsTab(panel) {
             conversation_turns:  Math.max(0, Math.min(10, parseInt(memInp.value, 10) || 0)),
             chat_enabled:        chatChk.checked,
         };
+        if (apiKeyInp.value !== '') {
+            payload.ollama_api_key = apiKeyInp.value;
+        } else if (apiKeyClearRequested) {
+            payload.ollama_api_key_clear = true;
+        }
         if (payload.chat_enabled && (!payload.ollama_url || !payload.ollama_model)) {
             ragStatusPill(saveBtn, 'URL and model are required when chat is enabled.', 'error');
             return;
@@ -958,6 +1010,15 @@ function ragBuildSettingsTab(panel) {
             });
             const data = await res.json();
             ragStatusPill(saveBtn, data.status === 'success' ? 'Saved.' : (data.error ?? 'Error.'), data.status === 'success' ? 'success' : 'error');
+            if (data.status === 'success') {
+                apiKeyInp.value = '';
+                if (apiKeyClearRequested) {
+                    renderApiKeyStatus(false);
+                } else if (payload.ollama_api_key) {
+                    renderApiKeyStatus(true);
+                }
+                apiKeyClearRequested = false;
+            }
         } catch (e) {
             ragStatusPill(saveBtn, 'Request failed: ' + e.message, 'error');
         }

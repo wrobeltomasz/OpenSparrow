@@ -42,6 +42,7 @@
         "error_loading": "Chyba pri načítaní {table}",
         "cannot_load": "Tabuľku nie je možné načítať",
         "duplicate": "Duplikovať",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplikácia zlyhala: stĺpec \"{col}\" musí byť jedinečný. Upravte ho v novom zázname.",
         "duplicate_conflict": "Duplikácia zlyhala: konflikt jedinečného stĺpca. Upravte hodnotu v novom zázname.",
         "search_label": "Hľadanie: \"{term}\"",

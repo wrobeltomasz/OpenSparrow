@@ -42,6 +42,7 @@
         "error_loading": "Chyba při načítání {table}",
         "cannot_load": "Tabulku nelze načíst",
         "duplicate": "Duplikovat",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplikace selhala: sloupec \"{col}\" musí být jedinečný. Upravte ho v novém záznamu.",
         "duplicate_conflict": "Duplikace selhala: konflikt jedinečného sloupce. Upravte hodnotu v novém záznamu.",
         "search_label": "Hledání: \"{term}\"",

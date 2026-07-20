@@ -42,6 +42,7 @@
         "error_loading": "Hiba a(z) {table} betöltésekor",
         "cannot_load": "A táblázat nem tölthető be",
         "duplicate": "Másolás",
+        "more_actions": "More actions",
         "duplicate_unique": "Másolás sikertelen: a(z) \"{col}\" oszlopnak egyedinek kell lennie. Szerkessze az új rekordban.",
         "duplicate_conflict": "Másolás sikertelen: egyedi oszlop ütközés. Szerkessze az értéket az új rekordban.",
         "search_label": "Keresés: \"{term}\"",

@@ -42,6 +42,7 @@
         "error_loading": "Viga {table} laadimisel",
         "cannot_load": "Tabelit ei saa laadida",
         "duplicate": "Dubleeri",
+        "more_actions": "More actions",
         "duplicate_unique": "Dubleerimine ebaõnnestus: veerg \"{col}\" peab olema unikaalne. Muutke seda uues kirjes.",
         "duplicate_conflict": "Dubleerimine ebaõnnestus: unikaalse veeru konflikt. Muutke väärtust uues kirjes.",
         "search_label": "Otsing: \"{term}\"",

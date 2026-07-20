@@ -42,6 +42,7 @@
         "error_loading": "Kļūda ielādējot {table}",
         "cannot_load": "Tabulu nevar ielādēt",
         "duplicate": "Dublēt",
+        "more_actions": "More actions",
         "duplicate_unique": "Dublēšana neizdevās: kolonnai \"{col}\" jābūt unikālai. Rediģējiet to jaunajā ierakstā.",
         "duplicate_conflict": "Dublēšana neizdevās: unikālas kolonnas konflikts. Rediģējiet vērtību jaunajā ierakstā.",
         "search_label": "Meklēšana: \"{term}\"",

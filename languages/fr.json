@@ -42,6 +42,7 @@
         "error_loading": "Erreur lors du chargement de {table}",
         "cannot_load": "Impossible de charger le tableau",
         "duplicate": "Dupliquer",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplication échouée : la colonne \"{col}\" doit être unique. Modifiez-la dans le nouvel enregistrement.",
         "duplicate_conflict": "Duplication échouée : conflit de colonne unique. Modifiez la valeur dans le nouvel enregistrement.",
         "search_label": "Recherche : \"{term}\"",

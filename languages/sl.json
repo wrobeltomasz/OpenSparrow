@@ -42,6 +42,7 @@
         "error_loading": "Napaka pri nalaganju {table}",
         "cannot_load": "Tabele ni mogoče naložiti",
         "duplicate": "Podvoji",
+        "more_actions": "More actions",
         "duplicate_unique": "Podvajanje ni uspelo: stolpec \"{col}\" mora biti enolično. Uredite ga v novem zapisu.",
         "duplicate_conflict": "Podvajanje ni uspelo: konflikt enoličnega stolpca. Uredite vrednost v novem zapisu.",
         "search_label": "Iskanje: \"{term}\"",

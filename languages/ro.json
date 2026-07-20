@@ -42,6 +42,7 @@
         "error_loading": "Eroare la încărcarea {table}",
         "cannot_load": "Nu se poate încărca tabelul",
         "duplicate": "Duplică",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplicare eșuată: coloana \"{col}\" trebuie să fie unică. Editează în noul înregistrare.",
         "duplicate_conflict": "Duplicare eșuată: conflict de coloană unică. Editează valoarea în noul înregistrare.",
         "search_label": "Căutare: \"{term}\"",

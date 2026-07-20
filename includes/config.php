@@ -217,6 +217,27 @@ ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
     }
     define('IP_HASH_SALT', $stored);
 })();
+// Symmetric key used to encrypt secrets stored at rest in spw_config (e.g. the
+// RAG module's Ollama Cloud API key). Prefer the APP_ENCRYPTION_KEY env var in
+// production. When neither env nor stored file is present, generate a 64-char
+// random key and persist to includes/.secret_key (web-denied by includes/.htaccess
+// + gitignored), mirroring the IP_HASH_SALT bootstrap above.
+(static function (): void {
+    $env = get_env('APP_ENCRYPTION_KEY', '');
+    if ($env !== '') {
+        define('APP_ENCRYPTION_KEY', $env);
+        return;
+    }
+    $file = __DIR__ . '/.secret_key';
+    $stored = is_file($file) ? trim((string) @file_get_contents($file)) : '';
+    if ($stored === '') {
+        $stored = bin2hex(random_bytes(32));
+        @file_put_contents($file, $stored, LOCK_EX);
+        @chmod($file, 0600);
+    }
+    define('APP_ENCRYPTION_KEY', $stored);
+})();
+require_once __DIR__ . '/crypto.php';
 // Argon2id parameters used for every password hash in the application.
 // Centralised because login.php's password_needs_rehash() check and every
 // writer (setup, admin user management, change_password) must agree —

@@ -42,6 +42,7 @@
         "error_loading": "Błąd podczas ładowania {table}",
         "cannot_load": "Nie można załadować tabeli",
         "duplicate": "Duplikuj",
+        "more_actions": "Więcej akcji",
         "duplicate_unique": "Duplikacja nieudana: kolumna \"{col}\" musi być unikalna. Edytuj wartość w nowym rekordzie.",
         "duplicate_conflict": "Duplikacja nieudana: wystąpił konflikt unikalności. Edytuj wartość w nowym rekordzie.",
         "search_label": "Szukaj: \"{term}\"",

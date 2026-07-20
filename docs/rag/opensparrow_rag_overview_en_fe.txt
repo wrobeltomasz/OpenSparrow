@@ -39,6 +39,9 @@ DATA GRID (index.php?table=X)
 The main way to browse and edit data:
   - Paginated, sortable, filterable data table
   - Inline editing directly in cells, duplicate record, delete
+  - Each row's actions (edit, duplicate, delete) are collapsed behind a single
+    "more actions" icon at the end of the row; hover or click it to reveal the
+    individual action icons
   - Column search and advanced filter bar
   - Keyboard navigation: arrow keys to move, Enter to edit, Ctrl+F to focus search,
     Ctrl+A to select all

@@ -42,6 +42,7 @@
         "error_loading": "Pogreška pri učitavanju {table}",
         "cannot_load": "Tablica se ne može učitati",
         "duplicate": "Dupliciraj",
+        "more_actions": "More actions",
         "duplicate_unique": "Dupliciranje nije uspjelo: stupac \"{col}\" mora biti jedinstven. Uredite ga u novom zapisu.",
         "duplicate_conflict": "Dupliciranje nije uspjelo: sukob jedinstvenog stupca. Uredite vrijednost u novom zapisu.",
         "search_label": "Pretraga: \"{term}\"",

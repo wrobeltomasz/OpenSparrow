@@ -202,6 +202,10 @@ if ($action === 'rag_settings') {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         $cfg = rag_config();
         unset($cfg['__cached']);
+        // Never return the encrypted (or decrypted) API key to the frontend —
+        // only whether one is configured.
+        $cfg['ollama_api_key_configured'] = !empty($cfg['ollama_api_key_enc']);
+        unset($cfg['ollama_api_key_enc']);
         echo json_encode(['status' => 'success', 'settings' => $cfg]);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
@@ -223,6 +227,8 @@ if ($action === 'rag_settings_save') {
         $useChunks        = isset($body['use_chunks']) ? (bool) $body['use_chunks'] : true;
         $convTurns        = max(0, min(10, (int) ($body['conversation_turns'] ?? 0)));
         $chatEnabled      = isset($body['chat_enabled']) ? (bool) $body['chat_enabled'] : true;
+        $apiKey           = isset($body['ollama_api_key']) ? trim((string) $body['ollama_api_key']) : '';
+        $clearApiKey      = !empty($body['ollama_api_key_clear']);
 
         if ($chatEnabled) {
             if ($ollamaUrl === '' || $model === '') {
@@ -249,6 +255,14 @@ if ($action === 'rag_settings_save') {
             'conversation_turns' => $convTurns,
             'chat_enabled'       => $chatEnabled,
         ]);
+
+        require_once __DIR__ . '/../crypto.php';
+        if ($clearApiKey) {
+            unset($cfg['ollama_api_key_enc']);
+        } elseif ($apiKey !== '') {
+            $cfg['ollama_api_key_enc'] = secret_encrypt($apiKey);
+        }
+
         $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
         $result = config_save('rag', $cfg, null, $userId);
         if ($result['status'] !== 'ok') {
@@ -284,12 +298,14 @@ if ($action === 'rag_test_query') {
         if (DEMO_MODE) {
             $ollamaResult = ['response' => '[Demo mode] Ollama disabled. Matched ' . count($files) . ' document(s).', 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_ms' => 0];
         } else {
+            require_once __DIR__ . '/../crypto.php';
             $ollamaResult = rag_call_ollama(
                 (string) $cfg['ollama_url'],
                 (string) $cfg['ollama_model'],
                 $prompt,
                 (int) ($cfg['ollama_timeout'] ?? 120),
-                (bool) ($cfg['ollama_ssl_verify'] ?? true)
+                (bool) ($cfg['ollama_ssl_verify'] ?? true),
+                secret_decrypt((string) ($cfg['ollama_api_key_enc'] ?? ''))
             );
         }
 
@@ -315,12 +331,15 @@ if ($action === 'rag_ollama_check') {
     header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
+        require_once __DIR__ . '/../crypto.php';
         $body      = json_decode(file_get_contents('php://input'), true) ?? [];
         $cfg       = rag_config();
         $ollamaUrl = trim((string) ($body['ollama_url'] ?? $cfg['ollama_url'] ?? 'http://localhost:11434'));
         $sslVerify = isset($body['ssl_verify'])
             ? (bool) $body['ssl_verify']
             : (bool) ($cfg['ollama_ssl_verify'] ?? true);
+        $apiKey    = secret_decrypt((string) ($cfg['ollama_api_key_enc'] ?? ''));
+        $authHeaders = ($apiKey !== null && $apiKey !== '') ? ['Authorization: Bearer ' . $apiKey] : [];
 
         if ($ollamaUrl === '') {
             throw new AdminApiMessage('ollama_url is required.');
@@ -341,6 +360,7 @@ if ($action === 'rag_ollama_check') {
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_SSL_VERIFYPEER => $sslVerify,
             CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
+            CURLOPT_HTTPHEADER     => $authHeaders,
         ]);
         $response = curl_exec($ch);
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -378,6 +398,7 @@ if ($action === 'rag_ollama_check') {
                 CURLOPT_CONNECTTIMEOUT => 2,
                 CURLOPT_SSL_VERIFYPEER => $sslVerify,
                 CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
+                CURLOPT_HTTPHEADER     => $authHeaders,
             ]);
             $vResp = curl_exec($vCh);
             curl_close($vCh);

@@ -42,6 +42,7 @@
         "error_loading": "Errore nel caricamento di {table}",
         "cannot_load": "Impossibile caricare la tabella",
         "duplicate": "Duplica",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplicazione fallita: la colonna \"{col}\" deve essere univoca. Modificala nel nuovo record.",
         "duplicate_conflict": "Duplicazione fallita: conflitto di colonna univoca. Modifica il valore nel nuovo record.",
         "search_label": "Ricerca: \"{term}\"",

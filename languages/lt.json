@@ -42,6 +42,7 @@
         "error_loading": "Klaida įkeliant {table}",
         "cannot_load": "Lentelės nepavyko įkelti",
         "duplicate": "Dublikuoti",
+        "more_actions": "More actions",
         "duplicate_unique": "Dublikavimas nepavyko: stulpelis \"{col}\" turi būti unikalus. Redaguokite naujame įraše.",
         "duplicate_conflict": "Dublikavimas nepavyko: unikalaus stulpelio konfliktas. Redaguokite reikšmę naujame įraše.",
         "search_label": "Paieška: \"{term}\"",

@@ -18,7 +18,7 @@ describe('OpenSparrow – Comments: Tab Structure', () => {
       if (res.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
-        .find('td.td-actions button:first-child')
+        .find('[data-cy=row-edit]')
         .click({ force: true });
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
     });
@@ -112,7 +112,7 @@ describe('OpenSparrow – Comments: Add Comment', () => {
       if (res.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
-        .find('td.td-actions button:first-child')
+        .find('[data-cy=row-edit]')
         .click({ force: true });
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
       cy.get('button.tab-btn[data-tab="tab-comments"]').then($btn => {
@@ -183,7 +183,7 @@ describe('OpenSparrow – Comments: Delete Comment', () => {
       if (res.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
-        .find('td.td-actions button:first-child')
+        .find('[data-cy=row-edit]')
         .click({ force: true });
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
       cy.get('button.tab-btn[data-tab="tab-comments"]').then($btn => {
@@ -262,7 +262,7 @@ describe('OpenSparrow – Comments: API Integration', () => {
       if (res.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
-        .find('td.td-actions button:first-child')
+        .find('[data-cy=row-edit]')
         .click({ force: true });
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
       cy.get('button.tab-btn[data-tab="tab-comments"]').then($btn => {
@@ -282,7 +282,7 @@ describe('OpenSparrow – Comments: API Integration', () => {
       if (res.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
-        .find('td.td-actions button:first-child')
+        .find('[data-cy=row-edit]')
         .click({ force: true });
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
       cy.get('button.tab-btn[data-tab="tab-comments"]').then($btn => {

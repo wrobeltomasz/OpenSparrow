@@ -42,6 +42,7 @@
         "error_loading": "Fel vid laddning av {table}",
         "cannot_load": "Kan inte ladda tabellen",
         "duplicate": "Duplicera",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplicering misslyckades: kolumnen \"{col}\" måste vara unik. Redigera den i den nya posten.",
         "duplicate_conflict": "Duplicering misslyckades: konflikt med unik kolumn. Redigera värdet i den nya posten.",
         "search_label": "Sökning: \"{term}\"",

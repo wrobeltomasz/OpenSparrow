@@ -141,6 +141,9 @@ RAG Documents:
   - File list: name, size, tags, date; delete, retag, search by name or tag
   - Statistics: total files and tokens, per-file token counts, query history
   - Configure Ollama (URL, model) and test retrieval-augmented queries directly
+  - Optional Ollama Cloud API key (password field) for the paid Ollama Cloud tier;
+    stored encrypted at rest, sent as a Bearer token — the settings screen never
+    shows the key back, only whether one is configured, with a button to clear it
   - Retrieval uses PostgreSQL full-text search; tag filtering narrows the search
 
 
@@ -269,7 +272,8 @@ Read and written through includes/config_store.php — never as files.
   print         — printout templates
   anonymization — GDPR anonymization rules and dictionary
   user_records  — per-table owner column mapping and record limits
-  rag           — Ollama URL, model, max context files, file size limit, timeout
+  rag           — Ollama URL, model, max context files, file size limit, timeout,
+                  encrypted Ollama Cloud API key (ollama_api_key_enc)
   etl           — external source connection and import job definitions
   etl_flows     — ordered chains ("flows") of existing ETL job ids, run
                   sequentially, stopping on the first step failure

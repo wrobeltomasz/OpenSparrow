@@ -801,9 +801,9 @@ thead th:last-child  { padding-right: 0.6rem; }
 }
 
 .th-actions {
-  width: 100px;
-  min-width: 100px;
-  max-width: 100px;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
 }
 
 .td-actions {
@@ -811,10 +811,36 @@ thead th:last-child  { padding-right: 0.6rem; }
   flex-direction: row;
   align-items: center;
   gap: 2px;
-  width: 100px;
-  min-width: 100px;
-  max-width: 100px;
-  flex-wrap: wrap;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+}
+
+/* ===== GRID ROW ACTIONS MENU (single trigger, reveals icons on hover/click) ===== */
+.td-actions-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.td-actions-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+}
+
+.td-actions-menu:hover .td-actions-panel,
+.td-actions-menu.open .td-actions-panel {
+  display: flex;
 }
 
 .btn-icon, .btn-icon-comment-add {

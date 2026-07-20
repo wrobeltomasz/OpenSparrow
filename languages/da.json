@@ -42,6 +42,7 @@
         "error_loading": "Fejl ved indlæsning af {table}",
         "cannot_load": "Kan ikke indlæse tabellen",
         "duplicate": "Dupliker",
+        "more_actions": "More actions",
         "duplicate_unique": "Duplikering mislykkedes: kolonnen \"{col}\" skal være unik. Rediger den i den nye post.",
         "duplicate_conflict": "Duplikering mislykkedes: konflikt med unik kolonne. Rediger værdien i den nye post.",
         "search_label": "Søgning: \"{term}\"",
