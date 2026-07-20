@@ -189,3 +189,47 @@ describe('OpenSparrow – Agent Panel: Grid Context', () => {
     });
   });
 });
+
+// ============================================================================
+// Test Suite: Context Bar (views page)
+// ============================================================================
+
+describe('OpenSparrow – Agent Panel: Views Context', () => {
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/views.php`);
+    cy.get('#viewContainer .vw-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
+  });
+
+  function openPanel() {
+    cy.get('#agPanel', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+    cy.get('#userAvatarBtn', { timeout: CypressHelpers.TIMEOUTS.medium }).click();
+    cy.get('#openAgentBtn', { timeout: CypressHelpers.TIMEOUTS.short }).should('be.visible').click();
+    cy.get('#agPanel').should('have.class', 'active');
+  }
+
+  it('current table data opt-in is hidden on the view selector screen', () => {
+    openPanel();
+    cy.get('#agGridOpt').should('have.prop', 'hidden', true);
+  });
+
+  it('current table data opt-in appears once a view with rows is opened', () => {
+    cy.get('body').then($body => {
+      if ($body.find('.vw-selector-card').length === 0) {
+        Cypress.log({ message: 'No configured views — skipping' });
+        return;
+      }
+      cy.get('.vw-selector-card').first().click();
+      cy.get('#viewContainer .vw-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
+      cy.get('body').then($b => {
+        if ($b.find('#viewContainer table tbody tr').length === 0) {
+          Cypress.log({ message: 'Opened view has no rows — skipping opt-in check' });
+          return;
+        }
+        openPanel();
+        cy.get('#agGridOpt').should('have.prop', 'hidden', false);
+        cy.get('#agGridDataCb').should('exist');
+      });
+    });
+  });
+});

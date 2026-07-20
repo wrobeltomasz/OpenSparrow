@@ -101,6 +101,10 @@ Ask questions via the "Ask AI" panel (avatar menu → Ask AI, or the chat icon).
 Answers are based on documents uploaded by the admin; tag filtering narrows which
 documents are searched. The Ask AI panel automatically pre-selects the tag matching
 the table you are currently viewing (e.g. on ?table=deals → tag "deals").
+A "Current table data" checkbox lets you additionally attach the rows currently on
+screen (up to 50 rows / 12 columns) as context — available on the grid page and on
+Views report tables; at least one source (a tag or "Current table data") must be
+selected before sending a question.
 
 
 FILES (files.php)

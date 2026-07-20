@@ -154,14 +154,19 @@ function closePanel() {
 // ── Context bar ───────────────────────────────────────────────────────────────
 
 function pageTableName() {
-    return new URLSearchParams(window.location.search).get('table') ?? '';
+    const fromUrl = new URLSearchParams(window.location.search).get('table');
+    if (fromUrl) return fromUrl;
+    // views.php has no ?table= URL param — views.js exposes the active view instead.
+    return window.CURRENT_VIEW?.name ?? '';
 }
 
 function pageTableDisplayName() {
-    const raw = pageTableName();
-    if (!raw) return '';
-    const activeLink = document.querySelector('.custom-nav-link.active[data-table]');
-    return activeLink?.querySelector('.menu-text')?.textContent.trim() || raw;
+    const fromUrl = new URLSearchParams(window.location.search).get('table');
+    if (fromUrl) {
+        const activeLink = document.querySelector('.custom-nav-link.active[data-table]');
+        return activeLink?.querySelector('.menu-text')?.textContent.trim() || fromUrl;
+    }
+    return window.CURRENT_VIEW?.display ?? '';
 }
 
 function updateContextBar() {
@@ -206,7 +211,8 @@ function buildFab() {
 // ── Tags ──────────────────────────────────────────────────────────────────────
 
 function readGridContext() {
-    const table = document.querySelector('#grid table');
+    // #grid table on the grid page; views.php renders its table under #viewContainer (same th[data-col]/tbody shape).
+    const table = document.querySelector('#grid table, #viewContainer table');
     if (!table) return '';
     const tableName = pageTableName();
 
@@ -229,7 +235,8 @@ function readGridContext() {
     const colIndexes = headerEls.map(th => allThs.indexOf(th));
 
     const allRows = [];
-    table.querySelectorAll('tbody tr').forEach(tr => {
+    // views.php grouped tables interleave group-header/subtotal rows that don't align to `headers` — skip them.
+    table.querySelectorAll('tbody tr:not(.vw-group-header):not(.vw-group-subtotal)').forEach(tr => {
         const allTds  = Array.from(tr.querySelectorAll('td'));
         const cells   = colIndexes.map(i => (allTds[i]?.textContent.trim() ?? '').replace(/\s+/g, ' '));
         if (cells.some(c => c !== '')) allRows.push(cells);

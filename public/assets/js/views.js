@@ -442,6 +442,8 @@ function _clearHandlers() {
     pillsEl.replaceChildren();
     pillsEl.classList.remove('active');
     syncClearBtn();
+    // No table is on screen while at the selector — agent-panel.js must not offer "current table data".
+    window.CURRENT_VIEW = null;
 }
 
 /* ── back to selector ── */
@@ -496,14 +498,19 @@ async function loadView(viewName, level, filterCol, filterVal) {
 /* ── render the view table (grid-identical structure) ── */
 function renderView(data) {
     containerEl.innerHTML = '';
-    const { view, level, max_level, group_by, drill_enabled, rows, columns, group_rows } = data;
+    const { view, level, max_level, group_by, drill_enabled, rows, columns, group_rows, display_name } = data;
 
     renderBreadcrumb();
 
     if (rows.length === 0) {
         containerEl.insertAdjacentHTML('beforeend', `<div class="vw-empty">${I18n.t('views.no_data')}</div>`);
+        // No table rendered — agent-panel.js must not offer "current table data".
+        window.CURRENT_VIEW = null;
         return;
     }
+
+    // Exposed for agent-panel.js's "current table data" opt-in (views have no ?table= URL param).
+    window.CURRENT_VIEW = { name: view, display: display_name ?? view };
 
     const allKeys      = Object.keys(rows[0]);
     const canDrillDown = drill_enabled && level < max_level && group_by != null;
