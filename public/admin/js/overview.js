@@ -15,9 +15,23 @@ function ovFmtNum(n) {
     return Number(n).toLocaleString();
 }
 
-function ovStatCard(icon, label, value, sub) {
+function navigateToTab(dataFile) {
+    const tab = document.querySelector('.admin-tab[data-file="' + dataFile + '"]');
+    if (!tab) return;
+    const section = tab.closest('.nav-section');
+    if (section && !section.classList.contains('open')) {
+        section.classList.add('open');
+    }
+    tab.click();
+}
+
+function ovStatCard(icon, label, value, sub, dataFile) {
     const card = document.createElement('div');
     card.className = 'ov-stat-card';
+    if (dataFile) {
+        card.classList.add('ov-stat-clickable');
+        card.addEventListener('click', () => navigateToTab(dataFile));
+    }
 
     const iconEl = document.createElement('img');
     iconEl.src = '../../assets/icons/' + icon;
@@ -196,48 +210,79 @@ export async function renderOverviewPage(ctx) {
     statsRow.className = 'ov-stats-row';
 
     statsRow.appendChild(ovStatCard(
-        'user_attributes.png', 'Users',
-        ovFmtNum(data.user_total),
-        data.user_active + ' active'
-    ));
-    statsRow.appendChild(ovStatCard(
-        'data_table.png', 'Tables',
-        ovFmtNum(data.table_count),
-        'in schema'
-    ));
-    statsRow.appendChild(ovStatCard(
-        'database.png', 'Records',
-        ovFmtNum(data.total_records),
-        data.table_count + ' tables'
-    ));
-    statsRow.appendChild(ovStatCard(
-        'upload.png', 'Files',
-        ovFmtNum(data.file_count),
-        ovFmtBytes(data.file_size_bytes)
-    ));
-    statsRow.appendChild(ovStatCard(
-        'docs.png', 'RAG Docs',
-        ovFmtNum(data.rag_count),
-        'documents'
-    ));
-    statsRow.appendChild(ovStatCard(
-        'table_chart_view.png', 'Views',
-        ovFmtNum(data.view_count),
-        'configured'
+        'fact_check.png', 'Anonymization',
+        ovFmtNum(data.anonymization_rule_count),
+        data.anonymization_enabled ? 'enabled' : 'disabled',
+        'anonymization'
     ));
     statsRow.appendChild(ovStatCard(
         'automation.png', 'Automations',
         ovFmtNum(data.automation_count),
-        'rules'
+        'rules',
+        'automations'
     ));
-
+    statsRow.appendChild(ovStatCard(
+        'database.png', 'ETL Jobs',
+        ovFmtNum(data.etl_job_count),
+        'configured',
+        'etl'
+    ));
+    statsRow.appendChild(ovStatCard(
+        'upload.png', 'Files',
+        ovFmtNum(data.file_count),
+        ovFmtBytes(data.file_size_bytes),
+        'files'
+    ));
     const lastCronRaw  = data.last_cron_run ?? null;
     const lastCronTime = lastCronRaw ? lastCronRaw.slice(11) : 'Never';
     const lastCronDate = lastCronRaw ? lastCronRaw.slice(0, 10) : '';
     statsRow.appendChild(ovStatCard(
         'manage_history.png', 'Last Cron',
         lastCronTime,
-        lastCronDate
+        lastCronDate,
+        'cron'
+    ));
+    statsRow.appendChild(ovStatCard(
+        'picture_as_pdf.png', 'Printouts',
+        ovFmtNum(data.print_count),
+        'templates',
+        'print'
+    ));
+    statsRow.appendChild(ovStatCard(
+        'docs.png', 'RAG Docs',
+        ovFmtNum(data.rag_count),
+        'documents',
+        'rag'
+    ));
+    statsRow.appendChild(ovStatCard(
+        'database.png', 'Records',
+        ovFmtNum(data.total_records),
+        data.table_count + ' tables',
+        'schema'
+    ));
+    statsRow.appendChild(ovStatCard(
+        'data_table.png', 'Tables',
+        ovFmtNum(data.table_count),
+        'in schema',
+        'schema'
+    ));
+    statsRow.appendChild(ovStatCard(
+        'user_attributes.png', 'Users',
+        ovFmtNum(data.user_total),
+        data.user_active + ' active',
+        'users'
+    ));
+    statsRow.appendChild(ovStatCard(
+        'table_chart_view.png', 'Views',
+        ovFmtNum(data.view_count),
+        'configured',
+        'views'
+    ));
+    statsRow.appendChild(ovStatCard(
+        'build.png', 'Workflows',
+        ovFmtNum(data.workflow_count),
+        'configured',
+        'workflows'
     ));
 
     workspaceEl.appendChild(statsRow);
@@ -318,6 +363,54 @@ export async function renderOverviewPage(ctx) {
     dbSizeRow.appendChild(dbLabel);
     dbSizeRow.appendChild(dbVal);
     statusPanel.appendChild(dbSizeRow);
+
+    statusPanel.appendChild(ovStatusRow(
+        'Secure cookies',
+        data.secure_cookies_ok,
+        data.secure_cookies_ok ? 'Enabled' : 'Disabled — enable in production'
+    ));
+    statusPanel.appendChild(ovStatusRow(
+        'IP hash salt',
+        data.ip_hash_salt_ok,
+        data.ip_hash_salt_ok ? 'Configured' : 'Not set — required in production'
+    ));
+
+    const sessionRow = document.createElement('div');
+    sessionRow.className = 'ov-status-row';
+    const sessionLabel = document.createElement('span');
+    sessionLabel.className = 'ov-status-label';
+    sessionLabel.textContent = 'Session lifetime';
+    const sessionVal = document.createElement('span');
+    sessionVal.className = 'ov-status-detail';
+    const sessionHours = data.session_lifetime ? (Number(data.session_lifetime) / 3600).toFixed(1) + ' h' : '—';
+    sessionVal.textContent = sessionHours;
+    sessionRow.appendChild(sessionLabel);
+    sessionRow.appendChild(sessionVal);
+    statusPanel.appendChild(sessionRow);
+
+    const memoryRow = document.createElement('div');
+    memoryRow.className = 'ov-status-row';
+    const memoryLabel = document.createElement('span');
+    memoryLabel.className = 'ov-status-label';
+    memoryLabel.textContent = 'PHP memory limit';
+    const memoryVal = document.createElement('span');
+    memoryVal.className = 'ov-status-detail';
+    memoryVal.textContent = ovEsc(data.memory_limit ?? '—');
+    memoryRow.appendChild(memoryLabel);
+    memoryRow.appendChild(memoryVal);
+    statusPanel.appendChild(memoryRow);
+
+    const uploadRow = document.createElement('div');
+    uploadRow.className = 'ov-status-row';
+    const uploadLabel = document.createElement('span');
+    uploadLabel.className = 'ov-status-label';
+    uploadLabel.textContent = 'Upload max filesize';
+    const uploadVal = document.createElement('span');
+    uploadVal.className = 'ov-status-detail';
+    uploadVal.textContent = ovEsc(data.upload_max_filesize ?? '—');
+    uploadRow.appendChild(uploadLabel);
+    uploadRow.appendChild(uploadVal);
+    statusPanel.appendChild(uploadRow);
 
     midRow.appendChild(statusPanel);
     workspaceEl.appendChild(midRow);

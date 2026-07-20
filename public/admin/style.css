@@ -1238,6 +1238,14 @@ textarea.adm-input {
     padding: 14px 16px;
     box-shadow: var(--shadow-sm);
 }
+.ov-stat-clickable {
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ov-stat-clickable:hover {
+    border-color: var(--accent, #3a6ea5);
+    box-shadow: var(--shadow-md, 0 2px 8px rgba(0,0,0,0.12));
+}
 .ov-stat-icon {
     width: 28px;
     height: 28px;

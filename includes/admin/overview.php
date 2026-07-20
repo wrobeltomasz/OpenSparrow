@@ -60,6 +60,25 @@ if ($action === 'overview') {
         // -- Automations (config-driven) --
         $autoCount = count(auto_cfg_read());
 
+        // -- Workflows (config-driven) --
+        $wfObj    = config_get('workflows');
+        $wfCount  = (is_array($wfObj) && is_array($wfObj['workflows'] ?? null)) ? count($wfObj['workflows']) : 0;
+
+        // -- ETL jobs (config-driven) --
+        $etlObj    = config_get('etl');
+        $etlCount  = (is_array($etlObj) && is_array($etlObj['jobs'] ?? null)) ? count($etlObj['jobs']) : 0;
+
+        // -- Printouts (config-driven) --
+        $printRow  = config_get_row('print');
+        $printCfg  = $printRow['value'] ?? [];
+        $printCount = (is_array($printCfg) && is_array($printCfg['prints'] ?? null)) ? count($printCfg['prints']) : 0;
+
+        // -- Anonymization rules (config-driven) --
+        $anonRow   = config_get_row('anonymization');
+        $anonCfg   = $anonRow['value'] ?? [];
+        $anonCount = (is_array($anonCfg) && is_array($anonCfg['rules'] ?? null)) ? count($anonCfg['rules']) : 0;
+        $anonEnabled = is_array($anonCfg) && !empty($anonCfg['enabled']);
+
         // -- Cron recent runs (last 5) --
         $tCronLog = sys_table('users_notifications_log');
         $cLogRes  = @pg_query($conn, "
@@ -128,6 +147,11 @@ if ($action === 'overview') {
             $pgVersion = $m[1];
         }
         $displayErrors = ini_get('display_errors');
+        $memoryLimit   = ini_get('memory_limit');
+        $uploadMax     = ini_get('upload_max_filesize');
+        $secureCookiesOk = defined('SECURE_COOKIES') ? (bool) SECURE_COOKIES : false;
+        $ipHashSaltOk    = defined('IP_HASH_SALT') && IP_HASH_SALT !== '';
+        $sessionLifetime = defined('SESSION_MAX_LIFETIME') ? (int) SESSION_MAX_LIFETIME : 0;
 
         echo json_encode([
             'status'            => 'success',
@@ -142,6 +166,11 @@ if ($action === 'overview') {
             'rag_count'         => $ragCount,
             'view_count'        => $viewCount,
             'automation_count'  => $autoCount,
+            'workflow_count'    => $wfCount,
+            'etl_job_count'     => $etlCount,
+            'print_count'       => $printCount,
+            'anonymization_rule_count' => $anonCount,
+            'anonymization_enabled'    => $anonEnabled,
             'last_cron_run'     => $lastCronRun,
             'cron_recent'       => $cronRecent,
             'audit_recent'      => $auditRecent,
@@ -151,6 +180,11 @@ if ($action === 'overview') {
             'php_ok'            => version_compare(PHP_VERSION, '8.1.0', '>='),
             'display_errors_ok' => ($displayErrors === '' || $displayErrors == '0' || strtolower((string) $displayErrors) === 'off'),
             'pending_migrations' => $pendingMig,
+            'memory_limit'       => $memoryLimit,
+            'upload_max_filesize' => $uploadMax,
+            'secure_cookies_ok'  => $secureCookiesOk,
+            'ip_hash_salt_ok'    => $ipHashSaltOk,
+            'session_lifetime'   => $sessionLifetime,
         ]);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
