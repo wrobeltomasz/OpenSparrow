@@ -4,6 +4,7 @@ import { debugLog } from '../../debug.js';
 import { fetchCommentCounts } from '../api.js';
 import { state } from '../state.js';
 import { I18n } from '../../i18n.js';
+import { makeIconButton } from '../dom.js';
 
 export async function loadCommentCounts(pageRows) {
     if (!state.currentTable || pageRows.length === 0) return;
@@ -31,18 +32,19 @@ export async function loadCommentCounts(pageRows) {
                 });
                 td.appendChild(badge);
             } else {
-                const addBtn = document.createElement('button');
-                addBtn.className = 'btn-icon-comment-add';
-                addBtn.title = I18n.t('grid.add_comment');
-                const img = document.createElement('img');
-                img.src = 'assets/icons/add_comment.png';
-                img.alt = I18n.t('grid.add_comment');
-                addBtn.appendChild(img);
-                addBtn.addEventListener('click', e => {
-                    e.stopPropagation();
-                    window.location.href = `edit.php?table=${encodeURIComponent(state.currentTable)}&id=${encodeURIComponent(rowId)}#tab-comments`;
+                const panel = td.querySelector('.td-actions-panel');
+                if (!panel) continue;
+                const addBtn = makeIconButton({
+                    cy: 'row-comment-add',
+                    title: I18n.t('grid.add_comment'),
+                    icon: 'assets/icons/add_comment.png',
+                    className: 'btn-icon-comment-add',
+                    onClick: e => {
+                        e.stopPropagation();
+                        window.location.href = `edit.php?table=${encodeURIComponent(state.currentTable)}&id=${encodeURIComponent(rowId)}#tab-comments`;
+                    },
                 });
-                td.appendChild(addBtn);
+                panel.appendChild(addBtn);
             }
         }
     } catch (err) {
