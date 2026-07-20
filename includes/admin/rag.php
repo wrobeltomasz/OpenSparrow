@@ -356,8 +356,8 @@ if ($action === 'rag_ollama_check') {
         }
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 8,
-            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => $sslVerify,
             CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
             CURLOPT_HTTPHEADER     => $authHeaders,
@@ -394,8 +394,8 @@ if ($action === 'rag_ollama_check') {
         if ($vCh !== false) {
             curl_setopt_array($vCh, [
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT        => 3,
-                CURLOPT_CONNECTTIMEOUT => 2,
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_CONNECTTIMEOUT => 5,
                 CURLOPT_SSL_VERIFYPEER => $sslVerify,
                 CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
                 CURLOPT_HTTPHEADER     => $authHeaders,
