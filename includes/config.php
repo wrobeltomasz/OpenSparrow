@@ -378,39 +378,3 @@ define('RAG_MAX_CONCURRENT', (int) get_env('RAG_MAX_CONCURRENT', '2'));
 // client. The client already limits rows and columns; this guards against a tampered
 // client sending an oversized payload.
 define('RAG_PAGE_CONTEXT_MAX_CHARS', (int) get_env('RAG_PAGE_CONTEXT_MAX_CHARS', '12000'));
-// -------------------------------------------------------------------------
-// MySQL (ETL source connection)
-// -------------------------------------------------------------------------
-
-// Credentials resolved from env vars first, then config/mysql_connection.json
-// (gitignored, web-denied by config/.htaccess). Env vars always take precedence.
-(static function (): void {
-    $envHost = get_env('MYSQL_HOST', '');
-    $envPort = get_env('MYSQL_PORT', '');
-    $envDb   = get_env('MYSQL_DB', '');
-    $envUser = get_env('MYSQL_USER', '');
-    $envPass = get_env('MYSQL_PASSWORD', '');
-
-    $file = [];
-    if ($envHost === '' || $envDb === '' || $envUser === '') {
-        $path    = __DIR__ . '/../config/mysql_connection.json';
-        $raw     = is_file($path) ? @file_get_contents($path) : false;
-        $decoded = $raw !== false ? json_decode($raw, true) : null;
-        if (is_array($decoded)) {
-            $file = $decoded;
-        }
-    }
-
-    define('MYSQL_HOST', $envHost !== '' ? $envHost : (string) ($file['host']     ?? ''));
-    define('MYSQL_PORT', $envPort !== '' ? (int) $envPort : (int) ($file['port'] ?? 3306));
-    define('MYSQL_DB', $envDb   !== '' ? $envDb   : (string) ($file['database'] ?? ''));
-    define('MYSQL_USER', $envUser !== '' ? $envUser : (string) ($file['user']     ?? ''));
-    define('MYSQL_PASSWORD', $envPass !== '' ? $envPass : (string) ($file['password'] ?? ''));
-})();
-
-// Strict connect timeout (seconds) applied to every MySQL (ETL source) PDO connection
-// (both the DSN connect_timeout and PDO::ATTR_TIMEOUT). Kept deliberately low so a
-// firewalled, hung, or dead MySQL host fails fast instead of tying up a PHP worker
-// long enough to starve the core PostgreSQL request path. Floor of 1s — never 0,
-// which several drivers treat as "no timeout". Env-overridable.
-define('MYSQL_CONNECT_TIMEOUT', max(1, (int) get_env('MYSQL_CONNECT_TIMEOUT', '2')));

@@ -2,7 +2,8 @@
 
 // cron/cron_notifications.php — CLI cron: calendar-based in-app notifications + automation email delivery
 // Reads the "calendar" config sources and inserts spw_users_notifications rows (daily de-duplication)
-// Also delivers pending rows from spw_automation_emails (queued by the "email" automation action) via mail();
+// Also delivers pending rows from spw_automation_emails (queued by the "email" automation action)
+// via SMTP (includes/smtp_client.php) when configured in Admin > Cron > Email, else PHP mail();
 // requires AUTOMATION_EMAIL_FROM, retries up to AUTOMATION_EMAIL_MAX_ATTEMPTS, header-injection safe
 declare(strict_types=1);
 
@@ -147,9 +148,35 @@ try {
     $tAutoEmails = sys_table('automation_emails');
     $emailsSent  = 0;
     $emailsFailed = 0;
+
+    $appSettings = config_get('settings') ?? [];
+    $smtpEnabled = !empty($appSettings['smtp_enabled']);
+    if ($smtpEnabled) {
+        require_once __DIR__ . '/../includes/smtp_client.php';
+        require_once __DIR__ . '/../includes/crypto.php';
+    }
+    $smtpPassword = '';
+    if ($smtpEnabled) {
+        $smtpPassword = (string) (secret_decrypt((string) ($appSettings['smtp_password_enc'] ?? '')) ?? '');
+    }
+    $smtpConfig = [
+        'host'       => (string) ($appSettings['smtp_host'] ?? ''),
+        'port'       => (int) ($appSettings['smtp_port'] ?? 587),
+        'encryption' => (string) ($appSettings['smtp_encryption'] ?? 'tls'),
+        'username'   => (string) ($appSettings['smtp_username'] ?? ''),
+        'password'   => $smtpPassword,
+        'from'       => AUTOMATION_EMAIL_FROM,
+    ];
+
     if (AUTOMATION_EMAIL_FROM === '') {
         print_log("<span style='color:orange;'>AUTOMATION_EMAIL_FROM is not configured — skipping email delivery (queued emails stay pending).</span>");
+    } elseif ($smtpEnabled && $smtpConfig['host'] === '') {
+        print_log("<span style='color:orange;'>SMTP delivery is enabled but no SMTP host is configured — skipping email delivery (queued emails stay pending).</span>");
     } else {
+        $methodLabel = $smtpEnabled
+            ? 'SMTP (' . htmlspecialchars($smtpConfig['host'], ENT_QUOTES, 'UTF-8') . ')'
+            : 'PHP mail()';
+        print_log('Delivery method: <b>' . $methodLabel . '</b>');
         $pendRes = pg_query_params(
             $conn,
             "SELECT id, recipient, subject, body FROM $tAutoEmails
@@ -167,17 +194,25 @@ try {
             $mailId    = (int) $mailRow['id'];
             $recipient = $hdrSafe((string) $mailRow['recipient']);
             $subject   = $hdrSafe((string) $mailRow['subject']);
-            $headers   = 'From: ' . $hdrSafe(AUTOMATION_EMAIL_FROM) . "\r\n"
-                       . "MIME-Version: 1.0\r\n"
-                       . "Content-Type: text/plain; charset=UTF-8\r\n"
-                       . "Content-Transfer-Encoding: 8bit";
 
-            $ok = @mail(
-                $recipient,
-                '=?UTF-8?B?' . base64_encode($subject) . '?=',
-                (string) $mailRow['body'],
-                $headers
-            );
+            if ($smtpEnabled) {
+                $result = smtp_send($smtpConfig, $recipient, $subject, (string) $mailRow['body']);
+                $ok = $result['ok'];
+                $failReason = $result['error'] ?? 'SMTP delivery failed';
+            } else {
+                $headers = 'From: ' . $hdrSafe(AUTOMATION_EMAIL_FROM) . "\r\n"
+                         . "MIME-Version: 1.0\r\n"
+                         . "Content-Type: text/plain; charset=UTF-8\r\n"
+                         . "Content-Transfer-Encoding: 8bit";
+
+                $ok = @mail(
+                    $recipient,
+                    '=?UTF-8?B?' . base64_encode($subject) . '?=',
+                    (string) $mailRow['body'],
+                    $headers
+                );
+                $failReason = 'mail() returned false';
+            }
 
             if ($ok) {
                 pg_query_params(
@@ -196,10 +231,10 @@ try {
                          error_msg = \$2,
                          status = CASE WHEN attempts + 1 >= \$3 THEN 'error' ELSE 'pending' END
                      WHERE id = \$1",
-                    [$mailId, 'mail() returned false', AUTOMATION_EMAIL_MAX_ATTEMPTS]
+                    [$mailId, $failReason, AUTOMATION_EMAIL_MAX_ATTEMPTS]
                 );
                 $emailsFailed++;
-                print_log("<span style='color:red;'>&nbsp;&nbsp; Failed email #$mailId to " . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8') . "</span>");
+                print_log("<span style='color:red;'>&nbsp;&nbsp; Failed email #$mailId to " . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8') . ": " . htmlspecialchars($failReason, ENT_QUOTES, 'UTF-8') . "</span>");
             }
         }
         print_log("Emails sent: <b>$emailsSent</b>, failed this run: <b>$emailsFailed</b>");

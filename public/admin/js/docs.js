@@ -295,7 +295,8 @@ ${_ul([
     `<strong>2. ${s.s9h_li2_label}:</strong> ${s.s9h_li2}`,
     `<strong>3. ${s.s9h_li3_label}:</strong> ${s.s9h_li3}`,
     `<strong>4. ${s.s9h_li4_label}:</strong> ${s.s9h_li4}`,
-    `<strong>5. ${s.s9h_li5_label}:</strong> ${s.s9h_li5}`
+    `<strong>5. ${s.s9h_li5_label}:</strong> ${s.s9h_li5}`,
+    `<strong>6. ${s.s9h_li6_label}:</strong> ${s.s9h_li6}`
 ])}
 
 ${_h3('doc-9i', s.s9i_head)}

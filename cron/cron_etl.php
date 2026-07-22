@@ -21,28 +21,8 @@ declare(strict_types=1);
 
 const ETL_MAX_PARALLEL_JOBS = 4;
 
-if (php_sapi_name() !== 'cli') {
-    http_response_code(403);
-    exit;
-}
-
-@ini_set('output_buffering', 'off');
-while (ob_get_level() > 0) {
-    ob_end_clean();
-}
-ob_implicit_flush(true);
-
-function etl_cli_log(string $msg): void
-{
-    echo $msg . "\n";
-    echo str_pad('', 4096) . "\n";
-    flush();
-}
-
-require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/api_helpers.php';
-require_once __DIR__ . '/../includes/config_store.php';
-require_once __DIR__ . '/../includes/etl_engine.php';
+require_once __DIR__ . '/../includes/etl_cli.php';
+etl_cli_boot();
 
 /**
  * Run exactly one job (by id) against the current config and log the result to
@@ -77,7 +57,7 @@ function etl_run_single_job(
     etl_cli_log("[etl] Job '{$jobName}' → {$job['target_table']} (" . ($job['load_mode'] ?? 'full_refresh') . ')...');
 
     $tLog     = sys_table('etl_log');
-    $logTable = @pg_query($conn, "SELECT 1 FROM {$tLog} LIMIT 0") !== false;
+    $logTable = etl_log_table_ready($conn, $tLog);
 
     $logId = null;
     if ($logTable && !$dryRun) {
@@ -175,24 +155,26 @@ try {
 }
 
 $tLog     = sys_table('etl_log');
-$logTable = @pg_query($conn, "SELECT 1 FROM {$tLog} LIMIT 0") !== false;
+$logTable = etl_log_table_ready($conn, $tLog);
 if (!$logTable) {
     etl_cli_log('[etl] Note: log table missing — run Initialize System Tables to enable run history.');
 }
+$interval = etl_interval_expr($frequency);
 
-// Frequency guard for scheduled runs — skip when a successful run exists in-window.
-if ($triggeredBy === 'cron' && $logTable) {
-    $intervalMap = ['daily' => '1 day', 'weekly' => '7 days', 'monthly' => '30 days'];
-    $interval    = $intervalMap[$frequency] ?? '1 day';
-    $recent      = @pg_query(
+/**
+ * Whether a scheduled run already succeeded for this job inside the frequency window.
+ * Per-job and scoped to triggered_by = 'cron', so a manual (admin) or flow-triggered
+ * run — and other jobs' successes — never suppress this job's scheduled run.
+ */
+$ranInWindow = static function (string $jobId) use ($conn, $tLog, $interval): bool {
+    $recent = @pg_query_params(
         $conn,
-        "SELECT 1 FROM {$tLog} WHERE status = 'success' AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1"
+        "SELECT 1 FROM {$tLog} WHERE job_id = \$1 AND triggered_by = 'cron' AND status = 'success' "
+        . "AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
+        [$jobId]
     );
-    if ($recent && pg_num_rows($recent) > 0) {
-        etl_cli_log("[etl] Skipping: a successful run exists within the '{$frequency}' window.");
-        exit(0);
-    }
-}
+    return $recent && pg_num_rows($recent) > 0;
+};
 
 // Which job ids will actually run.
 $jobIds = [];
@@ -206,6 +188,11 @@ foreach ($jobs as $job) {
     }
     // Scheduled runs skip disabled jobs; an explicit admin single-job run always runs.
     if ($onlyJobId === null && empty($job['enabled'])) {
+        continue;
+    }
+    // Per-job frequency guard for scheduled runs.
+    if ($triggeredBy === 'cron' && $logTable && $ranInWindow($jobId)) {
+        etl_cli_log("[etl] Skipping job '{$jobId}': a scheduled run already succeeded within the '{$frequency}' window.");
         continue;
     }
     $jobIds[] = $jobId;

@@ -414,6 +414,255 @@ function buildCleanupSection() {
     return card;
 }
 
+// ─── Section 6: Email Delivery ───────────────────────────────────────────────
+
+function cronField(labelText, inputEl) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:14px;';
+    const lbl = document.createElement('label');
+    lbl.textContent = labelText;
+    lbl.className = 'adm-field-label';
+    if (inputEl.id) lbl.htmlFor = inputEl.id;
+    wrap.append(lbl, inputEl);
+    return wrap;
+}
+
+function buildEmailSection() {
+    const { card, body } = cronMakeSection('cron-section-5', 'Email Delivery', 'Delivery settings for queued automation emails (spw_automation_emails). By default OpenSparrow uses the server\'s PHP mail() — enable SMTP below to send through an authenticated mail server instead.');
+
+    // ── From address ──────────────────────────────────────────────────────
+    const fromInput = document.createElement('input');
+    fromInput.type = 'email';
+    fromInput.id = 'cron-email-from';
+    fromInput.placeholder = 'noreply@example.com';
+    fromInput.className = 'adm-input w-260';
+
+    const lockNote = document.createElement('p');
+    lockNote.className = 'c-muted';
+    lockNote.style.cssText = 'margin:-8px 0 14px; display:none;';
+    lockNote.textContent = 'Controlled by the AUTOMATION_EMAIL_FROM environment variable — cannot be changed here.';
+
+    body.append(cronField('From address', fromInput), lockNote);
+
+    // ── SMTP enabled toggle ───────────────────────────────────────────────
+    const smtpRow = document.createElement('div');
+    smtpRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:16px;';
+    const smtpChk = document.createElement('input');
+    smtpChk.type = 'checkbox';
+    smtpChk.id = 'cron-smtp-enabled';
+    smtpChk.className = 'adm-check';
+    const smtpLbl = document.createElement('label');
+    smtpLbl.htmlFor = 'cron-smtp-enabled';
+    smtpLbl.textContent = 'Send via SMTP (instead of PHP mail())';
+    smtpLbl.style.cssText = 'cursor:pointer;';
+    smtpRow.append(smtpChk, smtpLbl);
+    body.appendChild(smtpRow);
+
+    // ── SMTP fields ────────────────────────────────────────────────────────
+    const smtpFields = document.createElement('div');
+    smtpFields.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0 16px;';
+
+    const hostInput = document.createElement('input');
+    hostInput.type = 'text';
+    hostInput.id = 'cron-smtp-host';
+    hostInput.placeholder = 'smtp.example.com';
+    hostInput.className = 'adm-input w-full';
+
+    const portInput = document.createElement('input');
+    portInput.type = 'number';
+    portInput.id = 'cron-smtp-port';
+    portInput.min = '1';
+    portInput.max = '65535';
+    portInput.value = '587';
+    portInput.className = 'adm-input w-full';
+
+    const encSelect = document.createElement('select');
+    encSelect.id = 'cron-smtp-encryption';
+    encSelect.className = 'adm-input w-full';
+    [['tls', 'STARTTLS (587)'], ['ssl', 'SSL/TLS (465)'], ['none', 'None']].forEach(([val, text]) => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = text;
+        encSelect.appendChild(opt);
+    });
+
+    const userInput = document.createElement('input');
+    userInput.type = 'text';
+    userInput.id = 'cron-smtp-username';
+    userInput.autocomplete = 'off';
+    userInput.className = 'adm-input w-full';
+
+    smtpFields.append(
+        cronField('Host', hostInput),
+        cronField('Port', portInput),
+        cronField('Encryption', encSelect),
+        cronField('Username', userInput)
+    );
+    body.appendChild(smtpFields);
+
+    // Password — write-only, same pattern as the RAG Ollama API key field.
+    const passRow = document.createElement('div');
+    passRow.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:6px;';
+    const passInput = document.createElement('input');
+    passInput.type = 'password';
+    passInput.id = 'cron-smtp-password';
+    passInput.placeholder = 'Leave blank to keep the current password';
+    passInput.autocomplete = 'new-password';
+    passInput.className = 'adm-input flex-1';
+    const passClearBtn = document.createElement('button');
+    passClearBtn.type = 'button';
+    passClearBtn.className = 'btn btn-secondary btn-sm';
+    passClearBtn.textContent = 'Clear password';
+    passClearBtn.style.flexShrink = '0';
+    passRow.append(passInput, passClearBtn);
+
+    const passStatus = document.createElement('div');
+    passStatus.className = 'c-muted';
+    passStatus.style.cssText = 'margin-bottom:16px;';
+
+    let passClearRequested = false;
+    function renderPassStatus(configured) {
+        passStatus.textContent = configured ? 'Password configured.' : 'No password set.';
+    }
+    passClearBtn.addEventListener('click', () => {
+        passClearRequested = true;
+        passInput.value = '';
+        renderPassStatus(false);
+    });
+    passInput.addEventListener('input', () => {
+        if (passInput.value !== '') passClearRequested = false;
+    });
+
+    body.append(cronField('Password', passRow), passStatus);
+
+    // ── Actions ────────────────────────────────────────────────────────────
+    const actionRow = document.createElement('div');
+    actionRow.style.cssText = 'display:flex; gap:10px; align-items:center; margin-top:6px;';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-primary';
+    saveBtn.textContent = 'Save';
+
+    const testBtn = document.createElement('button');
+    testBtn.type = 'button';
+    testBtn.className = 'btn btn-secondary';
+    testBtn.textContent = 'Test SMTP Connection';
+
+    actionRow.append(saveBtn, testBtn);
+
+    const result = document.createElement('p');
+    result.style.cssText = 'margin-top:12px; display:none;';
+
+    body.append(actionRow, result);
+
+    async function load() {
+        try {
+            const res = await apiFetch('api.php?action=get_automation_email_setting');
+            const data = await res.json();
+            fromInput.value = data.from || '';
+            if (data.locked_by_env) {
+                fromInput.disabled = true;
+                lockNote.style.display = '';
+            }
+            smtpChk.checked = !!data.smtp_enabled;
+            hostInput.value = data.smtp_host || '';
+            portInput.value = data.smtp_port || 587;
+            encSelect.value = data.smtp_encryption || 'tls';
+            userInput.value = data.smtp_username || '';
+            renderPassStatus(!!data.smtp_password_configured);
+        } catch (e) {
+            result.textContent = 'Request failed: ' + e.message;
+            result.style.color = '#a80000';
+            result.style.display = '';
+        }
+    }
+
+    function buildPayload() {
+        const payload = {
+            from: fromInput.value.trim(),
+            smtp_enabled: smtpChk.checked,
+            smtp_host: hostInput.value.trim(),
+            smtp_port: parseInt(portInput.value, 10) || 587,
+            smtp_encryption: encSelect.value,
+            smtp_username: userInput.value.trim(),
+        };
+        if (passInput.value !== '') {
+            payload.smtp_password = passInput.value;
+        } else if (passClearRequested) {
+            payload.smtp_password_clear = true;
+        }
+        return payload;
+    }
+
+    saveBtn.addEventListener('click', async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+        result.style.display = 'none';
+
+        try {
+            const res = await apiFetch('api.php?action=set_automation_email_setting', {
+                method: 'POST',
+                body: JSON.stringify(buildPayload())
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                result.textContent = 'Saved.';
+                result.style.color = 'var(--ok)';
+                passInput.value = '';
+                passClearRequested = false;
+                await load();
+            } else {
+                result.textContent = 'Error: ' + (data.error || 'unknown');
+                result.style.color = '#a80000';
+            }
+        } catch (e) {
+            result.textContent = 'Request failed: ' + e.message;
+            result.style.color = '#a80000';
+        }
+
+        result.style.display = '';
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+    });
+
+    testBtn.addEventListener('click', async () => {
+        testBtn.disabled = true;
+        testBtn.textContent = 'Testing…';
+        result.style.display = 'none';
+
+        try {
+            const res = await apiFetch('api.php?action=test_smtp_connection', {
+                method: 'POST',
+                body: JSON.stringify({
+                    smtp_host: hostInput.value.trim(),
+                    smtp_port: parseInt(portInput.value, 10) || 587,
+                    smtp_encryption: encSelect.value,
+                    smtp_username: userInput.value.trim(),
+                    smtp_password: passInput.value,
+                })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                result.textContent = 'Connection successful.';
+                result.style.color = 'var(--ok)';
+            } else {
+                result.textContent = 'Error: ' + (data.error || 'unknown');
+                result.style.color = '#a80000';
+            }
+        } catch (e) {
+            result.textContent = 'Request failed: ' + e.message;
+            result.style.color = '#a80000';
+        }
+
+        result.style.display = '';
+        testBtn.disabled = false;
+        testBtn.textContent = 'Test SMTP Connection';
+    });
+
+    load();
+    return card;
+}
+
 // ─── Main render ──────────────────────────────────────────────────────────────
 
 export function renderCronPage(ctx) {
@@ -430,12 +679,13 @@ export function renderCronPage(ctx) {
         'Run scheduled notification jobs, review run history and statistics, and manage cleanup of old log entries.'
     ));
 
-    const [p0, p1, p2, p3, p4] = buildInnerTabs(wrap, [
+    const [p0, p1, p2, p3, p4, p5] = buildInnerTabs(wrap, [
         { label: 'Run', icon: 'autorenew.png' },
         { label: 'History', icon: 'manage_history.png' },
         { label: 'Statistics', icon: 'bar_chart.png' },
         { label: 'Setup', icon: 'car_gear.png' },
         { label: 'Cleanup', icon: 'folder_zip.png' },
+        { label: 'Email', icon: 'mail.png' },
     ]);
 
     p0.appendChild(buildManualRunSection());
@@ -443,4 +693,5 @@ export function renderCronPage(ctx) {
     p2.appendChild(buildStatsSection());
     p3.appendChild(buildSetupSection());
     p4.appendChild(buildCleanupSection());
+    p5.appendChild(buildEmailSection());
 }

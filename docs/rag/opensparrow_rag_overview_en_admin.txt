@@ -167,6 +167,11 @@ Cron Notifications:
   - Run history (status, output, duration), statistics (avg duration, success rate)
   - Setup guide for the server system cron (cron/notifications.php, e.g. every 15 min)
   - Log cleanup (delete old cron log entries)
+  - Email tab: "From" address for queued automation emails (spw_automation_emails); optional
+    SMTP delivery (host, port, encryption, username, password, "Test SMTP Connection" button)
+    to send authenticated mail instead of the server's PHP mail(). SMTP password is stored
+    encrypted and never shown back in the UI. AUTOMATION_EMAIL_FROM env var, if set, locks
+    the From address (admin field becomes read-only).
 
 Database:
   - Initialize System Tables (creates/updates spw_* tables — required on first install)
@@ -209,7 +214,12 @@ ETL:
   - Preview shows sample rows before saving; Test connection verifies reachability
     (for CSV/FTP sources, also confirms the configured file exists)
   - Schedule: manual / daily / weekly / monthly, run by cron/cron_etl.php; run
-    history (rows read/written, duration, errors) in spw_etl_log
+    history (rows read/written, duration, errors) in spw_etl_log. The frequency
+    window is enforced per job (a job runs again only once its own scheduled run
+    has succeeded within the window) and only counts scheduled (cron) runs, so a
+    manual "Run now" or a flow-triggered run never suppresses a job's next
+    scheduled run. "Run now" reports failure when the underlying worker exits with
+    an error (the captured output is shown either way)
   - Flows tab: chains existing ETL jobs into an ordered sequence via a tile-based
     builder (start, job, job, ..., end tiles; steps reference job ids from the Jobs
     tab and can be reordered/removed). Runs strictly in order and stops immediately
@@ -270,7 +280,8 @@ Read and written through includes/config_store.php — never as files.
 
   schema        — table/column definitions
   menu          — sidebar navigation structure
-  settings      — app name, locale, feature toggles
+  settings      — app name, locale, feature toggles, automation email From address + SMTP
+                  delivery settings (host/port/encryption/username, encrypted password)
   dashboard     — widget layout
   calendar      — calendar event sources
   board         — Kanban board (table, status column, card columns)
@@ -295,6 +306,5 @@ Only bootstrap and distribution files remain on disk:
   database.json       — DB connection (host, port, dbname, user, password, schema);
                         read before any database connection exists, so it cannot live in the DB
   security.json       — CORS, HSTS, CSP, IP whitelist, session and password policy
-  mysql_connection.json — MySQL source connection credentials (ETL module)
   migrations.json     — release manifest (files/config keys removed per version)
   demo_meta.json      — installed demo metadata

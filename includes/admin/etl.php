@@ -358,8 +358,16 @@ if ($action === 'etl_preview') {
         exit;
     }
     try {
-        $stmt = $pdo->query('SELECT * FROM (' . $query . ') AS _etl_preview LIMIT 20');
-        $rows = $stmt->fetchAll();
+        // Run the validated read-only query as-is (do not wrap it in a derived table —
+        // that is invalid SQL for a WITH/CTE query, which the validator permits) and cap
+        // the result to 20 rows by fetching incrementally rather than appending LIMIT
+        // (which would clash with a query that already has its own LIMIT).
+        $stmt = $pdo->query($query);
+        $rows = [];
+        while (count($rows) < 20 && ($row = $stmt->fetch()) !== false) {
+            $rows[] = $row;
+        }
+        $stmt->closeCursor();
     } catch (\PDOException $e) {
         error_log('[etl][preview] ' . $e->getMessage());
         echo json_encode(['status' => 'error', 'error' => 'Preview query failed.']);
@@ -431,26 +439,10 @@ if ($action === 'etl_target_tables') {
 if ($action === 'run_etl') {
     header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
-    $cronScript = realpath(__DIR__ . '/../../cron/cron_etl.php');
-    if ($cronScript === false || !is_readable($cronScript)) {
-        echo json_encode(['status' => 'error', 'error' => 'ETL cron script not found.']);
-        exit;
-    }
-    if (!function_exists('exec')) {
-        echo json_encode(['status' => 'error', 'error' => 'exec() is disabled on this server.']);
-        exit;
-    }
+    require_once __DIR__ . '/etl_common.php';
     $data  = json_decode((string) file_get_contents('php://input'), true);
     $jobId = trim((string)($data['job_id'] ?? ''));
-    $args  = 'admin';
-    if ($jobId !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $jobId)) {
-        $args .= ' ' . escapeshellarg($jobId);
-    }
-    $lines = [];
-    $code  = 0;
-    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' ' . $args . ' 2>&1', $lines, $code);
-    echo json_encode(['status' => 'success', 'output' => implode("\n", $lines)]);
-    exit;
+    etl_admin_run_cron_script(__DIR__ . '/../../cron/cron_etl.php', $jobId, 'ETL cron script not found.');
 }
 
 if ($action === 'etl_log') {

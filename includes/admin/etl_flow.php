@@ -52,7 +52,8 @@ if ($action === 'etl_flow_save') {
         exit;
     }
     require_once __DIR__ . '/../config_store.php';
-    $existing = is_array(config_get('etl_flows')) ? config_get('etl_flows') : [];
+    $existing = config_get('etl_flows');
+    $existing = is_array($existing) ? $existing : [];
 
     $existingFlowsById = [];
     foreach ((array)($existing['flows'] ?? []) as $ef) {
@@ -61,8 +62,9 @@ if ($action === 'etl_flow_save') {
         }
     }
 
+    $etlJobs = (array)(config_get('etl')['jobs'] ?? []);
     $validJobIds = [];
-    foreach ((array)(config_get('etl')['jobs'] ?? []) as $job) {
+    foreach ($etlJobs as $job) {
         if (is_array($job) && (string)($job['id'] ?? '') !== '') {
             $validJobIds[] = (string)$job['id'];
         }
@@ -129,26 +131,10 @@ if ($action === 'etl_flow_save') {
 if ($action === 'run_etl_flow') {
     header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
-    $cronScript = realpath(__DIR__ . '/../../cron/cron_etl_flow.php');
-    if ($cronScript === false || !is_readable($cronScript)) {
-        echo json_encode(['status' => 'error', 'error' => 'ETL Flow cron script not found.']);
-        exit;
-    }
-    if (!function_exists('exec')) {
-        echo json_encode(['status' => 'error', 'error' => 'exec() is disabled on this server.']);
-        exit;
-    }
+    require_once __DIR__ . '/etl_common.php';
     $data   = json_decode((string) file_get_contents('php://input'), true);
     $flowId = trim((string)($data['flow_id'] ?? ''));
-    $args   = 'admin';
-    if ($flowId !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $flowId)) {
-        $args .= ' ' . escapeshellarg($flowId);
-    }
-    $lines = [];
-    $code  = 0;
-    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' ' . $args . ' 2>&1', $lines, $code);
-    echo json_encode(['status' => 'success', 'output' => implode("\n", $lines)]);
-    exit;
+    etl_admin_run_cron_script(__DIR__ . '/../../cron/cron_etl_flow.php', $flowId, 'ETL Flow cron script not found.');
 }
 
 if ($action === 'etl_flow_log') {
@@ -196,10 +182,11 @@ if ($action === 'etl_flow_purge_log') {
     require_not_demo('Demo mode — writes disabled.');
     try {
         require_once __DIR__ . '/../../includes/db.php';
-        $conn    = db_connect();
-        $days    = max(1, (int)(json_decode((string) file_get_contents('php://input'), true)['days'] ?? 90));
-        $tRunLog = sys_table('etl_flow_run_log');
-        $res     = @pg_query_params(
+        $conn     = db_connect();
+        $days     = max(1, (int)(json_decode((string) file_get_contents('php://input'), true)['days'] ?? 90));
+        $tRunLog  = sys_table('etl_flow_run_log');
+        $tStepLog = sys_table('etl_flow_step_log');
+        $res      = @pg_query_params(
             $conn,
             "DELETE FROM {$tRunLog} WHERE started_at < NOW() - (\$1 || ' days')::interval",
             [$days]
@@ -207,6 +194,9 @@ if ($action === 'etl_flow_purge_log') {
         if (!$res) {
             admin_db_fail($conn, 'etl_flow_purge_log');
         }
+        // Step rows normally cascade away with their parent run (FK ON DELETE CASCADE);
+        // this also sweeps any orphans left over from an interrupted/legacy delete.
+        @pg_query($conn, "DELETE FROM {$tStepLog} WHERE flow_run_id NOT IN (SELECT id FROM {$tRunLog})");
         echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);

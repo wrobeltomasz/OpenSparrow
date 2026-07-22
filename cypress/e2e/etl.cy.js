@@ -41,8 +41,8 @@ describe('OpenSparrow – Admin ETL', () => {
 
   // ── Navigation ──────────────────────────────────────────────────────────
 
-  it('shows all four ETL tabs', () => {
-    ['Sources', 'Jobs', 'Schedule', 'History'].forEach(label => {
+  it('shows all five ETL tabs', () => {
+    ['Sources', 'Jobs', 'Schedule', 'History', 'Flows'].forEach(label => {
       cy.contains('#workspace .item-btn', label).should('be.visible');
     });
   });
@@ -186,6 +186,42 @@ describe('OpenSparrow – Admin ETL', () => {
   it('Schedule tab: shows the cron command hint', () => {
     etlTab('Schedule');
     cy.get('#workspace').should('contain.text', 'cron_etl.php');
+  });
+
+  // ── Flows tab ───────────────────────────────────────────────────────────
+
+  it('Flows tab: renders without a load error', () => {
+    etlTab('Flows');
+    cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.long })
+      .should('contain.text', 'Chain existing ETL jobs')
+      .and('not.contain.text', 'Failed to load config')
+      .and('not.contain.text', 'Network error');
+    cy.contains('#workspace button', '+ Add flow').should('be.visible');
+  });
+
+  it('Flows tab: adds a flow and persists it after reload', () => {
+    etlTab('Flows');
+    cy.contains('button', '+ Add flow').click();
+    cy.get('#workspace .column-block').last().within(() => {
+      cy.get('.block-header').click();
+      cy.get('input').eq(0).clear().type('Cypress flow');
+    });
+    cy.contains('#workspace button', 'Save configuration').click();
+    cy.get('#workspace p').should('contain.text', 'saved');
+
+    openEtlTab();
+    etlTab('Flows');
+    cy.get('#workspace .column-block .block-title').should('contain.text', 'Cypress flow');
+  });
+
+  it('Flows tab: deletes a flow after confirmation', () => {
+    etlTab('Flows');
+    cy.window().then(win => cy.stub(win, 'confirm').returns(true));
+    cy.get('#workspace .column-block').last().within(() => {
+      cy.get('.icon-btn-danger').click();
+    });
+    cy.contains('#workspace button', 'Save configuration').click();
+    cy.get('#workspace p').should('contain.text', 'saved');
   });
 
   // ── History tab ─────────────────────────────────────────────────────────

@@ -8,6 +8,10 @@ import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs } from './ui.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 import { renderFlowsTab } from './etl_flow.js';
+import {
+    mkStatus, showStatus, fg, input, checkbox,
+    buildCollapsibleCard, buildHistoryTable, persistConfig, runCronAction,
+} from './etl_common.js';
 
 let etlConfig  = null;
 let etlVersion = 0;
@@ -35,50 +39,14 @@ function fetchTargetTables(schema) {
     return tablesCache.get(schema);
 }
 
-function mkStatus() {
-    const el = document.createElement('p');
-    el.style.cssText = 'margin-top:10px; display:none;';
-    return el;
-}
-function showStatus(el, msg, ok) {
-    el.textContent = msg;
-    el.style.color = ok ? 'var(--ok)' : '#a80000';
-    el.style.display = '';
-}
-function fg(label, node) {
-    const g = document.createElement('div');
-    g.className = 'form-group';
-    const l = document.createElement('label');
-    l.textContent = label;
-    g.append(l, node);
-    return g;
-}
-function input(value, type = 'text') {
-    const i = document.createElement('input');
-    i.type = type;
-    i.className = 'adm-input';
-    i.value = value ?? '';
-    return i;
-}
-
 async function saveConfig(statusEl) {
-    // Rebuild the connection password: keep the stored one unless the user typed a new value.
-    const payload = { ...etlConfig, version: etlVersion };
-    try {
-        const res  = await apiFetch('api.php?action=etl_save', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        if (data.status === 'success') {
-            etlVersion = data.version;
-            if (statusEl) showStatus(statusEl, 'Configuration saved.', true);
-            return true;
-        }
-        if (statusEl) showStatus(statusEl, data.error || 'Save failed.', false);
-    } catch (_) {
-        if (statusEl) showStatus(statusEl, 'Network error while saving.', false);
+    const result = await persistConfig('etl_save', { ...etlConfig, version: etlVersion });
+    if (result.ok) {
+        etlVersion = result.version;
+        if (statusEl) showStatus(statusEl, 'Configuration saved.', true);
+        return true;
     }
+    if (statusEl) showStatus(statusEl, result.error, false);
     return false;
 }
 
@@ -138,36 +106,12 @@ function renderSourcesTab(panel) {
 }
 
 function buildSourceCard(src, idx, redraw, status) {
-    const card = document.createElement('div');
-    card.className = 'column-block';
-
-    const hdr = document.createElement('div');
-    hdr.className = 'block-header';
-    const chevron = document.createElement('span');
-    chevron.className = 'block-chevron';
-    chevron.textContent = '▶';
-    const title = document.createElement('strong');
-    title.className = 'block-title';
-    title.textContent = src.name || '(unnamed source)';
-
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'icon-btn icon-btn-danger';
-    del.title = 'Delete';
-    del.textContent = '✕';
-    del.onclick = (e) => {
-        e.stopPropagation();
-        if (!confirm(`Delete source "${src.name}"? Jobs using it will need a new source assigned.`)) return;
-        etlConfig.sources.splice(idx, 1);
-        redraw();
-    };
-    hdr.append(chevron, title, del);
-    hdr.onclick = (e) => { if (!e.target.closest('button')) card.classList.toggle('collapsed'); };
-    card.appendChild(hdr);
-    card.classList.add('collapsed');
-
-    const body = document.createElement('div');
-    body.className = 'block-body';
+    const { card, body, title } = buildCollapsibleCard({
+        titleText: src.name,
+        placeholder: '(unnamed source)',
+        confirmMsg: `Delete source "${src.name}"? Jobs using it will need a new source assigned.`,
+        onDelete: () => { etlConfig.sources.splice(idx, 1); redraw(); },
+    });
 
     const name = input(src.name);
     name.oninput = () => { src.name = name.value; title.textContent = src.name || '(unnamed source)'; };
@@ -215,21 +159,8 @@ function buildSourceCard(src, idx, redraw, status) {
     csvDelimiter.maxLength = 1;
     csvDelimiter.oninput = () => { src.csv_delimiter = csvDelimiter.value.slice(0, 1) || ','; };
 
-    const csvHasHeader = input('', 'checkbox');
-    csvHasHeader.className = 'adm-check';
-    csvHasHeader.checked = src.csv_has_header !== false;
-    csvHasHeader.onchange = () => { src.csv_has_header = csvHasHeader.checked; };
-    const csvHasHeaderLbl = document.createElement('label');
-    csvHasHeaderLbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
-    csvHasHeaderLbl.append(csvHasHeader, document.createTextNode('First row is a header row'));
-
-    const passiveMode = input('', 'checkbox');
-    passiveMode.className = 'adm-check';
-    passiveMode.checked = src.passive_mode !== false;
-    passiveMode.onchange = () => { src.passive_mode = passiveMode.checked; };
-    const passiveModeLbl = document.createElement('label');
-    passiveModeLbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
-    passiveModeLbl.append(passiveMode, document.createTextNode('Passive mode (usually required behind NAT/firewalls)'));
+    const csvHasHeaderLbl = checkbox('First row is a header row', src.csv_has_header !== false, (v) => { src.csv_has_header = v; }).label;
+    const passiveModeLbl = checkbox('Passive mode (usually required behind NAT/firewalls)', src.passive_mode !== false, (v) => { src.passive_mode = v; }).label;
 
     const hostGrp          = fg('Host', host);
     const portGrp           = fg('Port', port);
@@ -310,7 +241,6 @@ function buildSourceCard(src, idx, redraw, status) {
     btnBar.append(btnTest);
     body.append(btnBar, testStatus);
 
-    card.appendChild(body);
     return card;
 }
 
@@ -351,36 +281,12 @@ function renderJobsTab(panel) {
 }
 
 function buildJobCard(job, idx, redraw, status) {
-    const card = document.createElement('div');
-    card.className = 'column-block';
-
-    const hdr = document.createElement('div');
-    hdr.className = 'block-header';
-    const chevron = document.createElement('span');
-    chevron.className = 'block-chevron';
-    chevron.textContent = '▶';
-    const title = document.createElement('strong');
-    title.className = 'block-title';
-    title.textContent = job.name || '(unnamed job)';
-
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'icon-btn icon-btn-danger';
-    del.title = 'Delete';
-    del.textContent = '✕';
-    del.onclick = (e) => {
-        e.stopPropagation();
-        if (!confirm(`Delete job "${job.name}"?`)) return;
-        etlConfig.jobs.splice(idx, 1);
-        redraw();
-    };
-    hdr.append(chevron, title, del);
-    hdr.onclick = (e) => { if (!e.target.closest('button')) card.classList.toggle('collapsed'); };
-    card.appendChild(hdr);
-    card.classList.add('collapsed');
-
-    const body = document.createElement('div');
-    body.className = 'block-body';
+    const { card, body, title } = buildCollapsibleCard({
+        titleText: job.name,
+        placeholder: '(unnamed job)',
+        confirmMsg: `Delete job "${job.name}"?`,
+        onDelete: () => { etlConfig.jobs.splice(idx, 1); redraw(); },
+    });
 
     const name = input(job.name);
     name.oninput = () => { job.name = name.value; title.textContent = job.name || '(unnamed job)'; };
@@ -495,13 +401,7 @@ function buildJobCard(job, idx, redraw, status) {
     keyGrp.style.display = job.load_mode === 'upsert' ? '' : 'none';
     mode.onchange = () => { job.load_mode = mode.value; keyGrp.style.display = mode.value === 'upsert' ? '' : 'none'; };
 
-    const enabled = input('', 'checkbox');
-    enabled.className = 'adm-check';
-    enabled.checked = job.enabled !== false;
-    enabled.onchange = () => { job.enabled = enabled.checked; };
-    const enabledLbl = document.createElement('label');
-    enabledLbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
-    enabledLbl.append(enabled, document.createTextNode('Enabled (runs on schedule)'));
+    const enabledLbl = checkbox('Enabled (runs on schedule)', job.enabled !== false, (v) => { job.enabled = v; }).label;
 
     const batchSize = input(String(job.batch_size ?? 500), 'number');
     batchSize.min = '50'; batchSize.max = '5000';
@@ -584,16 +484,7 @@ function buildJobCard(job, idx, redraw, status) {
     btnRun.style.marginLeft = '8px';
     btnRun.onclick = async () => {
         if (!(await saveConfig(status))) return; // persist so the cron reads the latest job
-        out.style.display = '';
-        out.textContent = 'Running…';
-        try {
-            const res  = await apiFetch('api.php?action=run_etl', {
-                method: 'POST',
-                body: JSON.stringify({ job_id: job.id }),
-            });
-            const data = await res.json();
-            out.textContent = data.output || (data.error || 'No output.');
-        } catch (_) { out.textContent = 'Network error.'; }
+        await runCronAction('run_etl', { job_id: job.id }, out);
     };
 
     const btnBar = document.createElement('div');
@@ -601,7 +492,6 @@ function buildJobCard(job, idx, redraw, status) {
     btnBar.append(btnPreview, btnRun);
     body.append(btnBar, out);
 
-    card.appendChild(body);
     return card;
 }
 
@@ -616,13 +506,7 @@ function renderPreview(columns, rows) {
 function renderScheduleTab(panel) {
     const status = mkStatus();
 
-    const enabled = input('', 'checkbox');
-    enabled.className = 'adm-check';
-    enabled.checked = !!etlConfig.enabled;
-    enabled.onchange = () => { etlConfig.enabled = enabled.checked; };
-    const enabledLbl = document.createElement('label');
-    enabledLbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
-    enabledLbl.append(enabled, document.createTextNode('Enable scheduled ETL runs'));
+    const enabledLbl = checkbox('Enable scheduled ETL runs', !!etlConfig.enabled, (v) => { etlConfig.enabled = v; }).label;
 
     const freq = document.createElement('select');
     freq.className = 'adm-input';
@@ -681,60 +565,27 @@ async function renderHistoryTab(panel) {
             if (data.note && (!data.rows || data.rows.length === 0)) { tableWrap.textContent = data.note; return; }
             if (!data.rows || data.rows.length === 0) { tableWrap.textContent = 'No runs yet.'; return; }
             tableWrap.innerHTML = '';
-            tableWrap.appendChild(buildHistoryTable(data.rows));
+            tableWrap.appendChild(buildJobHistory(data.rows));
         } catch (_) { tableWrap.textContent = 'Network error.'; }
     }
     load();
 }
 
-function buildHistoryTable(rows) {
-    const tbl = document.createElement('table');
-    tbl.className = 'adm-tbl';
-
-    const thead = tbl.createTHead();
-    const hr = thead.insertRow();
-    ['Started', 'Job', 'Trigger', 'Status', 'Read', 'Written', 'Duration (s)', 'Error'].forEach(h => {
-        const th = document.createElement('th');
-        th.className = 'adm-th';
-        th.textContent = h;
-        hr.appendChild(th);
-    });
-
-    const tbody = tbl.createTBody();
-    const clsMap = { success: 'ok', error: 'danger', running: 'warn' };
-    rows.forEach(r => {
-        const tr = tbody.insertRow();
-        function td(text, css) {
-            const el = document.createElement('td');
-            el.className = 'adm-td';
-            if (css) el.style.cssText = css;
-            el.textContent = text ?? '—';
-            return el;
-        }
-        const badge = document.createElement('span');
-        badge.className = 'adm-badge adm-badge-' + (clsMap[r.status] || 'muted');
-        badge.textContent = r.status || '';
-        const tdSt = document.createElement('td');
-        tdSt.className = 'adm-td';
-        tdSt.appendChild(badge);
-
-        const dur = r.duration_sec != null ? Math.round(parseFloat(r.duration_sec)) : '';
-        tr.append(
-            td(r.started_at || ''),
-            td(r.job_name || ''),
-            td(r.triggered_by || ''),
-            tdSt,
-            td(r.rows_read || '0'),
-            td(r.rows_written || '0'),
-            td(dur),
-            td(r.error_message || '', 'color:var(--danger); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
-        );
-    });
-
-    const wrap = document.createElement('div');
-    wrap.style.overflowX = 'auto';
-    wrap.appendChild(tbl);
-    return wrap;
+function buildJobHistory(rows) {
+    return buildHistoryTable(
+        ['Started', 'Job', 'Trigger', 'Status', 'Read', 'Written', 'Duration (s)', 'Error'],
+        rows,
+        (r, h) => [
+            h.td(r.started_at || ''),
+            h.td(r.job_name || ''),
+            h.td(r.triggered_by || ''),
+            h.statusCell(r.status),
+            h.td(r.rows_read || '0'),
+            h.td(r.rows_written || '0'),
+            h.td(r.duration_sec != null ? Math.round(parseFloat(r.duration_sec)) : ''),
+            h.errorCell(r.error_message),
+        ]
+    );
 }
 
 /* ---------- entry ---------- */
@@ -742,17 +593,22 @@ export async function renderEtlPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '<p class="c-muted" style="padding:16px;">Loading ETL configuration…</p>';
 
+    // Reset the per-session schema/table caches so reopening the page re-reads them
+    // (schemas/tables may have changed since the last visit).
+    schemasPromise = null;
+    tablesCache.clear();
+
     try {
         const res  = await apiFetch('api.php?action=etl_load');
         const data = await res.json();
         if (data.status !== 'success') {
-            workspaceEl.innerHTML = `<p style="color:#a80000; padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
+            workspaceEl.innerHTML = `<p style="color:var(--danger); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
             return;
         }
         etlConfig  = data.config;
         etlVersion = data.version || 0;
     } catch (_) {
-        workspaceEl.innerHTML = '<p style="color:#a80000; padding:16px;">Network error loading ETL config.</p>';
+        workspaceEl.innerHTML = '<p style="color:var(--danger); padding:16px;">Network error loading ETL config.</p>';
         return;
     }
 

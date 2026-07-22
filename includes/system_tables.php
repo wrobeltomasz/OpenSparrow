@@ -45,6 +45,9 @@ function system_tables_ddl(callable $ident): array
     $tAnonReport       = $ident('anonymization_report');
     $tConfig           = $ident('config');
     $tConfigLog        = $ident('config_log');
+    $tEtlLog           = $ident('etl_log');
+    $tEtlFlowRunLog    = $ident('etl_flow_run_log');
+    $tEtlFlowStepLog   = $ident('etl_flow_step_log');
 
     return [
         // spw_users
@@ -124,5 +127,15 @@ function system_tables_ddl(callable $ident): array
         // spw_config_log — audit trail of config changes (old/new snapshots)
         "CREATE TABLE IF NOT EXISTS $tConfigLog ( id bigserial NOT NULL, config_key varchar(64) NOT NULL, old_value jsonb NULL, new_value jsonb NULL, changed_by int4 NULL, changed_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_config_log_pkey PRIMARY KEY (id), CONSTRAINT spw_config_log_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES $tUsers(id) ON DELETE SET NULL )",
         "CREATE INDEX IF NOT EXISTS idx_spw_config_log_key ON $tConfigLog USING btree (config_key, changed_at DESC)",
+        // spw_etl_log — per-job ETL run history (cron/cron_etl.php)
+        "CREATE TABLE IF NOT EXISTS $tEtlLog ( id serial4 NOT NULL, job_id varchar(64) NOT NULL DEFAULT '', job_name varchar(255) NOT NULL DEFAULT '', triggered_by varchar(20) NOT NULL DEFAULT 'cron', status varchar(20) NOT NULL DEFAULT 'running', rows_read int4 NULL, rows_written int4 NULL, error_message text NULL, started_at timestamp DEFAULT now() NOT NULL, finished_at timestamp NULL, CONSTRAINT spw_etl_log_pkey PRIMARY KEY (id) )",
+        "CREATE INDEX IF NOT EXISTS idx_spw_etl_log_started_at ON $tEtlLog USING btree (started_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_spw_etl_log_job ON $tEtlLog USING btree (job_id, triggered_by, status, started_at)",
+        // spw_etl_flow_run_log — per-flow ETL run history (cron/cron_etl_flow.php)
+        "CREATE TABLE IF NOT EXISTS $tEtlFlowRunLog ( id serial4 NOT NULL, flow_id varchar(64) NOT NULL DEFAULT '', flow_name varchar(255) NOT NULL DEFAULT '', triggered_by varchar(20) NOT NULL DEFAULT 'cron', status varchar(20) NOT NULL DEFAULT 'running', failed_step_index int4 NULL, error_message text NULL, started_at timestamp DEFAULT now() NOT NULL, finished_at timestamp NULL, CONSTRAINT spw_etl_flow_run_log_pkey PRIMARY KEY (id) )",
+        "CREATE INDEX IF NOT EXISTS idx_spw_etl_flow_run_log_flow ON $tEtlFlowRunLog USING btree (flow_id, status, started_at)",
+        // spw_etl_flow_step_log — per-step detail of a flow run; cascades with its parent run
+        "CREATE TABLE IF NOT EXISTS $tEtlFlowStepLog ( id serial4 NOT NULL, flow_run_id int4 NULL, flow_id varchar(64) NOT NULL DEFAULT '', step_index int4 NOT NULL DEFAULT 0, job_id varchar(64) NOT NULL DEFAULT '', job_name varchar(255) NOT NULL DEFAULT '', status varchar(20) NOT NULL DEFAULT 'running', rows_read int4 NULL, rows_written int4 NULL, error_message text NULL, started_at timestamp DEFAULT now() NOT NULL, finished_at timestamp NULL, CONSTRAINT spw_etl_flow_step_log_pkey PRIMARY KEY (id), CONSTRAINT spw_etl_flow_step_log_run_fkey FOREIGN KEY (flow_run_id) REFERENCES $tEtlFlowRunLog(id) ON DELETE CASCADE )",
+        "CREATE INDEX IF NOT EXISTS idx_spw_etl_flow_step_log_run_id ON $tEtlFlowStepLog USING btree (flow_run_id)",
     ];
 }

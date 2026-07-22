@@ -300,43 +300,64 @@ function etl_reload_config_row(): ?array
 }
 
 /**
- * Persist a job's new incremental watermark into the "etl" config, retrying on an
- * optimistic-lock conflict (concurrent job runners writing to the same config row).
- * Best-effort: logs and gives up after a few attempts rather than blocking a job run.
+ * Read-modify-write a spw_config key under optimistic locking, retrying on conflict.
+ * $mutator receives the decoded config by reference and returns false to abort the
+ * write (nothing to change / already applied) or any other value to persist it.
+ * Best-effort: logs and gives up after a few attempts rather than blocking a caller.
+ * $reader lets a caller bypass the config-store cache (see etl_reload_config_row),
+ * needed when concurrent CLI processes write the same row.
+ *
+ * @param callable(array &$config): mixed $mutator
+ * @param ?callable(): ?array             $reader
  */
-function etl_persist_watermark(string $jobId, string $newWatermark, string $logTag): void
-{
+function etl_config_optimistic_update(
+    string $key,
+    callable $mutator,
+    string $logTag,
+    ?callable $reader = null
+): void {
+    $reader ??= static fn(): ?array => config_get_row($key);
     for ($attempt = 0; $attempt < 5; $attempt++) {
-        $row = etl_reload_config_row();
-        if ($row === null) {
+        $row = $reader();
+        if (!is_array($row)) {
             return;
         }
         $config = $row['value'];
-        $found  = false;
-        foreach ($config['jobs'] ?? [] as $i => $j) {
-            if ((string)($j['id'] ?? '') === $jobId) {
-                if ((string)($j['last_watermark'] ?? '') === $newWatermark) {
-                    return; // another runner already advanced it to this value.
-                }
-                $config['jobs'][$i]['last_watermark'] = $newWatermark;
-                $found = true;
-                break;
-            }
-        }
-        if (!$found) {
+        if ($mutator($config) === false) {
             return;
         }
-        $save = config_save('etl', $config, $row['version'], null);
+        $save = config_save($key, $config, $row['version'], null);
         if ($save['status'] === 'ok') {
             return;
         }
         if ($save['status'] !== 'conflict') {
-            error_log('[' . $logTag . '][etl] could not persist watermark: ' . ($save['error'] ?? 'unknown'));
+            error_log('[' . $logTag . '] could not persist config: ' . ($save['error'] ?? 'unknown'));
             return;
         }
         usleep(random_int(100000, 400000));
     }
-    error_log('[' . $logTag . '][etl] could not persist watermark after retries (lock conflict).');
+    error_log('[' . $logTag . '] could not persist config after retries (lock conflict).');
+}
+
+/**
+ * Persist a job's new incremental watermark into the "etl" config, retrying on an
+ * optimistic-lock conflict (concurrent job runners writing to the same config row).
+ * Bypasses the config-store cache so a retry sees another runner's committed write.
+ */
+function etl_persist_watermark(string $jobId, string $newWatermark, string $logTag): void
+{
+    etl_config_optimistic_update('etl', static function (array &$config) use ($jobId, $newWatermark) {
+        foreach ($config['jobs'] ?? [] as $i => $j) {
+            if ((string)($j['id'] ?? '') === $jobId) {
+                if ((string)($j['last_watermark'] ?? '') === $newWatermark) {
+                    return false; // another runner already advanced it to this value.
+                }
+                $config['jobs'][$i]['last_watermark'] = $newWatermark;
+                return true;
+            }
+        }
+        return false;
+    }, $logTag . '[etl]', 'etl_reload_config_row');
 }
 
 /**
@@ -376,11 +397,58 @@ function etl_validate_source_query(string $sql): ?string
     if (!preg_match('/^\s*(SELECT|WITH)\b/i', $trimmed)) {
         return 'Source query must start with SELECT (or WITH).';
     }
-    // Block obvious DML/DDL keywords defensively.
-    if (preg_match('/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|REPLACE|GRANT|CALL|INTO\s+OUTFILE)\b/i', $trimmed)) {
+    // Block obvious DML/DDL statements defensively. Match only where the keyword begins a
+    // statement (start of string or right after "(" / ";" / whitespace-then-newline), so
+    // read-only calls like SELECT REPLACE(name, …) or a column aliased "update" are not
+    // rejected. REPLACE is intentionally NOT blocked as a bare word for this reason —
+    // MySQL's writing form is "REPLACE INTO", covered below.
+    if (preg_match('/(?:^|\(|;)\s*(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|CALL|MERGE)\b/i', $trimmed)) {
         return 'Source query must be read-only (no INSERT/UPDATE/DELETE/DDL).';
     }
+    if (preg_match('/\b(REPLACE\s+INTO|INTO\s+OUTFILE|INTO\s+DUMPFILE)\b/i', $trimmed)) {
+        return 'Source query must be read-only (no writes to disk/table).';
+    }
     return null;
+}
+
+/**
+ * Compare two incremental-watermark values for "is $a strictly greater than $b?".
+ * Numeric when both sides are numeric (so 9 < 10, unlike a string compare), otherwise
+ * a plain string compare (correct for ISO-8601 dates/timestamps and text keys).
+ */
+function etl_watermark_gt(mixed $a, mixed $b): bool
+{
+    if (is_numeric($a) && is_numeric($b)) {
+        return (float)$a > (float)$b;
+    }
+    return (string)$a > (string)$b;
+}
+
+/**
+ * Return the target columns whose type is text-like (character/text). Used so an empty
+ * source string is stored as '' for text columns but coerced to NULL for non-text
+ * columns (where '' would be an invalid literal for e.g. integer/date/numeric).
+ *
+ * @return list<string>
+ */
+function etl_pg_text_columns(\PgSql\Connection $conn, string $schema, string $table): array
+{
+    $res = @pg_query_params(
+        $conn,
+        "SELECT column_name FROM information_schema.columns "
+        . "WHERE table_schema = \$1 AND table_name = \$2 "
+        . "AND data_type IN ('character varying', 'varchar', 'character', 'char', 'text', 'name', 'citext')",
+        [$schema, $table]
+    );
+    if (!$res) {
+        return [];
+    }
+    $cols = [];
+    while ($r = pg_fetch_assoc($res)) {
+        $cols[] = $r['column_name'];
+    }
+    pg_free_result($res);
+    return $cols;
 }
 
 /**
@@ -494,31 +562,27 @@ function etl_run_job(
         }
 
         // Extract. Reconnects and retries on a transient error (dropped connection, lock
-        // wait timeout, deadlock); a permanent error (bad SQL, unknown column) fails immediately.
-        $attempts = count(ETL_RETRY_DELAYS) + 1;
-        $rows     = null;
-        for ($i = 0; $i < $attempts; $i++) {
-            try {
-                $stmt = $pdo->query($sourceSql);
-                $rows = $stmt->fetchAll();
-                break;
-            } catch (\PDOException $e) {
-                $isLast = ($i === $attempts - 1);
-                if ($isLast || !etl_is_transient_pdo_error($e)) {
-                    error_log('[etl][' . $name . '] extract failed: ' . $e->getMessage());
-                    $out['error'] = 'Source query failed.';
-                    return $out;
-                }
-                $delay = ETL_RETRY_DELAYS[$i];
-                error_log('[etl][' . $name . '] extract transient error (attempt ' . ($i + 1) . '/' . $attempts . '): '
-                    . $e->getMessage() . ' — retrying in ' . $delay . 's');
-                sleep($delay);
-                $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
+        // wait timeout, deadlock) via etl_with_retry; a permanent error (bad SQL, unknown
+        // column) fails immediately.
+        try {
+            $rows = etl_with_retry(static function () use (&$pdo, $connCfg, $name, $sourceSql) {
                 if ($pdo === null) {
-                    $out['error'] = 'Source connection is not configured or unavailable.';
-                    return $out;
+                    $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
                 }
-            }
+                if ($pdo === null) {
+                    throw new \RuntimeException('Source connection is not configured or unavailable.');
+                }
+                try {
+                    return $pdo->query($sourceSql)->fetchAll();
+                } catch (\PDOException $e) {
+                    $pdo = null; // force a fresh connection on the next attempt
+                    throw $e;
+                }
+            }, 'etl:' . $name);
+        } catch (\Throwable $e) {
+            error_log('[etl][' . $name . '] extract failed: ' . $e->getMessage());
+            $out['error'] = 'Source query failed.';
+            return $out;
         }
     }
     $out['rows_read'] = count($rows);
@@ -527,7 +591,7 @@ function etl_run_job(
         $max = null;
         foreach ($rows as $r) {
             $v = $r[$incCol] ?? null;
-            if ($v !== null && ($max === null || (string)$v > (string)$max)) {
+            if ($v !== null && ($max === null || etl_watermark_gt($v, $max))) {
                 $max = $v;
             }
         }
@@ -583,7 +647,17 @@ function etl_run_job(
     $schemaIdent = pg_ident($schema);
     $tableIdent  = pg_ident($target);
     $colIdents   = array_map('pg_ident', $targetNames);
+    $textCols    = etl_pg_text_columns($pgConn, $schema, $target);
     $written     = 0;
+
+    // Guard against wiping the target on a transient empty extract: a full_refresh with
+    // zero source rows is treated as a no-op rather than a TRUNCATE (which would empty
+    // the table). Nothing to insert either, so return early as a successful no-op.
+    if ($loadMode === 'full_refresh' && empty($rows)) {
+        error_log('[etl][' . $name . '] full_refresh skipped TRUNCATE: source returned 0 rows.');
+        $out['status'] = 'success';
+        return $out;
+    }
 
     if (!@pg_query($pgConn, 'BEGIN')) {
         $out['error'] = 'Could not start transaction.';
@@ -615,8 +689,13 @@ function etl_run_job(
             foreach ($chunk as $row) {
                 $slots = [];
                 foreach ($cols as $c) {
-                    $val      = $row[$c] ?? null;
-                    $params[] = ($val === '') ? null : $val;
+                    $val = $row[$c] ?? null;
+                    // Coerce '' to NULL only for non-text target columns, where an empty
+                    // string is not a valid literal (int/date/numeric). Text columns keep ''.
+                    if ($val === '' && !in_array($pairs[$c], $textCols, true)) {
+                        $val = null;
+                    }
+                    $params[] = $val;
                     $slots[]  = '$' . $ph++;
                 }
                 $valueSql[] = '(' . implode(', ', $slots) . ')';

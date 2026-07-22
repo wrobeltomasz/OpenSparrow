@@ -91,6 +91,121 @@ if ($action === 'set_snapshot_setting') {
     exit;
 }
 
+// GET: return the automation email "From" address, SMTP delivery settings, and
+// whether the From address is locked by env var. The SMTP password is never
+// returned — only whether one is currently configured (see rag_settings for
+// the same pattern with the Ollama Cloud API key).
+if ($action === 'get_automation_email_setting') {
+    header('Content-Type: application/json');
+    $envVal = getenv('AUTOMATION_EMAIL_FROM');
+    $lockedByEnv = ($envVal !== false && $envVal !== '');
+    $settings = admin_read_settings();
+    $from = $lockedByEnv ? $envVal : (string) ($settings['automation_email_from'] ?? '');
+
+    echo json_encode([
+        'from'                    => $from,
+        'locked_by_env'           => $lockedByEnv,
+        'smtp_enabled'            => (bool) ($settings['smtp_enabled'] ?? false),
+        'smtp_host'               => (string) ($settings['smtp_host'] ?? ''),
+        'smtp_port'               => (int) ($settings['smtp_port'] ?? 587),
+        'smtp_encryption'         => (string) ($settings['smtp_encryption'] ?? 'tls'),
+        'smtp_username'           => (string) ($settings['smtp_username'] ?? ''),
+        'smtp_password_configured' => !empty($settings['smtp_password_enc']),
+    ]);
+    exit;
+}
+
+// POST: save the automation email "From" address and SMTP delivery settings to
+// the "settings" config. When smtp_enabled is true, the cron uses SMTP instead
+// of PHP's mail() to deliver spw_automation_emails.
+if ($action === 'set_automation_email_setting') {
+    header('Content-Type: application/json');
+    require_not_demo();
+    $envVal = getenv('AUTOMATION_EMAIL_FROM');
+    $lockedByEnv = ($envVal !== false && $envVal !== '');
+
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    $from = trim((string) ($body['from'] ?? ''));
+    if ($from !== '' && !filter_var($from, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['status' => 'error', 'error' => 'Enter a valid "From" email address, or leave empty.']);
+        exit;
+    }
+
+    $smtpEnabled    = !empty($body['smtp_enabled']);
+    $smtpHost       = trim((string) ($body['smtp_host'] ?? ''));
+    $smtpPort       = max(1, min(65535, (int) ($body['smtp_port'] ?? 587)));
+    $smtpEncryption = (string) ($body['smtp_encryption'] ?? 'tls');
+    if (!in_array($smtpEncryption, ['none', 'ssl', 'tls'], true)) {
+        $smtpEncryption = 'tls';
+    }
+    $smtpUsername   = trim((string) ($body['smtp_username'] ?? ''));
+    $smtpPassword   = isset($body['smtp_password']) ? (string) $body['smtp_password'] : '';
+    $clearPassword  = !empty($body['smtp_password_clear']);
+
+    if ($smtpEnabled && $smtpHost === '') {
+        echo json_encode(['status' => 'error', 'error' => 'SMTP host is required when SMTP delivery is enabled.']);
+        exit;
+    }
+
+    $settings = admin_read_settings();
+    if (!$lockedByEnv) {
+        $settings['automation_email_from'] = $from;
+    }
+    $settings['smtp_enabled']    = $smtpEnabled;
+    $settings['smtp_host']       = $smtpHost;
+    $settings['smtp_port']       = $smtpPort;
+    $settings['smtp_encryption'] = $smtpEncryption;
+    $settings['smtp_username']   = $smtpUsername;
+
+    require_once __DIR__ . '/../crypto.php';
+    if ($clearPassword) {
+        unset($settings['smtp_password_enc']);
+    } elseif ($smtpPassword !== '') {
+        $settings['smtp_password_enc'] = secret_encrypt($smtpPassword);
+    }
+
+    if (!admin_write_settings($settings)) {
+        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
+        exit;
+    }
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
+// POST: test the configured (or just-entered) SMTP connection without sending
+// an email — connects, EHLO/STARTTLS, AUTH LOGIN if credentials given, QUIT.
+if ($action === 'test_smtp_connection') {
+    header('Content-Type: application/json');
+    require_not_demo();
+    require_once __DIR__ . '/../smtp_client.php';
+    require_once __DIR__ . '/../crypto.php';
+
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    $settings = admin_read_settings();
+
+    // Use the password from the request if the admin typed a new one; otherwise
+    // fall back to the stored (encrypted) password so "Test" works on save data
+    // without requiring the password to be retyped.
+    $password = isset($body['smtp_password']) && $body['smtp_password'] !== ''
+        ? (string) $body['smtp_password']
+        : (string) (secret_decrypt((string) ($settings['smtp_password_enc'] ?? '')) ?? '');
+
+    $cfg = [
+        'host'       => trim((string) ($body['smtp_host'] ?? '')),
+        'port'       => (int) ($body['smtp_port'] ?? 587),
+        'encryption' => (string) ($body['smtp_encryption'] ?? 'tls'),
+        'username'   => trim((string) ($body['smtp_username'] ?? '')),
+        'password'   => $password,
+        'timeout'    => 10,
+    ];
+
+    $result = smtp_test_connection($cfg);
+    echo json_encode($result['ok']
+        ? ['status' => 'success']
+        : ['status' => 'error', 'error' => $result['error']]);
+    exit;
+}
+
 // GET: return language settings and all available locales from languages/*.json
 if ($action === 'get_language_setting') {
     header('Content-Type: application/json');

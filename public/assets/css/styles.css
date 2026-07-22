@@ -703,7 +703,9 @@ main {
 }
 
 table {
-  width: 100%;
+  width: auto;
+  min-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   position: relative;
 }
@@ -916,6 +918,9 @@ tbody td {
   color: var(--text);
   transition: background var(--transition);
   vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 tbody td:first-child { padding-left: 1.25rem; }
 

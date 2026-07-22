@@ -18,65 +18,25 @@ declare(strict_types=1);
 //   php cron_etl_flow.php admin <flowId>     — run a single flow now
 //   php cron_etl_flow.php admin <flowId> dry — dry run: every step runs with dryRun=true
 
-if (php_sapi_name() !== 'cli') {
-    http_response_code(403);
-    exit;
-}
-
-@ini_set('output_buffering', 'off');
-while (ob_get_level() > 0) {
-    ob_end_clean();
-}
-ob_implicit_flush(true);
-
-function etl_flow_cli_log(string $msg): void
-{
-    echo $msg . "\n";
-    echo str_pad('', 4096) . "\n";
-    flush();
-}
-
-require_once __DIR__ . '/../includes/db.php';
-require_once __DIR__ . '/../includes/api_helpers.php';
-require_once __DIR__ . '/../includes/config_store.php';
-require_once __DIR__ . '/../includes/etl_engine.php';
+require_once __DIR__ . '/../includes/etl_cli.php';
+etl_cli_boot();
 
 /**
  * Best-effort: write the flow's last_run_status/last_run_at back into the
- * "etl_flows" config, retrying on an optimistic-lock conflict. Mirrors
- * etl_persist_watermark()'s shape but targets the etl_flows key/field.
+ * "etl_flows" config, retrying on an optimistic-lock conflict.
  */
 function etl_flow_persist_last_run(string $flowId, string $status, string $whenIso): void
 {
-    for ($attempt = 0; $attempt < 5; $attempt++) {
-        $row = config_get_row('etl_flows');
-        if ($row === null) {
-            return;
-        }
-        $config = $row['value'];
-        $found  = false;
+    etl_config_optimistic_update('etl_flows', static function (array &$config) use ($flowId, $status, $whenIso) {
         foreach ($config['flows'] ?? [] as $i => $f) {
             if ((string)($f['id'] ?? '') === $flowId) {
                 $config['flows'][$i]['last_run_status'] = $status;
                 $config['flows'][$i]['last_run_at']     = $whenIso;
-                $found = true;
-                break;
+                return true;
             }
         }
-        if (!$found) {
-            return;
-        }
-        $save = config_save('etl_flows', $config, $row['version'], null);
-        if ($save['status'] === 'ok') {
-            return;
-        }
-        if ($save['status'] !== 'conflict') {
-            error_log('[etl_flow] could not persist last_run: ' . ($save['error'] ?? 'unknown'));
-            return;
-        }
-        usleep(random_int(100000, 400000));
-    }
-    error_log('[etl_flow] could not persist last_run after retries (lock conflict).');
+        return false;
+    }, 'etl_flow');
 }
 
 /**
@@ -94,17 +54,17 @@ function etl_flow_run_single(
     $flowName = (string)($flow['name'] ?? $flowId);
     $steps    = array_values((array)($flow['steps'] ?? []));
 
-    etl_flow_cli_log("[etl_flow] Flow '{$flowName}' — " . count($steps) . ' step(s)...');
+    etl_cli_log("[etl_flow] Flow '{$flowName}' — " . count($steps) . ' step(s)...');
 
     $tRunLog  = sys_table('etl_flow_run_log');
     $tStepLog = sys_table('etl_flow_step_log');
-    $logTable = @pg_query($conn, "SELECT 1 FROM {$tRunLog} LIMIT 0") !== false;
+    $logTable = etl_log_table_ready($conn, $tRunLog);
 
     // Also log each step to spw_etl_log, the same table cron_etl.php writes to, so a
     // job's run history (Jobs > History tab) shows flow-triggered runs alongside
     // directly-triggered ones — tagged triggered_by = 'flow' to tell them apart.
     $tJobLog     = sys_table('etl_log');
-    $jobLogTable = @pg_query($conn, "SELECT 1 FROM {$tJobLog} LIMIT 0") !== false;
+    $jobLogTable = etl_log_table_ready($conn, $tJobLog);
 
     $runLogId = null;
     if ($logTable && !$dryRun) {
@@ -135,18 +95,18 @@ function etl_flow_run_single(
         if ($job === null) {
             $errorMessage    = "Step " . ($stepIndex + 1) . ": job '{$jobId}' not found.";
             $failedStepIndex = $stepIndex;
-            etl_flow_cli_log('[etl_flow]   ERROR: ' . $errorMessage);
+            etl_cli_log('[etl_flow]   ERROR: ' . $errorMessage);
             $allOk = false;
             break;
         }
         $jobName = (string)($job['name'] ?? $jobId);
-        etl_flow_cli_log("[etl_flow]   Step " . ($stepIndex + 1) . ": '{$jobName}'...");
+        etl_cli_log("[etl_flow]   Step " . ($stepIndex + 1) . ": '{$jobName}'...");
 
         $connCfg = etl_resolve_source($sources, (string)($job['source_id'] ?? ''));
         if ($connCfg === null) {
             $errorMessage    = "Step " . ($stepIndex + 1) . " ('{$jobName}'): no valid source configured.";
             $failedStepIndex = $stepIndex;
-            etl_flow_cli_log('[etl_flow]   ERROR: ' . $errorMessage);
+            etl_cli_log('[etl_flow]   ERROR: ' . $errorMessage);
             $allOk = false;
             break;
         }
@@ -198,12 +158,12 @@ function etl_flow_run_single(
         if ($result['status'] !== 'success') {
             $errorMessage    = "Step " . ($stepIndex + 1) . " ('{$jobName}'): " . ($result['error'] ?? 'unknown error');
             $failedStepIndex = $stepIndex;
-            etl_flow_cli_log('[etl_flow]   ERROR: ' . ($result['error'] ?? 'unknown'));
+            etl_cli_log('[etl_flow]   ERROR: ' . ($result['error'] ?? 'unknown'));
             $allOk = false;
             break;
         }
 
-        etl_flow_cli_log("[etl_flow]     read {$result['rows_read']}, written {$result['rows_written']}.");
+        etl_cli_log("[etl_flow]     read {$result['rows_read']}, written {$result['rows_written']}.");
         $prevWm           = $job['last_watermark'] ?? null;
         $watermarkChanged = $result['new_watermark'] !== null && $result['new_watermark'] !== $prevWm;
         if (!$dryRun && $watermarkChanged) {
@@ -223,7 +183,7 @@ function etl_flow_run_single(
         etl_flow_persist_last_run($flowId, $allOk ? 'success' : 'error', date('c'));
     }
 
-    etl_flow_cli_log("[etl_flow] Flow '{$flowName}' " . ($allOk ? 'completed.' : 'FAILED.'));
+    etl_cli_log("[etl_flow] Flow '{$flowName}' " . ($allOk ? 'completed.' : 'FAILED.'));
     return $allOk;
 }
 
@@ -231,11 +191,11 @@ $triggeredBy = ($argv[1] ?? '') === 'admin' ? 'admin' : 'cron';
 $onlyFlowId  = ($triggeredBy === 'admin' && isset($argv[2]) && $argv[2] !== 'dry') ? (string)$argv[2] : null;
 $dryRun      = (($argv[2] ?? '') === 'dry' || ($argv[3] ?? '') === 'dry');
 
-etl_flow_cli_log('[etl_flow] Starting (' . $triggeredBy . ')' . ($dryRun ? ' — DRY RUN' : '') . '...');
+etl_cli_log('[etl_flow] Starting (' . $triggeredBy . ')' . ($dryRun ? ' — DRY RUN' : '') . '...');
 
 $flowsRow = config_get_row('etl_flows');
 if (!is_array($flowsRow)) {
-    etl_flow_cli_log('[etl_flow] Config not found. Configure it via Admin > ETL > Flows.');
+    etl_cli_log('[etl_flow] Config not found. Configure it via Admin > ETL > Flows.');
     exit(0);
 }
 $flowsConfig = $flowsRow['value'];
@@ -245,15 +205,15 @@ $frequency = (string)($flowsConfig['frequency'] ?? 'daily');
 $flows     = (array)($flowsConfig['flows'] ?? []);
 
 if (!$enabled && $triggeredBy === 'cron') {
-    etl_flow_cli_log('[etl_flow] Module is disabled. Exiting.');
+    etl_cli_log('[etl_flow] Module is disabled. Exiting.');
     exit(0);
 }
 if ($frequency === 'manual' && $triggeredBy === 'cron') {
-    etl_flow_cli_log('[etl_flow] Frequency set to manual — only runs when triggered via admin panel.');
+    etl_cli_log('[etl_flow] Frequency set to manual — only runs when triggered via admin panel.');
     exit(0);
 }
 if (empty($flows)) {
-    etl_flow_cli_log('[etl_flow] No flows configured. Exiting.');
+    etl_cli_log('[etl_flow] No flows configured. Exiting.');
     exit(0);
 }
 
@@ -263,18 +223,17 @@ $etlConfig = is_array($etlRow['value'] ?? null) ? $etlRow['value'] : ['sources' 
 try {
     $conn = db_connect();
 } catch (\RuntimeException $e) {
-    etl_flow_cli_log('[etl_flow] DB connection failed: ' . $e->getMessage());
+    etl_cli_log('[etl_flow] DB connection failed: ' . $e->getMessage());
     exit(1);
 }
 
 $tRunLog  = sys_table('etl_flow_run_log');
-$logTable = @pg_query($conn, "SELECT 1 FROM {$tRunLog} LIMIT 0") !== false;
+$logTable = etl_log_table_ready($conn, $tRunLog);
 if (!$logTable) {
-    etl_flow_cli_log('[etl_flow] Note: log tables missing — run Initialize System Tables to enable run history.');
+    etl_cli_log('[etl_flow] Note: log tables missing — run Initialize System Tables to enable run history.');
 }
 
-$intervalMap = ['daily' => '1 day', 'weekly' => '7 days', 'monthly' => '30 days'];
-$interval    = $intervalMap[$frequency] ?? '1 day';
+$interval = etl_interval_expr($frequency);
 
 $anyError = false;
 
@@ -300,7 +259,7 @@ foreach ($flows as $flow) {
             [$flowId]
         );
         if ($recent && pg_num_rows($recent) > 0) {
-            etl_flow_cli_log("[etl_flow] Skipping flow '{$flowId}': a successful run exists within the '{$frequency}' window.");
+            etl_cli_log("[etl_flow] Skipping flow '{$flowId}': a successful run exists within the '{$frequency}' window.");
             continue;
         }
     }
@@ -310,5 +269,5 @@ foreach ($flows as $flow) {
     }
 }
 
-etl_flow_cli_log('[etl_flow] Done.' . ($anyError ? ' Some flows failed — see above.' : ''));
+etl_cli_log('[etl_flow] Done.' . ($anyError ? ' Some flows failed — see above.' : ''));
 exit($anyError ? 1 : 0);
