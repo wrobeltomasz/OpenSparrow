@@ -1,7 +1,7 @@
 /* admin/js/views_editor.js — Views module admin editor (renderViewsEditor): edits the "views" config saved views (source, columns, colour rules, icon). */
 
 import { markDirty } from './app.js';
-import { createIconPicker } from './ui.js';
+import { createIconPicker, createTextInput, createCheckbox } from './ui.js';
 
 export function renderViewsEditor(ctx) {
     const { workspaceEl, currentConfig } = ctx;
@@ -35,9 +35,10 @@ export function renderViewsEditor(ctx) {
     const tabBar = document.createElement('div');
     tabBar.className = 'item-panel-items';
 
-    const pgTab      = document.createElement('button');
-    const schemasTab = document.createElement('button');
-    [pgTab, schemasTab].forEach(t => {
+    const pgTab       = document.createElement('button');
+    const schemasTab  = document.createElement('button');
+    const settingsTab = document.createElement('button');
+    [pgTab, schemasTab, settingsTab].forEach(t => {
         t.type = 'button';
         t.className = 'item-btn';
     });
@@ -50,8 +51,10 @@ export function renderViewsEditor(ctx) {
     }
     pgTab.append(tabIcon('table_chart_view.png'), document.createTextNode('PostgreSQL Views'));
     schemasTab.append(tabIcon('database.png'), document.createTextNode('Schemas'));
+    settingsTab.append(tabIcon('car_gear.png'), document.createTextNode('Settings'));
     tabBar.appendChild(pgTab);
     tabBar.appendChild(schemasTab);
+    tabBar.appendChild(settingsTab);
     wrap.appendChild(tabBar);
 
     const hdr = document.createElement('div');
@@ -64,7 +67,8 @@ export function renderViewsEditor(ctx) {
     function updateTabUi() {
         pgTab.classList.toggle('active', currentSource === 'postgres');
         schemasTab.classList.toggle('active', currentSource === 'schemas');
-        syncBtn.style.display = currentSource === 'schemas' ? 'none' : '';
+        settingsTab.classList.toggle('active', currentSource === 'settings');
+        syncBtn.style.display = currentSource === 'postgres' ? '' : 'none';
         syncBtn.textContent   = '↻ Sync PostgreSQL Views';
     }
 
@@ -76,6 +80,7 @@ export function renderViewsEditor(ctx) {
     }
     pgTab.addEventListener('click', () => switchSource('postgres'));
     schemasTab.addEventListener('click', () => switchSource('schemas'));
+    settingsTab.addEventListener('click', () => switchSource('settings'));
 
     const statusEl = document.createElement('div');
     statusEl.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px;';
@@ -153,6 +158,10 @@ export function renderViewsEditor(ctx) {
             renderSchemasPanel();
             return;
         }
+        if (currentSource === 'settings') {
+            renderSettingsPanel();
+            return;
+        }
         const names = viewNamesForSource(currentSource);
         if (names.length === 0) {
             const label = 'PostgreSQL';
@@ -213,6 +222,29 @@ export function renderViewsEditor(ctx) {
         } catch (_) {
             listEl.innerHTML = '<p style="color:var(--danger); padding:16px;">Network error while loading schemas.</p>';
         }
+    }
+
+    /* ---------- settings panel (module-level menu name/icon, same fields as ---------- */
+    /* Dashboard/Calendar/Workflows/Board/Files "Global Settings" — see renderGlobalSettings() in ui.js) */
+    function renderSettingsPanel() {
+        const heading = document.createElement('h3');
+        heading.textContent = 'Views Global Settings';
+        listEl.appendChild(heading);
+
+        listEl.appendChild(createTextInput('menu_name', 'Menu Display Name',
+            currentConfig.menu_name || 'Views', v => { currentConfig.menu_name = v; }));
+
+        listEl.appendChild(createIconPicker('menu_icon', 'Menu Icon',
+            currentConfig.menu_icon || '', v => {
+                if (v && v.trim() !== '') currentConfig.menu_icon = v;
+                else delete currentConfig.menu_icon;
+            }));
+
+        listEl.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
+            currentConfig.hidden, v => {
+                if (v) currentConfig.hidden = true;
+                else delete currentConfig.hidden;
+            }, false));
     }
 
     /* ---------- single view card (column-block style) ---------- */

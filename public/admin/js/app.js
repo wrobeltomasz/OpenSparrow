@@ -244,6 +244,7 @@ async function loadConfigFile(fileName) {
             if (!currentConfig.views || typeof currentConfig.views !== 'object' || Array.isArray(currentConfig.views)) {
                 currentConfig.views = {};
             }
+            if (!currentConfig.menu_name) currentConfig.menu_name = 'Views';
         } else if (fileName === 'user_records') {
             if (!currentConfig.columns || typeof currentConfig.columns !== 'object' || Array.isArray(currentConfig.columns)) {
                 currentConfig.columns = {};

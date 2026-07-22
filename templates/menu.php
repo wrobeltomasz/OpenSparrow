@@ -202,9 +202,9 @@ if (!empty($viewChildren)) {
     $menuCatalog['views'] = [
         'type'     => 'views',
         'href'     => 'views.php',
-        'name'     => 'Views',
-        'icon'     => 'assets/icons/table_chart_view.png',
-        'hidden'   => false,
+        'name'     => $viewsCfg['menu_name'] ?? 'Views',
+        'icon'     => $viewsCfg['menu_icon'] ?? 'assets/icons/table_chart_view.png',
+        'hidden'   => !empty($viewsCfg['hidden']),
         'active'   => $currentPage === 'views.php' && $currentView === '',
         'children' => $viewChildren,
     ];
