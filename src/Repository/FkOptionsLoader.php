@@ -44,7 +44,19 @@ final readonly class FkOptionsLoader
             $orderColSql
         );
 
-        $res     = $this->conn->exec($sql);
+        try {
+            $res = $this->conn->exec($sql);
+        } catch (\RuntimeException $e) {
+            throw new \RuntimeException(sprintf(
+                'Foreign key configuration error: display column(s) [%s] not found on table "%s"."%s" '
+                . '(reference_column "%s"). Check the FK settings in the schema editor. Original error: %s',
+                implode(', ', $dispRaw),
+                $refSchema,
+                $refTable,
+                $refPk,
+                $e->getMessage()
+            ), 0, $e);
+        }
         $options = [];
         while ($row = pg_fetch_assoc($res)) {
             $parts = [];
@@ -115,6 +127,17 @@ final readonly class FkOptionsLoader
                     $map[$r['id']] = $r['disp'];
                 }
                 pg_free_result($res);
+            } else {
+                error_log(sprintf(
+                    '[FkOptionsLoader] Foreign key configuration error: display column(s) [%s] not found on '
+                    . 'table "%s"."%s" (reference_column "%s"). Check the FK settings in the schema editor. '
+                    . 'Original error: %s',
+                    implode(', ', $dispRaw),
+                    $refSchema,
+                    $refTable,
+                    $refPk,
+                    trim(pg_last_error($this->conn->native()))
+                ));
             }
 
             foreach ($rows as &$row) {
