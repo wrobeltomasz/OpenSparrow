@@ -72,13 +72,37 @@
   max-height: calc(100vh - var(--header-h) - 50px);
 }
 
-/* Drillable rows */
+/* Drillable rows — arrow column shows the drill-down affordance at all times;
+   click expands/collapses the next level inline beneath the row (no navigation) */
 .vw-drillable { cursor: pointer; }
 
-.vw-drillable:hover td:first-child::after {
-  content: ' ▶';
-  opacity: 0.4;
-  font-size: 10px;
+.vw-drill-arrow {
+  display: inline-block;
+  width: 16px;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.vw-drill-nested-cell {
+  background: var(--bg);
+  padding: 10px 16px;
+}
+
+.vw-nested-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vw-nested-table th,
+.vw-nested-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-light);
+  text-align: left;
+}
+
+.vw-nested-table thead th {
+  color: var(--muted);
+  font-weight: 700;
 }
 
 /* Colored cell value chip */

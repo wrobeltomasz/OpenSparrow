@@ -155,6 +155,7 @@ try {
 
     // GET: DASHBOARD DATA
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'dashboard') {
+        require_once __DIR__ . '/../includes/dashboard_query.php';
         $dashboard = config_get('dashboard');
         if ($dashboard === null) {
             echo json_encode(['layout' => [], 'widgets' => []]);
@@ -186,39 +187,9 @@ try {
             $sqlWhere = '';
 // Build WHERE from structured conditions (column validated against schema, values escaped)
             $conditions = is_array($widget['query']['conditions'] ?? null) ? $widget['query']['conditions'] : [];
-
-            $condParts = [];
-            $allowedOps = ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'ILIKE', 'IS NULL', 'IS NOT NULL'];
-            foreach ($conditions as $cond) {
-                $col = $cond['col'] ?? '';
-                $op  = $cond['op']  ?? '=';
-                $val = (string)($cond['val'] ?? '');
-                if (!isset($tableCfg['columns'][$col])) {
-                    continue;
-                }
-                if (!in_array($op, $allowedOps, true)) {
-                    continue;
-                }
-                $colSql = pg_ident($col);
-                // Constrain the boolean connective to a strict allowlist — it is
-                // concatenated into SQL below, so never trust the raw config value.
-                $logic = strtoupper($cond['logic'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
-                if ($op === 'IS NULL' || $op === 'IS NOT NULL') {
-                    $condParts[] = [$colSql . ' ' . $op, $logic];
-                } else {
-                    $condParts[] = [$colSql . ' ' . $op . " '" . pg_escape_string($conn, $val) . "'", $logic];
-                }
-            }
-            // Parenthesise the whole condition group so the appended date-range AND
-            // cannot rebind a widget-level OR (AND binds tighter than OR in SQL).
-            $condSql = '';
-            if (!empty($condParts)) {
-                $built = $condParts[0][0];
-                for ($i = 1; $i < count($condParts); $i++) {
-                    $built .= ' ' . $condParts[$i][1] . ' ' . $condParts[$i][0];
-                }
-                $condSql = count($condParts) > 1 ? '(' . $built . ')' : $built;
-            }
+            // Parenthesised so the appended date-range AND below cannot rebind a
+            // widget-level OR (AND binds tighter than OR in SQL).
+            $condSql = dashboard_conditions_sql($conn, $tableCfg, $conditions);
 
             // Apply Global Date Filter if requested and target matches.
             // $dateSqlPrev covers the equally long window directly before the

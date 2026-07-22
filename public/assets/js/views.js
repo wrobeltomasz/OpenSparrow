@@ -23,7 +23,6 @@ function applyColorRules(rawValue, rules) {
 }
 
 /* ── module-level state ── */
-let drillStack     = [];
 let viewSortState  = { column: null, asc: true };
 let viewSearchTerm = '';
 let searchTimer    = null;
@@ -388,32 +387,6 @@ function populateColumnFilter(allKeys) {
     columnFilterEl.hidden = false;
 }
 
-/* ── breadcrumb (drillStack entries only, hidden at view root) ── */
-function renderBreadcrumb() {
-    breadcrumbEl.innerHTML = '';
-    if (drillStack.length <= 1) return;
-    drillStack.forEach((entry, idx) => {
-        if (idx > 0) {
-            const sep = document.createElement('span');
-            sep.className   = 'vw-breadcrumb-sep';
-            sep.textContent = '/';
-            breadcrumbEl.appendChild(sep);
-        }
-        if (idx < drillStack.length - 1) {
-            const a = document.createElement('span');
-            a.className   = 'vw-breadcrumb-item';
-            a.textContent = entry.label ?? entry.viewName;
-            a.addEventListener('click', () => drillTo(idx));
-            breadcrumbEl.appendChild(a);
-        } else {
-            const cur = document.createElement('span');
-            cur.className   = 'vw-breadcrumb-current';
-            cur.textContent = entry.label ?? entry.viewName;
-            breadcrumbEl.appendChild(cur);
-        }
-    });
-}
-
 /* ── disconnect search/export from current view ── */
 function _clearHandlers() {
     if (searchEl && _searchHandler) {
@@ -451,21 +424,7 @@ function showSelector() {
     _clearHandlers();
     if (searchEl) searchEl.value = '';
     viewSearchTerm = '';
-    drillStack = [];
     loadViewSelector();
-}
-
-/* ── navigate to a stack level ── */
-function drillTo(idx) {
-    drillStack = drillStack.slice(0, idx + 1);
-    const entry = drillStack[idx];
-    loadView(entry.viewName, entry.level, entry.filterCol, entry.filterVal);
-}
-
-/* ── drill down into a group ── */
-function drillDown(viewName, level, filterCol, filterVal, displayLabel) {
-    drillStack.push({ viewName, level: level + 1, filterCol, filterVal, label: `${filterCol}: ${displayLabel}` });
-    loadView(viewName, level + 1, filterCol, filterVal);
 }
 
 /* ── load and render view data ── */
@@ -478,7 +437,6 @@ async function loadView(viewName, level, filterCol, filterVal) {
     loadEl.className = 'vw-loading';
     loadEl.textContent = I18n.t('common.loading');
     containerEl.replaceChildren(loadEl);
-    renderBreadcrumb();
 
     let url = `api/views.php?action=data&view=${encodeURIComponent(viewName)}&level=${level}`;
     if (filterCol) url += `&filter_col=${encodeURIComponent(filterCol)}&filter_val=${encodeURIComponent(filterVal ?? '')}`;
@@ -500,8 +458,6 @@ function renderView(data) {
     containerEl.innerHTML = '';
     const { view, level, max_level, group_by, drill_enabled, rows, columns, group_rows, display_name } = data;
 
-    renderBreadcrumb();
-
     if (rows.length === 0) {
         containerEl.insertAdjacentHTML('beforeend', `<div class="vw-empty">${I18n.t('views.no_data')}</div>`);
         // No table rendered — agent-panel.js must not offer "current table data".
@@ -514,6 +470,7 @@ function renderView(data) {
 
     const allKeys      = Object.keys(rows[0]);
     const canDrillDown = drill_enabled && level < max_level && group_by != null;
+    const drillColCount = canDrillDown ? 1 : 0;
     let currentFilteredRows = [];
 
     /* ── table — same HTML as grid ── */
@@ -535,6 +492,8 @@ function renderView(data) {
             if (thLabel) thLabel.textContent = lbl + ind;
         });
     }
+
+    if (canDrillDown) headerRow.appendChild(document.createElement('th'));
 
     allKeys.forEach(key => {
         const th = document.createElement('th');
@@ -619,6 +578,13 @@ function renderView(data) {
     summaryTr.className = 'vw-summary-row';
     const summaryUpdaters = {};
 
+    if (canDrillDown) {
+        const drillTd = document.createElement('td');
+        drillTd.className   = 'vw-summary-label-cell';
+        drillTd.textContent = 'Σ';
+        summaryTr.appendChild(drillTd);
+    }
+
     allKeys.forEach((key, colIdx) => {
         const td = document.createElement('td');
         const fn = summaryFns[key];
@@ -626,7 +592,7 @@ function renderView(data) {
         if (fn) {
             td.className = 'vw-summary-cell';
             summaryUpdaters[key] = (filteredRows) => fillSummaryCell(td, fn, filteredRows, key);
-        } else if (colIdx === 0) {
+        } else if (colIdx === 0 && !canDrillDown) {
             td.className   = 'vw-summary-label-cell';
             td.textContent = 'Σ';
         }
@@ -672,7 +638,17 @@ function renderView(data) {
 
         const makeRow = (row) => {
             const tr = document.createElement('tr');
-            if (canDrillDown) tr.classList.add('vw-drillable');
+            let arrowEl = null;
+
+            if (canDrillDown) {
+                tr.classList.add('vw-drillable');
+                const arrowTd = document.createElement('td');
+                arrowEl = document.createElement('span');
+                arrowEl.className   = 'vw-drill-arrow';
+                arrowEl.textContent = '▸';
+                arrowTd.appendChild(arrowEl);
+                tr.appendChild(arrowTd);
+            }
 
             allKeys.forEach(key => {
                 const td     = document.createElement('td');
@@ -696,7 +672,7 @@ function renderView(data) {
             if (canDrillDown) {
                 tr.addEventListener('click', () => {
                     const drillVal = row[group_by];
-                    drillDown(view, level, group_by, drillVal, String(drillVal));
+                    toggleNestedDrill(tr, arrowEl, view, level, group_by, drillVal, allKeys.length + drillColCount);
                 });
             }
             return tr;
@@ -725,7 +701,7 @@ function renderView(data) {
             const headerTr = document.createElement('tr');
             headerTr.className = 'vw-group-header';
             const headerTd = document.createElement('td');
-            headerTd.colSpan = allKeys.length;
+            headerTd.colSpan = allKeys.length + drillColCount;
 
             const arrow = document.createElement('span');
             arrow.className   = 'vw-group-arrow';
@@ -763,13 +739,19 @@ function renderView(data) {
         function makeSubtotalRow(groupRows) {
             const tr = document.createElement('tr');
             tr.className = 'vw-group-subtotal';
+            if (canDrillDown) {
+                const drillTd = document.createElement('td');
+                drillTd.className   = 'vw-summary-label-cell';
+                drillTd.textContent = 'Σ';
+                tr.appendChild(drillTd);
+            }
             allKeys.forEach((key, colIdx) => {
                 const td = document.createElement('td');
                 const fn = summaryFns[key];
                 if (fn) {
                     td.className = 'vw-summary-cell';
                     fillSummaryCell(td, fn, groupRows, key);
-                } else if (colIdx === 0) {
+                } else if (colIdx === 0 && !canDrillDown) {
                     td.className   = 'vw-summary-label-cell';
                     td.textContent = 'Σ';
                 }
@@ -825,13 +807,123 @@ function renderView(data) {
     applyViewFilters();
 }
 
+/* ── inline drill-down: expand/collapse a group's next level beneath its row, recursively ── */
+function buildLevelTable(data) {
+    const { view, level, max_level, group_by, drill_enabled, rows, columns } = data;
+
+    if (!rows.length) {
+        const empty = document.createElement('div');
+        empty.className = 'vw-empty';
+        empty.textContent = I18n.t('views.no_data');
+        return empty;
+    }
+
+    const keys         = Object.keys(rows[0]);
+    const canDrill      = drill_enabled && level < max_level && group_by != null;
+    const drillColCount = canDrill ? 1 : 0;
+
+    const table = document.createElement('table');
+    table.className = 'vw-nested-table';
+
+    const thead     = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    if (canDrill) headerRow.appendChild(document.createElement('th'));
+    keys.forEach(key => {
+        const th = document.createElement('th');
+        th.textContent = columns[key]?.display_name ?? key;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    rows.forEach(row => {
+        const tr = document.createElement('tr');
+        let arrowEl = null;
+
+        if (canDrill) {
+            tr.classList.add('vw-drillable');
+            const arrowTd = document.createElement('td');
+            arrowEl = document.createElement('span');
+            arrowEl.className   = 'vw-drill-arrow';
+            arrowEl.textContent = '▸';
+            arrowTd.appendChild(arrowEl);
+            tr.appendChild(arrowTd);
+        }
+
+        keys.forEach(key => {
+            const td     = document.createElement('td');
+            const rawVal = row[key];
+            const rules  = columns[key]?.color_rules ?? [];
+            const color  = applyColorRules(rawVal, rules);
+
+            if (color) {
+                const chip = document.createElement('span');
+                chip.className        = 'vw-value-chip';
+                chip.style.background = color;
+                chip.textContent      = rawVal ?? '';
+                td.appendChild(chip);
+            } else {
+                td.textContent = rawVal ?? '';
+            }
+            tr.appendChild(td);
+        });
+
+        if (canDrill) {
+            tr.addEventListener('click', () => {
+                const drillVal = row[group_by];
+                toggleNestedDrill(tr, arrowEl, view, level, group_by, drillVal, keys.length + drillColCount);
+            });
+        }
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    return table;
+}
+
+async function toggleNestedDrill(tr, arrowEl, view, level, filterCol, filterVal, colSpan) {
+    const next = tr.nextElementSibling;
+    if (next && next.classList.contains('vw-drill-nested')) {
+        next.remove();
+        arrowEl.textContent = '▸';
+        return;
+    }
+
+    arrowEl.textContent = '▾';
+    const nestedTr = document.createElement('tr');
+    nestedTr.className = 'vw-drill-nested';
+    const nestedTd = document.createElement('td');
+    nestedTd.colSpan  = colSpan;
+    nestedTd.className = 'vw-drill-nested-cell';
+    const loading = document.createElement('div');
+    loading.className   = 'vw-loading';
+    loading.textContent = I18n.t('common.loading');
+    nestedTd.appendChild(loading);
+    nestedTr.appendChild(nestedTd);
+    tr.after(nestedTr);
+
+    try {
+        const url = `api/views.php?action=data&view=${encodeURIComponent(view)}&level=${level + 1}`
+            + `&filter_col=${encodeURIComponent(filterCol)}&filter_val=${encodeURIComponent(filterVal ?? '')}`;
+        const data = await apiFetch(url);
+        nestedTd.replaceChildren();
+        nestedTd.appendChild(buildLevelTable(data));
+    } catch (err) {
+        nestedTd.replaceChildren();
+        const errDiv = document.createElement('div');
+        errDiv.className = 'vw-error';
+        errDiv.textContent = I18n.t('views.error', { message: err.message });
+        nestedTd.appendChild(errDiv);
+    }
+}
+
 /* ── load list of all views and show selector ── */
 async function loadViewSelector() {
     const loadEl = document.createElement('div');
     loadEl.className = 'vw-loading';
     loadEl.textContent = I18n.t('views.loading');
     containerEl.replaceChildren(loadEl);
-    renderBreadcrumb();
     try {
         const data = await apiFetch('api/views.php?action=list');
         if (!data.views || data.views.length === 0) {
@@ -907,7 +999,6 @@ function renderSelector(views) {
 function initView(viewName) {
     viewSearchTerm = '';
     if (searchEl) searchEl.value = '';
-    drillStack = [{ viewName, level: 0, filterCol: null, filterVal: null, label: viewName }];
     loadView(viewName, 0, null, null);
 }
 

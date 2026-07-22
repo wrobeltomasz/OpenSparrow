@@ -116,8 +116,11 @@ by the admin.
 
 VIEWS (views.php)
 -----------------
-Read-only report pages built on database views, with drill-down navigation.
-Example: Revenue by Period drills Year → Month → Invoice.
+Read-only report pages built on database views, with drill-down grouping.
+Each drillable row shows a ▸ arrow; clicking it expands the next level's
+grouped data inline beneath the row (▾ when expanded), without leaving the
+page — click again to collapse. Example: Revenue by Period drills
+Year → Month → Invoice, each level expanding under the row above it.
 
 
 BOARD / KANBAN (board.php)
