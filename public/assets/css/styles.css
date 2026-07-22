@@ -816,6 +816,7 @@ thead th:last-child  { padding-right: 0.6rem; }
   width: 44px;
   min-width: 44px;
   max-width: 44px;
+  overflow: visible;
 }
 
 /* ===== GRID ROW ACTIONS MENU (single trigger, reveals icons on hover/click) ===== */

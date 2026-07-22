@@ -19,6 +19,8 @@ export async function loadCommentCounts(pageRows) {
             if (!td) continue;
 
             const cnt = counts[rowId] ?? 0;
+            const panel = td.querySelector('.td-actions-panel');
+            if (!panel) continue;
 
             if (cnt > 0) {
                 const badge = document.createElement('span');
@@ -30,10 +32,8 @@ export async function loadCommentCounts(pageRows) {
                     e.stopPropagation();
                     window.location.href = `edit.php?table=${encodeURIComponent(state.currentTable)}&id=${encodeURIComponent(rowId)}#tab-comments`;
                 });
-                td.appendChild(badge);
+                panel.appendChild(badge);
             } else {
-                const panel = td.querySelector('.td-actions-panel');
-                if (!panel) continue;
                 const addBtn = makeIconButton({
                     cy: 'row-comment-add',
                     title: I18n.t('grid.add_comment'),

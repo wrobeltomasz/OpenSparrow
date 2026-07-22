@@ -28,17 +28,17 @@ function resolveCellType(colCfg, hasFk) {
     return 'text';
 }
 
-function attachRowTooltip(td, row, schema) {
+function attachRowTooltip(td, row, schema, col) {
     const columns = schema.tables[state.currentTable]?.columns || {};
     td.style.cursor = 'default';
 
     td.addEventListener('mouseenter', () => {
-        const firstCol = state.displayedColumns[0];
-        const title = firstCol ? (row[firstCol + '__display'] ?? row[firstCol] ?? '') : '';
+        const title = col ? (row[col + '__display'] ?? row[col] ?? '') : '';
         showRecordTooltip(td, { title, rows: rowsFromRecord(row, columns) });
     });
 
     td.addEventListener('mouseleave', hideRecordTooltip);
+    td.addEventListener('focusin', hideRecordTooltip);
 }
 
 export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload) {
@@ -73,17 +73,14 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             tr.appendChild(buildExpandButton(row, schema, tr));
         }
 
-        let firstDataTd = null;
         for (const col of state.displayedColumns) {
             const colCfg = schema.tables[state.currentTable].columns[col] || {};
             const hasFk = Boolean(schema.tables[state.currentTable].foreign_keys?.[col]);
             const type = resolveCellType(colCfg, hasFk);
             const td = await CellRenderer.render(type, { row, col, colCfg, schema, isReadOnly });
-            if (!firstDataTd) firstDataTd = td;
+            attachRowTooltip(td, row, schema, col);
             tr.appendChild(td);
         }
-
-        if (firstDataTd) attachRowTooltip(firstDataTd, row, schema);
 
         // M2M columns — one TD per configured relationship, populated async by loader.js
         const m2mList = schema.tables[state.currentTable]?.many_to_many || [];
