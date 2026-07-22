@@ -417,13 +417,6 @@ function renderSidebar() {
     }
 
     if (currentFile === 'schema') {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'item-btn' + (currentItemKey === 'GLOBAL_SCHEMA' ? ' active' : '');
-        btn.append(tabIcon('car_gear.png'), document.createTextNode('Global Grid Settings'));
-        btn.onclick = () => { currentItemKey = 'GLOBAL_SCHEMA'; renderSidebar(); renderEditor('GLOBAL_SCHEMA', null, false); };
-        itemsRow.appendChild(btn);
-
         const menuBtn = document.createElement('button');
         menuBtn.type = 'button';
         menuBtn.className = 'item-btn' + (currentItemKey === 'MENU_PREVIEW' ? ' active' : '');
@@ -451,25 +444,39 @@ function renderSidebar() {
         mapBtn.append(tabIcon('account_tree.png'), document.createTextNode('Schema Map'));
         mapBtn.onclick = () => { currentItemKey = 'SCHEMA_MAP'; renderSidebar(); renderEditor('SCHEMA_MAP', null, false); };
         itemsRow.appendChild(mapBtn);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'item-btn' + (currentItemKey === 'GLOBAL_SCHEMA' ? ' active' : '');
+        btn.append(tabIcon('car_gear.png'), document.createTextNode('Global Grid Settings'));
+        btn.onclick = () => { currentItemKey = 'GLOBAL_SCHEMA'; renderSidebar(); renderEditor('GLOBAL_SCHEMA', null, false); };
+        itemsRow.appendChild(btn);
     }
 
-    if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board' || currentFile === 'files' || currentFile === 'automations') {
+    if (currentFile === 'files') {
+        const explorerBtn = document.createElement('button');
+        explorerBtn.type = 'button';
+        explorerBtn.className = 'item-btn' + (currentItemKey === 'MANAGER' ? ' active' : '');
+        explorerBtn.append(tabIcon('folder_open.png'), document.createTextNode('File Explorer'));
+        explorerBtn.onclick = () => { currentItemKey = 'MANAGER'; renderSidebar(); renderEditor('MANAGER', null, false); };
+        itemsRow.appendChild(explorerBtn);
+
+        const settingsBtn = document.createElement('button');
+        settingsBtn.type = 'button';
+        settingsBtn.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
+        settingsBtn.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
+        settingsBtn.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
+        itemsRow.appendChild(settingsBtn);
+        return;
+    }
+
+    if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board' || currentFile === 'automations') {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
         btn.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
         btn.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
         itemsRow.appendChild(btn);
-    }
-
-    if (currentFile === 'files') {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'item-btn' + (currentItemKey === 'MANAGER' ? ' active' : '');
-        btn.append(tabIcon('folder_open.png'), document.createTextNode('File Explorer'));
-        btn.onclick = () => { currentItemKey = 'MANAGER'; renderSidebar(); renderEditor('MANAGER', null, false); };
-        itemsRow.appendChild(btn);
-        return;
     }
 
     // Card tabs and automations: prepend "All X" button then return

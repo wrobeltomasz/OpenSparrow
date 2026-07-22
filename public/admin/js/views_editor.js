@@ -51,7 +51,7 @@ export function renderViewsEditor(ctx) {
     }
     pgTab.append(tabIcon('table_chart_view.png'), document.createTextNode('PostgreSQL Views'));
     schemasTab.append(tabIcon('database.png'), document.createTextNode('Schemas'));
-    settingsTab.append(tabIcon('car_gear.png'), document.createTextNode('Settings'));
+    settingsTab.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
     tabBar.appendChild(pgTab);
     tabBar.appendChild(schemasTab);
     tabBar.appendChild(settingsTab);

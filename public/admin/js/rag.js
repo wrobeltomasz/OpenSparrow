@@ -1516,9 +1516,9 @@ export async function renderRagPage(ctx) {
 
     const tabDefs = [
         { id: 'documents',  label: 'Documents',   icon: 'docs.png' },
-        { id: 'settings',   label: 'Settings',    icon: 'build.png' },
         { id: 'test',       label: 'Test',         icon: 'playground.png' },
         { id: 'statistics', label: 'Statistics',   icon: 'dashboard.png' },
+        { id: 'settings',   label: 'Global Settings', icon: 'build.png' },
     ];
 
     const { panels } = ragBuildTabs(wrap, tabDefs);
