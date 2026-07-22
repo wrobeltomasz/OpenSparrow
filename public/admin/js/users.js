@@ -1,22 +1,51 @@
-﻿// admin/js/users.js — User management (renderUsersEditor): list/add/toggle/change-role/change-password via api.php (users_* actions). CSRF via apiFetch(); HTML-escapes output.
+// admin/js/users.js — User management (renderUsersEditor): Manage Users / Statistics /
+// Global Settings inner tabs (list/add/toggle/change-role/change-password, user_stats,
+// user_policy_* via api.php users_* actions). CSRF via apiFetch(); HTML-escapes output.
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
-
+import { buildInnerTabs, createPageHeader } from './ui.js';
 
 export async function renderUsersEditor(ctx) {
     const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = `<h3>System Users</h3><p>Loading users...</p>`;
-    
+    workspaceEl.innerHTML = '';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
+    wrap.appendChild(createPageHeader('Users'));
+
+    const [managePanel, statsPanel, settingsPanel] = buildInnerTabs(wrap, [
+        { label: 'Manage Users', icon: 'user_attributes.png' },
+        { label: 'Statistics', icon: 'bar_chart.png' },
+        { label: 'Global Settings', icon: 'manage_history.png' },
+    ]);
+
+    workspaceEl.appendChild(wrap);
+
+    renderManageUsers(managePanel, ctx);
+    renderUserStats(statsPanel);
+    renderUserSettings(settingsPanel, ctx);
+}
+
+async function renderManageUsers(panel, ctx) {
+    panel.innerHTML = `<h3>System Users</h3><p>Loading users...</p>`;
+
     try {
-        const res = await apiFetch('api.php?action=users_list');
-        const data = await res.json();
-        
+        const [usersRes, policyRes] = await Promise.all([
+            apiFetch('api.php?action=users_list'),
+            apiFetch('api.php?action=user_policy_get'),
+        ]);
+        const data = await usersRes.json();
+        const policy = await policyRes.json();
+
         if (data.status !== 'success') {
-            workspaceEl.innerHTML = `<h3 style="color:var(--danger);">Error</h3><p>${escHtml(data.error)}</p>`;
+            panel.innerHTML = `<h3 style="color:var(--danger);">Error</h3><p>${escHtml(data.error)}</p>`;
             return;
         }
-        
+
+        const minPasswordLength = policy.status === 'success' ? policy.min_password_length : 8;
+        const defaultRole = policy.status === 'success' ? policy.default_role : 'editor';
+
         let html = `
             <h2 class="admin-page-title">System Users Management</h2>
             <p class="admin-page-desc">
@@ -76,7 +105,7 @@ export async function renderUsersEditor(ctx) {
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Password</label>
-                    <input type="password" id="newPassword" placeholder="Minimum 6 characters" class="adm-input" style="width:100%;">
+                    <input type="password" id="newPassword" placeholder="Minimum ${minPasswordLength} characters" class="adm-input" style="width:100%;">
                     <div id="passwordStrengthBar" style="height: 6px; background: var(--accent-mid); border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
                         <div id="passwordStrengthFill" style="height: 100%; width: 0%; transition: width 0.3s, background 0.3s;"></div>
                     </div>
@@ -85,33 +114,33 @@ export async function renderUsersEditor(ctx) {
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Role</label>
                     <select id="newRole" class="adm-input" style="width:100%;">
-                        <option value="editor" selected>Editor</option>
-                        <option value="viewer">Viewer</option>
-                        <option value="admin">Admin</option>
+                        <option value="editor" ${defaultRole === 'editor' ? 'selected' : ''}>Editor</option>
+                        <option value="viewer" ${defaultRole === 'viewer' ? 'selected' : ''}>Viewer</option>
+                        <option value="admin" ${defaultRole === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
                 </div>
                 <button id="btnAddUser" class="btn btn-success">Create User</button>
             </div>
         `;
-        
-        workspaceEl.innerHTML = html;
-        
+
+        panel.innerHTML = html;
+
         // Setup toggle active status events
-        workspaceEl.querySelectorAll('.btn-toggle-user').forEach(btn => {
+        panel.querySelectorAll('.btn-toggle-user').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const id = e.target.getAttribute('data-id');
                 const currentlyActive = e.target.getAttribute('data-active') === 'true';
                 if (!confirm(`Are you sure you want to ${currentlyActive ? 'deactivate' : 'activate'} this user?`)) return;
-                
+
                 try {
                     const req = await apiFetch('api.php?action=users_toggle', {
                         method: 'POST',
                         body: JSON.stringify({ id, is_active: !currentlyActive })
                     });
-                    
+
                     const resData = await req.json();
                     if (resData.status === 'success') {
-                        renderUsersEditor(ctx);
+                        renderManageUsers(panel, ctx);
                     } else {
                         alert('Error: ' + resData.error);
                     }
@@ -122,25 +151,25 @@ export async function renderUsersEditor(ctx) {
         });
 
         // Setup role change events
-        workspaceEl.querySelectorAll('.select-user-role').forEach(select => {
+        panel.querySelectorAll('.select-user-role').forEach(select => {
             select.addEventListener('change', async (e) => {
                 const id = e.target.getAttribute('data-id');
                 const role = e.target.value;
-                
+
                 try {
                     const req = await apiFetch('api.php?action=users_update_role', {
                         method: 'POST',
                         body: JSON.stringify({ id, role })
                     });
-                    
+
                     const resData = await req.json();
                     if (resData.status !== 'success') {
                         alert('Error: ' + resData.error);
-                        renderUsersEditor(ctx); 
+                        renderManageUsers(panel, ctx);
                     }
                 } catch (err) {
                     alert('Network error occurred.');
-                    renderUsersEditor(ctx); 
+                    renderManageUsers(panel, ctx);
                 }
             });
         });
@@ -148,7 +177,7 @@ export async function renderUsersEditor(ctx) {
         // Change password for existing user
         const currentUserId = parseInt(document.querySelector('meta[name="current-user-id"]')?.content ?? '0', 10);
 
-        workspaceEl.querySelectorAll('.btn-change-pwd').forEach(btn => {
+        panel.querySelectorAll('.btn-change-pwd').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id       = parseInt(btn.getAttribute('data-id'), 10);
                 const username = btn.getAttribute('data-username');
@@ -186,7 +215,7 @@ export async function renderUsersEditor(ctx) {
                 const newInput = document.createElement('input');
                 newInput.type = 'password';
                 newInput.id = 'cpw-new';
-                newInput.placeholder = 'New password (min 8 chars)';
+                newInput.placeholder = `New password (min ${minPasswordLength} chars)`;
                 newInput.className = 'adm-input w-full';
                 newInput.style.marginBottom = '8px';
                 box.appendChild(newInput);
@@ -236,9 +265,9 @@ export async function renderUsersEditor(ctx) {
                         msgEl.textContent = 'Current password is required.';
                         return;
                     }
-                    if (pwd.length < 8) {
+                    if (pwd.length < minPasswordLength) {
                         msgEl.style.color = 'var(--danger)';
-                        msgEl.textContent = 'Password must be at least 8 characters.';
+                        msgEl.textContent = `Password must be at least ${minPasswordLength} characters.`;
                         return;
                     }
                     if (pwd !== confirm) {
@@ -277,10 +306,10 @@ export async function renderUsersEditor(ctx) {
         });
 
         // Password strength indicator
-        const passwordInput = document.getElementById('newPassword');
-        const strengthFill = document.getElementById('passwordStrengthFill');
-        const strengthLabel = document.getElementById('passwordStrengthLabel');
-        
+        const passwordInput = panel.querySelector('#newPassword');
+        const strengthFill = panel.querySelector('#passwordStrengthFill');
+        const strengthLabel = panel.querySelector('#passwordStrengthLabel');
+
         function evaluatePassword(pwd) {
             let score = 0;
             if (pwd.length >= 6) score++;
@@ -289,14 +318,14 @@ export async function renderUsersEditor(ctx) {
             if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
             if (/\d/.test(pwd)) score++;
             if (/[^a-zA-Z0-9]/.test(pwd)) score++;
-            
-            if (pwd.length < 6) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--danger)' };
+
+            if (pwd.length < minPasswordLength) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--danger)' };
             if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: 'var(--danger)' };
             if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: 'var(--warn)' };
             if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: 'var(--muted)' };
             return { level: 'strong', percent: 100, label: 'Strong', color: 'var(--ok)' };
         }
-        
+
         passwordInput.addEventListener('input', () => {
             const pwd = passwordInput.value;
             if (!pwd) {
@@ -312,10 +341,10 @@ export async function renderUsersEditor(ctx) {
         });
 
         // Setup user creation
-        document.getElementById('btnAddUser').addEventListener('click', async () => {
-            const username = document.getElementById('newUsername').value;
-            const password = document.getElementById('newPassword').value;
-            const role = document.getElementById('newRole').value;
+        panel.querySelector('#btnAddUser').addEventListener('click', async () => {
+            const username = panel.querySelector('#newUsername').value;
+            const password = panel.querySelector('#newPassword').value;
+            const role = panel.querySelector('#newRole').value;
 
             if (!username || !password) {
                 alert('Username and password are required!');
@@ -331,7 +360,7 @@ export async function renderUsersEditor(ctx) {
 
                 if (resData.status === 'success') {
                     alert('User created successfully!');
-                    renderUsersEditor(ctx);
+                    renderManageUsers(panel, ctx);
                 } else {
                     alert('Error: ' + resData.error);
                 }
@@ -341,6 +370,142 @@ export async function renderUsersEditor(ctx) {
         });
 
     } catch (e) {
-        workspaceEl.innerHTML = `<h3 style="color:var(--danger);">Network Error</h3><p>${e.message}</p>`;
+        panel.innerHTML = `<h3 style="color:var(--danger);">Network Error</h3><p>${escHtml(e.message)}</p>`;
+    }
+}
+
+async function renderUserStats(panel) {
+    panel.innerHTML = `<p>Loading statistics...</p>`;
+
+    try {
+        const res = await apiFetch('api.php?action=users_stats');
+        const data = await res.json();
+
+        if (data.status !== 'success') {
+            panel.innerHTML = `<h3 style="color:var(--danger);">Error</h3><p>${escHtml(data.error)}</p>`;
+            return;
+        }
+
+        let html = `
+            <h2 class="admin-page-title">User Statistics</h2>
+            <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:24px;">
+                <div class="adm-sec-card stat-tile" style="min-width:140px;">
+                    <div class="stat-tile-label admin-page-desc">Total users</div>
+                    <div class="stat-tile-value">${escHtml(data.total)}</div>
+                </div>
+                <div class="adm-sec-card stat-tile" style="min-width:140px;">
+                    <div class="stat-tile-label admin-page-desc">Active</div>
+                    <div class="stat-tile-value c-ok">${escHtml(data.active)}</div>
+                </div>
+                <div class="adm-sec-card stat-tile" style="min-width:140px;">
+                    <div class="stat-tile-label admin-page-desc">Inactive</div>
+                    <div class="stat-tile-value c-danger">${escHtml(data.inactive)}</div>
+                </div>
+            </div>
+
+            <h4>By role</h4>
+            <table class="adm-tbl" style="margin-bottom:30px; max-width:400px;">
+                <thead>
+                    <tr><th class="adm-th">Role</th><th class="adm-th">Count</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td class="adm-td">Admin</td><td class="adm-td">${escHtml(data.by_role.admin)}</td></tr>
+                    <tr><td class="adm-td">Editor</td><td class="adm-td">${escHtml(data.by_role.editor)}</td></tr>
+                    <tr><td class="adm-td">Viewer</td><td class="adm-td">${escHtml(data.by_role.viewer)}</td></tr>
+                </tbody>
+            </table>
+
+            <h4>Recent user activity</h4>
+            <table class="adm-tbl">
+                <thead>
+                    <tr>
+                        <th class="adm-th">Action</th>
+                        <th class="adm-th">By</th>
+                        <th class="adm-th">When</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        if (data.recent.length === 0) {
+            html += `<tr><td class="adm-td" colspan="3">No recent activity.</td></tr>`;
+        } else {
+            data.recent.forEach(r => {
+                html += `
+                    <tr>
+                        <td class="adm-td">${escHtml(r.action)}</td>
+                        <td class="adm-td">${escHtml(r.username || '—')}</td>
+                        <td class="adm-td">${escHtml(r.created_at)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        html += `
+                </tbody>
+            </table>
+        `;
+
+        panel.innerHTML = html;
+    } catch (e) {
+        panel.innerHTML = `<h3 style="color:var(--danger);">Network Error</h3><p>${escHtml(e.message)}</p>`;
+    }
+}
+
+async function renderUserSettings(panel, ctx) {
+    panel.innerHTML = `<p>Loading settings...</p>`;
+
+    try {
+        const res = await apiFetch('api.php?action=user_policy_get');
+        const data = await res.json();
+
+        if (data.status !== 'success') {
+            panel.innerHTML = `<h3 style="color:var(--danger);">Error</h3><p>${escHtml(data.error)}</p>`;
+            return;
+        }
+
+        panel.innerHTML = `
+            <h2 class="admin-page-title">Global User Settings</h2>
+            <p class="admin-page-desc">Policy applied to new users and password changes across the whole system.</p>
+            <div style="max-width:400px;">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Minimum password length</label>
+                    <input type="number" id="policyMinPasswordLength" class="adm-input" style="width:100%;" min="6" step="1" value="${escHtml(data.min_password_length)}">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Default role for new users</label>
+                    <select id="policyDefaultRole" class="adm-input" style="width:100%;">
+                        <option value="editor" ${data.default_role === 'editor' ? 'selected' : ''}>Editor</option>
+                        <option value="viewer" ${data.default_role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                        <option value="admin" ${data.default_role === 'admin' ? 'selected' : ''}>Admin</option>
+                    </select>
+                </div>
+                <button id="btnSaveUserPolicy" class="btn btn-save">Save</button>
+            </div>
+        `;
+
+        panel.querySelector('#btnSaveUserPolicy').addEventListener('click', async () => {
+            const min_password_length = parseInt(panel.querySelector('#policyMinPasswordLength').value, 10);
+            const default_role = panel.querySelector('#policyDefaultRole').value;
+
+            try {
+                const req = await apiFetch('api.php?action=user_policy_save', {
+                    method: 'POST',
+                    body: JSON.stringify({ min_password_length, default_role })
+                });
+                const resData = await req.json();
+
+                if (resData.status === 'success') {
+                    alert('Settings saved.');
+                    renderUserSettings(panel, ctx);
+                } else {
+                    alert('Error: ' + resData.error);
+                }
+            } catch (err) {
+                alert('Network error occurred.');
+            }
+        });
+    } catch (e) {
+        panel.innerHTML = `<h3 style="color:var(--danger);">Network Error</h3><p>${escHtml(e.message)}</p>`;
     }
 }

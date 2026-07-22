@@ -36,13 +36,13 @@ function renderConditionsBuilder(q, colOptions) {
     wrap.appendChild(lbl);
 
     const list = document.createElement('div');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:8px;';
+    list.className = 'dash-cond-list';
 
     function rebuildList() {
         list.innerHTML = '';
         q.conditions.forEach((cond, idx) => {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
+            row.className = 'dash-cond-row';
 
             // AND/OR logic selector (hidden for first condition)
             if (idx > 0) {
@@ -58,7 +58,7 @@ function renderConditionsBuilder(q, colOptions) {
                 row.appendChild(logicSel);
             } else {
                 const spacer = document.createElement('span');
-                spacer.style.cssText = 'width:70px;text-align:center;';
+                spacer.className = 'dash-cond-where';
                 spacer.textContent = 'WHERE';
                 row.appendChild(spacer);
             }
@@ -146,20 +146,21 @@ function renderCalculateButton(itemData) {
     btn.className = 'btn btn-secondary btn-sm';
 
     const out = document.createElement('pre');
-    out.style.cssText = 'margin-top:8px; padding:8px 10px; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:13px; max-height:220px; overflow:auto; white-space:pre-wrap; display:none;';
+    out.className = 'dash-calc-out';
+    out.hidden = true;
 
     btn.addEventListener('click', async () => {
         if (!itemData.table) {
-            out.style.display = '';
-            out.style.color = 'var(--danger)';
+            out.hidden = false;
+            out.classList.add('c-danger');
             out.textContent = 'Select a source table first.';
             return;
         }
 
         btn.disabled = true;
         btn.textContent = 'Calculating…';
-        out.style.display = '';
-        out.style.color = '';
+        out.hidden = false;
+        out.classList.remove('c-danger');
         out.textContent = 'Please wait…';
 
         try {
@@ -173,14 +174,14 @@ function renderCalculateButton(itemData) {
             });
             const result = await res.json();
             if (result.status === 'success') {
-                out.style.color = '';
+                out.classList.remove('c-danger');
                 out.textContent = JSON.stringify(result.data, null, 2);
             } else {
-                out.style.color = 'var(--danger)';
+                out.classList.add('c-danger');
                 out.textContent = 'Error: ' + (result.error || 'unknown');
             }
         } catch (e) {
-            out.style.color = 'var(--danger)';
+            out.classList.add('c-danger');
             out.textContent = 'Request failed: ' + e.message;
         }
 
@@ -228,7 +229,7 @@ function renderPreviewInto(container, widget) {
     container.replaceChildren();
 
     const hdr = document.createElement('div');
-    hdr.style.cssText = 'font-weight:600;border-bottom:1px solid var(--border-light);padding-bottom:6px;margin-bottom:12px;';
+    hdr.className = 'dash-preview-hdr';
     hdr.textContent = 'Live Preview';
     container.appendChild(hdr);
 
@@ -293,16 +294,16 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
     const { workspaceEl: containerEl, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar } = ctx;
 
     const split = document.createElement('div');
-    split.style.cssText = 'display:flex;gap:24px;align-items:flex-start;';
+    split.className = 'dash-editor-split';
     containerEl.appendChild(split);
 
     // Form panel — all inputs go here (shadows outer workspaceEl)
     const workspaceEl = document.createElement('div');
-    workspaceEl.style.cssText = 'flex:1 1 0;min-width:0;';
+    workspaceEl.className = 'dash-editor-form';
 
     // Preview panel — sticky alongside form
     const previewWrap = document.createElement('div');
-    previewWrap.style.cssText = 'flex:0 0 280px;position:sticky;top:28px;';
+    previewWrap.className = 'dash-editor-preview';
 
     split.append(workspaceEl, previewWrap);
 
@@ -328,10 +329,7 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
     }));
 
     const queryBlock = document.createElement('div');
-    queryBlock.style.borderLeft = '2px solid var(--accent)';
-    queryBlock.style.paddingLeft = '15px';
-    queryBlock.style.marginLeft = '15px';
-    queryBlock.style.marginBottom = '20px';
+    queryBlock.className = 'dash-query-block';
     queryBlock.innerHTML = '<h4>Database Query Configuration</h4>';
 
     if (typeof itemData.query !== 'object' || itemData.query === null) itemData.query = {};
@@ -371,7 +369,7 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
 
     // Widget dimensions
     const sizeBlock = document.createElement('div');
-    sizeBlock.style.cssText = 'display:flex;gap:16px;margin-bottom:16px;';
+    sizeBlock.className = 'dash-size-block';
     sizeBlock.appendChild(createSelectInput('width', 'Width', [
         { value: 1, label: '1/3' },
         { value: 2, label: '2/3' },

@@ -1182,12 +1182,63 @@ textarea.adm-input {
 }
 .adm-sec-body { padding: 16px 18px; }
 
+/* ── Admin utility: stat tiles (centered count + label) ────────────── */
+.stat-tile {
+    padding: 16px 18px;
+    text-align: center;
+}
+.stat-tile-label { font-size: 13px; margin: 0 0 6px; }
+.stat-tile-value { font-size: 28px; font-weight: bold; }
+
 /* ── Admin utility: text colour helpers ────────────────────────────── */
 .c-muted  { color: var(--muted); }
 .c-danger { color: var(--danger); }
 .c-ok     { color: var(--ok); }
 .c-warn   { color: var(--warn); }
 .c-text   { color: var(--text); }
+
+/* ── Dashboard widget editor ────────────────────────────────────────── */
+/* Split layout: form panel on the left, sticky live-preview panel on the right. */
+.dash-editor-split { display: flex; gap: 24px; align-items: flex-start; }
+.dash-editor-form { flex: 1 1 0; min-width: 0; }
+.dash-editor-preview { flex: 0 0 280px; position: sticky; top: 28px; }
+
+/* Preview panel header. */
+.dash-preview-hdr {
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+}
+
+/* Query configuration block (accent-bordered group). */
+.dash-query-block {
+    border-left: 2px solid var(--accent);
+    padding-left: 15px;
+    margin-left: 15px;
+    margin-bottom: 20px;
+}
+
+/* Width/height selectors row. */
+.dash-size-block { display: flex; gap: 16px; margin-bottom: 16px; }
+
+/* WHERE-conditions builder. */
+.dash-cond-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.dash-cond-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.dash-cond-where { width: 70px; text-align: center; }
+
+/* "Calculate (real data)" JSON output pane. */
+.dash-calc-out {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 13px;
+    max-height: 220px;
+    overflow: auto;
+    white-space: pre-wrap;
+}
 
 /* ── Overview dashboard ─────────────────────────────────────────────── */
 .ov-loading {

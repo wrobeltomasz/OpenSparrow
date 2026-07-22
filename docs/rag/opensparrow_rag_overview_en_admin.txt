@@ -246,10 +246,15 @@ Settings:
     optional IP whitelist, session timeout, password policy
 
 Users:
-  - User list: ID, name, status (active/inactive), role
-  - Role dropdown per user: admin / editor / viewer
-  - Activate / deactivate accounts; per-user password change dialog with strength meter
-  - Add new user form: name + password + role
+  - Three inner tabs: Manage Users, Statistics, Global Settings
+  - Manage Users: user list (ID, name, status active/inactive, role); role dropdown
+    per user (admin / editor / viewer); activate / deactivate accounts; per-user
+    password change dialog with strength meter; add new user form (name + password + role,
+    preselected with the configured default role)
+  - Statistics: total / active / inactive user counts, breakdown by role, and the
+    last 10 user-related audit log entries (who did what, when)
+  - Global Settings: org-wide user policy — minimum password length and default role
+    for new users, enforced when adding users or changing passwords
 
 
 CONFIGURATION
@@ -276,6 +281,7 @@ Read and written through includes/config_store.php — never as files.
   print         — printout templates
   anonymization — GDPR anonymization rules and dictionary
   user_records  — per-table owner column mapping and record limits
+  user_policy   — minimum password length and default role for new users
   rag           — Ollama URL, model, max context files, file size limit, timeout,
                   encrypted Ollama Cloud API key (ollama_api_key_enc)
   etl           — external source connection and import job definitions
