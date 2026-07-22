@@ -756,7 +756,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             colorsTitle.style.marginBottom = '10px';
             colorsContainer.appendChild(colorsTitle);
 
-            if (!colCfg.enum_colors) colCfg.enum_colors = {};
+            if (!colCfg.enum_colors || Array.isArray(colCfg.enum_colors)) colCfg.enum_colors = {};
 
             colCfg.options.forEach(optVal => {
                 colorsContainer.appendChild(createColorInput(
