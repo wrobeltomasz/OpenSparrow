@@ -3,7 +3,7 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 import { moveArrayItem, moveObjectKey, renderGlobalSettings, createFullMenuPreview } from './ui.js';
 import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings } from './schema.js';
-import { renderDashboardLayout, renderDashboardEditor, initDashboardUI } from './dashboard.js';
+import { renderDashboardLayout, renderDashboardEditor } from './dashboard.js';
 import { renderCalendarEditor } from './calendar.js';
 import { renderBoardEditor } from './board.js';
 import { renderSecurityEditor } from './security.js';
@@ -98,8 +98,7 @@ import { escHtml as escapeHtml } from '../../assets/js/util/esc.js';
 // Retrieve the CSRF token from the meta tag
 
 document.addEventListener('DOMContentLoaded', async () => {
-    initDashboardUI();
-    await fetchGlobalSchema(); 
+    await fetchGlobalSchema();
     loadConfigFile(currentFile);
 
     const debugToggle = document.getElementById('debugToggle');

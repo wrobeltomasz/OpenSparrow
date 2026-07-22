@@ -55,7 +55,11 @@ Dashboard:
   - Add widgets: stat card (COUNT/SUM/AVG aggregate), bar chart, pie chart, table (recent records list)
   - Per widget: title, source table, aggregate (COUNT/SUM/AVG/MIN/MAX), axis columns,
     group-by, filter conditions, width/height, color palette
-  - Drag widgets to reorder in a 3-column grid; live preview while editing
+  - Drag widgets to reorder in a 3-column grid; live preview while editing (uses
+    placeholder sample data, not real query results)
+  - "Calculate (real data)" button in the query editor runs the widget's current,
+    unsaved table/aggregate/WHERE conditions against the real database and shows the
+    actual result, so filters and aggregation can be verified before saving
 
 Calendar:
   - Configure event sources: table + date/timestamp column

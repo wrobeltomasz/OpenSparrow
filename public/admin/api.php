@@ -6,7 +6,7 @@ declare(strict_types=1);
 // Auth gate: session + role === 'admin' (403 otherwise); CSRF on POST; DEMO_MODE disables writes.
 // ~65 actions dispatched via $adminModules (action → per-domain module under includes/admin/:
 // migrations, users, schema, health, backup, settings, config_files, performance, cron, m2m,
-// anonymization, rag, automations, overview). Demo actions + unknown-action fallback: demo/seed.php.
+// anonymization, rag, automations, dashboard, overview). Demo actions + unknown-action fallback: demo/seed.php.
 // Error envelope: deliberate messages thrown as AdminApiMessage pass to the client via admin_error_message();
 // any other Throwable is logged and genericized (never leaks paths/SQL/credentials);
 // admin_db_fail() logs raw pg errors and throws AdminApiMessage with a generic message.
@@ -207,6 +207,7 @@ $adminModules = [
     'automations_list' => 'automations',
     'automations_save' => 'automations',
     'automations_delete' => 'automations',
+    'dashboard_calculate' => 'dashboard',
     'overview' => 'overview',
 ];
 

@@ -238,161 +238,23 @@ try {
                 $sqlWherePrev = ' WHERE ' . implode(' AND ', $prevParts);
             }
 
-            if ($qType === 'count') {
-                $col = $widget['query']['column'] ?? id_column();
-                if (isset($tableCfg['columns'][$col]) || $col === id_column()) {
-                    $sql = sprintf('SELECT COUNT(%s) AS count FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
-        // Supress warnings with at symbol to prevent HTML breaking JSON response
-                    $res = @pg_query($conn, $sql);
-                    if ($res) {
-                        $row = pg_fetch_assoc($res);
-                        $data = (int)($row['count'] ?? 0);
-                        pg_free_result($res);
-                        if ($sqlWherePrev !== null) {
-                            $sqlPrev = sprintf('SELECT COUNT(%s) AS count FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWherePrev);
-                            $resP = @pg_query($conn, $sqlPrev);
-                            if ($resP) {
-                                $rowP = pg_fetch_assoc($resP);
-                                $widget['prev_data'] = (int)($rowP['count'] ?? 0);
-                                pg_free_result($resP);
-                            }
-                        }
-                    } else {
-                        $widget['sql_error'] = 'Query failed.';
-                    }
-                }
-            } elseif ($qType === 'sum') {
-                $col = $widget['query']['column'] ?? '';
-                if (isset($tableCfg['columns'][$col])) {
-                    $sql = sprintf('SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
-                    $res = @pg_query($conn, $sql);
-                    if ($res) {
-                        $row = pg_fetch_assoc($res);
-                        $val = (float)($row['total'] ?? 0);
-                        $data = ($val == (int)$val) ? (int)$val : round($val, 2);
-                        pg_free_result($res);
-                        if ($sqlWherePrev !== null) {
-                            $sqlPrev = sprintf('SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWherePrev);
-                            $resP = @pg_query($conn, $sqlPrev);
-                            if ($resP) {
-                                $rowP = pg_fetch_assoc($resP);
-                                $valP = (float)($rowP['total'] ?? 0);
-                                $widget['prev_data'] = ($valP == (int)$valP) ? (int)$valP : round($valP, 2);
-                                pg_free_result($resP);
-                            }
-                        }
-                    } else {
-                        $widget['sql_error'] = 'Query failed.';
-                    }
-                }
-            } elseif ($qType === 'avg') {
-                $col = $widget['query']['column'] ?? '';
-                if (isset($tableCfg['columns'][$col])) {
-                    $sql = sprintf('SELECT COALESCE(AVG(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
-                    $res = @pg_query($conn, $sql);
-                    if ($res) {
-                        $row = pg_fetch_assoc($res);
-                        $val = (float)($row['total'] ?? 0);
-                        $data = ($val == (int)$val) ? (int)$val : round($val, 2);
-                        pg_free_result($res);
-                        if ($sqlWherePrev !== null) {
-                            $sqlPrev = sprintf('SELECT COALESCE(AVG(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWherePrev);
-                            $resP = @pg_query($conn, $sqlPrev);
-                            if ($resP) {
-                                $rowP = pg_fetch_assoc($resP);
-                                $valP = (float)($rowP['total'] ?? 0);
-                                $widget['prev_data'] = ($valP == (int)$valP) ? (int)$valP : round($valP, 2);
-                                pg_free_result($resP);
-                            }
-                        }
-                    } else {
-                        $widget['sql_error'] = 'Query failed.';
-                    }
-                }
-            } elseif ($qType === 'group_by') {
-                $grpCol = $widget['query']['group_column'] ?? '';
-                $aggCol = $widget['query']['agg_column'] ?? id_column();
-                $aggType = strtoupper($widget['query']['agg_type'] ?? 'COUNT');
-                $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
-                $aggType = in_array($aggType, $allowedAgg, true) ? $aggType : 'COUNT';
-                if (isset($tableCfg['columns'][$grpCol])) {
-                    $sql = sprintf('SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY %s ORDER BY value DESC', pg_ident($grpCol), $aggType, pg_ident($aggCol), pg_ident($schemaName), pg_ident($table), $sqlWhere, pg_ident($grpCol));
-                    $res = @pg_query($conn, $sql);
-                    if ($res) {
-                        $data = [];
-                        while ($r = pg_fetch_assoc($res)) {
-                            $r['value'] = is_numeric($r['value']) ? (float)$r['value'] : $r['value'];
-                            $data[] = $r;
-                        }
-                        pg_free_result($res);
-                        $widget['column_type'] = $tableCfg['columns'][$grpCol]['type'] ?? 'text';
-                    } else {
-                        $widget['sql_error'] = 'Query failed.';
-                    }
-                }
-            } elseif ($qType === 'time_series') {
-                // Line/area chart: bucket a date/time column and aggregate per bucket,
-                // ordered chronologically.
-                $xCol = $widget['query']['x_column'] ?? '';
-                $aggCol = $widget['query']['agg_column'] ?? id_column();
-                $aggType = strtoupper($widget['query']['agg_type'] ?? 'COUNT');
-                $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
-                $aggType = in_array($aggType, $allowedAgg, true) ? $aggType : 'COUNT';
-                $granularity = strtolower($widget['query']['granularity'] ?? 'month');
-                $allowedGran = ['day', 'week', 'month', 'year'];
-                $granularity = in_array($granularity, $allowedGran, true) ? $granularity : 'month';
-                if (isset($tableCfg['columns'][$xCol])) {
-                    $bucket = sprintf("DATE_TRUNC('%s', %s)", $granularity, pg_ident($xCol));
-                    $sql = sprintf(
-                        'SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY 1 ORDER BY 1 ASC',
-                        $bucket,
-                        $aggType,
-                        pg_ident($aggCol),
-                        pg_ident($schemaName),
-                        pg_ident($table),
-                        $sqlWhere
-                    );
-                    $res = @pg_query($conn, $sql);
-                    if ($res) {
-                        $data = [];
-                        while ($r = pg_fetch_assoc($res)) {
-                            $r['value'] = is_numeric($r['value']) ? (float)$r['value'] : $r['value'];
-                            $data[] = $r;
-                        }
-                        pg_free_result($res);
-                        $widget['column_type'] = $tableCfg['columns'][$xCol]['type'] ?? 'text';
-                    } else {
-                        $widget['sql_error'] = 'Query failed.';
-                    }
-                }
-            } else {
-                $limit = (int)($widget['query']['limit'] ?? 5);
-                $orderBy = $widget['query']['order_by'] ?? id_column();
-                $dir = strtoupper($widget['query']['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
-                $displayCols = $widget['display_columns'] ?? [id_column()];
-                $validCols = array_filter($displayCols, fn($c) => isset($tableCfg['columns'][$c]) || $c === id_column());
-                if (empty($validCols)) {
-                    $validCols = [id_column()];
-                }
+            $result = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $widget['query'] ?? [], $widget['display_columns'] ?? [id_column()], $sqlWhere);
+            $data = $result['data'];
+            if (isset($result['sql_error'])) {
+                $widget['sql_error'] = $result['sql_error'];
+            }
+            if (isset($result['column_type'])) {
+                $widget['column_type'] = $result['column_type'];
+            }
+            if (isset($result['column_types'])) {
+                $widget['column_types'] = $result['column_types'];
+            }
 
-                $selectSql = implode(', ', array_map('pg_ident', $validCols));
-                if (isset($tableCfg['columns'][$orderBy]) || $orderBy === id_column()) {
-                    $sql = sprintf('SELECT %s FROM %s.%s%s ORDER BY %s %s LIMIT %d', $selectSql, pg_ident($schemaName), pg_ident($table), $sqlWhere, pg_ident($orderBy), $dir, $limit);
-                    $res = @pg_query($conn, $sql);
-                    if ($res) {
-                        $data = [];
-                        while ($r = pg_fetch_assoc($res)) {
-                            $data[] = $r;
-                        }
-                        pg_free_result($res);
-                        $colTypes = [];
-                        foreach ($validCols as $col) {
-                            $colTypes[$col] = $tableCfg['columns'][$col]['type'] ?? 'text';
-                        }
-                        $widget['column_types'] = $colTypes;
-                    } else {
-                        $widget['sql_error'] = 'Query failed.';
-                    }
+            // Previous-period comparison only applies to single-value widgets
+            if ($sqlWherePrev !== null && in_array($qType, ['count', 'sum', 'avg'], true) && !isset($result['sql_error'])) {
+                $prevResult = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $widget['query'] ?? [], $widget['display_columns'] ?? [id_column()], $sqlWherePrev);
+                if (!isset($prevResult['sql_error'])) {
+                    $widget['prev_data'] = $prevResult['data'];
                 }
             }
 

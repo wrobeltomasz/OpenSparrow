@@ -3,12 +3,28 @@
 declare(strict_types=1);
 
 // includes/admin/users.php — admin api.php module: user management (users_list, users_add, users_toggle,
-// users_update_role, users_change_password).
+// users_update_role, users_change_password, users_stats, user_policy_get, user_policy_save).
 // Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
 // POST-method enforcement — never include or serve this file directly.
 // Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
 // / admin_db_fail() / require_not_demo() helpers defined by the front controller.
 // Every action block emits its own JSON response and exits.
+
+const USER_ROLES = ['admin', 'editor', 'viewer'];
+
+/**
+ * Reads the 'user_policy' spw_config key, filling in defaults for unset fields.
+ */
+function admin_user_policy(): array
+{
+    $policy = config_get('user_policy') ?? [];
+    return [
+        'min_password_length' => (int) ($policy['min_password_length'] ?? 8),
+        'default_role' => in_array($policy['default_role'] ?? '', USER_ROLES, true)
+            ? $policy['default_role']
+            : 'editor',
+    ];
+}
 
 // Fetch list of all system users
 if ($action === 'users_list') {
@@ -44,13 +60,21 @@ if ($action === 'users_add') {
     header('Content-Type: application/json');
     require_not_demo();
 
+    $policy = admin_user_policy();
     $data = json_decode(file_get_contents('php://input'), true);
     $username = trim($data['username'] ?? '');
     $password = $data['password'] ?? '';
-    $role = in_array($data['role'] ?? '', ['admin', 'editor', 'viewer'], true) ? $data['role'] : 'editor';
+    $role = in_array($data['role'] ?? '', USER_ROLES, true) ? $data['role'] : $policy['default_role'];
 
     if (empty($username) || empty($password)) {
         echo json_encode(['status' => 'error', 'error' => 'Username and password are required.']);
+        exit;
+    }
+    if (strlen($password) < $policy['min_password_length']) {
+        echo json_encode([
+            'status' => 'error',
+            'error' => "Password must be at least {$policy['min_password_length']} characters.",
+        ]);
         exit;
     }
 
@@ -117,7 +141,7 @@ if ($action === 'users_update_role') {
 
     $data = json_decode(file_get_contents('php://input'), true);
     $userId = (int)($data['id'] ?? 0);
-    $role = in_array($data['role'] ?? '', ['admin', 'editor', 'viewer'], true) ? $data['role'] : 'editor';
+    $role = in_array($data['role'] ?? '', USER_ROLES, true) ? $data['role'] : admin_user_policy()['default_role'];
 
     if ($userId <= 0) {
         echo json_encode(['status' => 'error', 'error' => 'Invalid user ID.']);
@@ -154,8 +178,9 @@ if ($action === 'users_change_password') {
         echo json_encode(['status' => 'error', 'error' => 'User ID and password are required.']);
         exit;
     }
-    if (strlen($password) < 8) {
-        echo json_encode(['status' => 'error', 'error' => 'Password must be at least 8 characters.']);
+    $minLen = admin_user_policy()['min_password_length'];
+    if (strlen($password) < $minLen) {
+        echo json_encode(['status' => 'error', 'error' => "Password must be at least {$minLen} characters."]);
         exit;
     }
 

@@ -2,6 +2,7 @@
 // Imports the shared widget modules (self-register into WidgetRegistry) to live-preview widgets; edits the "dashboard" config widgets, queries and conditions.
 import { createTextInput, createSelectInput, createColorInput, createCheckbox, renderGlobalSettings } from './ui.js';
 import { WidgetRegistry } from '../../assets/js/dashboard/registry.js';
+import { apiFetch } from '../../assets/js/util/api.js';
 
 // Import widgets so they self-register into WidgetRegistry
 import '../../assets/js/dashboard/widgets/stat-card.js';
@@ -130,6 +131,67 @@ function renderConditionsBuilder(q, colOptions) {
     return wrap;
 }
 
+// Runs the widget's current (unsaved) query/table/conditions against real data via
+// includes/admin/dashboard.php (action=dashboard_calculate), so the operator can verify
+// the WHERE conditions and aggregation before saving — the preview panel only ever shows
+// mock data.
+function renderCalculateButton(itemData) {
+    const wrap = document.createElement('div');
+    wrap.className = 'form-group';
+    wrap.style.marginTop = '10px';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Calculate (real data)';
+    btn.className = 'btn btn-secondary btn-sm';
+
+    const out = document.createElement('pre');
+    out.style.cssText = 'margin-top:8px; padding:8px 10px; background:var(--bg); border:1px solid var(--border); border-radius:4px; font-size:13px; max-height:220px; overflow:auto; white-space:pre-wrap; display:none;';
+
+    btn.addEventListener('click', async () => {
+        if (!itemData.table) {
+            out.style.display = '';
+            out.style.color = 'var(--danger)';
+            out.textContent = 'Select a source table first.';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Calculating…';
+        out.style.display = '';
+        out.style.color = '';
+        out.textContent = 'Please wait…';
+
+        try {
+            const res = await apiFetch('api.php?action=dashboard_calculate', {
+                method: 'POST',
+                body: {
+                    table: itemData.table,
+                    query: itemData.query || {},
+                    display_columns: itemData.display_columns || [],
+                },
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+                out.style.color = '';
+                out.textContent = JSON.stringify(result.data, null, 2);
+            } else {
+                out.style.color = 'var(--danger)';
+                out.textContent = 'Error: ' + (result.error || 'unknown');
+            }
+        } catch (e) {
+            out.style.color = 'var(--danger)';
+            out.textContent = 'Request failed: ' + e.message;
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Calculate (real data)';
+    });
+
+    wrap.append(btn, out);
+    return wrap;
+}
+
 // ── Widget Preview ───────────────────────────────────────────────────────────
 
 function getMockData(type, displayColumns) {
@@ -172,7 +234,6 @@ function renderPreviewInto(container, widget) {
 
     if (!widget.type) {
         const ph = document.createElement('p');
-        ph.style.cssText = '';
         ph.textContent = 'Select a widget type to preview.';
         container.appendChild(ph);
         return;
@@ -202,7 +263,6 @@ function renderPreviewInto(container, widget) {
 
 // ── Exported editors ─────────────────────────────────────────────────────────
 
-// Added new widget types for vertical bar and pie charts
 export const WIDGET_TYPES = [
     { value: 'stat_card',         label: 'Stat Card' },
     { value: 'bar_chart',         label: 'Bar Chart (Horizontal)' },
@@ -211,11 +271,6 @@ export const WIDGET_TYPES = [
     { value: 'line_chart',        label: 'Line Chart (Time Series)' },
     { value: 'list',              label: 'Data List' },
 ];
-
-// Datalist initialization removed as we now use standard select inputs
-export function initDashboardUI() {
-    // Left empty to maintain compatibility if called elsewhere
-}
 
 export function renderDashboardLayout(ctx) {
     renderGlobalSettings(ctx, {
@@ -311,6 +366,7 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
     }
 
     queryBlock.appendChild(renderConditionsBuilder(q, colOptions));
+    queryBlock.appendChild(renderCalculateButton(itemData));
     workspaceEl.appendChild(queryBlock);
 
     // Widget dimensions
