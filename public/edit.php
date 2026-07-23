@@ -245,7 +245,7 @@ ob_start();
         $siLabel = $sd['config']['label'] ?? ($sd['schema']->displayName ?? $sTable);
         ?>
     <div class="tab-panel" id="tab-sub-<?php echo (int)$si; ?>" role="tabpanel">
-        <div class="subtable-container" style="margin-top: 10px;">
+        <div class="subtable-container form-wrapper">
             <div class="ef-panel-head">
                 <h3><?php echo htmlspecialchars($siLabel); ?></h3>
                 <?php if (!$isReadOnly) : ?>
@@ -293,7 +293,7 @@ ob_start();
     <?php endforeach; ?>
 
     <div class="tab-panel" id="tab-files" role="tabpanel">
-    <div class="subtable-container" style="margin-top: 10px;">
+    <div class="subtable-container form-wrapper">
         <div class="ef-panel-head">
             <h3 class="ef-panel-title"><?= t('form.attached_files') ?></h3>
         </div>
@@ -385,22 +385,24 @@ ob_start();
     </div><!-- /tab-panel#tab-files -->
 
     <div class="tab-panel" id="tab-comments" role="tabpanel">
-        <div id="c-panel"></div>
+        <div id="c-panel" class="form-wrapper"></div>
     </div><!-- /tab-panel#tab-comments -->
 
     <div class="tab-panel" id="tab-history" role="tabpanel">
-        <div id="ow-panel" class="owner-panel ow-panel">
-            <h3 class="ow-section-title"><?= t('owners.section_owner') ?></h3>
-            <div id="ow-current" class="ow-current"><?php echo htmlspecialchars(t('common.loading'), ENT_QUOTES, 'UTF-8'); ?></div>
-            <div id="ow-change" class="ow-change" hidden>
-                <select id="ow-select" class="ow-select"></select>
-                <button id="ow-save" type="button" class="btn-action"><?php echo htmlspecialchars(t('owners.change_owner'), ENT_QUOTES, 'UTF-8'); ?></button>
-                <span id="ow-status"></span>
+        <div class="form-wrapper">
+            <div id="ow-panel" class="owner-panel ow-panel">
+                <h3 class="ow-section-title"><?= t('owners.section_owner') ?></h3>
+                <div id="ow-current" class="ow-current"><?php echo htmlspecialchars(t('common.loading'), ENT_QUOTES, 'UTF-8'); ?></div>
+                <div id="ow-change" class="ow-change" hidden>
+                    <select id="ow-select" class="ow-select"></select>
+                    <button id="ow-save" type="button" class="btn-action"><?php echo htmlspecialchars(t('owners.change_owner'), ENT_QUOTES, 'UTF-8'); ?></button>
+                    <span id="ow-status"></span>
+                </div>
             </div>
-        </div>
-        <div id="ow-history" class="ow-history-wrap">
-            <h3 class="ow-section-title"><?= t('owners.section_history') ?></h3>
-            <div id="ow-history-body" class="ow-history-body">Loading…</div>
+            <div id="ow-history" class="ow-history-wrap">
+                <h3 class="ow-section-title"><?= t('owners.section_history') ?></h3>
+                <div id="ow-history-body" class="ow-history-body">Loading…</div>
+            </div>
         </div>
     </div><!-- /tab-panel#tab-history -->
 
