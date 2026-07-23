@@ -55,9 +55,11 @@ export function rowsFromRecord(rowData = {}, columns = {}) {
     return rows;
 }
 
+let showTimer = null;
+
 // Populate the shared tooltip with the model and position it against an anchor.
 // model: { title: string, rows: [{ label, value, color }] }
-export function showRecordTooltip(anchor, { title, rows } = {}) {
+function renderTooltipNow(anchor, { title, rows } = {}) {
     const el = getRecordTooltip();
     el.innerHTML = '';
 
@@ -104,8 +106,18 @@ export function showRecordTooltip(anchor, { title, rows } = {}) {
     el.style.top = topPos + 'px';
 }
 
-// Hide the shared tooltip (no-op if it was never created).
+// Schedule showing the tooltip after `delay` ms of continuous hover; cancels any
+// pending show for a previous anchor so only the latest hover target wins.
+export function showRecordTooltip(anchor, model = {}, delay = 1000) {
+    clearTimeout(showTimer);
+    showTimer = setTimeout(() => renderTooltipNow(anchor, model), delay);
+}
+
+// Hide the shared tooltip (no-op if it was never created) and cancel any pending
+// scheduled show, so a hover that ends before `delay` elapses never shows at all.
 export function hideRecordTooltip() {
+    clearTimeout(showTimer);
+    showTimer = null;
     const el = document.getElementById(TOOLTIP_ID);
     if (el) el.style.display = 'none';
 }
