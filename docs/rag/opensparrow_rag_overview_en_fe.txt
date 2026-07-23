@@ -150,7 +150,18 @@ the sheet before the report is generated (e.g. "select employee").
 NOTIFICATIONS
 -------------
 In-app notification bell in the header. Notifications come from upcoming calendar
-events and from automation rules. Click a notification to open the related record.
+events, automation rules, and note reminders (see NOTES below). Click a notification
+to open the related record.
+
+
+NOTES (User menu > Notes)
+--------------------------
+A private notepad reachable from the header user menu (avatar > Notes). Each note is
+visible only to its author, may optionally be linked to a specific record (by picking
+a table and record ID), and may optionally carry a reminder date. On the reminder date
+the standard notification cron delivers a reminder under the notification bell, with a
+link back to the linked record when one was set. Notes can be edited or deleted from
+the same panel.
 
 
 MOBILE & ACCESSIBILITY

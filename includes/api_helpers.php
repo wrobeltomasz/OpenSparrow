@@ -249,6 +249,41 @@ function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $ta
     );
 }
 
+// Record label column(s) for an arbitrary table, concatenated with CONCAT_WS() when
+// there's more than one. Prefers the caller-supplied $configured columns (e.g. from
+// the admin "User Records" > "Column Mapping" tab, config_get('user_records')); falls
+// back to a best-effort guess (first text column shown in the grid, else any grid
+// column, else the id). Shared by api/owners.php (My records) and api/notes.php
+// (record picker) — single source of truth for this heuristic.
+function record_label_columns(array $tableCfg, array $configured): array
+{
+    $cols = $tableCfg['columns'] ?? [];
+
+    if (!empty($configured)) {
+        $valid = array_values(array_filter(
+            $configured,
+            fn($c) => is_string($c) && isset($cols[$c]) && ($cols[$c]['type'] ?? '') !== 'virtual'
+        ));
+        if (!empty($valid)) {
+            return $valid;
+        }
+    }
+
+    $firstGridCol = null;
+    foreach ($cols as $colName => $colCfg) {
+        if (empty($colCfg['show_in_grid'])) {
+            continue;
+        }
+        if ($firstGridCol === null) {
+            $firstGridCol = $colName;
+        }
+        if (($colCfg['type'] ?? '') === 'text') {
+            return [$colName];
+        }
+    }
+    return [$firstGridCol ?? 'id'];
+}
+
 // ---------------------------------------------------------------------------
 // Shared JSON response + request-guard helpers for the api/ endpoints
 // ---------------------------------------------------------------------------

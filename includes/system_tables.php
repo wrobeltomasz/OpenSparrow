@@ -30,6 +30,7 @@ function system_tables_ddl(callable $ident): array
     $tCronLog          = $ident('users_notifications_log');
     $tFiles            = $ident('files');
     $tComments         = $ident('comments');
+    $tNotes            = $ident('notes');
     $tRecordSnapshots  = $ident('record_snapshots');
     $tRecordOwners     = $ident('record_owners');
     $tRelMigrations    = $ident('release_migrations');
@@ -74,6 +75,10 @@ function system_tables_ddl(callable $ident): array
         "CREATE TABLE IF NOT EXISTS $tComments ( id serial4 NOT NULL, related_table varchar(100) NOT NULL, related_id int4 NOT NULL, user_id int4 NOT NULL, body text NOT NULL, created_at timestamp DEFAULT now() NOT NULL, deleted_at timestamp NULL, CONSTRAINT spw_comments_pkey PRIMARY KEY (id), CONSTRAINT spw_comments_body_len CHECK (char_length(body) <= 4000), CONSTRAINT spw_comments_user_id_fkey FOREIGN KEY (user_id) REFERENCES $tUsers(id) ON DELETE SET NULL )",
         "CREATE INDEX IF NOT EXISTS idx_spw_comments_related ON $tComments USING btree (related_table, related_id, created_at)",
         "CREATE INDEX IF NOT EXISTS idx_spw_comments_user_id ON $tComments USING btree (user_id)",
+        // spw_notes: private user notepad, optionally linked to a record, with an optional reminder date
+        "CREATE TABLE IF NOT EXISTS $tNotes ( id serial4 NOT NULL, user_id int4 NOT NULL, related_table varchar(100) NULL, related_id int4 NULL, body text NOT NULL, reminder_date date NULL, created_at timestamp DEFAULT now() NOT NULL, updated_at timestamp NULL, deleted_at timestamp NULL, CONSTRAINT spw_notes_pkey PRIMARY KEY (id), CONSTRAINT spw_notes_body_len CHECK (char_length(body) <= 4000), CONSTRAINT spw_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES $tUsers(id) ON DELETE CASCADE )",
+        "CREATE INDEX IF NOT EXISTS idx_spw_notes_user_id ON $tNotes USING btree (user_id, created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_spw_notes_reminder ON $tNotes USING btree (reminder_date) WHERE (reminder_date IS NOT NULL)",
         // spw_record_snapshots
         "CREATE TABLE IF NOT EXISTS $tRecordSnapshots ( id serial4 NOT NULL, log_id int4 NOT NULL, table_name varchar(100) NOT NULL, record_id int4 NOT NULL, snapshot jsonb NOT NULL, created_at timestamp DEFAULT CURRENT_TIMESTAMP, CONSTRAINT spw_record_snapshots_pkey PRIMARY KEY (id), CONSTRAINT spw_record_snapshots_log_id_fkey FOREIGN KEY (log_id) REFERENCES $tUsersLog(id) ON DELETE CASCADE )",
         "CREATE INDEX IF NOT EXISTS idx_spw_record_snapshots_log_id ON $tRecordSnapshots USING btree (log_id)",

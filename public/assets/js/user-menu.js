@@ -6,6 +6,7 @@
 import { showToast } from './toast.js';
 import { I18n } from './i18n.js';
 import { BulkPanel } from './bulk_panel.js';
+import { openNotesPanel } from './notes-panel.js';
 
 const AVATAR_COUNT = 24;
 
@@ -352,6 +353,11 @@ function initUserMenu() {
     document.getElementById('myRecordsBtn')?.addEventListener('click', () => {
         toggle(false);
         openMyRecordsPanel();
+    });
+
+    document.getElementById('notesBtn')?.addEventListener('click', () => {
+        toggle(false);
+        openNotesPanel();
     });
 
     document.getElementById('logoutBtn')?.addEventListener('click', () => {

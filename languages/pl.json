@@ -124,6 +124,7 @@
         "avatar_updated": "Awatar zaktualizowany.",
         "my_records": "Moje rekordy",
         "my_records_empty": "Nie masz przypisanych rekordów.",
+        "notes": "Moje notatki",
         "close": "Zamknij",
         "avatar_option": "Awatar {n}",
         "avatar_options": "Opcje awatara",
@@ -283,6 +284,24 @@
         "bold_title": "Pogrubienie (**tekst**)",
         "italic_title": "Kursywa (*tekst*)",
         "unknown_author": "Nieznany"
+    },
+    "notes": {
+        "title": "Notatki",
+        "add": "Dodaj notatkę",
+        "save": "Zapisz",
+        "edit": "Edytuj",
+        "delete": "Usuń",
+        "delete_confirm": "Usunąć tę notatkę?",
+        "empty": "Nie masz jeszcze żadnych notatek.",
+        "body_placeholder": "Wpisz notatkę…",
+        "no_link": "Bez powiązania z rekordem",
+        "select_table_first": "-- Najpierw wybierz tabelę --",
+        "select_record": "-- Wybierz rekord --",
+        "load_error": "-- Błąd ładowania --",
+        "reminder_date": "Data przypomnienia",
+        "reminder_on": "Przypomnienie: {date}",
+        "open_record": "Otwórz rekord",
+        "error_saving": "Błąd zapisu notatki."
     },
     "owners": {
         "error_load": "Błąd ładowania właściciela.",

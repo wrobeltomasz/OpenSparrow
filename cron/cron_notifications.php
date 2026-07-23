@@ -141,6 +141,39 @@ try {
         print_log("<hr>");
     }
 
+    // ── Note reminders (spw_notes) ───────────────────────────────────────────
+    // Private per-user notes (User menu > Notes) with an optional reminder_date fire
+    // into the same spw_users_notifications table/dedup as the calendar sources above.
+    print_log("<h3>Note reminders</h3>");
+    $today = date('Y-m-d');
+    $noteRes = pg_query_params(
+        $conn,
+        "SELECT id, user_id, body, related_table, related_id
+         FROM " . sys_table('notes') . "
+         WHERE reminder_date = $1 AND deleted_at IS NULL",
+        [$today]
+    );
+    $noteRows = $noteRes ? (pg_fetch_all($noteRes) ?: []) : [];
+    print_log("Notes with a reminder due today: <b>" . count($noteRows) . "</b>");
+    foreach ($noteRows as $note) {
+        $noteUserId = (int)$note['user_id'];
+        $noteTitle  = mb_strimwidth((string)$note['body'], 0, 120, '...');
+        $noteLink   = ($note['related_table'] && $note['related_id'])
+            ? 'edit.php?table=' . rawurlencode((string)$note['related_table']) . '&id=' . (int)$note['related_id']
+            : '';
+        $noteInsertSql = "
+            INSERT INTO " . sys_table('users_notifications') . " (user_id, title, link, source_table, source_id, notify_date)
+            VALUES ($1, $2, $3, 'notes', $4, $5)
+            ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
+        ";
+        $noteInsertRes = pg_query_params($conn, $noteInsertSql, [$noteUserId, $noteTitle, $noteLink, (int)$note['id'], $today]);
+        if ($noteInsertRes && pg_affected_rows($noteInsertRes) > 0) {
+            print_log("&nbsp;&nbsp; Added reminder for user ID $noteUserId (Note ID: " . (int)$note['id'] . ")");
+            $insertedCount++;
+        }
+    }
+    print_log("<hr>");
+
     // ── Automation email queue (spw_automation_emails) ──────────────────────
     // Rows are queued by the "email" automation action (includes/automations.php)
     // and delivered here so record writes never block on SMTP.

@@ -26,6 +26,7 @@ $tChangeAvatar   = htmlspecialchars(t('header.change_avatar'), ENT_QUOTES, 'UTF-
 $tChangePassword = htmlspecialchars(t('auth.change_password'), ENT_QUOTES, 'UTF-8');
 $tAgentTitle     = htmlspecialchars(t('agent.title'), ENT_QUOTES, 'UTF-8');
 $tMyRecords      = htmlspecialchars(t('header.my_records'), ENT_QUOTES, 'UTF-8');
+$tNotes          = htmlspecialchars(t('header.notes'), ENT_QUOTES, 'UTF-8');
 $tLogout         = htmlspecialchars(t('auth.logout'), ENT_QUOTES, 'UTF-8');
 
 $vSidebarJs = @filemtime(__DIR__ . '/../public/assets/js/sidebar.js');
@@ -106,6 +107,9 @@ if ($logoEnabled) {
                 <button class="user-avatar-menu-item" id="openAgentBtn" role="menuitem"><?= $tAgentTitle ?></button>
                 <button class="user-avatar-menu-item" id="myRecordsBtn" data-cy="my-records" role="menuitem">
                     <?= $tMyRecords ?>
+                </button>
+                <button class="user-avatar-menu-item" id="notesBtn" data-cy="notes" role="menuitem">
+                    <?= $tNotes ?>
                 </button>
                 <div class="user-avatar-menu-divider"></div>
                 <button class="user-avatar-menu-item danger" id="logoutBtn" data-cy="logout" role="menuitem">

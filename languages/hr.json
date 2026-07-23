@@ -124,6 +124,7 @@
         "avatar_updated": "Avatar ažuriran.",
         "my_records": "Moji zapisi",
         "my_records_empty": "Nemate dodijeljenih zapisa.",
+        "notes": "My notes",
         "close": "Zatvori",
         "avatar_option": "Avatar {n}",
         "avatar_options": "Avatar options",
@@ -283,6 +284,24 @@
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
         "unknown_author": "Unknown"
+    },
+    "notes": {
+        "title": "Notes",
+        "add": "Add note",
+        "save": "Save",
+        "edit": "Edit",
+        "delete": "Delete",
+        "delete_confirm": "Delete this note?",
+        "empty": "You have no notes yet.",
+        "body_placeholder": "Write a note…",
+        "no_link": "Not linked to a record",
+        "select_table_first": "-- Select a table first --",
+        "select_record": "-- Select record --",
+        "load_error": "-- Load error --",
+        "reminder_date": "Reminder date",
+        "reminder_on": "Reminder: {date}",
+        "open_record": "Open record",
+        "error_saving": "Error saving note."
     },
     "owners": {
         "error_load": "Pogreška pri učitavanju vlasnika.",

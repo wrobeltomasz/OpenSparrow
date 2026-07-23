@@ -196,7 +196,7 @@ function actionMine($conn): void
             continue;
         }
 
-        $labelCols = mine_label_columns($tableCfg, $configuredCols[$tableName] ?? []);
+        $labelCols = record_label_columns($tableCfg, $configuredCols[$tableName] ?? []);
         $pgSchema  = $tableCfg['schema'] ?? 'public';
         $arrParam  = '{' . implode(',', $ids) . '}';
 
@@ -238,39 +238,6 @@ function actionMine($conn): void
     usort($tables, fn($a, $b) => strnatcasecmp($a['display_name'], $b['display_name']));
 
     jsonSuccess(['tables' => $tables]);
-}
-
-// Record label column(s), concatenated with CONCAT_WS() when there's more than one.
-// Prefers the admin-configured "user_records" columns for this table (set via
-// the admin "User Records" > "Column Mapping" tab); falls back to a best-effort guess
-// (first text column shown in the grid, else any grid column, else the id).
-function mine_label_columns(array $tableCfg, array $configured): array
-{
-    $cols = $tableCfg['columns'] ?? [];
-
-    if (!empty($configured)) {
-        $valid = array_values(array_filter(
-            $configured,
-            fn($c) => is_string($c) && isset($cols[$c]) && ($cols[$c]['type'] ?? '') !== 'virtual'
-        ));
-        if (!empty($valid)) {
-            return $valid;
-        }
-    }
-
-    $firstGridCol = null;
-    foreach ($cols as $colName => $colCfg) {
-        if (empty($colCfg['show_in_grid'])) {
-            continue;
-        }
-        if ($firstGridCol === null) {
-            $firstGridCol = $colName;
-        }
-        if (($colCfg['type'] ?? '') === 'text') {
-            return [$colName];
-        }
-    }
-    return [$firstGridCol ?? 'id'];
 }
 
 function actionMassSet($conn, array $body): void
