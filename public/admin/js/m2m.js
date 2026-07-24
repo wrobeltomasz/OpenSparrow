@@ -1,4 +1,4 @@
-﻿// admin/js/m2m.js — Many-to-Many relationship builder wizard
+// admin/js/m2m.js — Many-to-Many relationship builder wizard
 // Lists/creates/deletes junction tables via api.php (list_m2m / create_m2m / delete_m2m). CSRF via apiFetch().
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';

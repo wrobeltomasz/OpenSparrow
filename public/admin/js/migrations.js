@@ -1,4 +1,4 @@
-﻿// admin/js/migrations.js — Migrations page (renderMigrationsPage): scan for schema drift and apply pending migrations via admin/api_migrations.php (scan/apply); inner tabs.
+// admin/js/migrations.js — Migrations page (renderMigrationsPage): scan for schema drift and apply pending migrations via admin/api_migrations.php (scan/apply); inner tabs.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';
 import { escHtml as escRelMig } from '../../assets/js/util/esc.js';

@@ -1,4 +1,4 @@
-﻿// admin/js/rag.js — RAG knowledge base management page
+// admin/js/rag.js — RAG knowledge base management page
 // Upload/list/delete/rechunk documents, edit settings, test query and Ollama check via api.php (rag_* actions). CSRF via apiFetch().
 
 import { apiFetch } from '../../assets/js/util/api.js';

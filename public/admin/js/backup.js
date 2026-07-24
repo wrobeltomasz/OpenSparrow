@@ -1,4 +1,4 @@
-﻿// admin/js/backup.js — Backup & restore page (renderBackupPage): per-table export/import and full backup via api.php (export / import / backup_tables). CSRF via apiFetch().
+// admin/js/backup.js — Backup & restore page (renderBackupPage): per-table export/import and full backup via api.php (export / import / backup_tables). CSRF via apiFetch().
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';

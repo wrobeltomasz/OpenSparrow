@@ -1,4 +1,4 @@
-﻿// admin/js/demo.js — Demo sample-app catalog + install UI
+// admin/js/demo.js — Demo sample-app catalog + install UI
 // DEMOS metadata (CRM: label, schema, tables, feature list); installs/uninstalls the demo app via api.php (demo_install / demo_uninstall / demo_status).
 
 import { apiFetch } from '../../assets/js/util/api.js';

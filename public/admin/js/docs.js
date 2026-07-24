@@ -1,4 +1,4 @@
-﻿// admin/js/docs.js — Admin documentation page renderer; builds HTML from docs-strings.js STRINGS, language switch persisted in localStorage (sparrow_docs_lang). Languages: en/pl/de/fr/it/es.
+// admin/js/docs.js — Admin documentation page renderer; builds HTML from docs-strings.js STRINGS, language switch persisted in localStorage (sparrow_docs_lang). Languages: en/pl/de/fr/it/es.
 import { STRINGS } from './docs-strings.js';
 
 // Configuration constants - limited to required languages

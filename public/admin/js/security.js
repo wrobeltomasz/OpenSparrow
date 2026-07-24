@@ -1,4 +1,4 @@
-﻿// admin/js/security.js — Security settings tab (renderSecurityEditor): informational; points the admin to System -> Users for password changes.
+// admin/js/security.js — Security settings tab (renderSecurityEditor): informational; points the admin to System -> Users for password changes.
 
 export function renderSecurityEditor(key, itemData, isArray, ctx) {
     const { workspaceEl } = ctx;

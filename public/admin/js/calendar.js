@@ -1,4 +1,4 @@
-﻿// admin/js/calendar.js — Calendar view configuration editor (renderCalendarEditor): date/title columns, notified users, colors; includes legacy *_field -> *_column cleanup.
+// admin/js/calendar.js — Calendar view configuration editor (renderCalendarEditor): date/title columns, notified users, colors; includes legacy *_field -> *_column cleanup.
 import { createTextInput, createSelectInput, createColorInput, createIconPicker, createMultiSelect } from './ui.js';
 
 export function renderCalendarEditor(key, itemData, isArray, ctx) {

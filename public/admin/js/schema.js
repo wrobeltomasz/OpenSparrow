@@ -1,4 +1,4 @@
-﻿// admin/js/schema.js — Schema editor (tables, columns, FKs, grid settings)
+// admin/js/schema.js — Schema editor (tables, columns, FKs, grid settings)
 // Core editor for the "schema" config: renderSchemaEditor / renderSchemaGlobalSettings, syncSchemaTables. XSS-escapes output.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createTextInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';

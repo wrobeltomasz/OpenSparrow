@@ -1,4 +1,4 @@
-﻿// admin/js/workflows.js — Workflows multi-step wizard editor (renderWorkflowsEditor): edits workflow steps; global settings (menu_name/icon/hidden) handled centrally in app.js.
+// admin/js/workflows.js — Workflows multi-step wizard editor (renderWorkflowsEditor): edits workflow steps; global settings (menu_name/icon/hidden) handled centrally in app.js.
 import { createTextInput, createSelectInput, createIconPicker } from './ui.js';
 
 // Render the multi-step wizard configuration interface. Global Workflow

@@ -1,4 +1,4 @@
-﻿// admin/js/health.js — System health dashboard (renderHealthDashboard): fetches api.php?action=health and shows the status checks.
+// admin/js/health.js — System health dashboard (renderHealthDashboard): fetches api.php?action=health and shows the status checks.
 export async function renderHealthDashboard(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = `<h3>Checking system status...</h3>`;

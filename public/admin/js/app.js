@@ -1,4 +1,4 @@
-﻿// admin/js/app.js — Admin panel SPA controller / router (loaded by admin/index.php)
+// admin/js/app.js — Admin panel SPA controller / router (loaded by admin/index.php)
 // Builds the sidebar tabs and dispatches each to its render*() module (schema, dashboard, users, rag, performance, cron, ...); owns currentConfig, dirty-state tracking and the "Save config" action (#btnSave). Exports showStatusPill, markDirty.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { moveArrayItem, moveObjectKey, renderGlobalSettings, createFullMenuPreview } from './ui.js';

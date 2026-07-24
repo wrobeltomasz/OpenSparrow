@@ -178,7 +178,11 @@ export function renderViewsEditor(ctx) {
             const res  = await fetch('../api/views.php?action=schemas');
             const data = await res.json();
             if (data.status !== 'ok') {
-                listEl.innerHTML = `<p style="color:var(--danger); padding:16px;">Failed to load schemas: ${data.error ?? 'unknown'}</p>`;
+                listEl.innerHTML = '';
+                const err = document.createElement('p');
+                err.style.cssText = 'color:var(--danger); padding:16px;';
+                err.textContent = 'Failed to load schemas: ' + (data.error ?? 'unknown');
+                listEl.appendChild(err);
                 return;
             }
 

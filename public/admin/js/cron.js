@@ -1,4 +1,4 @@
-﻿// admin/js/cron.js — Cron notifications management page
+// admin/js/cron.js — Cron notifications management page
 // Shows run log/stats and lets the admin trigger or purge cron via api.php (cron_log, cron_stats, cron_purge_log, run_cron_notifications). CSRF via apiFetch().
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';

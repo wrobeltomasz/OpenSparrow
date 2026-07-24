@@ -105,7 +105,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Ensure state-changing actions use POST method to prevent CSRF via GET
-$postActions = ['save', 'init_db', 'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'user_policy_save', 'create_table', 'add_column', 'schema_add_table', 'run_cron_notifications', 'backup_tables', 'set_snapshot_setting', 'cron_purge_log', 'create_m2m', 'delete_m2m', 'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all', 'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'automations_save', 'automations_delete', 'anonymization_save', 'run_anonymization', 'anonymization_purge_log', 'upload_logo', 'remove_logo', 'set_logo_enabled', 'set_app_name', 'set_language_setting', 'set_chat_bubble_setting'];
+// Every action with a side effect must be listed here: CSRF is only validated on
+// POST, so a mutating action reachable via GET bypasses the token check entirely.
+$postActions = [
+    'save', 'init_db',
+    'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'user_policy_save',
+    'create_table', 'add_column', 'schema_add_table',
+    'run_cron_notifications', 'cron_purge_log',
+    'backup_tables',
+    'set_snapshot_setting', 'set_language_setting', 'set_chat_bubble_setting',
+    'set_logo_enabled', 'set_app_name', 'upload_logo', 'remove_logo',
+    'set_automation_email_setting', 'test_smtp_connection',
+    'create_m2m', 'delete_m2m',
+    'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all',
+    'rag_settings_save', 'rag_test_query', 'rag_ollama_check',
+    'automations_save', 'automations_delete',
+    'anonymization_save', 'run_anonymization', 'anonymization_purge_log',
+    'etl_save', 'run_etl', 'etl_purge_log', 'etl_test_connection', 'etl_preview',
+    'etl_flow_save', 'run_etl_flow', 'etl_flow_purge_log',
+];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     http_response_code(405);

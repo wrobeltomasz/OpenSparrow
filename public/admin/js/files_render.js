@@ -1,4 +1,4 @@
-﻿// admin/js/files_render.js — Files module UI (admin): lists/filters/paginates files via api/files.php (FILES_API). Text type tags ([IMG]/[PDF]/...), 25 per page.
+// admin/js/files_render.js — Files module UI (admin): lists/filters/paginates files via api/files.php (FILES_API). Text type tags ([IMG]/[PDF]/...), 25 per page.
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { getCsrfToken } from '../../assets/js/util/csrf.js';
