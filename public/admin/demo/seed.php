@@ -68,6 +68,82 @@ if ($action === 'demo_install') {
             }
         }
 
+        // Demo users — fixed password for all demo accounts, hashed the same way as
+        // includes/admin/users.php's users_add (ARGON2_OPTIONS is defined in
+        // includes/config.php, already loaded via the admin bootstrap chain).
+        // ON CONFLICT ... RETURNING id makes this safe to re-run after a prior install.
+        $demoUserPassword = 'test';
+        $tUsers = sys_table('users');
+        $demoUserIds = [];
+        foreach ($demoData['demo_users'] as $i => $du) {
+            $salt = bin2hex(random_bytes(32));
+            $hash = password_hash($salt . $demoUserPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
+            $res = pg_query_params($conn, "
+                INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role, avatar_id)
+                VALUES (\$1, \$2, \$3, 'argon2id', \$4, true, \$5, \$6)
+                ON CONFLICT (username) DO UPDATE SET
+                    password_hash = EXCLUDED.password_hash, salt = EXCLUDED.salt,
+                    password_params = EXCLUDED.password_params, is_active = true, role = EXCLUDED.role,
+                    avatar_id = EXCLUDED.avatar_id
+                RETURNING id
+            ", [$du['username'], $hash, $salt, json_encode(ARGON2_OPTIONS), $du['role'], $du['avatar_id']]);
+            if ($res === false) {
+                admin_db_fail($conn, "demo_install:demo_users:{$type}");
+            }
+            $demoUserIds[$i] = (int) pg_fetch_result($res, 0, 'id');
+        }
+
+        // Demo comments — cross-user discussion threads on CRM records
+        $tComments = sys_table('comments');
+        foreach ($demoData['demo_comments'] as $c) {
+            $res = pg_query_params($conn, "
+                INSERT INTO $tComments (related_table, related_id, user_id, body) VALUES (\$1, \$2, \$3, \$4)
+            ", [$c['related_table'], $c['related_id'], $demoUserIds[$c['author']], $c['body']]);
+            if ($res === false) {
+                admin_db_fail($conn, "demo_install:demo_comments:{$type}");
+            }
+        }
+
+        // Demo notes — per-user "My Notes"
+        $tNotes = sys_table('notes');
+        foreach ($demoData['demo_notes'] as $n) {
+            $res = pg_query_params($conn, "
+                INSERT INTO $tNotes (user_id, related_table, related_id, body, reminder_date) VALUES (\$1, \$2, \$3, \$4, \$5)
+            ", [$demoUserIds[$n['author']], $n['related_table'], $n['related_id'], $n['body'], $n['reminder_date'] ?? null]);
+            if ($res === false) {
+                admin_db_fail($conn, "demo_install:demo_notes:{$type}");
+            }
+        }
+
+        // Demo record ownership ("My records" panel) — assigns each listed record to
+        // its demo-user owner, mirroring api/owners.php's mass_set insert shape.
+        $tOwners = sys_table('record_owners');
+        $ownerChangedBy = (int) ($_SESSION['user_id'] ?? 0);
+        foreach ($demoData['demo_record_owners'] as $o) {
+            $res = pg_query_params($conn, "
+                INSERT INTO $tOwners (table_name, record_id, owner_id, changed_by, is_current)
+                VALUES (\$1, \$2, \$3, \$4, true)
+            ", [$o['related_table'], $o['related_id'], $demoUserIds[$o['author']], $ownerChangedBy]);
+            if ($res === false) {
+                admin_db_fail($conn, "demo_install:demo_record_owners:{$type}");
+            }
+        }
+
+        // Demo notifications — pre-seeded bell-icon entries for the demo users
+        $tNotifications = sys_table('users_notifications');
+        $notifyDate = date('Y-m-d');
+        foreach ($demoData['demo_notifications'] as $note) {
+            $link = 'edit.php?table=' . rawurlencode((string) $note['related_table']) . '&id=' . (int) $note['related_id'];
+            $res = pg_query_params($conn, "
+                INSERT INTO $tNotifications (user_id, title, link, source_table, source_id, is_read, notify_date)
+                VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7)
+                ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
+            ", [$demoUserIds[$note['author']], $note['title'], $link, $note['related_table'], $note['related_id'], $note['is_read'] ? 't' : 'f', $notifyDate]);
+            if ($res === false) {
+                admin_db_fail($conn, "demo_install:demo_notifications:{$type}");
+            }
+        }
+
         $configDir = realpath(__DIR__ . '/../../../config');
 
         // schema config (spw_config key "schema")
@@ -251,6 +327,48 @@ if ($action === 'demo_install') {
             config_save('files', $filesCfg, null, $seedUserId);
         }
 
+        // Demo files — small CSV attachments on CRM records, written both to disk
+        // (mirrors public/api/files.php's upload flow) and to spw_files. Reads the
+        // files config fresh (rather than reusing $filesCfg above, which is only set
+        // when files_relations is non-empty) so storage_path is always available.
+        $demoFileIds   = [];
+        $demoFilePaths = [];
+        if (!empty($demoData['demo_files']) && is_array($demoData['demo_files'])) {
+            $storagePath = trim((config_get('files') ?? [])['storage_path'] ?? 'storage/files/', '/');
+            $repoRoot    = realpath(__DIR__ . '/../../../');
+            $filesDir    = $repoRoot . '/' . $storagePath;
+            if (!is_dir($filesDir)) {
+                mkdir($filesDir, 0750, true);
+                @file_put_contents($filesDir . '/.htaccess', "Require all denied\n");
+            }
+            $tFiles = sys_table('files');
+            foreach ($demoData['demo_files'] as $f) {
+                $physicalName = bin2hex(random_bytes(16)) . '.csv';
+                $dbPath       = $storagePath . '/' . $physicalName;
+                $res = pg_query_params($conn, "
+                    INSERT INTO $tFiles
+                        (name, display_name, type, mime_type, extension, size_bytes, storage_path, uploaded_by, related_table, related_id, description)
+                    VALUES
+                        (\$1, \$1, 'spreadsheet', 'text/csv', 'csv', \$2, \$3, \$4, \$5, \$6, \$7)
+                    RETURNING id
+                ", [
+                    $f['filename'],
+                    strlen($f['content']),
+                    $dbPath,
+                    $demoUserIds[$f['author']],
+                    $f['related_table'],
+                    $f['related_id'],
+                    $f['description'] ?? null,
+                ]);
+                if ($res === false) {
+                    admin_db_fail($conn, "demo_install:demo_files:{$type}");
+                }
+                file_put_contents($filesDir . '/' . $physicalName, $f['content']);
+                $demoFileIds[]   = (int) pg_fetch_result($res, 0, 'id');
+                $demoFilePaths[] = $dbPath;
+            }
+        }
+
         // menu config (spw_config key "menu") — apply nested menu layout from demo definition
         $menuKeys = [];
         if (!empty($demoData['menu_items']) && is_array($demoData['menu_items'])) {
@@ -339,6 +457,10 @@ if ($action === 'demo_install') {
             'automation_ids' => $automationIds,
             'print_keys'     => $printKeys,
             'board_ids'      => array_column($demoData['board']['boards'] ?? [], 'id'),
+            'demo_user_ids'  => $demoUserIds,
+            'demo_usernames' => array_column($demoData['demo_users'], 'username'),
+            'demo_file_ids'  => $demoFileIds,
+            'demo_file_paths' => $demoFilePaths,
         ];
         file_put_contents(
             $configDir . '/demo_meta.json',
@@ -385,6 +507,35 @@ if ($action === 'demo_uninstall') {
         $pgSchema = $meta['schema'] ?? '';
         if ($pgSchema === 'spw_crm') {
             @pg_query($conn, 'DROP SCHEMA IF EXISTS ' . pg_ident($pgSchema) . ' CASCADE');
+        }
+
+        // Remove demo record ownership seeded on the (about to be dropped) demo CRM tables
+        foreach ($meta['tables'] ?? [] as $t) {
+            @pg_query_params($conn, 'DELETE FROM ' . sys_table('record_owners') . ' WHERE table_name = $1', [$t]);
+        }
+
+        // Remove demo files — DB rows plus the physical files written under storage/files/
+        $demoFileIds = $meta['demo_file_ids'] ?? [];
+        if (!empty($demoFileIds)) {
+            $fileIdList = '{' . implode(',', array_map('intval', $demoFileIds)) . '}';
+            @pg_query_params($conn, 'DELETE FROM ' . sys_table('files') . ' WHERE id = ANY($1::int[])', [$fileIdList]);
+        }
+        $repoRoot = realpath(__DIR__ . '/../../../');
+        foreach ($meta['demo_file_paths'] ?? [] as $p) {
+            $full = $repoRoot . '/' . $p;
+            if (is_file($full)) {
+                @unlink($full);
+            }
+        }
+
+        // Remove demo comments/notes/notifications/users seeded for the demo accounts
+        $demoUserIds = $meta['demo_user_ids'] ?? [];
+        if (!empty($demoUserIds)) {
+            $idList = '{' . implode(',', array_map('intval', $demoUserIds)) . '}';
+            @pg_query_params($conn, 'DELETE FROM ' . sys_table('comments') . ' WHERE user_id = ANY($1::int[])', [$idList]);
+            @pg_query_params($conn, 'DELETE FROM ' . sys_table('notes') . ' WHERE user_id = ANY($1::int[])', [$idList]);
+            @pg_query_params($conn, 'DELETE FROM ' . sys_table('users_notifications') . ' WHERE user_id = ANY($1::int[])', [$idList]);
+            @pg_query_params($conn, 'DELETE FROM ' . sys_table('users') . ' WHERE id = ANY($1::int[])', [$idList]);
         }
 
         // Drop views — try both the demo pg_schema and the app schema (backward compat)

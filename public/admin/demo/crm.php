@@ -929,6 +929,94 @@ function demo_def_crm($conn): array
             'invoices'  => ['invoice_number'],
             'assets'    => ['name'],
         ],
+        // Demo users — 3 sample accounts used to seed cross-user comments,
+        // per-user "My Notes", record ownership and notifications below. Password
+        // is fixed to 'test' for all of them, hashed centrally in seed.php (not
+        // stored here). avatar_id matches assets/img/avatar-<id>.png.
+        'demo_users' => [
+            ['username' => 'demo.anna',  'role' => 'editor', 'avatar_id' => 3],
+            ['username' => 'demo.marek', 'role' => 'editor', 'avatar_id' => 9],
+            ['username' => 'demo.julia', 'role' => 'viewer', 'avatar_id' => 15],
+        ],
+        // Demo comments — cross-user discussion threads seeded onto CRM records.
+        // 'author' indexes into demo_users above; related ids are literal, matching
+        // the sequential insertion order of seed_data above (fresh spw_crm schema).
+        'demo_comments' => [
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'body' => "Talked to John Smith today, he's leaning towards the annual plan. Sending updated pricing tomorrow."],
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'body' => 'Good — flag me before you send it, I want to double check the discount tier.'],
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'body' => 'Will do. Also added the renewal clause they asked for.'],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 1, 'body' => "Negotiation is dragging — legal on their side wants another round of redlines."],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 2, 'body' => 'Noted, I will hold off scheduling the kickoff call until this closes.'],
+            ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'body' => 'Marked as Won — first invoice already generated.'],
+            ['related_table' => 'companies', 'related_id' => 1, 'author' => 1, 'body' => 'Acme is a strategic account this quarter, prioritize their support tickets.'],
+            ['related_table' => 'companies', 'related_id' => 1, 'author' => 2, 'body' => 'Got it, tagging their tickets as high priority.'],
+            ['related_table' => 'contacts', 'related_id' => 1, 'author' => 0, 'body' => 'John prefers email over calls — keep that in mind for follow-ups.'],
+            ['related_table' => 'deals', 'related_id' => 7, 'author' => 2, 'body' => 'Infrastructure buildout timeline looks tight, worth a check-in call this week.'],
+        ],
+        // Demo notes — private "My Notes" entries seeded per demo user, some linked
+        // to a CRM record and some standalone (related_table/related_id null). Two
+        // carry a reminder_date (computed at install time) to demonstrate the
+        // cron_notifications.php note-reminder flow firing a real notification.
+        'demo_notes' => [
+            ['author' => 0, 'related_table' => 'deals', 'related_id' => 1, 'body' => 'Follow up with John Smith about the annual plan pricing.', 'reminder_date' => date('Y-m-d', strtotime('+1 day'))],
+            ['author' => 0, 'related_table' => 'deals', 'related_id' => 4, 'body' => 'Send the Support & Maintenance invoice receipt confirmation.', 'reminder_date' => null],
+            ['author' => 0, 'related_table' => null, 'related_id' => null, 'body' => 'Prepare Q3 pipeline summary for the team meeting.', 'reminder_date' => null],
+            ['author' => 1, 'related_table' => 'deals', 'related_id' => 2, 'body' => 'Check discount tier before Anna sends updated pricing.', 'reminder_date' => date('Y-m-d')],
+            ['author' => 1, 'related_table' => 'companies', 'related_id' => 1, 'body' => 'Acme renewal is coming up — review their support history first.', 'reminder_date' => null],
+            ['author' => 1, 'related_table' => null, 'related_id' => null, 'body' => "Review this month's Won deals for commission calculation.", 'reminder_date' => null],
+            ['author' => 2, 'related_table' => 'companies', 'related_id' => 1, 'body' => 'Acme tickets are high priority — check queue every morning.', 'reminder_date' => null],
+            ['author' => 2, 'related_table' => 'deals', 'related_id' => 7, 'body' => 'Schedule a check-in call about the infrastructure buildout timeline.', 'reminder_date' => null],
+        ],
+        // Demo files — small CSV attachments on CRM records, written both to disk
+        // (storage_path convention mirrors public/api/files.php's upload handler) and
+        // to spw_files. 'author' indexes into demo_users above (uploaded_by).
+        'demo_files' => [
+            [
+                'related_table' => 'deals', 'related_id' => 1, 'author' => 0,
+                'filename' => 'enterprise-license-pricing.csv',
+                'description' => 'Pricing breakdown for the Enterprise License Q2 deal.',
+                'content' => "Item,Qty,Unit Price,Total\nEnterprise License (Annual),1,45000.00,45000.00\nOnboarding Package,1,0.00,0.00\n",
+            ],
+            [
+                'related_table' => 'deals', 'related_id' => 2, 'author' => 1,
+                'filename' => 'digital-transformation-scope.csv',
+                'description' => 'Scope items discussed during negotiation.',
+                'content' => "Phase,Description,Est. Hours\nDiscovery,Stakeholder interviews and audit,80\nImplementation,Core platform rollout,320\nTraining,End-user onboarding,40\n",
+            ],
+            [
+                'related_table' => 'companies', 'related_id' => 1, 'author' => 1,
+                'filename' => 'acme-account-summary.csv',
+                'description' => 'Quarterly account summary for Acme Corporation.',
+                'content' => "Metric,Value\nOpen Deals,2\nTotal Pipeline Value,70000\nSupport Tickets (Open),3\n",
+            ],
+            [
+                'related_table' => 'contacts', 'related_id' => 1, 'author' => 0,
+                'filename' => 'john-smith-notes.csv',
+                'description' => 'Call log summary for John Smith.',
+                'content' => "Date,Channel,Summary\n2026-06-01,Email,Sent updated proposal\n2026-06-05,Call,Discussed contract terms\n",
+            ],
+        ],
+        // Demo record ownership ("My records" panel) — assigns a few CRM records to
+        // demo users so the panel isn't empty right after install. 'author' indexes
+        // into demo_users above and becomes the owner_id.
+        'demo_record_owners' => [
+            ['related_table' => 'deals',      'related_id' => 1, 'author' => 0],
+            ['related_table' => 'deals',      'related_id' => 4, 'author' => 0],
+            ['related_table' => 'contacts',   'related_id' => 1, 'author' => 0],
+            ['related_table' => 'deals',      'related_id' => 2, 'author' => 1],
+            ['related_table' => 'companies',  'related_id' => 1, 'author' => 1],
+            ['related_table' => 'deals',      'related_id' => 7, 'author' => 2],
+        ],
+        // Demo notifications — a few pre-seeded bell-icon entries per demo user so
+        // the notification panel isn't empty right after install. 'author' indexes
+        // into demo_users above and becomes the recipient (user_id).
+        'demo_notifications' => [
+            ['author' => 0, 'title' => 'New comment on deal: Enterprise License Q2', 'related_table' => 'deals', 'related_id' => 1, 'is_read' => false],
+            ['author' => 1, 'title' => 'New comment on deal: Digital Transformation Project', 'related_table' => 'deals', 'related_id' => 2, 'is_read' => false],
+            ['author' => 2, 'title' => 'New comment on deal: Cloud Infrastructure Buildout', 'related_table' => 'deals', 'related_id' => 7, 'is_read' => false],
+            ['author' => 0, 'title' => 'You were assigned as owner of: Support & Maintenance', 'related_table' => 'deals', 'related_id' => 4, 'is_read' => true],
+            ['author' => 1, 'title' => 'You were assigned as owner of: Acme Corporation', 'related_table' => 'companies', 'related_id' => 1, 'is_read' => true],
+        ],
         'menu_items' => [
             ['key' => 'dashboard'],
             ['key' => 'calendar'],
