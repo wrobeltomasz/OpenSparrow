@@ -13,6 +13,7 @@ declare(strict_types=1);
 // Run cron_notifications.php ad-hoc and return captured output
 if ($action === 'run_cron_notifications') {
     header('Content-Type: application/json');
+    require_not_demo('Demo mode — writes disabled.');
     $cronScript = realpath(__DIR__ . '/../../cron/cron_notifications.php');
     if ($cronScript === false || !is_readable($cronScript)) {
         echo json_encode(['status' => 'error', 'error' => 'Cron script not found.']);

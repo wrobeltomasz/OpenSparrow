@@ -88,6 +88,7 @@ if ($action === 'anonymization_save') {
 
 if ($action === 'run_anonymization') {
     header('Content-Type: application/json');
+    require_not_demo('Demo mode — writes disabled.');
     $cronScript = realpath(__DIR__ . '/../../cron/cron_anonymization.php');
     if ($cronScript === false || !is_readable($cronScript)) {
         echo json_encode(['status' => 'error', 'error' => 'Anonymization cron script not found.']);

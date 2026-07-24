@@ -119,6 +119,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 // POST: save menu structure (order + nesting) to the "menu" config
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
+    require_not_demo('Demo mode — writes disabled.');
 
     $body = json_decode(file_get_contents('php://input'), true);
     if (!is_array($body) || !isset($body['items']) || !is_array($body['items'])) {
@@ -210,12 +211,9 @@ if ($action === 'get' && in_array($file, $allowedFiles, true)) {
 
 // Save content to a JSON config file
 if ($action === 'save' && in_array($file, $allowedFiles, true)) {
-    // Block saving sensitive files in Demo Mode
-    if ($isDemoMode && in_array($file, ['database', 'security'])) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'Saving ' . $file . ' configuration is disabled in Demo Mode.']);
-        exit;
-    }
+    // Block all configuration writes in Demo Mode.
+    header('Content-Type: application/json');
+    require_not_demo('Saving ' . $file . ' configuration is disabled in Demo Mode.', 403);
 
     $data = file_get_contents('php://input');
     $filePath = __DIR__ . '/../../config/' . $file . '.json';

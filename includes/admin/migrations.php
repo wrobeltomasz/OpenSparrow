@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 // Initialize database tables and migrations
 if ($action === 'init_db') {
+    header('Content-Type: application/json');
+    require_not_demo('Disabled in Demo Mode.', 403);
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
