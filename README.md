@@ -64,7 +64,7 @@ Pick the path that matches your environment. Every path ends at the same place: 
 - **Inline editing** — in-grid PATCH updates routed through a single `api.php` gateway.
 - **Dashboard engine** — COUNT / SUM / AVG / MIN / MAX / GROUP BY widgets defined in the `dashboard` configuration.
 - **Calendar & notifications** — date-based records on a calendar view, with scheduled reminders via cron.
-- **Admin panel** — collapsible sidebar navigation with visual editors for schema, dashboards, calendar, workflows, files, and users at `/admin`. Unified login for all roles — no separate admin password.
+- **Admin panel** — collapsible sidebar navigation with visual editors for schema, dashboards, calendar, boards, printouts, views, workflows, automations, files, ETL, anonymization, the knowledge base, and users at `/admin`. Unified login for all roles — no separate admin password.
 - **Visual table builder** — create PostgreSQL tables from the admin UI with per-column type, NOT NULL, default value, index (btree/hash/unique), column comment (`COMMENT ON COLUMN`), and foreign key constraints. Timestamps preset adds `created_at`/`updated_at` automatically. Tables are registered in the app schema configuration in the same step.
 - **Audit logging & record snapshots** — every write is logged to `spw_users_log`; an optional record-snapshot module saves a full JSONB copy of each record after INSERT/UPDATE to `spw_record_snapshots`, toggled from the admin panel or via env var.
 - **CSV export & pagination** — built-in grid utilities.
@@ -74,6 +74,12 @@ Pick the path that matches your environment. Every path ends at the same place: 
 - **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Knowledge Base** tab. No cloud API required.
 - **Automations** — rule-based triggers on record create/update/delete with template variables, configured from the admin panel.
 - **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab.
+- **Kanban boards** — drag records between status lanes; multiple boards can be defined in the `board` configuration, each appearing as its own sidebar item.
+- **Saved views** — read-only pages backed by PostgreSQL views, discoverable across multiple schemas and configured from the admin panel.
+- **Printable reports** — configurable print templates with paginated output, defined in the `print` configuration and rendered by `print.php`.
+- **ETL module** — scheduled data transfers from MySQL or PostgreSQL sources into PostgreSQL targets, with multi-step flows, run logs, and a cron worker.
+- **Data anonymization** — GDPR-oriented column scrubbing with preview, scheduled runs, and an audit trail in `spw_anonymization_log`.
+- **Bulk operations** — mass edit, CSV import, and search-and-replace data cleanup, all with preview before applying.
 - *(Planned)* REST API and webhook engine for n8n / Make / custom integrations.
 
 ---
@@ -288,7 +294,9 @@ All web-served files below live under `public/` (the document root).
 - **`setup.php` / `setup_api.php`** — first-run setup wizard and its API backend. Active only when `config/database.json` is absent.
 - **`api.php`** — main API gateway (GET / POST / PATCH / DELETE).
 - **`index.php`** — default landing / data entry page.
-- **`dashboard.php` / `calendar.php`** — user-facing visualization and scheduling modules.
+- **`dashboard.php` / `calendar.php` / `board.php`** — user-facing visualization, scheduling, and Kanban modules.
+- **`views.php` / `print.php`** — saved-view pages and printable report templates.
+- **`files.php` / `file_download.php`** — file manager UI and the download proxy (uploads are never served by direct path).
 - **`login.php` / `logout.php`** — session and authentication.
 - **`create.php` / `edit.php`** — record create/update forms.
 - **`api/schema.php`** — filtered schema endpoint for the frontend (hides backend-only structure).
@@ -320,14 +328,14 @@ Configuration lives in `config/database.json`. The web document root is the `pub
 
 Testing tooling is **dev-only** — none of it is needed to run the application.
 
-**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer; no database required. **87 tests, 129 assertions** across 14 files, mirroring the `src/` namespace under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
+**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer and the language-file contract; no database required. **192 tests, 294 assertions** across 15 files, mirroring the `src/` namespace under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
 
 ```bash
 composer install          # once
 vendor/bin/phpunit
 ```
 
-**Cypress — E2E tests.** 15 suites covering authentication, admin panel, grid operations, CRUD workflows, calendar, files, comments, notifications, views, workflows, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
+**Cypress — E2E tests.** 22 suites covering authentication, admin panel, grid operations, CRUD workflows, dashboard, calendar, board, print, files, comments, notifications, views, workflows, mass edit, CSV import, data cleanup, ETL, anonymization, i18n, API contracts, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
 
 ```bash
 npm install               # once
