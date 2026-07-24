@@ -15,8 +15,15 @@ require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/api_helpers.php';
 
 start_session();
-if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+if (empty($_SESSION['user_id'])) {
     header('Content-Type: application/json');
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'error' => 'Unauthorized access. Log in first.']);
+    exit;
+}
+if (($_SESSION['role'] ?? '') !== 'admin') {
+    header('Content-Type: application/json');
+    http_response_code(403);
     echo json_encode(['status' => 'error', 'error' => 'Unauthorized access. Log in first.']);
     exit;
 }

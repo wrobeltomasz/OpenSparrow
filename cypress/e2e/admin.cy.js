@@ -72,25 +72,45 @@ describe('OpenSparrow – Admin Panel', () => {
   // Note: the nav has overflow-y:auto — tabs below the fold must be scrolled
   // into view first, otherwise Cypress treats them as hidden.
 
-  ['schema', 'dashboard', 'calendar', 'files', 'menu', 'add_table', 'views', 'csv_import'].forEach(tab => {
+  ['schema', 'dashboard', 'calendar', 'files', 'views', 'csv_import'].forEach(tab => {
     it(`navigates to data tab: ${tab}`, () => {
       clickAdminTab(tab);
       cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     });
   });
 
+  // Add Table / M2M / Menu Preview live inside the Schema tab, not as their own
+  // sidebar entries — moved there in commit 0b6e119. "Add New Table" is an
+  // item-btn in the Schema tab's table list, not a #workspace button.
+  it('Schema tab exposes Add New Table', () => {
+    clickAdminTab('schema');
+    cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
+    cy.contains('.item-btn', 'Add New Table').should('be.visible');
+  });
+
   // ── System Tabs ────────────────────────────────────────────────────────────
 
-  ['database', 'users', 'health', 'backup', 'audit', 'migrations', 'performance', 'cron', 'demo', 'settings'].forEach(tab => {
+  ['users', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings'].forEach(tab => {
     it(`navigates to system tab: ${tab}`, () => {
       clickAdminTab(tab);
       cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     });
   });
 
+  // Database / Audit & Snapshots live inside the Settings tab as inner tabs,
+  // not as their own sidebar entries — moved there in commit 0b6e119.
+  it('Settings tab exposes Database and Audit & Snapshots inner tabs', () => {
+    clickAdminTab('settings');
+    cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
+    cy.contains('#workspace .item-btn', 'Database').should('be.visible').click();
+    cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
+    cy.contains('#workspace .item-btn', 'Audit & Snapshots').should('be.visible').click();
+    cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
+  });
+
   // ── AI / Automation Tabs ───────────────────────────────────────────────────
 
-  ['workflows', 'automations', 'rag'].forEach(tab => {
+  ['workflows', 'automations', 'rag', 'anonymization', 'etl'].forEach(tab => {
     it(`navigates to advanced tab: ${tab}`, () => {
       clickAdminTab(tab);
       cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
