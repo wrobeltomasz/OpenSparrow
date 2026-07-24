@@ -480,7 +480,7 @@ ${_h4('Backups')}
 ${_p('Removed files are copied to <code>storage/migrations_backup/&lt;version&gt;/</code> before deletion. Config keys are DB-backed, so their pre-change value is kept in the <code>spw_config_log</code> audit trail instead. The applied history in the Migrations tab shows the backup location for each action.')}
 ${_h4('Adding a migration entry (for contributors)')}
 ${_p('Every pull request that removes a file or a configuration key must add an entry to <code>config/migrations.json</code> in the same PR. In <code>removed_config_keys</code>, <code>file</code> names the <code>spw_config</code> key — the legacy <code>schema.json</code> spelling is still accepted and maps to key <code>schema</code>. Example:')}
-<pre style="background:#F4F7F9;padding:12px;border-radius:4px;overflow-x:auto;">"2.5.0": {
+<pre style="background:#F4F7F9;padding:12px;border-radius:4px;overflow-x:auto;">"3.1": {
   "removed_files": ["admin/old_feature.php"],
   "deprecated_files": [],
   "removed_config_keys": [
