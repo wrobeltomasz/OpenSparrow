@@ -250,6 +250,77 @@ describe('OpenSparrow – Comments: Delete Comment', () => {
 });
 
 // ============================================================================
+// Test Suite: My Comments panel (avatar menu)
+// ============================================================================
+
+describe('OpenSparrow – Comments: My Comments panel', () => {
+  const openPanel = () => {
+    cy.get('[data-cy=user-avatar]').click();
+    cy.get('[data-cy=my-comments]').should('be.visible');
+    cy.get('[data-cy=my-comments]').click();
+    cy.get('#myCommentsPanel', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .should('have.class', 'active');
+  };
+
+  beforeEach(() => {
+    loginAsTestUser();
+    cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
+  });
+
+  it('avatar menu exposes the My comments item', () => {
+    cy.get('[data-cy=user-avatar]').click();
+    cy.get('[data-cy=my-comments]').should('be.visible');
+  });
+
+  it('panel opens and calls api/comments.php?action=mine', () => {
+    cy.intercept('GET', '**/api/comments.php?action=mine').as('mineFetch');
+    openPanel();
+    cy.wait('@mineFetch', { timeout: CypressHelpers.TIMEOUTS.long })
+      .its('response.body.success').should('eq', true);
+  });
+
+  it('panel shows own comments or the empty state', () => {
+    openPanel();
+    cy.get('#myCommentsPanel .bp-body', { timeout: CypressHelpers.TIMEOUTS.long })
+      .should($body => {
+        const hasItems = $body.find('.um-item').length > 0;
+        const hasEmpty = $body.find('.dc-empty').length > 0;
+        expect(hasItems || hasEmpty, 'panel shows a list or an empty state').to.be.true;
+      });
+  });
+
+  it('a listed comment links to its record comment tab', () => {
+    // Guarantee at least one own comment before opening the panel.
+    waitForGridOrEmpty().then(res => {
+      if (res.type !== 'grid') return;
+      cy.get('#grid tbody tr')
+        .first()
+        .find('[data-cy=row-edit]')
+        .click({ force: true });
+      cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'edit.php');
+      cy.get('button.tab-btn[data-tab="tab-comments"]').then($btn => {
+        if ($btn.length === 0) return;
+        cy.wrap($btn).click();
+        cy.get('#c-panel', { timeout: CypressHelpers.TIMEOUTS.medium }).then($panel => {
+          if ($panel.find('.c-input').length === 0) return;
+          cy.get('.c-input').type(`mine-${Date.now()}`);
+          cy.get('.c-send-btn').click();
+          cy.get('#c-panel .c-thread .c-msg', { timeout: CypressHelpers.TIMEOUTS.long })
+            .should('have.length.gte', 1);
+
+          openPanel();
+          cy.get('#myCommentsPanel .um-item', { timeout: CypressHelpers.TIMEOUTS.long })
+            .should('have.length.gte', 1);
+          cy.get('#myCommentsPanel .um-item').first().find('.um-item-link')
+            .should('have.attr', 'href')
+            .and('match', /edit\.php\?table=[^&]+&id=\d+#tab-comments$/);
+        });
+      });
+    });
+  });
+});
+
+// ============================================================================
 // Test Suite: Comments API Integration
 // ============================================================================
 

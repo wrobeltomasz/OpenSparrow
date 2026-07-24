@@ -7,6 +7,7 @@ import { showToast } from './toast.js';
 import { I18n } from './i18n.js';
 import { BulkPanel } from './bulk_panel.js';
 import { openNotesPanel } from './notes-panel.js';
+import { formatDateTime } from './util/format-value.js';
 
 const AVATAR_COUNT = 24;
 
@@ -240,10 +241,10 @@ function closeModal(overlay) {
 
 let myRecordsPanel = null;
 
-function renderMyRecords(bodyEl, tables) {
+function renderMyRecords(bodyEl, records) {
     bodyEl.textContent = '';
 
-    if (!tables.length) {
+    if (!records.length) {
         const empty = document.createElement('p');
         empty.className = 'dc-empty';
         empty.textContent = I18n.t('header.my_records_empty');
@@ -251,29 +252,31 @@ function renderMyRecords(bodyEl, tables) {
         return;
     }
 
-    for (const group of tables) {
-        const heading = document.createElement('h4');
-        heading.textContent = `${group.display_name} (${group.records.length})`;
-        bodyEl.appendChild(heading);
+    const list = document.createElement('ul');
+    list.className = 'um-list';
 
-        const table = document.createElement('table');
-        table.className = 'bp-preview-table';
-        const tbody = document.createElement('tbody');
+    for (const record of records) {
+        const item = document.createElement('li');
+        item.className = 'um-item';
 
-        for (const record of group.records) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            const link = document.createElement('a');
-            link.href = 'edit.php?table=' + encodeURIComponent(group.table) + '&id=' + encodeURIComponent(record.id);
-            link.textContent = record.label;
-            td.appendChild(link);
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-        }
+        const link = document.createElement('a');
+        link.className = 'um-item-link';
+        link.href = 'edit.php?table=' + encodeURIComponent(record.table)
+            + '&id=' + encodeURIComponent(record.id);
+        link.textContent = `${record.table_display} → ${record.label}`;
+        item.appendChild(link);
 
-        table.appendChild(tbody);
-        bodyEl.appendChild(table);
+        const meta = document.createElement('div');
+        meta.className = 'um-item-meta';
+        meta.textContent = I18n.t('header.my_records_assigned', {
+            date: formatDateTime(record.assigned_at),
+        });
+        item.appendChild(meta);
+
+        list.appendChild(item);
     }
+
+    bodyEl.appendChild(list);
 }
 
 async function openMyRecordsPanel() {
@@ -298,9 +301,89 @@ async function openMyRecordsPanel() {
         if (!res.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
 
         myRecordsPanel.clearStatus();
-        renderMyRecords(myRecordsPanel.bodyEl, data.tables ?? []);
+        renderMyRecords(myRecordsPanel.bodyEl, data.records ?? []);
     } catch (err) {
         myRecordsPanel.setStatus(err.message, true);
+    }
+}
+
+// ── My comments panel ───────────────────────────────────────────────────────
+
+const MY_COMMENT_SNIPPET_MAX = 140;
+
+let myCommentsPanel = null;
+
+function renderMyComments(bodyEl, comments) {
+    bodyEl.textContent = '';
+
+    if (!comments.length) {
+        const empty = document.createElement('p');
+        empty.className = 'dc-empty';
+        empty.textContent = I18n.t('header.my_comments_empty');
+        bodyEl.appendChild(empty);
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'um-list';
+
+    for (const comment of comments) {
+        const item = document.createElement('li');
+        item.className = 'um-item';
+
+        const body = document.createElement('div');
+        body.className = 'um-item-body';
+        const raw = comment.body ?? '';
+        body.textContent = raw.length > MY_COMMENT_SNIPPET_MAX
+            ? `${raw.slice(0, MY_COMMENT_SNIPPET_MAX)}…`
+            : raw;
+        item.appendChild(body);
+
+        const link = document.createElement('a');
+        link.className = 'um-item-link';
+        // #tab-comments opens the record straight on its comment thread — same deep
+        // link the grid comment badges use.
+        link.href = 'edit.php?table=' + encodeURIComponent(comment.related_table)
+            + '&id=' + encodeURIComponent(comment.related_id) + '#tab-comments';
+        link.textContent = `${comment.table_display} → ${comment.record_label}`;
+        item.appendChild(link);
+
+        const meta = document.createElement('div');
+        meta.className = 'um-item-meta';
+        meta.textContent = formatDateTime(comment.created_at);
+        item.appendChild(meta);
+
+        list.appendChild(item);
+    }
+
+    bodyEl.appendChild(list);
+}
+
+async function openMyCommentsPanel() {
+    if (!myCommentsPanel) {
+        myCommentsPanel = new BulkPanel({
+            id: 'myCommentsPanel',
+            title: I18n.t('header.my_comments'),
+            showApply: false,
+        });
+    }
+
+    myCommentsPanel.open();
+    myCommentsPanel.clearStatus();
+    myCommentsPanel.setStatus(I18n.t('common.loading'));
+    myCommentsPanel.bodyEl.textContent = '';
+
+    try {
+        const res = await fetch('api/comments.php?action=mine', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
+
+        myCommentsPanel.clearStatus();
+        renderMyComments(myCommentsPanel.bodyEl, data.comments ?? []);
+    } catch (err) {
+        myCommentsPanel.setStatus(err.message, true);
     }
 }
 
@@ -353,6 +436,11 @@ function initUserMenu() {
     document.getElementById('myRecordsBtn')?.addEventListener('click', () => {
         toggle(false);
         openMyRecordsPanel();
+    });
+
+    document.getElementById('myCommentsBtn')?.addEventListener('click', () => {
+        toggle(false);
+        openMyCommentsPanel();
     });
 
     document.getElementById('notesBtn')?.addEventListener('click', () => {

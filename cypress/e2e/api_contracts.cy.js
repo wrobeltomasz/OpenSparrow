@@ -195,6 +195,40 @@ describe('OpenSparrow – API Contracts: Response Shapes', () => {
     });
   });
 
+  it('owners action=mine returns a flat records array with assignment dates', () => {
+    cy.request(`${BASE}/api/owners.php?action=mine`).then(res => {
+      expect(res.status).to.eq(200);
+      const data = asJson(res.body);
+      expect(data.success, 'success').to.eq(true);
+      expect(data.records, 'records').to.be.an('array');
+      if (data.records.length === 0) {
+        Cypress.log({ message: 'No owned records — item shape check skipped' });
+        return;
+      }
+      const r = data.records[0];
+      expect(r.id, 'id').to.be.a('number');
+      ['table', 'table_display', 'label', 'assigned_at']
+        .forEach(k => expect(r[k], k).to.be.a('string'));
+    });
+  });
+
+  it('comments action=mine returns a comments array with resolved record labels', () => {
+    cy.request(`${BASE}/api/comments.php?action=mine`).then(res => {
+      expect(res.status).to.eq(200);
+      const data = asJson(res.body);
+      expect(data.success, 'success').to.eq(true);
+      expect(data.comments, 'comments').to.be.an('array');
+      if (data.comments.length === 0) {
+        Cypress.log({ message: 'No own comments — item shape check skipped' });
+        return;
+      }
+      const c = data.comments[0];
+      ['id', 'related_id'].forEach(k => expect(c[k], k).to.be.a('number'));
+      ['body', 'related_table', 'table_display', 'record_label', 'created_at']
+        .forEach(k => expect(c[k], k).to.be.a('string'));
+    });
+  });
+
   it('api=list with an unknown table does not return 200', () => {
     cy.request({
       url: `${BASE}/api.php?api=list&table=definitely_not_a_table`,

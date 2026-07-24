@@ -112,12 +112,7 @@ function actionListRecords($conn): void
 
     $userRecordsCfg = config_get('user_records') ?? [];
     $configuredCols = is_array($userRecordsCfg['columns'][$table] ?? null) ? $userRecordsCfg['columns'][$table] : [];
-    $labelCols      = record_label_columns($tableCfg, $configuredCols);
-
-    $escapedLabelCols = array_map('pg_ident', $labelCols);
-    $labelSql = count($escapedLabelCols) > 1
-        ? "CONCAT_WS(' - ', " . implode(', ', $escapedLabelCols) . ')'
-        : $escapedLabelCols[0];
+    $labelSql       = record_label_sql($tableCfg, $configuredCols);
 
     $sql = sprintf(
         'SELECT id, %s AS label FROM %s.%s ORDER BY id DESC LIMIT %d',

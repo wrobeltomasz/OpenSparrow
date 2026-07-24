@@ -253,8 +253,9 @@ function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $ta
 // there's more than one. Prefers the caller-supplied $configured columns (e.g. from
 // the admin "User Records" > "Column Mapping" tab, config_get('user_records')); falls
 // back to a best-effort guess (first text column shown in the grid, else any grid
-// column, else the id). Shared by api/owners.php (My records) and api/notes.php
-// (record picker) — single source of truth for this heuristic.
+// column, else the id). Shared by api/owners.php (My records), api/comments.php
+// (My comments) and api/notes.php (record picker) — single source of truth for this
+// heuristic.
 function record_label_columns(array $tableCfg, array $configured): array
 {
     $cols = $tableCfg['columns'] ?? [];
@@ -282,6 +283,19 @@ function record_label_columns(array $tableCfg, array $configured): array
         }
     }
     return [$firstGridCol ?? 'id'];
+}
+
+// SELECT expression rendering a record's display label, built from the columns resolved
+// by record_label_columns(). Identifiers are escaped with pg_ident(), so the result is
+// safe to interpolate into a query. Callers still apply their own '#'.$id fallback when
+// the resulting label comes back blank.
+function record_label_sql(array $tableCfg, array $configured): string
+{
+    $cols = array_map('pg_ident', record_label_columns($tableCfg, $configured));
+
+    return count($cols) > 1
+        ? "CONCAT_WS(' - ', " . implode(', ', $cols) . ')'
+        : $cols[0];
 }
 
 // ---------------------------------------------------------------------------

@@ -5,7 +5,7 @@
 //
 // api/comments.php — Comments module API (discussion threads attached to records)
 // Auth gate: session + UA enforcement + CSRF on POST; JSON responses via jsonError()/jsonSuccess()
-// match() action routing: list, add, delete, counts — comments keyed by (related_table, related_id), table validated against schema.json
+// match() action routing: list, mine, add, delete, counts — comments keyed by (related_table, related_id), table validated against schema.json
 // Parameterized queries; sys_table('comments')
 
 declare(strict_types=1);
@@ -34,6 +34,7 @@ try {
 
     match ($action) {
         'list'   => actionList($conn),
+        'mine'   => actionMine($conn),
         'add'    => actionAdd($conn, $body),
         'delete' => actionDelete($conn, $body),
         'counts' => actionCounts($conn),
@@ -82,6 +83,95 @@ function actionList($conn): void
     while ($row = pg_fetch_assoc($res)) {
         $row['avatar_id'] = $row['avatar_id'] !== null ? (int)$row['avatar_id'] : null;
         $comments[] = $row;
+    }
+
+    jsonSuccess(['comments' => $comments]);
+}
+
+// "My comments" (avatar menu panel) — flat, newest-first list of the comments the logged-in
+// user authored, each resolved to its record's display label so the panel can link straight
+// back to the record's comment tab. Label heuristic is shared with the "My records" panel
+// (record_label_sql() in api_helpers.php).
+function actionMine($conn): void
+{
+    requireLogin();
+
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+
+    $sql = 'SELECT id, body, related_table, related_id, created_at
+        FROM ' . sys_table('comments') . '
+        WHERE user_id = $1 AND deleted_at IS NULL
+        ORDER BY created_at DESC, id DESC
+        LIMIT ' . COMMENTS_MINE_LIMIT;
+
+    $res = pg_query_params($conn, $sql, [$userId]);
+    if (!$res) {
+        error_log('api_comments actionMine failed: ' . pg_last_error($conn));
+        jsonError('Database error.', 500);
+    }
+
+    $rows   = pg_fetch_all($res) ?: [];
+    $idsBy  = [];
+    foreach ($rows as $row) {
+        $idsBy[$row['related_table']][] = (int)$row['related_id'];
+    }
+
+    require_once __DIR__ . '/../../includes/config_store.php';
+    $schema         = config_get('schema') ?? [];
+    $userRecordsCfg = config_get('user_records') ?? [];
+    $configuredCols = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
+
+    // table => ['display' => string, 'labels' => [record_id => label]]
+    $resolved = [];
+    foreach ($idsBy as $tableName => $ids) {
+        $tableCfg = $schema['tables'][$tableName] ?? null;
+        // Comments can outlive their table (renamed/removed from the schema editor).
+        if ($tableCfg === null || !empty($tableCfg['hidden'])) {
+            continue;
+        }
+
+        $rowsSql = sprintf(
+            'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',
+            record_label_sql($tableCfg, $configuredCols[$tableName] ?? []),
+            pg_ident($tableCfg['schema'] ?? 'public'),
+            pg_ident($tableName)
+        );
+
+        $labelRes = pg_query_params($conn, $rowsSql, ['{' . implode(',', array_unique($ids)) . '}']);
+        if (!$labelRes) {
+            error_log('api_comments actionMine label lookup failed: ' . pg_last_error($conn));
+            continue;
+        }
+
+        $labels = [];
+        while ($r = pg_fetch_assoc($labelRes)) {
+            $label = trim((string)($r['label'] ?? ''));
+            $labels[(int)$r['id']] = $label !== '' ? $label : ('#' . $r['id']);
+        }
+
+        $resolved[$tableName] = [
+            'display' => to_display_name($tableCfg),
+            'labels'  => $labels,
+        ];
+    }
+
+    $comments = [];
+    foreach ($rows as $row) {
+        $tableName = $row['related_table'];
+        if (!isset($resolved[$tableName])) {
+            continue;
+        }
+        $recordId = (int)$row['related_id'];
+        $comments[] = [
+            'id'            => (int)$row['id'],
+            'body'          => $row['body'],
+            'related_table' => $tableName,
+            'related_id'    => $recordId,
+            'table_display' => $resolved[$tableName]['display'],
+            // A comment can outlive its record when the row was hard-deleted.
+            'record_label'  => $resolved[$tableName]['labels'][$recordId] ?? ('#' . $recordId),
+            'created_at'    => $row['created_at'],
+        ];
     }
 
     jsonSuccess(['comments' => $comments]);

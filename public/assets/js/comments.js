@@ -18,6 +18,7 @@ const isReadOnly = myRole !== 'editor';
 import { getCsrfToken as csrfToken } from './util/csrf.js';
 import { escHtml } from './util/esc.js';
 import { apiFetch } from './util/api.js';
+import { formatDateTime as formatTime } from './util/format-value.js';
 
 // ── Tiny markdown-like formatter (no external libs) ────────────────────────
 function formatBody(raw) {
@@ -30,12 +31,6 @@ function formatBody(raw) {
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g,     '<em>$1</em>')
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-}
-
-function formatTime(iso) {
-    if (!iso) return '';
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
 // ── DOM builders ───────────────────────────────────────────────────────────

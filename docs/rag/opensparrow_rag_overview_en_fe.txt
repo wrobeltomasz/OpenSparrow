@@ -16,9 +16,12 @@ LOGIN & SESSION
 Log in at login.php with username and password. Sessions expire after a configured time
 (default 8 hours) — you will be logged out automatically. Change your password anytime from
 the user menu (top-right avatar). You can also pick an avatar (24 built-in choices).
-The avatar menu also opens "My records" — a quick list of records assigned to you across
-tables, most recently assigned first (how many are shown, and what labels them, is set by
-the admin).
+The avatar menu also opens "My records" — a list of records assigned to you across tables,
+most recently assigned first, each showing the table, the record and the date it was
+assigned to you (how many are shown, and what labels them, is set by the admin). Next to it,
+"My comments" lists the comments you wrote yourself, newest first — each entry shows the
+start of the comment plus the table and record it belongs to, and clicking it opens that
+record straight on its Comments tab. Both panels share the same layout.
 
 
 ROLES (what you can do)

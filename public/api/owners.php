@@ -148,19 +148,20 @@ function actionEditors($conn): void
     jsonSuccess(['users' => $users]);
 }
 
-// "My records" — cross-table list of records currently owned by the logged-in user,
-// grouped by table with a best-effort display label per record. Label columns and the
-// per-table record limit come from the "user_records" config (admin "User Records" tab).
+// "My records" — flat, most-recently-assigned-first list of the records currently owned by
+// the logged-in user, each with a best-effort display label and the date it was assigned.
+// Label columns and the per-table record cap come from the "user_records" config (admin
+// "User Records" tab). Presentation mirrors the "My comments" panel.
 function actionMine($conn): void
 {
     requireLogin();
 
     $userId = (int)($_SESSION['user_id'] ?? 0);
 
-    // Most-recently-assigned first, per table, so the per-table limit below keeps the
+    // Most-recently-assigned first, per table, so the per-table cap below keeps the
     // freshest assignments.
     $sql = "
-        SELECT table_name, record_id
+        SELECT table_name, record_id, changed_at
         FROM " . sys_table('record_owners') . "
         WHERE owner_id = \$1 AND is_current = true
         ORDER BY table_name, changed_at DESC, record_id DESC
@@ -177,18 +178,21 @@ function actionMine($conn): void
     $configuredCols  = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
     $limit           = (int)($userRecordsCfg['limit'] ?? 20);
 
-    $byTable = [];
+    $byTable    = [];
+    $assignedAt = [];
     while ($row = pg_fetch_assoc($res)) {
         $tableName = $row['table_name'];
         if ($limit > 0 && count($byTable[$tableName] ?? []) >= $limit) {
             continue;
         }
-        $byTable[$tableName][] = (int)$row['record_id'];
+        $recordId = (int)$row['record_id'];
+        $byTable[$tableName][] = $recordId;
+        $assignedAt[$tableName . '#' . $recordId] = $row['changed_at'];
     }
 
     $schema = config_get('schema') ?? [];
 
-    $tables = [];
+    $records = [];
     foreach ($byTable as $tableName => $ids) {
         $tableCfg = $schema['tables'][$tableName] ?? null;
         // Ownership rows can outlive their table (renamed/removed from schema.json).
@@ -196,14 +200,9 @@ function actionMine($conn): void
             continue;
         }
 
-        $labelCols = record_label_columns($tableCfg, $configuredCols[$tableName] ?? []);
-        $pgSchema  = $tableCfg['schema'] ?? 'public';
-        $arrParam  = '{' . implode(',', $ids) . '}';
-
-        $escapedLabelCols = array_map('pg_ident', $labelCols);
-        $labelSql = count($escapedLabelCols) > 1
-            ? "CONCAT_WS(' - ', " . implode(', ', $escapedLabelCols) . ')'
-            : $escapedLabelCols[0];
+        $pgSchema = $tableCfg['schema'] ?? 'public';
+        $arrParam = '{' . implode(',', $ids) . '}';
+        $labelSql = record_label_sql($tableCfg, $configuredCols[$tableName] ?? []);
 
         $rowsSql = sprintf(
             'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',
@@ -218,26 +217,24 @@ function actionMine($conn): void
             continue;
         }
 
-        $records = [];
+        $tableDisplay = to_display_name($tableCfg);
         while ($r = pg_fetch_assoc($rowsRes)) {
-            $label = trim((string)($r['label'] ?? ''));
+            $recordId = (int)$r['id'];
+            $label    = trim((string)($r['label'] ?? ''));
             $records[] = [
-                'id'    => (int)$r['id'],
-                'label' => $label !== '' ? $label : ('#' . $r['id']),
+                'table'         => $tableName,
+                'table_display' => $tableDisplay,
+                'id'            => $recordId,
+                'label'         => $label !== '' ? $label : ('#' . $recordId),
+                'assigned_at'   => $assignedAt[$tableName . '#' . $recordId] ?? null,
             ];
         }
-        usort($records, fn($a, $b) => strnatcasecmp($a['label'], $b['label']));
-
-        $tables[] = [
-            'table'        => $tableName,
-            'display_name' => to_display_name($tableCfg),
-            'records'      => $records,
-        ];
     }
 
-    usort($tables, fn($a, $b) => strnatcasecmp($a['display_name'], $b['display_name']));
+    // Newest assignment first across all tables — the panel is a flat chronological list.
+    usort($records, fn($a, $b) => strcmp((string)$b['assigned_at'], (string)$a['assigned_at']));
 
-    jsonSuccess(['tables' => $tables]);
+    jsonSuccess(['records' => $records]);
 }
 
 function actionMassSet($conn, array $body): void

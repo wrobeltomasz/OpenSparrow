@@ -292,6 +292,9 @@ define('THUMBNAIL_CACHE_MAX_AGE', (int) get_env('THUMBNAIL_CACHE_MAX_AGE', '8640
 // Hard ceiling on the number of comments a single API request may return when
 // a "limit" query parameter is provided (used for preview/inline widgets).
 define('COMMENTS_PAGE_LIMIT_MAX', (int) get_env('COMMENTS_PAGE_LIMIT_MAX', '50'));
+
+// Number of own comments listed in the "My comments" panel (avatar menu), newest first.
+define('COMMENTS_MINE_LIMIT', (int) get_env('COMMENTS_MINE_LIMIT', '50'));
 // -------------------------------------------------------------------------
 // Notifications
 // -------------------------------------------------------------------------
