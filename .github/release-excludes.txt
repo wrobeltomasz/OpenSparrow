@@ -10,6 +10,7 @@ tmp/sess_*
 temp
 cache
 node_modules
+vendor
 cypress
 .cypress-cache
 cypress.config.js
@@ -43,6 +44,22 @@ CLA.md
 CODE_OF_CONDUCT.md
 CONTRIBUTING.md
 SECURITY.md
++ config/database.json.example
++ config/migrations.json
 config/*.example
+config/*.json
 includes/.secret_salt
+includes/.secret_key
++ storage/files/.gitkeep
++ storage/files/.htaccess
++ storage/sessions/.gitkeep
++ storage/sessions/.htaccess
++ storage/ratelimit/.htaccess
 storage/files/*
+storage/sessions/*
+storage/ratelimit/*
+deploy
+.env.example
+docs/PRODUCTION_SETUP.md
+docs/TESTING_GUIDELINES.md
+docs/rag-samples
