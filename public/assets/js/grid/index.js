@@ -141,7 +141,7 @@ export async function renderGrid(schema) {
     );
 
     const table = document.createElement('table');
-    table.appendChild(renderThead(schema, isReadOnly, onRerender));
+    table.appendChild(renderThead(schema, isReadOnly, onRerender, _getPageRows));
 
     const { tbody, pageRows } = await renderTbody(schema, isReadOnly, _getPageRows, onTableReload);
     table.appendChild(tbody);

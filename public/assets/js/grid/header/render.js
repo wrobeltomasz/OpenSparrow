@@ -6,7 +6,7 @@ import { toggleSortState } from './sort.js';
 import { initColumnResize } from './resize.js';
 import { initColumnDnD } from './dnd.js';
 
-export function renderThead(schema, isReadOnly, onRerender) {
+export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
     const thead = document.createElement('thead');
     const headRow = document.createElement('tr');
     const subtables = schema.tables[state.currentTable]?.subtables || [];
@@ -20,11 +20,11 @@ export function renderThead(schema, isReadOnly, onRerender) {
         cb.setAttribute('aria-label', I18n.t('grid.select_all_rows'));
         cb.title = I18n.t('grid.select_all_toggle');
         cb.addEventListener('change', e => {
-            const allIds = state.filteredData.map(r => r.id);
+            const pageIds = getPageRows().map(r => r.id);
             if (e.target.checked) {
-                allIds.forEach(id => state.selectedIds.add(id));
+                pageIds.forEach(id => state.selectedIds.add(id));
             } else {
-                allIds.forEach(id => state.selectedIds.delete(id));
+                pageIds.forEach(id => state.selectedIds.delete(id));
             }
             document.querySelectorAll('.row-select-cb').forEach(rowCb => {
                 rowCb.checked = e.target.checked;
