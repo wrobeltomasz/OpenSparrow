@@ -161,6 +161,14 @@ ${_ul([
 ${_h4(s.s2_subtables_head)}
 ${_p(s.s2_subtables_desc)}
 ${_ul([s.s2_sub_open, `<strong>${s.s2_sub_target_label}:</strong> ${s.s2_sub_target}`, `<strong>${s.s2_sub_fkcol_label}:</strong> ${s.s2_sub_fkcol}`])}
+${_h4(s.s2_img_head)}
+${_p(s.s2_img_desc)}
+${_ul([
+    `<strong>${s.s2_img_enable_label}:</strong> ${s.s2_img_enable}`,
+    `<strong>${s.s2_img_max_label}:</strong> ${s.s2_img_max}`,
+    `<strong>${s.s2_img_grid_label}:</strong> ${s.s2_img_grid}`,
+    `<strong>${s.s2_img_upload_label}:</strong> ${s.s2_img_upload}`
+])}
 
 ${_h3('doc-3', s.s3_head)}
 ${_p(s.s3_desc)}
