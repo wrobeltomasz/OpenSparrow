@@ -280,7 +280,9 @@
             "many": "Wybrano {n} zdjęć"
         },
         "image_limit": "Można dołączyć maksymalnie {max} zdjęć.",
-        "image_upload_error": "Przesyłanie zdjęcia nie powiodło się: {msg}"
+        "image_upload_error": "Przesyłanie zdjęcia nie powiodło się: {msg}",
+        "procedure_running": "Wykonywanie…",
+        "procedure_error": "Walidacja nie powiodła się: {msg}"
     },
     "comments": {
         "delete": "Usuń",

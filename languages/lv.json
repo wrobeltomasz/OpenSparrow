@@ -276,7 +276,9 @@
             "other": "Izvēlēti {n} attēli"
         },
         "image_limit": "Varat pievienot līdz {max} attēliem.",
-        "image_upload_error": "Attēla augšupielāde neizdevās: {msg}"
+        "image_upload_error": "Attēla augšupielāde neizdevās: {msg}",
+        "procedure_running": "Notiek izpilde…",
+        "procedure_error": "Validācija neizdevās: {msg}"
     },
     "comments": {
         "delete": "Dzēst",

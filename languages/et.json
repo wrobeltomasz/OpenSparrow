@@ -276,7 +276,9 @@
             "other": "Valitud {n} pilti"
         },
         "image_limit": "Saate lisada kuni {max} pilti.",
-        "image_upload_error": "Pildi üleslaadimine ebaõnnestus: {msg}"
+        "image_upload_error": "Pildi üleslaadimine ebaõnnestus: {msg}",
+        "procedure_running": "Käivitamine…",
+        "procedure_error": "Valideerimine ebaõnnestus: {msg}"
     },
     "comments": {
         "delete": "Kustuta",

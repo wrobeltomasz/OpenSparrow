@@ -279,7 +279,9 @@
             "other": "Vybraných {n} obrázkov"
         },
         "image_limit": "Môžete pripojiť až {max} obrázkov.",
-        "image_upload_error": "Nahrávanie obrázka zlyhalo: {msg}"
+        "image_upload_error": "Nahrávanie obrázka zlyhalo: {msg}",
+        "procedure_running": "Prebieha…",
+        "procedure_error": "Overenie zlyhalo: {msg}"
     },
     "comments": {
         "delete": "Zmazať",

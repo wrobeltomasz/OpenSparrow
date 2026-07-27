@@ -983,8 +983,53 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
 
         form.appendChild(btnContainer);
 
+        // Call the PostgreSQL procedure configured for this step. Runs before the
+        // wizard advances, so a RAISE EXCEPTION inside the procedure can act as a
+        // server-side validation gate. Only form values and configured literals are
+        // sent — at this point nothing has been written to the database yet, so no
+        // record ids exist (see the deferred-save note above saveAll()).
+        async function callStepProcedure() {
+            // Send one snapshot per step (the first buffered record for
+            // allow_multiple steps); the server picks the fields it needs from the
+            // procedure configuration.
+            const stepValues = {};
+            stepData.forEach((records, idx) => {
+                if (!records || !records[0]) return;
+                // Drop the buffered File objects — they are not procedure arguments
+                // and would serialise to empty objects.
+                const { __images, ...values } = records[0];
+                stepValues[String(idx)] = values;
+            });
+
+            const res = await apiFetch('api.php?api=workflow_procedure', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: {
+                    workflow_id: workflow.id,
+                    step_index: currentStepIndex,
+                    step_values: stepValues
+                }
+            });
+
+            // Read raw text first so a server-side HTML error page does not blow up
+            // JSON.parse, mirroring saveAll()'s handling.
+            const rawText = await res.text();
+            let result;
+            try {
+                result = JSON.parse(rawText);
+            } catch {
+                console.error('RAW SERVER RESPONSE:', rawText);
+                const cleanError = rawText.replace(/<\/?[^>]+(>|$)/g, '').trim();
+                throw new Error(I18n.t('workflow.server_error', { msg: cleanError.substring(0, 150) }));
+            }
+
+            if (!res.ok || result.success !== true) {
+                throw new Error(result.error || I18n.t('workflow.unknown_save_error'));
+            }
+        }
+
         // Advance to the next step (or the review), buffering the current form.
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             if (step.allow_multiple) {
@@ -1011,6 +1056,26 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
                 // offending field.
                 if (!form.reportValidity()) return;
                 stepData[currentStepIndex] = [snapshotWithImages()];
+            }
+
+            // Fire the step's procedure before navigating. Skipped when returning
+            // from the review screen — that is an edit round-trip, not a genuine
+            // step advance, and would otherwise run the procedure twice.
+            if (step.procedure && step.procedure.enabled && !returnToReview) {
+                const prevLabel = nextBtn.textContent;
+                nextBtn.disabled = true;
+                nextBtn.textContent = I18n.t('workflow.procedure_running');
+                try {
+                    await callStepProcedure();
+                } catch (err) {
+                    console.error(err);
+                    showToast(I18n.t('workflow.procedure_error', { msg: err.message }), 'error');
+                    nextBtn.disabled = false;
+                    nextBtn.textContent = prevLabel;
+                    return; // stay on the current step
+                }
+                nextBtn.disabled = false;
+                nextBtn.textContent = prevLabel;
             }
 
             if (returnToReview) {

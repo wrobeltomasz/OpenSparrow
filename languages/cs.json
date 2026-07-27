@@ -279,7 +279,9 @@
             "other": "Vybráno {n} obrázků"
         },
         "image_limit": "Můžete připojit až {max} obrázků.",
-        "image_upload_error": "Nahrání obrázku se nezdařilo: {msg}"
+        "image_upload_error": "Nahrání obrázku se nezdařilo: {msg}",
+        "procedure_running": "Probíhá…",
+        "procedure_error": "Ověření selhalo: {msg}"
     },
     "comments": {
         "delete": "Smazat",

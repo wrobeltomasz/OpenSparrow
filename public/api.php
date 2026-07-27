@@ -766,6 +766,95 @@ try {
         exit(json_encode(['success' => true, 'counts' => $nonZero ?: (object)[]]));
     }
 
+    // POST: WORKFLOW STEP PROCEDURE (CALL a configured PostgreSQL procedure)
+    // Deliberately a top-level block: the generic mutating branch below resolves
+    // $body['table'] through safe_table(), and this request targets no schema table.
+    // CSRF for POST is already enforced by os_api_bootstrap(); Admin/Viewer roles are
+    // blocked by the gates above.
+    if ($method === 'POST' && ($_GET['api'] ?? '') === 'workflow_procedure') {
+        $body       = json_decode(file_get_contents('php://input') ?: '[]', true) ?: [];
+        $workflowId = (string)($body['workflow_id'] ?? '');
+        $stepIndex  = (int)($body['step_index'] ?? -1);
+        $stepValues = is_array($body['step_values'] ?? null) ? $body['step_values'] : [];
+
+        // The procedure identity comes exclusively from the stored configuration —
+        // never from the request — so a client can only trigger what an admin
+        // already whitelisted by configuring it on this step.
+        $wfConfig = config_get('workflows') ?? [];
+        $procCfg  = null;
+        foreach ($wfConfig['workflows'] ?? [] as $wf) {
+            if (($wf['id'] ?? '') !== $workflowId) {
+                continue;
+            }
+            $procCfg = $wf['steps'][$stepIndex]['procedure'] ?? null;
+            break;
+        }
+
+        if (!is_array($procCfg) || empty($procCfg['enabled'])) {
+            http_response_code(400);
+            exit(json_encode(['error' => 'No procedure configured for this step.']));
+        }
+
+        $procSchema = trim((string)($procCfg['schema'] ?? ''));
+        $procName   = trim((string)($procCfg['name'] ?? ''));
+        if ($procSchema === '' || $procName === '') {
+            http_response_code(400);
+            exit(json_encode(['error' => 'Procedure configuration is incomplete.']));
+        }
+
+        // Resolve positional arguments. Field values come from the wizard's buffered
+        // step snapshots; literals from the configuration. Empty string becomes NULL
+        // so non-text parameters (int, date, …) do not fail on an untouched field.
+        $params = [];
+        foreach ($procCfg['params'] ?? [] as $param) {
+            if (($param['source'] ?? '') === 'literal') {
+                $value = (string)($param['value'] ?? '');
+            } else {
+                $srcStep  = (string)($param['step'] ?? '');
+                $srcField = (string)($param['field'] ?? '');
+                $value    = $stepValues[$srcStep][$srcField] ?? null;
+                if (is_bool($value)) {
+                    $value = $value ? 't' : 'f';
+                } elseif ($value !== null) {
+                    $value = (string)$value;
+                }
+            }
+            $params[] = ($value === '' || $value === null) ? null : $value;
+        }
+
+        $placeholders = [];
+        for ($p = 1; $p <= count($params); $p++) {
+            $placeholders[] = '$' . $p;
+        }
+        $callSql = 'CALL ' . pg_ident($procSchema) . '.' . pg_ident($procName)
+            . '(' . implode(', ', $placeholders) . ')';
+
+        // No explicit transaction: a PROCEDURE may COMMIT internally, which errors
+        // out inside an open transaction block. Async send + pg_get_result gives us a
+        // result handle even on failure, so we can return only the RAISE message
+        // (MESSAGE_PRIMARY) instead of the full pg_last_error() context.
+        if (!@pg_send_query_params($conn, $callSql, $params)) {
+            http_response_code(500);
+            exit(json_encode(['error' => 'Could not execute the procedure.']));
+        }
+
+        $procRes = pg_get_result($conn);
+        $sqlErr  = $procRes ? pg_result_error_field($procRes, PGSQL_DIAG_MESSAGE_PRIMARY) : null;
+        // Drain any further results so the connection stays usable for later requests.
+        while (pg_get_result($conn)) {
+            continue;
+        }
+
+        if ($sqlErr !== null && $sqlErr !== '') {
+            error_log('[workflow_procedure] ' . $procSchema . '.' . $procName . ': ' . $sqlErr);
+            http_response_code(400);
+            exit(json_encode(['error' => $sqlErr]));
+        }
+
+        log_user_action($conn, (int)$_SESSION['user_id'], 'CALL_PROCEDURE');
+        exit(json_encode(['success' => true]));
+    }
+
     // POST / PATCH / DELETE
     if (in_array($method, ['POST','PATCH','DELETE'], true)) {
         $body = json_decode(file_get_contents('php://input') ?: '[]', true);

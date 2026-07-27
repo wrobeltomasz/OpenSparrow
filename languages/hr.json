@@ -279,7 +279,9 @@
             "other": "Odabrano {n} slika"
         },
         "image_limit": "Možete priložiti do {max} slika.",
-        "image_upload_error": "Slanje slike nije uspjelo: {msg}"
+        "image_upload_error": "Slanje slike nije uspjelo: {msg}",
+        "procedure_running": "Izvršavanje…",
+        "procedure_error": "Provjera nije uspjela: {msg}"
     },
     "comments": {
         "delete": "Obriši",

@@ -276,7 +276,9 @@
             "other": "{n} billeder valgt"
         },
         "image_limit": "Du kan vedhæfte op til {max} billeder.",
-        "image_upload_error": "Billedupload mislykkedes: {msg}"
+        "image_upload_error": "Billedupload mislykkedes: {msg}",
+        "procedure_running": "Kører…",
+        "procedure_error": "Validering mislykkedes: {msg}"
     },
     "comments": {
         "delete": "Slet",

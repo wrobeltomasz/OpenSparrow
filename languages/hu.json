@@ -276,7 +276,9 @@
             "other": "{n} kép kiválasztva"
         },
         "image_limit": "Legfeljebb {max} képet csatolhat.",
-        "image_upload_error": "A kép feltöltése sikertelen: {msg}"
+        "image_upload_error": "A kép feltöltése sikertelen: {msg}",
+        "procedure_running": "Futtatás…",
+        "procedure_error": "Az ellenőrzés sikertelen: {msg}"
     },
     "comments": {
         "delete": "Törlés",

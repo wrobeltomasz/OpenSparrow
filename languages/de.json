@@ -276,7 +276,9 @@
             "other": "{n} Bilder ausgewählt"
         },
         "image_limit": "Sie können bis zu {max} Bilder anhängen.",
-        "image_upload_error": "Bild-Upload fehlgeschlagen: {msg}"
+        "image_upload_error": "Bild-Upload fehlgeschlagen: {msg}",
+        "procedure_running": "Wird ausgeführt…",
+        "procedure_error": "Validierung fehlgeschlagen: {msg}"
     },
     "comments": {
         "delete": "Löschen",

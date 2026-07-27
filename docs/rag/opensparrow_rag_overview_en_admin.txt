@@ -125,6 +125,15 @@ Workflow Manager:
   - Per workflow: title, description, icon
   - Step builder: add / remove / drag-reorder steps
   - Per step: target table, form fields, multi-record option (e.g. several contacts)
+  - Per step: optional PostgreSQL procedure called when the user clicks "Next step".
+    Pick schema + procedure from a dropdown listing the database's stored procedures;
+    one row is then shown per declared IN parameter, each fed either from a workflow
+    field (choose the source step and column — the current step or any earlier one)
+    or from a fixed value typed in by hand. The procedure runs before the wizard
+    advances and receives only form values, never record ids — nothing is written to
+    the database until the final review screen. If the procedure raises an exception,
+    its message is shown to the user and the wizard stays on the current step, so a
+    procedure can act as a server-side validation gate.
 
 Automations:
   - Event-driven rules executed by the backend on record events

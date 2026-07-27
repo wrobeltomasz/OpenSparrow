@@ -276,7 +276,9 @@
             "other": "Επιλέχθηκαν {n} εικόνες"
         },
         "image_limit": "Μπορείτε να επισυνάψετε έως {max} εικόνες.",
-        "image_upload_error": "Η μεταφόρτωση εικόνας απέτυχε: {msg}"
+        "image_upload_error": "Η μεταφόρτωση εικόνας απέτυχε: {msg}",
+        "procedure_running": "Εκτελείται…",
+        "procedure_error": "Η επικύρωση απέτυχε: {msg}"
     },
     "comments": {
         "delete": "Διαγραφή",

@@ -279,7 +279,9 @@
             "other": "{n} imagini selectate"
         },
         "image_limit": "Puteți atașa până la {max} imagini.",
-        "image_upload_error": "Încărcarea imaginii a eșuat: {msg}"
+        "image_upload_error": "Încărcarea imaginii a eșuat: {msg}",
+        "procedure_running": "Se execută…",
+        "procedure_error": "Validarea a eșuat: {msg}"
     },
     "comments": {
         "delete": "Șterge",

@@ -276,7 +276,9 @@
             "other": "{n} bilder valda"
         },
         "image_limit": "Du kan bifoga upp till {max} bilder.",
-        "image_upload_error": "Bilduppladdning misslyckades: {msg}"
+        "image_upload_error": "Bilduppladdning misslyckades: {msg}",
+        "procedure_running": "Kör…",
+        "procedure_error": "Valideringen misslyckades: {msg}"
     },
     "comments": {
         "delete": "Ta bort",

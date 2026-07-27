@@ -276,7 +276,9 @@
             "other": "{n} images sélectionnées"
         },
         "image_limit": "Vous pouvez joindre jusqu'à {max} images.",
-        "image_upload_error": "Échec du téléchargement de l'image : {msg}"
+        "image_upload_error": "Échec du téléchargement de l'image : {msg}",
+        "procedure_running": "Exécution…",
+        "procedure_error": "Échec de la validation : {msg}"
     },
     "comments": {
         "delete": "Supprimer",

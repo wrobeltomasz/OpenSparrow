@@ -282,7 +282,9 @@
             "other": "Izbranih {n} slik"
         },
         "image_limit": "Priložite lahko do {max} slik.",
-        "image_upload_error": "Nalaganje slike ni uspelo: {msg}"
+        "image_upload_error": "Nalaganje slike ni uspelo: {msg}",
+        "procedure_running": "Izvajanje…",
+        "procedure_error": "Preverjanje ni uspelo: {msg}"
     },
     "comments": {
         "delete": "Izbriši",

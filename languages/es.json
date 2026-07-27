@@ -276,7 +276,9 @@
             "other": "{n} imágenes seleccionadas"
         },
         "image_limit": "Puede adjuntar hasta {max} imágenes.",
-        "image_upload_error": "Error al subir la imagen: {msg}"
+        "image_upload_error": "Error al subir la imagen: {msg}",
+        "procedure_running": "Ejecutando…",
+        "procedure_error": "Error de validación: {msg}"
     },
     "comments": {
         "delete": "Eliminar",

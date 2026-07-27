@@ -276,7 +276,9 @@
             "other": "{n} images selected"
         },
         "image_limit": "You can attach up to {max} images.",
-        "image_upload_error": "Image upload failed: {msg}"
+        "image_upload_error": "Image upload failed: {msg}",
+        "procedure_running": "Running…",
+        "procedure_error": "Validation failed: {msg}"
     },
     "comments": {
         "delete": "Delete",

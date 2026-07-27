@@ -279,7 +279,9 @@
             "other": "Pasirinkta {n} paveikslėlių"
         },
         "image_limit": "Galite pridėti iki {max} paveikslėlių.",
-        "image_upload_error": "Nepavyko įkelti paveikslėlio: {msg}"
+        "image_upload_error": "Nepavyko įkelti paveikslėlio: {msg}",
+        "procedure_running": "Vykdoma…",
+        "procedure_error": "Patikra nepavyko: {msg}"
     },
     "comments": {
         "delete": "Ištrinti",

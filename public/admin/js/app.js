@@ -984,6 +984,23 @@ function validateWorkflowsConfig(config) {
             if (!step.table || step.table.trim() === '') {
                 return `"${label}" — Step ${s + 1} ("${step.title.trim()}") has no target table.`;
             }
+            // A half-configured procedure hook would fail at runtime with a generic
+            // server error, so reject it here while the admin can still see why.
+            const proc = step.procedure;
+            if (proc && proc.enabled) {
+                const stepLabel = `"${label}" — Step ${s + 1} ("${step.title.trim()}")`;
+                if (!proc.schema || !proc.name) {
+                    return `${stepLabel} has "call procedure" enabled but no procedure selected.`;
+                }
+                const params = proc.params || [];
+                for (let p = 0; p < params.length; p++) {
+                    const param = params[p] || {};
+                    if (param.source === 'literal') continue;
+                    if (!param.field || param.field.trim() === '') {
+                        return `${stepLabel} — procedure parameter ${p + 1} has no source field selected.`;
+                    }
+                }
+            }
         }
     }
     return null;

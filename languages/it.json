@@ -276,7 +276,9 @@
             "other": "{n} immagini selezionate"
         },
         "image_limit": "Puoi allegare fino a {max} immagini.",
-        "image_upload_error": "Caricamento immagine non riuscito: {msg}"
+        "image_upload_error": "Caricamento immagine non riuscito: {msg}",
+        "procedure_running": "Esecuzione…",
+        "procedure_error": "Convalida non riuscita: {msg}"
     },
     "comments": {
         "delete": "Elimina",

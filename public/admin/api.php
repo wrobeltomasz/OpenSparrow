@@ -204,6 +204,7 @@ $adminModules = [
     'list_m2m' => 'm2m',
     'create_m2m' => 'm2m',
     'delete_m2m' => 'm2m',
+    'list_procedures' => 'procedures',
     'anonymization_load' => 'anonymization',
     'anonymization_save' => 'anonymization',
     'run_anonymization' => 'anonymization',

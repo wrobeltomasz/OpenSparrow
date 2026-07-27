@@ -49,6 +49,23 @@ function demo_def_crm($conn): array
                 . 'LEFT JOIN spw_crm.deals d ON d.id = i.deal_id '
                 . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
                 . 'LEFT JOIN spw_crm.contacts ct ON ct.id = d.contact_id',
+            // Validation procedure for the "Add Contact" workflow below: the wizard
+            // CALLs it when the user clicks "Next step", and a RAISE EXCEPTION here
+            // blocks the step and surfaces the message in the UI. Phone separators
+            // (- . space parentheses) are stripped before the digit check, so
+            // "+1-555-1001" and "+1 (555) 1001" both pass.
+            'CREATE OR REPLACE PROCEDURE spw_crm.validate_contact(p_email text, p_phone text) '
+                . 'LANGUAGE plpgsql AS $proc$ '
+                . 'DECLARE v_digits text; '
+                . 'BEGIN '
+                . 'IF p_email IS NULL OR p_email NOT LIKE \'%@%\' THEN '
+                . 'RAISE EXCEPTION \'Invalid email: %\', COALESCE(p_email, \'(empty)\'); '
+                . 'END IF; '
+                . 'v_digits := regexp_replace(COALESCE(p_phone, \'\'), \'[-. ()]\', \'\', \'g\'); '
+                . 'IF v_digits <> \'\' AND v_digits !~ \'^\\+?[0-9]{6,15}$\' THEN '
+                . 'RAISE EXCEPTION \'Invalid phone: % — digits only, separators - . ( ) and spaces are allowed\', p_phone; '
+                . 'END IF; '
+                . 'END $proc$',
         ],
         'seed_data' => [
             "INSERT INTO spw_crm.companies (name, industry, website, phone, email) VALUES ('Acme Corporation', 'Technology', 'acme.com', '+1-555-1001', 'sales@acme.com')",
@@ -795,6 +812,20 @@ function demo_def_crm($conn): array
                 ['title' => 'Add Contact',   'table' => 'contacts',  'foreign_key' => 'company_id', 'link_to_step' => 1, 'allow_multiple' => false],
                 ['title' => 'Create Deal',   'table' => 'deals',     'foreign_key' => 'company_id', 'link_to_step' => 1, 'allow_multiple' => false],
                 ['title' => 'Send Quote',    'table' => 'quotes',    'foreign_key' => 'deal_id',    'link_to_step' => 3, 'allow_multiple' => true],
+            ]],
+            // Single-step workflow demonstrating the per-step stored-procedure hook:
+            // spw_crm.validate_contact runs on "Next step" and rejects a malformed
+            // email or phone before anything is written to the database.
+            ['id' => 'wf_demo_crm_003', 'title' => 'Add Contact', 'icon' => 'assets/icons/person_text.png', 'description' => 'CRM: add a single contact, validated by a PostgreSQL procedure.', 'steps' => [
+                ['title' => 'Add Contact', 'table' => 'contacts', 'foreign_key' => '', 'link_to_step' => 0, 'allow_multiple' => false, 'procedure' => [
+                    'enabled' => true,
+                    'schema'  => 'spw_crm',
+                    'name'    => 'validate_contact',
+                    'params'  => [
+                        ['source' => 'field', 'step' => 0, 'field' => 'email'],
+                        ['source' => 'field', 'step' => 0, 'field' => 'phone'],
+                    ],
+                ]],
             ]],
         ],
         'views' => [

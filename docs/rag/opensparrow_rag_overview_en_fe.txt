@@ -98,7 +98,9 @@ Each step links to the previous record automatically; some steps allow adding
 multiple records (e.g. several contacts for one company). If a step's table has an
 image gallery configured, the step form also offers an image upload field; the
 photo is attached to that step's record once it is saved (visible afterwards in
-the record's Images tab).
+the record's Images tab). A step can also be guarded by a database validation rule
+configured by an admin: if it rejects what you entered, its message is shown and the
+wizard stays on the current step until you correct the data.
 
 
 AUTOMATIONS (background behavior)
