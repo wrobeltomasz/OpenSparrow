@@ -336,6 +336,33 @@ ${_ul([
     `<strong>${s.s9k_controls_label}:</strong> ${s.s9k_controls}`
 ])}
 
+${_h3('doc-9l', s.s9l_head)}
+${_p(s.s9l_desc)}
+${_ul([
+    `<strong>${s.s9l_edit_label}:</strong> ${s.s9l_edit}`,
+    `<strong>${s.s9l_dup_label}:</strong> ${s.s9l_dup}`,
+    `<strong>${s.s9l_clean_label}:</strong> ${s.s9l_clean}`,
+    `<strong>${s.s9l_role_label}:</strong> ${s.s9l_role}`
+])}
+
+${_h3('doc-9m', s.s9m_head)}
+${_p(s.s9m_desc)}
+${_ul([
+    `<strong>${s.s9m_tab1_label}:</strong> ${s.s9m_tab1}`,
+    `<strong>${s.s9m_tab2_label}:</strong> ${s.s9m_tab2}`,
+    `<strong>${s.s9m_tab3_label}:</strong> ${s.s9m_tab3}`,
+    `<strong>${s.s9m_tab4_label}:</strong> ${s.s9m_tab4}`
+])}
+
+${_h3('doc-9n', s.sLogo_head)}
+${_p(s.sLogo_desc)}
+${_ul([
+    `<strong>${s.sLogo_li1_label}:</strong> ${s.sLogo_li1}`,
+    `<strong>${s.sLogo_li2_label}:</strong> ${s.sLogo_li2}`,
+    `<strong>${s.sLogo_li3_label}:</strong> ${s.sLogo_li3}`,
+    `<strong>${s.sLogo_li4_label}:</strong> ${s.sLogo_li4}`
+])}
+
 ${_h3('doc-10', s.s10_head)}
 ${_p(s.s10_desc)}
 ${_ul([
@@ -350,6 +377,20 @@ ${_ul([
     `<strong>${s.s10b_schemas_label}:</strong> ${s.s10b_schemas}`,
     `<strong>${s.s10b_display_label}:</strong> ${s.s10b_display}`,
     `<strong>${s.s10b_readonly_label}:</strong> ${s.s10b_readonly}`
+])}
+
+${_h3('doc-10c', s.s10c_head)}
+${_p(s.s10c_desc)}
+${_ul([
+    `<strong>${s.s10c_map_label}:</strong> ${s.s10c_map}`,
+    `<strong>${s.s10c_global_label}:</strong> ${s.s10c_global}`
+])}
+
+${_h3('doc-10d', s.s10d_head)}
+${_p(s.s10d_desc)}
+${_ul([
+    `<strong>${s.s10d_where_label}:</strong> ${s.s10d_where}`,
+    `<strong>${s.s10d_perm_label}:</strong> ${s.s10d_perm}`
 ])}
 
 ${_h3('doc-11', s.s11_head)}
@@ -404,101 +445,6 @@ ${_ul([
     `<strong>${s.s11e_log_label}:</strong> ${s.s11e_log}`
 ])}
 
-${_h3('doc-13', s.s13_head)}
-${_p(s.s13_desc)}
-${_h4(s.s13_config_head)}
-${_ul([s.s13_config1, s.s13_config2])}
-${_h4(s.s13_trans_head)}
-${_p(s.s13_trans_desc)}
-${_ul([s.s13_trans1, s.s13_trans2, s.s13_trans3, `<strong>${s.s13_trans4_label}:</strong> ${s.s13_trans4}`])}
-${_h4(s.s13_php_head)}
-${_ul([s.s13_php1, s.s13_php2, s.s13_php3, s.s13_php4])}
-${_h4(s.s13_js_head)}
-${_ul([s.s13_js1, s.s13_js2, s.s13_js3, s.s13_js4, s.s13_js5, s.s13_js6])}
-${_h4(s.s13_add_head)}
-${_ol([s.s13_add1, s.s13_add2, s.s13_add3, s.s13_add4])}
-
-${_h3('doc-13-rag', s.sRag_head)}
-${_p(s.sRag_desc)}
-${_ul([
-    `<strong>${s.s13_docs_label}:</strong> ${s.s13_docs}`,
-    `<strong>${s.s13_config_label}:</strong> ${s.s13_config}`,
-    `<strong>${s.s13_test_label}:</strong> ${s.s13_test}`,
-    `<strong>${s.s13_stats_label}:</strong> ${s.s13_stats}`,
-    `<strong>${s.s13_multilang_label}:</strong> ${s.s13_multilang}`
-])}
-
-${_h3('doc-14-aut', s.s14_head)}
-${_p(s.s14_desc)}
-${_h4(s.s14_trigger_label)}
-${_p(s.s14_trigger)}
-${_h4(s.s14_cond_label)}
-${_p(s.s14_cond)}
-${_h4(s.s14_actions_label)}
-${_p(s.s14_actions)}
-${_h4(s.s14_vars_label)}
-${_p(s.s14_vars)}
-${_h4(s.s14_history_label)}
-${_p(s.s14_history)}
-${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;')}
-
-${_h3('doc-13-print', s.sPrint_head)}
-${_p(s.sPrint_desc)}
-${_ul([
-    `<strong>${s.sPrint_source_label}:</strong> ${s.sPrint_source}`,
-    `<strong>${s.sPrint_layout_label}:</strong> ${s.sPrint_layout}`,
-    `<strong>${s.sPrint_pagination_label}:</strong> ${s.sPrint_pagination}`,
-    `<strong>${s.sPrint_access_label}:</strong> ${s.sPrint_access}`,
-    `<strong>${s.sPrint_config_label}:</strong> ${s.sPrint_config}`
-])}
-
-${_h3('doc-9m', s.s9m_head)}
-${_p(s.s9m_desc)}
-${_ul([
-    `<strong>${s.s9m_tab1_label}:</strong> ${s.s9m_tab1}`,
-    `<strong>${s.s9m_tab2_label}:</strong> ${s.s9m_tab2}`,
-    `<strong>${s.s9m_tab3_label}:</strong> ${s.s9m_tab3}`,
-    `<strong>${s.s9m_tab4_label}:</strong> ${s.s9m_tab4}`
-])}
-
-${_h3('doc-9n', s.sLogo_head)}
-${_p(s.sLogo_desc)}
-${_ul([
-    `<strong>${s.sLogo_li1_label}:</strong> ${s.sLogo_li1}`,
-    `<strong>${s.sLogo_li2_label}:</strong> ${s.sLogo_li2}`,
-    `<strong>${s.sLogo_li3_label}:</strong> ${s.sLogo_li3}`,
-    `<strong>${s.sLogo_li4_label}:</strong> ${s.sLogo_li4}`
-])}
-
-${_h3('doc-14', 'Upgrading OpenSparrow')}
-${_p('After running <code>git pull</code> to a new version, use <strong>System → Migrations</strong> to check for pending release migrations. The admin header displays a yellow upgrade notice when action is required.')}
-${_h4('Release workflow')}
-${_ol([
-    'Pull the new release: <code>git pull</code>',
-    'Open Admin → <strong>System → Migrations</strong>.',
-    'Run <strong>Apply Pending Migrations</strong> first (database schema changes).',
-    'Scroll to the <strong>Release Migrations</strong> section. Select the actions you want to apply and click <strong>Apply selected</strong>.',
-    'Verify the upgrade notice in the header has disappeared.',
-])}
-${_h4('What Release Migrations do')}
-${_ul([
-    '<strong>Remove file</strong> — moves an obsolete file to <code>storage/migrations_backup/&lt;version&gt;/</code> then deletes it from the working tree.',
-    '<strong>Remove config key</strong> — removes a deprecated field from a configuration key in the <code>spw_config</code> store; the previous value is written to <code>spw_config_log</code> first. Skipped if an admin saved that config while the migration ran.',
-    '<strong>Deprecated (info only)</strong> — no action taken; the file is still present but generates a warning in <code>storage/logs/deprecations.log</code> if accessed.',
-])}
-${_h4('Backups')}
-${_p('Removed files are copied to <code>storage/migrations_backup/&lt;version&gt;/</code> before deletion. Config keys are DB-backed, so their pre-change value is kept in the <code>spw_config_log</code> audit trail instead. The applied history in the Migrations tab shows the backup location for each action.')}
-${_h4('Adding a migration entry (for contributors)')}
-${_p('Every pull request that removes a file or a configuration key must add an entry to <code>config/migrations.json</code> in the same PR. In <code>removed_config_keys</code>, <code>file</code> names the <code>spw_config</code> key — the legacy <code>schema.json</code> spelling is still accepted and maps to key <code>schema</code>. Example:')}
-<pre style="background:#F4F7F9;padding:12px;border-radius:4px;overflow-x:auto;">"3.1": {
-  "removed_files": ["admin/old_feature.php"],
-  "deprecated_files": [],
-  "removed_config_keys": [
-    { "file": "schema.json", "path": "$.tables[*].legacy_flag" }
-  ],
-  "notes": "Removed old feature, replaced by new system."
-}</pre>
-
 ${_h3('doc-12', s.s12_head)}
 ${_ul([s.s12_li1, s.s12_li2, s.s12_li3, s.s12_li4])}
 ${_h4(s.s12_env_head)}
@@ -525,5 +471,72 @@ ${_h4(s.s12_env_head)}
         <tr><td class="adm-td"><code>PGSCHEMA</code></td><td class="adm-td"><code>app</code></td><td class="adm-td">${s.env_pgschema}</td></tr>
     </tbody>
 </table>
+
+${_h3('doc-13', s.s13_head)}
+${_p(s.s13_desc)}
+${_h4(s.s13_config_head)}
+${_ul([s.s13_config1, s.s13_config2])}
+${_h4(s.s13_trans_head)}
+${_p(s.s13_trans_desc)}
+${_ul([s.s13_trans1, s.s13_trans2, s.s13_trans3, `<strong>${s.s13_trans4_label}:</strong> ${s.s13_trans4}`])}
+${_h4(s.s13_php_head)}
+${_ul([s.s13_php1, s.s13_php2, s.s13_php3, s.s13_php4])}
+${_h4(s.s13_js_head)}
+${_ul([s.s13_js1, s.s13_js2, s.s13_js3, s.s13_js4, s.s13_js5, s.s13_js6])}
+${_h4(s.s13_add_head)}
+${_ol([s.s13_add1, s.s13_add2, s.s13_add3, s.s13_add4])}
+
+${_h3('doc-14', s.s14_head)}
+${_p(s.s14_desc)}
+${_h4(s.s14_trigger_label)}
+${_p(s.s14_trigger)}
+${_h4(s.s14_cond_label)}
+${_p(s.s14_cond)}
+${_h4(s.s14_actions_label)}
+${_p(s.s14_actions)}
+${_h4(s.s14_vars_label)}
+${_p(s.s14_vars)}
+${_h4(s.s14_history_label)}
+${_p(s.s14_history)}
+${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;')}
+
+${_h3('doc-15', s.sRag_head)}
+${_p(s.sRag_desc)}
+${_ul([
+    `<strong>${s.s13_docs_label}:</strong> ${s.s13_docs}`,
+    `<strong>${s.s13_config_label}:</strong> ${s.s13_config}`,
+    `<strong>${s.s13_test_label}:</strong> ${s.s13_test}`,
+    `<strong>${s.s13_stats_label}:</strong> ${s.s13_stats}`,
+    `<strong>${s.s13_multilang_label}:</strong> ${s.s13_multilang}`
+])}
+
+${_h3('doc-16', s.sPrint_head)}
+${_p(s.sPrint_desc)}
+${_ul([
+    `<strong>${s.sPrint_source_label}:</strong> ${s.sPrint_source}`,
+    `<strong>${s.sPrint_layout_label}:</strong> ${s.sPrint_layout}`,
+    `<strong>${s.sPrint_pagination_label}:</strong> ${s.sPrint_pagination}`,
+    `<strong>${s.sPrint_access_label}:</strong> ${s.sPrint_access}`,
+    `<strong>${s.sPrint_config_label}:</strong> ${s.sPrint_config}`
+])}
+
+${_h3('doc-17', s.sUpg_head)}
+${_p(s.sUpg_desc)}
+${_h4(s.sUpg_flow_head)}
+${_ol([s.sUpg_step1, s.sUpg_step2, s.sUpg_step3, s.sUpg_step4, s.sUpg_step5])}
+${_h4(s.sUpg_what_head)}
+${_ul([s.sUpg_what1, s.sUpg_what2, s.sUpg_what3])}
+${_h4(s.sUpg_backup_head)}
+${_p(s.sUpg_backup)}
+${_h4(s.sUpg_add_head)}
+${_p(s.sUpg_add)}
+<pre style="background:#F4F7F9;padding:12px;border-radius:4px;overflow-x:auto;">"3.1": {
+  "removed_files": ["admin/old_feature.php"],
+  "deprecated_files": [],
+  "removed_config_keys": [
+    { "file": "schema.json", "path": "$.tables[*].legacy_flag" }
+  ],
+  "notes": "Removed old feature, replaced by new system."
+}</pre>
 </div>`;
 }
