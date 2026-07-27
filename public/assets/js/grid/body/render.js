@@ -93,6 +93,16 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             tr.appendChild(tdM2m);
         }
 
+        // Image gallery column — populated async by images/loader.js
+        const imagesCfg = schema.tables[state.currentTable]?.images;
+        if (imagesCfg?.enabled && imagesCfg.show_in_grid) {
+            const tdImg = document.createElement('td');
+            tdImg.className = 'td-images';
+            tdImg.dataset.imgRowId = String(row['id']);
+            tdImg.dataset.imgLabel = imagesCfg.label || I18n.t('images.label');
+            tr.appendChild(tdImg);
+        }
+
         // Actions column
         if (!isReadOnly) {
             tr.appendChild(buildActionsCell(row, schema, isReadOnly, onTableReload));

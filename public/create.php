@@ -154,6 +154,10 @@ ob_start();
             </div>
             <?php endif; ?>
 
+            <?php if (images_config($rawSchema, $table)) : ?>
+                <p class="ef-empty"><?= t('images.save_first') ?></p>
+            <?php endif; ?>
+
             <div class="form-actions">
                 <?php if ($isReadOnly) : ?>
                     <button type="button" class="btn-save" disabled><?= t('form.add_record') ?></button>

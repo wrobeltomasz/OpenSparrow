@@ -543,5 +543,16 @@
         "network_error_msg": "Network error: {msg}",
         "initializing": "Initializing...",
         "init_failed": "Initialization failed"
+    },
+    "images": {
+        "label": "Images",
+        "upload": "Upload image",
+        "delete": "Delete",
+        "empty": "No images attached to this record yet.",
+        "count": "{n} of {max}",
+        "limit_reached": "Image limit reached for this record.",
+        "save_first": "Save the record first to attach images.",
+        "select_first": "Please select an image to upload.",
+        "confirm_delete": "Delete this image?"
     }
 }

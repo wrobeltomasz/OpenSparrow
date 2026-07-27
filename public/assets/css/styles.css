@@ -802,6 +802,116 @@ thead th:last-child  { padding-right: 0.6rem; }
   border-bottom: none;
 }
 
+/* Record image gallery — grid column + hover popup */
+.th-images,
+.td-images {
+  width: 70px;
+  vertical-align: middle;
+}
+
+.img-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.img-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.img-more {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.img-popup {
+  position: fixed;
+  pointer-events: auto;
+  z-index: 10001;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  padding: 10px;
+  max-width: 300px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.img-popup-title {
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.img-popup-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.img-popup-grid img {
+  width: 82px;
+  height: 82px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  display: block;
+}
+
+/* Record form gallery (edit.php) */
+.img-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.img-gallery-item {
+  position: relative;
+  width: 110px;
+}
+
+.img-gallery-item img {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  display: block;
+}
+
+.img-gallery-name {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 3px;
+}
+
+.img-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.img-count {
+  color: var(--muted);
+}
+
 .th-actions {
   width: 44px;
   min-width: 44px;

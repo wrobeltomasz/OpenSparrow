@@ -3,7 +3,7 @@
 import { I18n } from '../i18n.js';
 import { state } from './state.js';
 
-const SKIP_CLASS = new Set(['td-actions', 'td-m2m']);
+const SKIP_CLASS = new Set(['td-actions', 'td-m2m', 'td-images']);
 const PAGE_STEP    = 10;
 const CTRL_HOLD_MS = 2000;
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform ?? navigator.userAgent);

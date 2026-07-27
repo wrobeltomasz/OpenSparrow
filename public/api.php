@@ -570,6 +570,24 @@ try {
         exit(json_encode(['data' => $data ?: (object)[]]));
     }
 
+    // GET: BATCH RECORD IMAGES FOR GRID COLUMN
+    if ($method === 'GET' && ($_GET['api'] ?? '') === 'image_rows') {
+        require_once __DIR__ . '/../includes/images.php';
+        $table = $_GET['table'] ?? '';
+        if (!isset($schema['tables'][$table]) || images_config($schema, $table) === null) {
+            exit(json_encode(['data' => (object)[]]));
+        }
+
+        $ids = array_values(array_filter(explode(',', $_GET['ids'] ?? ''), 'ctype_digit'));
+        $ids = array_slice($ids, 0, 200);
+        if (empty($ids)) {
+            exit(json_encode(['data' => (object)[]]));
+        }
+
+        $data = images_for_rows($conn, $table, array_map('intval', $ids));
+        exit(json_encode(['data' => $data ?: (object)[]]));
+    }
+
     // GET: LIST TABLE ROWS
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'list') {
         $table = $_GET['table'] ?? '';

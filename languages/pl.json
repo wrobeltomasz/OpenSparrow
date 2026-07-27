@@ -546,5 +546,16 @@
         "network_error_msg": "Błąd sieci: {msg}",
         "initializing": "Inicjalizacja...",
         "init_failed": "Inicjalizacja nie powiodła się"
+    },
+    "images": {
+        "label": "Obrazki",
+        "upload": "Wgraj obrazek",
+        "delete": "Usuń",
+        "empty": "Ten rekord nie ma jeszcze żadnych obrazków.",
+        "count": "{n} z {max}",
+        "limit_reached": "Osiągnięto limit obrazków dla tego rekordu.",
+        "save_first": "Zapisz rekord, aby dodać obrazki.",
+        "select_first": "Wybierz obrazek do wgrania.",
+        "confirm_delete": "Usunąć ten obrazek?"
     }
 }

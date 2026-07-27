@@ -51,6 +51,11 @@ The main way to browse and edit data:
   - Export selected rows to CSV
   - Mass Edit: select multiple rows, bulk-update a field across all selected
   - Quick Data Cleanup: find-and-replace across a column, with regex support
+  - Images column: when the admin enables images for a table, the grid gains a
+    thumbnail column showing the first image of each record plus a "+N" badge for
+    the rest; hovering the cell opens a popup with larger previews, and clicking a
+    preview opens the full-size image in a new tab. The column is read-only —
+    images are added and removed from the record's edit form.
 
 
 CREATE & EDIT FORMS
@@ -61,6 +66,10 @@ Create a record at create.php, edit at edit.php?table=X&id=Y:
     links to other records (foreign keys), and multi-select relations
   - Subtables: related records displayed inline (e.g. Contacts under a Company)
   - File attachments per record
+  - Images tab (only when the admin enabled images for the table): a gallery of the
+    record's images with upload and delete, limited to the configured number of
+    images per record. Only image files are accepted. On create.php the tab is
+    absent — the record must be saved first before images can be attached.
   - Comments thread per record
   - Record ownership tracking (who owns/created the record)
 

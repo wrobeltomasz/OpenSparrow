@@ -48,6 +48,10 @@ Schema:
   - Drag-and-drop column reordering
   - Subtable configuration (FK back-references shown inside edit forms)
   - M2M (many-to-many) configuration
+  - Images: per-table switch enabling a record image gallery — display label, max
+    images per record (1-50), and whether a thumbnail column appears in the grid.
+    Images are stored as regular files (spw_files) linked to the record, so the
+    Files module's size and extension limits still apply.
 
 Schema — inner tabs (reachable from inside the Schema tab, not as separate sidebar items):
   - Add Table: wizard for creating a new PostgreSQL table and registering it in the schema

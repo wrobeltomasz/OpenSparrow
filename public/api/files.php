@@ -18,6 +18,39 @@ $conn = os_api_bootstrap(['csrf' => 'manual']);
 
 // Files-module config via the spw_config store (key "files").
 require_once __DIR__ . '/../../includes/config_store.php';
+// Record image galleries: IMAGES_FIELD discriminator + images_config()/images_count()
+require_once __DIR__ . '/../../includes/images.php';
+
+/**
+ * Validate a gallery upload target: the table must have images enabled in the schema
+ * config, the record must be accessible to the current user, and the per-record limit
+ * must not be reached. Exits with a JSON error otherwise.
+ *
+ * @return array{table:string,id:int}
+ */
+function validateImageTarget($conn, string $table, int $recordId): array
+{
+    if ($table === '' || $recordId <= 0) {
+        jsonError('related_table and related_id are required for gallery uploads.', 400);
+    }
+
+    $schema = config_get('schema');
+    $cfg    = is_array($schema) ? images_config($schema, $table) : null;
+    if ($cfg === null) {
+        jsonError('This table does not accept images.', 403);
+    }
+
+    $tableCfg = $schema['tables'][$table];
+    if (!can_access_record($conn, $tableCfg, $table, $recordId, (int)$_SESSION['user_id'])) {
+        jsonError('Forbidden', 403);
+    }
+
+    if (images_count($conn, $table, $recordId) >= $cfg['max_per_record']) {
+        jsonError('Image limit reached for this record.', 409);
+    }
+
+    return ['table' => $table, 'id' => $recordId];
+}
 
 function loadConfig(): array
 {
@@ -215,6 +248,17 @@ function actionUpload($conn): void
         jsonError('File type category is not allowed.', 415);
     }
 
+    // Gallery mode: the upload targets a record's image gallery instead of the plain
+    // attachment list. Validated against the schema config, not the Files relations.
+    $imageMode   = ($_POST['related_field'] ?? '') === IMAGES_FIELD;
+    $imageTarget = null;
+    if ($imageMode) {
+        if ($type !== 'image') {
+            jsonError('Only image files can be added to a record gallery.', 415);
+        }
+        $imageTarget = validateImageTarget($conn, trim($_POST['related_table'] ?? ''), (int)($_POST['related_id'] ?? 0));
+    }
+
     // Read the REAL content type and reject any file whose bytes do not match the
     // extension the client claimed. Extension/category checks above are trivially
     // spoofable (rename virus.html -> photo.jpg); this closes both the spoofing gap
@@ -250,8 +294,14 @@ function actionUpload($conn): void
     $relatedTableReq = trim($_POST['related_table'] ?? '');
     $relatedId       = isset($_POST['related_id']) && $_POST['related_id'] !== '' ? (int)$_POST['related_id'] : null;
     $relatedTable    = null;
+    $relatedField    = null;
+    if ($imageMode) {
+        // Already validated (table has a gallery, record accessible, limit not reached)
+        $relatedTable = $imageTarget['table'];
+        $relatedId    = $imageTarget['id'];
+        $relatedField = IMAGES_FIELD;
+    } elseif ($relatedTableReq && $relatedId) {
 // Validate that the requested table exists in config
-    if ($relatedTableReq && $relatedId) {
         $relations = $config['relations'] ?? [];
         foreach ($relations as $rel) {
             if ($rel['table'] === $relatedTableReq) {
@@ -271,9 +321,9 @@ function actionUpload($conn): void
 
     $sql = "
         INSERT INTO " . sys_table('files') . "
-            (uuid, name, display_name, type, mime_type, extension, size_bytes, storage_path, uploaded_by, related_table, related_id, tags)
+            (uuid, name, display_name, type, mime_type, extension, size_bytes, storage_path, uploaded_by, related_table, related_id, tags, related_field)
         VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING id, uuid
     ";
     $params = [
@@ -288,7 +338,8 @@ function actionUpload($conn): void
         $_SESSION['user_id'],
         $relatedTable,
         $relatedId,
-        $tagsPgArray
+        $tagsPgArray,
+        $relatedField
     ];
     $res = pg_query_params($conn, $sql, $params);
     if (!$res) {
@@ -445,6 +496,27 @@ function actionDelete($conn, array $body): void
     $uuid = trim($body['uuid'] ?? '');
     if (!$uuid) {
         jsonError('uuid is required.', 400);
+    }
+
+    // Gallery images inherit the visibility of their record — a user who cannot see the
+    // row must not be able to delete its images either (mirrors file_download.php).
+    $own = pg_query_params(
+        $conn,
+        "SELECT related_table, related_id FROM " . sys_table('files')
+        . " WHERE uuid = $1 AND related_field = $2 AND deleted_at IS NULL",
+        [$uuid, IMAGES_FIELD]
+    );
+    if ($own && pg_num_rows($own) > 0) {
+        $ownRow = pg_fetch_assoc($own);
+        $schema = config_get('schema');
+        $rTable = (string)$ownRow['related_table'];
+        $tblCfg = $schema['tables'][$rTable] ?? null;
+        if (
+            !is_array($tblCfg)
+            || !can_access_record($conn, $tblCfg, $rTable, (int)$ownRow['related_id'], (int)$_SESSION['user_id'])
+        ) {
+            jsonError('File not found or already deleted.', 404);
+        }
     }
 
     $sql = "UPDATE " . sys_table('files') . " SET deleted_at = NOW() WHERE uuid = $1 AND deleted_at IS NULL RETURNING id";

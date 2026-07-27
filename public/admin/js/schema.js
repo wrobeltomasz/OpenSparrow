@@ -1,7 +1,7 @@
 // admin/js/schema.js — Schema editor (tables, columns, FKs, grid settings)
 // Core editor for the "schema" config: renderSchemaEditor / renderSchemaGlobalSettings, syncSchemaTables. XSS-escapes output.
 import { apiFetch } from '../../assets/js/util/api.js';
-import { createTextInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';
+import { createTextInput, createNumberInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';
 import { showStatusPill, markDirty } from './app.js';
 
 // Utility function to escape HTML strings safely against XSS
@@ -1012,4 +1012,44 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     };
 
     renderM2m();
+
+    // ── Images ────────────────────────────────────────────────────────────────
+    // Kept out of tableData until the user actually changes something, so opening a
+    // table's editor never adds an empty "images" key to the saved schema.
+    const imagesCfg = (typeof tableData.images === 'object' && tableData.images !== null)
+        ? tableData.images
+        : {};
+    const touchImages = () => { tableData.images = imagesCfg; markDirty(); };
+
+    const imgTitle = document.createElement('h3');
+    imgTitle.textContent = 'Images';
+    imgTitle.style.marginTop = '40px';
+    workspaceEl.appendChild(imgTitle);
+
+    const imgHint = document.createElement('p');
+    imgHint.style.cssText = '  margin:-8px 0 14px;';
+    imgHint.textContent = 'Lets users attach images to each record of this table from the edit form, with a thumbnail column in the grid.';
+    workspaceEl.appendChild(imgHint);
+
+    const imgBlock = document.createElement('div');
+    imgBlock.className = 'column-block';
+    imgBlock.appendChild(createCheckbox('images_enabled', 'Enable Images For This Table', imagesCfg.enabled, (val) => {
+        imagesCfg.enabled = val;
+        touchImages();
+    }, false));
+    imgBlock.appendChild(createTextInput(
+        'images_label', 'Display Label',
+        imagesCfg.label || '',
+        (val) => { imagesCfg.label = val; touchImages(); }
+    ));
+    imgBlock.appendChild(createNumberInput(
+        'images_max', 'Max Images Per Record (1-50)',
+        imagesCfg.max_per_record ?? 10,
+        (val) => { imagesCfg.max_per_record = Math.min(50, Math.max(1, parseInt(val, 10) || 1)); touchImages(); }
+    ));
+    imgBlock.appendChild(createCheckbox('images_grid', 'Show Thumbnail Column In Grid', imagesCfg.show_in_grid, (val) => {
+        imagesCfg.show_in_grid = val;
+        touchImages();
+    }, true));
+    workspaceEl.appendChild(imgBlock);
 }

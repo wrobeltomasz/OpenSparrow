@@ -181,6 +181,7 @@ function os_boot_app(): array
     require_once __DIR__ . '/db.php';
     require_once __DIR__ . '/api_helpers.php';
     require_once __DIR__ . '/automations.php';
+    require_once __DIR__ . '/images.php';
 
     $session = new PhpSession();
     $request = new PhpRequest();

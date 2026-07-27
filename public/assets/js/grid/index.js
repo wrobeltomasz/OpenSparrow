@@ -13,6 +13,8 @@ import { loadSubtableCounts } from './body/subtable-counts.js';
 import { initPreviewPopup, clearPreviewCache } from './comments/preview-popup.js';
 import { loadM2mColumns, clearM2mStore } from './m2m/loader.js';
 import { initM2mPopup } from './m2m/popup.js';
+import { loadImageColumn, clearImageStore } from './images/loader.js';
+import { initImagePopup } from './images/popup.js';
 import { computeVirtual } from './cells/virtual-cell.js';
 
 export { getState, setFilteredData };
@@ -31,6 +33,7 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         state.fkCache = new Map();
         clearPreviewCache();
         clearM2mStore();
+        clearImageStore();
         state.fullData = data.rows || [];
         state.serverSearchMode = !!data.truncated;
         state.serverSearchActive = false;
@@ -154,6 +157,7 @@ export async function renderGrid(schema) {
     loadCommentCounts(pageRows);
     loadSubtableCounts(pageRows, schema);
     loadM2mColumns(pageRows, schema);
+    loadImageColumn(pageRows, schema);
 }
 
 export async function resetFilters(schema) {
@@ -213,4 +217,5 @@ export async function serverSearchRows(schema, search) {
 document.addEventListener('DOMContentLoaded', () => {
     initPreviewPopup();
     initM2mPopup();
+    initImagePopup();
 });

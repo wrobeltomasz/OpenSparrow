@@ -39,6 +39,7 @@ if (!$schemas->hasTable($table)) {
 $tableCfg   = $schemas->table($table);
 $rawSchema  = $schemas->raw();
 $m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
+$imagesCfg  = images_config($rawSchema, $table);
 $error      = '';
 
 // Row-level authorization gate, applied before any read or write. Records the user
@@ -139,6 +140,12 @@ ob_start();
                 <?php echo htmlspecialchars($siLabel); ?>
             </button>
         <?php endforeach; ?>
+        <?php if ($imagesCfg) : ?>
+            <button class="tab-btn" data-tab="tab-images" role="tab" aria-selected="false">
+                <img class="tab-icon" src="assets/icons/image.png" alt="">
+                <?php echo htmlspecialchars($imagesCfg['label'] ?: t('images.label'), ENT_QUOTES, 'UTF-8'); ?>
+            </button>
+        <?php endif; ?>
         <button class="tab-btn" data-tab="tab-files" role="tab" aria-selected="false">
             <img class="tab-icon" src="assets/icons/folder_open.png" alt="">
             <?= t('form.tab_files') ?>
@@ -292,6 +299,62 @@ ob_start();
     </div><!-- /tab-panel#tab-sub-<?php echo (int)$si; ?> -->
     <?php endforeach; ?>
 
+    <?php if ($imagesCfg) : ?>
+        <?php $galleryImages = images_for_record($GLOBALS['conn'], $table, (int)$id); ?>
+    <div class="tab-panel" id="tab-images" role="tabpanel">
+    <div class="subtable-container form-wrapper">
+        <div class="ef-panel-head">
+            <?php $imgLabel = $imagesCfg['label'] ?: t('images.label'); ?>
+            <h3 class="ef-panel-title"><?php echo htmlspecialchars($imgLabel, ENT_QUOTES, 'UTF-8'); ?></h3>
+            <?php
+            $imgCountText = t('images.count', [
+                'n'   => count($galleryImages),
+                'max' => $imagesCfg['max_per_record'],
+            ]);
+            ?>
+            <span class="img-count" id="imgCount"><?php
+                echo htmlspecialchars($imgCountText, ENT_QUOTES, 'UTF-8');
+            ?></span>
+        </div>
+
+        <?php if (!empty($galleryImages)) : ?>
+            <div class="img-gallery">
+                <?php foreach ($galleryImages as $gi) : ?>
+                    <?php
+                    $giUrl  = 'file_download.php?uuid=' . urlencode($gi['uuid']);
+                    $giName = htmlspecialchars($gi['display_name'] ?: $gi['name'], ENT_QUOTES, 'UTF-8');
+                    ?>
+                    <div class="img-gallery-item">
+                        <a href="<?php echo $giUrl; ?>" target="_blank" rel="noopener">
+                            <img src="<?php echo $giUrl; ?>&amp;thumb=1" alt="<?php echo $giName; ?>" loading="lazy">
+                        </a>
+                        <div class="img-gallery-name"><?php echo $giName; ?></div>
+                        <?php if (!$isReadOnly) : ?>
+                            <button type="button" class="btn-action img-delete-btn"
+                                    data-uuid="<?php echo htmlspecialchars($gi['uuid'], ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= t('images.delete') ?>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else : ?>
+            <p class="ef-empty"><?= t('images.empty') ?></p>
+        <?php endif; ?>
+
+        <?php if (!$isReadOnly && count($galleryImages) < $imagesCfg['max_per_record']) : ?>
+            <div class="img-upload-row">
+                <input type="file" id="imageInput" accept="image/*" class="ef-upload-input">
+                <button type="button" id="btnImageUpload" class="btn-action ef-upload-btn"><?= t('images.upload') ?></button>
+                <span id="imageUploadStatus" class="ef-upload-status"></span>
+            </div>
+        <?php elseif (!$isReadOnly) : ?>
+            <p class="ef-empty"><?= t('images.limit_reached') ?></p>
+        <?php endif; ?>
+    </div>
+    </div><!-- /tab-panel#tab-images -->
+    <?php endif; ?>
+
     <div class="tab-panel" id="tab-files" role="tabpanel">
     <div class="subtable-container form-wrapper">
         <div class="ef-panel-head">
@@ -417,6 +480,10 @@ ob_start();
     window.EDIT_ID         = <?php echo json_encode((int)$id, JSON_THROW_ON_ERROR); ?>;
     window.CURRENT_USER_ID = <?php echo json_encode($session->userId(), JSON_THROW_ON_ERROR); ?>;
     window.USER_ROLE       = <?php echo json_encode($session->role(), JSON_THROW_ON_ERROR); ?>;
+    window.IMAGE_TEXT      = <?php echo json_encode([
+        'select_first'   => t('images.select_first'),
+        'confirm_delete' => t('images.confirm_delete'),
+    ], JSON_THROW_ON_ERROR); ?>;
 </script>
 
 <script nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
@@ -509,6 +576,71 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         input.addEventListener('input', validate);
         validate();
+    });
+
+    // Record image gallery — upload + delete (same api/files.php endpoints, gallery mode)
+    const btnImgUpload = document.getElementById('btnImageUpload');
+    if (btnImgUpload) {
+        btnImgUpload.addEventListener('click', async () => {
+            const input    = document.getElementById('imageInput');
+            const statusEl = document.getElementById('imageUploadStatus');
+
+            if (!input.files || !input.files.length) {
+                statusEl.textContent = window.IMAGE_TEXT.select_first;
+                statusEl.style.color = 'var(--danger)';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('action', 'upload');
+            formData.append('csrf_token', window.CSRF_TOKEN);
+            formData.append('file', input.files[0]);
+            formData.append('related_table', <?php echo json_encode($tableCfg->name); ?>);
+            formData.append('related_id',    <?php echo json_encode($id); ?>);
+            formData.append('related_field', '__image');
+
+            statusEl.textContent = 'Uploading...';
+            statusEl.style.color = 'var(--text)';
+            btnImgUpload.disabled = true;
+
+            try {
+                const res  = await fetch('api/files.php', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    statusEl.textContent = 'Error: ' + (data.error || 'Upload failed');
+                    statusEl.style.color = 'var(--danger)';
+                    btnImgUpload.disabled = false;
+                }
+            } catch (err) {
+                statusEl.textContent = 'Network error during upload.';
+                statusEl.style.color = 'var(--danger)';
+                btnImgUpload.disabled = false;
+            }
+        });
+    }
+
+    document.querySelectorAll('.img-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (!confirm(window.IMAGE_TEXT.confirm_delete)) return;
+            btn.disabled = true;
+            try {
+                const res = await fetch('api/files.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', uuid: btn.dataset.uuid, csrf_token: window.CSRF_TOKEN }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                btn.disabled = false;
+            }
+        });
     });
 
     // Inline file upload

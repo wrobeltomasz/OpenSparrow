@@ -92,6 +92,18 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         headRow.appendChild(thM2m);
     }
 
+    // Image gallery column — one TH when the table has images enabled
+    const imagesCfg = schema.tables[state.currentTable]?.images;
+    if (imagesCfg?.enabled && imagesCfg.show_in_grid) {
+        const thImg = document.createElement('th');
+        thImg.className = 'th-images';
+        const thImgLabel = document.createElement('span');
+        thImgLabel.className = 'th-label';
+        thImgLabel.textContent = imagesCfg.label || I18n.t('images.label');
+        thImg.appendChild(thImgLabel);
+        headRow.appendChild(thImg);
+    }
+
     if (!isReadOnly) {
         const thActions = document.createElement('th');
         thActions.className = 'th-actions';

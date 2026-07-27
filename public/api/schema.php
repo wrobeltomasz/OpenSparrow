@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $userRole = $_SESSION['role'] ?? 'viewer';
 require_once __DIR__ . '/../../includes/config_store.php';
+require_once __DIR__ . '/../../includes/images.php';
 $schemaData = config_get('schema');
 if (!is_array($schemaData) || !isset($schemaData['tables'])) {
     http_response_code(500);
@@ -109,6 +110,12 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
         'subtables'    => $tableConfig['subtables'] ?? [],
         'many_to_many' => $m2mList,
     ];
+
+    // Image gallery config (normalised; absent key = feature off for this table)
+    $imagesCfg = images_config($schemaData, $tableName);
+    if ($imagesCfg !== null) {
+        $publicSchema[$tableName]['images'] = $imagesCfg;
+    }
 }
 
 $pageSize = null;
