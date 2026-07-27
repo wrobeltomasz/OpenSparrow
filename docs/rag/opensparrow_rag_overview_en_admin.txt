@@ -2,8 +2,9 @@ OpenSparrow — Admin Panel Overview
 ==================================
 The Admin panel (/admin/) is where the entire OpenSparrow application is configured:
 tables, forms, dashboards, calendars, workflows, automations, users, and system maintenance.
-Available to the admin role (and partially to editor). All configuration is stored as JSON
-files in config/ — no code changes required.
+Available to the admin role (and partially to editor). All application configuration is stored
+in the database (the spw_config table, one JSONB row per key) — no code changes and no config
+files to edit; only database.json and security.json remain on disk as bootstrap files.
 
 Current version: 3.0.
 Stack: PHP 8.4+, PostgreSQL 14+, vanilla JavaScript (ES6+). No npm, no composer required.
@@ -22,8 +23,8 @@ System tables live in the PostgreSQL schema from database.json (default "app"),
 all prefixed spw_.
 
 
-Navigation sections: Overview, Data Management, Workflows, Knowledge Base, System,
-Configuration. A Docs button in the header opens built-in searchable documentation
+Navigation sections (collapsible left sidebar): Overview, Data Management, Workflows,
+Knowledge Base, System. A Docs button in the header opens built-in searchable documentation
 (Getting Started / Schema / Grid Features / Admin Panel / Troubleshooting).
 
 
@@ -48,8 +49,14 @@ Schema:
   - Subtable configuration (FK back-references shown inside edit forms)
   - M2M (many-to-many) configuration
 
-Add Table:
-  - Wizard for creating a new PostgreSQL table and registering it in the schema
+Schema — inner tabs (reachable from inside the Schema tab, not as separate sidebar items):
+  - Add Table: wizard for creating a new PostgreSQL table and registering it in the schema
+  - Menu Preview: drag-and-drop editor of the frontend sidebar navigation ("menu" config key)
+    — visibility, order, nesting; saved automatically on drop
+  - Schema Map (ERD): read-only entity-relationship diagram of all tables with FK relations
+    drawn as arrows; click a table to jump to its editor, with zoom and pan controls
+  - M2M Builder: visual builder for many-to-many relations — left/right FK tables,
+    junction table name, display columns
 
 Dashboard:
   - Add widgets: stat card (COUNT/SUM/AVG aggregate), bar chart, pie chart, table (recent records list)
@@ -69,13 +76,11 @@ Calendar:
 
 CSV Import:
   - Upload CSV, map columns to table fields, preview, import in batches
-  - Import history tracked in spw_csv_import_log
+  - Import history tracked in spw_imports (one row per import run) with per-row
+    detail in spw_import_rows_log
 
 Files:
   - File management settings: allowed types, size limits ("files" config key)
-
-Menu Preview:
-  - Sidebar navigation structure ("menu" config key): visibility, order, grouping
 
 User Records:
   - Configures the "My records" panel every user opens from the avatar menu
@@ -83,10 +88,6 @@ User Records:
   - Column Mapping tab: per table, which columns are concatenated into each
     assigned record's label
   - Global Settings tab: how many recently-assigned records are shown per table
-
-Schema Map (ERD):
-  - Visual entity-relationship diagram: all tables with FK relations drawn as arrows
-  - Click a table to jump to its schema editor; zoom and pan controls
 
 Views:
   - Read-only PostgreSQL views exposed as grid pages ("views" config key)
@@ -188,10 +189,6 @@ Health Check:
   - Database connection status, table bloat analysis, index advisor,
     slow query log, backup status
 
-M2M Builder:
-  - Visual builder for many-to-many relations: left/right FK tables, junction table
-    name, display columns
-
 ETL:
   - Scheduled or on-demand batch import from one or more external source databases
     (MySQL, MariaDB, PostgreSQL, SQLite) or a CSV file fetched from an FTP/FTPS
@@ -235,6 +232,9 @@ Anonymization (GDPR):
   - Schedule: manual / daily / weekly / monthly via cron/cron_anonymization.php
   - Scan Schema suggests PII columns by matching column names against a keyword
     dictionary; run history in spw_anonymization_log
+  - Each history entry can expand into a GDPR/EDPB compliance report (JSON, stored in
+    spw_anonymization_report) shown inline, with a Download button saving it as a
+    .json file for the data-protection record
 
 Migrations:
   - Database migrations tab: list of system migrations (pending / applied),
@@ -265,11 +265,6 @@ Users:
     last 10 user-related audit log entries (who did what, when)
   - Global Settings: org-wide user policy — minimum password length and default role
     for new users, enforced when adding users or changing passwords
-
-
-CONFIGURATION
--------------
-Run Notifications Cron — trigger the notification worker manually.
 
 
 CONFIGURATION STORE (spw_config table)

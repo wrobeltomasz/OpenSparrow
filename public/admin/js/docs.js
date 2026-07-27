@@ -83,6 +83,7 @@ ${_p(s.s0b_desc)}
 ${_ul([
     `<strong>${s.s0b_data_label}:</strong> ${s.s0b_data}`,
     `<strong>${s.s0b_workflows_label}:</strong> ${s.s0b_workflows}`,
+    `<strong>${s.s0b_kb_label}:</strong> ${s.s0b_kb}`,
     `<strong>${s.s0b_system_label}:</strong> ${s.s0b_system}`,
     `<strong>${s.s0b_save_label}:</strong> ${s.s0b_save}`,
     `<strong>${s.s0b_guard_label}:</strong> ${s.s0b_guard}`,
@@ -111,7 +112,16 @@ ${_ul([
     `<code>spw_comments</code> — ${s.s1_t_comments}`,
     `<code>spw_record_snapshots</code> — ${s.s1_t_snapshots}`,
     `<code>spw_record_owners</code> — ${s.s1_t_owners}`,
-    `<code>spw_migrations</code> — ${s.s1_t_migrations}`
+    `<code>spw_migrations</code> — ${s.s1_t_migrations}`,
+    `<code>spw_release_migrations</code> — ${s.s1_t_release_migrations}`,
+    `<code>spw_config</code> — ${s.s1_t_config}`,
+    `<code>spw_config_log</code> — ${s.s1_t_config_log}`,
+    `<code>spw_notes</code> — ${s.s1_t_notes}`,
+    `<code>spw_rag_*</code> — ${s.s1_t_rag}`,
+    `<code>spw_automation_*</code> — ${s.s1_t_automations}`,
+    `<code>spw_imports</code> — ${s.s1_t_imports}`,
+    `<code>spw_etl_*</code> — ${s.s1_t_etl}`,
+    `<code>spw_anonymization_*</code> — ${s.s1_t_anon}`
 ])}
 ${_warn(s.s1_note_strong, s.s1_note_text)}
 

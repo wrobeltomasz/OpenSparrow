@@ -74,6 +74,7 @@ Pick the path that matches your environment. Every path ends at the same place: 
 - **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Knowledge Base** tab. No cloud API required.
 - **Automations** — rule-based triggers on record create/update/delete with template variables, configured from the admin panel.
 - **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab.
+- **Private notes** — a personal notepad in the user menu (`spw_notes`), visible only to its author, optionally linked to a record and carrying a reminder date delivered by the notification cron.
 - **Kanban boards** — drag records between status lanes; multiple boards can be defined in the `board` configuration, each appearing as its own sidebar item.
 - **Saved views** — read-only pages backed by PostgreSQL views, discoverable across multiple schemas and configured from the admin panel.
 - **Printable reports** — configurable print templates with paginated output, defined in the `print` configuration and rendered by `print.php`.
@@ -277,7 +278,7 @@ over HTTP lives under `public/` (entry PHP scripts, `public/admin/`,
 the repository root, *outside* the document root, and cannot be reached over the web.
 
 ### Core directories
-- **`src/`** — OOP application layer (PSR-4, no Composer). Namespaced under `App\`. Sub-directories: `Audit/`, `Csrf/`, `Domain/`, `Form/`, `Http/`, `Persistence/`, `Repository/`, `Support/`. Loaded via `includes/autoload.php`; wired in `includes/bootstrap.php`.
+- **`src/`** — OOP application layer (PSR-4, no Composer). Namespaced under `App\`. Sub-directories: `Audit/`, `Csrf/`, `Domain/`, `Form/`, `Http/`, `Persistence/`, `Repository/`, `Security/`, `Support/`. Loaded via `includes/autoload.php`; wired in `includes/bootstrap.php`.
 - **`public/admin/`** — management panel (schema editor, dashboards, calendar, workflows, users, files, system health). Web-served; self-authenticated (requires role `admin`).
 - **`public/assets/`** — static frontend resources (`css/`, `js/`, `icons/`, `img/`).
 - **`includes/`** — backend helpers. `config.php` centralizes env-driven configuration; `db.php` centralizes PostgreSQL access; `api_helpers.php` holds request/response helpers; `autoload.php` registers the PSR-4 class loader; `bootstrap.php` wires all OOP dependencies.
@@ -302,6 +303,7 @@ All web-served files below live under `public/` (the document root).
 - **`api/schema.php`** — filtered schema endpoint for the frontend (hides backend-only structure).
 - **`api/fk.php`** — proxy endpoint for foreign-key dropdowns (never exposes internal relations).
 - **`api/rag.php`** — RAG knowledge base endpoint (`?action=tags` GET, `?action=query` POST); consumed by the slide-in "Ask AI" panel (`assets/js/agent-panel.js`).
+- **Remaining `api/` endpoints** — `comments.php`, `notes.php`, `owners.php`, `files.php`, `notifications.php`, `views.php`, `print.php`, `mass_edit.php`, `data_cleanup.php`: specialized backends for the corresponding modules. Everything else goes through `api.php`.
 - **`Dockerfile` / `docker-compose.yml`** — containerized deployment (dev stack). **`Dockerfile.standalone`** — single-container image (Nginx + PHP-FPM) used by Render / Railway. **`docker-compose-production.yml`** — hardened production stack.
 - **`render.yaml` / `railway.toml`** — one-click cloud deploy configs.
 - **`phpcs.xml`** — PSR-12 ruleset.
