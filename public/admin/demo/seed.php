@@ -369,6 +369,56 @@ if ($action === 'demo_install') {
             }
         }
 
+        // Demo images — record image gallery entries (spw_files rows tagged
+        // related_field = IMAGES_FIELD), sourced from static PNGs checked into
+        // admin/demo/assets/images/ and copied into storage/files/, same convention
+        // as demo_files above.
+        $demoImageIds   = [];
+        $demoImagePaths = [];
+        if (!empty($demoData['demo_images']) && is_array($demoData['demo_images'])) {
+            require_once __DIR__ . '/../../../includes/images.php';
+            $storagePath = trim((config_get('files') ?? [])['storage_path'] ?? 'storage/files/', '/');
+            $repoRoot    = realpath(__DIR__ . '/../../../');
+            $filesDir    = $repoRoot . '/' . $storagePath;
+            if (!is_dir($filesDir)) {
+                mkdir($filesDir, 0750, true);
+                @file_put_contents($filesDir . '/.htaccess', "Require all denied\n");
+            }
+            $assetsDir = __DIR__ . '/assets/images';
+            $tFiles    = sys_table('files');
+            foreach ($demoData['demo_images'] as $img) {
+                $srcPath = $assetsDir . '/' . basename($img['source_file']);
+                if (!is_file($srcPath)) {
+                    continue;
+                }
+                $content      = file_get_contents($srcPath);
+                $physicalName = bin2hex(random_bytes(16)) . '.png';
+                $dbPath       = $storagePath . '/' . $physicalName;
+                $res = pg_query_params($conn, "
+                    INSERT INTO $tFiles
+                        (name, display_name, type, mime_type, extension, size_bytes, storage_path, uploaded_by, related_table, related_id, related_field)
+                    VALUES
+                        (\$1, \$2, 'image', 'image/png', 'png', \$3, \$4, \$5, \$6, \$7, \$8)
+                    RETURNING id
+                ", [
+                    basename($img['source_file']),
+                    $img['display_name'] ?? basename($img['source_file']),
+                    strlen($content),
+                    $dbPath,
+                    $demoUserIds[$img['author']],
+                    $img['related_table'],
+                    $img['related_id'],
+                    IMAGES_FIELD,
+                ]);
+                if ($res === false) {
+                    admin_db_fail($conn, "demo_install:demo_images:{$type}");
+                }
+                file_put_contents($filesDir . '/' . $physicalName, $content);
+                $demoImageIds[]   = (int) pg_fetch_result($res, 0, 'id');
+                $demoImagePaths[] = $dbPath;
+            }
+        }
+
         // menu config (spw_config key "menu") — apply nested menu layout from demo definition
         $menuKeys = [];
         if (!empty($demoData['menu_items']) && is_array($demoData['menu_items'])) {
@@ -461,6 +511,8 @@ if ($action === 'demo_install') {
             'demo_usernames' => array_column($demoData['demo_users'], 'username'),
             'demo_file_ids'  => $demoFileIds,
             'demo_file_paths' => $demoFilePaths,
+            'demo_image_ids' => $demoImageIds,
+            'demo_image_paths' => $demoImagePaths,
         ];
         file_put_contents(
             $configDir . '/demo_meta.json',
@@ -522,6 +574,19 @@ if ($action === 'demo_uninstall') {
         }
         $repoRoot = realpath(__DIR__ . '/../../../');
         foreach ($meta['demo_file_paths'] ?? [] as $p) {
+            $full = $repoRoot . '/' . $p;
+            if (is_file($full)) {
+                @unlink($full);
+            }
+        }
+
+        // Remove demo images — DB rows plus the physical files
+        $demoImageIds = $meta['demo_image_ids'] ?? [];
+        if (!empty($demoImageIds)) {
+            $imgIdList = '{' . implode(',', array_map('intval', $demoImageIds)) . '}';
+            @pg_query_params($conn, 'DELETE FROM ' . sys_table('files') . ' WHERE id = ANY($1::int[])', [$imgIdList]);
+        }
+        foreach ($meta['demo_image_paths'] ?? [] as $p) {
             $full = $repoRoot . '/' . $p;
             if (is_file($full)) {
                 @unlink($full);

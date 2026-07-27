@@ -621,7 +621,7 @@ function demo_def_crm($conn): array
                 'company_id' => ['reference_table' => 'companies', 'reference_column' => 'id', 'display_column' => 'name'],
             ], 'subtables' => [
                 ['table' => 'activities', 'foreign_key' => 'contact_id', 'label' => 'Activities', 'columns_to_show' => ['type', 'scheduled_at', 'done']],
-            ]],
+            ], 'images' => ['enabled' => true, 'label' => 'Photo', 'max_per_record' => 5, 'show_in_grid' => true]],
             'deals' => ['display_name' => 'Deals', 'schema' => 'spw_crm', 'icon' => 'assets/icons/point_of_sale.png', 'columns' => [
                 'id'             => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique deal identifier'],
                 'company_id'     => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Company', 'description' => 'Company associated with this deal'],
@@ -995,6 +995,15 @@ function demo_def_crm($conn): array
                 'description' => 'Call log summary for John Smith.',
                 'content' => "Date,Channel,Summary\n2026-06-01,Email,Sent updated proposal\n2026-06-05,Call,Discussed contract terms\n",
             ],
+        ],
+        // Demo contact photos — record image gallery (spw_config schema key
+        // tables.contacts.images) demo data. Source PNGs are checked into the repo
+        // under admin/demo/assets/images/ and copied into storage/files at install
+        // time (mirrors demo_files above, but tagged related_field = IMAGES_FIELD).
+        'demo_images' => [
+            ['related_table' => 'contacts', 'related_id' => 1, 'author' => 0, 'source_file' => 'Face_male_1.png', 'display_name' => 'John Smith.png'],
+            ['related_table' => 'contacts', 'related_id' => 3, 'author' => 1, 'source_file' => 'Face_male_2.png', 'display_name' => 'Michael Brown.png'],
+            ['related_table' => 'contacts', 'related_id' => 4, 'author' => 1, 'source_file' => 'Face_feamle_3.png', 'display_name' => 'Emma Wilson.png'],
         ],
         // Demo record ownership ("My records" panel) — assigns a few CRM records to
         // demo users so the panel isn't empty right after install. 'author' indexes
