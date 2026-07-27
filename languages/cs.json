@@ -273,7 +273,13 @@
         "schema_not_found": "Error: Schema for table '{table}' not found.",
         "unknown_save_error": "Unknown error occurred while saving.",
         "save_error": "Error saving data: {msg}",
-        "server_error": "Server Error (PHP/SQL): {msg}"
+        "server_error": "Server Error (PHP/SQL): {msg}",
+        "images_selected": {
+            "one": "Vybrán {n} obrázek",
+            "other": "Vybráno {n} obrázků"
+        },
+        "image_limit": "Můžete připojit až {max} obrázků.",
+        "image_upload_error": "Nahrání obrázku se nezdařilo: {msg}"
     },
     "comments": {
         "delete": "Smazat",

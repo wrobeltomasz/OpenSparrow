@@ -95,7 +95,10 @@ WORKFLOWS (index.php?workflows=1)
 Guided multi-step forms for entering related records in sequence, opened from the
 sidebar menu. Example: Company → Contact → Deal → Quote in one guided flow.
 Each step links to the previous record automatically; some steps allow adding
-multiple records (e.g. several contacts for one company).
+multiple records (e.g. several contacts for one company). If a step's table has an
+image gallery configured, the step form also offers an image upload field; the
+photo is attached to that step's record once it is saved (visible afterwards in
+the record's Images tab).
 
 
 AUTOMATIONS (background behavior)

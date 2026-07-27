@@ -270,7 +270,13 @@
         "schema_not_found": "Error: Schema for table '{table}' not found.",
         "unknown_save_error": "Unknown error occurred while saving.",
         "save_error": "Error saving data: {msg}",
-        "server_error": "Server Error (PHP/SQL): {msg}"
+        "server_error": "Server Error (PHP/SQL): {msg}",
+        "images_selected": {
+            "one": "{n} billede valgt",
+            "other": "{n} billeder valgt"
+        },
+        "image_limit": "Du kan vedhæfte op til {max} billeder.",
+        "image_upload_error": "Billedupload mislykkedes: {msg}"
     },
     "comments": {
         "delete": "Slet",

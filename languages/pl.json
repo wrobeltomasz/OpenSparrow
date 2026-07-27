@@ -273,7 +273,14 @@
         "schema_not_found": "Błąd: Nie znaleziono schematu dla tabeli '{table}'.",
         "unknown_save_error": "Wystąpił nieznany błąd podczas zapisu.",
         "save_error": "Błąd zapisu danych: {msg}",
-        "server_error": "Błąd serwera (PHP/SQL): {msg}"
+        "server_error": "Błąd serwera (PHP/SQL): {msg}",
+        "images_selected": {
+            "one": "Wybrano {n} zdjęcie",
+            "few": "Wybrano {n} zdjęcia",
+            "many": "Wybrano {n} zdjęć"
+        },
+        "image_limit": "Można dołączyć maksymalnie {max} zdjęć.",
+        "image_upload_error": "Przesyłanie zdjęcia nie powiodło się: {msg}"
     },
     "comments": {
         "delete": "Usuń",

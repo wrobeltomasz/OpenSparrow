@@ -270,7 +270,13 @@
         "schema_not_found": "Error: Schema for table '{table}' not found.",
         "unknown_save_error": "Unknown error occurred while saving.",
         "save_error": "Error saving data: {msg}",
-        "server_error": "Server Error (PHP/SQL): {msg}"
+        "server_error": "Server Error (PHP/SQL): {msg}",
+        "images_selected": {
+            "one": "Επιλέχθηκε {n} εικόνα",
+            "other": "Επιλέχθηκαν {n} εικόνες"
+        },
+        "image_limit": "Μπορείτε να επισυνάψετε έως {max} εικόνες.",
+        "image_upload_error": "Η μεταφόρτωση εικόνας απέτυχε: {msg}"
     },
     "comments": {
         "delete": "Διαγραφή",

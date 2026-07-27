@@ -448,6 +448,12 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         // re-fetching (the form is long gone by then).
         stepMeta[currentStepIndex] = { tableSchema };
 
+        // Image gallery config (schema `images` block, same source as edit.php's
+        // gallery tab). Upload itself is deferred to saveAll(), since api/files.php
+        // requires a record id that does not exist until the step is persisted.
+        const imagesCfg = tableSchema.images && tableSchema.images.enabled ? tableSchema.images : null;
+        let pendingImages = [];
+
         // Pre-fetch FK options for all non-injected FK columns in parallel
         const fkOptionMap = {}; // { colName: [{value, label}] }
         const fkCfgMap = tableSchema.foreign_keys || {};
@@ -710,6 +716,48 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
 
         form.appendChild(grid);
 
+        // Image upload field (only for tables with a schema-configured gallery).
+        // The file(s) are held in `pendingImages` and only actually uploaded to
+        // api/files.php once this step's record has been saved and has an id.
+        let imageStatusEl = null;
+        if (imagesCfg) {
+            const imgGroup = document.createElement('div');
+            imgGroup.className = 'form-group';
+
+            const imgLabel = document.createElement('label');
+            imgLabel.textContent = imagesCfg.label || I18n.t('images.label');
+
+            const imgInput = document.createElement('input');
+            imgInput.type = 'file';
+            imgInput.accept = 'image/*';
+            imgInput.multiple = imagesCfg.max_per_record > 1;
+            imgInput.className = 'ef-upload-input';
+
+            imageStatusEl = document.createElement('span');
+            imageStatusEl.className = 'ef-upload-status';
+            imageStatusEl.textContent = I18n.t('workflow.image_limit', { max: imagesCfg.max_per_record });
+
+            imgInput.addEventListener('change', () => {
+                pendingImages = Array.from(imgInput.files || []).slice(0, imagesCfg.max_per_record);
+                imageStatusEl.textContent = pendingImages.length
+                    ? I18n.t('workflow.images_selected', { n: pendingImages.length }, pendingImages.length)
+                    : I18n.t('workflow.image_limit', { max: imagesCfg.max_per_record });
+            });
+
+            imgGroup.appendChild(imgLabel);
+            imgGroup.appendChild(imgInput);
+            imgGroup.appendChild(imageStatusEl);
+            form.appendChild(imgGroup);
+        }
+
+        // Attach the currently pending image selection to a freshly read form
+        // snapshot, so it survives being buffered/edited alongside the record.
+        function snapshotWithImages() {
+            const snap = readForm(form);
+            if (imagesCfg) snap.__images = pendingImages;
+            return snap;
+        }
+
         // Detect FK linkages: for each FK select, check if referenced table has a FK
         // column that also appears in this form → enable "Show related only" checkbox.
         const fkLinkMap = {}; // { dependentCol: masterCol }
@@ -831,8 +879,17 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         function enterEditMode(ri) {
             editingIndex = ri;
             form.reset();
-            writeForm(form, (stepData[currentStepIndex] || [])[ri]);
+            const snap = (stepData[currentStepIndex] || [])[ri];
+            writeForm(form, snap);
             refreshVirtuals();
+            if (imagesCfg) {
+                pendingImages = snap?.__images || [];
+                if (imageStatusEl) {
+                    imageStatusEl.textContent = pendingImages.length
+                        ? I18n.t('workflow.images_selected', { n: pendingImages.length }, pendingImages.length)
+                        : I18n.t('workflow.image_limit', { max: imagesCfg.max_per_record });
+                }
+            }
             if (addBtn) addBtn.textContent = I18n.t('form.update_record');
             if (cancelEditBtn) cancelEditBtn.hidden = false;
             renderMultiList();
@@ -844,6 +901,10 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             editingIndex = null;
             form.reset();
             refreshVirtuals();
+            if (imagesCfg) {
+                pendingImages = [];
+                if (imageStatusEl) imageStatusEl.textContent = I18n.t('workflow.image_limit', { max: imagesCfg.max_per_record });
+            }
             if (addBtn) addBtn.textContent = I18n.t('form.add_record');
             if (cancelEditBtn) cancelEditBtn.hidden = true;
             renderMultiList();
@@ -857,6 +918,12 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
         } else if (bufferedRecords.length > 0) {
             writeForm(form, bufferedRecords[0]);
             refreshVirtuals();
+            if (imagesCfg) {
+                pendingImages = bufferedRecords[0].__images || [];
+                if (imageStatusEl && pendingImages.length) {
+                    imageStatusEl.textContent = I18n.t('workflow.images_selected', { n: pendingImages.length }, pendingImages.length);
+                }
+            }
         }
 
         // Action buttons — Back / (Add to list) / Next. Nothing is saved here.
@@ -871,7 +938,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             backBtn.addEventListener('click', () => {
                 // Preserve whatever is currently entered before stepping back.
                 if (!step.allow_multiple) {
-                    stepData[currentStepIndex] = [readForm(form)];
+                    stepData[currentStepIndex] = [snapshotWithImages()];
                 }
                 goToStep(currentStepIndex - 1);
             });
@@ -888,9 +955,9 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
                 if (!stepData[currentStepIndex]) stepData[currentStepIndex] = [];
                 if (editingIndex !== null) {
                     // Replace the record being edited instead of appending.
-                    stepData[currentStepIndex][editingIndex] = readForm(form);
+                    stepData[currentStepIndex][editingIndex] = snapshotWithImages();
                 } else {
-                    stepData[currentStepIndex].push(readForm(form));
+                    stepData[currentStepIndex].push(snapshotWithImages());
                 }
                 // exitEditMode clears the form, restores labels and re-renders.
                 exitEditMode();
@@ -933,9 +1000,9 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
                     if (!stepData[currentStepIndex]) stepData[currentStepIndex] = [];
                     if (editingIndex !== null) {
                         // Mid-edit: commit the change in place, not as a duplicate.
-                        stepData[currentStepIndex][editingIndex] = readForm(form);
+                        stepData[currentStepIndex][editingIndex] = snapshotWithImages();
                     } else {
-                        stepData[currentStepIndex].push(readForm(form));
+                        stepData[currentStepIndex].push(snapshotWithImages());
                     }
                 }
             } else {
@@ -943,7 +1010,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
                 // the browser's native (localized) prompt and focuses the first
                 // offending field.
                 if (!form.reportValidity()) return;
-                stepData[currentStepIndex] = [readForm(form)];
+                stepData[currentStepIndex] = [snapshotWithImages()];
             }
 
             if (returnToReview) {
@@ -1016,6 +1083,14 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
                         dt.textContent = colDef.display_name || colName;
                         const dd = document.createElement('dd');
                         dd.textContent = String(val);
+                        dl.appendChild(dt);
+                        dl.appendChild(dd);
+                    }
+                    if (Array.isArray(snap.__images) && snap.__images.length > 0) {
+                        const dt = document.createElement('dt');
+                        dt.textContent = meta?.tableSchema?.images?.label || I18n.t('images.label');
+                        const dd = document.createElement('dd');
+                        dd.textContent = I18n.t('workflow.images_selected', { n: snap.__images.length }, snap.__images.length);
                         dl.appendChild(dt);
                         dl.appendChild(dd);
                     }
@@ -1105,6 +1180,27 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
 
                     savedRecords.add(snap);
                     if (stepResults[i] === undefined) stepResults[i] = result.id;
+
+                    // Upload any images buffered for this record now that it has an
+                    // id — reuses the exact api/files.php gallery-upload contract
+                    // that edit.php's image tab uses (related_field = '__image').
+                    if (Array.isArray(snap.__images) && snap.__images.length > 0) {
+                        for (const file of snap.__images) {
+                            const formData = new FormData();
+                            formData.append('action', 'upload');
+                            formData.append('csrf_token', getCsrfToken());
+                            formData.append('file', file);
+                            formData.append('related_table', step.table);
+                            formData.append('related_id', String(result.id));
+                            formData.append('related_field', '__image');
+
+                            const imgRes = await fetch('api/files.php', { method: 'POST', body: formData });
+                            const imgData = await imgRes.json();
+                            if (!imgData.success) {
+                                throw new Error(I18n.t('workflow.image_upload_error', { msg: imgData.error || '' }));
+                            }
+                        }
+                    }
                 }
             }
 
