@@ -222,6 +222,8 @@ ${_ul([
 ])}
 ${_h4(s.s5_validation_head)}
 ${_p(s.s5_validation_desc)}
+${_h4(s.s5_proc_head)}
+${_p(s.s5_proc_desc)}
 
 ${_h3('doc-6', s.s6_head)}
 ${_p(s.s6_desc)}
