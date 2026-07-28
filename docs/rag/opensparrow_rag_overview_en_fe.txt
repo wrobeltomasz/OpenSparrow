@@ -56,6 +56,9 @@ The main way to browse and edit data:
     the rest; hovering the cell opens a popup with larger previews, and clicking a
     preview opens the full-size image in a new tab. The column is read-only —
     images are added and removed from the record's edit form.
+  - Highlight rules: when the admin defines row-highlight conditions for a table
+    (Data Management → Schema), rows whose column value matches a condition are
+    colored accordingly; if multiple rules match, the first one defined wins.
 
 
 CREATE & EDIT FORMS

@@ -1052,4 +1052,90 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         touchImages();
     }, true));
     workspaceEl.appendChild(imgBlock);
+
+    // ── Highlight Rules ─────────────────────────────────────────────────────
+    // Row-level conditional formatting for the grid, mirroring the Views module's
+    // color_rules mechanism (public/admin/js/views_editor.js buildRuleRow).
+    if (!Array.isArray(tableData.highlight_rules)) tableData.highlight_rules = [];
+
+    const hlTitle = document.createElement('h3');
+    hlTitle.textContent = 'Highlight Rules';
+    hlTitle.style.marginTop = '40px';
+    workspaceEl.appendChild(hlTitle);
+
+    const hlHint = document.createElement('p');
+    hlHint.style.cssText = '  margin:-8px 0 14px;';
+    hlHint.textContent = 'Colors an entire grid row when the chosen column matches the condition. Rules are evaluated in order; the first match wins.';
+    workspaceEl.appendChild(hlHint);
+
+    const hlContainer = document.createElement('div');
+    workspaceEl.appendChild(hlContainer);
+
+    const renderHighlightRules = () => {
+        hlContainer.innerHTML = '';
+        const columnNames = Object.keys(tableData.columns);
+        const rules = tableData.highlight_rules;
+
+        rules.forEach((rule, idx) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:8px;';
+
+            const colSel = document.createElement('select');
+            colSel.className = 'adm-input w-160';
+            columnNames.forEach(colName => {
+                const o = document.createElement('option');
+                o.value = colName;
+                o.textContent = colName;
+                if (rule.column === colName) o.selected = true;
+                colSel.appendChild(o);
+            });
+            colSel.addEventListener('change', () => { rules[idx].column = colSel.value; markDirty(); });
+
+            const opSel = document.createElement('select');
+            opSel.className = 'adm-input w-80';
+            ['==', '!=', '>', '>=', '<', '<=', 'contains'].forEach(op => {
+                const o = document.createElement('option');
+                o.value = op;
+                o.textContent = op;
+                if (rule.op === op) o.selected = true;
+                opSel.appendChild(o);
+            });
+            opSel.addEventListener('change', () => { rules[idx].op = opSel.value; markDirty(); });
+
+            const valInp = document.createElement('input');
+            valInp.type = 'text';
+            valInp.className = 'adm-input w-110';
+            valInp.value = rule.value ?? '';
+            valInp.placeholder = 'Value';
+            valInp.addEventListener('input', () => { rules[idx].value = valInp.value; markDirty(); });
+
+            const colorInp = document.createElement('input');
+            colorInp.type = 'color';
+            colorInp.className = 'adm-color';
+            colorInp.value = rule.color ?? '#fee2e2';
+            colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; markDirty(); });
+
+            const btnDel = document.createElement('button');
+            btnDel.type = 'button';
+            btnDel.className = 'btn btn-danger btn-xs';
+            btnDel.textContent = '✕ Remove';
+            btnDel.addEventListener('click', () => { rules.splice(idx, 1); markDirty(); renderHighlightRules(); });
+
+            row.append(colSel, opSel, valInp, colorInp, btnDel);
+            hlContainer.appendChild(row);
+        });
+
+        const btnAdd = document.createElement('button');
+        btnAdd.type = 'button';
+        btnAdd.className = 'btn btn-success btn-sm';
+        btnAdd.textContent = '+ Add Highlight Rule';
+        btnAdd.addEventListener('click', () => {
+            rules.push({ column: columnNames[0] || '', op: '==', value: '', color: '#fee2e2' });
+            markDirty();
+            renderHighlightRules();
+        });
+        hlContainer.appendChild(btnAdd);
+    };
+
+    renderHighlightRules();
 }

@@ -7,6 +7,7 @@ import { CellRenderer } from '../cells/registry.js';
 import { buildExpandButton } from './drilldown.js';
 import { makeIconButton } from '../dom.js';
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from '../../util/record-tooltip.js';
+import { matchHighlightRule } from '../highlight-rules.js';
 
 // Import cell renderers so they self-register
 import '../cells/fk-cell.js';
@@ -46,9 +47,11 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
     const pageRows = getPageRows();
     const subtables = schema.tables[state.currentTable]?.subtables || [];
     const hasSubtables = subtables.length > 0;
+    const highlightRules = schema.tables[state.currentTable]?.highlight_rules || [];
 
     for (const row of pageRows) {
         const tr = document.createElement('tr');
+        const highlightColor = matchHighlightRule(row, highlightRules);
 
         if (!isReadOnly) {
             const tdSelect = document.createElement('td');
@@ -106,6 +109,12 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
         // Actions column
         if (!isReadOnly) {
             tr.appendChild(buildActionsCell(row, schema, isReadOnly, onTableReload));
+        }
+
+        // Applied per-td (not on tr) because tbody tr:nth-child(even) td / :hover td
+        // both set their own background on the td, which would otherwise mask a tr-level color.
+        if (highlightColor) {
+            tr.querySelectorAll('td').forEach(td => { td.style.backgroundColor = highlightColor; });
         }
 
         tbody.appendChild(tr);

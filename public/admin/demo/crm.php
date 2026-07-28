@@ -728,6 +728,8 @@ function demo_def_crm($conn): array
             ], 'foreign_keys' => [
                 'deal_id'  => ['reference_table' => 'deals',  'reference_column' => 'id', 'display_column' => 'title'],
                 'quote_id' => ['reference_table' => 'quotes', 'reference_column' => 'id', 'display_column' => 'quote_number'],
+            ], 'highlight_rules' => [
+                ['column' => 'amount_total', 'op' => '<', 'value' => '50000', 'color' => '#fee2e2'],
             ]],
             'assets' => ['display_name' => 'Assets', 'schema' => 'spw_crm', 'icon' => 'assets/icons/database.png', 'columns' => [
                 'id'                   => ['type' => 'number',  'display_name' => 'ID', 'description' => 'Unique asset identifier'],

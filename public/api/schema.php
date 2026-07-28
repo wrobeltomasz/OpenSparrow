@@ -102,13 +102,28 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
         ];
     }
 
+    // Row-level conditional formatting rules for the grid
+    $highlightRules = [];
+    foreach ($tableConfig['highlight_rules'] ?? [] as $rule) {
+        if (empty($rule['column']) || empty($rule['op']) || !isset($rule['value']) || empty($rule['color'])) {
+            continue;
+        }
+        $highlightRules[] = [
+            'column' => $rule['column'],
+            'op'     => $rule['op'],
+            'value'  => $rule['value'],
+            'color'  => $rule['color'],
+        ];
+    }
+
     $publicSchema[$tableName] = [
-        'display_name' => $tableConfig['display_name'] ?? $tableName,
-        'columns'      => $publicColumns,
-        'icon'         => $tableConfig['icon'] ?? null,
-        'foreign_keys' => $foreignKeys,
-        'subtables'    => $tableConfig['subtables'] ?? [],
-        'many_to_many' => $m2mList,
+        'display_name'    => $tableConfig['display_name'] ?? $tableName,
+        'columns'         => $publicColumns,
+        'icon'            => $tableConfig['icon'] ?? null,
+        'foreign_keys'    => $foreignKeys,
+        'subtables'       => $tableConfig['subtables'] ?? [],
+        'many_to_many'    => $m2mList,
+        'highlight_rules' => $highlightRules,
     ];
 
     // Image gallery config (normalised; absent key = feature off for this table)
