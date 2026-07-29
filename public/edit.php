@@ -246,10 +246,18 @@ ob_start();
 
     <?php foreach ($subtablesData as $si => $sd) : ?>
         <?php
-        $sTable  = $sd['config']['table'];
-        $sFk     = $sd['config']['foreign_key'];
-        $sCols   = $sd['config']['columns_to_show'] ?? ['id'];
-        $siLabel = $sd['config']['label'] ?? ($sd['schema']->displayName ?? $sTable);
+        $sTable      = $sd['config']['table'];
+        $sFk         = $sd['config']['foreign_key'];
+        $sCols       = $sd['config']['columns_to_show'] ?? ['id'];
+        $siLabel     = $sd['config']['label'] ?? ($sd['schema']->displayName ?? $sTable);
+        $sColumnsMap = [];
+        foreach ($sd['schema']->columns as $sColName => $sColCfg) {
+            $sColumnsMap[$sColName] = [
+                'display_name' => $sColCfg->displayName,
+                'type'         => $sColCfg->type,
+                'enum_colors'  => $sColCfg->enumColors,
+            ];
+        }
         ?>
     <div class="tab-panel" id="tab-sub-<?php echo (int)$si; ?>" role="tabpanel">
         <div class="subtable-container form-wrapper">
@@ -266,7 +274,8 @@ ob_start();
                 <p class="ef-empty"><?php echo htmlspecialchars(t('form.no_records'), ENT_QUOTES, 'UTF-8'); ?></p>
             <?php else : ?>
                 <div class="edit-subtable-wrapper">
-                    <table>
+                    <?php $sColumnsJson = htmlspecialchars(json_encode($sColumnsMap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8'); ?>
+                    <table data-columns='<?php echo $sColumnsJson; ?>'>
                         <thead>
                             <tr>
                                 <?php foreach ($sCols as $c) : ?>
@@ -277,7 +286,8 @@ ob_start();
                         </thead>
                         <tbody>
                             <?php foreach ($sd['rows'] as $r) : ?>
-                                <tr>
+                                <?php $sRowJson = htmlspecialchars(json_encode($r, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8'); ?>
+                                <tr data-row='<?php echo $sRowJson; ?>' data-title="<?php echo htmlspecialchars($siLabel); ?>">
                                     <?php foreach ($sCols as $c) : ?>
                                         <?php $displayVal = $r[$c . '__display'] ?? $r[$c] ?? ''; ?>
                                         <td><?php echo htmlspecialchars((string)$displayVal); ?></td>
@@ -695,6 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script type="module" src="assets/js/edit/subtable-tooltip.js?v=<?php echo @filemtime('assets/js/edit/subtable-tooltip.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php
 $extraScripts = ob_get_clean();
 include __DIR__ . '/../templates/layout.php';

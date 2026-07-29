@@ -110,9 +110,8 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
             }
             $sTableCfg = $this->schemas->table($sName);
             $sFk       = $sub['foreign_key'];
-            $sCols     = $sub['columns_to_show'] ?? ['id'];
 
-            $selCols    = array_unique(array_merge(['id'], $sCols));
+            $selCols    = array_unique(array_merge(['id'], array_keys($sTableCfg->dbColumns())));
             $selColsSql = implode(', ', array_map([Identifier::class, 'quote'], $selCols));
 
             $sql = sprintf(
