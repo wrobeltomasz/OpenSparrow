@@ -72,7 +72,7 @@ Pick the path that matches your environment. Every path ends at the same place: 
 - **File management** — per-record attachments with tagging and search, configurable via the admin panel.
 - **WCAG 2.1 focus** — accessibility-oriented UI.
 - **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Knowledge Base** tab. No cloud API required.
-- **Automations** — rule-based triggers on record create/update/delete with template variables, configured from the admin panel.
+- **Automations** — rule-based triggers on record create/update/delete with nested AND/OR conditions, change detection, and template variables. Actions can update the record, notify users, create a related record, queue an email, or call an outbound webhook. Configured from the admin panel, with a per-rule run history.
 - **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab.
 - **Private notes** — a personal notepad in the user menu (`spw_notes`), visible only to its author, optionally linked to a record and carrying a reminder date delivered by the notification cron.
 - **Kanban boards** — drag records between status lanes; multiple boards can be defined in the `board` configuration, each appearing as its own sidebar item.
@@ -81,7 +81,8 @@ Pick the path that matches your environment. Every path ends at the same place: 
 - **ETL module** — scheduled data transfers from MySQL or PostgreSQL sources into PostgreSQL targets, with multi-step flows, run logs, and a cron worker.
 - **Data anonymization** — GDPR-oriented column scrubbing with preview, scheduled runs, and an audit trail in `spw_anonymization_log`.
 - **Bulk operations** — mass edit, CSV import, and search-and-replace data cleanup, all with preview before applying.
-- *(Planned)* REST API and webhook engine for n8n / Make / custom integrations.
+- **Outbound webhooks (n8n / Make / custom)** — any automation rule can POST/PUT/PATCH/DELETE a JSON payload to an external endpoint on record create, update or delete. The body carries the rule, event and record (mapped fields or the whole row, plus the pre-change state on update and delete). Requests can be signed with an HMAC SHA-256 `X-Sparrow-Signature` header and/or carry custom headers for the receiver's own auth; signing secrets and header values are stored encrypted. Failed sends optionally retry on timeouts and 5xx/429. Point the URL at an n8n Webhook node and no plugin is needed on either side.
+- *(Planned)* Inbound REST API with token authentication, so external systems can read and write OpenSparrow data. Today every endpoint is session-authenticated, so integrations are outbound-only.
 
 ---
 

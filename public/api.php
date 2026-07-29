@@ -1249,6 +1249,9 @@ try {
 
             check_record_ownership($conn, $tableCfg, $table, $deleteId, (int)$_SESSION['user_id'], 'Forbidden: you do not own this record.');
 
+            // Delete automations only ever see this snapshot — the row is gone afterwards.
+            $deletedRecord = auto_capture_old_record($conn, $schemaName, $table, $deleteId, 'delete');
+
             $sql = sprintf('DELETE FROM %s.%s WHERE %s=$1', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));
             $res = @pg_query_params($conn, $sql, [$deleteId]);
             if (!$res) {
@@ -1259,7 +1262,7 @@ try {
             }
 
             log_user_action($conn, (int)$_SESSION['user_id'], 'DELETE', $table, $deleteId);
-            evaluate_automation_rules($conn, $schemaName, $table, $deleteId, 'delete', (int)$_SESSION['user_id']);
+            evaluate_automation_rules($conn, $schemaName, $table, $deleteId, 'delete', (int)$_SESSION['user_id'], $deletedRecord);
             echo json_encode(['ok' => true]);
             exit;
         }

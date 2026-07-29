@@ -111,10 +111,12 @@ wizard stays on the current step until you correct the data.
 
 AUTOMATIONS (background behavior)
 ---------------------------------
-Admins can configure rules that run automatically when you create or update a record —
-for example auto-filling fields, sending you a notification, or creating a follow-up
-record in another table. If a record changes "by itself" after saving, an automation
-rule did it.
+Admins can configure rules that run automatically when you create, update or delete a
+record — for example auto-filling fields, sending you a notification, creating a
+follow-up record in another table, sending an email, or notifying an external system
+(such as an n8n workflow). If a record changes "by itself" after saving, an automation
+rule did it. Rules run as part of your save, so a slow external receiver can make the
+save take a moment longer.
 
 
 AI ASSISTANT (RAG)

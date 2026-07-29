@@ -1,12 +1,43 @@
 </div><!-- /admin-layout -->
 
-<?php $appJsVer = @filemtime('js/app.js'); ?>
-<!-- Import map: modules import "./app.js" (no query) while the entry tag uses the
-     cache-busting "?v=" URL. Without this map the browser would treat those as two
-     different modules and instantiate app.js twice (duplicate listeners, split
-     state: lost saves, phantom dirty flags). Keep both URLs identical. -->
+<?php
+// One cache-busting version for the whole admin module graph. app.js pulls in ~30
+// sibling modules with bare specifiers, so versioning the entry file alone left every
+// one of them frozen in the browser cache after an update — a shipped change simply
+// never reached users, and the symptom ("this feature does nothing") gives no hint
+// that stale JavaScript is the cause.
+//
+// The map rewrites every module URL to the SAME "?v=", which is what makes this safe:
+// a module reachable under two different URLs is instantiated twice by the browser
+// (duplicate listeners, split state: lost saves, phantom dirty flags). One version for
+// the whole graph, derived from the newest file, keeps every specifier consistent.
+// Built from globs so a new module is covered without touching this file.
+$moduleGroups = [
+    './js/'                   => glob(__DIR__ . '/../js/*.js') ?: [],
+    '../assets/js/util/'      => glob(__DIR__ . '/../../assets/js/util/*.js') ?: [],
+    '../assets/js/dashboard/' => glob(__DIR__ . '/../../assets/js/dashboard/*.js') ?: [],
+];
+
+$appJsVer = 0;
+foreach ($moduleGroups as $files) {
+    foreach ($files as $file) {
+        $appJsVer = max($appJsVer, (int) @filemtime($file));
+    }
+}
+
+$importMap = [];
+foreach ($moduleGroups as $urlPrefix => $files) {
+    foreach ($files as $file) {
+        $spec              = $urlPrefix . basename($file);
+        $importMap[$spec] = $spec . '?v=' . $appJsVer;
+    }
+}
+?>
 <script type="importmap">
-    {"imports": {"./js/app.js": "./js/app.js?v=<?php echo $appJsVer; ?>"}}
+    <?php echo json_encode(
+        ['imports' => $importMap],
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG
+    ); ?>
 </script>
 <script type="module" src="js/app.js?v=<?php echo $appJsVer; ?>"></script>
 <script>

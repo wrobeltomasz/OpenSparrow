@@ -10,10 +10,12 @@
 // Old state comes from auto_capture_old_record() called by writers BEFORE the UPDATE
 // Templates support {{record.field}}, {{old_record.field}}, {{current_user.id}}, {{today}} (condition values too)
 // Webhooks can carry an X-Sparrow-Signature header (HMAC SHA-256 of the JSON body) when the action has a secret
+// (stored encrypted as secret_enc), plus free-form custom headers for the receiver's own auth (e.g. n8n Header Auth)
+// Delete rules run against the caller's pre-delete snapshot, since the row is gone by then
 // Executes actions: update fields (with template placeholders {{record.field}}, {{current_user.id}}), create notifications (with daily de-duplication), insert related records,
 // send outbound HTTP webhooks (JSON payload with mapped record fields), or queue emails to spw_automation_emails (delivered by cron/cron_notifications.php)
 // Webhook and email respect record ownership (owner_restricted tables) and write to the audit trail via log_user_action()
-// Logs each run to spw_automation_runs; called from api.php after INSERT/PATCH
+// Logs each run to spw_automation_runs; called from api.php after INSERT/PATCH/DELETE
 
 declare(strict_types=1);
 
@@ -35,19 +37,23 @@ function auto_load_config(): array
  * (changed / changed_from / changed_to) and {{ old_record.field }} templates
  * can compare old vs new values. Callers invoke this BEFORE running the UPDATE
  * and pass the result to evaluate_automation_rules(). Returns null (skipping
- * the extra SELECT) when no enabled update rule targets the table.
+ * the extra SELECT) when no enabled rule for $event targets the table.
+ *
+ * Delete writers call it with $event = 'delete': the row is gone by the time the
+ * rules run, so this snapshot becomes the record the delete rules see.
  */
 function auto_capture_old_record(
     PgSql\Connection $conn,
     string $tableSchema,
     string $table,
-    int $recordId
+    int $recordId,
+    string $event = 'update'
 ): ?array {
     $hasRule = array_any(
         auto_load_config(),
         static fn(array $r): bool => !empty($r['enabled'])
             && ($r['trigger_table'] ?? '') === $table
-            && ($r['trigger_event'] ?? '') === 'update'
+            && ($r['trigger_event'] ?? '') === $event
     );
     if (!$hasRule) {
         return null;
@@ -65,7 +71,8 @@ function auto_capture_old_record(
 
 /**
  * Evaluate automation rules for a given table event and execute matching actions.
- * Called from api.php after INSERT and PATCH mutations.
+ * Called from api.php after INSERT, PATCH and DELETE mutations. Delete events
+ * require $oldRecord — see auto_capture_old_record().
  */
 function evaluate_automation_rules(
     PgSql\Connection $conn,
@@ -76,10 +83,6 @@ function evaluate_automation_rules(
     int $userId,
     ?array $oldRecord = null
 ): void {
-    if ($event === 'delete') {
-        return;
-    }
-
     $all   = auto_load_config();
     $rules = array_filter($all, static function (array $r) use ($table, $event): bool {
         return !empty($r['enabled'])
@@ -91,15 +94,24 @@ function evaluate_automation_rules(
         return;
     }
 
-    $sql    = sprintf('SELECT * FROM %s.%s WHERE id = $1', pg_ident($tableSchema), pg_ident($table));
-    $recRes = @pg_query_params($conn, $sql, [$recordId]);
-    if (!$recRes) {
-        return;
-    }
-    $record = pg_fetch_assoc($recRes);
-    pg_free_result($recRes);
-    if (!$record) {
-        return;
+    if ($event === 'delete') {
+        // The row no longer exists — the caller's pre-delete snapshot IS the record.
+        // Without one there is nothing to evaluate or ship to the receiver.
+        if ($oldRecord === null) {
+            return;
+        }
+        $record = $oldRecord;
+    } else {
+        $sql    = sprintf('SELECT * FROM %s.%s WHERE id = $1', pg_ident($tableSchema), pg_ident($table));
+        $recRes = @pg_query_params($conn, $sql, [$recordId]);
+        if (!$recRes) {
+            return;
+        }
+        $record = pg_fetch_assoc($recRes);
+        pg_free_result($recRes);
+        if (!$record) {
+            return;
+        }
     }
 
     foreach ($rules as $rule) {
@@ -233,12 +245,17 @@ function auto_execute_action(
     string $event = '',
     ?array $oldRecord = null
 ): ?string {
+    // "update" edits the triggering row, which no longer exists on delete events.
+    if ($event === 'delete' && ($action['type'] ?? '') === 'update') {
+        return 'update: not available on delete events';
+    }
+
     return match ($action['type'] ?? '') {
         'update'        => auto_action_update($conn, $tableSchema, $table, $recordId, $record, $action, $userId, $oldRecord),
         'notify'        => auto_action_notify($conn, $recordId, $ruleId, $record, $action, $userId, $oldRecord),
         'create_record' => auto_action_create_record($conn, $tableSchema, $record, $action, $userId, $oldRecord),
         'webhook'       => auto_action_webhook($conn, $table, $recordId, $record, $action, $userId, $ruleId, $event, $oldRecord),
-        'email'         => auto_action_email($conn, $table, $recordId, $record, $action, $userId, $ruleId, $oldRecord),
+        'email'         => auto_action_email($conn, $table, $recordId, $record, $action, $userId, $ruleId, $oldRecord, $event),
         default         => null,
     };
 }
@@ -258,8 +275,19 @@ function auto_table_cfg(string $table): array
 // Outbound actions (webhook, email) ship record data outside the app, so they
 // re-check the ownership policy: on owner_restricted tables the record must be
 // unowned or owned by the triggering user. Returns error string or null when allowed.
-function auto_owner_guard(PgSql\Connection $conn, string $table, int $recordId, int $userId, string $actionName): ?string
-{
+// Delete events skip the check: the row and its spw_record_owners entry are already
+// gone, so it could only ever fail — the writer enforced ownership before deleting.
+function auto_owner_guard(
+    PgSql\Connection $conn,
+    string $table,
+    int $recordId,
+    int $userId,
+    string $actionName,
+    string $event = ''
+): ?string {
+    if ($event === 'delete') {
+        return null;
+    }
     if (!can_access_record($conn, auto_table_cfg($table), $table, $recordId, $userId)) {
         return $actionName . ': blocked — record is owned by another user';
     }
@@ -413,8 +441,87 @@ function auto_action_create_record(
     return $res === false ? ('create_record failed: ' . pg_last_error($conn)) : null;
 }
 
+// Resolve a webhook signing secret. New rules store it encrypted (secret_enc);
+// rules saved before that carry a plaintext "secret" and keep working until re-saved.
+function auto_webhook_secret(array $action): string
+{
+    $enc = (string) ($action['secret_enc'] ?? '');
+    if ($enc !== '') {
+        require_once __DIR__ . '/crypto.php';
+        return (string) (secret_decrypt($enc) ?? '');
+    }
+    return (string) ($action['secret'] ?? '');
+}
+
+// Header names the transport owns — a rule must not be able to forge the signature,
+// misdeclare the body, or rewrite the request target.
+const AUTO_WEBHOOK_RESERVED_HEADERS = [
+    'content-type',
+    'content-length',
+    'user-agent',
+    'host',
+    'x-sparrow-signature',
+];
+
+// Decrypt the action's custom header values. Header names stay in the clear — the
+// editor and the save validator need them — but the values are credentials, so they
+// live encrypted in headers_enc. A name mapped to an empty string means "declared,
+// no value yet". Rules saved before this carry a plaintext "headers" map and keep
+// working until re-saved.
+function auto_webhook_header_map(array $action): array
+{
+    require_once __DIR__ . '/crypto.php';
+    $out = [];
+    foreach ((array) ($action['headers_enc'] ?? []) as $name => $enc) {
+        $plain = secret_decrypt((string) $enc);
+        if ($plain !== null) {
+            $out[(string) $name] = $plain;
+        }
+    }
+    foreach ((array) ($action['headers'] ?? []) as $name => $val) {
+        if (!array_key_exists((string) $name, $out)) {
+            $out[(string) $name] = (string) $val;
+        }
+    }
+    return $out;
+}
+
+// Build extra request headers from the action's header map (name => template).
+// This is what lets a receiver such as n8n use a Header Auth credential.
+// Values run through the template resolver; CR/LF is stripped to prevent header
+// injection, and reserved names are dropped.
+function auto_webhook_headers(array $action, array $record, int $userId, ?array $oldRecord): array
+{
+    $out = [];
+    foreach (auto_webhook_header_map($action) as $name => $tpl) {
+        $name = trim((string) $name);
+        // RFC 7230 token characters only.
+        if ($name === '' || preg_match('/^[A-Za-z0-9!#$%&\'*+.^_`|~-]+$/', $name) !== 1) {
+            continue;
+        }
+        if (in_array(strtolower($name), AUTO_WEBHOOK_RESERVED_HEADERS, true)) {
+            continue;
+        }
+        $val = auto_resolve_template((string) $tpl, $record, $userId, $oldRecord);
+        $val = trim((string) preg_replace('/[\r\n]+/', ' ', $val));
+        if ($val === '') {
+            continue;
+        }
+        $out[] = $name . ': ' . $val;
+    }
+    return $out;
+}
+
+// A failure worth repeating: the receiver was unreachable, rate-limited or broken,
+// as opposed to a 4xx that says the request itself is wrong and will never succeed.
+function auto_webhook_is_transient(string $curlErr, int $httpCode): bool
+{
+    return $curlErr !== '' || $httpCode === 0 || $httpCode === 408 || $httpCode === 429 || $httpCode >= 500;
+}
+
 // Send an outbound HTTP request with a JSON payload built from the record.
-// Config: url (http/https), method (POST|PUT), payload (map: json_key => template).
+// Config: url (http/https), method (POST|PUT|PATCH|DELETE), payload (map: json_key => template),
+// headers_enc (map: name => encrypted template), secret_enc (HMAC signing key), retries (0-2).
 // Empty payload map sends the full record under "data". Response codes >= 300 are errors.
 function auto_action_webhook(
     PgSql\Connection $conn,
@@ -439,12 +546,12 @@ function auto_action_webhook(
         return 'webhook: PHP curl extension is not available';
     }
 
-    if (($guardErr = auto_owner_guard($conn, $table, $recordId, $userId, 'webhook')) !== null) {
+    if (($guardErr = auto_owner_guard($conn, $table, $recordId, $userId, 'webhook', $event)) !== null) {
         return $guardErr;
     }
 
     $method  = strtoupper(trim((string) ($action['method'] ?? 'POST')));
-    if (!in_array($method, ['POST', 'PUT'], true)) {
+    if (!in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
         $method = 'POST';
     }
 
@@ -461,50 +568,77 @@ function auto_action_webhook(
         }
     }
 
-    $payload = json_encode([
+    $envelope = [
         'rule_id'      => $ruleId,
         'event'        => $event,
         'table'        => $table,
         'record_id'    => $recordId,
         'triggered_by' => $userId,
         'data'         => $data,
-    ], JSON_UNESCAPED_UNICODE);
+    ];
+    // Ship the pre-change state alongside the new one so the receiver can diff
+    // without keeping its own copy. Absent on create (there is no previous state).
+    if ($oldRecord !== null && $event !== 'create') {
+        $envelope['old_data'] = $oldRecord;
+    }
+    $payload = json_encode($envelope, JSON_UNESCAPED_UNICODE);
 
     $headers = [
         'Content-Type: application/json',
         'User-Agent: OpenSparrow-Automation/' . (defined('OPENSPARROW_VERSION') ? OPENSPARROW_VERSION : ''),
     ];
+    $headers = array_merge($headers, auto_webhook_headers($action, $record, $userId, $oldRecord));
     // Optional signing secret (GitHub/Stripe webhook pattern): the receiver can
     // recompute HMAC SHA-256 over the raw body to verify origin and integrity.
-    $secret = (string) ($action['secret'] ?? '');
+    $secret = auto_webhook_secret($action);
     if ($secret !== '') {
         $headers[] = 'X-Sparrow-Signature: sha256=' . hash_hmac('sha256', (string) $payload, $secret);
     }
 
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_CUSTOMREQUEST  => $method,
-        CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_HTTPHEADER     => $headers,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT        => 10,
-        CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2,
-    ]);
-    curl_exec($ch);
-    $curlErr  = curl_error($ch);
-    $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    curl_close($ch);
+    // Retries are opt-in: each attempt blocks the user's request for up to the
+    // full timeout, so the default stays 0 and the ceiling is deliberately low.
+    $retries  = max(0, min(2, (int) ($action['retries'] ?? 0)));
+    $attempt  = 0;
+    $curlErr  = '';
+    $httpCode = 0;
+
+    while (true) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST  => $method,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => $headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+        ]);
+        curl_exec($ch);
+        $curlErr  = curl_error($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+
+        if ($curlErr === '' && $httpCode > 0 && $httpCode < 300) {
+            break;
+        }
+        if ($attempt >= $retries || !auto_webhook_is_transient($curlErr, $httpCode)) {
+            break;
+        }
+        // 500 ms, then 1500 ms.
+        usleep($attempt === 0 ? 500000 : 1500000);
+        $attempt++;
+    }
 
     log_user_action($conn, $userId, 'AUTO_WEBHOOK', $table, $recordId);
 
+    $suffix = $attempt > 0 ? ' (after ' . ($attempt + 1) . ' attempts)' : '';
     if ($curlErr !== '') {
-        return 'webhook failed: ' . $curlErr;
+        return 'webhook failed: ' . $curlErr . $suffix;
     }
     if ($httpCode >= 300 || $httpCode === 0) {
-        return 'webhook failed: endpoint returned HTTP ' . $httpCode;
+        return 'webhook failed: endpoint returned HTTP ' . $httpCode . $suffix;
     }
     return null;
 }
@@ -520,7 +654,8 @@ function auto_action_email(
     array $action,
     int $userId,
     string $ruleId,
-    ?array $oldRecord = null
+    ?array $oldRecord = null,
+    string $event = ''
 ): ?string {
     $rawRecipients = $action['recipients'] ?? [];
     if (is_string($rawRecipients)) {
@@ -537,7 +672,7 @@ function auto_action_email(
         return 'email: subject is required';
     }
 
-    if (($guardErr = auto_owner_guard($conn, $table, $recordId, $userId, 'email')) !== null) {
+    if (($guardErr = auto_owner_guard($conn, $table, $recordId, $userId, 'email', $event)) !== null) {
         return $guardErr;
     }
 

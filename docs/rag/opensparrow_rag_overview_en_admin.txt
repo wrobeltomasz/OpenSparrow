@@ -142,15 +142,37 @@ Workflow Manager:
 Automations:
   - Event-driven rules executed by the backend on record events
   - Rule list shows name, table, event, status; Edit / History / Delete per rule
-  - Triggers: After create (INSERT), After update (PATCH)
+  - Triggers: After create (INSERT), After update (PATCH), After delete (DELETE)
   - Conditions: AND/OR groups, nestable; operators equals, not equals, contains,
-    not contains, is empty, is not empty
+    not contains, is empty, is not empty, numeric/date comparisons, and change
+    detection (changed, not changed, changed from, changed to)
   - Actions:
-      1. Update fields on this record
+      1. Update fields on this record — not available on delete events (the row is gone)
       2. Send notification — recipient user ID, title, optional link; one notification
          per (rule, record, user, day), duplicates ignored
       3. Create record in another table — target table + field mapping
-  - Values support variables {{ record.field_name }} and {{ current_user.id }}
+      4. Send webhook (HTTP request) — see below
+      5. Send email — queued to spw_automation_emails, delivered by the notification cron
+  - Values support variables {{ record.field_name }}, {{ old_record.field_name }},
+    {{ current_user.id }} and {{ today }}
+  - Webhook action (the integration path for n8n, Make and custom receivers):
+      * Method POST / PUT / PATCH / DELETE, http(s) URL — point it at an n8n Webhook node
+      * JSON body: { rule_id, event, table, record_id, triggered_by, data } plus old_data
+        on update and delete events. An empty payload mapping sends the whole record
+        as "data"; otherwise each mapped JSON key gets a resolved template value
+      * Secret — when set, the request carries X-Sparrow-Signature: sha256=<HMAC of the
+        raw body>, so the receiver can verify origin. Stored encrypted, never shown back
+        in the UI; leave the field blank to keep the saved value, or use "Clear secret"
+      * Headers — free-form name/value map for the receiver's own auth (e.g. an n8n
+        Header Auth credential). Names stay visible; values are stored encrypted and
+        never sent back to the browser — leave one blank to keep the saved value,
+        remove the row to delete it, and note that renaming a header clears its value.
+        Content-Type, Content-Length, User-Agent, Host and X-Sparrow-Signature are set
+        by OpenSparrow and cannot be overridden
+      * On failure — optional 1 or 2 retries with backoff, applied only to timeouts and
+        5xx/429 responses; a 4xx is never repeated. Sending is synchronous, so retries
+        delay the user's save (5 s connect / 10 s response timeout per attempt)
+      * Webhook and email skip records owned by another user on owner_restricted tables
   - Run History: last 100 executions per rule — time, table, record ID, event,
     status (ok / error / skipped), error message; stored in spw_automation_runs
 

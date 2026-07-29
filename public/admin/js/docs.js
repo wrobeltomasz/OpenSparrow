@@ -507,6 +507,11 @@ ${_h4(s.s14_actions_label)}
 ${_p(s.s14_actions)}
 ${_h4(s.s14_vars_label)}
 ${_p(s.s14_vars)}
+${_h4(s.s14_n8n_label)}
+${_p(s.s14_n8n_intro)}
+${_ol([s.s14_n8n1, s.s14_n8n2, s.s14_n8n3, s.s14_n8n4, s.s14_n8n5])}
+${_p(s.s14_n8n_payload)}
+${_warn(s.s14_n8n_warn_label, s.s14_n8n_warn)}
 ${_h4(s.s14_history_label)}
 ${_p(s.s14_history)}
 ${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;')}

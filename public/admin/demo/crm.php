@@ -669,7 +669,7 @@ function demo_def_crm($conn): array
                 'deal_id'    => ['reference_table' => 'deals',    'reference_column' => 'id', 'display_column' => 'title'],
                 'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
             ]],
-            'leads' => ['display_name' => 'Leads', 'schema' => 'spw_crm', 'icon' => 'assets/icons/person_text.png', 'columns' => [
+            'leads' => ['display_name' => 'Leads', 'schema' => 'spw_crm', 'icon' => 'assets/icons/person_text.png', 'hidden' => true, 'columns' => [
                 'id'                   => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique lead identifier'],
                 'source'               => ['type' => 'enum',    'show_in_grid' => true, 'options' => ['Web', 'Referral', 'Cold Call', 'Event', 'Ads', 'Other'], 'enum_colors' => ['Web' => '#93c5fd', 'Referral' => '#6ee7b7', 'Cold Call' => '#d1d5db', 'Event' => '#fcd34d', 'Ads' => '#c4b5fd', 'Other' => '#d1d5db'], 'display_name' => 'Source', 'description' => 'How this lead was acquired'],
                 'first_name'           => ['type' => 'text',    'show_in_grid' => true, 'display_name' => 'First Name', 'not_null' => true, 'description' => 'Lead first name'],
@@ -683,7 +683,7 @@ function demo_def_crm($conn): array
             ], 'foreign_keys' => [
                 'converted_contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
             ]],
-            'products' => ['display_name' => 'Products', 'schema' => 'spw_crm', 'icon' => 'assets/icons/shopping_cart.png', 'columns' => [
+            'products' => ['display_name' => 'Products', 'schema' => 'spw_crm', 'icon' => 'assets/icons/shopping_cart.png', 'hidden' => true, 'columns' => [
                 'id'          => ['type' => 'number',  'display_name' => 'ID', 'description' => 'Unique product identifier'],
                 'sku'         => ['type' => 'text',    'show_in_grid' => true, 'not_null' => true, 'display_name' => 'SKU', 'description' => 'Stock Keeping Unit — unique product code'],
                 'name'        => ['type' => 'text',    'show_in_grid' => true, 'not_null' => true, 'display_name' => 'Name', 'description' => 'Product or service name'],
@@ -695,7 +695,7 @@ function demo_def_crm($conn): array
             ], 'many_to_many' => [
                 ['label' => 'Interested Contacts', 'junction_table' => 'product_contacts', 'self_fk' => 'product_id', 'other_fk' => 'contact_id', 'other_table' => 'contacts', 'display_column' => 'last_name'],
             ]],
-            'quotes' => ['display_name' => 'Quotes', 'schema' => 'spw_crm', 'icon' => 'assets/icons/ballot.png', 'columns' => [
+            'quotes' => ['display_name' => 'Quotes', 'schema' => 'spw_crm', 'icon' => 'assets/icons/ballot.png', 'hidden' => true, 'columns' => [
                 'id'           => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique quote identifier'],
                 'deal_id'      => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Deal', 'description' => 'Deal this quote is attached to'],
                 'quote_number' => ['type' => 'text',   'show_in_grid' => true, 'display_name' => 'Quote #', 'not_null' => true, 'description' => 'Human-readable quote identifier'],
@@ -711,7 +711,7 @@ function demo_def_crm($conn): array
             ], 'subtables' => [
                 ['table' => 'invoices', 'foreign_key' => 'quote_id', 'label' => 'Invoices', 'columns_to_show' => ['invoice_number', 'status', 'amount_total', 'due_date']],
             ]],
-            'invoices' => ['display_name' => 'Invoices', 'schema' => 'spw_crm', 'icon' => 'assets/icons/file_present.png', 'columns' => [
+            'invoices' => ['display_name' => 'Invoices', 'schema' => 'spw_crm', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'columns' => [
                 'id'             => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique invoice identifier'],
                 'deal_id'        => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Deal', 'description' => 'Deal this invoice belongs to (optional)'],
                 'quote_id'       => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Quote', 'description' => 'Quote this invoice was generated from (optional)'],
@@ -731,7 +731,7 @@ function demo_def_crm($conn): array
             ], 'highlight_rules' => [
                 ['column' => 'amount_total', 'op' => '<', 'value' => '50000', 'color' => '#fee2e2'],
             ]],
-            'assets' => ['display_name' => 'Assets', 'schema' => 'spw_crm', 'icon' => 'assets/icons/database.png', 'columns' => [
+            'assets' => ['display_name' => 'Assets', 'schema' => 'spw_crm', 'icon' => 'assets/icons/database.png', 'hidden' => true, 'columns' => [
                 'id'                   => ['type' => 'number',  'display_name' => 'ID', 'description' => 'Unique asset identifier'],
                 'asset_tag'            => ['type' => 'text',    'show_in_grid' => true, 'display_name' => 'Tag', 'not_null' => true, 'description' => 'Inventory tag — printed/scanned identifier'],
                 'name'                 => ['type' => 'text',    'show_in_grid' => true, 'not_null' => true, 'display_name' => 'Name', 'description' => 'Asset name or description'],
@@ -765,11 +765,6 @@ function demo_def_crm($conn): array
             ['id' => 'demo_crm_004', 'type' => 'stat_card', 'title' => 'Pipeline Value',       'table' => 'deals',      'width' => 1, 'height' => 1, 'query' => ['type' => 'sum', 'column' => 'value', 'conditions' => [['col' => 'stage', 'op' => '!=', 'val' => 'Won'], ['col' => 'stage', 'op' => '!=', 'val' => 'Lost']]], 'icon' => 'assets/icons/payments.png',     'color' => '#e2b932', 'display_columns' => []],
             ['id' => 'demo_crm_003', 'type' => 'bar_chart', 'title' => 'Deals by Stage',       'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'stage',  'conditions' => []], 'icon' => 'assets/icons/point_of_sale.png','color' => '#fcd34d', 'display_columns' => []],
             ['id' => 'demo_crm_005', 'type' => 'pie_chart', 'title' => 'Activities Status',    'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'done',   'conditions' => []], 'icon' => 'assets/icons/calendar.png',     'color' => '#c4b5fd', 'display_columns' => []],
-            ['id' => 'demo_crm_007', 'type' => 'pie_chart', 'title' => 'Lead Sources',         'table' => 'leads',      'width' => 2, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'source', 'conditions' => []], 'icon' => 'assets/icons/account_tree.png', 'color' => '#c4b5fd', 'display_columns' => []],
-            ['id' => 'demo_crm_008', 'type' => 'bar_chart', 'title' => 'Quotes by Status',     'table' => 'quotes',     'width' => 1, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'status', 'conditions' => []], 'icon' => 'assets/icons/ballot.png',       'color' => '#c4b5fd', 'display_columns' => []],
-            ['id' => 'demo_crm_006', 'type' => 'stat_card', 'title' => 'Active Leads',         'table' => 'leads',      'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => [['col' => 'status', 'op' => '!=', 'val' => 'Lost']]], 'icon' => 'assets/icons/person_text.png', 'color' => '#bb53d0', 'display_columns' => []],
-            ['id' => 'demo_crm_009', 'type' => 'stat_card', 'title' => 'Outstanding Invoices', 'table' => 'invoices',   'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => [['col' => 'status', 'op' => '=', 'val' => 'Sent'], ['col' => 'status', 'op' => '=', 'val' => 'Overdue', 'logic' => 'OR']]], 'icon' => 'assets/icons/file_present.png', 'color' => '#d71919', 'display_columns' => []],
-            ['id' => 'demo_crm_010', 'type' => 'stat_card', 'title' => 'Active Assets',        'table' => 'assets',     'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => [['col' => 'status', 'op' => '=', 'val' => 'Active']]], 'icon' => 'assets/icons/database.png', 'color' => '#2563eb', 'display_columns' => []],
             // Time-series line/area charts — one row (1/3 + 2/3). Both read a spread
             // created_at (see the UPDATE ... created_at seed statements) so the axis
             // covers the last few months.
@@ -779,9 +774,6 @@ function demo_def_crm($conn): array
         'calendar_sources' => [
             ['table' => 'activities', 'date_column' => 'scheduled_at', 'title_column' => 'type', 'color' => '#93c5fd', 'notify_before_days' => 1, 'url_template' => 'edit.php?table=activities&id={id}', 'icon' => 'assets/icons/calendar.png', 'notified_users' => []],
             ['table' => 'deals', 'date_column' => 'expected_close', 'title_column' => 'title', 'color' => '#fcd34d', 'notify_before_days' => 3, 'url_template' => 'edit.php?table=deals&id={id}', 'icon' => 'assets/icons/point_of_sale.png', 'notified_users' => []],
-            ['table' => 'quotes', 'date_column' => 'valid_until', 'title_column' => 'quote_number', 'color' => '#c4b5fd', 'notify_before_days' => 7, 'url_template' => 'edit.php?table=quotes&id={id}', 'icon' => 'assets/icons/ballot.png', 'notified_users' => []],
-            ['table' => 'invoices', 'date_column' => 'due_date', 'title_column' => 'invoice_number', 'color' => '#f87171', 'notify_before_days' => 7, 'url_template' => 'edit.php?table=invoices&id={id}', 'icon' => 'assets/icons/file_present.png', 'notified_users' => []],
-            ['table' => 'assets', 'date_column' => 'warranty_end', 'title_column' => 'name', 'color' => '#d1d5db', 'notify_before_days' => 14, 'url_template' => 'edit.php?table=assets&id={id}', 'icon' => 'assets/icons/database.png', 'notified_users' => []],
         ],
         // Kanban board — Deals grouped by their sales Stage. Dragging a card
         // between lanes moves the deal along the pipeline (updates deals.stage).
@@ -838,11 +830,11 @@ function demo_def_crm($conn): array
                     ['op' => '>', 'value' => 100000, 'color' => '#2b9348'],
                 ]],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_leads_funnel' => ['schema' => 'spw_crm', 'display_name' => 'CRM Leads Funnel', 'menu_name' => 'Leads Funnel', 'icon' => 'assets/icons/account_tree.png', 'hidden' => false, 'description' => 'Lead count by qualification status.', 'columns' => [
+            'v_demo_crm_leads_funnel' => ['schema' => 'spw_crm', 'display_name' => 'CRM Leads Funnel', 'menu_name' => 'Leads Funnel', 'icon' => 'assets/icons/account_tree.png', 'hidden' => true, 'description' => 'Lead count by qualification status.', 'columns' => [
                 'status'     => ['display_name' => 'Status'],
                 'lead_count' => ['display_name' => 'Leads', 'summary' => 'sum'],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_revenue' => ['schema' => 'spw_crm', 'display_name' => 'CRM Revenue', 'menu_name' => 'Revenue Summary', 'icon' => 'assets/icons/file_present.png', 'hidden' => false, 'description' => 'Invoice count & total by status.', 'columns' => [
+            'v_demo_crm_revenue' => ['schema' => 'spw_crm', 'display_name' => 'CRM Revenue', 'menu_name' => 'Revenue Summary', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'Invoice count & total by status.', 'columns' => [
                 'status'        => ['display_name' => 'Status'],
                 'invoice_count' => ['display_name' => 'Invoices',     'summary' => 'sum'],
                 // SUMIF demo: total counted only for non-draft invoices
@@ -850,14 +842,14 @@ function demo_def_crm($conn): array
                     'column' => 'status', 'op' => '!=', 'value' => 'Draft',
                 ]],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_assets_by_category' => ['schema' => 'spw_crm', 'display_name' => 'Assets by Category', 'menu_name' => 'Assets Summary', 'icon' => 'assets/icons/database.png', 'hidden' => false, 'description' => 'Asset count & book value by category.', 'columns' => [
+            'v_demo_crm_assets_by_category' => ['schema' => 'spw_crm', 'display_name' => 'Assets by Category', 'menu_name' => 'Assets Summary', 'icon' => 'assets/icons/database.png', 'hidden' => true, 'description' => 'Asset count & book value by category.', 'columns' => [
                 'category'    => ['display_name' => 'Category'],
                 'asset_count' => ['display_name' => 'Assets',       'summary' => 'sum'],
                 'total_value' => ['display_name' => 'Total Value',  'summary' => 'max'],
             ], 'drill_down' => ['enabled' => false]],
             // Showcase view: default row grouping (group_rows) with per-group subtotals,
             // SUMIF (paid revenue), COUNTIF (unpaid invoices), AVG and color rules.
-            'v_demo_crm_revenue_by_period' => ['schema' => 'spw_crm', 'display_name' => 'Revenue by Period', 'menu_name' => 'Revenue by Period', 'icon' => 'assets/icons/file_present.png', 'hidden' => false, 'description' => 'Invoices grouped by month with subtotals, SUMIF (paid revenue) and COUNTIF (unpaid invoices).', 'group_rows' => 'year_month', 'columns' => [
+            'v_demo_crm_revenue_by_period' => ['schema' => 'spw_crm', 'display_name' => 'Revenue by Period', 'menu_name' => 'Revenue by Period', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'Invoices grouped by month with subtotals, SUMIF (paid revenue) and COUNTIF (unpaid invoices).', 'group_rows' => 'year_month', 'columns' => [
                 'year'           => ['display_name' => 'Year'],
                 'year_month'     => ['display_name' => 'Month',      'aggregate' => ''],
                 'invoice_number' => ['display_name' => 'Invoice #',  'aggregate' => 'count', 'summary' => 'count'],

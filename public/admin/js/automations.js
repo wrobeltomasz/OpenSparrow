@@ -26,6 +26,7 @@ function autoStatusPill(anchor, msg, type = 'success') {
 const AUTO_EVENTS = [
     { value: 'create', label: 'After create' },
     { value: 'update', label: 'After update' },
+    { value: 'delete', label: 'After delete' },
 ];
 
 const AUTO_OPS = [
@@ -57,15 +58,34 @@ const AUTO_ACTION_TYPES = [
 ];
 
 const AUTO_WEBHOOK_METHODS = [
-    { value: 'POST', label: 'POST' },
-    { value: 'PUT',  label: 'PUT' },
+    { value: 'POST',   label: 'POST' },
+    { value: 'PUT',    label: 'PUT' },
+    { value: 'PATCH',  label: 'PATCH' },
+    { value: 'DELETE', label: 'DELETE' },
 ];
+
+const AUTO_WEBHOOK_RETRIES = [
+    { value: '0', label: 'No retry' },
+    { value: '1', label: 'Retry once' },
+    { value: '2', label: 'Retry twice' },
+];
+
+// Kept in sync with AUTO_WEBHOOK_RESERVED_HEADERS in includes/automations.php.
+const AUTO_RESERVED_HEADERS = ['content-type', 'content-length', 'user-agent', 'host', 'x-sparrow-signature'];
 
 const AUTO_RUN_COLORS = {
     ok:      { bg: 'rgba(43,147,72,0.12)',  fg: '#2b9348' },
     error:   { bg: 'rgba(208,0,0,0.08)',    fg: '#a80000' },
     skipped: { bg: 'rgba(100,116,139,0.1)', fg: '#64748B' },
 };
+
+// PHP encodes an empty associative array as JSON `[]`, so a map that was saved
+// empty comes back as a JS Array. Assigning string keys to an Array works in
+// memory and even renders, but JSON.stringify() serialises only the indexed
+// elements — the entries silently vanish on save. Normalise before editing.
+function autoAsMap(value) {
+    return (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+}
 
 // ── Shared: bare select ───────────────────────────────────────────
 function makeSelect(options, current, onChange) {
@@ -281,7 +301,7 @@ function buildActionsSection(parsed, tableOptions, getColumns, users) {
                     update:        { type: 'update', set: {} },
                     notify:        { type: 'notify', user_ids: ['{{ current_user.id }}'], title: '', link: '' },
                     create_record: { type: 'create_record', target_table: tableOptions[0]?.value ?? '', set: {} },
-                    webhook:       { type: 'webhook', method: 'POST', url: '', payload: {} },
+                    webhook:       { type: 'webhook', method: 'POST', url: '', payload: {}, headers: {}, retries: 0 },
                     email:         { type: 'email', recipients: [], subject: '', body: '' },
                 };
                 parsed.actions[i] = defaults[typeSel.value] ?? defaults.update;
@@ -325,7 +345,7 @@ function buildActionsSection(parsed, tableOptions, getColumns, users) {
 }
 
 function renderUpdateBody(bodyEl, action, triggerTable, getColumns) {
-    if (!action.set) action.set = {};
+    action.set = autoAsMap(action.set);
 
     const setRows = document.createElement('div');
     bodyEl.appendChild(setRows);
@@ -518,7 +538,7 @@ function renderNotifyBody(bodyEl, action, users) {
 }
 
 function renderCreateRecordBody(bodyEl, action, tableOptions, getColumns) {
-    if (!action.set) action.set = {};
+    action.set = autoAsMap(action.set);
     if (!action.target_table && tableOptions.length > 0) {
         action.target_table = tableOptions[0].value;
     }
@@ -627,103 +647,92 @@ function autoLabeledInput(bodyEl, label, placeholder, value, onInput) {
     return inp;
 }
 
-function renderWebhookBody(bodyEl, action) {
-    if (!action.payload) action.payload = {};
-    if (!action.method) action.method = 'POST';
-
-    bodyEl.appendChild(autoHintText(
-        'Sends a JSON payload to the endpoint. Payload fields below map JSON keys to values '
-        + '(templates allowed). Leave the mapping empty to send the full record.'
-    ));
-
-    // Method + URL row
-    const reqRow = document.createElement('div');
-    reqRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
-    const methodSel = makeSelect(AUTO_WEBHOOK_METHODS, action.method, (v) => { action.method = v; });
-    methodSel.classList.add('w-90');
-    const urlInp = document.createElement('input');
-    urlInp.type        = 'url';
-    urlInp.className   = 'form-input';
-    urlInp.placeholder = 'https://example.com/hooks/opensparrow';
-    urlInp.value       = action.url || '';
-    urlInp.style.flex  = '1';
-    urlInp.addEventListener('input', () => { action.url = urlInp.value; });
-    reqRow.appendChild(methodSel);
-    reqRow.appendChild(urlInp);
-    bodyEl.appendChild(reqRow);
-
-    autoLabeledInput(
-        bodyEl,
-        'Secret',
-        'optional — adds X-Sparrow-Signature header (HMAC SHA-256 of the JSON body)',
-        action.secret,
-        (v) => { action.secret = v; }
-    );
-
-    // Payload mapping: free-text JSON key -> template value
+// Editor for a free-form { key: value } map on an action (payload fields, headers).
+// opts: { label, addLabel, newKey, keyPlaceholder, valuePlaceholder, validateKey,
+//         configuredValues } — configuredValues marks keys whose value is stored
+// server-side and never sent to the browser (header credentials): the input shows a
+// placeholder instead, and staying blank keeps the saved value.
+function autoMapEditor(bodyEl, map, opts) {
     const mapLbl = document.createElement('div');
-    mapLbl.textContent = 'Payload fields';
+    mapLbl.textContent = opts.label;
     mapLbl.style.cssText = 'font-weight:600;margin-bottom:4px;';
     bodyEl.appendChild(mapLbl);
 
     const mapRows = document.createElement('div');
     bodyEl.appendChild(mapRows);
 
-    const btnAddField = document.createElement('button');
-    btnAddField.className   = 'btn btn-sm';
-    btnAddField.textContent = '+ Add Field';
-    btnAddField.style.marginTop = '4px';
-    btnAddField.addEventListener('click', () => {
-        let key = 'field';
+    const btnAdd = document.createElement('button');
+    btnAdd.type        = 'button';
+    btnAdd.className   = 'btn btn-sm';
+    btnAdd.textContent = opts.addLabel;
+    btnAdd.style.marginTop = '4px';
+    btnAdd.addEventListener('click', () => {
+        let key = opts.newKey;
         let n = 1;
-        while (action.payload[key] !== undefined) { key = 'field_' + (++n); }
-        action.payload[key] = '';
-        renderMapRows();
+        while (map[key] !== undefined) { key = opts.newKey + '_' + (++n); }
+        map[key] = '';
+        renderRows();
     });
-    bodyEl.appendChild(btnAddField);
+    bodyEl.appendChild(btnAdd);
 
-    function renderMapRows() {
+    function renderRows() {
         mapRows.innerHTML = '';
-        Object.entries(action.payload ?? {}).forEach(([key, val]) => {
+        Object.entries(map).forEach(([key, val]) => {
             const row = document.createElement('div');
             row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
 
             const keyInp = document.createElement('input');
             keyInp.type        = 'text';
             keyInp.className   = 'form-input';
-            keyInp.placeholder = 'json_key';
+            keyInp.placeholder = opts.keyPlaceholder;
             keyInp.value       = key;
             keyInp.style.flex  = '1';
             keyInp.addEventListener('change', () => {
                 const newKey = keyInp.value.trim();
-                if (!newKey || newKey === key || action.payload[newKey] !== undefined) {
+                if (newKey === key) return;
+                // Tell the user why the name bounced back — a silent revert reads
+                // as "nothing happened" and is impossible to debug from the UI.
+                let reason = '';
+                if (!newKey) {
+                    reason = 'Name cannot be empty.';
+                } else if (map[newKey] !== undefined) {
+                    reason = `"${newKey}" is already used.`;
+                } else if (opts.validateKey && !opts.validateKey(newKey)) {
+                    reason = opts.invalidKeyHint ?? `"${newKey}" is not a valid name.`;
+                }
+                if (reason) {
                     keyInp.value = key;
+                    autoStatusPill(keyInp, reason, 'error');
                     return;
                 }
-                const oldVal = action.payload[key];
-                delete action.payload[key];
-                action.payload[newKey] = oldVal;
-                renderMapRows();
+                const oldVal = map[key];
+                delete map[key];
+                map[newKey] = oldVal;
+                // The server carries stored values over by name, so a rename loses it.
+                if (opts.configuredValues) delete opts.configuredValues[key];
+                renderRows();
             });
 
             const eq = document.createElement('span');
             eq.textContent   = '=';
             eq.style.cssText = 'font-weight:600;';
 
+            const isStored = Boolean(opts.configuredValues?.[key]);
             const valInp = document.createElement('input');
             valInp.type        = 'text';
             valInp.className   = 'form-input';
-            valInp.placeholder = 'value or {{ record.field }} / {{ current_user.id }}';
+            valInp.placeholder = isStored ? 'saved — type a new value to replace it' : opts.valuePlaceholder;
             valInp.value       = val || '';
             valInp.style.flex  = '2';
-            valInp.addEventListener('input', () => { action.payload[key] = valInp.value; });
+            valInp.addEventListener('input', () => { map[key] = valInp.value; });
 
             const btnRm = document.createElement('button');
             btnRm.className   = 'btn btn-sm btn-danger';
             btnRm.textContent = '×';
             btnRm.addEventListener('click', () => {
-                delete action.payload[key];
-                renderMapRows();
+                delete map[key];
+                if (opts.configuredValues) delete opts.configuredValues[key];
+                renderRows();
             });
 
             row.appendChild(keyInp);
@@ -734,7 +743,110 @@ function renderWebhookBody(bodyEl, action) {
         });
     }
 
-    renderMapRows();
+    renderRows();
+}
+
+function autoIsValidHeaderName(name) {
+    return /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/.test(name)
+        && !AUTO_RESERVED_HEADERS.includes(name.toLowerCase());
+}
+
+function renderWebhookBody(bodyEl, action) {
+    action.payload            = autoAsMap(action.payload);
+    action.headers            = autoAsMap(action.headers);
+    action.headers_configured = autoAsMap(action.headers_configured);
+    if (!action.method) action.method = 'POST';
+
+    bodyEl.appendChild(autoHintText(
+        'Sends a JSON payload to the endpoint — point it at an n8n Webhook node, Make, or any '
+        + 'HTTP receiver. Payload fields below map JSON keys to values (templates allowed). '
+        + 'Leave the mapping empty to send the full record.'
+    ));
+
+    // Method + URL row
+    const reqRow = document.createElement('div');
+    reqRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+    const methodSel = makeSelect(AUTO_WEBHOOK_METHODS, action.method, (v) => { action.method = v; });
+    methodSel.classList.add('w-90');
+    const urlInp = document.createElement('input');
+    urlInp.type        = 'url';
+    urlInp.className   = 'form-input';
+    urlInp.placeholder = 'https://n8n.example.com/webhook/opensparrow';
+    urlInp.value       = action.url || '';
+    urlInp.style.flex  = '1';
+    urlInp.addEventListener('input', () => { action.url = urlInp.value; });
+    reqRow.appendChild(methodSel);
+    reqRow.appendChild(urlInp);
+    bodyEl.appendChild(reqRow);
+
+    // The stored secret is never sent back to the browser — the server only reports
+    // whether one exists. Blank keeps it; "Clear" removes it on save.
+    const secretInp = autoLabeledInput(
+        bodyEl,
+        'Secret',
+        action.secret_configured
+            ? 'a secret is saved — type a new one to replace it'
+            : 'optional — adds X-Sparrow-Signature header (HMAC SHA-256 of the JSON body)',
+        '',
+        (v) => { action.secret = v; if (v) action.secret_clear = false; }
+    );
+    if (action.secret_configured) {
+        const btnClear = document.createElement('button');
+        btnClear.className   = 'btn btn-sm';
+        btnClear.textContent = 'Clear secret';
+        btnClear.style.marginBottom = '6px';
+        btnClear.addEventListener('click', () => {
+            action.secret       = '';
+            action.secret_clear = true;
+            secretInp.value       = '';
+            secretInp.placeholder = 'will be cleared on save';
+        });
+        bodyEl.appendChild(btnClear);
+    }
+
+    // Retry row — each attempt blocks the saving user, hence the low ceiling.
+    const retryRow = document.createElement('div');
+    retryRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+    const retryLbl = document.createElement('span');
+    retryLbl.textContent   = 'On failure';
+    retryLbl.style.cssText = 'font-weight:600;min-width:80px;';
+    const retrySel = makeSelect(
+        AUTO_WEBHOOK_RETRIES,
+        String(action.retries ?? 0),
+        (v) => { action.retries = parseInt(v, 10); }
+    );
+    retrySel.classList.add('w-180');
+    retryRow.appendChild(retryLbl);
+    retryRow.appendChild(retrySel);
+    bodyEl.appendChild(retryRow);
+    bodyEl.appendChild(autoHintText(
+        'Retries apply only to timeouts and 5xx/429 responses. A 4xx is never repeated.'
+    ));
+
+    autoMapEditor(bodyEl, action.payload, {
+        label:            'Payload fields',
+        addLabel:         '+ Add Field',
+        newKey:           'field',
+        keyPlaceholder:   'json_key',
+        valuePlaceholder: 'value or {{ record.field }} / {{ current_user.id }}',
+    });
+
+    bodyEl.appendChild(autoHintText(
+        'Custom headers — use these for the receiver’s auth, e.g. an n8n Header Auth credential. '
+        + 'Values are stored encrypted and never sent back to this page: leave one blank to keep '
+        + 'the saved value, or remove the row to delete it. Renaming a header clears its value. '
+        + 'Content-Type, User-Agent and X-Sparrow-Signature are set by OpenSparrow and cannot be overridden.'
+    ));
+    autoMapEditor(bodyEl, action.headers, {
+        label:            'Headers',
+        addLabel:         '+ Add Header',
+        newKey:           'X-Custom-Header',
+        keyPlaceholder:   'Header-Name',
+        valuePlaceholder: 'value or {{ record.field }}',
+        validateKey:      autoIsValidHeaderName,
+        invalidKeyHint:   'Invalid or reserved header name — letters, digits and - _ only, no spaces or colons.',
+        configuredValues: action.headers_configured,
+    });
 }
 
 function renderEmailBody(bodyEl, action) {
