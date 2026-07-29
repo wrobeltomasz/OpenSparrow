@@ -213,6 +213,13 @@ if ($action === 'init_database') {
         $tUsers = table_ident($schema, 'spw_users');
         $tMigrations = table_ident($schema, 'spw_migrations');
 
+        if ($dropSchema) {
+            $dropResult = @pg_query($conn, "DROP SCHEMA IF EXISTS $schemaIdent CASCADE");
+            if (!$dropResult) {
+                throw new Exception('Failed to drop existing schema "' . $schema . '": ' . pg_last_error($conn));
+            }
+        }
+
         // The spw_* DDL is shared with the admin init_db action so the two entry points
         // cannot drift apart — see includes/system_tables.php. This wizard only adds the
         // bootstrap (schema + migration tracker) around it, applies the table/column
