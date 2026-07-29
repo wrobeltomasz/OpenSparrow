@@ -32,35 +32,12 @@ $action = $_GET['action'] ?? '';
 $file = $_GET['file'] ?? '';
 $isDemoMode = DEMO_MODE;
 
-// Deliberate, user-facing API errors thrown by this endpoint's own validation.
-// Catch blocks pass these messages through to the client via admin_error_message();
-// every other Throwable (PDO/pg driver errors, JSON or type failures) is logged
-// and replaced with a generic message so file paths, SQL or credentials never
-// reach the HTTP response. Note: a plain instanceof-RuntimeException whitelist
-// would not work here — PDOException extends RuntimeException.
-final class AdminApiMessage extends RuntimeException
-{
-}
-
-// Map a caught exception to a client-safe message (see AdminApiMessage above).
-function admin_error_message(Throwable $e): string
-{
-    if ($e instanceof AdminApiMessage) {
-        return $e->getMessage();
-    }
-    error_log('[admin_api][unhandled] ' . get_class($e) . ': ' . $e->getMessage());
-    return 'Internal error. Check server logs for details.';
-}
-
-// Never leak raw Postgres errors (schema names, constraint names, column lists)
-// into the HTTP response. Details go to the PHP error log; the client gets a
-// stable, generic message so the operator knows to check the server logs.
-function admin_db_fail($conn, string $context): void
-{
-    $raw = $conn !== null ? pg_last_error($conn) : 'no connection';
-    error_log('[admin_api][' . $context . '] ' . $raw);
-    throw new AdminApiMessage('Database operation failed. Check server logs for details.');
-}
+// Deliberate, user-facing API errors (AdminApiMessage) and the generic error-envelope
+// helpers (admin_error_message, admin_db_fail) live in includes/admin_api_errors.php
+// so public/setup_api.php can reuse demo_install_run() without duplicating them.
+// Note: a plain instanceof-RuntimeException whitelist would not work for
+// admin_error_message() — PDOException extends RuntimeException too.
+require_once __DIR__ . '/../../includes/admin_api_errors.php';
 
 // Demo Mode guard for admin write actions. Emits the standard error envelope and
 // exits when DEMO_MODE is on; $code 0 leaves the HTTP status untouched.

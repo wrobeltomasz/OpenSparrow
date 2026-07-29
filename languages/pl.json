@@ -526,6 +526,8 @@
         "lbl_schema": "Nazwa schematu",
         "help_schema": "Schemat PostgreSQL dla tabel systemowych (domyślnie: app)",
         "create_schema": "Utwórz schemat, jeśli nie istnieje",
+        "install_demo": "Zainstaluj przykładowe dane demo CRM",
+        "help_install_demo": "Dodaje gotowy CRM z przykładowymi firmami, transakcjami, pulpitami i innymi danymi, aby od razu poznać aplikację",
         "admin_default": "Domyślne konto administratora",
         "username_colon": "Nazwa użytkownika:",
         "password_colon": "Hasło:",
@@ -554,7 +556,9 @@
         "network_error": "Błąd sieci",
         "network_error_msg": "Błąd sieci: {msg}",
         "initializing": "Inicjalizacja...",
-        "init_failed": "Inicjalizacja nie powiodła się"
+        "init_failed": "Inicjalizacja nie powiodła się",
+        "demo_installed": "Demo CRM zostało pomyślnie zainstalowane.",
+        "demo_failed_prefix": "Instalacja demo CRM nie powiodła się: "
     },
     "images": {
         "label": "Obrazki",

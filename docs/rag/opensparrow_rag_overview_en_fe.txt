@@ -133,6 +133,12 @@ A "Current table data" checkbox lets you additionally attach the rows currently 
 screen (up to 50 rows / 12 columns) as context — available on the grid page and on
 Views report tables; at least one source (a tag or "Current table data") must be
 selected before sending a question.
+Only the current page of the grid is attached, with unformatted values (raw numbers
+and dates, foreign keys as their labels) and the real record counts, so the assistant
+knows how many records the filter matched and will not answer "how many" questions
+from the visible page alone. If the table has more than 12 columns, the assistant
+keeps the most informative ones (id, required fields, enums and foreign keys) rather
+than simply the leftmost ones.
 
 
 FILES (files.php)

@@ -231,6 +231,11 @@ Demo Systems:
     dashboard widgets, calendar sources, workflows, and views
   - Demo: CRM (companies, contacts, deals, activities, leads, products,
     quotes, invoices, assets) — installs into its own spw_crm schema
+  - The CRM demo also seeds three demo user accounts (demo.anna, demo.marek,
+    demo.julia) plus the collaboration data tied to them: multi-message comment
+    threads on deals, companies, contacts and leads, private notes with reminders,
+    record ownership, file and image attachments, and bell-icon notifications —
+    so the comment, notes and notification panels are populated right after install
   - Reset button removes the demo data and its configuration entries
 
 Health Check:

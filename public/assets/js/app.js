@@ -11,6 +11,7 @@ import { initWorkflows } from './workflows.js';
 import { initDataCleanup } from './data_cleanup.js';
 import { initGridKeyboard } from './grid/keyboard.js';
 import { initMassEdit } from './grid/mass_edit.js';
+import { buildGridContext } from './grid/ai-context.js';
 
 // Break circular dependency: grid/index.js cannot import pagination.js because
 // pagination.js imports renderGrid from grid.js. We wire them together here.
@@ -18,6 +19,10 @@ injectPagination(getPageRows, setupPagination);
 initDataCleanup();
 initGridKeyboard();
 initMassEdit();
+
+// Exposed for agent-panel.js's "current table data" opt-in: model-based grid context
+// (raw values + real record counts) instead of scraping the rendered table.
+window.CURRENT_GRID_CONTEXT = buildGridContext;
 
 const menuEl = document.getElementById('menu');
 const gridTitleEl = document.getElementById('gridTitle');

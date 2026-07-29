@@ -125,6 +125,12 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <label for="create-schema"><?= $e('setup.create_schema') ?></label>
                 </div>
 
+                <div class="checkbox-group">
+                    <input type="checkbox" id="install-demo">
+                    <label for="install-demo"><?= $e('setup.install_demo') ?></label>
+                </div>
+                <div class="help-text"><?= $e('setup.help_install_demo') ?></div>
+
                 <div class="admin-info">
                     <strong><?= $e('setup.admin_default') ?></strong>
                     <div><?= $e('setup.username_colon') ?> <code>admin</code></div>
@@ -192,6 +198,8 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <div><?= $e('setup.password_colon') ?> <code id="created-admin-password"></code></div>
                 </div>
 
+                <div id="demo-install-msg" class="status-message" hidden></div>
+
                 <div style="background: #f0f6fa; padding: 12px; border-radius: var(--radius); border-left: 3px solid #0284c7; font-size: 13px; color: #003366; margin-bottom: 20px;">
                     <strong style="display: block; margin-bottom: 4px;"><?= $e('setup.next_steps') ?></strong>
                     <ol style="margin: 0; padding-left: 16px;">
@@ -224,6 +232,8 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             'initializing'      => t('setup.initializing'),
             'init_failed'       => t('setup.init_failed'),
             'init_btn'          => t('setup.init_btn'),
+            'demo_installed'    => t('setup.demo_installed'),
+            'demo_failed_prefix' => t('setup.demo_failed_prefix'),
         ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
         let currentStep = 1;
         let connectionValid = false;
@@ -354,13 +364,22 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     user: dbData.user,
                     password: dbData.password,
                     schema: dbData.schema,
-                    create_schema: document.getElementById('create-schema').checked
+                    create_schema: document.getElementById('create-schema').checked,
+                    install_demo: document.getElementById('install-demo').checked
                 })
             })
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
                     document.getElementById('created-admin-password').textContent = data.admin_password || '';
+                    const demoMsg = document.getElementById('demo-install-msg');
+                    if (document.getElementById('install-demo').checked) {
+                        demoMsg.hidden = false;
+                        demoMsg.textContent = data.demo_installed
+                            ? T.demo_installed
+                            : (T.demo_failed_prefix + (data.demo_error || ''));
+                        demoMsg.className = 'status-message show ' + (data.demo_installed ? 'success' : 'error');
+                    }
                     currentStep = 5;
                     updateDisplay();
                 } else {

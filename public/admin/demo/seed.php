@@ -27,26 +27,12 @@ if ($action === 'demo_status') {
 }
 
 /* ── Demo: install ───────────────────────────────────────────────── */
-if ($action === 'demo_install') {
-    header('Content-Type: application/json');
-    if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
-        exit;
-    }
-
-    $body    = json_decode(file_get_contents('php://input'), true) ?? [];
-    $type    = $body['type']    ?? '';
-    $confirm = $body['confirm'] ?? '';
-
-    if ($type !== 'crm') {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid demo type.']);
-        exit;
-    }
-    if ($confirm !== 'CONFIRM') {
-        echo json_encode(['status' => 'error', 'error' => 'Confirmation required.']);
-        exit;
-    }
-
+// demo_install_run() holds the actual install logic so it can be reused
+// outside the admin/api.php request cycle (see public/setup_api.php, which
+// calls it directly — after establishing a session for the freshly created
+// admin account — to offer "install demo CRM" as part of the setup wizard).
+function demo_install_run(string $type): array
+{
     try {
         require_once __DIR__ . '/../../../includes/db.php';
         $conn     = db_connect();
@@ -520,10 +506,33 @@ if ($action === 'demo_install') {
         );
 
         log_user_action($conn, (int)($_SESSION['user_id'] ?? 0), 'DEMO_INSTALL', 'demo', null);
-        echo json_encode(['status' => 'success', 'meta' => $meta]);
+        return ['status' => 'success', 'meta' => $meta];
     } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+        return ['status' => 'error', 'error' => $e->getMessage()];
     }
+}
+
+if ($action === 'demo_install') {
+    header('Content-Type: application/json');
+    if ($isDemoMode) {
+        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
+        exit;
+    }
+
+    $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $type    = $body['type']    ?? '';
+    $confirm = $body['confirm'] ?? '';
+
+    if ($type !== 'crm') {
+        echo json_encode(['status' => 'error', 'error' => 'Invalid demo type.']);
+        exit;
+    }
+    if ($confirm !== 'CONFIRM') {
+        echo json_encode(['status' => 'error', 'error' => 'Confirmation required.']);
+        exit;
+    }
+
+    echo json_encode(demo_install_run($type));
     exit;
 }
 

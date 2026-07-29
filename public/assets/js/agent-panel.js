@@ -2,7 +2,8 @@
 // This file is part of OpenSparrow - https://opensparrow.org
 // Licensed under LGPL v3. See LICENCE file for details.
 //
-// Slide-in AI assistant over the grid: sends the visible rows (max 50x12) as page context + the question to api/rag.php, renders answers via rag-render.js. Tag filter, conversation history, abort/stop, clear. CSRF via apiFetch().
+// Slide-in AI assistant over the grid: sends the current page rows (max 50x12) as page context + the question to api/rag.php, renders answers via rag-render.js. Tag filter, conversation history, abort/stop, clear. CSRF via apiFetch().
+// Grid context comes from window.CURRENT_GRID_CONTEXT (grid/ai-context.js, data-model based); DOM scraping below is the fallback for views.php.
 
 import { I18n } from './i18n.js';
 import { renderAnswer } from './rag-render.js';
@@ -211,6 +212,20 @@ function buildFab() {
 // ── Tags ──────────────────────────────────────────────────────────────────────
 
 function readGridContext() {
+    // Grid page: app.js publishes a data-model-based provider (raw values, real record counts,
+    // schema-driven column choice). Fall back to DOM scraping for views.php, which has no such model.
+    if (typeof window.CURRENT_GRID_CONTEXT === 'function') {
+        try {
+            const text = window.CURRENT_GRID_CONTEXT();
+            if (text) return text;
+        } catch (err) {
+            console.error('Grid context provider failed, falling back to DOM:', err);
+        }
+    }
+    return readGridContextFromDom();
+}
+
+function readGridContextFromDom() {
     // #grid table on the grid page; views.php renders its table under #viewContainer (same th[data-col]/tbody shape).
     const table = document.querySelector('#grid table, #viewContainer table');
     if (!table) return '';
@@ -252,7 +267,9 @@ function readGridContext() {
     let text = `table: ${tableName}, ${rows.length} of ${allRows.length} row(s) shown\n`;
     text += headers.join(' | ') + '\n';
     rows.forEach(r => { text += r.join(' | ') + '\n'; });
-    if (hiddenRows > 0) text += `...(${hiddenRows} more rows not shown)\n`;
+    if (hiddenRows > 0) {
+        text += `...(${hiddenRows} more rows not shown — do not compute totals or counts over the whole set)\n`;
+    }
     if (hiddenCols > 0) text += `...(${hiddenCols} more columns not shown)\n`;
     return text;
 }

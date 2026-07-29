@@ -149,6 +149,7 @@ if ($action === 'init_database') {
     $password = $data['password'] ?? '';
     $schema = $data['schema'] ?? 'app';
     $createSchema = (bool)($data['create_schema'] ?? true);
+    $installDemo = (bool)($data['install_demo'] ?? false);
 
     if (!$host || !$dbname || !$user || !$schema) {
         echo json_encode([
@@ -244,7 +245,7 @@ if ($action === 'init_database') {
         error_log('[OpenSparrow] First-run admin account created. Change the password shown in the setup wizard immediately after login.');
         $resAdmin = @pg_query_params(
             $conn,
-            "INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role) SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin' WHERE NOT EXISTS (SELECT 1 FROM $tUsers LIMIT 1)",
+            "INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role) SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin' WHERE NOT EXISTS (SELECT 1 FROM $tUsers LIMIT 1) RETURNING id",
             [$firstAdminHash, $firstAdminSalt, 'argon2id', json_encode($argonOpts)]
         );
 
@@ -252,6 +253,8 @@ if ($action === 'init_database') {
             error_log('setup seed admin error: ' . pg_last_error($conn));
             throw new Exception('Failed to create admin account. Check database permissions.');
         }
+
+        $adminId = pg_num_rows($resAdmin) > 0 ? (int) pg_fetch_result($resAdmin, 0, 'id') : null;
 
         pg_close($conn);
 
@@ -282,11 +285,49 @@ if ($action === 'init_database') {
             throw new Exception('Configuration file was not created.');
         }
 
+        // Optionally seed the CRM demo app right away. Reuses demo_install_run()
+        // from admin/demo/seed.php (the same code the admin panel's "Demo" page
+        // calls) by establishing a real admin session for this request — safe
+        // here only because setup_api.php is single-use and unreachable once
+        // config/database.json exists (guarded at the top of this file).
+        $demoInstalled = false;
+        $demoError = null;
+        if ($installDemo && $adminId !== null) {
+            try {
+                require_once __DIR__ . '/../includes/session.php';
+                require_once __DIR__ . '/../includes/admin_api_errors.php';
+                require_once __DIR__ . '/../includes/api_helpers.php';
+                require_once __DIR__ . '/../includes/config_store.php';
+
+                start_session();
+                session_regenerate_id(true);
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                $_SESSION['user_id'] = $adminId;
+                $_SESSION['username'] = 'admin';
+                $_SESSION['role'] = 'admin';
+                $_SESSION['avatar_id'] = null;
+                $_SESSION['created_at'] = time();
+                $_SESSION['user_agent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+
+                require_once __DIR__ . '/admin/demo/seed.php';
+                $demoResult = demo_install_run('crm');
+                $demoInstalled = ($demoResult['status'] ?? '') === 'success';
+                if (!$demoInstalled) {
+                    $demoError = $demoResult['error'] ?? 'Demo installation failed.';
+                }
+            } catch (Throwable $e) {
+                error_log('setup demo install error: ' . $e->getMessage());
+                $demoError = 'Demo installation failed. Check server logs for details.';
+            }
+        }
+
         echo json_encode([
-            'success'        => true,
-            'message'        => 'System initialized successfully.',
-            'admin_user'     => 'admin',
-            'admin_password' => $tmpPassword,
+            'success'         => true,
+            'message'         => 'System initialized successfully.',
+            'admin_user'      => 'admin',
+            'admin_password'  => $tmpPassword,
+            'demo_installed'  => $demoInstalled,
+            'demo_error'      => $demoError,
         ]);
     } catch (Exception $e) {
         echo json_encode([
