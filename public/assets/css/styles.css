@@ -1730,8 +1730,10 @@ header .dash-filter-label {
   border: 1px solid var(--border-light);
   border-radius: 4px;
 }
+/* Weekday header band — same solid fill as the grid's `thead th`. */
 .calendar-day-name {
-  background: #f8fafc;
+  background: var(--accent-mid);
+  color: var(--accent-dark);
   padding: 10px;
   text-align: center;
   font-weight: 700;
