@@ -134,6 +134,7 @@ if ($action === 'overview') {
         // Keep in sync with the $migrations/$known registry in includes/admin/migrations.php.
         $knownMig = [
             '3.0_baseline',
+            '3.1_table_comments',
         ];
         $pendingMig = count(array_filter($knownMig, static fn($n) => !isset($applied[$n])));
 

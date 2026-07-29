@@ -61,6 +61,11 @@ if ($action === 'init_db') {
 
             // Add future migrations below — never modify the 3.0_baseline entry above.
 
+            // 3.1 — table/column descriptions (COMMENT ON). Metadata only, re-runnable.
+            '3.1_table_comments' => system_tables_comments_ddl(
+                static fn(string $n): string => sys_table($n)
+            ),
+
         ];
 
         // Run each migration that has not been applied yet.
@@ -152,6 +157,7 @@ if ($action === 'migrations_list') {
         // Must match keys in init_db $migrations registry — append only below 3.0_baseline.
         $known = [
             '3.0_baseline',
+            '3.1_table_comments',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");

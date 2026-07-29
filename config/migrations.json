@@ -9,6 +9,6 @@
         "removed_files": [],
         "deprecated_files": [],
         "removed_config_keys": [],
-        "notes": "Added per-table record image galleries with grid thumbnails and edit-form upload."
+        "notes": "Added per-table record image galleries with grid thumbnails and edit-form upload. Adds the 3.1_table_comments database migration, which applies COMMENT ON TABLE / COMMENT ON COLUMN descriptions to every spw_* table (metadata only, no structural change) - run Admin -> Migrations -> Initialize System Tables to apply it."
     }
 }

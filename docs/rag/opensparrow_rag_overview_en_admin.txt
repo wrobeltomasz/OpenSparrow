@@ -6,7 +6,7 @@ Available to the admin role (and partially to editor). All application configura
 in the database (the spw_config table, one JSONB row per key) — no code changes and no config
 files to edit; only database.json and security.json remain on disk as bootstrap files.
 
-Current version: 3.0.
+Current version: 3.1.
 Stack: PHP 8.4+, PostgreSQL 14+, vanilla JavaScript (ES6+). No npm, no composer required.
 License: LGPL v3. Self-hosted, works fully offline.
 
@@ -192,7 +192,9 @@ Cron Notifications:
     the From address (admin field becomes read-only).
 
 Database:
-  - Initialize System Tables (creates/updates spw_* tables — required on first install)
+  - Initialize System Tables (creates/updates spw_* tables — required on first install).
+    Runs every pending database migration, so it also applies the table/column descriptions
+    added in 3.1; safe to re-run at any time (all statements are idempotent)
   - PostgreSQL schema browser, table creation wizard, column type documentation
 
 Demo Systems:
@@ -255,7 +257,18 @@ Anonymization (GDPR):
 
 Migrations:
   - Database migrations tab: list of system migrations (pending / applied),
-    "Apply pending migrations" button
+    "Apply pending migrations" button. Applied migrations are recorded in spw_migrations.
+    Two migrations exist:
+      3.0_baseline        — the whole spw_* schema (tables, constraints, indexes). The
+                            pre-3.0 incremental history was collapsed into this single
+                            append-only entry; 3.0 is the first shipped version
+      3.1_table_comments  — COMMENT ON TABLE / COMMENT ON COLUMN descriptions for every
+                            spw_* table and column. Metadata only: no columns, constraints
+                            or indexes change, so the 3.1 table layout is identical to 3.0.
+                            After applying it, the descriptions are visible in psql \d+,
+                            DBeaver, pgAdmin and anything else reading obj_description()
+  - A fresh install via the setup wizard applies both automatically, so new databases
+    are created with the descriptions already in place
   - Release migrations tab: config cleanup driven by config/migrations.json —
     tracks files and config keys removed between versions, applied manually on upgrade
 
@@ -282,6 +295,71 @@ Users:
     last 10 user-related audit log entries (who did what, when)
   - Global Settings: org-wide user policy — minimum password length and default role
     for new users, enforced when adding users or changing passwords
+
+
+SYSTEM TABLES (spw_*)
+---------------------
+27 system tables, all prefixed spw_ and created in the schema from database.json
+(default "app"). Since 3.1 every table and column also carries its description as a
+PostgreSQL COMMENT. The full column-by-column reference is docs/DATABASE.md; the DDL
+lives in includes/system_tables.php (system_tables_ddl + system_tables_comments_ddl).
+
+Users, authentication and audit:
+  spw_users                  — application accounts (username, Argon2id password hash,
+                               role, active flag, avatar)
+  spw_users_log              — audit trail of every record mutation (who, what action,
+                               which table and record, when)
+  spw_login_attempts         — login attempt journal for the rate limiter; stores a
+                               salted hash of the IP, never the raw address
+  spw_record_snapshots       — full before/after row snapshots (JSONB) attached to an
+                               audit entry; retention configurable in Settings
+  spw_record_owners          — record ownership history; the row flagged is_current
+                               drives per-user row filtering
+
+Configuration:
+  spw_config                 — DB-backed application configuration, one JSONB row per
+                               key, with an optimistic-locking version column
+  spw_config_log             — change history of the configuration store (old/new value)
+  spw_release_migrations     — applied release migrations (file/config cleanups from
+                               config/migrations.json)
+  spw_migrations             — applied database migrations (3.0_baseline,
+                               3.1_table_comments)
+
+Content attached to records:
+  spw_files                  — uploaded files and attachments, including the record
+                               image galleries (rows tagged related_field = __image);
+                               soft-deleted, served only through the file proxies
+  spw_comments               — per-record discussion threads (max 4000 characters)
+  spw_notes                  — private per-user notepad, optionally linked to a record
+                               and optionally carrying a reminder date
+
+Notifications and automations:
+  spw_users_notifications    — per-user notification inbox; a uniqueness rule on
+                               (user, source record, date) keeps the cron idempotent
+  spw_users_notifications_log
+                             — run history of the notification cron worker
+  spw_automation_runs        — execution log of automation rules (one row per firing)
+  spw_automation_emails      — outbound email queue (status, attempts, delivery time)
+
+CSV import:
+  spw_imports                — one row per import run (row counts, column mapping,
+                               conflict column, status)
+  spw_import_rows_log        — per-row rejection detail for skipped rows
+
+Knowledge base (RAG):
+  spw_rag_files              — knowledge-base documents, full-text indexed
+  spw_rag_chunks             — documents split into retrieval chunks
+  spw_rag_queries            — question log and usage metering (tokens, duration, model)
+  spw_rag_query_sources      — citations returned for a query, in relevance order
+
+Anonymization (GDPR):
+  spw_anonymization_log      — anonymization run history (rules processed, rows scrubbed)
+  spw_anonymization_report   — detailed per-run compliance report (JSONB, downloadable)
+
+ETL:
+  spw_etl_log                — single-job run history (rows read/written, errors)
+  spw_etl_flow_run_log       — flow run history, including the failing step index
+  spw_etl_flow_step_log      — per-step detail of a flow run
 
 
 CONFIGURATION STORE (spw_config table)

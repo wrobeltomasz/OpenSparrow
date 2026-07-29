@@ -8,7 +8,7 @@ OpenSparrow is an open-source, schema-driven web platform. The tables, forms, an
 see are generated from configuration maintained by your administrator — if you need a new
 table, column, widget, or workflow, ask an admin.
 
-Current version: 3.0. Self-hosted, works fully offline.
+Current version: 3.1. Self-hosted, works fully offline.
 
 
 LOGIN & SESSION

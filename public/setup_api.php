@@ -203,7 +203,8 @@ if ($action === 'init_database') {
 
         // The spw_* DDL is shared with the admin init_db action so the two entry points
         // cannot drift apart — see includes/system_tables.php. This wizard only adds the
-        // bootstrap (schema + migration tracker) around it and records the baseline.
+        // bootstrap (schema + migration tracker) around it, applies the table/column
+        // descriptions, and records both migrations as applied.
         require_once __DIR__ . '/../includes/system_tables.php';
         $queries = array_merge(
             [
@@ -211,7 +212,11 @@ if ($action === 'init_database') {
                 "CREATE TABLE IF NOT EXISTS $tMigrations ( id serial4 NOT NULL, name varchar(100) NOT NULL, applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id), CONSTRAINT spw_migrations_name_key UNIQUE (name) )",
             ],
             system_tables_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
-            ["INSERT INTO $tMigrations (name) VALUES ('3.0_baseline') ON CONFLICT (name) DO NOTHING"]
+            system_tables_comments_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
+            [
+                "INSERT INTO $tMigrations (name) VALUES ('3.0_baseline') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $tMigrations (name) VALUES ('3.1_table_comments') ON CONFLICT (name) DO NOTHING",
+            ]
         );
 
         // Execute DDL queries
