@@ -50,8 +50,6 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         thLabel.className = 'th-label';
         if (colCfg.description) {
             th.title = colCfg.description;
-            thLabel.style.borderBottom = '1px dotted currentColor';
-            thLabel.style.cursor = 'help';
         }
 
         if (colCfg.type === 'virtual') {

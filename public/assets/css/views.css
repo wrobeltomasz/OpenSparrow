@@ -101,7 +101,7 @@
 }
 
 .vw-nested-table thead th {
-  color: var(--muted);
+  color: var(--accent-dark);
   font-weight: 700;
 }
 
