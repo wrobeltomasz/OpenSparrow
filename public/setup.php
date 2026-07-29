@@ -125,6 +125,14 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <label for="create-schema"><?= $e('setup.create_schema') ?></label>
                 </div>
 
+                <div id="schema-exists-box" style="background: #fdecea; padding: 12px; border-radius: var(--radius); border-left: 3px solid #d32f2f; font-size: 13px; color: #611a15; margin-top: 8px; display: none;">
+                    <strong id="schema-exists-text" style="display: block; margin-bottom: 8px;"></strong>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="drop-schema">
+                        <label for="drop-schema"><?= $e('setup.drop_schema') ?></label>
+                    </div>
+                </div>
+
                 <div class="checkbox-group">
                     <input type="checkbox" id="install-demo">
                     <label for="install-demo"><?= $e('setup.install_demo') ?></label>
@@ -234,6 +242,7 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             'init_btn'          => t('setup.init_btn'),
             'demo_installed'    => t('setup.demo_installed'),
             'demo_failed_prefix' => t('setup.demo_failed_prefix'),
+            'schema_exists_text' => t('setup.schema_exists_text', ['schema' => '{schema}']),
         ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
         let currentStep = 1;
         let connectionValid = false;
@@ -243,8 +252,23 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             dbname: '',
             user: '',
             password: '',
-            schema: ''
+            schema: '',
+            connSchemas: []
         };
+
+        function checkSchemaExists() {
+            const box = document.getElementById('schema-exists-box');
+            const schema = document.getElementById('db-schema').value.trim();
+            if (schema && dbData.connSchemas.includes(schema)) {
+                box.style.display = '';
+                document.getElementById('schema-exists-text').textContent = T.schema_exists_text.replace('{schema}', schema);
+            } else {
+                box.style.display = 'none';
+                document.getElementById('drop-schema').checked = false;
+            }
+        }
+
+        document.getElementById('db-schema').addEventListener('input', checkSchemaExists);
 
         function nextStep(step) {
             if (step === 3 && !connectionValid) {
@@ -253,6 +277,9 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             }
             currentStep = step;
             updateDisplay();
+            if (step === 3) {
+                checkSchemaExists();
+            }
             if (step === 4) {
                 updateSummary();
             }
@@ -312,6 +339,7 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     status.classList.add('success');
                     message.innerHTML = '<span class="status-icon success"></span>' + T.conn_success;
                     connectionValid = true;
+                    dbData.connSchemas = data.schemas || [];
                     nextBtn.disabled = false;
                     showMessage('status-message-2', '', '');
                 } else {
@@ -365,6 +393,7 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     password: dbData.password,
                     schema: dbData.schema,
                     create_schema: document.getElementById('create-schema').checked,
+                    drop_schema: document.getElementById('drop-schema').checked,
                     install_demo: document.getElementById('install-demo').checked
                 })
             })

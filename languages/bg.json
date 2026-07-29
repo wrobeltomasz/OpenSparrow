@@ -522,6 +522,7 @@
         "lbl_schema": "Schema Name",
         "help_schema": "PostgreSQL schema for system tables (default: app)",
         "create_schema": "Create schema if it doesn't exist",
+        "drop_schema": "Drop and recreate this schema (ALL existing data in it will be permanently deleted)",
         "install_demo": "Install demo CRM sample data",
         "help_install_demo": "Adds a ready-made CRM with sample companies, deals, dashboards, and more so you can explore the app right away",
         "admin_default": "Default Admin Account",
@@ -554,7 +555,8 @@
         "initializing": "Initializing...",
         "init_failed": "Initialization failed",
         "demo_installed": "Demo CRM installed successfully.",
-        "demo_failed_prefix": "Demo CRM installation failed: "
+        "demo_failed_prefix": "Demo CRM installation failed: ",
+        "schema_exists_text": "The schema \"{schema}\" already exists on this database."
     },
     "images": {
         "label": "Images",

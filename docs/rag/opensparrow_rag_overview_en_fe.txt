@@ -139,6 +139,9 @@ knows how many records the filter matched and will not answer "how many" questio
 from the visible page alone. If the table has more than 12 columns, the assistant
 keeps the most informative ones (id, required fields, enums and foreign keys) rather
 than simply the leftmost ones.
+The assistant answers only from those sources, so when they do not cover your question
+it says so plainly in your own language — and answers the covered part first if a
+question is only partly documented — instead of guessing from general knowledge.
 
 
 FILES (files.php)

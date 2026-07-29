@@ -149,6 +149,7 @@ if ($action === 'init_database') {
     $password = $data['password'] ?? '';
     $schema = $data['schema'] ?? 'app';
     $createSchema = (bool)($data['create_schema'] ?? true);
+    $dropSchema = (bool)($data['drop_schema'] ?? false);
     $installDemo = (bool)($data['install_demo'] ?? false);
 
     if (!$host || !$dbname || !$user || !$schema) {
@@ -164,6 +165,16 @@ if ($action === 'init_database') {
         echo json_encode([
             'success' => false,
             'message' => 'Invalid schema name. Use alphanumeric characters and underscores only.'
+        ]);
+        exit;
+    }
+
+    // Never let the wizard drop 'public' — it is PostgreSQL's own default
+    // schema and almost never something the operator actually meant to wipe.
+    if ($dropSchema && strtolower($schema) === 'public') {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Refusing to drop the "public" schema. Choose a dedicated schema name instead.'
         ]);
         exit;
     }

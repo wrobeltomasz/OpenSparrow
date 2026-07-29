@@ -196,6 +196,13 @@ RAG Documents:
     stored encrypted at rest, sent as a Bearer token — the settings screen never
     shows the key back, only whether one is configured, with a button to clear it
   - Retrieval uses PostgreSQL full-text search; tag filtering narrows the search
+  - Answers are grounded: the model may use only the retrieved context (documents
+    and, on frontend pages, the visible grid data) and is barred from its own
+    pre-trained knowledge. When the context has no answer it must say so instead
+    of guessing — in the answer language, with no follow-up suggestions. When the
+    context covers a question only in part, it answers that part and names what
+    is missing. Expect "not in the knowledge base" replies for topics you have
+    not uploaded; that is correct behaviour, not a misconfiguration
 
 
 SYSTEM
