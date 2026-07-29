@@ -1056,14 +1056,8 @@ function demo_def_crm($conn): array
             ['key' => 'calendar'],
             ['key' => 'companies', 'children' => [
                 ['key' => 'contacts'],
-                ['key' => 'leads'],
             ]],
-            ['key' => 'deals', 'children' => [
-                ['key' => 'quotes'],
-                ['key' => 'invoices'],
-                ['key' => 'products'],
-            ]],
-            ['key' => 'assets'],
+            ['key' => 'deals'],
             ['key' => 'activities'],
             ['key' => 'board'],
             ['key' => 'files'],
