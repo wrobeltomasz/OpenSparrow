@@ -478,28 +478,51 @@ function renderSidebar() {
         itemsRow.appendChild(btn);
     }
 
-    // Card tabs and automations: prepend "All X" button then return
-    if (isCardTab || currentFile === 'automations') {
+    // Automations: the two rule kinds (record actions vs. outgoing n8n webhooks) are
+    // tabs in THIS bar. Building a second tab strip inside the workspace would stack
+    // two tab rows on top of each other.
+    if (currentFile === 'automations') {
+        const activeMode = currentItemKey === 'N8N' ? 'N8N'
+                         : currentItemKey === 'LAYOUT' ? 'LAYOUT'
+                         : 'ALL';
+        // Inserted at the front, so build in reverse to keep the visual order.
+        [
+            { key: 'N8N', label: 'n8n Automations',    icon: 'arrow_split.png' },
+            { key: 'ALL', label: 'Record Automations', icon: 'automation.png' },
+        ].forEach(mode => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'item-btn' + (activeMode === mode.key ? ' active' : '');
+            btn.append(tabIcon(mode.icon), document.createTextNode(mode.label));
+            btn.onclick = () => {
+                currentItemKey = mode.key;
+                renderSidebar();
+                renderEditor(mode.key, null, false);
+            };
+            itemsRow.insertBefore(btn, itemsRow.firstChild);
+        });
+        return;
+    }
+
+    // Card tabs: prepend "All X" button then return
+    if (isCardTab) {
         const btnAll = document.createElement('button');
         btnAll.type = 'button';
         btnAll.className = 'item-btn' + (currentItemKey === null ? ' active' : '');
         const allIcon = currentFile === 'schema'       ? 'data_table.png'
                        : currentFile === 'dashboard'    ? 'dashboard.png'
                        : currentFile === 'workflows'    ? 'build.png'
-                       : currentFile === 'automations'  ? 'automation.png'
                        : currentFile === 'board'        ? 'account_tree.png'
                        : 'calendar.png';
         const allLabel = currentFile === 'schema'       ? 'All PostgreSQL tables'
                            : currentFile === 'dashboard'    ? 'All Widgets'
                            : currentFile === 'workflows'    ? 'All Workflows'
-                           : currentFile === 'automations'  ? 'All Automations'
                            : 'All Sources';
         btnAll.append(tabIcon(allIcon), document.createTextNode(allLabel));
         btnAll.onclick = () => {
             currentItemKey = null;
             renderSidebar();
-            if (currentFile === 'automations') renderEditor('ALL', null, false);
-            else renderItemCards();
+            renderItemCards();
         };
         itemsRow.insertBefore(btnAll, itemsRow.firstChild);
         return;
@@ -867,7 +890,8 @@ function renderEditor(key, itemData, isArray) {
             workspaceEl.appendChild(msg);
             return;
         }
-        return renderAutomationsPage(ctx);
+        // The item-panel tab bar owns the record/n8n split — pass the picked mode down.
+        return renderAutomationsPage(ctx, key === 'N8N' ? 'n8n' : 'record');
     }
     if (currentFile === 'views') return renderViewsEditor(ctx);
     if (currentFile === 'user_records') return renderUserRecordsEditor(ctx);

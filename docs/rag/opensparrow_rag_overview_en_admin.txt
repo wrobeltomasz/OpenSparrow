@@ -141,6 +141,13 @@ Workflow Manager:
 
 Automations:
   - Event-driven rules executed by the backend on record events
+  - Two tabs over the same rule set:
+      * Record Automations — rules whose actions stay inside OpenSparrow (update fields,
+        send notification, create record, send email)
+      * n8n Automations — rules that call an outgoing webhook; a rule is filed here as
+        soon as one of its actions is a webhook, so the two tabs never overlap. A new
+        rule created here starts with the webhook call already added and needs no action
+        type picker
   - Rule list shows name, table, event, status; Edit / History / Delete per rule
   - Triggers: After create (INSERT), After update (PATCH), After delete (DELETE)
   - Conditions: AND/OR groups, nestable; operators equals, not equals, contains,
@@ -151,7 +158,7 @@ Automations:
       2. Send notification — recipient user ID, title, optional link; one notification
          per (rule, record, user, day), duplicates ignored
       3. Create record in another table — target table + field mapping
-      4. Send webhook (HTTP request) — see below
+      4. Send webhook (HTTP request) — offered in the n8n Automations tab only; see below
       5. Send email — queued to spw_automation_emails, delivered by the notification cron
   - Values support variables {{ record.field_name }}, {{ old_record.field_name }},
     {{ current_user.id }} and {{ today }}

@@ -24,7 +24,18 @@ function demo_def_crm($conn): array
             "CREATE TABLE IF NOT EXISTS spw_crm.invoices (id SERIAL PRIMARY KEY, deal_id INTEGER REFERENCES spw_crm.deals(id) ON DELETE SET NULL, quote_id INTEGER REFERENCES spw_crm.quotes(id) ON DELETE SET NULL, invoice_number VARCHAR(50) NOT NULL UNIQUE, status VARCHAR(50) DEFAULT 'Draft', issue_date DATE NOT NULL, due_date DATE NOT NULL, amount_net NUMERIC(12,2) DEFAULT 0, amount_tax NUMERIC(12,2) DEFAULT 0, amount_total NUMERIC(12,2) DEFAULT 0, paid_at TIMESTAMP, notes TEXT, created_at TIMESTAMP DEFAULT NOW())",
             "CREATE TABLE IF NOT EXISTS spw_crm.assets (id SERIAL PRIMARY KEY, asset_tag VARCHAR(50) NOT NULL UNIQUE, name VARCHAR(255) NOT NULL, category VARCHAR(50) DEFAULT 'Hardware', purchase_date DATE, purchase_price NUMERIC(12,2) DEFAULT 0, current_value NUMERIC(12,2) DEFAULT 0, depreciation_method VARCHAR(50) DEFAULT 'Straight Line', assigned_contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE SET NULL, location VARCHAR(255), warranty_end DATE, next_inspection_date DATE, status VARCHAR(50) DEFAULT 'Active', notes TEXT, created_at TIMESTAMP DEFAULT NOW())",
             "CREATE TABLE IF NOT EXISTS spw_crm.product_contacts (id SERIAL PRIMARY KEY, product_id INTEGER REFERENCES spw_crm.products(id) ON DELETE CASCADE, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE CASCADE, interested_at TIMESTAMP DEFAULT NOW())",
-            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_pipeline AS SELECT stage, COUNT(*) AS deal_count, COALESCE(SUM(value), 0) AS total_value FROM spw_crm.deals GROUP BY stage ORDER BY stage',
+            // Many-to-many: extra stakeholder contacts on a deal, beyond the single
+            // primary deals.contact_id FK — showcases the many_to_many field type on
+            // a table that stays visible in the slimmed-down demo menu.
+            "CREATE TABLE IF NOT EXISTS spw_crm.deal_contacts (id SERIAL PRIMARY KEY, deal_id INTEGER REFERENCES spw_crm.deals(id) ON DELETE CASCADE, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE CASCADE, role VARCHAR(100), added_at TIMESTAMP DEFAULT NOW())",
+            // Deal-level (not pre-aggregated) so the Pipeline Summary view can group
+            // client-side by stage (group_rows) and offer a drill-down from the stage
+            // subtotal rows down to the individual deals within a stage.
+            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_pipeline AS '
+                . 'SELECT d.id, d.stage, d.title, d.value, d.expected_close, c.name AS company_name '
+                . 'FROM spw_crm.deals d '
+                . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
+                . 'ORDER BY d.stage, d.expected_close',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_leads_funnel AS SELECT status, COUNT(*) AS lead_count FROM spw_crm.leads GROUP BY status ORDER BY status',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_revenue AS SELECT status, COUNT(*) AS invoice_count, COALESCE(SUM(amount_total), 0) AS total FROM spw_crm.invoices GROUP BY status ORDER BY status',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_assets_by_category AS SELECT category, COUNT(*) AS asset_count, COALESCE(SUM(current_value), 0) AS total_value FROM spw_crm.assets GROUP BY category ORDER BY category',
@@ -598,6 +609,14 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.product_contacts (product_id, contact_id, interested_at) VALUES (16, 6, NOW() - INTERVAL '12 days')",
             "INSERT INTO spw_crm.product_contacts (product_id, contact_id, interested_at) VALUES (17, 1, NOW() - INTERVAL '7 days')",
             "INSERT INTO spw_crm.product_contacts (product_id, contact_id, interested_at) VALUES (18, 2, NOW() - INTERVAL '3 days')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (1, 2, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (1, 7, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (2, 8, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (3, 9, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (4, 10, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (7, 12, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (8, 14, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (12, 18, 'Legal Reviewer')",
             // Spread created_at over past weeks/months so the dashboard period filter
             // (Today/7d/30d) and stat card trend deltas have history to compare against.
             // The WHERE guard on leads keeps the intentionally stale GDPR-demo rows intact.
@@ -655,6 +674,8 @@ function demo_def_crm($conn): array
                 ['table' => 'activities', 'foreign_key' => 'deal_id', 'label' => 'Activities', 'columns_to_show' => ['type', 'scheduled_at', 'done', 'notes']],
                 ['table' => 'quotes',     'foreign_key' => 'deal_id', 'label' => 'Quotes',     'columns_to_show' => ['quote_number', 'status', 'total', 'valid_until']],
                 ['table' => 'invoices',   'foreign_key' => 'deal_id', 'label' => 'Invoices',   'columns_to_show' => ['invoice_number', 'status', 'amount_total', 'due_date']],
+            ], 'many_to_many' => [
+                ['label' => 'Other Stakeholders', 'junction_table' => 'deal_contacts', 'self_fk' => 'deal_id', 'other_fk' => 'contact_id', 'other_table' => 'contacts', 'display_column' => 'last_name'],
             ]],
             'activities' => ['display_name' => 'Activities', 'schema' => 'spw_crm', 'icon' => 'assets/icons/calendar.png', 'columns' => [
                 'id'           => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique activity identifier'],
@@ -758,6 +779,15 @@ function demo_def_crm($conn): array
                 'product_id' => ['reference_table' => 'products', 'reference_column' => 'id', 'display_column' => 'name'],
                 'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
             ], 'subtables' => []],
+            'deal_contacts' => ['display_name' => 'Deal–Contacts', 'schema' => 'spw_crm', 'hidden' => true, 'columns' => [
+                'id'         => ['display_name' => 'ID',      'type' => 'number', 'not_null' => true, 'readonly' => true,  'show_in_grid' => true, 'show_in_edit' => true],
+                'deal_id'    => ['display_name' => 'Deal',    'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
+                'contact_id' => ['display_name' => 'Contact', 'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
+                'role'       => ['display_name' => 'Role',    'type' => 'text',   'show_in_grid' => true, 'show_in_edit' => true],
+            ], 'foreign_keys' => [
+                'deal_id'    => ['reference_table' => 'deals',    'reference_column' => 'id', 'display_column' => 'title'],
+                'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
+            ], 'subtables' => []],
         ],
         'dashboard_widgets' => [
             ['id' => 'demo_crm_001', 'type' => 'stat_card', 'title' => 'Companies',           'table' => 'companies',  'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => []], 'icon' => 'assets/icons/apartment.png',    'color' => '#553eb1', 'display_columns' => []],
@@ -823,13 +853,20 @@ function demo_def_crm($conn): array
             ]],
         ],
         'views' => [
-            'v_demo_crm_pipeline' => ['schema' => 'spw_crm', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => false, 'description' => 'Deal count & value by stage.', 'columns' => [
-                'stage'       => ['display_name' => 'Stage'],
-                'deal_count'  => ['display_name' => 'Deals',       'summary' => 'sum'],
-                'total_value' => ['display_name' => 'Total Value', 'summary' => 'sum', 'color_rules' => [
+            // Showcase view: default row grouping (group_rows) by stage with subtotals,
+            // plus a drill-down from the stage subtotal rows down to the individual
+            // deals within that stage.
+            'v_demo_crm_pipeline' => ['schema' => 'spw_crm', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => false, 'description' => 'Deals grouped by sales stage, with subtotals and drill-down to individual deals.', 'group_rows' => 'stage', 'columns' => [
+                'stage'          => ['display_name' => 'Stage',       'aggregate' => ''],
+                'title'          => ['display_name' => 'Deal',        'aggregate' => 'count', 'summary' => 'count'],
+                'company_name'   => ['display_name' => 'Company',     'aggregate' => ''],
+                'value'          => ['display_name' => 'Value',       'aggregate' => 'sum', 'summary' => 'sum', 'color_rules' => [
                     ['op' => '>', 'value' => 100000, 'color' => '#2b9348'],
                 ]],
-            ], 'drill_down' => ['enabled' => false]],
+                'expected_close' => ['display_name' => 'Expected Close', 'aggregate' => ''],
+            ], 'drill_down' => ['enabled' => true, 'levels' => [
+                ['group_by' => 'stage', 'label' => 'Stage'],
+            ]]],
             'v_demo_crm_leads_funnel' => ['schema' => 'spw_crm', 'display_name' => 'CRM Leads Funnel', 'menu_name' => 'Leads Funnel', 'icon' => 'assets/icons/account_tree.png', 'hidden' => true, 'description' => 'Lead count by qualification status.', 'columns' => [
                 'status'     => ['display_name' => 'Status'],
                 'lead_count' => ['display_name' => 'Leads', 'summary' => 'sum'],

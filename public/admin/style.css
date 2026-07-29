@@ -1433,3 +1433,261 @@ textarea.adm-input {
     color: var(--text);
     margin: 4px 0 0;
 }
+
+/* ===== Automations editor ===== */
+/* Field layout mirrors the Workflows editor: stacked .form-group fields for the
+   single-value inputs, and these row/section classes for the repeatable builders
+   (conditions, actions, key = value maps) that cannot be stacked. */
+.auto-form {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 720px;
+}
+.auto-form .form-group {
+    margin-bottom: 16px;
+}
+.auto-form .form-group input[type="text"],
+.auto-form .form-group input[type="url"],
+.auto-form .form-group select,
+.auto-form .form-group textarea {
+    max-width: 100%;
+}
+
+/* Two fields side by side (trigger table + event). */
+.auto-form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.auto-form-row > .form-group {
+    flex: 1 1 220px;
+}
+.auto-form-row > .form-group.auto-form-narrow {
+    flex: 0 0 140px;
+}
+
+.form-group label.auto-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    font-weight: 400;
+    cursor: pointer;
+}
+.form-group label.auto-check input[type="checkbox"] {
+    margin-right: 0;
+}
+
+/* Titled section (Conditions, Actions). */
+.auto-section {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-bottom: 16px;
+    background: var(--panel);
+}
+.auto-section-title {
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+.auto-section-sub {
+    font-weight: 600;
+    color: var(--text);
+    margin: 12px 0 6px;
+}
+
+/* One repeatable row: [field] [operator] [value] [x] */
+.auto-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.auto-row > input,
+.auto-row > select {
+    flex: 1 1 140px;
+    min-width: 0;
+    padding: 8px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius);
+    font-family: inherit;
+}
+.auto-row > input:focus,
+.auto-row > select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-mid);
+}
+.auto-row > textarea {
+    flex: 1 1 100%;
+    min-height: 90px;
+    resize: vertical;
+    padding: 8px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius);
+    font-family: inherit;
+}
+.auto-row > input:disabled { opacity: .45; }
+/* Width modifiers — kept element-qualified so they outrank the generic
+   `.auto-row > input/select` flex rule above. */
+.auto-row > select.auto-row-op     { flex: 0 0 150px; }
+.auto-row > input.auto-row-narrow,
+.auto-row > select.auto-row-narrow { flex: 0 0 110px; }
+.auto-row > input.auto-row-wide,
+.auto-row > select.auto-row-wide   { flex: 2 1 220px; }
+.auto-row-label {
+    flex: 0 0 90px;
+    font-weight: 600;
+    color: var(--text);
+}
+.auto-row-eq {
+    flex: 0 0 auto;
+    font-weight: 600;
+    color: var(--text);
+}
+.auto-row-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* Condition group (recursive AND/OR nesting). */
+.auto-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.auto-group-header select {
+    flex: 0 0 80px;
+    padding: 6px 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius);
+    font-family: inherit;
+}
+.auto-group-remove { margin-left: auto; }
+.auto-group-nested {
+    border-left: 2px solid var(--border);
+    padding-left: 10px;
+    margin: 0 0 10px 8px;
+}
+
+/* One action card inside the Actions section. */
+.auto-action {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 10px;
+}
+.auto-action-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.auto-action-header > select { flex: 1; }
+.auto-action-name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Inline explanatory text inside an action body. */
+.auto-hint {
+    color: var(--text);
+    font-style: italic;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+/* Notification recipient picker. */
+.auto-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+    min-height: 26px;
+}
+.auto-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: var(--accent-mid);
+    border-radius: 999px;
+}
+.auto-chip-remove {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    color: inherit;
+}
+.auto-picker {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+.auto-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+.auto-picker-row.selected { background: rgba(0, 0, 0, .04); }
+
+/* Transient inline feedback pill next to a control. */
+.auto-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: opacity .3s;
+}
+.auto-status-pill.success {
+    background: rgba(43, 147, 72, .12);
+    color: var(--ok);
+    border-color: var(--ok);
+}
+.auto-status-pill.error {
+    background: rgba(208, 0, 0, .08);
+    color: var(--danger-dark);
+    border-color: var(--danger);
+}
+.auto-status-pill.info {
+    background: var(--accent-mid);
+    color: var(--text);
+}
+
+/* Run-history status cell. */
+.auto-run-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+.auto-run-ok      { background: rgba(43, 147, 72, .12);  color: var(--ok); }
+.auto-run-error   { background: rgba(208, 0, 0, .08);    color: var(--danger-dark); }
+.auto-run-skipped { background: rgba(100, 116, 139, .1); color: var(--muted); }
+
+.auto-list  { max-width: 900px; }
+.auto-bar   { margin-bottom: 12px; }
+.auto-meta  { flex-shrink: 0; }
+.auto-shrink { flex-shrink: 0; }
