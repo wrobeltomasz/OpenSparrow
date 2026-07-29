@@ -272,7 +272,7 @@ ob_start();
                                 <?php foreach ($sCols as $c) : ?>
                                     <th><?php echo htmlspecialchars($sd['schema']->columns[$c]->displayName ?? $c); ?></th>
                                 <?php endforeach; ?>
-                                <th style="width: 80px;"><?= t('common.actions') ?></th>
+                                <th class="subtable-actions"><?= t('common.actions') ?></th>
                             </tr>
                         </thead>
                         <tbody>

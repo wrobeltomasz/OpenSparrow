@@ -617,6 +617,35 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (7, 12, 'Technical Evaluator')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (8, 14, 'Economic Buyer')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (12, 18, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (2, 3, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (3, 4, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (5, 11, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (6, 1, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (6, 7, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (7, 13, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (8, 15, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (9, 14, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (10, 15, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (11, 16, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (12, 13, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (13, 19, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (14, 20, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (15, 21, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (16, 22, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (17, 23, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (18, 24, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (19, 25, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (20, 26, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (21, 27, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (22, 28, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (23, 29, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (24, 30, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (25, 24, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (26, 4, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (26, 9, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (27, 12, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (28, 14, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (29, 16, 'Executive Sponsor')",
             // Spread created_at over past weeks/months so the dashboard period filter
             // (Today/7d/30d) and stat card trend deltas have history to compare against.
             // The WHERE guard on leads keeps the intentionally stale GDPR-demo rows intact.
@@ -639,7 +668,7 @@ function demo_def_crm($conn): array
                 'website'    => ['type' => 'text',   'show_in_grid' => true, 'display_name' => 'Website', 'description' => 'Company website URL'],
                 'phone'      => ['type' => 'text',   'show_in_grid' => true, 'display_name' => 'Phone', 'description' => 'Main company phone number'],
                 'email'      => ['type' => 'text',   'show_in_grid' => true, 'display_name' => 'Email', 'description' => 'Company email address'],
-                'created_at' => ['type' => 'timestamp', 'show_in_grid' => true,  'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when company record was created'],
+                'created_at' => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when company record was created'],
             ], 'subtables' => [
                 ['table' => 'contacts', 'foreign_key' => 'company_id', 'label' => 'Contacts', 'columns_to_show' => ['first_name', 'last_name', 'email', 'position']],
                 ['table' => 'deals',    'foreign_key' => 'company_id', 'label' => 'Deals',    'columns_to_show' => ['title', 'stage', 'value', 'expected_close']],
@@ -652,7 +681,7 @@ function demo_def_crm($conn): array
                 'email'      => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'Email', 'description' => 'Contact email address'],
                 'phone'      => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'Phone', 'description' => 'Contact phone number'],
                 'position'   => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'Position', 'description' => 'Job title or position at company'],
-                'created_at' => ['type' => 'timestamp', 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when contact record was created'],
+                'created_at' => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when contact record was created'],
             ], 'foreign_keys' => [
                 'company_id' => ['reference_table' => 'companies', 'reference_column' => 'id', 'display_column' => 'name'],
             ], 'subtables' => [
@@ -666,7 +695,7 @@ function demo_def_crm($conn): array
                 'value'          => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Value', 'description' => 'Estimated deal value in currency units'],
                 'stage'          => ['type' => 'enum',   'show_in_grid' => true, 'options' => ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'], 'enum_colors' => ['Lead' => '#d1d5db', 'Qualified' => '#93c5fd', 'Proposal' => '#fcd34d', 'Negotiation' => '#fcd34d', 'Won' => '#6ee7b7', 'Lost' => '#f87171'], 'display_name' => 'Stage', 'description' => 'Current stage in sales pipeline'],
                 'expected_close' => ['type' => 'date',   'show_in_grid' => true, 'display_name' => 'Expected Close', 'description' => 'Projected closing date'],
-                'created_at'     => ['type' => 'timestamp', 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when deal record was created'],
+                'created_at'     => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when deal record was created'],
             ], 'foreign_keys' => [
                 'company_id' => ['reference_table' => 'companies', 'reference_column' => 'id', 'display_column' => 'name'],
                 'contact_id' => ['reference_table' => 'contacts',  'reference_column' => 'id', 'display_column' => 'first_name'],
@@ -685,7 +714,7 @@ function demo_def_crm($conn): array
                 'notes'        => ['type' => 'text',    'show_in_grid' => false, 'display_name' => 'Notes', 'description' => 'Detailed notes or comments about the activity'],
                 'scheduled_at' => ['type' => 'timestamp', 'show_in_grid' => true, 'display_name' => 'Scheduled At', 'description' => 'Date and time activity is scheduled or occurred'],
                 'done'         => ['type' => 'boolean', 'show_in_grid' => true, 'enum_colors' => ['true' => '#6ee7b7', 'false' => '#f87171'], 'display_name' => 'Done', 'description' => 'Whether activity is completed'],
-                'created_at'   => ['type' => 'timestamp', 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when activity record was created'],
+                'created_at'   => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when activity record was created'],
             ], 'foreign_keys' => [
                 'deal_id'    => ['reference_table' => 'deals',    'reference_column' => 'id', 'display_column' => 'title'],
                 'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
@@ -700,7 +729,7 @@ function demo_def_crm($conn): array
                 'company_name'         => ['type' => 'text',    'show_in_grid' => true, 'display_name' => 'Company',    'description' => 'Free-text company name (not yet linked to companies table)'],
                 'status'               => ['type' => 'enum',    'show_in_grid' => true, 'options' => ['New', 'Contacted', 'Qualified', 'Lost'], 'enum_colors' => ['New' => '#93c5fd', 'Contacted' => '#fcd34d', 'Qualified' => '#6ee7b7', 'Lost' => '#f87171'], 'display_name' => 'Status', 'description' => 'Lead qualification status'],
                 'converted_contact_id' => ['type' => 'number',  'show_in_grid' => false, 'display_name' => 'Converted To', 'description' => 'Contact record created when lead was converted'],
-                'created_at'           => ['type' => 'timestamp', 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when lead record was created'],
+                'created_at'           => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when lead record was created'],
             ], 'foreign_keys' => [
                 'converted_contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
             ]],
@@ -712,7 +741,7 @@ function demo_def_crm($conn): array
                 'unit_price'  => ['type' => 'number',  'show_in_grid' => true, 'display_name' => 'Unit Price', 'description' => 'Standard list price per unit'],
                 'category'    => ['type' => 'enum',    'show_in_grid' => true, 'options' => ['Software', 'Service', 'Support', 'Hardware'], 'enum_colors' => ['Software' => '#93c5fd', 'Service' => '#6ee7b7', 'Support' => '#fcd34d', 'Hardware' => '#d1d5db'], 'display_name' => 'Category', 'description' => 'Product category'],
                 'active'      => ['type' => 'boolean', 'show_in_grid' => true, 'enum_colors' => ['true' => '#6ee7b7', 'false' => '#f87171'], 'display_name' => 'Active', 'description' => 'Whether product is currently sellable'],
-                'created_at'  => ['type' => 'timestamp', 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when product record was created'],
+                'created_at'  => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when product record was created'],
             ], 'many_to_many' => [
                 ['label' => 'Interested Contacts', 'junction_table' => 'product_contacts', 'self_fk' => 'product_id', 'other_fk' => 'contact_id', 'other_table' => 'contacts', 'display_column' => 'last_name'],
             ]],
@@ -726,7 +755,7 @@ function demo_def_crm($conn): array
                 'tax'          => ['type' => 'number', 'show_in_grid' => false, 'display_name' => 'Tax', 'description' => 'Tax amount'],
                 'total'        => ['type' => 'number', 'show_in_grid' => true,  'display_name' => 'Total', 'description' => 'Grand total payable'],
                 'notes'        => ['type' => 'text',   'show_in_grid' => false, 'display_name' => 'Notes', 'description' => 'Internal notes or customer-facing comments'],
-                'created_at'   => ['type' => 'timestamp', 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when quote record was created'],
+                'created_at'   => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when quote record was created'],
             ], 'foreign_keys' => [
                 'deal_id' => ['reference_table' => 'deals', 'reference_column' => 'id', 'display_column' => 'title'],
             ], 'subtables' => [
@@ -745,7 +774,7 @@ function demo_def_crm($conn): array
                 'amount_total'   => ['type' => 'number', 'show_in_grid' => true,  'display_name' => 'Total', 'description' => 'Total amount payable'],
                 'paid_at'        => ['type' => 'timestamp', 'show_in_grid' => false, 'display_name' => 'Paid At', 'description' => 'Timestamp of payment receipt (NULL when unpaid)'],
                 'notes'          => ['type' => 'text',   'show_in_grid' => false, 'display_name' => 'Notes', 'description' => 'Internal notes about the invoice'],
-                'created_at'     => ['type' => 'timestamp', 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when invoice record was created'],
+                'created_at'     => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when invoice record was created'],
             ], 'foreign_keys' => [
                 'deal_id'  => ['reference_table' => 'deals',  'reference_column' => 'id', 'display_column' => 'title'],
                 'quote_id' => ['reference_table' => 'quotes', 'reference_column' => 'id', 'display_column' => 'quote_number'],
@@ -767,7 +796,7 @@ function demo_def_crm($conn): array
                 'next_inspection_date' => ['type' => 'date',    'show_in_grid' => false, 'display_name' => 'Next Inspection', 'description' => 'Date of next scheduled inspection/maintenance'],
                 'status'               => ['type' => 'enum',    'show_in_grid' => true,  'options' => ['Active', 'Maintenance', 'Retired', 'Lost'], 'enum_colors' => ['Active' => '#6ee7b7', 'Maintenance' => '#fcd34d', 'Retired' => '#d1d5db', 'Lost' => '#f87171'], 'display_name' => 'Status', 'description' => 'Operational status of the asset'],
                 'notes'                => ['type' => 'text',    'show_in_grid' => false, 'display_name' => 'Notes', 'description' => 'Free-text notes about condition, history, claims'],
-                'created_at'           => ['type' => 'timestamp', 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when asset record was created'],
+                'created_at'           => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when asset record was created'],
             ], 'foreign_keys' => [
                 'assigned_contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
             ]],
@@ -857,13 +886,11 @@ function demo_def_crm($conn): array
             // plus a drill-down from the stage subtotal rows down to the individual
             // deals within that stage.
             'v_demo_crm_pipeline' => ['schema' => 'spw_crm', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => false, 'description' => 'Deals grouped by sales stage, with subtotals and drill-down to individual deals.', 'group_rows' => 'stage', 'columns' => [
-                'stage'          => ['display_name' => 'Stage',       'aggregate' => ''],
-                'title'          => ['display_name' => 'Deal',        'aggregate' => 'count', 'summary' => 'count'],
-                'company_name'   => ['display_name' => 'Company',     'aggregate' => ''],
-                'value'          => ['display_name' => 'Value',       'aggregate' => 'sum', 'summary' => 'sum', 'color_rules' => [
+                'stage' => ['display_name' => 'Stage',  'aggregate' => ''],
+                'title' => ['display_name' => 'Deals',  'aggregate' => 'count', 'summary' => 'count'],
+                'value' => ['display_name' => 'Value',  'aggregate' => 'sum', 'summary' => 'sum', 'color_rules' => [
                     ['op' => '>', 'value' => 100000, 'color' => '#2b9348'],
                 ]],
-                'expected_close' => ['display_name' => 'Expected Close', 'aggregate' => ''],
             ], 'drill_down' => ['enabled' => true, 'levels' => [
                 ['group_by' => 'stage', 'label' => 'Stage'],
             ]]],

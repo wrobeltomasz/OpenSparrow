@@ -1672,6 +1672,16 @@ header .dash-filter-label {
   transition: background-color var(--transition);
 }
 
+/* The global `tbody td` grid rule (nowrap + overflow:hidden + ellipsis) also
+   matches sub-table cells and truncated the action button to a bare "…".
+   Action cells size to their button instead. */
+.edit-subtable-wrapper td.subtable-actions,
+.edit-subtable-wrapper th.subtable-actions {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
 .edit-subtable-wrapper tbody tr:last-child td {
   border-bottom: none;
 }
