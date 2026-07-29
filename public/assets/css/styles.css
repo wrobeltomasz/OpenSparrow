@@ -1574,6 +1574,12 @@ header .dash-filter-label {
   background-color: var(--bg) !important;
   padding: 15px 20px !important;
   border-bottom: 2px solid var(--border-light);
+  /* Cancel the grid-wide `tbody td` truncation (nowrap + overflow:hidden +
+     ellipsis) — it would inherit into the expanded sub-grid and cut off
+     longer child-record labels instead of wrapping them. */
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .c-expand-btn {
