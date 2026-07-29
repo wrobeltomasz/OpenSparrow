@@ -1066,6 +1066,13 @@ function demo_def_crm($conn): array
             ['related_table' => 'contacts', 'related_id' => 1, 'author' => 0, 'source_file' => 'Face_male_1.png', 'display_name' => 'John Smith.png'],
             ['related_table' => 'contacts', 'related_id' => 3, 'author' => 1, 'source_file' => 'Face_male_2.png', 'display_name' => 'Michael Brown.png'],
             ['related_table' => 'contacts', 'related_id' => 4, 'author' => 1, 'source_file' => 'Face_feamle_3.png', 'display_name' => 'Emma Wilson.png'],
+            ['related_table' => 'contacts', 'related_id' => 2, 'author' => 0, 'source_file' => 'Face_feamle_5.png', 'display_name' => 'Sarah Johnson.png'],
+            ['related_table' => 'contacts', 'related_id' => 5, 'author' => 0, 'source_file' => 'Face_male_4.png', 'display_name' => 'David Miller.png'],
+            ['related_table' => 'contacts', 'related_id' => 6, 'author' => 1, 'source_file' => 'Face_feamle_8.png', 'display_name' => 'Lisa Garcia.png'],
+            ['related_table' => 'contacts', 'related_id' => 7, 'author' => 0, 'source_file' => 'Face_male_6.png', 'display_name' => 'Robert Taylor.png'],
+            ['related_table' => 'contacts', 'related_id' => 8, 'author' => 1, 'source_file' => 'Face_feamle_9.png', 'display_name' => 'Jennifer Martinez.png'],
+            ['related_table' => 'contacts', 'related_id' => 9, 'author' => 0, 'source_file' => 'Face_male_7.png', 'display_name' => 'Christopher Anderson.png'],
+            ['related_table' => 'contacts', 'related_id' => 11, 'author' => 1, 'source_file' => 'Face_male_10.png', 'display_name' => 'James White.png'],
         ],
         // Demo record ownership ("My records" panel) — assigns a few CRM records to
         // demo users so the panel isn't empty right after install. 'author' indexes
