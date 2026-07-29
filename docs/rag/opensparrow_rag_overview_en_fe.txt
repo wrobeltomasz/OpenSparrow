@@ -45,6 +45,9 @@ The main way to browse and edit data:
   - Each row's actions (edit, duplicate, delete) are collapsed behind a single
     "more actions" icon at the end of the row; hover or click it to reveal the
     individual action icons
+  - Crosshair hover highlight: pointing at a cell highlights both its row and its
+    column (including the column header) — the row in the accent tint, the column
+    in a lighter grey
   - Column search and advanced filter bar
   - Keyboard navigation: arrow keys to move, Enter to edit, Ctrl+F to focus search,
     Ctrl+A to select all

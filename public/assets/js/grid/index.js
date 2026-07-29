@@ -16,6 +16,7 @@ import { initM2mPopup } from './m2m/popup.js';
 import { loadImageColumn, clearImageStore } from './images/loader.js';
 import { initImagePopup } from './images/popup.js';
 import { computeVirtual } from './cells/virtual-cell.js';
+import { attachCrosshair } from './crosshair.js';
 
 export { getState, setFilteredData };
 export { clearSelection } from './state.js';
@@ -148,6 +149,8 @@ export async function renderGrid(schema) {
 
     const { tbody, pageRows } = await renderTbody(schema, isReadOnly, _getPageRows, onTableReload);
     table.appendChild(tbody);
+
+    attachCrosshair(table);
 
     const container = state.containerEl || document.getElementById('grid');
     container.replaceChildren(table);
