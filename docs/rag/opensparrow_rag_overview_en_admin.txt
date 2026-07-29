@@ -191,7 +191,9 @@ RAG Documents:
     to plain text before uploading
   - File list: name, size, tags, date; delete, retag, search by name or tag
   - Statistics: total files and tokens, per-file token counts, query history
-  - Configure Ollama (URL, model) and test retrieval-augmented queries directly
+  - Configure Ollama (URL, model) and test retrieval-augmented queries directly.
+    URL is either a local instance (default http://localhost:11434) or Ollama
+    Cloud (https://api.ollama.com) for the hosted/paid tier
   - Optional Ollama Cloud API key (password field) for the paid Ollama Cloud tier;
     stored encrypted at rest, sent as a Bearer token — the settings screen never
     shows the key back, only whether one is configured, with a button to clear it
