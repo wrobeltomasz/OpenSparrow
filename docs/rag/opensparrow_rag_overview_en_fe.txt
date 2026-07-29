@@ -70,7 +70,10 @@ Create a record at create.php, edit at edit.php?table=X&id=Y:
   - Full record editor with all fields; required fields and validation enforced
   - Field types include text, numbers, dates, checkboxes, dropdowns (enums with colors),
     links to other records (foreign keys), and multi-select relations
-  - Subtables: related records displayed inline (e.g. Contacts under a Company)
+  - Subtables: related records displayed inline (e.g. Contacts under a Company).
+    Hovering a subtable row shows the same floating record tooltip used by the
+    grid row, calendar event, and board card, with the full set of the child
+    record's field values.
   - File attachments per record
   - Images tab (only when the admin enabled images for the table): a gallery of the
     record's images with upload and delete, limited to the configured number of
