@@ -186,7 +186,8 @@ NOTES (User menu > Notes)
 --------------------------
 A private notepad reachable from the header user menu (avatar > Notes). Each note is
 visible only to its author, may optionally be linked to a specific record (by picking
-a table and record ID), and may optionally carry a reminder date. On the reminder date
+a table and record ID), and may optionally carry a reminder date and time, picked in a
+field labelled "Reminder date and time". Once that moment has passed,
 the standard notification cron delivers a reminder under the notification bell, with a
 link back to the linked record when one was set. Notes can be edited or deleted from
 the same panel.

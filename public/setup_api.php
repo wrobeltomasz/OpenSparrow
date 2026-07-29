@@ -204,7 +204,8 @@ if ($action === 'init_database') {
         // The spw_* DDL is shared with the admin init_db action so the two entry points
         // cannot drift apart — see includes/system_tables.php. This wizard only adds the
         // bootstrap (schema + migration tracker) around it, applies the table/column
-        // descriptions, and records both migrations as applied.
+        // descriptions plus the 3.1 note-reminder column change, and records the
+        // migrations as applied.
         require_once __DIR__ . '/../includes/system_tables.php';
         $queries = array_merge(
             [
@@ -214,8 +215,11 @@ if ($action === 'init_database') {
             system_tables_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
             system_tables_comments_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
             [
+                // Note reminders carry a time — see 3.1_notes_reminder_time in the admin registry.
+                "ALTER TABLE " . table_ident($schema, 'spw_notes') . " ALTER COLUMN reminder_date TYPE timestamp",
                 "INSERT INTO $tMigrations (name) VALUES ('3.0_baseline') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $tMigrations (name) VALUES ('3.1_table_comments') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $tMigrations (name) VALUES ('3.1_notes_reminder_time') ON CONFLICT (name) DO NOTHING",
             ]
         );
 

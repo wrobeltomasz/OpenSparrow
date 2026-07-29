@@ -2499,6 +2499,17 @@ thead th.drag-over {
   font-family: inherit;
 }
 
+.note-date-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.note-date-label {
+  color: var(--text);
+  white-space: nowrap;
+}
+
 .note-record-select {
   min-width: 160px;
   max-width: 220px;

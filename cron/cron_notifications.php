@@ -142,19 +142,20 @@ try {
     }
 
     // ── Note reminders (spw_notes) ───────────────────────────────────────────
-    // Private per-user notes (User menu > Notes) with an optional reminder_date fire
-    // into the same spw_users_notifications table/dedup as the calendar sources above.
+    // Private per-user notes (User menu > Notes) with an optional reminder_date (date+time)
+    // fire into the same spw_users_notifications table/dedup as the calendar sources above.
+    // Due-or-overdue rather than an exact match, so a reminder set for 14:30 still fires on
+    // the next run and a missed run does not swallow it (dedup keeps it to one per note).
     print_log("<h3>Note reminders</h3>");
     $today = date('Y-m-d');
-    $noteRes = pg_query_params(
+    $noteRes = pg_query(
         $conn,
-        "SELECT id, user_id, body, related_table, related_id
+        "SELECT id, user_id, body, related_table, related_id, reminder_date::date AS reminder_day
          FROM " . sys_table('notes') . "
-         WHERE reminder_date = $1 AND deleted_at IS NULL",
-        [$today]
+         WHERE reminder_date IS NOT NULL AND reminder_date <= NOW() AND deleted_at IS NULL"
     );
     $noteRows = $noteRes ? (pg_fetch_all($noteRes) ?: []) : [];
-    print_log("Notes with a reminder due today: <b>" . count($noteRows) . "</b>");
+    print_log("Notes with a reminder due: <b>" . count($noteRows) . "</b>");
     foreach ($noteRows as $note) {
         $noteUserId = (int)$note['user_id'];
         $noteTitle  = mb_strimwidth((string)$note['body'], 0, 120, '...');
@@ -166,7 +167,10 @@ try {
             VALUES ($1, $2, $3, 'notes', $4, $5)
             ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
         ";
-        $noteInsertRes = pg_query_params($conn, $noteInsertSql, [$noteUserId, $noteTitle, $noteLink, (int)$note['id'], $today]);
+        // Dedup on the reminder's own day, so an overdue note still notifies exactly once.
+        $noteDay = $note['reminder_day'] ?: $today;
+        $noteParams = [$noteUserId, $noteTitle, $noteLink, (int)$note['id'], $noteDay];
+        $noteInsertRes = pg_query_params($conn, $noteInsertSql, $noteParams);
         if ($noteInsertRes && pg_affected_rows($noteInsertRes) > 0) {
             print_log("&nbsp;&nbsp; Added reminder for user ID $noteUserId (Note ID: " . (int)$note['id'] . ")");
             $insertedCount++;

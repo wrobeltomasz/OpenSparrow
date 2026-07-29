@@ -29,7 +29,8 @@ function resolveCellType(colCfg, hasFk) {
     return 'text';
 }
 
-function attachRowTooltip(td, row, schema, col) {
+function attachRowTooltip(td, row, schema, col, type) {
+    if (type === 'fk') return; // interactive search widget; native datalist popup breaks hide events
     const columns = schema.tables[state.currentTable]?.columns || {};
     td.style.cursor = 'default';
 
@@ -81,7 +82,7 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             const hasFk = Boolean(schema.tables[state.currentTable].foreign_keys?.[col]);
             const type = resolveCellType(colCfg, hasFk);
             const td = await CellRenderer.render(type, { row, col, colCfg, schema, isReadOnly });
-            attachRowTooltip(td, row, schema, col);
+            attachRowTooltip(td, row, schema, col, type);
             tr.appendChild(td);
         }
 

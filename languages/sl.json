@@ -312,7 +312,7 @@
         "select_table_first": "-- Select a table first --",
         "select_record": "-- Select record --",
         "load_error": "-- Load error --",
-        "reminder_date": "Reminder date",
+        "reminder_date": "Reminder date and time",
         "reminder_on": "Reminder: {date}",
         "open_record": "Open record",
         "error_saving": "Error saving note."

@@ -228,7 +228,7 @@ Unlike comments, notes are visible only to their author; they may be free-floati
 | `related_table` | varchar(100) NULL | Optional linked table. |
 | `related_id` | int4 NULL | Optional linked record. |
 | `body` | text NOT NULL | Note text; CHECK `char_length(body) <= 4000`. |
-| `reminder_date` | date NULL | If set, `cron/cron_notifications.php` raises a notification on that date. |
+| `reminder_date` | timestamp NULL | If set, `cron/cron_notifications.php` raises a notification once that date and time has passed. |
 | `created_at` | timestamp NOT NULL DEFAULT now() | Creation time. |
 | `updated_at` | timestamp NULL | Last edit; NULL if never edited. |
 | `deleted_at` | timestamp NULL | Soft delete. |

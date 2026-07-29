@@ -40,7 +40,10 @@ async function renderFkCell({ row, col, colCfg, schema, isReadOnly }) {
 
     input.value = currentDisplay;
 
-    input.addEventListener('focus', () => input.select());
+    // Select all text on focus so typing immediately replaces it — deferred to a
+    // microtask because a mouse click's default caret placement runs after focus
+    // and would otherwise collapse the selection right back to a cursor position.
+    input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
     input.addEventListener('blur', () => {
         const isValid = Array.from(datalist.options).some(o => o.value === input.value);
         if (!isValid && input.value !== '') {

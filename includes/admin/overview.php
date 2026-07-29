@@ -135,6 +135,7 @@ if ($action === 'overview') {
         $knownMig = [
             '3.0_baseline',
             '3.1_table_comments',
+            '3.1_notes_reminder_time',
         ];
         $pendingMig = count(array_filter($knownMig, static fn($n) => !isset($applied[$n])));
 

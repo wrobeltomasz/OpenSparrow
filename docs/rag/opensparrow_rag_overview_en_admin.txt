@@ -360,7 +360,7 @@ Content attached to records:
                                soft-deleted, served only through the file proxies
   spw_comments               — per-record discussion threads (max 4000 characters)
   spw_notes                  — private per-user notepad, optionally linked to a record
-                               and optionally carrying a reminder date
+                               and optionally carrying a reminder date+time
 
 Notifications and automations:
   spw_users_notifications    — per-user notification inbox; a uniqueness rule on

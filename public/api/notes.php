@@ -64,7 +64,9 @@ function validatedRelation(array $src): array
     return [validatedTable($relatedTable, 'related_table'), $relatedId];
 }
 
-// Validates an optional reminder_date (Y-m-d, today or later). Returns null when unset.
+// Validates an optional reminder date+time, now or later. Accepts the datetime-local
+// wire format (Y-m-d\TH:i[:s]), a space-separated variant, and a bare Y-m-d (treated as
+// midnight) for backward compatibility. Returns 'Y-m-d H:i:00', or null when unset.
 function validatedReminderDate(array $src): ?string
 {
     $raw = trim($src['reminder_date'] ?? '');
@@ -72,15 +74,31 @@ function validatedReminderDate(array $src): ?string
         return null;
     }
 
-    $date = DateTime::createFromFormat('Y-m-d', $raw);
-    if (!$date || $date->format('Y-m-d') !== $raw) {
-        jsonError('reminder_date must be a valid date (YYYY-MM-DD).', 400);
+    $normalized = str_replace('T', ' ', $raw);
+    $date = null;
+    $hasTime = true;
+    foreach (['Y-m-d H:i:s', 'Y-m-d H:i', 'Y-m-d'] as $format) {
+        $parsed = DateTime::createFromFormat($format, $normalized);
+        if ($parsed && $parsed->format($format) === $normalized) {
+            $date = $parsed;
+            $hasTime = $format !== 'Y-m-d';
+            break;
+        }
     }
-    if ($raw < date('Y-m-d')) {
+    if (!$date) {
+        jsonError('reminder_date must be a valid date/time (YYYY-MM-DDTHH:MM).', 400);
+    }
+    // A bare date means "that day", not "that day at the current clock time".
+    if (!$hasTime) {
+        $date->setTime(0, 0);
+        if ($date->format('Y-m-d') < date('Y-m-d')) {
+            jsonError('reminder_date cannot be in the past.', 400);
+        }
+    } elseif ($date->format('Y-m-d H:i:s') < date('Y-m-d H:i:s')) {
         jsonError('reminder_date cannot be in the past.', 400);
     }
 
-    return $raw;
+    return $date->format('Y-m-d H:i:00');
 }
 
 function validatedBody(array $src): string
@@ -157,6 +175,10 @@ function actionList($conn): void
     $notes = [];
     while ($row = pg_fetch_assoc($res)) {
         $row['related_id'] = $row['related_id'] !== null ? (int)$row['related_id'] : null;
+        // PG renders timestamps as 'Y-m-d H:i:s'; the client wants minute precision.
+        if (!empty($row['reminder_date'])) {
+            $row['reminder_date'] = substr(str_replace(' ', 'T', $row['reminder_date']), 0, 16);
+        }
         $notes[] = $row;
     }
 
@@ -190,7 +212,7 @@ function actionAdd($conn, array $body): void
         'body'          => $noteBody,
         'related_table' => $relatedTable,
         'related_id'    => $relatedId,
-        'reminder_date' => $reminderDate,
+        'reminder_date' => $reminderDate !== null ? substr(str_replace(' ', 'T', $reminderDate), 0, 16) : null,
         'created_at'    => $inserted['created_at'],
         'updated_at'    => null,
     ]], 201);

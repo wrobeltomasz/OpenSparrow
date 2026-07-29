@@ -22,6 +22,24 @@ async function loadTableOptions() {
     return tableOptions;
 }
 
+// datetime-local wants local wall-clock 'YYYY-MM-DDTHH:MM' — toISOString() would shift by UTC.
+function localDateTimeValue(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Stored values are 'YYYY-MM-DDTHH:MM'; older notes may still be a bare 'YYYY-MM-DD'.
+function toInputValue(stored) {
+    if (!stored) return '';
+    const v = String(stored).replace(' ', 'T').slice(0, 16);
+    return v.length === 10 ? v + 'T00:00' : v;
+}
+
+// Human-readable reminder for the badge: 'YYYY-MM-DD HH:MM'.
+function formatReminder(stored) {
+    return toInputValue(stored).replace('T', ' ');
+}
+
 function noteLink(note) {
     if (!note.related_table || !note.related_id) return null;
     return 'edit.php?table=' + encodeURIComponent(note.related_table) + '&id=' + encodeURIComponent(note.related_id);
@@ -155,15 +173,23 @@ function buildForm(tables, onSubmit, initial = null) {
     }
 
     const dateInput = document.createElement('input');
-    dateInput.type = 'date';
+    dateInput.type = 'datetime-local';
     dateInput.className = 'note-date-input';
-    dateInput.min = new Date().toISOString().slice(0, 10);
-    dateInput.value = initial?.reminder_date ?? '';
+    dateInput.min = localDateTimeValue(new Date());
+    dateInput.value = toInputValue(initial?.reminder_date);
     dateInput.title = I18n.t('notes.reminder_date');
+
+    const dateField = document.createElement('label');
+    dateField.className = 'note-date-field';
+    const dateLabel = document.createElement('span');
+    dateLabel.className = 'note-date-label';
+    dateLabel.textContent = I18n.t('notes.reminder_date');
+    dateField.appendChild(dateLabel);
+    dateField.appendChild(dateInput);
 
     linkRow.appendChild(tableSelect);
     linkRow.appendChild(recordSelect);
-    linkRow.appendChild(dateInput);
+    linkRow.appendChild(dateField);
 
     const actionsRow = document.createElement('div');
     actionsRow.className = 'note-form-row';
@@ -225,7 +251,7 @@ function buildNoteRow(note, tables, { onSave, onDelete }) {
         if (note.reminder_date) {
             const badge = document.createElement('span');
             badge.className = 'note-reminder-badge';
-            badge.textContent = I18n.t('notes.reminder_on', { date: note.reminder_date });
+            badge.textContent = I18n.t('notes.reminder_on', { date: formatReminder(note.reminder_date) });
             meta.appendChild(badge);
         }
 

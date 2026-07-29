@@ -310,7 +310,7 @@
         "select_table_first": "-- Najpierw wybierz tabelę --",
         "select_record": "-- Wybierz rekord --",
         "load_error": "-- Błąd ładowania --",
-        "reminder_date": "Data przypomnienia",
+        "reminder_date": "Data i godzina przypomnienia",
         "reminder_on": "Przypomnienie: {date}",
         "open_record": "Otwórz rekord",
         "error_saving": "Błąd zapisu notatki."
