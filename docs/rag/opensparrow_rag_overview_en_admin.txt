@@ -237,6 +237,8 @@ Demo Systems:
     record ownership, file and image attachments, and bell-icon notifications —
     so the comment, notes and notification panels are populated right after install
   - Reset button removes the demo data and its configuration entries
+  - Can also be installed directly from the first-run setup wizard (a checkbox
+    on the Schema step seeds the CRM demo right after the admin account is created)
 
 Health Check:
   - Database connection status, table bloat analysis, index advisor,
