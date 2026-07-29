@@ -1,8 +1,8 @@
-// admin/js/docs.js — Admin documentation page renderer; builds HTML from docs-strings.js STRINGS, language switch persisted in localStorage (sparrow_docs_lang). Languages: en/pl/de/fr/it/es.
+// admin/js/docs.js — Admin documentation page renderer; builds HTML from docs-strings.js STRINGS, language switch persisted in localStorage (sparrow_docs_lang). Languages: en/pl only.
 import { STRINGS } from './docs-strings.js';
 
-// Configuration constants - limited to required languages
-const ALL_LANGS = ['en', 'pl', 'de', 'fr', 'it', 'es'];
+// Configuration constants - documentation is maintained in English and Polish only
+const ALL_LANGS = ['en', 'pl'];
 const STORAGE_KEY = 'sparrow_docs_lang';
 
 // HTML generators
@@ -495,6 +495,7 @@ ${_h4(s.s13_js_head)}
 ${_ul([s.s13_js1, s.s13_js2, s.s13_js3, s.s13_js4, s.s13_js5, s.s13_js6])}
 ${_h4(s.s13_add_head)}
 ${_ol([s.s13_add1, s.s13_add2, s.s13_add3, s.s13_add4])}
+${_p(`<strong>${s.s13_docslang_label}:</strong> ${s.s13_docslang}`)}
 
 ${_h3('doc-14', s.s14_head)}
 ${_p(s.s14_desc)}
