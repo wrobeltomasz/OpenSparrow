@@ -1,0 +1,43 @@
+Additional Permission under Section 7 of the GNU General Public License,
+
+version 3, as incorporated by the GNU Lesser General Public License,
+
+version 3 ("this License")
+
+ 
+As a special exception to the terms of this License, the copyright holder
+
+of OpenSparrow grants the following additional permission.
+
+ 
+Data schemas, configuration files, generated source code, and any other
+
+content that you create, upload, or otherwise supply through the
+
+interfaces provided by OpenSparrow (including, but not limited to, JSON
+
+schema definitions and application code generated from them) constitute
+
+an "Application" within the meaning of Section 0 of the GNU Lesser
+
+General Public License, version 3, and are not considered to be based
+
+on, or a modified version of, the Library, regardless of the degree of
+
+integration with OpenSparrow at runtime.
+
+ 
+Accordingly, you are not required to license such Application under the
+
+terms of this License, the GNU General Public License, or the GNU Lesser
+
+General Public License, and you retain all rights to it as its author
+
+or rightful owner.
+
+ 
+This exception does not extend to modifications made directly to
+
+OpenSparrow's own source code (the Library itself), which remain subject
+
+to the terms of the GNU Lesser General Public License, version 3.
