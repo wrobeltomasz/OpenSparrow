@@ -17,7 +17,6 @@ require_once __DIR__ . '/../crypto.php';
 
 // GET: list automation run history
 if ($action === 'automations_runs' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn  = db_connect();
@@ -45,9 +44,9 @@ if ($action === 'automations_runs' && $_SERVER['REQUEST_METHOD'] === 'GET') {
                 $runs[] = $row;
             }
         }
-        echo json_encode(['ok' => true, 'runs' => $runs]);
+        echo json_encode(['status' => 'success', 'runs' => $runs]);
     } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => admin_error_message($e)]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
@@ -98,18 +97,21 @@ function auto_redact_secrets(array $rules): array
 
 // GET: list all automation rules
 if ($action === 'automations_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    header('Content-Type: application/json');
     try {
-        echo json_encode(['ok' => true, 'automations' => auto_redact_secrets(auto_cfg_read())]);
+        echo json_encode(['status' => 'success', 'automations' => auto_redact_secrets(auto_cfg_read())]);
     } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => admin_error_message($e)]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
 
 // POST: create or update automation rule
 if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
+    if (DEMO_MODE) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
+        exit;
+    }
     try {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -124,11 +126,11 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             : null;
 
         if ($name === '') {
-            echo json_encode(['ok' => false, 'error' => 'Name is required.']);
+            echo json_encode(['status' => 'error', 'error' => 'Name is required.']);
             exit;
         }
         if (!in_array($triggerEvent, ['create', 'update', 'delete'], true)) {
-            echo json_encode(['ok' => false, 'error' => 'Invalid trigger_event.']);
+            echo json_encode(['status' => 'error', 'error' => 'Invalid trigger_event.']);
             exit;
         }
 
@@ -140,7 +142,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $url    = trim((string) ($act['url'] ?? ''));
                 $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
                 if ($url === '' || !in_array($scheme, ['http', 'https'], true)) {
-                    echo json_encode(['ok' => false, 'error' => $label . ' (webhook): a valid http(s) URL is required.']);
+                    echo json_encode(['status' => 'error', 'error' => $label . ' (webhook): a valid http(s) URL is required.']);
                     exit;
                 }
                 $allowedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
@@ -186,11 +188,11 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $recips = array_filter((array) $recips, static fn($r) => trim((string) $r) !== '');
                 if ($recips === []) {
-                    echo json_encode(['ok' => false, 'error' => $label . ' (email): at least one recipient is required.']);
+                    echo json_encode(['status' => 'error', 'error' => $label . ' (email): at least one recipient is required.']);
                     exit;
                 }
                 if (trim((string) ($act['subject'] ?? '')) === '') {
-                    echo json_encode(['ok' => false, 'error' => $label . ' (email): subject is required.']);
+                    echo json_encode(['status' => 'error', 'error' => $label . ' (email): subject is required.']);
                     exit;
                 }
             }
@@ -288,30 +290,34 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         auto_cfg_write($list);
-        echo json_encode(['ok' => true]);
+        echo json_encode(['status' => 'success']);
     } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => admin_error_message($e)]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }
 
 // POST: delete automation rule
 if ($action === 'automations_delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
+    if (DEMO_MODE) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
+        exit;
+    }
     try {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $id   = (string) ($body['id'] ?? '');
         if ($id === '') {
-            echo json_encode(['ok' => false, 'error' => 'Invalid id.']);
+            echo json_encode(['status' => 'error', 'error' => 'Invalid id.']);
             exit;
         }
 
         $list    = auto_cfg_read();
         $filtered = array_filter($list, static fn(array $item) => ($item['id'] ?? '') !== $id);
         auto_cfg_write($filtered);
-        echo json_encode(['ok' => true]);
+        echo json_encode(['status' => 'success']);
     } catch (Throwable $e) {
-        echo json_encode(['ok' => false, 'error' => admin_error_message($e)]);
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
 }

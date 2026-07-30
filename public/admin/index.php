@@ -16,19 +16,30 @@ start_session();
 // First-run bypass: if spw_users table doesn't exist yet the panel must be
 // reachable so the operator can run "Initialize System Tables". Once the table
 // exists and contains at least one admin account, normal auth applies.
+// Narrow on purpose: only a *working* connection reporting SQLSTATE 42P01
+// (undefined_table) counts as first run. Treating any db_connect()/pg_query
+// failure as first run would drop the login and role gates on a transient
+// connection or permission error.
 $firstRun = false;
 require_once __DIR__ . '/../../includes/db.php';
 $_conn = @db_connect();
-if (!$_conn) {
-    $firstRun = true;
-} else {
+if ($_conn) {
     $tUsers = sys_table('users');
-    $chk = @pg_query($_conn, "SELECT 1 FROM $tUsers LIMIT 1");
-    if ($chk === false) {
-        $firstRun = true;
+    // pg_send_query()/pg_get_result() rather than pg_query(): a failed pg_query()
+    // returns false and discards the result object, so its SQLSTATE is unreadable.
+    $sqlState = null;
+    if (@pg_send_query($_conn, "SELECT 1 FROM $tUsers LIMIT 1")) {
+        $chk = @pg_get_result($_conn);
+        if ($chk !== false) {
+            $sqlState = pg_result_error_field($chk, PGSQL_DIAG_SQLSTATE);
+        }
+        while (@pg_get_result($_conn)) {
+            // drain any remaining results so the connection stays usable
+        }
     }
+    $firstRun = ($sqlState === '42P01');
 }
-unset($_conn, $chk);
+unset($_conn, $chk, $sqlState, $tUsers);
 
 // Redirect to login if not authenticated (skipped on first run)
 if (!$firstRun && !isset($_SESSION['user_id'])) {

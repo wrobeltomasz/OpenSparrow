@@ -45,19 +45,33 @@ export async function renderAuditEditor(ctx) {
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid; gap:10px; margin-bottom:24px;';
 
-    const statusCard = (title, isOk, msg) => {
+    // title/msg are built as text nodes, not interpolated into innerHTML: these
+    // helpers take API-derived strings at several call sites.
+    const buildCard = (borderColor, titleColor, prefix, title, msg) => {
         const div = document.createElement('div');
-        div.style.cssText = `padding:12px 16px; border-left:4px solid ${isOk ? '#2b9348' : '#d00000'}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
-        div.innerHTML = `<strong style=" display:block; margin-bottom:4px; color:${isOk ? '#2b9348' : '#d00000'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong><span style="color:#64748B; ">${msg}</span>`;
+        div.style.cssText = `padding:12px 16px; border-left:4px solid ${borderColor}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
+
+        const strong = document.createElement('strong');
+        strong.style.cssText = `display:block; margin-bottom:4px; color:${titleColor};`;
+        strong.textContent = `${prefix} ${title}`;
+
+        const span = document.createElement('span');
+        span.style.color = '#64748B';
+        span.textContent = msg;
+
+        div.append(strong, span);
         return div;
     };
 
-    const infoCard = (title, msg) => {
-        const div = document.createElement('div');
-        div.style.cssText = 'padding:12px 16px; border-left:4px solid #005A9E; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;';
-        div.innerHTML = `<strong style=" display:block; margin-bottom:4px; color:#1E293B;">[INFO] ${title}</strong><span style="color:#64748B; ">${msg}</span>`;
-        return div;
-    };
+    const statusCard = (title, isOk, msg) => buildCard(
+        isOk ? '#2b9348' : '#d00000',
+        isOk ? '#2b9348' : '#d00000',
+        isOk ? '[OK]' : '[FAIL]',
+        title,
+        msg
+    );
+
+    const infoCard = (title, msg) => buildCard('#005A9E', '#1E293B', '[INFO]', title, msg);
 
     grid.appendChild(statusCard(
         'spw_record_snapshots table',

@@ -12,29 +12,13 @@ declare(strict_types=1);
 
 // Run cron_notifications.php ad-hoc and return captured output
 if ($action === 'run_cron_notifications') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
-    $cronScript = realpath(__DIR__ . '/../../cron/cron_notifications.php');
-    if ($cronScript === false || !is_readable($cronScript)) {
-        echo json_encode(['status' => 'error', 'error' => 'Cron script not found.']);
-        exit;
-    }
-    if (!function_exists('exec')) {
-        echo json_encode(['status' => 'error', 'error' => 'exec() is disabled on this server.']);
-        exit;
-    }
-    $lines = [];
-    $returnCode = 0;
-    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' admin 2>&1', $lines, $returnCode);
-    echo json_encode(['status' => 'success', 'output' => implode("\n", $lines)]);
-    exit;
+    admin_run_cron_script(__DIR__ . '/../../cron/cron_notifications.php', 'Cron script not found.');
 }
 
 if ($action === 'cron_log') {
-    header('Content-Type: application/json');
-    try {
-        require_once __DIR__ . '/../../includes/db.php';
-        $conn = db_connect();
+    admin_try(static function (): void {
+        $conn = admin_conn();
         $tLog = sys_table('users_notifications_log');
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
         $res = @pg_query($conn, "
@@ -52,22 +36,13 @@ if ($action === 'cron_log') {
         if (!$res) {
             admin_db_fail($conn, 'cron_log');
         }
-        $rows = [];
-        while ($r = pg_fetch_assoc($res)) {
-            $rows[] = $r;
-        }
-        echo json_encode(['status' => 'success', 'rows' => $rows]);
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
-    }
-    exit;
+        admin_ok(['rows' => admin_fetch_all($res)]);
+    });
 }
 
 if ($action === 'cron_stats') {
-    header('Content-Type: application/json');
-    try {
-        require_once __DIR__ . '/../../includes/db.php';
-        $conn = db_connect();
+    admin_try(static function (): void {
+        $conn = admin_conn();
         $tN = sys_table('users_notifications');
         $tU = sys_table('users');
 
@@ -96,10 +71,7 @@ if ($action === 'cron_stats') {
         if (!$perUserRes) {
             admin_db_fail($conn, 'cron_stats_per_user');
         }
-        $perUser = [];
-        while ($r = pg_fetch_assoc($perUserRes)) {
-            $perUser[] = $r;
-        }
+        $perUser = admin_fetch_all($perUserRes);
 
         $lastRunRes = @pg_query($conn, "
             SELECT TO_CHAR(started_at, 'YYYY-MM-DD HH24:MI:SS') AS last_run,
@@ -109,35 +81,11 @@ if ($action === 'cron_stats') {
         ");
         $lastRun = ($lastRunRes && $r = pg_fetch_assoc($lastRunRes)) ? $r : null;
 
-        echo json_encode(['status' => 'success', 'totals' => $totals, 'per_user' => $perUser, 'last_run' => $lastRun]);
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
-    }
-    exit;
+        admin_ok(['totals' => $totals, 'per_user' => $perUser, 'last_run' => $lastRun]);
+    });
 }
-
-// ── Many-to-Many Relationship Builder ─────────────────────────────────────────
 
 if ($action === 'cron_purge_log') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
-    try {
-        require_once __DIR__ . '/../../includes/db.php';
-        $conn = db_connect();
-        $days = max(1, (int)(json_decode(file_get_contents('php://input'), true)['days'] ?? 30));
-        $tLog = sys_table('users_notifications_log');
-        $res = @pg_query_params(
-            $conn,
-            "DELETE FROM {$tLog} WHERE started_at < NOW() - (\$1 || ' days')::interval",
-            [$days]
-        );
-        if (!$res) {
-            admin_db_fail($conn, 'cron_purge_log');
-        }
-        echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
-    }
-    exit;
+    admin_try(static fn() => admin_purge_log(sys_table('users_notifications_log'), 30, 'cron_purge_log'));
 }
-// ── Data Anonymization ────────────────────────────────────────────────────────

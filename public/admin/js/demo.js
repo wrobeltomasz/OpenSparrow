@@ -48,7 +48,13 @@ export function renderDemoPage({ workspaceEl }) {
                 renderInstallForm(workspaceEl);
             }
         } catch (e) {
-            workspaceEl.innerHTML = `<p class="admin-error">Error: ${e.message}</p>`;
+            // Exception text often originates from the API — build the node
+            // instead of interpolating it into HTML.
+            workspaceEl.innerHTML = '';
+            const err = document.createElement('p');
+            err.className = 'admin-error';
+            err.textContent = 'Error: ' + e.message;
+            workspaceEl.appendChild(err);
         }
     })();
 }

@@ -8,33 +8,11 @@ declare(strict_types=1);
 // Runs in the front controller's scope — each helper emits JSON and exits.
 
 /**
- * Validate, invoke a cron worker script with an optional single-item id, and emit the
- * captured output as JSON. Unlike the old inline copies, the run status reflects the
- * worker's exit code, so a failed run reports status:'error' (with the output still
- * included so the admin sees what happened). Never returns — always exits.
+ * ETL-flavoured argument order for admin_run_cron_script() (includes/admin/helpers.php),
+ * which is now the single implementation shared with cron.php and anonymization.php.
+ * Kept so the two ETL modules keep their existing call shape. Never returns.
  */
-function etl_admin_run_cron_script(string $absScriptPath, string $itemId, string $notFoundMsg): void
+function etl_admin_run_cron_script(string $absScriptPath, string $itemId, string $notFoundMsg): never
 {
-    $cronScript = realpath($absScriptPath);
-    if ($cronScript === false || !is_readable($cronScript)) {
-        echo json_encode(['status' => 'error', 'error' => $notFoundMsg]);
-        exit;
-    }
-    if (!function_exists('exec')) {
-        echo json_encode(['status' => 'error', 'error' => 'exec() is disabled on this server.']);
-        exit;
-    }
-    $args = 'admin';
-    if ($itemId !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $itemId)) {
-        $args .= ' ' . escapeshellarg($itemId);
-    }
-    $lines = [];
-    $code  = 0;
-    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' ' . $args . ' 2>&1', $lines, $code);
-    echo json_encode([
-        'status'    => $code === 0 ? 'success' : 'error',
-        'output'    => implode("\n", $lines),
-        'exit_code' => $code,
-    ]);
-    exit;
+    admin_run_cron_script($absScriptPath, $notFoundMsg, $itemId);
 }

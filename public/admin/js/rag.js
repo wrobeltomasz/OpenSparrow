@@ -2,7 +2,8 @@
 // Upload/list/delete/rechunk documents, edit settings, test query and Ollama check via api.php (rag_* actions). CSRF via apiFetch().
 
 import { apiFetch } from '../../assets/js/util/api.js';
-import { escHtml as ragEsc } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
+import { showStatusPill } from './app.js';
 
 function ragCard(title, desc) {
     const card = document.createElement('div');
@@ -203,7 +204,7 @@ function ragBuildDocumentsTab(panel) {
                 opt.textContent = code.toUpperCase();
                 langUpSelect.appendChild(opt);
             });
-        } catch (_) { /* optional */ }
+        } catch (e) { console.warn('[rag] language list unavailable', e); }
     })();
 
     const uploadBtn = document.createElement('button');
@@ -453,11 +454,11 @@ function ragBuildDocumentsTab(panel) {
                     if (d.status === 'success') {
                         await loadFiles();
                     } else {
-                        alert('Re-chunk failed: ' + (d.error ?? 'Unknown error'));
+                        showStatusPill(rechunkBtn, 'Re-chunk failed: ' + (d.error ?? 'Unknown error'), 'error');
                         rechunkBtn.disabled = false;
                     }
                 } catch (e) {
-                    alert('Request failed: ' + e.message);
+                    showStatusPill(rechunkBtn, 'Request failed: ' + e.message, 'error');
                     rechunkBtn.disabled = false;
                 }
             });
@@ -468,7 +469,7 @@ function ragBuildDocumentsTab(panel) {
             delBtn.textContent = 'Delete';
             delBtn.className = 'btn btn-danger btn-xs';
             delBtn.addEventListener('click', async () => {
-                if (!confirm('Delete "' + ragEsc(file.filename) + '"?')) return;
+                if (!confirm('Delete "' + escHtml(file.filename) + '"?')) return;
                 delBtn.disabled = true;
                 try {
                     const r = await apiFetch('api.php?action=rag_delete', {
@@ -479,11 +480,11 @@ function ragBuildDocumentsTab(panel) {
                     if (d.status === 'success') {
                         await loadFiles();
                     } else {
-                        alert('Delete failed: ' + (d.error ?? 'Unknown error'));
+                        showStatusPill(delBtn, 'Delete failed: ' + (d.error ?? 'Unknown error'), 'error');
                         delBtn.disabled = false;
                     }
                 } catch (e) {
-                    alert('Request failed: ' + e.message);
+                    showStatusPill(delBtn, 'Request failed: ' + e.message, 'error');
                     delBtn.disabled = false;
                 }
             });
@@ -973,7 +974,7 @@ function ragBuildSettingsTab(panel) {
                     modelSelect.insertBefore(opt, modelSelect.options[1] ?? null);
                 }
             }
-        } catch (_) { /* use defaults */ }
+        } catch (e) { console.warn('[rag] settings unavailable, using defaults', e); }
     })();
 
     // ── Save ─────────────────────────────────────────────────────────────────
@@ -1104,7 +1105,7 @@ function ragBuildTestTab(panel) {
                 if (code === current) opt.selected = true;
                 langSelect.appendChild(opt);
             });
-        } catch (_) { /* language hint is optional */ }
+        } catch (e) { console.warn('[rag] language hint unavailable', e); }
     })();
 
     // Query input

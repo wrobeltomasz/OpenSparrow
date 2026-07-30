@@ -9,9 +9,10 @@ declare(strict_types=1);
 // / admin_db_fail() / require_not_demo() helpers defined by the front controller.
 // Every action block emits its own JSON response and exits.
 
+require_once __DIR__ . '/../api_helpers.php';
+
 // GET: admin overview dashboard data
 if ($action === 'overview') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();

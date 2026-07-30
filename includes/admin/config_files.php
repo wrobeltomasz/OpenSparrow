@@ -28,8 +28,6 @@ $menuSanitizeIcon = static function (string $icon): string {
 
 // GET: return structured (possibly nested) menu item list for the admin Menu Preview tab
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    header('Content-Type: application/json');
-
     // Build catalog: key → full display entry
     $catalog = [];
 
@@ -118,7 +116,6 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 
 // POST: save menu structure (order + nesting) to the "menu" config
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
 
     $body = json_decode(file_get_contents('php://input'), true);
@@ -182,7 +179,6 @@ $dbBackedFiles = ['automations', 'board', 'calendar', 'dashboard', 'files', 'sch
 
 // Get content of a JSON config file
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
-    header('Content-Type: application/json');
     if (in_array($file, $dbBackedFiles, true)) {
         require_once __DIR__ . '/../config_store.php';
         $cfg = config_get($file);
@@ -212,12 +208,10 @@ if ($action === 'get' && in_array($file, $allowedFiles, true)) {
 // Save content to a JSON config file
 if ($action === 'save' && in_array($file, $allowedFiles, true)) {
     // Block all configuration writes in Demo Mode.
-    header('Content-Type: application/json');
     require_not_demo('Saving ' . $file . ' configuration is disabled in Demo Mode.', 403);
 
     $data = file_get_contents('php://input');
     $filePath = __DIR__ . '/../../config/' . $file . '.json';
-    header('Content-Type: application/json');
     $parsedData = json_decode($data, true);
     if (in_array($file, $dbBackedFiles, true)) {
         if (!is_array($parsedData)) {

@@ -12,6 +12,10 @@ declare(strict_types=1);
 
 const USER_ROLES = ['admin', 'editor', 'viewer'];
 
+// The admin performing the action. Every user-management mutation is audited
+// against this id — writing a hardcoded 0 would make the *_log trail anonymous.
+$adminActorId = (int) ($_SESSION['user_id'] ?? 0);
+
 /**
  * Reads the 'user_policy' spw_config key, filling in defaults for unset fields.
  */
@@ -28,7 +32,6 @@ function admin_user_policy(): array
 
 // Fetch list of all system users
 if ($action === 'users_list') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -57,7 +60,6 @@ if ($action === 'users_list') {
 
 // Add a new user securely
 if ($action === 'users_add') {
-    header('Content-Type: application/json');
     require_not_demo();
 
     $policy = admin_user_policy();
@@ -96,7 +98,7 @@ if ($action === 'users_add') {
         }
         $newRow = pg_fetch_assoc($res);
         $newUserId = (int)($newRow['id'] ?? 0);
-        log_user_action($conn, 0, 'ADD_USER', 'users', $newUserId);
+        log_user_action($conn, $adminActorId, 'ADD_USER', 'users', $newUserId);
         echo json_encode(['status' => 'success']);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
@@ -106,7 +108,6 @@ if ($action === 'users_add') {
 
 // Toggle user activation status
 if ($action === 'users_toggle') {
-    header('Content-Type: application/json');
     require_not_demo();
 
     $data = json_decode(file_get_contents('php://input'), true);
@@ -126,7 +127,7 @@ if ($action === 'users_toggle') {
         if (!$res) {
             admin_db_fail($conn, 'users_toggle');
         }
-        log_user_action($conn, 0, 'TOGGLE_USER', 'users', $userId);
+        log_user_action($conn, $adminActorId, 'TOGGLE_USER', 'users', $userId);
         echo json_encode(['status' => 'success']);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
@@ -136,7 +137,6 @@ if ($action === 'users_toggle') {
 
 // Handle user role update
 if ($action === 'users_update_role') {
-    header('Content-Type: application/json');
     require_not_demo();
 
     $data = json_decode(file_get_contents('php://input'), true);
@@ -157,7 +157,7 @@ if ($action === 'users_update_role') {
         if (!$res) {
             admin_db_fail($conn, 'users_update_role');
         }
-        log_user_action($conn, 0, 'UPDATE_ROLE', 'users', $userId);
+        log_user_action($conn, $adminActorId, 'UPDATE_ROLE', 'users', $userId);
         echo json_encode(['status' => 'success']);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
@@ -167,7 +167,6 @@ if ($action === 'users_update_role') {
 
 // Change a user's password (admin action — no current-password check required)
 if ($action === 'users_change_password') {
-    header('Content-Type: application/json');
     require_not_demo();
 
     $data     = json_decode(file_get_contents('php://input'), true);
@@ -200,7 +199,7 @@ if ($action === 'users_change_password') {
         if (!$res) {
             admin_db_fail($conn, 'users_change_password');
         }
-        log_user_action($conn, 0, 'CHANGE_PASSWORD', 'users', $userId);
+        log_user_action($conn, $adminActorId, 'CHANGE_PASSWORD', 'users', $userId);
         echo json_encode(['status' => 'success']);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
@@ -210,7 +209,6 @@ if ($action === 'users_change_password') {
 
 // User counts (total/active/inactive/by-role) plus recent user-related audit activity
 if ($action === 'users_stats') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn    = db_connect();
@@ -268,14 +266,12 @@ if ($action === 'users_stats') {
 
 // Fetch the global user policy (min password length, default role for new users)
 if ($action === 'user_policy_get') {
-    header('Content-Type: application/json');
     echo json_encode(['status' => 'success'] + admin_user_policy());
     exit;
 }
 
 // Save the global user policy
 if ($action === 'user_policy_save') {
-    header('Content-Type: application/json');
     require_not_demo();
 
     $data = json_decode(file_get_contents('php://input'), true);
@@ -294,7 +290,7 @@ if ($action === 'user_policy_save') {
     $result = config_save('user_policy', [
         'min_password_length' => $minLen,
         'default_role' => $defaultRole,
-    ]);
+    ], null, $adminActorId ?: null);
     if ($result['status'] !== 'ok') {
         echo json_encode(['status' => 'error', 'error' => $result['error'] ?? 'Save failed.']);
         exit;
@@ -302,7 +298,7 @@ if ($action === 'user_policy_save') {
 
     require_once __DIR__ . '/../../includes/db.php';
     require_once __DIR__ . '/../../includes/api_helpers.php';
-    log_user_action(db_connect(), 0, 'UPDATE_USER_POLICY', 'users', 0);
+    log_user_action(db_connect(), $adminActorId, 'UPDATE_USER_POLICY', 'users', 0);
     echo json_encode(['status' => 'success']);
     exit;
 }

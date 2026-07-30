@@ -3,40 +3,18 @@
 // Persists the "anonymization" config via anonymization_save.
 // Cron worker: cron/cron_anonymization.php.
 import { apiFetch } from '../../assets/js/util/api.js';
-import { buildInnerTabs, createPageHeader } from './ui.js';
+import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdStatus, buildSectionCard } from './ui.js';
 
 let anonConfig  = null;
 let anonVersion = 0;   // optimistic-lock version echoed back on save
 let schemaCache = null;
 
-import { escHtml as anonEsc } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
+import { getGlobalSchema } from './app.js';
 
-function mkSection(title, desc) {
-    const card = document.createElement('div');
-    card.className = 'adm-sec-card';
-
-    const hdr = document.createElement('div');
-    hdr.className = 'adm-sec-hdr';
-    hdr.style.display = 'block';
-
-    const h3 = document.createElement('h3');
-    h3.textContent = title;
-    h3.style.cssText = 'margin:0 0 4px; ';
-
-    const p = document.createElement('p');
-    p.textContent = desc;
-    p.style.cssText = 'margin:0; ';
-    p.className = 'c-muted';
-
-    hdr.append(h3, p);
-    card.appendChild(hdr);
-
-    const body = document.createElement('div');
-    body.className = 'adm-sec-body';
-    card.appendChild(body);
-
-    return { card, body };
-}
+// Section cards come from ui.js (buildSectionCard) — this module used to carry
+// its own byte-identical copy.
+const mkSection = (title, desc) => buildSectionCard(title, desc);
 
 function mkStatusEl() {
     const el = document.createElement('p');
@@ -75,10 +53,9 @@ function isDateType(type) {
 }
 
 async function getSchema() {
-    if (schemaCache) return schemaCache;
-    const res = await apiFetch('api.php?action=get&file=schema');
-    schemaCache = await res.json();
-    return schemaCache;
+    // Shared with every other tab (app.js caches and de-duplicates the request).
+    schemaCache = await getGlobalSchema();
+    return schemaCache ?? {};
 }
 
 // ─── Tab 1: Rules ─────────────────────────────────────────────────────────────
@@ -547,9 +524,8 @@ function buildSuggestionsTab() {
         container.innerHTML = '';
 
         try {
-            const res     = await apiFetch('api.php?action=get&file=schema');
-            const schema  = await res.json();
-            const tables  = schema.tables || {};
+            const schema  = await getGlobalSchema();
+            const tables  = schema?.tables || {};
             const keywords = (anonConfig.dictionary || []).map(w => w.toLowerCase().trim()).filter(Boolean);
 
             if (keywords.length === 0) {
@@ -971,34 +947,13 @@ function buildHistorySection() {
                 container.textContent = 'No runs recorded yet.';
                 return;
             }
-            const tbl   = document.createElement('table');
-            tbl.className = 'adm-tbl';
             const headers = ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Rules', 'Rows Anonymized', 'Report', 'Error'];
-            const thead = tbl.createTHead();
-            const hr    = thead.insertRow();
-            headers.forEach(h => {
-                const th = document.createElement('th');
-                th.className   = 'adm-th';
-                th.textContent = h;
-                hr.appendChild(th);
-            });
+            const tbl = mkTable();
+            mkThead(tbl, headers);
             const tbody = tbl.createTBody();
             data.rows.forEach(r => {
                 const tr = tbody.insertRow();
-                function td(text, css) {
-                    const el = document.createElement('td');
-                    el.className  = 'adm-td';
-                    if (css) el.style.cssText = css;
-                    el.textContent = text ?? '—';
-                    return el;
-                }
-                const clsMap = { success: 'ok', error: 'danger', running: 'warn' };
-                const badge  = document.createElement('span');
-                badge.className   = 'adm-badge adm-badge-' + (clsMap[r.status] || 'muted');
-                badge.textContent = (r.status || '').toUpperCase();
-                const tdSt = document.createElement('td');
-                tdSt.className = 'adm-td';
-                tdSt.appendChild(badge);
+                const tdSt = tdStatus(r.status);
 
                 tr.append(
                     td(r.id),
@@ -1039,13 +994,13 @@ export async function renderAnonymizationPage(ctx) {
         const res  = await apiFetch('api.php?action=anonymization_load');
         const data = await res.json();
         if (data.status !== 'success') {
-            workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Failed to load config: ' + anonEsc(data.error || 'unknown') + '</p>';
+            workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Failed to load config: ' + escHtml(data.error || 'unknown') + '</p>';
             return;
         }
         anonConfig  = data.config;
         anonVersion = data.version ?? 0;
     } catch (e) {
-        workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Request failed: ' + anonEsc(e.message) + '</p>';
+        workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Request failed: ' + escHtml(e.message) + '</p>';
         return;
     }
 

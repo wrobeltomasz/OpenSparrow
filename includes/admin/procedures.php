@@ -12,7 +12,6 @@ declare(strict_types=1);
 // Every action block emits its own JSON response and exits.
 
 if ($action === 'list_procedures') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();

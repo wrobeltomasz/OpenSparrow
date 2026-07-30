@@ -12,7 +12,6 @@ declare(strict_types=1);
 // Every action block emits its own JSON response and exits.
 
 if ($action === 'anonymization_load') {
-    header('Content-Type: application/json');
     require_once __DIR__ . '/../config_store.php';
     $defaults = [
         'enabled'    => false,
@@ -27,7 +26,6 @@ if ($action === 'anonymization_load') {
 }
 
 if ($action === 'anonymization_save') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
     $data = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($data)) {
@@ -65,81 +63,36 @@ if ($action === 'anonymization_save') {
             'replacement' => $r,
         ];
     }
-    require_once __DIR__ . '/../config_store.php';
     // Optimistic lock: the editor echoes back the version it loaded (the field is
     // stripped here — the whitelist rebuild above never copies it into $config).
-    $expectedVersion = isset($data['version']) && is_numeric($data['version']) ? (int) $data['version'] : null;
-    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-    $result = config_save('anonymization', $config, $expectedVersion, $userId);
-    if ($result['status'] === 'conflict') {
-        echo json_encode([
-            'status' => 'error',
-            'error'  => 'Config was modified by someone else — reload and retry.',
-        ]);
-        exit;
-    }
-    if ($result['status'] !== 'ok') {
-        echo json_encode(['status' => 'error', 'error' => $result['error'] ?? 'Failed to save config.']);
-        exit;
-    }
-    echo json_encode(['status' => 'success', 'version' => $result['version']]);
-    exit;
+    admin_config_save_versioned('anonymization', $config, admin_expected_version($data));
 }
 
 if ($action === 'run_anonymization') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
-    $cronScript = realpath(__DIR__ . '/../../cron/cron_anonymization.php');
-    if ($cronScript === false || !is_readable($cronScript)) {
-        echo json_encode(['status' => 'error', 'error' => 'Anonymization cron script not found.']);
-        exit;
-    }
-    if (!function_exists('exec')) {
-        echo json_encode(['status' => 'error', 'error' => 'exec() is disabled on this server.']);
-        exit;
-    }
-    $lines      = [];
-    $returnCode = 0;
-    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' admin 2>&1', $lines, $returnCode);
-    echo json_encode(['status' => 'success', 'output' => implode("\n", $lines)]);
-    exit;
+    admin_run_cron_script(
+        __DIR__ . '/../../cron/cron_anonymization.php',
+        'Anonymization cron script not found.'
+    );
 }
 
 if ($action === 'preview_anonymization') {
-    header('Content-Type: application/json');
-    // Dry run — read-only COUNT(*), modifies no data, so it is allowed even in demo mode.
-    $cronScript = realpath(__DIR__ . '/../../cron/cron_anonymization.php');
-    if ($cronScript === false || !is_readable($cronScript)) {
-        echo json_encode(['status' => 'error', 'error' => 'Anonymization cron script not found.']);
-        exit;
-    }
-    if (!function_exists('exec')) {
-        echo json_encode(['status' => 'error', 'error' => 'exec() is disabled on this server.']);
-        exit;
-    }
-    $lines      = [];
-    $returnCode = 0;
-    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' admin dry 2>&1', $lines, $returnCode);
-    echo json_encode(['status' => 'success', 'output' => implode("\n", $lines)]);
-    exit;
+    // Dry run — read-only COUNT(*), modifies no data, so it is allowed even in
+    // demo mode. It still spawns a process, so it is POST-only ($postActions).
+    admin_run_cron_script(
+        __DIR__ . '/../../cron/cron_anonymization.php',
+        'Anonymization cron script not found.',
+        '',
+        ['dry']
+    );
 }
 
 if ($action === 'anonymization_log') {
-    header('Content-Type: application/json');
-    try {
-        require_once __DIR__ . '/../../includes/db.php';
-        $conn  = db_connect();
+    admin_try(static function (): void {
+        $conn    = admin_conn();
         $tLog    = sys_table('anonymization_log');
         $tReport = sys_table('anonymization_report');
-        $probe   = @pg_query($conn, "SELECT 1 FROM {$tLog} LIMIT 0");
-        if (!$probe) {
-            echo json_encode([
-                'status' => 'success',
-                'rows'   => [],
-                'note'   => 'Run Initialize System Tables to create the log table.',
-            ]);
-            exit;
-        }
+        admin_require_log_table($conn, $tLog);
         $cols = 'l.id, l.started_at, l.finished_at, l.status, l.triggered_by, l.rules_processed, '
               . 'l.rows_anonymized, l.error_message';
         $dur  = 'EXTRACT(EPOCH FROM (COALESCE(l.finished_at, now()) - l.started_at)) AS duration_sec';
@@ -161,45 +114,27 @@ if ($action === 'anonymization_log') {
         if (!$res) {
             admin_db_fail($conn, 'anonymization_log');
         }
-        $rows = [];
-        while ($row = pg_fetch_assoc($res)) {
-            $rows[] = $row;
-        }
-        echo json_encode(['status' => 'success', 'rows' => $rows]);
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
-    }
-    exit;
+        admin_ok(['rows' => admin_fetch_all($res)]);
+    });
 }
 
 if ($action === 'anonymization_purge_log') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
-    try {
-        require_once __DIR__ . '/../../includes/db.php';
-        $conn = db_connect();
-        $days    = max(1, (int)(json_decode((string) file_get_contents('php://input'), true)['days'] ?? 90));
-        $tLog    = sys_table('anonymization_log');
-        $tReport = sys_table('anonymization_report');
-        $res     = @pg_query_params(
-            $conn,
-            "DELETE FROM {$tLog} WHERE started_at < NOW() - (\$1 || ' days')::interval",
-            [$days]
-        );
-        if (!$res) {
-            admin_db_fail($conn, 'anonymization_purge_log');
-        }
+    admin_try(static fn() => admin_purge_log(
+        sys_table('anonymization_log'),
+        90,
+        'anonymization_purge_log',
+        'started_at',
         // Keep the report table in sync (best-effort: it may not exist on older installs).
-        @pg_query_params(
-            $conn,
-            "DELETE FROM {$tReport} WHERE created_at < NOW() - (\$1 || ' days')::interval",
-            [$days]
-        );
-        echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
-    }
-    exit;
+        static function (\PgSql\Connection $conn, int $days): void {
+            @pg_query_params(
+                $conn,
+                'DELETE FROM ' . sys_table('anonymization_report')
+                    . " WHERE created_at < NOW() - ($1 || ' days')::interval",
+                [$days]
+            );
+        }
+    ));
 }
 
 // ── RAG Knowledge Base ────────────────────────────────────────────────────────

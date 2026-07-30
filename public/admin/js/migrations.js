@@ -1,7 +1,7 @@
 // admin/js/migrations.js — Migrations page (renderMigrationsPage): scan for schema drift and apply pending migrations via admin/api_migrations.php (scan/apply); inner tabs.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';
-import { escHtml as escRelMig } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
 
 export async function renderMigrationsPage(ctx) {
     const { workspaceEl } = ctx;
@@ -106,7 +106,7 @@ async function loadMigrations(container) {
     }
 
     if (data.status !== 'success') {
-        container.innerHTML = `<p style="color:var(--danger); ">Error: ${escRelMig(data.error)}</p>`;
+        container.innerHTML = `<p style="color:var(--danger); ">Error: ${escHtml(data.error)}</p>`;
         return;
     }
 
@@ -141,9 +141,9 @@ async function loadMigrations(container) {
             : '—';
 
         tr.innerHTML = `
-            <td class="adm-td mono">${escRelMig(m.name)}</td>
+            <td class="adm-td mono">${escHtml(m.name)}</td>
             <td class="adm-td">${badge}</td>
-            <td class="adm-td">${escRelMig(appliedAt)}</td>`;
+            <td class="adm-td">${escHtml(appliedAt)}</td>`;
     });
 
     const summary = document.createElement('p');
@@ -167,7 +167,7 @@ async function loadReleaseMigrations(container) {
     }
 
     if (data.status !== 'success') {
-        container.innerHTML = `<p style="color:var(--danger); ">Error: ${escRelMig(data.error || 'Unknown')}</p>`;
+        container.innerHTML = `<p style="color:var(--danger); ">Error: ${escHtml(data.error || 'Unknown')}</p>`;
         return;
     }
 
@@ -242,7 +242,7 @@ function renderVersionCard(v, container) {
                 : (a.type === 'config_key_remove' && !a.present)
                     ? ' <span style=" ">(key not found — will skip)</span>'
                     : '';
-            lbl.innerHTML = typeTag + escRelMig(a.label) + existTag;
+            lbl.innerHTML = typeTag + escHtml(a.label) + existTag;
 
             row.append(cb, lbl);
             card.appendChild(row);
@@ -267,8 +267,8 @@ function renderVersionCard(v, container) {
             ad.actions.forEach(a => {
                 const li = document.createElement('li');
                 if (a.status === 'done' && a.backup) {
-                    li.innerHTML = escRelMig(a.type + ': ' + (a.path || a.file)) +
-                        ' <span style="">— backup: ' + escRelMig(a.backup) + '</span>';
+                    li.innerHTML = escHtml(a.type + ': ' + (a.path || a.file)) +
+                        ' <span style="">— backup: ' + escHtml(a.backup) + '</span>';
                 } else {
                     li.textContent = a.type + ': ' + (a.path || a.file || '') + ' [' + a.status + ']';
                 }

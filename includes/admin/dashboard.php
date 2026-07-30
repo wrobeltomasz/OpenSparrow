@@ -11,7 +11,6 @@ declare(strict_types=1);
 // / admin_db_fail() helpers defined by the front controller.
 
 if ($action === 'dashboard_calculate') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../../includes/api_helpers.php';

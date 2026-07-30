@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 // Handle table creation
 if ($action === 'create_table') {
-    header('Content-Type: application/json');
     require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
 
@@ -50,7 +49,6 @@ if ($action === 'create_table') {
 }
 
 if ($action === 'add_column') {
-    header('Content-Type: application/json');
     require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
 
@@ -151,8 +149,6 @@ if ($action === 'add_column') {
 
 // Register a newly created table in schema.json
 if ($action === 'schema_add_table') {
-    header('Content-Type: application/json');
-
     require_not_demo('Disabled in Demo Mode.', 403);
 
     $input       = json_decode(file_get_contents('php://input'), true);
@@ -240,7 +236,6 @@ if ($action === 'schema_add_table') {
 
 // List spw_* system tables from the database for the backup page
 if ($action === 'list_system_tables') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -268,7 +263,6 @@ if ($action === 'list_system_tables') {
 // rules that flag SQL-looking GET query strings on shared hosting) with a GET
 // fallback for backward compatibility.
 if ($action === 'sync_schema') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -298,7 +292,6 @@ if ($action === 'sync_schema') {
 // rules that flag SQL-looking GET query strings on shared hosting) with a GET
 // fallback for backward compatibility.
 if ($action === 'get_db_columns') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();

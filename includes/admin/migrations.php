@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 // Initialize database tables and migrations
 if ($action === 'init_db') {
-    header('Content-Type: application/json');
     require_not_demo('Disabled in Demo Mode.', 403);
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -141,13 +140,11 @@ if ($action === 'init_db') {
         if ($pruned_count > 0) {
             $message .= " Pruned {$pruned_count} obsolete pre-3.0 migration row(s).";
         }
-        header('Content-Type: application/json');
         echo json_encode([
             'status'  => 'success',
             'message' => $message,
         ]);
     } catch (Throwable $e) {
-        header('Content-Type: application/json');
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
     exit;
@@ -155,7 +152,6 @@ if ($action === 'init_db') {
 
 // List all migrations: known registry vs applied in DB
 if ($action === 'migrations_list') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();

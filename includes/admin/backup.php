@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 // Create a timestamped copy of selected tables (structure + data, no indexes/constraints)
 if ($action === 'backup_tables') {
-    header('Content-Type: application/json');
     // CREATE TABLE ... AS SELECT is a write — gated like the other DDL actions
     // (create_table / add_column / schema_add_table in schema.php).
     require_not_demo('Disabled in Demo Mode.', 403);

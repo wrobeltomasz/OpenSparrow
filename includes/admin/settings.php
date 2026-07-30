@@ -21,24 +21,22 @@ if ($action === 'list_icons') {
     foreach ($dirsToScan as $prefix => $dirPath) {
         if (is_dir($dirPath)) {
             $files = scandir($dirPath);
-            foreach ($files as $file) {
-                if ($file !== '.' && $file !== '..') {
-                    $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+            foreach ($files as $iconFile) {
+                if ($iconFile !== '.' && $iconFile !== '..') {
+                    $ext = strtolower(pathinfo($iconFile, PATHINFO_EXTENSION));
                     if (in_array($ext, ['png', 'jpg', 'jpeg', 'svg', 'gif'])) {
-                        $icons[] = $prefix . '/' . $file;
+                        $icons[] = $prefix . '/' . $iconFile;
                     }
                 }
             }
         }
     }
-    header('Content-Type: application/json');
     echo json_encode(['status' => 'success', 'icons' => array_values(array_unique($icons))]);
     exit;
 }
 
 // GET: return current record-snapshot setting and whether it is locked by env var
 if ($action === 'get_snapshot_setting') {
-    header('Content-Type: application/json');
     $envVal = getenv('RECORD_SNAPSHOTS_ENABLED');
     $lockedByEnv = ($envVal !== false && $envVal !== '');
     $enabled = false;
@@ -72,7 +70,6 @@ if ($action === 'get_snapshot_setting') {
 
 // POST: toggle record-snapshot setting in the "settings" config
 if ($action === 'set_snapshot_setting') {
-    header('Content-Type: application/json');
     require_not_demo();
     $envVal = getenv('RECORD_SNAPSHOTS_ENABLED');
     if ($envVal !== false && $envVal !== '') {
@@ -83,10 +80,7 @@ if ($action === 'set_snapshot_setting') {
     $enabled = (bool) ($body['enabled'] ?? false);
     $settings = admin_read_settings();
     $settings['record_snapshots_enabled'] = $enabled;
-    if (!admin_write_settings($settings)) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
-        exit;
-    }
+    admin_save_settings($settings);
     echo json_encode(['status' => 'success', 'enabled' => $enabled]);
     exit;
 }
@@ -96,7 +90,6 @@ if ($action === 'set_snapshot_setting') {
 // returned — only whether one is currently configured (see rag_settings for
 // the same pattern with the Ollama Cloud API key).
 if ($action === 'get_automation_email_setting') {
-    header('Content-Type: application/json');
     $envVal = getenv('AUTOMATION_EMAIL_FROM');
     $lockedByEnv = ($envVal !== false && $envVal !== '');
     $settings = admin_read_settings();
@@ -119,7 +112,6 @@ if ($action === 'get_automation_email_setting') {
 // the "settings" config. When smtp_enabled is true, the cron uses SMTP instead
 // of PHP's mail() to deliver spw_automation_emails.
 if ($action === 'set_automation_email_setting') {
-    header('Content-Type: application/json');
     require_not_demo();
     $envVal = getenv('AUTOMATION_EMAIL_FROM');
     $lockedByEnv = ($envVal !== false && $envVal !== '');
@@ -164,10 +156,7 @@ if ($action === 'set_automation_email_setting') {
         $settings['smtp_password_enc'] = secret_encrypt($smtpPassword);
     }
 
-    if (!admin_write_settings($settings)) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
-        exit;
-    }
+    admin_save_settings($settings);
     echo json_encode(['status' => 'success']);
     exit;
 }
@@ -175,7 +164,6 @@ if ($action === 'set_automation_email_setting') {
 // POST: test the configured (or just-entered) SMTP connection without sending
 // an email — connects, EHLO/STARTTLS, AUTH LOGIN if credentials given, QUIT.
 if ($action === 'test_smtp_connection') {
-    header('Content-Type: application/json');
     require_not_demo();
     require_once __DIR__ . '/../smtp_client.php';
     require_once __DIR__ . '/../crypto.php';
@@ -208,7 +196,6 @@ if ($action === 'test_smtp_connection') {
 
 // GET: return language settings and all available locales from languages/*.json
 if ($action === 'get_language_setting') {
-    header('Content-Type: application/json');
     $settings = admin_read_settings();
 
     $defaultLanguage = is_string($settings['default_language'] ?? null) ? $settings['default_language'] : 'en';
@@ -234,7 +221,6 @@ if ($action === 'get_language_setting') {
 
 // POST: save language settings to the "settings" config
 if ($action === 'set_language_setting') {
-    header('Content-Type: application/json');
     require_not_demo();
 
     $body        = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -262,10 +248,7 @@ if ($action === 'set_language_setting') {
     $settings['default_language'] = $defaultLang;
     unset($settings['available_languages']);
 
-    if (!admin_write_settings($settings)) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
-        exit;
-    }
+    admin_save_settings($settings);
 
     echo json_encode([
         'status'           => 'success',
@@ -276,7 +259,6 @@ if ($action === 'set_language_setting') {
 
 // GET: return AI chat bubble setting
 if ($action === 'get_chat_bubble_setting') {
-    header('Content-Type: application/json');
     $settings = admin_read_settings();
     echo json_encode(['chat_bubble_enabled' => (bool) ($settings['chat_bubble_enabled'] ?? false)]);
     exit;
@@ -284,7 +266,6 @@ if ($action === 'get_chat_bubble_setting') {
 
 // POST: save AI chat bubble setting
 if ($action === 'set_chat_bubble_setting') {
-    header('Content-Type: application/json');
     require_not_demo();
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $enabled = !empty($body['chat_bubble_enabled']);
@@ -292,10 +273,7 @@ if ($action === 'set_chat_bubble_setting') {
     $settings = admin_read_settings();
     $settings['chat_bubble_enabled'] = $enabled;
 
-    if (!admin_write_settings($settings)) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
-        exit;
-    }
+    admin_save_settings($settings);
     echo json_encode(['status' => 'success', 'chat_bubble_enabled' => $enabled]);
     exit;
 }
@@ -304,7 +282,6 @@ if ($action === 'set_chat_bubble_setting') {
 // logo_enabled defaults to false — a fresh install shows no header logo, matching
 // the layout before this feature existed.
 if ($action === 'get_logo_setting') {
-    header('Content-Type: application/json');
     $settings = admin_read_settings();
     $logoPath = $settings['custom_logo_path'] ?? null;
     $appName  = $settings['app_name'] ?? null;
@@ -318,7 +295,6 @@ if ($action === 'get_logo_setting') {
 
 // POST: save the custom application name shown on the login page and browser title
 if ($action === 'set_app_name') {
-    header('Content-Type: application/json');
     require_not_demo();
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $appName = trim((string) ($body['app_name'] ?? ''));
@@ -331,17 +307,13 @@ if ($action === 'set_app_name') {
     $settings = admin_read_settings();
     $settings['app_name'] = $appName;
 
-    if (!admin_write_settings($settings)) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
-        exit;
-    }
+    admin_save_settings($settings);
     echo json_encode(['status' => 'success', 'app_name' => $appName]);
     exit;
 }
 
 // POST: toggle whether the header logo is shown at all (independent of the uploaded file)
 if ($action === 'set_logo_enabled') {
-    header('Content-Type: application/json');
     require_not_demo();
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $enabled = !empty($body['logo_enabled']);
@@ -349,17 +321,13 @@ if ($action === 'set_logo_enabled') {
     $settings = admin_read_settings();
     $settings['logo_enabled'] = $enabled;
 
-    if (!admin_write_settings($settings)) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
-        exit;
-    }
+    admin_save_settings($settings);
     echo json_encode(['status' => 'success', 'logo_enabled' => $enabled]);
     exit;
 }
 
 // POST: upload a replacement logo shown on the frontend footer
 if ($action === 'upload_logo') {
-    header('Content-Type: application/json');
     require_not_demo();
 
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
@@ -367,10 +335,10 @@ if ($action === 'upload_logo') {
         exit;
     }
 
-    $file = $_FILES['file'];
+    $upload = $_FILES['file'];
     // A logo has no reason to be large; keeps the upload folder and page weight small.
     $maxBytes = 2 * 1024 * 1024;
-    if ($file['size'] > $maxBytes) {
+    if ($upload['size'] > $maxBytes) {
         echo json_encode(['status' => 'error', 'error' => 'Logo must be 2 MB or smaller.']);
         exit;
     }
@@ -381,7 +349,7 @@ if ($action === 'upload_logo') {
     $mimeType = 'application/octet-stream';
     if (class_exists('finfo')) {
         $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mimeType = $finfo->file($file['tmp_name']) ?: 'application/octet-stream';
+        $mimeType = $finfo->file($upload['tmp_name']) ?: 'application/octet-stream';
     }
     if (!isset($allowedMimes[$mimeType])) {
         echo json_encode(['status' => 'error', 'error' => 'Only PNG, JPEG or WEBP images are allowed.']);
@@ -404,7 +372,7 @@ if ($action === 'upload_logo') {
     $ext         = $allowedMimes[$mimeType];
     $filename    = 'logo-' . bin2hex(random_bytes(8)) . '.' . $ext;
     $destination = $uploadDir . '/' . $filename;
-    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+    if (!move_uploaded_file($upload['tmp_name'], $destination)) {
         echo json_encode(['status' => 'error', 'error' => 'Failed to save the uploaded file.']);
         exit;
     }
@@ -424,10 +392,7 @@ if ($action === 'upload_logo') {
     $settings['custom_logo_path'] = '/assets/img/uploads/' . $filename;
     // Uploading a logo implies wanting it shown; the enable toggle can still turn it off later.
     $settings['logo_enabled'] = true;
-    if (!admin_write_settings($settings)) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
-        exit;
-    }
+    admin_save_settings($settings);
 
     echo json_encode(['status' => 'success', 'logo_path' => $settings['custom_logo_path'], 'logo_enabled' => true]);
     exit;
@@ -435,7 +400,6 @@ if ($action === 'upload_logo') {
 
 // POST: remove the custom logo and revert to the default OpenSparrow logo
 if ($action === 'remove_logo') {
-    header('Content-Type: application/json');
     require_not_demo();
 
     $settings     = admin_read_settings();
@@ -454,10 +418,7 @@ if ($action === 'remove_logo') {
     // to the default OpenSparrow logo.
     $settings['logo_enabled'] = false;
 
-    if (!admin_write_settings($settings)) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not save settings.']);
-        exit;
-    }
+    admin_save_settings($settings);
 
     echo json_encode(['status' => 'success', 'logo_enabled' => false]);
     exit;

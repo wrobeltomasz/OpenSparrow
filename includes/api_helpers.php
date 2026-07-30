@@ -3,8 +3,9 @@
 // api_helpers.php — Shared helper functions for API endpoints
 // Provides safe table/column access, FK display mapping, boolean normalization, type min values, audit logging, ownership checks, and record snapshots
 // All SQL identifiers are quoted with pg_ident(); values are escaped or parameterized; uses sys_table() for system tables
-// Functions: safe_table, column_list, pg_ident, map_fk_display, log_user_action, get_record_owner_id, can_access_record, set_record_owner, snapshot_record, jsonError, jsonSuccess, requireLogin, validatedTable
+// Functions: safe_table, column_list, pg_ident, map_fk_display, log_user_action, get_record_owner_id, can_access_record, set_record_owner, snapshot_record, jsonError, jsonSuccess, requireLogin, requireWrite, require_not_demo, validatedTable
 
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/../src/Security/UserRole.php';
 
 use App\Security\UserRole;
@@ -337,6 +338,24 @@ function requireWrite(array $roles = ['editor', 'admin']): void
     if (!in_array($_SESSION['role'] ?? '', $roles, true)) {
         jsonError('Forbidden: read-only access', 403);
     }
+}
+
+// Demo Mode guard for write actions. There is no central gate — every action
+// that mutates data or configuration must call this itself. Emits the standard
+// {status:error} envelope and exits when DEMO_MODE is on; pass $code 0 to leave
+// the HTTP status untouched (legacy call sites that expect a 200 body).
+// Single source of truth — endpoints must not define their own copies.
+function require_not_demo(string $message = 'Action disabled in Demo Mode.', int $code = 403): void
+{
+    if (!DEMO_MODE) {
+        return;
+    }
+    if ($code !== 0) {
+        http_response_code($code);
+    }
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'error' => $message]);
+    exit;
 }
 
 // Server-side mirror of the client data-pattern check (assets/js/grid_actions.js):

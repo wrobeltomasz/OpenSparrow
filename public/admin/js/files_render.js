@@ -2,6 +2,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { getCsrfToken } from '../../assets/js/util/csrf.js';
+import { showStatusPill } from './app.js';
 
 const FILES_API = '../api/files.php';
 
@@ -182,7 +183,7 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     const tables = _state.getTableOptions ? _state.getTableOptions() : [];
     
     let tableOpts = '<option value="">-- Target Table --</option>';
-    tables.forEach(t => tableOpts += `<option value="${esc(t.value)}" ${data.table === t.value ? 'selected' : ''}>${esc(t.label)}</option>`);
+    tables.forEach(t => tableOpts += `<option value="${escHtml(t.value)}" ${data.table === t.value ? 'selected' : ''}>${escHtml(t.label)}</option>`);
 
     row.innerHTML = `
         <div style="flex:1">
@@ -211,8 +212,8 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
         if (tbl && _state.getColumnOptionsForTable) {
             const cols = _state.getColumnOptionsForTable(tbl);
             cols.forEach(col => {
-                col1Sel.innerHTML += `<option value="${esc(col.value)}" ${data.col1 === col.value ? 'selected' : ''}>${esc(col.label)}</option>`;
-                col2Sel.innerHTML += `<option value="${esc(col.value)}" ${data.col2 === col.value ? 'selected' : ''}>${esc(col.label)}</option>`;
+                col1Sel.innerHTML += `<option value="${escHtml(col.value)}" ${data.col1 === col.value ? 'selected' : ''}>${escHtml(col.label)}</option>`;
+                col2Sel.innerHTML += `<option value="${escHtml(col.value)}" ${data.col2 === col.value ? 'selected' : ''}>${escHtml(col.label)}</option>`;
             });
         }
     };
@@ -352,7 +353,7 @@ async function loadList() {
         const data = await res.json();
 
         if (!data.success) {
-            setTbody(`<tr><td colspan="8" class="adm-td" style="color:var(--danger)">${esc(data.error || 'Failed to load')}</td></tr>`);
+            setTbody(`<tr><td colspan="8" class="adm-td" style="color:var(--danger)">${escHtml(data.error || 'Failed to load')}</td></tr>`);
             return;
         }
 
@@ -379,25 +380,25 @@ function renderTable(files) {
     }
 
     const rows = files.map(f => `
-        <tr data-uuid="${esc(f.uuid)}">
+        <tr data-uuid="${escHtml(f.uuid)}">
             <td class="adm-td" style="font-weight:bold;text-align:center;color:var(--muted)">${TYPE_ICONS[f.type] ?? TYPE_ICONS.other}</td>
             <td class="adm-td">
                 ${f.type === 'image'
-                    ? `<img src="../file_download.php?uuid=${esc(f.uuid)}&thumb=1" alt="" style="height:32px;width:32px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px">`
+                    ? `<img src="../file_download.php?uuid=${escHtml(f.uuid)}&thumb=1" alt="" style="height:32px;width:32px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px">`
                     : ''}
-                <a href="../file_download.php?uuid=${esc(f.uuid)}" target="_blank">${esc(f.display_name || f.name)}</a>
+                <a href="../file_download.php?uuid=${escHtml(f.uuid)}" target="_blank">${escHtml(f.display_name || f.name)}</a>
             </td>
             <td class="adm-td">
-                <span class="adm-badge adm-badge-muted">${esc(f.type)}</span>
+                <span class="adm-badge adm-badge-muted">${escHtml(f.type)}</span>
             </td>
             <td class="adm-td" style="white-space:nowrap">${formatBytes(f.size_bytes)}</td>
             <td class="adm-td">
-                ${f.related_table ? `<span class="adm-badge adm-badge-muted">${esc(f.related_table)} #${f.related_id}</span>` : '-'}
+                ${f.related_table ? `<span class="adm-badge adm-badge-muted">${escHtml(f.related_table)} #${f.related_id}</span>` : '-'}
             </td>
-            <td class="adm-td">${esc(f.uploaded_by_username || '-')}</td>
+            <td class="adm-td">${escHtml(f.uploaded_by_username || '-')}</td>
             <td class="adm-td" style="white-space:nowrap">${formatDate(f.created_at)}</td>
             <td class="adm-td">
-                <button class="btn btn-danger btn-xs" data-del="${esc(f.uuid)}" data-name="${esc(f.display_name || f.name)}">Del</button>
+                <button class="btn btn-danger btn-xs" data-del="${escHtml(f.uuid)}" data-name="${escHtml(f.display_name || f.name)}">Del</button>
             </td>
         </tr>
     `).join('');
@@ -422,10 +423,10 @@ async function deleteFile(uuid, name) {
         if (data.success) {
             loadList();
         } else {
-            alert(data.error || 'Delete failed.');
+            showStatusPill(document.getElementById('workspace'), data.error || 'Delete failed.', 'error');
         }
     } catch {
-        alert('Network error.');
+        showStatusPill(document.getElementById('workspace'), 'Network error.', 'error');
     }
 }
 
@@ -484,7 +485,7 @@ function formatDate(iso) {
 }
 
 // Security HTML escape
-import { escHtml as esc } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
 
 // String capitalization
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }

@@ -3,7 +3,8 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';
 
-import { escHtml as esc } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
+import { getGlobalSchema } from './app.js';
 
 // spw_config holds the whole application configuration (schema, menu, dashboard,
 // workflows, ...) as one JSONB row per key — treated as "Global Settings" rather
@@ -101,21 +102,21 @@ function buildGroupPanel(panel, tables) {
                     if (r.status === 'success') {
                         li.style.background = 'rgba(43,147,72,0.12)';
                         li.innerHTML = `<span style="color:var(--ok);font-weight:700;">✓</span>`
-                            + ` <strong>${esc(r.table)}</strong> → <code style="background:rgba(43,147,72,0.12);padding:1px 5px;border-radius:3px;">${esc(r.backup)}</code>`
-                            + ` <span style="color:var(--ok);">(${esc(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
+                            + ` <strong>${escHtml(r.table)}</strong> → <code style="background:rgba(43,147,72,0.12);padding:1px 5px;border-radius:3px;">${escHtml(r.backup)}</code>`
+                            + ` <span style="color:var(--ok);">(${escHtml(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
                     } else {
                         li.style.background = 'rgba(208,0,0,0.08)';
                         li.innerHTML = `<span style="color:#a80000;font-weight:700;">✗</span>`
-                            + ` <strong>${esc(r.table)}</strong>: <span style="color:#a80000;">${esc(r.message)}</span>`;
+                            + ` <strong>${escHtml(r.table)}</strong>: <span style="color:#a80000;">${escHtml(r.message)}</span>`;
                     }
                     ul.appendChild(li);
                 });
                 resultArea.appendChild(ul);
             } else {
-                resultArea.innerHTML = `<p style="color:var(--danger);margin:0;">Error: ${esc(data.error || 'Unknown error')}</p>`;
+                resultArea.innerHTML = `<p style="color:var(--danger);margin:0;">Error: ${escHtml(data.error || 'Unknown error')}</p>`;
             }
         } catch (e) {
-            resultArea.innerHTML = `<p style="color:var(--danger);margin:0;">Request failed: ${esc(e.message)}</p>`;
+            resultArea.innerHTML = `<p style="color:var(--danger);margin:0;">Request failed: ${escHtml(e.message)}</p>`;
         }
 
         btnBackup.disabled = false;
@@ -137,14 +138,13 @@ export async function renderBackupPage(ctx) {
     let globalSettingsTables = [];
 
     try {
-        const [schemaRes, sysRes] = await Promise.all([
-            apiFetch('api.php?action=get&file=schema'),
+        const [schemaData, sysRes] = await Promise.all([
+            getGlobalSchema(),
             apiFetch('api.php?action=list_system_tables')
         ]);
-        const schemaData = await schemaRes.json();
-        const sysData    = await sysRes.json();
+        const sysData = await sysRes.json();
 
-        if (schemaData.tables) {
+        if (schemaData?.tables) {
             for (const [name, cfg] of Object.entries(schemaData.tables)) {
                 userTables.push({
                     name,

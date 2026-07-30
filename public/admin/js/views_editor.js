@@ -2,6 +2,7 @@
 
 import { markDirty } from './app.js';
 import { createIconPicker, createTextInput, createCheckbox } from './ui.js';
+import { apiFetch } from '../../assets/js/util/api.js';
 
 export function renderViewsEditor(ctx) {
     const { workspaceEl, currentConfig } = ctx;
@@ -114,7 +115,7 @@ export function renderViewsEditor(ctx) {
         const label = 'PostgreSQL';
         setStatus(`Syncing ${label} views…`, 'info');
         try {
-            const res  = await fetch('../api/views.php?action=sync');
+            const res  = await apiFetch('../api/views.php?action=sync');
             const data = await res.json();
             if (data.status !== 'ok') { setStatus('Sync failed: ' + (data.error ?? 'unknown'), 'error'); return; }
             const synced      = data.db_views ?? [];
@@ -164,8 +165,11 @@ export function renderViewsEditor(ctx) {
         }
         const names = viewNamesForSource(currentSource);
         if (names.length === 0) {
-            const label = 'PostgreSQL';
-            listEl.innerHTML = `<p style=" text-align:center; padding:32px;">No ${label} views found. Click "${syncBtn.textContent}" to discover views.</p>`;
+            listEl.innerHTML = '';
+            const empty = document.createElement('p');
+            empty.style.cssText = 'text-align:center; padding:32px;';
+            empty.textContent = `No PostgreSQL views found. Click "${syncBtn.textContent}" to discover views.`;
+            listEl.appendChild(empty);
             return;
         }
         names.forEach(vName => listEl.appendChild(buildViewCard(vName, views[vName] ?? {})));
@@ -175,7 +179,7 @@ export function renderViewsEditor(ctx) {
     async function renderSchemasPanel() {
         listEl.innerHTML = '<p style=" padding:16px;">Loading schemas…</p>';
         try {
-            const res  = await fetch('../api/views.php?action=schemas');
+            const res  = await apiFetch('../api/views.php?action=schemas');
             const data = await res.json();
             if (data.status !== 'ok') {
                 listEl.innerHTML = '';

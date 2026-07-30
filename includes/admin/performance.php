@@ -12,7 +12,6 @@ declare(strict_types=1);
 // Every action block emits its own JSON response and exits.
 
 if ($action === 'performance_check') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -153,7 +152,6 @@ if ($action === 'performance_check') {
 }
 
 if ($action === 'performance_slow_queries') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -194,7 +192,6 @@ if ($action === 'performance_slow_queries') {
 }
 
 if ($action === 'performance_table_stats') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -237,7 +234,14 @@ if ($action === 'performance_table_stats') {
             ORDER BY s.n_dead_tup DESC, s.seq_scan DESC
         ";
 
-        $pairs = '{' . implode(',', array_map(fn($p) => '{"' . $p[0] . '","' . $p[1] . '"}', $tracked)) . '}';
+        // Build the text[][] literal. Inside a Postgres array literal a quoted
+        // element must backslash-escape both " and \, otherwise a schema/table
+        // name containing either character corrupts the whole literal.
+        $arrEsc = static fn(string $v): string => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $v) . '"';
+        $pairs = '{' . implode(',', array_map(
+            static fn($p) => '{' . $arrEsc((string) $p[0]) . ',' . $arrEsc((string) $p[1]) . '}',
+            $tracked
+        )) . '}';
         $res = @pg_query_params($conn, $sql, [$pairs]);
         if (!$res) {
             // Fallback: query per table if array-of-arrays not supported
@@ -279,7 +283,6 @@ if ($action === 'performance_table_stats') {
 }
 
 if ($action === 'performance_db_health') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -324,7 +327,6 @@ if ($action === 'performance_db_health') {
 }
 
 if ($action === 'performance_unused_indexes') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
@@ -362,7 +364,6 @@ if ($action === 'performance_unused_indexes') {
 }
 
 if ($action === 'performance_schema_warnings') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();

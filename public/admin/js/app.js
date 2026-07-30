@@ -2,34 +2,45 @@
 // Builds the sidebar tabs and dispatches each to its render*() module (schema, dashboard, users, rag, performance, cron, ...); owns currentConfig, dirty-state tracking and the "Save config" action (#btnSave). Exports showStatusPill, markDirty.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { moveArrayItem, moveObjectKey, renderGlobalSettings, createFullMenuPreview } from './ui.js';
+// Static imports are limited to the modules the router needs synchronously:
+// schema/dashboard/calendar/board/workflows are called from renderEditorIntoCard
+// while building a config card. Every other tab is loaded on demand — see
+// PAGE_MODULES below.
 import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings } from './schema.js';
 import { renderDashboardLayout, renderDashboardEditor } from './dashboard.js';
 import { renderCalendarEditor } from './calendar.js';
 import { renderBoardEditor } from './board.js';
-import { renderSecurityEditor } from './security.js';
-import { renderHealthDashboard } from './health.js';
-import { renderDocumentation } from './docs.js';
-import { renderUsersEditor } from './users.js';
 import { renderWorkflowsEditor } from './workflows.js';
-import { renderFilesEditor } from './files_render.js';
-import { renderBackupPage } from './backup.js';
-import { renderAddTableEditor } from './add_table.js';
-import { renderMigrationsPage } from './migrations.js';
-import { renderPerformancePage } from './performance.js';
-import { renderCronPage } from './cron.js';
-import { renderM2mPage } from './m2m.js';
-import { renderErdPage } from './erd.js';
-import { renderViewsEditor } from './views_editor.js';
-import { renderUserRecordsEditor } from './user_records_editor.js';
-import { renderPrintEditor } from './print_editor.js';
-import { renderDemoPage } from './demo.js';
-import { renderSettingsPage } from './settings.js';
-import { renderCsvImportPage } from './csv_import.js';
-import { renderRagPage } from './rag.js';
-import { renderAutomationsPage } from './automations.js';
-import { renderOverviewPage } from './overview.js';
-import { renderAnonymizationPage } from './anonymization.js';
-import { renderEtlPage } from './etl.js';
+
+// ── Lazy tab modules ──────────────────────────────────────────────────────────
+// The panel used to statically import all 35 tab modules, so opening any tab
+// downloaded every one of them (~19k lines) before first paint. Each entry
+// resolves to that tab's render function on first use; the browser caches the
+// module afterwards, so switching back is free.
+//
+// The dynamic specifiers below must stay byte-identical to the ones in the
+// import map emitted by os_module_graph() (includes/page_helpers.php) —
+// otherwise a module would be fetched twice under two URLs and instantiated
+// twice (see the app.js double-instantiation incident).
+const PAGE_MODULES = {
+    overview:      () => import('./overview.js').then(m => m.renderOverviewPage),
+    health:        () => import('./health.js').then(m => m.renderHealthDashboard),
+    docs:          () => import('./docs.js').then(m => m.renderDocumentation),
+    users:         () => import('./users.js').then(m => m.renderUsersEditor),
+    backup:        () => import('./backup.js').then(m => m.renderBackupPage),
+    migrations:    () => import('./migrations.js').then(m => m.renderMigrationsPage),
+    performance:   () => import('./performance.js').then(m => m.renderPerformancePage),
+    cron:          () => import('./cron.js').then(m => m.renderCronPage),
+    demo:          () => import('./demo.js').then(m => m.renderDemoPage),
+    settings:      () => import('./settings.js').then(m => m.renderSettingsPage),
+    csv_import:    () => import('./csv_import.js').then(m => m.renderCsvImportPage),
+    rag:           () => import('./rag.js').then(m => m.renderRagPage),
+    anonymization: () => import('./anonymization.js').then(m => m.renderAnonymizationPage),
+    etl:           () => import('./etl.js').then(m => m.renderEtlPage),
+    print:         () => import('./print_editor.js').then(m => m.renderPrintEditor),
+    views:         () => import('./views_editor.js').then(m => m.renderViewsEditor),
+    user_records:  () => import('./user_records_editor.js').then(m => m.renderUserRecordsEditor),
+};
 
 let currentConfig = null;
 let currentFile = 'overview';
@@ -93,12 +104,12 @@ export function showStatusPill(anchor, message, variant = 'success') {
 }
 
 // Utility function to escape HTML strings safely against XSS
-import { escHtml as escapeHtml } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
 
 // Retrieve the CSRF token from the meta tag
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await fetchGlobalSchema();
+    await getGlobalSchema();
     loadConfigFile(currentFile);
 
     const debugToggle = document.getElementById('debugToggle');
@@ -140,11 +151,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 
+// In-flight request, so concurrent callers share one round trip instead of each
+// issuing their own. Cleared by invalidateGlobalSchema() after a schema save.
+let globalSchemaPromise = null;
+
 async function fetchGlobalSchema() {
     try {
         const res = await apiFetch('api.php?action=get&file=schema');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         globalSchemaObj = await res.json();
-    } catch (e) { console.warn("Could not load global schema"); }
+    } catch (e) {
+        // Leaving this silent used to empty every table/column picker in the
+        // panel with no visible reason — surface it instead.
+        globalSchemaObj = null;
+        console.warn('Could not load global schema', e);
+        showStatusPill(document.getElementById('workspace'), 'Could not load the schema — table and column lists will be empty.', 'error');
+    }
+    return globalSchemaObj;
+}
+
+/**
+ * The "schema" config, shared by every admin tab. Previously eight modules each
+ * fetched api.php?action=get&file=schema on their own; they now await this
+ * cache. Pass force = true only when the schema itself has just been written.
+ */
+export function getGlobalSchema({ force = false } = {}) {
+    if (force) invalidateGlobalSchema();
+    if (globalSchemaObj) return Promise.resolve(globalSchemaObj);
+    if (!globalSchemaPromise) {
+        globalSchemaPromise = fetchGlobalSchema().finally(() => { globalSchemaPromise = null; });
+    }
+    return globalSchemaPromise;
+}
+
+export function invalidateGlobalSchema() {
+    globalSchemaObj    = null;
+    globalSchemaPromise = null;
+}
+
+/**
+ * Tables from the shared schema, hidden ones removed, sorted by display name —
+ * the derivation several editors used to reimplement after their own fetch.
+ */
+export async function getSchemaTables() {
+    const schema = await getGlobalSchema();
+    return Object.entries(schema?.tables ?? {})
+        .filter(([, cfg]) => !cfg?.hidden)
+        .map(([name, cfg]) => ({ name, label: cfg.display_name || name, columns: cfg.columns ?? {} }))
+        .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 function getTableOptions() {
@@ -850,10 +904,38 @@ function renderMenuPreview(ctx) {
             preview.el.remove();
             const msg = document.createElement('p');
             msg.style.color = 'var(--danger)';
-            msg.textContent = 'Failed to load menu config: ' + escapeHtml(err.message);
+            msg.textContent = 'Failed to load menu config: ' + escHtml(err.message);
             workspaceEl.appendChild(msg);
         }
     })();
+}
+
+/**
+ * Loads a lazy tab module and invokes its render function.
+ *
+ * Respects the same workspaceEl._renderId generation counter the tab click
+ * handler bumps, so a module that finishes downloading after the user has moved
+ * on cannot paint over the newly selected tab. A failed download reports itself
+ * instead of leaving the workspace blank.
+ */
+function loadAndRender(loader, ctx, invoke = null) {
+    const myId = workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
+    return loader().then(
+        (fn) => {
+            if (workspaceEl._renderId !== myId) return undefined;
+            return invoke ? invoke(fn) : fn(ctx);
+        },
+        (err) => {
+            if (workspaceEl._renderId !== myId) return undefined;
+            console.error('Could not load tab module', err);
+            workspaceEl.innerHTML = '';
+            const msg = document.createElement('p');
+            msg.className = 'admin-error';
+            msg.textContent = 'Could not load this section. Check your connection and reload the page.';
+            workspaceEl.appendChild(msg);
+            return undefined;
+        }
+    );
 }
 
 function renderEditor(key, itemData, isArray) {
@@ -866,22 +948,17 @@ function renderEditor(key, itemData, isArray) {
         btnSave.style.display = 'inline-block';
     }
 
-    if (currentFile === 'overview') return renderOverviewPage(ctx);
-    if (currentFile === 'security') return renderSecurityEditor(key, itemData, isArray, ctx);
-    if (currentFile === 'health') return renderHealthDashboard(ctx);
-    if (currentFile === 'docs') return renderDocumentation(ctx);
-    if (currentFile === 'users') return renderUsersEditor(ctx);
-    if (currentFile === 'backup') return renderBackupPage(ctx);
-    if (currentFile === 'migrations') return renderMigrationsPage(ctx);
-    if (currentFile === 'performance') return renderPerformancePage(ctx);
-    if (currentFile === 'cron') return renderCronPage(ctx);
-    if (currentFile === 'demo') return renderDemoPage(ctx);
-    if (currentFile === 'settings') return renderSettingsPage(ctx);
-    if (currentFile === 'csv_import') return renderCsvImportPage(ctx);
-    if (currentFile === 'rag') return renderRagPage(ctx);
-    if (currentFile === 'anonymization') return renderAnonymizationPage(ctx);
-    if (currentFile === 'etl') return renderEtlPage(ctx);
-    if (currentFile === 'print') return renderPrintEditor(ctx);
+    // Single-render tab modules, loaded on demand.
+    const pageLoader = PAGE_MODULES[currentFile];
+    if (pageLoader) return loadAndRender(pageLoader, ctx);
+
+    if (currentFile === 'security') {
+        return loadAndRender(
+            () => import('./security.js').then(m => m.renderSecurityEditor),
+            ctx,
+            (fn) => fn(key, itemData, isArray, ctx)
+        );
+    }
     if (currentFile === 'automations') {
         if (key === 'LAYOUT') {
             const msg = document.createElement('p');
@@ -891,27 +968,28 @@ function renderEditor(key, itemData, isArray) {
             return;
         }
         // The item-panel tab bar owns the record/n8n split — pass the picked mode down.
-        return renderAutomationsPage(ctx, key === 'N8N' ? 'n8n' : 'record');
+        return loadAndRender(
+            () => import('./automations.js').then(m => m.renderAutomationsPage),
+            ctx,
+            (fn) => fn(ctx, key === 'N8N' ? 'n8n' : 'record')
+        );
     }
-    if (currentFile === 'views') return renderViewsEditor(ctx);
-    if (currentFile === 'user_records') return renderUserRecordsEditor(ctx);
-    if (currentFile === 'files' && key === 'MANAGER') return renderFilesEditor(ctx);
+    if (currentFile === 'files' && key === 'MANAGER') {
+        return loadAndRender(() => import('./files_render.js').then(m => m.renderFilesEditor), ctx);
+    }
 
     if (currentFile === 'schema' && key === 'MENU_PREVIEW') {
         renderMenuPreview(ctx);
         return;
     }
     if (currentFile === 'schema' && key === 'ADD_TABLE') {
-        renderAddTableEditor(ctx);
-        return;
+        return loadAndRender(() => import('./add_table.js').then(m => m.renderAddTableEditor), ctx);
     }
     if (currentFile === 'schema' && key === 'M2M_BUILDER') {
-        renderM2mPage(ctx);
-        return;
+        return loadAndRender(() => import('./m2m.js').then(m => m.renderM2mPage), ctx);
     }
     if (currentFile === 'schema' && key === 'SCHEMA_MAP') {
-        renderErdPage(ctx);
-        return;
+        return loadAndRender(() => import('./erd.js').then(m => m.renderErdPage), ctx);
     }
 
     if (key === 'LAYOUT') {
@@ -1073,7 +1151,9 @@ btnSave.addEventListener('click', async () => {
             if (result.status === 'success') {
                 markClean();
                 showStatusPill(btnSave, `${currentFile}.json saved`, 'success');
-                fetchGlobalSchema();
+                // Only a schema write can change the shared schema cache —
+                // saving calendar/board/workflows/… must not trigger a refetch.
+                if (currentFile === 'schema') getGlobalSchema({ force: true });
             } else {
                 showStatusPill(btnSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
             }

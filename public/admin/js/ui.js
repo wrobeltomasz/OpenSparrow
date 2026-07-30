@@ -770,3 +770,82 @@ export function createPageHeader(title, description) {
     }
     return frag;
 }
+
+// ── Small DOM builder ─────────────────────────────────────────────────────────
+// The three-line createElement/className/textContent shape that half a dozen
+// modules had each rebuilt under their own name.
+export function el(tag, className = '', text = '') {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== '' && text !== null && text !== undefined) node.textContent = text;
+    return node;
+}
+
+// ── Table builders ────────────────────────────────────────────────────────────
+// Canonical <table class="adm-tbl"> helpers. performance.js, cron.js,
+// etl_common.js, anonymization.js and csv_import.js each carried a private,
+// byte-identical copy of these (mkTable/cronMkTable/…); import these instead.
+
+export function mkTable() {
+    return el('table', 'adm-tbl');
+}
+
+// Appends a <thead> row of <th class="adm-th"> cells to `table`.
+export function mkThead(table, cols) {
+    const tr = table.createTHead().insertRow();
+    cols.forEach(h => tr.appendChild(el('th', 'adm-th', h)));
+    return tr;
+}
+
+// A <td class="adm-td">. `extra` is inline CSS for the rare per-cell tweak
+// (truncation, colour); prefer a class where one exists.
+export function td(text, extra = '') {
+    const cell = el('td', 'adm-td');
+    if (extra) cell.style.cssText = extra.replace(/^[;\s]+/, '');
+    cell.textContent = text ?? '—';
+    return cell;
+}
+
+// A <td class="adm-td"> wrapping an element instead of text.
+export function tdEl(child, extra = '') {
+    const cell = el('td', 'adm-td');
+    if (extra) cell.style.cssText = extra.replace(/^[;\s]+/, '');
+    if (child) cell.appendChild(child);
+    return cell;
+}
+
+// Status badge cell used by every run-history table (ETL, cron, anonymization).
+const STATUS_CLASS = { success: 'ok', error: 'danger', running: 'warn' };
+export function tdStatus(status) {
+    return tdEl(el('span', 'adm-badge adm-badge-' + (STATUS_CLASS[status] || 'muted'), status || ''));
+}
+
+// Truncated, danger-coloured error cell for run-history tables.
+export function tdError(text) {
+    return td(
+        text || '',
+        'color:var(--danger); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
+    );
+}
+
+// ── Section card ──────────────────────────────────────────────────────────────
+// The <div class="adm-sec-card"> shell (header + body) that anonymization.js,
+// cron.js, audit.js and automations.js each hand-rolled. Returns both nodes so
+// the caller fills `body` and appends `card`.
+export function buildSectionCard(title, description = '', id = '') {
+    const card = el('div', 'adm-sec-card');
+    if (id) card.id = id;
+
+    const hdr = el('div', 'adm-sec-hdr');
+    hdr.style.display = 'block';
+    hdr.appendChild(el('h3', '', title)).style.cssText = 'margin:0 0 4px;';
+    if (description) {
+        hdr.appendChild(el('p', 'c-muted', description)).style.cssText = 'margin:0;';
+    }
+    card.appendChild(hdr);
+
+    const body = el('div', 'adm-sec-body');
+    card.appendChild(body);
+
+    return { card, body };
+}

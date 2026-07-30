@@ -10,9 +10,9 @@ declare(strict_types=1);
 // Every action block emits its own JSON response and exits.
 
 require_once __DIR__ . '/../config_store.php';
+require_once __DIR__ . '/../api_helpers.php';
 
 if ($action === 'list_m2m') {
-    header('Content-Type: application/json');
     $schema = config_get('schema');
     if (!is_array($schema['tables'] ?? null)) {
         echo json_encode(['tables' => [], 'relationships' => []]);
@@ -49,7 +49,6 @@ if ($action === 'list_m2m') {
 }
 
 if ($action === 'create_m2m') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
 
     $body       = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -93,30 +92,30 @@ if ($action === 'create_m2m') {
         $conn = db_connect();
         $pgSchema = $schema['tables'][$tableA]['schema'] ?? 'public';
 
-        // Create junction table in PostgreSQL
+        // Create junction table in PostgreSQL. Every identifier — including
+        // $pgSchema, which comes from the schema config and is not covered by
+        // the $identRe check above — goes through pg_ident().
         $sql = sprintf(
-            'CREATE TABLE IF NOT EXISTS "%s"."%s" (
+            'CREATE TABLE IF NOT EXISTS %s.%s (
                 id         SERIAL PRIMARY KEY,
-                %s         INT NOT NULL REFERENCES "%s"."%s"(id) ON DELETE CASCADE,
-                %s         INT NOT NULL REFERENCES "%s"."%s"(id) ON DELETE CASCADE,
+                %s         INT NOT NULL REFERENCES %s.%s(id) ON DELETE CASCADE,
+                %s         INT NOT NULL REFERENCES %s.%s(id) ON DELETE CASCADE,
                 UNIQUE(%s, %s)
             )',
-            $pgSchema,
-            $jt,
+            pg_ident($pgSchema),
+            pg_ident($jt),
             pg_ident($selfFk),
-            $pgSchema,
-            $tableA,
+            pg_ident($pgSchema),
+            pg_ident($tableA),
             pg_ident($otherFk),
-            $pgSchema,
-            $tableB,
+            pg_ident($pgSchema),
+            pg_ident($tableB),
             pg_ident($selfFk),
             pg_ident($otherFk)
         );
         $res = @pg_query($conn, $sql);
         if (!$res) {
-            $err = pg_last_error($conn);
-            echo json_encode(['status' => 'error', 'error' => 'PostgreSQL: ' . $err]);
-            exit;
+            admin_db_fail($conn, 'create_m2m');
         }
 
         // Add hidden junction table entry to schema.json (if not exists)
@@ -166,7 +165,6 @@ if ($action === 'create_m2m') {
 }
 
 if ($action === 'delete_m2m') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
 
     $body          = json_decode(file_get_contents('php://input'), true) ?? [];

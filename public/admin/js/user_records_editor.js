@@ -6,7 +6,7 @@
 // avatar menu (public/assets/js/user-menu.js -> public/api/owners.php action=mine). Two tabs:
 // "Column Mapping" (per table, which columns are CONCAT_WS'd into each record's label) and
 // "Global Settings" (how many recently-assigned records are shown per table).
-import { markDirty } from './app.js';
+import { markDirty, getGlobalSchema } from './app.js';
 import { createPageHeader, buildInnerTabs } from './ui.js';
 
 export function renderUserRecordsEditor(ctx) {
@@ -43,8 +43,7 @@ export function renderUserRecordsEditor(ctx) {
 function renderColumnsPanel(panel, currentConfig) {
     panel.innerHTML = '<p class="help-text">Loading tables…</p>';
 
-    fetch('api.php?action=get&file=schema')
-        .then((res) => res.json())
+    getGlobalSchema()
         .then((schema) => {
             const tables = (schema && schema.tables) || {};
             const tableNames = Object.keys(tables)

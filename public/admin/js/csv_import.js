@@ -2,6 +2,7 @@
 // Upload + preview, then execute import or create-table via admin/api_csv_import.php (csv_import_*, csv_create_table).
 
 import { apiFetch } from '../../assets/js/util/api.js';
+import { getGlobalSchema } from './app.js';
 
 const LS_COPY_MODE  = 'csv_import_default_copy';
 const LS_DELIMITER  = 'csv_import_delimiter';
@@ -89,9 +90,8 @@ export async function renderCsvImportPage(ctx) {
     appendOpt(tableSelect, '', '— Select table —');
 
     try {
-        const res  = await apiFetch('api.php?action=get&file=schema');
-        const data = await res.json();
-        if (data.tables) {
+        const data = await getGlobalSchema();
+        if (data?.tables) {
             for (const [name, cfg] of Object.entries(data.tables)) {
                 const opt = appendOpt(tableSelect, name, cfg.display_name || name);
                 opt.dataset.cols = JSON.stringify(cfg.columns || {});
@@ -587,7 +587,7 @@ export async function renderCsvImportPage(ctx) {
         uploadHint.textContent = '';
 
         if (createMode) {
-            uploadMsg.textContent = `Reading ${esc(file.name)}…`;
+            uploadMsg.textContent = `Reading ${escHtml(file.name)}…`;
             try {
                 const { headers, preview } = await loadCSVPreviewLocal(file, csvDelimiter, csvEncoding);
                 csvFile     = file;
@@ -596,21 +596,21 @@ export async function renderCsvImportPage(ctx) {
                 csvTmpName  = '';
                 csvOrigName = file.name;
 
-                uploadMsg.textContent = `✓ ${esc(file.name)} — ${headers.length} column${headers.length !== 1 ? 's' : ''} detected`;
+                uploadMsg.textContent = `✓ ${escHtml(file.name)} — ${headers.length} column${headers.length !== 1 ? 's' : ''} detected`;
                 uploadMsg.style.color = '#2b9348';
                 dropZone.style.borderColor = '#64748B';
 
                 renderMapping();
                 card2.el.style.display = 'block';
             } catch (e) {
-                uploadMsg.textContent = 'Preview failed: ' + esc(e.message);
+                uploadMsg.textContent = 'Preview failed: ' + escHtml(e.message);
                 uploadMsg.style.color = '#d00000';
                 uploadHint.textContent = 'Try again.';
             }
             return;
         }
 
-        uploadMsg.textContent = `Uploading ${esc(file.name)}…`;
+        uploadMsg.textContent = `Uploading ${escHtml(file.name)}…`;
         const fd = new FormData();
         fd.append('csv_file', file);
         fd.append('csv_delimiter', csvDelimiter);
@@ -630,14 +630,14 @@ export async function renderCsvImportPage(ctx) {
             csvTmpName  = data.tmp_name;
             csvOrigName = data.original_name;
 
-            uploadMsg.textContent  = `✓ ${esc(file.name)}  —  ${csvRowCount.toLocaleString()} data rows, ${csvHeaders.length} columns`;
+            uploadMsg.textContent  = `✓ ${escHtml(file.name)}  —  ${csvRowCount.toLocaleString()} data rows, ${csvHeaders.length} columns`;
             uploadMsg.style.color  = '#2b9348';
             dropZone.style.borderColor = '#64748B';
 
             renderMapping();
             card2.el.style.display = 'block';
         } catch (e) {
-            uploadMsg.textContent  = 'Upload failed: ' + esc(e.message);
+            uploadMsg.textContent  = 'Upload failed: ' + escHtml(e.message);
             uploadMsg.style.color  = '#d00000';
             uploadHint.textContent = 'Try again.';
         }
@@ -728,7 +728,7 @@ export async function renderCsvImportPage(ctx) {
 
         const note = document.createElement('p');
         note.style.cssText = 'color:#64748B;margin:0 0 12px;';
-        note.textContent   = `Map ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to "${esc(selectedTable)}" columns. Leave "— Skip —" to ignore a CSV column.`;
+        note.textContent   = `Map ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to "${escHtml(selectedTable)}" columns. Leave "— Skip —" to ignore a CSV column.`;
         mappingContainer.appendChild(note);
 
         const tbl   = document.createElement('table');
@@ -853,7 +853,7 @@ export async function renderCsvImportPage(ctx) {
             resetUploadZone();
             loadHistory();
         } catch (e) {
-            showBanner(execStatus, 'Import error: ' + esc(e.message), 'error');
+            showBanner(execStatus, 'Import error: ' + escHtml(e.message), 'error');
         } finally {
             execBtn.disabled    = false;
             execBtn.textContent = 'Execute Import';
@@ -942,7 +942,7 @@ export async function renderCsvImportPage(ctx) {
             resetUploadZone();
             loadHistory();
         } catch (e) {
-            showBanner(execStatus, 'Error: ' + esc(e.message), 'error');
+            showBanner(execStatus, 'Error: ' + escHtml(e.message), 'error');
         } finally {
             execBtn.disabled    = false;
             execBtn.textContent = 'Create Table & Import';
@@ -969,7 +969,9 @@ export async function renderCsvImportPage(ctx) {
         const stat = (label, value, accent) => {
             const s = document.createElement('span');
             s.style.cssText = `color:${accent ? '#1a6b35' : '#64748B'};`;
-            s.innerHTML = `<strong>${value}</strong> ${label}`;
+            const strong = document.createElement('strong');
+            strong.textContent = value;
+            s.append(strong, ' ' + label);
             return s;
         };
 
@@ -1364,4 +1366,4 @@ function td(text, style) {
     return el;
 }
 
-import { escHtml as esc } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';

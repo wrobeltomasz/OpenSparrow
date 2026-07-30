@@ -1,9 +1,9 @@
 // admin/js/cron.js — Cron notifications management page
 // Shows run log/stats and lets the admin trigger or purge cron via api.php (cron_log, cron_stats, cron_purge_log, run_cron_notifications). CSRF via apiFetch().
 import { apiFetch } from '../../assets/js/util/api.js';
-import { buildInnerTabs, createPageHeader } from './ui.js';
+import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdEl, buildSectionCard } from './ui.js';
 
-import { escHtml as cronEscHtml } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
 
 function statusBadge(status) {
     const cls = { success: 'ok', error: 'danger', running: 'warn' }[status] ?? 'muted';
@@ -13,66 +13,13 @@ function statusBadge(status) {
     return b;
 }
 
-function cronMkTable() {
-    const t = document.createElement('table');
-    t.className = 'adm-tbl';
-    return t;
-}
+// Table and section-card builders now live in ui.js (mkTable / mkThead / td /
+// tdEl / buildSectionCard) — this module used to carry cron-prefixed copies.
 
-function cronMkThead(table, cols) {
-    const thead = table.createTHead();
-    const tr = thead.insertRow();
-    cols.forEach(h => {
-        const th = document.createElement('th');
-        th.className = 'adm-th';
-        th.textContent = h;
-        tr.appendChild(th);
-    });
-}
-
-function cronTd(text, extra = '') {
-    const el = document.createElement('td');
-    el.className = 'adm-td';
-    if (extra) el.style.cssText = extra.replace(/^[;\s]+/, '');
-    el.textContent = text ?? '—';
-    return el;
-}
-
-function cronTdEl(child, extra = '') {
-    const el = document.createElement('td');
-    el.className = 'adm-td';
-    if (extra) el.style.cssText = extra.replace(/^[;\s]+/, '');
-    if (child) el.appendChild(child);
-    return el;
-}
-
-// ─── Section builder ─────────────────────────────────────────────────────────
-
+// cronMakeSection(id, title, desc) kept as a thin adapter so the six call sites
+// below stay readable; buildSectionCard takes (title, desc, id).
 function cronMakeSection(id, title, description) {
-    const card = document.createElement('div');
-    card.id = id;
-    card.className = 'adm-sec-card';
-
-    const hdr = document.createElement('div');
-    hdr.className = 'adm-sec-hdr';
-    hdr.style.display = 'block';
-
-    const h3 = document.createElement('h3');
-    h3.textContent = title;
-    h3.style.cssText = 'margin:0 0 4px; ';
-    const desc = document.createElement('p');
-    desc.textContent = description;
-    desc.style.cssText = 'margin:0; ';
-    desc.className = 'c-muted';
-
-    hdr.append(h3, desc);
-    card.appendChild(hdr);
-
-    const body = document.createElement('div');
-    body.className = 'adm-sec-body';
-    card.appendChild(body);
-
-    return { card, body };
+    return buildSectionCard(title, description, id);
 }
 
 // ─── Section 1: Manual Run ────────────────────────────────────────────────────
@@ -149,21 +96,21 @@ function buildRunHistorySection() {
                 return;
             }
 
-            const t = cronMkTable();
-            cronMkThead(t, ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Sources', 'Notifications', 'Error']);
+            const t = mkTable();
+            mkThead(t, ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Sources', 'Notifications', 'Error']);
 
             const tbody = t.createTBody();
             data.rows.forEach(r => {
                 const tr = tbody.insertRow();
-                tr.appendChild(cronTd(r.id));
-                tr.appendChild(cronTdEl(statusBadge(r.status)));
-                tr.appendChild(cronTd(r.triggered_by));
-                tr.appendChild(cronTd(r.started_at ? r.started_at.replace('T', ' ').substring(0, 19) : ''));
+                tr.appendChild(td(r.id));
+                tr.appendChild(tdEl(statusBadge(r.status)));
+                tr.appendChild(td(r.triggered_by));
+                tr.appendChild(td(r.started_at ? r.started_at.replace('T', ' ').substring(0, 19) : ''));
                 const dur = r.duration_sec !== null ? Number(r.duration_sec).toFixed(2) + 's' : '—';
-                tr.appendChild(cronTd(dur));
-                tr.appendChild(cronTd(r.sources_processed));
-                tr.appendChild(cronTd(r.notifications_created));
-                tr.appendChild(cronTd(r.error_message, 'color:#a80000; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
+                tr.appendChild(td(dur));
+                tr.appendChild(td(r.sources_processed));
+                tr.appendChild(td(r.notifications_created));
+                tr.appendChild(td(r.error_message, 'color:#a80000; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
             });
 
             container.innerHTML = '';
@@ -248,14 +195,14 @@ function buildStatsSection() {
                 h4.style.cssText = 'margin:0 0 10px;    ';
                 container.appendChild(h4);
 
-                const tbl = cronMkTable();
-                cronMkThead(tbl, ['Username', 'Email', 'Unread Count']);
+                const tbl = mkTable();
+                mkThead(tbl, ['Username', 'Email', 'Unread Count']);
                 const tbody = tbl.createTBody();
                 data.per_user.forEach(r => {
                     const tr = tbody.insertRow();
-                    tr.appendChild(cronTd(r.username));
-                    tr.appendChild(cronTd(r.email));
-                    tr.appendChild(cronTd(r.unread_count));
+                    tr.appendChild(td(r.username));
+                    tr.appendChild(td(r.email));
+                    tr.appendChild(td(r.unread_count));
                 });
                 container.appendChild(tbl);
             } else {

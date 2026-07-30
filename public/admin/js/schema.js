@@ -5,7 +5,7 @@ import { createTextInput, createNumberInput, createSelectInput, createCheckbox, 
 import { showStatusPill, markDirty } from './app.js';
 
 // Utility function to escape HTML strings safely against XSS
-import { escHtml as escapeHtml } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
 
 // Global grid settings form (page size, etc.)
 export function renderSchemaGlobalSettings(config, ctx) {
@@ -244,7 +244,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     // Table title. Deletion is handled by the red ✕ in the card header (buildItemCard),
     // consistent with every other card tab — no separate in-editor delete button.
     const titleEl = document.createElement('h3');
-    titleEl.innerHTML = `Table Properties: ${escapeHtml(tableName)}`;
+    titleEl.innerHTML = `Table Properties: ${escHtml(tableName)}`;
     titleEl.style.margin = '0 0 20px';
     workspaceEl.appendChild(titleEl);
 

@@ -4,6 +4,7 @@
 // used to each copy verbatim. Inline styles here are layout-only (margin/flex/
 // display); colors use CSS variables per the admin UI standard.
 import { apiFetch } from '../../assets/js/util/api.js';
+import { mkTable, mkThead, td, tdStatus, tdError } from './ui.js';
 
 /** A hidden status line, shown by showStatus(). */
 export function mkStatus() {
@@ -96,38 +97,13 @@ export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onD
  * helpers.statusCell(status) (colored badge) and helpers.errorCell(text).
  */
 export function buildHistoryTable(headers, rows, rowFn) {
-    const tbl = document.createElement('table');
-    tbl.className = 'adm-tbl';
+    const tbl = mkTable();
+    mkThead(tbl, headers);
 
-    const hr = tbl.createTHead().insertRow();
-    headers.forEach(h => {
-        const th = document.createElement('th');
-        th.className = 'adm-th';
-        th.textContent = h;
-        hr.appendChild(th);
-    });
-
-    const clsMap = { success: 'ok', error: 'danger', running: 'warn' };
-    const td = (text, css) => {
-        const el = document.createElement('td');
-        el.className = 'adm-td';
-        if (css) el.style.cssText = css;
-        el.textContent = text ?? '—';
-        return el;
-    };
-    const statusCell = (status) => {
-        const cell = document.createElement('td');
-        cell.className = 'adm-td';
-        const badge = document.createElement('span');
-        badge.className = 'adm-badge adm-badge-' + (clsMap[status] || 'muted');
-        badge.textContent = status || '';
-        cell.appendChild(badge);
-        return cell;
-    };
-    const errorCell = (text) => td(
-        text || '',
-        'color:var(--danger); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
-    );
+    // Cell builders come from ui.js; the rowFn contract (td/statusCell/errorCell)
+    // is preserved so etl.js and etl_flow.js need no changes.
+    const statusCell = tdStatus;
+    const errorCell  = tdError;
 
     const tbody = tbl.createTBody();
     rows.forEach(r => {

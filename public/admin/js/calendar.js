@@ -1,5 +1,6 @@
 // admin/js/calendar.js — Calendar view configuration editor (renderCalendarEditor): date/title columns, notified users, colors; includes legacy *_field -> *_column cleanup.
 import { createTextInput, createSelectInput, createColorInput, createIconPicker, createMultiSelect } from './ui.js';
+import { apiFetch } from '../../assets/js/util/api.js';
 
 export function renderCalendarEditor(key, itemData, isArray, ctx) {
     const { workspaceEl, getTableOptions, getColumnOptionsForTable, renderEditor } = ctx;
@@ -56,7 +57,7 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
     usersWrapper.innerHTML = '<p style="color:#64748B; ">Loading active users...</p>';
     workspaceEl.appendChild(usersWrapper);
 
-    fetch('api.php?action=users_list')
+    apiFetch('api.php?action=users_list')
         .then(res => res.json())
         .then(data => {
             usersWrapper.innerHTML = '';

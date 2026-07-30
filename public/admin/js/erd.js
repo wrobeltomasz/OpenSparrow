@@ -1,5 +1,7 @@
 // admin/js/erd.js — Schema Map: renders an SVG ERD of FK / subtable / many-to-many relationships from the "schema" config. Layout constants below (node width/height, row height, etc.).
 
+import { getGlobalSchema } from './app.js';
+
 const NS  = 'http://www.w3.org/2000/svg';
 const NW  = 195;   // node width
 const NHD = 36;    // header height
@@ -72,8 +74,8 @@ export async function renderErdPage(ctx) {
 
     let rawSchema;
     try {
-        const r = await fetch('api.php?action=get&file=schema');
-        rawSchema = await r.json();
+        rawSchema = await getGlobalSchema();
+        if (!rawSchema) throw new Error('schema unavailable');
     } catch {
         loadEl.textContent = 'Failed to load schema.';
         return;

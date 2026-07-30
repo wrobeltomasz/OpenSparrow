@@ -11,7 +11,6 @@ declare(strict_types=1);
 // admin_error_message() defined by the front controller. Each block emits JSON and exits.
 
 if ($action === 'etl_flow_load') {
-    header('Content-Type: application/json');
     require_once __DIR__ . '/../config_store.php';
     $defaults = [
         'enabled'   => false,
@@ -44,7 +43,6 @@ if ($action === 'etl_flow_load') {
 }
 
 if ($action === 'etl_flow_save') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
     $data = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($data)) {
@@ -113,23 +111,10 @@ if ($action === 'etl_flow_save') {
         'flows'     => $flows,
     ];
 
-    $expectedVersion = isset($data['version']) && is_numeric($data['version']) ? (int) $data['version'] : null;
-    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-    $result = config_save('etl_flows', $config, $expectedVersion, $userId);
-    if ($result['status'] === 'conflict') {
-        echo json_encode(['status' => 'error', 'error' => 'Config was modified by someone else — reload and retry.']);
-        exit;
-    }
-    if ($result['status'] !== 'ok') {
-        echo json_encode(['status' => 'error', 'error' => $result['error'] ?? 'Failed to save config.']);
-        exit;
-    }
-    echo json_encode(['status' => 'success', 'version' => $result['version']]);
-    exit;
+    admin_config_save_versioned('etl_flows', $config, admin_expected_version($data));
 }
 
 if ($action === 'run_etl_flow') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
     require_once __DIR__ . '/etl_common.php';
     $data   = json_decode((string) file_get_contents('php://input'), true);
@@ -138,19 +123,10 @@ if ($action === 'run_etl_flow') {
 }
 
 if ($action === 'etl_flow_log') {
-    header('Content-Type: application/json');
-    try {
-        require_once __DIR__ . '/../../includes/db.php';
-        $conn    = db_connect();
+    admin_try(static function (): void {
+        $conn    = admin_conn();
         $tRunLog = sys_table('etl_flow_run_log');
-        if (!@pg_query($conn, "SELECT 1 FROM {$tRunLog} LIMIT 0")) {
-            echo json_encode([
-                'status' => 'success',
-                'rows'   => [],
-                'note'   => 'Run Initialize System Tables to create the log table.',
-            ]);
-            exit;
-        }
+        admin_require_log_table($conn, $tRunLog);
         $flowId = trim((string)($_GET['flow_id'] ?? ''));
         $sql = "SELECT id, flow_id, flow_name, triggered_by, status, failed_step_index, error_message,
                        started_at, finished_at,
@@ -166,40 +142,23 @@ if ($action === 'etl_flow_log') {
         if (!$res) {
             admin_db_fail($conn, 'etl_flow_log');
         }
-        $rows = [];
-        while ($row = pg_fetch_assoc($res)) {
-            $rows[] = $row;
-        }
-        echo json_encode(['status' => 'success', 'rows' => $rows]);
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
-    }
-    exit;
+        admin_ok(['rows' => admin_fetch_all($res)]);
+    });
 }
 
 if ($action === 'etl_flow_purge_log') {
-    header('Content-Type: application/json');
     require_not_demo('Demo mode — writes disabled.');
-    try {
-        require_once __DIR__ . '/../../includes/db.php';
-        $conn     = db_connect();
-        $days     = max(1, (int)(json_decode((string) file_get_contents('php://input'), true)['days'] ?? 90));
-        $tRunLog  = sys_table('etl_flow_run_log');
-        $tStepLog = sys_table('etl_flow_step_log');
-        $res      = @pg_query_params(
-            $conn,
-            "DELETE FROM {$tRunLog} WHERE started_at < NOW() - (\$1 || ' days')::interval",
-            [$days]
-        );
-        if (!$res) {
-            admin_db_fail($conn, 'etl_flow_purge_log');
-        }
+    admin_try(static fn() => admin_purge_log(
+        sys_table('etl_flow_run_log'),
+        90,
+        'etl_flow_purge_log',
+        'started_at',
         // Step rows normally cascade away with their parent run (FK ON DELETE CASCADE);
         // this also sweeps any orphans left over from an interrupted/legacy delete.
-        @pg_query($conn, "DELETE FROM {$tStepLog} WHERE flow_run_id NOT IN (SELECT id FROM {$tRunLog})");
-        echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
-    }
-    exit;
+        static function (\PgSql\Connection $conn): void {
+            $tRunLog  = sys_table('etl_flow_run_log');
+            $tStepLog = sys_table('etl_flow_step_log');
+            @pg_query($conn, "DELETE FROM {$tStepLog} WHERE flow_run_id NOT IN (SELECT id FROM {$tRunLog})");
+        }
+    ));
 }

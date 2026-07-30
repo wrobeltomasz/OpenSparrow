@@ -15,7 +15,6 @@ if (!defined('DEMO_MODE')) {
 
 /* ── Demo: status ────────────────────────────────────────────────── */
 if ($action === 'demo_status') {
-    header('Content-Type: application/json');
     $metaPath = realpath(__DIR__ . '/../../../config') . '/demo_meta.json';
     if (file_exists($metaPath)) {
         $meta = json_decode(file_get_contents($metaPath), true);
@@ -513,7 +512,6 @@ function demo_install_run(string $type): array
 }
 
 if ($action === 'demo_install') {
-    header('Content-Type: application/json');
     if ($isDemoMode) {
         echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
         exit;
@@ -538,7 +536,6 @@ if ($action === 'demo_install') {
 
 /* ── Demo: uninstall ─────────────────────────────────────────────── */
 if ($action === 'demo_uninstall') {
-    header('Content-Type: application/json');
     if ($isDemoMode) {
         echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
         exit;

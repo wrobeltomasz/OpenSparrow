@@ -91,7 +91,6 @@ if ($action === 'health') {
             return file_exists($f) && is_array(@json_decode(@file_get_contents($f), true));
         })(),
     ];
-    header('Content-Type: application/json');
     echo json_encode($data);
     exit;
 }

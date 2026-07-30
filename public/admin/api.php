@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 // admin/api.php — Admin-panel REST API front controller
-// Auth gate: session + role === 'admin' (403 otherwise); CSRF on POST; DEMO_MODE disables writes.
-// ~65 actions dispatched via $adminModules (action → per-domain module under includes/admin/:
+// Auth gate: session + role === 'admin' (403 otherwise); CSRF on POST/PATCH/DELETE;
+// DEMO_MODE disables writes (per-action require_not_demo(), no central gate).
+// ~85 actions dispatched via $adminModules (action → per-domain module under includes/admin/:
 // migrations, users, schema, health, backup, settings, config_files, performance, cron, m2m,
 // anonymization, rag, automations, dashboard, overview). Demo actions + unknown-action fallback: demo/seed.php.
 // Error envelope: deliberate messages thrown as AdminApiMessage pass to the client via admin_error_message();
@@ -14,17 +15,25 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/api_helpers.php';
 
+// This endpoint keeps its own gate order (it needs $isDemoMode and a per-action
+// dispatch) instead of os_api_bootstrap(), so it has to send the same hardening
+// that os_api_bootstrap() does: errors off + security headers.
+ini_set('display_errors', '0');
 start_session();
+send_security_headers();
+
+// Every action of this endpoint answers with JSON, so the type is set once here
+// instead of being repeated in each of the ~90 action blocks.
+header('Content-Type: application/json');
+
 if (empty($_SESSION['user_id'])) {
-    header('Content-Type: application/json');
     http_response_code(401);
     echo json_encode(['status' => 'error', 'error' => 'Unauthorized access. Log in first.']);
     exit;
 }
 if (($_SESSION['role'] ?? '') !== 'admin') {
-    header('Content-Type: application/json');
     http_response_code(403);
-    echo json_encode(['status' => 'error', 'error' => 'Unauthorized access. Log in first.']);
+    echo json_encode(['status' => 'error', 'error' => 'Forbidden: admin role required.']);
     exit;
 }
 
@@ -39,39 +48,14 @@ $isDemoMode = DEMO_MODE;
 // admin_error_message() — PDOException extends RuntimeException too.
 require_once __DIR__ . '/../../includes/admin_api_errors.php';
 
-// Demo Mode guard for admin write actions. Emits the standard error envelope and
-// exits when DEMO_MODE is on; $code 0 leaves the HTTP status untouched.
-function require_not_demo(string $message = 'Action disabled in Demo Mode.', int $code = 0): void
-{
-    if (!DEMO_MODE) {
-        return;
-    }
-    if ($code !== 0) {
-        http_response_code($code);
-    }
-    echo json_encode(['status' => 'error', 'error' => $message]);
-    exit;
-}
+// Shared response/connection/config helpers for the includes/admin/ modules
+// (admin_try, admin_ok, admin_err, admin_conn, admin_purge_log, …).
+require_once __DIR__ . '/../../includes/admin/helpers.php';
 
-// Settings config helpers (spw_config key "settings", via the config store).
-// The unused $path parameter is kept for call-site compatibility within the
-// settings module.
-function admin_read_settings(string $path = ''): array
-{
-    require_once __DIR__ . '/../../includes/config_store.php';
-    return config_get('settings') ?? [];
-}
-
-function admin_write_settings(array $settings): bool
-{
-    require_once __DIR__ . '/../../includes/config_store.php';
-    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-    $result = config_save('settings', $settings, null, $userId);
-    return $result['status'] === 'ok';
-}
-
-// CSRF Protection for state-changing POST requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// CSRF Protection for state-changing requests. Mirrors os_api_bootstrap()
+// (includes/bootstrap.php) — POST/PATCH/DELETE — so a mutating action that
+// slips off the $postActions whitelist below is still covered on those verbs.
+if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE'], true)) {
     $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
     if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
         header('Content-Type: application/json');
@@ -97,9 +81,10 @@ $postActions = [
     'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all',
     'rag_settings_save', 'rag_test_query', 'rag_ollama_check',
     'automations_save', 'automations_delete',
-    'anonymization_save', 'run_anonymization', 'anonymization_purge_log',
+    'anonymization_save', 'run_anonymization', 'preview_anonymization', 'anonymization_purge_log',
     'etl_save', 'run_etl', 'etl_purge_log', 'etl_test_connection', 'etl_preview',
     'etl_flow_save', 'run_etl_flow', 'etl_flow_purge_log',
+    'demo_install', 'demo_uninstall',
 ];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');

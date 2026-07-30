@@ -1,4 +1,7 @@
 // admin/js/health.js — System health dashboard (renderHealthDashboard): fetches api.php?action=health and shows the status checks.
+
+import { apiFetch } from '../../assets/js/util/api.js';
+
 export async function renderHealthDashboard(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = `<h3>Checking system status...</h3>`;
@@ -7,7 +10,7 @@ export async function renderHealthDashboard(ctx) {
     const myId = workspaceEl._renderId;
 
     try {
-        const res  = await fetch('api.php?action=health');
+        const res  = await apiFetch('api.php?action=health');
         const data = await res.json();
 
         const card = (title, isOk, msg) => `

@@ -5,6 +5,7 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';
+import { showStatusPill } from './app.js';
 
 export async function renderUsersEditor(ctx) {
     const { workspaceEl } = ctx;
@@ -142,10 +143,10 @@ async function renderManageUsers(panel, ctx) {
                     if (resData.status === 'success') {
                         renderManageUsers(panel, ctx);
                     } else {
-                        alert('Error: ' + resData.error);
+                        showStatusPill(e.target, resData.error || 'Update failed.', 'error');
                     }
                 } catch (err) {
-                    alert('Network error occurred.');
+                    showStatusPill(e.target, 'Network error.', 'error');
                 }
             });
         });
@@ -164,11 +165,11 @@ async function renderManageUsers(panel, ctx) {
 
                     const resData = await req.json();
                     if (resData.status !== 'success') {
-                        alert('Error: ' + resData.error);
+                        showStatusPill(e.target, resData.error || 'Role change failed.', 'error');
                         renderManageUsers(panel, ctx);
                     }
                 } catch (err) {
-                    alert('Network error occurred.');
+                    showStatusPill(e.target, 'Network error.', 'error');
                     renderManageUsers(panel, ctx);
                 }
             });
@@ -341,13 +342,14 @@ async function renderManageUsers(panel, ctx) {
         });
 
         // Setup user creation
-        panel.querySelector('#btnAddUser').addEventListener('click', async () => {
+        panel.querySelector('#btnAddUser').addEventListener('click', async (e) => {
+            const addBtn   = e.currentTarget;
             const username = panel.querySelector('#newUsername').value;
             const password = panel.querySelector('#newPassword').value;
             const role = panel.querySelector('#newRole').value;
 
             if (!username || !password) {
-                alert('Username and password are required!');
+                showStatusPill(addBtn, 'Username and password are required.', 'error');
                 return;
             }
 
@@ -359,13 +361,13 @@ async function renderManageUsers(panel, ctx) {
                 const resData = await req.json();
 
                 if (resData.status === 'success') {
-                    alert('User created successfully!');
+                    showStatusPill(addBtn, 'User created.', 'success');
                     renderManageUsers(panel, ctx);
                 } else {
-                    alert('Error: ' + resData.error);
+                    showStatusPill(addBtn, resData.error || 'Could not create the user.', 'error');
                 }
             } catch (err) {
-                alert('Network error occurred.');
+                showStatusPill(addBtn, 'Network error.', 'error');
             }
         });
 
@@ -484,7 +486,8 @@ async function renderUserSettings(panel, ctx) {
             </div>
         `;
 
-        panel.querySelector('#btnSaveUserPolicy').addEventListener('click', async () => {
+        panel.querySelector('#btnSaveUserPolicy').addEventListener('click', async (e) => {
+            const saveBtn = e.currentTarget;
             const min_password_length = parseInt(panel.querySelector('#policyMinPasswordLength').value, 10);
             const default_role = panel.querySelector('#policyDefaultRole').value;
 
@@ -496,13 +499,13 @@ async function renderUserSettings(panel, ctx) {
                 const resData = await req.json();
 
                 if (resData.status === 'success') {
-                    alert('Settings saved.');
+                    showStatusPill(saveBtn, 'Settings saved.', 'success');
                     renderUserSettings(panel, ctx);
                 } else {
-                    alert('Error: ' + resData.error);
+                    showStatusPill(saveBtn, resData.error || 'Save failed.', 'error');
                 }
             } catch (err) {
-                alert('Network error occurred.');
+                showStatusPill(saveBtn, 'Network error.', 'error');
             }
         });
     } catch (e) {

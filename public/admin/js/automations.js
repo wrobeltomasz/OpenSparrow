@@ -8,6 +8,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createPageHeader } from './ui.js';
+import { getGlobalSchema } from './app.js';
 
 function autoStatusPill(anchor, msg, type = 'success') {
     const prev = anchor.parentNode?.querySelector('.auto-status-pill');
@@ -819,9 +820,7 @@ export async function renderAutomationsPage(ctx, mode = 'record') {
     // ── Shared data ──────────────────────────────────────────────
     let schemaObj = {};
     try {
-        const sr = await apiFetch('api.php?action=get&file=schema');
-        const sd = await sr.json();
-        schemaObj = sd.tables ?? {};
+        schemaObj = (await getGlobalSchema())?.tables ?? {};
     } catch (_) {}
 
     let users = [];
@@ -1124,7 +1123,7 @@ function buildAutomationsTab(panel, mode, shared) {
                 body:   JSON.stringify(payload),
             });
             const data = await r.json();
-            if (data.ok) {
+            if (data.status === 'success') {
                 await loadList();
             } else {
                 autoStatusPill(anchorEl, data.error || 'Error', 'error');
@@ -1143,7 +1142,7 @@ function buildAutomationsTab(panel, mode, shared) {
                 body:   JSON.stringify({ id }),
             });
             const data = await r.json();
-            if (data.ok) {
+            if (data.status === 'success') {
                 autoStatusPill(btn, 'Deleted', 'success');
                 await loadList();
             } else {
@@ -1263,7 +1262,7 @@ function buildAutomationsTab(panel, mode, shared) {
                     body:   JSON.stringify(payload),
                 });
                 const data = await r.json();
-                if (data.ok) { await onSaved(); }
+                if (data.status === 'success') { await onSaved(); }
                 else { autoStatusPill(btnSave, data.error || 'Save failed', 'error'); }
             } catch (_) { autoStatusPill(btnSave, 'Request failed', 'error'); }
         });

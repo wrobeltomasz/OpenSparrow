@@ -12,7 +12,6 @@ declare(strict_types=1);
 // Every action block emits its own JSON response and exits.
 
 if ($action === 'rag_list') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn       = db_connect();
@@ -39,7 +38,6 @@ if ($action === 'rag_list') {
 }
 
 if ($action === 'rag_upload') {
-    header('Content-Type: application/json');
     require_not_demo();
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -116,7 +114,6 @@ if ($action === 'rag_upload') {
 }
 
 if ($action === 'rag_delete') {
-    header('Content-Type: application/json');
     require_not_demo();
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -139,7 +136,6 @@ if ($action === 'rag_delete') {
 }
 
 if ($action === 'rag_rechunk') {
-    header('Content-Type: application/json');
     require_not_demo();
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -169,7 +165,6 @@ if ($action === 'rag_rechunk') {
 }
 
 if ($action === 'rag_rechunk_all') {
-    header('Content-Type: application/json');
     require_not_demo();
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -197,7 +192,6 @@ if ($action === 'rag_rechunk_all') {
 }
 
 if ($action === 'rag_settings') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         $cfg = rag_config();
@@ -214,7 +208,6 @@ if ($action === 'rag_settings') {
 }
 
 if ($action === 'rag_settings_save') {
-    header('Content-Type: application/json');
     require_not_demo();
     try {
         $body             = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -276,7 +269,6 @@ if ($action === 'rag_settings_save') {
 }
 
 if ($action === 'rag_test_query') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../../includes/rag_helpers.php';
@@ -328,7 +320,6 @@ if ($action === 'rag_test_query') {
 
 // POST: proxy to Ollama /api/tags — returns available local models + version
 if ($action === 'rag_ollama_check') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         require_once __DIR__ . '/../crypto.php';
@@ -417,7 +408,6 @@ if ($action === 'rag_ollama_check') {
 
 // GET: RAG query statistics summary + recent queries with source attribution
 if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    header('Content-Type: application/json');
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn             = db_connect();

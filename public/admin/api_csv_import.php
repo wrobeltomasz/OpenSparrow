@@ -8,6 +8,8 @@ declare(strict_types=1);
 // Limits: 500 MB max, 1000-row batches, 5 preview rows; parameterized inserts
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/api_helpers.php';
+require_once __DIR__ . '/../../includes/admin_api_errors.php';
 
 os_api_bootstrap(['connect' => false, 'role' => 'admin']);
 
@@ -598,7 +600,7 @@ if ($action === 'csv_import_history') {
         $repo = new ImportRepository($conn);
         echo json_encode(['status' => 'success', 'imports' => $repo->getHistory()]);
     } catch (\Exception $e) {
-        csv_fail($e->getMessage());
+        csv_fail(admin_error_message($e));
     }
     exit;
 }
@@ -615,7 +617,7 @@ if ($action === 'csv_import_log') {
         $rows = $repo->getRowLog($importId);
         echo json_encode(['status' => 'success', 'rows' => $rows, 'count' => count($rows)]);
     } catch (\Exception $e) {
-        csv_fail($e->getMessage());
+        csv_fail(admin_error_message($e));
     }
     exit;
 }
@@ -625,6 +627,7 @@ if ($action === 'csv_import_upload') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         csv_fail('POST required.', 405);
     }
+    require_not_demo('Demo mode — CSV import is disabled.');
     $file = $_FILES['csv_file'] ?? null;
     if (!$file) {
         csv_fail('No file uploaded. Use field name "csv_file".');
@@ -690,6 +693,7 @@ if ($action === 'csv_import_execute') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         csv_fail('POST required.', 405);
     }
+    require_not_demo('Demo mode — CSV import is disabled.');
 
     $body = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($body)) {
@@ -817,6 +821,7 @@ if ($action === 'csv_create_table') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         csv_fail('POST required.', 405);
     }
+    require_not_demo('Demo mode — creating tables is disabled.');
 
     $body       = json_decode((string) file_get_contents('php://input'), true);
     $tableName  = preg_replace('/[^a-z0-9_]/', '', strtolower((string) ($body['table']  ?? '')));
@@ -957,7 +962,7 @@ if ($action === 'csv_schemas') {
         }
         echo json_encode(['status' => 'success', 'schemas' => $schemas]);
     } catch (\Exception $e) {
-        csv_fail($e->getMessage());
+        csv_fail(admin_error_message($e));
     }
     exit;
 }

@@ -82,18 +82,23 @@ export async function renderDatabaseSection(panel) {
         testBtn.style.opacity = '0.7';
 
         try {
-            const res = await fetch('api.php?action=health');
+            const res = await apiFetch('api.php?action=health');
             const data = await res.json();
 
             if (data.db_connected) {
-                alert('✓ Success! Successfully connected to the database.');
+                showStatusPill(testBtn, 'Connected to the database.', 'success');
                 testBtn.style.background = '#2b9348';
             } else {
-                alert('✗ Connection failed:\n' + data.db_error + '\n\nDid you click "Save configuration" before testing?');
+                showStatusPill(
+                    testBtn,
+                    'Connection failed: ' + (data.db_error || 'unknown error')
+                    + ' — save the configuration before testing.',
+                    'error'
+                );
                 testBtn.style.background = '#d00000';
             }
         } catch (e) {
-            alert('✗ API Error: Cannot reach server.');
+            showStatusPill(testBtn, 'Cannot reach the server.', 'error');
         }
 
         testBtn.textContent = 'Test Saved Connection';

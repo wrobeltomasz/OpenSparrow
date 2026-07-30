@@ -1,7 +1,8 @@
 // admin/js/overview.js — Admin home / overview page
 // Summary cards (record counts, DB size, etc.) via api.php (overview). Local HTML-escape + byte-format helpers.
 
-import { escHtml as ovEsc } from '../../assets/js/util/esc.js';
+import { escHtml } from '../../assets/js/util/esc.js';
+import { apiFetch } from '../../assets/js/util/api.js';
 
 function ovFmtBytes(bytes) {
     const b = Number(bytes);
@@ -166,7 +167,7 @@ export async function renderOverviewPage(ctx) {
 
     let data;
     try {
-        const res = await fetch('api.php?action=overview');
+        const res = await apiFetch('api.php?action=overview');
         data = await res.json();
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
@@ -180,7 +181,7 @@ export async function renderOverviewPage(ctx) {
     if (data.status === 'error') {
         const err = document.createElement('p');
         err.style.color = '#a80000';
-        err.textContent = 'Error: ' + ovEsc(data.error ?? 'Unknown error');
+        err.textContent = 'Error: ' + escHtml(data.error ?? 'Unknown error');
         workspaceEl.appendChild(err);
         return;
     }
@@ -199,7 +200,7 @@ export async function renderOverviewPage(ctx) {
 
     const versionBadge = document.createElement('span');
     versionBadge.className = 'ov-version-badge';
-    versionBadge.textContent = 'v' + ovEsc(data.app_version ?? '');
+    versionBadge.textContent = 'v' + escHtml(data.app_version ?? '');
     welcomeLeft.appendChild(versionBadge);
 
     welcomeBar.appendChild(welcomeLeft);
@@ -332,12 +333,12 @@ export async function renderOverviewPage(ctx) {
     statusPanel.appendChild(ovSection('System Status'));
 
     statusPanel.appendChild(ovStatusRow(
-        'PHP ' + ovEsc(data.php_version ?? ''),
+        'PHP ' + escHtml(data.php_version ?? ''),
         data.php_ok,
         data.php_ok ? '' : 'PHP 8.1+ required'
     ));
     statusPanel.appendChild(ovStatusRow(
-        'PostgreSQL ' + ovEsc(data.pg_version ?? ''),
+        'PostgreSQL ' + escHtml(data.pg_version ?? ''),
         true,
         ''
     ));
@@ -395,7 +396,7 @@ export async function renderOverviewPage(ctx) {
     memoryLabel.textContent = 'PHP memory limit';
     const memoryVal = document.createElement('span');
     memoryVal.className = 'ov-status-detail';
-    memoryVal.textContent = ovEsc(data.memory_limit ?? '—');
+    memoryVal.textContent = escHtml(data.memory_limit ?? '—');
     memoryRow.appendChild(memoryLabel);
     memoryRow.appendChild(memoryVal);
     statusPanel.appendChild(memoryRow);
@@ -407,7 +408,7 @@ export async function renderOverviewPage(ctx) {
     uploadLabel.textContent = 'Upload max filesize';
     const uploadVal = document.createElement('span');
     uploadVal.className = 'ov-status-detail';
-    uploadVal.textContent = ovEsc(data.upload_max_filesize ?? '—');
+    uploadVal.textContent = escHtml(data.upload_max_filesize ?? '—');
     uploadRow.appendChild(uploadLabel);
     uploadRow.appendChild(uploadVal);
     statusPanel.appendChild(uploadRow);

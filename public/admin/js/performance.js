@@ -1,8 +1,9 @@
 // admin/js/performance.js — Performance & Index Advisor page
 // Tabs over api.php performance_* actions (check, slow_queries, table_stats, db_health, unused_indexes, schema_warnings); severity badges.
-import { buildInnerTabs, createPageHeader } from './ui.js';
+import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdEl } from './ui.js';
 
 import { escHtml } from '../../assets/js/util/esc.js';
+import { apiFetch } from '../../assets/js/util/api.js';
 
 function severityBadge(sev) {
     const b = document.createElement('span');
@@ -23,39 +24,6 @@ function copyBtn(getText, label = 'Copy SQL', small = true) {
         });
     });
     return btn;
-}
-
-function mkThead(table, cols) {
-    const thead = table.createTHead();
-    const tr = thead.insertRow();
-    cols.forEach(h => {
-        const th = document.createElement('th');
-        th.className = 'adm-th';
-        th.textContent = h;
-        tr.appendChild(th);
-    });
-}
-
-function mkTable() {
-    const t = document.createElement('table');
-    t.className = 'adm-tbl';
-    return t;
-}
-
-function td(text, extra = '') {
-    const el = document.createElement('td');
-    el.className = 'adm-td';
-    if (extra) el.style.cssText = extra.replace(/^[;\s]+/, '');
-    el.textContent = text ?? '—';
-    return el;
-}
-
-function tdEl(child, extra = '') {
-    const el = document.createElement('td');
-    el.className = 'adm-td';
-    if (extra) el.style.cssText = extra.replace(/^[;\s]+/, '');
-    if (child) el.appendChild(child);
-    return el;
 }
 
 // ─── Section builder ────────────────────────────────────────────────────────
@@ -413,7 +381,7 @@ async function runSection(apiAction, renderFn, btn, body) {
     btn.textContent = 'Scanning…';
     setBodyLoading(body);
     try {
-        const res = await fetch(`api.php?action=${apiAction}`);
+        const res = await apiFetch(`api.php?action=${apiAction}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (data.status === 'error') throw new Error(data.error || 'Server error');
