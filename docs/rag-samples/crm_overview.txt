@@ -27,7 +27,8 @@ WORKFLOWS:
 2. Convert Lead: Capture Lead → Add Company → Add Contact → Create Deal → Send Quote
 
 VIEWS (read-only summaries):
-- Pipeline Summary: deal count and value by stage
+- Pipeline Summary: deal and activity measures per company and stage (counts, value
+  total/avg/max/min, close-date window, overdue deals), grouped by stage
 - Leads Funnel: lead count by status
 - Revenue Summary: invoice count and total by status
 - Assets Summary: asset count and book value by category

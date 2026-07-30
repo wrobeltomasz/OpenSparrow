@@ -11,7 +11,9 @@ function demo_def_crm($conn): array
 {
     return [
         'pg_schema'  => 'spw_crm',
-        'view_names' => ['v_demo_crm_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_revenue', 'v_demo_crm_assets_by_category', 'v_demo_crm_revenue_by_period', 'v_demo_crm_quote_doc', 'v_demo_crm_invoice_doc'],
+        // 'v_demo_crm_pipeline' is the pre-3.1 name of the pipeline view — kept in the
+        // list so uninstalling a demo installed by an older build still drops it.
+        'view_names' => ['v_demo_crm_company_pipeline', 'v_demo_crm_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_revenue', 'v_demo_crm_assets_by_category', 'v_demo_crm_revenue_by_period', 'v_demo_crm_quote_doc', 'v_demo_crm_invoice_doc'],
         'ddl' => [
             'CREATE SCHEMA IF NOT EXISTS spw_crm',
             "CREATE TABLE IF NOT EXISTS spw_crm.companies (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, industry VARCHAR(100), website VARCHAR(255), phone VARCHAR(50), email VARCHAR(255), created_at TIMESTAMP DEFAULT NOW())",
@@ -28,14 +30,40 @@ function demo_def_crm($conn): array
             // primary deals.contact_id FK — showcases the many_to_many field type on
             // a table that stays visible in the slimmed-down demo menu.
             "CREATE TABLE IF NOT EXISTS spw_crm.deal_contacts (id SERIAL PRIMARY KEY, deal_id INTEGER REFERENCES spw_crm.deals(id) ON DELETE CASCADE, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE CASCADE, role VARCHAR(100), added_at TIMESTAMP DEFAULT NOW())",
-            // Deal-level (not pre-aggregated) so the Pipeline Summary view can group
-            // client-side by stage (group_rows) and offer a drill-down from the stage
-            // subtotal rows down to the individual deals within a stage.
-            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_pipeline AS '
-                . 'SELECT d.id, d.stage, d.title, d.value, d.expected_close, c.name AS company_name '
+            // Superseded by v_demo_crm_company_pipeline below — dropped explicitly so a
+            // demo re-install over a pre-3.1 install does not leave the old view behind
+            // (CREATE OR REPLACE cannot change a view's column list).
+            'DROP VIEW IF EXISTS spw_crm.v_demo_crm_pipeline',
+            // Company x stage aggregate feeding the Pipeline Summary view: deal count /
+            // value stats, the expected-close window and overdue count per group, plus
+            // activity totals. Activities are pre-aggregated per deal in the subquery so
+            // the join fan-out cannot skew COUNT(d.id) / AVG / MAX / MIN over d.value.
+            // Contact count is a correlated subquery — it belongs to the company, not to
+            // the company x stage group, so it repeats across a company's stage rows.
+            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_company_pipeline AS '
+                . 'SELECT c.name AS company_name, c.industry AS industry, d.stage AS stage, '
+                . '(SELECT COUNT(*) FROM spw_crm.contacts ct WHERE ct.company_id = c.id) AS contact_count, '
+                . 'COUNT(d.id) AS deal_count, '
+                . 'COALESCE(SUM(d.value), 0) AS total_value, '
+                . 'ROUND(AVG(d.value), 2) AS avg_deal, '
+                . 'MAX(d.value) AS max_deal, '
+                . 'MIN(d.value) AS min_deal, '
+                . 'ROUND(STDDEV_SAMP(d.value), 2) AS stddev_deal, '
+                . 'MIN(d.expected_close) AS first_close, '
+                . 'MAX(d.expected_close) AS last_close, '
+                . "COUNT(*) FILTER (WHERE d.expected_close < CURRENT_DATE "
+                . "AND d.stage NOT IN ('Won', 'Lost')) AS overdue_deals, "
+                . 'COALESCE(SUM(act.cnt), 0) AS activity_count, '
+                . 'COALESCE(SUM(act.done_cnt), 0) AS activity_done, '
+                . 'COALESCE(SUM(act.cnt) - SUM(act.done_cnt), 0) AS activity_open, '
+                . 'ROUND(AVG(act.cnt), 2) AS avg_activities_per_deal '
                 . 'FROM spw_crm.deals d '
-                . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
-                . 'ORDER BY d.stage, d.expected_close',
+                . 'JOIN spw_crm.companies c ON c.id = d.company_id '
+                . 'LEFT JOIN (SELECT deal_id, COUNT(*) AS cnt, '
+                . 'COUNT(*) FILTER (WHERE done) AS done_cnt '
+                . 'FROM spw_crm.activities GROUP BY deal_id) act ON act.deal_id = d.id '
+                . 'GROUP BY c.id, c.name, c.industry, d.stage '
+                . 'ORDER BY c.name, d.stage',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_leads_funnel AS SELECT status, COUNT(*) AS lead_count FROM spw_crm.leads GROUP BY status ORDER BY status',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_revenue AS SELECT status, COUNT(*) AS invoice_count, COALESCE(SUM(amount_total), 0) AS total FROM spw_crm.invoices GROUP BY status ORDER BY status',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_assets_by_category AS SELECT category, COUNT(*) AS asset_count, COALESCE(SUM(current_value), 0) AS total_value FROM spw_crm.assets GROUP BY category ORDER BY category',
@@ -272,6 +300,42 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (24, 9, 'Call', 'Coaching engagement initiated', NOW() + INTERVAL '10 days', false)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (6, 11, 'Note', 'Payment terms finalized', NOW() - INTERVAL '4 days', true)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (12, 13, 'Email', 'SOC alignment meeting scheduled', NOW() + INTERVAL '3 days', false)",
+            // Bulk volume for the Pipeline Summary view (v_demo_crm_company_pipeline):
+            // the hand-written rows above only cover companies 1-24 with ~1 deal per
+            // company and stage, which makes avg/max/min collapse onto the same number.
+            // These three set-based inserts give every company contacts, 12 deals spread
+            // evenly over the 6 stages (2+ per company x stage group, so the spread
+            // measures differ) and a few activities per deal. All values are derived
+            // from id arithmetic rather than random(), so a demo install is reproducible.
+            // Order matters: contacts -> deals (pick a contact of their company) ->
+            // activities (attach to the generated deals).
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) "
+                . "SELECT c.id, "
+                . "(ARRAY['Adam','Bella','Carlos','Diana','Elias','Farah','Grace','Hugo','Iris','Jonas','Klara','Liam'])[1 + (c.id + g) % 12], "
+                . "(ARRAY['Bauer','Novak','Silva','Okafor','Dubois','Rossi','Hansen','Marek','Ferrara','Larsen','Costa','Weber'])[1 + (c.id * 3 + g) % 12], "
+                . "'contact' || c.id || '-' || g || '@' || COALESCE(NULLIF(c.website, ''), 'example.com'), "
+                . "'+1-555-' || LPAD((((c.id * 7 + g * 13) % 9000) + 1000)::text, 4, '0'), "
+                . "(ARRAY['Account Manager','Procurement Lead','CTO','Operations Manager','Finance Director','Project Manager','Head of IT','Commercial Director'])[1 + (c.id + g * 2) % 8] "
+                . "FROM spw_crm.companies c CROSS JOIN generate_series(1, 2) g",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) "
+                . "SELECT c.id, ct.id, "
+                . "(ARRAY['Enterprise License','Cloud Migration','Support Retainer','Platform Rollout','Security Audit','Data Warehouse','Integration Project','Managed Services'])[1 + (c.id + g) % 8] "
+                . "|| ' ' || (ARRAY['Q1','Q2','Q3','Q4'])[1 + (c.id + g * 3) % 4] || ' #' || g, "
+                . "(12000 + ((c.id * 7919 + g * 3571) % 240) * 1000)::numeric(12,2), "
+                . "(ARRAY['Lead','Qualified','Proposal','Negotiation','Won','Lost'])[1 + (c.id + g) % 6], "
+                . "DATE '2026-01-15' + ((c.id * 13 + g * 29) % 330) "
+                . "FROM spw_crm.companies c "
+                . "CROSS JOIN generate_series(1, 12) g "
+                . "LEFT JOIN LATERAL (SELECT x.id FROM spw_crm.contacts x WHERE x.company_id = c.id "
+                . "ORDER BY x.id OFFSET ((c.id + g) % 2) LIMIT 1) ct ON true",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) "
+                . "SELECT d.id, d.contact_id, "
+                . "(ARRAY['Call','Meeting','Email','Task','Note'])[1 + (d.id + g) % 5], "
+                . "(ARRAY['Discovery call','Requirements workshop','Proposal sent','Pricing follow-up','Reference check','Contract review'])[1 + (d.id * 3 + g) % 6], "
+                . "NOW() + ((((d.id * 17 + g * 5) % 120) - 60)::text || ' days')::interval, "
+                . "((d.id + g) % 3 <> 0) "
+                . "FROM spw_crm.deals d CROSS JOIN generate_series(1, 1 + (d.id % 4)) g "
+                . "WHERE d.id > 29",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Web', 'Olivia', 'Hayes', 'olivia.h@northwind.io', '+1-555-3001', 'Northwind Traders', 'New', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Referral', 'Marcus', 'Bennett', 'marcus.b@apexlogi.com', '+1-555-3002', 'Apex Logistics', 'Contacted', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Event', 'Sofia', 'Kowalski', 'sofia.k@brightsoft.eu', '+44-20-555-0103', 'BrightSoft EU', 'Qualified', 1)",
@@ -882,23 +946,39 @@ function demo_def_crm($conn): array
             ]],
         ],
         'views' => [
-            // Showcase view: default row grouping (group_rows) by stage with subtotals,
-            // plus a drill-down from the stage subtotal rows down to the individual
-            // deals within that stage.
-            'v_demo_crm_pipeline' => ['schema' => 'spw_crm', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => false, 'description' => 'Deals grouped by sales stage, with subtotals and drill-down to individual deals.', 'group_rows' => 'stage', 'columns' => [
-                'stage' => ['display_name' => 'Stage',  'aggregate' => ''],
-                'title' => ['display_name' => 'Deals',  'aggregate' => 'count', 'summary' => 'count'],
-                'value' => ['display_name' => 'Value',  'aggregate' => 'sum', 'summary' => 'sum', 'color_rules' => [
-                    ['op' => '>', 'value' => 100000, 'color' => '#2b9348'],
+            // Showcase view: company x stage measures with default row grouping
+            // (group_rows) by stage plus per-group aggregates, and drill-down enabled.
+            // Mirrors the config as tuned in the admin Views editor.
+            'v_demo_crm_company_pipeline' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => false, 'description' => 'Deal and activity measures per company and sales stage, with subtotals and drill-down by stage and industry.', 'group_rows' => 'stage', 'columns' => [
+                'company_name'   => ['display_name' => 'Company',        'aggregate' => 'count'],
+                'industry'       => ['display_name' => 'Industry',       'aggregate' => ''],
+                'stage'          => ['display_name' => 'Stage',          'aggregate' => ''],
+                'contact_count'  => ['display_name' => 'Contacts',       'aggregate' => 'sum', 'color_rules' => [
+                    ['op' => '>', 'value' => 3, 'color' => '#d00000'],
                 ]],
-            ], 'drill_down' => ['enabled' => true, 'levels' => [
-                ['group_by' => 'stage', 'label' => 'Stage'],
-            ]]],
-            'v_demo_crm_leads_funnel' => ['schema' => 'spw_crm', 'display_name' => 'CRM Leads Funnel', 'menu_name' => 'Leads Funnel', 'icon' => 'assets/icons/account_tree.png', 'hidden' => true, 'description' => 'Lead count by qualification status.', 'columns' => [
+                'deal_count'     => ['display_name' => 'Deals',          'aggregate' => 'sum'],
+                'total_value'    => ['display_name' => 'Total Value',    'aggregate' => 'sum', 'color_rules' => [
+                    ['op' => '>', 'value' => 300000, 'color' => '#2b9348'],
+                ]],
+                'avg_deal'       => ['display_name' => 'Avg Deal',       'aggregate' => 'avg'],
+                'max_deal'       => ['display_name' => 'Max Deal',       'aggregate' => 'max'],
+                'min_deal'       => ['display_name' => 'Min Deal',       'aggregate' => 'min'],
+                'stddev_deal'    => ['display_name' => 'Deal Std Dev',   'aggregate' => 'avg'],
+                'first_close'    => ['display_name' => 'First Close',    'aggregate' => 'min'],
+                'last_close'     => ['display_name' => 'Last Close',     'aggregate' => 'max'],
+                'overdue_deals'  => ['display_name' => 'Overdue',        'aggregate' => 'sum', 'color_rules' => [
+                    ['op' => '>', 'value' => 1, 'color' => '#d00000'],
+                ]],
+                'activity_count' => ['display_name' => 'Activities',     'aggregate' => 'sum'],
+                'activity_done'  => ['display_name' => 'Done',           'aggregate' => 'sum'],
+                'activity_open'  => ['display_name' => 'Open',           'aggregate' => 'sum'],
+                'avg_activities_per_deal' => ['display_name' => 'Avg Activities / Deal', 'aggregate' => 'avg'],
+            ], 'drill_down' => ['enabled' => true, 'levels' => []]],
+            'v_demo_crm_leads_funnel' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'CRM Leads Funnel', 'menu_name' => 'Leads Funnel', 'icon' => 'assets/icons/account_tree.png', 'hidden' => true, 'description' => 'Lead count by qualification status.', 'columns' => [
                 'status'     => ['display_name' => 'Status'],
                 'lead_count' => ['display_name' => 'Leads', 'summary' => 'sum'],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_revenue' => ['schema' => 'spw_crm', 'display_name' => 'CRM Revenue', 'menu_name' => 'Revenue Summary', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'Invoice count & total by status.', 'columns' => [
+            'v_demo_crm_revenue' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'CRM Revenue', 'menu_name' => 'Revenue Summary', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'Invoice count & total by status.', 'columns' => [
                 'status'        => ['display_name' => 'Status'],
                 'invoice_count' => ['display_name' => 'Invoices',     'summary' => 'sum'],
                 // SUMIF demo: total counted only for non-draft invoices
@@ -906,14 +986,14 @@ function demo_def_crm($conn): array
                     'column' => 'status', 'op' => '!=', 'value' => 'Draft',
                 ]],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_assets_by_category' => ['schema' => 'spw_crm', 'display_name' => 'Assets by Category', 'menu_name' => 'Assets Summary', 'icon' => 'assets/icons/database.png', 'hidden' => true, 'description' => 'Asset count & book value by category.', 'columns' => [
+            'v_demo_crm_assets_by_category' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Assets by Category', 'menu_name' => 'Assets Summary', 'icon' => 'assets/icons/database.png', 'hidden' => true, 'description' => 'Asset count & book value by category.', 'columns' => [
                 'category'    => ['display_name' => 'Category'],
                 'asset_count' => ['display_name' => 'Assets',       'summary' => 'sum'],
                 'total_value' => ['display_name' => 'Total Value',  'summary' => 'max'],
             ], 'drill_down' => ['enabled' => false]],
             // Showcase view: default row grouping (group_rows) with per-group subtotals,
             // SUMIF (paid revenue), COUNTIF (unpaid invoices), AVG and color rules.
-            'v_demo_crm_revenue_by_period' => ['schema' => 'spw_crm', 'display_name' => 'Revenue by Period', 'menu_name' => 'Revenue by Period', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'Invoices grouped by month with subtotals, SUMIF (paid revenue) and COUNTIF (unpaid invoices).', 'group_rows' => 'year_month', 'columns' => [
+            'v_demo_crm_revenue_by_period' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Revenue by Period', 'menu_name' => 'Revenue by Period', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'Invoices grouped by month with subtotals, SUMIF (paid revenue) and COUNTIF (unpaid invoices).', 'group_rows' => 'year_month', 'columns' => [
                 'year'           => ['display_name' => 'Year'],
                 'year_month'     => ['display_name' => 'Month',      'aggregate' => ''],
                 'invoice_number' => ['display_name' => 'Invoice #',  'aggregate' => 'count', 'summary' => 'count'],
@@ -937,7 +1017,7 @@ function demo_def_crm($conn): array
             ]]],
             // Document views backing the Quote/Invoice print templates — not meant to be
             // browsed as reports, so hidden from the Views module listing.
-            'v_demo_crm_quote_doc' => ['schema' => 'spw_crm', 'display_name' => 'Quote Document', 'menu_name' => 'Quote Document', 'icon' => 'assets/icons/ballot.png', 'hidden' => true, 'description' => 'One row per quote with joined company/contact/deal fields for the Quote print template.', 'columns' => [
+            'v_demo_crm_quote_doc' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Quote Document', 'menu_name' => 'Quote Document', 'icon' => 'assets/icons/ballot.png', 'hidden' => true, 'description' => 'One row per quote with joined company/contact/deal fields for the Quote print template.', 'columns' => [
                 'quote_number' => ['display_name' => 'Quote #'],
                 'status'       => ['display_name' => 'Status'],
                 'valid_until'  => ['display_name' => 'Valid Until'],
@@ -945,7 +1025,7 @@ function demo_def_crm($conn): array
                 'tax'          => ['display_name' => 'Tax'],
                 'total'        => ['display_name' => 'Total'],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_invoice_doc' => ['schema' => 'spw_crm', 'display_name' => 'Invoice Document', 'menu_name' => 'Invoice Document', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'One row per invoice with joined company/contact/deal fields for the Invoice print template.', 'columns' => [
+            'v_demo_crm_invoice_doc' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Invoice Document', 'menu_name' => 'Invoice Document', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'One row per invoice with joined company/contact/deal fields for the Invoice print template.', 'columns' => [
                 'invoice_number' => ['display_name' => 'Invoice #'],
                 'status'         => ['display_name' => 'Status'],
                 'issue_date'     => ['display_name' => 'Issued'],

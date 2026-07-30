@@ -45,7 +45,11 @@ RELATED RECORDS:
 - Invoices: payment requests for this deal
 
 PIPELINE VIEW:
-Go to Menu → Pipeline Summary for a count and value breakdown by stage.
+Go to Menu → Pipeline Summary for deal and activity measures per company and stage:
+contacts, deal count, total/average/max/min deal value, deal value standard deviation,
+first and last expected close date, overdue deals (expected close in the past while the
+deal is neither Won nor Lost) and activity totals (all / done / open, average per deal).
+Rows are grouped by stage with per-group aggregates, and drill-down is enabled.
 Deals dashboard widget "Deals by Stage" shows a bar chart.
 
 CALENDAR:
