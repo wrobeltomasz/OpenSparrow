@@ -11,9 +11,10 @@ function demo_def_crm($conn): array
 {
     return [
         'pg_schema'  => 'spw_crm',
-        // 'v_demo_crm_pipeline' is the pre-3.1 name of the pipeline view — kept in the
-        // list so uninstalling a demo installed by an older build still drops it.
-        'view_names' => ['v_demo_crm_company_pipeline', 'v_demo_crm_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_revenue', 'v_demo_crm_assets_by_category', 'v_demo_crm_revenue_by_period', 'v_demo_crm_quote_doc', 'v_demo_crm_invoice_doc'],
+        // 'v_demo_crm_pipeline' is the pre-3.1 name of the pipeline view, and the two
+        // '*_doc' views backed the retired Quote/Invoice printouts — all kept in the
+        // list so uninstalling a demo installed by an older build still drops them.
+        'view_names' => ['v_demo_crm_company_pipeline', 'v_demo_crm_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_revenue', 'v_demo_crm_assets_by_category', 'v_demo_crm_revenue_by_period', 'v_demo_crm_pipeline_report', 'v_demo_crm_activity_agenda', 'v_demo_crm_quote_doc', 'v_demo_crm_invoice_doc'],
         'ddl' => [
             'CREATE SCHEMA IF NOT EXISTS spw_crm',
             "CREATE TABLE IF NOT EXISTS spw_crm.companies (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, industry VARCHAR(100), website VARCHAR(255), phone VARCHAR(50), email VARCHAR(255), created_at TIMESTAMP DEFAULT NOW())",
@@ -68,26 +69,31 @@ function demo_def_crm($conn): array
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_revenue AS SELECT status, COUNT(*) AS invoice_count, COALESCE(SUM(amount_total), 0) AS total FROM spw_crm.invoices GROUP BY status ORDER BY status',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_assets_by_category AS SELECT category, COUNT(*) AS asset_count, COALESCE(SUM(current_value), 0) AS total_value FROM spw_crm.assets GROUP BY category ORDER BY category',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_revenue_by_period AS SELECT TO_CHAR(issue_date, \'YYYY\') AS year, TO_CHAR(issue_date, \'YYYY-MM\') AS year_month, invoice_number, status, amount_net, amount_tax, amount_total, issue_date, due_date, CASE WHEN paid_at IS NOT NULL THEN \'Yes\' ELSE \'No\' END AS paid FROM spw_crm.invoices',
-            // Document views for the Quote/Invoice print templates below — one row per
-            // quote/invoice, joined out to deal/company/contact for the printable header.
-            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_quote_doc AS '
-                . 'SELECT q.id, q.quote_number, q.status, q.valid_until, q.subtotal, q.tax, q.total, q.notes, q.created_at, '
-                . 'd.title AS deal_title, '
-                . 'c.name AS company_name, c.website AS company_website, c.phone AS company_phone, c.email AS company_email, '
-                . 'ct.first_name AS contact_first_name, ct.last_name AS contact_last_name, ct.email AS contact_email, ct.phone AS contact_phone '
-                . 'FROM spw_crm.quotes q '
-                . 'LEFT JOIN spw_crm.deals d ON d.id = q.deal_id '
+            // Report views for the print templates below — multi-row lists over the tables
+            // the demo actually exposes (deals / activities), joined out to company and
+            // contact. 'done_label' is a text mirror of activities.done: the print
+            // parameter picker runs DISTINCT on the bound column, and a raw boolean would
+            // offer 't'/'f' in the dropdown (same trick as 'paid' in the revenue view).
+            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_pipeline_report AS '
+                . 'SELECT d.id, d.title, d.stage, d.value, d.expected_close, '
+                . 'c.name AS company_name, c.industry AS company_industry, '
+                . "TRIM(CONCAT_WS(' ', ct.first_name, ct.last_name)) AS contact_name, "
+                . 'ct.email AS contact_email '
+                . 'FROM spw_crm.deals d '
                 . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
-                . 'LEFT JOIN spw_crm.contacts ct ON ct.id = d.contact_id',
-            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_invoice_doc AS '
-                . 'SELECT i.id, i.invoice_number, i.status, i.issue_date, i.due_date, i.amount_net, i.amount_tax, i.amount_total, i.paid_at, i.notes, i.created_at, '
+                . 'LEFT JOIN spw_crm.contacts ct ON ct.id = d.contact_id '
+                . 'ORDER BY c.name, d.expected_close',
+            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_activity_agenda AS '
+                . 'SELECT a.id, a.scheduled_at::date AS scheduled_on, a.type, a.notes, '
+                . "CASE WHEN a.done THEN 'Yes' ELSE 'No' END AS done_label, "
                 . 'd.title AS deal_title, '
-                . 'c.name AS company_name, c.website AS company_website, c.phone AS company_phone, c.email AS company_email, '
-                . 'ct.first_name AS contact_first_name, ct.last_name AS contact_last_name, ct.email AS contact_email, ct.phone AS contact_phone '
-                . 'FROM spw_crm.invoices i '
-                . 'LEFT JOIN spw_crm.deals d ON d.id = i.deal_id '
+                . 'c.name AS company_name, '
+                . "TRIM(CONCAT_WS(' ', ct.first_name, ct.last_name)) AS contact_name "
+                . 'FROM spw_crm.activities a '
+                . 'LEFT JOIN spw_crm.deals d ON d.id = a.deal_id '
                 . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
-                . 'LEFT JOIN spw_crm.contacts ct ON ct.id = d.contact_id',
+                . 'LEFT JOIN spw_crm.contacts ct ON ct.id = a.contact_id '
+                . 'ORDER BY a.scheduled_at DESC',
             // Validation procedure for the "Add Contact" workflow below: the wizard
             // CALLs it when the user clicks "Next step", and a RAISE EXCEPTION here
             // blocks the step and surfaces the message in the UI. Phone separators
@@ -1015,73 +1021,72 @@ function demo_def_crm($conn): array
                 ['group_by' => 'year',       'label' => 'Year'],
                 ['group_by' => 'year_month', 'label' => 'Month'],
             ]]],
-            // Document views backing the Quote/Invoice print templates — not meant to be
-            // browsed as reports, so hidden from the Views module listing.
-            'v_demo_crm_quote_doc' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Quote Document', 'menu_name' => 'Quote Document', 'icon' => 'assets/icons/ballot.png', 'hidden' => true, 'description' => 'One row per quote with joined company/contact/deal fields for the Quote print template.', 'columns' => [
-                'quote_number' => ['display_name' => 'Quote #'],
-                'status'       => ['display_name' => 'Status'],
-                'valid_until'  => ['display_name' => 'Valid Until'],
-                'subtotal'     => ['display_name' => 'Subtotal'],
-                'tax'          => ['display_name' => 'Tax'],
-                'total'        => ['display_name' => 'Total'],
+            // Report views backing the print templates — not meant to be browsed as
+            // reports, so hidden from the Views module listing.
+            'v_demo_crm_pipeline_report' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Pipeline Report Source', 'menu_name' => 'Pipeline Report Source', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => true, 'description' => 'One row per deal with joined company and contact fields for the Sales Pipeline Report print template.', 'columns' => [
+                'title'          => ['display_name' => 'Deal'],
+                'company_name'   => ['display_name' => 'Company'],
+                'contact_name'   => ['display_name' => 'Contact'],
+                'stage'          => ['display_name' => 'Stage'],
+                'value'          => ['display_name' => 'Value'],
+                'expected_close' => ['display_name' => 'Expected Close'],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_invoice_doc' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Invoice Document', 'menu_name' => 'Invoice Document', 'icon' => 'assets/icons/file_present.png', 'hidden' => true, 'description' => 'One row per invoice with joined company/contact/deal fields for the Invoice print template.', 'columns' => [
-                'invoice_number' => ['display_name' => 'Invoice #'],
-                'status'         => ['display_name' => 'Status'],
-                'issue_date'     => ['display_name' => 'Issued'],
-                'due_date'       => ['display_name' => 'Due'],
-                'amount_net'     => ['display_name' => 'Net'],
-                'amount_tax'     => ['display_name' => 'Tax'],
-                'amount_total'   => ['display_name' => 'Total'],
+            'v_demo_crm_activity_agenda' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Activity Agenda Source', 'menu_name' => 'Activity Agenda Source', 'icon' => 'assets/icons/account_tree.png', 'hidden' => true, 'description' => 'One row per activity with joined deal and contact fields for the Activity Agenda print template.', 'columns' => [
+                'scheduled_on' => ['display_name' => 'Scheduled'],
+                'type'         => ['display_name' => 'Type'],
+                'deal_title'   => ['display_name' => 'Deal'],
+                'contact_name' => ['display_name' => 'Contact'],
+                'done_label'   => ['display_name' => 'Completed'],
+                'notes'        => ['display_name' => 'Notes'],
             ], 'drill_down' => ['enabled' => false]],
         ],
         'prints' => [
-            'crm_quote_offer' => [
-                'display_name' => 'Quote / Offer',
-                'menu_name'    => 'Quote / Offer',
-                'description'  => 'Printable offer document for a single quote, with company/contact details and totals.',
-                'icon'         => 'assets/icons/ballot.png',
+            'crm_pipeline_report' => [
+                'display_name' => 'Sales Pipeline Report',
+                'menu_name'    => 'Pipeline Report',
+                'description'  => 'Open and closed deals with company, contact, value and expected close date. Filter by stage or company.',
+                'icon'         => 'assets/icons/point_of_sale.png',
                 'hidden'       => false,
-                'view'         => 'v_demo_crm_quote_doc',
+                'view'         => 'v_demo_crm_pipeline_report',
                 'blocks'       => [
-                    ['type' => 'header', 'level' => 1, 'text' => 'Quote {quote_number}'],
-                    ['type' => 'text', 'text' => 'Company: {company_name} — {company_website} — {company_phone}'],
-                    ['type' => 'text', 'text' => 'Contact: {contact_first_name} {contact_last_name} ({contact_email})'],
-                    ['type' => 'text', 'text' => 'Regarding: {deal_title}'],
-                    ['type' => 'text', 'text' => 'Status: {status} | Valid until: {valid_until}'],
+                    ['type' => 'header', 'level' => 1, 'text' => 'Sales Pipeline Report'],
+                    ['type' => 'text', 'text' => 'Deals by stage, with the owning company and primary contact.'],
                     ['type' => 'table', 'columns' => [
-                        ['name' => 'subtotal', 'align' => 'right'],
-                        ['name' => 'tax',      'align' => 'right'],
-                        ['name' => 'total',    'align' => 'right'],
+                        ['name' => 'title',          'align' => 'left',   'width' => 26],
+                        ['name' => 'company_name',   'align' => 'left',   'width' => 20],
+                        ['name' => 'contact_name',   'align' => 'left',   'width' => 18],
+                        ['name' => 'stage',          'align' => 'left',   'width' => 12],
+                        ['name' => 'value',          'align' => 'right',  'width' => 12],
+                        ['name' => 'expected_close', 'align' => 'center', 'width' => 12],
                     ]],
-                    ['type' => 'text', 'text' => 'Notes: {notes}'],
                 ],
                 'params' => [
-                    ['key' => 'quote_id', 'label' => 'Quote', 'type' => 'select', 'column' => 'id', 'required' => true, 'source_view' => 'v_demo_crm_quote_doc', 'value_column' => 'id', 'label_column' => 'quote_number'],
+                    ['key' => 'stage', 'label' => 'Stage', 'type' => 'select', 'column' => 'stage', 'required' => false, 'source_view' => 'v_demo_crm_pipeline_report', 'value_column' => 'stage', 'label_column' => 'stage'],
+                    ['key' => 'company', 'label' => 'Company', 'type' => 'select', 'column' => 'company_name', 'required' => false, 'source_view' => 'v_demo_crm_pipeline_report', 'value_column' => 'company_name', 'label_column' => 'company_name'],
                 ],
             ],
-            'crm_invoice' => [
-                'display_name' => 'Invoice',
-                'menu_name'    => 'Invoice',
-                'description'  => 'Printable invoice document for a single invoice, with company/contact details and amounts.',
-                'icon'         => 'assets/icons/file_present.png',
+            'crm_activity_agenda' => [
+                'display_name' => 'Activity Agenda',
+                'menu_name'    => 'Activity Agenda',
+                'description'  => 'Scheduled calls, meetings and tasks with the related deal and contact. Filter by type or completion.',
+                'icon'         => 'assets/icons/account_tree.png',
                 'hidden'       => false,
-                'view'         => 'v_demo_crm_invoice_doc',
+                'view'         => 'v_demo_crm_activity_agenda',
                 'blocks'       => [
-                    ['type' => 'header', 'level' => 1, 'text' => 'Invoice {invoice_number}'],
-                    ['type' => 'text', 'text' => 'Company: {company_name} — {company_website} — {company_phone}'],
-                    ['type' => 'text', 'text' => 'Contact: {contact_first_name} {contact_last_name} ({contact_email})'],
-                    ['type' => 'text', 'text' => 'Regarding: {deal_title}'],
-                    ['type' => 'text', 'text' => 'Issued: {issue_date} | Due: {due_date} | Status: {status}'],
+                    ['type' => 'header', 'level' => 1, 'text' => 'Activity Agenda'],
+                    ['type' => 'text', 'text' => 'Activities in reverse chronological order, newest first.'],
                     ['type' => 'table', 'columns' => [
-                        ['name' => 'amount_net',   'align' => 'right'],
-                        ['name' => 'amount_tax',   'align' => 'right'],
-                        ['name' => 'amount_total', 'align' => 'right'],
+                        ['name' => 'scheduled_on', 'align' => 'center', 'width' => 12],
+                        ['name' => 'type',         'align' => 'left',   'width' => 10],
+                        ['name' => 'deal_title',   'align' => 'left',   'width' => 24],
+                        ['name' => 'contact_name', 'align' => 'left',   'width' => 18],
+                        ['name' => 'done_label',   'align' => 'center', 'width' => 8],
+                        ['name' => 'notes',        'align' => 'left',   'width' => 28],
                     ]],
-                    ['type' => 'text', 'text' => 'Notes: {notes}'],
                 ],
                 'params' => [
-                    ['key' => 'invoice_id', 'label' => 'Invoice', 'type' => 'select', 'column' => 'id', 'required' => true, 'source_view' => 'v_demo_crm_invoice_doc', 'value_column' => 'id', 'label_column' => 'invoice_number'],
+                    ['key' => 'type', 'label' => 'Type', 'type' => 'select', 'column' => 'type', 'required' => false, 'source_view' => 'v_demo_crm_activity_agenda', 'value_column' => 'type', 'label_column' => 'type'],
+                    ['key' => 'done', 'label' => 'Completed', 'type' => 'select', 'column' => 'done_label', 'required' => false, 'source_view' => 'v_demo_crm_activity_agenda', 'value_column' => 'done_label', 'label_column' => 'done_label'],
                 ],
             ],
         ],

@@ -185,6 +185,13 @@ h3.pr-block-header { font-size: 16px; margin-top: 14px; }
   text-align: left;
   vertical-align: top;
   color: #111;
+  /* The global grid rule (`tbody td` in styles.css) sets nowrap + ellipsis, which
+     silently truncates long cells on paper. On a printed sheet content must wrap
+     instead — pagination measures real row heights, so wrapped rows are fine. */
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
 }
 
 .pr-block-table th {
