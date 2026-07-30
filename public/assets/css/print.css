@@ -171,11 +171,28 @@ h3.pr-block-header { font-size: 16px; margin-top: 14px; }
   white-space: pre-wrap;
 }
 
+/* The sheet uses real <table>/<thead>/<tbody> elements, so every bare-element rule
+   written for the data grid in styles.css (`table`, `thead th`, `tbody tr`,
+   `tbody td`, the zebra and hover rules) also lands here. Those are screen-grid
+   affordances — sticky headers, row hover, ellipsis truncation — and all of them
+   are wrong on a document. Each declaration below that exists purely to neutralize
+   one of them is marked GRID-RESET; do not drop them when tidying this file. */
 .pr-block-table {
   width: 100%;
   border-collapse: collapse;
   margin: 0 0 16px;
   font-size: 12px;
+  /* GRID-RESET: `table` in styles.css sets min-width:100% and table-layout:fixed.
+     Fixed layout is what makes the per-column `width` percentages predictable, so
+     it is restated here deliberately rather than inherited by accident. */
+  min-width: 0;
+  table-layout: fixed;
+}
+
+/* GRID-RESET: `tbody tr { height: 36px }` pads rows out to grid height, which
+   inflates the sheet and fits fewer rows per printed page than the layout intends. */
+.pr-block-table tbody tr {
+  height: auto;
 }
 
 .pr-block-table th,
@@ -185,19 +202,40 @@ h3.pr-block-header { font-size: 16px; margin-top: 14px; }
   text-align: left;
   vertical-align: top;
   color: #111;
-  /* The global grid rule (`tbody td` in styles.css) sets nowrap + ellipsis, which
-     silently truncates long cells on paper. On a printed sheet content must wrap
-     instead — pagination measures real row heights, so wrapped rows are fine. */
+  /* GRID-RESET: `tbody td` sets nowrap + overflow:hidden + ellipsis, which silently
+     truncates long cells on paper. On a printed sheet content must wrap instead —
+     pagination measures real row heights, so wrapped rows are fine. */
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
   word-break: break-word;
 }
 
+/* GRID-RESET: the zebra rule `tbody tr:nth-child(even) td` outweighs the plain
+   `.pr-block-table td` selector and bands the sheet with the app background color.
+   Cells on a document stay white. */
+.pr-block-table tbody tr:nth-child(even) td {
+  background: transparent;
+}
+
+/* GRID-RESET: `tbody tr:hover td` and the crosshair `.col-hover` rules use
+   !important, so only !important can take them back off a document preview. */
+.pr-block-table tbody tr:hover td,
+.pr-block-table tbody td.col-hover,
+.pr-block-table tbody tr:hover td.col-hover {
+  background: transparent !important;
+}
+
 .pr-block-table th {
   background: #f0f0f0;
   font-weight: 700;
   text-align: center;
+  /* GRID-RESET: `thead th` is sticky with z-index:10 so the grid header stays
+     pinned while scrolling. On the sheet that floats the header over the document
+     and fights the per-page <thead> clones the pagination pass inserts. */
+  position: static;
+  z-index: auto;
+  user-select: text;
 }
 
 .pr-block-empty {
