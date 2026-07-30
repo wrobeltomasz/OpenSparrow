@@ -303,6 +303,12 @@ try {
             $schemaName = $tableCfg['schema'] ?? 'public';
             $idCol = id_column();
             $titleCol = $src['title_column'] ?? $idCol;
+            // Optional second column rendered after the title on the event tile.
+            // Ignored when unset or pointing at a column the table no longer has.
+            $subCol = $src['subtitle_column'] ?? '';
+            if ($subCol !== '' && !isset($tableCfg['columns'][$subCol])) {
+                $subCol = '';
+            }
             $dateCol = $src['date_column'] ?? '';
             $color = $src['color'] ?? '#3b82f6';
             if (isset($tableCfg['columns'][$dateCol])) {
@@ -331,6 +337,9 @@ try {
                             'id' => $r[$idCol],
                             'table' => $table,
                             'title' => $r[$titleCol] ?? 'No title',
+                            'subtitle' => $subCol !== ''
+                                ? (string)($r[$subCol . '__display'] ?? $r[$subCol] ?? '')
+                                : '',
                             'date' => substr($r[$dateCol], 0, 10),
                             'color' => $color,
                             'icon' => $src['icon'] ?? null,

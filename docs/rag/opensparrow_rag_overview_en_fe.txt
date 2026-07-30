@@ -96,6 +96,8 @@ CALENDAR (calendar.php)
 -----------------------
 Monthly calendar showing events taken from date fields of your tables.
 Multiple sources with different colors. Clicking an event opens the related record.
+An event tile shows its title and, if the source is configured with a subtitle column,
+a second value dimmed next to it (e.g. "Call · Discovery call").
 Events can trigger advance notifications (e.g. 3 days before a deadline).
 
 

@@ -247,6 +247,7 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (6, 9, 'Premium Support Contract', 42000.00, 'Won', '2026-05-22')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (8, 11, 'Security Operations Center', 160000.00, 'Qualified', '2026-07-20')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (10, 15, 'Executive Coaching Program', 38000.00, 'Lead', '2026-08-12')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (12, 20, 'Data Platform Extension', 92000.00, 'Proposal', '2026-09-10')",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (1, 1, 'Call', 'Discussed budget and timeline', NOW() - INTERVAL '2 days', true)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (2, 3, 'Meeting', 'Presentation to stakeholders', NOW() + INTERVAL '3 days', false)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (3, 4, 'Email', 'Sent proposal document', NOW() - INTERVAL '5 days', true)",
@@ -309,12 +310,12 @@ function demo_def_crm($conn): array
             // Bulk volume for the Pipeline Summary view (v_demo_crm_company_pipeline):
             // the hand-written rows above only cover companies 1-24 with ~1 deal per
             // company and stage, which makes avg/max/min collapse onto the same number.
-            // These three set-based inserts give every company contacts, 12 deals spread
-            // evenly over the 6 stages (2+ per company x stage group, so the spread
-            // measures differ) and a few activities per deal. All values are derived
+            // Two set-based inserts: extra contacts for every company, and 1-3 extra
+            // activities per deal (the deal list stays at the 30 hand-written rows above,
+            // all of which have deal_contacts m2m links). Activities are scheduled across
+            // a 3-month window (previous, current and next month, business hours
+            // 08:00-16:00) so the calendar is not clumped into single days. Values derive
             // from id arithmetic rather than random(), so a demo install is reproducible.
-            // Order matters: contacts -> deals (pick a contact of their company) ->
-            // activities (attach to the generated deals).
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) "
                 . "SELECT c.id, "
                 . "(ARRAY['Adam','Bella','Carlos','Diana','Elias','Farah','Grace','Hugo','Iris','Jonas','Klara','Liam'])[1 + (c.id + g) % 12], "
@@ -323,25 +324,15 @@ function demo_def_crm($conn): array
                 . "'+1-555-' || LPAD((((c.id * 7 + g * 13) % 9000) + 1000)::text, 4, '0'), "
                 . "(ARRAY['Account Manager','Procurement Lead','CTO','Operations Manager','Finance Director','Project Manager','Head of IT','Commercial Director'])[1 + (c.id + g * 2) % 8] "
                 . "FROM spw_crm.companies c CROSS JOIN generate_series(1, 2) g",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) "
-                . "SELECT c.id, ct.id, "
-                . "(ARRAY['Enterprise License','Cloud Migration','Support Retainer','Platform Rollout','Security Audit','Data Warehouse','Integration Project','Managed Services'])[1 + (c.id + g) % 8] "
-                . "|| ' ' || (ARRAY['Q1','Q2','Q3','Q4'])[1 + (c.id + g * 3) % 4] || ' #' || g, "
-                . "(12000 + ((c.id * 7919 + g * 3571) % 240) * 1000)::numeric(12,2), "
-                . "(ARRAY['Lead','Qualified','Proposal','Negotiation','Won','Lost'])[1 + (c.id + g) % 6], "
-                . "DATE '2026-01-15' + ((c.id * 13 + g * 29) % 330) "
-                . "FROM spw_crm.companies c "
-                . "CROSS JOIN generate_series(1, 12) g "
-                . "LEFT JOIN LATERAL (SELECT x.id FROM spw_crm.contacts x WHERE x.company_id = c.id "
-                . "ORDER BY x.id OFFSET ((c.id + g) % 2) LIMIT 1) ct ON true",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) "
                 . "SELECT d.id, d.contact_id, "
                 . "(ARRAY['Call','Meeting','Email','Task','Note'])[1 + (d.id + g) % 5], "
                 . "(ARRAY['Discovery call','Requirements workshop','Proposal sent','Pricing follow-up','Reference check','Contract review'])[1 + (d.id * 3 + g) % 6], "
-                . "NOW() + ((((d.id * 17 + g * 5) % 120) - 60)::text || ' days')::interval, "
+                . "date_trunc('day', NOW()) "
+                . "+ ((((d.id * 17 + g * 29) % 91) - 45)::text || ' days')::interval "
+                . "+ ((8 + (d.id * 3 + g * 7) % 9)::text || ' hours')::interval, "
                 . "((d.id + g) % 3 <> 0) "
-                . "FROM spw_crm.deals d CROSS JOIN generate_series(1, 1 + (d.id % 4)) g "
-                . "WHERE d.id > 29",
+                . "FROM spw_crm.deals d CROSS JOIN generate_series(1, 1 + (d.id % 3)) g",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Web', 'Olivia', 'Hayes', 'olivia.h@northwind.io', '+1-555-3001', 'Northwind Traders', 'New', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Referral', 'Marcus', 'Bennett', 'marcus.b@apexlogi.com', '+1-555-3002', 'Apex Logistics', 'Contacted', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Event', 'Sofia', 'Kowalski', 'sofia.k@brightsoft.eu', '+44-20-555-0103', 'BrightSoft EU', 'Qualified', 1)",
@@ -716,6 +707,8 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (27, 12, 'Technical Evaluator')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (28, 14, 'Legal Reviewer')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (29, 16, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (30, 18, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (30, 8, 'Procurement')",
             // Spread created_at over past weeks/months so the dashboard period filter
             // (Today/7d/30d) and stat card trend deltas have history to compare against.
             // The WHERE guard on leads keeps the intentionally stale GDPR-demo rows intact.
@@ -901,7 +894,7 @@ function demo_def_crm($conn): array
             ['id' => 'demo_crm_012', 'type' => 'line_chart', 'title' => 'Activities Over Time',  'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'week',  'agg_column' => 'id',    'agg_type' => 'count', 'area' => true, 'conditions' => []], 'icon' => 'assets/icons/calendar.png',      'color' => '#553eb1', 'display_columns' => []],
         ],
         'calendar_sources' => [
-            ['table' => 'activities', 'date_column' => 'scheduled_at', 'title_column' => 'type', 'color' => '#93c5fd', 'notify_before_days' => 1, 'url_template' => 'edit.php?table=activities&id={id}', 'icon' => 'assets/icons/calendar.png', 'notified_users' => []],
+            ['table' => 'activities', 'date_column' => 'scheduled_at', 'title_column' => 'type', 'subtitle_column' => 'notes', 'color' => '#93c5fd', 'notify_before_days' => 1, 'url_template' => 'edit.php?table=activities&id={id}', 'icon' => 'assets/icons/calendar.png', 'notified_users' => []],
             ['table' => 'deals', 'date_column' => 'expected_close', 'title_column' => 'title', 'color' => '#fcd34d', 'notify_before_days' => 3, 'url_template' => 'edit.php?table=deals&id={id}', 'icon' => 'assets/icons/point_of_sale.png', 'notified_users' => []],
         ],
         // Kanban board — Deals grouped by their sales Stage. Dragging a card

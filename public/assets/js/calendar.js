@@ -389,6 +389,14 @@ function renderCalendar() {
             const titleText = document.createTextNode(ev.title);
             evEl.appendChild(titleText);
 
+            // Optional secondary value (source's subtitle_column) on the same line
+            if (ev.subtitle) {
+                const subSpan = document.createElement('span');
+                subSpan.className = 'calendar-event-sub';
+                subSpan.textContent = ' · ' + ev.subtitle;
+                evEl.appendChild(subSpan);
+            }
+
             // Securely encode URL parameters
             evEl.addEventListener('click', () => {
                 window.location.href = `edit.php?table=${encodeURIComponent(ev.table)}&id=${encodeURIComponent(ev.id)}`;

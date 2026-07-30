@@ -1807,6 +1807,9 @@ header .dash-filter-label {
 }
 .calendar-event:hover { opacity: 0.9; }
 
+/* Secondary value from a source's subtitle_column, inline after the title */
+.calendar-event-sub { opacity: 0.8; }
+
 /* Small red ✕ delete button on each calendar event (editors only) */
 .calendar-event-del {
   position: absolute;

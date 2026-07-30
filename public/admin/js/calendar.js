@@ -19,14 +19,27 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
 
     workspaceEl.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), itemData.table, v => { 
         itemData.table = v; 
-        itemData.date_column = ""; 
-        itemData.title_column = ""; 
+        itemData.date_column = "";
+        itemData.title_column = "";
+        delete itemData.subtitle_column;
         renderEditor(key, itemData, isArray); 
     }));
     
     workspaceEl.appendChild(createSelectInput('date_column', 'Date Column Name', columnOptions, itemData.date_column, v => itemData.date_column = v));
     workspaceEl.appendChild(createSelectInput('title_column', 'Title Column Name', columnOptions, itemData.title_column, v => itemData.title_column = v));
-    
+
+    // Optional second column shown after the title on the event tile
+    // columnOptions already starts with an empty entry — relabel it, don't add a second one
+    const subtitleOptions = columnOptions.map(o => (o.value === '' ? { value: '', label: '(None)' } : o));
+    workspaceEl.appendChild(createSelectInput('subtitle_column', 'Subtitle Column Name', subtitleOptions, itemData.subtitle_column || '', v => {
+        if (v && v.trim() !== '') {
+            itemData.subtitle_column = v;
+        } else {
+            delete itemData.subtitle_column;
+        }
+    }));
+
+
     workspaceEl.appendChild(createIconPicker('icon', 'Event Icon', itemData.icon || '', v => {
         if (v && v.trim() !== '') {
             itemData.icon = v;

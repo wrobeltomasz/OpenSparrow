@@ -79,6 +79,8 @@ Dashboard:
 Calendar:
   - Configure event sources: table + date/timestamp column
   - Event title template (which column becomes the title)
+  - Optional subtitle column — a second column shown dimmed after the title on the
+    event tile (e.g. Type + Notes); leave it as "(None)" for a single-value tile
   - Color rules (per enum value or fixed hex), optional icon
   - Advance notification days (notify_before_days) per source
 
