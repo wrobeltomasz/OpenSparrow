@@ -362,4 +362,6 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and sign the 
 
 Copyright © 2024–2026 OpenSparrow Contributors. Licensed under the **GNU Lesser General Public License v3.0 (LGPL v3)**.
 
-You may use OpenSparrow in open-source and closed-source commercial projects. Modifications to core OpenSparrow files must remain under the same license. The LGPL v3 is a set of additional permissions on top of the GPL v3: see [COPYING.LESSER](COPYING.LESSER) for the LGPL terms and [COPYING](COPYING) for the base GPL v3.
+You may use OpenSparrow in open-source and closed-source commercial projects. Modifications to core OpenSparrow files must remain under the same license. 
+The LGPL v3 is a set of additional permissions on top of the GPL v3: see [COPYING.LESSER](COPYING.LESSER) for the LGPL terms and [COPYING](COPYING) for the base GPL v3.
+See also: [LICENSE-EXCEPTION](LICENSE-EXCEPTION)
