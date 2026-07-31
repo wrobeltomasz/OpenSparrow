@@ -453,7 +453,7 @@ function initUserMenu() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-    await I18n.load();
+document.addEventListener('DOMContentLoaded', () => {
     initUserMenu();
+    I18n.load();
 });

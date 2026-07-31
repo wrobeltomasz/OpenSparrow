@@ -20,8 +20,10 @@
 
   --border:       #CBD5E1;
   --border-light: #E2E8F0;
-  /* column half of the grid crosshair hover — a touch lighter than --border-light */
-  --col-hover:    #EDF1F5;
+  /* grid crosshair — row + column hover stripe (lighter tint, distinct from --accent-mid used elsewhere) */
+  --row-col-hover: #EEF4FA;
+  /* the exact hovered cell — darker than the stripe above so it stands out */
+  --cell-hover:   #CBE0F0;
 
   --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md:    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -1039,12 +1041,13 @@ tbody td {
 tbody td:first-child { padding-left: 1.25rem; }
 
 tbody tr:nth-child(even) td { background: var(--bg); }
-/* Crosshair hover highlight — row (CSS) + column (.col-hover, set by grid/crosshair.js) */
-tbody tr:hover td { background: var(--accent-mid) !important; }
-tbody td.col-hover:not(.cell-error):not(.cell-success) { background: var(--col-hover) !important; }
-thead th.col-hover { background: var(--col-hover); }
-/* intersection cell keeps the row color */
-tbody tr:hover td.col-hover:not(.cell-error):not(.cell-success) { background: var(--accent-mid) !important; }
+/* Crosshair hover highlight — row (CSS) + column (.col-hover, set by grid/crosshair.js) — same tint for both stripes */
+tbody tr:hover td { background: var(--row-col-hover) !important; }
+tbody td.col-hover:not(.cell-error):not(.cell-success) { background: var(--row-col-hover) !important; }
+thead th.col-hover { background: var(--row-col-hover); }
+/* exact hovered cell (.cell-hover, set by grid/crosshair.js) — darker than the stripes; must outrank the row+col rules above */
+tbody tr:hover td.cell-hover:not(.cell-error):not(.cell-success),
+tbody td.col-hover.cell-hover:not(.cell-error):not(.cell-success) { background: var(--cell-hover) !important; }
 
 /* ===== TABLE INNER INPUTS ===== */
 td select,

@@ -3,15 +3,22 @@
 // cannot express "cells sharing the hovered cell's index".
 
 const COL_CLASS = 'col-hover';
+const CELL_CLASS = 'cell-hover';
 
 export function attachCrosshair(table) {
     let lastIndex = -1;
+    let lastCell = null;
 
     const clear = () => {
-        if (lastIndex === -1) return;
-        table.querySelectorAll('.' + COL_CLASS)
-            .forEach(cell => cell.classList.remove(COL_CLASS));
-        lastIndex = -1;
+        if (lastIndex !== -1) {
+            table.querySelectorAll('.' + COL_CLASS)
+                .forEach(cell => cell.classList.remove(COL_CLASS));
+            lastIndex = -1;
+        }
+        if (lastCell) {
+            lastCell.classList.remove(CELL_CLASS);
+            lastCell = null;
+        }
     };
 
     const paint = (index) => {
@@ -29,6 +36,11 @@ export function attachCrosshair(table) {
         const cell = e.target.closest('td, th');
         if (!cell || cell.closest('table') !== table) return clear();
         paint(cell.colSpan === 1 ? cell.cellIndex : -1);
+        if (cell !== lastCell) {
+            if (lastCell) lastCell.classList.remove(CELL_CLASS);
+            cell.classList.add(CELL_CLASS);
+            lastCell = cell;
+        }
     });
 
     table.addEventListener('mouseleave', clear);
