@@ -119,8 +119,8 @@
         "admin_panel": "Πίνακας διαχείρισης",
         "user_menu": "Μενού χρήστη",
         "change_avatar": "Αλλαγή avatar",
-        "choose_avatar": "Επιλογή avatar",
-        "use_initial": "Χρήση αρχικού",
+        "choose_avatar": "Choose avatar color",
+        "default_color": "Default color",
         "avatar_updated": "Το avatar ενημερώθηκε.",
         "my_records": "Οι εγγραφές μου",
         "my_records_empty": "Δεν σας έχουν ανατεθεί εγγραφές.",
@@ -129,8 +129,8 @@
         "my_comments_empty": "Δεν έχετε γράψει ακόμη σχόλια.",
         "notes": "My notes",
         "close": "Κλείσιμο",
-        "avatar_option": "Avatar {n}",
-        "avatar_options": "Avatar options",
+        "avatar_option": "Color {n}",
+        "avatar_options": "Avatar colors",
         "error_saving_avatar": "Error saving avatar."
     },
     "admin": {

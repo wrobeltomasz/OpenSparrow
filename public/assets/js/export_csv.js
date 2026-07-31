@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/export_csv.js — exportCSV(): builds a CSV from the grid's displayedColumns + filteredData (respects current filter/sort) and triggers a client-side download. No server call.
 
 import { getState } from './grid.js';

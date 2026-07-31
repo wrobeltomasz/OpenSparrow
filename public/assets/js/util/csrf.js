@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/util/csrf.js — getCsrfToken(): returns the session CSRF token.
 // Sources, in order: window.CSRF_TOKEN (inlined by edit.php/files.php, which have no
 // <meta> tag) then the <meta name="csrf-token"> tag (templates/layout.php pages).

@@ -119,8 +119,8 @@
         "admin_panel": "Panel administracyjny",
         "user_menu": "Menu użytkownika",
         "change_avatar": "Zmień awatar",
-        "choose_avatar": "Wybierz awatar",
-        "use_initial": "Użyj inicjału",
+        "choose_avatar": "Wybierz kolor awatara",
+        "default_color": "Kolor domyślny",
         "avatar_updated": "Awatar zaktualizowany.",
         "my_records": "Moje rekordy",
         "my_records_empty": "Nie masz przypisanych rekordów.",
@@ -129,8 +129,8 @@
         "my_comments_empty": "Nie napisałeś jeszcze żadnych komentarzy.",
         "notes": "Moje notatki",
         "close": "Zamknij",
-        "avatar_option": "Awatar {n}",
-        "avatar_options": "Opcje awatara",
+        "avatar_option": "Kolor {n}",
+        "avatar_options": "Kolory awatara",
         "error_saving_avatar": "Błąd zapisu awatara."
     },
     "admin": {

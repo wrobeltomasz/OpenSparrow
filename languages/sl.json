@@ -119,8 +119,8 @@
         "admin_panel": "Skrbniška plošča",
         "user_menu": "Uporabniški meni",
         "change_avatar": "Spremeni avatar",
-        "choose_avatar": "Izberi avatar",
-        "use_initial": "Uporabi inicialko",
+        "choose_avatar": "Choose avatar color",
+        "default_color": "Default color",
         "avatar_updated": "Avatar posodobljen.",
         "my_records": "Moji zapisi",
         "my_records_empty": "Nimate dodeljenih zapisov.",
@@ -129,8 +129,8 @@
         "my_comments_empty": "Niste še napisali nobenega komentarja.",
         "notes": "My notes",
         "close": "Zapri",
-        "avatar_option": "Avatar {n}",
-        "avatar_options": "Avatar options",
+        "avatar_option": "Color {n}",
+        "avatar_options": "Avatar colors",
         "error_saving_avatar": "Error saving avatar."
     },
     "admin": {

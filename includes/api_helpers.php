@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // api_helpers.php — Shared helper functions for API endpoints
 // Provides safe table/column access, FK display mapping, boolean normalization, type min values, audit logging, ownership checks, and record snapshots
 // All SQL identifiers are quoted with pg_ident(); values are escaped or parameterized; uses sys_table() for system tables

@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/grid/body/render.js — renderTbody(): builds grid rows, delegating each cell to its registered CellRenderer (imports all cell types so they self-register); adds row actions + expand button.
 
 import { I18n } from '../../i18n.js';

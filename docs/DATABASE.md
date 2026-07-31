@@ -74,7 +74,7 @@ Created by the bootstrap block, *not* by `system_tables_ddl()`. One row per appl
 | `password_params` | jsonb DEFAULT `'{}'` | Cost parameters used for the hash (memory/time/threads), for rehash comparison. |
 | `is_active` | bool DEFAULT true | Soft disable — inactive users cannot log in but their audit rows survive. |
 | `role` | varchar(20) NOT NULL DEFAULT `'editor'` | Authorization level (`admin` / `editor` / read-only roles). Enforced server-side in `api_bootstrap.php` / `requireWrite()`. |
-| `avatar_id` | smallint NULL | Index of the built-in avatar icon shown in the UI. |
+| `avatar_id` | smallint NULL | Avatar colour: 1-based index into the avatar palette (OS_AVATAR_COLORS). NULL = default colour. The avatar itself is the initial of the username. |
 
 ### `spw_users_log` — user action audit trail
 

@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/edit/subtable-tooltip.js — record tooltip for edit.php generic
 // subtables, reusing the same shared tooltip as the grid (util/record-tooltip.js).
 // Row data + column metadata are embedded server-side as data-row/data-columns

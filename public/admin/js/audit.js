@@ -1,5 +1,7 @@
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // admin/js/audit.js — Audit-log settings editor (renderAuditEditor); reads/writes audit config via api.php.
 import { apiFetch } from '../../assets/js/util/api.js';

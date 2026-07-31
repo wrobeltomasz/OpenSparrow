@@ -1,6 +1,8 @@
 <?php
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 // templates/header.php — unified application header for all app pages.
 // Optional variables (set before include):
@@ -10,7 +12,10 @@
 $userRole  = $_SESSION['role']      ?? 'viewer';
 $avatarId  = $_SESSION['avatar_id'] ?? null;
 $uname     = $_SESSION['username']  ?? '';
-$initial   = htmlspecialchars(strtoupper(substr($uname, 0, 1)), ENT_QUOTES, 'UTF-8');
+// The avatar is the username's initial on the colour the user picked; avatar_id is
+// the palette index (NULL = default). mb_* so a multibyte initial stays one character.
+$initial     = htmlspecialchars(mb_strtoupper(mb_substr($uname, 0, 1)), ENT_QUOTES, 'UTF-8');
+$avatarColor = os_avatar_color($avatarId !== null ? (int)$avatarId : null);
 $unameEsc  = htmlspecialchars($uname, ENT_QUOTES, 'UTF-8');
 $nonceAttr = isset($cspNonce)
     ? ' nonce="' . htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8') . '"'
@@ -84,18 +89,13 @@ if ($logoEnabled) {
         <?php if ($uname !== '') : ?>
         <div class="user-avatar-wrap">
             <button class="user-avatar-btn" id="userAvatarBtn" data-cy="user-avatar"
+                    <?php if ($avatarId) : ?>data-avatar-id="<?= (int)$avatarId ?>" <?php endif; ?>
                     aria-label="User menu" aria-expanded="false" aria-haspopup="true">
-                <?php if ($avatarId) : ?>
-                    <img class="avatar avatar-border"
-                         src="assets/img/avatar-<?= (int)$avatarId ?>.png"
-                         alt="Avatar <?= (int)$avatarId ?>" />
-                <?php else : ?>
-                    <svg class="avatar avatar-border avatar-initial" viewBox="0 0 32 32" aria-hidden="true">
-                        <circle cx="16" cy="16" r="16" fill="#364B60"/>
-                        <text x="16" y="21" text-anchor="middle" fill="#fff"
-                              font-size="14" font-family="Inter,sans-serif" font-weight="600"><?= $initial ?></text>
-                    </svg>
-                <?php endif; ?>
+                <svg class="avatar avatar-border avatar-initial" viewBox="0 0 32 32" aria-hidden="true">
+                    <circle cx="16" cy="16" r="16" fill="<?= $avatarColor ?>"/>
+                    <text x="16" y="21" text-anchor="middle" fill="#fff"
+                          font-size="14" font-family="Inter,sans-serif" font-weight="600"><?= $initial ?></text>
+                </svg>
                 <span class="user-avatar-tooltip"><?= $unameEsc ?></span>
             </button>
             <div class="user-avatar-menu" id="userAvatarMenu" role="menu">

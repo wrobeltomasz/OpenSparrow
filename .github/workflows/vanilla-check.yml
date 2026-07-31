@@ -35,7 +35,7 @@ jobs:
                -e "cdn\.jsdelivr\.net|unpkg\.com|cdnjs\.cloudflare\.com" \
                public/assets templates public/admin includes public/*.php \
                --exclude-dir={.git,vendor,node_modules,.github,tests,cypress,storage,tmp,temp,cache,.claude} \
-               --exclude={README.md,COPYING,LICENCE,Dockerfile,docker-compose.yml}; then
+               --exclude={README.md,COPYING,COPYING.LESSER,LICENSE-EXCEPTION,Dockerfile,docker-compose.yml}; then
             echo "--------------------------------------------------------"
             echo "ERROR: Forbidden library detected in application code!"
             echo "Please ensure you are using Vanilla JS/CSS."

@@ -119,8 +119,8 @@
         "admin_panel": "Administrátorský panel",
         "user_menu": "Používateľské menu",
         "change_avatar": "Zmeniť avatar",
-        "choose_avatar": "Vybrať avatar",
-        "use_initial": "Použiť iniciálu",
+        "choose_avatar": "Choose avatar color",
+        "default_color": "Default color",
         "avatar_updated": "Avatar aktualizovaný.",
         "my_records": "Moje záznamy",
         "my_records_empty": "Nemáte pridelené žiadne záznamy.",
@@ -129,8 +129,8 @@
         "my_comments_empty": "Zatiaľ ste nenapísali žiadne komentáre.",
         "notes": "My notes",
         "close": "Zatvoriť",
-        "avatar_option": "Avatar {n}",
-        "avatar_options": "Avatar options",
+        "avatar_option": "Color {n}",
+        "avatar_options": "Avatar colors",
         "error_saving_avatar": "Error saving avatar."
     },
     "admin": {

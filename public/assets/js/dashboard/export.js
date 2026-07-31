@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/dashboard/export.js — buildExportButton(widget): per-widget CSV download built
 // client-side from widget.data (no server call). Returns null when the user lacks the
 // canExport capability or the widget has no exportable data.

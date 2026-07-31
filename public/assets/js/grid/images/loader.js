@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/grid/images/loader.js — Record-image cell data store: batch-loads a page's
 // gallery thumbnails (api=image_rows), caches them per (table:rowId) and renders the cell.
 

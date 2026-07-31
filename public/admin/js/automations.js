@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/automations.js — Automation rules management UI
 // Two views over the same "automations" config: record automations (update / notify /
 // create record / email) and n8n automations (outgoing webhooks). Which one renders is

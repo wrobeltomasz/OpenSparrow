@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // calendar.js — Calendar view (loaded as ES module by calendar.php)
 // Renders records of a table as events positioned by a date column; dragging an
 // event reschedules it via api.php (api=calendar). CSRF via apiFetch(); i18n via /api.php?action=i18n_bundle.

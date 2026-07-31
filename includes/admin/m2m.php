@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 declare(strict_types=1);
 
 // includes/admin/m2m.php — admin api.php module: many-to-many relation management (list_m2m, create_m2m, delete_m2m).

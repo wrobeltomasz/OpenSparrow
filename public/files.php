@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // files.php — Files module page (frontend HTML)
 // Boots via includes/bootstrap.php: os_page_bootstrap() — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
 // Exposes capability flags (canEdit/canExport) to the client

@@ -365,3 +365,9 @@ Copyright © 2024–2026 OpenSparrow Contributors. Licensed under the **GNU Less
 You may use OpenSparrow in open-source and closed-source commercial projects. Modifications to core OpenSparrow files must remain under the same license. 
 The LGPL v3 is a set of additional permissions on top of the GPL v3: see [COPYING.LESSER](COPYING.LESSER) for the LGPL terms and [COPYING](COPYING) for the base GPL v3.
 See also: [LICENSE-EXCEPTION](LICENSE-EXCEPTION)
+
+### Third-party assets
+
+The icons in `public/assets/icons/` are Google **Material Symbols / Material Icons** ([fonts.google.com/icons](https://fonts.google.com/icons)), © Google LLC, licensed under the **Apache License 2.0** — see [NOTICE](NOTICE) for the attribution and [licenses/Apache-2.0.txt](licenses/Apache-2.0.txt) for the full license text.
+
+No third-party source code is bundled: the frontend is vanilla JS/CSS with no libraries or CDN dependencies, and the only Composer/npm packages are dev-time test tooling (PHPUnit, Cypress), which is not distributed.

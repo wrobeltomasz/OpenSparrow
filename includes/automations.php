@@ -1,7 +1,9 @@
 <?php
 
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // automations.php — Rule engine for automation triggers (update, notify, create_record, webhook, email)
 // Loads rules from the "automations" config; evaluates conditions (AND/OR groups, operators: =, !=, contains, is_empty,

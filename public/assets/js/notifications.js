@@ -1,5 +1,7 @@
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // notifications.js — Header notification bell. Polls api/notifications.php (get_count for the unread badge, get_list for the dropdown) and marks items read. Runs on DOMContentLoaded.
 

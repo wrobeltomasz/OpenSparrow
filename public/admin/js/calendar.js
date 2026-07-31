@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/calendar.js — Calendar view configuration editor (renderCalendarEditor): date/title columns, notified users, colors; includes legacy *_field -> *_column cleanup.
 import { createTextInput, createSelectInput, createColorInput, createIconPicker, createMultiSelect } from './ui.js';
 import { apiFetch } from '../../assets/js/util/api.js';

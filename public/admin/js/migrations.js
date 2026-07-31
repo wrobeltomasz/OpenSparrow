@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/migrations.js — Migrations page (renderMigrationsPage): scan for schema drift and apply pending migrations via admin/api_migrations.php (scan/apply); inner tabs.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';

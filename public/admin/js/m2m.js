@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/m2m.js — Many-to-Many relationship builder wizard
 // Lists/creates/deletes junction tables via api.php (list_m2m / create_m2m / delete_m2m). CSRF via apiFetch().
 import { apiFetch } from '../../assets/js/util/api.js';

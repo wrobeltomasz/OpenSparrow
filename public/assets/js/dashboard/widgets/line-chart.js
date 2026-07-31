@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/dashboard/widgets/line-chart.js — Registers the 'line_chart' widget; hand-drawn inline SVG time-series line (optional area fill under the line), with drill-down and formatted time-bucket labels on the X axis.
 
 import { applyDrillDown } from '../drill-down.js';

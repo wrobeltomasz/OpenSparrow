@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/performance.js — Performance & Index Advisor page
 // Tabs over api.php performance_* actions (check, slow_queries, table_stats, db_health, unused_indexes, schema_warnings); severity badges.
 import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdEl } from './ui.js';

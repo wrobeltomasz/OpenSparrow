@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // login.php — Login page and post-login landing resolver
 // Boots via includes/bootstrap.php: os_page_bootstrap(guest, setup check, 'login' CSP, no HSTS) — redirects to setup.php if config/database.json is missing
 // POST authenticates against sys_table('users') with password_verify (Argon2) + CSRF; brute-force throttling via sys_table('login_attempts') (per username + IP hash)

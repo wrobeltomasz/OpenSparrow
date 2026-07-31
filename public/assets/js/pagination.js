@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // pagination.js — Client-side pagination for the data grid
 // Page-size selector [10/25/50/100] persisted in localStorage (sparrow_page_size); slices grid rows per page and re-renders. Wired to grid.js from app.js to avoid a circular import.
 import { renderGrid, getState } from './grid.js';

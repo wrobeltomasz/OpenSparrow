@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // file_download.php — Secure file download / thumbnail proxy
 // Usage: file_download.php?uuid=<uuid>  |  file_download.php?uuid=<uuid>&thumb=1
 // Auth gate: session required (401 otherwise); send_security_headers('download')

@@ -1,5 +1,7 @@
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // admin/js/settings.js — General settings page (renderSettingsPage): loads/saves app + chat-bubble + custom-logo settings via api.php (get/set_*_setting, upload_logo, remove_logo).
 import { apiFetch } from '../../assets/js/util/api.js';

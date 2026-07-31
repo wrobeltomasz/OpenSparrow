@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // cron/cron_notifications.php — CLI cron: calendar-based in-app notifications + automation email delivery
 // Reads the "calendar" config sources and inserts spw_users_notifications rows (daily de-duplication)
 // Also delivers pending rows from spw_automation_emails (queued by the "email" automation action)

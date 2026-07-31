@@ -1,5 +1,7 @@
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // board.js — Board (Kanban) view (ES module)
 // Visualises records of a single table as cards laid out in lanes, one lane per

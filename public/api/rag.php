@@ -2,7 +2,9 @@
 
 // api/rag.php — RAG knowledge base query endpoint
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // Auth gate: session + UA enforcement; CSRF on POST; set_time_limit(240) — higher than Ollama timeout
 // actions: tags (GET, distinct KB tags), files (GET), query (POST, the RAG question)

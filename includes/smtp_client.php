@@ -1,7 +1,9 @@
 <?php
 
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // smtp_client.php — Minimal dependency-free SMTP client (EHLO / STARTTLS / AUTH LOGIN / DATA)
 // via native PHP stream sockets. No external library (project convention: no composer/npm

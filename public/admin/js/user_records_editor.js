@@ -1,5 +1,7 @@
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // admin/js/user_records_editor.js — User Records module admin editor (renderUserRecordsEditor):
 // edits the "user_records" config, which drives the front-end "My records" panel opened from the

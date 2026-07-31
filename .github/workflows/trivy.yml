@@ -1,0 +1,109 @@
+name: Trivy Security Scan
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    # Re-scan weekly so newly published CVEs surface without a code change.
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  # Dependencies (composer.lock, package-lock.json) and leaked secrets.
+  repository:
+    name: Filesystem scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run Trivy on the repository
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scanners: vuln,secret
+          format: sarif
+          output: trivy-fs.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          # Report-only: the SARIF upload is the signal, a red X here would block PRs
+          # on upstream CVEs we cannot fix.
+          exit-code: '0'
+
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+  # Dockerfiles, docker-compose and nginx config misconfigurations.
+  config:
+    name: Misconfiguration scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run Trivy on IaC / config files
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: config
+          format: sarif
+          output: trivy-config.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: '0'
+
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-config
+
+  # OS packages and PHP extensions inside the published image.
+  image:
+    name: Container image scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image locally
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: opensparrow:scan
+          cache-from: type=gha
+          provenance: false
+
+      - name: Run Trivy on the image
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: image
+          image-ref: opensparrow:scan
+          format: sarif
+          output: trivy-image.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image

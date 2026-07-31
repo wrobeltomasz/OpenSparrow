@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 /* assets/js/print.js — Frontend print-templates renderer (print.php page)
    Fetches templates from api/print.php and renders block-based printable reports
    (header / text / table). All dynamic values are inserted via textContent /

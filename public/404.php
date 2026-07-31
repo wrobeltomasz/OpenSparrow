@@ -1,5 +1,10 @@
 <!doctype html>
 <!--
+  This file is part of OpenSparrow - https://opensparrow.org
+  SPDX-License-Identifier: LGPL-3.0-or-later
+  Copyright (C) 2024-2026 OpenSparrow Contributors
+  Licensed under LGPL v3. See COPYING.LESSER file for details.
+
   404.php — Static "Page Not Found" error page (pure HTML, no PHP / auth / DB).
   Served by the .htaccess ErrorDocument directive. Standalone styling (assets/css/styles.css), link back to home.
 -->

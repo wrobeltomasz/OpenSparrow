@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 declare(strict_types=1);
 
 // system_tables.php — the spw_* system-table DDL, shared by the two entry points that
@@ -210,7 +215,7 @@ function system_tables_comments_ddl(callable $ident): array
         "COMMENT ON COLUMN $tUsers.password_params IS 'Cost parameters used for the hash (memory/time/threads), for rehash comparison.'",
         "COMMENT ON COLUMN $tUsers.is_active IS 'Soft disable - inactive users cannot log in but their audit rows survive.'",
         "COMMENT ON COLUMN $tUsers.role IS 'Authorization level (admin / editor / read-only roles). Enforced server-side in api_bootstrap.php and requireWrite().'",
-        "COMMENT ON COLUMN $tUsers.avatar_id IS 'Index of the built-in avatar icon shown in the UI.'",
+        "COMMENT ON COLUMN $tUsers.avatar_id IS 'Avatar colour: 1-based index into the avatar palette (OS_AVATAR_COLORS). NULL = default colour. The avatar itself is the initial of the username.'",
 
         "COMMENT ON TABLE $tUsersLog IS 'User action audit trail. Written by log_user_action() (includes/api_helpers.php); every mutation must produce a row.'",
         "COMMENT ON COLUMN $tUsersLog.id IS 'Log entry id; referenced by spw_record_snapshots.log_id.'",

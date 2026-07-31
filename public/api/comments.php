@@ -1,7 +1,9 @@
 <?php
 
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // api/comments.php — Comments module API (discussion threads attached to records)
 // Auth gate: session + UA enforcement + CSRF on POST; JSON responses via jsonError()/jsonSuccess()

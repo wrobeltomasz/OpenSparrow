@@ -1,7 +1,9 @@
 <?php
 
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // bootstrap.php — Central bootstrap for every public entry point
 // os_page_bootstrap() — HTML controllers: session, setup check, auth redirect, staleness enforcement, admin redirect, CSRF token, CSP nonce + security headers

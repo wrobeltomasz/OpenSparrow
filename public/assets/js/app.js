@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/app.js — Main grid-page controller (ES module entry for index.php / template.php)
 // Wires grid.js with pagination, CSV export, workflows, data-cleanup, keyboard nav and mass-edit; owns the global filter/search state and the table menu, add-row, global search, column filter and clear-filters controls.
 

@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/dashboard.js — Dashboard layout + widget editor
 // Imports the shared widget modules (self-register into WidgetRegistry) to live-preview widgets; edits the "dashboard" config widgets, queries and conditions.
 import { createTextInput, createSelectInput, createColorInput, createCheckbox, renderGlobalSettings } from './ui.js';

@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/grid/header/render.js — renderThead(): builds the header row (select-all + columns) and wires per-column sort, resize and drag-and-drop reordering.
 
 import { state } from '../state.js';

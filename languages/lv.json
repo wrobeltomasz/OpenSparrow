@@ -119,8 +119,8 @@
         "admin_panel": "Administratora panelis",
         "user_menu": "Lietotāja izvēlne",
         "change_avatar": "Mainīt avatāru",
-        "choose_avatar": "Izvēlēties avatāru",
-        "use_initial": "Izmantot iniciāli",
+        "choose_avatar": "Choose avatar color",
+        "default_color": "Default color",
         "avatar_updated": "Avatārs atjaunināts.",
         "my_records": "Mani ieraksti",
         "my_records_empty": "Jums nav piešķirtu ierakstu.",
@@ -129,8 +129,8 @@
         "my_comments_empty": "Jūs vēl neesat rakstījis nevienu komentāru.",
         "notes": "My notes",
         "close": "Aizvērt",
-        "avatar_option": "Avatar {n}",
-        "avatar_options": "Avatar options",
+        "avatar_option": "Color {n}",
+        "avatar_options": "Avatar colors",
         "error_saving_avatar": "Error saving avatar."
     },
     "admin": {

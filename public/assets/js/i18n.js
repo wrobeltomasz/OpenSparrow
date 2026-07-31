@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/i18n.js — Client-side i18n bridge (I18n.load/t with pluralisation + {var} interpolation); also sets window.I18n for non-module scripts.
 
 /**

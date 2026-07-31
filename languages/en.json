@@ -119,8 +119,8 @@
         "admin_panel": "Admin panel",
         "user_menu": "User menu",
         "change_avatar": "Change avatar",
-        "choose_avatar": "Choose avatar",
-        "use_initial": "Use initial",
+        "choose_avatar": "Choose avatar color",
+        "default_color": "Default color",
         "avatar_updated": "Avatar updated.",
         "my_records": "My records",
         "my_records_empty": "You have no assigned records.",
@@ -129,8 +129,8 @@
         "my_comments_empty": "You have not written any comments yet.",
         "notes": "My notes",
         "close": "Close",
-        "avatar_option": "Avatar {n}",
-        "avatar_options": "Avatar options",
+        "avatar_option": "Color {n}",
+        "avatar_options": "Avatar colors",
         "error_saving_avatar": "Error saving avatar."
     },
     "admin": {

@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/etl_common.js — shared building blocks for the ETL admin modules
 // (etl.js and etl_flow.js). Factors out the form-field helpers, collapsible-card
 // scaffold, run-history table and config persist/run-cron calls those two modules

@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/grid/state.js — Singleton grid state + helpers (sortRows, reorderColumns, selection)
 // Shared mutable `state` (current table, full/filtered data, displayed columns, sort, fkCache, selectedIds, search mode) imported by all grid sub-modules.
 export const state = {

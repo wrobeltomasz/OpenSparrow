@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/backup.js — Backup & restore page (renderBackupPage): per-table export/import and full backup via api.php (export / import / backup_tables). CSRF via apiFetch().
 
 import { apiFetch } from '../../assets/js/util/api.js';

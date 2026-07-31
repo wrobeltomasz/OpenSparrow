@@ -1,15 +1,25 @@
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
-// user-menu.js — Header user menu: avatar picker (1..24) and change-password, saved via api.php (update_avatar / change_password). CSRF via apiFetch().
+// user-menu.js — Header user menu: avatar colour picker (1..24) and change-password, saved via api.php (update_avatar / change_password). CSRF via apiFetch().
 
 import { showToast } from './toast.js';
 import { I18n } from './i18n.js';
 import { BulkPanel } from './bulk_panel.js';
 import { openNotesPanel } from './notes-panel.js';
 import { formatDateTime } from './util/format-value.js';
+import { AVATAR_COLORS, renderAvatar } from './avatar.js';
 
-const AVATAR_COUNT = 24;
+const AVATAR_COUNT = AVATAR_COLORS.length;
+
+// The header button is the single source of truth for the current user's name and
+// colour: the tooltip carries the username, data-avatar-id the palette index.
+function headerUsername() {
+    const tooltip = document.querySelector('#userAvatarBtn .user-avatar-tooltip');
+    return tooltip?.textContent?.trim() || '?';
+}
 
 import { apiFetch as sharedApiFetch } from './util/api.js';
 
@@ -23,7 +33,7 @@ function apiFetch(action, body) {
 
 // ── Avatar picker modal ────────────────────────────────────────────────────
 
-function buildAvatarModal(currentId) {
+function buildAvatarModal(currentId, username) {
     const overlay = document.createElement('div');
     overlay.className = 'um-overlay';
     overlay.setAttribute('role', 'dialog');
@@ -37,7 +47,7 @@ function buildAvatarModal(currentId) {
         <h3>${I18n.t('header.choose_avatar')}</h3>
         <div class="um-picker" role="group" aria-label="${I18n.t('header.avatar_options')}"></div>
         <div class="um-actions">
-            <button class="um-btn um-btn-secondary" id="umAvatarClear">${I18n.t('header.use_initial')}</button>
+            <button class="um-btn um-btn-secondary" id="umAvatarClear">${I18n.t('header.default_color')}</button>
             <button class="um-btn um-btn-primary" id="umAvatarSave" disabled>${I18n.t('common.save')}</button>
         </div>`;
 
@@ -50,7 +60,7 @@ function buildAvatarModal(currentId) {
         btn.setAttribute('aria-label', I18n.t('header.avatar_option', { n: i }));
         btn.setAttribute('aria-pressed', String(i === selected));
         btn.dataset.id = String(i);
-        btn.innerHTML = `<img class="avatar" src="assets/img/avatar-${i}.png" alt="${I18n.t('header.avatar_option', { n: i })}" />`;
+        btn.appendChild(renderAvatar(i, username));
         btn.addEventListener('click', () => {
             picker.querySelectorAll('.um-picker-btn').forEach(b => {
                 b.classList.remove('selected');
@@ -110,39 +120,12 @@ function updateHeaderAvatar(avatarId) {
     const existing = btn.querySelector('.avatar');
     if (!existing) return;
 
+    existing.replaceWith(renderAvatar(avatarId, tooltip?.textContent?.trim() ?? '?'));
+    // Keep the button in sync so reopening the picker preselects the saved colour.
     if (avatarId) {
-        const img = document.createElement('img');
-        img.className = 'avatar avatar-border';
-        img.src = `assets/img/avatar-${avatarId}.png`;
-        img.alt = I18n.t('header.avatar_option', { n: avatarId });
-        existing.replaceWith(img);
+        btn.dataset.avatarId = String(avatarId);
     } else {
-        // Fallback to initial circle SVG — built via DOM API to avoid innerHTML XSS (CodeQL js/xss-through-dom)
-        const initial = (tooltip?.textContent?.trim()?.[0] ?? '?').toUpperCase();
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('class', 'avatar avatar-border avatar-initial');
-        svg.setAttribute('viewBox', '0 0 32 32');
-        svg.setAttribute('aria-hidden', 'true');
-
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', '16');
-        circle.setAttribute('cy', '16');
-        circle.setAttribute('r', '16');
-        circle.setAttribute('fill', '#364B60');
-
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', '16');
-        text.setAttribute('y', '21');
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('fill', '#fff');
-        text.setAttribute('font-size', '14');
-        text.setAttribute('font-family', 'Inter,sans-serif');
-        text.setAttribute('font-weight', '600');
-        text.textContent = initial;
-
-        svg.appendChild(circle);
-        svg.appendChild(text);
-        existing.replaceWith(svg);
+        delete btn.dataset.avatarId;
     }
 }
 
@@ -419,13 +402,8 @@ function initUserMenu() {
 
     document.getElementById('changeAvatarBtn')?.addEventListener('click', () => {
         toggle(false);
-        const currentId = (() => {
-            const img = btn.querySelector('img.avatar');
-            if (!img) return null;
-            const m = img.src?.match(/avatar-(\d+)\.png/);
-            return m ? parseInt(m[1], 10) : null;
-        })();
-        openModal(buildAvatarModal(currentId));
+        const currentId = parseInt(btn.dataset.avatarId ?? '', 10);
+        openModal(buildAvatarModal(Number.isInteger(currentId) ? currentId : null, headerUsername()));
     });
 
     document.getElementById('changePasswordBtn')?.addEventListener('click', () => {

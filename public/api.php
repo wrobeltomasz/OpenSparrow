@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 declare(strict_types=1);
 
 // api.php — Main CRUD/data REST API for the frontend (core data endpoint, largest file)
@@ -26,16 +31,18 @@ if (in_array($profileAction, ['update_avatar', 'change_password'], true)) {
     $conn = db_connect();
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $uid  = (int)$_SESSION['user_id'];
-// POST: save chosen avatar (1-24) or clear it (null)
+// POST: save the chosen avatar colour (palette index) or clear it (null = default colour)
     if ($profileAction === 'update_avatar' && $method === 'POST') {
         $avatarId = array_key_exists('avatar_id', $body) ? $body['avatar_id'] : false;
         if ($avatarId === false) {
             http_response_code(400);
             exit(json_encode(['error' => 'avatar_id required']));
         }
-        if ($avatarId !== null && (!is_int($avatarId) || $avatarId < 1 || $avatarId > 24)) {
+        // Bound by the palette itself (includes/page_helpers.php) so the two cannot drift.
+        $avatarMax = count(OS_AVATAR_COLORS);
+        if ($avatarId !== null && (!is_int($avatarId) || $avatarId < 1 || $avatarId > $avatarMax)) {
             http_response_code(400);
-            exit(json_encode(['error' => 'avatar_id must be 1-24 or null']));
+            exit(json_encode(['error' => "avatar_id must be 1-$avatarMax or null"]));
         }
 
         $sql = 'UPDATE ' . sys_table('users') . ' SET avatar_id = $1 WHERE id = $2';

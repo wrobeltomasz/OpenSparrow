@@ -1,5 +1,7 @@
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // comments.js — Record comment thread on edit.php (window.EDIT_TABLE/EDIT_ID)
 // Lists/adds comments via api/comments.php, polls every 15s; read-only for non-editors. Includes an XSS-safe mini markdown formatter (escapes HTML, incl. quotes, before auto-linking URLs).

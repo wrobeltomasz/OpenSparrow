@@ -119,8 +119,8 @@
         "admin_panel": "Adminisztrációs panel",
         "user_menu": "Felhasználói menü",
         "change_avatar": "Avatar módosítása",
-        "choose_avatar": "Avatar kiválasztása",
-        "use_initial": "Kezdőbetű használata",
+        "choose_avatar": "Choose avatar color",
+        "default_color": "Default color",
         "avatar_updated": "Avatar frissítve.",
         "my_records": "Saját rekordjaim",
         "my_records_empty": "Nincsenek Önhöz rendelt rekordok.",
@@ -129,8 +129,8 @@
         "my_comments_empty": "Még nem írt hozzászólást.",
         "notes": "My notes",
         "close": "Bezárás",
-        "avatar_option": "Avatar {n}",
-        "avatar_options": "Avatar options",
+        "avatar_option": "Color {n}",
+        "avatar_options": "Avatar colors",
         "error_saving_avatar": "Error saving avatar."
     },
     "admin": {

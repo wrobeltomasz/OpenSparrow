@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/overview.js — Admin home / overview page
 // Summary cards (record counts, DB size, etc.) via api.php (overview). Local HTML-escape + byte-format helpers.
 

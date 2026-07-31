@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // api/files.php — Files module API (upload, list, soft-delete, config)
 // Auth gate: session + UA enforcement; CSRF where applicable; JSON via jsonError()/jsonSuccess()
 // match() action routing: list, get_config, upload, delete, mass_delete, mass_tag, update_meta,

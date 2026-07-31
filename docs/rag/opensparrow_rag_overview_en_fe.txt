@@ -15,7 +15,8 @@ LOGIN & SESSION
 ---------------
 Log in at login.php with username and password. Sessions expire after a configured time
 (default 8 hours) — you will be logged out automatically. Change your password anytime from
-the user menu (top-right avatar). You can also pick an avatar (24 built-in choices).
+the user menu (top-right avatar). Your avatar is the first letter of your username on a
+colour you choose — pick one of 24 colours from the same menu, or reset it to the default.
 The avatar menu also opens "My records" — a list of records assigned to you across tables,
 most recently assigned first, each showing the table, the record and the date it was
 assigned to you (how many are shown, and what labels them, is set by the admin). Next to it,

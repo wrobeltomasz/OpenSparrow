@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/util/format-value.js — Shared display formatting: formatBoolean (→ localized Yes/No via I18n), formatCellValue(value, columnType) and formatDateTime(iso). Used by dashboard widgets, grid cells and the comment panels.
 
 import { I18n } from '../i18n.js';

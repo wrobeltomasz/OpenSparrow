@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/js/anonymization.js — Data Anonymization admin module
 // 4 tabs: Rules, Schedule, Suggestions, Dictionary.
 // Persists the "anonymization" config via anonymization_save.

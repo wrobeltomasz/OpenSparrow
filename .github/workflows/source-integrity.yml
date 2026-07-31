@@ -99,11 +99,13 @@ jobs:
         uses: actions/checkout@v6
 
       # COPYING (GPL v3) and COPYING.LESSER (LGPL v3) must stay verbatim.
-      # The pinned hashes are the sha256 of the repo's canonical copies
-      # (wording verified identical to https://www.gnu.org/licenses/ texts;
-      # formatting follows the gnu.org HTML rendering). Any edit to either
-      # file fails this job — if a change is ever intentional, re-verify the
-      # wording against gnu.org and update the hashes here in the same PR.
+      # The pinned hashes are the sha256 of the canonical FSF plain-text
+      # files, byte for byte:
+      #   https://www.gnu.org/licenses/gpl-3.0.txt
+      #   https://www.gnu.org/licenses/lgpl-3.0.txt
+      # Any edit to either file fails this job — the licence texts are not
+      # ours to reformat, so the fix is to restore the file from gnu.org,
+      # not to update the hashes.
       - name: Verify COPYING and COPYING.LESSER checksums
         run: |
           set -euo pipefail
@@ -117,6 +119,6 @@ jobs:
             fi
             echo "$2: OK"
           }
-          check db577a83cb12a0be806cd166a31fa86335768c7981424181028a1a1bfbac0c62 COPYING
-          check dbcd19ea5a26de8ad07b566291bab225318cc218e0f1f0d522ce47baa1f3c319 COPYING.LESSER
+          check 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986 COPYING
+          check e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118 COPYING.LESSER
           echo "Licence files match their pinned checksums."

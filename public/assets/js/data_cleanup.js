@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/data_cleanup.js — Bulk find/replace (regex) cleanup panel (editor feature)
 // Slide-in panel over the current grid table: debounced, hashed preview then apply via api/data_cleanup.php. Skips numeric/boolean column types.
 

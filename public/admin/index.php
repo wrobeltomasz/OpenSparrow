@@ -1,4 +1,10 @@
 <?php
+
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // admin/index.php — Admin panel shell (HTML + JS module loader, role: admin only)
 // First-run: redirects to ../setup.php if database.json is missing; allows access before spw_users exists so the operator can run "Initialize System Tables", otherwise requires login + admin role
 // Renders the admin SPA; tabs/logic live in admin/js/* (loaded by app.js)

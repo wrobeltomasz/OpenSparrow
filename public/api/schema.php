@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // api/schema.php — Public schema descriptor endpoint for the client UI (AJAX, GET-only)
 // Auth gate: session + UA enforcement; GET + X-Requested-With required; no-store
 // Returns a sanitised view of the "schema" config (tables, columns, FK reference_table, default_page_size); strips sensitive config

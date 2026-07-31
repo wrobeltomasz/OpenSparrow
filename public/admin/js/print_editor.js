@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 /* admin/js/print_editor.js — Printouts module admin editor (renderPrintEditor):
    edits the "print" config templates via api/print.php (config / columns / save).
    Each template is bound to a PostgreSQL view from the Views module; the available

@@ -1,7 +1,9 @@
 <?php
 
 // This file is part of OpenSparrow - https://opensparrow.org
-// Licensed under LGPL v3. See LICENCE file for details.
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
 //
 // page_helpers.php — Shared HTML fragments for frontend page controllers
 // os_header_search()        — header search pill (search & filter UI standard)
@@ -11,6 +13,7 @@
 // os_module_script()        — nonce'd <script type="module"> tag with ?v=filemtime cache busting
 // os_module_graph()         — one shared ?v= + import map for a whole ES module tree
 // os_import_map()           — renders that map; must precede the first module script
+// os_avatar_color()         — palette lookup for the initial-and-color avatar
 // Loaded via bootstrap.php; keep ids/classes stable — Cypress specs depend on them.
 
 declare(strict_types=1);
@@ -132,4 +135,27 @@ function os_import_map(array $imports, string $nonce = ''): string
         ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"'
         : '';
     return '<script type="importmap"' . $nonceAttr . '>' . $json . '</script>' . "\n";
+}
+
+// Avatar palette. An avatar is the user's initial on a colour of their choice;
+// spw_users.avatar_id stores the 1-based index into this palette (NULL = default
+// slate). Every colour is dark enough for white text at 4.5:1 or better.
+//
+// KEEP IN SYNC with AVATAR_COLORS in public/assets/js/avatar.js — same order,
+// same values. PHP renders the header avatar server-side, JS renders every other
+// one, and a drift would show the same user in two different colours.
+const OS_AVATAR_COLORS = [
+    '#364B60', '#1F6F8B', '#2E7D6B', '#3F7D3F', '#6B7D2E', '#8A6D1F',
+    '#A65A2E', '#B04A4A', '#A33F6B', '#7A4FA3', '#4F55A3', '#2F6FA3',
+    '#455A64', '#00695C', '#2E7D32', '#558B2F', '#9E7B0A', '#C05621',
+    '#B23A48', '#8E3B6B', '#5E35B1', '#3949AB', '#0277BD', '#00838F',
+];
+
+// Resolves an avatar_id (1..24, or NULL/out of range) to a palette colour.
+function os_avatar_color(?int $avatarId): string
+{
+    if ($avatarId === null || $avatarId < 1 || $avatarId > count(OS_AVATAR_COLORS)) {
+        return OS_AVATAR_COLORS[0];
+    }
+    return OS_AVATAR_COLORS[$avatarId - 1];
 }

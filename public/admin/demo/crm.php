@@ -1,5 +1,10 @@
 <?php
 
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 declare(strict_types=1);
 
 // admin/demo/crm.php — CRM demo app definition (data only, no auth/routing)
@@ -1099,7 +1104,8 @@ function demo_def_crm($conn): array
         // Demo users — 3 sample accounts used to seed cross-user comments,
         // per-user "My Notes", record ownership and notifications below. Password
         // is fixed to 'test' for all of them, hashed centrally in seed.php (not
-        // stored here). avatar_id matches assets/img/avatar-<id>.png.
+        // stored here). avatar_id is the avatar colour index (OS_AVATAR_COLORS in
+        // includes/page_helpers.php) — the avatar itself is the username's initial.
         'demo_users' => [
             ['username' => 'demo.anna',  'role' => 'editor', 'avatar_id' => 3],
             ['username' => 'demo.marek', 'role' => 'editor', 'avatar_id' => 9],
@@ -1183,22 +1189,10 @@ function demo_def_crm($conn): array
                 'content' => "Date,Channel,Summary\n2026-06-01,Email,Sent updated proposal\n2026-06-05,Call,Discussed contract terms\n",
             ],
         ],
-        // Demo contact photos — record image gallery (spw_config schema key
-        // tables.contacts.images) demo data. Source PNGs are checked into the repo
-        // under admin/demo/assets/images/ and copied into storage/files at install
-        // time (mirrors demo_files above, but tagged related_field = IMAGES_FIELD).
-        'demo_images' => [
-            ['related_table' => 'contacts', 'related_id' => 1, 'author' => 0, 'source_file' => 'Face_male_1.png', 'display_name' => 'John Smith.png'],
-            ['related_table' => 'contacts', 'related_id' => 3, 'author' => 1, 'source_file' => 'Face_male_2.png', 'display_name' => 'Michael Brown.png'],
-            ['related_table' => 'contacts', 'related_id' => 4, 'author' => 1, 'source_file' => 'Face_feamle_3.png', 'display_name' => 'Emma Wilson.png'],
-            ['related_table' => 'contacts', 'related_id' => 2, 'author' => 0, 'source_file' => 'Face_feamle_5.png', 'display_name' => 'Sarah Johnson.png'],
-            ['related_table' => 'contacts', 'related_id' => 5, 'author' => 0, 'source_file' => 'Face_male_4.png', 'display_name' => 'David Miller.png'],
-            ['related_table' => 'contacts', 'related_id' => 6, 'author' => 1, 'source_file' => 'Face_feamle_8.png', 'display_name' => 'Lisa Garcia.png'],
-            ['related_table' => 'contacts', 'related_id' => 7, 'author' => 0, 'source_file' => 'Face_male_6.png', 'display_name' => 'Robert Taylor.png'],
-            ['related_table' => 'contacts', 'related_id' => 8, 'author' => 1, 'source_file' => 'Face_feamle_9.png', 'display_name' => 'Jennifer Martinez.png'],
-            ['related_table' => 'contacts', 'related_id' => 9, 'author' => 0, 'source_file' => 'Face_male_7.png', 'display_name' => 'Christopher Anderson.png'],
-            ['related_table' => 'contacts', 'related_id' => 11, 'author' => 1, 'source_file' => 'Face_male_10.png', 'display_name' => 'James White.png'],
-        ],
+        // No 'demo_images' key: the demo used to ship photographs of faces as contact
+        // images, which were dropped for licensing/likeness reasons. The seeder still
+        // supports the key (seed.php skips it when absent), so any demo that wants to
+        // populate the record image gallery can define it with its own artwork.
         // Demo record ownership ("My records" panel) — assigns a few CRM records to
         // demo users so the panel isn't empty right after install. 'author' indexes
         // into demo_users above and becomes the owner_id.

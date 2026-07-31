@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // assets/js/dashboard/index.js — Dashboard entry point
 // Imports all widget modules (they self-register into WidgetRegistry), loads i18n, then fetches dashboard.json widget data and renders #dashboardSection.
 // Header controls (rendered in the app header by dashboard.php):

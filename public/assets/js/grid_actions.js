@@ -1,3 +1,8 @@
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
 // grid_actions.js — Inline cell editing + row actions for the data grid
 // attachCellEvents (PATCH edited cells to api.php), deleteRow, duplicateRow; toasts + debug-panel error logging; CSRF via apiFetch().
 import { debugLog } from './debug.js';
