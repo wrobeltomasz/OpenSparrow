@@ -53,7 +53,7 @@ Pick the path that matches your environment. Every path ends at the same place: 
 
 ## Preview
 
-<img width="1720" height="692" alt="20260420_banner" src="https://github.com/user-attachments/assets/0da4a0c6-667f-4559-87fc-1cb0a729473f" />
+<img width="1917" height="1245" alt="screencapture-localhost-8080-board-php-2026-08-01-00_52_05" src="https://github.com/user-attachments/assets/5c84e981-e749-4d09-af57-fdb6e4c97203" />
 
 ---
 
