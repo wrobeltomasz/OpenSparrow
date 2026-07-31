@@ -58,7 +58,8 @@ if ($request->isPost()) {
             $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
             m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$newId, $selected, $rawSchema);
         }
-        header('Location: index.php?table=' . urlencode($table));
+        $fragment = images_config($rawSchema, $table) ? '#tab-images' : '#tab-files';
+        header('Location: edit.php?table=' . urlencode($table) . '&id=' . $newId . $fragment);
         exit;
     } catch (\App\Form\ValidationException $e) {
         // validation_regexp mismatch — message comes from schema.json and is user-facing
@@ -152,10 +153,6 @@ ob_start();
                 </div>
                 <?php endforeach; ?>
             </div>
-            <?php endif; ?>
-
-            <?php if (images_config($rawSchema, $table)) : ?>
-                <p class="ef-empty"><?= t('images.save_first') ?></p>
             <?php endif; ?>
 
             <div class="form-actions">

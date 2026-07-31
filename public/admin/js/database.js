@@ -75,7 +75,6 @@ export async function renderDatabaseSection(panel) {
     testBtn.textContent = 'Test Saved Connection';
     testBtn.className = 'btn btn-primary';
     testBtn.style.marginTop = '12px';
-    testBtn.style.width = '100%';
 
     testBtn.onclick = async () => {
         testBtn.textContent = 'Testing...';

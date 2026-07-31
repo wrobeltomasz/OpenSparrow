@@ -38,7 +38,7 @@ async function saveConfig(partial, statusEl) {
         const data = await res.json();
         if (data.status === 'success') {
             anonVersion = data.version ?? anonVersion + 1;
-            if (statusEl) showStatus(statusEl, 'Saved.', true);
+            if (statusEl) showStatus(statusEl, 'Configuration saved.', true);
         } else {
             if (statusEl) showStatus(statusEl, 'Error: ' + (data.error || 'unknown'), false);
         }

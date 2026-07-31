@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="36.079" tests="15" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-07-31T14:36:28" tests="0" file="cypress\e2e\workflows.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="OpenSparrow – Workflows: Page Load" timestamp="2026-07-31T14:36:28" tests="3" time="8.934" failures="0">
+    <testcase name="OpenSparrow – Workflows: Page Load page loads with sidebar menu" time="5.577" classname="page loads with sidebar menu">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: Page Load workflows link in sidebar is active" time="1.383" classname="workflows link in sidebar is active">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: Page Load grid container renders workflow list or keeps standard grid" time="1.630" classname="grid container renders workflow list or keeps standard grid">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Workflows: List" timestamp="2026-07-31T14:36:37" tests="4" time="8.575" failures="0">
+    <testcase name="OpenSparrow – Workflows: List workflow cards render if workflows are configured" time="2.119" classname="workflow cards render if workflows are configured">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: List each workflow card has a non-empty title" time="2.154" classname="each workflow card has a non-empty title">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: List each workflow card has a description paragraph" time="1.892" classname="each workflow card has a description paragraph">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: List grid title reflects workflow section name" time="1.992" classname="grid title reflects workflow section name">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Workflows: Step Wizard" timestamp="2026-07-31T14:36:46" tests="6" time="12.257" failures="0">
+    <testcase name="OpenSparrow – Workflows: Step Wizard clicking a workflow card shows step bar" time="1.977" classname="clicking a workflow card shows step bar">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: Step Wizard step bar contains pill elements" time="1.950" classname="step bar contains pill elements">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: Step Wizard grid title shows step progress (Step X of Y pattern)" time="1.979" classname="grid title shows step progress (Step X of Y pattern)">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: Step Wizard step form renders after card click" time="1.848" classname="step form renders after card click">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: Step Wizard step form has submit button" time="1.908" classname="step form has submit button">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: Step Wizard step form has at least one input field" time="1.999" classname="step form has at least one input field">
+    </testcase>
+  </testsuite>
+  <testsuite name="OpenSparrow – Workflows: Sidebar Navigation" timestamp="2026-07-31T14:36:58" tests="2" time="6.301" failures="0">
+    <testcase name="OpenSparrow – Workflows: Sidebar Navigation sidebar contains workflows link if configured" time="1.883" classname="sidebar contains workflows link if configured">
+    </testcase>
+    <testcase name="OpenSparrow – Workflows: Sidebar Navigation clicking sidebar workflows link shows workflow list" time="4.187" classname="clicking sidebar workflows link shows workflow list">
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -37,15 +37,17 @@ describe('OpenSparrow – Images: admin schema editor', () => {
   });
 
   it('table editor exposes an Images section', () => {
-    // Open the first real table in the schema list (skip the "Add New Table" button)
-    cy.get('.item-btn').not(':contains("Add New Table")').first().click();
+    // Open the first real table card (schema tables render as .column-block
+    // cards, not .item-btn — those are the tab-strip utility buttons like
+    // "All PostgreSQL tables" / "Add New Table" / "M2M Builder").
+    cy.get('#workspace .column-block .block-header').first().click();
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium })
       .contains('h3', 'Images')
       .should('exist');
   });
 
   it('Images section has the enable switch, label, limit and grid toggle', () => {
-    cy.get('.item-btn').not(':contains("Add New Table")').first().click();
+    cy.get('#workspace .column-block .block-header').first().click();
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).within(() => {
       cy.contains('label, .adm-field-label', 'Enable Images For This Table').should('exist');
       cy.contains('label, .adm-field-label', 'Max Images Per Record').should('exist');

@@ -67,9 +67,14 @@ try {
         }
     }
 
-    // ── Clean up cypress-created application records ──────────────────────────
+    // ── Reset config keys that Cypress specs mutate and rely on defaults for ──
     if ($action === 'seed' || $action === 'cleanup') {
         require_once __DIR__ . '/../includes/config_store.php';
+        config_delete('anonymization');
+    }
+
+    // ── Clean up cypress-created application records ──────────────────────────
+    if ($action === 'seed' || $action === 'cleanup') {
         $schema = config_get('schema');
         if (is_array($schema)) {
             $appSchema = pg_ident(sys_schema());

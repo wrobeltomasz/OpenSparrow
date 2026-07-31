@@ -87,8 +87,8 @@ describe('OpenSparrow – Admin ETL', () => {
 
   it('Sources tab: Test connection reports failure for an unreachable host', () => {
     etlTab('Sources');
+    addSource();
     cy.get('#workspace .column-block:visible').first().within(() => {
-      cy.get('.block-header').click();
       // Select fields by their label, not by index: which inputs are visible
       // depends on the driver (file drivers hide host/port/user/password,
       // FTP drivers swap in protocol/remote-dir/CSV fields), so positional
@@ -109,13 +109,17 @@ describe('OpenSparrow – Admin ETL', () => {
   it('Sources tab: supports 2+ sources at once', () => {
     etlTab('Sources');
     addSource();
+    addSource();
     cy.contains('#workspace button:visible', 'Save configuration').click();
     cy.get('#workspace p:visible').should('contain.text', 'saved');
     cy.get('#workspace .column-block:visible').should('have.length.gte', 2);
 
-    // Clean up the extra source so repeated runs don't leave the ETL config
+    // Clean up both added sources so repeated runs don't leave the ETL config
     // accumulating stray "(unnamed source)" entries.
     cy.window().then(win => cy.stub(win, 'confirm').returns(true));
+    cy.get('#workspace .column-block:visible').last().within(() => {
+      cy.get('.icon-btn-danger').click();
+    });
     cy.get('#workspace .column-block:visible').last().within(() => {
       cy.get('.icon-btn-danger').click();
     });
