@@ -3172,7 +3172,11 @@ thead th.drag-over {
     top: 0;
     right: -440px;
     width: 420px;
+    /* 100vh is the *large* viewport on mobile (browser toolbars excluded), so the
+       footer with the Apply button ends up below the fold. dvh tracks the visible
+       viewport; the vh line stays as a fallback for browsers without dvh. */
     height: 100vh;
+    height: 100dvh;
     background: var(--panel);
     box-shadow: -4px 0 20px rgba(0,0,0,0.18);
     z-index: 1001;
@@ -3209,6 +3213,7 @@ thead th.drag-over {
 
 .dc-body, .bp-body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 20px;
     display: flex;
@@ -3280,7 +3285,13 @@ thead th.drag-over {
 .dc-ins { background: #dcfce7; color: var(--ok-dark); border-radius: 2px; padding: 0 2px; }
 .dc-empty { color: var(--muted); font-style: italic; }
 
-.dc-footer, .bp-footer { padding: 16px 20px; border-top: 1px solid var(--border-light); flex-shrink: 0; }
+/* padding-bottom keeps the Apply button clear of the iOS home indicator */
+.dc-footer, .bp-footer {
+    padding: 16px 20px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
 .dc-apply-btn, .bp-apply-btn {
     width: 100%;
     padding: 10px;
@@ -3298,6 +3309,8 @@ thead th.drag-over {
 @media (max-width: 768px) {
     .dc-panel, .bp-panel { width: 100%; right: -100%; }
     .dc-panel.active, .bp-panel.active { right: 0; }
+    /* 44px touch target per WCAG 2.5.5, matching mobile.css */
+    .dc-apply-btn, .bp-apply-btn { min-height: 44px; font-size: 15px; }
 }
 
 /* ── Mass Edit (me-) ─────────────────────────────────────────────────────── */
@@ -3590,6 +3603,7 @@ thead th.drag-over {
     right: -420px;
     width: 400px;
     height: 100vh;
+    height: 100dvh;
     background: var(--panel);
     box-shadow: -4px 0 20px rgba(0,0,0,0.18);
     z-index: 1001;
