@@ -92,6 +92,7 @@ if ($action === 'query' && $method === 'POST') {
         $rawFileIds  = array_map('intval', (array) ($body['file_ids'] ?? []));
         $fileIds     = array_values(array_filter($rawFileIds, fn($id) => $id > 0));
         $pageContext = mb_substr(trim((string) ($body['page_context'] ?? '')), 0, RAG_PAGE_CONTEXT_MAX_CHARS);
+        $table       = mb_substr(trim((string) ($body['table'] ?? '')), 0, 255);
         $language    = mb_substr(trim((string) ($body['language'] ?? '')), 0, 10);
         $rawHistory  = (array) ($body['history'] ?? []);
 
@@ -180,7 +181,14 @@ if ($action === 'query' && $method === 'POST') {
             $files = [];
         }
 
-        $prompt = rag_build_prompt($query, $files, $pageContext, $language, $history);
+        $aggregateView = '';
+        if ($table !== '') {
+            require_once __DIR__ . '/../../includes/config_store.php';
+            $schema        = config_get('schema') ?? [];
+            $aggregateView = rag_view_aggregate($conn, $schema, $table, $cfg);
+        }
+
+        $prompt = rag_build_prompt($query, $files, $pageContext, $language, $history, $aggregateView);
         $result = rag_call_ollama(
             (string) $cfg['ollama_url'],
             (string) $cfg['ollama_model'],

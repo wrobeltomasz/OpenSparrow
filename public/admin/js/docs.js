@@ -528,8 +528,15 @@ ${_ul([
     `<strong>${s.s13_config_label}:</strong> ${s.s13_config}`,
     `<strong>${s.s13_test_label}:</strong> ${s.s13_test}`,
     `<strong>${s.s13_stats_label}:</strong> ${s.s13_stats}`,
-    `<strong>${s.s13_multilang_label}:</strong> ${s.s13_multilang}`
+    `<strong>${s.s13_multilang_label}:</strong> ${s.s13_multilang}`,
+    `<strong>${s.sRagAgg_label}:</strong> ${s.sRagAgg_summary}`
 ])}
+${_h4(s.sRagAgg_head)}
+${_p(s.sRagAgg_desc)}
+${_ul([
+    s.sRagAgg_li1, s.sRagAgg_li2, s.sRagAgg_li3, s.sRagAgg_li4, s.sRagAgg_li5, s.sRagAgg_li6, s.sRagAgg_li7
+])}
+${_warn(s.sRagAgg_warn_label, s.sRagAgg_warn)}
 
 ${_h3('doc-16', s.sPrint_head)}
 ${_p(s.sPrint_desc)}

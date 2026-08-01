@@ -1029,6 +1029,194 @@ function ragBuildSettingsTab(panel) {
             ragStatusPill(saveBtn, 'Request failed: ' + e.message, 'error');
         }
     });
+
+    ragBuildAggregateViewsCard(panel);
+}
+
+// ── Aggregate views card ────────────────────────────────────────────────────
+// Lets an admin attach a pre-written SQL view (e.g. v_companies_aggr) to a table so the
+// RAG assistant can answer count/sum/average questions with exact numbers computed over
+// the FULL matching set, not just the visible grid page. The model never sees or writes
+// SQL — it only reads the already-computed result of this admin-vetted view. Only tables
+// without row-level ownership restriction may be paired with a view (a plain view has no
+// session/user_id to filter by), enforced server-side in rag_aggregate_view_save.
+
+function ragBuildAggregateViewsCard(panel) {
+    const { card, body } = ragCard(
+        'Aggregate Views',
+        'Attach a SQL view you’ve written (e.g. v_companies_aggr) to a table so the assistant can answer '
+            + 'count/sum/average questions with exact totals over the full table, not just the visible page. '
+            + 'Only tables without owner-level restriction are eligible — a plain view cannot filter by the current user.'
+    );
+    panel.appendChild(card);
+
+    const tableWrap = document.createElement('div');
+    tableWrap.style.cssText = 'overflow-x:auto;margin-bottom:16px;';
+    body.appendChild(tableWrap);
+
+    const table = document.createElement('table');
+    table.className = 'adm-tbl';
+    const thead = table.createTHead();
+    const hdrRow = thead.insertRow();
+    ['Table', 'View', ''].forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col;
+        th.className = 'adm-th';
+        hdrRow.appendChild(th);
+    });
+    const tbody = table.createTBody();
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+
+    const addRow = document.createElement('div');
+    addRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;';
+
+    const tableGroup = document.createElement('div');
+    const tableLbl = document.createElement('label');
+    tableLbl.textContent = 'Table';
+    tableLbl.className = 'adm-field-label';
+    const tableSelect = document.createElement('select');
+    tableSelect.className = 'adm-input w-full';
+    tableGroup.appendChild(tableLbl);
+    tableGroup.appendChild(tableSelect);
+
+    const viewGroup = document.createElement('div');
+    viewGroup.style.flex = '1';
+    const viewLbl = document.createElement('label');
+    viewLbl.textContent = 'View (schema.view)';
+    viewLbl.className = 'adm-field-label';
+    const viewInp = document.createElement('input');
+    viewInp.type = 'text';
+    viewInp.placeholder = 'public.v_companies_aggr';
+    viewInp.setAttribute('list', 'rag-agg-view-options');
+    viewInp.className = 'adm-input w-full';
+    const viewList = document.createElement('datalist');
+    viewList.id = 'rag-agg-view-options';
+    viewGroup.appendChild(viewLbl);
+    viewGroup.appendChild(viewInp);
+    viewGroup.appendChild(viewList);
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.textContent = 'Attach';
+    addBtn.className = 'btn btn-primary';
+
+    addRow.appendChild(tableGroup);
+    addRow.appendChild(viewGroup);
+    addRow.appendChild(addBtn);
+    body.appendChild(addRow);
+
+    async function loadAndRender() {
+        try {
+            const res  = await apiFetch('api.php?action=rag_aggregate_view_list');
+            const data = await res.json();
+            if (data.status !== 'success') {
+                ragStatusPill(addBtn, data.error ?? 'Failed to load aggregate views.', 'error');
+                return;
+            }
+            renderMappings(data.mappings ?? {});
+            renderTableOptions(data.tables ?? []);
+            renderViewOptions(data.available_views ?? []);
+        } catch (e) {
+            ragStatusPill(addBtn, 'Request failed: ' + e.message, 'error');
+        }
+    }
+
+    function renderTableOptions(tables) {
+        tableSelect.innerHTML = '';
+        if (tables.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '— no eligible tables —';
+            tableSelect.appendChild(opt);
+            tableSelect.disabled = true;
+            return;
+        }
+        tableSelect.disabled = false;
+        tables.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            tableSelect.appendChild(opt);
+        });
+    }
+
+    function renderViewOptions(views) {
+        viewList.innerHTML = '';
+        views.forEach(v => {
+            const opt = document.createElement('option');
+            // Always fully qualified so a view is unambiguous regardless of the
+            // selected table's own schema (a view may live in a different schema).
+            opt.value = v.schema + '.' + v.name;
+            viewList.appendChild(opt);
+        });
+    }
+
+    function renderMappings(mappings) {
+        tbody.innerHTML = '';
+        const entries = Object.entries(mappings);
+        if (entries.length === 0) {
+            const row = tbody.insertRow();
+            const td  = row.insertCell();
+            td.colSpan = 3;
+            td.textContent = 'No aggregate views attached yet.';
+            td.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
+            return;
+        }
+        entries.forEach(([tableName, viewName]) => {
+            const row = tbody.insertRow();
+            const tdStyle = 'padding:10px 12px;border-bottom:1px solid #CBD5E1;vertical-align:middle;';
+
+            const td1 = row.insertCell();
+            td1.style.cssText = tdStyle + 'font-weight:500;';
+            td1.textContent   = tableName;
+
+            const td2 = row.insertCell();
+            td2.style.cssText = tdStyle;
+            td2.textContent   = viewName;
+
+            const td3 = row.insertCell();
+            td3.style.cssText = tdStyle;
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = 'Remove';
+            removeBtn.className = 'btn btn-danger btn-xs';
+            removeBtn.addEventListener('click', () => saveMapping(tableName, '', removeBtn));
+            td3.appendChild(removeBtn);
+        });
+    }
+
+    async function saveMapping(tableName, viewName, anchorBtn) {
+        anchorBtn.disabled = true;
+        try {
+            const res  = await apiFetch('api.php?action=rag_aggregate_view_save', {
+                method: 'POST',
+                body: JSON.stringify({ table: tableName, view: viewName }),
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                ragStatusPill(anchorBtn, viewName ? 'Attached.' : 'Removed.', 'success');
+                viewInp.value = '';
+                await loadAndRender();
+            } else {
+                ragStatusPill(anchorBtn, data.error ?? 'Error.', 'error');
+            }
+        } catch (e) {
+            ragStatusPill(anchorBtn, 'Request failed: ' + e.message, 'error');
+        } finally {
+            anchorBtn.disabled = false;
+        }
+    }
+
+    addBtn.addEventListener('click', () => {
+        const tableName = tableSelect.value;
+        const viewName  = viewInp.value.trim();
+        if (!tableName) { ragStatusPill(addBtn, 'Select a table first.', 'error'); return; }
+        if (!viewName) { ragStatusPill(addBtn, 'Enter a view name.', 'error'); return; }
+        saveMapping(tableName, viewName, addBtn);
+    });
+
+    loadAndRender();
 }
 
 // ── Test tab ─────────────────────────────────────────────────────────────────

@@ -157,6 +157,14 @@ function closePanel() {
 // ── Context bar ───────────────────────────────────────────────────────────────
 
 function pageTableName() {
+    // Table switches on the grid page are client-side (app.js pushes the URL down to the
+    // bare pathname, no reload), so ?table= only reflects the table that was loaded on the
+    // original page load. window.CURRENT_GRID_TABLE (published by app.js) tracks the live
+    // grid model and is the source of truth whenever it's available.
+    if (typeof window.CURRENT_GRID_TABLE === 'function') {
+        const live = window.CURRENT_GRID_TABLE();
+        if (live) return live;
+    }
     const fromUrl = new URLSearchParams(window.location.search).get('table');
     if (fromUrl) return fromUrl;
     // views.php has no ?table= URL param — views.js exposes the active view instead.
@@ -164,10 +172,10 @@ function pageTableName() {
 }
 
 function pageTableDisplayName() {
-    const fromUrl = new URLSearchParams(window.location.search).get('table');
-    if (fromUrl) {
+    const currentTable = pageTableName();
+    if (currentTable) {
         const activeLink = document.querySelector('.custom-nav-link.active[data-table]');
-        return activeLink?.querySelector('.menu-text')?.textContent.trim() || fromUrl;
+        return activeLink?.querySelector('.menu-text')?.textContent.trim() || currentTable;
     }
     return window.CURRENT_VIEW?.display ?? '';
 }
@@ -402,7 +410,7 @@ function replaceWithAnswer(wrap, answer, sources, tagFallback, suggestions) {
     bubble.innerHTML = renderAnswer(answer, {
         allowedTables: window.SCHEMA_TABLES,
         linkClass:     'ag-record-link',
-        markdown:      false,
+        markdown:      true,
     });
     wrap.appendChild(bubble);
 
@@ -482,7 +490,12 @@ async function sendQuery() {
     try {
         const res  = await apiFetch(API + '?action=query', {
             method:  'POST',
-            body: { query, tags, page_context: includeGrid ? readGridContext() : '', language: document.documentElement.lang || '' },
+            body: {
+                query, tags,
+                page_context: includeGrid ? readGridContext() : '',
+                table: includeGrid ? pageTableName() : '',
+                language: document.documentElement.lang || '',
+            },
             signal: currentAbortController.signal,
         });
 

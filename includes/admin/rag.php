@@ -273,6 +273,110 @@ if ($action === 'rag_settings_save') {
     exit;
 }
 
+// GET: current table -> aggregate view mappings + pickable tables/views for the admin UI.
+if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    try {
+        require_once __DIR__ . '/../../includes/db.php';
+        require_once __DIR__ . '/../config_store.php';
+        $conn   = db_connect();
+        $schema = config_get('schema') ?? [];
+        $cfg    = config_get('rag') ?? [];
+        $views  = is_array($cfg['aggregate_views'] ?? null) ? $cfg['aggregate_views'] : [];
+
+        // Only tables without owner-level row restriction can be paired with a
+        // static view — a plain SQL view has no session/user_id to filter by.
+        $tables = [];
+        foreach (($schema['tables'] ?? []) as $name => $tableCfg) {
+            if (empty($tableCfg['owner_restricted'])) {
+                $tables[] = $name;
+            }
+        }
+        sort($tables);
+
+        $availableViews = [];
+        $res = @pg_query($conn, "SELECT table_schema, table_name FROM information_schema.views WHERE table_schema NOT IN ('pg_catalog', 'information_schema') ORDER BY table_schema, table_name");
+        if ($res) {
+            while ($row = pg_fetch_assoc($res)) {
+                $availableViews[] = [
+                    'schema' => $row['table_schema'],
+                    'name'   => $row['table_name'],
+                ];
+            }
+        }
+
+        echo json_encode([
+            'status'          => 'success',
+            'mappings'        => $views,
+            'tables'          => $tables,
+            'available_views' => $availableViews,
+        ]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    }
+    exit;
+}
+
+// POST: attach (or clear, when view === '') an aggregate view to a table.
+if ($action === 'rag_aggregate_view_save') {
+    require_not_demo();
+    try {
+        require_once __DIR__ . '/../../includes/db.php';
+        require_once __DIR__ . '/../../includes/rag_helpers.php';
+        require_once __DIR__ . '/../config_store.php';
+        $conn  = db_connect();
+        $body  = json_decode(file_get_contents('php://input'), true) ?? [];
+        $table = trim((string) ($body['table'] ?? ''));
+        $view  = trim((string) ($body['view'] ?? ''));
+
+        if ($table === '') {
+            throw new AdminApiMessage('Table is required.');
+        }
+
+        $schema    = config_get('schema') ?? [];
+        $tableCfg  = $schema['tables'][$table] ?? null;
+        if ($tableCfg === null) {
+            throw new AdminApiMessage('Unknown table.');
+        }
+        if (!empty($tableCfg['owner_restricted'])) {
+            throw new AdminApiMessage('Cannot attach an aggregate view to an owner-restricted table.');
+        }
+
+        $existingCfg = config_get('rag') ?? [];
+        $views       = is_array($existingCfg['aggregate_views'] ?? null) ? $existingCfg['aggregate_views'] : [];
+
+        if ($view === '') {
+            unset($views[$table]);
+        } else {
+            // Always requires an explicit "schema.view" (e.g. spw_crm.v_deals_aggr) — a
+            // view is not assumed to live in the same schema as the table it's attached to.
+            $ref = rag_parse_qualified_view($view);
+            if ($ref === null) {
+                throw new AdminApiMessage('Invalid view reference. Use the format "schema.view".');
+            }
+            $chk = @pg_query_params(
+                $conn,
+                'SELECT 1 FROM information_schema.views WHERE table_schema = $1 AND table_name = $2',
+                [$ref['schema'], $ref['view']]
+            );
+            if (!$chk || pg_num_rows($chk) === 0) {
+                throw new AdminApiMessage("View \"{$ref['view']}\" was not found in schema \"{$ref['schema']}\".");
+            }
+            $views[$table] = $ref['schema'] . '.' . $ref['view'];
+        }
+
+        $cfg    = array_merge($existingCfg, ['aggregate_views' => $views]);
+        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $result = config_save('rag', $cfg, null, $userId);
+        if ($result['status'] !== 'ok') {
+            throw new AdminApiMessage($result['error'] ?? 'Could not save the aggregate view mapping.');
+        }
+        echo json_encode(['status' => 'success', 'mappings' => $views]);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    }
+    exit;
+}
+
 if ($action === 'rag_test_query') {
     try {
         require_once __DIR__ . '/../../includes/db.php';

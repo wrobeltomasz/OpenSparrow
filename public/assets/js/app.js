@@ -29,6 +29,11 @@ initMassEdit();
 // (raw values + real record counts) instead of scraping the rendered table.
 window.CURRENT_GRID_CONTEXT = buildGridContext;
 
+// Exposed for agent-panel.js's context bar. Table switches on this page are client-side
+// (app.js:pushState, no reload — see the menu click handler below), so the URL's ?table=
+// goes stale the moment the user picks another table; this reads the live grid model instead.
+window.CURRENT_GRID_TABLE = () => getState().currentTable;
+
 const menuEl = document.getElementById('menu');
 const gridTitleEl = document.getElementById('gridTitle');
 const addRowBtn = document.getElementById('addRow');
