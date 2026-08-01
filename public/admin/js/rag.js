@@ -759,16 +759,21 @@ function ragBuildSettingsTab(panel) {
     }
 
     const otherGrid = document.createElement('div');
-    otherGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:16px;';
+    otherGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:16px;';
     const { group: ctxGroup,     inp: ctxInp }     = ragField('Max context files', 'rag-max-ctx', '3');
     const { group: sizeGroup,    inp: sizeInp }    = ragField('Max file size (MB)', 'rag-max-size', '10');
     const { group: timeoutGroup, inp: timeoutInp } = ragField('Ollama timeout (s)', 'rag-timeout', '120');
     const { group: memGroup,     inp: memInp }     = ragField('Conversation memory (turns)', 'rag-conv-turns', '0');
     memInp.title = '0 = disabled; max 10. Each turn = one user question + one assistant reply.';
+    const { group: aggGroup, inp: aggInp } = ragField('Aggregate view rows', 'rag-agg-limit', '100');
+    aggInp.title = 'Max rows read from an aggregate view and put in the prompt (1-1000). '
+        + 'Too low a value truncates the data and the assistant will answer "not in the context" '
+        + 'for rows that never reached it.';
     otherGrid.appendChild(ctxGroup);
     otherGrid.appendChild(sizeGroup);
     otherGrid.appendChild(timeoutGroup);
     otherGrid.appendChild(memGroup);
+    otherGrid.appendChild(aggGroup);
     connBody.appendChild(otherGrid);
 
     const chunksRow = document.createElement('div');
@@ -967,6 +972,7 @@ function ragBuildSettingsTab(panel) {
                 if (s.ollama_ssl_verify !== undefined) sslChk.checked = !!s.ollama_ssl_verify;
                 if (s.use_chunks !== undefined) chunksChk.checked = !!s.use_chunks;
                 if (s.conversation_turns !== undefined) memInp.value = s.conversation_turns;
+                if (s.aggregate_view_limit !== undefined) aggInp.value = s.aggregate_view_limit;
                 if (s.chat_enabled !== undefined) chatChk.checked = !!s.chat_enabled;
                 renderApiKeyStatus(!!s.ollama_api_key_configured);
 
@@ -999,6 +1005,7 @@ function ragBuildSettingsTab(panel) {
             use_chunks:          chunksChk.checked,
             conversation_turns:  Math.max(0, Math.min(10, parseInt(memInp.value, 10) || 0)),
             chat_enabled:        chatChk.checked,
+            aggregate_view_limit: Math.max(1, Math.min(1000, parseInt(aggInp.value, 10) || 100)),
         };
         if (apiKeyInp.value !== '') {
             payload.ollama_api_key = apiKeyInp.value;

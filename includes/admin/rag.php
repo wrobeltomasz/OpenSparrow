@@ -224,6 +224,7 @@ if ($action === 'rag_settings_save') {
         $sslVerify        = isset($body['ssl_verify']) ? (bool) $body['ssl_verify'] : true;
         $useChunks        = isset($body['use_chunks']) ? (bool) $body['use_chunks'] : true;
         $convTurns        = max(0, min(10, (int) ($body['conversation_turns'] ?? 0)));
+        $aggLimit         = max(1, min(1000, (int) ($body['aggregate_view_limit'] ?? 100)));
         $chatEnabled      = isset($body['chat_enabled']) ? (bool) $body['chat_enabled'] : true;
         $apiKey           = isset($body['ollama_api_key']) ? trim((string) $body['ollama_api_key']) : '';
         $clearApiKey      = !empty($body['ollama_api_key_clear']);
@@ -243,15 +244,16 @@ if ($action === 'rag_settings_save') {
         $existingCfg = config_get('rag') ?? [];
 
         $cfg = array_merge($existingCfg, [
-            'ollama_url'         => $ollamaUrl,
-            'ollama_model'       => $model,
-            'max_context_files'  => $maxCtx,
-            'max_file_size_mb'   => $maxSizeMb,
-            'ollama_timeout'     => $timeout,
-            'ollama_ssl_verify'  => $sslVerify,
-            'use_chunks'         => $useChunks,
-            'conversation_turns' => $convTurns,
-            'chat_enabled'       => $chatEnabled,
+            'ollama_url'           => $ollamaUrl,
+            'ollama_model'         => $model,
+            'max_context_files'    => $maxCtx,
+            'max_file_size_mb'     => $maxSizeMb,
+            'ollama_timeout'       => $timeout,
+            'ollama_ssl_verify'    => $sslVerify,
+            'use_chunks'           => $useChunks,
+            'conversation_turns'   => $convTurns,
+            'chat_enabled'         => $chatEnabled,
+            'aggregate_view_limit' => $aggLimit,
         ]);
 
         require_once __DIR__ . '/../crypto.php';

@@ -19,17 +19,18 @@ function rag_config(): array
         return $cfg;
     }
     $defaults = [
-        'ollama_url'         => get_env('OLLAMA_URL', 'http://localhost:11434'),
-        'ollama_model'       => get_env('OLLAMA_MODEL', 'llama3'),
-        'max_context_files'  => 3,
-        'max_file_size_mb'   => 10,
-        'ollama_timeout'     => 120,
-        'ollama_ssl_verify'  => true,
-        'chunk_size'         => 1000,
-        'chunk_overlap'      => 200,
-        'use_chunks'         => true,
-        'conversation_turns' => 0,
-        'chat_enabled'       => true,
+        'ollama_url'           => get_env('OLLAMA_URL', 'http://localhost:11434'),
+        'ollama_model'         => get_env('OLLAMA_MODEL', 'llama3'),
+        'max_context_files'    => 3,
+        'max_file_size_mb'     => 10,
+        'ollama_timeout'       => 120,
+        'ollama_ssl_verify'    => true,
+        'chunk_size'           => 1000,
+        'chunk_overlap'        => 200,
+        'use_chunks'           => true,
+        'conversation_turns'   => 0,
+        'chat_enabled'         => true,
+        'aggregate_view_limit' => 100,
     ];
     require_once __DIR__ . '/config_store.php';
     $raw = config_get('rag');
@@ -292,10 +293,17 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
         return '';
     }
 
+    // Row cap for the aggregate block, configurable in the global RAG settings.
+    // Too low a value silently truncates the block and the model then correctly
+    // answers "not in the context" for rows that never reached the prompt.
+    $limit = (int) ($cfg['aggregate_view_limit'] ?? 100);
+    $limit = max(1, min(1000, $limit));
+
     $res = @pg_query($conn, sprintf(
-        'SELECT * FROM %s.%s LIMIT 20',
+        'SELECT * FROM %s.%s LIMIT %d',
         pg_ident($ref['schema']),
-        pg_ident($ref['view'])
+        pg_ident($ref['view']),
+        $limit
     ));
     if (!$res) {
         return '';
@@ -313,6 +321,12 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
     $text    = "Aggregate view \"{$ref['schema']}.{$ref['view']}\" for table {$table}:\n" . implode(' | ', $columns) . "\n";
     foreach ($rows as $row) {
         $text .= implode(' | ', array_map(fn($v) => $v === null ? '' : (string) $v, $row)) . "\n";
+    }
+    if (count($rows) === $limit) {
+        // The view may hold more rows than the cap — say so, so the model does not
+        // present a truncated list as if it were the complete aggregate.
+        $text .= "NOTE: this list was cut off at the configured limit of {$limit} row(s);"
+            . " further rows of the view are NOT shown here.\n";
     }
 
     return $text;
