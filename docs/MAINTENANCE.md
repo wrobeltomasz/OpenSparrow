@@ -87,12 +87,18 @@ concentrated in a few places listed below.
 
 ### Open items, in recommended order
 
-1. **`admin/js/docs-strings.js` (~2.7k lines)** — six languages of admin docs
-   hardcoded in one JS file, parallel to the `languages/*.json` system. Options:
-   per-language files loaded on demand, or reduce built-in docs to en+pl.
+1. ~~**`admin/js/docs-strings.js` (~2.7k lines)** — six languages of admin docs
+   hardcoded in one JS file.~~ **Resolved 2026-07-29 (851df26)** by taking the
+   second option: built-in admin docs reduced to **en + pl**, the de/fr/it/es and
+   placeholder locales dropped. The app UI keeps all 20 languages — only the admin
+   Docs tab is bilingual. Do not add doc locales back; the maintenance cost was the
+   whole reason for the trim.
 2. **20-language hard key parity** (`tests/I18n/LanguageFilesTest.php`) — every
    new key costs 20 edits. Considered alternative: fallback-to-en with parity
-   enforced only for en+pl. Product decision, not taken yet.
+   enforced only for en+pl. Product decision, not taken yet. (The docs-strings trim
+   above is precedent for the narrower en+pl scope, but the app UI is a different
+   surface — untranslated *interface* strings are more visible than untranslated
+   documentation, so the decision does not carry over automatically.)
 
 ### Deliberately NOT simplified
 
@@ -251,3 +257,46 @@ the same nitpicks are not re-litigated.
   (`cell-error`/`cell-success`, `tr:hover td`); only the pair in
   `#dateFiltersContainer` (ID selector already wins) is removable cleanup when
   that block is next touched.
+
+## 3.1 refactors (2026-07/08)
+
+Three structural changes landed during 3.1. All three exist because a pattern that
+worked at 2.x scale stopped working — record them so the pattern is extended, not
+re-litigated.
+
+### Admin module helper layer (`includes/admin/helpers.php`, 4e7e4bd)
+
+The 2026-07-09 admin API split moved 66 action blocks out of `public/admin/api.php`
+into per-domain modules under `includes/admin/`, but each module then re-implemented
+the same request/response boilerplate — and drifted. `helpers.php` (`admin_try`,
+`admin_ok`, `admin_conn`, …) now carries it, and `includes/admin_api_errors.php`
+carries the shared error vocabulary. The measurable win was not line count but
+correctness: five admin actions had lost their `require_not_demo()` call in the
+copy-paste, which is what prompted the extraction (see `SECURITY.md` → "3.1
+hardening pass"). New admin modules use these wrappers; do not hand-roll the
+try/catch/JSON envelope again.
+
+**Standing constraint, unchanged:** the admin endpoint still has no central write
+gate. `$postActions` in the front controller and the per-action `require_not_demo()`
+calls are hand-maintained lists, now pinned by `tests/Admin/AdminApiGuardsTest.php`.
+The helper layer makes the guards convenient — it does not make them automatic.
+
+### Import map versions every ES module (5dfc3d8, df3a61a)
+
+Cache busting used to stamp `?v=` on entry scripts only, so after an upgrade the
+browser refetched `app.js` but kept every module it imports. Any fix in a non-entry
+module stayed invisible until a manual hard refresh — a support burden with no
+visible cause. Both trees (admin and frontend) now declare an import map that gives
+**every** module the same version.
+
+The trap this creates, already hit once: the `?v=` on a module's `<script src>` and
+its bare specifier in the import map must agree, or the module is instantiated twice
+under two URLs and one instance's state (e.g. an unsaved config edit) is silently
+discarded. When bumping the version, change both or neither.
+
+### Feature modules added under `includes/` (f633145, df3a61a, 99cdd52)
+
+`images.php` (record image galleries), `crypto.php` (encryption of stored secrets)
+and `admin/procedures.php` (workflow stored-procedure steps) follow the June 2026
+DRY convention: shared backend logic goes in `includes/`, not `src/`. `src/` remains
+frozen — it is the existing OOP layer, not the destination for new backend code.

@@ -62,19 +62,21 @@ Pick the path that matches your environment. Every path ends at the same place: 
 - **First-run setup wizard** — guided `setup.php` wizard appears automatically on first launch (no `database.json` present). Collects PostgreSQL credentials, tests the connection, creates the schema, initializes all system tables, and seeds the default admin account in one flow.
 - **Config-driven CRUD** — tables and forms generated from the `schema` configuration with nested relations, constraints, and enum color states.
 - **Inline editing** — in-grid PATCH updates routed through a single `api.php` gateway.
+- **Record image galleries** — per-table photo galleries: thumbnails render directly in the grid, full-size images open in a popup, and uploads happen from the Edit form. Enabled per table in the `schema` configuration; files are stored alongside attachments in `spw_files`.
+- **Conditional row highlighting** — colour rules evaluated per row in the grid (e.g. overdue invoices in red), defined in the admin panel next to the column settings.
 - **Dashboard engine** — COUNT / SUM / AVG / MIN / MAX / GROUP BY widgets defined in the `dashboard` configuration.
-- **Calendar & notifications** — date-based records on a calendar view, with scheduled reminders via cron.
+- **Calendar & notifications** — date-based records on a calendar view, with scheduled reminders via cron. An optional subtitle column adds a second line to each calendar entry.
 - **Admin panel** — collapsible sidebar navigation with visual editors for schema, dashboards, calendar, boards, printouts, views, workflows, automations, files, ETL, anonymization, the knowledge base, and users at `/admin`. Unified login for all roles — no separate admin password.
 - **Visual table builder** — create PostgreSQL tables from the admin UI with per-column type, NOT NULL, default value, index (btree/hash/unique), column comment (`COMMENT ON COLUMN`), and foreign key constraints. Timestamps preset adds `created_at`/`updated_at` automatically. Tables are registered in the app schema configuration in the same step.
 - **Audit logging & record snapshots** — every write is logged to `spw_users_log`; an optional record-snapshot module saves a full JSONB copy of each record after INSERT/UPDATE to `spw_record_snapshots`, toggled from the admin panel or via env var.
 - **CSV export & pagination** — built-in grid utilities.
-- **Workflows builder** — multi-step wizards linking parent/child records across tables.
+- **Workflows builder** — multi-step wizards linking parent/child records across tables. Each step can also upload an image or call a PostgreSQL stored procedure, so server-side logic runs as part of the wizard.
 - **File management** — per-record attachments with tagging and search, configurable via the admin panel.
 - **WCAG 2.1 focus** — accessibility-oriented UI.
 - **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Knowledge Base** tab. No cloud API required.
-- **Automations** — rule-based triggers on record create/update/delete with nested AND/OR conditions, change detection, and template variables. Actions can update the record, notify users, create a related record, queue an email, or call an outbound webhook. Configured from the admin panel, with a per-rule run history.
+- **Automations** — rule-based triggers on record create/update/delete with nested AND/OR conditions, change detection, and template variables. Actions can update the record, notify users, create a related record, queue an email, or call an outbound webhook. Configured from the admin panel — split into **Record Automations** (in-app actions) and **n8n Automations** (outbound webhooks) — with a per-rule run history.
 - **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab.
-- **Private notes** — a personal notepad in the user menu (`spw_notes`), visible only to its author, optionally linked to a record and carrying a reminder date delivered by the notification cron.
+- **Private notes** — a personal notepad in the user menu (`spw_notes`), visible only to its author, optionally linked to a record and carrying a reminder date **and time**, delivered by the notification cron once that moment has passed.
 - **Kanban boards** — drag records between status lanes; multiple boards can be defined in the `board` configuration, each appearing as its own sidebar item.
 - **Saved views** — read-only pages backed by PostgreSQL views, discoverable across multiple schemas and configured from the admin panel.
 - **Printable reports** — configurable print templates with paginated output, defined in the `print` configuration and rendered by `print.php`.
@@ -178,7 +180,9 @@ The wizard walks you through four steps:
 
 1. **Welcome** — intro and requirements overview.
 2. **Database Connection** — enter host, port, database name, username, and password. Click **Test Connection** to verify before proceeding.
-3. **Schema** — choose the PostgreSQL schema name (default: `app`). Optionally tick *Create schema if not exists*.
+3. **Schema** — choose the PostgreSQL schema name (default: `app`). Optionally tick *Create schema if not exists*, and optionally tick *Install CRM demo data* to have the wizard seed a ready-made example application (companies, contacts, deals, activities, dashboards, board, printouts) you can explore or delete later.
+
+   > ⚠️ The third checkbox, *Drop and recreate this schema*, runs `DROP SCHEMA … CASCADE`. Everything in that schema is permanently deleted, including tables the wizard did not create. Leave it unticked unless you are deliberately wiping a scratch installation.
 4. **Review & Initialize** — confirm settings and click **Initialize System Tables**. The wizard creates all `spw_*` tables, seeds the `admin` account with a **randomly generated password displayed once on this screen** — copy it before leaving the page — and writes `config/database.json`.
 
 After initialization you are redirected to `/login`. Sign in as `admin` with the password shown in the wizard, then go to **System → Users → Change pwd** and set your own password.
@@ -196,7 +200,7 @@ All accounts are stored in `spw_users` and managed from **System → Users**. Th
 | `viewer` | Blocked | Read-only |
 
 - **Password reset:** click **Change pwd** next to any user. For your own account the current password is required; for other accounts the admin can override without it.
-- Re-run **Initialize System Tables** after every upgrade — it uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE … ADD COLUMN IF NOT EXISTS` and also migrates legacy roles (`full → editor`, `readonly → viewer`).
+- Re-run **System → Migrations → Initialize System Tables** after every upgrade — it uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE … ADD COLUMN IF NOT EXISTS` and also migrates legacy roles (`full → editor`, `readonly → viewer`).
 
 ---
 
@@ -206,8 +210,8 @@ All accounts are stored in `spw_users` and managed from **System → Users**. Th
 2. **Before uploading** — export your configuration from the admin panel: **Configuration → Export config**. Keep this backup safe.
 3. Extract the ZIP and upload all files to your server via FTP, overwriting existing files.
 4. Your `config/database.json` is **not included** in the ZIP and your schema, dashboards, and all other settings live in the database — configuration is preserved automatically.
-5. Log in to `/admin` → **System Health** → **Initialize System Tables** to apply any new system table migrations.
-6. Check **System Health** — the version shown should match the release tag you just uploaded.
+5. Log in to `/admin` → **System → Migrations** → **Initialize System Tables** to apply any new system table migrations. Release 3.1 ships two: `3.1_table_comments` (adds `COMMENT ON` descriptions to every `spw_*` table — metadata only) and `3.1_notes_reminder_time` (widens `spw_notes.reminder_date` from `date` to `timestamp`; existing reminders keep their day at 00:00).
+6. Check **System → Health Check** — the version shown should match the release tag you just uploaded.
 
 ---
 
@@ -266,7 +270,7 @@ All variables are read by `includes/config.php` on every request — the single 
 
 | Variable | Default | Description |
 |---|---|---|
-| `OLLAMA_URL` | `http://localhost:11434` | Base URL of the local Ollama instance. Used by `api/rag.php` and admin RAG actions. |
+| `OLLAMA_URL` | `http://localhost:11434` | Base URL of the Ollama endpoint — either a local instance (the default) or **Ollama Cloud** (`https://api.ollama.com`) for the hosted tier. Used by `api/rag.php` and admin RAG actions. The Ollama Cloud API key is not an env var: set it in **Knowledge Base → RAG Documents → Global Settings**, where it is stored encrypted (`ollama_api_key_enc`) and never returned to the browser. |
 | `OLLAMA_MODEL` | `llama3` | Default Ollama model for RAG queries. Overridden by the `rag` configuration if present. |
 
 ---
@@ -281,8 +285,8 @@ the repository root, *outside* the document root, and cannot be reached over the
 ### Core directories
 - **`src/`** — OOP application layer (PSR-4, no Composer). Namespaced under `App\`. Sub-directories: `Audit/`, `Csrf/`, `Domain/`, `Form/`, `Http/`, `Persistence/`, `Repository/`, `Security/`, `Support/`. Loaded via `includes/autoload.php`; wired in `includes/bootstrap.php`.
 - **`public/admin/`** — management panel (schema editor, dashboards, calendar, workflows, users, files, system health). Web-served; self-authenticated (requires role `admin`).
-- **`public/assets/`** — static frontend resources (`css/`, `js/`, `icons/`, `img/`).
-- **`includes/`** — backend helpers. `config.php` centralizes env-driven configuration; `db.php` centralizes PostgreSQL access; `api_helpers.php` holds request/response helpers; `autoload.php` registers the PSR-4 class loader; `bootstrap.php` wires all OOP dependencies.
+- **`public/assets/`** — static frontend resources: `css/`, `js/`, `icons/` (the Material Symbols set, see [Third-party assets](#third-party-assets)) and `img/` (application logos plus the `uploads/` directory).
+- **`includes/`** — backend helpers. `config.php` centralizes env-driven configuration; `db.php` centralizes PostgreSQL access; `api_helpers.php` holds request/response helpers (including the shared `requireWrite()` and `require_not_demo()` guards); `crypto.php` encrypts stored secrets (webhook signing keys, custom headers, the Ollama Cloud API key); `images.php` backs the record image galleries; `autoload.php` registers the PSR-4 class loader; `bootstrap.php` wires all OOP dependencies. `includes/admin/` holds the admin API modules dispatched by `public/admin/api.php`, with `helpers.php` providing their shared request/response wrappers and `admin_api_errors.php` the shared error vocabulary.
 - **`config/`** — bootstrap and distribution files only: `database.json` (connection details, read before any DB connection exists), `security.json`, and `demo_meta.json`. All JSON in this folder is gitignored and, being outside the `public/` document root, is not web-reachable — except `migrations.json`, the distribution-tracked release manifest. Application configuration (schema, menu, settings, dashboard, calendar, board, workflows, automations, views, files, print, anonymization, user_records, rag) lives in the `spw_config` database table — see `includes/config_store.php`.
 - **`cron/`** — scheduled workers (e.g. `cron_notifications.php`).
 - **`templates/`** — layout wrappers (`template.php`).
@@ -331,14 +335,14 @@ Configuration lives in `config/database.json`. The web document root is the `pub
 
 Testing tooling is **dev-only** — none of it is needed to run the application.
 
-**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer and the language-file contract; no database required. **192 tests, 294 assertions** across 15 files, mirroring the `src/` namespace under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
+**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer, the admin API guards (CSRF / demo-mode / migration registry) and the language-file contract; no database required. **206 tests, 335 assertions** across 18 files under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
 
 ```bash
 composer install          # once
 vendor/bin/phpunit
 ```
 
-**Cypress — E2E tests.** 22 suites covering authentication, admin panel, grid operations, CRUD workflows, dashboard, calendar, board, print, files, comments, notifications, views, workflows, mass edit, CSV import, data cleanup, ETL, anonymization, i18n, API contracts, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
+**Cypress — E2E tests.** 23 suites covering authentication, admin panel, grid operations, CRUD workflows, dashboard, calendar, board, print, files, record image galleries, comments, notifications, views, workflows, mass edit, CSV import, data cleanup, ETL, anonymization, i18n, keyboard shortcuts, API contracts, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
 
 ```bash
 npm install               # once

@@ -110,15 +110,29 @@ tar -xzf storage_backup.tar.gz
 
 ```bash
 # 1. Update image version in .env (release tags follow X.Y format, no "v" prefix)
-DOCKER_IMAGE=wrobeltom/opensparrow:2.8
+DOCKER_IMAGE=wrobeltom/opensparrow:3.1
 
 # 2. Pull & restart
 docker compose pull
 docker compose up -d
 
-# 3. Apply migrations if any
-# Admin → System Health → Initialize System Tables
+# 3. Apply migrations
+# Admin → System → Migrations → Initialize System Tables
 ```
+
+Step 3 is not optional on an upgrade — the app reports pending migrations in the
+admin panel, but does not apply them by itself. Migrations are re-runnable
+(`IF NOT EXISTS` throughout), so running the step when nothing is pending is a no-op.
+
+**Upgrading to 3.1** brings two migrations:
+
+| Migration | Effect |
+|---|---|
+| `3.1_table_comments` | Applies `COMMENT ON TABLE` / `COMMENT ON COLUMN` descriptions to every `spw_*` table. Metadata only — no structural change. |
+| `3.1_notes_reminder_time` | Widens `spw_notes.reminder_date` from `date` to `timestamp` so note reminders carry a time of day. Existing reminders keep their date at 00:00. |
+
+The second one alters a column type, so take the database backup below **before**
+running it — that is the one step in an upgrade that is not trivially reversible.
 
 ---
 
@@ -139,6 +153,6 @@ docker compose up -d
 - [ ] `.env` added to `.gitignore`
 - [ ] `docker compose pull` succeeded
 - [ ] `docker compose ps` — all services healthy
-- [ ] `/admin → System Health → Initialize System Tables` ran
+- [ ] `/admin → System → Migrations → Initialize System Tables` ran
 - [ ] Login works at `http://localhost/login.php`
 - [ ] Backup strategy in place

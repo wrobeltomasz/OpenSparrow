@@ -1,7 +1,7 @@
 # Cypress E2E Testing Guidelines
 ## OpenSparrow Frontend Testing Standards
 
-**Version:** 2.7  
+**Version:** 3.1  
 **Audience:** Frontend Developers  
 **Focus:** All Cypress E2E test files in `cypress/e2e/`  
 
@@ -14,15 +14,40 @@
 - **Language:** JavaScript (ES6+)
 - **Target:** OpenSparrow web application (PHP/PostgreSQL)
 - **Base URL:** http://localhost:8080
-- **Current Test Files:**
-  - `cypress/e2e/login.cy.js` — Authentication flows, grid navigation, core UI
-  - `cypress/e2e/admin.cy.js` — Admin panel interactions
-  - `cypress/e2e/grid.cy.js` — Grid operations, sorting, filtering, pagination
-  - `cypress/e2e/crud.cy.js` — Create/edit/delete record flows
-  - `cypress/e2e/data_cleanup.cy.js` — Find & Replace drawer, accent/case options
-  - `cypress/e2e/keyboard_shortcuts.cy.js` — Keyboard navigation, cell selection, copy/paste
+- **Current Test Files** (23 specs in `cypress/e2e/`):
+
+| Spec | Covers |
+|---|---|
+| `admin.cy.js` | Admin panel navigation and per-module interactions |
+| `agent_panel.cy.js` | Slide-in "Ask AI" panel and RAG chat |
+| `anonymization.cy.js` | GDPR column scrubbing: preview, run, audit trail |
+| `api_contracts.cy.js` | API contracts — CSRF on writes, GET never mutates |
+| `board.cy.js` | Kanban board, dragging cards between status lanes |
+| `calendar.cy.js` | Calendar view and date-based records |
+| `comments.cy.js` | Threaded record comments, grid badge, Edit-form tab |
+| `crud.cy.js` | Create / edit / delete record flows |
+| `csv_import.cy.js` | CSV import with preview and per-row rejection log |
+| `dashboard.cy.js` | Dashboard widgets and aggregations |
+| `data_cleanup.cy.js` | Find & Replace drawer, accent/case options |
+| `etl.cy.js` | ETL jobs and multi-step flows |
+| `files.cy.js` | File manager, attachments, tagging and search |
+| `grid.cy.js` | Grid operations: sorting, filtering, pagination |
+| `i18n.cy.js` | Language switching and translated UI strings |
+| `images.cy.js` | Record image galleries: grid thumbnails, upload, popup |
+| `keyboard_shortcuts.cy.js` | Keyboard navigation, cell selection, copy/paste |
+| `login.cy.js` | Authentication flows, grid navigation, core UI |
+| `mass_edit.cy.js` | Bulk edit with preview before applying |
+| `notifications.cy.js` | Notification bell, dropdown, reminders |
+| `print.cy.js` | Printable report templates and pagination |
+| `views.cy.js` | Saved views backed by PostgreSQL views |
+| `workflows.cy.js` | Multi-step workflow wizards |
 
 - **Shared Helpers** (`cypress/support/e2e.js`): `loginAsTestUser`, `loginAsAdmin`, `waitForGridOrEmpty`, `waitForPagination`
+
+> **Admin nav is collapsible.** Sidebar sections (`.nav-section`) are closed by
+> default except Overview, so a spec must expand the section before clicking an
+> `.admin-tab` inside it. Clicking a hidden tab is the most common cause of a
+> newly written admin spec failing.
 
 ### Guiding Principle
 **Tests as living documentation.** Every test should answer: _"What does the happy path look like?"_ and _"When does it fail?"_
@@ -664,15 +689,24 @@ Before merging test changes, verify:
 
 ### Prerequisites
 ```bash
-# 1. Docker stack running
+# 1a. A running instance — Docker stack (serves on :8080, the default baseUrl)
 docker compose up -d
 
-# 2. Test user created in database (or use /admin/Users)
-# Username: test, Password: test
+# 1b. …or the PHP built-in server. Export these BEFORE starting it:
+#     APP_ENV=development   — cypress_seed.php hard-404s without it
+#     SECURE_COOKIES=false  — otherwise the session cookie will not stick on HTTP
+APP_ENV=development SECURE_COOKIES=false php -S localhost:8080 -t public
+
+# 2. Test users in the database (or create them in Admin → System → Users)
+# Frontend: test / test        Admin: testadmin / testadmin
 
 # 3. Node dependencies
 npm install
 ```
+
+> The seed endpoint `public/cypress_seed.php` is deliberately unreachable in
+> production — it returns 404 unless `APP_ENV=development`. If a whole suite fails
+> at setup, check that variable first.
 
 ### Commands
 ```bash

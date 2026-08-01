@@ -15,9 +15,9 @@ Click the **Fork** button on GitHub and clone your fork:
 
 ### 2. Requirements
 
-- PHP >= 8.1  
+- PHP >= 8.4 (CI runs the test suite on 8.4 and 8.5)  
 - PostgreSQL >= 14  
-- Web server (Apache/Nginx)
+- Web server (Apache/Nginx), or the PHP built-in server for local work
 
 ### 3. Run the project locally
 
@@ -27,10 +27,16 @@ Click the **Fork** button on GitHub and clone your fork:
 
 Open http://localhost:8080 — on first run you are redirected to the setup wizard.
 
-**Option B — your own web server:**
+**Option B — your own web server or the PHP built-in server:**
 
-- Place the project in your server directory  
-- Open http://localhost/OpenSparrow/ in a browser  
+The web document root is the `public/` directory — point your virtual host at it
+(the shipped `nginx.conf` already does), or serve it directly:
+
+    php -S localhost:8000 -t public
+
+Open http://localhost:8000 in a browser. On plain HTTP set `SECURE_COOKIES=false`
+first, otherwise the session cookie will not stick; add `APP_ENV=development` if you
+plan to run the Cypress suite (`cypress_seed.php` 404s without it).
 
 In both cases the **setup wizard** (`setup.php`) walks you through the database
 connection and creates the `admin` account with a randomly generated password
@@ -98,6 +104,19 @@ Use clear and descriptive messages:
 ## Code Style
 
 We aim to keep the code clean and consistent.
+
+### Licence headers
+
+Every new PHP and JS source file starts with the four-line SPDX header used
+throughout the tree — copy it from any existing file:
+
+    // This file is part of OpenSparrow - https://opensparrow.org
+    // SPDX-License-Identifier: LGPL-3.0-or-later
+    // Copyright (C) 2024-2026 OpenSparrow Contributors
+    // Licensed under LGPL v3. See COPYING.LESSER file for details.
+
+Do not modify `COPYING`, `COPYING.LESSER` or the files in `licenses/` — the
+Source Integrity workflow verifies their checksums.
 
 ### PHP
 

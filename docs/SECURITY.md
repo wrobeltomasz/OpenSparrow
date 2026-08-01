@@ -62,6 +62,51 @@ already been verified, so audits are not repeated from scratch.
   tightening is defense-in-depth plus offline-policy enforcement, not a
   vulnerability fix.
 
+## Audit: 3.1 hardening pass (2026-07/08)
+
+Four gaps closed while building 3.1. All four share one root cause worth remembering:
+a guard that lives in the *main* code path is not a guard — side-channel endpoints,
+bulk operations and newly added actions each need it applied explicitly.
+
+- **Record ownership was enforced on writes but not on reads** (d369d48). The grid's
+  side-channel endpoints (image thumbnails, subtable counts) take record ids as
+  *input* rather than selecting rows themselves, so `owner_restriction_sql()` had
+  nothing to hang its `NOT EXISTS` off — an id the grid never returned could still be
+  probed directly. New `filter_visible_ids()` in `includes/api_helpers.php` narrows a
+  client-supplied id list to the visible ones; it **fails closed** (a failed ownership
+  lookup returns an empty list, never the input). It mirrors `can_access_record()`:
+  unowned rows pass, rows owned by someone else are dropped — keep the three in sync.
+- **`owner_restriction_sql()` degraded to a no-op on unqualified ids** (d369d48).
+  The predicate is a correlated subquery over `spw_record_owners`, which has its own
+  `id` column, so a bare `'id'` resolved to the *inner* `ro.id`, making the condition
+  `ro.record_id = ro.id` — essentially never true, filter silently gone. The function
+  now **throws** on an `$idExpr` without a dot: callers must alias the outer table
+  (`_t.id`). A silent-degradation bug like this cannot be left to code review.
+- **Admin CSRF / DEMO_MODE coverage was per-action and hand-maintained**
+  (bc81a17, 4e7e4bd). Five admin write actions never called `require_not_demo()`, so a
+  public demo instance accepted them. The admin modules now go through the shared
+  wrappers in `includes/admin/helpers.php` instead of each re-implementing the checks.
+  The structural risk documented in the DEMO_MODE design stands: there is **no central
+  gate**, every write action must still guard itself — which is exactly what
+  `tests/Admin/AdminApiGuardsTest.php` now asserts by scanning the sources. Treat that
+  test the way `cypress/e2e/api_contracts.cy.js` is treated for CSRF: it is the
+  regression net, so a new admin action that skips the guard fails CI rather than ship.
+  Related gaps closed the same way: record duplication, mass file operations and the
+  ETL runner all reused the main-path guard but not the bulk one.
+- **Webhook credentials were stored and echoed in plaintext** (df3a61a). Automation
+  webhook signing secrets and custom header values now live encrypted in
+  `secret_enc` / `headers_enc` via `includes/crypto.php` and are **never returned to
+  the browser** — the admin UI receives only a `*_configured` boolean, the same
+  convention as `ollama_api_key_configured` in `includes/admin/rag.php`. Rules saved
+  before 3.1 keep working from their plaintext fields and are re-encrypted on the next
+  save. New secret-bearing config fields must follow this pattern: encrypt at rest,
+  expose a boolean, never round-trip the value through the client.
+
+The SSRF condition recorded above is unchanged and still holds: webhook URLs remain
+admin-controlled. 3.1 widened the webhook feature (PATCH/DELETE methods, custom headers,
+retries) but not who can edit the target URL — if that ever becomes editor-editable,
+the URL validation called for above is due in the same PR.
+
 ## Audit: `innerHTML` usage in `public/assets/js/` (2026-07-09)
 
 All 56 occurrences (16 files) were reviewed, including every helper the data flows

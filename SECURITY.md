@@ -6,8 +6,8 @@ We provide security updates only for the latest minor release on the current maj
 
 | Version       | Supported          |
 | ------------- | ------------------ |
-| 2.x (latest)  | :white_check_mark: |
-| 1.x and older | :x:                |
+| 3.x (latest)  | :white_check_mark: |
+| 2.x and older | :x:                |
 
 ## Reporting a Vulnerability
 
