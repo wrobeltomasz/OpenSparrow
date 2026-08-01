@@ -92,7 +92,12 @@
         "no_records": "Brak rekordów.",
         "add_subtable": "+ Dodaj {label}",
         "attached_files": "Dołączone pliki",
-        "no_options": "Brak dostępnych opcji."
+        "no_options": "Brak dostępnych opcji.",
+        "m2m_none_selected": "Nic nie wybrano",
+        "m2m_search": "Szukaj…",
+        "m2m_select_all": "Zaznacz wszystko",
+        "m2m_clear": "Wyczyść",
+        "m2m_no_matches": "Brak pasujących opcji."
     },
     "auth": {
         "login": "Zaloguj się",

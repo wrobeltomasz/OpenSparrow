@@ -71,6 +71,10 @@ Create a record at create.php, edit at edit.php?table=X&id=Y:
   - Full record editor with all fields; required fields and validation enforced
   - Field types include text, numbers, dates, checkboxes, dropdowns (enums with colors),
     links to other records (foreign keys), and multi-select relations
+  - Many-to-many relations use a collapsible picker: the closed control shows the
+    current selection as chips ("+N" once there are more than four), and opening it
+    reveals a scrollable checkbox list with Select all / Clear, plus a search box
+    once the relation has more than ten options
   - Subtables: related records displayed inline (e.g. Contacts under a Company).
     Hovering a subtable row shows the same floating record tooltip used by the
     grid row, calendar event, and board card, with the full set of the child

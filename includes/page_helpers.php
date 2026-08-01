@@ -14,6 +14,7 @@
 // os_module_graph()         — one shared ?v= + import map for a whole ES module tree
 // os_import_map()           — renders that map; must precede the first module script
 // os_avatar_color()         — palette lookup for the initial-and-color avatar
+// os_m2m_group()            — collapsible searchable many-to-many picker (create.php + edit.php)
 // Loaded via bootstrap.php; keep ids/classes stable — Cypress specs depend on them.
 
 declare(strict_types=1);
@@ -158,4 +159,101 @@ function os_avatar_color(?int $avatarId): string
         return OS_AVATAR_COLORS[0];
     }
     return OS_AVATAR_COLORS[$avatarId - 1];
+}
+
+// Options above this count get a search box inside the picker panel.
+const OS_M2M_SEARCH_THRESHOLD = 10;
+
+// Chips rendered in the collapsed summary before it falls back to "N selected".
+const OS_M2M_SUMMARY_CHIPS = 3;
+
+// One many-to-many relation as a collapsible <details> picker: a field-shaped
+// summary listing the current selection, and a scrollable checkbox panel with
+// search + select all/clear. The checkboxes are plain `m2m_<index>[]` inputs and
+// stay in the DOM while collapsed, so POST handling is unchanged and the control
+// still works with JS disabled (assets/js/edit/m2m-picker.js only enhances it).
+// $options are m2m_options() rows, $selected the m2m_selected() id list.
+function os_m2m_group(int $index, array $cfg, array $options, array $selected, bool $readOnly): string
+{
+    $esc   = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+    $label = $esc((string)($cfg['label'] ?? 'Related'));
+
+    $html = '<div class="m2m-group">' . "\n"
+        . '<div class="m2m-group-label">' . $label . '</div>' . "\n";
+
+    if ($options === []) {
+        return $html . '<p class="m2m-empty">' . $esc(t('form.no_options')) . '</p>' . "\n</div>\n";
+    }
+
+    $selectedLabels = [];
+    foreach ($options as $opt) {
+        if (in_array((string)$opt['id'], $selected, true)) {
+            $selectedLabels[] = (string)$opt['label'];
+        }
+    }
+
+    $html .= '<details class="m2m-picker"'
+        . ' data-none-text="' . $esc(t('form.m2m_none_selected')) . '">' . "\n"
+        . '<summary class="m2m-toggle">'
+        . '<span class="m2m-summary">' . os_m2m_summary($selectedLabels) . '</span>'
+        . '<span class="m2m-chevron" aria-hidden="true">▾</span>'
+        . '</summary>' . "\n"
+        . '<div class="m2m-panel">' . "\n";
+
+    // Short lists need no search box, and a read-only record needs no bulk
+    // toggles — with neither, the head row is skipped entirely.
+    $head = '';
+    if (count($options) > OS_M2M_SEARCH_THRESHOLD) {
+        $ph = $esc(t('form.m2m_search'));
+        $head .= '<input type="text" class="m2m-search" placeholder="' . $ph . '" aria-label="' . $ph . '">';
+    }
+    if (!$readOnly) {
+        $head .= '<button type="button" class="m2m-link" data-m2m-all>' . $esc(t('form.m2m_select_all')) . '</button>'
+            . '<button type="button" class="m2m-link" data-m2m-none>' . $esc(t('form.m2m_clear')) . '</button>';
+    }
+    if ($head !== '') {
+        $html .= '<div class="m2m-panel-head">' . $head . '</div>' . "\n";
+    }
+
+    $html .= '<div class="m2m-options">' . "\n";
+    foreach ($options as $opt) {
+        $html .= '<label class="m2m-option">'
+            . '<input type="checkbox" name="m2m_' . $index . '[]"'
+            . ' value="' . $esc((string)$opt['id']) . '"'
+            . (in_array((string)$opt['id'], $selected, true) ? ' checked' : '')
+            . ($readOnly ? ' disabled' : '') . '>'
+            . '<span class="m2m-option-label">' . $esc((string)$opt['label']) . '</span>'
+            . '</label>' . "\n";
+    }
+    $html .= '</div>' . "\n"
+        . '<p class="m2m-no-matches" hidden>' . $esc(t('form.m2m_no_matches')) . '</p>' . "\n"
+        . '</div>' . "\n</details>\n</div>\n";
+
+    return $html;
+}
+
+// Collapsed-summary contents: up to OS_M2M_SUMMARY_CHIPS chips, then a "+N" chip.
+// KEEP IN SYNC with renderSummary() in public/assets/js/edit/m2m-picker.js.
+function os_m2m_summary(array $labels): string
+{
+    if ($labels === []) {
+        return '<span class="m2m-summary-empty">' . htmlspecialchars(t('form.m2m_none_selected'), ENT_QUOTES, 'UTF-8') . '</span>';
+    }
+
+    if (count($labels) > OS_M2M_SUMMARY_CHIPS + 1) {
+        $shown = array_slice($labels, 0, OS_M2M_SUMMARY_CHIPS);
+        $more  = count($labels) - OS_M2M_SUMMARY_CHIPS;
+    } else {
+        $shown = $labels;
+        $more  = 0;
+    }
+
+    $html = '';
+    foreach ($shown as $l) {
+        $html .= '<span class="m2m-chip">' . htmlspecialchars($l, ENT_QUOTES, 'UTF-8') . '</span>';
+    }
+    if ($more > 0) {
+        $html .= '<span class="m2m-chip m2m-chip-more">+' . $more . '</span>';
+    }
+    return $html;
 }

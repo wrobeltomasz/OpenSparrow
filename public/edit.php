@@ -202,32 +202,8 @@ ob_start();
                     <?php
                     $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema);
                     $m2mSel  = m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema);
+                    echo os_m2m_group((int)$mi, $m2mCfg, $m2mOpts, $m2mSel, $isReadOnly);
                     ?>
-                <div class="m2m-group">
-                    <div class="m2m-group-label">
-                        <?php echo htmlspecialchars($m2mCfg['label'] ?? 'Related'); ?>
-                    </div>
-                    <?php if (empty($m2mOpts)) : ?>
-                        <p class="m2m-empty"><?php echo htmlspecialchars(t('form.no_options'), ENT_QUOTES, 'UTF-8'); ?></p>
-                    <?php else : ?>
-                    <div class="m2m-options">
-                        <?php foreach ($m2mOpts as $opt) : ?>
-                        <label class="m2m-option">
-                            <input type="checkbox"
-                                name="m2m_<?php echo (int)$mi; ?>[]"
-                                value="<?php echo htmlspecialchars($opt['id'], ENT_QUOTES, 'UTF-8'); ?>"
-                                <?php if (in_array($opt['id'], $m2mSel, true)) {
-                                    echo 'checked';
-                                } ?>
-                                <?php if ($isReadOnly) {
-                                    echo 'disabled';
-                                } ?>>
-                            <?php echo htmlspecialchars($opt['label']); ?>
-                        </label>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
-                </div>
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
@@ -711,6 +687,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script type="module" src="assets/js/edit/subtable-tooltip.js?v=<?php echo @filemtime('assets/js/edit/subtable-tooltip.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script type="module" src="assets/js/edit/m2m-picker.js?v=<?php echo @filemtime('assets/js/edit/m2m-picker.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php
 $extraScripts = ob_get_clean();
 include __DIR__ . '/../templates/layout.php';

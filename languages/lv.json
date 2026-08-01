@@ -92,7 +92,12 @@
         "no_records": "Ieraksti nav atrasti.",
         "add_subtable": "+ Pievienot {label}",
         "attached_files": "Pievienotie faili",
-        "no_options": "No options available."
+        "no_options": "No options available.",
+        "m2m_none_selected": "None selected",
+        "m2m_search": "Search…",
+        "m2m_select_all": "Select all",
+        "m2m_clear": "Clear",
+        "m2m_no_matches": "No matching options."
     },
     "auth": {
         "login": "Pieteikties",

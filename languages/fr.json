@@ -92,7 +92,12 @@
         "no_records": "Aucun enregistrement trouvé.",
         "add_subtable": "+ Ajouter {label}",
         "attached_files": "Fichiers joints",
-        "no_options": "No options available."
+        "no_options": "No options available.",
+        "m2m_none_selected": "None selected",
+        "m2m_search": "Search…",
+        "m2m_select_all": "Select all",
+        "m2m_clear": "Clear",
+        "m2m_no_matches": "No matching options."
     },
     "auth": {
         "login": "Se connecter",
