@@ -67,6 +67,10 @@ https://github.com/user-attachments/assets/4c8c136f-ce1d-44eb-9fb5-a34ad478c588
 
 https://github.com/user-attachments/assets/28222785-a025-4d11-9ea1-cbb5a516ed1a
 
+## User Menu module Demo Video
+
+https://github.com/user-attachments/assets/62611274-d6e3-41ee-9b88-6e84f8f18827
+
 ---
 
 ## Features
