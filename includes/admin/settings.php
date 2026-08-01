@@ -19,9 +19,10 @@ declare(strict_types=1);
 // Scan directories for available icons
 if ($action === 'list_icons') {
     $icons = [];
+    // assets/icons only — assets/img holds branding (logos) and the custom-logo
+    // upload dir, which must never show up as pickable menu icons.
     $dirsToScan = [
         'assets/icons' => __DIR__ . '/../../public/assets/icons',
-        'assets/img' => __DIR__ . '/../../public/assets/img'
     ];
     foreach ($dirsToScan as $prefix => $dirPath) {
         if (is_dir($dirPath)) {

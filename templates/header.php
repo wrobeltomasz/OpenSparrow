@@ -71,7 +71,7 @@ if ($logoEnabled) {
         <div class="notifications-wrapper" data-cy="notifications" aria-label="<?= $tNotifications ?>">
             <span>
                 <img class="notif-icon-img" title="<?= $tNotifications ?>"
-                     src="assets/img/notifications.png" alt="<?= $tNotifications ?>">
+                     src="assets/icons/notifications.png" alt="<?= $tNotifications ?>">
             </span>
             <span id="notif-badge" class="notif-badge">0</span>
             <div id="notif-dropdown" class="notif-dropdown">
@@ -82,7 +82,7 @@ if ($logoEnabled) {
 
         <?php if ($userRole === 'admin') : ?>
         <a href="/admin/index.php" class="header-admin-link" data-cy="admin-link" title="<?= $tAdminPanel ?>">
-            <img title="<?= $tAdminPanel ?>" src="assets/img/settings.png" alt="<?= $tAdminTitle ?>">
+            <img title="<?= $tAdminPanel ?>" src="assets/icons/settings.png" alt="<?= $tAdminTitle ?>">
         </a>
         <?php endif; ?>
 

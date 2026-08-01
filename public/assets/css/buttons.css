@@ -174,28 +174,3 @@
   text-decoration: none;
 }
 
-/* .btn-remove - legacy alias of .btn-danger. */
-.btn-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: var(--danger);
-  color: #fff;
-  border: 1px solid var(--danger);
-  padding: 8px 14px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 13px;
-  white-space: nowrap;
-  text-decoration: none;
-  box-shadow: var(--shadow-sm);
-  transition: background var(--transition), border-color var(--transition);
-}
-.btn-remove:hover:not(:disabled) {
-  background: var(--danger-dark);
-  border-color: var(--danger-dark);
-  color: #fff;
-  text-decoration: none;
-}

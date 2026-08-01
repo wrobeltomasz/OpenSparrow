@@ -737,7 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // delegation — no inline onclick, no global function
             const deleteBtn = window.USER_CAPS.canEdit
                 ? `<button class="btn-icon btn-icon-danger" data-action="delete-file" data-uuid="${escapeHtml(f.uuid)}" title="${T.delete}">
-                        <img src="assets/img/delete.png" alt="${T.delete}">
+                        <img src="assets/icons/delete.png" alt="${T.delete}">
                     </button>`
                 : '';
 

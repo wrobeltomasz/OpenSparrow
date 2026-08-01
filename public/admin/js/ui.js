@@ -153,7 +153,7 @@ export function createIconPicker(key, labelText, value, onChange) {
         closeBtn.onclick = () => modal.remove();
         content.appendChild(closeBtn);
         
-        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:#64748B; ">Icons are loaded from <code>assets/icons/</code> and <code>assets/img/</code>.</p>';
+        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:#64748B; ">Icons are loaded from <code>assets/icons/</code>.</p>';
         
         const grid = document.createElement('div');
         grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;

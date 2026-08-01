@@ -140,7 +140,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     const trigger = makeIconButton({
         cy: 'row-actions-toggle',
         title: I18n.t('grid.more_actions'),
-        icon: 'assets/img/more_vert.png',
+        icon: 'assets/icons/more_vert.png',
         onClick: e => {
             e.stopPropagation();
             closeAllActionMenus(menu);
@@ -155,7 +155,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     panel.appendChild(makeIconButton({
         cy: 'row-edit',
         title: I18n.t('common.edit'),
-        icon: 'assets/img/edit_square.png',
+        icon: 'assets/icons/edit_square.png',
         onClick: () => {
             window.location.href = `edit.php?table=${state.currentTable}&id=${row['id']}`;
         },
@@ -164,7 +164,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     panel.appendChild(makeIconButton({
         cy: 'row-duplicate',
         title: I18n.t('grid.duplicate'),
-        icon: 'assets/img/content_copy.png',
+        icon: 'assets/icons/content_copy.png',
         onClick: async () => {
             const result = await duplicateRow(row['id']);
             if (result?.ok) await onTableReload();
@@ -174,7 +174,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     panel.appendChild(makeIconButton({
         cy: 'row-delete',
         title: I18n.t('common.delete'),
-        icon: 'assets/img/delete.png',
+        icon: 'assets/icons/delete.png',
         className: 'btn-icon btn-icon-danger',
         onClick: async () => {
             if (!confirm(I18n.t('common.confirm_delete'))) return;

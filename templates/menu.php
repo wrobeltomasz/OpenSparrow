@@ -71,6 +71,13 @@ if (!function_exists('renderMenuIcon')) {
             ) {
                 return '';
             }
+            // Legacy shim: the icon picker used to also list assets/img/, so a saved
+            // config may still point the moved 48x48 icons at their old location.
+            $icon = preg_replace(
+                '#^assets/img/(action_key|content_copy|delete|edit_square|more_vert|notifications|settings)\.png$#',
+                'assets/icons/$1.png',
+                $icon
+            );
             return '<img src="' . htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') . '" alt="" />';
         }
         return '<span class="menu-icon-span">'

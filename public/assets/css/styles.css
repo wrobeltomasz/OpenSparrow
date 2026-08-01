@@ -297,22 +297,6 @@ header .print-filter-label {
   gap: 15px;
 }
 
-.btn-logout {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.4);
-  color: white;
-  padding: 0.42rem 0.85rem;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
-  text-decoration: none;
-}
-
-.btn-logout:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: white;
-}
-
 /* ===== AVATAR ===== */
 .avatar {
   width: 32px;
@@ -325,10 +309,6 @@ header .print-filter-label {
   border-radius: 50%;
   box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
   object-fit: cover;
-}
-
-.avatar-muted {
-  opacity: 0.7;
 }
 
 /* ===== USER AVATAR BUTTON + TOOLTIP ===== */
@@ -1228,22 +1208,6 @@ footer {
   gap: 0.5rem;
 }
 
-.footer-logo-link {
-  display: block;
-  transition: opacity var(--transition);
-}
-
-.footer-logo-link:hover {
-  opacity: 0.8;
-}
-
-.footer-logo-img {
-  height: 25px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
-
 .footer-text {
   display: flex;
   flex-direction: column;
@@ -1705,13 +1669,6 @@ header .dash-filter-label {
 
 .edit-subtable-wrapper tbody tr:hover td {
   background-color: var(--accent-light);
-}
-
-.edit-subtable-title {
-  font-weight: 700;
-  color: var(--accent-dark);
-  margin-bottom: 5px;
-  margin-top: 25px;
 }
 
 /* =========================================
@@ -2278,14 +2235,6 @@ thead th.drag-over {
 .menu-submenu .custom-nav-link {
     padding-left: 2.6rem;
     font-size: 13px;
-}
-
-/* =========================================
-   AVATAR SIZE MODIFIER
-========================================= */
-.avatar-sm {
-  width: 24px;
-  height: 24px;
 }
 
 /* =========================================
@@ -2857,11 +2806,6 @@ thead th.drag-over {
   gap: 6px;
 }
 
-.editor-form .form-group.span-2,
-.setup-card .form-group.span-2 {
-  grid-column: span 2;
-}
-
 .editor-form .form-group > label,
 .setup-card .form-group > label {
   font-weight: 700;
@@ -3015,7 +2959,6 @@ thead th.drag-over {
 
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
-  .form-group.span-2 { grid-column: 1; }
   .form-wrapper { padding: 20px; }
 }
 
@@ -3155,10 +3098,6 @@ thead th.drag-over {
 .editable-tags { cursor: pointer; }
 .f-tag-add { color: var(--muted); font-style: italic; font-size: 12px; }
 .f-tag-edit { width: 100%; min-width: 140px; }
-.f-status-success { color: var(--ok); }
-.f-status-error   { color: var(--f-danger); }
-.f-status-neutral { color: var(--f-text-main); }
-
 /* === dashboard === */
 #dashboardMain { padding: 20px; width: 100%; overflow-y: auto; }
 #gridTitle { margin-bottom: 20px; }
@@ -3308,14 +3247,14 @@ thead th.drag-over {
 .bp-status { padding: 0 20px 8px; flex-shrink: 0; }
 .dc-status.error, .bp-status.error { color: var(--danger); }
 
-.dc-preview-area, .bp-preview-area {
+.dc-preview-area {
     border: 1px solid var(--border-light);
     border-radius: var(--radius);
     overflow-y: auto;
     background: var(--panel);
+    min-height: 60px;
+    max-height: 320px;
 }
-.dc-preview-area { min-height: 60px; max-height: 320px; }
-.bp-preview-area { min-height: 40px; max-height: 260px; }
 .dc-preview-table, .bp-preview-table { width: 100%; border-collapse: collapse; }
 .dc-preview-table th, .bp-preview-table th {
     background: #f8fafc;

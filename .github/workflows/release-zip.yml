@@ -6,8 +6,16 @@ on:
       tag:
         description: 'Release tag in X.Y format (e.g. 2.8)'
         required: true
+      skip_checks:
+        description: 'Skip the required-checks gate (emergency releases only)'
+        type: boolean
+        default: false
   push:
-    tags: ['*']
+    # Release tags only — bare X.Y, or X.Y.Z for hotfixes. Any other tag
+    # (backup-*, wip-*, ...) must not trigger a release build.
+    tags:
+      - '[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -16,7 +24,70 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
+  verify-checks:
+    name: Required checks green
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+
+    steps:
+      - name: Resolve release tag
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
+
+      - name: Verify required checks succeeded on the tagged commit
+        # Tag pushes do not run php-tests / php-lint / source-integrity /
+        # deploy-smoke (those trigger on push-to-main and PRs), so without this
+        # gate a release could be cut from a commit whose checks are red.
+        # The tag points at a main commit, which did run them.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_CHECKS: ${{ github.event.inputs.skip_checks }}
+        run: |
+          set -euo pipefail
+
+          if [ "${SKIP_CHECKS}" = "true" ]; then
+            echo "::warning::Required-checks gate skipped by operator request."
+            exit 0
+          fi
+
+          SHA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${RELEASE_TAG}" --jq '.sha')
+          echo "Tag ${RELEASE_TAG} -> commit ${SHA}"
+
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/check-runs" \
+            --paginate --jq '.check_runs[] | select(.conclusion == "success") | .name' \
+            | sort -u > /tmp/green.txt
+          echo "Successful check runs on ${SHA}:"
+          sed 's/^/  - /' /tmp/green.txt
+
+          MISSING=0
+          while IFS= read -r NAME; do
+            [ -n "$NAME" ] || continue
+            if ! grep -Fxq "$NAME" /tmp/green.txt; then
+              echo "::error::Required check '${NAME}' is not green on commit ${SHA}."
+              MISSING=1
+            fi
+          done <<'REQUIRED'
+          phpunit
+          phpcs
+          UTF-8 encoding check
+          Version files in sync
+          Licence files unchanged
+          Docker Compose path
+          Standalone image (Render / Railway path)
+          Release ZIP file set (FTP path)
+          REQUIRED
+
+          if [ "$MISSING" -ne 0 ]; then
+            echo "::error::Refusing to build a release from a commit with red or missing checks. Re-run the failing workflows, or dispatch manually with skip_checks=true."
+            exit 1
+          fi
+
   build-zip:
+    needs: verify-checks
     runs-on: ubuntu-latest
     permissions:
       contents: write   # required to create draft release and upload assets
@@ -29,6 +100,17 @@ jobs:
           echo "RELEASE_TAG=${TAG}" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v6
+        with:
+          # Pin the checkout to the tag itself. Without this, a manual
+          # workflow_dispatch would package the default branch — which may have
+          # moved on since the tag — and label it with the release version.
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up PHP 8.4 (lowest supported)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
 
       - name: Verify release tag matches OPENSPARROW_VERSION
         # Enforces the version-bump checklist: a release tag must equal the
@@ -52,6 +134,7 @@ jobs:
           VERSION="${RELEASE_TAG}"
           PKG="opensparrow-${VERSION}"
 
+          # rsync creates only the last path component, so dist/ must exist.
           mkdir -p "dist/${PKG}"
 
           # Exclude list shared with deploy-smoke.yml, which boots this exact
@@ -65,6 +148,7 @@ jobs:
 
           cd dist
           zip -r "${PKG}.zip" "${PKG}/"
+          sha256sum "${PKG}.zip" > "${PKG}.zip.sha256"
           echo "ZIP_NAME=${PKG}.zip" >> "$GITHUB_ENV"
 
       - name: Create draft release with ZIP or upload to existing draft
@@ -72,10 +156,13 @@ jobs:
         # This step runs on tag push (before any release exists) and creates a draft
         # with the ZIP attached. The operator then adds release notes and publishes.
         run: |
+          set -euo pipefail
           if gh release view "${RELEASE_TAG}" > /dev/null 2>&1; then
-            gh release upload "${RELEASE_TAG}" "dist/${ZIP_NAME}" --clobber
+            gh release upload "${RELEASE_TAG}" \
+              "dist/${ZIP_NAME}" "dist/${ZIP_NAME}.sha256" --clobber
           else
-            gh release create "${RELEASE_TAG}" "dist/${ZIP_NAME}" \
+            gh release create "${RELEASE_TAG}" \
+              "dist/${ZIP_NAME}" "dist/${ZIP_NAME}.sha256" \
               --title "${RELEASE_TAG}" \
               --draft \
               --verify-tag
