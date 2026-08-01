@@ -53,7 +53,8 @@ Pick the path that matches your environment. Every path ends at the same place: 
 
 ## Preview
 
-<img alt="screencapture-localhost-8080-board-php-2026-08-01-00_52_05" src="https://github.com/user-attachments/assets/5c84e981-e749-4d09-af57-fdb6e4c97203" />
+<img width="2028" height="1086" alt="Zrzut ekranu 2026-08-01 233817" src="https://github.com/user-attachments/assets/1e322af2-1615-41ec-9589-85a9c64dde63" />
+
 
 ## RAG module Demo Video
 
