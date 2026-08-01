@@ -68,7 +68,7 @@
 ### 2. Naming Convention
 **Tests must be descriptive and focused:**
 
-✅ **Good:**
+**Good:**
 ```javascript
 it('logs in successfully with valid credentials', () => {
   // Test code
@@ -79,7 +79,7 @@ it('displays error message when password is incorrect', () => {
 });
 ```
 
-❌ **Bad:**
+**Bad:**
 ```javascript
 it('login test', () => { /* unclear scope */ });
 it('checks login', () => { /* too vague */ });
@@ -118,19 +118,19 @@ describe('OpenSparrow – Grid Navigation', () => {
 
 ### Best Practice Example
 ```javascript
-// ✅ GOOD: data-cy first, with smart fallbacks
+// GOOD: data-cy first, with smart fallbacks
 cy.get('[data-cy=username], input[name="username"]', { timeout: TIMEOUTS.long })
   .should('exist')
   .clear()
   .type('test');
 
-// ✅ GOOD: Role selector when semantic
+// GOOD: Role selector when semantic
 cy.get('button[type="submit"]').click();
 
-// ❌ AVOID: Relying on .css-class-name or nth-child
+// AVOID: Relying on .css-class-name or nth-child
 cy.get('div > div > button:nth-child(2)').click();
 
-// ❌ AVOID: Overly specific XPath
+// AVOID: Overly specific XPath
 cy.get('//*[@id="app"]/div[1]/form[2]/div[3]/button')
 ```
 
@@ -158,8 +158,8 @@ cy.get('[data-cy=add], #addRow, [data-action="add"], .btn-add').click();
 ```javascript
 /**
  * Authenticates as standard user in reusable session.
- * ✅ Uses cy.session() to avoid re-login in every test
- * ✅ Reduces test runtime by ~70% for multi-test runs
+ * - Uses cy.session() to avoid re-login in every test
+ * - Reduces test runtime by ~70% for multi-test runs
  */
 function loginAsTestUser() {
   cy.session('testUser', () => {
@@ -183,9 +183,9 @@ function loginAsTestUser() {
 ```javascript
 /**
  * Waits for grid to load OR empty-state to appear.
- * ✅ Tolerates both states (flexibility)
- * ✅ Polls until timeout (doesn't fail immediately)
- * ✅ Returns result object for conditional logic
+ * - Tolerates both states (flexibility)
+ * - Polls until timeout (doesn't fail immediately)
+ * - Returns result object for conditional logic
  */
 function waitForGridOrEmpty({ timeout = TIMEOUTS.long } = {}) {
   const gridSel = '#grid, [data-cy=grid]';
@@ -217,8 +217,8 @@ function waitForGridOrEmpty({ timeout = TIMEOUTS.long } = {}) {
 ```javascript
 /**
  * Clicks Add button (exists) and optionally asserts URL change.
- * ✅ Checks existence before click (graceful skip)
- * ✅ Waits for onclick to be set by loadTable()
+ * - Checks existence before click (graceful skip)
+ * - Waits for onclick to be set by loadTable()
  */
 function clickAddIfPresentAndAssert(tableParam = null) {
   const addSel = '#addRow, [data-cy=add]';
@@ -259,9 +259,9 @@ function clickAddIfPresentAndAssert(tableParam = null) {
 ```javascript
 describe('My Feature', () => {
   beforeEach(() => {
-    loginAsTestUser();  // ✅ Reuse session (fast)
+    loginAsTestUser();  // Reuse session (fast)
     cy.visit(`${BASE}/index.php?table=company`);
-    cy.url().should('include', 'table=company');  // ✅ Assert navigation worked
+    cy.url().should('include', 'table=company');  // Assert navigation worked
   });
 
   it('displays the grid', () => {
@@ -274,45 +274,45 @@ describe('My Feature', () => {
 
 #### Existence Assertions
 ```javascript
-// ✅ Preferred: Be explicit about what you're checking
+// Preferred: Be explicit about what you're checking
 cy.get('[data-cy=grid]').should('exist');
 cy.get('[data-cy=error-message]').should('not.exist');
 
-// ✅ Good for UI state
+// Good for UI state
 cy.get('[data-cy=add-button]').should('be.visible');
 cy.get('[data-cy=delete-button]').should('be.disabled');
 ```
 
 #### Content Assertions
 ```javascript
-// ✅ Check text content (not exact HTML)
+// Check text content (not exact HTML)
 cy.contains('Dashboard').should('be.visible');
 cy.get('[data-cy=title]').should('contain.text', 'Company Grid');
 
-// ❌ Avoid: Exact HTML matching (fragile)
+// Avoid: Exact HTML matching (fragile)
 cy.get('.error').should('have.text', 'Error: Invalid input!'); // brittle
 ```
 
 #### URL Assertions
 ```javascript
-// ✅ For navigation checks
+// For navigation checks
 cy.url().should('include', '/dashboard.php');
 cy.url().should('not.include', '/login.php');
 
-// ✅ Not:
+// Not:
 cy.url().should('equal', 'http://localhost:8080/dashboard.php'); // fragile to port changes
 ```
 
 #### Visibility Assertions
 ```javascript
-// ✅ Strong visibility check
+// Strong visibility check
 cy.get('[data-cy=button]').should('be.visible');
 
-// ✅ Account for hidden elements
+// Account for hidden elements
 cy.get('[data-cy=mobile-menu]').should('exist'); // may exist but hidden
 cy.get('[data-cy=mobile-menu]').should('be.visible'); // actually rendered
 
-// ❌ Don't assume visibility from existence
+// Don't assume visibility from existence
 // cy.get('#hidden-div').click(); // Will fail if not visible
 ```
 
@@ -352,35 +352,35 @@ cy.get('[data-cy=username]', { timeout: TIMEOUTS.short }).clear();
 
 ### 2. Network Stability
 ```javascript
-// ✅ Good: Wait for actual element to stabilize
+// Good: Wait for actual element to stabilize
 cy.get('[data-cy=grid]', { timeout: TIMEOUTS.long })
   .should('exist')
   .and('be.visible');
 
-// ❌ Bad: Arbitrary delay
+// Bad: Arbitrary delay
 cy.wait(2000); // 2s is a guess, may be too short or too long
 ```
 
 ### 3. DOM Stability (Waiting for JavaScript to Run)
 ```javascript
-// ✅ Wait for onclick to be attached (loadTable() runs after DOM ready)
+// Wait for onclick to be attached (loadTable() runs after DOM ready)
 cy.get('#addRow').should($btn => {
   expect($btn[0].onclick).to.not.be.null; // Retry until onclick exists
 });
 
-// ✅ Wait for attribute (e.g., disabled state set by JS)
+// Wait for attribute (e.g., disabled state set by JS)
 cy.get('[data-cy=save]').should('not.be.disabled');
 ```
 
 ### 4. Scroll & Visibility
 ```javascript
-// ✅ Scroll element into view before click
+// Scroll element into view before click
 cy.get('[data-cy=button]')
   .scrollIntoView()
   .should('be.visible')
   .click();
 
-// ✅ Don't scroll off-screen
+// Don't scroll off-screen
 cy.get('[data-cy=modal]')
   .should('be.visible') // Already centered
   .click();
@@ -388,11 +388,11 @@ cy.get('[data-cy=modal]')
 
 ### 5. Race Conditions
 ```javascript
-// ❌ Bad: Assumes elements load in order
+// Bad: Assumes elements load in order
 cy.get('[data-cy=form]').submit();
 cy.get('[data-cy=success-message]').should('exist');
 
-// ✅ Good: Wait for form to actually submit
+// Good: Wait for form to actually submit
 cy.get('[data-cy=form]').submit();
 cy.get('[data-cy=success-message]', { timeout: TIMEOUTS.medium })
   .should('be.visible'); // Waits for AJAX to complete
@@ -425,7 +425,7 @@ it('works on desktop', () => {
 
 ### Handling Responsive Differences
 ```javascript
-// ✅ Different selectors for mobile vs desktop
+// Different selectors for mobile vs desktop
 function waitForActions({ timeout = TIMEOUTS.long } = {}) {
   cy.get('body').then($body => {
     if ($body.find('#mobileActions').length > 0) {
@@ -445,7 +445,7 @@ function waitForActions({ timeout = TIMEOUTS.long } = {}) {
 
 ### 1. DRY Principle (Don't Repeat Yourself)
 ```javascript
-// ❌ Bad: Login repeated in every test
+// Bad: Login repeated in every test
 describe('My tests', () => {
   it('test 1', () => {
     cy.visit('/login.php');
@@ -460,7 +460,7 @@ describe('My tests', () => {
   });
 });
 
-// ✅ Good: Centralize login
+// Good: Centralize login
 describe('My tests', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -478,7 +478,7 @@ describe('My tests', () => {
 
 ### 2. Constants Over Magic Values
 ```javascript
-// ✅ Good
+// Good
 const VALID_USER = 'test';
 const INVALID_USER = 'baduser';
 
@@ -486,7 +486,7 @@ cy.get('[data-cy=username]').type(VALID_USER);
 cy.get('[data-cy=password]').type('correct-password');
 cy.get('[data-cy=loginBtn]').click();
 
-// ❌ Bad: Magic strings scattered
+// Bad: Magic strings scattered
 cy.get('[data-cy=username]').type('test');
 cy.get('[data-cy=password]').type('test');
 cy.get('[data-cy=loginBtn]').click();
@@ -496,11 +496,11 @@ cy.get('[data-cy=username]').type('test'); // Is it the same test user?
 
 ### 3. Comments (Sparse, Intentional)
 ```javascript
-// ✅ Why, not what
+// Why, not what
 // Logout via URL param because session validation requires valid cookies
 cy.visit(`${BASE}/admin/index.php?logout=1`);
 
-// ❌ Obvious comments that clutter
+// Avoid: Obvious comments that clutter
 // Type 'test' into the username field
 cy.get('[data-cy=username]').type('test');
 ```
@@ -510,8 +510,8 @@ cy.get('[data-cy=username]').type('test');
 /**
  * Authenticates as admin in persistent session.
  * 
- * ✅ Session reused across multiple tests (faster)
- * ✅ Session validation ensures auth is still valid
+ * - Session reused across multiple tests (faster)
+ * - Session validation ensures auth is still valid
  * 
  * Precondition: None (auto-handles first visit)
  * Postcondition: Admin panel loaded, auth headers set
@@ -534,7 +534,7 @@ function loginAsAdmin() {
 
 ### 1. Meaningful Logs
 ```javascript
-// ✅ Descriptive log for troubleshooting
+// Descriptive log for troubleshooting
 if ($btn.length === 0) {
   Cypress.log({
     name: 'clickAddButton',
@@ -542,7 +542,7 @@ if ($btn.length === 0) {
   });
 }
 
-// ❌ Unclear
+// Avoid: Unclear
 console.log('btn not found');
 ```
 

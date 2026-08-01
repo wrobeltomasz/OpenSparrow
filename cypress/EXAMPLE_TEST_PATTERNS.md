@@ -1,689 +1,448 @@
 # Example Test Patterns
-## Practical Implementation Guide for Cypress Tests
+## Worked examples for OpenSparrow Cypress specs
+
+Every example below is grounded in code that exists in this repository —
+`cypress/support/e2e.js`, `templates/template.php`, `public/login.php` and the
+23 specs in `cypress/e2e/`. Selectors used here are real; do not invent new
+`data-cy` hooks in a spec without adding them to the source in the same PR
+(the full inventory is in `cypress/TEST_CHECKLIST.md`).
+
+Companion documents: `cypress/TEST_CHECKLIST.md` (the short pre-PR list) and
+`docs/TESTING_GUIDELINES.md` (the full reference).
 
 ---
 
-## Example 1: Simple User Journey Test
+## Example 1: Simple user journey
 
-### Scenario
-"User logs in and navigates to Company grid"
+**Scenario:** the user logs in and opens the Company grid.
 
-### ❌ Bad Implementation
+### Bad implementation
 ```javascript
 it('user logs in and navigates', () => {
-  // No setup, unclear initial state
-  cy.visit('http://localhost:8080/index.php'); // Magic URL
-  cy.get('input').eq(0).type('test'); // Which input? nth-child is brittle
+  cy.visit('http://localhost:8080/index.php'); // magic URL
+  cy.get('input').eq(0).type('test');          // which input?
   cy.get('input').eq(1).type('test');
-  cy.get('button').click(); // Which button?
-  cy.wait(3000); // Arbitrary delay
-  cy.get('div').contains('Company').click(); // Class not tested
-  // No assertions, no verification
+  cy.get('button').click();                    // which button?
+  cy.wait(3000);                               // arbitrary delay
+  cy.get('div').contains('Company').click();
+  // no assertions — what was verified?
 });
 ```
 
-**Problems:**
-- Unclear selectors (nth-child, div > button)
-- Magic URL hardcoded
-- Arbitrary delay (flaky)
-- No assertions (what are we verifying?)
-- No setup/helper usage
+**Problems:** positional selectors, hardcoded URL, fixed delay, no assertions,
+and a login flow reimplemented instead of reusing the shared session helper.
 
-### ✅ Good Implementation
+### Good implementation
 ```javascript
-describe('User authentication flow', () => {
-  // Constants at top
-  const BASE = 'http://localhost:8080';
+describe('OpenSparrow – Grid navigation', () => {
+  before(() => {
+    cy.seedDatabase();
+  });
 
-  // Reusable helper
-  function loginAsTestUser() {
-    cy.session('testUser', () => {
-      cy.visit(`${BASE}/index.php`);
-      cy.get('[data-cy=username]').clear().type('test');
-      cy.get('[data-cy=password]').clear().type('test');
-      cy.get('[data-cy=loginBtn]').click();
-      cy.url().should('include', '/dashboard.php');
-    });
-  }
-
-  // Shared setup
   beforeEach(() => {
-    loginAsTestUser();
+    loginAsTestUser();               // shared helper, cy.session-cached
   });
 
-  // Clear, focused test
-  it('displays dashboard after successful login', () => {
+  it('displays the dashboard after login', () => {
     cy.visit(`${BASE}/dashboard.php`);
-    cy.get('#menu').should('be.visible'); // What we expect to see
-    cy.contains('.menu-text', 'Dashboard').should('be.visible');
+    cy.get('#menu').should('be.visible');
   });
 
-  it('navigates to Company grid', () => {
-    cy.visit(`${BASE}/dashboard.php`);
-    cy.get('[data-cy=menu-company]').should('be.visible').click();
-    cy.url({ timeout: 8000 }).should('include', 'table=company');
+  it('opens the Company grid from the menu', () => {
+    cy.visit(`${BASE}/index.php?table=company`);
+    cy.url().should('include', 'table=company');
+    waitForGridOrEmpty().should('have.property', 'type', 'grid');
     cy.get('[data-cy=grid-title]').should('contain.text', 'Company');
   });
 });
 ```
 
-**Improvements:**
-- ✅ Clear selectors (data-cy first)
-- ✅ Constants for URLs
-- ✅ Reusable login helper
-- ✅ Setup via beforeEach
-- ✅ Explicit assertions (what must be true)
-- ✅ Appropriate timeouts
-- ✅ One behavior per test
+**Why it works:** `BASE`, `loginAsTestUser` and `waitForGridOrEmpty` all come
+from `cypress/support/e2e.js` and are available globally — no local copies. The
+session is created once and reused. Every navigation is asserted.
 
 ---
 
-## Example 2: Conditional Test (Feature May Not Be Present)
+## Example 2: Role-dependent UI
 
-### Scenario
-"Test Add button, but gracefully skip if user is read-only"
+**Scenario:** test the Add button, but the current role may not have one.
 
-### ❌ Bad Implementation
+This is not a hypothetical. `templates/template.php` filters grid actions by
+role — `add` and `data-cleanup` render only for `editor`, so the same page has a
+different button set for a viewer.
+
+### Bad implementation
 ```javascript
-it('can add new record', () => {
+it('can add a new record', () => {
   cy.visit(`${BASE}/index.php?table=company`);
-  cy.get('#addRow').click(); // Fails if not present!
+  cy.get('#addRow').click();          // fails outright for a viewer
   cy.url().should('include', 'create.php');
 });
 ```
 
-**Problem:**
-- Crashes if Add button doesn't exist (permission denied)
-- No way to distinguish "permission denied" from "test failed"
+The failure is also uninformative: "element not found" does not distinguish a
+missing permission from a broken page.
 
-### ✅ Good Implementation
+### Good implementation
 ```javascript
-it('can add new record when permitted', () => {
+it('opens the create form when the role allows it', () => {
   cy.visit(`${BASE}/index.php?table=company`);
 
-  // Check if button exists, handle both cases
   cy.get('body').then($body => {
-    const hasAddButton = $body.find('#addRow, [data-cy=add]').length > 0;
-
-    if (!hasAddButton) {
+    if ($body.find('#addRow, [data-cy=add]').length === 0) {
       Cypress.log({
         name: 'addButton',
-        message: 'Add button not present (likely read-only role)',
+        message: 'Add button not present — role has no create permission',
       });
-      return; // Gracefully skip
+      return;
     }
 
-    // Button exists, test it
     cy.get('#addRow, [data-cy=add]')
       .first()
       .should('be.visible')
-      .and('not.be.disabled')
-      .click();
+      .and('not.be.disabled');
+    cy.get('#addRow, [data-cy=add]').first().click();
 
-    cy.url({ timeout: 8000 }).should('include', 'create.php');
+    cy.url({ timeout: TIMEOUTS.long }).should('include', 'create.php');
   });
 });
 ```
 
-**Improvements:**
-- ✅ Handles both cases (button present/absent)
-- ✅ Clear log message (useful for CI)
-- ✅ Doesn't crash on permission denied
-- ✅ Fallback selectors (ID + data-cy)
+The shared `clickAddIfPresent()` already implements this — prefer it. The example
+is here because the same shape applies to any optional control.
 
 ---
 
-## Example 3: Helper Function with Parameters
+## Example 3: Never chain `.should()` into `.click()`
 
-### Scenario
-"Reusable helper to fill login form with different credentials"
+**Scenario:** click a button only once it is no longer hidden.
 
-### ❌ Bad Implementation
+### Broken — and this is a real failure from `files.cy.js`
 ```javascript
-// Helper with no parameters, only works for one user
-function loginAsTest() {
-  cy.get('input[name="username"]').type('test');
-  cy.get('input[name="password"]').type('test');
-  cy.get('button[type="submit"]').click();
-}
-
-// To test another user, must write new helper
-function loginAsAdmin() {
-  cy.get('input[name="username"]').type('admin');
-  cy.get('input[name="password"]').type('admin123');
-  cy.get('button[type="submit"]').click();
-}
+cy.get('#clearFilters').should('not.have.attr', 'hidden').click();
 ```
 
-**Problems:**
-- Duplication (violates DRY)
-- Not flexible
-- Hard to maintain
-
-### ✅ Good Implementation
-```javascript
-/**
- * Authenticate as specified user.
- * 
- * Reuses session so multiple tests don't re-login.
- * Each user gets own session key.
- * 
- * @param {string} username - Login username
- * @param {string} password - Login password
- * @param {string} [sessionName] - Session key (defaults to username)
- * @returns {void}
- * @example
- *   loginWithCredentials('test', 'test');
- *   loginWithCredentials('admin', 'admin123', 'adminSession');
- */
-function loginWithCredentials(username, password, sessionName = username) {
-  cy.session(sessionName, () => {
-    cy.visit(`${BASE}/index.php`);
-    cy.get('[data-cy=username], input[name="username"]')
-      .clear()
-      .type(username);
-    cy.get('[data-cy=password], input[name="password"]')
-      .clear()
-      .type(password);
-    cy.get('[data-cy=loginBtn], button[type="submit"]').click();
-    cy.url({ timeout: TIMEOUTS.long }).should('include', '/dashboard.php');
-  });
-}
-
-// Usage - now flexible!
-describe('Authentication', () => {
-  it('test user can login', () => {
-    loginWithCredentials('test', 'test');
-    cy.visit(`${BASE}/dashboard.php`);
-    cy.get('#menu').should('exist');
-  });
-
-  it('admin can login', () => {
-    loginWithCredentials('admin', 'admin123', 'adminSession');
-    cy.visit(`${BASE}/dashboard.php`);
-    cy.get('#menu').should('exist');
-  });
-
-  it('invalid password fails', () => {
-    cy.visit(`${BASE}/index.php`);
-    cy.get('[data-cy=username]').type('test');
-    cy.get('[data-cy=password]').type('wrongpassword');
-    cy.get('[data-cy=loginBtn]').click();
-    cy.get('[data-cy=error], .error').should('contain.text', 'Invalid');
-  });
-});
+```
+CypressError: cy.click() failed because it requires a DOM element.
+The subject received was: undefined
+The previous command that ran was: cy.should()
 ```
 
-**Improvements:**
-- ✅ JSDoc documentation
-- ✅ Parameterized (reusable)
-- ✅ Session management (fast)
-- ✅ Flexible session names
-- ✅ Fallback selectors
-- ✅ Example usage in comment
+### Correct
+```javascript
+cy.get('#clearFilters').should('not.have.attr', 'hidden');
+cy.get('#clearFilters').click();
+```
+
+Assert on one statement, then re-query for the click. Apply it even to static
+elements. Components that re-render on every state change — board and calendar
+filter chips, grid rows — make the stale subject especially likely.
 
 ---
 
-## Example 4: Wait Helper with Return Value
+## Example 4: Waiting for a grid that may be empty
 
-### Scenario
-"Wait for grid to load, but accept either grid OR empty state"
+**Scenario:** a table may legitimately have no records, so the page renders an
+empty state instead of a grid.
 
-### ❌ Bad Implementation
+### Bad implementation
 ```javascript
-it('company grid displays or shows empty state', () => {
+it('company grid displays', () => {
   cy.visit(`${BASE}/index.php?table=company`);
-  // Assumes grid always loads, no empty state handling
-  cy.get('#grid').should('exist');
+  cy.get('#grid').should('exist');    // fails on an empty table
 });
 ```
 
-**Problem:**
-- Assumes grid always exists
-- Fails if table is empty (empty state instead of grid)
-
-### ✅ Good Implementation
+### Good implementation — use the shared helper
 ```javascript
-/**
- * Wait for either grid or empty-state to appear.
- * Some tables may have no records → empty state instead of grid.
- * 
- * Polls repeatedly until one appears, then returns which.
- * This allows tests to handle both gracefully.
- * 
- * @param {Object} options
- * @param {number} [options.timeout=15000] - Max wait time
- * @returns {Cypress.Chainable<{type: 'grid'|'empty'}>}
- * @example
- *   waitForGridOrEmpty().then(result => {
- *     if (result.type === 'grid') {
- *       cy.get('[data-cy=row]').should('have.length.gt', 0);
- *     } else {
- *       cy.get('.empty-state').should('contain.text', 'No records');
- *     }
- *   });
- */
-function waitForGridOrEmpty({ timeout = TIMEOUTS.long } = {}) {
-  const gridSelectors = '#grid, [data-cy=grid], table[id*="grid"]';
-  const emptySelectors = '.empty-state, [data-cy=empty-state], .no-data';
-
-  return cy.document({ timeout }).then(doc => {
-    const check = () => {
-      const grid = doc.querySelector(gridSelectors);
-      const empty = doc.querySelector(emptySelectors);
-
-      // Found grid
-      if (grid) {
-        return cy.wrap(grid)
-          .should('exist')
-          .then(() => ({ type: 'grid', element: grid }));
-      }
-
-      // Found empty state
-      if (empty) {
-        return cy.wrap(empty)
-          .should('exist')
-          .then(() => ({ type: 'empty', element: empty }));
-      }
-
-      // Neither found, retry
-      return cy.wait(200, { log: false }).then(check);
-    };
-
-    return check();
-  });
-}
-
-// Usage
-describe('Grid display', () => {
-  it('shows grid or empty state', () => {
-    cy.visit(`${BASE}/index.php?table=company`);
-    
-    waitForGridOrEmpty().then(result => {
-      if (result.type === 'grid') {
-        cy.wrap(result.element)
-          .find('tr')
-          .should('have.length.gt', 0); // Has records
-      } else {
-        cy.wrap(result.element)
-          .should('contain.text', 'No records'); // Empty
-      }
-    });
-  });
-});
-```
-
-**Improvements:**
-- ✅ Handles both outcomes (grid + empty)
-- ✅ Returns result object for branching logic
-- ✅ Polling with retry (not hardcoded delay)
-- ✅ Comprehensive JSDoc
-- ✅ Flexible selectors
-
----
-
-## Example 5: Assertion Patterns
-
-### ❌ Bad Assertions
-```javascript
-it('user can search', () => {
+it('shows either the grid or the empty state', () => {
   cy.visit(`${BASE}/index.php?table=company`);
 
-  // Bad: Testing implementation detail
-  cy.get('#searchInput').should('have.class', 'focused'); // Who cares about CSS class?
-
-  // Bad: Unclear what "visible" means
-  cy.get('.grid-row').should('be.visible');
-
-  // Bad: Magic numbers
-  cy.get('tr').should('have.length', 5); // How do we know it's 5?
-
-  // Bad: No assertion, just logging
-  cy.get('[data-cy=grid]').then($grid => {
-    console.log('Grid loaded'); // What should happen next?
-  });
-});
-```
-
-### ✅ Good Assertions
-```javascript
-it('user can search and filter results', () => {
-  cy.visit(`${BASE}/index.php?table=company`);
-  waitForGridOrEmpty().should('have.property', 'type', 'grid');
-
-  // Good: Clear state, user-visible
-  cy.get('[data-cy=search]')
-    .should('be.visible')
-    .and('not.be.disabled');
-
-  // Good: Test behavior, not implementation
-  cy.get('[data-cy=search]')
-    .type('Apple Inc');
-
-  // Good: Assert result (fewer rows after search)
-  cy.get('[data-cy=grid-row]', { timeout: TIMEOUTS.medium })
-    .should('have.length.lessThan', 10); // Before search was >10
-
-  // Good: Test actual content
-  cy.get('[data-cy=company-name]')
-    .first()
-    .should('contain.text', 'Apple');
-});
-```
-
-**Improvements:**
-- ✅ Tests user-visible behavior
-- ✅ Clear expectations (what must be true)
-- ✅ No magic numbers (or explained context)
-- ✅ Proper timeouts for async operations
-
----
-
-## Example 6: Mobile vs Desktop Test
-
-### Scenario
-"Grid actions differ on mobile (select) vs desktop (buttons)"
-
-### ✅ Good Implementation
-```javascript
-function waitForActions({ timeout = TIMEOUTS.long } = {}) {
-  return cy.get('body').then($body => {
-    const hasMobileSelect = $body.find('#mobileActions').length > 0;
-    const hasDesktopButtons = $body.find('#actions button').length > 0;
-
-    if (hasMobileSelect) {
-      // Mobile: <select> element
-      return cy.get('#mobileActions')
-        .find('option')
-        .should('have.length.gt', 0)
-        .then(() => ({ platform: 'mobile' }));
+  waitForGridOrEmpty().then(result => {
+    if (result.type === 'grid') {
+      cy.wrap(result.element).find('tr').should('have.length.greaterThan', 0);
+    } else {
+      cy.wrap(result.element).should('be.visible');
     }
-
-    if (hasDesktopButtons) {
-      // Desktop: buttons
-      return cy.get('#actions')
-        .within(() => {
-          cy.get('[data-cy=add]')
-            .should('be.visible');
-          cy.get('[data-cy=export]')
-            .should('be.visible');
-        })
-        .then(() => ({ platform: 'desktop' }));
-    }
-
-    throw new Error('Actions container not found');
   });
+});
+```
+
+Two details of the real implementation in `cypress/support/e2e.js` matter when
+writing your own wait helper:
+
+- it enforces a **hard deadline** and throws when neither state appears, instead
+  of polling until Cypress's own timeout produces an unhelpful error;
+- it returns `{ type, element }` so the caller can branch without re-querying.
+
+```javascript
+if (Date.now() > deadline) {
+  throw new Error(`waitForGridOrEmpty: neither grid nor empty state appeared within ${timeout}ms`);
+}
+return cy.wait(200, { log: false }).then(check);
+```
+
+---
+
+## Example 5: Admin panel navigation
+
+**Scenario:** open an admin module and assert on its content.
+
+Two facts break admin specs written like frontend ones:
+
+1. The admin role is **blocked from `public/api.php`** — every frontend data call
+   returns 403. Admin specs may only touch `/admin/index.php` and `/admin/api.php`.
+2. The sidebar sections are **collapsed by default** (except Overview), so an
+   `.admin-tab` is not clickable until its `.nav-section` is expanded.
+
+### Good implementation — the pattern from `images.cy.js`
+```javascript
+/** Click a sidebar admin-tab, expanding its collapsed .nav-section first. */
+function clickAdminTab(dataFile) {
+  cy.get(`button.admin-tab[data-file="${dataFile}"]`).then($btn => {
+    const $section = $btn.closest('.nav-section');
+    if ($section.length && !$section.hasClass('open')) {
+      cy.wrap($section.find('.nav-section-header')).click();
+    }
+  });
+  cy.get(`button.admin-tab[data-file="${dataFile}"]`).scrollIntoView().should('be.visible').click();
 }
 
-describe('Grid actions', () => {
+describe('OpenSparrow – Images: admin schema editor', () => {
+  before(() => {
+    cy.seedDatabase();
+  });
+
   beforeEach(() => {
-    loginAsTestUser();
+    loginAsAdmin();
+    cy.visit(`${BASE}/admin/index.php`);
+    cy.get('header.admin-header', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+    // The admin SPA renders lazily — wait for the first tab to have content
+    cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.long })
+      .should($el => {
+        expect($el.children().length, 'admin JS rendered initial tab').to.be.gte(1);
+      });
+    clickAdminTab('schema');
+    cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
   });
+
+  it('table editor exposes an Images section', () => {
+    cy.get('#workspace .column-block .block-header').first().click();
+    cy.get('#workspace').contains('h3', 'Images').should('exist');
+  });
+});
+```
+
+Note the assertion on `#editorForm` children rather than a fixed wait: the admin
+panel lazy-loads its page modules, so "the shell is present" and "the module has
+rendered" are two different states.
+
+---
+
+## Example 6: Mobile vs desktop
+
+**Scenario:** grid actions are buttons on desktop and a `<select>` on mobile.
+
+```javascript
+describe('Grid actions', () => {
+  beforeEach(() => loginAsTestUser());
 
   it('shows action buttons on desktop', () => {
-    cy.viewport(1920, 1080); // Desktop
+    cy.viewport(1920, 1080);
     cy.visit(`${BASE}/index.php?table=company`);
-    waitForActions().should('have.property', 'platform', 'desktop');
+    cy.get('#actions').should('exist');
+    cy.get('[data-cy=export], #exportCsv').should('be.visible');
   });
 
-  it('shows action select on mobile', () => {
-    cy.viewport('iphone-x'); // Mobile
+  it('shows the action select on mobile', () => {
+    cy.viewport(375, 667);
     cy.visit(`${BASE}/index.php?table=company`);
-    waitForActions().should('have.property', 'platform', 'mobile');
+    cy.get('#mobileActions').find('option').should('have.length.greaterThan', 0);
   });
 });
 ```
 
-**Improvements:**
-- ✅ Tests both viewports
-- ✅ Different selectors per platform
-- ✅ Helper returns platform info
-- ✅ Clear expectations per device
+`waitForActions()` in the support file already tolerates both layouts and is the
+better choice when the spec does not care which one it got.
 
 ---
 
-## Example 7: Error Case Testing
+## Example 7: Error case
 
-### Scenario
-"Test that invalid login shows error message"
+**Scenario:** an invalid login shows an error and does not navigate away.
 
-### ❌ Bad Implementation
+### Bad implementation
 ```javascript
 it('login error', () => {
   cy.visit(`${BASE}/index.php`);
   cy.get('[name="username"]').type('test');
   cy.get('[name="password"]').type('wrongpwd');
   cy.get('button').click();
-  cy.get('.error').should('be.visible'); // Which error? May be hidden initially
+  cy.get('.error').should('be.visible');   // which error? no timeout
 });
 ```
 
-**Problems:**
-- Unclear error selector
-- No timeout for error to appear
-- No verification of error content
-
-### ✅ Good Implementation
+### Good implementation
 ```javascript
-describe('Login error handling', () => {
-  it('shows error message with invalid credentials', () => {
-    cy.visit(`${BASE}/index.php`);
+it('shows an error for invalid credentials', () => {
+  cy.visit(`${BASE}/login.php`);
 
-    // Fill form
-    cy.get('[data-cy=username]').clear().type('test');
-    cy.get('[data-cy=password]').clear().type('wrongpassword');
+  cy.get('[data-cy=username]').clear().type('test');
+  cy.get('[data-cy=password]').clear().type('wrongpassword');
+  cy.get('[data-cy=loginBtn]').click();
 
-    // Submit form
-    cy.get('[data-cy=loginBtn]').click();
+  cy.get('[data-cy=login-error]', { timeout: TIMEOUTS.medium })
+    .should('be.visible')
+    .and('contain.text', 'Invalid');
 
-    // Wait for error to appear (async)
-    cy.get('[data-cy=error], .alert-danger', { timeout: TIMEOUTS.medium })
-      .should('be.visible')
-      .and('contain.text', 'Invalid credentials');
-
-    // Verify we're still on login page (not redirected)
-    cy.url().should('include', 'index.php');
-    cy.url().should('not.include', 'dashboard.php');
-  });
-
-  it('clears error when user retries', () => {
-    cy.visit(`${BASE}/index.php`);
-
-    // First attempt fails
-    cy.get('[data-cy=username]').clear().type('test');
-    cy.get('[data-cy=password]').clear().type('wrong');
-    cy.get('[data-cy=loginBtn]').click();
-    cy.get('[data-cy=error]', { timeout: TIMEOUTS.medium }).should('be.visible');
-
-    // User corrects password
-    cy.get('[data-cy=password]').clear().type('test'); // Correct password
-
-    // Error clears (or new attempt hides it)
-    cy.get('[data-cy=loginBtn]').click();
-    cy.url({ timeout: TIMEOUTS.long }).should('include', 'dashboard.php');
-  });
+  // Still on the login page, not redirected
+  cy.url().should('not.include', 'dashboard.php');
 });
 ```
 
-**Improvements:**
-- ✅ Tests error appearance (async wait)
-- ✅ Tests error content
-- ✅ Verifies page state (still on login)
-- ✅ Tests recovery (retry with correct credentials)
+Two cautions. `[data-cy=login-error]` is the real hook — there is no generic
+`[data-cy=error]`. And the substring assertion only holds because
+`public/login.php` emits that message as a literal English string; prefer
+asserting on the element and the unchanged URL when a message may be translated.
+
+Repeated failures also trip the rate limiter
+(`LOGIN_MAX_ATTEMPTS_PER_USERNAME`, default 5), so a spec that hammers bad
+credentials will start seeing the lockout message instead.
 
 ---
 
-## Example 8: Data-Driven Test (Multiple Inputs)
+## Example 8: Data-driven test
 
-### Scenario
-"Test that certain menu items exist"
+**Scenario:** assert that several menu entries are present.
 
-### ❌ Bad Implementation (Repetitive)
+### Bad implementation
 ```javascript
-it('has Dashboard menu item', () => {
-  loginAsTestUser();
-  cy.contains('.menu-text', 'Dashboard').should('be.visible');
-});
-
-it('has Company menu item', () => {
-  loginAsTestUser();
-  cy.contains('.menu-text', 'Company').should('be.visible');
-});
-
-it('has Employee menu item', () => {
-  loginAsTestUser();
-  cy.contains('.menu-text', 'Employee').should('be.visible');
-});
-// ... 10 more identical tests
+it('has Dashboard menu item', () => { /* … */ });
+it('has Company menu item',   () => { /* … */ });
+it('has Employee menu item',  () => { /* … */ });
+// …ten more identical tests
 ```
 
-**Problems:**
-- Massive duplication
-- Repeated setup (login)
-- Hard to maintain
-
-### ✅ Good Implementation (Data-Driven)
+### Good implementation
 ```javascript
 describe('Menu items', () => {
+  const MENU_ITEMS = ['Dashboard', 'Company', 'Employee'];
+
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/dashboard.php`);
   });
 
-  const menuItems = ['Dashboard', 'Company', 'Employee', 'Settings'];
-
-  menuItems.forEach(item => {
-    it(`displays ${item} in menu`, () => {
-      cy.contains('.menu-text', item)
-        .should('be.visible')
-        .and('not.be.disabled');
+  MENU_ITEMS.forEach(item => {
+    it(`displays ${item} in the menu`, () => {
+      cy.contains('.menu-text', item).should('be.visible');
     });
   });
 });
 ```
 
-**Improvements:**
-- ✅ Single test template, multiple inputs
-- ✅ DRY principle
-- ✅ Easy to add/remove items
-- ✅ Shared setup via beforeEach
+`.menu-text` is the real class emitted by `templates/menu.php`. Keep the list
+short and tied to tables the seed guarantees — menu contents come from the
+`schema` configuration and differ per installation.
 
 ---
 
-## Example 9: Proper Cleanup (afterEach)
+## Example 9: Seeding and cleanup
 
-### Scenario
-"Clean up state after tests (logout, delete temp data)"
+**Scenario:** a spec creates records and must not leave residue.
 
-### ✅ Good Implementation
+OpenSparrow does not clean up per test with an `afterEach` logout. Cleanup is
+centralised in the seed endpoint: `cy.seedDatabase()` upserts both test users
+**and** deletes rows whose first text column matches `cypress%` or `cy-%`.
+
 ```javascript
-describe('Account management', () => {
-  const testRecordId = null;
-
-  afterEach(() => {
-    // Clean up: logout and clear session
-    cy.request('GET', `${BASE}/admin/index.php?logout=1`);
-    
-    // Optional: delete temp data from DB if integration test
-    // cy.task('deleteRecord', testRecordId);
+describe('Record creation', () => {
+  before(() => {
+    cy.seedDatabase();          // once per describe — not beforeEach
   });
 
-  it('user can change password', () => {
+  beforeEach(() => {
     loginAsTestUser();
-    cy.visit(`${BASE}/admin/index.php`);
-    // ... test code ...
   });
 
-  it('user can update profile', () => {
-    loginAsTestUser();
-    cy.visit(`${BASE}/admin/index.php`);
-    // ... test code ...
+  it('creates a company', () => {
+    cy.visit(`${BASE}/create.php?table=company`);
+    // The prefix is what makes the row collectable by the next seed run
+    cy.get('input[name="name"]').type('Cypress Test Company');
+    cy.get('form').submit();
+    cy.url({ timeout: TIMEOUTS.long }).should('include', 'edit.php');
   });
 });
 ```
 
-**Improvements:**
-- ✅ Cleans up after each test
-- ✅ Prevents side effects between tests
-- ✅ Ensures fresh state for next test
+**Rules that follow from this design:**
+
+- name every created record with a `Cypress` / `cy-` prefix, or it becomes permanent;
+- call `cy.seedDatabase()` in `before()`, not `beforeEach()` — it is a full
+  cleanup pass, not per-test setup;
+- the endpoint 404s unless `APP_ENV=development`; a suite failing at the very
+  first hook usually means that variable, not the tests.
 
 ---
 
-## Quick Comparison: Before & After
+## Quick comparison: before and after
 
-| Aspect | ❌ Before | ✅ After |
-|--------|----------|----------|
-| **Setup** | Repeated login in each test | `beforeEach()` + `cy.session()` |
-| **Selectors** | `cy.get('input').eq(0)` | `cy.get('[data-cy=username]')` |
-| **Waits** | `cy.wait(2000)` | `cy.get('[data-cy=grid]', { timeout: 15000 })` |
-| **Assertions** | `cy.get('div').should('exist')` | `cy.get('[data-cy=error]').should('contain.text', '...')` |
-| **Helpers** | None, code duplicated | Parameterized, reusable helpers |
-| **Errors** | Silent failure, unclear cause | Meaningful Cypress.log() messages |
-| **Mobile** | Not tested | `cy.viewport()` for each platform |
-| **Runtime** | 10+ seconds per test | <10 seconds (with session reuse) |
+| Aspect | Before | After |
+|---|---|---|
+| **Setup** | Login repeated in each test | `before(seedDatabase)` + `cy.session()` helper |
+| **Selectors** | `cy.get('input').eq(0)` | `cy.get('[data-cy=username], input[name="username"]')` |
+| **Waits** | `cy.wait(2000)` | `waitForGridOrEmpty()` with a hard deadline |
+| **Clicks** | `.should(...).click()` chained | assert, then re-query and click |
+| **Assertions** | `cy.get('div').should('exist')` | `cy.get('[data-cy=login-error]').should('contain.text', '…')` |
+| **Optional UI** | Test fails for the wrong role | `cy.get('body').then(...)` + `Cypress.log()` skip |
+| **Admin nav** | Click a hidden `.admin-tab` | Expand `.nav-section` first |
+| **Cleanup** | None, or an ad-hoc logout | `Cypress`-prefixed data + `cy.seedDatabase()` |
 
 ---
 
-## Template: New Test File
+## Template: new spec file
 
 ```javascript
-// cypress/e2e/my-feature.cy.js
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
+// cypress/e2e/my_feature.cy.js
 // ============================================================================
-// Feature: [Brief description of what's tested]
-// Coverage: [What scenarios are covered]
+// Feature: [what is under test]
+// Coverage: [which scenarios]
+// Requires: test / testadmin users (cy.seedDatabase()).
 // ============================================================================
 
 const BASE = 'http://localhost:8080';
 
-const TIMEOUTS = {
-  short: 5000,
-  medium: 8000,
-  long: 15000,
-};
+// Helpers specific to this spec go here. Anything reusable across specs belongs
+// in cypress/support/e2e.js instead — BASE, TIMEOUTS, loginAsTestUser,
+// loginAsAdmin, waitForGridOrEmpty, waitForActions, clickAddIfPresent and
+// waitForPagination are already global.
 
-// ============================================================================
-// Helpers
-// ============================================================================
+describe('OpenSparrow – My Feature', () => {
+  before(() => {
+    cy.seedDatabase();
+  });
 
-/**
- * [What this helper does]
- * 
- * [Why it's needed / when to use]
- * 
- * @param {type} param - [Description]
- * @returns {Cypress.Chainable<type>}
- */
-function myHelper() {
-  // Implementation
-}
-
-// ============================================================================
-// Tests
-// ============================================================================
-
-describe('My Feature', () => {
   beforeEach(() => {
     loginAsTestUser();
-    cy.visit(`${BASE}/index.php?table=myTable`);
-    cy.url().should('include', 'table=myTable');
+    cy.visit(`${BASE}/index.php?table=company`);
+    cy.url().should('include', 'table=company');
   });
 
-  it('describes behavior when X', () => {
-    // Arrange (setup complete in beforeEach)
+  it('describes the behaviour under condition X', () => {
+    // Arrange — done in beforeEach
     // Act
-    cy.get('[data-cy=button]').click();
+    cy.get('[data-cy=search]').type('Cypress');
     // Assert
-    cy.get('[data-cy=result]', { timeout: TIMEOUTS.medium }).should('be.visible');
-  });
-
-  it('describes behavior when Y', () => {
-    // Arrange
-    // Act
-    // Assert
+    cy.get('[data-cy=grid]', { timeout: TIMEOUTS.medium }).should('be.visible');
   });
 });
 ```
 
 ---
 
-**Last Updated:** 2026-05-17
+**Last updated:** 2026-08-01 (OpenSparrow 3.1)

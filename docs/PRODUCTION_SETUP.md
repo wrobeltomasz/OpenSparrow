@@ -42,7 +42,7 @@ docker compose up -d
 
 | Variable | Default | Required |
 |----------|---------|----------|
-| `POSTGRES_PASSWORD` | — | ✓ Strong value required |
+| `POSTGRES_PASSWORD` | — | Yes — strong value required |
 | `POSTGRES_USER` | postgres | |
 | `POSTGRES_DB` | opensparrow | |
 | `PGSCHEMA` | app | |
