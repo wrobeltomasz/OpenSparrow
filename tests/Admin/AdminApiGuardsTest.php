@@ -46,7 +46,7 @@ final class AdminApiGuardsTest extends TestCase
         'set_automation_email_setting', 'test_smtp_connection',
         'create_m2m', 'delete_m2m',
         'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all',
-        'rag_settings_save', 'rag_test_query', 'rag_ollama_check',
+        'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'rag_aggregate_view_save',
         'automations_save', 'automations_delete',
         'anonymization_save', 'run_anonymization', 'preview_anonymization', 'anonymization_purge_log',
         'etl_save', 'run_etl', 'etl_purge_log', 'etl_test_connection', 'etl_preview',
