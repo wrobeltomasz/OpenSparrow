@@ -109,10 +109,20 @@ function auto_cfg_read(): array
     return is_array($data) ? ($data['automations'] ?? []) : [];
 }
 
+// Throws AdminApiMessage on failure so the callers' try/catch reports it — reporting
+// "saved" on a rejected write leaves the admin believing an edited rule is live when
+// the stored rule is unchanged. Mirrors admin_config_save_versioned() in
+// includes/admin/helpers.php, minus the optimistic-lock version (not echoed here).
 function auto_cfg_write(array $automations): void
 {
     $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-    config_save('automations', ['automations' => array_values($automations)], null, $userId);
+    $result = config_save('automations', ['automations' => array_values($automations)], null, $userId);
+    if (($result['status'] ?? '') === 'conflict') {
+        throw new AdminApiMessage('Config was modified by someone else — reload and retry.');
+    }
+    if (($result['status'] ?? '') !== 'ok') {
+        throw new AdminApiMessage($result['error'] ?? 'Failed to save automations config.');
+    }
 }
 
 // ── Action → module dispatch ─────────────────────────────────────────────────

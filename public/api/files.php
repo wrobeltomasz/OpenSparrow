@@ -377,6 +377,39 @@ function uuidListToPgArray(mixed $uuids): string
     return '{' . implode(',', array_unique($clean)) . '}';
 }
 
+// Gallery images inherit the visibility of the record they hang off — a user who cannot
+// see the row must not be able to touch its images either (mirrors file_download.php).
+// Plain attachments (related_field !== IMAGES_FIELD) are unaffected and pass through.
+// Fails closed with the same 404 the single-file paths use, so an inaccessible uuid is
+// indistinguishable from a missing one. $pgUuids is a PG uuid[] literal.
+function assertGalleryAccess($conn, string $pgUuids): void
+{
+
+    $res = pg_query_params(
+        $conn,
+        "SELECT DISTINCT related_table, related_id FROM " . sys_table('files')
+        . " WHERE uuid = ANY($1) AND related_field = $2 AND deleted_at IS NULL",
+        [$pgUuids, IMAGES_FIELD]
+    );
+    if (!$res) {
+        error_log('api_files assertGalleryAccess failed: ' . pg_last_error($conn));
+        jsonError('Database error.', 500);
+    }
+
+    $schema = config_get('schema');
+    $userId = (int) $_SESSION['user_id'];
+    while ($row = pg_fetch_assoc($res)) {
+        $rTable = (string) $row['related_table'];
+        $tblCfg = $schema['tables'][$rTable] ?? null;
+        if (
+            !is_array($tblCfg)
+            || !can_access_record($conn, $tblCfg, $rTable, (int) $row['related_id'], $userId)
+        ) {
+            jsonError('File not found or already deleted.', 404);
+        }
+    }
+}
+
 // Normalize a comma-separated tag string into a PG text[] literal — capped to
 // prevent oversized payloads; empty entries dropped; quotes/backslashes escaped.
 function tagsToPgArray(string $tagsInput): ?string
@@ -404,6 +437,7 @@ function actionMassDelete($conn, array $body): void
     requireWrite();
     os_require_csrf('body', $body);
     $pgUuids = uuidListToPgArray($body['uuids'] ?? null);
+    assertGalleryAccess($conn, $pgUuids);
     $sql = "UPDATE " . sys_table('files') . "
             SET deleted_at = NOW()
             WHERE uuid = ANY($1) AND deleted_at IS NULL
@@ -427,6 +461,7 @@ function actionMassTag($conn, array $body): void
     if ($pgTags === null) {
         jsonError('tags is required.', 400);
     }
+    assertGalleryAccess($conn, $pgUuids);
     $sql = "UPDATE " . sys_table('files') . "
             SET tags = (SELECT array_agg(DISTINCT t) FROM unnest(COALESCE(tags, '{}') || $2::text[]) AS t),
                 updated_at = NOW()
@@ -452,6 +487,7 @@ function actionUpdateMeta($conn, array $body): void
     if (!$uuid || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
         jsonError('Valid uuid is required.', 400);
     }
+    assertGalleryAccess($conn, '{' . strtolower($uuid) . '}');
 
     $sets   = [];
     $params = [];
@@ -499,30 +535,10 @@ function actionDelete($conn, array $body): void
     requireWrite();
     os_require_csrf('body', $body);
     $uuid = trim($body['uuid'] ?? '');
-    if (!$uuid) {
-        jsonError('uuid is required.', 400);
+    if (!$uuid || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
+        jsonError('Valid uuid is required.', 400);
     }
-
-    // Gallery images inherit the visibility of their record — a user who cannot see the
-    // row must not be able to delete its images either (mirrors file_download.php).
-    $own = pg_query_params(
-        $conn,
-        "SELECT related_table, related_id FROM " . sys_table('files')
-        . " WHERE uuid = $1 AND related_field = $2 AND deleted_at IS NULL",
-        [$uuid, IMAGES_FIELD]
-    );
-    if ($own && pg_num_rows($own) > 0) {
-        $ownRow = pg_fetch_assoc($own);
-        $schema = config_get('schema');
-        $rTable = (string)$ownRow['related_table'];
-        $tblCfg = $schema['tables'][$rTable] ?? null;
-        if (
-            !is_array($tblCfg)
-            || !can_access_record($conn, $tblCfg, $rTable, (int)$ownRow['related_id'], (int)$_SESSION['user_id'])
-        ) {
-            jsonError('File not found or already deleted.', 404);
-        }
-    }
+    assertGalleryAccess($conn, '{' . strtolower($uuid) . '}');
 
     $sql = "UPDATE " . sys_table('files') . " SET deleted_at = NOW() WHERE uuid = $1 AND deleted_at IS NULL RETURNING id";
     $res = pg_query_params($conn, $sql, [$uuid]);
@@ -622,7 +638,7 @@ function actionGetRelatedRecords($conn): void
     // outside the default app schema, e.g. a demo app's own schema) — mirrors the
     // $tableCfg['schema'] ?? 'public' pattern used across api.php/mass_edit.php/etc.
     $schemaCfg  = config_get('schema');
-    $pgSchema   = (is_array($schemaCfg) ? ($schemaCfg['tables'][$reqTable]['schema'] ?? null) : null) ?? sys_schema();
+    $pgSchema   = (is_array($schemaCfg) ? ($schemaCfg['tables'][$reqTable]['schema'] ?? null) : null) ?? 'public';
 
 // Validate columns directly from database schema
     $sqlCols = "SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2";

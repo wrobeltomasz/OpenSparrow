@@ -276,6 +276,7 @@
         "server_error": "Server Error (PHP/SQL): {msg}",
         "images_selected": {
             "one": "Pasirinktas {n} paveikslėlis",
+            "few": "Pasirinkti {n} paveikslėliai",
             "other": "Pasirinkta {n} paveikslėlių"
         },
         "image_limit": "Galite pridėti iki {max} paveikslėlių.",

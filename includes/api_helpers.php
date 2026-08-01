@@ -220,16 +220,75 @@ function check_record_ownership(\PgSql\Connection $conn, array $tableCfg, string
 
 // SQL predicate for bulk statements on owner-restricted tables: excludes rows whose
 // current owner is another user (unowned rows pass, matching can_access_record()).
-// $idExpr is the row-id reference in the outer query ('id' or an alias like '_t.id');
 // $tableParam and $ownerParam are the 1-based pg placeholder numbers the caller binds
 // the table name and user id to. Bulk counterpart of can_access_record() — keep the
 // two policies in sync.
+//
+// $idExpr MUST be table-qualified ('_t.id', never a bare 'id'): the predicate is a
+// correlated subquery over spw_record_owners, which has its own "id" column, so an
+// unqualified reference resolves to the *inner* ro.id. That turns the condition into
+// `ro.record_id = ro.id`, which is essentially never true, and the whole filter
+// silently degrades to a no-op. Alias the outer table and qualify the reference.
 function owner_restriction_sql(string $idExpr, int $tableParam, int $ownerParam): string
 {
+    if (!str_contains($idExpr, '.')) {
+        throw new InvalidArgumentException(
+            'owner_restriction_sql(): $idExpr must be table-qualified (e.g. "_t.id"), got "' . $idExpr . '".'
+        );
+    }
     $tOwners = sys_table('record_owners');
     return " AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro"
         . " WHERE ro.table_name = \${$tableParam} AND ro.record_id = {$idExpr}"
         . " AND ro.is_current = true AND ro.owner_id != \${$ownerParam})";
+}
+
+// Narrow a client-supplied list of record ids down to the ones the user may see.
+// Read-side counterpart of owner_restriction_sql() for the grid's side-channel
+// endpoints (image thumbnails, subtable counts): those take ids as *input* instead of
+// selecting rows themselves, so there is no outer query to hang a NOT EXISTS off — and
+// without this an id the grid never returned can still be probed directly.
+//
+// Returns $ids unchanged (as ints) for tables that are not owner_restricted. Mirrors
+// can_access_record(): unowned rows pass, rows owned by someone else are dropped.
+//
+// @param  array<int|string> $ids
+// @return int[]
+function filter_visible_ids(
+    \PgSql\Connection $conn,
+    array $tableCfg,
+    string $table,
+    array $ids,
+    int $userId
+): array {
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    if (empty($tableCfg['owner_restricted']) || $ids === []) {
+        return $ids;
+    }
+
+    $tOwners = sys_table('record_owners');
+    $sql = "SELECT ro.record_id FROM {$tOwners} ro"
+         . ' WHERE ro.table_name = $1 AND ro.is_current = true'
+         . ' AND ro.owner_id IS NOT NULL AND ro.owner_id != $2'
+         . ' AND ro.record_id = ANY($3::int[])';
+
+    $res = @pg_query_params($conn, $sql, [
+        $table,
+        $userId,
+        '{' . implode(',', $ids) . '}',
+    ]);
+    if (!$res) {
+        // Fail closed: a broken ownership lookup must not widen visibility.
+        error_log('filter_visible_ids failed: ' . pg_last_error($conn));
+        return [];
+    }
+
+    $blocked = [];
+    while ($row = pg_fetch_assoc($res)) {
+        $blocked[] = (int)$row['record_id'];
+    }
+    pg_free_result($res);
+
+    return $blocked === [] ? $ids : array_values(array_diff($ids, $blocked));
 }
 
 // Record ownership: mark previous current row inactive, insert new current row.

@@ -431,7 +431,10 @@ function initUserMenu() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Every menu label and modal in this module goes through I18n.t(), so the bundle must be
+// in place before any handler can run — otherwise clicking the avatar early renders raw
+// keys ("header.choose_avatar").
+document.addEventListener('DOMContentLoaded', async () => {
+    await I18n.load();
     initUserMenu();
-    I18n.load();
 });

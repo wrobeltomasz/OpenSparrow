@@ -29,7 +29,11 @@ export function buildExpandButton(row, schema, tr) {
         const ddTr = document.createElement('tr');
         ddTr.className = 'drilldown-row';
         const ddTd = document.createElement('td');
-        ddTd.colSpan = state.displayedColumns.length + (isReadOnly ? 2 : 3);
+        // Count the row's real cells rather than re-deriving the total: the row also
+        // carries one td per m2m relationship and one for the image gallery, which a
+        // hand-kept formula kept missing. Falls back to the old arithmetic if the row
+        // has somehow been detached.
+        ddTd.colSpan = tr.cells.length || (state.displayedColumns.length + (isReadOnly ? 2 : 3));
 
         const loading = document.createElement('em');
         loading.textContent = I18n.t('common.loading');

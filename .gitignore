@@ -82,6 +82,8 @@ CLAUDE.md
 cypress/screenshots/
 cypress/videos/
 cypress/downloads/
+cypress/wyniki/
+cypress/results/
 .cypress-cache/
 node_modules/
 

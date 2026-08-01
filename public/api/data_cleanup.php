@@ -162,12 +162,12 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
     // so the owner params land at $2/$3 vs $3/$4 respectively — separate branches required.
     if (!empty($tableCfg['owner_restricted'])) {
         $uid      = (int)$_SESSION['user_id'];
-        $ownerCnt = owner_restriction_sql('id', 2, 3);
-        $ownerRow = owner_restriction_sql('id', 3, 4);
+        $ownerCnt = owner_restriction_sql('_t.id', 2, 3);
+        $ownerRow = owner_restriction_sql('_t.id', 3, 4);
 
         $cntRes = @pg_query_params(
             $conn,
-            "SELECT COUNT(*) FROM {$tblSql} WHERE {$whereSql}{$ownerCnt}",
+            "SELECT COUNT(*) FROM {$tblSql} AS _t WHERE {$whereSql}{$ownerCnt}",
             [$pattern, $tableName, $uid]
         );
         if (!$cntRes) {
@@ -179,8 +179,8 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
 
         $rowRes = @pg_query_params(
             $conn,
-            "SELECT id, {$colSql} AS before_val, {$replaceExp} AS after_val
-             FROM {$tblSql}
+            "SELECT _t.id, {$colSql} AS before_val, {$replaceExp} AS after_val
+             FROM {$tblSql} AS _t
              WHERE {$whereSql}{$ownerRow}
              LIMIT 20",
             [$pattern, $safeReplace, $tableName, $uid]

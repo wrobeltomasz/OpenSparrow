@@ -233,7 +233,12 @@ function admin_run_cron_script(
     }
 
     $args = 'admin';
-    if ($itemId !== '' && preg_match('/^[A-Za-z0-9_-]+$/', $itemId)) {
+    if ($itemId !== '') {
+        // Fail closed: the workers treat a missing id as "process everything", so silently
+        // dropping a malformed id would turn "run this one job" into a full run.
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $itemId)) {
+            admin_err('Invalid item id.');
+        }
         $args .= ' ' . escapeshellarg($itemId);
     }
     foreach ($extraArgs as $extra) {

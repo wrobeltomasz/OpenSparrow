@@ -310,7 +310,7 @@ function system_tables_comments_ddl(callable $ident): array
         "COMMENT ON COLUMN $tNotes.related_table IS 'Optional linked table.'",
         "COMMENT ON COLUMN $tNotes.related_id IS 'Optional linked record.'",
         "COMMENT ON COLUMN $tNotes.body IS 'Note text. CHECK char_length(body) <= 4000.'",
-        "COMMENT ON COLUMN $tNotes.reminder_date IS 'If set, cron/cron_notifications.php raises a notification on that date.'",
+        "COMMENT ON COLUMN $tNotes.reminder_date IS 'If set, cron/cron_notifications.php raises a notification once that date and time has passed.'",
         "COMMENT ON COLUMN $tNotes.created_at IS 'Creation time.'",
         "COMMENT ON COLUMN $tNotes.updated_at IS 'Last edit; NULL if never edited.'",
         "COMMENT ON COLUMN $tNotes.deleted_at IS 'Soft delete marker.'",

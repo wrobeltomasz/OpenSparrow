@@ -276,7 +276,8 @@
         "server_error": "Server Error (PHP/SQL): {msg}",
         "images_selected": {
             "one": "{n} imagine selectată",
-            "other": "{n} imagini selectate"
+            "few": "{n} imagini selectate",
+            "other": "{n} de imagini selectate"
         },
         "image_limit": "Puteți atașa până la {max} imagini.",
         "image_upload_error": "Încărcarea imaginii a eșuat: {msg}",

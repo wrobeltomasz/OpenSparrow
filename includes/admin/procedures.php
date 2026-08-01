@@ -68,7 +68,7 @@ if ($action === 'list_procedures') {
             ];
         }
 
-        echo json_encode(['status' => 'ok', 'procedures' => array_values($bySpecific)]);
+        echo json_encode(['status' => 'success', 'procedures' => array_values($bySpecific)]);
         exit;
     } catch (Throwable $e) {
         http_response_code(500);

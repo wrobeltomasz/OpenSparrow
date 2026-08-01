@@ -136,7 +136,7 @@ COMMENT ON COLUMN app.spw_notes.user_id IS 'Owner. FK to spw_users(id) ON DELETE
 COMMENT ON COLUMN app.spw_notes.related_table IS 'Optional linked table.';
 COMMENT ON COLUMN app.spw_notes.related_id IS 'Optional linked record.';
 COMMENT ON COLUMN app.spw_notes.body IS 'Note text. CHECK char_length(body) <= 4000.';
-COMMENT ON COLUMN app.spw_notes.reminder_date IS 'If set, cron/cron_notifications.php raises a notification on that date.';
+COMMENT ON COLUMN app.spw_notes.reminder_date IS 'If set, cron/cron_notifications.php raises a notification once that date and time has passed.';
 COMMENT ON COLUMN app.spw_notes.created_at IS 'Creation time.';
 COMMENT ON COLUMN app.spw_notes.updated_at IS 'Last edit; NULL if never edited.';
 COMMENT ON COLUMN app.spw_notes.deleted_at IS 'Soft delete marker.';

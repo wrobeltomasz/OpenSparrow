@@ -315,6 +315,9 @@ if ($action === 'init_database') {
         // config/database.json exists (guarded at the top of this file).
         $demoInstalled = false;
         $demoError = null;
+        if ($installDemo && $adminId === null) {
+            $demoError = 'Demo data was skipped because no admin account was created.';
+        }
         if ($installDemo && $adminId !== null) {
             try {
                 require_once __DIR__ . '/../includes/session.php';
@@ -344,11 +347,18 @@ if ($action === 'init_database') {
             }
         }
 
+        // The seed INSERT is a no-op when the database already holds users, so $adminId is
+        // null and $tmpPassword was never stored — handing it to the operator would give
+        // them credentials that cannot log in.
         echo json_encode([
             'success'         => true,
-            'message'         => 'System initialized successfully.',
-            'admin_user'      => 'admin',
-            'admin_password'  => $tmpPassword,
+            'message'         => $adminId !== null
+                ? 'System initialized successfully.'
+                : 'System initialized, but the database already contained user accounts —'
+                    . ' no admin account was created and no password was set.'
+                    . ' Sign in with an existing account.',
+            'admin_user'      => $adminId !== null ? 'admin' : null,
+            'admin_password'  => $adminId !== null ? $tmpPassword : null,
             'demo_installed'  => $demoInstalled,
             'demo_error'      => $demoError,
         ]);

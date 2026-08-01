@@ -205,11 +205,15 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <p style="color: var(--muted); margin: 0 0 24px 0;"><?= $e('setup.complete_sub') ?></p>
                 </div>
 
-                <div class="admin-info">
+                <div class="admin-info" id="admin-info">
                     <strong><?= $e('setup.admin_created') ?></strong>
                     <div><?= $e('setup.username_colon') ?> <code>admin</code></div>
                     <div><?= $e('setup.password_colon') ?> <code id="created-admin-password"></code></div>
                 </div>
+
+                <!-- Shown instead of the credentials block when the database already held
+                     user accounts, so the seed INSERT was a no-op and there is no password. -->
+                <div id="admin-account-note" class="status-message" hidden></div>
 
                 <div id="demo-install-msg" class="status-message" hidden></div>
 
@@ -405,7 +409,17 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
+                    // No password means no admin row was seeded (the database already had
+                    // users) — show the server's explanation instead of a blank credential.
+                    const hasAdmin = !!data.admin_password;
+                    document.getElementById('admin-info').hidden = !hasAdmin;
                     document.getElementById('created-admin-password').textContent = data.admin_password || '';
+                    const adminNote = document.getElementById('admin-account-note');
+                    adminNote.hidden = hasAdmin;
+                    if (!hasAdmin) {
+                        adminNote.textContent = data.message || '';
+                        adminNote.className = 'status-message show error';
+                    }
                     const demoMsg = document.getElementById('demo-install-msg');
                     if (document.getElementById('install-demo').checked) {
                         demoMsg.hidden = false;

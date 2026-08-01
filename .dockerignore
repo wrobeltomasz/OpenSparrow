@@ -55,6 +55,7 @@ config/*.json
 !config/migrations.json
 config/*.example
 includes/.secret_salt
+includes/.secret_key
 
 # Local runtime state — never bake user data into the image
 storage/files/*

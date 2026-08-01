@@ -305,17 +305,20 @@ Anonymization (GDPR):
 Migrations:
   - Database migrations tab: list of system migrations (pending / applied),
     "Apply pending migrations" button. Applied migrations are recorded in spw_migrations.
-    Two migrations exist:
+    Three migrations exist:
       3.0_baseline        — the whole spw_* schema (tables, constraints, indexes). The
                             pre-3.0 incremental history was collapsed into this single
                             append-only entry; 3.0 is the first shipped version
       3.1_table_comments  — COMMENT ON TABLE / COMMENT ON COLUMN descriptions for every
                             spw_* table and column. Metadata only: no columns, constraints
-                            or indexes change, so the 3.1 table layout is identical to 3.0.
-                            After applying it, the descriptions are visible in psql \d+,
-                            DBeaver, pgAdmin and anything else reading obj_description()
-  - A fresh install via the setup wizard applies both automatically, so new databases
-    are created with the descriptions already in place
+                            or indexes change. After applying it, the descriptions are
+                            visible in psql \d+, DBeaver, pgAdmin and anything else
+                            reading obj_description()
+      3.1_notes_reminder_time — widens spw_notes.reminder_date from date to timestamp so a
+                            note reminder can carry a time of day, not just a date. This is
+                            the only table-layout change in 3.1
+  - A fresh install via the setup wizard applies all three automatically, so new databases
+    are created with the descriptions and the widened reminder column already in place
   - Release migrations tab: config cleanup driven by config/migrations.json —
     tracks files and config keys removed between versions, applied manually on upgrade
 

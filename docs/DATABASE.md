@@ -6,7 +6,9 @@ Reference for every system-owned table. All of them live in the PostgreSQL schem
 **Sources of truth**
 
 - `includes/system_tables.php` → `system_tables_ddl()` — the whole schema; it *is* the body of the
-  `3.0_baseline` migration and is also what the setup wizard (`public/setup_api.php`) runs.
+  `3.0_baseline` migration. The setup wizard (`public/setup_api.php`) runs it too, followed by
+  `system_tables_comments_ddl()` and the `3.1_notes_reminder_time` `ALTER TABLE`, so a fresh install
+  lands on the same state as an upgraded one.
 - `includes/admin/migrations.php` → `$bootstrap` — `CREATE SCHEMA` + `spw_migrations` only; created
   before the migration registry can be consulted, so it is not part of `system_tables_ddl()`.
 
@@ -16,18 +18,26 @@ Reference for every system-owned table. All of them live in the PostgreSQL schem
 |---|---|
 | Initial version | **3.0** — single migration `3.0_baseline` (the pre-3.0 incremental history was collapsed into it) |
 | Current version | **3.1** (`includes/version.php`, `includes/VERSION`) |
-| Migrations after the baseline | **`3.1_table_comments`** — `COMMENT ON TABLE` / `COMMENT ON COLUMN` only |
+| Migrations after the baseline | **`3.1_table_comments`** — `COMMENT ON TABLE` / `COMMENT ON COLUMN` only<br>**`3.1_notes_reminder_time`** — `spw_notes.reminder_date` `date` → `timestamp` |
 
 The `$migrations` registry, the `$known` list (`includes/admin/migrations.php`) and `$knownMig`
-(`includes/admin/overview.php`) contain the same two keys: `3.0_baseline` and `3.1_table_comments`.
-`config/migrations.json` has a `3.1` entry with empty `removed_files` / `removed_config_keys`.
+(`includes/admin/overview.php`) contain the same three keys, in the same order: `3.0_baseline`,
+`3.1_table_comments`, `3.1_notes_reminder_time` — a parity that `tests/Admin/MigrationRegistryTest.php`
+enforces. `config/migrations.json` has a `3.1` entry with empty `removed_files` /
+`removed_config_keys`.
 
-**The 3.1 table layout is identical to the 3.0 initial layout** — `3.1_table_comments` adds
-descriptions (catalog metadata), not columns, constraints or indexes. 3.1's
-feature (per-table record image galleries) reuses `spw_files` with no schema change: gallery images
-are ordinary `spw_files` rows tagged `related_field = '__image'` (`IMAGES_FIELD`,
-`includes/images.php`). Every "3.1" column below is therefore also a "3.0" column; the *Changed in
-3.1* column of each table is empty by construction and is not repeated per table.
+**3.1 changes the table layout in exactly one place:** `3.1_notes_reminder_time` widens
+`spw_notes.reminder_date` from `date` to `timestamp`, so a note reminder can carry a time of day
+(`cron/cron_notifications.php` compares it with `NOW()`). Everything else is unchanged —
+`3.1_table_comments` adds descriptions (catalog metadata), not columns, constraints or indexes,
+and 3.1's headline feature (per-table record image galleries) reuses `spw_files` with no schema
+change: gallery images are ordinary `spw_files` rows tagged `related_field = '__image'`
+(`IMAGES_FIELD`, `includes/images.php`). Apart from `spw_notes.reminder_date`, every "3.1" column
+below is also a "3.0" column, so no per-table *Changed in 3.1* column is repeated.
+
+Note that `system_tables_ddl()` still creates `reminder_date` as `date`: the baseline body is
+append-only and must keep producing the 3.0 layout, with the migration applying the type change
+afterwards. The column type documented below is the post-migration one.
 
 27 tables total: 26 from `system_tables_ddl()` + `spw_migrations` from the bootstrap.
 

@@ -76,7 +76,15 @@ if (in_array($profileAction, ['update_avatar', 'change_password'], true)) {
             exit(json_encode(['error' => 'Database error']));
         }
 
-        $row      = pg_fetch_assoc($resFetch);
+        // A live session whose user row has since been deleted returns no row here.
+        // Guard before password_verify(): under strict_types a null hash is a TypeError,
+        // and this block runs outside the try/catch below, so it would be a blank 500.
+        $row = pg_fetch_assoc($resFetch);
+        if (!is_array($row) || ($row['password_hash'] ?? null) === null) {
+            http_response_code(401);
+            exit(json_encode(['error' => 'Account no longer exists.']));
+        }
+
         $salt     = $row['salt'] ?? '';
         $toVerify = $salt !== '' ? $salt . $current : $current;
         if (!password_verify($toVerify, $row['password_hash'])) {
@@ -323,15 +331,27 @@ try {
                 $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
 
                 $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
+
+                // Same row-level ownership rule as api=list, applied per source table:
+                // a calendar must not surface events off records the user cannot see.
+                $qParams  = [$dateFrom, $dateTo];
+                $ownerSql = '';
+                if (!empty($tableCfg['owner_restricted'])) {
+                    $ownerSql  = owner_restriction_sql('_t.' . pg_ident($idCol), 3, 4);
+                    $qParams[] = $table;
+                    $qParams[] = (int)$_SESSION['user_id'];
+                }
+
                 $sql = sprintf(
-                    'SELECT %s FROM %s.%s WHERE %s IS NOT NULL AND %s BETWEEN $1 AND $2',
+                    'SELECT %s FROM %s.%s AS _t WHERE %s IS NOT NULL AND %s BETWEEN $1 AND $2%s',
                     $selectSql,
                     pg_ident($schemaName),
                     pg_ident($table),
                     pg_ident($dateCol),
-                    pg_ident($dateCol)
+                    pg_ident($dateCol),
+                    $ownerSql
                 );
-                $res = @pg_query_params($conn, $sql, [$dateFrom, $dateTo]);
+                $res = @pg_query_params($conn, $sql, $qParams);
                 if ($res) {
                     $rows = [];
                     while ($r = pg_fetch_assoc($res)) {
@@ -449,14 +469,24 @@ try {
                 ];
             }
         } else {
+            // Lanes derived from the data must be derived from the *visible* data, or a
+            // restricted board grows empty lanes that only exist in other users' records.
+            // The enum branch above needs no filter: those lanes come from the config.
+            $laneParams = [];
+            $laneOwner  = '';
+            if (!empty($tableCfg['owner_restricted'])) {
+                $laneOwner  = owner_restriction_sql('_t.' . pg_ident($idCol), 1, 2);
+                $laneParams = [$table, (int)$_SESSION['user_id']];
+            }
             $sqlDistinct = sprintf(
-                'SELECT DISTINCT %s AS v FROM %s.%s WHERE %s IS NOT NULL ORDER BY 1',
+                'SELECT DISTINCT %s AS v FROM %s.%s AS _t WHERE %s IS NOT NULL%s ORDER BY 1',
                 pg_ident($statusCol),
                 pg_ident($schemaName),
                 pg_ident($table),
-                pg_ident($statusCol)
+                pg_ident($statusCol),
+                $laneOwner
             );
-            $rd = @pg_query($conn, $sqlDistinct);
+            $rd = @pg_query_params($conn, $sqlDistinct, $laneParams);
             if ($rd) {
                 while ($r = pg_fetch_assoc($rd)) {
                     $val = (string)$r['v'];
@@ -471,14 +501,22 @@ try {
         $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $cols)));
         $cards = [];
         $selectSql  = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
+
+        $cardParams = [];
+        $cardWhere  = '';
+        if (!empty($tableCfg['owner_restricted'])) {
+            $cardWhere  = ' WHERE TRUE' . owner_restriction_sql('_t.' . pg_ident($idCol), 1, 2);
+            $cardParams = [$table, (int)$_SESSION['user_id']];
+        }
         $sql = sprintf(
-            'SELECT %s FROM %s.%s ORDER BY %s DESC',
+            'SELECT %s FROM %s.%s AS _t%s ORDER BY %s DESC',
             $selectSql,
             pg_ident($schemaName),
             pg_ident($table),
+            $cardWhere,
             pg_ident($idCol)
         );
-        $res  = @pg_query($conn, $sql);
+        $res  = @pg_query_params($conn, $sql, $cardParams);
         $rows = [];
         if ($res) {
             while ($r = pg_fetch_assoc($res)) {
@@ -554,11 +592,25 @@ try {
         $otSchema = $schema['tables'][$otherTable]['schema'] ?? 'public';
         $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($ids)));
 
+        // The row ids come straight from the client, so an owner-restricted parent table
+        // needs the same filter the grid now applies — otherwise a user can enumerate ids
+        // and read the related labels of records they cannot see. The restriction is keyed
+        // on the *parent* record: in the junction table that is j.<self_fk>.
+        // Note this deliberately does not filter on $otherTable's own ownership; dropping
+        // links out of a record you do own would make the relation look broken.
+        $qParams  = $ids;
+        $ownerSql = '';
+        if (!empty($schema['tables'][$table]['owner_restricted'])) {
+            $ownerSql  = owner_restriction_sql('j.' . pg_ident($selfFk), count($ids) + 1, count($ids) + 2);
+            $qParams[] = $table;
+            $qParams[] = (int)$_SESSION['user_id'];
+        }
+
         $sql = sprintf(
             'SELECT j.%s AS sid, o.%s AS label
                FROM %s.%s j
                JOIN %s.%s o ON o."id" = j.%s
-              WHERE j.%s IN (%s)
+              WHERE j.%s IN (%s)%s
               ORDER BY j.%s, o.%s',
             pg_ident($selfFk),
             pg_ident($displayCol),
@@ -569,10 +621,11 @@ try {
             pg_ident($otherFk),
             pg_ident($selfFk),
             $placeholders,
+            $ownerSql,
             pg_ident($selfFk),
             pg_ident($displayCol)
         );
-        $res = @pg_query_params($conn, $sql, $ids);
+        $res = @pg_query_params($conn, $sql, $qParams);
         if (!$res) {
             exit(json_encode(['data' => (object)[]]));
         }
@@ -600,7 +653,15 @@ try {
             exit(json_encode(['data' => (object)[]]));
         }
 
-        $data = images_for_rows($conn, $table, array_map('intval', $ids));
+        // The ids arrive from the client, so they are not necessarily rows api=list would
+        // have returned — drop the ones this user may not see before disclosing image
+        // uuids and names for them.
+        $ids = filter_visible_ids($conn, $schema['tables'][$table], $table, $ids, (int)$_SESSION['user_id']);
+        if (empty($ids)) {
+            exit(json_encode(['data' => (object)[]]));
+        }
+
+        $data = images_for_rows($conn, $table, $ids);
         exit(json_encode(['data' => $data ?: (object)[]]));
     }
 
@@ -654,6 +715,28 @@ try {
             $params[]  = $likeVal;
         }
 
+        // Row-level ownership filter. Until now owner_restricted only gated writes and file
+        // downloads, so the grid handed every row of a restricted table to any authenticated
+        // user. Applying it here makes reads follow the same policy as can_access_record():
+        // the caller sees rows they own plus unowned rows. No admin exemption is needed —
+        // admin accounts are rejected from this whole API at the top of the file, so only
+        // editors and viewers reach here. Filtering in SQL rather than post-fetch keeps
+        // COUNT(1) OVER() and the LIMIT/OFFSET pagination consistent with what is visible.
+        //
+        // The id expression MUST be table-qualified: spw_record_owners has its own "id"
+        // column, so a bare `id` inside the NOT EXISTS subquery binds to ro.id and the
+        // filter silently degrades to a no-op.
+        if (!empty($tableCfg['owner_restricted'])) {
+            $ownerSql = owner_restriction_sql(
+                '_t.' . pg_ident($idCol),
+                count($params) + 1,
+                count($params) + 2
+            );
+            $params[] = $table;
+            $params[] = (int)$_SESSION['user_id'];
+            $whereSql .= ($whereSql === '' ? ' WHERE TRUE' : '') . $ownerSql;
+        }
+
         $offset = max(0, (int)($_GET['offset'] ?? 0));
 
         $defaultSort  = $tableCfg['default_sort'] ?? [];
@@ -675,7 +758,7 @@ try {
         $rowCap       = $initialLimit > 0 ? $initialLimit : MAX_LIST_ROWS;
 
         $sql = sprintf(
-            'SELECT %s, COUNT(1) OVER() AS __spw_total FROM %s.%s%s ORDER BY %s LIMIT %d OFFSET %d',
+            'SELECT %s, COUNT(1) OVER() AS __spw_total FROM %s.%s AS _t%s ORDER BY %s LIMIT %d OFFSET %d',
             $selectSql,
             pg_ident($schemaName),
             pg_ident($table),
@@ -733,6 +816,15 @@ try {
             fn($id) => $id > 0
         )));
 
+        if (empty($ids)) {
+            exit(json_encode(['success' => true, 'counts' => (object)[]]));
+        }
+
+        // Filter the client-supplied parent ids once, before the per-subtable loop, so a
+        // restricted row yields no badge instead of a count of its children. Only the
+        // parent's ownership is applied — see the note on api=m2m_rows for why the child
+        // table's own restriction is deliberately not layered on top.
+        $ids = filter_visible_ids($conn, $tableCfg, $table, $ids, (int)$_SESSION['user_id']);
         if (empty($ids)) {
             exit(json_encode(['success' => true, 'counts' => (object)[]]));
         }
@@ -1199,6 +1291,10 @@ try {
                 exit;
             }
 
+            // Duplicating reads the whole source row, so it needs the same ownership gate
+            // as PATCH/DELETE — otherwise a copy is a read of a record the user cannot see.
+            check_record_ownership($conn, $tableCfg, $table, $srcId, (int)$_SESSION['user_id'], 'Forbidden: you do not own this record.');
+
             $dupCols = [];
             foreach ($tableCfg['columns'] as $colName => $colCfg) {
                 if ($colName === $idCol) {
@@ -1248,6 +1344,7 @@ try {
                     snapshot_record($conn, $schemaName, $table, (int)$newId, $logId);
                 }
                 set_record_owner($conn, $table, (int)$newId, $userId, $userId);
+                evaluate_automation_rules($conn, $schemaName, $table, (int)$newId, 'create', $userId);
             }
 
             echo json_encode(['ok' => true, 'id' => $newId]);
@@ -1282,6 +1379,14 @@ try {
             echo json_encode(['ok' => true]);
             exit;
         }
+
+        // Every branch above is guarded by isset()/action equality and exits on its own.
+        // Falling through means the payload matched none of them (e.g. a PATCH whose
+        // "value" is null, so isset() was false) — answer explicitly instead of ending
+        // with HTTP 200 and an empty body, which the client reads as a successful write.
+        http_response_code(400);
+        echo json_encode(['error' => 'Unsupported action or malformed request body']);
+        exit;
     }
 } catch (Throwable $e) {
     error_log('[api][exception] ' . $e->getMessage());

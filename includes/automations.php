@@ -255,7 +255,7 @@ function auto_execute_action(
     return match ($action['type'] ?? '') {
         'update'        => auto_action_update($conn, $tableSchema, $table, $recordId, $record, $action, $userId, $oldRecord),
         'notify'        => auto_action_notify($conn, $recordId, $ruleId, $record, $action, $userId, $oldRecord),
-        'create_record' => auto_action_create_record($conn, $tableSchema, $record, $action, $userId, $oldRecord),
+        'create_record' => auto_action_create_record($conn, $record, $action, $userId, $oldRecord),
         'webhook'       => auto_action_webhook($conn, $table, $recordId, $record, $action, $userId, $ruleId, $event, $oldRecord),
         'email'         => auto_action_email($conn, $table, $recordId, $record, $action, $userId, $ruleId, $oldRecord, $event),
         default         => null,
@@ -403,7 +403,6 @@ function auto_action_notify(
 
 function auto_action_create_record(
     PgSql\Connection $conn,
-    string $tableSchema,
     array $record,
     array $action,
     int $userId,
@@ -413,6 +412,16 @@ function auto_action_create_record(
     if ($targetTable === '') {
         return 'create_record: target_table is required';
     }
+
+    // Resolve the target's own schema from the config rather than reusing the schema of
+    // the table whose change fired the rule — they are not necessarily the same, and a
+    // cross-schema rule would otherwise either error out or, worse, silently write into a
+    // same-named table elsewhere. An unconfigured target is rejected outright.
+    $targetCfg = auto_table_cfg($targetTable);
+    if ($targetCfg === []) {
+        return 'create_record: unknown target_table ' . $targetTable;
+    }
+    $targetSchema = (string) ($targetCfg['schema'] ?? 'public');
 
     $set    = $action['set'] ?? [];
     $cols   = [];
@@ -433,7 +442,7 @@ function auto_action_create_record(
     $placeholders = implode(', ', array_map(static fn(int $n): string => '$' . $n, range(1, count($params))));
     $sql = sprintf(
         'INSERT INTO %s.%s (%s) VALUES (%s)',
-        pg_ident($tableSchema),
+        pg_ident($targetSchema),
         pg_ident($targetTable),
         implode(', ', $cols),
         $placeholders

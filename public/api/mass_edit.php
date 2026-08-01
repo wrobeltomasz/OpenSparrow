@@ -99,11 +99,11 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
 
     if (!empty($tableCfg['owner_restricted'])) {
         $uid      = (int)$_SESSION['user_id'];
-        $ownerSql = owner_restriction_sql('id', 2, 3);
+        $ownerSql = owner_restriction_sql('_t.id', 2, 3);
 
         $countRes = @pg_query_params(
             $conn,
-            "SELECT COUNT(*) FROM {$tblSql} WHERE id = ANY(\$1::int[]){$ownerSql}",
+            "SELECT COUNT(*) FROM {$tblSql} AS _t WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
             [$arrParam, $tableName, $uid]
         );
         if (!$countRes) {
@@ -115,10 +115,10 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
 
         $rowRes = @pg_query_params(
             $conn,
-            "SELECT id, {$colSql} AS current_val
-             FROM {$tblSql}
-             WHERE id = ANY(\$1::int[]){$ownerSql}
-             ORDER BY id
+            "SELECT _t.id, {$colSql} AS current_val
+             FROM {$tblSql} AS _t
+             WHERE _t.id = ANY(\$1::int[]){$ownerSql}
+             ORDER BY _t.id
              LIMIT 10",
             [$arrParam, $tableName, $uid]
         );

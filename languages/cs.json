@@ -276,6 +276,7 @@
         "server_error": "Server Error (PHP/SQL): {msg}",
         "images_selected": {
             "one": "Vybrán {n} obrázek",
+            "few": "Vybrány {n} obrázky",
             "other": "Vybráno {n} obrázků"
         },
         "image_limit": "Můžete připojit až {max} obrázků.",

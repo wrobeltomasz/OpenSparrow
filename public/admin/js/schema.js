@@ -1024,7 +1024,17 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     const imagesCfg = (typeof tableData.images === 'object' && tableData.images !== null)
         ? tableData.images
         : {};
-    const touchImages = () => { tableData.images = imagesCfg; markDirty(); };
+    // createCheckbox/createNumberInput fire onChange synchronously while building the
+    // field, to seed a default for an unset value. That seeding must not count as an
+    // edit — otherwise merely expanding a table marks the config dirty and writes an
+    // "images" key into tables that never used images. Only changes after the block is
+    // built come from the user.
+    let imagesReady = false;
+    const touchImages = () => {
+        if (!imagesReady) return;
+        tableData.images = imagesCfg;
+        markDirty();
+    };
 
     const imgTitle = document.createElement('h3');
     imgTitle.textContent = 'Images';
@@ -1057,11 +1067,15 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         touchImages();
     }, true));
     workspaceEl.appendChild(imgBlock);
+    imagesReady = true;
 
     // ── Highlight Rules ─────────────────────────────────────────────────────
     // Row-level conditional formatting for the grid, mirroring the Views module's
     // color_rules mechanism (public/admin/js/views_editor.js buildRuleRow).
-    if (!Array.isArray(tableData.highlight_rules)) tableData.highlight_rules = [];
+    // Held locally and attached to tableData only on a real edit, so merely opening a
+    // table's editor never adds an empty "highlight_rules" array to the saved schema.
+    const hlRules = Array.isArray(tableData.highlight_rules) ? tableData.highlight_rules : [];
+    const touchHighlights = () => { tableData.highlight_rules = hlRules; markDirty(); };
 
     const hlTitle = document.createElement('h3');
     hlTitle.textContent = 'Highlight Rules';
@@ -1079,7 +1093,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     const renderHighlightRules = () => {
         hlContainer.innerHTML = '';
         const columnNames = Object.keys(tableData.columns);
-        const rules = tableData.highlight_rules;
+        const rules = hlRules;
 
         rules.forEach((rule, idx) => {
             const row = document.createElement('div');
@@ -1094,7 +1108,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                 if (rule.column === colName) o.selected = true;
                 colSel.appendChild(o);
             });
-            colSel.addEventListener('change', () => { rules[idx].column = colSel.value; markDirty(); });
+            colSel.addEventListener('change', () => { rules[idx].column = colSel.value; touchHighlights(); });
 
             const opSel = document.createElement('select');
             opSel.className = 'adm-input w-80';
@@ -1105,26 +1119,26 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                 if (rule.op === op) o.selected = true;
                 opSel.appendChild(o);
             });
-            opSel.addEventListener('change', () => { rules[idx].op = opSel.value; markDirty(); });
+            opSel.addEventListener('change', () => { rules[idx].op = opSel.value; touchHighlights(); });
 
             const valInp = document.createElement('input');
             valInp.type = 'text';
             valInp.className = 'adm-input w-110';
             valInp.value = rule.value ?? '';
             valInp.placeholder = 'Value';
-            valInp.addEventListener('input', () => { rules[idx].value = valInp.value; markDirty(); });
+            valInp.addEventListener('input', () => { rules[idx].value = valInp.value; touchHighlights(); });
 
             const colorInp = document.createElement('input');
             colorInp.type = 'color';
             colorInp.className = 'adm-color';
             colorInp.value = rule.color ?? '#fee2e2';
-            colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; markDirty(); });
+            colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; touchHighlights(); });
 
             const btnDel = document.createElement('button');
             btnDel.type = 'button';
             btnDel.className = 'btn btn-danger btn-xs';
             btnDel.textContent = '✕ Remove';
-            btnDel.addEventListener('click', () => { rules.splice(idx, 1); markDirty(); renderHighlightRules(); });
+            btnDel.addEventListener('click', () => { rules.splice(idx, 1); touchHighlights(); renderHighlightRules(); });
 
             row.append(colSel, opSel, valInp, colorInp, btnDel);
             hlContainer.appendChild(row);
@@ -1136,7 +1150,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         btnAdd.textContent = '+ Add Highlight Rule';
         btnAdd.addEventListener('click', () => {
             rules.push({ column: columnNames[0] || '', op: '==', value: '', color: '#fee2e2' });
-            markDirty();
+            touchHighlights();
             renderHighlightRules();
         });
         hlContainer.appendChild(btnAdd);
