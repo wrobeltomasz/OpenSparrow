@@ -38,6 +38,10 @@ Demo: https://demo.opensparrow.org
 
 ---
 
+https://github.com/user-attachments/assets/f8750a92-14a9-4c79-8b5e-cc73eadf2da3
+
+
+
 ## Deploy in Minutes
 
 Pick the path that matches your environment. Every path ends at the same place: the first-run **setup wizard** configures the database, creates all system tables, and seeds the admin account for you.
@@ -55,10 +59,13 @@ Pick the path that matches your environment. Every path ends at the same place: 
 
 <img width="1917" height="1245" alt="screencapture-localhost-8080-board-php-2026-08-01-00_52_05" src="https://github.com/user-attachments/assets/5c84e981-e749-4d09-af57-fdb6e4c97203" />
 
-## RAG Demo Preview
+## RAG module Demo Video
 
 https://github.com/user-attachments/assets/034bbe0c-f246-4152-9779-edabc84d781c
 
+## Calendar module Demo Video
+
+https://github.com/user-attachments/assets/4c8c136f-ce1d-44eb-9fb5-a34ad478c588
 
 ---
 
