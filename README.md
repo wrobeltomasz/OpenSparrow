@@ -55,6 +55,11 @@ Pick the path that matches your environment. Every path ends at the same place: 
 
 <img width="1917" height="1245" alt="screencapture-localhost-8080-board-php-2026-08-01-00_52_05" src="https://github.com/user-attachments/assets/5c84e981-e749-4d09-af57-fdb6e4c97203" />
 
+## RAG Demo Preview
+
+https://github.com/user-attachments/assets/034bbe0c-f246-4152-9779-edabc84d781c
+
+
 ---
 
 ## Features
