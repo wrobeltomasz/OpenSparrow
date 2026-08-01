@@ -118,7 +118,10 @@
         top: var(--header-h);
         left: -240px;
         width: 240px;
+        /* dvh, not vh: with the browser toolbar visible 100vh overshoots the visible
+           viewport, so the tail of a long menu sits under it. vh line = fallback. */
         height: calc(100vh - var(--header-h));
+        height: calc(100dvh - var(--header-h));
         z-index: 200;
         transition: left 0.25s ease, box-shadow 0.25s ease;
         box-shadow: none;
@@ -175,6 +178,10 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         box-shadow: inset -10px 0 14px -6px rgba(0, 0, 0, 0.09);
+        /* styles.css sizes these with 100vh, which overshoots the visible viewport
+           while the browser toolbar is up and pushes the last rows off-screen.
+           Browsers without dvh drop this line and keep the vh value. */
+        max-height: calc(100dvh - var(--header-h) - 50px);
     }
 
     #grid table,
