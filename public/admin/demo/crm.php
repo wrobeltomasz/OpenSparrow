@@ -16,10 +16,8 @@ function demo_def_crm($conn): array
 {
     return [
         'pg_schema'  => 'spw_crm',
-        // 'v_demo_crm_pipeline' is the pre-3.1 name of the pipeline view, and the two
-        // '*_doc' views backed the retired Quote/Invoice printouts — all kept in the
-        // list so uninstalling a demo installed by an older build still drops them.
-        'view_names' => ['v_demo_crm_company_pipeline', 'v_demo_crm_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_revenue', 'v_demo_crm_assets_by_category', 'v_demo_crm_revenue_by_period', 'v_demo_crm_pipeline_report', 'v_demo_crm_activity_agenda', 'v_demo_crm_quote_doc', 'v_demo_crm_invoice_doc'],
+        // Every view this definition creates, for the uninstall drop pass.
+        'view_names' => ['v_demo_crm_company_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_revenue', 'v_demo_crm_assets_by_category', 'v_demo_crm_revenue_by_period', 'v_demo_crm_pipeline_report', 'v_demo_crm_activity_agenda'],
         'ddl' => [
             'CREATE SCHEMA IF NOT EXISTS spw_crm',
             "CREATE TABLE IF NOT EXISTS spw_crm.companies (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, industry VARCHAR(100), website VARCHAR(255), phone VARCHAR(50), email VARCHAR(255), created_at TIMESTAMP DEFAULT NOW())",
@@ -36,10 +34,6 @@ function demo_def_crm($conn): array
             // primary deals.contact_id FK — showcases the many_to_many field type on
             // a table that stays visible in the slimmed-down demo menu.
             "CREATE TABLE IF NOT EXISTS spw_crm.deal_contacts (id SERIAL PRIMARY KEY, deal_id INTEGER REFERENCES spw_crm.deals(id) ON DELETE CASCADE, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE CASCADE, role VARCHAR(100), added_at TIMESTAMP DEFAULT NOW())",
-            // Superseded by v_demo_crm_company_pipeline below — dropped explicitly so a
-            // demo re-install over a pre-3.1 install does not leave the old view behind
-            // (CREATE OR REPLACE cannot change a view's column list).
-            'DROP VIEW IF EXISTS spw_crm.v_demo_crm_pipeline',
             // Company x stage aggregate feeding the Pipeline Summary view: deal count /
             // value stats, the expected-close window and overdue count per group, plus
             // activity totals. Activities are pre-aggregated per deal in the subquery so
@@ -1359,6 +1353,26 @@ function demo_def_crm($conn): array
                 ['table' => 'leads', 'date_column' => 'created_at', 'days' => 365, 'column' => 'first_name', 'replacement' => '[REDACTED]'],
                 ['table' => 'leads', 'date_column' => 'created_at', 'days' => 365, 'column' => 'last_name',  'replacement' => '[REDACTED]'],
             ],
+        ],
+        // RAG knowledge base — the sample documents describing this demo, loaded into
+        // spw_rag_files so the "Ask AI" panel has something to retrieve straight after
+        // install. Content is read from docs/rag-samples/ at install time rather than
+        // duplicated here, so the docs stay single-sourced; 'file' is resolved against
+        // that directory only (see seed.php, which rejects anything with a separator).
+        // Ingest is offline: retrieval is PostgreSQL full-text search, so no Ollama call
+        // happens here — Ollama is only needed later, to answer a question.
+        // Tags mirror the table in docs/rag-samples/README.md.
+        'rag_docs' => [
+            ['file' => 'crm_overview.txt',           'tag' => 'crm'],
+            ['file' => 'crm_companies_contacts.txt', 'tag' => 'companies'],
+            ['file' => 'crm_deals.txt',              'tag' => 'deals'],
+            ['file' => 'crm_activities.txt',         'tag' => 'activities'],
+            ['file' => 'crm_leads.txt',              'tag' => 'leads'],
+            ['file' => 'crm_quotes_invoices.txt',    'tag' => 'quotes'],
+            ['file' => 'crm_workflows.txt',          'tag' => 'workflows'],
+            ['file' => 'crm_dashboard_calendar.txt', 'tag' => 'dashboard'],
+            ['file' => 'crm_reports_print.txt',      'tag' => 'reports'],
+            ['file' => 'crm_collaboration.txt',      'tag' => 'collaboration'],
         ],
     ];
 }

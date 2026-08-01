@@ -35,7 +35,11 @@ if ($action === 'demo_status') {
 // outside the admin/api.php request cycle (see public/setup_api.php, which
 // calls it directly — after establishing a session for the freshly created
 // admin account — to offer "install demo CRM" as part of the setup wizard).
-function demo_install_run(string $type): array
+//
+// $withRagDocs loads the demo's sample knowledge-base documents into spw_rag_files.
+// It defaults to true so the setup wizard gets them without a second checkbox; the
+// admin Demo page passes the state of its own checkbox.
+function demo_install_run(string $type, bool $withRagDocs = true): array
 {
     try {
         require_once __DIR__ . '/../../../includes/db.php';
@@ -409,6 +413,65 @@ function demo_install_run(string $type): array
             }
         }
 
+        // RAG knowledge base — load the demo's sample documents into spw_rag_files so the
+        // "Ask AI" panel can retrieve them straight after install. Opt-out via $withRagDocs.
+        //
+        // This deliberately writes the same rows admin/rag.php's rag_upload would, rather
+        // than calling that action: the upload handler is guarded by require_not_demo()
+        // and reads $_FILES/$_SESSION, neither of which applies on the setup-wizard path.
+        //
+        // No network call happens here. Retrieval is PostgreSQL full-text search over
+        // to_tsvector(content), so ingest is pure SQL — Ollama is needed only later, when
+        // a question is actually answered. Installing on a host without Ollama is fine.
+        $ragFileIds = [];
+        if ($withRagDocs && !empty($demoData['rag_docs']) && is_array($demoData['rag_docs'])) {
+            require_once __DIR__ . '/../../../includes/rag_helpers.php';
+            $samplesDir = realpath(__DIR__ . '/../../../docs/rag-samples');
+            $ragCfg     = rag_config();
+            $tRagFiles  = sys_table('rag_files');
+            $ragUserId  = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+            foreach ($demoData['rag_docs'] as $doc) {
+                $name = (string) ($doc['file'] ?? '');
+                // Definition-supplied name: keep it a plain basename inside the samples
+                // directory — no separators, no traversal, no absolute path.
+                if ($samplesDir === false || $name === '' || basename($name) !== $name) {
+                    continue;
+                }
+                $srcPath = $samplesDir . '/' . $name;
+                if (!is_file($srcPath)) {
+                    continue;
+                }
+                $content = file_get_contents($srcPath);
+                if ($content === false || trim($content) === '') {
+                    continue;
+                }
+                $tag = trim((string) ($doc['tag'] ?? ''));
+                $res = @pg_query_params(
+                    $conn,
+                    "INSERT INTO {$tRagFiles} (filename, content, tags, file_size, uploaded_by)
+                     VALUES (\$1, \$2, \$3::text[], \$4, \$5) RETURNING id",
+                    [
+                        $name,
+                        $content,
+                        php_array_to_pg_text($tag !== '' ? [$tag] : []),
+                        strlen($content),
+                        $ragUserId,
+                    ]
+                );
+                // A missing knowledge base must not sink the whole demo install — the
+                // CRM data is the point, the documents are a convenience on top.
+                if ($res === false) {
+                    error_log('demo_install: RAG doc insert failed for ' . $name . ' — ' . pg_last_error($conn));
+                    continue;
+                }
+                $fileId = (int) pg_fetch_result($res, 0, 'id');
+                if ((bool) ($ragCfg['use_chunks'] ?? true)) {
+                    rag_store_chunks($conn, $fileId, $content, $ragCfg);
+                }
+                $ragFileIds[] = $fileId;
+            }
+        }
+
         // menu config (spw_config key "menu") — apply nested menu layout from demo definition
         $menuKeys = [];
         if (!empty($demoData['menu_items']) && is_array($demoData['menu_items'])) {
@@ -503,6 +566,7 @@ function demo_install_run(string $type): array
             'demo_file_paths' => $demoFilePaths,
             'demo_image_ids' => $demoImageIds,
             'demo_image_paths' => $demoImagePaths,
+            'rag_file_ids'   => $ragFileIds,
         ];
         file_put_contents(
             $configDir . '/demo_meta.json',
@@ -525,6 +589,9 @@ if ($action === 'demo_install') {
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $type    = $body['type']    ?? '';
     $confirm = $body['confirm'] ?? '';
+    // Checkbox on the admin Demo page; absent body key means "yes", matching the
+    // default the setup wizard gets.
+    $withRag = !isset($body['rag_docs']) || (bool) $body['rag_docs'];
 
     if ($type !== 'crm') {
         echo json_encode(['status' => 'error', 'error' => 'Invalid demo type.']);
@@ -535,7 +602,7 @@ if ($action === 'demo_install') {
         exit;
     }
 
-    echo json_encode(demo_install_run($type));
+    echo json_encode(demo_install_run($type, $withRag));
     exit;
 }
 
@@ -604,6 +671,16 @@ if ($action === 'demo_uninstall') {
             }
         }
 
+        // Remove the demo's RAG documents. Only the ids this install recorded are
+        // touched, so a knowledge base the user built themselves survives. Chunks go
+        // with them: spw_rag_chunks.file_id is ON DELETE CASCADE.
+        $ragFileIds = $meta['rag_file_ids'] ?? [];
+        if (!empty($ragFileIds)) {
+            $ragIdList = '{' . implode(',', array_map('intval', $ragFileIds)) . '}';
+            $tRagFiles = sys_table('rag_files');
+            @pg_query_params($conn, "DELETE FROM {$tRagFiles} WHERE id = ANY(\$1::int[])", [$ragIdList]);
+        }
+
         // Remove demo comments/notes/notifications/users seeded for the demo accounts
         $demoUserIds = $meta['demo_user_ids'] ?? [];
         if (!empty($demoUserIds)) {
@@ -614,17 +691,17 @@ if ($action === 'demo_uninstall') {
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('users') . ' WHERE id = ANY($1::int[])', [$idList]);
         }
 
-        // Drop views — try both the demo pg_schema and the app schema (backward compat)
-        $appSchema  = sys_schema();
+        // Drop views. The DROP SCHEMA ... CASCADE above already takes them when the demo
+        // owns its own schema; this stays for the case where pg_schema is the app schema,
+        // where CASCADE never runs. The name pattern keeps the drop to demo views only.
         $demoSchema = $meta['schema'] ?? '';
-        foreach ($meta['view_names'] ?? [] as $vName) {
-            if (!preg_match('/^v_demo_[a-z_]+$/', $vName)) {
-                continue;
-            }
-            if ($demoSchema !== '' && $demoSchema !== $appSchema) {
+        if ($demoSchema !== '') {
+            foreach ($meta['view_names'] ?? [] as $vName) {
+                if (!preg_match('/^v_demo_[a-z_]+$/', $vName)) {
+                    continue;
+                }
                 @pg_query($conn, 'DROP VIEW IF EXISTS ' . pg_ident($demoSchema) . '.' . pg_ident($vName));
             }
-            @pg_query($conn, 'DROP VIEW IF EXISTS ' . pg_ident($appSchema) . '.' . pg_ident($vName));
         }
 
         require_once __DIR__ . '/../../../includes/config_store.php';

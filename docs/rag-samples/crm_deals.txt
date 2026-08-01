@@ -3,54 +3,75 @@ CRM Deals — Sales Pipeline
 A Deal represents a sales opportunity with a specific company and contact.
 
 FIELDS:
-- title: Name of the deal (e.g. "Enterprise License Q2")
+- title: Name of the deal (e.g. "Enterprise License Q2"), required
 - value: Estimated revenue in currency units
-- stage: Current pipeline position
+- stage: Current pipeline position (color-coded enum)
 - expected_close: Target closing date
-- company_id: Linked company
+- company_id: Linked company (dropdown showing the company name)
 - contact_id: Primary contact person
+- created_at: Set automatically, read-only
 
-DEAL STAGES (in order):
-1. Lead — Initial interest, not yet qualified
-2. Qualified — Confirmed need and budget
-3. Proposal — Quote or proposal has been prepared/sent
-4. Negotiation — Terms being finalized
-5. Won — Deal closed successfully
-6. Lost — Deal did not proceed
+DEAL STAGES (in order, with their grid colors):
+1. Lead — Initial interest, not yet qualified (grey)
+2. Qualified — Confirmed need and budget (blue)
+3. Proposal — Quote or proposal has been prepared/sent (yellow)
+4. Negotiation — Terms being finalized (yellow)
+5. Won — Deal closed successfully (green)
+6. Lost — Deal did not proceed (red)
+
+OTHER STAKEHOLDERS (many-to-many):
+Besides the single primary contact_id, a deal can list any number of extra contacts in
+the "Other Stakeholders" field on its edit page. This is a many-to-many link stored in
+the deal_contacts junction table, with an optional role per link.
 
 HOW TO PROGRESS A DEAL:
-- Move stage manually in the grid or edit form, or drag its card between lanes on the
-  Deals Board (Kanban view, Menu → Deals Board) — dragging a card updates the deal's
-  stage the same way as editing the field directly
+- Change stage in the grid or the edit form, or drag its card between lanes on the
+  Deals Board — dragging updates deals.stage exactly like editing the field
 - Log activities (calls, meetings, emails) to track communication
 - Attach quotes under the Quotes subtable
-- Once a quote is marked Accepted, a draft invoice is generated automatically (see
+- Once a quote is marked Accepted, a Draft invoice is generated automatically (see
   "Automations" below) — no manual invoice creation needed
 
 DEALS BOARD (Kanban):
-Menu → Deals Board shows one lane per stage (To Do-style columns: Lead, Qualified,
-Proposal, Negotiation, Won, Lost). Each card shows the deal title, linked company, value
-and expected close date. Dragging a card to another lane moves the deal to that stage.
+Menu → Deals Board shows one lane per stage (Lead, Qualified, Proposal, Negotiation,
+Won, Lost). Each card shows the deal title plus its company, value and expected close
+date. Dragging a card to another lane moves the deal to that stage.
 
 AUTOMATIONS ON DEALS:
-- "Deal Won — Close Notification": when a deal's stage is set to Won, the user who made
-  the change gets an in-app notification linking back to the deal.
-- "Quote Accepted — Generate Draft Invoice" (see CRM Quotes and Invoices doc): when a
+- "Deal Won — Close Notification": when a deal is updated and its stage becomes Won, the
+  user who made the change gets an in-app notification linking back to the deal.
+- "Quote Accepted — Generate Draft Invoice" (see the CRM Quotes and Invoices doc): when a
   quote linked to a deal is marked Accepted, a Draft invoice is created automatically,
-  copying the quote's amounts and linking it back to both the deal and the quote.
+  copying the quote's amounts and linking back to both the deal and the quote.
 
-RELATED RECORDS:
-- Activities: scheduled calls, meetings, tasks linked to this deal
-- Quotes: pricing offers for this deal
-- Invoices: payment requests for this deal
+RELATED RECORDS (subtables on a deal's edit page):
+- Activities: type, scheduled at, done, notes
+- Quotes: quote number, status, total, valid until
+- Invoices: invoice number, status, amount total, due date
+Quotes and Invoices are not in the sidebar menu — a deal's subtables are the normal way
+to reach them.
 
-PIPELINE VIEW:
-Go to Menu → Pipeline Summary for deal and activity measures per company and stage:
-contacts, deal count, total/average/max/min deal value, deal value standard deviation,
-first and last expected close date, overdue deals (expected close in the past while the
-deal is neither Won nor Lost) and activity totals (all / done / open, average per deal).
-Rows are grouped by stage with per-group aggregates, and drill-down is enabled.
-Deals dashboard widget "Deals by Stage" shows a bar chart.
+PIPELINE SUMMARY VIEW:
+Menu → Pipeline Summary gives deal and activity measures per company and stage: contact
+count, deal count, total/average/max/min deal value, deal value standard deviation, first
+and last expected close date, overdue deals (expected close in the past while the deal is
+neither Won nor Lost) and activity totals (all / done / open, average per deal). Rows are
+grouped by stage with per-group aggregates, and drill-down is enabled. Color rules
+highlight more than 3 contacts (red), total value over 300,000 (green) and more than one
+overdue deal (red).
+
+DASHBOARD:
+- "Deals by Stage" bar chart
+- "Pipeline Value" stat card — sum of value across all deals that are neither Won nor Lost
+- "Deals Value Over Time" area chart — deal value summed per month by created_at
 
 CALENDAR:
-Deals appear on calendar by expected_close date (yellow, 3 days advance warning).
+Deals appear on the calendar by expected_close date (yellow, 3 days advance warning).
+Clicking one opens edit.php?table=deals&id={id}
+
+PRINT:
+Menu → Pipeline Report renders open and closed deals with company, contact, value and
+expected close date, filterable by stage or company. See the CRM Reports and Printouts doc.
+
+FILES:
+Deals are a file-relation target — documents can be attached and browsed from Menu → Files.

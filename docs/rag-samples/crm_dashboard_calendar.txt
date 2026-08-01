@@ -1,0 +1,51 @@
+CRM Dashboard and Calendar
+==========================
+
+DASHBOARD
+---------
+The CRM demo installs seven widgets. Nothing else is on the dashboard unless you add it.
+
+Stat cards (one row):
+- "Companies" — count of all company records
+- "Contacts" — count of all contact records
+- "Pipeline Value" — sum of deals.value across deals whose stage is neither Won nor Lost,
+  i.e. the value still in play
+
+Charts:
+- "Deals by Stage" — bar chart, deals grouped by stage
+- "Activities Status" — pie chart, activities grouped by done (completed vs pending)
+- "Deals Value Over Time" — area/line chart, deal value summed per month by created_at
+- "Activities Over Time" — area/line chart, activity count per week by created_at
+
+PERIOD FILTER:
+The dashboard has a period filter (Today / 7 days / 30 days) and stat cards show a trend
+delta against the previous period. The demo seed deliberately spreads created_at over the
+past months for companies, contacts, deals, products and activities so the filter and the
+time-series charts have real history to show. Leads older than a year are left untouched
+so the anonymization preview still has stale rows to match.
+
+There are no widgets for leads, quotes, invoices, products or assets — those tables are
+not part of the demo's visible surface.
+
+CALENDAR
+--------
+Two sources feed the Calendar:
+
+1. Activities, by scheduled_at
+   - Color: blue
+   - Title: the activity type; subtitle: the notes
+   - Notification: 1 day before scheduled_at
+   - Click opens edit.php?table=activities&id={id}
+
+2. Deals, by expected_close
+   - Color: yellow
+   - Title: the deal title
+   - Notification: 3 days before expected_close
+   - Click opens edit.php?table=deals&id={id}
+
+Quotes, invoices and asset warranty dates are NOT on the calendar in this demo.
+
+Calendar notifications are delivered by cron_notifications.php, which also handles note
+reminders and queued automation emails. Recipients are configured per source in
+Admin → Calendar; the demo leaves the recipient list empty, so set it there if you want
+the reminders to actually reach a user.

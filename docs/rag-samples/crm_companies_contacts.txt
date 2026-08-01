@@ -1,0 +1,65 @@
+CRM Companies and Contacts
+==========================
+The two base tables of the CRM demo. Companies is the top-level menu item; Contacts is
+nested underneath it in the sidebar.
+
+COMPANIES
+---------
+A Company is a client organization.
+
+Fields:
+- name: Official company name (required)
+- industry: Sector the company operates in (e.g. Technology, Consulting, Cybersecurity)
+- website: Company website URL
+- phone: Main company phone number
+- email: Company email address
+- created_at: Set automatically, read-only, hidden from the grid and the edit form
+
+Related records on a company's edit page:
+- Contacts subtable: first name, last name, email, position
+- Deals subtable: title, stage, value, expected close
+
+Industries used by the seed data include Technology, Consulting, Software, IT Services,
+Digital Agency, Cloud Services, Analytics, Cybersecurity, R&D, Management Consulting,
+Business Services, Enterprise Software, Private Equity, Marketing Services and
+Venture Capital.
+
+CONTACTS
+--------
+A Contact is a person working at a Company.
+
+Fields:
+- company_id: Company this contact belongs to (dropdown showing the company name)
+- first_name, last_name: Contact name (both required)
+- email: Contact email address
+- phone: Contact phone number
+- position: Job title (e.g. Sales Director, IT Director, Head of Sales)
+- created_at: Set automatically, read-only
+
+Photos:
+Contacts have an image gallery enabled, labelled "Photo", up to 5 images per record, and
+the first image is shown in the grid. The demo ships no photos of its own — the gallery
+starts empty and you upload your own.
+
+Related records on a contact's edit page:
+- Activities subtable: type, scheduled at, done
+
+Where else contacts appear:
+- As the primary contact on a Deal (deals.contact_id)
+- As extra stakeholders on a Deal via the "Other Stakeholders" many-to-many field
+- As the assignee on an Asset (assets.assigned_contact_id)
+- As an interested party on a Product (product_contacts many-to-many)
+
+CREATING RECORDS:
+- Directly from the Companies or Contacts grid ("Add" button)
+- Through the "New CRM Deal" workflow, which chains company → contact → deal → activity
+- Through the "Add Contact" workflow, which validates the email and phone with a
+  PostgreSQL stored procedure before saving
+
+DASHBOARD:
+- "Companies" stat card counts all company records
+- "Contacts" stat card counts all contact records
+
+FILES:
+Companies and Contacts are both file-relation targets, so documents can be attached to
+them and browsed from Menu → Files.

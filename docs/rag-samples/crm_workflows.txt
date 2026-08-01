@@ -1,0 +1,52 @@
+CRM Workflows
+=============
+A workflow is a guided, multi-step wizard that creates a chain of linked records. Each
+step targets a table; a step's foreign key is filled automatically from the record created
+in an earlier step. The CRM demo installs three.
+
+1. NEW CRM DEAL
+---------------
+The standard "land a new client" path.
+Step 1: Add Company    → companies
+Step 2: Add Contact    → contacts, company_id taken from step 1, repeatable
+Step 3: Create Deal    → deals, company_id taken from step 1
+Step 4: Log Activity   → activities, deal_id taken from step 3, repeatable
+
+"Repeatable" (allow multiple) means you can add several records at that step before
+moving on — several contacts at one company, several activities on one deal.
+
+2. CONVERT LEAD
+---------------
+Turns an inbound prospect into a real opportunity.
+Step 1: Capture Lead   → leads
+Step 2: Add Company    → companies
+Step 3: Add Contact    → contacts, company_id taken from step 2
+Step 4: Create Deal    → deals, company_id taken from step 2
+Step 5: Send Quote     → quotes, deal_id taken from step 4, repeatable
+
+This workflow is the main way to reach the leads and quotes tables, since neither is in
+the sidebar menu.
+
+3. ADD CONTACT (with stored-procedure validation)
+-------------------------------------------------
+A single-step workflow that exists to demonstrate the per-step stored-procedure hook.
+Step 1: Add Contact    → contacts
+
+Before the step is committed, the workflow CALLs the PostgreSQL procedure
+spw_crm.validate_contact(email, phone) with the values typed into the form. If the
+procedure raises an exception the step is blocked and the message is shown in the UI —
+nothing is written to the database.
+
+What the procedure rejects:
+- An email that is NULL or contains no "@" → "Invalid email: ..."
+- A phone that, after stripping separators, is not 6 to 15 digits with an optional
+  leading "+" → "Invalid phone: ... digits only, separators - . ( ) and spaces are
+  allowed"
+
+Separators are stripped before the digit check, so "+1-555-1001" and "+1 (555) 1001" both
+pass. An empty phone is accepted; only the email is mandatory.
+
+REQUIRED FIELDS:
+Workflow steps enforce the same required fields as the normal edit form — for example
+companies.name, contacts.first_name / last_name and deals.title are all NOT NULL and must
+be filled before the step advances.

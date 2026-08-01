@@ -1,35 +1,77 @@
 CRM Demo — OpenSparrow
 ======================
-Customer Relationship Management system for tracking companies, contacts, deals, and sales activities.
+Customer Relationship Management demo app for tracking companies, contacts, deals and
+sales activities. Installed from Admin → Demo Data. All tables live in the PostgreSQL
+schema spw_crm.
 
-TABLES:
+MENU (what the demo puts in the sidebar):
+- Dashboard
+- Calendar
+- Companies (with Contacts nested underneath)
+- Deals
+- Activities
+- Deals Board (Kanban)
+- Files
+Plus the Pipeline Summary view, and the Pipeline Report and Activity Agenda printouts.
+
+TABLES IN THE MENU:
 - companies: Client organizations. Fields: name, industry, website, phone, email.
-- contacts: Individual people at companies. Fields: first_name, last_name, email, phone, position, company_id.
-- deals: Sales opportunities. Fields: title, value, stage, expected_close, company_id, contact_id.
-- activities: Actions on deals (calls, meetings, emails). Fields: type, notes, scheduled_at, done.
-- leads: Incoming prospects not yet converted. Fields: source, first_name, last_name, company_name, status.
-- products: Catalog of sellable items and services. Fields: sku, name, unit_price, category, active.
-- quotes: Pricing offers sent to clients. Fields: quote_number, status, subtotal, tax, total, valid_until.
-- invoices: Payment requests. Fields: invoice_number, status, issue_date, due_date, amount_total, paid_at.
-- assets: Company-owned physical and intangible assets. Fields: asset_tag, name, category, current_value, status.
+- contacts: People at companies. Fields: first_name, last_name, email, phone, position,
+  company_id. Contacts also have a photo gallery (up to 5 images per record).
+- deals: Sales opportunities. Fields: title, value, stage, expected_close, company_id,
+  contact_id.
+- activities: Actions on deals (calls, meetings, emails). Fields: type, notes,
+  scheduled_at, done, deal_id, contact_id.
+
+BACKGROUND TABLES (seeded and fully configured, but NOT in the menu):
+Reachable only through a deal's subtables, a workflow step, or a direct
+index.php?table=... URL. They exist so the demo can show automations, a workflow and
+the GDPR anonymization rules working against real data.
+- leads: Incoming prospects not yet converted. Drives two automations and the
+  anonymization rules.
+- quotes: Pricing offers per deal. Drives the "Quote Accepted" invoice automation and is
+  the last step of the Convert Lead workflow. Shown as a subtable on a deal.
+- invoices: Payment requests. Shown as a subtable on a deal.
+- products / product_contacts: Product catalog and a many-to-many link to interested
+  contacts.
+- assets: Company-owned asset registry.
+- deal_contacts: Junction table behind the "Other Stakeholders" many-to-many field on a
+  deal.
 
 RELATIONSHIPS:
 - Contact belongs to Company (company_id)
-- Deal belongs to Company and Contact
+- Deal belongs to Company and Contact (contact_id = primary contact)
+- Deal has many extra stakeholder Contacts via deal_contacts (many-to-many field
+  "Other Stakeholders")
 - Activity belongs to Deal and Contact
 - Quote belongs to Deal
 - Invoice belongs to Deal and optionally a Quote
 - Asset can be assigned to a Contact (assigned_contact_id)
-- Product to Contact is many-to-many via product_contacts table
+- Product to Contact is many-to-many via product_contacts
+
+SUBTABLES (related records listed on an edit page):
+- Company → Contacts, Deals
+- Contact → Activities
+- Deal → Activities, Quotes, Invoices
 
 WORKFLOWS:
 1. New CRM Deal: Add Company → Add Contact → Create Deal → Log Activity
 2. Convert Lead: Capture Lead → Add Company → Add Contact → Create Deal → Send Quote
+3. Add Contact: single step, validated by a PostgreSQL stored procedure
+See the CRM Workflows doc.
 
-VIEWS (read-only summaries):
-- Pipeline Summary: deal and activity measures per company and stage (counts, value
-  total/avg/max/min, close-date window, overdue deals), grouped by stage
-- Leads Funnel: lead count by status
-- Revenue Summary: invoice count and total by status
-- Assets Summary: asset count and book value by category
-- Revenue by Period: invoices drilled down by year → month
+VIEWS:
+- Pipeline Summary (in the menu): deal and activity measures per company and stage
+Four more views are installed but hidden from the menu: Leads Funnel, Revenue Summary,
+Assets Summary, Revenue by Period. Two further views (Pipeline Report Source, Activity
+Agenda Source) exist only to feed the print templates and are not meant to be browsed.
+
+DEMO USERS:
+Three extra users are created: demo.anna (editor), demo.marek (editor) and demo.julia
+(viewer). Password for all three is "test". They own records, write comments and receive
+notifications — see the CRM Collaboration doc.
+
+UNINSTALL:
+Admin → Demo Data removes the spw_crm schema, the demo users and every config entry the
+install added (widgets, views, menu items, board, workflows, automations, prints,
+anonymization rules, files).

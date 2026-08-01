@@ -12,13 +12,17 @@ import { createPageHeader } from './ui.js';
 const DEMOS = {
     crm: {
         label:       'CRM',
-        description: 'Full-featured Customer Relationship Management — companies, contacts, deals, leads, products, quotes, invoices, and assets. 75 companies, 60 leads, and 28 deals with full history seeded.',
+        description: 'Customer Relationship Management — companies, contacts, deals and activities in the menu, '
+            + 'with leads, products, quotes, invoices and assets seeded behind them to drive the automations, '
+            + 'workflows and GDPR anonymization rules.',
         schema:      'spw_crm',
         tables:      ['companies', 'contacts', 'deals', 'activities', 'leads', 'products', 'quotes', 'invoices', 'assets'],
         color:       'var(--muted)',
         icon:        'assets/icons/account_box.png',
         recommended: true,
-        features:    ['10 dashboard widgets', '5 calendar sources + reminders', 'Kanban board: Deals by Stage', '2 workflows', '5 read-only views', '3 automations', 'M2M products ↔ contacts', 'file attachments'],
+        // Keep in sync with public/admin/demo/crm.php — these counts are what the
+        // definition actually installs, not what an older build shipped.
+        features:    ['7 dashboard widgets', '2 calendar sources + reminders', 'Kanban board: Deals by Stage', '3 workflows', '7 read-only views', '4 automations', '2 printouts', 'M2M stakeholders on deals', 'file attachments', 'RAG knowledge base'],
     },
 };
 
@@ -92,6 +96,32 @@ function renderInstallForm(workspaceEl) {
     confirmInput.placeholder = 'CONFIRM';
     confirmInput.className   = 'demo-confirm-input';
 
+    // Knowledge-base opt-out. Checked by default: the documents are inert without
+    // Ollama (they just sit in spw_rag_files), but without them the Ask AI panel has
+    // nothing to retrieve and looks broken on a fresh demo.
+    const ragRow = document.createElement('div');
+    ragRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:16px;';
+
+    const ragChk = document.createElement('input');
+    ragChk.type      = 'checkbox';
+    ragChk.id        = 'demo-rag-docs-chk';
+    ragChk.className = 'adm-check';
+    ragChk.checked   = true;
+
+    const ragLabel = document.createElement('label');
+    ragLabel.htmlFor     = 'demo-rag-docs-chk';
+    ragLabel.textContent = 'Install RAG knowledge base for this demo';
+    ragLabel.className   = 'adm-field-label';
+    ragLabel.style.cursor = 'pointer';
+
+    ragRow.append(ragChk, ragLabel);
+
+    const ragHelp = document.createElement('div');
+    ragHelp.className   = 'help-text';
+    ragHelp.textContent = 'Loads the sample documents describing this demo into RAG Documents, '
+        + 'so the Ask AI panel can answer questions about it. Answering needs Ollama; '
+        + 'installing the documents does not.';
+
     const installBtn = document.createElement('button');
     installBtn.textContent = 'Install Demo';
     installBtn.className   = 'btn btn-primary';
@@ -107,7 +137,11 @@ function renderInstallForm(workspaceEl) {
         installBtn.disabled  = true;
         installBtn.textContent = 'Installing…';
         try {
-            const d = await apiPost('demo_install', { type: selectedType, confirm: 'CONFIRM' });
+            const d = await apiPost('demo_install', {
+                type:     selectedType,
+                confirm:  'CONFIRM',
+                rag_docs: ragChk.checked,
+            });
             if (d.status === 'success') {
                 renderDemoPage({ workspaceEl });
             } else {
@@ -123,6 +157,8 @@ function renderInstallForm(workspaceEl) {
     });
 
     confirmSection.appendChild(warningBox);
+    confirmSection.appendChild(ragRow);
+    confirmSection.appendChild(ragHelp);
     confirmSection.appendChild(confirmLabel);
     confirmSection.appendChild(confirmInput);
     confirmSection.appendChild(installBtn);

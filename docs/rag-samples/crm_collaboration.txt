@@ -1,0 +1,74 @@
+CRM Collaboration — Users, Comments, Notes, Files, Notifications
+================================================================
+The demo seeds a small team and the traces of their work, so the collaboration features
+are not empty on a fresh install.
+
+DEMO USERS
+----------
+Three users are created alongside the CRM data:
+- demo.anna  — role: editor
+- demo.marek — role: editor
+- demo.julia — role: viewer
+The password for all three is "test". Each gets an avatar colour; the avatar itself is the
+first letter of the username.
+
+Roles behave as they do everywhere in OpenSparrow: an editor can create and change
+records, a viewer is read-only.
+
+COMMENTS
+--------
+Records carry threaded comments, shown on the record's edit page. The demo seeds a set of
+comments forming real back-and-forth discussions between the three users, mostly on deals,
+plus some on companies, contacts and leads. Examples of the threads: pricing and
+discount tiers on "Enterprise License Q2", stalled legal redlines on the digital
+transformation deal, a reference-customer request on the analytics deal, and handover
+notes on a deal that was closed Won.
+
+MY NOTES
+--------
+"My Notes" is a private per-user panel — a note is visible only to its author. A note can
+stand alone or be linked to a record (a deal, a company), and can carry a reminder_date.
+
+The demo seeds notes across all three users, some linked to a deal or a company and some
+standalone. A couple of them carry a reminder date (one due today, one tomorrow) so the
+note-reminder flow in cron_notifications.php has something to fire on.
+
+MY RECORDS (ownership)
+----------------------
+Records can be assigned an owner, and each user sees the records they own in the "My
+records" panel. The demo hands out a handful of records so the panel is not empty for any
+of the three: demo.anna owns deals and a contact, demo.marek owns a deal and Acme
+Corporation, demo.julia owns a deal.
+
+The panel's label for a record comes from a per-table column mapping — companies show
+their name, contacts show first and last name, deals show the title, activities show the
+type, and so on.
+
+Ownership is enforced on reads and on bulk operations, not just displayed: a record whose
+current owner is someone else is filtered out. Records with no owner stay visible to
+everyone, so assigning an owner narrows access rather than the reverse.
+
+FILES
+-----
+Menu → Files lists documents attached to records. File relations are configured for
+Companies, Deals and Contacts, so those three can hold attachments.
+
+The demo seeds a few small CSV attachments: a pricing breakdown and a scope list on deals,
+a quarterly account summary on Acme Corporation, and a call log on the contact John Smith.
+They are written both to spw_files and to disk under storage/files/.
+
+Contacts additionally have a record image gallery (label "Photo", up to 5 per record). The
+demo ships no images — it used to seed contact photographs, which were dropped for
+licensing and likeness reasons, so the gallery starts empty.
+
+NOTIFICATIONS
+-------------
+The bell icon lists in-app notifications. The demo seeds a batch of them across the three
+users — new comments on deals, companies, contacts and leads, plus ownership assignments —
+with a mix of read and unread so the panel looks lived-in.
+
+Notifications are also produced at runtime by:
+- the "Deal Won — Close Notification" automation
+- calendar reminders (activities 1 day ahead, deals 3 days ahead)
+- note reminders, when a note's reminder_date comes due
+The runtime ones are delivered by cron_notifications.php, so that job has to be running.

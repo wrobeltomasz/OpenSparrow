@@ -1,0 +1,60 @@
+CRM Reports and Printouts
+=========================
+
+PIPELINE SUMMARY (view)
+-----------------------
+Menu → Pipeline Summary. The demo's one visible view: deal and activity measures
+aggregated per company and sales stage.
+
+Columns:
+- Company, Industry, Stage
+- Contacts — how many contacts the company has (a company-level figure, so it repeats
+  across that company's stage rows)
+- Deals — deal count in this company/stage group
+- Total Value, Avg Deal, Max Deal, Min Deal, Deal Std Dev
+- First Close, Last Close — the earliest and latest expected close date in the group
+- Overdue — deals whose expected close is in the past while the stage is neither Won
+  nor Lost
+- Activities, Done, Open, Avg Activities / Deal
+
+Behaviour:
+- Rows are grouped by stage by default, with per-group aggregates
+- Drill-down is enabled
+- Color rules: more than 3 contacts turns red, total value above 300,000 turns green,
+  more than one overdue deal turns red
+
+PRINTOUTS
+---------
+Two print templates ship with the demo. Both produce a printable/PDF-ready multi-row
+report through the Print module, and both take optional filter parameters chosen from a
+dropdown before printing.
+
+1. Pipeline Report (menu: Pipeline Report)
+   One row per deal: title, company, contact, stage, value, expected close.
+   Sorted by company, then expected close date.
+   Parameters: Stage and Company, both optional — leave a parameter empty to include
+   everything.
+   Backed by the v_demo_crm_pipeline_report view.
+
+2. Activity Agenda (menu: Activity Agenda)
+   One row per activity, newest first: scheduled date, type, deal, contact, completed,
+   notes.
+   Parameters: Type and Completed, both optional. Completed reads a text column showing
+   Yes/No rather than the raw boolean, so the dropdown offers readable values.
+   Backed by the v_demo_crm_activity_agenda view.
+
+There are no Quote or Invoice printouts. Earlier builds of the demo shipped them; they
+were retired, and the views behind them are dropped on install/uninstall.
+
+HIDDEN VIEWS
+------------
+Installed but kept out of the menu, available if you unhide them in Admin → Views:
+- Leads Funnel — lead count by status
+- Revenue Summary — invoice count and total by status, with a SUMIF that excludes Draft
+  invoices from the total
+- Assets Summary — asset count and book value by category
+- Revenue by Period — invoices grouped by month with subtotals, a SUMIF for paid revenue
+  and a COUNTIF for unpaid invoices
+
+The two "... Source" views (Pipeline Report Source, Activity Agenda Source) only feed the
+print templates and are not meant to be browsed as grids.
