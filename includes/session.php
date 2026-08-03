@@ -37,6 +37,13 @@ function send_security_headers(
     bool $includeHsts = true,
     string $cspMode = 'default'
 ): void {
+    // PHP emits X-Powered-By with its exact patch version whenever expose_php is
+    // On, handing an attacker the version to match CVEs against. nginx.conf strips
+    // it with fastcgi_hide_header, but that only covers deployments using our own
+    // server config — not Apache/mod_php, not a hand-rolled nginx, not php -S.
+    // Removing it here makes the policy independent of how the app is served.
+    header_remove('X-Powered-By');
+
     header('X-Frame-Options: DENY');
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: strict-origin-when-cross-origin');

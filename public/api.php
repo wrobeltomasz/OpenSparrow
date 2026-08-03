@@ -668,7 +668,17 @@ try {
     // GET: LIST TABLE ROWS
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'list') {
         $table = $_GET['table'] ?? '';
-        $tableCfg = safe_table($schema, $table);
+        // A table name absent from the configured schema is bad client input, not a
+        // server fault: without this the RuntimeException from safe_table() falls
+        // through to the catch-all at the bottom and every typo, stale bookmark or
+        // probe answers 500 and writes an error_log entry. Mirrors the handling in
+        // api/mass_edit.php.
+        try {
+            $tableCfg = safe_table($schema, $table);
+        } catch (\RuntimeException $e) {
+            http_response_code(400);
+            exit(json_encode(['error' => 'Unknown table']));
+        }
         $idCol = id_column();
         $schemaName = $tableCfg['schema'] ?? 'public';
         $cols = column_list($tableCfg);
@@ -803,7 +813,12 @@ try {
     // GET: SUBTABLE COUNTS — total linked records per row across all configured subtables
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'subtable_counts') {
         $table     = $_GET['table'] ?? '';
-        $tableCfg  = safe_table($schema, $table);
+        try {
+            $tableCfg = safe_table($schema, $table);
+        } catch (\RuntimeException $e) {
+            http_response_code(400);
+            exit(json_encode(['error' => 'Unknown table']));
+        }
         $subtables = $tableCfg['subtables'] ?? [];
 
         if (empty($subtables)) {
@@ -967,7 +982,12 @@ try {
     if (in_array($method, ['POST','PATCH','DELETE'], true)) {
         $body = json_decode(file_get_contents('php://input') ?: '[]', true);
         $table = $body['table'] ?? '';
-        $tableCfg = safe_table($schema, $table);
+        try {
+            $tableCfg = safe_table($schema, $table);
+        } catch (\RuntimeException $e) {
+            http_response_code(400);
+            exit(json_encode(['error' => 'Unknown table']));
+        }
         $schemaName = $tableCfg['schema'] ?? 'public';
         $idCol = id_column();
 // POST: CALENDAR MOVE EVENT (Drag & Drop functionality)

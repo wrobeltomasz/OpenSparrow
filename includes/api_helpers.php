@@ -67,9 +67,31 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, ?\PgSql\Con
             continue;
         }
 
-        $refTable = safe_table($schema, $fkCfg['reference_table']);
+        // A foreign key may point at a table that has since been dropped from the
+        // schema config. That is an administrator's configuration error, not a bad
+        // request, so it must not become a 500: this helper runs while mapping
+        // result rows, after the caller has already validated the table it was
+        // asked for, and an exception here would take down the grid, m2m rows and
+        // subtable listings alike. Skip the dangling key and leave the raw value
+        // in place — a column showing an id instead of a label is a far better
+        // failure than three read paths returning "Internal server error" with no
+        // hint as to which reference is broken.
+        //
+        // The name is read defensively: a malformed entry, or one missing the key
+        // altogether, would raise a TypeError rather than the RuntimeException
+        // caught below and so slip straight past this guard.
+        $refName = is_array($fkCfg) ? (string) ($fkCfg['reference_table'] ?? '') : '';
+        try {
+            $refTable = safe_table($schema, $refName);
+        } catch (\RuntimeException $e) {
+            error_log(sprintf(
+                '[map_fk_display] dangling foreign key %s -> %s: reference table not in schema config',
+                (string) $fkCol,
+                $refName === '' ? '(missing reference_table)' : $refName
+            ));
+            continue;
+        }
         $refSchema = $refTable['schema'] ?? 'public';
-        $refName   = $fkCfg['reference_table'];
         $refColId  = $fkCfg['reference_column'] ?? 'id';
 
         // Handle array of display columns dynamically
