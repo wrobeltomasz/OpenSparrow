@@ -120,6 +120,89 @@ function loginAsAdmin() {
   });
 }
 
+/**
+ * Authenticate as the *second* editor account (test2 / test2).
+ * Exists so the security specs can act as "another user" and probe row-level
+ * ownership (IDOR). Requires cy.seedDatabase() to have run.
+ */
+function loginAsTestUser2() {
+  cy.session('testUser2', () => {
+    cy.visit(`${BASE}/login.php`);
+    cy.get('[data-cy=username], input[name="username"]', { timeout: TIMEOUTS.long })
+      .should('exist')
+      .clear()
+      .type('test2');
+    cy.get('[data-cy=password], input[name="password"]')
+      .clear()
+      .type('test2');
+    cy.get('[data-cy=loginBtn], button[type="submit"]')
+      .click();
+
+    cy.url({ timeout: TIMEOUTS.long }).should('not.include', 'login.php');
+  }, {
+    validate() {
+      cy.request({ url: `${BASE}/dashboard.php`, followRedirect: false })
+        .its('status').should('eq', 200);
+    },
+  });
+}
+
+// ============================================================================
+// Security Helpers
+// ============================================================================
+
+/**
+ * Read the CSRF token the way the app's own client does
+ * (public/assets/js/util/csrf.js): window.CSRF_TOKEN first, <meta> second.
+ * Visit a page of the app first — the token lives in the rendered document.
+ * Yields the token string.
+ */
+Cypress.Commands.add('csrfToken', () => {
+  return cy.window({ log: false }).then(win => {
+    const fromGlobal = win.CSRF_TOKEN;
+    if (fromGlobal) return fromGlobal;
+    const meta = win.document.querySelector('meta[name="csrf-token"]');
+    const token = meta && meta.getAttribute('content');
+    expect(token, 'CSRF token present in document').to.be.a('string').and.not.be.empty;
+    return token;
+  });
+});
+
+// Server internals that must never reach the client in an error body.
+const LEAK_PATTERN = /SQLSTATE|Fatal error|Warning: |Stack trace|pg_query|\/var\/www|[A-Za-z]:\\\\|\.php on line|\.php:\d+/;
+
+/**
+ * Assert a request was denied with one of the expected status codes AND that the
+ * response body leaks no server internals.
+ *
+ * The exact code matters: file_download.php deliberately answers 404 (not 403)
+ * for someone else's file so that existence is not disclosed, and admin/api.php
+ * answers 405 (not 403) for a mutation attempted over GET. Asserting merely
+ * ">= 400" would let those distinctions rot away unnoticed.
+ *
+ *   cy.expectDenied(res, [401, 403])
+ */
+Cypress.Commands.add('expectDenied', (res, codes, label = '') => {
+  const prefix = label ? `${label}: ` : '';
+  expect(codes, `${prefix}expected status`).to.include(res.status);
+  const body = typeof res.body === 'string' ? res.body : JSON.stringify(res.body || '');
+  expect(body, `${prefix}error body must not leak internals`).to.not.match(LEAK_PATTERN);
+});
+
+/**
+ * cy.request() that fails soft — every security probe expects a rejection, so
+ * failOnStatusCode is always off and redirects are never followed (a 302 to
+ * login.php is itself the assertion in most access-control tests).
+ */
+Cypress.Commands.add('probe', (options) => {
+  return cy.request({
+    failOnStatusCode: false,
+    followRedirect: false,
+    ...options,
+    url: options.url.startsWith('http') ? options.url : `${BASE}${options.url}`,
+  });
+});
+
 // ============================================================================
 // Grid Helpers
 // ============================================================================
@@ -257,6 +340,7 @@ function waitForPagination({ timeout = TIMEOUTS.medium } = {}) {
 window.BASE              = BASE;
 window.TIMEOUTS          = TIMEOUTS;
 window.loginAsTestUser   = loginAsTestUser;
+window.loginAsTestUser2  = loginAsTestUser2;
 window.loginAsAdmin      = loginAsAdmin;
 window.waitForGridOrEmpty = waitForGridOrEmpty;
 window.waitForActions    = waitForActions;
@@ -267,6 +351,7 @@ window.CypressHelpers = {
   BASE,
   TIMEOUTS,
   loginAsTestUser,
+  loginAsTestUser2,
   loginAsAdmin,
   waitForGridOrEmpty,
   waitForActions,

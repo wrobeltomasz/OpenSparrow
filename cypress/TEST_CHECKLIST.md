@@ -326,6 +326,48 @@ cy.get('#grid tr').should('have.length.greaterThan', 1);
 - [ ] `cypress_seed.php` is never assumed reachable in production — it 404s there
       by design, and specs must not work around that
 
+### The security suite — `cypress/e2e/security/`
+
+A dedicated regression net for the invariants that no functional spec would
+notice breaking. Every request in it is expected to be **refused**, and each test
+asserts three things rather than one:
+
+1. the **exact** status code (`401` / `403` / `404` / `405` / `413` / `415`) —
+   never merely `>= 400`, because the differences carry meaning
+   (`file_download.php` answers 404 for a foreign file so existence is not
+   disclosed; `admin/api.php` answers 405 for a mutation attempted over GET);
+2. the **effect** — after the refusal, `cy.dbCount()` or a read through the
+   rightful owner proves nothing changed. A 403 does not by itself mean the
+   write did not happen;
+3. **no disclosure** — `cy.expectDenied()` also fails the test if the error body
+   contains SQLSTATE codes, file paths or stack traces.
+
+| Spec | Guards |
+|---|---|
+| `auth_session.cy.js` | cookie flags, session id rotation on login, logout invalidation, login throttle, user enumeration |
+| `authorization.cy.js` | anonymous access, editor↛admin, admin↛frontend API, `require_ajax`, dead `setup_api.php` |
+| `idor.cy.js` | `can_access_record()` / `owner_restriction_sql()` / `filter_visible_ids()` — three implementations of one policy |
+| `csrf.cy.js` | header and body tokens, cross-session tokens, and the `$postActions` whitelist |
+| `headers_upload.cy.js` | CSP + nonce freshness, hardening headers, the upload gauntlet (ext → type → finfo) |
+| `injection.cy.js` | SQLi probes, stored XSS rendering, path traversal |
+
+Two things to know before editing it:
+
+- **`csrf.cy.js` reads `public/admin/api.php` with `cy.readFile`.** It parses
+  `$postActions` and `$adminModules` out of the source, so a newly added
+  mutating admin action is caught automatically instead of silently escaping the
+  whitelist. If a new action's name reads as a mutation but genuinely does not
+  write, add it to `READ_ONLY_EXCEPTIONS` in that spec with the reason.
+- **`idor.cy.js` needs a fixture the seeder builds**: `cypress_seed.php?action=own`
+  creates two records owned by `test` and `test2` and turns `owner_restricted` on
+  for that table; `action=own_reset` undoes both. The suite skips itself when no
+  configured table can host the fixture.
+
+Tests that pin a **known, unfixed** weakness (currently: `GET /logout.php` needs
+no CSRF token; `X-Forwarded-For` rotates the per-IP login bucket) are marked
+`KNOWN:` in the title and assert today's behaviour deliberately, so that changing
+it is a decision rather than an accident.
+
 ---
 
 ## Related files
@@ -335,7 +377,9 @@ cy.get('#grid tr').should('have.length.greaterThan', 1);
 - **Shared helpers:** `cypress/support/e2e.js`
 - **Cypress config:** `cypress.config.js` (baseUrl, timeouts, Chromium flags)
 - **Seed endpoint:** `public/cypress_seed.php`
-- **Fixtures:** `cypress/fixtures/test_upload.txt`, `cypress/fixtures/test_companies.csv`
+- **Fixtures:** `cypress/fixtures/test_upload.txt`, `cypress/fixtures/test_companies.csv`,
+  and the upload-gauntlet payloads `evil.php`, `evil.svg`, `fake_png.png` (a PHP
+  body under a `.png` name, for the finfo content check)
 - **Package:** `package.json` (Cypress ^13.0.0; scripts `cy:open`, `cy:run`)
 
 ---
