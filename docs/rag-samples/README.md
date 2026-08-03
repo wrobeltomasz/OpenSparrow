@@ -10,14 +10,13 @@ Sample `.txt` knowledge-base files for the OpenSparrow RAG module, describing th
 | crm_deals.txt | `deals` | Stages, Kanban board, stakeholders M2M, automations, pipeline view |
 | crm_activities.txt | `activities` | Activity types, calendar, dashboard widgets |
 | crm_leads.txt | `leads` | Lead sources and statuses, lead automations, GDPR anonymization |
-| crm_quotes_invoices.txt | `quotes` | Quote lifecycle, invoice statuses, the invoice automation |
 | crm_workflows.txt | `workflows` | The three workflows, incl. stored-procedure validation |
 | crm_dashboard_calendar.txt | `dashboard` | The seven widgets, period filter, calendar sources |
 | crm_reports_print.txt | `reports` | Pipeline Summary view, the two printouts, hidden views |
 | crm_collaboration.txt | `collaboration` | Demo users, comments, notes, ownership, files, notifications |
 
 These describe the demo **as it is installed today**: only Companies, Contacts, Deals and
-Activities are in the sidebar. Leads, quotes, invoices, products and assets are seeded but
+Activities are in the sidebar. Leads are seeded but
 hidden, reachable through subtables, workflows or a direct URL — the docs say so where it
 matters, so the agent does not send users to menu entries that are not there.
 

@@ -29,12 +29,6 @@ index.php?table=... URL. They exist so the demo can show automations, a workflow
 the GDPR anonymization rules working against real data.
 - leads: Incoming prospects not yet converted. Drives two automations and the
   anonymization rules.
-- quotes: Pricing offers per deal. Drives the "Quote Accepted" invoice automation and is
-  the last step of the Convert Lead workflow. Shown as a subtable on a deal.
-- invoices: Payment requests. Shown as a subtable on a deal.
-- products / product_contacts: Product catalog and a many-to-many link to interested
-  contacts.
-- assets: Company-owned asset registry.
 - deal_contacts: Junction table behind the "Other Stakeholders" many-to-many field on a
   deal.
 
@@ -44,27 +38,23 @@ RELATIONSHIPS:
 - Deal has many extra stakeholder Contacts via deal_contacts (many-to-many field
   "Other Stakeholders")
 - Activity belongs to Deal and Contact
-- Quote belongs to Deal
-- Invoice belongs to Deal and optionally a Quote
-- Asset can be assigned to a Contact (assigned_contact_id)
-- Product to Contact is many-to-many via product_contacts
 
 SUBTABLES (related records listed on an edit page):
 - Company → Contacts, Deals
 - Contact → Activities
-- Deal → Activities, Quotes, Invoices
+- Deal → Activities
 
 WORKFLOWS:
 1. New CRM Deal: Add Company → Add Contact → Create Deal → Log Activity
-2. Convert Lead: Capture Lead → Add Company → Add Contact → Create Deal → Send Quote
+2. Convert Lead: Capture Lead → Add Company → Add Contact → Create Deal
 3. Add Contact: single step, validated by a PostgreSQL stored procedure
 See the CRM Workflows doc.
 
 VIEWS:
 - Pipeline Summary (in the menu): deal and activity measures per company and stage
-Four more views are installed but hidden from the menu: Leads Funnel, Revenue Summary,
-Assets Summary, Revenue by Period. Two further views (Pipeline Report Source, Activity
-Agenda Source) exist only to feed the print templates and are not meant to be browsed.
+One more view is installed but hidden from the menu: Leads Funnel. Two further views
+(Pipeline Report Source, Activity Agenda Source) exist only to feed the print templates
+and are not meant to be browsed.
 
 DEMO USERS:
 Three extra users are created: demo.anna (editor), demo.marek (editor) and demo.julia

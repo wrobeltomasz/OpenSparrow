@@ -43,18 +43,13 @@ dropdown before printing.
    Yes/No rather than the raw boolean, so the dropdown offers readable values.
    Backed by the v_demo_crm_activity_agenda view.
 
-There are no Quote or Invoice printouts. Earlier builds of the demo shipped them; they
-were retired, and the views behind them are dropped on install/uninstall.
+These two are the only printouts. Earlier builds of the demo shipped document templates
+as well; they were retired, and the views behind them are dropped on install/uninstall.
 
 HIDDEN VIEWS
 ------------
 Installed but kept out of the menu, available if you unhide them in Admin → Views:
 - Leads Funnel — lead count by status
-- Revenue Summary — invoice count and total by status, with a SUMIF that excludes Draft
-  invoices from the total
-- Assets Summary — asset count and book value by category
-- Revenue by Period — invoices grouped by month with subtotals, a SUMIF for paid revenue
-  and a COUNTIF for unpaid invoices
 
 The two "... Source" views (Pipeline Report Source, Activity Agenda Source) only feed the
 print templates and are not meant to be browsed as grids.

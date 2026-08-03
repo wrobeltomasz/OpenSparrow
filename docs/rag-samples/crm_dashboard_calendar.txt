@@ -20,11 +20,11 @@ Charts:
 PERIOD FILTER:
 The dashboard has a period filter (Today / 7 days / 30 days) and stat cards show a trend
 delta against the previous period. The demo seed deliberately spreads created_at over the
-past months for companies, contacts, deals, products and activities so the filter and the
+past months for companies, contacts, deals and activities so the filter and the
 time-series charts have real history to show. Leads older than a year are left untouched
 so the anonymization preview still has stale rows to match.
 
-There are no widgets for leads, quotes, invoices, products or assets — those tables are
+There are no widgets for leads — that table is
 not part of the demo's visible surface.
 
 CALENDAR
@@ -43,7 +43,7 @@ Two sources feed the Calendar:
    - Notification: 3 days before expected_close
    - Click opens edit.php?table=deals&id={id}
 
-Quotes, invoices and asset warranty dates are NOT on the calendar in this demo.
+Nothing else is on the calendar in this demo.
 
 Calendar notifications are delivered by cron_notifications.php, which also handles note
 reminders and queued automation emails. Recipients are configured per source in

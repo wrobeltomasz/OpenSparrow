@@ -47,8 +47,6 @@ Related records on a contact's edit page:
 Where else contacts appear:
 - As the primary contact on a Deal (deals.contact_id)
 - As extra stakeholders on a Deal via the "Other Stakeholders" many-to-many field
-- As the assignee on an Asset (assets.assigned_contact_id)
-- As an interested party on a Product (product_contacts many-to-many)
 
 CREATING RECORDS:
 - Directly from the Companies or Contacts grid ("Add" button)

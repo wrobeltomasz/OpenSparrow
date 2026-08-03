@@ -22,10 +22,9 @@ Step 1: Capture Lead   → leads
 Step 2: Add Company    → companies
 Step 3: Add Contact    → contacts, company_id taken from step 2
 Step 4: Create Deal    → deals, company_id taken from step 2
-Step 5: Send Quote     → quotes, deal_id taken from step 4, repeatable
 
-This workflow is the main way to reach the leads and quotes tables, since neither is in
-the sidebar menu.
+This workflow is the main way to reach the leads table, since it is not in the sidebar
+menu.
 
 3. ADD CONTACT (with stored-procedure validation)
 -------------------------------------------------

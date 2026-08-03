@@ -13,16 +13,16 @@ const DEMOS = {
     crm: {
         label:       'CRM',
         description: 'Customer Relationship Management — companies, contacts, deals and activities in the menu, '
-            + 'with leads, products, quotes, invoices and assets seeded behind them to drive the automations, '
+            + 'with leads seeded behind them to drive the automations, '
             + 'workflows and GDPR anonymization rules.',
         schema:      'spw_crm',
-        tables:      ['companies', 'contacts', 'deals', 'activities', 'leads', 'products', 'quotes', 'invoices', 'assets'],
+        tables:      ['companies', 'contacts', 'deals', 'activities', 'leads'],
         color:       'var(--muted)',
         icon:        'assets/icons/account_box.png',
         recommended: true,
         // Keep in sync with public/admin/demo/crm.php — these counts are what the
         // definition actually installs, not what an older build shipped.
-        features:    ['7 dashboard widgets', '2 calendar sources + reminders', 'Kanban board: Deals by Stage', '3 workflows', '7 read-only views', '4 automations', '2 printouts', 'M2M stakeholders on deals', 'file attachments', 'RAG knowledge base'],
+        features:    ['7 dashboard widgets', '2 calendar sources + reminders', 'Kanban board: Deals by Stage', '3 workflows', '4 read-only views', '3 automations', '2 printouts', 'M2M stakeholders on deals', 'file attachments', 'RAG knowledge base'],
     },
 };
 

@@ -35,7 +35,6 @@ Step 1: Capture Lead — fill the lead record with source and contact info
 Step 2: Add Company — create a company record for their organization
 Step 3: Add Contact — create a contact linked to that company
 Step 4: Create Deal — open a deal for the opportunity
-Step 5: Send Quote — attach a quote to the deal (repeatable)
 
 AUTOMATIONS ON LEADS:
 - "New Web Lead — Auto Contact": any new lead created with source = Web is automatically

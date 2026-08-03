@@ -14,7 +14,7 @@ FIELDS:
 DEAL STAGES (in order, with their grid colors):
 1. Lead — Initial interest, not yet qualified (grey)
 2. Qualified — Confirmed need and budget (blue)
-3. Proposal — Quote or proposal has been prepared/sent (yellow)
+3. Proposal — A proposal has been prepared/sent (yellow)
 4. Negotiation — Terms being finalized (yellow)
 5. Won — Deal closed successfully (green)
 6. Lost — Deal did not proceed (red)
@@ -28,9 +28,6 @@ HOW TO PROGRESS A DEAL:
 - Change stage in the grid or the edit form, or drag its card between lanes on the
   Deals Board — dragging updates deals.stage exactly like editing the field
 - Log activities (calls, meetings, emails) to track communication
-- Attach quotes under the Quotes subtable
-- Once a quote is marked Accepted, a Draft invoice is generated automatically (see
-  "Automations" below) — no manual invoice creation needed
 
 DEALS BOARD (Kanban):
 Menu → Deals Board shows one lane per stage (Lead, Qualified, Proposal, Negotiation,
@@ -40,16 +37,9 @@ date. Dragging a card to another lane moves the deal to that stage.
 AUTOMATIONS ON DEALS:
 - "Deal Won — Close Notification": when a deal is updated and its stage becomes Won, the
   user who made the change gets an in-app notification linking back to the deal.
-- "Quote Accepted — Generate Draft Invoice" (see the CRM Quotes and Invoices doc): when a
-  quote linked to a deal is marked Accepted, a Draft invoice is created automatically,
-  copying the quote's amounts and linking back to both the deal and the quote.
 
 RELATED RECORDS (subtables on a deal's edit page):
 - Activities: type, scheduled at, done, notes
-- Quotes: quote number, status, total, valid until
-- Invoices: invoice number, status, amount total, due date
-Quotes and Invoices are not in the sidebar menu — a deal's subtables are the normal way
-to reach them.
 
 PIPELINE SUMMARY VIEW:
 Menu → Pipeline Summary gives deal and activity measures per company and stage: contact
