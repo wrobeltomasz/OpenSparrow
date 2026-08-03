@@ -241,11 +241,16 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
             }
             $anonCfg['rules'] = $rules;
             $anonCfgOrdered = [
-                'enabled'    => $anonCfg['enabled'],
-                'frequency'  => $anonCfg['frequency'],
-                'dictionary' => $anonCfg['dictionary'],
-                'rules'      => $anonCfg['rules'],
+                'enabled'   => $anonCfg['enabled'],
+                'frequency' => $anonCfg['frequency'],
             ];
+            // Persist the dictionary only when there is one. Writing an empty array
+            // would beat the module defaults, since anonymization_load merges the
+            // stored value over them.
+            if ($anonCfg['dictionary']) {
+                $anonCfgOrdered['dictionary'] = $anonCfg['dictionary'];
+            }
+            $anonCfgOrdered['rules'] = $anonCfg['rules'];
             $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
             config_save('anonymization', $anonCfgOrdered, null, $seedUserId);
         }
