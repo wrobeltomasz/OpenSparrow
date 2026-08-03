@@ -16,6 +16,14 @@ module.exports = defineConfig({
     defaultCommandTimeout: 10000,
     requestTimeout: 10000,
     setupNodeEvents(on) {
+      // cy.log only renders in the browser Command Log; cy.task('log', msg)
+      // additionally prints to the terminal during `cypress run`.
+      on('task', {
+        log(message) {
+          console.log(message);
+          return null;
+        },
+      });
       on('before:browser:launch', (browser, launchOptions) => {
         if (browser.family === 'chromium') {
           launchOptions.args.push('--no-sandbox');

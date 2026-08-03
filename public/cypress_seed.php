@@ -37,6 +37,7 @@ if (!hash_equals($expectedToken, $providedToken)) {
 
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/api_helpers.php';
+require_once __DIR__ . '/../includes/config_store.php';
 
 header('Content-Type: application/json');
 
@@ -117,6 +118,33 @@ try {
 
             $results['cleaned'] = $cleaned;
         }
+    }
+
+    // ── Row count for a configured table ──────────────────────────────────────
+    // Read-only. The table name is never interpolated from the request: it must
+    // match a key in the configured schema, and the resolved names go through
+    // pg_ident(). Same dev-only + token gates as every other action above.
+    if ($action === 'count') {
+        $table  = (string) ($_POST['table'] ?? $_GET['table'] ?? '');
+        $schema = config_get('schema');
+        $tableCfg = $schema['tables'][$table] ?? null;
+
+        if (!is_array($tableCfg)) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'error' => 'Unknown table']);
+            exit;
+        }
+
+        $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
+        $res = pg_query($conn, "SELECT COUNT(*) AS c FROM $pgTable");
+        if (!$res) {
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'error' => pg_last_error($conn)]);
+            exit;
+        }
+
+        $results['table'] = $table;
+        $results['count'] = (int) pg_fetch_result($res, 0, 'c');
     }
 
     echo json_encode(['status' => 'ok', 'results' => $results]);

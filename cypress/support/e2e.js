@@ -36,6 +36,30 @@ Cypress.Commands.add('seedDatabase', () => {
   }).its('body.status').should('eq', 'ok');
 });
 
+/**
+ * Row count straight from PostgreSQL for a configured table (bypasses the UI,
+ * so it is an independent check of what actually landed in the database).
+ * Yields a Number, chainable:  cy.dbCount('companies').then(n => ...)
+ */
+Cypress.Commands.add('dbCount', (table) => {
+  return cy.request({
+    method: 'POST',
+    url: `${BASE}/cypress_seed.php`,
+    form: true,
+    body: { token: 'cypress-dev-seed', action: 'count', table },
+    failOnStatusCode: true,
+  }).then(({ body }) => {
+    expect(body.status, `count(${table}) status`).to.eq('ok');
+    const count = body.results.count;
+    // cy.log → browser Command Log, cy.task('log') → terminal during cypress run
+    cy.log(`**dbCount(${table}) = ${count}**`);
+    // Yield the count explicitly: when a .then() callback queues commands, its
+    // plain return value is discarded and the last command's yield wins.
+    return cy.task('log', `[dbCount] ${table} = ${count}`, { log: false })
+      .then(() => count);
+  });
+});
+
 // ============================================================================
 // Session & Authentication
 // ============================================================================
