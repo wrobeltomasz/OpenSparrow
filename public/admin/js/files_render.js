@@ -51,7 +51,9 @@ export async function renderFilesEditor(ctx) {
     if (!_state.config.max_file_size_mb) _state.config.max_file_size_mb = 20;
     if (!_state.config.storage_path) _state.config.storage_path = 'storage/files/';
     if (!_state.config.allowed_types) _state.config.allowed_types = ['image', 'spreadsheet', 'archive', 'other'];
-    if (!_state.config.allowed_extensions) _state.config.allowed_extensions = ["jpg", "jpeg", "png", "gif", "webp", "svg", "pdf", "doc", "docx", "odt", "rtf", "xls", "xlsx", "ods", "csv", "zip", "tar", "gz"];
+    // No 'svg' — script-bearing markup, kept off the allowlist so the refusal does
+    // not rely on the finfo sniff. Keep in step with seed.php's default list.
+    if (!_state.config.allowed_extensions) _state.config.allowed_extensions = ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "odt", "rtf", "xls", "xlsx", "ods", "csv", "zip", "tar", "gz"];
     if (!_state.config.relations) _state.config.relations = [];
 
     workspaceEl.innerHTML = '';

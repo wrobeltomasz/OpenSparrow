@@ -307,8 +307,12 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
                 $filesCfg['allowed_types'] = ['image', 'spreadsheet', 'archive', 'other'];
             }
             if (!isset($filesCfg['allowed_extensions']) || !is_array($filesCfg['allowed_extensions'])) {
+                // No 'svg': it is script-bearing markup, and file_download.php can
+                // serve it inline. Keeping it off the allowlist means the refusal no
+                // longer depends on the finfo content sniff, which is itself guarded
+                // by class_exists('finfo') and absent on some builds.
                 $filesCfg['allowed_extensions'] = [
-                    'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf',
+                    'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf',
                     'doc', 'docx', 'odt', 'rtf',
                     'xls', 'xlsx', 'ods', 'csv',
                     'zip', 'tar', 'gz',
