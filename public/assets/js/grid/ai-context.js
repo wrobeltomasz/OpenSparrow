@@ -69,15 +69,28 @@ export function buildGridContext() {
     const from          = (currentPage - 1) * pageSize + 1;
     const to            = from + rows.length - 1;
 
-    // Spell out that this is ONE PAGE of a larger result set, otherwise the model
-    // answers aggregate questions ("how many...?") from the visible slice alone.
-    let header = `table: ${currentTable} — CURRENT PAGE ONLY: rows ${from}-${to} of ${filteredTotal} matching record(s), `
-        + `page ${currentPage} of ${totalPages}`;
-    if (wasTruncated && totalRows > filteredTotal) {
-        header += `; ${totalRows} record(s) exist in the database beyond the loaded set`;
+    // The header is binding for the model (see the COUNTING section of the prompt): it either
+    // declares the block a complete set — every matching record is here, so totals are fair
+    // game — or ONE PAGE of a larger set, where aggregate questions must be refused.
+    const isCompleteSet = rows.length === filteredTotal
+        && totalPages === 1
+        && hiddenRows === 0
+        && !(wasTruncated && totalRows > filteredTotal);
+
+    let header;
+    if (isCompleteSet) {
+        header = `table: ${currentTable} — COMPLETE SET: all ${filteredTotal} matching record(s) are`
+            + ' included below (current filters applied, page 1 of 1). No rows are missing, so you MAY'
+            + ' count, sum and average over these rows.';
+    } else {
+        header = `table: ${currentTable} — CURRENT PAGE ONLY: rows ${from}-${to} of ${filteredTotal} matching record(s), `
+            + `page ${currentPage} of ${totalPages}`;
+        if (wasTruncated && totalRows > filteredTotal) {
+            header += `; ${totalRows} record(s) exist in the database beyond the loaded set`;
+        }
+        header += '. Rows outside this page are NOT included — never compute totals, counts or averages'
+            + ' over the whole table from this excerpt.';
     }
-    header += '. Rows outside this page are NOT included — never compute totals, counts or averages'
-        + ' over the whole table from this excerpt.';
 
     let text = header + '\n' + columns.join(' | ') + '\n';
     rows.forEach(row => {

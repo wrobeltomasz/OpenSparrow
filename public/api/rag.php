@@ -211,7 +211,7 @@ if ($action === 'query' && $method === 'POST') {
         }
 
         $parsed      = rag_extract_suggestions($result['response']);
-        $answer      = $parsed['answer'];
+        $answer      = rag_strip_context_leaks($parsed['answer']);
         $suggestions = $parsed['suggestions'];
 
         rag_log_query($conn, [
@@ -227,7 +227,14 @@ if ($action === 'query' && $method === 'POST') {
             'sources'           => $files,
         ]);
 
-        exit(json_encode(['answer' => $answer, 'sources' => $sources, 'tag_fallback' => $tagFallback, 'suggestions' => $suggestions]));
+        exit(json_encode([
+            'answer'       => $answer,
+            'sources'      => $sources,
+            'tag_fallback' => $tagFallback,
+            'suggestions'  => $suggestions,
+            // Lets the panel keep a refusal out of the conversation memory it sends back.
+            'no_answer'    => rag_is_no_answer($answer, $suggestions),
+        ]));
     } catch (Throwable $e) {
         error_log('[api_rag][query] ' . $e->getMessage());
         http_response_code(500);

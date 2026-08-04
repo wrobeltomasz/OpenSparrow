@@ -143,9 +143,18 @@ selected before sending a question.
 Only the current page of the grid is attached, with unformatted values (raw numbers
 and dates, foreign keys as their labels) and the real record counts, so the assistant
 knows how many records the filter matched and will not answer "how many" questions
-from the visible page alone. If the table has more than 12 columns, the assistant
-keeps the most informative ones (id, required fields, enums and foreign keys) rather
-than simply the leftmost ones.
+from a partial page. When the page happens to contain every matching record — all
+rows fit on one page and nothing was truncated — the block says so and the assistant
+may then count and total those rows itself. If the table has more than 12 columns,
+the assistant keeps the most informative ones (id, required fields, enums and foreign
+keys) rather than simply the leftmost ones.
+For tables with an aggregate view attached by the admin, exact totals over the whole
+table are computed on the server (including subtotals per status, category and so on)
+and handed to the assistant ready to quote, so it never has to add anything up.
+If the admin enabled conversation memory, the panel also sends back the previous
+question and answer, so a follow-up like "and for last month?" is understood. Only
+that one exchange is kept, it is used purely to resolve what the question refers to,
+and the Clear button in the panel wipes it.
 The assistant answers only from those sources, so when they do not cover your question
 it says so plainly in your own language — and answers the covered part first if a
 question is only partly documented — instead of guessing from general knowledge.

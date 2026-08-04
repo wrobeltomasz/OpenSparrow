@@ -529,6 +529,7 @@ ${_ul([
     `<strong>${s.s13_test_label}:</strong> ${s.s13_test}`,
     `<strong>${s.s13_stats_label}:</strong> ${s.s13_stats}`,
     `<strong>${s.s13_multilang_label}:</strong> ${s.s13_multilang}`,
+    `<strong>${s.s13_memory_label}:</strong> ${s.s13_memory}`,
     `<strong>${s.sRagAgg_label}:</strong> ${s.sRagAgg_summary}`
 ])}
 ${_h4(s.sRagAgg_head)}
@@ -536,6 +537,9 @@ ${_p(s.sRagAgg_desc)}
 ${_ul([
     s.sRagAgg_li1, s.sRagAgg_li2, s.sRagAgg_li3, s.sRagAgg_li4, s.sRagAgg_li5, s.sRagAgg_li6, s.sRagAgg_li7
 ])}
+${_h4(s.sRagRollup_head)}
+${_p(s.sRagRollup_desc)}
+${_ul([s.sRagRollup_li1, s.sRagRollup_li2, s.sRagRollup_li3])}
 ${_warn(s.sRagAgg_warn_label, s.sRagAgg_warn)}
 
 ${_h3('doc-16', s.sPrint_head)}

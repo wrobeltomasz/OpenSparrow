@@ -27,6 +27,9 @@ let contextBarEl, gridOptEl, fabEl;
 let tagsLoaded = false;
 let currentAbortController = null;
 let abortedByUser = false;
+// Last completed turn (question + answer) sent back as `history` so the model keeps
+// context. Deliberately one turn only — the server trims it further via conversation_turns.
+let lastTurn = null;
 
 // ── Build DOM ─────────────────────────────────────────────────────────────────
 
@@ -124,7 +127,7 @@ function buildPanel() {
     overlayEl.addEventListener('click', closePanel);
     sendBtn.addEventListener('click', sendQuery);
     stopBtn.addEventListener('click', () => { abortedByUser = true; currentAbortController?.abort(); });
-    clearBtn.addEventListener('click', () => { convEl.innerHTML = ''; });
+    clearBtn.addEventListener('click', () => { convEl.innerHTML = ''; lastTurn = null; });
     queryEl.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -274,7 +277,12 @@ function readGridContextFromDom() {
     const hiddenRows  = allRows.length - rows.length;
     const hiddenCols  = totalCols - headers.length;
 
-    let text = `table: ${tableName}, ${rows.length} of ${allRows.length} row(s) shown\n`;
+    // Same completeness contract as the data-model path (grid/ai-context.js): say plainly
+    // whether every row is present, otherwise the model must refuse aggregate questions.
+    let text = hiddenRows === 0
+        ? `table: ${tableName} — COMPLETE SET: all ${allRows.length} row(s) of this report are`
+          + ' included below. No rows are missing, so you MAY count, sum and average over these rows.\n'
+        : `table: ${tableName} — CURRENT PAGE ONLY: ${rows.length} of ${allRows.length} row(s) shown.\n`;
     text += headers.join(' | ') + '\n';
     rows.forEach(r => { text += r.join(' | ') + '\n'; });
     if (hiddenRows > 0) {
@@ -495,6 +503,12 @@ async function sendQuery() {
                 page_context: includeGrid ? readGridContext() : '',
                 table: includeGrid ? pageTableName() : '',
                 language: document.documentElement.lang || '',
+                history: lastTurn
+                    ? [
+                        { role: 'user',      content: lastTurn.query },
+                        { role: 'assistant', content: lastTurn.answer },
+                    ]
+                    : [],
             },
             signal: currentAbortController.signal,
         });
@@ -511,6 +525,11 @@ async function sendQuery() {
             replaceWithError(thinkWrap, data.error ?? 'Request failed.');
         } else {
             replaceWithAnswer(thinkWrap, data.answer, data.sources ?? [], data.tag_fallback ?? false, data.suggestions ?? []);
+            // A refusal must never become memory: fed back as history it primes the next
+            // refusal. The server flags it (rag_is_no_answer) since a translated
+            // "not in the context" is not recognisable here.
+            const answer = String(data.answer ?? '').trim();
+            lastTurn = (answer === '' || data.no_answer) ? null : { query, answer };
         }
     } catch (err) {
         if (err.name === 'AbortError') {
