@@ -481,6 +481,27 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
             }
         }
 
+        // RAG aggregate views (spw_config key "rag", section aggregate_views) — attach the
+        // demo's aggregate views to their tables, exactly as Admin → RAG → Aggregate Views
+        // would. Written whether or not the sample documents were requested: this is a
+        // config mapping over the demo's own data, not a knowledge-base document. The
+        // views themselves are created by the DDL above, so no existence check is needed.
+        // Owner-restricted tables are skipped for the same reason the admin action rejects
+        // them — a plain view has no session user to filter rows by.
+        if (!empty($demoData['rag_aggregate_views']) && is_array($demoData['rag_aggregate_views'])) {
+            require_once __DIR__ . '/../../../includes/config_store.php';
+            $ragViewCfg = config_get('rag') ?? [];
+            $aggViews   = is_array($ragViewCfg['aggregate_views'] ?? null) ? $ragViewCfg['aggregate_views'] : [];
+            foreach ($demoData['rag_aggregate_views'] as $aggTable => $aggView) {
+                if (!empty($demoData['schema_tables'][$aggTable]['owner_restricted'])) {
+                    continue;
+                }
+                $aggViews[$aggTable] = $aggView;
+            }
+            $ragViewCfg['aggregate_views'] = $aggViews;
+            config_save('rag', $ragViewCfg, null, $seedUserId);
+        }
+
         // menu config (spw_config key "menu") — apply nested menu layout from demo definition
         $menuKeys = [];
         if (!empty($demoData['menu_items']) && is_array($demoData['menu_items'])) {
@@ -887,6 +908,21 @@ if ($action === 'demo_uninstall') {
             } else {
                 config_save('print', $printCfg, null, $cleanUserId);
             }
+        }
+
+        // Clean RAG aggregate views (drop mappings pointing at demo tables). The "rag"
+        // key itself is never deleted — unlike the module configs above it also holds the
+        // user's global RAG settings (model, chunking, limits), which the demo never owned.
+        $ragViewCfg = config_get('rag');
+        if (is_array($ragViewCfg) && !empty($ragViewCfg['aggregate_views'])) {
+            $tbls = $meta['tables'] ?? [];
+            foreach ($tbls as $t) {
+                unset($ragViewCfg['aggregate_views'][$t]);
+            }
+            if (empty($ragViewCfg['aggregate_views'])) {
+                unset($ragViewCfg['aggregate_views']);
+            }
+            config_save('rag', $ragViewCfg, null, $cleanUserId);
         }
 
         // Clean user_records config (drop column mappings for demo tables; delete the

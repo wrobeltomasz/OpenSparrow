@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 // admin/demo/crm.php — CRM demo app definition (data only, no auth/routing)
 // demo_def_crm($conn): returns the spw_crm schema spec — DDL (companies, contacts, deals, activities, leads), view names, seed data,
-// plus config payloads: dashboard widgets, calendar sources, Kanban board, workflows, views, menu, files relations, automations (incl. email action), anonymization rules, print templates and User Records column mapping
+// plus config payloads: dashboard widgets, calendar sources, Kanban board, workflows, views, menu, files relations, automations (incl. email action), anonymization rules, print templates, RAG knowledge-base documents and aggregate view, and User Records column mapping
 // Consumed by demo/seed.php during demo_install
 
 function demo_def_crm($conn): array
@@ -17,7 +17,7 @@ function demo_def_crm($conn): array
     return [
         'pg_schema'  => 'spw_crm',
         // Every view this definition creates, for the uninstall drop pass.
-        'view_names' => ['v_demo_crm_company_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_pipeline_report', 'v_demo_crm_activity_agenda'],
+        'view_names' => ['v_demo_crm_company_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_pipeline_report', 'v_demo_crm_activity_agenda', 'v_demo_crm_deals_aggregate'],
         'ddl' => [
             'CREATE SCHEMA IF NOT EXISTS spw_crm',
             "CREATE TABLE IF NOT EXISTS spw_crm.companies (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, industry VARCHAR(100), website VARCHAR(255), phone VARCHAR(50), email VARCHAR(255), created_at TIMESTAMP DEFAULT NOW())",
@@ -85,6 +85,43 @@ function demo_def_crm($conn): array
                 . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
                 . 'LEFT JOIN spw_crm.contacts ct ON ct.id = a.contact_id '
                 . 'ORDER BY a.scheduled_at DESC',
+            // Aggregate view for the RAG "Ask AI" panel (spw_config rag.aggregate_views,
+            // mapped to the deals table below). Read verbatim as SELECT * ... LIMIT n by
+            // rag_view_aggregate(), so the column aliases ARE the semantics the model
+            // sees — hence the long, self-describing names, and hence the grain has to
+            // match them exactly: one row per company x stage, nothing finer. Grouping by
+            // contact_id as well would put Acme's three Proposal deals (45k + 25k + 88k)
+            // on three rows while the aliases still promise a per-company-and-stage total
+            // — and the demo's own acme-account-summary.csv attachment states 158000.
+            // Contacts are therefore aggregated into one cell instead of splitting rows.
+            // CONCAT (not ||) so a NULL email or phone blanks one part, not the whole
+            // label; FILTER drops deals that have no primary contact at all.
+            // The string_agg delimiter must NOT be " | ": rag_view_aggregate() joins the
+            // COLUMNS of each row with exactly that string, so a multi-contact cell would
+            // read as extra columns and shift every field after it.
+            // Company phone/website/email are deliberately absent: they would repeat
+            // verbatim on every stage row of the same company, and the model can already
+            // read them from the companies knowledge-base document. The expected-close
+            // window is here instead — it is the one thing the block could not answer.
+            'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_deals_aggregate AS '
+                . 'SELECT '
+                . 'co.name AS company_name, '
+                . 'co.industry AS company_industry, '
+                . 'string_agg(DISTINCT '
+                . "CONCAT(ct.first_name, ' ', ct.last_name, ', email: ', ct.email, ', phone_number: ', ct.phone), "
+                . "'; ') FILTER (WHERE ct.id IS NOT NULL) "
+                . 'AS company_contact_person_first_name_last_name_email_phone_contact, '
+                . 'de.stage, '
+                . 'COUNT(*) AS total_deals_count_per_company_and_stage, '
+                . 'SUM(de.value) AS sum_deal_value_per_company_and_stage, '
+                . 'ROUND(AVG(de.value), 2) AS avg_deal_value_per_company_and_stage, '
+                . 'MIN(de.expected_close) AS first_expected_close_per_company_and_stage, '
+                . 'MAX(de.expected_close) AS last_expected_close_per_company_and_stage '
+                . 'FROM spw_crm.deals de '
+                . 'LEFT JOIN spw_crm.companies co ON co.id = de.company_id '
+                . 'LEFT JOIN spw_crm.contacts ct ON ct.id = de.contact_id '
+                . 'GROUP BY co.id, co.name, co.industry, de.stage '
+                . 'ORDER BY co.name, de.stage',
             // Validation procedure for the "Add Contact" workflow below: the wizard
             // CALLs it when the user clicks "Next step", and a RAISE EXCEPTION here
             // blocks the step and surfaces the message in the UI. Phone separators
@@ -209,100 +246,134 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (22, 'Dorothy', 'Parker', 'dorothy.p@insightdata.io', '+1-555-2028', 'Analytics Head')",
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (23, 'Edward', 'Evans', 'edward.e@safeguardsec.com', '+1-555-2029', 'Security Director')",
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (24, 'Barbara', 'Edwards', 'barbara.e@futureworks.io', '+1-555-2030', 'Research Manager')",
+            // Second named contact for companies 6-24 (which had only one). Deals carry both
+            // a primary contact and "Other Stakeholders" links, and both must belong to the
+            // deal's own company — with a single contact per company the stakeholder would
+            // have to be the primary contact again, or someone from an unrelated company.
+            // Email domains follow companies.website, as with the contacts above.
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (6, 'Laura', 'Turner', 'laura.t@cloudfirst.io', '+1-555-2031', 'Procurement Lead')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (7, 'Peter', 'Baker', 'peter.b@datastream.io', '+1-555-2032', 'Head of Platform')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (8, 'Alice', 'Hughes', 'alice.h@securenet.com', '+1-555-2033', 'Compliance Manager')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (9, 'Victor', 'Foster', 'victor.f@innovatelabs.io', '+1-555-2034', 'Finance Director')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (10, 'Grace', 'Bennett', 'grace.b@brightbridge.com', '+1-555-2035', 'Engagement Manager')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (11, 'Simon', 'Reed', 'simon.r@nextgendyn.com', '+1-555-2036', 'Procurement Lead')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (12, 'Nina', 'Murphy', 'nina.m@vertexsol.com', '+1-555-2037', 'Head of IT')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (13, 'Oscar', 'Cooper', 'oscar.c@momentum.io', '+1-555-2038', 'Legal Counsel')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (14, 'Julia', 'Rivera', 'julia.r@purescale.com', '+1-555-2039', 'Brand Manager')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (15, 'Martin', 'Sanders', 'martin.s@quantumleap.io', '+1-555-2040', 'Investment Partner')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (16, 'Clara', 'Powell', 'clara.p@zenithtech.com', '+1-555-2041', 'CTO')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (17, 'Felix', 'Bryant', 'felix.b@nexusgroup.io', '+1-555-2042', 'Practice Lead')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (18, 'Diana', 'Coleman', 'diana.c@provision.com', '+1-555-2043', 'Product Owner')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (19, 'Henry', 'Perry', 'henry.p@apexitsol.net', '+1-555-2044', 'Service Delivery Manager')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (20, 'Sofia', 'Long', 'sofia.l@creativeminds.io', '+1-555-2045', 'Account Director')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (21, 'Adrian', 'Hayes', 'adrian.h@skycloud.io', '+1-555-2046', 'Infrastructure Lead')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (22, 'Maya', 'Ross', 'maya.r@insightdata.io', '+1-555-2047', 'Data Governance Lead')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (23, 'Leon', 'Barnes', 'leon.b@safeguardsec.com', '+1-555-2048', 'Risk Manager')",
+            "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (24, 'Elena', 'Ward', 'elena.w@futureworks.io', '+1-555-2049', 'Programme Manager')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (1, 1, 'Enterprise License Q2', 45000.00, 'Proposal', '2026-06-30')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (2, 3, 'Digital Transformation Project', 120000.00, 'Negotiation', '2026-07-15')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (3, 4, 'Cloud Migration Services', 85000.00, 'Qualified', '2026-06-01')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (4, 5, 'Support & Maintenance', 35000.00, 'Won', '2026-05-20')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (5, 6, 'Marketing Campaign Development', 55000.00, 'Lead', '2026-08-01')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (1, 2, 'Integration Consulting', 25000.00, 'Proposal', '2026-07-01')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (6, 7, 'Cloud Infrastructure Buildout', 95000.00, 'Qualified', '2026-06-15')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (7, 8, 'Data Analytics Platform', 150000.00, 'Negotiation', '2026-07-30')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (8, 9, 'Security Audit & Remediation', 65000.00, 'Proposal', '2026-06-20')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (9, 10, 'Innovation Research Program', 75000.00, 'Lead', '2026-08-15')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (10, 11, 'Strategic Business Review', 40000.00, 'Won', '2026-05-30')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (11, 12, 'Enterprise Services Package', 110000.00, 'Negotiation', '2026-07-10')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (12, 13, 'Software Platform Implementation', 180000.00, 'Qualified', '2026-08-01')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (13, 14, 'Growth Fund Round A', 500000.00, 'Negotiation', '2026-08-30')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (14, 15, 'Brand Strategy & Marketing', 85000.00, 'Proposal', '2026-06-25')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (15, 16, 'Seed Investment Series', 250000.00, 'Lead', '2026-09-01')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (16, 17, 'Technology Stack Modernization', 95000.00, 'Qualified', '2026-07-05')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (17, 18, 'Business Process Consulting', 65000.00, 'Proposal', '2026-06-10')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (18, 19, 'Application Development', 120000.00, 'Lead', '2026-08-20')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (19, 20, 'System Integration & APIs', 78000.00, 'Won', '2026-05-25')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (20, 21, 'Digital Marketing Campaign', 55000.00, 'Proposal', '2026-06-18')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (21, 22, 'Cloud Architecture Redesign', 105000.00, 'Negotiation', '2026-07-22')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (22, 23, 'Business Intelligence Suite', 145000.00, 'Qualified', '2026-08-10')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (23, 24, 'Threat Assessment & Response', 68000.00, 'Lead', '2026-08-05')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (24, 3, 'Product Innovation Initiative', 95000.00, 'Proposal', '2026-07-12')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (3, 5, 'Infrastructure Expansion Phase 2', 125000.00, 'Negotiation', '2026-08-25')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (6, 9, 'Premium Support Contract', 42000.00, 'Won', '2026-05-22')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (8, 11, 'Security Operations Center', 160000.00, 'Qualified', '2026-07-20')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (10, 15, 'Executive Coaching Program', 38000.00, 'Lead', '2026-08-12')",
-            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (12, 20, 'Data Platform Extension', 92000.00, 'Proposal', '2026-09-10')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (6, 12, 'Cloud Infrastructure Buildout', 95000.00, 'Qualified', '2026-06-15')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (7, 13, 'Data Analytics Platform', 150000.00, 'Negotiation', '2026-07-30')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (8, 14, 'Security Audit & Remediation', 65000.00, 'Proposal', '2026-06-20')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (9, 15, 'Innovation Research Program', 75000.00, 'Lead', '2026-08-15')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (10, 16, 'Strategic Business Review', 40000.00, 'Won', '2026-05-30')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (11, 17, 'Enterprise Services Package', 110000.00, 'Negotiation', '2026-07-10')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (12, 18, 'Software Platform Implementation', 180000.00, 'Qualified', '2026-08-01')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (13, 19, 'Growth Fund Round A', 500000.00, 'Negotiation', '2026-08-30')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (14, 20, 'Brand Strategy & Marketing', 85000.00, 'Proposal', '2026-06-25')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (15, 21, 'Seed Investment Series', 250000.00, 'Lead', '2026-09-01')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (16, 22, 'Technology Stack Modernization', 95000.00, 'Qualified', '2026-07-05')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (17, 23, 'Business Process Consulting', 65000.00, 'Proposal', '2026-06-10')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (18, 24, 'Application Development', 120000.00, 'Lead', '2026-08-20')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (19, 25, 'System Integration & APIs', 78000.00, 'Won', '2026-05-25')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (20, 26, 'Digital Marketing Campaign', 55000.00, 'Proposal', '2026-06-18')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (21, 27, 'Cloud Architecture Redesign', 105000.00, 'Negotiation', '2026-07-22')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (22, 28, 'Business Intelligence Suite', 145000.00, 'Qualified', '2026-08-10')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (23, 29, 'Threat Assessment & Response', 68000.00, 'Lead', '2026-08-05')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (24, 30, 'Product Innovation Initiative', 95000.00, 'Proposal', '2026-07-12')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (3, 9, 'Infrastructure Expansion Phase 2', 125000.00, 'Negotiation', '2026-08-25')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (6, 12, 'Premium Support Contract', 42000.00, 'Won', '2026-05-22')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (8, 14, 'Security Operations Center', 160000.00, 'Qualified', '2026-07-20')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (10, 16, 'Executive Coaching Program', 38000.00, 'Lead', '2026-08-12')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (12, 18, 'Data Platform Extension', 92000.00, 'Proposal', '2026-09-10')",
+            // Deals 31-35 deliberately land on a company + stage that already has one, so
+            // v_demo_crm_deals_aggregate (fed to the RAG "Ask AI" panel) shows real groups
+            // instead of 29 rows that all read COUNT = 1. Acme/Proposal ends up with three.
+            // Each uses a contact belonging to that same company, and the expected_close
+            // dates sit outside the existing ones so the first/last close window is visible.
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (1, 7, 'Managed Services Retainer', 88000.00, 'Proposal', '2026-08-14')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (2, 8, 'Change Management Programme', 210000.00, 'Negotiation', '2026-09-05')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (3, 9, 'Developer Training Package', 32000.00, 'Qualified', '2026-06-28')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (4, 10, 'Hardware Refresh Phase 1', 61000.00, 'Won', '2026-06-05')",
+            "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (5, 11, 'Social Campaign Retainer', 47000.00, 'Lead', '2026-09-15')",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (1, 1, 'Call', 'Discussed budget and timeline', NOW() - INTERVAL '2 days', true)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (2, 3, 'Meeting', 'Presentation to stakeholders', NOW() + INTERVAL '3 days', false)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (3, 4, 'Email', 'Sent proposal document', NOW() - INTERVAL '5 days', true)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (4, 5, 'Task', 'Follow-up on implementation', NOW() + INTERVAL '4 days', false)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (5, 6, 'Note', 'Initial contact qualifies as lead', NOW() - INTERVAL '1 day', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (1, 1, 'Email', 'Sent revised pricing sheet', NOW() - INTERVAL '12 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (2, 3, 'Call', 'Quarterly check-in call', NOW() + INTERVAL '7 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (3, 4, 'Meeting', 'Architecture walkthrough on-site', NOW() + INTERVAL '10 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (4, 5, 'Task', 'Prepare renewal contract draft', NOW() - INTERVAL '8 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (5, 6, 'Email', 'Introductory product overview', NOW() + INTERVAL '14 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (1, 2, 'Email', 'Sent revised pricing sheet', NOW() - INTERVAL '12 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (2, 8, 'Call', 'Quarterly check-in call', NOW() + INTERVAL '7 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (3, 9, 'Meeting', 'Architecture walkthrough on-site', NOW() + INTERVAL '10 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (4, 10, 'Task', 'Prepare renewal contract draft', NOW() - INTERVAL '8 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (5, 11, 'Email', 'Introductory product overview', NOW() + INTERVAL '14 days', false)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (6, 2, 'Call', 'Discovery call with procurement', NOW() + INTERVAL '2 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (1, 2, 'Meeting', 'Demo of new reporting features', NOW() + INTERVAL '17 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (1, 7, 'Meeting', 'Demo of new reporting features', NOW() + INTERVAL '17 days', false)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (2, 3, 'Note', 'Stakeholder map updated', NOW() - INTERVAL '15 days', true)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (3, 4, 'Task', 'Send SOC2 documentation pack', NOW() + INTERVAL '5 days', false)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (4, 5, 'Email', 'Confirm onboarding schedule', NOW() + INTERVAL '21 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (7, 7, 'Call', 'Infrastructure planning discussion', NOW() - INTERVAL '3 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (8, 8, 'Meeting', 'Data platform requirements workshop', NOW() + INTERVAL '5 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (9, 9, 'Email', 'Security assessment questionnaire sent', NOW() - INTERVAL '4 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (10, 10, 'Task', 'Schedule research kickoff meeting', NOW() + INTERVAL '6 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (11, 11, 'Call', 'Strategic planning session', NOW() - INTERVAL '1 day', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (12, 12, 'Meeting', 'Enterprise platform demo', NOW() + INTERVAL '8 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (13, 13, 'Note', 'Fund allocation criteria reviewed', NOW() - INTERVAL '2 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (14, 14, 'Email', 'Marketing deck sent for review', NOW() + INTERVAL '4 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (15, 15, 'Call', 'Seed round discussion with founders', NOW() - INTERVAL '6 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (16, 16, 'Task', 'Tech stack assessment complete', NOW() + INTERVAL '3 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (17, 17, 'Meeting', 'Process mapping and analysis', NOW() - INTERVAL '7 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (18, 18, 'Email', 'Development proposal sent', NOW() + INTERVAL '9 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (19, 19, 'Call', 'API integration design review', NOW() - INTERVAL '4 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (20, 20, 'Note', 'Digital strategy defined', NOW() + INTERVAL '2 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (21, 21, 'Task', 'Cloud migration planning', NOW() - INTERVAL '5 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (22, 22, 'Meeting', 'BI dashboarding requirements', NOW() + INTERVAL '7 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (23, 23, 'Call', 'Security threat modeling session', NOW() - INTERVAL '3 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (24, 24, 'Email', 'R&D roadmap shared', NOW() + INTERVAL '6 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (1, 4, 'Task', 'Budget approval from finance', NOW() - INTERVAL '10 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (2, 6, 'Call', 'Executive steering committee prep', NOW() + INTERVAL '11 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (3, 7, 'Meeting', 'Technical architecture review', NOW() - INTERVAL '6 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (4, 8, 'Email', 'Support SLA document finalized', NOW() + INTERVAL '5 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (5, 9, 'Note', 'Campaign metrics baseline set', NOW() - INTERVAL '9 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (6, 10, 'Task', 'Vendor evaluation criteria', NOW() + INTERVAL '10 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (7, 11, 'Call', 'Stakeholder interviews completed', NOW() - INTERVAL '8 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (8, 12, 'Meeting', 'Data science team alignment', NOW() + INTERVAL '12 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (9, 13, 'Email', 'Remediation plan draft', NOW() - INTERVAL '2 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (10, 14, 'Task', 'Lab resource allocation', NOW() + INTERVAL '8 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (11, 15, 'Call', 'Strategic roadmap alignment', NOW() - INTERVAL '11 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (12, 16, 'Note', 'Contract legal review passed', NOW() + INTERVAL '9 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (13, 17, 'Email', 'LP commitment letters received', NOW() - INTERVAL '13 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (14, 18, 'Task', 'Brand audit and positioning', NOW() + INTERVAL '7 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (15, 19, 'Meeting', 'Due diligence kick-off', NOW() - INTERVAL '14 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (16, 20, 'Call', 'Legacy system migration planning', NOW() + INTERVAL '13 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (17, 21, 'Email', 'Consulting scope statement', NOW() - INTERVAL '7 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (18, 22, 'Task', 'Development environment setup', NOW() + INTERVAL '11 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (19, 23, 'Note', 'Integration test results reviewed', NOW() - INTERVAL '5 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (20, 24, 'Call', 'Digital channel strategy', NOW() + INTERVAL '6 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (21, 3, 'Meeting', 'Cloud capacity planning', NOW() - INTERVAL '9 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (22, 5, 'Email', 'Analytics engine configuration', NOW() + INTERVAL '4 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (23, 7, 'Task', 'Penetration testing approved', NOW() - INTERVAL '6 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (24, 9, 'Call', 'Coaching engagement initiated', NOW() + INTERVAL '10 days', false)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (6, 11, 'Note', 'Payment terms finalized', NOW() - INTERVAL '4 days', true)",
-            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (12, 13, 'Email', 'SOC alignment meeting scheduled', NOW() + INTERVAL '3 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (7, 12, 'Call', 'Infrastructure planning discussion', NOW() - INTERVAL '3 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (8, 13, 'Meeting', 'Data platform requirements workshop', NOW() + INTERVAL '5 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (9, 14, 'Email', 'Security assessment questionnaire sent', NOW() - INTERVAL '4 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (10, 15, 'Task', 'Schedule research kickoff meeting', NOW() + INTERVAL '6 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (11, 16, 'Call', 'Strategic planning session', NOW() - INTERVAL '1 day', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (12, 17, 'Meeting', 'Enterprise platform demo', NOW() + INTERVAL '8 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (13, 18, 'Note', 'Fund allocation criteria reviewed', NOW() - INTERVAL '2 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (14, 19, 'Email', 'Marketing deck sent for review', NOW() + INTERVAL '4 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (15, 20, 'Call', 'Seed round discussion with founders', NOW() - INTERVAL '6 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (16, 21, 'Task', 'Tech stack assessment complete', NOW() + INTERVAL '3 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (17, 22, 'Meeting', 'Process mapping and analysis', NOW() - INTERVAL '7 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (18, 23, 'Email', 'Development proposal sent', NOW() + INTERVAL '9 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (19, 24, 'Call', 'API integration design review', NOW() - INTERVAL '4 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (20, 25, 'Note', 'Digital strategy defined', NOW() + INTERVAL '2 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (21, 26, 'Task', 'Cloud migration planning', NOW() - INTERVAL '5 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (22, 27, 'Meeting', 'BI dashboarding requirements', NOW() + INTERVAL '7 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (23, 28, 'Call', 'Security threat modeling session', NOW() - INTERVAL '3 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (24, 29, 'Email', 'R&D roadmap shared', NOW() + INTERVAL '6 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (1, 1, 'Task', 'Budget approval from finance', NOW() - INTERVAL '10 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (2, 8, 'Call', 'Executive steering committee prep', NOW() + INTERVAL '11 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (3, 9, 'Meeting', 'Technical architecture review', NOW() - INTERVAL '6 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (4, 10, 'Email', 'Support SLA document finalized', NOW() + INTERVAL '5 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (5, 6, 'Note', 'Campaign metrics baseline set', NOW() - INTERVAL '9 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (6, 7, 'Task', 'Vendor evaluation criteria', NOW() + INTERVAL '10 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (7, 31, 'Call', 'Stakeholder interviews completed', NOW() - INTERVAL '8 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (8, 32, 'Meeting', 'Data science team alignment', NOW() + INTERVAL '12 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (9, 33, 'Email', 'Remediation plan draft', NOW() - INTERVAL '2 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (10, 34, 'Task', 'Lab resource allocation', NOW() + INTERVAL '8 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (11, 35, 'Call', 'Strategic roadmap alignment', NOW() - INTERVAL '11 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (12, 36, 'Note', 'Contract legal review passed', NOW() + INTERVAL '9 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (13, 37, 'Email', 'LP commitment letters received', NOW() - INTERVAL '13 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (14, 38, 'Task', 'Brand audit and positioning', NOW() + INTERVAL '7 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (15, 39, 'Meeting', 'Due diligence kick-off', NOW() - INTERVAL '14 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (16, 40, 'Call', 'Legacy system migration planning', NOW() + INTERVAL '13 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (17, 41, 'Email', 'Consulting scope statement', NOW() - INTERVAL '7 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (18, 42, 'Task', 'Development environment setup', NOW() + INTERVAL '11 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (19, 43, 'Note', 'Integration test results reviewed', NOW() - INTERVAL '5 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (20, 44, 'Call', 'Digital channel strategy', NOW() + INTERVAL '6 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (21, 45, 'Meeting', 'Cloud capacity planning', NOW() - INTERVAL '9 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (22, 46, 'Email', 'Analytics engine configuration', NOW() + INTERVAL '4 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (23, 47, 'Task', 'Penetration testing approved', NOW() - INTERVAL '6 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (24, 48, 'Call', 'Coaching engagement initiated', NOW() + INTERVAL '10 days', false)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (6, 1, 'Note', 'Payment terms finalized', NOW() - INTERVAL '4 days', true)",
+            "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (12, 17, 'Email', 'SOC alignment meeting scheduled', NOW() + INTERVAL '3 days', false)",
             // Bulk volume for the Pipeline Summary view (v_demo_crm_company_pipeline):
             // the hand-written rows above only cover companies 1-24 with ~1 deal per
             // company and stage, which makes avg/max/min collapse onto the same number.
             // Two set-based inserts: extra contacts for every company, and 1-3 extra
-            // activities per deal (the deal list stays at the 30 hand-written rows above,
+            // activities per deal (the deal list stays at the 35 hand-written rows above,
             // all of which have deal_contacts m2m links). Activities are scheduled across
             // a 3-month window (previous, current and next month, business hours
             // 08:00-16:00) so the calendar is not clumped into single days. Values derive
@@ -345,40 +416,40 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (2, 8, 'Legal Reviewer')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (3, 9, 'Technical Evaluator')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (4, 10, 'Economic Buyer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (7, 12, 'Technical Evaluator')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (8, 14, 'Economic Buyer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (12, 18, 'Legal Reviewer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (2, 3, 'Executive Sponsor')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (3, 4, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (7, 31, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (8, 32, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (12, 36, 'Legal Reviewer')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (5, 11, 'Champion')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (6, 1, 'Executive Sponsor')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (6, 7, 'Procurement')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (7, 13, 'Economic Buyer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (8, 15, 'Technical Evaluator')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (9, 14, 'Legal Reviewer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (10, 15, 'Technical Evaluator')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (11, 16, 'Procurement')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (12, 13, 'Technical Evaluator')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (13, 19, 'Economic Buyer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (14, 20, 'Executive Sponsor')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (15, 21, 'Champion')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (16, 22, 'Legal Reviewer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (17, 23, 'Technical Evaluator')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (18, 24, 'Procurement')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (19, 25, 'Economic Buyer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (20, 26, 'Technical Evaluator')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (21, 27, 'Champion')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (22, 28, 'Legal Reviewer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (23, 29, 'Executive Sponsor')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (24, 30, 'Procurement')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (25, 24, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (9, 33, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (10, 34, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (11, 35, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (13, 37, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (14, 38, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (15, 39, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (16, 40, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (17, 41, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (18, 42, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (19, 43, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (20, 44, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (21, 45, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (22, 46, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (23, 47, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (24, 48, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (25, 49, 'Technical Evaluator')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (26, 4, 'Champion')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (26, 9, 'Economic Buyer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (27, 12, 'Technical Evaluator')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (28, 14, 'Legal Reviewer')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (29, 16, 'Executive Sponsor')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (30, 18, 'Champion')",
-            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (30, 8, 'Procurement')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (27, 31, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (28, 33, 'Legal Reviewer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (29, 35, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (30, 37, 'Champion')",
+            // Stakeholders for deals 31-35, all drawn from the deal's own company.
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (31, 1, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (31, 2, 'Technical Evaluator')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (32, 3, 'Executive Sponsor')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (33, 4, 'Champion')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (34, 5, 'Economic Buyer')",
+            "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (35, 6, 'Champion')",
             // Spread created_at over past weeks/months so the dashboard period filter
             // (Today/7d/30d) and stat card trend deltas have history to compare against.
             // The WHERE guard on leads keeps the intentionally stale GDPR-demo rows intact.
@@ -738,7 +809,10 @@ function demo_def_crm($conn): array
                 'related_table' => 'companies', 'related_id' => 1, 'author' => 1,
                 'filename' => 'acme-account-summary.csv',
                 'description' => 'Quarterly account summary for Acme Corporation.',
-                'content' => "Metric,Value\nOpen Deals,2\nTotal Pipeline Value,70000\nSupport Tickets (Open),3\n",
+                // Must match the seeded deals for company 1 (ids 1, 6 and 31 — all still
+                // open): the RAG panel reads this attachment and the deals aggregate view
+                // side by side, so a stale total here reads as a contradiction.
+                'content' => "Metric,Value\nOpen Deals,3\nTotal Pipeline Value,158000\nSupport Tickets (Open),3\n",
             ],
             [
                 'related_table' => 'contacts', 'related_id' => 1, 'author' => 0,
@@ -912,6 +986,15 @@ function demo_def_crm($conn): array
             ['file' => 'crm_dashboard_calendar.txt', 'tag' => 'dashboard'],
             ['file' => 'crm_reports_print.txt',      'tag' => 'reports'],
             ['file' => 'crm_collaboration.txt',      'tag' => 'collaboration'],
+        ],
+        // RAG aggregate views (spw_config key "rag", section aggregate_views, shown in
+        // Admin → RAG → Aggregate Views). table => "schema.view": when the Ask AI panel
+        // is opened on that table, the view's rows are appended to the prompt as exact
+        // totals computed over the FULL set, not just the page the user can see.
+        // Capped by rag.aggregate_view_limit (default 100) — this view yields one row per
+        // company x stage, 29 for the seeded deals, so nothing is truncated.
+        'rag_aggregate_views' => [
+            'deals' => 'spw_crm.v_demo_crm_deals_aggregate',
         ],
     ];
 }

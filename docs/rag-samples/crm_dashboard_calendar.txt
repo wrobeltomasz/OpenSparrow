@@ -47,5 +47,5 @@ Nothing else is on the calendar in this demo.
 
 Calendar notifications are delivered by cron_notifications.php, which also handles note
 reminders and queued automation emails. Recipients are configured per source in
-Admin → Calendar; the demo leaves the recipient list empty, so set it there if you want
-the reminders to actually reach a user.
+Admin → Calendar; the install subscribes the admin account that ran it to both sources, so
+reminders have a recipient out of the box — add or change them there.

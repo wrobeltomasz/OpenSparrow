@@ -53,3 +53,8 @@ Installed but kept out of the menu, available if you unhide them in Admin → Vi
 
 The two "... Source" views (Pipeline Report Source, Activity Agenda Source) only feed the
 print templates and are not meant to be browsed as grids.
+
+One further database view, v_demo_crm_deals_aggregate, is not part of the Views module at
+all: it holds one row per company and sales stage (contacts, deal count, total/average
+value, first and last expected close) and is attached to the deals table in Admin → RAG →
+Aggregate Views, so those exact totals are available when asking questions on that table.

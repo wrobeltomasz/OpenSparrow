@@ -55,7 +55,9 @@ VIEWS:
 - Pipeline Summary (in the menu): deal and activity measures per company and stage
 One more view is installed but hidden from the menu: Leads Funnel. Two further views
 (Pipeline Report Source, Activity Agenda Source) exist only to feed the print templates
-and are not meant to be browsed.
+and are not meant to be browsed. A fifth database view, v_demo_crm_deals_aggregate, holds
+deal totals per company and stage and is attached to the deals table in Admin → RAG →
+Aggregate Views; it is not registered in the Views module at all.
 
 DEMO USERS:
 Three extra users are created: demo.anna (editor), demo.marek (editor) and demo.julia
@@ -65,4 +67,4 @@ notifications — see the CRM Collaboration doc.
 UNINSTALL:
 Admin → Demo Data removes the spw_crm schema, the demo users and every config entry the
 install added (widgets, views, menu items, board, workflows, automations, prints,
-anonymization rules, files).
+anonymization rules, files, the RAG aggregate view mapping).
