@@ -334,6 +334,65 @@ function waitForPagination({ timeout = TIMEOUTS.medium } = {}) {
 }
 
 // ============================================================================
+// Shared Assertion Contracts
+// ============================================================================
+//
+// Behaviours that every module repeats identically. Before these existed the
+// same three or four it() blocks were copy-pasted into dashboard / calendar /
+// board / files / views, which meant a change to the shared contract had to be
+// chased through six files. Each module now states its own selectors and calls
+// the contract once — coverage per module is unchanged.
+
+/**
+ * The page-level filter bar contract, shared by every module that renders one:
+ *
+ *   1. #clearFilters starts hidden (no filter active yet),
+ *   2. activating any filter reveals it,
+ *   3. clicking it restores the unfiltered state and hides itself again.
+ *
+ * @param {Function}  activate  applies a filter (select a value, click a chip, type a phrase)
+ * @param {Function} [reset]    extra assertions about the restored state (e.g. select back to 'all')
+ * @param {Function} [settle]   waits out the module's async reload, between each step
+ */
+function assertClearFiltersContract({ activate, reset, settle } = {}) {
+  cy.get('#clearFilters').should('have.attr', 'hidden');
+
+  activate();
+  if (settle) settle();
+  cy.get('#clearFilters').should('not.have.attr', 'hidden');
+
+  // Re-query rather than chaining off the assertion above: chaining .should()
+  // straight into .click() re-runs the click on every retry.
+  cy.get('#clearFilters').click();
+  if (settle) settle();
+
+  if (reset) reset();
+  cy.get('#clearFilters').should('have.attr', 'hidden');
+}
+
+/**
+ * Sidebar smoke shared by every page that renders the menu. Called from inside
+ * the module's own "loads … page" test rather than as a separate it().
+ */
+function assertSidebarPresent() {
+  cy.get('#menu', { timeout: TIMEOUTS.long }).should('exist');
+  cy.get('.menu-list li').its('length').should('be.gte', 1);
+}
+
+/**
+ * Mobile smoke: at 375×667 the module's key elements still render. Replaces the
+ * two- and three-test "… : Mobile" describes that only asserted existence.
+ * Set the viewport in the caller's beforeEach — this only asserts.
+ *
+ * @param {string[]} selectors  must all exist at the mobile viewport
+ */
+function assertMobileSmoke(selectors) {
+  selectors.forEach(sel => {
+    cy.get(sel, { timeout: TIMEOUTS.medium }).should('exist');
+  });
+}
+
+// ============================================================================
 // Expose helpers globally so spec files can call them without import
 // ============================================================================
 
@@ -346,6 +405,9 @@ window.waitForGridOrEmpty = waitForGridOrEmpty;
 window.waitForActions    = waitForActions;
 window.clickAddIfPresent = clickAddIfPresent;
 window.waitForPagination = waitForPagination;
+window.assertClearFiltersContract = assertClearFiltersContract;
+window.assertSidebarPresent = assertSidebarPresent;
+window.assertMobileSmoke = assertMobileSmoke;
 
 window.CypressHelpers = {
   BASE,
@@ -357,4 +419,7 @@ window.CypressHelpers = {
   waitForActions,
   clickAddIfPresent,
   waitForPagination,
+  assertClearFiltersContract,
+  assertSidebarPresent,
+  assertMobileSmoke,
 };

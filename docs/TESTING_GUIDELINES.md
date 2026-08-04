@@ -14,35 +14,52 @@
 - **Language:** JavaScript (ES6+)
 - **Target:** OpenSparrow web application (PHP/PostgreSQL)
 - **Base URL:** http://localhost:8080
-- **Current Test Files** (23 specs in `cypress/e2e/`):
+- **Current Test Files** (30 specs, grouped by area under `cypress/e2e/`):
 
 | Spec | Covers |
 |---|---|
-| `admin.cy.js` | Admin panel navigation and per-module interactions |
-| `agent_panel.cy.js` | Slide-in "Ask AI" panel and RAG chat |
-| `anonymization.cy.js` | GDPR column scrubbing: preview, run, audit trail |
-| `api_contracts.cy.js` | API contracts — CSRF on writes, GET never mutates |
-| `board.cy.js` | Kanban board, dragging cards between status lanes |
-| `calendar.cy.js` | Calendar view and date-based records |
-| `comments.cy.js` | Threaded record comments, grid badge, Edit-form tab |
-| `crud.cy.js` | Create / edit / delete record flows |
-| `csv_import.cy.js` | CSV import with preview and per-row rejection log |
-| `dashboard.cy.js` | Dashboard widgets and aggregations |
-| `data_cleanup.cy.js` | Find & Replace drawer, accent/case options |
-| `etl.cy.js` | ETL jobs and multi-step flows |
-| `files.cy.js` | File manager, attachments, tagging and search |
-| `grid.cy.js` | Grid operations: sorting, filtering, pagination |
-| `i18n.cy.js` | Language switching and translated UI strings |
-| `images.cy.js` | Record image galleries: grid thumbnails, upload, popup |
-| `keyboard_shortcuts.cy.js` | Keyboard navigation, cell selection, copy/paste |
-| `login.cy.js` | Authentication flows, grid navigation, core UI |
-| `mass_edit.cy.js` | Bulk edit with preview before applying |
-| `notifications.cy.js` | Notification bell, dropdown, reminders |
-| `print.cy.js` | Printable report templates and pagination |
-| `views.cy.js` | Saved views backed by PostgreSQL views |
-| `workflows.cy.js` | Multi-step workflow wizards |
+| **`auth/`** | |
+| `auth/login.cy.js` | Login, logout, and the authenticated shell (sidebar, header avatar) |
+| **`grid/`** | |
+| `grid/crud.cy.js` | Create / edit / delete record flows |
+| `grid/data_cleanup.cy.js` | Find & Replace drawer, accent/case options |
+| `grid/grid.cy.js` | Grid operations: sorting, filtering, pagination, inline edit, mobile |
+| `grid/images.cy.js` | Record image galleries: grid thumbnails, upload, popup |
+| `grid/keyboard_shortcuts.cy.js` | Keyboard navigation, cell selection, copy/paste |
+| `grid/mass_edit.cy.js` | Bulk edit with preview before applying |
+| **`modules/`** | |
+| `modules/agent_panel.cy.js` | Slide-in "Ask AI" panel and RAG chat |
+| `modules/board.cy.js` | Kanban board, dragging cards between status lanes |
+| `modules/calendar.cy.js` | Calendar view and date-based records |
+| `modules/comments.cy.js` | Threaded record comments, grid badge, Edit-form tab |
+| `modules/dashboard.cy.js` | Dashboard widgets and aggregations |
+| `modules/files.cy.js` | File manager, attachments, tagging and search |
+| `modules/notifications.cy.js` | Notification bell, dropdown, reminders |
+| `modules/print.cy.js` | Printable report templates and pagination |
+| `modules/views.cy.js` | Saved views backed by PostgreSQL views |
+| `modules/workflows.cy.js` | Multi-step workflow wizards |
+| **`admin/`** | |
+| `admin/admin.cy.js` | Admin panel navigation and per-module interactions |
+| `admin/anonymization.cy.js` | GDPR column scrubbing: preview, run, audit trail |
+| `admin/csv_import.cy.js` | CSV import with preview and per-row rejection log |
+| `admin/etl.cy.js` | ETL jobs and multi-step flows |
+| **`api/`** (no DOM) | |
+| `api/api_contracts.cy.js` | JSON response shapes of the endpoints the frontend consumes |
+| `api/db_counts.cy.js` | DB-truth row counts via `cy.dbCount()` after create / delete |
+| `api/i18n.cy.js` | Language switching and translated UI strings |
+| **`security/`** | |
+| `security/auth_session.cy.js` | Session cookie flags, id rotation, login throttle |
+| `security/authorization.cy.js` | Anonymous gates, editor↛admin, admin↛frontend API |
+| `security/csrf.cy.js` | CSRF on every mutating verb; admin `$postActions` whitelist |
+| `security/headers_upload.cy.js` | Hardening headers, CSP nonce, the upload gauntlet |
+| `security/idor.cy.js` | Row-level ownership across grid, edit, PATCH, DELETE, bulk |
+| `security/injection.cy.js` | SQLi probes, stored XSS, path traversal |
 
-- **Shared Helpers** (`cypress/support/e2e.js`): `loginAsTestUser`, `loginAsAdmin`, `waitForGridOrEmpty`, `waitForPagination`
+The auth (401), CSRF (403) and role (403) gates live only in `security/` — those
+specs assert the exact status code *and* that the body leaks no server internals
+(`cy.expectDenied`). Do not add a weaker second copy to a feature spec.
+
+- **Shared Helpers** (`cypress/support/e2e.js`): `loginAsTestUser`, `loginAsAdmin`, `waitForGridOrEmpty`, `waitForPagination`, plus the shared assertion contracts `assertClearFiltersContract`, `assertSidebarPresent` and `assertMobileSmoke` — never re-copy those blocks into a spec
 
 > **Admin nav is collapsible.** Sidebar sections (`.nav-section`) are closed by
 > default except Overview, so a spec must expand the section before clicking an
@@ -58,7 +75,7 @@
 
 ### 1. File Organization
 ```javascript
-// cypress/e2e/login.cy.js
+// cypress/e2e/auth/login.cy.js
 // 1. Imports and configuration (constants, timeouts)
 // 2. Helper functions (reusable actions and assertions)
 // 3. Test suites (describe blocks)
@@ -717,7 +734,7 @@ npm run cy:open
 npm run cy:run
 
 # Run specific test file
-npm run cy:run -- --spec "cypress/e2e/login.cy.js"
+npm run cy:run -- --spec "cypress/e2e/auth/login.cy.js"
 
 # Run with browser preview
 npm run cy:run -- --headed

@@ -3,7 +3,8 @@
 
 Every example below is grounded in code that exists in this repository —
 `cypress/support/e2e.js`, `templates/template.php`, `public/login.php` and the
-23 specs in `cypress/e2e/`. Selectors used here are real; do not invent new
+specs under `cypress/e2e/` (grouped into `auth/`, `grid/`, `modules/`, `admin/`,
+`api/` and `security/`). Selectors used here are real; do not invent new
 `data-cy` hooks in a spec without adding them to the source in the same PR
 (the full inventory is in `cypress/TEST_CHECKLIST.md`).
 
@@ -385,6 +386,88 @@ describe('Record creation', () => {
 
 ---
 
+## Example 10: A shared assertion contract
+
+Some behaviour is identical in every module that has it. The filter bar is the
+clearest case: dashboard, calendar, board, files and views all render the same
+`#clearFilters` button with the same three-step contract — hidden until a filter
+is active, revealed on activation, restores the unfiltered state when clicked.
+
+### Bad — the same block copy-pasted into six specs
+
+```javascript
+it('clear-filters button is hidden until a filter is active', () => {
+  cy.get('#clearFilters').should('have.attr', 'hidden');
+});
+
+it('typing a search phrase reveals the clear-filters button', () => {
+  cy.get('#calendarSearch').type('zzz-search-term');
+  cy.get('#clearFilters').should('not.have.attr', 'hidden');
+});
+
+it('clear-filters resets the search and hides itself', () => {
+  cy.get('#calendarSearch').type('zzz-search-term');
+  cy.get('#clearFilters').click();
+  cy.get('#calendarSearch').should('have.value', '');
+  cy.get('#clearFilters').should('have.attr', 'hidden');
+});
+```
+
+Three tests here, three more in `board.cy.js`, four in `files.cy.js` — and a
+change to the shared behaviour has to be found in all six files.
+
+### Good — state the selectors, call the contract
+
+```javascript
+it('search follows the clear-filters contract', () => {
+  assertClearFiltersContract({
+    activate: () => cy.get('#calendarSearch').type('zzz-search-term'),
+    reset:    () => cy.get('#calendarSearch').should('have.value', ''),
+  });
+});
+```
+
+The module still asserts its own selectors and its own reset state — nothing is
+generalised away. Only the ordering and the `#clearFilters` assertions, which are
+genuinely identical everywhere, moved into `cypress/support/e2e.js`.
+
+Two extras worth knowing:
+
+- **`settle`** runs between every step, for modules that reload asynchronously
+  after a filter change:
+
+  ```javascript
+  assertClearFiltersContract({
+    activate: () => cy.get('#dashDateFilter').select('7d'),
+    settle:   () => cy.get('#dashboardSection .dash-loading',
+                { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist'),
+    reset:    () => cy.get('#dashDateFilter').should('have.value', 'all'),
+  });
+  ```
+
+- **`activate` and `reset` may assert more than the filter itself.** Board and
+  dashboard use them to check that the right number of lanes/widgets disappeared
+  and came back:
+
+  ```javascript
+  cy.get('.board-lane').then($lanes => {
+    const totalLanes = $lanes.length;
+    assertClearFiltersContract({
+      activate: () => {
+        cy.get('#boardFilters .filter-chip').first().click();
+        cy.get('.board-lane').should('have.length', totalLanes - 1);
+      },
+      reset: () => cy.get('.board-lane').should('have.length', totalLanes),
+    });
+  });
+  ```
+
+The same reasoning produced `assertSidebarPresent()` and
+`assertMobileSmoke([...])`. Before adding a third copy of any block, ask whether
+it belongs in `support/e2e.js` with the varying parts passed in.
+
+---
+
 ## Quick comparison: before and after
 
 | Aspect | Before | After |
@@ -408,7 +491,7 @@ describe('Record creation', () => {
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/my_feature.cy.js
+// cypress/e2e/modules/my_feature.cy.js   <- area folder, see TEST_CHECKLIST.md
 // ============================================================================
 // Feature: [what is under test]
 // Coverage: [which scenarios]
@@ -419,8 +502,9 @@ const BASE = 'http://localhost:8080';
 
 // Helpers specific to this spec go here. Anything reusable across specs belongs
 // in cypress/support/e2e.js instead — BASE, TIMEOUTS, loginAsTestUser,
-// loginAsAdmin, waitForGridOrEmpty, waitForActions, clickAddIfPresent and
-// waitForPagination are already global.
+// loginAsAdmin, waitForGridOrEmpty, waitForActions, clickAddIfPresent,
+// waitForPagination, assertClearFiltersContract, assertSidebarPresent and
+// assertMobileSmoke are already global.
 
 describe('OpenSparrow – My Feature', () => {
   before(() => {

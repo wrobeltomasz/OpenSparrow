@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/mass_edit.cy.js
+// cypress/e2e/grid/mass_edit.cy.js
 // ============================================================================
 // Mass Edit Module Tests
 // Covers: checkbox selection, floating me-bar, Edit Fields panel,

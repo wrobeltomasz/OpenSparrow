@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/dashboard.cy.js
+// cypress/e2e/modules/dashboard.cy.js
 // ============================================================================
 // Dashboard Module Tests — dashboard.php
 // ============================================================================
@@ -22,14 +22,11 @@ describe('OpenSparrow – Dashboard: Page Structure', () => {
 
   it('loads dashboard page', () => {
     cy.get('#dashboardMain', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
+    assertSidebarPresent();
   });
 
   it('has dashboard section container', () => {
     cy.get('#dashboardSection').should('exist');
-  });
-
-  it('has sidebar menu', () => {
-    cy.get('#menu').should('exist');
   });
 
   it('has notifications bell', () => {
@@ -123,23 +120,14 @@ describe('OpenSparrow – Dashboard: Period Filter', () => {
     });
   });
 
-  it('clear-filters button is hidden until a filter is active', () => {
-    cy.get('#clearFilters').should('have.attr', 'hidden');
-  });
-
-  it('changing the period reloads the widgets and reveals the clear-filters button', () => {
-    cy.get('#dashDateFilter').select('7d');
-    cy.get('#dashboardSection .dash-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
-    cy.get('#clearFilters').should('not.have.attr', 'hidden');
-  });
-
-  it('clear-filters resets the period back to "all" and hides itself', () => {
-    cy.get('#dashDateFilter').select('7d');
-    cy.get('#dashboardSection .dash-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
-    cy.get('#clearFilters').click();
-    cy.get('#dashboardSection .dash-loading', { timeout: CypressHelpers.TIMEOUTS.long }).should('not.exist');
-    cy.get('#dashDateFilter').should('have.value', 'all');
-    cy.get('#clearFilters').should('have.attr', 'hidden');
+  it('period filter follows the clear-filters contract', () => {
+    assertClearFiltersContract({
+      activate: () => cy.get('#dashDateFilter').select('7d'),
+      settle: () => cy.get('#dashboardSection .dash-loading', {
+        timeout: CypressHelpers.TIMEOUTS.long,
+      }).should('not.exist'),
+      reset: () => cy.get('#dashDateFilter').should('have.value', 'all'),
+    });
   });
 });
 
@@ -166,29 +154,25 @@ describe('OpenSparrow – Dashboard: Widget Visibility Filters', () => {
     });
   });
 
-  it('clicking a widget chip hides that widget and shows the clear-filters button', () => {
+  it('hiding a widget chip follows the clear-filters contract and restores every widget', () => {
     cy.get('body').then($body => {
-      if ($body.find('#dashboardFilters .filter-chip').length === 0) return;
+      if ($body.find('#dashboardFilters .filter-chip').length === 0) {
+        Cypress.log({ message: 'No widgets configured — skipping chip tests' });
+        return;
+      }
       cy.get('.dash-widget').then($widgets => {
         const total = $widgets.length;
-        cy.get('#dashboardFilters .filter-chip').first().click();
-        cy.get('#dashboardFilters .filter-chip').first().should('have.class', 'off');
-        cy.get('#clearFilters').should('not.have.attr', 'hidden');
-        cy.get('.dash-widget').should('have.length', total - 1);
-      });
-    });
-  });
-
-  it('clear-filters button restores every widget and hides itself', () => {
-    cy.get('body').then($body => {
-      if ($body.find('#dashboardFilters .filter-chip').length === 0) return;
-      cy.get('.dash-widget').then($widgets => {
-        const total = $widgets.length;
-        cy.get('#dashboardFilters .filter-chip').first().click();
-        cy.get('#clearFilters').click();
-        cy.get('#dashboardFilters .filter-chip.off').should('have.length', 0);
-        cy.get('.dash-widget').should('have.length', total);
-        cy.get('#clearFilters').should('have.attr', 'hidden');
+        assertClearFiltersContract({
+          activate: () => {
+            cy.get('#dashboardFilters .filter-chip').first().click();
+            cy.get('#dashboardFilters .filter-chip').first().should('have.class', 'off');
+            cy.get('.dash-widget').should('have.length', total - 1);
+          },
+          reset: () => {
+            cy.get('#dashboardFilters .filter-chip.off').should('have.length', 0);
+            cy.get('.dash-widget').should('have.length', total);
+          },
+        });
       });
     });
   });

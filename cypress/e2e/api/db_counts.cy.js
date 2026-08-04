@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/db_counts.cy.js
+// cypress/e2e/api/db_counts.cy.js
 // ============================================================================
 // Database Row-Count Tests (CRM demo data)
 // ----------------------------------------------------------------------------

@@ -10,9 +10,36 @@ short version you run through while writing a spec and again before opening a PR
 
 - [ ] Understand the happy path from the user's side, not the implementation's
 - [ ] Identify the assertions: what must be true *after* the action?
-- [ ] Check the 23 existing specs in `cypress/e2e/` — is this already covered?
+- [ ] Check the existing specs in the matching folder below — is this already covered?
 - [ ] Plan selectors: is there a `data-cy` hook? If not, a stable `id`? (see below)
 - [ ] Decide which session the spec needs: `test` (editor) or `testadmin` (admin)
+
+---
+
+## Where the spec goes
+
+Specs are grouped by the area they exercise. A new spec belongs in the folder
+that matches what it drives, not the file it happens to touch.
+
+| Folder | Holds |
+|---|---|
+| `cypress/e2e/auth/` | Login, logout, and the shell that only exists once logged in |
+| `cypress/e2e/grid/` | The data grid and record editing: grid, crud, mass_edit, data_cleanup, keyboard_shortcuts, images |
+| `cypress/e2e/modules/` | User-facing feature pages: dashboard, calendar, board, views, print, files, workflows, comments, notifications, agent_panel |
+| `cypress/e2e/admin/` | The admin panel and its modules: admin, anonymization, etl, csv_import |
+| `cypress/e2e/api/` | No DOM — `cy.request()` response shapes and DB-truth counts |
+| `cypress/e2e/security/` | Access control, CSRF, injection, uploads, IDOR (see its own section below) |
+
+Two rules keep the folders from drifting back into one pile:
+
+- **Auth, CSRF and role gates belong in `security/`, nowhere else.** Those specs
+  assert the exact status code *and* that the body leaks no internals
+  (`cy.expectDenied`). A second, weaker copy in a feature spec only creates a
+  place to forget to update.
+- **Page shell assertions belong to one spec.** The sidebar, the header avatar
+  and the notifications bell each have one owner (`auth/login.cy.js`,
+  `modules/notifications.cy.js`). Other specs call `assertSidebarPresent()`
+  inside their own "loads … page" test rather than adding another `it`.
 
 ---
 
@@ -30,12 +57,33 @@ globally. Redefining them in a spec is the most common review comment.
 | `waitForActions()` | Waits for `#actions` (desktop) or `#mobileActions` (mobile) |
 | `clickAddIfPresent()` | Clicks Add, or logs and skips when the role has no Add button |
 | `waitForPagination()` | Returns `true`/`false` — a single-page table is a valid outcome |
+| `assertClearFiltersContract()` | The whole `#clearFilters` contract in one call — see below |
+| `assertSidebarPresent()` | `#menu` exists and has at least one item; call inside your own "loads … page" test |
+| `assertMobileSmoke([selectors])` | Asserts a list of selectors still render at the mobile viewport |
 | `BASE`, `TIMEOUTS` | `http://localhost:8080` and `{ short: 5000, medium: 8000, long: 15000 }` |
 
 Both access styles work: bare (`TIMEOUTS.long`) or namespaced
 (`CypressHelpers.TIMEOUTS.long`). Existing specs use both; pick one per file.
 
+### Do not re-copy a shared contract
+
+The clear-filters block, the sidebar check and the mobile smoke used to be
+copy-pasted into six specs each, so every change to the shared behaviour had to
+be chased through six files. They are helpers now. Pass your module's own
+selectors; the coverage per module is the same.
+
+```javascript
+it('search follows the clear-filters contract', () => {
+  assertClearFiltersContract({
+    activate: () => cy.get('#calendarSearch').type('zzz-search-term'),
+    reset:    () => cy.get('#calendarSearch').should('have.value', ''),
+    // settle: only when the module reloads asynchronously after a filter change
+  });
+});
+```
+
 - [ ] No local copy of a login / wait helper that already exists above
+- [ ] No hand-written `clear-filters button is hidden until…` / `shows sidebar menu` / `loads X on mobile` block
 - [ ] `cy.seedDatabase()` is in `before()`, once per describe block
 
 ---
@@ -199,7 +247,7 @@ skips rather than failing.
 ## Debugging a flaky test
 
 1. Re-run the single spec a few times:
-   `npm run cy:run -- --spec "cypress/e2e/login.cy.js"`
+   `npm run cy:run -- --spec "cypress/e2e/auth/login.cy.js"`
    (PowerShell loop: `1..10 | ForEach-Object { npm run cy:run }`)
 2. Check every `.get()` has an explicit `{ timeout }` where the DOM is async
 3. Check that each `.click()` is followed by an assertion on the result
@@ -280,7 +328,7 @@ Then:
 ```bash
 npm run cy:open                                       # interactive
 npm run cy:run                                        # headless (CI)
-npm run cy:run -- --spec "cypress/e2e/login.cy.js"    # one spec
+npm run cy:run -- --spec "cypress/e2e/auth/login.cy.js"    # one spec
 npm run cy:run -- --headed                            # watch the browser
 npm run cy:run -- --browser edge                      # alternate browser
 ```

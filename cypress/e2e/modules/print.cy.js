@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/print.cy.js
+// cypress/e2e/modules/print.cy.js
 // ============================================================================
 // Print Module Tests — print.php
 // ============================================================================
@@ -23,14 +23,11 @@ describe('OpenSparrow – Print: Page Structure', () => {
   it('loads print page', () => {
     cy.get('#printSection', { timeout: CypressHelpers.TIMEOUTS.medium })
       .should('exist');
+    assertSidebarPresent();
   });
 
   it('print container exists', () => {
     cy.get('#printContainer').should('exist');
-  });
-
-  it('shows sidebar menu', () => {
-    cy.get('#menu').should('exist');
   });
 });
 

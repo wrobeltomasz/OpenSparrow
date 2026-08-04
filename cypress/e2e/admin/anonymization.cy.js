@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/anonymization.cy.js
+// cypress/e2e/admin/anonymization.cy.js
 // ============================================================================
 // Admin Data Anonymization Module Tests
 // Requires:  testadmin / testadmin user with role = 'admin'

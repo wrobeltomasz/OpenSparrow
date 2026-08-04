@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/workflows.cy.js
+// cypress/e2e/modules/workflows.cy.js
 // ============================================================================
 // Workflows Module Tests
 // Workflows are rendered in #grid container via index.php?workflows
@@ -38,7 +38,7 @@ describe('OpenSparrow – Workflows: Page Load', () => {
   });
 
   it('page loads with sidebar menu', () => {
-    cy.get('#menu').should('exist');
+    assertSidebarPresent();
   });
 
   it('workflows link in sidebar is active', () => {

@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/grid.cy.js
+// cypress/e2e/grid/grid.cy.js
 // ============================================================================
 // Grid Display, Search, Filter, Actions Tests
 // ============================================================================

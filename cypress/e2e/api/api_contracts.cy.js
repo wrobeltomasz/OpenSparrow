@@ -3,20 +3,27 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/api_contracts.cy.js
+// cypress/e2e/api/api_contracts.cy.js
 // ============================================================================
 // API Contract Tests — pure cy.request(), no DOM
 //
-// Asserts the JSON shapes and auth/CSRF/role gates of the backend endpoints
-// the frontend depends on. These catch contract drift (renamed keys, changed
-// status codes) long before an e2e spec fails on a missing DOM element.
+// Asserts the JSON *shapes* of the backend endpoints the frontend depends on.
+// These catch contract drift (renamed keys, changed status codes) long before
+// an e2e spec fails on a missing DOM element.
 //
 // Covered:
-//  - api.php            auth gate (401), admin block (403), CSRF gate (403),
-//                       api=list shape, action=i18n_bundle shape, api=board shape
+//  - api.php            api=list shape, action=i18n_bundle shape, api=board shape
 //  - api/notifications.php  get_count / get_list shapes
 //  - api/files.php      action=list shape
+//  - api/owners.php     action=mine shape
+//  - api/comments.php   action=mine shape
 //  - api/print.php      action=list/data/param_options shapes, unknown print/key 404s
+//
+// NOT covered here: the auth (401), CSRF (403) and role (403) gates. Those live
+// in cypress/e2e/security/ — authorization.cy.js sweeps every guarded path and
+// csrf.cy.js every mutating verb, both asserting the exact status code *and*
+// that the error body leaks no server internals (cy.expectDenied). Repeating a
+// weaker version of those assertions here only bought a second place to update.
 // ============================================================================
 
 const BASE = 'http://localhost:8080';
@@ -25,91 +32,6 @@ const BASE = 'http://localhost:8080';
 function asJson(body) {
   return typeof body === 'string' ? JSON.parse(body) : body;
 }
-
-// ============================================================================
-// Test Suite: Unauthenticated requests are rejected
-// ============================================================================
-
-describe('OpenSparrow – API Contracts: Auth Gate', () => {
-  beforeEach(() => {
-    cy.clearCookies();
-  });
-
-  it('api.php rejects unauthenticated GET with 401 JSON', () => {
-    cy.request({
-      url: `${BASE}/api.php?api=list&table=companies`,
-      failOnStatusCode: false,
-    }).then(res => {
-      expect(res.status).to.eq(401);
-      expect(asJson(res.body).error, 'error message').to.eq('Unauthorized');
-    });
-  });
-
-  it('api/notifications.php rejects unauthenticated GET with 401', () => {
-    cy.request({
-      url: `${BASE}/api/notifications.php?action=get_count`,
-      failOnStatusCode: false,
-    }).then(res => {
-      expect(res.status).to.eq(401);
-    });
-  });
-
-  it('api/files.php rejects unauthenticated GET with 401', () => {
-    cy.request({
-      url: `${BASE}/api/files.php?action=list`,
-      failOnStatusCode: false,
-    }).then(res => {
-      expect(res.status).to.eq(401);
-    });
-  });
-
-  it('api/files.php bulk actions reject unauthenticated POST with 401', () => {
-    ['mass_delete', 'mass_tag'].forEach(action => {
-      cy.request({
-        method: 'POST',
-        url: `${BASE}/api/files.php`,
-        body: { action, uuids: ['00000000-0000-4000-8000-000000000000'], tags: 'x' },
-        failOnStatusCode: false,
-      }).then(res => {
-        expect(res.status, `${action} status`).to.eq(401);
-      });
-    });
-  });
-});
-
-// ============================================================================
-// Test Suite: CSRF and role gates
-// ============================================================================
-
-describe('OpenSparrow – API Contracts: CSRF & Roles', () => {
-  before(() => {
-    cy.seedDatabase();
-  });
-
-  it('POST to api.php without X-CSRF-Token header is rejected with 403', () => {
-    loginAsTestUser();
-    cy.request({
-      method: 'POST',
-      url: `${BASE}/api.php?table=companies`,
-      body: {},
-      failOnStatusCode: false,
-    }).then(res => {
-      expect(res.status).to.eq(403);
-      expect(asJson(res.body).error, 'error message').to.match(/CSRF/i);
-    });
-  });
-
-  it('admin accounts are blocked from the frontend data API with 403', () => {
-    loginAsAdmin();
-    cy.request({
-      url: `${BASE}/api.php?api=list&table=companies`,
-      failOnStatusCode: false,
-    }).then(res => {
-      expect(res.status).to.eq(403);
-      expect(asJson(res.body).error, 'error message').to.match(/admin/i);
-    });
-  });
-});
 
 // ============================================================================
 // Test Suite: Response shapes (as editor test user)

@@ -3,21 +3,30 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/login.cy.js
+// cypress/e2e/auth/login.cy.js
 // ============================================================================
-// Login, Logout, and Authenticated User Flow Tests
+// Login, Logout, and Authenticated Shell
+//
+// Feature:  authentication and the chrome that only exists once logged in
+// Coverage: login success/failure, logout, sidebar + header shell
+// Requires: test / test (editor)
+//
+// Deliberately NOT covered here — this spec used to duplicate all of it:
+//   grid contents, search, pagination, Add button  -> e2e/grid/grid.cy.js
+//   dashboard shell and mobile viewport            -> e2e/modules/dashboard.cy.js
+//   notifications bell                             -> e2e/modules/notifications.cy.js
 // ============================================================================
 
 const BASE = 'http://localhost:8080';
 
 // Helpers are imported from cypress/support/e2e.js (supportFile)
-// Usage: loginAsTestUser(), waitForGridOrEmpty(), waitForActions(), etc.
+// Usage: loginAsTestUser(), assertSidebarPresent(), etc.
 
 // ============================================================================
-// Test Suite: Authenticated User Flow
+// Test Suite: Authenticated Shell
 // ============================================================================
 
-describe('OpenSparrow – Authenticated user flow', () => {
+describe('OpenSparrow – Authenticated shell', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/dashboard.php`);
@@ -26,27 +35,15 @@ describe('OpenSparrow – Authenticated user flow', () => {
   });
 
   it('displays the sidebar with core menu items', () => {
+    assertSidebarPresent();
     cy.get('#menu').should('be.visible');
-    cy.get('.menu-list li').its('length').should('be.gte', 1);
     cy.contains('.menu-text', 'Dashboard').should('be.visible');
-  });
-
-  it('toggles the sidebar on mobile', () => {
-    cy.viewport('iphone-x');
-    cy.get('[data-cy=sidebar-toggle], #sidebarToggle').click();
-    cy.get('#menu').should('exist');
   });
 
   it('displays user avatar button in header', () => {
     cy.get('[data-cy=user-avatar], #userAvatarBtn', {
       timeout: CypressHelpers.TIMEOUTS.medium,
     }).should('be.visible');
-  });
-
-  it('displays notifications widget', () => {
-    cy.get('[data-cy=notifications], .notifications-wrapper', {
-      timeout: CypressHelpers.TIMEOUTS.medium,
-    }).should('exist');
   });
 
   it('shows admin link for admin users', () => {
@@ -60,83 +57,6 @@ describe('OpenSparrow – Authenticated user flow', () => {
       } else {
         Cypress.log({ message: 'Admin link not present (user not admin)' });
       }
-    });
-  });
-
-  it('navigates to Company grid', () => {
-    cy.visit(`${BASE}/index.php?table=companies`);
-    cy.url().should('include', 'table=companies');
-
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
-        cy.get('[data-cy=grid-title], #gridTitle', { timeout: CypressHelpers.TIMEOUTS.short })
-          .should('contain.text', 'Companies');
-      } else {
-        Cypress.log({ message: 'Empty grid state' });
-      }
-    });
-  });
-
-  it('shows grid action buttons when present', () => {
-    cy.visit(`${BASE}/index.php?table=companies`);
-    waitForGridOrEmpty();
-    waitForActions();
-  });
-
-  it('displays search and filter controls on grid', () => {
-    cy.visit(`${BASE}/index.php?table=companies`);
-
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
-        cy.get('[data-cy=search], #globalSearch', {
-          timeout: CypressHelpers.TIMEOUTS.medium,
-        })
-          .should('exist')
-          .and('be.visible');
-
-        cy.get('[data-cy=column-filter], #columnFilter', {
-          timeout: CypressHelpers.TIMEOUTS.medium,
-        })
-          .should('exist')
-          .and('be.visible');
-      } else {
-        Cypress.log({ message: 'Empty state — skipping search/filter' });
-      }
-    });
-  });
-
-  it('shows pagination if table has enough records', () => {
-    cy.visit(`${BASE}/index.php?table=companies`);
-    waitForGridOrEmpty();
-    waitForPagination().then(found => {
-      if (found) {
-        Cypress.log({ message: 'Pagination found' });
-      } else {
-        Cypress.log({ message: 'No pagination (likely single page)' });
-      }
-    });
-  });
-
-  it('allows Add record when editor role', () => {
-    cy.visit(`${BASE}/index.php?table=companies`);
-
-    cy.get('body').then($body => {
-      const hasAddButton = $body.find('#addRow, [data-cy=add]').length > 0;
-
-      if (!hasAddButton) {
-        Cypress.log({ message: 'Add button not present (read-only)' });
-        return;
-      }
-
-      // Wait for loadTable() to attach onclick before clicking
-      cy.get('#addRow, [data-cy=add]')
-        .first()
-        .should($btn => {
-          expect($btn[0].onclick, 'Add button onclick set by loadTable').to.not.be.null;
-        })
-        .click();
-
-      cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'create.php');
     });
   });
 });
@@ -210,49 +130,5 @@ describe('OpenSparrow – Login & Logout flow', () => {
     // Should be redirected to login
     cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'login.php');
     cy.contains('OpenSparrow').should('be.visible');
-  });
-});
-
-// ============================================================================
-// Test Suite: Mobile Viewport
-// ============================================================================
-
-describe('OpenSparrow – Mobile viewport', () => {
-  beforeEach(() => {
-    cy.viewport('iphone-x');
-    loginAsTestUser();
-  });
-
-  it('loads dashboard on mobile', () => {
-    cy.visit(`${BASE}/dashboard.php`);
-    cy.get('#menu').should('exist');
-  });
-
-  it('displays mobile-friendly grid on mobile', () => {
-    cy.visit(`${BASE}/index.php?table=companies`);
-    cy.viewport('iphone-x');
-
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
-        cy.get('[data-cy=grid]').should('exist');
-      }
-    });
-  });
-
-  it('shows mobileActions select on mobile viewport', () => {
-    cy.visit(`${BASE}/index.php?table=companies`);
-
-    // mobileActions exists in DOM regardless of viewport (CSS visibility depends on media query)
-    cy.get('#mobileActions').should('exist');
-    cy.get('#mobileActions option').should('have.length.gt', 0);
-  });
-
-  it('mobileActions select has at least export option', () => {
-    cy.visit(`${BASE}/index.php?table=companies`);
-
-    cy.get('#mobileActions').find('option').then($opts => {
-      const values = $opts.toArray().map(o => o.value.toLowerCase());
-      expect(values.some(v => v === 'export')).to.be.true;
-    });
   });
 });

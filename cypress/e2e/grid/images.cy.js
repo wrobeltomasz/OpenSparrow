@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/images.cy.js
+// cypress/e2e/grid/images.cy.js
 // ============================================================================
 // Record image galleries — admin schema switch, grid column, batch API contract
 // Requires: test / testadmin users (cy.seedDatabase()).

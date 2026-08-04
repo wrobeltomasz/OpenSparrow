@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/calendar.cy.js
+// cypress/e2e/modules/calendar.cy.js
 // ============================================================================
 // Calendar Module Tests — calendar.php
 // ============================================================================
@@ -23,6 +23,7 @@ describe('OpenSparrow – Calendar: Page Structure', () => {
   it('loads calendar page', () => {
     cy.get('#calendarMain', { timeout: CypressHelpers.TIMEOUTS.medium })
       .should('exist');
+    assertSidebarPresent();
   });
 
   it('shows navigation buttons', () => {
@@ -54,9 +55,6 @@ describe('OpenSparrow – Calendar: Page Structure', () => {
       .should('have.length', 1);
   });
 
-  it('shows sidebar menu', () => {
-    cy.get('#menu').should('exist');
-  });
 });
 
 // ============================================================================
@@ -276,16 +274,11 @@ describe('OpenSparrow – Calendar: Search & Filters', () => {
     cy.get('#calendarSearch').should('exist').and('have.attr', 'type', 'search');
   });
 
-  it('clear-filters button is hidden until a filter is active', () => {
-    cy.get('#clearFilters').should('have.attr', 'hidden');
-  });
-
-  it('typing a search phrase reveals the clear-filters button; clearing hides it again', () => {
-    cy.get('#calendarSearch').type('zzz-search-term');
-    cy.get('#clearFilters').should('not.have.attr', 'hidden');
-    cy.get('#clearFilters').click();
-    cy.get('#calendarSearch').should('have.value', '');
-    cy.get('#clearFilters').should('have.attr', 'hidden');
+  it('search follows the clear-filters contract', () => {
+    assertClearFiltersContract({
+      activate: () => cy.get('#calendarSearch').type('zzz-search-term'),
+      reset: () => cy.get('#calendarSearch').should('have.value', ''),
+    });
   });
 
   it('renders a visibility chip per configured calendar source', () => {
@@ -299,15 +292,16 @@ describe('OpenSparrow – Calendar: Search & Filters', () => {
     });
   });
 
-  it('clicking a source chip toggles its off state and the clear-filters button', () => {
+  it('a source chip toggles off and follows the clear-filters contract', () => {
     cy.get('body').then($body => {
       if ($body.find('#calendarFilters .filter-chip').length === 0) return;
-      cy.get('#calendarFilters .filter-chip').first().click();
-      cy.get('#calendarFilters .filter-chip').first().should('have.class', 'off');
-      cy.get('#clearFilters').should('not.have.attr', 'hidden');
-      cy.get('#clearFilters').click();
-      cy.get('#calendarFilters .filter-chip.off').should('have.length', 0);
-      cy.get('#clearFilters').should('have.attr', 'hidden');
+      assertClearFiltersContract({
+        activate: () => {
+          cy.get('#calendarFilters .filter-chip').first().click();
+          cy.get('#calendarFilters .filter-chip').first().should('have.class', 'off');
+        },
+        reset: () => cy.get('#calendarFilters .filter-chip.off').should('have.length', 0),
+      });
     });
   });
 
@@ -334,18 +328,7 @@ describe('OpenSparrow – Calendar: Mobile', () => {
     cy.visit(`${BASE}/calendar.php`);
   });
 
-  it('loads calendar on mobile viewport', () => {
-    cy.get('#calendarMain', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .should('exist');
-  });
-
-  it('calendar title visible on mobile', () => {
-    cy.get('#calendarTitle', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .should('exist');
-  });
-
-  it('navigation buttons exist on mobile', () => {
-    cy.get('#btnPrev').should('exist');
-    cy.get('#btnNext').should('exist');
+  it('calendar, title and navigation render on mobile', () => {
+    assertMobileSmoke(['#calendarMain', '#calendarTitle', '#btnPrev', '#btnNext']);
   });
 });

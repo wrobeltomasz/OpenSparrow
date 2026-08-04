@@ -65,6 +65,20 @@ describe('Security – anonymous access', () => {
     });
   });
 
+  // The GUARDED_APIS sweep above is GET-only. The file bulk actions are POST and
+  // route through a different branch of api/files.php, so an anonymous caller has
+  // to be refused there too — not just on the listing.
+  ['mass_delete', 'mass_tag'].forEach(action => {
+    it(`api/files.php action=${action} rejects an anonymous POST with 401`, () => {
+      cy.probe({
+        method: 'POST',
+        url: '/api/files.php',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: { action, uuids: ['00000000-0000-4000-8000-000000000000'], tags: 'cypress' },
+      }).then(res => cy.expectDenied(res, [401], `files.php ${action}`));
+    });
+  });
+
   it('admin/index.php redirects an anonymous visitor to login.php', () => {
     cy.probe({ url: '/admin/index.php' }).then(res => {
       expect(res.status).to.be.oneOf([302, 303]);

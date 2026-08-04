@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/board.cy.js
+// cypress/e2e/modules/board.cy.js
 // ============================================================================
 // Board (Kanban) Module Tests — board.php
 // ============================================================================
@@ -23,6 +23,7 @@ describe('OpenSparrow – Board: Page Structure', () => {
   it('loads board page', () => {
     cy.get('#boardMain', { timeout: CypressHelpers.TIMEOUTS.medium })
       .should('exist');
+    assertSidebarPresent();
   });
 
   it('shows a board title', () => {
@@ -43,9 +44,6 @@ describe('OpenSparrow – Board: Page Structure', () => {
     });
   });
 
-  it('shows sidebar menu', () => {
-    cy.get('#menu').should('exist');
-  });
 });
 
 // ============================================================================
@@ -155,10 +153,6 @@ describe('OpenSparrow – Board: Filters', () => {
     cy.get('#boardContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
   });
 
-  it('clear-filters button is hidden until a filter is active', () => {
-    cy.get('#clearFilters').should('have.attr', 'hidden');
-  });
-
   it('renders a visibility chip per lane', () => {
     cy.get('body').then($body => {
       if ($body.find('#boardFilters .filter-chip').length === 0) {
@@ -170,29 +164,22 @@ describe('OpenSparrow – Board: Filters', () => {
     });
   });
 
-  it('clicking a lane chip hides that lane and shows the clear-filters button', () => {
+  it('hiding a lane chip follows the clear-filters contract and restores every lane', () => {
     cy.get('body').then($body => {
       if ($body.find('#boardFilters .filter-chip').length === 0) return;
       cy.get('.board-lane').then($lanes => {
         const totalLanes = $lanes.length;
-        cy.get('#boardFilters .filter-chip').first().click();
-        cy.get('#boardFilters .filter-chip').first().should('have.class', 'off');
-        cy.get('#clearFilters').should('not.have.attr', 'hidden');
-        cy.get('.board-lane').should('have.length', totalLanes - 1);
-      });
-    });
-  });
-
-  it('clear-filters button restores every lane and hides itself', () => {
-    cy.get('body').then($body => {
-      if ($body.find('#boardFilters .filter-chip').length === 0) return;
-      cy.get('.board-lane').then($lanes => {
-        const totalLanes = $lanes.length;
-        cy.get('#boardFilters .filter-chip').first().click();
-        cy.get('#clearFilters').click();
-        cy.get('#boardFilters .filter-chip.off').should('have.length', 0);
-        cy.get('.board-lane').should('have.length', totalLanes);
-        cy.get('#clearFilters').should('have.attr', 'hidden');
+        assertClearFiltersContract({
+          activate: () => {
+            cy.get('#boardFilters .filter-chip').first().click();
+            cy.get('#boardFilters .filter-chip').first().should('have.class', 'off');
+            cy.get('.board-lane').should('have.length', totalLanes - 1);
+          },
+          reset: () => {
+            cy.get('#boardFilters .filter-chip.off').should('have.length', 0);
+            cy.get('.board-lane').should('have.length', totalLanes);
+          },
+        });
       });
     });
   });
@@ -209,14 +196,8 @@ describe('OpenSparrow – Board: Mobile', () => {
     cy.visit(`${BASE}/board.php`);
   });
 
-  it('loads board on mobile viewport', () => {
-    cy.get('#boardMain', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .should('exist');
-  });
-
-  it('board title visible on mobile', () => {
-    cy.get('#boardTitle', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .should('exist');
+  it('board and title render on mobile', () => {
+    assertMobileSmoke(['#boardMain', '#boardTitle']);
   });
 });
 

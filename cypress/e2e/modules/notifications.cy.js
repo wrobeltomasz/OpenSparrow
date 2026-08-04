@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/notifications.cy.js
+// cypress/e2e/modules/notifications.cy.js
 // ============================================================================
 // Notifications Bell Tests — header present on all pages
 // ============================================================================

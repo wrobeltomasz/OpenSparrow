@@ -373,7 +373,7 @@ vendor/bin/phpunit
 npm install               # once
 npm run cy:run            # headless (CI-friendly)
 npm run cy:open           # interactive Test Runner
-npm run cy:run -- --spec "cypress/e2e/login.cy.js"   # single suite
+npm run cy:run -- --spec "cypress/e2e/auth/login.cy.js"   # single suite
 npm run cy:run -- --browser edge                     # alternate browser
 ```
 

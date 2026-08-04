@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/admin.cy.js
+// cypress/e2e/admin/admin.cy.js
 // ============================================================================
 // Admin Panel Tests
 // Requires:  testadmin / testadmin user with role = 'admin'

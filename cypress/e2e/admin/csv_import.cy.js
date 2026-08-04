@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/csv_import.cy.js
+// cypress/e2e/admin/csv_import.cy.js
 // ============================================================================
 // CSV Import Admin Panel Tests
 //

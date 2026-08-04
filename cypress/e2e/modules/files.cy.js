@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/files.cy.js
+// cypress/e2e/modules/files.cy.js
 // ============================================================================
 // File Manager Module Tests — files.php
 // ============================================================================
@@ -175,45 +175,42 @@ describe('OpenSparrow – Files: Clear Filters', () => {
     cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
   });
 
-  it('clear-filters button is hidden until a filter is active', () => {
-    cy.get('#clearFilters').should('have.attr', 'hidden');
+  // The file list reloads asynchronously after every filter change; each step of
+  // the contract has to wait that out before asserting on #clearFilters.
+  const listSettled = () =>
+    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
+      .invoke('text')
+      .should('not.include', 'Loading');
+
+  it('search follows the clear-filters contract', () => {
+    assertClearFiltersContract({
+      activate: () => cy.get('#fileSearch').clear().type('zzz-no-such-file-zzz'),
+      settle: listSettled,
+      reset: () => cy.get('#fileSearch').should('have.value', ''),
+    });
   });
 
-  it('typing a search phrase reveals the clear-filters button', () => {
-    cy.get('#fileSearch').clear().type('zzz-no-such-file-zzz');
-    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .invoke('text')
-      .should('not.include', 'Loading');
-    cy.get('#clearFilters').should('not.have.attr', 'hidden');
+  it('type filter follows the clear-filters contract', () => {
+    assertClearFiltersContract({
+      activate: () => cy.get('#fileTypeFilter').select('image'),
+      settle: listSettled,
+      reset: () => cy.get('#fileTypeFilter').should('have.value', 'all'),
+    });
   });
 
-  it('changing the type filter reveals the clear-filters button', () => {
-    cy.get('#fileTypeFilter').select('image');
-    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .invoke('text')
-      .should('not.include', 'Loading');
-    cy.get('#clearFilters').should('not.have.attr', 'hidden');
-  });
-
-  it('clicking clear-filters resets the search box, type filter, and hides itself', () => {
-    cy.get('#fileSearch').clear().type('zzz-no-such-file-zzz');
-    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .invoke('text')
-      .should('not.include', 'Loading');
-    cy.get('#fileTypeFilter').select('image');
-    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .invoke('text')
-      .should('not.include', 'Loading');
-
-    cy.get('#clearFilters').should('not.have.attr', 'hidden');
-    cy.get('#clearFilters').click();
-
-    cy.get('#fileSearch').should('have.value', '');
-    cy.get('#fileTypeFilter').should('have.value', 'all');
-    cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
-      .invoke('text')
-      .should('not.include', 'Loading');
-    cy.get('#clearFilters').should('have.attr', 'hidden');
+  it('clear-filters resets the search box and the type filter together', () => {
+    assertClearFiltersContract({
+      activate: () => {
+        cy.get('#fileSearch').clear().type('zzz-no-such-file-zzz');
+        listSettled();
+        cy.get('#fileTypeFilter').select('image');
+      },
+      settle: listSettled,
+      reset: () => {
+        cy.get('#fileSearch').should('have.value', '');
+        cy.get('#fileTypeFilter').should('have.value', 'all');
+      },
+    });
   });
 });
 
@@ -415,12 +412,7 @@ describe('OpenSparrow – Files: Mobile', () => {
     cy.visit(`${BASE}/files.php`);
   });
 
-  it('loads files page on mobile', () => {
-    cy.get('#filesSection', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
-  });
-
-  it('upload and search inputs exist on mobile', () => {
-    cy.get('#fileSearch').should('exist');
-    cy.get('#btnUpload').should('exist');
+  it('files section, search and upload render on mobile', () => {
+    assertMobileSmoke(['#filesSection', '#fileSearch', '#btnUpload']);
   });
 });

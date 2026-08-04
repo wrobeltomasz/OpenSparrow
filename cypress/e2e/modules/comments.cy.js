@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/comments.cy.js
+// cypress/e2e/modules/comments.cy.js
 // ============================================================================
 // Comments Module Tests — edit.php Comments tab
 // ============================================================================

@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/agent_panel.cy.js
+// cypress/e2e/modules/agent_panel.cy.js
 // ============================================================================
 // AI Agent Panel Tests — the sliding panel opened via #openAgentBtn.
 // Panel DOM is built by assets/js/agent-panel.js after DOMContentLoaded.

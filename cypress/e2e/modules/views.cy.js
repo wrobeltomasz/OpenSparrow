@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/views.cy.js
+// cypress/e2e/modules/views.cy.js
 // ============================================================================
 // Views Module Tests — views.php
 // ============================================================================
@@ -23,6 +23,7 @@ describe('OpenSparrow – Views: Page Structure', () => {
   it('loads views page', () => {
     cy.get('#viewSection', { timeout: CypressHelpers.TIMEOUTS.medium })
       .should('exist');
+    assertSidebarPresent();
   });
 
   it('view container exists', () => {
@@ -38,9 +39,6 @@ describe('OpenSparrow – Views: Page Structure', () => {
     cy.get('#globalSearch').should('exist');
   });
 
-  it('shows sidebar menu', () => {
-    cy.get('#menu').should('exist');
-  });
 });
 
 // ============================================================================
@@ -242,7 +240,7 @@ describe('OpenSparrow – Views: Column Filters', () => {
     });
   });
 
-  it('clear-filters button resets the column filter and hides itself', () => {
+  it('column filter follows the clear-filters contract', () => {
     cy.get('#viewContainer').then($el => {
       if ($el.find('.vw-selector-card').length === 0) return;
       cy.get('.vw-selector-card').first().click();
@@ -251,11 +249,13 @@ describe('OpenSparrow – Views: Column Filters', () => {
         cy.get('#columnFilter option').its('length').then(len => {
           if (len < 2) return;
           cy.get('#columnFilter option').eq(1).invoke('val').then(val => {
-            cy.get('#columnFilter').select(val);
-            cy.get('#clearFilters').click();
-            cy.get('#columnFilter').should('have.value', '');
-            cy.get('#filterBar').children().should('have.length', 0);
-            cy.get('#clearFilters').should('have.attr', 'hidden');
+            assertClearFiltersContract({
+              activate: () => cy.get('#columnFilter').select(val),
+              reset: () => {
+                cy.get('#columnFilter').should('have.value', '');
+                cy.get('#filterBar').children().should('have.length', 0);
+              },
+            });
           });
         });
       });
