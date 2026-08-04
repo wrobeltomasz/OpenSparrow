@@ -435,6 +435,11 @@ function demo_def_crm($conn): array
                 ['table' => 'activities', 'foreign_key' => 'deal_id', 'label' => 'Activities', 'columns_to_show' => ['type', 'scheduled_at', 'done', 'notes']],
             ], 'many_to_many' => [
                 ['label' => 'Other Stakeholders', 'junction_table' => 'deal_contacts', 'self_fk' => 'deal_id', 'other_fk' => 'contact_id', 'other_table' => 'contacts', 'display_column' => 'last_name'],
+            ], 'highlight_rules' => [
+                // Evaluated in order, first match wins. Thresholds are picked against the
+                // seeded deal values below so both rules actually fire in the demo grid.
+                ['column' => 'value', 'op' => '>=', 'value' => '150000', 'color' => '#dcfce7'],
+                ['column' => 'value', 'op' => '<',  'value' => '40000',  'color' => '#fee2e2'],
             ]],
             'activities' => ['display_name' => 'Activities', 'schema' => 'spw_crm', 'icon' => 'assets/icons/calendar.png', 'columns' => [
                 'id'           => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique activity identifier'],
