@@ -8,7 +8,7 @@ FIELDS:
 - scheduled_at: Date and time of the activity
 - done: Boolean — true = completed (green), false = pending (red)
 - deal_id: Deal this activity relates to (dropdown showing the deal title)
-- contact_id: Contact involved (dropdown showing the contact's last name)
+- contact_id: Contact involved (dropdown showing the contact's first and last name)
 - created_at: Set automatically, read-only
 
 ACTIVITY TYPES (with their grid colors):

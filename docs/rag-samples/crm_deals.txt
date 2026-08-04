@@ -8,7 +8,7 @@ FIELDS:
 - stage: Current pipeline position (color-coded enum)
 - expected_close: Target closing date
 - company_id: Linked company (dropdown showing the company name)
-- contact_id: Primary contact person
+- contact_id: Primary contact person (dropdown showing first and last name)
 - created_at: Set automatically, read-only
 
 DEAL STAGES (in order, with their grid colors):
@@ -18,6 +18,21 @@ DEAL STAGES (in order, with their grid colors):
 4. Negotiation — Terms being finalized (yellow)
 5. Won — Deal closed successfully (green)
 6. Lost — Deal did not proceed (red)
+
+ROW HIGHLIGHTING IN THE GRID:
+On top of the per-stage cell colors, whole rows of the Deals grid are colored by value:
+150,000 and above turns green, below 40,000 turns red, anything between stays plain.
+Rules are evaluated in order and the first match wins, so the color reflects value
+regardless of stage.
+
+ATTACHMENTS (image gallery):
+Deals have a record image gallery labelled "Attachments", up to 5 per record, with a
+thumbnail column in the grid. The demo seeds seven document images: a signed contract
+scan and an approved terms sheet on "Enterprise License Q2", a solution architecture and
+a rollout plan on "Digital Transformation Project", a source system inventory on "Cloud
+Migration Services", a signed order form on "Support & Maintenance" and a site photo on
+"Cloud Infrastructure Buildout". This is separate from Menu → Files, which holds ordinary
+file attachments (see crm_collaboration.txt).
 
 OTHER STAKEHOLDERS (many-to-many):
 Besides the single primary contact_id, a deal can list any number of extra contacts in

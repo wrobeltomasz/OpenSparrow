@@ -57,9 +57,9 @@ The demo seeds a few small CSV attachments: a pricing breakdown and a scope list
 a quarterly account summary on Acme Corporation, and a call log on the contact John Smith.
 They are written both to spw_files and to disk under storage/files/.
 
-Contacts additionally have a record image gallery (label "Photo", up to 5 per record). The
-demo ships no images — it used to seed contact photographs, which were dropped for
-licensing and likeness reasons, so the gallery starts empty.
+Deals additionally have a record image gallery (label "Attachments", up to 5 per record),
+seeded with seven document images across five deals. Contacts used to carry photographs
+here, which were dropped for licensing and likeness reasons.
 
 NOTIFICATIONS
 -------------

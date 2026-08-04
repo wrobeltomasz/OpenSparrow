@@ -6,8 +6,8 @@ Sample `.txt` knowledge-base files for the OpenSparrow RAG module, describing th
 | File | Tag | Contents |
 |------|-----|----------|
 | crm_overview.txt | `crm` | Tables, menu, relationships, subtables, seeded volumes, demo users |
-| crm_companies_contacts.txt | `companies` | Company and contact fields, subtables, photo gallery |
-| crm_deals.txt | `deals` | Stages, Kanban board, stakeholders M2M, automations, pipeline view |
+| crm_companies_contacts.txt | `companies` | Company and contact fields, subtables |
+| crm_deals.txt | `deals` | Stages, row highlighting, attachments gallery, Kanban board, stakeholders M2M, automations, pipeline view |
 | crm_activities.txt | `activities` | Activity types, calendar, dashboard widgets |
 | crm_leads.txt | `leads` | Lead sources and statuses, lead automations, GDPR anonymization |
 | crm_workflows.txt | `workflows` | The three workflows, incl. stored-procedure validation |

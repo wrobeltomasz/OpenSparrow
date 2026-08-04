@@ -17,9 +17,10 @@ Plus the Pipeline Summary view, and the Pipeline Report and Activity Agenda prin
 TABLES IN THE MENU:
 - companies: Client organizations. Fields: name, industry, website, phone, email.
 - contacts: People at companies. Fields: first_name, last_name, email, phone, position,
-  company_id. Contacts also have a photo gallery (up to 5 images per record).
+  company_id.
 - deals: Sales opportunities. Fields: title, value, stage, expected_close, company_id,
-  contact_id.
+  contact_id. Deals also have an image gallery (up to 5 "Attachments" per record) and
+  value-based row highlighting in the grid.
 - activities: Actions on deals (calls, meetings, emails). Fields: type, notes,
   scheduled_at, done, deal_id, contact_id.
 

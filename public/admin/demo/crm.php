@@ -429,15 +429,23 @@ function demo_def_crm($conn): array
                 'expected_close' => ['type' => 'date',   'show_in_grid' => true, 'display_name' => 'Expected Close', 'description' => 'Projected closing date'],
                 'created_at'     => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when deal record was created'],
             ], 'foreign_keys' => [
+                // Contacts are labelled by first + last name everywhere in this demo:
+                // the bulk seed below reuses 12 first names across ~180 contacts, so a
+                // single-column label makes the picker ambiguous. display_column accepts
+                // a list and the parts are joined with " - " (includes/api_helpers.php,
+                // src/Repository/FkOptionsLoader.php, grid/cells/fk-cell.js).
                 'company_id' => ['reference_table' => 'companies', 'reference_column' => 'id', 'display_column' => 'name'],
-                'contact_id' => ['reference_table' => 'contacts',  'reference_column' => 'id', 'display_column' => 'first_name'],
+                'contact_id' => ['reference_table' => 'contacts',  'reference_column' => 'id', 'display_column' => ['first_name', 'last_name']],
             ], 'subtables' => [
                 ['table' => 'activities', 'foreign_key' => 'deal_id', 'label' => 'Activities', 'columns_to_show' => ['type', 'scheduled_at', 'done', 'notes']],
             ], 'many_to_many' => [
+                // Single column on purpose, unlike the foreign_keys above: m2m_options()
+                // feeds display_column straight to pg_ident() (includes/m2m.php), so a
+                // list would be a fatal, not a joined label.
                 ['label' => 'Other Stakeholders', 'junction_table' => 'deal_contacts', 'self_fk' => 'deal_id', 'other_fk' => 'contact_id', 'other_table' => 'contacts', 'display_column' => 'last_name'],
             ], 'highlight_rules' => [
                 // Evaluated in order, first match wins. Thresholds are picked against the
-                // seeded deal values below so both rules actually fire in the demo grid.
+                // seeded deal values in seed_data above (25k-500k) so both rules fire.
                 ['column' => 'value', 'op' => '>=', 'value' => '150000', 'color' => '#dcfce7'],
                 ['column' => 'value', 'op' => '<',  'value' => '40000',  'color' => '#fee2e2'],
             ], 'images' => ['enabled' => true, 'label' => 'Attachments', 'max_per_record' => 5, 'show_in_grid' => true]],
@@ -452,7 +460,7 @@ function demo_def_crm($conn): array
                 'created_at'   => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when activity record was created'],
             ], 'foreign_keys' => [
                 'deal_id'    => ['reference_table' => 'deals',    'reference_column' => 'id', 'display_column' => 'title'],
-                'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
+                'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => ['first_name', 'last_name']],
             ]],
             'leads' => ['display_name' => 'Leads', 'schema' => 'spw_crm', 'icon' => 'assets/icons/person_text.png', 'hidden' => true, 'columns' => [
                 'id'                   => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique lead identifier'],
@@ -466,7 +474,7 @@ function demo_def_crm($conn): array
                 'converted_contact_id' => ['type' => 'number',  'show_in_grid' => false, 'display_name' => 'Converted To', 'description' => 'Contact record created when lead was converted'],
                 'created_at'           => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when lead record was created'],
             ], 'foreign_keys' => [
-                'converted_contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
+                'converted_contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => ['first_name', 'last_name']],
             ]],
             'deal_contacts' => ['display_name' => 'Deal–Contacts', 'schema' => 'spw_crm', 'hidden' => true, 'columns' => [
                 'id'         => ['display_name' => 'ID',      'type' => 'number', 'not_null' => true, 'readonly' => true,  'show_in_grid' => true, 'show_in_edit' => true],
@@ -475,7 +483,7 @@ function demo_def_crm($conn): array
                 'role'       => ['display_name' => 'Role',    'type' => 'text',   'show_in_grid' => true, 'show_in_edit' => true],
             ], 'foreign_keys' => [
                 'deal_id'    => ['reference_table' => 'deals',    'reference_column' => 'id', 'display_column' => 'title'],
-                'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => 'last_name'],
+                'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => ['first_name', 'last_name']],
             ], 'subtables' => []],
         ],
         'dashboard_widgets' => [

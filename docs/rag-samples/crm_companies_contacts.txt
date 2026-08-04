@@ -36,10 +36,8 @@ Fields:
 - position: Job title (e.g. Sales Director, IT Director, Head of Sales)
 - created_at: Set automatically, read-only
 
-Photos:
-Contacts have an image gallery enabled, labelled "Photo", up to 5 images per record, and
-the first image is shown in the grid. The demo ships no photos of its own — the gallery
-starts empty and you upload your own.
+Contacts have no image gallery — the record gallery in this demo is enabled on Deals
+(labelled "Attachments"), see crm_deals.txt.
 
 Related records on a contact's edit page:
 - Activities subtable: type, scheduled at, done
