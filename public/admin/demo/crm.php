@@ -418,7 +418,7 @@ function demo_def_crm($conn): array
                 'company_id' => ['reference_table' => 'companies', 'reference_column' => 'id', 'display_column' => 'name'],
             ], 'subtables' => [
                 ['table' => 'activities', 'foreign_key' => 'contact_id', 'label' => 'Activities', 'columns_to_show' => ['type', 'scheduled_at', 'done']],
-            ], 'images' => ['enabled' => true, 'label' => 'Photo', 'max_per_record' => 5, 'show_in_grid' => true]],
+            ]],
             'deals' => ['display_name' => 'Deals', 'schema' => 'spw_crm', 'icon' => 'assets/icons/point_of_sale.png', 'columns' => [
                 'id'             => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique deal identifier'],
                 'company_id'     => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Company', 'description' => 'Company associated with this deal'],
@@ -440,7 +440,7 @@ function demo_def_crm($conn): array
                 // seeded deal values below so both rules actually fire in the demo grid.
                 ['column' => 'value', 'op' => '>=', 'value' => '150000', 'color' => '#dcfce7'],
                 ['column' => 'value', 'op' => '<',  'value' => '40000',  'color' => '#fee2e2'],
-            ]],
+            ], 'images' => ['enabled' => true, 'label' => 'Attachments', 'max_per_record' => 5, 'show_in_grid' => true]],
             'activities' => ['display_name' => 'Activities', 'schema' => 'spw_crm', 'icon' => 'assets/icons/calendar.png', 'columns' => [
                 'id'           => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique activity identifier'],
                 'deal_id'      => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Deal', 'description' => 'Deal this activity is associated with'],
@@ -739,10 +739,22 @@ function demo_def_crm($conn): array
                 'content' => "Date,Channel,Summary\n2026-06-01,Email,Sent updated proposal\n2026-06-05,Call,Discussed contract terms\n",
             ],
         ],
-        // No 'demo_images' key: the demo used to ship photographs of faces as contact
-        // images, which were dropped for licensing/likeness reasons. The seeder still
-        // supports the key (seed.php skips it when absent), so any demo that wants to
-        // populate the record image gallery can define it with its own artwork.
+        // Demo images — record image gallery for deals. 'source_file' names a PNG in
+        // admin/demo/assets/images/ (copies of the app's own assets/icons artwork, so the
+        // demo ships no third-party media); seed.php copies it into storage/files/ and
+        // tags the spw_files row with IMAGES_FIELD. Contacts used to carry photographs of
+        // faces here, which were dropped for licensing/likeness reasons — hence icons.
+        // 'author' indexes into demo_users above (uploaded_by). Keep at most
+        // max_per_record (5) entries per deal, matching the 'images' config above.
+        'demo_images' => [
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'source_file' => 'docs.png',           'display_name' => 'Signed Contract Scan'],
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'source_file' => 'fact_check.png',     'display_name' => 'Approved Terms Sheet'],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 1, 'source_file' => 'account_tree.png',   'display_name' => 'Solution Architecture'],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 0, 'source_file' => 'calendar_check.png', 'display_name' => 'Rollout Plan'],
+            ['related_table' => 'deals', 'related_id' => 3, 'author' => 1, 'source_file' => 'database.png',       'display_name' => 'Source System Inventory'],
+            ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'source_file' => 'order_approve.png',  'display_name' => 'Signed Order Form'],
+            ['related_table' => 'deals', 'related_id' => 7, 'author' => 2, 'source_file' => 'warehouse.png',      'display_name' => 'Data Centre Site Photo'],
+        ],
         // Demo record ownership ("My records" panel) — assigns a few CRM records to
         // demo users so the panel isn't empty right after install. 'author' indexes
         // into demo_users above and becomes the owner_id.
