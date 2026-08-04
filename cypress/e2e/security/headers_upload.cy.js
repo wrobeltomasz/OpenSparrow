@@ -48,6 +48,27 @@ function uploadProbe({ filename, content, mime, token }) {
 }
 
 /**
+ * Soft-delete an uploaded file through the API.
+ *
+ * The seed endpoint's cleanup walks only the tables in the schema config, and the
+ * files table is a system table — so `action=cleanup` does NOT reclaim uploads
+ * (it answers `{"cleaned":[]}`). Without this, the accepted-upload control case
+ * leaves a row and a blob in storage/files/ on every single run.
+ */
+function deleteUpload(uuid, token) {
+  return cy.window().then(win =>
+    win.fetch('/api/files.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ action: 'delete', uuid, csrf_token: token }),
+    }).then(res => {
+      expect(res.status, 'probe upload must be cleaned up').to.eq(200);
+    })
+  );
+}
+
+/**
  * Assert an upload was refused with `code` and that the message names the check
  * that caught it — a 415 from the wrong branch is not the same guarantee.
  *
@@ -193,6 +214,8 @@ describe('Security – file upload validation', () => {
           .to.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
         expect(res.body, 'the client filename must not become the stored name')
           .to.not.match(/cypress-upload-probe\.csv/);
+
+        deleteUpload(JSON.parse(res.body).file.uuid, token);
       });
     });
   });

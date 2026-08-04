@@ -243,7 +243,12 @@ function actionUpload($conn): void
 
     $originalName = $file['name'];
     $ext          = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-    $allowedExts  = $config['allowed_extensions'] ?? [];
+    // Never honour a configured extension the server cannot content-verify. The
+    // admin panel saves the Files config verbatim, so allowed_extensions is not a
+    // trusted input on its own — intersecting it with verifiableExtensionMap()
+    // keeps svg/php/html out no matter what is stored. This also holds when finfo
+    // is missing, where the mimeMatchesExtension() sniff below never runs at all.
+    $allowedExts = array_intersect($config['allowed_extensions'] ?? [], array_keys(verifiableExtensionMap()));
     if (!in_array($ext, $allowedExts, true)) {
         jsonError('Extension is not allowed.', 415);
     }
@@ -697,12 +702,21 @@ function actionGetRelatedRecords($conn): void
 // modern Office/archive formats), so the allowlist is intentionally permissive on the
 // generic side but still blocks the dangerous mismatches (text/html, scripts, executables
 // masquerading as images). An unknown extension has no entry and is rejected.
-function mimeMatchesExtension(string $ext, string $mime): bool
+/**
+ * Extensions whose bytes the server can actually verify, mapped to the MIME types
+ * finfo may report for them.
+ *
+ * This doubles as the ceiling on allowed_extensions. The Files config is written
+ * verbatim by the admin panel — includes/admin/config_files.php stores whatever
+ * JSON it is posted, with no per-field validation — so the stored allowlist alone
+ * is not a trustworthy input. An extension absent from this map (svg, php, html…)
+ * can never be content-checked, so it must never be accepted, whatever the config
+ * says. See actionUpload(), which intersects the two.
+ */
+function verifiableExtensionMap(): array
 {
-
-    $mime = strtolower(trim($mime));
     $octet = 'application/octet-stream';
-    $map = [
+    return [
         'jpg'  => ['image/jpeg'],
         'jpeg' => ['image/jpeg'],
         'png'  => ['image/png'],
@@ -721,6 +735,13 @@ function mimeMatchesExtension(string $ext, string $mime): bool
         'tar'  => ['application/x-tar', $octet],
         'gz'   => ['application/gzip', 'application/x-gzip', $octet],
     ];
+}
+
+function mimeMatchesExtension(string $ext, string $mime): bool
+{
+
+    $mime = strtolower(trim($mime));
+    $map  = verifiableExtensionMap();
     if (!isset($map[$ext])) {
         return false;
     }
