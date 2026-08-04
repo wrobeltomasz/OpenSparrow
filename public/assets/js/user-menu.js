@@ -10,7 +10,7 @@ import { I18n } from './i18n.js';
 import { BulkPanel } from './bulk_panel.js';
 import { openNotesPanel } from './notes-panel.js';
 import { formatDateTime } from './util/format-value.js';
-import { AVATAR_COLORS, renderAvatar } from './avatar.js';
+import { AVATAR_COLORS, avatarColor, renderAvatar } from './avatar.js';
 
 const AVATAR_COUNT = AVATAR_COLORS.length;
 
@@ -45,34 +45,45 @@ function buildAvatarModal(currentId, username) {
     box.innerHTML = `
         <button class="um-close" aria-label="${I18n.t('header.close')}">&times;</button>
         <h3>${I18n.t('header.choose_avatar')}</h3>
-        <div class="um-picker" role="group" aria-label="${I18n.t('header.avatar_options')}"></div>
+        <div class="um-picker form-group">
+            <label for="umAvatarSelect">${I18n.t('header.avatar_options')}</label>
+            <div class="um-color-row">
+                <span class="um-color-preview"></span>
+                <select class="um-select" id="umAvatarSelect"></select>
+            </div>
+        </div>
         <div class="um-actions">
             <button class="um-btn um-btn-secondary" id="umAvatarClear">${I18n.t('header.default_color')}</button>
             <button class="um-btn um-btn-primary" id="umAvatarSave" disabled>${I18n.t('common.save')}</button>
         </div>`;
 
-    const picker = box.querySelector('.um-picker');
+    const select  = box.querySelector('#umAvatarSelect');
+    const preview = box.querySelector('.um-color-preview');
     let selected = currentId ?? null;
 
+    // One coloured <option> per palette entry — the colour has to sit on the option
+    // itself, not only on the <select>, or the closed list is the only thing tinted.
     for (let i = 1; i <= AVATAR_COUNT; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'um-picker-btn' + (i === selected ? ' selected' : '');
-        btn.setAttribute('aria-label', I18n.t('header.avatar_option', { n: i }));
-        btn.setAttribute('aria-pressed', String(i === selected));
-        btn.dataset.id = String(i);
-        btn.appendChild(renderAvatar(i, username));
-        btn.addEventListener('click', () => {
-            picker.querySelectorAll('.um-picker-btn').forEach(b => {
-                b.classList.remove('selected');
-                b.setAttribute('aria-pressed', 'false');
-            });
-            btn.classList.add('selected');
-            btn.setAttribute('aria-pressed', 'true');
-            selected = i;
-            box.querySelector('#umAvatarSave').disabled = false;
-        });
-        picker.appendChild(btn);
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = I18n.t('header.avatar_option', { n: i });
+        opt.style.color = AVATAR_COLORS[i - 1];
+        select.appendChild(opt);
     }
+
+    const paintPreview = id => {
+        preview.replaceChildren(renderAvatar(id, username));
+        select.style.color = avatarColor(id);
+    };
+
+    select.value = String(selected ?? 1);
+    paintPreview(selected ?? null);
+
+    select.addEventListener('change', () => {
+        selected = parseInt(select.value, 10);
+        paintPreview(selected);
+        box.querySelector('#umAvatarSave').disabled = false;
+    });
 
     box.querySelector('.um-close').addEventListener('click', () => closeModal(overlay));
     overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay); });

@@ -464,33 +464,41 @@ header .print-filter-label {
   color: var(--text);
 }
 
-/* avatar picker grid */
+/* avatar colour picker: label + preview + coloured option list */
 .um-picker {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
   margin-bottom: 1rem;
 }
 
-.um-picker-btn {
-  background: none;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  padding: 2px;
-  cursor: pointer;
-  transition: border-color var(--transition);
+.um-picker label {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.um-color-row {
   display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.um-picker-btn:hover,
-.um-picker-btn:focus-visible {
-  border-color: var(--accent);
+.um-color-preview {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.um-select {
+  flex: 1;
+  padding: 0.42rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.um-select:focus {
   outline: none;
-}
-
-.um-picker-btn.selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-mid);
+  box-shadow: 0 0 0 2px rgba(0,90,158,0.15);
 }
 
 /* password change form */
