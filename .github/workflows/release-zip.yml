@@ -71,8 +71,10 @@ jobs:
               MISSING=1
             fi
           done <<'REQUIRED'
-          phpunit
-          phpcs
+          phpunit (8.4)
+          phpunit (8.5)
+          phpcs (8.4)
+          phpcs (8.5)
           UTF-8 encoding check
           Version files in sync
           Licence files unchanged
