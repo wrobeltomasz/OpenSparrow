@@ -141,9 +141,9 @@ $reportDetails  = []; // per-rule entries for the structured JSON report
 $schemaCfg = [];
 {
     $decoded = config_get('schema');
-    if (is_array($decoded) && isset($decoded['tables'])) {
-        $schemaCfg = $decoded['tables'];
-    }
+if (is_array($decoded) && isset($decoded['tables'])) {
+    $schemaCfg = $decoded['tables'];
+}
 }
 
 foreach ($rules as $rule) {

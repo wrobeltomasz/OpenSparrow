@@ -71,11 +71,13 @@ try {
         $argonOpts = ['memory_cost' => 1 << 16, 'time_cost' => 2, 'threads' => 1];
         $optsJson  = json_encode($argonOpts);
 
-        foreach ([
+        foreach (
+            [
             ['test',      'test',      'editor'],
             ['test2',     'test2',     'editor'],
             ['testadmin', 'testadmin', 'admin'],
-        ] as [$username, $password, $role]) {
+            ] as [$username, $password, $role]
+        ) {
             $salt = bin2hex(random_bytes(32));
             $hash = password_hash($salt . $password, PASSWORD_ARGON2ID, $argonOpts);
 

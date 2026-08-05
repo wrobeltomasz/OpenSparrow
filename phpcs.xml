@@ -4,7 +4,14 @@
 
     <arg name="extensions" value="php"/>
 
-    <rule ref="PSR12"/>
+    <rule ref="PSR12">
+        <!-- includes/ deliberately keeps helper classes (AdminApiMessage, I18n, ...)
+             in the global namespace and reused via class_exists() guards across many
+             files without `use` imports — namespacing them is a wider convention
+             change, not a lint fix. src/ (namespaced, PSR-4) is unaffected. -->
+        <exclude name="PSR1.Classes.ClassDeclaration.MissingNamespace"/>
+        <exclude name="PSR1.Classes.ClassDeclaration.MultipleClasses"/>
+    </rule>
 
     <file>.</file>
 

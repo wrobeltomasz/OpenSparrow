@@ -1,1 +1,3 @@
-<?php echo 'cypress-upload-probe'; ?>
+<?php
+
+echo 'cypress-upload-probe';

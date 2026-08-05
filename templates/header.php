@@ -89,7 +89,9 @@ if ($logoEnabled) {
         <?php if ($uname !== '') : ?>
         <div class="user-avatar-wrap">
             <button class="user-avatar-btn" id="userAvatarBtn" data-cy="user-avatar"
-                    <?php if ($avatarId) : ?>data-avatar-id="<?= (int)$avatarId ?>" <?php endif; ?>
+                    <?php if ($avatarId) :
+                        ?>data-avatar-id="<?= (int)$avatarId ?>" <?php
+                    endif; ?>
                     aria-label="User menu" aria-expanded="false" aria-haspopup="true">
                 <svg class="avatar avatar-border avatar-initial" viewBox="0 0 32 32" aria-hidden="true">
                     <circle cx="16" cy="16" r="16" fill="<?= $avatarColor ?>"/>
