@@ -94,3 +94,6 @@ node_modules/
 # Local release-package staging (scripts/build-release-local.ps1)
 /dist/
 /dist-local/
+
+# Local-only JSON->SQL schema generator tool — never published, never documented
+/creator/
