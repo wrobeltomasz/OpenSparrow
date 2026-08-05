@@ -90,3 +90,7 @@ node_modules/
 # Dependencies — commit package*.json for reproducibility
 # package.json
 # package-lock.json
+
+# Local release-package staging (scripts/build-release-local.ps1)
+/dist/
+/dist-local/
