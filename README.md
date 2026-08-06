@@ -1,7 +1,5 @@
 <div align="center">
 
-<img width="100" height="100" alt="opensparrow-logo" src="https://github.com/user-attachments/assets/b4793826-edc3-4ede-99e1-bdbd9c12f0bb" />
-
   <h1>OpenSparrow</h1>
 
   <p><strong>Schema-driven PHP platform to build CRUD apps, dashboards, and calendars on PostgreSQL in minutes.</strong></p>
