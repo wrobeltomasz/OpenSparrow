@@ -360,14 +360,14 @@ Configuration lives in `config/database.json`. The web document root is the `pub
 
 Testing tooling is **dev-only** — none of it is needed to run the application.
 
-**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer, the admin API guards (CSRF / demo-mode / migration registry) and the language-file contract; no database required. **206 tests, 335 assertions** across 18 files under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
+**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer, the admin API guards (CSRF / demo-mode / migration registry) and the language-file contract; no database required. **237 tests, 385 assertions** across 19 files under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
 
 ```bash
 composer install          # once
 vendor/bin/phpunit
 ```
 
-**Cypress — E2E tests.** 23 suites covering authentication, admin panel, grid operations, CRUD workflows, dashboard, calendar, board, print, files, record image galleries, comments, notifications, views, workflows, mass edit, CSV import, data cleanup, ETL, anonymization, i18n, keyboard shortcuts, API contracts, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
+**Cypress — E2E tests.** 30 suites covering authentication, admin panel, grid operations, CRUD workflows, dashboard, calendar, board, print, files, record image galleries, comments, notifications, views, workflows, mass edit, CSV import, data cleanup, ETL, anonymization, i18n, keyboard shortcuts, API contracts, authorization/IDOR, session security, CSRF, injection, upload/header hardening, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
 
 ```bash
 npm install               # once
