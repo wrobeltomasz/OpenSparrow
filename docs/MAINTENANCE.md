@@ -1,8 +1,8 @@
 # Maintainability Decisions & Code-Size Review
 
 Findings and standing decisions from codebase reviews, so they are not re-derived
-from scratch. Security-specific decisions live in `SECURITY.md`; binding coding
-rules live in `CLAUDE.md`.
+from scratch. Security-specific decisions live in `SECURITY.md`; **binding coding
+and UI rules live in this document** — see "Where binding rules live" at the end.
 
 ## Code-size review (2026-07-09)
 
@@ -35,8 +35,8 @@ concentrated in a few places listed below.
   helper functions); every block still sets its own Content-Type and exits, and
   unmatched actions fall through to `demo/seed.php` — URLs and JSON contracts
   unchanged. The `$migrations`/`$known` registries stay together in
-  `includes/admin/migrations.php` (release process depends on them — see
-  CLAUDE.md "Version bumps" steps 4–5). A third copy of the migration-key
+  `includes/admin/migrations.php` (the release process depends on both being
+  updated together during a version bump). A third copy of the migration-key
   list lives in `includes/admin/overview.php` (`$knownMig`, drives the
   dashboard pending count) and must be kept in sync with those two. As of 3.0
   the pre-3.0 incremental migration history was collapsed into a single
@@ -110,11 +110,6 @@ concentrated in a few places listed below.
 - The two `apiFetch()` functions (`user-menu.js`, `views.js`) have genuinely
   different semantics and stay separate.
 
-### Local housekeeping note
-
-`.claude/worktrees/` may accumulate orphaned agent worktrees (git-ignored,
-stale pre-restructure copies) that pollute repo-wide searches — safe to delete.
-
 ## Repository & Docker Hub rename (2026-07-09)
 
 The GitHub repository moved to `wrobeltomasz/OpenSparrow` (previously
@@ -145,10 +140,16 @@ assistant (a `git remote set-url` was denied in-session) — update it manually:
 
 All page-level search and filter controls were unified into a single
 header-based standard and rolled out to every page: grid, views, board,
-calendar, files, dashboard. The **binding rules** live in CLAUDE.md →
-"Search & filter UI standard" (placement, shared classes, overflow, clear
-button, stable IDs); this section records the reasoning and gotchas so they
-are not re-derived or re-litigated.
+calendar, files, dashboard.
+
+The **binding rules** are the Decisions below — treat them as normative for any
+new or touched filter UI, not merely as history: controls render in the blue app
+header via `$headerControls`; they use the one shared class family
+(`filter-chip`, `filter-pill`, `filter-range`/`num-filter`) with no inline
+styles; chip containers never wrap (`nowrap` + `overflow-x: auto`) so the
+fixed-height header cannot grow; every page carries a `#clearFilters` control;
+and search input ids stay page-specific but stable. The rest of this section
+records the reasoning and gotchas so they are not re-derived or re-litigated.
 
 ### Decisions
 
@@ -210,8 +211,8 @@ are not re-derived or re-litigated.
   historical inline-style approach (its CSP is `unsafe-style`).
 - **`board.cy.js` asserts `#boardSearch` has `type="search"`** — search inputs
   across pages are `type="search"` (native clear ×, shared
-  `header input[type="search"]` styling); keep ids page-specific but stable
-  (full contract list in CLAUDE.md).
+  `header input[type="search"]` styling); keep ids page-specific but stable —
+  they are Cypress selectors, so renaming one breaks its spec.
 - `templates/layout.php` includes `header.php` in the same scope, so any page
   can define `$headerControls` before the include — no template changes
   needed per page.
@@ -245,8 +246,8 @@ the same nitpicks are not re-litigated.
   (`grid/header/dnd.js`). Known harmless side effect: the `cursor: help` set in
   `grid/header/render.js` on described columns never applies (the `title`
   tooltip sits on the `th` and still works).
-- **Class naming is consistent**: kebab-case with short module prefixes
-  (`dash-`, `kg-`, `f-`) per CLAUDE.md — these are not "camelCase" violations.
+- **Class naming is consistent**: the convention is kebab-case with short module
+  prefixes (`dash-`, `kg-`, `f-`) — these are not "camelCase" violations.
   camelCase appears only in IDs serving as JS hooks (`#sidebarToggle`,
   `#dateFiltersContainer`, ~14 selectors) — a deliberate ID-vs-class split;
   renaming would touch many JS files for zero gain.
@@ -300,3 +301,17 @@ discarded. When bumping the version, change both or neither.
 and `admin/procedures.php` (workflow stored-procedure steps) follow the June 2026
 DRY convention: shared backend logic goes in `includes/`, not `src/`. `src/` remains
 frozen — it is the existing OOP layer, not the destination for new backend code.
+
+## Where binding rules live
+
+This document is the authoritative, version-controlled home for binding UI and
+architecture decisions.
+
+Several sections used to delegate their "binding rules" to an untracked local
+developer note instead of stating them. Those pointers had been dangling for
+months — the file they named was not in the repository, so the rules could not be
+reviewed, released or recovered, and one set of them was lost outright. The
+pointers were removed on 2026-08-07 and the rules written out in place.
+
+When a rule must hold for everyone, write it **here**, in full. Never delegate a
+binding rule to a file that is not tracked.

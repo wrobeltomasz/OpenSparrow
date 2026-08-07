@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * The set of system-table migration keys is written out by hand in three places
- * (CLAUDE.md step 5 of the release checklist):
+ * (all three must be updated together during a release):
  *
  *   1. $migrations  — includes/admin/migrations.php, the init_db registry that
  *                     actually runs the DDL,

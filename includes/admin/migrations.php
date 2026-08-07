@@ -10,7 +10,7 @@ declare(strict_types=1);
 // includes/admin/migrations.php — admin api.php module: system-table migrations (init_db, migrations_list). The
 // $migrations registry and
 // the $known list MUST stay in this single file and match exactly — the release
-// process (CLAUDE.md "Version bumps") appends to both. A third copy of the key list lives in
+// process appends to both during a version bump. A third copy of the key list lives in
 // includes/admin/overview.php ($knownMig, for the dashboard pending count) and must be kept in
 // sync too. 3.0_baseline is the append-only floor: the pre-3.0 incremental history was collapsed
 // into it (3.0 is the first shipped version); append future releases as new keys, never edit it.

@@ -1,9 +1,9 @@
 # Security Decisions & Audit Log
 
-Architectural security decisions and audit results. Coding rules themselves live in
-`CLAUDE.md` → "Security code practices" — that section is the authoritative checklist
-for every PHP/JS change; this file records **why** those rules exist and what has
-already been verified, so audits are not repeated from scratch.
+Architectural security decisions and audit results. The **Standing decisions**
+below are the authoritative checklist for every PHP/JS change; the rest of this
+file records **why** those rules exist and what has already been verified, so
+audits are not repeated from scratch.
 
 ## Standing decisions
 

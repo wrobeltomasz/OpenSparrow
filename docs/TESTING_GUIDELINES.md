@@ -775,7 +775,9 @@ npm run cy:run -- --browser chrome --debug
 - **Flakiness Prevention:** https://docs.cypress.io/guides/core-concepts/flaky-test-management
 - **Selectors:** https://docs.cypress.io/guides/core-concepts/selecting-elements
 - **WCAG Accessibility Testing:** https://www.w3.org/WAI/test-evaluate/
-- **OpenSparrow CLAUDE.md:** Security patterns, SQL safety, deployment
+- **OpenSparrow `docs/SECURITY.md`:** Security patterns, SQL safety
+- **OpenSparrow `docs/MAINTENANCE.md`:** Binding coding and UI rules
+- **OpenSparrow `docs/PRODUCTION_SETUP.md`:** Deployment
 
 ---
 

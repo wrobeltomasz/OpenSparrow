@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@v6
 
       # The release process requires includes/version.php, includes/VERSION
-      # and config/migrations.json to agree (see CLAUDE.md "Version bumps").
+      # and config/migrations.json to agree (all updated together on a version bump).
       - name: Verify version.php, VERSION and migrations.json agree
         run: |
           set -euo pipefail

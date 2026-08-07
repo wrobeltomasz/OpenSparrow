@@ -44,7 +44,8 @@ function os_header_clear_filters(): string
 }
 
 // Nonce'd inline <script> exposing window.<name> = <json> globals.
-// JSON_HEX_* flags make the values safe inside a <script> context (CLAUDE.md rule).
+// JSON_HEX_* flags make the values safe inside a <script> context — required by the
+// JS/PHP boundary rules in docs/SECURITY.md.
 function os_inline_globals(array $vars, string $nonce): string
 {
     $flags = JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;

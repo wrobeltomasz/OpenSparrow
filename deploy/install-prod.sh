@@ -5,7 +5,7 @@
 # Same overall flow as install.sh, but hardened for production:
 #   - requires a pinned image tag (never "latest")
 #   - forces SECURE_COOKIES=true (assumes TLS terminates in front of this stack)
-#   - generates and requires IP_HASH_SALT (no safe default per CLAUDE.md)
+#   - generates and requires IP_HASH_SALT (no safe default — see docs/SECURITY.md)
 #   - does NOT expose the PostgreSQL port to 0.0.0.0 by default (bind to
 #     127.0.0.1 so only the host itself can reach it, e.g. via SSH tunnel)
 #   - always takes a pre-wipe backup (no --skip-backup escape hatch)
