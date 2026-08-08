@@ -130,7 +130,7 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <label for="create-schema"><?= $e('setup.create_schema') ?></label>
                 </div>
 
-                <div id="schema-exists-box" style="background: #fdecea; padding: 12px; border-radius: var(--radius); border-left: 3px solid #d32f2f; font-size: 13px; color: #611a15; margin-top: 8px; display: none;">
+                <div id="schema-exists-box" style="background: var(--warn-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--warn); font-size: 13px; color: var(--text); margin-top: 8px; display: none;">
                     <strong id="schema-exists-text" style="display: block; margin-bottom: 8px;"></strong>
                     <div class="checkbox-group">
                         <input type="checkbox" id="drop-schema">
@@ -150,7 +150,7 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <div><?= $e('setup.password_colon') ?> <?= $e('setup.admin_pwd_note') ?></div>
                 </div>
 
-                <div style="background: var(--accent-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--accent); font-size: 13px; color: #003366;">
+                <div style="background: var(--accent-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--accent); font-size: 13px; color: var(--accent);">
                     <strong style="display: block; margin-bottom: 4px;">⚠ <?= $e('setup.important') ?></strong>
                     <?= $e('setup.important_text') ?>
                 </div>
@@ -217,7 +217,7 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
 
                 <div id="demo-install-msg" class="status-message" hidden></div>
 
-                <div style="background: #f0f6fa; padding: 12px; border-radius: var(--radius); border-left: 3px solid #0284c7; font-size: 13px; color: #003366; margin-bottom: 20px;">
+                <div style="background: var(--accent-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--accent); font-size: 13px; color: var(--accent); margin-bottom: 20px;">
                     <strong style="display: block; margin-bottom: 4px;"><?= $e('setup.next_steps') ?></strong>
                     <ol style="margin: 0; padding-left: 16px;">
                         <li><?= $e('setup.next_step_1') ?></li>

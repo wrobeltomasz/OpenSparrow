@@ -13,25 +13,55 @@
    owns its own palette regardless of load order. Do not redeclare .btn*
    rules here - add admin-only button variants to buttons.css instead. */
 :root {
-  --bg:           #F4F7F9;
-  --panel:        #ffffff;
-  --text:         #1E293B;
-  --muted:        #64748B;
-  --accent:       #005A9E;
-  --accent-dark:  #003366;
-  --accent-light: #F0F6FA;
-  --accent-mid:   #DDEAF4;
-  --danger:       #d00000;
-  --danger-dark:  #a80000;
-  --ok:           #2b9348;
-  --ok-dark:      #236e38;
-  --warn:         #ffc300;
-  --border:       #CBD5E1;
-  --border-light: #E2E8F0;
-  --shadow-sm:    0 1px 2px rgba(30, 41, 59, 0.08);
-  --shadow-md:    0 4px 6px -1px rgba(30, 41, 59, 0.12), 0 2px 4px -1px rgba(30, 41, 59, 0.06);
-  --radius:       6px;
-  --radius-lg:    10px;
+  /* ============================================================
+     Admin — "Business" theme. Same 4 + 1 colour system as the app
+     (assets/css/styles.css); keep the two in sync.
+       1. --c-paper  white       surfaces
+       2. --c-stone  cool grey   page ground, rules, muted text
+       3. --c-ink    graphite    text, dark bars, destructive actions
+       4. --c-navy   #003366     the single accent: links, actions, selection
+       5. --c-error  red         RESERVED — failed states only (see --error)
+     Do not introduce a sixth hue, and do not reach for --c-error to add
+     emphasis: non-error state is carried by fill, border and weight.
+     ============================================================ */
+  --c-paper: #FFFFFF;
+  --c-stone: #8A9199;
+  --c-ink:   #1F2A37;
+  --c-navy:  #003366;
+  --c-error: #B3261E;
+
+  --bg:           #F5F6F7;
+  --panel:        var(--c-paper);
+  --text:         var(--c-ink);
+  --muted:        #6E767F;
+
+  --accent:       var(--c-navy);
+  --accent-dark:  #002245;
+  --accent-light: #F1F4F8;
+  --accent-mid:   #D0DAE6;
+
+  /* The FIFTH colour. Reserved for failure: a failed run, a rejected
+     save, an invalid field. Nothing else may use it. */
+  --error:        var(--c-error);
+  --error-light:  #FBEFEE;
+
+  /* A delete button is an intent, not a failure — it stays inside the
+     four working hues. Emphasis comes from fill + weight. */
+  --danger:       var(--c-ink);
+  --danger-dark:  #0E1620;
+  --danger-light: #EFF1F3;
+  --ok:           var(--c-navy);
+  --ok-dark:      var(--accent-dark);
+  --ok-light:     var(--accent-light);
+  --warn:         var(--c-ink);
+  --warn-light:   #F0F2F4;
+
+  --border:       #D8DBDF;
+  --border-light: #E9EBED;
+  --shadow-sm:    0 1px 2px rgba(31, 42, 55, 0.08);
+  --shadow-md:    0 4px 6px -1px rgba(31, 42, 55, 0.12), 0 2px 4px -1px rgba(31, 42, 55, 0.06);
+  --radius:       4px;
+  --radius-lg:    6px;
   --header-h:     56px;
   --nav-w:        260px;
   --transition:   150ms ease;
@@ -55,7 +85,7 @@ body {
 /* Content area uses a single font size + colour + style. Differentiate only
    with font-weight:700 or italic. EXEMPT: the left nav (.admin-nav) keeps its
    own sizing; monospace (.mono/.block-key/code/SQL) and semantic status colours
-   (.adm-badge-*, .ov-badge-*, .c-ok/.c-danger/.c-warn) are deliberate exceptions.
+   (.adm-badge-*, .ov-badge-*, .c-ok/.c-danger/.c-warn/.c-error) are deliberate exceptions.
    The .admin-nav rule below re-asserts the menu's own font-size after inheritance. */
 .admin-nav,
 .admin-nav * {
@@ -66,8 +96,8 @@ body {
 
 /* ===== First-run banner ===== */
 .first-run-banner {
-    background: rgba(255, 195, 0, 0.15);
-    border-bottom: 2px solid #ffc300;
+    background: var(--warn-light);
+    border-bottom: 2px solid var(--warn);
     padding: 10px 20px;
     font-size: 13px;
     color: var(--text);
@@ -991,7 +1021,7 @@ textarea.adm-input {
 
 .demo-card:hover {
     border-color: var(--demo-color, var(--accent));
-    box-shadow: 0 4px 12px rgba(30, 41, 59, 0.12);
+    box-shadow: 0 4px 12px rgba(31, 42, 55, 0.12);
 }
 
 .demo-card.selected {
@@ -1054,15 +1084,15 @@ textarea.adm-input {
 }
 
 .demo-card.recommended {
-    border-color: #ffc300;
+    border-color: var(--accent);
 }
 
 .demo-recommended-badge {
     position: absolute;
     top: 12px;
     right: 12px;
-    background: #ffc300;
-    color: var(--text);
+    background: var(--accent);
+    color: #fff;
     font-size: 11px;
     font-weight: 600;
     padding: 2px 8px;
@@ -1081,8 +1111,8 @@ textarea.adm-input {
 }
 
 .demo-warning {
-    background: rgba(255, 195, 0, 0.12);
-    border: 1px solid #ffc300;
+    background: var(--warn-light);
+    border: 1px solid var(--warn);
     color: var(--text);
     border-radius: 6px;
     padding: 12px 16px;
@@ -1091,7 +1121,7 @@ textarea.adm-input {
 }
 
 .demo-warning-danger {
-    background: rgba(208, 0, 0, 0.08);
+    background: var(--danger-light);
     border-color: var(--danger);
     color: var(--danger);
 }
@@ -1148,13 +1178,15 @@ textarea.adm-input {
     font-weight: 700;
     white-space: nowrap;
 }
-.adm-badge-ok     { background: rgba(43,147,72,0.12);  color: var(--ok); }
-.adm-badge-danger { background: rgba(208,0,0,0.08);    color: var(--danger); }
-.adm-badge-warn   { background: rgba(255,195,0,0.15);  color: var(--text); }
-.adm-badge-muted  { background: var(--border-light);   color: var(--muted); }
-.adm-badge-high   { background: rgba(208,0,0,0.08);    color: var(--danger); }
-.adm-badge-medium { background: rgba(255,195,0,0.15);  color: var(--text); }
-.adm-badge-low    { background: var(--border-light);   color: var(--muted); }
+/* With one accent and no red/amber/green, severity is carried by FILL WEIGHT,
+   not hue: solid ink = highest, outlined = middle, flat tint = lowest. */
+.adm-badge-ok     { background: var(--ok-light);     color: var(--ok);    box-shadow: inset 0 0 0 1px var(--accent-mid); }
+.adm-badge-danger { background: var(--danger);       color: #fff; }
+.adm-badge-warn   { background: var(--warn-light);   color: var(--text);  box-shadow: inset 0 0 0 1px var(--muted); }
+.adm-badge-muted  { background: var(--border-light); color: var(--muted); }
+.adm-badge-high   { background: var(--danger);       color: #fff; }
+.adm-badge-medium { background: var(--warn-light);   color: var(--text);  box-shadow: inset 0 0 0 1px var(--muted); }
+.adm-badge-low    { background: var(--border-light); color: var(--muted); }
 
 /* ── Admin utility: tables ─────────────────────────────────────────── */
 .adm-tbl { width: 100%; border-collapse: collapse; }
@@ -1200,6 +1232,9 @@ textarea.adm-input {
 /* ── Admin utility: text colour helpers ────────────────────────────── */
 .c-muted  { color: var(--muted); }
 .c-danger { color: var(--danger); }
+/* The fifth colour, as a text helper. Failures only — a count of inactive
+   rows is not a failure and must keep .c-danger. */
+.c-error  { color: var(--error); }
 .c-ok     { color: var(--ok); }
 .c-warn   { color: var(--warn); }
 .c-text   { color: var(--text); }
@@ -1301,7 +1336,7 @@ textarea.adm-input {
     transition: border-color 0.15s, box-shadow 0.15s;
 }
 .ov-stat-clickable:hover {
-    border-color: var(--accent, #3a6ea5);
+    border-color: var(--accent);
     box-shadow: var(--shadow-md, 0 2px 8px rgba(0,0,0,0.12));
 }
 .ov-stat-icon {
@@ -1397,8 +1432,8 @@ textarea.adm-input {
     font-weight: 700;
     flex-shrink: 0;
 }
-.ov-badge-ok   { background: rgba(43,147,72,.12); color: #2b9348; }
-.ov-badge-warn { background: rgba(208,0,0,.08);   color: var(--danger-dark); }
+.ov-badge-ok   { background: var(--ok-light); color: var(--ok); box-shadow: inset 0 0 0 1px var(--accent-mid); }
+.ov-badge-warn { background: var(--warn-light);   color: var(--text); box-shadow: inset 0 0 0 1px var(--muted); }
 .ov-status-label  { flex: 1; color: var(--text); }
 .ov-status-detail { color: var(--text); }
 .ov-tables-grid {
@@ -1669,14 +1704,14 @@ textarea.adm-input {
     transition: opacity .3s;
 }
 .auto-status-pill.success {
-    background: rgba(43, 147, 72, .12);
+    background: var(--ok-light);
     color: var(--ok);
     border-color: var(--ok);
 }
 .auto-status-pill.error {
-    background: rgba(208, 0, 0, .08);
-    color: var(--danger-dark);
-    border-color: var(--danger);
+    background: var(--error-light);
+    color: var(--error);
+    border-color: var(--error);
 }
 .auto-status-pill.info {
     background: var(--accent-mid);
@@ -1690,9 +1725,9 @@ textarea.adm-input {
     border-radius: 999px;
     font-weight: 600;
 }
-.auto-run-ok      { background: rgba(43, 147, 72, .12);  color: var(--ok); }
-.auto-run-error   { background: rgba(208, 0, 0, .08);    color: var(--danger-dark); }
-.auto-run-skipped { background: rgba(100, 116, 139, .1); color: var(--muted); }
+.auto-run-ok      { background: var(--ok-light);  color: var(--ok); }
+.auto-run-error   { background: var(--error-light);    color: var(--error); }
+.auto-run-skipped { background: var(--border-light); color: var(--muted); }
 
 .auto-list  { max-width: 900px; }
 .auto-bar   { margin-bottom: 12px; }

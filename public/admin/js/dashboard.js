@@ -157,7 +157,7 @@ function renderCalculateButton(itemData) {
     btn.addEventListener('click', async () => {
         if (!itemData.table) {
             out.hidden = false;
-            out.classList.add('c-danger');
+            out.classList.add('c-error');
             out.textContent = 'Select a source table first.';
             return;
         }
@@ -165,7 +165,7 @@ function renderCalculateButton(itemData) {
         btn.disabled = true;
         btn.textContent = 'Calculating…';
         out.hidden = false;
-        out.classList.remove('c-danger');
+        out.classList.remove('c-error');
         out.textContent = 'Please wait…';
 
         try {
@@ -179,14 +179,14 @@ function renderCalculateButton(itemData) {
             });
             const result = await res.json();
             if (result.status === 'success') {
-                out.classList.remove('c-danger');
+                out.classList.remove('c-error');
                 out.textContent = JSON.stringify(result.data, null, 2);
             } else {
-                out.classList.add('c-danger');
+                out.classList.add('c-error');
                 out.textContent = 'Error: ' + (result.error || 'unknown');
             }
         } catch (e) {
-            out.classList.add('c-danger');
+            out.classList.add('c-error');
             out.textContent = 'Request failed: ' + e.message;
         }
 

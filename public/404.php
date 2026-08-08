@@ -37,7 +37,7 @@
 </main>
 
 <footer>
-    <div class="footer-content" style="text-align: center; padding: 20px; color: var(--muted, #6b7280); font-size: 0.9rem;">
+    <div class="footer-content" style="text-align: center; padding: 20px; color: var(--muted, #6E767F); font-size: 0.9rem;">
         <small>
             <a href="https://opensparrow.org/" style="color: inherit; text-decoration: none;">OpenSparrow.org</a> | Open source | PHP + vanilla JS + Postgres
         </small>

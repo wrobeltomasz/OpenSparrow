@@ -135,9 +135,11 @@
   display: none;
 }
 .status-message.show { display: block; }
-.status-message.success { background: #ecfdf5; color: #065f46; border: 1px solid #bbf7d0; }
-.status-message.error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-.status-message.info    { background: #f0f6fa; color: #003366; border: 1px solid #bfdbfe; }
+/* 4 + 1 palette (see styles.css): success and info stay on the single accent
+   and are told apart by fill weight; only .error may use the fifth colour. */
+.status-message.success { background: var(--ok-light);    color: var(--ok-dark); border: 1px solid var(--accent-mid); font-weight: 700; }
+.status-message.error   { background: var(--error-light); color: var(--error);   border: 1px solid var(--error); }
+.status-message.info    { background: var(--accent-light); color: var(--accent);  border: 1px solid var(--border); }
 
 .spinner {
   display: inline-block;
