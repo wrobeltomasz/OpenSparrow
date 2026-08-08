@@ -17,7 +17,7 @@ Reference for every system-owned table. All of them live in the PostgreSQL schem
 | | |
 |---|---|
 | Initial version | **3.0** — single migration `3.0_baseline` (the pre-3.0 incremental history was collapsed into it) |
-| Current version | **3.1** (`includes/version.php`, `includes/VERSION`) |
+| Current version | **3.2** (`includes/version.php`, `includes/VERSION`) |
 | Migrations after the baseline | **`3.1_table_comments`** — `COMMENT ON TABLE` / `COMMENT ON COLUMN` only<br>**`3.1_notes_reminder_time`** — `spw_notes.reminder_date` `date` → `timestamp` |
 
 The `$migrations` registry, the `$known` list (`includes/admin/migrations.php`) and `$knownMig`
