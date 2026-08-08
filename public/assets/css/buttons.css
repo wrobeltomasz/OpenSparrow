@@ -137,6 +137,7 @@
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
@@ -165,6 +166,7 @@
   cursor: pointer;
   font-weight: 500;
   font-size: 13px;
+  line-height: 1.2;
   white-space: nowrap;
   text-decoration: none;
   box-shadow: var(--shadow-sm);

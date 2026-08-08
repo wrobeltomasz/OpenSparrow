@@ -563,10 +563,12 @@ header .print-filter-label {
 }
 
 .um-btn {
-  padding: 0.42rem 0.9rem;
+  padding: 8px 14px;
   border-radius: var(--radius);
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
+  font-size: 13px;
+  line-height: 1.2;
   transition: background var(--transition), opacity var(--transition);
 }
 
@@ -998,7 +1000,7 @@ thead th:last-child  { padding-right: 0.6rem; }
   padding: 0;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
   opacity: 0.7;
   transition: opacity var(--transition), background var(--transition);
@@ -1154,11 +1156,15 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 0.42rem 0.9rem;
+  /* Same box as .btn in buttons.css - an unclassed <button> must not be
+     a different height from a .btn sitting next to it. */
+  padding: 8px 14px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--panel);
   color: var(--text);
+  font-size: 13px;
+  line-height: 1.2;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition);
@@ -1292,11 +1298,11 @@ footer {
   right: 8px;
   padding: 2px 8px;
   border: 1px solid var(--border-light);
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: var(--panel);
   color: var(--muted);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -1602,14 +1608,14 @@ header .dash-filter-label {
   border-radius: var(--radius);
   cursor: pointer;
   color: var(--accent);
-  font-weight: 700;
+  font-weight: 500;
   padding: 2px 7px;
 }
 
 .c-expand-btn.has-records {
   background: var(--accent-mid);
   color: var(--accent-dark);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .drilldown-container {
@@ -1740,7 +1746,7 @@ header .dash-filter-label {
   cursor: pointer;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 .calendar-nav button:hover {
   background: var(--border-light);
@@ -1787,7 +1793,7 @@ header .dash-filter-label {
   line-height: 10px;
   padding: 0;
   border: 1px solid var(--border-light);
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: var(--panel);
   color: var(--muted);
   font-weight: 700;
@@ -1831,7 +1837,7 @@ header .dash-filter-label {
   background: rgba(255, 255, 255, 0.85);
   color: var(--error);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.12s, background 0.12s, color 0.12s;
@@ -2447,7 +2453,7 @@ thead th.drag-over {
 .c-toolbar-btn {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius);
   padding: 2px 7px;
   cursor: pointer;
   color: var(--text);
@@ -2922,12 +2928,14 @@ thead th.drag-over {
 .btn-save {
   display: inline-flex;
   align-items: center;
-  padding: 0.42rem 0.9rem;
+  padding: 8px 14px;
   background: var(--accent);
   color: #fff;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
   transition: background var(--transition), box-shadow var(--transition);
   box-shadow: var(--shadow-sm);
@@ -2948,12 +2956,14 @@ thead th.drag-over {
 .btn-cancel {
   display: inline-flex;
   align-items: center;
-  padding: 0.42rem 0.9rem;
+  padding: 8px 14px;
   background: var(--panel);
   color: var(--muted);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
   transition: all var(--transition);
 }
@@ -2966,12 +2976,14 @@ thead th.drag-over {
 .btn-delete {
   display: inline-flex;
   align-items: center;
-  padding: 0.42rem 0.9rem;
+  padding: 8px 14px;
   background: var(--error);
   color: #fff;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
   transition: background var(--transition), box-shadow var(--transition);
   box-shadow: var(--shadow-sm);
@@ -3339,7 +3351,7 @@ thead th.drag-over {
     color: #fff;
     border: none;
     border-radius: var(--radius);
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
     transition: background var(--transition);
 }
@@ -3402,14 +3414,19 @@ thead th.drag-over {
 .me-bar-dup-btn, .me-bar-export-btn, .me-bar-owner-btn, .me-bar-clear-btn,
 .me-bar-edit-btn, .me-bar-delete-btn {
     border-radius: var(--radius);
-    padding: 6px 14px;
-    font-weight: 700;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
     cursor: pointer;
     transition: background var(--transition);
 }
 
 /* Ghost buttons on the dark bar: dup/export/owner share one look, clear is the muted variant */
 .me-bar-dup-btn, .me-bar-export-btn, .me-bar-owner-btn, .me-bar-clear-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    line-height: 1.2;
     background: rgba(255,255,255,0.12);
     color: var(--border-light);
     border: 1px solid rgba(255,255,255,0.25);
@@ -3418,12 +3435,12 @@ thead th.drag-over {
     background: rgba(255,255,255,0.22);
     color: #fff;
 }
-.me-bar-clear-btn { color: var(--border); font-weight: 400; padding: 6px 12px; border-color: rgba(255,255,255,0.2); }
+.me-bar-clear-btn { color: var(--border); font-weight: 500; border-color: rgba(255,255,255,0.2); }
 
 .me-bar-edit-btn {
     background: var(--accent);
     color: #fff;
-    border: none;
+    border: 1px solid transparent;
 }
 .me-bar-edit-btn:hover { background: var(--accent-dark); }
 
@@ -3443,7 +3460,7 @@ thead th.drag-over {
 .me-col-picker-quick-btn {
     background: none;
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--radius);
     padding: 3px 10px;
     cursor: pointer;
     color: var(--accent);
@@ -3493,8 +3510,10 @@ thead th.drag-over {
     background: var(--border-light);
     color: var(--muted);
     border: 1px solid var(--border-light);
-    border-radius: 6px;
-    font-weight: 700;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
 }
@@ -3557,7 +3576,7 @@ thead th.drag-over {
     line-height: 1;
     background: var(--panel);
     border: 1px solid var(--border-light);
-    border-radius: 6px;
+    border-radius: var(--radius);
     color: var(--muted);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
@@ -3983,7 +4002,7 @@ thead th.drag-over {
 .ef-upload-bar { background: var(--bg); padding: 15px; border: 1px dashed var(--border); border-radius: var(--radius); margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ef-upload-input { padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); }
 .ef-upload-text { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; width: 180px; }
-.ef-upload-btn { background: var(--accent); padding: 7px 16px; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-weight: 700; }
+.ef-upload-btn { background: var(--accent); padding: 8px 14px; border: 1px solid transparent; border-radius: var(--radius); color: #fff; cursor: pointer; font-size: 13px; font-weight: 500; line-height: 1.2; }
 .ef-upload-status { margin-left: 10px; }
 
 /* Files table */
@@ -3996,7 +4015,7 @@ thead th.drag-over {
 .ef-file-icon { width: 20px; height: 20px; opacity: 0.8; }
 .ef-file-meta { color: var(--muted); }
 .ef-file-dash { color: var(--border); }
-.ef-download-btn { background: var(--accent); padding: 4px 10px; border-radius: 4px; color: #fff; text-decoration: none; display: inline-block; }
+.ef-download-btn { background: var(--accent); padding: 4px 10px; border-radius: var(--radius); color: #fff; text-decoration: none; display: inline-block; }
 .ef-col-actions { width: 100px; }
 
 /* Owner / history */

@@ -162,11 +162,14 @@
 }
 
 .setup-card button {
+  /* Deliberately larger than the app's .btn - this is a full-page wizard.
+     The transparent border keeps .primary and .secondary the same height. */
   padding: 10px 20px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
   transition: all var(--transition);
   font-family: inherit;

@@ -131,13 +131,14 @@
 }
 
 .pr-print-btn {
-  padding: 0.45rem 1.2rem;
+  padding: 8px 14px;
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
   color: #fff;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
   transition: all var(--transition);
 }
