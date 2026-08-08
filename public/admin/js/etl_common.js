@@ -21,7 +21,7 @@ export function mkStatus() {
 /** Show a status message in an element created by mkStatus(), green on ok / red on error. */
 export function showStatus(el, msg, ok) {
     el.textContent = msg;
-    el.style.color = ok ? 'var(--ok)' : 'var(--danger)';
+    el.style.color = ok ? 'var(--ok)' : 'var(--error)';
     el.style.display = '';
 }
 

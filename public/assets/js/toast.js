@@ -8,7 +8,7 @@
 export function showToast(message, variant = 'error', duration = 4000) {
     const colors = {
         error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
-        success: { bg: 'var(--ok-light)', fg: 'var(--ok-dark)', border: 'var(--accent-mid)' },
+        success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--accent-mid)' },
         info:    { bg: 'var(--accent-light)', fg: 'var(--accent)', border: 'var(--accent-mid)' },
     }[variant] || { bg: 'var(--border-light)', fg: 'var(--text)', border: 'var(--border)' };
 

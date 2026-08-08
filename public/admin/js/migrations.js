@@ -81,11 +81,11 @@ export async function renderMigrationsPage(ctx) {
                 statusEl.textContent = '✓ ' + data.message;
                 await loadMigrations(tableWrap);
             } else {
-                statusEl.style.color = 'var(--danger)';
+                statusEl.style.color = 'var(--error)';
                 statusEl.textContent = '✗ ' + (data.error || 'Unknown error.');
             }
         } catch {
-            statusEl.style.color = 'var(--danger)';
+            statusEl.style.color = 'var(--error)';
             statusEl.textContent = '✗ Network error.';
         } finally {
             runBtn.disabled    = false;
@@ -106,12 +106,12 @@ async function loadMigrations(container) {
         const res = await apiFetch('api.php?action=migrations_list');
         data = await res.json();
     } catch {
-        container.innerHTML = '<p style="color:var(--danger); ">Failed to load migrations.</p>';
+        container.innerHTML = '<p style="color:var(--error); ">Failed to load migrations.</p>';
         return;
     }
 
     if (data.status !== 'success') {
-        container.innerHTML = `<p style="color:var(--danger); ">Error: ${escHtml(data.error)}</p>`;
+        container.innerHTML = `<p style="color:var(--error); ">Error: ${escHtml(data.error)}</p>`;
         return;
     }
 
@@ -167,12 +167,12 @@ async function loadReleaseMigrations(container) {
         const res = await apiFetch('api_migrations.php?action=scan');
         data = await res.json();
     } catch {
-        container.innerHTML = '<p style="color:var(--danger); ">Failed to load release migrations.</p>';
+        container.innerHTML = '<p style="color:var(--error); ">Failed to load release migrations.</p>';
         return;
     }
 
     if (data.status !== 'success') {
-        container.innerHTML = `<p style="color:var(--danger); ">Error: ${escHtml(data.error || 'Unknown')}</p>`;
+        container.innerHTML = `<p style="color:var(--error); ">Error: ${escHtml(data.error || 'Unknown')}</p>`;
         return;
     }
 
@@ -318,13 +318,13 @@ function renderVersionCard(v, container) {
                     const banner = document.getElementById('mig-pending-banner');
                     if (banner) banner.style.display = 'none';
                 } else {
-                    statusMsg.style.color = 'var(--danger)';
+                    statusMsg.style.color = 'var(--error)';
                     statusMsg.textContent = '✗ ' + (data.error || 'Unknown error.');
                     applyBtn.disabled    = false;
                     applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
                 }
             } catch {
-                statusMsg.style.color = 'var(--danger)';
+                statusMsg.style.color = 'var(--error)';
                 statusMsg.textContent = '✗ Network error.';
                 applyBtn.disabled    = false;
                 applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';

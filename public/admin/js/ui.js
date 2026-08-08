@@ -186,7 +186,7 @@ export function createIconPicker(key, labelText, value, onChange) {
                 grid.innerHTML = '<p style="grid-column: 1 / -1; color:var(--muted);">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
             }
         } catch(e) {
-            grid.innerHTML = '<p style="color:var(--danger); grid-column: 1 / -1;">An error occurred while loading icons.</p>';
+            grid.innerHTML = '<p style="color:var(--error); grid-column: 1 / -1;">An error occurred while loading icons.</p>';
         }
         
         content.appendChild(grid);
@@ -829,7 +829,7 @@ export function tdStatus(status) {
 export function tdError(text) {
     return td(
         text || '',
-        'color:var(--danger); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
+        'color:var(--error); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
     );
 }
 

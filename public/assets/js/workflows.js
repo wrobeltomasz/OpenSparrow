@@ -354,7 +354,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             const pill = document.createElement('div');
             pill.style.cssText = [
                 'display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap; transition:all .2s;',
-                done    ? 'background:var(--ok-light); color:var(--ok-dark);'  :
+                done    ? 'background:var(--ok-light); color:var(--ok);'  :
                 current ? 'background:var(--accent); color:#fff;' :
                           'background:var(--border-light); color:var(--muted);'
             ].join('');
@@ -443,7 +443,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
 
         if (!tableSchema) {
             const errorMsg = document.createElement('p');
-            errorMsg.style.cssText = 'color: var(--danger); text-align: center; margin-top: 40px;';
+            errorMsg.style.cssText = 'color: var(--error); text-align: center; margin-top: 40px;';
             errorMsg.textContent = I18n.t('workflow.schema_not_found', { table: step.table });
             containerEl.appendChild(errorMsg);
             return;

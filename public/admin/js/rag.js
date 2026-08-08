@@ -42,7 +42,7 @@ function ragStatusPill(anchor, msg, type = 'success') {
     const prev = anchor.parentNode?.querySelector('.rag-status-pill');
     if (prev) prev.remove();
     const colors = {
-        success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--muted)' },
+        success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--ok)' },
         error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
         info:    { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' },
     }[type] ?? { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' };
@@ -370,7 +370,7 @@ function ragBuildDocumentsTab(panel) {
                 const td  = row.insertCell();
                 td.colSpan = 7;
                 td.textContent = 'Error loading documents: ' + (data.error ?? 'Unknown error');
-                td.style.cssText = 'padding:16px;color:var(--danger);text-align:center;';
+                td.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
                 return;
             }
             renderFiles(data.files ?? []);
@@ -380,7 +380,7 @@ function ragBuildDocumentsTab(panel) {
             const td  = row.insertCell();
             td.colSpan    = 7;
             td.textContent = 'Failed to load: ' + e.message;
-            td.style.cssText = 'padding:16px;color:var(--danger);text-align:center;';
+            td.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
         }
     }
 
@@ -932,7 +932,7 @@ function ragBuildSettingsTab(panel) {
 
             if (data.status === 'success') {
                 const n = (data.models ?? []).length;
-                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:var(--ok-light);color:var(--ok);border:1px solid var(--border);';
+                statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:var(--ok-light);color:var(--ok);border:1px solid var(--ok);';
                 statusLine.textContent   = '✓ Connected · ' + n + ' model' + (n !== 1 ? 's' : '') + ' available'
                     + (data.version ? ' · Ollama ' + data.version : '');
 
@@ -1271,7 +1271,7 @@ function ragBuildTestTab(panel) {
                 });
             }
         } catch (_) {
-            tagChips.innerHTML = '<span style="color:var(--danger);">Could not load tags.</span>';
+            tagChips.innerHTML = '<span style="color:var(--error);">Could not load tags.</span>';
         }
     })();
 
@@ -1398,7 +1398,7 @@ function ragBuildTestTab(panel) {
                 data = await res.json();
             } catch {
                 answerBox.textContent = 'The server timed out or returned an unexpected response. Please try again.';
-                answerBox.style.color = 'var(--danger)';
+                answerBox.style.color = 'var(--error)';
                 return;
             }
             if (data.status === 'success') {
@@ -1425,7 +1425,7 @@ function ragBuildTestTab(panel) {
                 }
             } else {
                 answerBox.textContent = 'Error: ' + (data.error ?? 'Unknown error');
-                answerBox.style.color = 'var(--danger)';
+                answerBox.style.color = 'var(--error)';
             }
         } catch (e) {
             if (e.name === 'AbortError') {
@@ -1433,7 +1433,7 @@ function ragBuildTestTab(panel) {
             } else {
                 answerBox.textContent = 'Request failed: ' + e.message;
             }
-            answerBox.style.color = 'var(--danger)';
+            answerBox.style.color = 'var(--error)';
         } finally {
             testAbortCtrl = null;
             runBtn.disabled = false;
@@ -1683,7 +1683,7 @@ function ragBuildStatsTab(panel) {
             const td  = row.insertCell();
             td.colSpan = 9;
             td.textContent = 'Failed to load: ' + e.message;
-            td.style.cssText = 'padding:16px;color:var(--danger);text-align:center;';
+            td.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
         } finally {
             refreshBtn.disabled = false;
         }

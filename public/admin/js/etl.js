@@ -607,13 +607,13 @@ export async function renderEtlPage(ctx) {
         const res  = await apiFetch('api.php?action=etl_load');
         const data = await res.json();
         if (data.status !== 'success') {
-            workspaceEl.innerHTML = `<p style="color:var(--danger); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
+            workspaceEl.innerHTML = `<p style="color:var(--error); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
             return;
         }
         etlConfig  = data.config;
         etlVersion = data.version || 0;
     } catch (_) {
-        workspaceEl.innerHTML = '<p style="color:var(--danger); padding:16px;">Network error loading ETL config.</p>';
+        workspaceEl.innerHTML = '<p style="color:var(--error); padding:16px;">Network error loading ETL config.</p>';
         return;
     }
 

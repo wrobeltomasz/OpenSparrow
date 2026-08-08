@@ -81,13 +81,13 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
                 ));
             } else {
                 const errP = document.createElement('p');
-                errP.style.cssText = 'color:var(--danger);';
+                errP.style.cssText = 'color:var(--error);';
                 errP.textContent = `Error loading users: ${data.error}`;
                 usersWrapper.appendChild(errP);
             }
         })
         .catch(() => {
-            usersWrapper.innerHTML = '<p style="color:var(--danger); ">Network error while fetching users.</p>';
+            usersWrapper.innerHTML = '<p style="color:var(--error); ">Network error while fetching users.</p>';
         });
 
     workspaceEl.appendChild(createTextInput('url_template', 'URL Template', itemData.url_template, v => itemData.url_template = v));

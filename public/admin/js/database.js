@@ -20,7 +20,7 @@ export async function renderDatabaseSection(panel) {
         dbConfig = await res.json();
         if (!dbConfig.host) dbConfig = { host: 'localhost', port: '5432', dbname: '', user: 'postgres', password: '' };
     } catch (e) {
-        panel.innerHTML = '<h3 style="color:var(--danger);">Error loading database settings. Check server logs.</h3>';
+        panel.innerHTML = '<h3 style="color:var(--error);">Error loading database settings. Check server logs.</h3>';
         return;
     }
 

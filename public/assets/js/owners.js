@@ -123,7 +123,7 @@ async function saveOwner() {
     const ownerId = parseInt(select.value, 10);
     if (!ownerId) {
         status.textContent = I18n.t('owners.select_first');
-        status.style.color = 'var(--danger)';
+        status.style.color = 'var(--error)';
         return;
     }
 
@@ -143,11 +143,11 @@ async function saveOwner() {
             await loadHistory();
         } else {
             status.textContent = data.error || I18n.t('owners.error_save');
-            status.style.color = 'var(--danger)';
+            status.style.color = 'var(--error)';
         }
     } catch {
         status.textContent = I18n.t('owners.network_error');
-        status.style.color = 'var(--danger)';
+        status.style.color = 'var(--error)';
     } finally {
         saveBtn.disabled = false;
     }

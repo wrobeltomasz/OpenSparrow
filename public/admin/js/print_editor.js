@@ -89,7 +89,7 @@ export function renderPrintEditor(ctx) {
         const styles = {
             info:  'background:var(--accent-light); color:var(--accent-dark);',
             ok:    'background:var(--ok-light); color:var(--ok);',
-            error: 'background:var(--error-light); color:var(--danger);',
+            error: 'background:var(--error-light); color:var(--error);',
         };
         statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
         statusEl.textContent = msg;

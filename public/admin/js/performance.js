@@ -81,7 +81,7 @@ function setBodyLoading(body) {
 function setBodyError(body, msg) {
     body.replaceChildren();
     const p = document.createElement('p');
-    p.style.cssText = 'color:var(--danger);  margin:0;';
+    p.style.cssText = 'color:var(--error);  margin:0;';
     p.textContent = msg;
     body.appendChild(p);
 }
@@ -321,13 +321,13 @@ function renderDbHealth(body, data) {
         'Cache Hit Ratio',
         cacheHit + '%',
         'target: > 99%',
-        cacheHit >= 99 ? 'var(--ok)' : cacheHit >= 95 ? 'var(--warn)' : 'var(--danger)'
+        cacheHit >= 99 ? 'var(--ok)' : cacheHit >= 95 ? 'var(--warn)' : 'var(--error)'
     ));
     grid.appendChild(kpi(
         'Active Connections',
         activeConn + ' / ' + maxConn,
         connPct + '% of max_connections',
-        connPct > 80 ? 'var(--danger)' : connPct > 60 ? 'var(--warn)' : 'var(--ok)'
+        connPct > 80 ? 'var(--error)' : connPct > 60 ? 'var(--warn)' : 'var(--ok)'
     ));
     grid.appendChild(kpi('DB Size', db.db_size));
     grid.appendChild(kpi('Committed Txns', Number(db.xact_commit).toLocaleString()));
@@ -335,7 +335,7 @@ function renderDbHealth(body, data) {
         'Deadlocks',
         db.deadlocks,
         '',
-        parseInt(db.deadlocks) > 0 ? 'var(--danger)' : 'var(--ok)'
+        parseInt(db.deadlocks) > 0 ? 'var(--error)' : 'var(--ok)'
     ));
     grid.appendChild(kpi('Rollbacks', Number(db.xact_rollback).toLocaleString()));
 

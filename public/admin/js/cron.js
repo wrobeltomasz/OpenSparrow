@@ -166,7 +166,7 @@ function buildStatsSection() {
 
             const kpis = [
                 ['Total Notifications', t.total ?? '—', 'var(--muted)'],
-                ['Unread',              t.unread ?? '—', 'var(--danger)'],
+                ['Unread',              t.unread ?? '—', 'var(--error)'],
                 ['Due Today (unread)',  t.due_today ?? '—', 'var(--warn)'],
                 ['Upcoming Unread',     t.upcoming_unread ?? '—', 'var(--muted)'],
             ];

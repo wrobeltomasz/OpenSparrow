@@ -77,14 +77,15 @@
 }
 
 .btn-danger {
-  background: var(--danger);
+  background: var(--error);
   color: #fff;
-  border-color: var(--danger);
+  border-color: var(--error);
 }
 .btn-danger:hover:not(:disabled) {
-  background: var(--danger-dark);
-  border-color: var(--danger-dark);
+  background: var(--error);
+  border-color: var(--error);
   color: #fff;
+  filter: brightness(0.88);
 }
 
 .btn-success {
@@ -93,9 +94,10 @@
   border-color: var(--ok);
 }
 .btn-success:hover:not(:disabled) {
-  background: var(--ok-dark);
-  border-color: var(--ok-dark);
+  background: var(--ok);
+  border-color: var(--ok);
   color: #fff;
+  filter: brightness(0.88);
 }
 
 .btn-warning {
@@ -104,9 +106,10 @@
   border-color: var(--warn);
 }
 .btn-warning:hover:not(:disabled) {
-  background: var(--danger-dark);
-  border-color: var(--danger-dark);
+  background: var(--warn);
+  border-color: var(--warn);
   color: #fff;
+  filter: brightness(0.88);
 }
 
 .btn-sm {
@@ -168,9 +171,10 @@
   transition: background var(--transition), border-color var(--transition);
 }
 .btn-add:hover:not(:disabled) {
-  background: var(--ok-dark);
-  border-color: var(--ok-dark);
+  background: var(--ok);
+  border-color: var(--ok);
   color: #fff;
   text-decoration: none;
+  filter: brightness(0.88);
 }
 

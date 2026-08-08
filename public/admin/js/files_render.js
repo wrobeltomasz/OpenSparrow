@@ -360,7 +360,7 @@ async function loadList() {
         const data = await res.json();
 
         if (!data.success) {
-            setTbody(`<tr><td colspan="8" class="adm-td" style="color:var(--danger)">${escHtml(data.error || 'Failed to load')}</td></tr>`);
+            setTbody(`<tr><td colspan="8" class="adm-td" style="color:var(--error)">${escHtml(data.error || 'Failed to load')}</td></tr>`);
             return;
         }
 
@@ -373,7 +373,7 @@ async function loadList() {
         const statusEl = document.getElementById('f-status');
         if (statusEl) statusEl.textContent = `${_state.total} file${_state.total !== 1 ? 's' : ''} found`;
     } catch (e) {
-        setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--danger)">Network error</td></tr>');
+        setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--error)">Network error</td></tr>');
     } finally {
         _state.loading = false;
     }

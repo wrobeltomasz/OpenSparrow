@@ -196,14 +196,14 @@ export async function renderFlowsTab(panel) {
         const res  = await apiFetch('api.php?action=etl_flow_load');
         const data = await res.json();
         if (data.status !== 'success') {
-            panel.innerHTML = `<p style="color:var(--danger); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
+            panel.innerHTML = `<p style="color:var(--error); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
             return;
         }
         flowsConfig   = data.config;
         flowsVersion  = data.version || 0;
         jobsForPicker = data.jobs || [];
     } catch (_) {
-        panel.innerHTML = '<p style="color:var(--danger); padding:16px;">Network error loading Flows config.</p>';
+        panel.innerHTML = '<p style="color:var(--error); padding:16px;">Network error loading Flows config.</p>';
         return;
     }
     if (!Array.isArray(flowsConfig.flows)) flowsConfig.flows = [];

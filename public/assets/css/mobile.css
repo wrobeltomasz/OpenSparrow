@@ -38,7 +38,7 @@
         min-height: 44px;
         background: none;
         border: none;
-        color: white;
+        color: #fff;
         font-size: 1.2rem;
         cursor: pointer;
         padding: 0 4px;
@@ -67,7 +67,7 @@
         flex-direction: column;
         gap: 8px;
         padding: 10px 12px 14px;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+        box-shadow: 0 6px 16px rgba(31, 42, 55, 0.22);
         z-index: 149;
         box-sizing: border-box;
     }
@@ -131,7 +131,7 @@
 
     nav#menu.menu.mob-open {
         left: 0;
-        box-shadow: 6px 0 24px rgba(0, 0, 0, 0.22);
+        box-shadow: 6px 0 24px rgba(31, 42, 55, 0.22);
     }
 
     /* Dark overlay behind open sidebar; JS adds mob-visible to show it */
@@ -139,7 +139,7 @@
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.45);
+        background: rgba(31, 42, 55, 0.45);
         z-index: 199;
     }
 
@@ -177,7 +177,7 @@
     #filesGrid {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        box-shadow: inset -10px 0 14px -6px rgba(0, 0, 0, 0.09);
+        box-shadow: inset -10px 0 14px -6px rgba(31, 42, 55, 0.09);
         /* styles.css sizes these with 100vh, which overshoots the visible viewport
            while the browser toolbar is up and pushes the last rows off-screen.
            Browsers without dvh drop this line and keep the vh value. */
@@ -244,7 +244,7 @@
         font-size: 0; /* button text hidden; + rendered via ::before */
         background: var(--ok);
         border-color: var(--ok);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+        box-shadow: 0 4px 16px rgba(31, 42, 55, 0.28);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -254,7 +254,7 @@
         content: '+';
         font-size: 2rem;
         font-weight: 300;
-        color: white;
+        color: #fff;
         line-height: 1;
     }
 

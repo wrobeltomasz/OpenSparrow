@@ -118,10 +118,10 @@ function buildGroupPanel(panel, tables) {
                 });
                 resultArea.appendChild(ul);
             } else {
-                resultArea.innerHTML = `<p style="color:var(--danger);margin:0;">Error: ${escHtml(data.error || 'Unknown error')}</p>`;
+                resultArea.innerHTML = `<p style="color:var(--error);margin:0;">Error: ${escHtml(data.error || 'Unknown error')}</p>`;
             }
         } catch (e) {
-            resultArea.innerHTML = `<p style="color:var(--danger);margin:0;">Request failed: ${escHtml(e.message)}</p>`;
+            resultArea.innerHTML = `<p style="color:var(--error);margin:0;">Request failed: ${escHtml(e.message)}</p>`;
         }
 
         btnBackup.disabled = false;
@@ -170,7 +170,7 @@ export async function renderBackupPage(ctx) {
         }
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<p style="color:var(--danger);padding:20px;">Failed to load tables.</p>';
+        workspaceEl.innerHTML = '<p style="color:var(--error);padding:20px;">Failed to load tables.</p>';
         return;
     }
 

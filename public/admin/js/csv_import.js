@@ -963,7 +963,7 @@ export async function renderCsvImportPage(ctx) {
         resultEl.style.cssText = `padding:18px 20px;border-radius:8px;background:${bg};border:1px solid ${bdr};margin-bottom:8px;`;
 
         const title = document.createElement('div');
-        title.style.cssText = `font-weight:700;margin-bottom:8px;color:${ok ? 'var(--ok-dark)' : 'var(--muted)'};`;
+        title.style.cssText = `font-weight:700;margin-bottom:8px;color:${ok ? 'var(--ok)' : 'var(--muted)'};`;
         title.textContent = ok
             ? `✓ Import complete`
             : `⚠ Import finished with issues`;
@@ -973,7 +973,7 @@ export async function renderCsvImportPage(ctx) {
 
         const stat = (label, value, accent) => {
             const s = document.createElement('span');
-            s.style.cssText = `color:${accent ? 'var(--ok-dark)' : 'var(--muted)'};`;
+            s.style.cssText = `color:${accent ? 'var(--ok)' : 'var(--muted)'};`;
             const strong = document.createElement('strong');
             strong.textContent = value;
             s.append(strong, ' ' + label);
@@ -1046,7 +1046,7 @@ export async function renderCsvImportPage(ctx) {
             const tr = tbody.insertRow();
 
             const tdN = td(String(row.row_number), 'white-space:nowrap;');
-            const tdE = td(row.error_message || '', 'color:var(--danger);');
+            const tdE = td(row.error_message || '', 'color:var(--error);');
             const tdR = td(row.raw_data || '', 'font-family:var(--font-mono);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
             tdN.className = 'adm-td adm-td-sm';
             tdE.className = 'adm-td adm-td-sm';
@@ -1178,7 +1178,7 @@ export async function renderCsvImportPage(ctx) {
 
     function showBanner(container, msg, type) {
         const colors = {
-            success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--muted)' },
+            success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--ok)' },
             error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
         }[type] ?? { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' };
         const div = document.createElement('div');

@@ -45,7 +45,7 @@ async function renderManageUsers(panel, ctx) {
         const policy = await policyRes.json();
 
         if (data.status !== 'success') {
-            panel.innerHTML = `<h3 style="color:var(--danger);">Error</h3><p>${escHtml(data.error)}</p>`;
+            panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
             return;
         }
 
@@ -267,17 +267,17 @@ async function renderManageUsers(panel, ctx) {
                     const pwd     = newInput.value;
                     const confirm = box.querySelector('#cpw-confirm').value;
                     if (isSelf && !box.querySelector('#cpw-current').value) {
-                        msgEl.style.color = 'var(--danger)';
+                        msgEl.style.color = 'var(--error)';
                         msgEl.textContent = 'Current password is required.';
                         return;
                     }
                     if (pwd.length < minPasswordLength) {
-                        msgEl.style.color = 'var(--danger)';
+                        msgEl.style.color = 'var(--error)';
                         msgEl.textContent = `Password must be at least ${minPasswordLength} characters.`;
                         return;
                     }
                     if (pwd !== confirm) {
-                        msgEl.style.color = 'var(--danger)';
+                        msgEl.style.color = 'var(--error)';
                         msgEl.textContent = 'Passwords do not match.';
                         return;
                     }
@@ -301,10 +301,10 @@ async function renderManageUsers(panel, ctx) {
                             data = await res.json();
                             if (data.status === 'success') { overlay.remove(); return; }
                         }
-                        msgEl.style.color = 'var(--danger)';
+                        msgEl.style.color = 'var(--error)';
                         msgEl.textContent = data.error || 'Error saving password.';
                     } catch {
-                        msgEl.style.color = 'var(--danger)';
+                        msgEl.style.color = 'var(--error)';
                         msgEl.textContent = 'Network error.';
                     }
                 });
@@ -325,8 +325,8 @@ async function renderManageUsers(panel, ctx) {
             if (/\d/.test(pwd)) score++;
             if (/[^a-zA-Z0-9]/.test(pwd)) score++;
 
-            if (pwd.length < minPasswordLength) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--danger)' };
-            if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: 'var(--danger)' };
+            if (pwd.length < minPasswordLength) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--error)' };
+            if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: 'var(--error)' };
             if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: 'var(--warn)' };
             if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: 'var(--muted)' };
             return { level: 'strong', percent: 100, label: 'Strong', color: 'var(--ok)' };
@@ -377,7 +377,7 @@ async function renderManageUsers(panel, ctx) {
         });
 
     } catch (e) {
-        panel.innerHTML = `<h3 style="color:var(--danger);">Network Error</h3><p>${escHtml(e.message)}</p>`;
+        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(e.message)}</p>`;
     }
 }
 
@@ -389,7 +389,7 @@ async function renderUserStats(panel) {
         const data = await res.json();
 
         if (data.status !== 'success') {
-            panel.innerHTML = `<h3 style="color:var(--danger);">Error</h3><p>${escHtml(data.error)}</p>`;
+            panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
             return;
         }
 
@@ -455,7 +455,7 @@ async function renderUserStats(panel) {
 
         panel.innerHTML = html;
     } catch (e) {
-        panel.innerHTML = `<h3 style="color:var(--danger);">Network Error</h3><p>${escHtml(e.message)}</p>`;
+        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(e.message)}</p>`;
     }
 }
 
@@ -467,7 +467,7 @@ async function renderUserSettings(panel, ctx) {
         const data = await res.json();
 
         if (data.status !== 'success') {
-            panel.innerHTML = `<h3 style="color:var(--danger);">Error</h3><p>${escHtml(data.error)}</p>`;
+            panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
             return;
         }
 
@@ -514,6 +514,6 @@ async function renderUserSettings(panel, ctx) {
             }
         });
     } catch (e) {
-        panel.innerHTML = `<h3 style="color:var(--danger);">Network Error</h3><p>${escHtml(e.message)}</p>`;
+        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(e.message)}</p>`;
     }
 }

@@ -76,7 +76,7 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
 
             const h4 = document.createElement('h4');
             h4.textContent = incomplete ? `Step ${index + 1} — incomplete` : `Step ${index + 1}`;
-            if (incomplete) h4.style.color = 'var(--danger)';
+            if (incomplete) h4.style.color = 'var(--error)';
 
             const delBtn = document.createElement('button');
             delBtn.type = 'button';

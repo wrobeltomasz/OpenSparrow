@@ -112,7 +112,7 @@ async function buildSubtableBlock(sub, row) {
         wrapper.appendChild(ul);
     } catch {
         const err = document.createElement('p');
-        err.style.cssText = 'color:var(--danger); font-size:13px;';
+        err.style.cssText = 'color:var(--error); font-size:13px;';
         err.textContent = I18n.t('grid.drilldown_error');
         wrapper.appendChild(err);
     }

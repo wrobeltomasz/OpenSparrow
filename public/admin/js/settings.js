@@ -26,7 +26,7 @@ export async function renderSettingsPage(ctx) {
         bubbleData = bubbleRes.ok ? await bubbleRes.json() : { chat_bubble_enabled: false };
         logoData   = logoRes.ok ? await logoRes.json() : { logo_path: null };
     } catch (e) {
-        workspaceEl.innerHTML = '<h3 style="color:var(--danger);">Error loading settings. Check server logs.</h3>';
+        workspaceEl.innerHTML = '<h3 style="color:var(--error);">Error loading settings. Check server logs.</h3>';
         return;
     }
 

@@ -14,21 +14,25 @@
    rules here - add admin-only button variants to buttons.css instead. */
 :root {
   /* ============================================================
-     Admin — "Business" theme. Same 4 + 1 colour system as the app
-     (assets/css/styles.css); keep the two in sync.
+     Admin — "Business" theme. Keep in sync with assets/css/styles.css.
+     4 + 2 COLOUR SYSTEM. Four neutral/accent hues carry the whole UI; two
+     semantic hues are admitted for status and nothing else.
        1. --c-paper  white       surfaces
        2. --c-stone  cool grey   page ground, rules, muted text
-       3. --c-ink    graphite    text, dark bars, destructive actions
+       3. --c-ink    graphite    text, dark bars, caution
        4. --c-navy   #003366     the single accent: links, actions, selection
-       5. --c-error  red         RESERVED — failed states only (see --error)
-     Do not introduce a sixth hue, and do not reach for --c-error to add
-     emphasis: non-error state is carried by fill, border and weight.
+       5. --c-ok     #0E7E4F     success / positive state
+       6. --c-error  #AB0000     failure and destructive actions
+     Everything else below is one of those, tinted towards paper or ink.
+     Do not introduce a seventh hue, and do not reach for --c-ok / --c-error
+     for decoration: they mean "this succeeded" and "this failed or destroys".
      ============================================================ */
   --c-paper: #FFFFFF;
   --c-stone: #8A9199;
   --c-ink:   #1F2A37;
   --c-navy:  #003366;
-  --c-error: #B3261E;
+  --c-ok:    #0E7E4F;
+  --c-error: #AB0000;
 
   --bg:           #F5F6F7;
   --panel:        var(--c-paper);
@@ -40,19 +44,14 @@
   --accent-light: #F1F4F8;
   --accent-mid:   #D0DAE6;
 
-  /* The FIFTH colour. Reserved for failure: a failed run, a rejected
-     save, an invalid field. Nothing else may use it. */
+  /* The two semantic hues. One shade each: hover states darken with
+     filter: brightness() instead of a second token. There is no --danger
+     token - a failed request and a delete button are the same red. */
   --error:        var(--c-error);
-  --error-light:  #FBEFEE;
-
-  /* A delete button is an intent, not a failure — it stays inside the
-     four working hues. Emphasis comes from fill + weight. */
-  --danger:       var(--c-ink);
-  --danger-dark:  #0E1620;
-  --danger-light: #EFF1F3;
-  --ok:           var(--c-navy);
-  --ok-dark:      var(--accent-dark);
-  --ok-light:     var(--accent-light);
+  --error-light:  #FBEDED;   /* error @ 7% on paper */
+  --ok:           var(--c-ok);
+  --ok-light:     #EAF5F0;
+  /* Caution has no hue of its own — amber would be a seventh colour. */
   --warn:         var(--c-ink);
   --warn-light:   #F0F2F4;
 
@@ -123,7 +122,7 @@ body {
     padding: 0 16px;
     height: var(--header-h);
     box-shadow: var(--shadow-sm);
-    color: white;
+    color: #fff;
     position: relative;
     z-index: 20;
 }
@@ -149,7 +148,7 @@ body {
 .brand-name {
     font-size: 16px;
     font-weight: 600;
-    color: white;
+    color: #fff;
     white-space: nowrap;
 }
 
@@ -174,7 +173,7 @@ body {
 /* Save button */
 .btn-save {
     background: var(--ok);
-    color: white;
+    color: #fff;
     border: none;
     padding: 7px 14px;
     border-radius: var(--radius);
@@ -185,13 +184,13 @@ body {
     white-space: nowrap;
 }
 
-.btn-save:hover { background: var(--ok-dark); }
+.btn-save:hover { background: var(--ok); filter: brightness(0.88); }
 
 /* Docs button in header */
 .btn-header-icon {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    color: white;
+    color: #fff;
     padding: 6px 10px;
     border-radius: var(--radius);
     cursor: pointer;
@@ -215,9 +214,9 @@ body {
 
 /* Logout button */
 .btn-header-logout {
-    background: var(--danger);
-    color: white;
-    border: 1px solid var(--danger);
+    background: var(--error);
+    color: #fff;
+    border: 1px solid var(--error);
     padding: 7px 14px;
     border-radius: var(--radius);
     cursor: pointer;
@@ -227,7 +226,7 @@ body {
     white-space: nowrap;
 }
 
-.btn-header-logout:hover { background: var(--danger-dark); }
+.btn-header-logout:hover { background: var(--error); filter: brightness(0.88); }
 
 /* ===== Main layout: nav + content ===== */
 .admin-layout {
@@ -791,8 +790,8 @@ textarea.adm-input {
     flex-shrink: 0;
 }
 .icon-btn:hover { color: var(--accent); }
-.icon-btn-danger { color: var(--danger); }
-.icon-btn-danger:hover { color: var(--danger-dark); }
+.icon-btn-danger { color: var(--error); }
+.icon-btn-danger:hover { color: var(--error); filter: brightness(0.85); }
 
 /* ETL Flow step builder: start -> job -> job -> ... -> end tile strip. */
 .flow-tile-row {
@@ -949,7 +948,7 @@ textarea.adm-input {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    background: var(--danger);
+    background: var(--error);
     color: #fff;
     padding: 2px 6px;
     border-radius: 3px;
@@ -1126,9 +1125,9 @@ textarea.adm-input {
 }
 
 .demo-warning-danger {
-    background: var(--danger-light);
-    border-color: var(--danger);
-    color: var(--danger);
+    background: var(--error-light);
+    border-color: var(--error);
+    color: var(--error);
 }
 
 .demo-confirm-input {
@@ -1183,13 +1182,13 @@ textarea.adm-input {
     font-weight: 700;
     white-space: nowrap;
 }
-/* With one accent and no red/amber/green, severity is carried by FILL WEIGHT,
-   not hue: solid ink = highest, outlined = middle, flat tint = lowest. */
-.adm-badge-ok     { background: var(--ok-light);     color: var(--ok);    box-shadow: inset 0 0 0 1px var(--accent-mid); }
-.adm-badge-danger { background: var(--danger);       color: #fff; }
+/* Ok and danger carry hue; caution has none, so it keeps an outline to stay
+   distinct from the flat "low"/"muted" tint. */
+.adm-badge-ok     { background: var(--ok-light);     color: var(--ok); }
+.adm-badge-danger { background: var(--error-light); color: var(--error); }
 .adm-badge-warn   { background: var(--warn-light);   color: var(--text);  box-shadow: inset 0 0 0 1px var(--muted); }
 .adm-badge-muted  { background: var(--border-light); color: var(--muted); }
-.adm-badge-high   { background: var(--danger);       color: #fff; }
+.adm-badge-high   { background: var(--error-light); color: var(--error); }
 .adm-badge-medium { background: var(--warn-light);   color: var(--text);  box-shadow: inset 0 0 0 1px var(--muted); }
 .adm-badge-low    { background: var(--border-light); color: var(--muted); }
 
@@ -1236,9 +1235,9 @@ textarea.adm-input {
 
 /* ── Admin utility: text colour helpers ────────────────────────────── */
 .c-muted  { color: var(--muted); }
-.c-danger { color: var(--danger); }
-/* The fifth colour, as a text helper. Failures only — a count of inactive
-   rows is not a failure and must keep .c-danger. */
+.c-danger { color: var(--error); }
+/* .c-danger and .c-error now resolve to the same red; both are kept because
+   both are in use. Prefer .c-error for failure messages. */
 .c-error  { color: var(--error); }
 .c-ok     { color: var(--ok); }
 .c-warn   { color: var(--warn); }
@@ -1342,7 +1341,7 @@ textarea.adm-input {
 }
 .ov-stat-clickable:hover {
     border-color: var(--accent);
-    box-shadow: var(--shadow-md, 0 2px 8px rgba(0,0,0,0.12));
+    box-shadow: var(--shadow-md, 0 2px 8px rgba(31, 42, 55, 0.12));
 }
 .ov-stat-icon {
     width: 28px;
@@ -1437,7 +1436,7 @@ textarea.adm-input {
     font-weight: 700;
     flex-shrink: 0;
 }
-.ov-badge-ok   { background: var(--ok-light); color: var(--ok); box-shadow: inset 0 0 0 1px var(--accent-mid); }
+.ov-badge-ok   { background: var(--ok-light); color: var(--ok); }
 .ov-badge-warn { background: var(--warn-light);   color: var(--text); box-shadow: inset 0 0 0 1px var(--muted); }
 .ov-status-label  { flex: 1; color: var(--text); }
 .ov-status-detail { color: var(--text); }
@@ -1694,7 +1693,7 @@ textarea.adm-input {
     padding: 5px 10px;
     cursor: pointer;
 }
-.auto-picker-row.selected { background: rgba(0, 0, 0, .04); }
+.auto-picker-row.selected { background: rgba(31, 42, 55, .04); }
 
 /* Transient inline feedback pill next to a control. */
 .auto-status-pill {

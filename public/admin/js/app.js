@@ -908,7 +908,7 @@ function renderMenuPreview(ctx) {
         } catch (err) {
             preview.el.remove();
             const msg = document.createElement('p');
-            msg.style.color = 'var(--danger)';
+            msg.style.color = 'var(--error)';
             msg.textContent = 'Failed to load menu config: ' + escHtml(err.message);
             workspaceEl.appendChild(msg);
         }

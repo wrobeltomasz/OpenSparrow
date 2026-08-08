@@ -1131,7 +1131,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             const colorInp = document.createElement('input');
             colorInp.type = 'color';
             colorInp.className = 'adm-color';
-            colorInp.value = rule.color ?? '#FBEFEE';
+            colorInp.value = rule.color ?? '#FBEDED';
             colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; touchHighlights(); });
 
             const btnDel = document.createElement('button');
@@ -1149,7 +1149,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         btnAdd.className = 'btn btn-success btn-sm';
         btnAdd.textContent = '+ Add Highlight Rule';
         btnAdd.addEventListener('click', () => {
-            rules.push({ column: columnNames[0] || '', op: '==', value: '', color: '#FBEFEE' });
+            rules.push({ column: columnNames[0] || '', op: '==', value: '', color: '#FBEDED' });
             touchHighlights();
             renderHighlightRules();
         });

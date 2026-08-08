@@ -8,22 +8,24 @@
 :root {
   /* ============================================================
      OpenSparrow FE — "Business" theme.
-     4 + 1 COLOUR SYSTEM. Four working hues carry the whole UI; the fifth
-     exists ONLY to mark an error and must never be used decoratively.
+     4 + 2 COLOUR SYSTEM. Four neutral/accent hues carry the whole UI; two
+     semantic hues are admitted for status and nothing else.
        1. --c-paper  white       surfaces
        2. --c-stone  cool grey   page ground, rules, muted text
-       3. --c-ink    graphite    text, dark bars, destructive actions
+       3. --c-ink    graphite    text, dark bars, caution
        4. --c-navy   #003366     the single accent: links, actions, selection
-       5. --c-error  red         RESERVED — failed states only (see --error)
+       5. --c-ok     #0E7E4F     success / positive state
+       6. --c-error  #AB0000     failure and destructive actions
      Everything else below is one of those, tinted towards paper or ink.
-     Do not introduce a sixth hue, and do not reach for --c-error to add
-     emphasis: non-error state is carried by fill, border and weight.
+     Do not introduce a seventh hue, and do not reach for --c-ok / --c-error
+     for decoration: they mean "this succeeded" and "this failed or destroys".
      ============================================================ */
   --c-paper: #FFFFFF;
   --c-stone: #8A9199;
   --c-ink:   #1F2A37;
   --c-navy:  #003366;
-  --c-error: #B3261E;
+  --c-ok:    #0E7E4F;
+  --c-error: #AB0000;
 
   --bg:           #F5F6F7;   /* stone @ 8% on paper */
   --panel:        var(--c-paper);
@@ -36,20 +38,14 @@
   --accent-light: #F1F4F8;   /* navy @ 6% */
   --accent-mid:   #D0DAE6;   /* navy @ 18% */
 
-  /* The FIFTH colour. Reserved for failure: a rejected save, a failed
-     request, an invalid field. Nothing else may use it. */
+  /* The two semantic hues. One shade each: hover states darken with
+     filter: brightness() instead of a second token. There is no --danger
+     token - a failed request and a delete button are the same red. */
   --error:        var(--c-error);
-  --error-light:  #FBEFEE;   /* error @ 7% on paper */
-
-  /* Destructive / positive / caution stay inside the four working hues —
-     a delete button is an intent, not a failure, so it does NOT go red.
-     Emphasis comes from fill + weight. */
-  --danger:       var(--c-ink);
-  --danger-dark:  #0E1620;
-  --danger-light: #EFF1F3;
-  --ok:           var(--c-navy);
-  --ok-dark:      var(--accent-dark);
-  --ok-light:     var(--accent-light);
+  --error-light:  #FBEDED;   /* error @ 7% on paper */
+  --ok:           var(--c-ok);
+  --ok-light:     #EAF5F0;
+  /* Caution has no hue of its own — amber would be a seventh colour. */
   --warn:         var(--c-ink);
   --warn-light:   #F0F2F4;
 
@@ -368,7 +364,7 @@ header .print-filter-label {
   top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.75);
+  background: rgba(31, 42, 55, 0.75);
   color: #fff;
   padding: 4px 8px;
   border-radius: 4px;
@@ -442,11 +438,11 @@ header .print-filter-label {
 }
 
 .user-avatar-menu-item.danger {
-  color: var(--danger);
+  color: var(--error);
 }
 
 .user-avatar-menu-item.danger:hover {
-  background: var(--danger-light);
+  background: var(--error-light);
 }
 
 .user-avatar-menu-divider {
@@ -460,7 +456,7 @@ header .print-filter-label {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(31, 42, 55, 0.45);
   z-index: 1000;
   align-items: center;
   justify-content: center;
@@ -599,7 +595,7 @@ header .print-filter-label {
 }
 
 .um-error {
-  color: var(--danger);
+  color: var(--error);
   margin-bottom: 0.75rem;
   display: none;
 }
@@ -812,7 +808,7 @@ thead th:last-child  { padding-right: 0.6rem; }
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 5px 15px rgba(31, 42, 55, 0.2);
   padding: 10px 14px;
   color: var(--text);
   min-width: 160px;
@@ -877,7 +873,7 @@ thead th:last-child  { padding-right: 0.6rem; }
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 5px 15px rgba(31, 42, 55, 0.2);
   padding: 10px;
   max-width: 300px;
   max-height: 320px;
@@ -1020,7 +1016,7 @@ thead th:last-child  { padding-right: 0.6rem; }
 }
 
 .btn-icon-danger:hover {
-  background: var(--danger-light);
+  background: var(--error-light);
 }
 
 .btn-icon-comment-add:hover {
@@ -1136,8 +1132,8 @@ td.editable:focus {
 
 td.readonly { color: var(--muted); }
 
-td.cell-error   { background-color: var(--error-light) !important; box-shadow: inset 0 0 0 2px var(--error); transition: none; }
-td.cell-success { background-color: var(--ok-light) !important; box-shadow: inset 0 0 0 2px var(--c-navy); transition: none; }
+td.cell-error   { background-color: var(--error-light) !important; transition: none; }
+td.cell-success { background-color: var(--ok-light) !important; transition: none; }
 tbody tr:hover td.cell-error, tbody tr:hover td.cell-success { filter: brightness(0.95); }
 
 /* ===== ACTIONS BAR ===== */
@@ -1186,10 +1182,10 @@ button.success:hover:not(:disabled) {
   color: #fff;
 }
 
-button.danger { border-color: var(--danger); color: var(--danger); background: var(--danger-light); font-weight: 700; }
+button.danger { border-color: var(--error); color: var(--error); background: var(--error-light); }
 button.danger:hover:not(:disabled) {
-  background: var(--danger);
-  border-color: var(--danger);
+  background: var(--error);
+  border-color: var(--error);
   color: #fff;
 }
 
@@ -1357,7 +1353,7 @@ header .dash-filter-label {
   font-weight: 700;
 }
 .dash-delta.up { color: var(--ok); }
-.dash-delta.down { color: var(--danger); }
+.dash-delta.down { color: var(--error); }
 .dash-delta.flat { color: var(--muted); }
 .dash-stat-card .dash-delta {
   display: inline-block;
@@ -1421,7 +1417,7 @@ header .dash-filter-label {
   justify-content: center;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(31, 42, 55, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
   background: var(--panel);
   color: var(--text);
@@ -1495,7 +1491,7 @@ header .dash-filter-label {
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(31, 42, 55, 0.1);
   flex-shrink: 0;
 }
 .dash-pie-legend {
@@ -1576,7 +1572,7 @@ header .dash-filter-label {
 /* Dashboard error / loading states */
 .dash-error {
   grid-column: 1 / -1;
-  color: var(--danger);
+  color: var(--error);
   padding: 16px;
 }
 .dash-loading {
@@ -1809,7 +1805,7 @@ header .dash-filter-label {
   padding: 4px 22px 4px 6px;
   margin-bottom: 4px;
   border-radius: 4px;
-  color: white;
+  color: #fff;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -1833,7 +1829,7 @@ header .dash-filter-label {
   border: none;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.85);
-  color: var(--danger);
+  color: var(--error);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -1846,7 +1842,7 @@ header .dash-filter-label {
 }
 .calendar-event-del:hover,
 .calendar-event-del:focus-visible {
-  background: var(--danger);
+  background: var(--error);
   color: #fff;
 }
 #calendarMain { padding: 20px; width: 100%; overflow-y: auto; }
@@ -1862,7 +1858,7 @@ header .dash-filter-label {
 .cal-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(31, 42, 55, 0.3);
   z-index: 9998;
   display: flex;
   align-items: center;
@@ -1877,7 +1873,7 @@ header .dash-filter-label {
   padding: 24px 28px 20px;
   min-width: 320px;
   max-width: 420px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 40px rgba(31, 42, 55, 0.15);
   z-index: 9999;
 }
 .cal-modal-title {
@@ -1974,7 +1970,7 @@ header .dash-filter-label {
 }
 .filter-pill-remove {
   cursor: pointer;
-  color: var(--danger);
+  color: var(--error);
   font-size: 16px;
   font-weight: bold;
   line-height: 1;
@@ -2412,7 +2408,7 @@ thead th.drag-over {
 }
 
 .c-msg-del-btn:hover {
-  color: var(--danger);
+  color: var(--error);
 }
 
 .c-input-area {
@@ -2712,7 +2708,7 @@ thead th.drag-over {
 #sidebarToggle {
   background: none;
   border: none;
-  color: white;
+  color: #fff;
   font-size: 1.5rem;
   cursor: pointer;
   margin-left: 0px;
@@ -2747,8 +2743,8 @@ thead th.drag-over {
   position: absolute;
   top: -8px;
   right: -10px;
-  background: var(--danger);
-  color: white;
+  background: var(--error);
+  color: #fff;
   border-radius: 50%;
   padding: 2px 6px;
   font-size: 11px;
@@ -2762,9 +2758,9 @@ thead th.drag-over {
   top: 40px;
   right: -50px;
   width: 320px;
-  background: white;
+  background: #fff;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(31, 42, 55, 0.15);
   z-index: 1000;
   max-height: 400px;
   overflow-y: auto;
@@ -2805,7 +2801,7 @@ thead th.drag-over {
 .form-wrapper {
   background: var(--panel);
   border-radius: var(--radius-lg);
-  box-shadow: 0 2px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 16px rgba(31, 42, 55, 0.08), 0 1px 4px rgba(31, 42, 55, 0.04);
   padding: 32px 36px;
   border: 1px solid var(--border-light);
   margin-top: 8px;
@@ -2857,7 +2853,7 @@ thead th.drag-over {
 
 .editor-form .form-group > label .required,
 .setup-card .form-group > label .required {
-  color: var(--danger);
+  color: var(--error);
   margin-left: 2px;
 }
 
@@ -2911,7 +2907,7 @@ thead th.drag-over {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  border: 1px solid rgba(0,0,0,0.08);
+  border: 1px solid rgba(31, 42, 55, 0.08);
   line-height: 1;
 }
 
@@ -2971,7 +2967,7 @@ thead th.drag-over {
   display: inline-flex;
   align-items: center;
   padding: 0.42rem 0.9rem;
-  background: var(--danger);
+  background: var(--error);
   color: #fff;
   border: none;
   border-radius: var(--radius);
@@ -2982,8 +2978,9 @@ thead th.drag-over {
 }
 
 .btn-delete:hover {
-  background: var(--danger-dark);
+  background: var(--error);
   box-shadow: var(--shadow-md);
+  filter: brightness(0.88);
 }
 
 .tab-btn .tab-icon {
@@ -3052,7 +3049,7 @@ thead th.drag-over {
   justify-content: center;
   padding: 0.85rem;
   background: var(--accent);
-  color: white;
+  color: #fff;
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
@@ -3093,7 +3090,7 @@ thead th.drag-over {
 :root {
   --f-primary: var(--accent-dark);
   --f-accent: var(--accent);
-  --f-danger: var(--danger);
+  --f-danger: var(--error);
   --f-bg-light: var(--bg);
   --f-border: var(--border-light);
   --f-text-main: var(--text);
@@ -3133,7 +3130,7 @@ thead th.drag-over {
 .f-type-icon { width: 20px; height: 20px; opacity: 0.8; }
 .f-type-label { font-weight: 700; color: var(--muted); }
 .f-td-empty { text-align: center; padding: 30px; color: var(--muted); }
-.f-td-error { color: var(--danger); text-align: center; padding: 30px; }
+.f-td-error { color: var(--error); text-align: center; padding: 30px; }
 .related-badge { background: var(--accent-light); color: var(--accent-dark); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; border: 1px solid var(--accent-mid); display: inline-block; text-decoration: none; transition: background 0.2s; }
 .related-badge:hover { background: var(--accent-mid); }
 .tag-badge { background: var(--border-light); color: var(--muted); padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid var(--border); margin-right: 4px; display: inline-block; }
@@ -3170,7 +3167,7 @@ thead th.drag-over {
   padding: 0.85rem 1.5rem;
   font-size: 1rem;
   background: var(--accent);
-  color: white;
+  color: #fff;
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
@@ -3189,14 +3186,14 @@ thead th.drag-over {
   font-family: var(--font-sans);
 }
 .admin-403-card {
-  background: white;
+  background: #fff;
   padding: 40px 30px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(31, 42, 55, 0.1);
   max-width: 380px;
   border: 1px solid var(--border-light);
 }
-.admin-403-card h1 { color: var(--danger); font-size: 22px; margin-bottom: 10px; }
+.admin-403-card h1 { color: var(--error); font-size: 22px; margin-bottom: 10px; }
 .admin-403-card p { color: var(--muted); }
 .admin-403-card a { color: var(--accent); text-decoration: none; font-weight: 700; }
 
@@ -3205,7 +3202,7 @@ thead th.drag-over {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.3);
+    background: rgba(31, 42, 55, 0.3);
     z-index: 1000;
 }
 .dc-overlay.active, .bp-overlay.active { display: block; }
@@ -3221,7 +3218,7 @@ thead th.drag-over {
     height: 100vh;
     height: 100dvh;
     background: var(--panel);
-    box-shadow: -4px 0 20px rgba(0,0,0,0.18);
+    box-shadow: -4px 0 20px rgba(31, 42, 55, 0.18);
     z-index: 1001;
     display: flex;
     flex-direction: column;
@@ -3324,8 +3321,8 @@ thead th.drag-over {
 .dc-preview-table td { max-width: 170px; }
 .bp-preview-table td { max-width: 130px; }
 .dc-preview-table tr:last-child td, .bp-preview-table tr:last-child td { border-bottom: none; }
-.dc-del { background: var(--danger-light); color: var(--danger); text-decoration: line-through; border-radius: 2px; padding: 0 2px; }
-.dc-ins { background: var(--ok-light); color: var(--ok-dark); border-radius: 2px; padding: 0 2px; }
+.dc-del { background: var(--error-light); color: var(--error); text-decoration: line-through; border-radius: 2px; padding: 0 2px; }
+.dc-ins { background: var(--ok-light); color: var(--ok); border-radius: 2px; padding: 0 2px; }
 .dc-empty { color: var(--muted); font-style: italic; }
 
 /* padding-bottom keeps the Apply button clear of the iOS home indicator */
@@ -3431,11 +3428,11 @@ thead th.drag-over {
 .me-bar-edit-btn:hover { background: var(--accent-dark); }
 
 .me-bar-delete-btn {
-    background: rgba(255,255,255,0.14);
+    background: rgba(171,0,0,0.18);
     color: #fff;
-    border: 1px solid rgba(255,255,255,0.30);
+    border: 1px solid rgba(171,0,0,0.45);
 }
-.me-bar-delete-btn:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.me-bar-delete-btn:hover { background: var(--error); color: #fff; border-color: var(--error); }
 
 /* Column picker (export) */
 .me-col-picker-quick {
@@ -3512,7 +3509,7 @@ thead th.drag-over {
     background: #fff;
 }
 .me-preview-area:empty { display: none; }
-.me-new-val { color: var(--ok-dark); font-weight: 700; }
+.me-new-val { color: var(--ok); font-weight: 700; }
 
 .me-null-row {
     display: flex;
@@ -3569,7 +3566,7 @@ thead th.drag-over {
 .kg-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(31, 42, 55, 0.3);
     z-index: 9998;
 }
 .kg-help-overlay {
@@ -3585,7 +3582,7 @@ thead th.drag-over {
     padding: 24px 28px 20px;
     min-width: 340px;
     max-width: 500px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 40px rgba(31, 42, 55, 0.15);
 }
 .kg-help-title {
     margin: 0 0 16px;
@@ -3635,7 +3632,7 @@ thead th.drag-over {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.3);
+    background: rgba(31, 42, 55, 0.3);
     z-index: 1000;
 }
 .ag-overlay.active { display: block; }
@@ -3648,7 +3645,7 @@ thead th.drag-over {
     height: 100vh;
     height: 100dvh;
     background: var(--panel);
-    box-shadow: -4px 0 20px rgba(0,0,0,0.18);
+    box-shadow: -4px 0 20px rgba(31, 42, 55, 0.18);
     z-index: 1001;
     display: flex;
     flex-direction: column;
@@ -3770,8 +3767,8 @@ thead th.drag-over {
 .ag-record-link { display: inline-flex; align-items: center; padding: 2px 9px; background: var(--accent-light); border: 1px solid var(--accent-mid); border-radius: 999px; color: var(--accent-dark); text-decoration: none; font-weight: 700; vertical-align: middle; transition: background var(--transition); }
 .ag-record-link:hover { background: var(--accent-mid); }
 .ag-context-bar { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--accent-light); border-bottom: 1px solid var(--accent-mid); color: var(--accent-dark); font-weight: 700; flex-shrink: 0; }
-.ag-fab { position: fixed; bottom: 80px; right: 24px; z-index: 1100; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); border: none; box-shadow: 0 4px 14px rgba(0,0,0,0.22); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s, box-shadow 0.15s; }
-.ag-fab:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(0,0,0,0.28); }
+.ag-fab { position: fixed; bottom: 80px; right: 24px; z-index: 1100; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); border: none; box-shadow: 0 4px 14px rgba(31, 42, 55, 0.22); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s, box-shadow 0.15s; }
+.ag-fab:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(31, 42, 55, 0.28); }
 .ag-fab img { width: 24px; height: 24px; filter: brightness(0) invert(1); }
 
 .ag-input-area {
@@ -3865,7 +3862,7 @@ thead th.drag-over {
 /* Save/error banners — shared by create.php + edit.php */
 .form-alert { margin-bottom: 15px; padding: 10px; border-radius: var(--radius); border: 1px solid transparent; }
 .form-alert.error   { color: var(--error);  border-color: var(--error); background: var(--error-light); }
-.form-alert.success { color: var(--ok-dark); border-color: var(--ok); background: var(--ok-light); padding: 10px 14px; }
+.form-alert.success { color: var(--ok); border-color: var(--ok); background: var(--ok-light); padding: 10px 14px; }
 
 /* Workflow step form — reuses the record-editor form classes (.form-page,
    .form-wrapper, .editor-form, .form-grid, .form-group, .form-actions) so a
@@ -3963,7 +3960,7 @@ thead th.drag-over {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: #fff;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 20px rgba(31, 42, 55, 0.12);
 }
 .m2m-panel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .m2m-search { flex: 1 1 auto; min-width: 0; }

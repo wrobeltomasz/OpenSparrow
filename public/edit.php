@@ -578,7 +578,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!input.files || !input.files.length) {
                 statusEl.textContent = window.IMAGE_TEXT.select_first;
-                statusEl.style.color = 'var(--danger)';
+                statusEl.style.color = 'var(--error)';
                 return;
             }
 
@@ -601,12 +601,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.reload();
                 } else {
                     statusEl.textContent = 'Error: ' + (data.error || 'Upload failed');
-                    statusEl.style.color = 'var(--danger)';
+                    statusEl.style.color = 'var(--error)';
                     btnImgUpload.disabled = false;
                 }
             } catch (err) {
                 statusEl.textContent = 'Network error during upload.';
-                statusEl.style.color = 'var(--danger)';
+                statusEl.style.color = 'var(--error)';
                 btnImgUpload.disabled = false;
             }
         });
@@ -645,7 +645,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!fileInput.files || !fileInput.files.length) {
                 statusEl.textContent = 'Please select a file to upload.';
-                statusEl.style.color = 'var(--danger)';
+                statusEl.style.color = 'var(--error)';
                 return;
             }
 
@@ -671,12 +671,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
                     statusEl.textContent = 'Error: ' + (data.error || 'Upload failed');
-                    statusEl.style.color = 'var(--danger)';
+                    statusEl.style.color = 'var(--error)';
                     btnUpload.disabled   = false;
                 }
             } catch (err) {
                 statusEl.textContent = 'Network error during upload.';
-                statusEl.style.color = 'var(--danger)';
+                statusEl.style.color = 'var(--error)';
                 btnUpload.disabled   = false;
             }
         });

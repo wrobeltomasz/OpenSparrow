@@ -109,7 +109,7 @@ export function renderViewsEditor(ctx) {
         const styles = {
             info:  'background:var(--accent-light); color:var(--accent-dark);',
             ok:    'background:var(--ok-light); color:var(--ok);',
-            error: 'background:var(--error-light); color:var(--danger);',
+            error: 'background:var(--error-light); color:var(--error);',
         };
         statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
         statusEl.textContent = msg;
@@ -189,7 +189,7 @@ export function renderViewsEditor(ctx) {
             if (data.status !== 'ok') {
                 listEl.innerHTML = '';
                 const err = document.createElement('p');
-                err.style.cssText = 'color:var(--danger); padding:16px;';
+                err.style.cssText = 'color:var(--error); padding:16px;';
                 err.textContent = 'Failed to load schemas: ' + (data.error ?? 'unknown');
                 listEl.appendChild(err);
                 return;
@@ -233,7 +233,7 @@ export function renderViewsEditor(ctx) {
             });
             listEl.appendChild(list);
         } catch (_) {
-            listEl.innerHTML = '<p style="color:var(--danger); padding:16px;">Network error while loading schemas.</p>';
+            listEl.innerHTML = '<p style="color:var(--error); padding:16px;">Network error while loading schemas.</p>';
         }
     }
 
@@ -562,7 +562,7 @@ export function renderViewsEditor(ctx) {
             addRuleBtn.className   = 'btn btn-success btn-sm';
             addRuleBtn.textContent = '+ Add color rule';
             addRuleBtn.addEventListener('click', () => {
-                rules.push({ op: '>', value: 0, color: '#B3261E' });
+                rules.push({ op: '>', value: 0, color: '#AB0000' });
                 renderRules();
                 markDirty();
             });
@@ -598,7 +598,7 @@ export function renderViewsEditor(ctx) {
         const colorInp = document.createElement('input');
         colorInp.type  = 'color';
         colorInp.className = 'adm-color';
-        colorInp.value = rule.color ?? '#B3261E';
+        colorInp.value = rule.color ?? '#AB0000';
         colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; });
 
         const delBtn = document.createElement('button');

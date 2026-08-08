@@ -19,8 +19,8 @@ export async function renderHealthDashboard(ctx) {
         const data = await res.json();
 
         const card = (title, isOk, msg) => `
-            <div style="padding:12px 16px; border-left:4px solid ${isOk ? 'var(--ok)' : 'var(--danger)'}; background:var(--panel); box-shadow:var(--shadow-sm); border-radius:4px;">
-                <strong style=" display:block; margin-bottom:4px; color:${isOk ? 'var(--ok)' : 'var(--danger)'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong>
+            <div style="padding:12px 16px; border-left:4px solid ${isOk ? 'var(--ok)' : 'var(--error)'}; background:var(--panel); box-shadow:var(--shadow-sm); border-radius:4px;">
+                <strong style=" display:block; margin-bottom:4px; color:${isOk ? 'var(--ok)' : 'var(--error)'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong>
                 <span style=" ">${msg}</span>
             </div>`;
 
@@ -128,6 +128,6 @@ export async function renderHealthDashboard(ctx) {
 
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = `<h3 style="color:var(--danger);">Error loading diagnostics. Check server logs.</h3>`;
+        workspaceEl.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;
     }
 }
