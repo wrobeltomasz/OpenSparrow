@@ -533,7 +533,7 @@
         "create_schema": "Utwórz schemat, jeśli nie istnieje",
         "drop_schema": "Usuń i utwórz ten schemat od nowa (WSZYSTKIE istniejące w nim dane zostaną trwale usunięte)",
         "install_demo": "Zainstaluj przykładowe dane demo CRM",
-        "help_install_demo": "Dodaje gotowy CRM z przykładowymi firmami, transakcjami, pulpitami i innymi danymi, aby od razu poznać aplikację, oraz bazę wiedzy opisującą go dla panelu Ask AI",
+        "help_install_demo": "Dodaje gotowy CRM z przykładowymi firmami, transakcjami, pulpitami i innymi danymi, aby od razu poznać aplikację, oraz bazę wiedzy opisującą go dla panelu Ask AI. Zakłada również trzy konta demo (demo.anna, demo.marek, demo.julia) ze wspólnym, stałym hasłem \"test\" — usuń je lub zmień im hasła w Administracja > Użytkownicy, zanim udostępnisz tę instalację w sieci. Demo możesz też zainstalować później w Administracja > Demo, gdzie każda część jest opcjonalna.",
         "admin_default": "Domyślne konto administratora",
         "username_colon": "Nazwa użytkownika:",
         "password_colon": "Hasło:",

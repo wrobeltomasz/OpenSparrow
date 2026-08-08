@@ -529,7 +529,7 @@
         "create_schema": "Create schema if it doesn't exist",
         "drop_schema": "Drop and recreate this schema (ALL existing data in it will be permanently deleted)",
         "install_demo": "Install demo CRM sample data",
-        "help_install_demo": "Adds a ready-made CRM with sample companies, deals, dashboards, and more so you can explore the app right away, plus a knowledge base describing it for the Ask AI panel",
+        "help_install_demo": "Adds a ready-made CRM with sample companies, deals, dashboards, and more so you can explore the app right away, plus a knowledge base describing it for the Ask AI panel. It also creates three demo accounts (demo.anna, demo.marek, demo.julia) that share the fixed password \"test\" — delete them or change their passwords in Admin > Users before putting this installation on a network. You can install the demo later from Admin > Demo instead, where each part is optional.",
         "admin_default": "Default Admin Account",
         "username_colon": "Username:",
         "password_colon": "Password:",

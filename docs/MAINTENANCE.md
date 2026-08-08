@@ -302,6 +302,68 @@ and `admin/procedures.php` (workflow stored-procedure steps) follow the June 202
 DRY convention: shared backend logic goes in `includes/`, not `src/`. `src/` remains
 frozen — it is the existing OOP layer, not the destination for new backend code.
 
+## Demo install options (2026-08-08)
+
+The CRM demo installs a lot more than sample rows — it seeds or merges fourteen
+spw_config keys and writes to several system tables. Three parts of that are now
+opt-out checkboxes on Admin > Demo (`public/admin/js/demo.js`), passed to
+`demo_install_run()` in `public/admin/demo/seed.php` as `$withRagDocs`,
+`$withUsers` and `$withAudit`. All three default to true.
+
+### Why these three are separable and the rest are not
+
+Everything else the demo installs lives inside the demo's own schema or under
+demo-owned config keys, so it is inert to the host installation. These three
+reach outside it:
+
+- **RAG knowledge base** writes to `spw_rag_files`, shared with any knowledge base
+  the user built themselves.
+- **Demo users** creates real accounts in `spw_users`. All three share the fixed
+  password `test`, documented in the repository. This is a genuine security
+  opt-out, not a convenience one: an installation reachable from a network may
+  legitimately refuse them. The comments, notes, ownership rows and notifications
+  carry their `user_id` and are installed or skipped with them.
+- **Audit history** writes to `spw_users_log` / `spw_record_snapshots` and flips
+  the global `record_snapshots_enabled` setting.
+
+### Binding constraints
+
+- **A bare feature toggle is not a demo feature.** Enabling record snapshots alone
+  leaves Admin > Audit and the per-record history empty until the first manual
+  edit — the demo looked broken for exactly the reason that justified the RAG
+  checkbox. The option therefore backfills dated `spw_users_log` rows with matching
+  snapshots. Apply the same test to any future toggle the demo offers to flip.
+- **Snapshots are derived, never duplicated.** `demo_audit` in `crm.php` lists only
+  the columns that differed at that point in time; `seed.php` fetches the record's
+  current state with `fetch_record_json()` and applies the entry as an overlay. Do
+  not paste whole historical rows into the definition — they would silently drift
+  from `seed_data`.
+- **Anything written outside the demo schema must be recorded in
+  `config/demo_meta.json` and removed by id on uninstall.** `audit_log_ids` follows
+  the existing `rag_file_ids` / `demo_file_ids` pattern so a user's own audit rows
+  survive; the snapshots go with them through
+  `spw_record_snapshots.log_id ON DELETE CASCADE`.
+- **A setting the demo flipped is reverted only if the demo flipped it.**
+  `snapshots_enabled_by_demo` in the meta file guards this — an installation that
+  already had record snapshots on must not have them switched off by an uninstall.
+- **Option dependencies are enforced server-side, not only in the UI.** Audit
+  entries are attributed to the demo accounts, so `demo_install` recomputes
+  `$withAudit && $withUsers` regardless of what the request body claims.
+- **`RECORD_SNAPSHOTS_ENABLED` wins.** When the env var pins the setting,
+  `demo_status` reports `snapshots_locked_by_env` and the form disables the option
+  with an explanation. Writing the stored value there would be a silent no-op,
+  because `includes/admin/settings.php` reads the env var first.
+
+### The setup wizard deliberately has no per-part control
+
+`public/setup_api.php` calls `demo_install_run('crm')` with all defaults, so the
+wizard picks up new parts automatically and stays a single checkbox — it is meant
+to be short, and every choice is reversible from Admin > Demo a minute later. The
+one thing it must not do is stay silent about the accounts: `setup.help_install_demo`
+names them, states the fixed password and points at Admin > Users. That string was
+updated in `en` and `pl` only, so the other 18 locales still carry the older text;
+the EN fallback covers missing keys, not stale ones.
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and

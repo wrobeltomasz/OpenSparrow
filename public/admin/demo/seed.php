@@ -21,11 +21,26 @@ if (!defined('DEMO_MODE')) {
 /* ── Demo: status ────────────────────────────────────────────────── */
 if ($action === 'demo_status') {
     $metaPath = realpath(__DIR__ . '/../../../config') . '/demo_meta.json';
+    // The install form's "audit history" option needs to know whether the record
+    // snapshot setting is pinned by the environment, so it can explain why it is
+    // unavailable instead of silently doing nothing (same env gate as
+    // includes/admin/settings.php's set_snapshot_setting).
+    $snapEnv = getenv('RECORD_SNAPSHOTS_ENABLED');
+    $snapshotsLockedByEnv = ($snapEnv !== false && $snapEnv !== '');
     if (file_exists($metaPath)) {
         $meta = json_decode(file_get_contents($metaPath), true);
-        echo json_encode(['status' => 'success', 'installed' => true, 'meta' => $meta]);
+        echo json_encode([
+            'status'    => 'success',
+            'installed' => true,
+            'meta'      => $meta,
+            'snapshots_locked_by_env' => $snapshotsLockedByEnv,
+        ]);
     } else {
-        echo json_encode(['status' => 'success', 'installed' => false]);
+        echo json_encode([
+            'status'    => 'success',
+            'installed' => false,
+            'snapshots_locked_by_env' => $snapshotsLockedByEnv,
+        ]);
     }
     exit;
 }
@@ -39,7 +54,17 @@ if ($action === 'demo_status') {
 // $withRagDocs loads the demo's sample knowledge-base documents into spw_rag_files.
 // It defaults to true so the setup wizard gets them without a second checkbox; the
 // admin Demo page passes the state of its own checkbox.
-function demo_install_run(string $type, bool $withRagDocs = true): array
+//
+// $withUsers creates the demo user accounts and everything keyed to them: comments,
+// personal notes, record ownership and notifications. It is a real opt-out, not a
+// convenience one — the accounts share a fixed, publicly documented password, so an
+// installation reachable from a network may not want them. With it off, file and
+// image attachments are still installed but attributed to the installing admin.
+//
+// $withAudit backfills spw_users_log + spw_record_snapshots and turns the record
+// snapshot setting on. It requires $withUsers (the log entries are attributed to the
+// demo accounts) and is skipped when RECORD_SNAPSHOTS_ENABLED locks the setting.
+function demo_install_run(string $type, bool $withRagDocs = true, bool $withUsers = true, bool $withAudit = true): array
 {
     try {
         require_once __DIR__ . '/../../../includes/db.php';
@@ -62,14 +87,20 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
             }
         }
 
+        // Everything from here to the end of the notifications block is the demo's
+        // collaboration layer, installed as a unit under $withUsers: the accounts plus
+        // the comments, notes, ownership rows and notifications that carry their user_id.
+        // $demoUserIds stays empty when it is skipped — see $authorId() below, which is
+        // what the always-installed file/image attachments use to attribute an uploader.
+        $demoUserPassword = 'test';
+        $tUsers = sys_table('users');
+        $demoUserIds = [];
+
         // Demo users — fixed password for all demo accounts, hashed the same way as
         // includes/admin/users.php's users_add (ARGON2_OPTIONS is defined in
         // includes/config.php, already loaded via the admin bootstrap chain).
         // ON CONFLICT ... RETURNING id makes this safe to re-run after a prior install.
-        $demoUserPassword = 'test';
-        $tUsers = sys_table('users');
-        $demoUserIds = [];
-        foreach ($demoData['demo_users'] as $i => $du) {
+        foreach (($withUsers ? $demoData['demo_users'] : []) as $i => $du) {
             $salt = bin2hex(random_bytes(32));
             $hash = password_hash($salt . $demoUserPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
             $res = pg_query_params($conn, "
@@ -87,9 +118,15 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
             $demoUserIds[$i] = (int) pg_fetch_result($res, 0, 'id');
         }
 
+        // Author resolver for the blocks that are installed regardless of $withUsers
+        // (files, images): fall back to the installing admin when the demo accounts
+        // were declined, so uploaded_by never lands on a non-existent user id.
+        $fallbackUserId = (int) ($_SESSION['user_id'] ?? 0);
+        $authorId = static fn(int $i): int => $demoUserIds[$i] ?? $fallbackUserId;
+
         // Demo comments — cross-user discussion threads on CRM records
         $tComments = sys_table('comments');
-        foreach ($demoData['demo_comments'] as $c) {
+        foreach (($withUsers ? $demoData['demo_comments'] : []) as $c) {
             $res = pg_query_params($conn, "
                 INSERT INTO $tComments (related_table, related_id, user_id, body) VALUES (\$1, \$2, \$3, \$4)
             ", [$c['related_table'], $c['related_id'], $demoUserIds[$c['author']], $c['body']]);
@@ -100,7 +137,7 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
 
         // Demo notes — per-user "My Notes"
         $tNotes = sys_table('notes');
-        foreach ($demoData['demo_notes'] as $n) {
+        foreach (($withUsers ? $demoData['demo_notes'] : []) as $n) {
             $res = pg_query_params($conn, "
                 INSERT INTO $tNotes (user_id, related_table, related_id, body, reminder_date) VALUES (\$1, \$2, \$3, \$4, \$5)
             ", [$demoUserIds[$n['author']], $n['related_table'], $n['related_id'], $n['body'], $n['reminder_date'] ?? null]);
@@ -113,7 +150,7 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
         // its demo-user owner, mirroring api/owners.php's mass_set insert shape.
         $tOwners = sys_table('record_owners');
         $ownerChangedBy = (int) ($_SESSION['user_id'] ?? 0);
-        foreach ($demoData['demo_record_owners'] as $o) {
+        foreach (($withUsers ? $demoData['demo_record_owners'] : []) as $o) {
             $res = pg_query_params($conn, "
                 INSERT INTO $tOwners (table_name, record_id, owner_id, changed_by, is_current)
                 VALUES (\$1, \$2, \$3, \$4, true)
@@ -126,7 +163,7 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
         // Demo notifications — pre-seeded bell-icon entries for the demo users
         $tNotifications = sys_table('users_notifications');
         $notifyDate = date('Y-m-d');
-        foreach ($demoData['demo_notifications'] as $note) {
+        foreach (($withUsers ? $demoData['demo_notifications'] : []) as $note) {
             $link = 'edit.php?table=' . rawurlencode((string) $note['related_table']) . '&id=' . (int) $note['related_id'];
             $res = pg_query_params($conn, "
                 INSERT INTO $tNotifications (user_id, title, link, source_table, source_id, is_read, notify_date)
@@ -135,6 +172,61 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
             ", [$demoUserIds[$note['author']], $note['title'], $link, $note['related_table'], $note['related_id'], $note['is_read'] ? 't' : 'f', $notifyDate]);
             if ($res === false) {
                 admin_db_fail($conn, "demo_install:demo_notifications:{$type}");
+            }
+        }
+
+        // Demo audit trail — backdated spw_users_log entries with a matching
+        // spw_record_snapshots row each, so Admin > Audit and the per-record history
+        // have something to show before the first manual edit.
+        //
+        // Requires the demo accounts: the log rows are attributed to them, and the
+        // caller already forces $withAudit off when $withUsers is off.
+        //
+        // Each snapshot is the record's CURRENT state (fetch_record_json) with the
+        // definition's 'changes' overlay applied, so the historical rows track
+        // seed_data automatically instead of duplicating it. The base JSON is fetched
+        // once per record, not once per entry.
+        $auditLogIds = [];
+        if ($withAudit && $withUsers && !empty($demoData['demo_audit']) && is_array($demoData['demo_audit'])) {
+            require_once __DIR__ . '/../../../includes/api_helpers.php';
+            $tUsersLog = sys_table('users_log');
+            $tSnapshots = sys_table('record_snapshots');
+            $demoSchema = (string) $demoData['pg_schema'];
+            $baseJson   = [];
+
+            foreach ($demoData['demo_audit'] as $a) {
+                $table    = (string) $a['table'];
+                $recordId = (int) $a['record_id'];
+                $cacheKey = $table . '#' . $recordId;
+                if (!array_key_exists($cacheKey, $baseJson)) {
+                    $raw = fetch_record_json($conn, $demoSchema, $table, $recordId);
+                    $baseJson[$cacheKey] = is_string($raw) ? json_decode($raw, true) : null;
+                }
+                // A record the seed data never created (or a definition typo) must not
+                // sink the install — the CRM data is the point, the history is on top.
+                if (!is_array($baseJson[$cacheKey])) {
+                    continue;
+                }
+
+                $at  = date('Y-m-d H:i:s', strtotime('-' . (int) $a['days_ago'] . ' days'));
+                $res = pg_query_params($conn, "
+                    INSERT INTO $tUsersLog (user_id, action, target_table, record_id, created_at)
+                    VALUES (\$1, \$2, \$3, \$4, \$5) RETURNING id
+                ", [$demoUserIds[$a['author']], $a['action'], $table, $recordId, $at]);
+                if ($res === false) {
+                    admin_db_fail($conn, "demo_install:demo_audit:{$type}");
+                }
+                $logId = (int) pg_fetch_result($res, 0, 'id');
+                $auditLogIds[] = $logId;
+
+                $snapshot = array_merge($baseJson[$cacheKey], $a['changes'] ?? []);
+                $res = pg_query_params($conn, "
+                    INSERT INTO $tSnapshots (log_id, table_name, record_id, snapshot, created_at)
+                    VALUES (\$1, \$2, \$3, \$4, \$5)
+                ", [$logId, $table, $recordId, json_encode($snapshot), $at]);
+                if ($res === false) {
+                    admin_db_fail($conn, "demo_install:demo_audit_snapshots:{$type}");
+                }
             }
         }
 
@@ -358,7 +450,7 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
                     $f['filename'],
                     strlen($f['content']),
                     $dbPath,
-                    $demoUserIds[$f['author']],
+                    $authorId((int) $f['author']),
                     $f['related_table'],
                     $f['related_id'],
                     $f['description'] ?? null,
@@ -408,7 +500,7 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
                     $img['display_name'] ?? basename($img['source_file']),
                     strlen($content),
                     $dbPath,
-                    $demoUserIds[$img['author']],
+                    $authorId((int) $img['author']),
                     $img['related_table'],
                     $img['related_id'],
                     IMAGES_FIELD,
@@ -576,6 +668,24 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
             config_save('user_records', $urCfg, null, $seedUserId);
         }
 
+        // settings config — turn record snapshots on so the history keeps growing past
+        // the seeded entries. Only when the demo actually flipped it: an installation
+        // that already had it on must not have it switched off again on uninstall, and
+        // RECORD_SNAPSHOTS_ENABLED takes precedence over the stored value anyway
+        // (includes/admin/settings.php), so writing it there would be a silent no-op.
+        $snapshotsEnabledByDemo = false;
+        $snapEnv = getenv('RECORD_SNAPSHOTS_ENABLED');
+        if ($withAudit && $withUsers && ($snapEnv === false || $snapEnv === '')) {
+            require_once __DIR__ . '/../../../includes/config_store.php';
+            $setCfg = config_get('settings') ?? [];
+            if (empty($setCfg['record_snapshots_enabled'])) {
+                $setCfg['record_snapshots_enabled'] = true;
+                $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+                config_save('settings', $setCfg, null, $seedUserId);
+                $snapshotsEnabledByDemo = true;
+            }
+        }
+
         // demo_meta.json
         $meta = [
             'type'           => $type,
@@ -591,7 +701,9 @@ function demo_install_run(string $type, bool $withRagDocs = true): array
             'print_keys'     => $printKeys,
             'board_ids'      => array_column($demoData['board']['boards'] ?? [], 'id'),
             'demo_user_ids'  => $demoUserIds,
-            'demo_usernames' => array_column($demoData['demo_users'], 'username'),
+            'demo_usernames' => $withUsers ? array_column($demoData['demo_users'], 'username') : [],
+            'audit_log_ids'  => $auditLogIds,
+            'snapshots_enabled_by_demo' => $snapshotsEnabledByDemo,
             'demo_file_ids'  => $demoFileIds,
             'demo_file_paths' => $demoFilePaths,
             'demo_image_ids' => $demoImageIds,
@@ -619,9 +731,13 @@ if ($action === 'demo_install') {
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $type    = $body['type']    ?? '';
     $confirm = $body['confirm'] ?? '';
-    // Checkbox on the admin Demo page; absent body key means "yes", matching the
-    // default the setup wizard gets.
-    $withRag = !isset($body['rag_docs']) || (bool) $body['rag_docs'];
+    // Checkboxes on the admin Demo page; an absent body key means "yes", matching the
+    // defaults the setup wizard gets.
+    $withRag   = !isset($body['rag_docs'])   || (bool) $body['rag_docs'];
+    $withUsers = !isset($body['demo_users']) || (bool) $body['demo_users'];
+    // Audit history is attributed to the demo accounts, so it cannot outlive them —
+    // enforced here as well as in the UI, which disables the checkbox.
+    $withAudit = (!isset($body['audit_history']) || (bool) $body['audit_history']) && $withUsers;
 
     if ($type !== 'crm') {
         echo json_encode(['status' => 'error', 'error' => 'Invalid demo type.']);
@@ -632,7 +748,7 @@ if ($action === 'demo_install') {
         exit;
     }
 
-    echo json_encode(demo_install_run($type, $withRag));
+    echo json_encode(demo_install_run($type, $withRag, $withUsers, $withAudit));
     exit;
 }
 
@@ -711,6 +827,18 @@ if ($action === 'demo_uninstall') {
             @pg_query_params($conn, "DELETE FROM {$tRagFiles} WHERE id = ANY(\$1::int[])", [$ragIdList]);
         }
 
+        // Remove the demo's seeded audit history. Only the log ids this install
+        // recorded are touched, so real audit rows survive; the snapshots go with them
+        // via spw_record_snapshots.log_id ON DELETE CASCADE. This runs before the demo
+        // users are deleted, but the order does not matter — spw_users_log.user_id has
+        // no FK to spw_users, precisely so audit rows outlive the accounts.
+        $auditLogIds = $meta['audit_log_ids'] ?? [];
+        if (!empty($auditLogIds)) {
+            $logIdList = '{' . implode(',', array_map('intval', $auditLogIds)) . '}';
+            $tUsersLog = sys_table('users_log');
+            @pg_query_params($conn, "DELETE FROM {$tUsersLog} WHERE id = ANY(\$1::int[])", [$logIdList]);
+        }
+
         // Remove demo comments/notes/notifications/users seeded for the demo accounts
         $demoUserIds = $meta['demo_user_ids'] ?? [];
         if (!empty($demoUserIds)) {
@@ -736,6 +864,16 @@ if ($action === 'demo_uninstall') {
 
         require_once __DIR__ . '/../../../includes/config_store.php';
         $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+
+        // Revert the record-snapshot setting only if the demo is the one that turned it
+        // on — an install that found it already enabled leaves it that way.
+        if (!empty($meta['snapshots_enabled_by_demo'])) {
+            $setCfg = config_get('settings') ?? [];
+            if (!empty($setCfg['record_snapshots_enabled'])) {
+                $setCfg['record_snapshots_enabled'] = false;
+                config_save('settings', $setCfg, null, $cleanUserId);
+            }
+        }
 
         // Clean schema config (delete the key if no tables remain)
         $cfg = config_get('schema');

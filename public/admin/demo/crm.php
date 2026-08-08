@@ -872,6 +872,48 @@ function demo_def_crm($conn): array
             ['author' => 0, 'title' => 'New comment on lead: Marcus Bennett', 'related_table' => 'leads', 'related_id' => 2, 'is_read' => false],
             ['author' => 2, 'title' => 'New comment on lead: Lucas Müller', 'related_table' => 'leads', 'related_id' => 6, 'is_read' => true],
         ],
+        // Demo audit trail — backdated spw_users_log entries plus the matching
+        // spw_record_snapshots rows, so the Audit module and per-record history are
+        // populated straight after install instead of staying empty until the first
+        // manual edit. Opt-in via the "audit history" checkbox on the Demo page.
+        //
+        // 'author' indexes into demo_users, so this block requires them (the checkbox
+        // is disabled without demo users). 'days_ago' backdates created_at on both the
+        // log row and its snapshot. 'changes' is an overlay applied on top of the
+        // record's CURRENT state, which seed.php reads with fetch_record_json() — only
+        // the columns that differed at that point in time are listed here, so the
+        // snapshots stay in sync with seed_data instead of duplicating whole rows.
+        'demo_audit' => [
+            // Enterprise License Q2 — Lead → Qualified → Proposal, value revised up
+            ['author' => 0, 'table' => 'deals', 'record_id' => 1, 'action' => 'create', 'days_ago' => 48, 'changes' => ['stage' => 'Lead',      'value' => 30000.00]],
+            ['author' => 0, 'table' => 'deals', 'record_id' => 1, 'action' => 'update', 'days_ago' => 35, 'changes' => ['stage' => 'Qualified', 'value' => 30000.00]],
+            ['author' => 1, 'table' => 'deals', 'record_id' => 1, 'action' => 'update', 'days_ago' => 21, 'changes' => ['stage' => 'Qualified', 'value' => 45000.00]],
+            ['author' => 0, 'table' => 'deals', 'record_id' => 1, 'action' => 'update', 'days_ago' => 9,  'changes' => []],
+            // Digital Transformation Project — long negotiation, close date pushed back
+            ['author' => 1, 'table' => 'deals', 'record_id' => 2, 'action' => 'create', 'days_ago' => 62, 'changes' => ['stage' => 'Qualified',   'expected_close' => '2026-06-15']],
+            ['author' => 1, 'table' => 'deals', 'record_id' => 2, 'action' => 'update', 'days_ago' => 30, 'changes' => ['stage' => 'Proposal',    'expected_close' => '2026-06-15']],
+            ['author' => 1, 'table' => 'deals', 'record_id' => 2, 'action' => 'update', 'days_ago' => 11, 'changes' => []],
+            // Cloud Migration Services — migration window confirmed, date moved
+            ['author' => 1, 'table' => 'deals', 'record_id' => 3, 'action' => 'create', 'days_ago' => 40, 'changes' => ['stage' => 'Lead', 'expected_close' => '2026-05-15']],
+            ['author' => 0, 'table' => 'deals', 'record_id' => 3, 'action' => 'update', 'days_ago' => 14, 'changes' => []],
+            // Support & Maintenance — the full path to Won
+            ['author' => 0, 'table' => 'deals', 'record_id' => 4, 'action' => 'create', 'days_ago' => 75, 'changes' => ['stage' => 'Lead']],
+            ['author' => 0, 'table' => 'deals', 'record_id' => 4, 'action' => 'update', 'days_ago' => 52, 'changes' => ['stage' => 'Proposal']],
+            ['author' => 0, 'table' => 'deals', 'record_id' => 4, 'action' => 'update', 'days_ago' => 33, 'changes' => ['stage' => 'Negotiation']],
+            ['author' => 0, 'table' => 'deals', 'record_id' => 4, 'action' => 'update', 'days_ago' => 18, 'changes' => []],
+            // Data Analytics Platform — reference customer request stalled it
+            ['author' => 2, 'table' => 'deals', 'record_id' => 8, 'action' => 'create', 'days_ago' => 44, 'changes' => ['stage' => 'Qualified', 'value' => 120000.00]],
+            ['author' => 2, 'table' => 'deals', 'record_id' => 8, 'action' => 'update', 'days_ago' => 16, 'changes' => ['stage' => 'Proposal',  'value' => 150000.00]],
+            ['author' => 0, 'table' => 'deals', 'record_id' => 8, 'action' => 'update', 'days_ago' => 5,  'changes' => []],
+            // Contact and company edits — history is not deals-only
+            ['author' => 0, 'table' => 'contacts',  'record_id' => 1, 'action' => 'create', 'days_ago' => 90, 'changes' => ['position' => 'Sales Manager', 'phone' => null]],
+            ['author' => 0, 'table' => 'contacts',  'record_id' => 1, 'action' => 'update', 'days_ago' => 27, 'changes' => []],
+            ['author' => 1, 'table' => 'companies', 'record_id' => 1, 'action' => 'create', 'days_ago' => 96, 'changes' => ['industry' => 'IT', 'website' => null]],
+            ['author' => 1, 'table' => 'companies', 'record_id' => 1, 'action' => 'update', 'days_ago' => 60, 'changes' => []],
+            // Lead qualification — the record the anonymization rules also target
+            ['author' => 2, 'table' => 'leads', 'record_id' => 2, 'action' => 'create', 'days_ago' => 22, 'changes' => ['status' => 'New']],
+            ['author' => 2, 'table' => 'leads', 'record_id' => 2, 'action' => 'update', 'days_ago' => 8,  'changes' => []],
+        ],
         'menu_items' => [
             ['key' => 'dashboard'],
             ['key' => 'calendar'],

@@ -14,7 +14,13 @@ const DEMOS = {
         label:       'CRM',
         description: 'Customer Relationship Management — companies, contacts, deals and activities in the menu, '
             + 'with leads seeded behind them to drive the automations, '
-            + 'workflows and GDPR anonymization rules.',
+            + 'workflows and GDPR anonymization rules. A full tour of the platform: a dashboard of stat, bar, pie '
+            + 'and line widgets, a calendar with reminders, a Kanban board of the sales pipeline, step-by-step '
+            + 'workflows (one validated by a PostgreSQL procedure), aggregate views with subtotals and drill-down, '
+            + 'parameterised printouts built on those views, event-driven automations that notify, update and send '
+            + 'email, and a RAG knowledge base so the Ask AI panel can answer questions about the data. Collaboration '
+            + 'is seeded too — three demo users with comments, personal notes, record ownership, notifications, '
+            + 'file and image attachments.',
         schema:      'spw_crm',
         tables:      ['companies', 'contacts', 'deals', 'activities', 'leads'],
         color:       'var(--muted)',
@@ -22,7 +28,28 @@ const DEMOS = {
         recommended: true,
         // Keep in sync with public/admin/demo/crm.php — these counts are what the
         // definition actually installs, not what an older build shipped.
-        features:    ['7 dashboard widgets', '2 calendar sources + reminders', 'Kanban board: Deals by Stage', '3 workflows', '4 read-only views', '3 automations', '2 printouts', 'M2M stakeholders on deals', 'file attachments', 'RAG knowledge base'],
+        features:    [
+            '7 dashboard widgets',
+            'Stat, bar, pie and line charts',
+            '2 calendar sources + reminders',
+            'Kanban board: Deals by Stage',
+            '3 workflows',
+            'PostgreSQL procedure validation',
+            '4 read-only views',
+            'Subtotals + drill-down',
+            '2 printouts with parameters',
+            '3 automations: notify, update, email',
+            'RAG knowledge base: 9 documents',
+            'RAG aggregate view on deals',
+            'GDPR anonymization: 4 rules',
+            'M2M stakeholders on deals',
+            'File and image attachments',
+            '3 demo users',
+            'Comments, notes, notifications',
+            'Record ownership',
+            'Audit history + record snapshots',
+            'Highlight rules + colored enums',
+        ],
     },
 };
 
@@ -54,7 +81,7 @@ export function renderDemoPage({ workspaceEl }) {
             if (d.installed) {
                 renderInstalled(workspaceEl, d.meta);
             } else {
-                renderInstallForm(workspaceEl);
+                renderInstallForm(workspaceEl, { snapshotsLockedByEnv: !!d.snapshots_locked_by_env });
             }
         } catch (e) {
             // Exception text often originates from the API — build the node
@@ -68,11 +95,45 @@ export function renderDemoPage({ workspaceEl }) {
     })();
 }
 
-function renderInstallForm(workspaceEl) {
+// One install option: checkbox, clickable label and the help text explaining what it
+// installs and why you might want it off. Returns the row so callers can reach the
+// input; keeps the three options below from repeating the same eight nodes.
+function buildInstallOption({ id, label, help, checked = true }) {
+    const wrap = document.createElement('div');
+    wrap.className = 'demo-install-option';
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+    const chk = document.createElement('input');
+    chk.type      = 'checkbox';
+    chk.id        = id;
+    chk.className = 'adm-check';
+    chk.checked   = checked;
+
+    const lbl = document.createElement('label');
+    lbl.htmlFor     = id;
+    lbl.textContent = label;
+    lbl.className   = 'adm-field-label';
+    lbl.style.cursor = 'pointer';
+
+    row.append(chk, lbl);
+
+    const helpEl = document.createElement('div');
+    helpEl.className   = 'help-text';
+    helpEl.textContent = help;
+
+    wrap.append(row, helpEl);
+    return { wrap, chk, help: helpEl };
+}
+
+function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
     workspaceEl.innerHTML = '';
 
     workspaceEl.appendChild(createPageHeader('Install Demo System',
-        'Installs a dedicated PostgreSQL schema with tables and sample data, and merges the demo schema, dashboard, calendar, board, workflows, and views configuration into the app configuration.'));
+        'Installs a dedicated PostgreSQL schema with tables, views, procedures and sample data, and merges the demo '
+        + 'schema, menu, dashboard, calendar, board, workflows, views, printouts, automations, anonymization rules, '
+        + 'file relations and RAG knowledge base into the app configuration.'));
 
     const grid = document.createElement('div');
     grid.className = 'demo-cards';
@@ -96,31 +157,75 @@ function renderInstallForm(workspaceEl) {
     confirmInput.placeholder = 'CONFIRM';
     confirmInput.className   = 'demo-confirm-input';
 
-    // Knowledge-base opt-out. Checked by default: the documents are inert without
-    // Ollama (they just sit in spw_rag_files), but without them the Ask AI panel has
-    // nothing to retrieve and looks broken on a fresh demo.
-    const ragRow = document.createElement('div');
-    ragRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:16px;';
+    // Optional parts of the install. All three default to on — the demo is meant to
+    // show the whole platform — but each is separable, and the help text says what you
+    // lose by turning it off so the choice is informed rather than a guess.
+    const options = document.createElement('div');
+    options.className = 'demo-install-options';
 
-    const ragChk = document.createElement('input');
-    ragChk.type      = 'checkbox';
-    ragChk.id        = 'demo-rag-docs-chk';
-    ragChk.className = 'adm-check';
-    ragChk.checked   = true;
+    const optTitle = document.createElement('strong');
+    optTitle.className = 'demo-install-options-title';
+    optTitle.textContent = 'What to install';
+    options.appendChild(optTitle);
 
-    const ragLabel = document.createElement('label');
-    ragLabel.htmlFor     = 'demo-rag-docs-chk';
-    ragLabel.textContent = 'Install RAG knowledge base for this demo';
-    ragLabel.className   = 'adm-field-label';
-    ragLabel.style.cursor = 'pointer';
+    // Knowledge base. The documents are inert without Ollama (they just sit in
+    // spw_rag_files), but without them the Ask AI panel has nothing to retrieve and
+    // looks broken on a fresh demo.
+    const rag = buildInstallOption({
+        id:    'demo-rag-docs-chk',
+        label: 'RAG knowledge base',
+        help:  'Loads nine sample documents describing this demo into RAG Documents, so the Ask AI '
+            + 'panel can answer questions about the CRM data. Installing them is pure SQL and needs '
+            + 'no network; only answering a question later requires Ollama. Leave it off if you do '
+            + 'not plan to use Ask AI — the Ask AI panel will then return nothing.',
+    });
 
-    ragRow.append(ragChk, ragLabel);
+    // Demo accounts. A genuine opt-out rather than a convenience one: the accounts
+    // share one fixed password documented in the repository, so an installation
+    // reachable from a network may legitimately not want them.
+    const users = buildInstallOption({
+        id:    'demo-users-chk',
+        label: 'Demo users and collaboration data',
+        help:  'Creates three demo accounts (demo.anna, demo.marek, demo.julia) and the data keyed '
+            + 'to them: comment threads, personal notes, record ownership and notifications. All '
+            + 'three share the fixed password "test", so leave this off on any installation reachable '
+            + 'from a network. Without it the CRM data, dashboard, board, workflows, views, printouts '
+            + 'and automations are unaffected; file attachments are installed under your own account.',
+    });
 
-    const ragHelp = document.createElement('div');
-    ragHelp.className   = 'help-text';
-    ragHelp.textContent = 'Loads the sample documents describing this demo into RAG Documents, '
-        + 'so the Ask AI panel can answer questions about it. Answering needs Ollama; '
-        + 'installing the documents does not.';
+    // Audit history. A bare toggle would leave both the Audit module and the per-record
+    // history empty until the first manual edit, so this seeds backdated entries too.
+    const audit = buildInstallOption({
+        id:    'demo-audit-chk',
+        label: 'Audit history and record snapshots',
+        help:  'Backfills roughly twenty dated edits on the demo deals, contacts and companies — who '
+            + 'changed what and when, with a full JSONB snapshot of the record at each point — and '
+            + 'turns Record Snapshots on so the history keeps growing. Without it the Audit module '
+            + 'and per-record history stay empty until you make the first edit yourself.',
+    });
+
+    // Audit entries are attributed to the demo accounts, so the option cannot outlive
+    // them; the server enforces the same dependency in demo_install.
+    const syncAuditAvailability = () => {
+        const envLocked = snapshotsLockedByEnv;
+        const blocked   = envLocked || !users.chk.checked;
+        audit.chk.disabled = blocked;
+        if (blocked) audit.chk.checked = false;
+        if (envLocked) {
+            audit.help.textContent = 'Unavailable: the RECORD_SNAPSHOTS_ENABLED environment variable '
+                + 'controls the record snapshot setting, so the demo cannot change it.';
+        } else if (!users.chk.checked) {
+            audit.help.textContent = 'Requires the demo users above — every history entry records which '
+                + 'demo account made the change.';
+        } else {
+            audit.help.textContent = audit.helpDefault;
+        }
+    };
+    audit.helpDefault = audit.help.textContent;
+    users.chk.addEventListener('change', syncAuditAvailability);
+
+    options.append(rag.wrap, users.wrap, audit.wrap);
+    syncAuditAvailability();
 
     const installBtn = document.createElement('button');
     installBtn.textContent = 'Install Demo';
@@ -138,9 +243,11 @@ function renderInstallForm(workspaceEl) {
         installBtn.textContent = 'Installing…';
         try {
             const d = await apiPost('demo_install', {
-                type:     selectedType,
-                confirm:  'CONFIRM',
-                rag_docs: ragChk.checked,
+                type:          selectedType,
+                confirm:       'CONFIRM',
+                rag_docs:      rag.chk.checked,
+                demo_users:    users.chk.checked,
+                audit_history: audit.chk.checked,
             });
             if (d.status === 'success') {
                 renderDemoPage({ workspaceEl });
@@ -157,8 +264,7 @@ function renderInstallForm(workspaceEl) {
     });
 
     confirmSection.appendChild(warningBox);
-    confirmSection.appendChild(ragRow);
-    confirmSection.appendChild(ragHelp);
+    confirmSection.appendChild(options);
     confirmSection.appendChild(confirmLabel);
     confirmSection.appendChild(confirmInput);
     confirmSection.appendChild(installBtn);
@@ -190,7 +296,7 @@ function renderInstallForm(workspaceEl) {
             confirmInput.value   = '';
             installBtn.disabled  = true;
             confirmSection.style.display = '';
-            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into the schema, dashboard, calendar, board, workflows, views, and automations configuration. Existing entries with the same keys/IDs will be overwritten.`;
+            warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into the schema, menu, dashboard, calendar, board, workflows, views, printouts, automations, anonymization, files and RAG configuration. Existing entries with the same keys/IDs will be overwritten.`;
         });
 
         grid.appendChild(card);
@@ -228,7 +334,7 @@ function renderInstalled(workspaceEl, meta) {
 
     const warn = document.createElement('div');
     warn.className   = 'demo-warning demo-warning-danger';
-    warn.textContent = `Uninstalling will DROP SCHEMA ${meta.schema} CASCADE (all data lost) and remove demo entries from all JSON config files. This cannot be undone.`;
+    warn.textContent = `Uninstalling will DROP SCHEMA ${meta.schema} CASCADE (all data lost) and remove demo entries from the app configuration — menu, dashboard, calendar, board, workflows, views, printouts, automations, anonymization, files and RAG documents — along with the demo users and their comments, notes, notifications and seeded audit history. Audit entries and record snapshots you created yourself are kept. This cannot be undone.`;
 
     const lbl = document.createElement('label');
     lbl.textContent = 'Type CONFIRM to uninstall:';

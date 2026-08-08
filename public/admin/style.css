@@ -1130,6 +1130,30 @@ textarea.adm-input {
     color: var(--error);
 }
 
+.demo-install-options {
+    margin-top: 16px;
+}
+
+.demo-install-options-title {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.demo-install-option {
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+}
+
+.demo-install-option .help-text {
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+.demo-install-option input:disabled + label {
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
 .demo-confirm-input {
     display: block;
     margin-top: 8px;
