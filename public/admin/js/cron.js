@@ -55,11 +55,11 @@ function buildManualRunSection() {
                 output.innerHTML = data.output || '(no output)';
             } else {
                 output.textContent = 'Error: ' + (data.error || 'unknown');
-                output.style.color = '#a80000';
+                output.style.color = 'var(--error)';
             }
         } catch (e) {
             output.textContent = 'Request failed: ' + e.message;
-            output.style.color = '#a80000';
+            output.style.color = 'var(--error)';
         }
 
         runBtn.disabled = false;
@@ -115,7 +115,7 @@ function buildRunHistorySection() {
                 tr.appendChild(td(dur));
                 tr.appendChild(td(r.sources_processed));
                 tr.appendChild(td(r.notifications_created));
-                tr.appendChild(td(r.error_message, 'color:#a80000; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
+                tr.appendChild(td(r.error_message, 'color:var(--error); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
             });
 
             container.innerHTML = '';
@@ -327,7 +327,7 @@ function buildCleanupSection() {
         const days = parseInt(input.value, 10);
         if (!days || days < 1) {
             result.textContent = 'Enter a valid number of days.';
-            result.style.color = '#a80000';
+            result.style.color = 'var(--error)';
             result.style.display = '';
             return;
         }
@@ -349,11 +349,11 @@ function buildCleanupSection() {
                 result.style.color = 'var(--ok)';
             } else {
                 result.textContent = 'Error: ' + (data.error || 'unknown');
-                result.style.color = '#a80000';
+                result.style.color = 'var(--error)';
             }
         } catch (e) {
             result.textContent = 'Request failed: ' + e.message;
-            result.style.color = '#a80000';
+            result.style.color = 'var(--error)';
         }
 
         result.style.display = '';
@@ -524,7 +524,7 @@ function buildEmailSection() {
             renderPassStatus(!!data.smtp_password_configured);
         } catch (e) {
             result.textContent = 'Request failed: ' + e.message;
-            result.style.color = '#a80000';
+            result.style.color = 'var(--error)';
             result.style.display = '';
         }
     }
@@ -565,11 +565,11 @@ function buildEmailSection() {
                 await load();
             } else {
                 result.textContent = 'Error: ' + (data.error || 'unknown');
-                result.style.color = '#a80000';
+                result.style.color = 'var(--error)';
             }
         } catch (e) {
             result.textContent = 'Request failed: ' + e.message;
-            result.style.color = '#a80000';
+            result.style.color = 'var(--error)';
         }
 
         result.style.display = '';
@@ -599,11 +599,11 @@ function buildEmailSection() {
                 result.style.color = 'var(--ok)';
             } else {
                 result.textContent = 'Error: ' + (data.error || 'unknown');
-                result.style.color = '#a80000';
+                result.style.color = 'var(--error)';
             }
         } catch (e) {
             result.textContent = 'Request failed: ' + e.message;
-            result.style.color = '#a80000';
+            result.style.color = 'var(--error)';
         }
 
         result.style.display = '';

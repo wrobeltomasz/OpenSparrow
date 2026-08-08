@@ -71,14 +71,14 @@ async function loadHistory() {
         [I18n.t('owners.col_owner'), I18n.t('owners.col_changed_by'), I18n.t('owners.col_date')].forEach(h => {
             const th = document.createElement('th');
             th.textContent = h;
-            th.style.cssText = 'text-align:left;padding:8px 10px;border-bottom:2px solid #e2e8f0;color:#475569;font-weight:600;';
+            th.style.cssText = 'text-align:left;padding:8px 10px;border-bottom:2px solid var(--border-light);color:var(--muted);font-weight:600;';
             hrow.appendChild(th);
         });
 
         const tbody = table_.createTBody();
         data.history.forEach(row => {
             const tr = tbody.insertRow();
-            tr.style.borderBottom = '1px solid #f1f5f9';
+            tr.style.borderBottom = '1px solid var(--border-light)';
             [
                 row.username       || '—',
                 row.changed_by_name || '—',

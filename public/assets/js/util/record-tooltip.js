@@ -12,10 +12,10 @@
 // hovered anchor element. Values are set via textContent — safe against XSS.
 
 const TOOLTIP_ID = 'record-tooltip';
-const TOOLTIP_STYLE = 'position:absolute;display:none;background:#fff;border:1px solid #ddd;'
+const TOOLTIP_STYLE = 'position:absolute;display:none;background:#fff;border:1px solid var(--border);'
     + 'padding:12px;border-radius:6px;box-shadow:0 5px 15px rgba(0,0,0,0.2);font-size:13px;'
     + 'z-index:10000;pointer-events:none;min-width:220px;max-width:340px;max-height:400px;'
-    + 'overflow-y:auto;color:#333;';
+    + 'overflow-y:auto;color:var(--text);';
 
 // Lazily create (once) and return the shared tooltip container.
 export function getRecordTooltip() {
@@ -71,7 +71,7 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
     if (title !== undefined && title !== null && title !== '') {
         const header = document.createElement('div');
         header.style.cssText = 'font-weight:bold;font-size:14px;margin-bottom:8px;'
-            + 'border-bottom:1px solid #eee;padding-bottom:5px;';
+            + 'border-bottom:1px solid var(--border-light);padding-bottom:5px;';
         header.textContent = String(title);
         el.appendChild(header);
     }
@@ -81,7 +81,7 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
         rowDiv.style.marginBottom = '4px';
 
         const strong = document.createElement('strong');
-        strong.style.color = '#555';
+        strong.style.color = 'var(--muted)';
         strong.textContent = row.label + ': ';
         rowDiv.appendChild(strong);
 
@@ -93,7 +93,7 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
         }
 
         const spanVal = document.createElement('span');
-        spanVal.style.color = '#111';
+        spanVal.style.color = 'var(--text)';
         spanVal.textContent = String(row.value);
         rowDiv.appendChild(spanVal);
 

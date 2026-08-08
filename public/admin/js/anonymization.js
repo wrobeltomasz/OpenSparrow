@@ -29,7 +29,7 @@ function mkStatusEl() {
 
 function showStatus(el, msg, ok) {
     el.textContent = msg;
-    el.style.color = ok ? 'var(--ok)' : '#a80000';
+    el.style.color = ok ? 'var(--ok)' : 'var(--error)';
     el.style.display = '';
 }
 
@@ -186,11 +186,11 @@ function buildPreviewBlock(container) {
                 out.textContent = data.output || '(no output)';
             } else {
                 out.textContent = 'Error: ' + (data.error || 'unknown');
-                out.style.color = '#a80000';
+                out.style.color = 'var(--error)';
             }
         } catch (e) {
             out.textContent = 'Request failed: ' + e.message;
-            out.style.color = '#a80000';
+            out.style.color = 'var(--error)';
         }
         btn.disabled    = false;
         btn.textContent = 'Preview (dry run)';
@@ -447,11 +447,11 @@ function buildScheduleTab() {
                 output.textContent = data.output || '(no output)';
             } else {
                 output.textContent = 'Error: ' + (data.error || 'unknown');
-                output.style.color = '#a80000';
+                output.style.color = 'var(--error)';
             }
         } catch (e) {
             output.textContent = 'Request failed: ' + e.message;
-            output.style.color = '#a80000';
+            output.style.color = 'var(--error)';
         }
         runBtn.disabled    = false;
         runBtn.textContent = 'Run Now';
@@ -685,13 +685,13 @@ function buildSuggestionsTab() {
                             const repl = replInp.value;
                             if (!dc) {
                                 formSt.textContent = 'Select a date column.';
-                                formSt.style.color = '#a80000';
+                                formSt.style.color = 'var(--error)';
                                 formSt.style.display = '';
                                 return;
                             }
                             if (isNaN(days) || days < 1) {
                                 formSt.textContent = 'Enter a valid number of days.';
-                                formSt.style.color = '#a80000';
+                                formSt.style.color = 'var(--error)';
                                 formSt.style.display = '';
                                 return;
                             }
@@ -724,7 +724,7 @@ function buildSuggestionsTab() {
         } catch (e) {
             const msg = document.createElement('p');
             msg.textContent = 'Failed to load schema: ' + e.message;
-            msg.style.color = '#a80000';
+            msg.style.color = 'var(--error)';
             container.appendChild(msg);
         } finally {
             scanBtn.disabled    = false;
@@ -890,7 +890,7 @@ function buildReportCell(r, tbody, colspan) {
 
         const idLbl = document.createElement('strong');
         idLbl.textContent = report.report_id || 'Report';
-        idLbl.style.cssText = ' font-family:monospace;';
+        idLbl.style.cssText = ' font-family:var(--font-mono);';
 
         const dlBtn = document.createElement('button');
         dlBtn.textContent  = 'Download JSON';
@@ -969,7 +969,7 @@ function buildHistorySection() {
                     td(r.rules_processed),
                     td(r.rows_anonymized),
                     buildReportCell(r, tbody, headers.length),
-                    td(r.error_message, 'color:#a80000; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
+                    td(r.error_message, 'color:var(--error); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
                 );
             });
             container.appendChild(tbl);
@@ -999,13 +999,13 @@ export async function renderAnonymizationPage(ctx) {
         const res  = await apiFetch('api.php?action=anonymization_load');
         const data = await res.json();
         if (data.status !== 'success') {
-            workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Failed to load config: ' + escHtml(data.error || 'unknown') + '</p>';
+            workspaceEl.innerHTML = '<p style="color:var(--error);padding:20px;">Failed to load config: ' + escHtml(data.error || 'unknown') + '</p>';
             return;
         }
         anonConfig  = data.config;
         anonVersion = data.version ?? 0;
     } catch (e) {
-        workspaceEl.innerHTML = '<p style="color:#a80000;padding:20px;">Request failed: ' + escHtml(e.message) + '</p>';
+        workspaceEl.innerHTML = '<p style="color:var(--error);padding:20px;">Request failed: ' + escHtml(e.message) + '</p>';
         return;
     }
 

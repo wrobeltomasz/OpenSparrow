@@ -88,8 +88,8 @@ export function renderPrintEditor(ctx) {
     function setStatus(msg, type = 'info') {
         const styles = {
             info:  'background:var(--accent-light); color:var(--accent-dark);',
-            ok:    'background:rgba(43,147,72,0.08); color:var(--ok);',
-            error: 'background:rgba(208,0,0,0.08); color:var(--danger);',
+            ok:    'background:var(--ok-light); color:var(--ok);',
+            error: 'background:var(--error-light); color:var(--danger);',
         };
         statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
         statusEl.textContent = msg;
@@ -153,7 +153,7 @@ export function renderPrintEditor(ctx) {
         }
         cols.forEach(col => {
             const badge = document.createElement('span');
-            badge.style.cssText = ' font-family:monospace; color:var(--accent-dark); background:var(--accent-light); padding:2px 8px; border-radius:10px;';
+            badge.style.cssText = ' font-family:var(--font-mono); color:var(--accent-dark); background:var(--accent-light); padding:2px 8px; border-radius:10px;';
             badge.textContent = `{${col.name}}`;
             badge.title = col.data_type || '';
             box.appendChild(badge);

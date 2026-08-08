@@ -54,12 +54,12 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
         }
     }));
     
-    workspaceEl.appendChild(createColorInput('color', 'Event Color', itemData.color || '#64748B', v => itemData.color = v));
+    workspaceEl.appendChild(createColorInput('color', 'Event Color', itemData.color || '#6E767F', v => itemData.color = v));
     workspaceEl.appendChild(createTextInput('notify_before_days', 'Notify Before (Days)', itemData.notify_before_days, v => itemData.notify_before_days = parseInt(v) || 0));
 
     // Async block for loading active users from database
     const usersWrapper = document.createElement('div');
-    usersWrapper.innerHTML = '<p style="color:#64748B; ">Loading active users...</p>';
+    usersWrapper.innerHTML = '<p style="color:var(--muted); ">Loading active users...</p>';
     workspaceEl.appendChild(usersWrapper);
 
     apiFetch('api.php?action=users_list')

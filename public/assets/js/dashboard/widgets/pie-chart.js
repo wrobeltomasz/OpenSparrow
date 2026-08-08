@@ -9,7 +9,9 @@ import { applyDrillDown } from '../drill-down.js';
 import { WidgetRegistry } from '../registry.js';
 import { formatCellValue } from '../../util/format-value.js';
 
-const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+// Sequential ramp off --c-navy (#003366). One hue, eight steps: slices stay
+// distinguishable without a second colour. Literal hex - feeds a conic-gradient.
+const COLORS = ['#003366', '#1B4C7E', '#356696', '#5081AE', '#6C9CC6', '#8AB6DA', '#AACFE8', '#CBE2F1'];
 
 function renderPieChart(widget) {
     const wrapper = document.createElement('div');

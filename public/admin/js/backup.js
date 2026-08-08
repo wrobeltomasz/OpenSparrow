@@ -53,7 +53,7 @@ function buildGroupPanel(panel, tables) {
         nameSpan.textContent = t.display !== t.name ? `${t.display}  (${t.name})` : t.name;
 
         const schemaTag = document.createElement('span');
-        schemaTag.style.cssText = 'font-family:monospace;';
+        schemaTag.style.cssText = 'font-family:var(--font-mono);';
         schemaTag.textContent = t.schema;
 
         label.append(cb, nameSpan, schemaTag);
@@ -105,14 +105,14 @@ function buildGroupPanel(panel, tables) {
                     const li = document.createElement('li');
                     li.style.cssText = 'padding:8px 12px;border-radius:4px;margin-bottom:4px;display:flex;gap:8px;align-items:baseline;';
                     if (r.status === 'success') {
-                        li.style.background = 'rgba(43,147,72,0.12)';
+                        li.style.background = 'var(--ok-light)';
                         li.innerHTML = `<span style="color:var(--ok);font-weight:700;">✓</span>`
-                            + ` <strong>${escHtml(r.table)}</strong> → <code style="background:rgba(43,147,72,0.12);padding:1px 5px;border-radius:3px;">${escHtml(r.backup)}</code>`
+                            + ` <strong>${escHtml(r.table)}</strong> → <code style="background:var(--ok-light);padding:1px 5px;border-radius:3px;">${escHtml(r.backup)}</code>`
                             + ` <span style="color:var(--ok);">(${escHtml(r.rows)} row${r.rows !== 1 ? 's' : ''})</span>`;
                     } else {
-                        li.style.background = 'rgba(208,0,0,0.08)';
-                        li.innerHTML = `<span style="color:#a80000;font-weight:700;">✗</span>`
-                            + ` <strong>${escHtml(r.table)}</strong>: <span style="color:#a80000;">${escHtml(r.message)}</span>`;
+                        li.style.background = 'var(--error-light)';
+                        li.innerHTML = `<span style="color:var(--error);font-weight:700;">✗</span>`
+                            + ` <strong>${escHtml(r.table)}</strong>: <span style="color:var(--error);">${escHtml(r.message)}</span>`;
                     }
                     ul.appendChild(li);
                 });

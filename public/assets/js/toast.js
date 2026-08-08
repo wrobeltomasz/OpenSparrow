@@ -7,10 +7,10 @@
 // Stacks bottom-right, auto-dismisses (default 4s). Variants: error/success/info.
 export function showToast(message, variant = 'error', duration = 4000) {
     const colors = {
-        error:   { bg: '#fee2e2', fg: '#991b1b', border: '#fca5a5' },
-        success: { bg: '#dcfce7', fg: '#166534', border: '#86efac' },
-        info:    { bg: '#e0f2fe', fg: '#075985', border: '#7dd3fc' },
-    }[variant] || { bg: '#e2e8f0', fg: '#0f172a', border: '#cbd5e1' };
+        error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
+        success: { bg: 'var(--ok-light)', fg: 'var(--ok-dark)', border: 'var(--accent-mid)' },
+        info:    { bg: 'var(--accent-light)', fg: 'var(--accent)', border: 'var(--accent-mid)' },
+    }[variant] || { bg: 'var(--border-light)', fg: 'var(--text)', border: 'var(--border)' };
 
     const toast = document.createElement('div');
     toast.style.cssText = [

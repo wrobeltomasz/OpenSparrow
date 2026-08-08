@@ -212,7 +212,7 @@ function render() {
     const filterLanes = (board.columns || []).map(l => ({ value: l.value, label: l.label, color: l.color }));
     const hasUnmatched = (byStatus[UNMATCHED] || []).length > 0;
     if (hasUnmatched) {
-        filterLanes.push({ value: UNMATCHED, label: t('board.uncategorized'), color: '#94a3b8' });
+        filterLanes.push({ value: UNMATCHED, label: t('board.uncategorized'), color: '#8A9199' });
     }
     renderFilterBar(filterLanes);
 
@@ -223,7 +223,7 @@ function render() {
 
     // Records whose status matches no configured lane still need to be visible.
     if (hasUnmatched && !hiddenLanes.has(UNMATCHED)) {
-        container.appendChild(buildLane(UNMATCHED, t('board.uncategorized'), '#94a3b8', byStatus[UNMATCHED], false));
+        container.appendChild(buildLane(UNMATCHED, t('board.uncategorized'), '#8A9199', byStatus[UNMATCHED], false));
     }
 
     // A configured board can still produce zero lanes (status column with no

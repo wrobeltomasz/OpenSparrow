@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (items && items.length > 0) {
                 items.forEach(n => {
                     const li = document.createElement('li');
-                    li.style.cssText = 'padding:10px 15px;border-bottom:1px solid #f0f0f0;font-weight:' +
+                    li.style.cssText = 'padding:10px 15px;border-bottom:1px solid var(--border-light);font-weight:' +
                         (n.is_read === 't' ? 'normal' : 'bold') + ';';
                     li.textContent = n.title;
                     if (n.link) {
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } else {
                 const empty = document.createElement('li');
-                empty.style.cssText = 'padding:15px;text-align:center;color:#777;';
+                empty.style.cssText = 'padding:15px;text-align:center;color:var(--muted);';
                 empty.textContent = window.I18n ? window.I18n.t('notifications.none') : 'No new notifications';
                 list.appendChild(empty);
             }

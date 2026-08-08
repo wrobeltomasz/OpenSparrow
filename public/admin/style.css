@@ -66,6 +66,11 @@
   --nav-w:        260px;
   --transition:   150ms ease;
   --admin-font-size: 14px;
+
+  /* Kept in sync with assets/css/styles.css — see the note there.
+     Inter is not bundled; do not reintroduce it. */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 /* ===== Base ===== */
@@ -75,7 +80,7 @@ body {
     margin: 0;
     background-color: var(--bg);
     color: var(--text);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
     font-size: var(--admin-font-size);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
@@ -536,7 +541,7 @@ body {
 
 .block-key {
     color: var(--text);
-    font-family: monospace;
+    font-family: var(--font-mono);
     flex-shrink: 0;
 }
 
@@ -745,7 +750,7 @@ textarea.adm-input {
 .w-260 { width: 260px; }
 .w-full  { width: 100%; }
 .flex-1  { flex: 1; }
-.mono    { font-family: monospace; }
+.mono    { font-family: var(--font-mono); }
 
 /* Compact color-swatch input for inline rule rows. */
 .adm-color {
@@ -1060,7 +1065,7 @@ textarea.adm-input {
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 12px;
-    font-family: monospace;
+    font-family: var(--font-mono);
 }
 
 .demo-card-tables {

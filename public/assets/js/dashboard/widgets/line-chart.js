@@ -19,7 +19,7 @@ const PAD_R = 8;
 const PAD_T = 12;
 const PAD_B = 30; // room for X-axis labels
 
-const DEFAULT_COLOR = '#3b82f6';
+const DEFAULT_COLOR = '#003366';  // literal: goes into SVG attributes, var() would not resolve
 const MAX_X_LABELS = 8;
 
 function svgEl(tag, attrs) {

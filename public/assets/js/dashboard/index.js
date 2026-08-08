@@ -51,7 +51,7 @@ function buildWidgetChip(widget, container) {
 
     const dot = document.createElement('span');
     dot.className = 'filter-dot';
-    dot.style.backgroundColor = widget.color || '#3b82f6';
+    dot.style.backgroundColor = widget.color || 'var(--accent)';
     chip.appendChild(dot);
     chip.appendChild(document.createTextNode(widget.title || key));
 

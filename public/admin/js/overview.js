@@ -176,7 +176,7 @@ export async function renderOverviewPage(ctx) {
         data = await res.json();
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<p style="color:#a80000;">Failed to load dashboard data. Check server logs.</p>';
+        workspaceEl.innerHTML = '<p style="color:var(--error);">Failed to load dashboard data. Check server logs.</p>';
         return;
     }
 
@@ -185,7 +185,7 @@ export async function renderOverviewPage(ctx) {
 
     if (data.status === 'error') {
         const err = document.createElement('p');
-        err.style.color = '#a80000';
+        err.style.color = 'var(--error)';
         err.textContent = 'Error: ' + escHtml(data.error ?? 'Unknown error');
         workspaceEl.appendChild(err);
         return;

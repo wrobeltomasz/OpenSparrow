@@ -60,7 +60,7 @@ export function renderAvatar(avatarId, username, size = 32) {
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('fill', '#fff');
     text.setAttribute('font-size', '14');
-    text.setAttribute('font-family', 'Inter,sans-serif');
+    text.setAttribute('font-family', 'system-ui,sans-serif');
     text.setAttribute('font-weight', '600');
     text.textContent = initial;
     svg.appendChild(text);

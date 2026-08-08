@@ -100,7 +100,7 @@ export function renderBoardEditor(key, itemData, isArray, ctx) {
 
         if (!hasEnum) {
             const warn = document.createElement('p');
-            warn.style.cssText = 'color:#a16207; margin:-6px 0 14px; max-width:640px;';
+            warn.style.cssText = 'color:var(--warn); margin:-6px 0 14px; max-width:640px;';
             warn.textContent = 'This table has no enum columns. Lanes will be derived from the distinct '
                 + 'values currently in the chosen column, and all lanes use the default color below. '
                 + 'For a proper status workflow, define an enum column in the Schema editor.';
@@ -121,7 +121,7 @@ export function renderBoardEditor(key, itemData, isArray, ctx) {
                 const chips = document.createElement('div');
                 chips.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px;';
                 meta.options.forEach(opt => {
-                    const color = (meta.enum_colors && meta.enum_colors[opt]) || itemData.color || '#005A9E';
+                    const color = (meta.enum_colors && meta.enum_colors[opt]) || itemData.color || '#003366';
                     const chip = document.createElement('span');
                     chip.style.cssText = 'display:inline-flex; align-items:center; gap:6px; padding:4px 10px; '
                         + 'border:1px solid var(--border); border-radius:999px; background:var(--panel);';
@@ -147,7 +147,7 @@ export function renderBoardEditor(key, itemData, isArray, ctx) {
             itemData.card_columns = v;
         }));
 
-        workspaceEl.appendChild(createColorInput('color', 'Default Lane / Card Color', itemData.color || '#005A9E', v => {
+        workspaceEl.appendChild(createColorInput('color', 'Default Lane / Card Color', itemData.color || '#003366', v => {
             itemData.color = v;
         }));
     }

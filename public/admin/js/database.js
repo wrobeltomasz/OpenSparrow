@@ -31,7 +31,7 @@ export async function renderDatabaseSection(panel) {
     panel.appendChild(h3);
 
     const desc = document.createElement('p');
-    desc.style.cssText = 'color:#64748B; margin-bottom: 20px;';
+    desc.style.cssText = 'color:var(--muted); margin-bottom: 20px;';
     desc.innerHTML = 'Configure your database connection. <strong>Click "Save configuration" before testing!</strong>';
     panel.appendChild(desc);
 
@@ -91,7 +91,7 @@ export async function renderDatabaseSection(panel) {
 
             if (data.db_connected) {
                 showStatusPill(testBtn, 'Connected to the database.', 'success');
-                testBtn.style.background = '#2b9348';
+                testBtn.style.background = 'var(--ok)';
             } else {
                 showStatusPill(
                     testBtn,
@@ -99,7 +99,7 @@ export async function renderDatabaseSection(panel) {
                     + ' — save the configuration before testing.',
                     'error'
                 );
-                testBtn.style.background = '#d00000';
+                testBtn.style.background = 'var(--error)';
             }
         } catch (e) {
             showStatusPill(testBtn, 'Cannot reach the server.', 'error');

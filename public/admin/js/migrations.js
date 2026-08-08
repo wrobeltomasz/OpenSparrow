@@ -192,13 +192,13 @@ function renderVersionCard(v, container) {
     const hasActions = v.actions.some(a => a.type !== 'file_deprecated');
 
     const card = document.createElement('div');
-    card.style.cssText = `border:1px solid ${isPending ? 'var(--warn)' : 'var(--accent-mid)'}; border-radius:6px; padding:16px 20px; margin-bottom:16px; background:${isPending ? 'rgba(255,195,0,0.08)' : 'var(--accent-mid)'};`;
+    card.style.cssText = `border:1px solid ${isPending ? 'var(--warn)' : 'var(--accent-mid)'}; border-radius:6px; padding:16px 20px; margin-bottom:16px; background:${isPending ? 'var(--warn-light)' : 'var(--accent-mid)'};`;
 
     const headerRow = document.createElement('div');
     headerRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:8px;';
 
     const verSpan = document.createElement('span');
-    verSpan.style.cssText = 'font-family:monospace;  font-weight:700; color:var(--text);';
+    verSpan.style.cssText = 'font-family:var(--font-mono);  font-weight:700; color:var(--text);';
     verSpan.textContent = 'v' + v.version;
 
     const badge = document.createElement('span');

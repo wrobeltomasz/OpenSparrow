@@ -583,11 +583,11 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             const f = colCfg.formula;
 
             const vBlock = document.createElement('div');
-            vBlock.style.cssText = 'margin-left:20px;padding-left:10px;border-left:2px solid #64748B;margin-bottom:15px;';
+            vBlock.style.cssText = 'margin-left:20px;padding-left:10px;border-left:2px solid var(--muted);margin-bottom:15px;';
 
             const vTitle = document.createElement('h5');
             vTitle.textContent = 'Formula Configuration';
-            vTitle.style.cssText = 'margin-top:0;margin-bottom:10px;color:#64748B;';
+            vTitle.style.cssText = 'margin-top:0;margin-bottom:10px;color:var(--muted);';
             vBlock.appendChild(vTitle);
 
             // Operation selector
@@ -752,7 +752,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             const colorsContainer = document.createElement('div');
             colorsContainer.style.marginLeft = '20px';
             colorsContainer.style.paddingLeft = '10px';
-            colorsContainer.style.borderLeft = '2px solid #64748B';
+            colorsContainer.style.borderLeft = '2px solid var(--muted)';
             colorsContainer.style.marginBottom = '15px';
             
             const colorsTitle = document.createElement('h5');
@@ -805,7 +805,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         const regexContainer = document.createElement('div');
         regexContainer.style.marginLeft = '20px'; 
         regexContainer.style.paddingLeft = '10px'; 
-        regexContainer.style.borderLeft = '2px solid #64748B'; 
+        regexContainer.style.borderLeft = '2px solid var(--muted)'; 
         regexContainer.style.marginBottom = '15px';
 
         const regexTitle = document.createElement('h5');
@@ -1131,7 +1131,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             const colorInp = document.createElement('input');
             colorInp.type = 'color';
             colorInp.className = 'adm-color';
-            colorInp.value = rule.color ?? '#fee2e2';
+            colorInp.value = rule.color ?? '#FBEFEE';
             colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; touchHighlights(); });
 
             const btnDel = document.createElement('button');
@@ -1149,7 +1149,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         btnAdd.className = 'btn btn-success btn-sm';
         btnAdd.textContent = '+ Add Highlight Rule';
         btnAdd.addEventListener('click', () => {
-            rules.push({ column: columnNames[0] || '', op: '==', value: '', color: '#fee2e2' });
+            rules.push({ column: columnNames[0] || '', op: '==', value: '', color: '#FBEFEE' });
             touchHighlights();
             renderHighlightRules();
         });

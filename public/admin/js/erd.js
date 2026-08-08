@@ -29,19 +29,19 @@ export async function renderErdPage(ctx) {
 
     const h2 = document.createElement('h2');
     h2.textContent = 'Schema Map';
-    h2.style.cssText = 'margin:0;color:#1E293B;';
+    h2.style.cssText = 'margin:0;color:var(--text);';
     tb.appendChild(h2);
 
     const hint = document.createElement('span');
     hint.textContent = 'Drag canvas to pan · Scroll to zoom · Click table to highlight · Drag table to reposition';
-    hint.style.cssText = 'color:#64748B;';
+    hint.style.cssText = 'color:var(--muted);';
     tb.appendChild(hint);
 
     const right = document.createElement('div');
     right.style.cssText = 'margin-left:auto;display:flex;gap:10px;align-items:center;';
 
     const statsEl = document.createElement('span');
-    statsEl.style.cssText = 'color:#64748B;';
+    statsEl.style.cssText = 'color:var(--muted);';
     right.appendChild(statsEl);
 
     const searchEl = document.createElement('input');
@@ -51,7 +51,7 @@ export async function renderErdPage(ctx) {
     right.appendChild(searchEl);
 
     const hiddenLbl = document.createElement('label');
-    hiddenLbl.style.cssText = 'color:#64748B;display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;';
+    hiddenLbl.style.cssText = 'color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;';
     const hiddenChk = document.createElement('input');
     hiddenChk.type = 'checkbox';
     hiddenLbl.appendChild(hiddenChk);
@@ -74,7 +74,7 @@ export async function renderErdPage(ctx) {
 
     const loadEl = document.createElement('p');
     loadEl.textContent = 'Loading schema…';
-    loadEl.style.cssText = 'color:#64748B;';
+    loadEl.style.cssText = 'color:var(--muted);';
     wrap.appendChild(loadEl);
 
     let rawSchema;
@@ -88,7 +88,7 @@ export async function renderErdPage(ctx) {
     loadEl.remove();
 
     const container = document.createElement('div');
-    container.style.cssText = 'flex:1;position:relative;border:1px solid #CBD5E1;border-radius:8px;overflow:hidden;background:#F4F7F9;cursor:grab;';
+    container.style.cssText = 'flex:1;position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);cursor:grab;';
     wrap.appendChild(container);
 
     startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, searchEl, statsEl);
@@ -211,7 +211,7 @@ function svgTxt(content, x, y, o = {}) {
         'text-anchor':       o.ta   || 'start',
         'font-size':         o.sz   || 12,
         'font-family':       'system-ui,-apple-system,sans-serif',
-        fill:                o.fill || '#64748B',
+        fill:                o.fill || '#6E767F',
         ...(o.weight  ? { 'font-weight': o.weight  } : {}),
         ...(o.opacity ? { opacity:       o.opacity  } : {}),
     });
@@ -250,16 +250,16 @@ function topRoundedRect(x, y, w, h, r) {
 // ── rendering ─────────────────────────────────────────────────────────────────
 
 const EDGE_STYLE = {
-    fk:  { color: '#64748B', dash: '' },
-    sub: { color: '#2b9348', dash: '7,4' },
-    m2m: { color: '#64748B', dash: '3,5' },
+    fk:  { color: '#6E767F', dash: '' },
+    sub: { color: '#003366', dash: '7,4' },
+    m2m: { color: '#8A9199', dash: '3,5' },
 };
 
 const HDR_COLOR = {
-    normal: '#1E293B',
-    hidden: '#64748B',
-    sel:    '#ffc300',
-    nbr:    '#1E293B',
+    normal: '#1F2A37',
+    hidden: '#8A9199',
+    sel:    '#003366',
+    nbr:    '#1F2A37',
 };
 
 function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
@@ -323,8 +323,11 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
         g.appendChild(svgEl('rect', { x:x+3, y:y+3, width:n.w, height:n.h, rx:7, fill:'#00000016' }));
 
         // Body
-        g.appendChild(svgEl('rect', { x, y, width:n.w, height:n.h, rx:7, fill:'#fff',
-            stroke: isSel ? '#ffc300' : isNbr ? '#1E293B' : '#DDEAF4',
+        // Selected node is filled with --accent-light: with one accent colour the
+        // stroke alone was too weak to spot. Literal hex - SVG attrs ignore var().
+        g.appendChild(svgEl('rect', { x, y, width:n.w, height:n.h, rx:7,
+            fill: isSel ? '#F1F4F8' : '#fff',
+            stroke: isSel ? '#003366' : isNbr ? '#1F2A37' : '#D0DAE6',
             'stroke-width': (isSel || isNbr) ? 2 : 1,
         }));
 
@@ -342,22 +345,22 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
         }
 
         // Separator
-        g.appendChild(svgEl('line', { x1:x, y1:y+NHD, x2:x+n.w, y2:y+NHD, stroke:'#DDEAF4', 'stroke-width':1 }));
+        g.appendChild(svgEl('line', { x1:x, y1:y+NHD, x2:x+n.w, y2:y+NHD, stroke:'#D0DAE6', 'stroke-width':1 }));
 
         // Columns
         n.cols.forEach((col, ci) => {
             const cy = y + NHD + ci*NRH + NRH/2 + 2;
-            if (col.isFk) g.appendChild(svgTxt('→', x+6, cy, { fill:'#64748B', sz:10 }));
+            if (col.isFk) g.appendChild(svgTxt('→', x+6, cy, { fill:'#6E767F', sz:10 }));
             g.appendChild(svgTxt(col.name, col.isFk ? x+18 : x+8, cy,
-                { fill:'#1E293B', sz:11, max:17 }));
+                { fill:'#1F2A37', sz:11, max:17 }));
             g.appendChild(svgTxt(col.type, x+n.w-7, cy,
-                { ta:'end', fill:'#64748B', sz:10, max:10 }));
+                { ta:'end', fill:'#6E767F', sz:10, max:10 }));
         });
 
         if (n.extra > 0) {
             const cy = y + NHD + n.cols.length*NRH + NRH/2 + 2;
             g.appendChild(svgTxt(`+ ${n.extra} more`, x+n.w/2, cy,
-                { ta:'middle', fill:'#64748B', sz:10 }));
+                { ta:'middle', fill:'#6E767F', sz:10 }));
         }
 
         gN.appendChild(g);
@@ -385,12 +388,12 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
 
     // Legend overlay
     const leg = document.createElement('div');
-    leg.style.cssText = 'position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.95);border:1px solid #CBD5E1;border-radius:6px;padding:8px 12px;line-height:2;pointer-events:none;z-index:5;';
+    leg.style.cssText = 'position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.95);border:1px solid var(--border);border-radius:6px;padding:8px 12px;line-height:2;pointer-events:none;z-index:5;';
     leg.innerHTML = [
-        '<b style="color:#64748B;display:block;margin-bottom:2px;">Legend</b>',
-        '<div><span style="display:inline-block;width:22px;height:2px;background:#005A9E;vertical-align:middle;margin-right:6px;"></span>Foreign key</div>',
-        '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dashed #2b9348;vertical-align:middle;margin-right:6px;"></span>Subtable</div>',
-        '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dotted #64748B;vertical-align:middle;margin-right:6px;"></span>Many-to-many</div>',
+        '<b style="color:var(--muted);display:block;margin-bottom:2px;">Legend</b>',
+        '<div><span style="display:inline-block;width:22px;height:2px;background:#6E767F;vertical-align:middle;margin-right:6px;"></span>Foreign key</div>',
+        '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dashed #003366;vertical-align:middle;margin-right:6px;"></span>Subtable</div>',
+        '<div><span style="display:inline-block;width:22px;height:0;border-top:2px dotted #8A9199;vertical-align:middle;margin-right:6px;"></span>Many-to-many</div>',
     ].join('');
     container.appendChild(leg);
 
@@ -528,7 +531,7 @@ function exportPng(svg, nodes) {
     const bg = document.createElementNS(NS, 'rect');
     bg.setAttribute('x', String(mnX)); bg.setAttribute('y', String(mnY));
     bg.setAttribute('width', String(vw)); bg.setAttribute('height', String(vh));
-    bg.setAttribute('fill', '#DDEAF4');
+    bg.setAttribute('fill', '#D0DAE6');
     if (gAllClone) gAllClone.prepend(bg);
 
     const svgStr  = new XMLSerializer().serializeToString(clone);
@@ -542,7 +545,7 @@ function exportPng(svg, nodes) {
         canvas.width  = Math.round(vw * scale);
         canvas.height = Math.round(vh * scale);
         const c2 = canvas.getContext('2d');
-        c2.fillStyle = '#DDEAF4';
+        c2.fillStyle = '#D0DAE6';
         c2.fillRect(0, 0, canvas.width, canvas.height);
         c2.scale(scale, scale);
         c2.drawImage(img, 0, 0);

@@ -127,7 +127,7 @@ function renderIndexAdvisor(body, data) {
         grp.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
 
         const gh = document.createElement('div');
-        gh.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:monospace;  font-weight:600;';
+        gh.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono);  font-weight:600;';
         const ghText = document.createElement('span');
         ghText.textContent = tableKey;
         gh.appendChild(ghText);
@@ -140,7 +140,7 @@ function renderIndexAdvisor(body, data) {
         rows.forEach(s => {
             const tr = tbody.insertRow();
             tr.appendChild(tdEl(severityBadge(s.priority)));
-            tr.appendChild(td(s.column, 'font-family:monospace; font-weight:600;'));
+            tr.appendChild(td(s.column, 'font-family:var(--font-mono); font-weight:600;'));
             tr.appendChild(td(s.reasons.join(' · ')));
             const codeTd = document.createElement('td');
             codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:340px;';
@@ -168,7 +168,7 @@ function renderUnusedIndexes(body, data) {
     }
 
     const warn = document.createElement('p');
-    warn.style.cssText = '  background:rgba(255,195,0,0.12); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
+    warn.style.cssText = '  background:var(--warn-light); padding:8px 12px; border-radius:6px; margin-bottom:14px;';
     warn.textContent = `⚠ ${rows.length} unused index${rows.length !== 1 ? 'es' : ''} found. Unused indexes waste storage and slow down writes. Verify before dropping.`;
     body.appendChild(warn);
 
@@ -181,13 +181,13 @@ function renderUnusedIndexes(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         tr.appendChild(td(`"${r.schemaname}"."${r.tablename}"`));
-        tr.appendChild(td(r.indexname, 'font-family:monospace;'));
+        tr.appendChild(td(r.indexname, 'font-family:var(--font-mono);'));
         tr.appendChild(td(r.idx_scan));
         tr.appendChild(td(r.index_size));
         const codeTd = document.createElement('td');
         codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:300px;';
         const code = document.createElement('code');
-        code.style.cssText = ' background:rgba(208,0,0,0.08); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
+        code.style.cssText = ' background:var(--error-light); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
         code.textContent = r.drop_sql;
         codeTd.appendChild(code);
         tr.appendChild(codeTd);
@@ -226,7 +226,7 @@ function renderSlowQueries(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         const avgMs = parseFloat(r.mean_ms);
-        const color = avgMs > 500 ? '#a80000' : avgMs > 100 ? 'var(--muted)' : 'inherit';
+        const color = avgMs > 500 ? 'var(--error)' : avgMs > 100 ? 'var(--muted)' : 'inherit';
         tr.appendChild(td(r.mean_ms + ' ms', `font-weight:600; color:${color};`));
         tr.appendChild(td(r.total_ms + ' ms'));
         tr.appendChild(td(r.calls));
@@ -261,7 +261,7 @@ function renderTableStats(body, data) {
     rows.forEach(r => {
         const tr = tbody.insertRow();
         const deadPct = parseFloat(r.dead_pct);
-        const bloatColor = deadPct > 20 ? '#a80000' : deadPct > 10 ? 'var(--muted)' : 'inherit';
+        const bloatColor = deadPct > 20 ? 'var(--error)' : deadPct > 10 ? 'var(--muted)' : 'inherit';
         const seqScan = parseInt(r.seq_scan) || 0;
         const idxScan = parseInt(r.idx_scan) || 0;
         const scanColor = seqScan > 100 && seqScan > idxScan * 2 ? 'var(--muted)' : 'inherit';

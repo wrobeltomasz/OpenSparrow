@@ -53,7 +53,7 @@ export async function renderM2mPage(ctx) {
     const cardHeader = document.createElement('div');
     cardHeader.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:22px;';
     const cardBadge = document.createElement('div');
-    cardBadge.style.cssText = 'width:32px; height:32px; border-radius:50%; background:#005A9E; color:#fff; display:flex; align-items:center; justify-content:center;  flex-shrink:0; line-height:1;';
+    cardBadge.style.cssText = 'width:32px; height:32px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center;  flex-shrink:0; line-height:1;';
     cardBadge.textContent = '↔';
     const cardH3 = document.createElement('h3');
     cardH3.style.cssText = 'margin:0; ';

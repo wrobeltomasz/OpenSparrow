@@ -185,7 +185,7 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     const list = document.getElementById('f-relations-list');
     const row = document.createElement('div');
     row.className = 'f-relation-row';
-    row.style.cssText = 'display:flex; gap:10px; background:#F4F7F9; padding:10px; border:1px solid #CBD5E1; border-radius:4px; align-items:flex-end;';
+    row.style.cssText = 'display:flex; gap:10px; background:var(--bg); padding:10px; border:1px solid var(--border); border-radius:4px; align-items:flex-end;';
 
     const tables = _state.getTableOptions ? _state.getTableOptions() : [];
     
@@ -248,7 +248,7 @@ function fillConfigForm(cfg) {
     typesEl.innerHTML = ALL_TYPES.map(t => `
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:normal">
             <input type="checkbox" value="${t}" ${(cfg.allowed_types || []).includes(t) ? 'checked' : ''}>
-            <span style="font-weight:bold;color:#64748B">${TYPE_ICONS[t]}</span> ${cap(t)}
+            <span style="font-weight:bold;color:var(--muted)">${TYPE_ICONS[t]}</span> ${cap(t)}
         </label>
     `).join('');
 
@@ -319,7 +319,7 @@ async function uploadFile() {
     }
 
     statusEl.textContent = 'Uploading...';
-    statusEl.style.color = '#64748B';
+    statusEl.style.color = 'var(--muted)';
 
     try {
         const res = await apiFetch(FILES_API, {
@@ -449,7 +449,7 @@ function renderPager() {
         if (p === 1 || p === pages || (p >= page - 2 && p <= page + 2)) {
             html += `<button data-p="${p}" class="btn btn-xs ${p === page ? 'btn-primary' : 'btn-secondary'}">${p}</button>`;
         } else if (p === page - 3 || p === page + 3) {
-            html += `<span style="padding:4px 4px;color:#64748B">...</span>`;
+            html += `<span style="padding:4px 4px;color:var(--muted)">...</span>`;
         }
     }
 
@@ -472,7 +472,7 @@ function setTbody(html) {
 function showMsg(el, text, ok) {
     if (!el) return;
     el.textContent = text;
-    el.style.color = ok ? '#2b9348' : '#d00000';
+    el.style.color = ok ? 'var(--ok)' : 'var(--error)';
     setTimeout(() => { el.textContent = ''; }, 4000);
 }
 

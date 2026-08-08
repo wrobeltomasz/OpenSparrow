@@ -32,13 +32,13 @@ export function debugLog(msg, obj) {
       bottom: 20px;
       right: 20px;
       width: 450px;
-      background: #f4f4f4;
-      border: 1px solid #ccc;
+      background: var(--border-light);
+      border: 1px solid var(--border);
       padding: 10px;
       max-height: 250px;
       overflow-y: auto;
       font-size: 12px;
-      font-family: monospace;
+      font-family:var(--font-mono);
       z-index: 9999;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       border-radius: 4px;

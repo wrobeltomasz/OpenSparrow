@@ -96,7 +96,7 @@ if ($logoEnabled) {
                 <svg class="avatar avatar-border avatar-initial" viewBox="0 0 32 32" aria-hidden="true">
                     <circle cx="16" cy="16" r="16" fill="<?= $avatarColor ?>"/>
                     <text x="16" y="21" text-anchor="middle" fill="#fff"
-                          font-size="14" font-family="Inter,sans-serif" font-weight="600"><?= $initial ?></text>
+                          font-size="14" font-family="system-ui,sans-serif" font-weight="600"><?= $initial ?></text>
                 </svg>
                 <span class="user-avatar-tooltip"><?= $unameEsc ?></span>
             </button>

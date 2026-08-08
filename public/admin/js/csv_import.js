@@ -77,7 +77,7 @@ export async function renderCsvImportPage(ctx) {
     // ── TAB 1: Import ─────────────────────────────────────────────────────────
 
     const desc = document.createElement('p');
-    desc.style.cssText = 'color:#64748B;margin:0 0 20px;';
+    desc.style.cssText = 'color:var(--muted);margin:0 0 20px;';
     desc.textContent = 'Import rows from a CSV file into an existing table, or create a new table directly from CSV headers.';
     importPanel.appendChild(desc);
 
@@ -173,7 +173,7 @@ export async function renderCsvImportPage(ctx) {
 
     // Upload drop zone
     const dropZone = document.createElement('div');
-    dropZone.style.cssText = 'border:2px dashed var(--border,#CBD5E1);border-radius:8px;padding:32px 20px;text-align:center;background:#fff;cursor:pointer;transition:border-color .2s,background .2s;margin-top:16px;';
+    dropZone.style.cssText = 'border:2px dashed var(--border);border-radius:8px;padding:32px 20px;text-align:center;background:#fff;cursor:pointer;transition:border-color .2s,background .2s;margin-top:16px;';
 
     const uploadIcon = document.createElement('img');
     uploadIcon.src = '../assets/icons/upload.png';
@@ -181,11 +181,11 @@ export async function renderCsvImportPage(ctx) {
     uploadIcon.style.cssText = 'width:36px;height:36px;margin-bottom:8px;pointer-events:none;opacity:0.5;';
 
     const uploadMsg = document.createElement('div');
-    uploadMsg.style.cssText = 'color:var(--muted,#64748B);margin-bottom:4px;pointer-events:none;';
+    uploadMsg.style.cssText = 'color:var(--muted);margin-bottom:4px;pointer-events:none;';
     uploadMsg.textContent = 'Click to select a CSV file or drag & drop here';
 
     const uploadHint = document.createElement('div');
-    uploadHint.style.cssText = 'color:var(--muted,#64748B);pointer-events:none;';
+    uploadHint.style.cssText = 'color:var(--muted);pointer-events:none;';
     uploadHint.textContent = '.csv only · max 500 MB';
 
     const fileInput = document.createElement('input');
@@ -220,11 +220,11 @@ export async function renderCsvImportPage(ctx) {
     appendOpt(conflictSelect, '', '— None (insert only) —');
 
     const conflictNote = document.createElement('span');
-    conflictNote.style.cssText = 'color:#64748B;';
+    conflictNote.style.cssText = 'color:var(--muted);';
     conflictNote.textContent = 'Matching rows will be updated instead of rejected (requires unique constraint).';
 
     const conflictWarn = document.createElement('div');
-    conflictWarn.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:rgba(255,195,0,0.12);border:1px solid #ffc300;border-radius:4px;color:#64748B;';
+    conflictWarn.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:var(--warn-light);border:1px solid var(--warn);border-radius:4px;color:var(--muted);';
 
     conflictRow.append(conflictLabel, conflictSelect, conflictNote);
     card2.body.appendChild(conflictRow);
@@ -240,7 +240,7 @@ export async function renderCsvImportPage(ctx) {
     copyModeChk.checked = localStorage.getItem(LS_COPY_MODE) === '1';
     const copyModeLabel = document.createElement('label');
     copyModeLabel.htmlFor = 'csv-copy-mode-chk';
-    copyModeLabel.style.cssText = 'color:#64748B;cursor:pointer;';
+    copyModeLabel.style.cssText = 'color:var(--muted);cursor:pointer;';
     copyModeLabel.textContent = 'Fast COPY mode';
     modeRow.append(copyModeChk, copyModeLabel);
     card2.body.appendChild(modeRow);
@@ -271,7 +271,7 @@ export async function renderCsvImportPage(ctx) {
     configPanel.appendChild(modeCard.el);
 
     const modeDesc = document.createElement('p');
-    modeDesc.style.cssText = 'color:#64748B;margin:0 0 16px;';
+    modeDesc.style.cssText = 'color:var(--muted);margin:0 0 16px;';
     modeDesc.textContent = 'Choose the default mode used when running imports. You can override this per-import in Step 2.';
     modeCard.body.appendChild(modeDesc);
 
@@ -292,7 +292,7 @@ export async function renderCsvImportPage(ctx) {
         strong.style.cssText = 'display:block;margin-bottom:2px;';
         strong.textContent = labelText;
         const small = document.createElement('span');
-        small.style.cssText = 'color:#64748B;';
+        small.style.cssText = 'color:var(--muted);';
         small.textContent = descText;
         txt.append(strong, small);
         row.append(radio, txt);
@@ -332,7 +332,7 @@ export async function renderCsvImportPage(ctx) {
     configPanel.appendChild(delimCard.el);
 
     const delimDesc = document.createElement('p');
-    delimDesc.style.cssText = 'color:#64748B;margin:0 0 14px;';
+    delimDesc.style.cssText = 'color:var(--muted);margin:0 0 14px;';
     delimDesc.textContent = 'Column separator used when parsing CSV files. Override per-import in Step 1.';
     delimCard.body.appendChild(delimDesc);
 
@@ -357,7 +357,7 @@ export async function renderCsvImportPage(ctx) {
     configPanel.appendChild(encCard.el);
 
     const encDesc = document.createElement('p');
-    encDesc.style.cssText = 'color:#64748B;margin:0 0 14px;';
+    encDesc.style.cssText = 'color:var(--muted);margin:0 0 14px;';
     encDesc.textContent = 'Character encoding of the source CSV file. Override per-import in Step 1. Files are converted to UTF-8 before inserting into PostgreSQL.';
     encCard.body.appendChild(encDesc);
 
@@ -382,7 +382,7 @@ export async function renderCsvImportPage(ctx) {
     configPanel.appendChild(limitsCard.el);
 
     const limitsNote = document.createElement('p');
-    limitsNote.style.cssText = 'color:#64748B;margin:0 0 14px;';
+    limitsNote.style.cssText = 'color:var(--muted);margin:0 0 14px;';
     limitsNote.textContent = 'Current server configuration. To change these values, edit docker-php-dev.ini and nginx.conf, then restart the container.';
     limitsCard.body.appendChild(limitsNote);
 
@@ -392,10 +392,10 @@ export async function renderCsvImportPage(ctx) {
 
     function addLimitRow(label, value, note) {
         const lbl = document.createElement('span');
-        lbl.style.cssText = 'color:#64748B;font-weight:600;white-space:nowrap;';
+        lbl.style.cssText = 'color:var(--muted);font-weight:600;white-space:nowrap;';
         lbl.textContent = label;
         const val = document.createElement('span');
-        val.style.cssText = 'font-family:monospace;color:#1E293B;';
+        val.style.cssText = 'font-family:var(--font-mono);color:var(--text);';
         val.textContent = value + (note ? ' — ' + note : '');
         limitsGrid.append(lbl, val);
     }
@@ -412,7 +412,7 @@ export async function renderCsvImportPage(ctx) {
         }
     } catch (_) {
         const err = document.createElement('p');
-        err.style.cssText = 'color:#d00000;';
+        err.style.cssText = 'color:var(--error);';
         err.textContent = 'Could not load server limits.';
         limitsCard.body.appendChild(err);
     }
@@ -439,11 +439,11 @@ export async function renderCsvImportPage(ctx) {
 
     dropZone.addEventListener('click', () => {
         if (createMode && !newTableName) {
-            flashMsg(uploadMsg, 'Enter a table name first.', '#d00000');
+            flashMsg(uploadMsg, 'Enter a table name first.', 'var(--error)');
             return;
         }
         if (!createMode && !selectedTable) {
-            flashMsg(uploadMsg, 'Select a target table first.', '#d00000');
+            flashMsg(uploadMsg, 'Select a target table first.', 'var(--error)');
             return;
         }
         fileInput.click();
@@ -451,8 +451,8 @@ export async function renderCsvImportPage(ctx) {
 
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropZone.style.borderColor = '#64748B';
-        dropZone.style.background  = '#DDEAF4';
+        dropZone.style.borderColor = 'var(--muted)';
+        dropZone.style.background  = 'var(--accent-mid)';
     });
     dropZone.addEventListener('dragleave', () => resetDropZone());
     dropZone.addEventListener('drop', (e) => {
@@ -580,15 +580,15 @@ export async function renderCsvImportPage(ctx) {
 
     async function handleUpload(file) {
         if (createMode && !newTableName) {
-            flashMsg(uploadMsg, 'Enter a table name first.', '#d00000');
+            flashMsg(uploadMsg, 'Enter a table name first.', 'var(--error)');
             return;
         }
         if (!createMode && !selectedTable) {
-            flashMsg(uploadMsg, 'Select a target table first.', '#d00000');
+            flashMsg(uploadMsg, 'Select a target table first.', 'var(--error)');
             return;
         }
 
-        uploadMsg.style.color  = '#64748B';
+        uploadMsg.style.color  = 'var(--muted)';
         uploadHint.textContent = '';
 
         if (createMode) {
@@ -602,14 +602,14 @@ export async function renderCsvImportPage(ctx) {
                 csvOrigName = file.name;
 
                 uploadMsg.textContent = `✓ ${escHtml(file.name)} — ${headers.length} column${headers.length !== 1 ? 's' : ''} detected`;
-                uploadMsg.style.color = '#2b9348';
-                dropZone.style.borderColor = '#64748B';
+                uploadMsg.style.color = 'var(--ok)';
+                dropZone.style.borderColor = 'var(--muted)';
 
                 renderMapping();
                 card2.el.style.display = 'block';
             } catch (e) {
                 uploadMsg.textContent = 'Preview failed: ' + escHtml(e.message);
-                uploadMsg.style.color = '#d00000';
+                uploadMsg.style.color = 'var(--error)';
                 uploadHint.textContent = 'Try again.';
             }
             return;
@@ -636,14 +636,14 @@ export async function renderCsvImportPage(ctx) {
             csvOrigName = data.original_name;
 
             uploadMsg.textContent  = `✓ ${escHtml(file.name)}  —  ${csvRowCount.toLocaleString()} data rows, ${csvHeaders.length} columns`;
-            uploadMsg.style.color  = '#2b9348';
-            dropZone.style.borderColor = '#64748B';
+            uploadMsg.style.color  = 'var(--ok)';
+            dropZone.style.borderColor = 'var(--muted)';
 
             renderMapping();
             card2.el.style.display = 'block';
         } catch (e) {
             uploadMsg.textContent  = 'Upload failed: ' + escHtml(e.message);
-            uploadMsg.style.color  = '#d00000';
+            uploadMsg.style.color  = 'var(--error)';
             uploadHint.textContent = 'Try again.';
         }
     }
@@ -665,7 +665,7 @@ export async function renderCsvImportPage(ctx) {
             ];
 
             const note = document.createElement('p');
-            note.style.cssText = 'color:#64748B;margin:0 0 12px;';
+            note.style.cssText = 'color:var(--muted);margin:0 0 12px;';
             note.textContent = `Rename ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to database column names. The table will be created with an auto-increment id column plus these columns.`;
             mappingContainer.appendChild(note);
 
@@ -732,7 +732,7 @@ export async function renderCsvImportPage(ctx) {
         if (!selectedTable) return;
 
         const note = document.createElement('p');
-        note.style.cssText = 'color:#64748B;margin:0 0 12px;';
+        note.style.cssText = 'color:var(--muted);margin:0 0 12px;';
         note.textContent   = `Map ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to "${escHtml(selectedTable)}" columns. Leave "— Skip —" to ignore a CSV column.`;
         mappingContainer.appendChild(note);
 
@@ -956,14 +956,14 @@ export async function renderCsvImportPage(ctx) {
 
     function renderResult(data) {
         const ok  = data.skipped_rows === 0;
-        const bg  = ok ? 'rgba(43,147,72,0.12)' : 'rgba(255,195,0,0.08)';
-        const bdr = ok ? '#2b9348'              : '#ffc300';
+        const bg  = ok ? 'var(--ok-light)' : 'var(--warn-light)';
+        const bdr = ok ? 'var(--ok)'              : 'var(--warn)';
 
         const resultEl = document.createElement('div');
         resultEl.style.cssText = `padding:18px 20px;border-radius:8px;background:${bg};border:1px solid ${bdr};margin-bottom:8px;`;
 
         const title = document.createElement('div');
-        title.style.cssText = `font-weight:700;margin-bottom:8px;color:${ok ? '#1a6b35' : '#64748B'};`;
+        title.style.cssText = `font-weight:700;margin-bottom:8px;color:${ok ? 'var(--ok-dark)' : 'var(--muted)'};`;
         title.textContent = ok
             ? `✓ Import complete`
             : `⚠ Import finished with issues`;
@@ -973,7 +973,7 @@ export async function renderCsvImportPage(ctx) {
 
         const stat = (label, value, accent) => {
             const s = document.createElement('span');
-            s.style.cssText = `color:${accent ? '#1a6b35' : '#64748B'};`;
+            s.style.cssText = `color:${accent ? 'var(--ok-dark)' : 'var(--muted)'};`;
             const strong = document.createElement('strong');
             strong.textContent = value;
             s.append(strong, ' ' + label);
@@ -996,7 +996,7 @@ export async function renderCsvImportPage(ctx) {
         if (data.has_errors && data.import_id) {
             const logLink = document.createElement('a');
             logLink.href  = '#';
-            logLink.style.cssText = 'display:inline-block;margin-top:8px;color:#64748B;';
+            logLink.style.cssText = 'display:inline-block;margin-top:8px;color:var(--muted);';
             logLink.textContent = 'View skipped row details ↓';
             logLink.addEventListener('click', async (e) => {
                 e.preventDefault();
@@ -1016,7 +1016,7 @@ export async function renderCsvImportPage(ctx) {
             const data = await res.json();
             if (data.status !== 'success' || !data.rows.length) {
                 const note = document.createElement('p');
-                note.style.cssText = 'color:#64748B;margin-top:8px;';
+                note.style.cssText = 'color:var(--muted);margin-top:8px;';
                 note.textContent = 'No row-level errors logged.';
                 container.appendChild(note);
                 return;
@@ -1047,7 +1047,7 @@ export async function renderCsvImportPage(ctx) {
 
             const tdN = td(String(row.row_number), 'white-space:nowrap;');
             const tdE = td(row.error_message || '', 'color:var(--danger);');
-            const tdR = td(row.raw_data || '', 'font-family:monospace;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
+            const tdR = td(row.raw_data || '', 'font-family:var(--font-mono);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
             tdN.className = 'adm-td adm-td-sm';
             tdE.className = 'adm-td adm-td-sm';
             tdR.className = 'adm-td adm-td-sm';
@@ -1060,13 +1060,13 @@ export async function renderCsvImportPage(ctx) {
     }
 
     async function loadHistory() {
-        histContainer.innerHTML = '<p style="color:#64748B;padding:4px 0;">Loading…</p>';
+        histContainer.innerHTML = '<p style="color:var(--muted);padding:4px 0;">Loading…</p>';
         try {
             const res  = await apiFetch('api_csv_import.php?action=csv_import_history');
             const data = await res.json();
 
             if (data.status !== 'success' || !data.imports.length) {
-                histContainer.innerHTML = '<p style="color:#64748B;">No imports yet.</p>';
+                histContainer.innerHTML = '<p style="color:var(--muted);">No imports yet.</p>';
                 return;
             }
 
@@ -1142,14 +1142,14 @@ export async function renderCsvImportPage(ctx) {
             histContainer.innerHTML = '';
             histContainer.appendChild(tbl);
         } catch (_) {
-            histContainer.innerHTML = '<p style="color:#d00000;">Failed to load history.</p>';
+            histContainer.innerHTML = '<p style="color:var(--error);">Failed to load history.</p>';
         }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     function resetDropZone() {
-        dropZone.style.borderColor = '#DDEAF4';
+        dropZone.style.borderColor = 'var(--accent-mid)';
         dropZone.style.background  = '#fff';
     }
 
@@ -1160,7 +1160,7 @@ export async function renderCsvImportPage(ctx) {
         csvHeaders  = [];
         csvPreview  = [];
         uploadMsg.textContent  = 'Click to select a CSV file or drag & drop here';
-        uploadMsg.style.color  = '#64748B';
+        uploadMsg.style.color  = 'var(--muted)';
         uploadHint.textContent = '.csv only · max 500 MB';
         resetDropZone();
         card2.el.style.display = 'none';
@@ -1178,9 +1178,9 @@ export async function renderCsvImportPage(ctx) {
 
     function showBanner(container, msg, type) {
         const colors = {
-            success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#64748B' },
-            error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
-        }[type] ?? { bg: '#DDEAF4', fg: '#1E293B', border: '#DDEAF4' };
+            success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--muted)' },
+            error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
+        }[type] ?? { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' };
         const div = document.createElement('div');
         div.style.cssText = `padding:10px 14px;border-radius:6px;background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`;
         div.textContent = msg;
@@ -1350,7 +1350,7 @@ function buildRow() {
 
 function buildLabel(text) {
     const lbl = document.createElement('label');
-    lbl.style.cssText = 'font-weight:600;color:#64748B;';
+    lbl.style.cssText = 'font-weight:600;color:var(--muted);';
     lbl.textContent = text;
     return lbl;
 }

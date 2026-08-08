@@ -354,13 +354,13 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             const pill = document.createElement('div');
             pill.style.cssText = [
                 'display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap; transition:all .2s;',
-                done    ? 'background:#dcfce7; color:#166534;'  :
+                done    ? 'background:var(--ok-light); color:var(--ok-dark);'  :
                 current ? 'background:var(--accent); color:#fff;' :
-                          'background:#f1f5f9; color:#94a3b8;'
+                          'background:var(--border-light); color:var(--muted);'
             ].join('');
 
             const dot = document.createElement('span');
-            dot.style.cssText = `width:8px; height:8px; border-radius:50%; background:${done ? '#16a34a' : current ? '#fff' : '#cbd5e1'};`;
+            dot.style.cssText = `width:8px; height:8px; border-radius:50%; background:${done ? 'var(--ok)' : current ? '#fff' : 'var(--border)'};`;
             const lbl = document.createElement('span');
             lbl.textContent = labelText;
 
@@ -370,7 +370,7 @@ function startWorkflow(workflow, containerEl, titleEl, appSchema, allWorkflows, 
             if (i < workflow.steps.length - 1) {
                 const arrow = document.createElement('span');
                 arrow.textContent = '→';
-                arrow.style.cssText = 'color:#cbd5e1; font-size:14px; padding:0 2px; flex-shrink:0;';
+                arrow.style.cssText = 'color:var(--border); font-size:14px; padding:0 2px; flex-shrink:0;';
                 bar.appendChild(arrow);
             }
         });

@@ -285,7 +285,7 @@ function renderCalendar() {
         cell.addEventListener('dragover', (e) => {
             e.preventDefault(); 
             e.dataTransfer.dropEffect = 'move';
-            cell.style.outline = '2px solid #6366f1'; 
+            cell.style.outline = '2px solid var(--accent)'; 
         });
 
         // Handle dragleave

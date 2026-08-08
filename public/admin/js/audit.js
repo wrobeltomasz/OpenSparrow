@@ -21,7 +21,7 @@ export async function renderAuditEditor(ctx) {
         data = await res.json();
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<h3 style="color:#d00000;">Error loading audit settings. Check server logs.</h3>';
+        workspaceEl.innerHTML = '<h3 style="color:var(--error);">Error loading audit settings. Check server logs.</h3>';
         return;
     }
 
@@ -58,7 +58,7 @@ export async function renderAuditEditor(ctx) {
         strong.textContent = `${prefix} ${title}`;
 
         const span = document.createElement('span');
-        span.style.color = '#64748B';
+        span.style.color = 'var(--muted)';
         span.textContent = msg;
 
         div.append(strong, span);
@@ -66,14 +66,14 @@ export async function renderAuditEditor(ctx) {
     };
 
     const statusCard = (title, isOk, msg) => buildCard(
-        isOk ? '#2b9348' : '#d00000',
-        isOk ? '#2b9348' : '#d00000',
+        isOk ? 'var(--ok)' : 'var(--error)',
+        isOk ? 'var(--ok)' : 'var(--error)',
         isOk ? '[OK]' : '[FAIL]',
         title,
         msg
     );
 
-    const infoCard = (title, msg) => buildCard('#005A9E', '#1E293B', '[INFO]', title, msg);
+    const infoCard = (title, msg) => buildCard('var(--accent)', 'var(--text)', '[INFO]', title, msg);
 
     grid.appendChild(statusCard(
         'spw_record_snapshots table',
@@ -108,7 +108,7 @@ export async function renderAuditEditor(ctx) {
     labelTitle.style.cssText = 'display:block;  margin-bottom:4px;';
     labelTitle.textContent = 'Record Snapshots';
     const labelDesc = document.createElement('span');
-    labelDesc.style.cssText = 'color:#64748B; ';
+    labelDesc.style.cssText = 'color:var(--muted); ';
     labelDesc.textContent = 'Capture full record state on every write operation and store it in spw_record_snapshots.';
     labelGroup.appendChild(labelTitle);
     labelGroup.appendChild(labelDesc);
@@ -126,7 +126,7 @@ export async function renderAuditEditor(ctx) {
     switchSlider.style.cssText = `
         position:absolute; cursor:${lockedByEnv || !tableExists ? 'not-allowed' : 'pointer'};
         top:0; left:0; right:0; bottom:0;
-        background:${enabled ? '#005A9E' : '#CBD5E1'};
+        background:${enabled ? 'var(--accent)' : 'var(--border)'};
         border-radius:26px; transition:background .2s;
     `;
     const switchKnob = document.createElement('span');
@@ -153,7 +153,7 @@ export async function renderAuditEditor(ctx) {
             const result = await res.json();
             if (result.status === 'success') {
                 enabled = newVal;
-                switchSlider.style.background = newVal ? '#005A9E' : '#CBD5E1';
+                switchSlider.style.background = newVal ? 'var(--accent)' : 'var(--border)';
                 switchKnob.style.left = newVal ? '24px' : '3px';
                 showStatusPill(pillAnchor, newVal ? 'Snapshots enabled' : 'Snapshots disabled', 'success');
             } else {

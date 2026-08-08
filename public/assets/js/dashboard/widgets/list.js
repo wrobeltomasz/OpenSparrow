@@ -38,7 +38,7 @@ function renderList(widget) {
             li.addEventListener('click', () => {
                 window.location.href = `edit.php?table=${encodeURIComponent(widget.table)}&id=${row.id}`;
             });
-            li.addEventListener('mouseenter', () => { li.style.color = '#3b82f6'; });
+            li.addEventListener('mouseenter', () => { li.style.color = 'var(--accent)'; });
             li.addEventListener('mouseleave', () => { li.style.color = ''; });
         }
         ul.appendChild(li);

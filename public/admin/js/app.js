@@ -94,10 +94,10 @@ export function showStatusPill(anchor, message, variant = 'success') {
     pill.className = 'status-pill status-pill-' + variant;
     pill.textContent = message;
     const colors = {
-        success: { bg: 'rgba(43,147,72,0.12)', fg: '#2b9348', border: '#2b9348' },
-        error:   { bg: 'rgba(208,0,0,0.08)', fg: '#a80000', border: '#d00000' },
-        info:    { bg: '#DDEAF4', fg: '#1E293B', border: '#CBD5E1' },
-    }[variant] || { bg: '#DDEAF4', fg: '#1E293B', border: '#CBD5E1' };
+        success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--ok)' },
+        error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
+        info:    { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--border)' },
+    }[variant] || { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--border)' };
     pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px;  font-weight:600; transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
 
@@ -279,7 +279,7 @@ async function loadConfigFile(fileName) {
                     status_column: currentConfig.status_column || '',
                     title_column: currentConfig.title_column || '',
                     card_columns: Array.isArray(currentConfig.card_columns) ? currentConfig.card_columns : [],
-                    color: currentConfig.color || '#005A9E',
+                    color: currentConfig.color || '#003366',
                 }] : [];
                 delete currentConfig.table;
                 delete currentConfig.status_column;
@@ -343,16 +343,16 @@ async function loadConfigFile(fileName) {
 function addNewItem() {
     let newIndex = 0;
     if (currentFile === 'dashboard') {
-        currentConfig.widgets.push({ id: "widget_" + Date.now(), type: "stat_card", title: "New Widget", table: "", query: { type: "count", column: "id" }, color: "#64748B", display_columns: [] });
+        currentConfig.widgets.push({ id: "widget_" + Date.now(), type: "stat_card", title: "New Widget", table: "", query: { type: "count", column: "id" }, color: "#6E767F", display_columns: [] });
         newIndex = currentConfig.widgets.length - 1;
     } else if (currentFile === 'calendar') {
-        currentConfig.sources.push({ table: "", date_column: "", title_column: "", color: "#64748B", notify_before_days: 0, user_id_column: "", url_template: "" });
+        currentConfig.sources.push({ table: "", date_column: "", title_column: "", color: "#6E767F", notify_before_days: 0, user_id_column: "", url_template: "" });
         newIndex = currentConfig.sources.length - 1;
     } else if (currentFile === 'workflows') {
         currentConfig.workflows.push({ id: "wf_" + Date.now(), title: "New Workflow", icon: "", steps: [] });
         newIndex = currentConfig.workflows.length - 1;
     } else if (currentFile === 'board') {
-        currentConfig.boards.push({ id: "brd_" + Date.now(), menu_name: "New Board", menu_icon: "", hidden: false, table: "", status_column: "", title_column: "", card_columns: [], color: "#005A9E" });
+        currentConfig.boards.push({ id: "brd_" + Date.now(), menu_name: "New Board", menu_icon: "", hidden: false, table: "", status_column: "", title_column: "", card_columns: [], color: "#003366" });
         newIndex = currentConfig.boards.length - 1;
     }
 

@@ -153,7 +153,7 @@ export function createIconPicker(key, labelText, value, onChange) {
         closeBtn.onclick = () => modal.remove();
         content.appendChild(closeBtn);
         
-        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:#64748B; ">Icons are loaded from <code>assets/icons/</code>.</p>';
+        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:var(--muted); ">Icons are loaded from <code>assets/icons/</code>.</p>';
         
         const grid = document.createElement('div');
         grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;
@@ -164,9 +164,9 @@ export function createIconPicker(key, labelText, value, onChange) {
             if (data.status === 'success' && data.icons.length > 0) {
                 data.icons.forEach(iconPath => {
                     const imgBox = document.createElement('div');
-                    imgBox.style.cssText = `cursor:pointer; text-align:center; padding:10px; border:1px solid #CBD5E1; border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center; height: 70px;`;
-                    imgBox.onmouseover = () => { imgBox.style.borderColor = '#64748B'; imgBox.style.background = '#DDEAF4'; };
-                    imgBox.onmouseout = () => { imgBox.style.borderColor = '#DDEAF4'; imgBox.style.background = 'transparent'; };
+                    imgBox.style.cssText = `cursor:pointer; text-align:center; padding:10px; border:1px solid var(--border); border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center; height: 70px;`;
+                    imgBox.onmouseover = () => { imgBox.style.borderColor = 'var(--muted)'; imgBox.style.background = 'var(--accent-mid)'; };
+                    imgBox.onmouseout = () => { imgBox.style.borderColor = 'var(--accent-mid)'; imgBox.style.background = 'transparent'; };
                     
                     const img = document.createElement('img');
                     img.src = '../' + iconPath; 
@@ -183,7 +183,7 @@ export function createIconPicker(key, labelText, value, onChange) {
                     grid.appendChild(imgBox);
                 });
             } else {
-                grid.innerHTML = '<p style="grid-column: 1 / -1; color:#64748B;">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
+                grid.innerHTML = '<p style="grid-column: 1 / -1; color:var(--muted);">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
             }
         } catch(e) {
             grid.innerHTML = '<p style="color:var(--danger); grid-column: 1 / -1;">An error occurred while loading icons.</p>';
@@ -234,7 +234,7 @@ export function createColorInput(key, labelText, value, onChange) {
     wrapper.appendChild(label);
     const input = document.createElement('input');
     input.type = 'color';
-    input.value = value || '#64748B'; 
+    input.value = value || '#6E767F'; 
     input.addEventListener('input', (e) => onChange(e.target.value));
     wrapper.appendChild(input);
     return wrapper;
@@ -276,7 +276,7 @@ export function createMenuPreview() {
 
     const item = document.createElement('div');
     item.className = 'menu-preview-item';
-    item.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; background:#003366; color:#F0F6FA; border-radius:6px;  min-width:220px; max-width:320px; transition:opacity .15s;';
+    item.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--accent-dark); color:var(--accent-light); border-radius:6px;  min-width:220px; max-width:320px; transition:opacity .15s;';
 
     const iconEl = document.createElement('span');
     iconEl.style.cssText = 'width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;';
@@ -286,7 +286,7 @@ export function createMenuPreview() {
 
     const badgeEl = document.createElement('span');
     badgeEl.textContent = 'HIDDEN';
-    badgeEl.style.cssText = ' background:#d00000; color:#fff; padding:2px 6px; border-radius:3px; display:none; ';
+    badgeEl.style.cssText = ' background:var(--error); color:#fff; padding:2px 6px; border-radius:3px; display:none; ';
 
     item.appendChild(iconEl);
     item.appendChild(nameEl);

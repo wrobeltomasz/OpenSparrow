@@ -11,13 +11,13 @@ const ALL_LANGS = ['en', 'pl'];
 const STORAGE_KEY = 'sparrow_docs_lang';
 
 // HTML generators
-const _h2 = (t) => `<h2 style="border-bottom:2px solid #DDEAF4;padding-bottom:10px;margin-top:0;color:#1E293B;">${t}</h2>`;
-const _h3 = (id, t) => `<h3 id="${id}" style="color:#64748B;margin-top:30px;">${t}</h3>`;
-const _h4 = (t, c = '#DDEAF4') => `<h4 style="color:#64748B;margin-top:20px;border-left:3px solid ${c};padding-left:15px;">${t}</h4>`;
+const _h2 = (t) => `<h2 style="border-bottom:2px solid var(--accent-mid);padding-bottom:10px;margin-top:0;color:var(--text);">${t}</h2>`;
+const _h3 = (id, t) => `<h3 id="${id}" style="color:var(--muted);margin-top:30px;">${t}</h3>`;
+const _h4 = (t, c = 'var(--accent-mid)') => `<h4 style="color:var(--muted);margin-top:20px;border-left:3px solid ${c};padding-left:15px;">${t}</h4>`;
 const _p = (t, style = '') => style ? `<p style="${style}">${t}</p>` : `<p>${t}</p>`;
 const _ul = (items) => `<ul style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
 const _ol = (items) => `<ol style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ol>`;
-const _warn = (s, t) => `<p style="background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;"><strong>${s}</strong> ${t}</p>`;
+const _warn = (s, t) => `<p style="background:var(--warn-light);padding:10px 14px;border-left:3px solid var(--warn);border-radius:4px;"><strong>${s}</strong> ${t}</p>`;
 
 export function renderDocumentation(ctx) {
     // Guard against missing context
@@ -67,7 +67,7 @@ function createLanguageBar(currentLang, ctx) {
 
 function createContentArea(s) {
     const content = document.createElement('div');
-    content.style.cssText = 'max-width:900px; padding:30px; background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#64748B; line-height:1.6; margin-bottom:40px;';
+    content.style.cssText = 'max-width:900px; padding:30px; background:white; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.1); color:var(--muted); line-height:1.6; margin-bottom:40px;';
     content.innerHTML = buildContent(s);
     return content;
 }
@@ -76,7 +76,7 @@ function createContentArea(s) {
 function buildContent(s) {
     return `<div>
 ${_h2(s.title)}
-<p style="color:#64748B;margin-bottom:30px;">${s.subtitle}</p>
+<p style="color:var(--muted);margin-bottom:30px;">${s.subtitle}</p>
 
 ${_h3('doc-0', s.s0_head)}
 ${_warn(s.s0_warn_strong, s.s0_warn_text)}
@@ -333,15 +333,15 @@ ${_ul([
 
 ${_h3('doc-9j', s.s9j_head)}
 ${_p(s.s9j_desc)}
-${_h4(s.s9j_how_head, '#64748B')}
+${_h4(s.s9j_how_head, 'var(--muted)')}
 ${_ol([
     `<strong>${s.s9j_how1_label}:</strong> ${s.s9j_how1}`,
     `<strong>${s.s9j_how2_label}:</strong> ${s.s9j_how2}`,
     `<strong>${s.s9j_how3_label}:</strong> ${s.s9j_how3}`
 ])}
-${_h4(s.s9j_config_head, '#64748B')}
+${_h4(s.s9j_config_head, 'var(--muted)')}
 ${_ul([`<strong>${s.s9j_config_li}</strong>`])}
-${_h4(s.s9j_runtime_head, '#64748B')}
+${_h4(s.s9j_runtime_head, 'var(--muted)')}
 ${_ul([s.s9j_runtime1, s.s9j_runtime2])}
 
 ${_h3('doc-9k', s.s9k_head)}
@@ -519,7 +519,7 @@ ${_p(s.s14_n8n_payload)}
 ${_warn(s.s14_n8n_warn_label, s.s14_n8n_warn)}
 ${_h4(s.s14_history_label)}
 ${_p(s.s14_history)}
-${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:rgba(255,195,0,0.12);padding:10px 14px;border-left:3px solid #ffc300;border-radius:4px;')}
+${_p(`<strong>${s.s14_note_label}:</strong> ${s.s14_note}`, 'background:var(--warn-light);padding:10px 14px;border-left:3px solid var(--warn);border-radius:4px;')}
 
 ${_h3('doc-15', s.sRag_head)}
 ${_p(s.sRag_desc)}
@@ -562,7 +562,7 @@ ${_h4(s.sUpg_backup_head)}
 ${_p(s.sUpg_backup)}
 ${_h4(s.sUpg_add_head)}
 ${_p(s.sUpg_add)}
-<pre style="background:#F4F7F9;padding:12px;border-radius:4px;overflow-x:auto;">"3.1": {
+<pre style="background:var(--bg);padding:12px;border-radius:4px;overflow-x:auto;">"3.1": {
   "removed_files": ["admin/old_feature.php"],
   "deprecated_files": [],
   "removed_config_keys": [

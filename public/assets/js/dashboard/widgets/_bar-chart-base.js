@@ -86,7 +86,7 @@ function buildVerticalBar(row, percent, color, columnType) {
 
     const bar = document.createElement('div');
     bar.className = 'dash-vbar-fill';
-    bar.style.backgroundColor = color || '#3b82f6';
+    bar.style.backgroundColor = color || 'var(--accent)';
     setTimeout(() => { bar.style.height = `${percent}%`; }, 50);
 
     const label = document.createElement('div');

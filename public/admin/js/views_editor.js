@@ -108,8 +108,8 @@ export function renderViewsEditor(ctx) {
     function setStatus(msg, type = 'info') {
         const styles = {
             info:  'background:var(--accent-light); color:var(--accent-dark);',
-            ok:    'background:rgba(43,147,72,0.08); color:var(--ok);',
-            error: 'background:rgba(208,0,0,0.08); color:var(--danger);',
+            ok:    'background:var(--ok-light); color:var(--ok);',
+            error: 'background:var(--error-light); color:var(--danger);',
         };
         statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
         statusEl.textContent = msg;
@@ -562,7 +562,7 @@ export function renderViewsEditor(ctx) {
             addRuleBtn.className   = 'btn btn-success btn-sm';
             addRuleBtn.textContent = '+ Add color rule';
             addRuleBtn.addEventListener('click', () => {
-                rules.push({ op: '>', value: 0, color: '#d00000' });
+                rules.push({ op: '>', value: 0, color: '#B3261E' });
                 renderRules();
                 markDirty();
             });
@@ -598,7 +598,7 @@ export function renderViewsEditor(ctx) {
         const colorInp = document.createElement('input');
         colorInp.type  = 'color';
         colorInp.className = 'adm-color';
-        colorInp.value = rule.color ?? '#d00000';
+        colorInp.value = rule.color ?? '#B3261E';
         colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; });
 
         const delBtn = document.createElement('button');
