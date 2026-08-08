@@ -100,13 +100,13 @@
 
 .btn-warning {
   background: var(--warn);
-  color: var(--text);
+  color: #fff;
   border-color: var(--warn);
 }
 .btn-warning:hover:not(:disabled) {
-  background: #e6b000;
-  border-color: #e6b000;
-  color: var(--text);
+  background: var(--danger-dark);
+  border-color: var(--danger-dark);
+  color: #fff;
 }
 
 .btn-sm {
