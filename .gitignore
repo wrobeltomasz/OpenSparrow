@@ -69,6 +69,10 @@ storage/files/*
 storage/ratelimit/*
 !storage/ratelimit/.htaccess
 
+# Runtime scratch files (keep the web-deny guard)
+storage/tmp/*
+!storage/tmp/.htaccess
+
 # Uploaded custom logo (admin → Settings → Custom Logo)
 public/assets/img/uploads/*
 !public/assets/img/uploads/.gitkeep

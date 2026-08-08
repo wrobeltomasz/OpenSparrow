@@ -6,6 +6,8 @@
 .claude
 tests
 dist
+dist-local
+creator
 tmp/sess_*
 temp
 cache
@@ -55,9 +57,11 @@ includes/.secret_key
 + storage/sessions/.gitkeep
 + storage/sessions/.htaccess
 + storage/ratelimit/.htaccess
++ storage/tmp/.htaccess
 storage/files/*
 storage/sessions/*
 storage/ratelimit/*
+storage/tmp/*
 deploy
 .env.example
 docs/PRODUCTION_SETUP.md

@@ -23,6 +23,16 @@ render.yaml
 .claude/
 CLAUDE.md
 
+# Local-only trees — the JSON->SQL generator is never published, and dist/
+# dist-local are release-staging output, not application code
+creator/
+dist/
+dist-local/
+
+# IDE
+.idea/
+.vscode/
+
 # Documentation (README, CONTRIBUTING, docs/ …); COPYING and COPYING.LESSER
 # are intentionally NOT excluded — the LGPL v3 licence text ships with the image.
 *.md
@@ -66,6 +76,8 @@ storage/sessions/*
 !storage/sessions/.htaccess
 storage/ratelimit/*
 !storage/ratelimit/.htaccess
+storage/tmp/*
+!storage/tmp/.htaccess
 public/assets/img/uploads/*
 !public/assets/img/uploads/.gitkeep
 !public/assets/img/uploads/.htaccess
