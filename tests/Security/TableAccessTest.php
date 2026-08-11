@@ -40,6 +40,14 @@ final class TableAccessTest extends TestCase
     protected function setUp(): void
     {
         $_SESSION['role'] = 'editor';
+        // The closure and the pick lists read config documents, so a fixture from one
+        // test would otherwise decide another test's answer depending on execution
+        // order. Start every test from empty documents; those that need content seed
+        // their own. Driven off the registry so a new scope is reset automatically.
+        $this->seedSchema([]);
+        foreach (USER_ACCESS_SCOPES as $def) {
+            $this->seedConfig($def['config'], [$def['path'] => []]);
+        }
     }
 
     /**
@@ -99,6 +107,22 @@ final class TableAccessTest extends TestCase
 
         $this->assertNull(user_allowed_tables());
         $this->assertTrue(user_can_access_table('invoices'));
+    }
+
+    public function testAdminShortcutDoesNotApplyToAnotherUser(): void
+    {
+        // The shortcut answers "is the CALLER an admin". Asked about somebody else —
+        // a "what does this user see" preview, a per-user notification job — the
+        // caller's role says nothing about the subject, and reading it anyway would
+        // report every user as unrestricted from the admin panel.
+        $this->seedTables('124', ['orders']);
+        $_SESSION['user_id'] = 999;
+        $_SESSION['role']    = 'admin';
+
+        $this->assertSame(['orders'], user_allowed_tables(124));
+        $this->assertFalse(user_can_access_table('invoices', 124));
+        // The caller's own answer is unaffected.
+        $this->assertNull(user_allowed_tables());
     }
 
     public function testNoSessionIsUnrestricted(): void
@@ -225,7 +249,7 @@ final class TableAccessTest extends TestCase
         $_SESSION['user_id'] = 116;
 
         $this->expectException(\InvalidArgumentException::class);
-        user_allowed_items('boards');
+        user_allowed_items('gadgets');
     }
 
     public function testFilterByUserAccessNarrowsViews(): void
@@ -235,5 +259,309 @@ final class TableAccessTest extends TestCase
 
         $views = ['v_payroll' => 1, 'v_sales' => 2];
         $this->assertSame(['v_sales'], array_keys(filter_by_user_access('views', $views)));
+    }
+
+    // ── The scope registry ───────────────────────────────────────────────────
+    // Scopes come in two config shapes: name-keyed maps (tables, views, printouts)
+    // and lists of objects identified by a field (boards, workflows). Every helper
+    // has to handle both without its callers knowing which is which — that is the
+    // whole point of the registry, and these tests pin it.
+
+    /** Replace one config document. */
+    private function seedConfig(string $key, array $value): void
+    {
+        config_cache($key, ['value' => $value, 'version' => 1], true);
+    }
+
+    public function testScopeItemsNormaliseBothConfigShapes(): void
+    {
+        $this->seedConfig('views', ['views' => ['v_sales' => ['display_name' => 'Sales']]]);
+        $this->seedConfig('board', ['boards' => [['id' => 'brd_1', 'menu_name' => 'Sales Board']]]);
+
+        // A map yields its keys, a list yields its id field — same shape out.
+        $this->assertSame(['v_sales' => 'Sales'], access_scope_items('views'));
+        $this->assertSame(['brd_1' => 'Sales Board'], access_scope_items('boards'));
+    }
+
+    public function testScopeItemsSkipHiddenAndUnidentifiableEntries(): void
+    {
+        $this->seedConfig('print', ['prints' => [
+            'inv'    => ['display_name' => 'Invoice'],
+            'draft'  => ['display_name' => 'Draft', 'hidden' => true],
+        ]]);
+        $this->seedConfig('workflows', ['workflows' => [
+            ['id' => 'wf_1', 'title' => 'Onboarding'],
+            ['title' => 'No id at all'],
+            'not-an-array',
+        ]]);
+
+        $this->assertSame(['inv' => 'Invoice'], access_scope_items('prints'));
+        $this->assertSame(['wf_1' => 'Onboarding'], access_scope_items('workflows'));
+    }
+
+    public function testScopeItemsFallBackToTheKeyWhenUnlabelled(): void
+    {
+        $this->seedConfig('views', ['views' => ['v_raw' => []]]);
+        $this->assertSame(['v_raw' => 'v_raw'], access_scope_items('views'));
+    }
+
+    public function testEveryScopeCarriesTheKeysItsConsumersRead(): void
+    {
+        // A row added to the registry with a field missing would surface as an undefined
+        // index deep inside the admin tab or a 403 message, far from the typo.
+        foreach (USER_ACCESS_SCOPES as $scope => $def) {
+            foreach (['config', 'path', 'id', 'label', 'noun', 'plural', 'title', 'empty'] as $field) {
+                $this->assertArrayHasKey($field, $def, "Scope '{$scope}' is missing '{$field}'.");
+            }
+            // Singular for the 403, plural for the tab's count badge — conflating them
+            // is how "Restricted to 2 of 5 table" gets shipped.
+            $this->assertNotSame(
+                $def['noun'],
+                $def['plural'],
+                "Scope '{$scope}' must spell its singular and plural nouns separately."
+            );
+        }
+    }
+
+    public function testUnknownScopeDefinitionThrows(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        access_scope('gadgets');
+    }
+
+    public function testBoardsAndWorkflowsAreGrantedById(): void
+    {
+        $this->seed(['125' => ['boards' => ['brd_1'], 'workflows' => ['wf_1']]]);
+        $_SESSION['user_id'] = 125;
+
+        $this->assertTrue(user_can_access('boards', 'brd_1'));
+        $this->assertFalse(user_can_access('boards', 'brd_2'));
+        $this->assertTrue(user_can_access('workflows', 'wf_1'));
+        $this->assertFalse(user_can_access('workflows', 'wf_2'));
+        // Independent of every other scope, as always.
+        $this->assertNull(user_allowed_items('tables'));
+    }
+
+    public function testFilterKeepsListsAsListsAndMapsAsMaps(): void
+    {
+        $this->seed(['126' => ['boards' => ['brd_2'], 'views' => ['v_sales']]]);
+        $_SESSION['user_id'] = 126;
+
+        $boards = [
+            ['id' => 'brd_1', 'menu_name' => 'One'],
+            ['id' => 'brd_2', 'menu_name' => 'Two'],
+        ];
+        $filtered = filter_by_user_access('boards', $boards);
+        $this->assertTrue(array_is_list($filtered), 'A list scope must come back as a list.');
+        $this->assertSame([['id' => 'brd_2', 'menu_name' => 'Two']], $filtered);
+
+        $views = ['v_payroll' => 1, 'v_sales' => 2];
+        $this->assertSame(['v_sales' => 2], filter_by_user_access('views', $views));
+    }
+
+    public function testFilterDropsListEntriesWithoutAnId(): void
+    {
+        $this->seed(['127' => ['workflows' => ['wf_1']]]);
+        $_SESSION['user_id'] = 127;
+
+        $items = [['id' => 'wf_1'], ['title' => 'no id'], 'not-an-array'];
+        $this->assertSame([['id' => 'wf_1']], filter_by_user_access('workflows', $items));
+    }
+
+    public function testUnrestrictedScopeReturnsTheInputUntouched(): void
+    {
+        $this->seed(['128' => ['tables' => ['orders']]]);
+        $_SESSION['user_id'] = 128;
+
+        $boards = [['id' => 'brd_1'], ['id' => 'brd_2']];
+        $this->assertSame($boards, filter_by_user_access('boards', $boards));
+    }
+
+    // ── Default-on gating at the API boundary ────────────────────────────────
+    // os_request_scope_violation() is the rule os_api_bootstrap() applies to every API
+    // request. The two are separate so the rule can be tested at all: the gate itself
+    // ends the process.
+
+    protected function tearDown(): void
+    {
+        $_GET = [];
+        $_POST = [];
+    }
+
+    public function testBoundaryGateRefusesAnOutOfScopeName(): void
+    {
+        $this->seedConfig('views', ['views' => ['v_ok' => [], 'v_secret' => []]]);
+        $this->seed(['129' => ['views' => ['v_ok']]]);
+        $_SESSION['user_id'] = 129;
+
+        $_GET['view'] = 'v_secret';
+        $this->assertSame(['views', 'v_secret'], os_request_scope_violation());
+
+        $_GET['view'] = 'v_ok';
+        $this->assertNull(os_request_scope_violation());
+    }
+
+    public function testBoundaryGateReadsGetPostAndBody(): void
+    {
+        $this->seedConfig('schema', ['tables' => ['orders' => [], 'secret' => []]]);
+        $this->seed(['130' => ['tables' => ['orders']]]);
+        $_SESSION['user_id'] = 130;
+
+        $_GET['table'] = 'secret';
+        $this->assertSame(['tables', 'secret'], os_request_scope_violation());
+        $_GET = [];
+
+        $_POST['related_table'] = 'secret';
+        $this->assertSame(['tables', 'secret'], os_request_scope_violation());
+        $_POST = [];
+
+        $this->assertSame(['tables', 'secret'], os_request_scope_violation(['table' => 'secret']));
+    }
+
+    public function testBoundaryGateIgnoresUnknownNames(): void
+    {
+        // An unknown name must fall through so the endpoint can answer 400/404 in its
+        // own words. Turning a typo into 403 would collapse the "unknown is 400, not
+        // yours is 403" distinction the endpoints and their tests rely on.
+        $this->seedConfig('schema', ['tables' => ['orders' => []]]);
+        $this->seed(['131' => ['tables' => ['orders']]]);
+        $_SESSION['user_id'] = 131;
+
+        $_GET['table'] = 'no_such_table';
+        $this->assertNull(os_request_scope_violation());
+    }
+
+    public function testBoundaryGateStillSeesHiddenEntries(): void
+    {
+        // Hidden means unreachable-by-menu, not unknown. Treating it as unknown here
+        // would let a hidden table through the boundary gate ungated.
+        $this->seedConfig('schema', ['tables' => ['orders' => [], 'ukryta' => ['hidden' => true]]]);
+        $this->seed(['132' => ['tables' => ['orders']]]);
+        $_SESSION['user_id'] = 132;
+
+        $_GET['table'] = 'ukryta';
+        $this->assertSame(['tables', 'ukryta'], os_request_scope_violation());
+    }
+
+    public function testBoundaryGateHonoursPerParameterOverrides(): void
+    {
+        $this->seedConfig('schema', ['tables' => ['orders' => [], 'secret' => []]]);
+        $this->seed(['133' => ['tables' => ['orders']]]);
+        $_SESSION['user_id'] = 133;
+
+        $_GET['table'] = 'secret';
+        $this->assertNull(os_request_scope_violation([], ['table' => false]));
+        $this->assertSame(['tables', 'secret'], os_request_scope_violation([], ['view' => false]));
+    }
+
+    public function testBoundaryGateLeavesUnrestrictedUsersAlone(): void
+    {
+        $this->seedConfig('schema', ['tables' => ['orders' => [], 'secret' => []]]);
+        $this->seed(['134' => ['views' => ['v_ok']]]);
+        $_SESSION['user_id'] = 134;
+
+        $_GET['table'] = 'secret';
+        $this->assertNull(os_request_scope_violation());
+    }
+
+    // ── Hidden-subtable closure ──────────────────────────────────────────────
+    // A hidden table cannot be ticked in the admin picker, so its access has to
+    // follow its parent's or it is unreachable for every restricted user — see
+    // with_hidden_subtables(). These tests pin both halves of that rule: hidden
+    // children are pulled in, visible ones stay a deliberate admin choice.
+
+    /** Replace the schema document. Only the keys the closure reads are needed. */
+    private function seedSchema(array $tables): void
+    {
+        config_cache('schema', ['value' => ['tables' => $tables], 'version' => 1], true);
+    }
+
+    public function testHiddenSubtableOfGrantedTableIsAccessible(): void
+    {
+        $this->seedSchema([
+            'zadania'    => ['subtables' => [['table' => 'checklisty'], ['table' => 'komentarze']]],
+            'checklisty' => ['hidden' => true],
+            'komentarze' => [],
+        ]);
+        $this->seedTables('118', ['zadania']);
+        $_SESSION['user_id'] = 118;
+
+        $this->assertTrue(
+            user_can_access_table('checklisty'),
+            'A hidden subtable must follow its parent — nothing else can grant it.'
+        );
+    }
+
+    public function testVisibleSubtableIsNotAutoGranted(): void
+    {
+        $this->seedSchema([
+            'zadania'    => ['subtables' => [['table' => 'checklisty'], ['table' => 'komentarze']]],
+            'checklisty' => ['hidden' => true],
+            'komentarze' => [],
+        ]);
+        $this->seedTables('119', ['zadania']);
+        $_SESSION['user_id'] = 119;
+
+        // komentarze is a normal table: it has a menu entry and a grid of its own, so
+        // an admin who did not tick it meant not to grant it.
+        $this->assertFalse(
+            user_can_access_table('komentarze'),
+            'A visible subtable must stay an explicit choice.'
+        );
+    }
+
+    public function testHiddenClosureIsTransitive(): void
+    {
+        // projekty → zadania (hidden) → checklisty (hidden): granting the root has to
+        // reach the whole hidden chain, not just its first link.
+        $this->seedSchema([
+            'projekty'   => ['subtables' => [['table' => 'zadania']]],
+            'zadania'    => ['hidden' => true, 'subtables' => [['table' => 'checklisty']]],
+            'checklisty' => ['hidden' => true],
+        ]);
+        $this->seedTables('120', ['projekty']);
+        $_SESSION['user_id'] = 120;
+
+        $this->assertTrue(user_can_access_table('zadania'));
+        $this->assertTrue(user_can_access_table('checklisty'));
+    }
+
+    public function testSubtableCycleTerminates(): void
+    {
+        // A misconfigured schema must not hang the request. Reaching the assertion at
+        // all is the point of this test.
+        $this->seedSchema([
+            'a' => ['subtables' => [['table' => 'b']]],
+            'b' => ['hidden' => true, 'subtables' => [['table' => 'a'], ['table' => 'c']]],
+            'c' => ['hidden' => true, 'subtables' => [['table' => 'b']]],
+        ]);
+        $this->seedTables('121', ['a']);
+        $_SESSION['user_id'] = 121;
+
+        $this->assertSame(['a', 'b', 'c'], user_allowed_tables());
+    }
+
+    public function testClosureIgnoresMalformedSubtableEntries(): void
+    {
+        $this->seedSchema([
+            'orders' => ['subtables' => [['no_table_key' => 1], 'not-an-array', ['table' => '']]],
+        ]);
+        $this->seedTables('122', ['orders']);
+        $_SESSION['user_id'] = 122;
+
+        $this->assertSame(['orders'], user_allowed_tables());
+    }
+
+    public function testUnrestrictedUserIsUnaffectedByTheClosure(): void
+    {
+        $this->seedSchema([
+            'zadania'    => ['subtables' => [['table' => 'checklisty']]],
+            'checklisty' => ['hidden' => true],
+        ]);
+        $this->seed(['123' => ['views' => ['v_sales']]]);
+        $_SESSION['user_id'] = 123;
+
+        // No table restriction at all still means null, not a closed-over list.
+        $this->assertNull(user_allowed_tables());
     }
 }

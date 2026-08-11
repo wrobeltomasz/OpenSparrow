@@ -27,5 +27,11 @@ if ($requestedTable !== '') {
     os_require_table_access($requestedTable);
 }
 
+// Same for ?workflow=: the wizard lives on this page rather than one of its own.
+$requestedWorkflow = substr($_GET['workflow'] ?? '', 0, 64);
+if ($requestedWorkflow !== '') {
+    os_require_access('workflows', $requestedWorkflow);
+}
+
 // Load the UI template (schema is no longer injected here)
 include __DIR__ . '/../templates/template.php';

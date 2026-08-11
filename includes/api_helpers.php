@@ -483,29 +483,111 @@ function validatedTable(string $table, string $field = 'table'): string
     return $table;
 }
 
-// ── Per-user access to tables, views and printouts ───────────────────────────
-// Admins may restrict a frontend user to a subset of the schema's tables, of the
-// configured PostgreSQL views, and of the print templates. All three live in one
-// 'user_table_access' spw_config document:
+// ── Per-user frontend access ─────────────────────────────────────────────────
+// Admins may restrict a frontend user to a subset of the schema's tables, the
+// configured PostgreSQL views, the print templates, the boards and the workflows.
+// All of it lives in one 'user_table_access' spw_config document:
 //
-//   {"users": {"<user_id>": {"tables": [...], "views": [...], "prints": [...]}}}
+//   {"users": {"<user_id>": {"tables": [...], "views": [...], "prints": [...],
+//                            "boards": [...], "workflows": [...]}}}
 //
-// Views and printouts are named objects with no table binding of their own, which
-// is why they are granted directly by name instead of being derived from a table.
+// Views, printouts, boards and workflows are named objects granted directly by name
+// (boards and workflows by their stable `id`), because none of them is derived from a
+// single table the way a grid page is.
 //
 // An ABSENT OR EMPTY list means UNRESTRICTED for that scope, not "no access". That
 // is what keeps the feature backward compatible: every existing user keeps working
 // until an admin deliberately ticks entries. "No access at all" is expressed by
-// deactivating the account (is_active = false), not by an empty list. The three
-// scopes are independent — restricting tables leaves views untouched.
+// deactivating the account (is_active = false), not by an empty list. The scopes are
+// independent — restricting tables leaves views untouched.
 //
 // Never cache the resolved lists in $_SESSION: an admin revoking access must take
 // effect on the user's next request, not on their next login. The static cache
 // below is per-request only.
 
-// Scopes a user's access can be narrowed to. Also the key set of the stored
-// per-user document — anything else in it is ignored.
-const USER_ACCESS_SCOPES = ['tables', 'views', 'prints'];
+// Every scope, in one place. This map is the single definition: the resolver, the
+// gates, the filters, the admin picker and the Access tab all read it, and none of
+// them enumerates scopes on its own. Adding a scope is adding a row here plus the
+// gate at whatever endpoint serves it — nothing else has a list to keep in step.
+//
+//   config / path — where the configured items live in the config store
+//   id            — null for name-keyed maps (schema tables, views, printouts);
+//                   the identifying field for lists of objects (boards, workflows)
+//   label         — field holding the human-readable name; falls back to the key
+//   noun / plural — singular for a 403 message, plural for the tab's count badge.
+//                   Both spellings are stored rather than derived: "printout" and
+//                   "printouts" are fine, but no rule survives every word
+//   title / empty — section heading and empty-state text in the admin Access tab
+const USER_ACCESS_SCOPES = [
+    'tables' => [
+        'config' => 'schema',    'path' => 'tables',    'id' => null,
+        'label'  => 'display_name', 'noun' => 'table',    'plural' => 'tables',
+        'title'  => 'Tables',    'empty' => 'No tables in the schema configuration.',
+    ],
+    'views' => [
+        'config' => 'views',     'path' => 'views',     'id' => null,
+        'label'  => 'display_name', 'noun' => 'view',     'plural' => 'views',
+        'title'  => 'Views',     'empty' => 'No views configured.',
+    ],
+    'prints' => [
+        'config' => 'print',     'path' => 'prints',    'id' => null,
+        'label'  => 'display_name', 'noun' => 'printout', 'plural' => 'printouts',
+        'title'  => 'Printouts', 'empty' => 'No printouts configured.',
+    ],
+    'boards' => [
+        'config' => 'board',     'path' => 'boards',    'id' => 'id',
+        'label'  => 'menu_name', 'noun' => 'board',     'plural' => 'boards',
+        'title'  => 'Boards',    'empty' => 'No boards configured.',
+    ],
+    'workflows' => [
+        'config' => 'workflows', 'path' => 'workflows', 'id' => 'id',
+        'label'  => 'title',     'noun' => 'workflow',  'plural' => 'workflows',
+        'title'  => 'Workflows', 'empty' => 'No workflows configured.',
+    ],
+];
+
+// One scope's definition. Throws on a typo rather than letting an unknown scope
+// resolve to "unrestricted", which would be a silently open gate.
+function access_scope(string $scope): array
+{
+    if (!isset(USER_ACCESS_SCOPES[$scope])) {
+        throw new InvalidArgumentException("Unknown access scope: {$scope}");
+    }
+    return USER_ACCESS_SCOPES[$scope];
+}
+
+// name => label for everything grantable in a scope, normalising the two config
+// shapes so no caller has to know which one it is looking at. Hidden entries are
+// dropped: they never reach the frontend menu, so granting them means nothing. (For
+// tables that exclusion is what with_hidden_subtables() compensates for.)
+//
+// @return array<string, string>
+function access_scope_items(string $scope, bool $includeHidden = false): array
+{
+    require_once __DIR__ . '/config_store.php';
+    $def   = access_scope($scope);
+    $items = (config_get($def['config']) ?? [])[$def['path']] ?? [];
+    if (!is_array($items)) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($items as $key => $cfg) {
+        if (!is_array($cfg) || (!$includeHidden && !empty($cfg['hidden']))) {
+            continue;
+        }
+        // A list of objects identifies itself by a field; a map by its key.
+        $name = $def['id'] === null ? (string) $key : (string) ($cfg[$def['id']] ?? '');
+        if ($name === '') {
+            continue;
+        }
+        // is_string, not a cast: a malformed config where the label is an array would
+        // otherwise raise "Array to string conversion" and render "Array" in the picker.
+        $label      = $cfg[$def['label']] ?? null;
+        $out[$name] = is_string($label) && $label !== '' ? $label : $name;
+    }
+    return $out;
+}
 
 // The user's allow-list for one scope, or null when unrestricted (no entry, empty
 // list, admin role, or no session at all — cron/CLI contexts must not be filtered).
@@ -514,18 +596,29 @@ function user_allowed_items(string $scope, ?int $userId = null): ?array
 {
     static $cache = [];
 
+    // Whether the answer is about the session's own user. An explicitly passed id asks
+    // about somebody else, and then the session's role says nothing about them — see
+    // the admin shortcut below.
+    $isSelf = ($userId === null);
+
     $userId ??= (int) ($_SESSION['user_id'] ?? 0);
     if ($userId <= 0) {
         return null;
     }
     // Admins never reach the frontend (bootstrap redirects them to admin/), and the
     // admin panel must keep seeing everything in order to configure it.
-    if (($_SESSION['role'] ?? '') === 'admin') {
+    //
+    // Only when asking about the session's own user, though. Reading $_SESSION['role']
+    // for an explicitly passed id answers "is the CALLER an admin", which from the
+    // admin panel or a cron impersonating an admin session would report every user as
+    // unrestricted — a "what does this user see" preview would show them everything,
+    // and a per-user notification job would leak across the boundary it is meant to
+    // respect. Callers wanting the admin shortcut for another user must check that
+    // user's role themselves.
+    if ($isSelf && ($_SESSION['role'] ?? '') === 'admin') {
         return null;
     }
-    if (!in_array($scope, USER_ACCESS_SCOPES, true)) {
-        throw new InvalidArgumentException("Unknown access scope: {$scope}");
-    }
+    access_scope($scope);
 
     if (!array_key_exists($userId, $cache)) {
         require_once __DIR__ . '/config_store.php';
@@ -542,15 +635,146 @@ function user_allowed_items(string $scope, ?int $userId = null): ?array
         }
 
         $resolved = [];
-        foreach (USER_ACCESS_SCOPES as $s) {
+        foreach (array_keys(USER_ACCESS_SCOPES) as $s) {
             $list = is_array($entry[$s] ?? null) ? $entry[$s] : [];
             $list = array_values(array_unique(array_filter($list, 'is_string')));
             $resolved[$s] = ($list === [] ? null : $list);
+        }
+        if ($resolved['tables'] !== null) {
+            $resolved['tables'] = with_hidden_subtables($resolved['tables']);
         }
         $cache[$userId] = $resolved;
     }
 
     return $cache[$userId][$scope];
+}
+
+// Extend an allow-list with the HIDDEN subtables reachable from it, transitively.
+//
+// A hidden table has no standalone presence in the frontend — no menu entry, no grid,
+// no place to navigate to — and admin_assignable_items() excludes it from the picker
+// for exactly that reason. So its access is never something an admin decides; it is a
+// consequence of the parent's. Without this closure, ticking any table at all costs a
+// user every hidden subtable tab in edit.php, the matching drill-down counts, and the
+// create.php/edit.php links those tabs point at — with no admin action able to give
+// them back, because the child cannot be ticked. (Concretely: `checklisty` under
+// `zadania` in the shipped example schema.)
+//
+// VISIBLE children are deliberately NOT closed over. Those an admin grants by ticking
+// them, and a missing tick hiding the tab is the intended, visible outcome — silently
+// widening it would take that decision away. The rule in one line: what an admin can
+// choose stays a choice, what they cannot choose follows its parent.
+//
+// @param string[] $tables
+// @return string[]
+function with_hidden_subtables(array $tables): array
+{
+    require_once __DIR__ . '/config_store.php';
+    $schema = (config_get('schema') ?? [])['tables'] ?? [];
+
+    $out   = array_fill_keys($tables, true);
+    $queue = $tables;
+    // Breadth-first: a hidden child may itself declare hidden children. $out doubles as
+    // the visited set, so a schema with a subtable cycle terminates instead of hanging.
+    while ($queue !== []) {
+        $parent = (string) array_shift($queue);
+        foreach ($schema[$parent]['subtables'] ?? [] as $sub) {
+            $child = is_array($sub) ? (string) ($sub['table'] ?? '') : '';
+            if ($child === '' || isset($out[$child]) || empty($schema[$child]['hidden'])) {
+                continue;
+            }
+            $out[$child] = true;
+            $queue[]     = $child;
+        }
+    }
+
+    return array_keys($out);
+}
+
+// ── Default-on gating at the API boundary ────────────────────────────────────
+// Request parameter name => the scope its value belongs to. os_api_bootstrap() walks
+// this map on every API request, so an endpoint that accepts a ?table= is gated
+// whether or not its author remembered to say so. Every gap in the 2026-08 audit was
+// a forgotten gate; the registry above removed the duplicated scope lists but could
+// not make anyone call a gate, and this is what changes the default from "open unless
+// somebody remembered" to "closed unless somebody opted out".
+//
+// It does NOT replace the per-endpoint gates. They stay: they run closer to the data,
+// they cover names this map cannot see (config-supplied bindings, values nested in a
+// body), and two independent checks are exactly what you want on an access boundary.
+const OS_REQUEST_SCOPE_PARAMS = [
+    'table'         => 'tables',
+    'related_table' => 'tables',
+    'view'          => 'views',
+    'print'         => 'prints',
+    'board'         => 'boards',
+    'workflow'      => 'workflows',
+    'workflow_id'   => 'workflows',
+];
+
+// Reject the request when it names an object the user may not reach.
+//
+// Only names that EXIST in the configuration are gated. An unknown name falls through
+// untouched so the endpoint can answer 400/404 in its own words — otherwise a typo
+// would answer 403 and the "unknown is 400, not yours is 403" distinction, which the
+// endpoints and their tests rely on, would collapse. Existence is checked including
+// hidden entries: a hidden table is unreachable-by-menu, not unknown, and treating it
+// as unknown here would let it through ungated.
+//
+// $overrides maps a parameter name to false to skip it, for the rare endpoint whose
+// parameter of that name is not a client-supplied object name.
+// The decision, with no side effect: the first [scope, name] the request names and the
+// user may not reach, or null when there is nothing to refuse. Split out from the gate
+// below because require_access() ends the process, which makes the rule itself
+// untestable if the two are one function.
+//
+// @param  array<string,mixed> $body    decoded request body, if any
+// @param  array<string,bool>  $overrides
+// @return array{0:string,1:string}|null
+function os_request_scope_violation(array $body = [], array $overrides = []): ?array
+{
+    foreach (OS_REQUEST_SCOPE_PARAMS as $param => $scope) {
+        if (($overrides[$param] ?? true) === false) {
+            continue;
+        }
+        // api/fk.php rewrites $_GET['table'] to a schema-supplied reference table
+        // before delegating into api.php, which boots a second time. Gating that value
+        // would 403 every FK pointing outside the user's tables — the exact case the
+        // constant exists to mark.
+        if ($param === 'table' && defined('OS_TABLE_ACCESS_DELEGATED')) {
+            continue;
+        }
+
+        foreach ([$_GET[$param] ?? null, $_POST[$param] ?? null, $body[$param] ?? null] as $value) {
+            if (!is_string($value) || $value === '') {
+                continue;
+            }
+            if (!isset(access_scope_items($scope, true)[$value])) {
+                continue;
+            }
+            if (!user_can_access($scope, $value)) {
+                return [$scope, $value];
+            }
+        }
+    }
+    return null;
+}
+
+function os_gate_request_scopes(array $overrides = []): void
+{
+    // Bodies are read, not consumed: php://input is re-readable for the JSON content
+    // types used here, so the endpoint still parses it itself afterwards. Verified,
+    // not assumed — a stream consumed here would break every POST silently.
+    $body = [];
+    if (str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json')) {
+        $decoded = json_decode((string) file_get_contents('php://input'), true);
+        $body    = is_array($decoded) ? $decoded : [];
+    }
+
+    $violation = os_request_scope_violation($body, $overrides);
+    if ($violation !== null) {
+        require_access($violation[0], $violation[1]);
+    }
 }
 
 // The user's allowed tables, or null when unrestricted. Thin wrapper kept because
@@ -584,40 +808,53 @@ function user_can_access_print(string $print, ?int $userId = null): bool
 }
 
 // JSON gate for API endpoints. Call it only with a REQUEST-supplied name.
-// Config-supplied names (FK reference_table, subtables, board/calendar bindings)
-// must NOT go through here — gating those would break label lookups inside tables
-// the user is legitimately allowed to see.
-function require_access(string $scope, string $name, string $label, ?int $userId = null): void
+// Config-supplied names (FK reference_table, subtables, calendar bindings) must NOT
+// go through here — gating those would break label lookups inside tables the user is
+// legitimately allowed to see. The noun in the message comes from the scope registry,
+// so a new scope gets a correct 403 without anyone writing one.
+function require_access(string $scope, string $name, ?int $userId = null): void
 {
     if (!user_can_access($scope, $name, $userId)) {
-        jsonError('Forbidden: no access to this ' . $label . '.', 403);
+        jsonError('Forbidden: no access to this ' . access_scope($scope)['noun'] . '.', 403);
     }
 }
 
 function require_table_access(string $table, ?int $userId = null): void
 {
-    require_access('tables', $table, 'table', $userId);
+    require_access('tables', $table, $userId);
 }
 
 function require_view_access(string $view, ?int $userId = null): void
 {
-    require_access('views', $view, 'view', $userId);
+    require_access('views', $view, $userId);
 }
 
 function require_print_access(string $print, ?int $userId = null): void
 {
-    require_access('prints', $print, 'printout', $userId);
+    require_access('prints', $print, $userId);
 }
 
-// Narrow a name-keyed map (schema['tables'], the views config, the prints config)
-// down to what the user may see. Preserves key order.
+// Narrow a configured collection down to what the user may see, in whichever shape it
+// was stored: a name-keyed map (schema tables, views, printouts) keeps its keys and
+// their order, a list of objects (boards, workflows) comes back as a list. Callers
+// pass the config through and get the same shape back, so none of them has to know
+// which kind it is holding.
 function filter_by_user_access(string $scope, array $items, ?int $userId = null): array
 {
     $allowed = user_allowed_items($scope, $userId);
     if ($allowed === null) {
         return $items;
     }
-    return array_intersect_key($items, array_flip($allowed));
+
+    $idField = access_scope($scope)['id'];
+    if ($idField === null) {
+        return array_intersect_key($items, array_flip($allowed));
+    }
+    return array_values(array_filter(
+        $items,
+        static fn($item): bool => is_array($item)
+            && in_array((string) ($item[$idField] ?? ''), $allowed, true)
+    ));
 }
 
 function filter_tables_for_user(array $tables, ?int $userId = null): array

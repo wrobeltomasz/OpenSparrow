@@ -171,6 +171,15 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
         os_require_csrf('header');
     }
 
+    // Per-user access, applied by default rather than per endpoint. 'gate' => false
+    // opts the whole endpoint out; ['gate' => ['table' => false]] opts one parameter
+    // out. Both need a comment at the call site saying why — see os_gate_request_scopes()
+    // and tests/Security/request_scope_inventory.php.
+    $gate = $options['gate'] ?? true;
+    if ($gate !== false) {
+        os_gate_request_scopes(is_array($gate) ? $gate : []);
+    }
+
     return ($options['connect'] ?? true) ? db_connect() : null;
 }
 

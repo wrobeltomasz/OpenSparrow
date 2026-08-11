@@ -172,6 +172,35 @@ try {
             exit;
         }
 
+        // Two filters, and both are needed. The first is the workflow's own scope: an
+        // admin grants workflows by id like views and printouts. The second keeps the
+        // table rule honest — every step writes rows into its target table and that
+        // write is gated by the mutating branch below, so a workflow granted to someone
+        // whose tables do not cover its steps would open a wizard that 403s partway
+        // through and name the step tables on the way. Granting a workflow does NOT
+        // grant its tables; the two are ticked separately and both have to hold.
+        if (is_array($workflows['workflows'] ?? null)) {
+            $workflows['workflows'] = filter_by_user_access('workflows', $workflows['workflows']);
+            $workflows['workflows'] = array_values(array_filter(
+                $workflows['workflows'],
+                static function ($wf): bool {
+                    // A malformed entry is dropped rather than served: filter_by_user_access()
+                    // does the same, but only for a restricted user, so without this an
+                    // unrestricted one would still receive it.
+                    if (!is_array($wf)) {
+                        return false;
+                    }
+                    foreach ((array) ($wf['steps'] ?? []) as $step) {
+                        $stepTable = is_array($step) ? (string) ($step['table'] ?? '') : '';
+                        if ($stepTable !== '' && !user_can_access_table($stepTable)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            ));
+        }
+
         echo json_encode($workflows);
         exit;
     }
@@ -411,15 +440,20 @@ try {
     if ($method === 'GET' && ($_GET['api'] ?? '') === 'board') {
         $boardsCfg = config_get('board') ?? [];
         $boardId   = substr($_GET['board'] ?? '', 0, 64);
-        $boardCfg  = null;
-        foreach (($boardsCfg['boards'] ?? []) as $b) {
+        // Per-user board scope. Filtering the list up front rather than gating the
+        // resolved board matters because of the fallback below: picking "the first
+        // board" out of the unfiltered config would hand a restricted user a board they
+        // were never granted whenever ?board= is missing or does not match.
+        $boards   = filter_by_user_access('boards', $boardsCfg['boards'] ?? []);
+        $boardCfg = null;
+        foreach ($boards as $b) {
             if (($b['id'] ?? '') === $boardId) {
                 $boardCfg = $b;
                 break;
             }
         }
         if ($boardCfg === null) {
-            $boardCfg = $boardsCfg['boards'][0] ?? [];
+            $boardCfg = $boards[0] ?? [];
         }
 
         $meta = [
@@ -441,8 +475,13 @@ try {
             exit;
         }
         // Config-supplied: an unconfigured-looking board (empty lanes) is the same
-        // answer this branch already gives for a broken binding.
+        // answer this branch already gives for a broken binding. The binding itself is
+        // blanked first — the table and status column are schema metadata, and naming
+        // them to someone who may not open that table hands over exactly what the
+        // allow-list exists to withhold.
         if (!user_can_access_table($table)) {
+            $meta['table']         = '';
+            $meta['status_column'] = '';
             echo json_encode($meta);
             exit;
         }
@@ -948,6 +987,12 @@ try {
         $stepIndex  = (int)($body['step_index'] ?? -1);
         $stepValues = is_array($body['step_values'] ?? null) ? $body['step_values'] : [];
 
+        // Per-user workflow scope. The workflow id is request-supplied and selects what
+        // runs, so it is gated here: hiding a workflow from the menu and the list while
+        // leaving this endpoint open would make the whole scope cosmetic — a direct POST
+        // would still fire the procedure.
+        require_access('workflows', $workflowId);
+
         // The procedure identity comes exclusively from the stored configuration —
         // never from the request — so a client can only trigger what an admin
         // already whitelisted by configuring it on this step.
@@ -1133,8 +1178,14 @@ try {
 
             $boardsCfg = config_get('board') ?? [];
             $boardId   = substr($body['board'] ?? '', 0, 64);
+            // Per-user board scope, on the write path too. The table gate above already
+            // stops a card being moved in a table the user cannot reach, but a board is
+            // granted separately: without this, someone holding the table could drag
+            // cards on a board that was never theirs. Resolved against the filtered
+            // list for the same reason the read branch is — an unmatched id must not
+            // fall through to something they were not granted.
             $boardCfg  = null;
-            foreach (($boardsCfg['boards'] ?? []) as $b) {
+            foreach (filter_by_user_access('boards', $boardsCfg['boards'] ?? []) as $b) {
                 if (($b['id'] ?? '') === $boardId) {
                     $boardCfg = $b;
                     break;

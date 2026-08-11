@@ -22,6 +22,11 @@ $cspNonce  = $page['nonce'];
 $userRole  = $page['role'];
 $userCaps  = $page['caps'];
 $boardId   = substr($_GET['board'] ?? '', 0, 64);
+// A ?board= outside the user's scope (stale bookmark, hand-edited URL) drops them back
+// on the default grid instead of rendering a shell whose data call returns empty lanes.
+if ($boardId !== '') {
+    os_require_access('boards', $boardId);
+}
 
 $pageTitle      = 'OpenSparrow | Board';
 $headerControls = os_header_search('boardSearch')

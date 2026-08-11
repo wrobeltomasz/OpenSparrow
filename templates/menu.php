@@ -134,11 +134,13 @@ $menuCatalog = [
 // child under the Board module entry — mirrors Workflows below (configurable
 // parent name/icon via the admin "Global Settings" tab, one child per board).
 $boardChildren = [];
-foreach ($boardCfg['boards'] ?? [] as $bItem) {
+// Boards are granted by id (the 'boards' scope) and additionally need their bound
+// table: opening a board the user was granted but whose table they were not would
+// answer with empty lanes, so it is not offered.
+foreach (filter_by_user_access('boards', $boardCfg['boards'] ?? []) as $bItem) {
     if (empty($bItem['table']) || empty($bItem['status_column']) || !empty($bItem['hidden'])) {
         continue;
     }
-    // A board is bound to one table — out of scope means the board is not listed.
     if (!user_can_access_table((string) $bItem['table'])) {
         continue;
     }
@@ -168,10 +170,23 @@ if (!empty($boardChildren)) {
 }
 
 // Each defined workflow becomes a submenu child under the Workflows module entry.
+// Same rule as boards: granted by id, and every step's table must be reachable or the
+// wizard would 403 partway through. Mirrors the api=workflows filter.
 $workflowChildren = [];
-foreach ($wfCfg['workflows'] ?? [] as $wfItem) {
+foreach (filter_by_user_access('workflows', $wfCfg['workflows'] ?? []) as $wfItem) {
     $wfId = (string) ($wfItem['id'] ?? '');
     if ($wfId === '') {
+        continue;
+    }
+    $wfStepsOk = true;
+    foreach ((array) ($wfItem['steps'] ?? []) as $wfStep) {
+        $wfStepTable = is_array($wfStep) ? (string) ($wfStep['table'] ?? '') : '';
+        if ($wfStepTable !== '' && !user_can_access_table($wfStepTable)) {
+            $wfStepsOk = false;
+            break;
+        }
+    }
+    if (!$wfStepsOk) {
         continue;
     }
     $workflowChildren[] = [
@@ -184,7 +199,9 @@ foreach ($wfCfg['workflows'] ?? [] as $wfItem) {
         'data-workflow-id' => $wfId,
     ];
 }
-if (!empty($wfCfg['workflows'])) {
+// Keyed off the surviving children, like the Board entry above: a parent whose every
+// child was filtered away would lead to an empty page.
+if (!empty($workflowChildren)) {
     $menuCatalog['workflows'] = [
         'type'      => 'workflows',
         'href'      => 'index.php?workflows=1',

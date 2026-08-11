@@ -402,33 +402,55 @@ function uuidListToPgArray(mixed $uuids): string
     return '{' . implode(',', array_unique($clean)) . '}';
 }
 
-// Gallery images inherit the visibility of the record they hang off — a user who cannot
-// see the row must not be able to touch its images either (mirrors file_download.php).
-// Plain attachments (related_field !== IMAGES_FIELD) are unaffected and pass through.
+// A file inherits the visibility of the record it hangs off: a user who cannot reach
+// that row — because the table is outside their access scope, or because the row
+// belongs to someone else in an owner-restricted table — must not be able to touch its
+// files either (mirrors file_download.php).
+//
+// This used to look at gallery rows only (`related_field = IMAGES_FIELD`), which left
+// every plain attachment unchecked on delete, mass-delete, mass-tag and metadata edit
+// — the read paths were gated while the write paths were not. It now covers every
+// attachment, and consults the per-user table scope as well as record ownership.
+//
+// Unattached files (no related_table, or no related_id) belong to no record and stay
+// editable by any logged-in user — the same rule actionList() applies when listing
+// them. A file pointing at a table that is no longer in the schema config fails closed
+// instead: there is nothing left to check ownership against, and a stuck orphan is a
+// better outcome than an unguarded one. The error_log line is there to make that case
+// diagnosable rather than mysterious.
+//
 // Fails closed with the same 404 the single-file paths use, so an inaccessible uuid is
 // indistinguishable from a missing one. $pgUuids is a PG uuid[] literal.
-function assertGalleryAccess($conn, string $pgUuids): void
+function assertFileAccess($conn, string $pgUuids): void
 {
 
     $res = pg_query_params(
         $conn,
         "SELECT DISTINCT related_table, related_id FROM " . sys_table('files')
-        . " WHERE uuid = ANY($1) AND related_field = $2 AND deleted_at IS NULL",
-        [$pgUuids, IMAGES_FIELD]
+        . " WHERE uuid = ANY($1) AND deleted_at IS NULL",
+        [$pgUuids]
     );
     if (!$res) {
-        error_log('api_files assertGalleryAccess failed: ' . pg_last_error($conn));
+        error_log('api_files assertFileAccess failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $schema = config_get('schema');
     $userId = (int) $_SESSION['user_id'];
     while ($row = pg_fetch_assoc($res)) {
-        $rTable = (string) $row['related_table'];
+        $rTable = trim((string) ($row['related_table'] ?? ''));
+        $rId    = (string) ($row['related_id'] ?? '');
+        if ($rTable === '' || $rId === '') {
+            continue;
+        }
         $tblCfg = $schema['tables'][$rTable] ?? null;
+        if (!is_array($tblCfg)) {
+            error_log('api_files assertFileAccess: file attached to unconfigured table ' . $rTable);
+            jsonError('File not found or already deleted.', 404);
+        }
         if (
-            !is_array($tblCfg)
-            || !can_access_record($conn, $tblCfg, $rTable, (int) $row['related_id'], $userId)
+            !user_can_access_table($rTable)
+            || !can_access_record($conn, $tblCfg, $rTable, (int) $rId, $userId)
         ) {
             jsonError('File not found or already deleted.', 404);
         }
@@ -462,7 +484,7 @@ function actionMassDelete($conn, array $body): void
     requireWrite();
     os_require_csrf('body', $body);
     $pgUuids = uuidListToPgArray($body['uuids'] ?? null);
-    assertGalleryAccess($conn, $pgUuids);
+    assertFileAccess($conn, $pgUuids);
     $sql = "UPDATE " . sys_table('files') . "
             SET deleted_at = NOW()
             WHERE uuid = ANY($1) AND deleted_at IS NULL
@@ -486,7 +508,7 @@ function actionMassTag($conn, array $body): void
     if ($pgTags === null) {
         jsonError('tags is required.', 400);
     }
-    assertGalleryAccess($conn, $pgUuids);
+    assertFileAccess($conn, $pgUuids);
     $sql = "UPDATE " . sys_table('files') . "
             SET tags = (SELECT array_agg(DISTINCT t) FROM unnest(COALESCE(tags, '{}') || $2::text[]) AS t),
                 updated_at = NOW()
@@ -512,7 +534,7 @@ function actionUpdateMeta($conn, array $body): void
     if (!$uuid || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
         jsonError('Valid uuid is required.', 400);
     }
-    assertGalleryAccess($conn, '{' . strtolower($uuid) . '}');
+    assertFileAccess($conn, '{' . strtolower($uuid) . '}');
 
     $sets   = [];
     $params = [];
@@ -563,7 +585,7 @@ function actionDelete($conn, array $body): void
     if (!$uuid || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid)) {
         jsonError('Valid uuid is required.', 400);
     }
-    assertGalleryAccess($conn, '{' . strtolower($uuid) . '}');
+    assertFileAccess($conn, '{' . strtolower($uuid) . '}');
 
     $sql = "UPDATE " . sys_table('files') . " SET deleted_at = NOW() WHERE uuid = $1 AND deleted_at IS NULL RETURNING id";
     $res = pg_query_params($conn, $sql, [$uuid]);

@@ -292,6 +292,9 @@ ${_ul([
     `<strong>${s.s9o_empty_label}:</strong> ${s.s9o_empty}`,
     `<strong>${s.s9o_admin_label}:</strong> ${s.s9o_admin}`,
     `<strong>${s.s9o_scope_label}:</strong> ${s.s9o_scope}`,
+    `<strong>${s.s9o_hidden_label}:</strong> ${s.s9o_hidden}`,
+    `<strong>${s.s9o_bindings_label}:</strong> ${s.s9o_bindings}`,
+    `<strong>${s.s9o_views_label}:</strong> ${s.s9o_views}`,
     `<strong>${s.s9o_limits_label}:</strong> ${s.s9o_limits}`
 ])}
 

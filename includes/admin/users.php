@@ -309,17 +309,25 @@ if ($action === 'user_policy_save') {
     exit;
 }
 
-// ── Per-user access to tables, views and printouts ───────────────────────────
+// ── Per-user frontend access ─────────────────────────────────────────────────
 // Reads/writes the 'user_table_access' spw_config key, shaped as
-//   {"users": {"<user_id>": {"tables": [...], "views": [...], "prints": [...]}}}
+//   {"users": {"<id>": {"tables": [], "views": [], "prints": [], "boards": [],
+//                       "workflows": []}}}
+//
+// The scope list is NOT repeated here: every loop below walks USER_ACCESS_SCOPES from
+// includes/api_helpers.php, and the pick lists come from access_scope_items(). That is
+// deliberate — a scope added to that registry has to show up in this tab without any
+// edit to this file, and a hand-kept copy is exactly how the two drift apart.
 //
 // An ABSENT OR EMPTY list means UNRESTRICTED for that scope, not "no access" — the
-// same contract user_allowed_items() enforces in includes/api_helpers.php. Do not
-// diverge here: that helper is the single decision point, this module only edits
-// the document. "No access at all" is expressed by deactivating the account.
+// same contract user_allowed_items() enforces. Do not diverge here: that helper is the
+// single decision point, this module only edits the document. "No access at all" is
+// expressed by deactivating the account.
 //
 // The key has no foreign key to spw_users (it is a config document, not a table),
 // so every save prunes entries whose user no longer exists.
+
+require_once __DIR__ . '/../api_helpers.php';
 
 /**
  * The 'users' map of the user_table_access config, keyed by user id as string.
@@ -331,10 +339,10 @@ function admin_user_table_access(): array
 }
 
 /**
- * One user's stored entry, normalised to the three-scope shape. A bare list is the
- * pre-scopes format and means tables only — mirrors user_allowed_items().
+ * One user's stored entry, normalised to one list per registered scope. A bare list is
+ * the pre-scopes format and means tables only — mirrors user_allowed_items().
  *
- * @return array{tables: list<string>, views: list<string>, prints: list<string>}
+ * @return array<string, list<string>>
  */
 function admin_user_access_entry(int $userId): array
 {
@@ -343,49 +351,60 @@ function admin_user_access_entry(int $userId): array
         $entry = ['tables' => $entry];
     }
     $out = [];
-    foreach (['tables', 'views', 'prints'] as $scope) {
-        $list       = is_array($entry[$scope] ?? null) ? $entry[$scope] : [];
+    foreach (array_keys(USER_ACCESS_SCOPES) as $scope) {
+        $list        = is_array($entry[$scope] ?? null) ? $entry[$scope] : [];
         $out[$scope] = array_values(array_filter($list, 'is_string'));
     }
     return $out;
 }
 
 /**
- * Name => display name for everything an admin may grant, per scope. Hidden entries
- * are excluded: they never reach the frontend menu, so granting them means nothing.
+ * Name => display name for everything an admin may grant, per scope. Reads the same
+ * registry the frontend gates read, so the picker can never offer something the gates
+ * do not recognise, nor miss something they do.
  *
- * @return array{tables: array<string,string>, views: array<string,string>, prints: array<string,string>}
+ * @return array<string, array<string,string>>
  */
 function admin_assignable_items(): array
 {
-    $collect = static function (array $items): array {
-        $out = [];
-        foreach ($items as $name => $cfg) {
-            if (!is_array($cfg) || !empty($cfg['hidden'])) {
-                continue;
-            }
-            $out[(string) $name] = $cfg['display_name'] ?? (string) $name;
-        }
-        return $out;
-    };
-
-    return [
-        'tables' => $collect((config_get('schema') ?? [])['tables'] ?? []),
-        'views'  => $collect((config_get('views')  ?? [])['views']  ?? []),
-        'prints' => $collect((config_get('print')  ?? [])['prints'] ?? []),
-    ];
+    $out = [];
+    foreach (array_keys(USER_ACCESS_SCOPES) as $scope) {
+        $out[$scope] = access_scope_items($scope);
+    }
+    return $out;
 }
 
 /**
- * Table name => display name. Kept as its own helper because the schema tab and the
- * access tab both ask for exactly this list.
+ * Grantable table => the hidden subtables ticking it drags in, transitively.
+ *
+ * A hidden table has no menu entry and no grid, so it is not offered in the picker;
+ * user_allowed_items() closes over it instead, or a restricted user would lose every
+ * hidden subtable tab with no way for an admin to give it back. Displaying the
+ * consequence is the whole point of this map — a closure nobody can see is a closure
+ * nobody can reason about. Only the entries that actually drag something in are
+ * returned, so the tab renders a note per ticked parent and nothing for the rest.
+ *
+ * @param  list<string> $tables
+ * @return array<string, list<string>>
  */
-function admin_assignable_tables(): array
+function admin_hidden_children_map(array $tables): array
 {
-    return admin_assignable_items()['tables'];
+    require_once __DIR__ . '/../api_helpers.php';
+
+    $map = [];
+    foreach ($tables as $table) {
+        // The closure includes the table itself; only what it adds is interesting here.
+        $extra = array_values(array_diff(with_hidden_subtables([$table]), [$table]));
+        if ($extra !== []) {
+            $map[$table] = $extra;
+        }
+    }
+    return $map;
 }
 
-// Allowed tables/views/printouts for one user, plus the full pick lists for the UI
+// One user's allow-lists plus the pick lists and section metadata for the UI. The
+// response is keyed by scope rather than naming each one, so the Access tab renders
+// whatever the registry defines and needs no scope list of its own.
 if ($action === 'user_tables_get') {
     $userId = (int) ($_GET['user_id'] ?? 0);
     if ($userId <= 0) {
@@ -396,17 +415,30 @@ if ($action === 'user_tables_get') {
     $entry      = admin_user_access_entry($userId);
     $assignable = admin_assignable_items();
 
+    $scopes = [];
+    $items  = [];
+    foreach (USER_ACCESS_SCOPES as $scope => $def) {
+        $scopes[] = [
+            'key'   => $scope,
+            'title' => $def['title'],
+            // Plural: the tab reads "Restricted to 2 of 5 tables".
+            'noun'  => $def['plural'],
+            'empty' => $def['empty'],
+        ];
+        // (object) casts matter: an empty PHP array reaches JS as [] and every string
+        // key would vanish on the client.
+        $items[$scope] = (object) $assignable[$scope];
+    }
+
     echo json_encode([
-        'status'     => 'success',
-        'user_id'    => $userId,
-        'tables'     => $entry['tables'],
-        'views'      => $entry['views'],
-        'prints'     => $entry['prints'],
-        // (object) casts matter: an empty PHP array reaches JS as [] and every
-        // string key would vanish on the client.
-        'all_tables' => (object) $assignable['tables'],
-        'all_views'  => (object) $assignable['views'],
-        'all_prints' => (object) $assignable['prints'],
+        'status'   => 'success',
+        'user_id'  => $userId,
+        'scopes'   => $scopes,
+        'selected' => (object) $entry,
+        'items'    => (object) $items,
+        // What ticking each table drags along, so the tab can say it out loud rather
+        // than leaving the closure invisible. Not an input to the save.
+        'hidden_children' => (object) admin_hidden_children_map(array_keys($assignable['tables'])),
     ]);
     exit;
 }
@@ -425,18 +457,18 @@ if ($action === 'user_tables_save') {
 
     // Only real, non-hidden entries may be granted. A name that is not configured is
     // rejected outright rather than silently dropped: a typo that quietly shrinks
-    // someone's access is worse than a visible error.
+    // someone's access is worse than a visible error. The noun in that message comes
+    // from the registry, so a new scope needs no wording added here.
     $assignable = admin_assignable_items();
-    $labels     = ['tables' => 'table', 'views' => 'view', 'prints' => 'printout'];
     $clean      = [];
-    foreach (['tables', 'views', 'prints'] as $scope) {
+    foreach (USER_ACCESS_SCOPES as $scope => $def) {
         $requested = is_array($data[$scope] ?? null) ? $data[$scope] : [];
         $seen      = [];
         foreach ($requested as $name) {
             if (!is_string($name) || !isset($assignable[$scope][$name])) {
                 echo json_encode([
                     'status' => 'error',
-                    'error'  => 'Unknown ' . $labels[$scope] . ' in selection.',
+                    'error'  => 'Unknown ' . $def['noun'] . ' in selection.',
                 ]);
                 exit;
             }

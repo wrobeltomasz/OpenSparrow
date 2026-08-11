@@ -128,6 +128,118 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
     }
 
+    public function testFileWriteGateCoversEveryAttachment(): void
+    {
+        $src = $this->code('public/api/files.php');
+
+        // The gate used to select `related_field = IMAGES_FIELD`, which left plain
+        // attachments unchecked on delete, mass-delete, mass-tag and metadata edit.
+        // Re-adding that predicate to this query silently reopens it.
+        $this->assertCodeHas(
+            'function assertFileAccess(',
+            $src,
+            'The shared file write gate must cover every attachment, not just galleries.'
+        );
+        $this->assertFalse(
+            str_contains($src, 'AND related_field = $2 AND deleted_at IS NULL'),
+            'The file write gate must not narrow itself back to gallery rows.'
+        );
+        $this->assertCodeHas(
+            'user_can_access_table($rTable)',
+            $src,
+            'The file write gate must consult the per-user table scope, not ownership alone.'
+        );
+    }
+
+    public function testBoardBindingIsBlankedWhenOutOfScope(): void
+    {
+        $src = $this->code('public/api.php');
+
+        // The board's table and status column are schema metadata; an out-of-scope
+        // board must answer like an unconfigured one, not name its binding.
+        $this->assertCodeHas(
+            "\$meta['table'] = '';",
+            $src,
+            'An out-of-scope board must not disclose the table it is bound to.'
+        );
+        $this->assertCodeHas(
+            "\$meta['status_column'] = '';",
+            $src,
+            'An out-of-scope board must not disclose its status column.'
+        );
+    }
+
+    public function testWorkflowListIsFilteredByStepTables(): void
+    {
+        $src = $this->code('public/api.php');
+
+        $this->assertCodeHas(
+            'user_can_access_table($stepTable)',
+            $src,
+            'Workflows whose steps land outside the user\'s tables must not be listed.'
+        );
+    }
+
+    public function testWorkflowProcedureIsGatedByWorkflowScope(): void
+    {
+        $src = $this->code('public/api.php');
+
+        // The scope is cosmetic without this one: hiding a workflow from the menu and
+        // the list still leaves a direct POST able to fire its procedure.
+        $this->assertCodeHas(
+            "require_access('workflows', \$workflowId)",
+            $src,
+            'workflow_procedure must gate the request-supplied workflow id.'
+        );
+    }
+
+    public function testBoardSelectionStartsFromTheFilteredList(): void
+    {
+        $src = $this->code('public/api.php');
+
+        // The branch falls back to "the first board" when ?board= is missing or does
+        // not match. Filtering after that fallback would hand a restricted user a
+        // board they were never granted, so the list has to be narrowed first.
+        $this->assertCodeHas(
+            "\$boards = filter_by_user_access('boards', \$boardsCfg['boards'] ?? [])",
+            $src,
+            'The board branch must resolve ?board= against the filtered list.'
+        );
+        $this->assertFalse(
+            str_contains($src, "\$boardCfg = \$boardsCfg['boards'][0] ?? [];"),
+            'The board fallback must not reach past the filter into the raw config.'
+        );
+    }
+
+    public function testPageGatesCoverBoardsAndWorkflows(): void
+    {
+        $this->assertCodeHas(
+            "os_require_access('boards', \$boardId)",
+            $this->code('public/board.php'),
+            'board.php must gate ?board= like views.php gates ?view=.'
+        );
+        $this->assertCodeHas(
+            "os_require_access('workflows', \$requestedWorkflow)",
+            $this->code('public/index.php'),
+            'index.php must gate ?workflow= — the wizard lives on that page.'
+        );
+    }
+
+    public function testAdminAccessTabKeepsNoScopeListOfItsOwn(): void
+    {
+        // The Access tab renders whatever user_tables_get sends, and that comes from
+        // USER_ACCESS_SCOPES. A local list here is how the picker and the gates drift.
+        $js = (string) file_get_contents(__DIR__ . '/../../public/admin/js/users.js');
+        $this->assertFalse(
+            str_contains($js, 'const ACCESS_SCOPES'),
+            'users.js must not re-declare the scope list; it renders data.scopes.'
+        );
+        $this->assertTrue(
+            str_contains($js, 'data.scopes'),
+            'users.js must render the sections the server describes.'
+        );
+    }
+
     public function testSchemaEndpointIsFilteredByTableAccess(): void
     {
         $src = $this->code('public/api.php');

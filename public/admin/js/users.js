@@ -36,20 +36,16 @@ export async function renderUsersEditor(ctx) {
     renderUserSettings(settingsPanel, ctx);
 }
 
-// Scopes rendered as sections, in menu order. Views and printouts are named
-// objects with no table binding of their own, so they are granted directly by
-// name rather than derived from a table.
-const ACCESS_SCOPES = [
-    { key: 'tables', all: 'all_tables', title: 'Tables',    noun: 'tables',    empty: 'No tables in the schema configuration.' },
-    { key: 'views',  all: 'all_views',  title: 'Views',     noun: 'views',     empty: 'No views configured.' },
-    { key: 'prints', all: 'all_prints', title: 'Printouts', noun: 'printouts', empty: 'No printouts configured.' },
-];
-
 // Access tab: pick a user, tick what they may reach on the frontend. Empty
 // selection = full access (no restriction) — same contract as user_allowed_items()
-// in includes/api_helpers.php. The three scopes are independent: restricting
-// tables leaves views and printouts untouched. Admins are excluded — they work in
-// this panel and must keep seeing everything.
+// in includes/api_helpers.php. The scopes are independent: restricting tables leaves
+// views, printouts, boards and workflows untouched. Admins are excluded — they work
+// in this panel and must keep seeing everything.
+//
+// The sections come from the server (user_tables_get -> scopes), which reads them from
+// USER_ACCESS_SCOPES. This file deliberately keeps no list of its own: a scope added to
+// that registry appears here with no JS change, and a copy kept here is exactly how the
+// picker and the gates would drift apart.
 async function renderUserAccess(panel) {
     panel.innerHTML = '<p class="help-text">Loading users…</p>';
 
@@ -100,7 +96,10 @@ async function renderUserAccess(panel) {
 
 // One checkbox section per scope. Returns a live reader for the ticked values so
 // the shared Save button does not need to know how many scopes there are.
-function renderScopeSection(container, scope, allItems, selected) {
+// hiddenChildren maps a grantable table to the hidden helper tables that ticking it
+// drags in (see admin_hidden_children_map in includes/admin/users.php); it is display
+// only and never part of the payload.
+function renderScopeSection(container, scope, allItems, selected, hiddenChildren = {}) {
     const names = Object.keys(allItems)
         .sort((a, b) => (allItems[a] || a).localeCompare(allItems[b] || b));
 
@@ -141,11 +140,13 @@ function renderScopeSection(container, scope, allItems, selected) {
             <button class="btn btn-secondary btn-sm ta-all">Select All</button>
             <button class="btn btn-secondary btn-sm ta-none">Select None</button>
         </div>
+        <p class="help-text ta-note" style="margin-top:10px;"></p>
     `;
     container.appendChild(section);
 
     const boxes = Array.from(section.querySelectorAll('.ta-item'));
     const badge = section.querySelector('.ta-badge');
+    const note  = section.querySelector('.ta-note');
 
     // Nothing ticked reads as "no access" to most people, so say the opposite out loud.
     const refreshBadge = () => {
@@ -154,16 +155,33 @@ function renderScopeSection(container, scope, allItems, selected) {
             ? '<span class="adm-badge adm-badge-ok">Full access (no restriction)</span>'
             : `<span class="adm-badge">Restricted to ${n} of ${boxes.length} ${escHtml(scope.noun)}</span>`;
     };
-    boxes.forEach(b => b.addEventListener('change', refreshBadge));
-    refreshBadge();
+
+    // Hidden helper tables have no menu entry and no grid of their own, so they are not
+    // listed above and access to them follows the parent instead. Name what a tick drags
+    // in — a closure nobody can see is a closure nobody can reason about.
+    const refreshNote = () => {
+        // Array.isArray, not `|| []`: a table named after an Object prototype key would
+        // otherwise hand flatMap a function instead of a list.
+        const extra = [...new Set(
+            boxes.filter(b => b.checked)
+                .flatMap(b => (Array.isArray(hiddenChildren[b.value]) ? hiddenChildren[b.value] : []))
+        )].sort();
+        note.textContent = extra.length === 0
+            ? ''
+            : 'Hidden helper tables granted along with the ticked ones: ' + extra.join(', ');
+    };
+
+    const refresh = () => { refreshBadge(); refreshNote(); };
+    boxes.forEach(b => b.addEventListener('change', refresh));
+    refresh();
 
     section.querySelector('.ta-all').addEventListener('click', () => {
         boxes.forEach(b => { b.checked = true; });
-        refreshBadge();
+        refresh();
     });
     section.querySelector('.ta-none').addEventListener('click', () => {
         boxes.forEach(b => { b.checked = false; });
-        refreshBadge();
+        refresh();
     });
 
     return () => boxes.filter(b => b.checked).map(b => b.value);
@@ -186,15 +204,18 @@ async function loadUserAccess(listEl, userId) {
     }
 
     listEl.innerHTML = '';
+    const scopes  = Array.isArray(data.scopes) ? data.scopes : [];
     const readers = {};
-    ACCESS_SCOPES.forEach(scope => {
+    scopes.forEach(scope => {
         // PHP casts these to objects so string keys survive JSON — an empty one
         // still arrives as {}, never as [].
         readers[scope.key] = renderScopeSection(
             listEl,
             scope,
-            data[scope.all] || {},
-            new Set(data[scope.key] || [])
+            (data.items || {})[scope.key] || {},
+            new Set((data.selected || {})[scope.key] || []),
+            // Only tables have a hidden-subtable closure to explain.
+            scope.key === 'tables' ? (data.hidden_children || {}) : {}
         );
     });
 
@@ -205,7 +226,7 @@ async function loadUserAccess(listEl, userId) {
 
     saveEl.addEventListener('click', async () => {
         const payload = { user_id: parseInt(userId, 10) };
-        ACCESS_SCOPES.forEach(scope => { payload[scope.key] = readers[scope.key](); });
+        scopes.forEach(scope => { payload[scope.key] = readers[scope.key](); });
         try {
             const res = await apiFetch('api.php?action=user_tables_save', {
                 method: 'POST',

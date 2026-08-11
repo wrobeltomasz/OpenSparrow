@@ -367,17 +367,37 @@ the EN fallback covers missing keys, not stale ones.
 ## Per-user frontend access (2026-08-11)
 
 Admins can restrict a frontend user to a subset of the schema tables, the
-configured views and the print templates, from **Users → Access**. The rules below
-are binding.
+configured views, the print templates, the boards and the workflows, from
+**Users → Access**. The rules below are binding.
+
+### One registry, no second list anywhere
+
+`USER_ACCESS_SCOPES` in `includes/api_helpers.php` is the single definition of what
+a scope is: which config document holds its items, whether that document is a
+name-keyed map or a list of objects, which field carries the id and the label, the
+noun for its 403, and the section heading for the admin tab. The resolver, the gates,
+the filters, the admin picker and the Access tab all read it.
+
+**Nothing else may enumerate scopes.** Not the admin module, not `users.js`, not a
+test. Adding a scope is one row here plus the gate at whatever endpoint serves it;
+every hand-kept copy of the list is a future drift between the picker and the gates,
+and `AccessScopeEndpointGuardTest` fails the build if `users.js` grows one back. That
+is also why `user_tables_get` answers with `scopes`/`items`/`selected` keyed by scope
+instead of naming each one — the tab renders whatever the registry describes.
 
 ### Storage and semantics
 
-- All three scopes live in one `user_table_access` key of `spw_config`, shaped as
-  `{"users": {"<id>": {"tables": [...], "views": [...], "prints": [...]}}}`.
-  No new table, no migration.
-- Views and printouts are granted **by name**, not derived from a table. Neither
-  config carries a table binding — both are backed by PostgreSQL views — so there
-  is nothing to derive from.
+- All scopes live in one `user_table_access` key of `spw_config`, shaped as
+  `{"users": {"<id>": {"tables": [], "views": [], "prints": [], "boards": [],
+  "workflows": []}}}`. No new table, no migration; an unknown key is ignored and a
+  missing one means unrestricted, so the document upgrades itself.
+- Views, printouts, boards and workflows are granted **by name**, not derived from a
+  table — boards and workflows by their stable `id` (`brd_…` / `wf_…`, assigned once
+  at creation in `admin/js/app.js` and independent of the title).
+- **Granting a board or a workflow does not grant its tables.** Both still check the
+  tables they touch: a board with an out-of-scope table is not listed, and a workflow
+  is dropped when any step targets a table the user cannot reach. The two ticks are
+  independent and both must hold — see "Files, boards and workflows" below.
 - **An absent or empty list means UNRESTRICTED for that scope, not "no access."**
   This is what makes the feature safe to ship: every pre-existing account keeps
   working until an admin deliberately ticks entries. Flipping this to "empty means
@@ -398,13 +418,18 @@ are binding.
 
 `includes/api_helpers.php` owns it, and nothing else may re-implement it:
 
-- `user_allowed_items($scope)` — the list, or `null` for unrestricted. Unknown
-  scope throws, so a typo is a hard error rather than a silent "unrestricted"
+- `access_scope($scope)` — one scope's definition. Throws on an unknown name, so a
+  typo is a hard error rather than a silent "unrestricted"
+- `access_scope_items($scope)` — `name => label` for everything grantable, with the
+  map/list difference already normalised away and hidden entries dropped
+- `user_allowed_items($scope)` — the allow-list, or `null` for unrestricted
 - `user_can_access($scope, $name)` — the predicate; `user_can_access_table()` /
-  `_view()` / `_print()` are thin readability wrappers
-- `require_access()` — API gate, **403** (not 400: "unknown" and "not yours" are
-  different answers); same three wrappers
-- `filter_by_user_access($scope, $items)` — narrow a name-keyed map
+  `_view()` / `_print()` are thin readability wrappers kept for the ~30 table call
+  sites. **Do not add a wrapper per new scope** — call the scoped form
+- `require_access($scope, $name)` — API gate, **403** (not 400: "unknown" and "not
+  yours" are different answers). The noun comes from the registry
+- `filter_by_user_access($scope, $items)` — narrows a collection and returns it in
+  the shape it arrived in: a map stays a keyed map, a list stays a list
 - `os_require_access()` in `includes/page_helpers.php` — page gate, redirects
   instead of emitting a JSON envelope
 
@@ -434,6 +459,45 @@ filter sits in two places, and they must stay in step:
 The distinction to keep in mind: FK exposes a **name**, a subtable exposes **rows**.
 That is the line, and it is why one is exempt and the other is not.
 
+### Hidden tables follow their parent
+
+Filtering subtables has a consequence that has to be handled with it: a **hidden**
+table is excluded from `admin_assignable_items()`, so it can never be ticked. Left
+alone, ticking any table at all would cost a user every hidden subtable tab, the
+matching drill-down counts and the `create.php`/`edit.php` links those tabs point at
+— permanently, with no admin action able to restore them. (`checklisty` under
+`zadania` in the shipped example schema is exactly this case.)
+
+`with_hidden_subtables()` closes the resolved table list over the hidden subtables
+reachable from it, transitively, inside `user_allowed_items()` — so every call site
+agrees without a single one of them knowing about it. The rule:
+
+- **Hidden children are pulled in.** They have no menu entry and no grid, exist only
+  as part of a parent record, and cannot be granted any other way. Access to them is
+  a consequence, not a decision.
+- **Visible children are not.** Those an admin grants by ticking them, and a missing
+  tick hiding the tab is the intended, visible outcome. Widening this to visible
+  tables takes the decision away from the admin — do not.
+
+The closure is displayed, never silent: `user_tables_get` returns a
+`hidden_children` map and the Access tab lists what each tick drags in.
+`admin_assignable_items()` still excludes hidden tables from the picker — the two
+work together, so do not "fix" the picker to offer them.
+
+Still not covered: a hidden table used **only** as a workflow step target, reachable
+from no subtable relation. It cannot be ticked and is not closed over, so a restricted
+user cannot run that workflow — unhide the table and grant it explicitly.
+
+Note that the reason has changed since workflows became a scope of their own. It used
+to be that closing over workflow bindings would grant every restricted user every
+table any workflow touches, because everyone saw every workflow — there was no anchor.
+Now there is one: workflows are granted individually, so "grant the step tables of a
+granted workflow" would be as well-anchored as the subtable closure. It is deliberately
+**not** implemented, because it is a visible widening of table access and the two ticks
+are documented as independent. If you ever add it, it belongs next to
+`with_hidden_subtables()` and needs the same treatment: displayed in the Access tab,
+never silent.
+
 `api/fk.php` is the sharp edge: it rewrites `$_GET['table']` to the reference table
 and re-enters `public/api.php`. It gates its own request-supplied source table, then
 defines `OS_TABLE_ACCESS_DELEGATED` so the `list` branch skips the gate for the
@@ -459,6 +523,60 @@ lookup in that file reads it and must keep resolving — so the filtered copy
 (`$schemaPublic`) is what gets encoded. The two endpoints must not disagree about
 what a user is allowed to know exists.
 
+### Files, boards and workflows
+
+Three call sites do not fit the "gate the request-supplied name" shape and are easy
+to get wrong:
+
+- **`assertFileAccess()` in `api/files.php`** is the single write gate behind
+  `delete`, `mass_delete`, `mass_tag` and `update_meta`. It resolves each uuid to its
+  `(related_table, related_id)` and checks both the table scope and record ownership.
+  It must **not** filter on `related_field`: doing so is what left every plain
+  attachment unchecked while galleries were guarded. Unattached files (no
+  `related_table`/`related_id`) belong to no record and stay editable by any logged-in
+  user, matching how `actionList()` lists them; a file pointing at a table missing
+  from the schema config fails closed and logs, because there is nothing left to check
+  ownership against.
+- **`api=board`** resolves `?board=` against the **filtered** list, not the raw
+  config. That ordering is the point: the branch falls back to "the first board" when
+  the parameter is missing or does not match, and filtering after that fallback would
+  hand a restricted user a board they were never granted. It also blanks `table` and
+  `status_column` when the bound table is out of scope — the lanes were already empty,
+  but the binding itself is schema metadata and must not be named to someone who
+  cannot open that table.
+- **`api=workflows`** applies two filters, and both are needed: the workflow's own
+  scope, then a check that every step's table is reachable. Step bindings are
+  config-supplied, which normally means "skip, do not reject" — a workflow is the
+  exception because it is the unit that either runs or does not, so a half-usable
+  wizard is dropped rather than served. `menu.php` repeats the step check for the
+  submenu; that duplication is deliberate and small, and the parent entry is keyed off
+  the surviving children so it disappears with them.
+- **`workflow_procedure`** gates the request-supplied `workflow_id`. Without it the
+  whole scope would be cosmetic: the workflow would vanish from the menu and the list
+  while a direct POST still fired its procedure. Any future endpoint that acts on a
+  workflow id needs the same line.
+
+### The admin shortcut is about the caller, not the subject
+
+`user_allowed_items()` returns "unrestricted" for admins by reading
+`$_SESSION['role']` — but only when no `$userId` was passed. An explicit id asks
+about somebody else, and the caller's role says nothing about that user: answering
+from the session would report every user as unrestricted whenever the code runs in
+the admin panel or under a cron impersonating an admin. A "what does this user see"
+preview would show them everything, and a per-user notification job would leak across
+the very boundary it is meant to respect. Callers that want the shortcut for another
+user must look up that user's role themselves.
+
+### Hidden entries in the other scopes
+
+`access_scope_items()` skips `hidden` entries in every scope, so a hidden board, view
+or printout cannot be ticked — and unlike tables there is no parent to inherit from,
+so a restricted user can never reach one. That is a tightening, not a hole: an
+unrestricted user still opens them by direct URL exactly as before (the `hidden` flag
+was only ever a menu-visibility flag, never a boundary). If a restricted user needs
+one, unhide it and grant it explicitly. Do not "fix" this by offering hidden entries
+in the picker — that would put items in the tab that the menu will never show.
+
 ### Accepted gaps — do not "fix" without a design change
 
 - FK labels still resolve across the boundary: a permitted table may display a name
@@ -476,12 +594,71 @@ what a user is allowed to know exists.
   the view only to users who should see its contents. Table access is not a
   substitute for reviewing what a view selects.
 
-### When adding a new endpoint that takes a table, view or print name
+### When adding a new endpoint that takes the name of a protected object
 
-Add `require_table_access()` / `require_view_access()` / `require_print_access()`
-right after the existing "unknown/not found" check, and add the action to
-`$postActions` in `public/admin/api.php` if it mutates. Both lists are hand-kept;
+Add `require_access($scope, $name)` (or one of the table/view/print wrappers) right
+after the existing "unknown/not found" check, and add the action to `$postActions` in
+`public/admin/api.php` if it mutates. Both lists are hand-kept;
 `tests/Admin/AdminApiGuardsTest.php` guards the second one.
+
+**Then record it in `tests/Security/request_scope_inventory.php`.** That file lists
+every place the code reads a request-supplied table/view/print/board/workflow name,
+with a decision — `gated`, `scoped`, `admin` or `none` — and a reason.
+`RequestScopeInventoryTest` scans the source and fails when a read is missing from it,
+when an entry describes a read that no longer exists, or when a reason is too short to
+be a reason. So a new endpoint accepting a `?table=` cannot merge until someone has
+written down what it does about it.
+
+Why this exists: every gap found in the 2026-08 audit was a **forgotten gate**, not a
+broken helper. The registry above removes the duplicated scope lists, but it cannot
+make anyone call a gate — that still depends on remembering, and this is what moves
+the remembering into CI.
+
+Read its green run correctly. It proves that somebody looked at each of those reads,
+**not** that they are all safe: the test cannot tell whether a gate is right, only
+whether the file claiming to gate contains a gate call at all. A check that felt
+complete would be worse than none, because then nobody would read the inventory
+either. When you touch one of those endpoints, re-read its entry and ask whether the
+reason still holds.
+
+### The boundary gate: closed by default
+
+`os_api_bootstrap()` now applies the access rules itself, from
+`OS_REQUEST_SCOPE_PARAMS` — the canonical map of request parameter names
+(`table`, `related_table`, `view`, `print`, `board`, `workflow`, `workflow_id`) to
+scopes. Every API endpoint is gated on those parameters whether or not its author
+remembered to say so. Opting out is explicit and needs a reason at the call site:
+
+```php
+os_api_bootstrap(['gate' => false]);                 // whole endpoint
+os_api_bootstrap(['gate' => ['table' => false]]);    // one parameter
+```
+
+Three rules make this safe, and none of them is optional:
+
+- **Only names that EXIST in the configuration are gated.** An unknown name falls
+  through so the endpoint answers 400/404 in its own words; gating it would turn every
+  typo into a 403 and collapse the "unknown is 400, not yours is 403" distinction that
+  the endpoints and their tests depend on.
+- **Existence is checked including hidden entries.** A hidden table is
+  unreachable-by-menu, not unknown — treating it as unknown would let it through
+  ungated, which is the opposite of what this is for.
+- **The body is read, not consumed.** `php://input` is re-readable for the JSON
+  content types in use, so endpoints still parse it themselves. That was verified
+  against a running server, not assumed: a consumed stream would break every POST
+  silently.
+
+`api/fk.php` is the one built-in exemption — its delegated `$_GET['table']` is skipped
+when `OS_TABLE_ACCESS_DELEGATED` is defined, the same constant the `list` branch reads.
+
+**The per-endpoint gates stay.** They run closer to the data, they cover names this map
+cannot see (config-supplied bindings, values nested deeper in a body), and two
+independent checks on an access boundary is the point, not redundancy to clean up.
+
+The rule and the gate are separate functions on purpose:
+`os_request_scope_violation()` decides and returns, `os_gate_request_scopes()` acts on
+it. `require_access()` ends the process, so merged into one function the rule could not
+be tested at all — `TableAccessTest` covers it directly.
 
 ## Where binding rules live
 
