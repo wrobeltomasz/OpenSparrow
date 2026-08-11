@@ -758,6 +758,18 @@ try {
         $params = [];
         if ($filterCol !== '' && ($filterVal !== '' || $filterFrom !== '' || $filterTo !== '')) {
             $allowedFilterCols = array_merge([$idCol], array_keys($tableCfg['columns'] ?? []));
+            // The same narrowing the projection above got, and for a stronger reason: a
+            // filter does not have to appear in the response to disclose what it matched.
+            // Left at the full column list, the FK exemption would let a restricted user
+            // filter an out-of-scope reference table on any column — and filter_from /
+            // filter_to make that a range probe, so a value they may not read is binary-
+            // searched out of which rows come back, keyed to the label that does show.
+            // Deriving the filter and the projection from one list is what makes the
+            // exemption "labels only" rather than "labels, plus anything you can ask
+            // yes/no questions about". The search clause below already spans $selectCols.
+            if (defined('OS_FK_LABEL_COLUMNS')) {
+                $allowedFilterCols = array_values(array_intersect($allowedFilterCols, $selectCols));
+            }
             if (in_array($filterCol, $allowedFilterCols, true)) {
                 if ($filterFrom !== '' || $filterTo !== '') {
                     // Half-open range filter [from, to) — used by time-series drill-down

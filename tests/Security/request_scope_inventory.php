@@ -36,7 +36,7 @@
 
 return [
     'public/api.php' => [
-        '_GET.table' => ['gated', 'Grid/list, m2m_rows, image_rows and subtable_counts all call require_table_access() after resolving the table. The list branch is the one exception and it is explicit: api/fk.php delegates into it with OS_TABLE_ACCESS_DELEGATED for a schema-supplied reference table, and narrows the projection to label columns via OS_FK_LABEL_COLUMNS.'],
+        '_GET.table' => ['gated', 'Grid/list, m2m_rows, image_rows and subtable_counts all call require_table_access() after resolving the table. The list branch is the one exception and it is explicit: api/fk.php delegates into it with OS_TABLE_ACCESS_DELEGATED for a schema-supplied reference table, and narrows the projection to label columns via OS_FK_LABEL_COLUMNS. That narrowing covers the filter_col allow-list as well as the SELECT list — a filter discloses what it matched without ever being selected, and filter_from/filter_to would otherwise turn the exemption into a range probe over any column of a table the user may not open.'],
         '_GET.board' => ['scoped', 'The board branch resolves ?board= against filter_by_user_access(boards, ...) and falls back to the first board of that filtered list, so an out-of-scope or unmatched id can never select a board the user was not granted.'],
         'body.table' => ['gated', 'Single require_table_access() at the top of the POST/PATCH/DELETE branch, before any of the mutating sub-branches (insert, update, delete, calendar move, board move, mass insert) reads it.'],
         'body.board' => ['scoped', 'move_card resolves the board id against filter_by_user_access(boards, ...); an unmatched id leaves $boardCfg empty and the request is rejected as an invalid board table.'],

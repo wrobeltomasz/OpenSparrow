@@ -128,6 +128,37 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
     }
 
+    /**
+     * Narrowing the projection is only half of the FK exemption. filter_col is checked
+     * against the table's OWN column list, so while that check stayed at the full list a
+     * restricted user could filter an out-of-scope reference table on a column the
+     * response never shows — and filter_from/filter_to make it a range probe, so the
+     * value gets binary-searched out of which rows come back, keyed to the label that
+     * does show. A filter never has to be selected to disclose what it matched.
+     */
+    public function testFkLabelAllowListAlsoNarrowsTheFilterColumns(): void
+    {
+        $src = $this->code('public/api.php');
+
+        $this->assertCodeHas(
+            'array_intersect($allowedFilterCols, $selectCols)',
+            $src,
+            'The FK label allow-list must narrow filter_col too, not the projection alone.'
+        );
+
+        // Order matters as much as presence: narrowing after the membership test would
+        // read as a guard and do nothing. Pinned by position for that reason.
+        $narrow = strpos($src, 'array_intersect($allowedFilterCols, $selectCols)');
+        $test   = strpos($src, 'in_array($filterCol, $allowedFilterCols, true)');
+        $this->assertIsInt($narrow, 'api.php no longer narrows the FK filter columns.');
+        $this->assertIsInt($test, 'api.php no longer validates filter_col against a list.');
+        $this->assertLessThan(
+            $test,
+            $narrow,
+            'filter_col must be narrowed before it is tested for membership, not after.'
+        );
+    }
+
     public function testFileWriteGateCoversEveryAttachment(): void
     {
         $src = $this->code('public/api/files.php');
