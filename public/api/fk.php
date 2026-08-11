@@ -49,6 +49,29 @@ if ($filterCol !== '') {
     }
 }
 
+// A reference table outside the user's scope stays readable — a dropdown on an
+// allowed table cannot render without its labels — but only as labels. Name the
+// columns a dropdown consumes (the key plus the configured display columns) and
+// api.php narrows its projection to them, so the exemption below can no longer be
+// turned into a full read of a table the user may not open. Filtering and search
+// then span nothing but these columns too, because the list branch derives both
+// from the same projection.
+if (!user_can_access_table($refTable)) {
+    $fkCfg   = $schemaData['tables'][$table]['foreign_keys'][$col];
+    $labelCols = [(string) ($fkCfg['reference_column'] ?? 'id')];
+    // display_column may be a string or a list; display_columns is the plural spelling
+    // the workflow wizard writes. Both shapes appear in stored schemas.
+    foreach (['display_column', 'display_columns'] as $key) {
+        $raw = $fkCfg[$key] ?? null;
+        foreach (is_array($raw) ? $raw : [$raw] as $name) {
+            if (is_string($name) && $name !== '') {
+                $labelCols[] = $name;
+            }
+        }
+    }
+    define('OS_FK_LABEL_COLUMNS', array_values(array_unique($labelCols)));
+}
+
 // Rewrite GET parameters to simulate a direct call to api.php for the reference table.
 // The constant tells api.php's list branch that this table name came from the schema
 // config, not from the client, so the per-user table gate must not apply to it —

@@ -440,11 +440,37 @@ defines `OS_TABLE_ACCESS_DELEGATED` so the `list` branch skips the gate for the
 delegated name. Remove that constant and every FK pointing outside a user's tables
 returns 403.
 
+**That waiver only holds because the projection is narrowed with it.** The `list`
+branch selects every configured column and derives its `search` clause from the same
+list, so an unnarrowed delegation is a full read of the reference table — columns,
+free-text search, filters and pagination included — for a user who may not open it.
+So when the reference table is out of scope, `api/fk.php` also defines
+`OS_FK_LABEL_COLUMNS` (the `reference_column` plus the configured
+`display_column`/`display_columns`), and the `list` branch intersects its projection
+with it. The two constants belong together: never define one without the other.
+Intersect, never assign — the constant may only ever *remove* columns from the
+schema-derived list, so it can never introduce a name of its own into the SQL.
+`tests/Security/AccessScopeEndpointGuardTest.php` pins both halves.
+
+`api.php?api=schema` echoes the schema document itself and is therefore filtered
+through `filter_tables_for_user()`, exactly like its sibling `public/api/schema.php`.
+The internal `$schema` variable stays unfiltered on purpose — every config-supplied
+lookup in that file reads it and must keep resolving — so the filtered copy
+(`$schemaPublic`) is what gets encoded. The two endpoints must not disagree about
+what a user is allowed to know exists.
+
 ### Accepted gaps — do not "fix" without a design change
 
 - FK labels still resolve across the boundary: a permitted table may display a name
-  from a restricted one. That is a name leak, not a data leak, and closing it would
-  break the dropdowns.
+  from a restricted one. That is a name leak, not a data leak — the narrowed
+  projection above is what keeps it to names — and closing it would break the
+  dropdowns.
+- `filter_col` on a delegated FK lookup still accepts any column of the reference
+  table, so an equality filter over a *guessed* value is an oracle: it reveals that
+  a matching record exists, and its label. Cascading FK dropdowns need that
+  parameter, and the response carries nothing but the label columns, so this stays.
+  Narrowing it would have to come with a configured cascade binding to replace the
+  client-supplied one.
 - A view or printout the user may open can read data from a table they may not. The
   binding is config-supplied, so it follows the same rule as FK references — grant
   the view only to users who should see its contents. Table access is not a

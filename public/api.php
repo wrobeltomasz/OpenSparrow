@@ -144,7 +144,15 @@ if ($schema === null) {
     echo json_encode(['error' => 'Cannot read schema configuration']);
     exit;
 }
-$schemaJson = json_encode($schema);
+// Per-user table access applies to the schema document itself: table names, PG schema
+// names and every column definition are exactly what the allow-list exists to scope,
+// and this endpoint is reachable by any logged-in frontend user. api/schema.php filters
+// the same way — the two must not disagree about what a user is allowed to know exists.
+$schemaPublic = $schema;
+// (object) so a user left with no tables at all still receives a JSON object — an
+// empty PHP array would reach the client as [] and behave like a list.
+$schemaPublic['tables'] = (object) filter_tables_for_user($schema['tables'] ?? []);
+$schemaJson = json_encode($schemaPublic);
 // Connect to DB (db.php + api_helpers.php are already loaded by the bootstrap)
 $conn = db_connect();
 require_once __DIR__ . '/../includes/automations.php';
@@ -706,6 +714,16 @@ try {
         $schemaName = $tableCfg['schema'] ?? 'public';
         $cols = column_list($tableCfg);
         $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
+        // The delegation above exempts the reference table from the per-user gate so
+        // FK labels keep resolving. Without narrowing the projection that exemption
+        // would hand back every configured column of a table the user may not open —
+        // api/fk.php therefore names the columns a dropdown actually needs, and the
+        // response carries nothing else. Intersected with the schema-derived list, so
+        // the constant can never introduce a column name of its own.
+        if (defined('OS_FK_LABEL_COLUMNS')) {
+            $keep = array_merge([$idCol], (array) OS_FK_LABEL_COLUMNS);
+            $selectCols = array_values(array_intersect($selectCols, $keep));
+        }
         $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
         $filterCol  = $_GET['filter_col'] ?? '';
         $filterVal  = $_GET['filter_val'] ?? '';
