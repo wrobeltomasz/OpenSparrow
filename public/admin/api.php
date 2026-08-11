@@ -76,6 +76,7 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE'], true)) {
 $postActions = [
     'save', 'init_db',
     'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'user_policy_save',
+    'user_tables_save',
     'create_table', 'add_column', 'schema_add_table',
     'run_cron_notifications', 'cron_purge_log',
     'backup_tables',
@@ -146,6 +147,8 @@ $adminModules = [
     'users_stats' => 'users',
     'user_policy_get' => 'users',
     'user_policy_save' => 'users',
+    'user_tables_get' => 'users',
+    'user_tables_save' => 'users',
     'create_table' => 'schema',
     'add_column' => 'schema',
     'schema_add_table' => 'schema',

@@ -80,7 +80,12 @@ if (!function_exists('renderMenuIcon')) {
 
 $includeDir   = __DIR__ . '/../config';
 require_once __DIR__ . '/../includes/config_store.php';
-$tables       = (config_get('schema') ?? [])['tables'] ?? [];
+require_once __DIR__ . '/../includes/api_helpers.php';
+// Per-user table access: the menu only lists what this user may open. This is
+// presentation — every endpoint enforces the same rule server-side (see
+// require_table_access() in includes/api_helpers.php), so hiding an entry here is
+// convenience, never the security boundary.
+$tables       = filter_tables_for_user((config_get('schema') ?? [])['tables'] ?? []);
 
 $currentPage  = basename($_SERVER['PHP_SELF']);
 $currentTable = substr($_GET['table'] ?? '', 0, 64);
@@ -131,6 +136,10 @@ $menuCatalog = [
 $boardChildren = [];
 foreach ($boardCfg['boards'] ?? [] as $bItem) {
     if (empty($bItem['table']) || empty($bItem['status_column']) || !empty($bItem['hidden'])) {
+        continue;
+    }
+    // A board is bound to one table — out of scope means the board is not listed.
+    if (!user_can_access_table((string) $bItem['table'])) {
         continue;
     }
     $bId             = (string) ($bItem['id'] ?? '');
@@ -194,6 +203,9 @@ foreach ($viewsCfg['views'] ?? [] as $vName => $vConfig) {
     if (!empty($vConfig['hidden'])) {
         continue;
     }
+    if (!user_can_access_view((string) $vName)) {
+        continue;
+    }
     $vName          = (string) $vName;
     $viewChildren[] = [
         'type'   => 'view',
@@ -221,6 +233,9 @@ $printCfg      = loadMenuConfig('print', $includeDir);
 $printChildren = [];
 foreach ($printCfg['prints'] ?? [] as $pName => $pConfig) {
     if (!empty($pConfig['hidden'])) {
+        continue;
+    }
+    if (!user_can_access_print((string) $pName)) {
         continue;
     }
     $pName           = (string) $pName;

@@ -466,6 +466,9 @@ function validate_column_regexp(array $colCfg, mixed $val): ?string
 
 // Validate a table name against schema.json. $field names the offending input in
 // the "is required" message so callers preserve their existing error wording.
+// Also enforces the per-user table allow-list: a table that exists but is out of
+// the user's scope is 403 (not 400) — the distinction matters, "unknown" and
+// "not yours" are different answers and only the second one is an access denial.
 function validatedTable(string $table, string $field = 'table'): string
 {
     if ($table === '') {
@@ -476,5 +479,148 @@ function validatedTable(string $table, string $field = 'table'): string
     if (!isset($schema['tables'][$table])) {
         jsonError('Unknown table.', 400);
     }
+    require_table_access($table);
     return $table;
+}
+
+// ── Per-user access to tables, views and printouts ───────────────────────────
+// Admins may restrict a frontend user to a subset of the schema's tables, of the
+// configured PostgreSQL views, and of the print templates. All three live in one
+// 'user_table_access' spw_config document:
+//
+//   {"users": {"<user_id>": {"tables": [...], "views": [...], "prints": [...]}}}
+//
+// Views and printouts are named objects with no table binding of their own, which
+// is why they are granted directly by name instead of being derived from a table.
+//
+// An ABSENT OR EMPTY list means UNRESTRICTED for that scope, not "no access". That
+// is what keeps the feature backward compatible: every existing user keeps working
+// until an admin deliberately ticks entries. "No access at all" is expressed by
+// deactivating the account (is_active = false), not by an empty list. The three
+// scopes are independent — restricting tables leaves views untouched.
+//
+// Never cache the resolved lists in $_SESSION: an admin revoking access must take
+// effect on the user's next request, not on their next login. The static cache
+// below is per-request only.
+
+// Scopes a user's access can be narrowed to. Also the key set of the stored
+// per-user document — anything else in it is ignored.
+const USER_ACCESS_SCOPES = ['tables', 'views', 'prints'];
+
+// The user's allow-list for one scope, or null when unrestricted (no entry, empty
+// list, admin role, or no session at all — cron/CLI contexts must not be filtered).
+// @return string[]|null
+function user_allowed_items(string $scope, ?int $userId = null): ?array
+{
+    static $cache = [];
+
+    $userId ??= (int) ($_SESSION['user_id'] ?? 0);
+    if ($userId <= 0) {
+        return null;
+    }
+    // Admins never reach the frontend (bootstrap redirects them to admin/), and the
+    // admin panel must keep seeing everything in order to configure it.
+    if (($_SESSION['role'] ?? '') === 'admin') {
+        return null;
+    }
+    if (!in_array($scope, USER_ACCESS_SCOPES, true)) {
+        throw new InvalidArgumentException("Unknown access scope: {$scope}");
+    }
+
+    if (!array_key_exists($userId, $cache)) {
+        require_once __DIR__ . '/config_store.php';
+        $cfg   = config_get('user_table_access');
+        $entry = $cfg['users'][(string) $userId] ?? null;
+
+        // A bare list is the pre-scopes shape and means tables only. Kept so a
+        // document written before views/printouts existed keeps working unchanged.
+        if (is_array($entry) && array_is_list($entry)) {
+            $entry = ['tables' => $entry];
+        }
+        if (!is_array($entry)) {
+            $entry = [];
+        }
+
+        $resolved = [];
+        foreach (USER_ACCESS_SCOPES as $s) {
+            $list = is_array($entry[$s] ?? null) ? $entry[$s] : [];
+            $list = array_values(array_unique(array_filter($list, 'is_string')));
+            $resolved[$s] = ($list === [] ? null : $list);
+        }
+        $cache[$userId] = $resolved;
+    }
+
+    return $cache[$userId][$scope];
+}
+
+// The user's allowed tables, or null when unrestricted. Thin wrapper kept because
+// it reads better at the ~20 table call sites than the scoped form.
+// @return string[]|null
+function user_allowed_tables(?int $userId = null): ?array
+{
+    return user_allowed_items('tables', $userId);
+}
+
+// Whether the current (or given) user may touch this item at all.
+function user_can_access(string $scope, string $name, ?int $userId = null): bool
+{
+    $allowed = user_allowed_items($scope, $userId);
+    return $allowed === null || in_array($name, $allowed, true);
+}
+
+function user_can_access_table(string $table, ?int $userId = null): bool
+{
+    return user_can_access('tables', $table, $userId);
+}
+
+function user_can_access_view(string $view, ?int $userId = null): bool
+{
+    return user_can_access('views', $view, $userId);
+}
+
+function user_can_access_print(string $print, ?int $userId = null): bool
+{
+    return user_can_access('prints', $print, $userId);
+}
+
+// JSON gate for API endpoints. Call it only with a REQUEST-supplied name.
+// Config-supplied names (FK reference_table, subtables, board/calendar bindings)
+// must NOT go through here — gating those would break label lookups inside tables
+// the user is legitimately allowed to see.
+function require_access(string $scope, string $name, string $label, ?int $userId = null): void
+{
+    if (!user_can_access($scope, $name, $userId)) {
+        jsonError('Forbidden: no access to this ' . $label . '.', 403);
+    }
+}
+
+function require_table_access(string $table, ?int $userId = null): void
+{
+    require_access('tables', $table, 'table', $userId);
+}
+
+function require_view_access(string $view, ?int $userId = null): void
+{
+    require_access('views', $view, 'view', $userId);
+}
+
+function require_print_access(string $print, ?int $userId = null): void
+{
+    require_access('prints', $print, 'printout', $userId);
+}
+
+// Narrow a name-keyed map (schema['tables'], the views config, the prints config)
+// down to what the user may see. Preserves key order.
+function filter_by_user_access(string $scope, array $items, ?int $userId = null): array
+{
+    $allowed = user_allowed_items($scope, $userId);
+    if ($allowed === null) {
+        return $items;
+    }
+    return array_intersect_key($items, array_flip($allowed));
+}
+
+function filter_tables_for_user(array $tables, ?int $userId = null): array
+{
+    return filter_by_user_access('tables', $tables, $userId);
 }

@@ -183,6 +183,11 @@ try {
             if (!empty($cfg['hidden'])) {
                 continue;
             }
+            // Per-user printout access. Unlike 'hidden' this is an access rule, so it
+            // also guards data/param_options below — a hidden menu entry is not a boundary.
+            if (!user_can_access_print((string) $name)) {
+                continue;
+            }
             $result[] = [
                 'name'         => $name,
                 'display_name' => $cfg['display_name'] ?? $name,
@@ -247,6 +252,7 @@ try {
             echo json_encode(['error' => 'Print template not found']);
             exit;
         }
+        require_print_access((string) $printName);
 
         $cfg           = $prints[$printName];
         $views         = print_available_views();
@@ -318,6 +324,7 @@ try {
             echo json_encode(['error' => 'Print template not found']);
             exit;
         }
+        require_print_access((string) $printName);
 
         $cfg   = $prints[$printName];
         $views = print_available_views();

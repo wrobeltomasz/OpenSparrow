@@ -189,6 +189,11 @@ try {
             if (!$table) {
                 continue;
             }
+            // Config-supplied table: skip the widget rather than 403 the whole
+            // dashboard — one out-of-scope widget must not blank the page.
+            if (!user_can_access_table($table)) {
+                continue;
+            }
 
             try {
                 $tableCfg = safe_table($schema, $table);
@@ -308,6 +313,10 @@ try {
             if (!$table) {
                 continue;
             }
+            // Config-supplied: drop the source, keep the rest of the calendar.
+            if (!user_can_access_table($table)) {
+                continue;
+            }
 
             try {
                 $tableCfg = safe_table($schema, $table);
@@ -420,6 +429,12 @@ try {
         $table     = $boardCfg['table'] ?? '';
         $statusCol = $boardCfg['status_column'] ?? '';
         if ($table === '' || $statusCol === '') {
+            echo json_encode($meta);
+            exit;
+        }
+        // Config-supplied: an unconfigured-looking board (empty lanes) is the same
+        // answer this branch already gives for a broken binding.
+        if (!user_can_access_table($table)) {
             echo json_encode($meta);
             exit;
         }
@@ -563,6 +578,7 @@ try {
         if (!isset($schema['tables'][$table])) {
             exit(json_encode(['data' => (object)[]]));
         }
+        require_table_access($table);
 
         $ids = array_values(array_filter(explode(',', $idsRaw), 'ctype_digit'));
         if (empty($ids)) {
@@ -646,6 +662,7 @@ try {
         if (!isset($schema['tables'][$table]) || images_config($schema, $table) === null) {
             exit(json_encode(['data' => (object)[]]));
         }
+        require_table_access($table);
 
         $ids = array_values(array_filter(explode(',', $_GET['ids'] ?? ''), 'ctype_digit'));
         $ids = array_slice($ids, 0, 200);
@@ -678,6 +695,12 @@ try {
         } catch (\RuntimeException $e) {
             http_response_code(400);
             exit(json_encode(['error' => 'Unknown table']));
+        }
+        // api/fk.php delegates here with a schema-supplied reference table and defines
+        // this constant to say so — that name never came from the client, so gating it
+        // would break FK dropdowns inside tables the user is allowed to use.
+        if (!defined('OS_TABLE_ACCESS_DELEGATED')) {
+            require_table_access($table);
         }
         $idCol = id_column();
         $schemaName = $tableCfg['schema'] ?? 'public';
@@ -819,6 +842,7 @@ try {
             http_response_code(400);
             exit(json_encode(['error' => 'Unknown table']));
         }
+        require_table_access($table);
         $subtables = $tableCfg['subtables'] ?? [];
 
         if (empty($subtables)) {
@@ -854,6 +878,12 @@ try {
                 continue;
             }
             if (!isset($schema['tables'][$subTable])) {
+                continue;
+            }
+            // Mirrors the subtable filtering in edit.php: a count is still a fact
+            // about a table the user may not open, so out-of-scope children are
+            // skipped rather than counted.
+            if (!user_can_access_table($subTable)) {
                 continue;
             }
             $subCfg  = $schema['tables'][$subTable];
@@ -988,6 +1018,10 @@ try {
             http_response_code(400);
             exit(json_encode(['error' => 'Unknown table']));
         }
+        // Every mutating branch below (insert, update, delete, calendar/board move,
+        // mass insert) resolves its target from this one $table, so the gate belongs
+        // here — one place, no per-branch copies to forget.
+        require_table_access($table);
         $schemaName = $tableCfg['schema'] ?? 'public';
         $idCol = id_column();
 // POST: CALENDAR MOVE EVENT (Drag & Drop functionality)

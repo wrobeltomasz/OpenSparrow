@@ -18,6 +18,11 @@ $page      = os_page_bootstrap(['csp' => 'unsafe-style']);
 $cspNonce  = $page['nonce'];
 $userRole  = $page['role'];
 $viewName  = substr($_GET['view'] ?? '', 0, 64);
+// A ?view= outside the user's scope (stale bookmark, hand-edited URL) drops them
+// back on the default grid instead of rendering a shell whose data call 403s.
+if ($viewName !== '') {
+    os_require_access('views', $viewName);
+}
 
 $pageTitle      = 'OpenSparrow — Views';
 $extraCss       = '<link href="assets/css/views.css" rel="stylesheet">';

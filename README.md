@@ -91,6 +91,7 @@ https://github.com/user-attachments/assets/62611274-d6e3-41ee-9b88-6e84f8f18827
 - **Calendar & notifications** — date-based records on a calendar view, with scheduled reminders via cron. An optional subtitle column adds a second line to each calendar entry.
 - **Admin panel** — collapsible sidebar navigation with visual editors for schema, dashboards, calendar, boards, printouts, views, workflows, automations, files, ETL, anonymization, the knowledge base, and users at `/admin`. Unified login for all roles — no separate admin password.
 - **Visual table builder** — create PostgreSQL tables from the admin UI with per-column type, NOT NULL, default value, index (btree/hash/unique), column comment (`COMMENT ON COLUMN`), and foreign key constraints. Timestamps preset adds `created_at`/`updated_at` automatically. Tables are registered in the app schema configuration in the same step.
+- **Per-user access control** — beyond the three roles, each frontend account can be restricted to a subset of tables, views and printouts from **System → Users → Access**. The three groups are independent, ticking nothing leaves a group unrestricted, and enforcement is server-side on every endpoint — menus, grids, forms, subtable tabs, bulk tools, files and the RAG context all follow the restriction.
 - **Audit logging & record snapshots** — every write is logged to `spw_users_log`; an optional record-snapshot module saves a full JSONB copy of each record after INSERT/UPDATE to `spw_record_snapshots`, toggled from the admin panel or via env var.
 - **CSV export & pagination** — built-in grid utilities.
 - **Workflows builder** — multi-step wizards linking parent/child records across tables. Each step can also upload an image or call a PostgreSQL stored procedure, so server-side logic runs as part of the wizard.
@@ -221,6 +222,8 @@ All accounts are stored in `spw_users` and managed from **System → Users**. Th
 | `admin` | Full access | Blocked |
 | `editor` | Blocked | Full CRUD |
 | `viewer` | Blocked | Read-only |
+
+Roles decide *what* an account may do. The **Access** tab decides *where* it may do it: pick a user and tick the tables, views and printouts they may reach on the frontend. The three groups are independent, and leaving a group empty means **no restriction** for that group — not "no access". To cut an account off entirely, deactivate it rather than clearing its checkboxes. Admin accounts are never restricted and are not listed there. The selection is stored in the `user_table_access` configuration key and takes effect on the user's next request, without them logging out.
 
 - **Password reset:** click **Change pwd** next to any user. For your own account the current password is required; for other accounts the admin can override without it.
 - Re-run **System → Migrations → Initialize System Tables** after every upgrade — it uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE … ADD COLUMN IF NOT EXISTS` and also migrates legacy roles (`full → editor`, `readonly → viewer`).

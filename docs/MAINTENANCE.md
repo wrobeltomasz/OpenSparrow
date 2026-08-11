@@ -364,6 +364,99 @@ names them, states the fixed password and points at Admin > Users. That string w
 updated in `en` and `pl` only, so the other 18 locales still carry the older text;
 the EN fallback covers missing keys, not stale ones.
 
+## Per-user frontend access (2026-08-11)
+
+Admins can restrict a frontend user to a subset of the schema tables, the
+configured views and the print templates, from **Users → Access**. The rules below
+are binding.
+
+### Storage and semantics
+
+- All three scopes live in one `user_table_access` key of `spw_config`, shaped as
+  `{"users": {"<id>": {"tables": [...], "views": [...], "prints": [...]}}}`.
+  No new table, no migration.
+- Views and printouts are granted **by name**, not derived from a table. Neither
+  config carries a table binding — both are backed by PostgreSQL views — so there
+  is nothing to derive from.
+- **An absent or empty list means UNRESTRICTED for that scope, not "no access."**
+  This is what makes the feature safe to ship: every pre-existing account keeps
+  working until an admin deliberately ticks entries. Flipping this to "empty means
+  denied" without first writing full lists for every existing user takes the whole
+  frontend down for everyone. `tests/Security/TableAccessTest.php` pins it.
+- **The scopes are independent.** Restricting tables leaves views and printouts
+  untouched. A shared code path that collapses them is the first thing to break.
+- A bare list (`{"users": {"7": ["orders"]}}`) is the pre-scopes shape and is read
+  as tables only. Keep that branch: dropping it would silently widen access on
+  upgrade, because an unreadable entry resolves to "unrestricted".
+- "No access at all" is expressed by deactivating the account, not by an empty list.
+- The `admin` role is never restricted and is not offered in the tab.
+- The resolved lists are **never cached in `$_SESSION`** — an admin revoking access
+  must take effect on the user's next request, not on their next login. The static
+  cache in `user_allowed_items()` is per-request only.
+
+### Where the decision is made
+
+`includes/api_helpers.php` owns it, and nothing else may re-implement it:
+
+- `user_allowed_items($scope)` — the list, or `null` for unrestricted. Unknown
+  scope throws, so a typo is a hard error rather than a silent "unrestricted"
+- `user_can_access($scope, $name)` — the predicate; `user_can_access_table()` /
+  `_view()` / `_print()` are thin readability wrappers
+- `require_access()` — API gate, **403** (not 400: "unknown" and "not yours" are
+  different answers); same three wrappers
+- `filter_by_user_access($scope, $items)` — narrow a name-keyed map
+- `os_require_access()` in `includes/page_helpers.php` — page gate, redirects
+  instead of emitting a JSON envelope
+
+`validatedTable()` calls the gate itself, so `api/owners.php`, `api/notes.php` and
+`api/comments.php` are covered without per-endpoint code.
+
+### The rule that keeps foreign keys working
+
+**Gate request-supplied table names only — never config-supplied ones.** The gate
+must not go inside `safe_table()`: that function also resolves FK reference tables
+and subtables, and filtering there breaks label lookups inside tables the user is
+fully entitled to. Config-supplied bindings (dashboard widgets, calendar sources,
+boards) are *skipped* rather than rejected, so one out-of-scope widget cannot blank
+a whole page.
+
+**Subtables are the deliberate exception to that rule.** A subtable tab in
+`edit.php` renders whole *rows* of the child table, not a single label, so leaving
+it unfiltered would hand a user the full contents of a table they may not open. The
+filter sits in two places, and they must stay in step:
+
+- `public/edit.php` — drops out-of-scope entries from `$subtablesData` right after
+  `$records->subtables()`. Filtered at the call site, not in
+  `PgRecordRepository::subtables()`, because `src/` is frozen.
+- `public/api.php` — the `subtable_counts` loop skips the same tables; a count is
+  still a fact about a table the user may not open.
+
+The distinction to keep in mind: FK exposes a **name**, a subtable exposes **rows**.
+That is the line, and it is why one is exempt and the other is not.
+
+`api/fk.php` is the sharp edge: it rewrites `$_GET['table']` to the reference table
+and re-enters `public/api.php`. It gates its own request-supplied source table, then
+defines `OS_TABLE_ACCESS_DELEGATED` so the `list` branch skips the gate for the
+delegated name. Remove that constant and every FK pointing outside a user's tables
+returns 403.
+
+### Accepted gaps — do not "fix" without a design change
+
+- FK labels still resolve across the boundary: a permitted table may display a name
+  from a restricted one. That is a name leak, not a data leak, and closing it would
+  break the dropdowns.
+- A view or printout the user may open can read data from a table they may not. The
+  binding is config-supplied, so it follows the same rule as FK references — grant
+  the view only to users who should see its contents. Table access is not a
+  substitute for reviewing what a view selects.
+
+### When adding a new endpoint that takes a table, view or print name
+
+Add `require_table_access()` / `require_view_access()` / `require_print_access()`
+right after the existing "unknown/not found" check, and add the action to
+`$postActions` in `public/admin/api.php` if it mutates. Both lists are hand-kept;
+`tests/Admin/AdminApiGuardsTest.php` guards the second one.
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and

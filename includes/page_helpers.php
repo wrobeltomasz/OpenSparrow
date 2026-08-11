@@ -15,9 +15,30 @@
 // os_import_map()           — renders that map; must precede the first module script
 // os_avatar_color()         — palette lookup for the initial-and-color avatar
 // os_m2m_group()            — collapsible searchable many-to-many picker (create.php + edit.php)
+// os_require_access()       — page-level per-user access gate (redirect, not JSON)
+// os_require_table_access() — the 'tables' scope of the above
 // Loaded via bootstrap.php; keep ids/classes stable — Cypress specs depend on them.
 
 declare(strict_types=1);
+
+// Page-level counterpart of require_access() (includes/api_helpers.php). HTML pages
+// must not answer with a JSON error envelope, so an out-of-scope item sends the user
+// back to the grid instead. Same decision function underneath — user_can_access()
+// stays the single source of truth for all three scopes.
+function os_require_access(string $scope, string $name): void
+{
+    require_once __DIR__ . '/api_helpers.php';
+    if (user_can_access($scope, $name)) {
+        return;
+    }
+    header('Location: index.php');
+    exit;
+}
+
+function os_require_table_access(string $table): void
+{
+    os_require_access('tables', $table);
+}
 
 // Search pill for the blue app header. Placeholder defaults to the shared
 // grid.search_placeholder i18n key; pass an explicit string to override.

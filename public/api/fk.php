@@ -27,6 +27,11 @@ if (!is_array($schemaData) || !isset($schemaData['tables'][$table]['foreign_keys
     exit;
 }
 
+// The SOURCE table is request-supplied, so it is gated. The reference table below
+// is not: it comes from the schema config, and a user legitimately working on an
+// allowed table must still be able to resolve its FK labels.
+require_table_access($table);
+
 $refTable = $schemaData['tables'][$table]['foreign_keys'][$col]['reference_table'] ?? '';
 if (empty($refTable)) {
     header('Content-Type: application/json');
@@ -44,7 +49,11 @@ if ($filterCol !== '') {
     }
 }
 
-// Rewrite GET parameters to simulate a direct call to api.php for the reference table
+// Rewrite GET parameters to simulate a direct call to api.php for the reference table.
+// The constant tells api.php's list branch that this table name came from the schema
+// config, not from the client, so the per-user table gate must not apply to it —
+// without it every FK pointing outside the user's tables would return 403.
+define('OS_TABLE_ACCESS_DELEGATED', true);
 $_GET['api'] = 'list';
 $_GET['table'] = $refTable;
 // Delegate response generation to main API handler

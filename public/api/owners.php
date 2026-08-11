@@ -204,6 +204,11 @@ function actionMine($conn): void
         if ($tableCfg === null || !empty($tableCfg['hidden'])) {
             continue;
         }
+        // A record can stay assigned to a user whose table access was revoked since —
+        // "My records" must not keep surfacing labels from a table they can no longer open.
+        if (!user_can_access_table($tableName)) {
+            continue;
+        }
 
         $pgSchema = $tableCfg['schema'] ?? 'public';
         $arrParam = '{' . implode(',', $ids) . '}';

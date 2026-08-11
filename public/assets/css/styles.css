@@ -1234,6 +1234,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
   white-space: pre-wrap;
   margin: 0 1.25rem 1.25rem 1.25rem;
   display: block;
+  /* Lives at the end of <main> (below the grid, above the footer): as a flex
+     child it must not shrink, and it must never squeeze the grid. */
+  flex: 0 0 auto;
 }
 
 /* ===== FOOTER ===== */

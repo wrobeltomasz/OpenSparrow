@@ -158,6 +158,19 @@ function actionList($conn): void
         $params[] = '%' . $search . '%';
     }
 
+    // Per-user table scope: files attached to a table the user may not reach are
+    // dropped from both the count and the page. Unattached files (related_table
+    // NULL or empty) belong to no table and stay visible to every logged-in user.
+    $allowedTables = user_allowed_tables();
+    if ($allowedTables !== null) {
+        $where[]  = "(f.related_table IS NULL OR f.related_table = '' OR f.related_table = ANY($"
+            . (count($params) + 1) . '::text[]))';
+        $params[] = '{' . implode(',', array_map(
+            fn(string $t): string => '"' . str_replace(['\\', '"'], ['\\\\', '\"'], $t) . '"',
+            $allowedTables
+        )) . '}';
+    }
+
     $whereSQL = implode(' AND ', $where);
     $countSQL = "SELECT COUNT(*) AS cnt FROM " . sys_table('files') . " f WHERE {$whereSQL}";
     $resCount = pg_query_params($conn, $countSQL, $params);
@@ -262,6 +275,13 @@ function actionUpload($conn): void
     // attachment list. Validated against the schema config, not the Files relations.
     $imageMode   = ($_POST['related_field'] ?? '') === IMAGES_FIELD;
     $imageTarget = null;
+    // related_table is request-supplied on both paths below (gallery and plain
+    // attachment), so it is gated here once — attaching a file to a record in a
+    // table the user has no access to must not be possible.
+    $reqRelatedTable = trim($_POST['related_table'] ?? '');
+    if ($reqRelatedTable !== '') {
+        require_table_access($reqRelatedTable);
+    }
     if ($imageMode) {
         if ($type !== 'image') {
             jsonError('Only image files can be added to a record gallery.', 415);
@@ -621,6 +641,7 @@ function actionGetRelatedRecords($conn): void
     if (!$reqTable) {
         jsonSuccess(['records' => []]);
     }
+    require_table_access($reqTable);
 
     $config    = loadConfig();
     $relConfig = null;

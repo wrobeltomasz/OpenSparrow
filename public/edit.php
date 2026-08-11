@@ -40,6 +40,9 @@ $id    = $request->query('id');
 if (!$schemas->hasTable($table)) {
     die('Invalid table.');
 }
+// Table-level gate first, row-level ownership gate below — a table the user may not
+// reach at all must not even get as far as the record lookup.
+os_require_table_access((string) $table);
 
 $tableCfg   = $schemas->table($table);
 $rawSchema  = $schemas->raw();
@@ -97,6 +100,16 @@ if ($row === null) {
 }
 
 $subtablesData = $records->subtables($tableCfg, $id);
+// Subtable bindings come from the schema config, and config-supplied names are
+// normally exempt from the per-user table gate (that exemption is what keeps FK
+// labels resolving). Subtables are the deliberate exception: a tab renders whole
+// ROWS of the child table, not a single label, so an unfiltered tab hands a user
+// the full contents of a table they may not open. Filtered here rather than in
+// PgRecordRepository::subtables() — src/ is frozen.
+$subtablesData = array_values(array_filter(
+    $subtablesData,
+    static fn(array $sd): bool => user_can_access_table((string) ($sd['config']['table'] ?? ''))
+));
 $relatedFiles  = $files->forRecord($tableCfg->name, $id);
 
 // Pre-load FK options for all FK columns — eliminates N+1 queries in the template.

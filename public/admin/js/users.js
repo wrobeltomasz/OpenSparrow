@@ -3,9 +3,10 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/users.js — User management (renderUsersEditor): Manage Users / Statistics /
-// Global Settings inner tabs (list/add/toggle/change-role/change-password, user_stats,
-// user_policy_* via api.php users_* actions). CSRF via apiFetch(); HTML-escapes output.
+// admin/js/users.js — User management (renderUsersEditor): Manage Users / Table Access /
+// Statistics / Global Settings inner tabs (list/add/toggle/change-role/change-password,
+// user_stats, user_policy_*, user_tables_* via api.php users_* actions).
+// CSRF via apiFetch(); HTML-escapes output.
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
@@ -20,8 +21,9 @@ export async function renderUsersEditor(ctx) {
     wrap.className = 'admin-page';
     wrap.appendChild(createPageHeader('Users'));
 
-    const [managePanel, statsPanel, settingsPanel] = buildInnerTabs(wrap, [
+    const [managePanel, accessPanel, statsPanel, settingsPanel] = buildInnerTabs(wrap, [
         { label: 'Manage Users', icon: 'user_attributes.png' },
+        { label: 'Access', icon: 'table_chart_view.png' },
         { label: 'Statistics', icon: 'bar_chart.png' },
         { label: 'Global Settings', icon: 'manage_history.png' },
     ]);
@@ -29,8 +31,196 @@ export async function renderUsersEditor(ctx) {
     workspaceEl.appendChild(wrap);
 
     renderManageUsers(managePanel, ctx);
+    renderUserAccess(accessPanel);
     renderUserStats(statsPanel);
     renderUserSettings(settingsPanel, ctx);
+}
+
+// Scopes rendered as sections, in menu order. Views and printouts are named
+// objects with no table binding of their own, so they are granted directly by
+// name rather than derived from a table.
+const ACCESS_SCOPES = [
+    { key: 'tables', all: 'all_tables', title: 'Tables',    noun: 'tables',    empty: 'No tables in the schema configuration.' },
+    { key: 'views',  all: 'all_views',  title: 'Views',     noun: 'views',     empty: 'No views configured.' },
+    { key: 'prints', all: 'all_prints', title: 'Printouts', noun: 'printouts', empty: 'No printouts configured.' },
+];
+
+// Access tab: pick a user, tick what they may reach on the frontend. Empty
+// selection = full access (no restriction) — same contract as user_allowed_items()
+// in includes/api_helpers.php. The three scopes are independent: restricting
+// tables leaves views and printouts untouched. Admins are excluded — they work in
+// this panel and must keep seeing everything.
+async function renderUserAccess(panel) {
+    panel.innerHTML = '<p class="help-text">Loading users…</p>';
+
+    let users;
+    try {
+        const res  = await apiFetch('api.php?action=users_list');
+        const data = await res.json();
+        if (data.status !== 'success') {
+            panel.innerHTML = `<p class="help-text">${escHtml(data.error || 'Failed to load users.')}</p>`;
+            return;
+        }
+        users = data.users.filter(u => u.role !== 'admin');
+    } catch (err) {
+        panel.innerHTML = '<p class="help-text">Network error while loading users.</p>';
+        return;
+    }
+
+    panel.innerHTML = `
+        <h2 class="admin-page-title">Frontend Access</h2>
+        <p class="admin-page-desc">
+            Restrict a user to a subset of the frontend tables, views and printouts. Each
+            group is independent, and ticking nothing in a group leaves that group
+            unrestricted — which is not the same as revoking access. To cut someone off
+            entirely, deactivate the account in Manage Users. Admin accounts are not
+            listed: they work in this panel and always see everything.
+        </p>
+        <div class="adm-sec-card">
+            <label class="adm-field-label" for="taUser">User</label>
+            <select id="taUser" class="adm-input w-260">
+                ${users.map(u => `<option value="${u.id}">${escHtml(u.username)}${u.is_active ? '' : ' (inactive)'}</option>`).join('')}
+            </select>
+            <div id="taScopes" style="margin-top:16px;"></div>
+        </div>
+    `;
+
+    if (users.length === 0) {
+        panel.querySelector('.adm-sec-card').innerHTML =
+            '<p class="help-text">No non-admin users yet. Create one in Manage Users first.</p>';
+        return;
+    }
+
+    const selectEl = panel.querySelector('#taUser');
+    const listEl   = panel.querySelector('#taScopes');
+
+    selectEl.addEventListener('change', () => loadUserAccess(listEl, selectEl.value));
+    loadUserAccess(listEl, selectEl.value);
+}
+
+// One checkbox section per scope. Returns a live reader for the ticked values so
+// the shared Save button does not need to know how many scopes there are.
+function renderScopeSection(container, scope, allItems, selected) {
+    const names = Object.keys(allItems)
+        .sort((a, b) => (allItems[a] || a).localeCompare(allItems[b] || b));
+
+    const section = document.createElement('div');
+    section.style.marginBottom = '22px';
+
+    if (names.length === 0) {
+        section.innerHTML = `<h4>${escHtml(scope.title)}</h4><p class="help-text">${escHtml(scope.empty)}</p>`;
+        container.appendChild(section);
+        return () => [];
+    }
+
+    section.innerHTML = `
+        <h4>${escHtml(scope.title)}</h4>
+        <div class="ta-badge" style="margin-bottom:10px;"></div>
+        <table class="adm-tbl">
+            <thead>
+                <tr>
+                    <th class="adm-th">Access</th>
+                    <th class="adm-th">Display Name</th>
+                    <th class="adm-th">Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${names.map(n => `
+                    <tr>
+                        <td class="adm-td">
+                            <input type="checkbox" class="adm-check ta-item" value="${escHtml(n)}"
+                                   ${selected.has(n) ? 'checked' : ''}>
+                        </td>
+                        <td class="adm-td"><strong>${escHtml(allItems[n] || n)}</strong></td>
+                        <td class="adm-td"><code>${escHtml(n)}</code></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm ta-all">Select All</button>
+            <button class="btn btn-secondary btn-sm ta-none">Select None</button>
+        </div>
+    `;
+    container.appendChild(section);
+
+    const boxes = Array.from(section.querySelectorAll('.ta-item'));
+    const badge = section.querySelector('.ta-badge');
+
+    // Nothing ticked reads as "no access" to most people, so say the opposite out loud.
+    const refreshBadge = () => {
+        const n = boxes.filter(b => b.checked).length;
+        badge.innerHTML = n === 0
+            ? '<span class="adm-badge adm-badge-ok">Full access (no restriction)</span>'
+            : `<span class="adm-badge">Restricted to ${n} of ${boxes.length} ${escHtml(scope.noun)}</span>`;
+    };
+    boxes.forEach(b => b.addEventListener('change', refreshBadge));
+    refreshBadge();
+
+    section.querySelector('.ta-all').addEventListener('click', () => {
+        boxes.forEach(b => { b.checked = true; });
+        refreshBadge();
+    });
+    section.querySelector('.ta-none').addEventListener('click', () => {
+        boxes.forEach(b => { b.checked = false; });
+        refreshBadge();
+    });
+
+    return () => boxes.filter(b => b.checked).map(b => b.value);
+}
+
+async function loadUserAccess(listEl, userId) {
+    listEl.innerHTML = '<p class="help-text">Loading…</p>';
+
+    let data;
+    try {
+        const res = await apiFetch(`api.php?action=user_tables_get&user_id=${encodeURIComponent(userId)}`);
+        data = await res.json();
+    } catch (err) {
+        listEl.innerHTML = '<p class="help-text">Network error while loading access.</p>';
+        return;
+    }
+    if (data.status !== 'success') {
+        listEl.innerHTML = `<p class="help-text">${escHtml(data.error || 'Failed to load access.')}</p>`;
+        return;
+    }
+
+    listEl.innerHTML = '';
+    const readers = {};
+    ACCESS_SCOPES.forEach(scope => {
+        // PHP casts these to objects so string keys survive JSON — an empty one
+        // still arrives as {}, never as [].
+        readers[scope.key] = renderScopeSection(
+            listEl,
+            scope,
+            data[scope.all] || {},
+            new Set(data[scope.key] || [])
+        );
+    });
+
+    const saveEl = document.createElement('button');
+    saveEl.className = 'btn btn-success';
+    saveEl.textContent = 'Save Access';
+    listEl.appendChild(saveEl);
+
+    saveEl.addEventListener('click', async () => {
+        const payload = { user_id: parseInt(userId, 10) };
+        ACCESS_SCOPES.forEach(scope => { payload[scope.key] = readers[scope.key](); });
+        try {
+            const res = await apiFetch('api.php?action=user_tables_save', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+            const out = await res.json();
+            if (out.status === 'success') {
+                showStatusPill(saveEl, 'Access saved.', 'success');
+            } else {
+                showStatusPill(saveEl, out.error || 'Save failed.', 'error');
+            }
+        } catch (err) {
+            showStatusPill(saveEl, 'Network error.', 'error');
+        }
+    });
 }
 
 async function renderManageUsers(panel, ctx) {

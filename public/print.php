@@ -20,6 +20,11 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 $page      = os_page_bootstrap();
 $cspNonce  = $page['nonce'];
 $printName = substr($_GET['print'] ?? '', 0, 64);
+// A ?print= outside the user's scope (stale bookmark, hand-edited URL) drops them
+// back on the default grid instead of rendering a shell whose data call 403s.
+if ($printName !== '') {
+    os_require_access('prints', $printName);
+}
 
 $pageTitle      = 'OpenSparrow — Print';
 $extraCss       = '<link href="assets/css/print.css" rel="stylesheet">';

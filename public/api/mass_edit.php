@@ -36,6 +36,8 @@ function validateTableColumn(array $body, array $schema): array
         exit(json_encode(['error' => 'Unknown table']));
     }
 
+    require_table_access($tableName);
+
     $cols = $tableCfg['columns'] ?? [];
 
     if ($colName === 'id') {
@@ -236,6 +238,8 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
         exit(json_encode(['error' => 'Unknown table']));
     }
 
+    require_table_access($tableName);
+
     // Build column list — exclude id and virtual columns
     $dupCols = [];
     foreach ($tableCfg['columns'] as $colName => $colCfg) {
@@ -332,6 +336,8 @@ if ($action === 'mass_delete' && $method === 'POST') {
         http_response_code(400);
         exit(json_encode(['error' => 'Unknown table']));
     }
+
+    require_table_access($tableName);
 
     $schemaName = $tableCfg['schema'] ?? 'public';
     $tblSql     = pg_ident($schemaName) . '.' . pg_ident($tableName);

@@ -285,6 +285,16 @@ ${_ul([
     `<strong>${s.s9d_history_label}:</strong> ${s.s9d_history}`
 ])}
 
+${_h3('doc-9o', s.s9o_head)}
+${_p(s.s9o_desc)}
+${_ul([
+    `<strong>${s.s9o_where_label}:</strong> ${s.s9o_where}`,
+    `<strong>${s.s9o_empty_label}:</strong> ${s.s9o_empty}`,
+    `<strong>${s.s9o_admin_label}:</strong> ${s.s9o_admin}`,
+    `<strong>${s.s9o_scope_label}:</strong> ${s.s9o_scope}`,
+    `<strong>${s.s9o_limits_label}:</strong> ${s.s9o_limits}`
+])}
+
 ${_h3('doc-9e', s.s9e_head)}
 ${_ul([
     `<strong>${s.s9e_sort_label}:</strong> ${s.s9e_sort}`,

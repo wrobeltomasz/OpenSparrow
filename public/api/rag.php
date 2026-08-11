@@ -100,6 +100,12 @@ if ($action === 'query' && $method === 'POST') {
             http_response_code(400);
             exit(json_encode(['error' => 'Query is required.']));
         }
+        // The table drives the aggregate view fed into the prompt — a client-supplied
+        // name, so it is gated. Without this the assistant would happily summarise
+        // rows from a table the user cannot open in the grid.
+        if ($table !== '') {
+            require_table_access($table);
+        }
         if (mb_strlen($query) > 2000) {
             http_response_code(400);
             exit(json_encode(['error' => 'Query too long (max 2000 characters).']));

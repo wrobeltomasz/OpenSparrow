@@ -144,7 +144,8 @@ Index: `(table_name, record_id, is_current)`.
 ### `spw_config` — DB-backed application configuration
 
 One JSONB row per configuration key (`schema`, `menu`, `settings`, `dashboard`, `calendar`, `board`,
-`workflows`, `automations`, `views`, `files`, `print`, `anonymization`, `user_records`, `rag`, …).
+`workflows`, `automations`, `views`, `files`, `print`, `anonymization`, `user_records`,
+`user_table_access`, `rag`, …).
 Accessed only through `includes/config_store.php`.
 
 | Column | Type | Description |

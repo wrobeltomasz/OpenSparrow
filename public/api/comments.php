@@ -131,6 +131,11 @@ function actionMine($conn): void
         if ($tableCfg === null || !empty($tableCfg['hidden'])) {
             continue;
         }
+        // Own comments on a table whose access was revoked since: drop the labels,
+        // the record they point at is no longer reachable for this user.
+        if (!user_can_access_table($tableName)) {
+            continue;
+        }
 
         $rowsSql = sprintf(
             'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',

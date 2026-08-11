@@ -433,6 +433,14 @@ Read and written through includes/config_store.php — never as files.
   anonymization — GDPR anonymization rules and dictionary
   user_records  — per-table owner column mapping and record limits
   user_policy   — minimum password length and default role for new users
+  user_table_access
+                — per-user frontend allow-lists for three independent scopes:
+                  {"users": {"<id>": {"tables": [], "views": [], "prints": []}}}.
+                  Edited in Users > Access. An absent or EMPTY list means
+                  UNRESTRICTED for that scope, not "no access" — to cut a user off
+                  entirely, deactivate the account instead. Views and printouts are
+                  granted by name (neither config binds to a table). Admins are
+                  never restricted.
   rag           — Ollama URL, model, max context files, file size limit, timeout,
                   encrypted Ollama Cloud API key (ollama_api_key_enc)
   etl           — external source connection and import job definitions

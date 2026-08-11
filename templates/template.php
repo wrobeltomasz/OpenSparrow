@@ -101,9 +101,10 @@ ob_start();
             <div id="pagination" data-cy="pagination" class="pagination"></div>
         </div>
     </section>
+
+    <pre id="debug"></pre>
 </main>
 
-<pre id="debug"></pre>
 <?php
 $pageContent = ob_get_clean();
 ob_start();

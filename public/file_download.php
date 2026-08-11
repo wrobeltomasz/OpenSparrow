@@ -72,6 +72,12 @@ if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
     if (is_array($tableCfg)) {
         $uid  = (int) $_SESSION['user_id'];
         $role = $_SESSION['role'] ?? '';
+        // Table-level scope first: a file attached to a table outside the user's
+        // access is as good as absent. Same 404 — no existence disclosure.
+        if (!user_can_access_table((string) $relatedTable)) {
+            http_response_code(404);
+            exit('File not found in database');
+        }
         if (!can_access_record($conn, $tableCfg, $relatedTable, (int) $relatedId, $uid, $role)) {
             http_response_code(404);
             exit('File not found in database');

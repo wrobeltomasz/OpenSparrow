@@ -20,5 +20,12 @@ if (isset($_GET['api'])) {
     exit;
 }
 
+// A ?table= the user has no access to (stale bookmark, hand-edited URL) drops them
+// back on the default grid instead of rendering an empty shell whose every XHR 403s.
+$requestedTable = substr($_GET['table'] ?? '', 0, 64);
+if ($requestedTable !== '') {
+    os_require_table_access($requestedTable);
+}
+
 // Load the UI template (schema is no longer injected here)
 include __DIR__ . '/../templates/template.php';

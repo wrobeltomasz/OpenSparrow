@@ -38,6 +38,7 @@ $table = $request->query('table');
 if (!$schemas->hasTable($table)) {
     die('Invalid table.');
 }
+os_require_table_access((string) $table);
 
 $tableCfg   = $schemas->table($table);
 $rawSchema  = $schemas->raw();

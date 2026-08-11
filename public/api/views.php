@@ -36,6 +36,11 @@ try {
             if (!empty($cfg['hidden'])) {
                 continue;
             }
+            // Per-user view access. Unlike 'hidden' this is an access rule, so it also
+            // guards the data action below — hiding a menu entry is not a boundary.
+            if (!user_can_access_view((string) $name)) {
+                continue;
+            }
             $result[] = [
                 'name'         => $name,
                 'display_name' => $cfg['display_name'] ?? $name,
@@ -62,6 +67,7 @@ try {
             echo json_encode(['error' => 'View not found']);
             exit;
         }
+        require_view_access((string) $viewName);
 
         $cfg        = $views[$viewName];
         $conn       = db_connect();

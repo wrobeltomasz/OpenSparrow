@@ -95,6 +95,8 @@ function validateInput(array $body, array $schema, $conn): array
         exit(json_encode(['error' => 'Unknown table']));
     }
 
+    require_table_access($tableName);
+
     $cols = $tableCfg['columns'] ?? [];
     if (!isset($cols[$colName]) || ($cols[$colName]['type'] ?? '') === 'virtual') {
         http_response_code(400);

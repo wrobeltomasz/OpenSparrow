@@ -40,6 +40,11 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
     if (!$includeHidden && !empty($tableConfig['hidden'])) {
         continue;
     }
+    // Per-user table access. Unlike 'hidden', this one is NOT overridable by
+    // include_hidden — it is an access rule, not a display preference.
+    if (!user_can_access_table($tableName)) {
+        continue;
+    }
 
     $publicColumns = [];
     foreach ($tableConfig['columns'] as $colName => $colDef) {
