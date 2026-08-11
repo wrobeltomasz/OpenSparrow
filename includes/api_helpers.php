@@ -746,32 +746,58 @@ function os_request_scope_violation(array $body = [], array $overrides = []): ?a
         }
 
         foreach ([$_GET[$param] ?? null, $_POST[$param] ?? null, $body[$param] ?? null] as $value) {
-            if (!is_string($value) || $value === '') {
-                continue;
-            }
-            if (!isset(access_scope_items($scope, true)[$value])) {
-                continue;
-            }
-            if (!user_can_access($scope, $value)) {
-                return [$scope, $value];
+            // An array-valued parameter (?table[]=x) is walked element by element. A
+            // bare is_string() test would skip it silently, and "skip" is the one
+            // outcome a gate must never have for a shape the client picks. Nesting
+            // deeper than one level falls through: no endpoint casts that to anything
+            // but the string "Array", which matches no configured name.
+            foreach (is_array($value) ? $value : [$value] as $name) {
+                if (!is_string($name) || $name === '') {
+                    continue;
+                }
+                if (!isset(access_scope_items($scope, true)[$name])) {
+                    continue;
+                }
+                if (!user_can_access($scope, $name)) {
+                    return [$scope, $name];
+                }
             }
         }
     }
     return null;
 }
 
+// The decoded request body, for the gate's own use.
+//
+// Parsed for every method that can carry one and every content type EXCEPT
+// multipart/form-data — deliberately not just application/json. Keying this on the
+// declared content type would put the gate under the client's control: a POST labelled
+// text/plain, or carrying no Content-Type at all, would sail past untouched while the
+// endpoint below parsed the very same bytes as JSON. The per-endpoint gates meant that
+// was never an open door, but "closed by default" has to mean closed regardless of
+// what the request claims to be sending.
+//
+// multipart/form-data is the one exclusion, and it is not stylistic: PHP consumes that
+// stream while populating $_POST/$_FILES, so php://input is empty for it and there is
+// nothing here to read. Every other content type leaves the stream re-readable, so the
+// endpoint still parses it itself afterwards — verified, not assumed, because a stream
+// consumed here would break every POST silently. A body that is not JSON decodes to
+// null and answers []; for those the names the gate wants are in $_GET/$_POST anyway.
+function os_gate_request_body(): array
+{
+    if (in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+        return [];
+    }
+    if (str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/form-data')) {
+        return [];
+    }
+    $decoded = json_decode((string) file_get_contents('php://input'), true);
+    return is_array($decoded) ? $decoded : [];
+}
+
 function os_gate_request_scopes(array $overrides = []): void
 {
-    // Bodies are read, not consumed: php://input is re-readable for the JSON content
-    // types used here, so the endpoint still parses it itself afterwards. Verified,
-    // not assumed — a stream consumed here would break every POST silently.
-    $body = [];
-    if (str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json')) {
-        $decoded = json_decode((string) file_get_contents('php://input'), true);
-        $body    = is_array($decoded) ? $decoded : [];
-    }
-
-    $violation = os_request_scope_violation($body, $overrides);
+    $violation = os_request_scope_violation(os_gate_request_body(), $overrides);
     if ($violation !== null) {
         require_access($violation[0], $violation[1]);
     }
@@ -860,4 +886,68 @@ function filter_by_user_access(string $scope, array $items, ?int $userId = null)
 function filter_tables_for_user(array $tables, ?int $userId = null): array
 {
     return filter_by_user_access('tables', $tables, $userId);
+}
+
+// Fill a submitted per-scope selection out to the full scope set, keeping whatever is
+// already stored for the scopes that were not submitted.
+//
+// A save replaces the user's whole entry, so a scope missing from the payload used to
+// land as [] — and [] means UNRESTRICTED. That turns "I did not mention boards" into
+// "boards are now unrestricted": an older cached users.js, a script written against an
+// earlier payload shape, or a future caller that only wants to change tables would
+// silently widen access it never meant to touch. Widening has to be something someone
+// asked for, so an absent scope carries over instead.
+//
+// Sending an explicit [] still clears that scope — that is how the Access tab removes
+// a restriction, and how "no ticks anywhere" deletes the entry altogether. A submitted
+// value that is not a list is treated as absent rather than as an instruction to
+// clear: malformed input must never resolve in the widening direction.
+//
+// Names are not validated here. The caller checks the scopes it actually received
+// against its own pick list; carried-over values pass through as stored, so a name
+// that stopped being assignable (a table since dropped from the schema) survives an
+// unrelated save rather than being quietly dropped from someone's grant.
+//
+// @param  array<string, mixed> $submitted per-scope lists the caller received
+// @param  array<string, mixed> $stored    the user's current per-scope lists
+// @return array<string, list<string>>
+function merge_user_access_selection(array $submitted, array $stored): array
+{
+    $out = [];
+    foreach (array_keys(USER_ACCESS_SCOPES) as $scope) {
+        $list = is_array($submitted[$scope] ?? null)
+            ? $submitted[$scope]
+            : ($stored[$scope] ?? []);
+        $out[$scope] = is_array($list)
+            ? array_values(array_unique(array_filter($list, 'is_string')))
+            : [];
+    }
+    return $out;
+}
+
+// Whether every table a workflow's steps write to is inside the user's table scope.
+//
+// Granting a workflow does NOT grant its tables — the two are ticked separately and
+// both have to hold — so this is the second half of the workflow rule, and it belongs
+// everywhere a workflow is served OR fired: the api=workflows list, the menu submenu,
+// the page hosting the wizard and workflow_procedure. It lives here rather than being
+// written out at each of those because a copy that only tracks the DISPLAY sites is
+// exactly how workflow_procedure ended up gating the id alone: the workflow vanished
+// from the menu and the list while a direct POST still ran its procedure.
+//
+// A malformed entry answers false rather than being served. filter_by_user_access()
+// drops one too, but only for a restricted user, so without this an unrestricted one
+// would still receive it.
+function workflow_tables_in_scope(mixed $wf, ?int $userId = null): bool
+{
+    if (!is_array($wf)) {
+        return false;
+    }
+    foreach ((array) ($wf['steps'] ?? []) as $step) {
+        $stepTable = is_array($step) ? (string) ($step['table'] ?? '') : '';
+        if ($stepTable !== '' && !user_can_access_table($stepTable, $userId)) {
+            return false;
+        }
+    }
+    return true;
 }

@@ -459,12 +459,18 @@ if ($action === 'user_tables_save') {
     // rejected outright rather than silently dropped: a typo that quietly shrinks
     // someone's access is worse than a visible error. The noun in that message comes
     // from the registry, so a new scope needs no wording added here.
+    // Only the scopes the payload actually carries are validated here. A scope it
+    // omits is not "cleared to unrestricted" — merge_user_access_selection() below
+    // carries the stored value over, so a caller that knows nothing about a scope
+    // cannot widen it by silence.
     $assignable = admin_assignable_items();
     $clean      = [];
     foreach (USER_ACCESS_SCOPES as $scope => $def) {
-        $requested = is_array($data[$scope] ?? null) ? $data[$scope] : [];
-        $seen      = [];
-        foreach ($requested as $name) {
+        if (!is_array($data[$scope] ?? null)) {
+            continue;
+        }
+        $seen = [];
+        foreach ($data[$scope] as $name) {
             if (!is_string($name) || !isset($assignable[$scope][$name])) {
                 echo json_encode([
                     'status' => 'error',
@@ -476,6 +482,7 @@ if ($action === 'user_tables_save') {
         }
         $clean[$scope] = array_keys($seen);
     }
+    $clean = merge_user_access_selection($clean, admin_user_access_entry($userId));
 
     try {
         require_once __DIR__ . '/../../includes/db.php';

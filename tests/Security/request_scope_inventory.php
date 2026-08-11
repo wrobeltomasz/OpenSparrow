@@ -40,7 +40,7 @@ return [
         '_GET.board' => ['scoped', 'The board branch resolves ?board= against filter_by_user_access(boards, ...) and falls back to the first board of that filtered list, so an out-of-scope or unmatched id can never select a board the user was not granted.'],
         'body.table' => ['gated', 'Single require_table_access() at the top of the POST/PATCH/DELETE branch, before any of the mutating sub-branches (insert, update, delete, calendar move, board move, mass insert) reads it.'],
         'body.board' => ['scoped', 'move_card resolves the board id against filter_by_user_access(boards, ...); an unmatched id leaves $boardCfg empty and the request is rejected as an invalid board table.'],
-        'body.workflow_id' => ['gated', 'workflow_procedure calls require_access(workflows, ...) before looking the procedure up. Without it the workflow scope would be cosmetic: a direct POST would still fire the procedure of a workflow hidden from the menu and the list.'],
+        'body.workflow_id' => ['gated', 'workflow_procedure calls require_access(workflows, ...) before looking the procedure up, then workflow_tables_in_scope() on the resolved entry. Both halves are needed: without the first the scope would be cosmetic (a direct POST would fire the procedure of a workflow hidden from the menu and the list), and without the second a workflow granted to someone whose tables do not cover its steps would still run against those tables.'],
     ],
     'public/api/comments.php' => [
         '_GET.related_table'  => ['gated', 'Both read actions go through validatedTable(), which calls require_table_access() itself.'],
@@ -89,7 +89,7 @@ return [
     ],
     'public/index.php' => [
         '_GET.table'    => ['gated', 'os_require_table_access() redirects to the default grid instead of rendering a page whose every XHR would 403.'],
-        '_GET.workflow' => ['gated', 'os_require_access(workflows, ...) — the workflow wizard lives on this page rather than one of its own.'],
+        '_GET.workflow' => ['gated', 'os_require_access(workflows, ...) — the workflow wizard lives on this page rather than one of its own — followed by workflow_tables_in_scope() on the configured entry, so the page cannot render a shell that api=workflows refuses to fill. An id matching nothing configured falls through untouched.'],
     ],
     'public/print.php' => [
         '_GET.print' => ['gated', 'os_require_access(prints, ...) redirects to the grid, so a stale bookmark or a hand-edited URL cannot render a print shell whose data call would 403.'],
@@ -107,6 +107,9 @@ return [
     'public/cypress_seed.php' => [
         '_GET.table'  => ['none', 'Test-only endpoint, dead outside development: a hard APP_ENV === production guard returns 404 before anything else runs, and a shared-token check follows it. It seeds fixtures for the E2E suite and must be able to reach every table.'],
         '_POST.table' => ['none', 'Same endpoint and the same two guards as above; the seeder writes fixture rows, so it must reach every table.'],
+    ],
+    'public/admin/api_csv_import.php' => [
+        'body.table' => ['admin', 'Admin CSV import endpoint: os_api_bootstrap([role => admin]) refuses every other role with a 403 before the body is read, and admins are never restricted, so a per-user scope check would be a no-op by definition. The name is validated against the schema configuration before any DDL or INSERT, and identifiers reach SQL only through pg_ident(). Found by widening the scanner to public/admin/*.php — it was invisible while that glob was missing.'],
     ],
     'includes/admin/dashboard.php' => [
         'body.table' => ['admin', 'Admin API module, included by public/admin/api.php only after the admin-role gate. Admins are never restricted.'],

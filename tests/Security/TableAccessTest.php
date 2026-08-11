@@ -443,6 +443,159 @@ final class TableAccessTest extends TestCase
         $this->assertSame(['tables', 'ukryta'], os_request_scope_violation());
     }
 
+    // ── Saving a selection ───────────────────────────────────────────────────
+    // A save replaces the user's whole entry, so what happens to a scope the payload
+    // does not mention is a security decision, not a detail: [] means UNRESTRICTED.
+
+    public function testOmittedScopeKeepsItsStoredValue(): void
+    {
+        $stored = ['tables' => ['orders'], 'views' => ['v_ok'], 'boards' => ['brd_1']];
+
+        // A caller that only knows about tables must not widen views and boards.
+        $merged = merge_user_access_selection(['tables' => ['clients']], $stored);
+
+        $this->assertSame(['clients'], $merged['tables'], 'The submitted scope must win.');
+        $this->assertSame(['v_ok'], $merged['views'], 'An omitted scope must not be widened.');
+        $this->assertSame(['brd_1'], $merged['boards'], 'An omitted scope must not be widened.');
+        $this->assertSame([], $merged['prints'], 'Nothing stored and nothing sent stays unrestricted.');
+    }
+
+    public function testExplicitEmptyListStillClearsAScope(): void
+    {
+        // This is how the Access tab removes a restriction — it must keep working, or
+        // an admin could never hand access back.
+        $merged = merge_user_access_selection(
+            ['views' => []],
+            ['tables' => ['orders'], 'views' => ['v_ok']]
+        );
+
+        $this->assertSame([], $merged['views'], 'An explicit [] must clear the scope.');
+        $this->assertSame(['orders'], $merged['tables']);
+    }
+
+    public function testMalformedScopeValueDoesNotWiden(): void
+    {
+        // Not a list = not an instruction to clear. Malformed input must never resolve
+        // in the widening direction.
+        foreach (['orders', 42, null, false] as $junk) {
+            $merged = merge_user_access_selection(['tables' => $junk], ['tables' => ['orders']]);
+            $this->assertSame(
+                ['orders'],
+                $merged['tables'],
+                'A malformed submitted value must fall back to the stored list.'
+            );
+        }
+    }
+
+    public function testMergeCoversEveryRegisteredScope(): void
+    {
+        // The stored document is written from this result, so a scope missing from it
+        // would be dropped from the entry on the next save.
+        $merged = merge_user_access_selection([], []);
+
+        $this->assertSame(array_keys(USER_ACCESS_SCOPES), array_keys($merged));
+    }
+
+    public function testBodyIsNotReadWhenThereCannotBeOne(): void
+    {
+        // Both branches short-circuit before touching php://input. GET/HEAD carry no
+        // body; multipart/form-data has already been consumed by PHP while filling
+        // $_POST/$_FILES, so the stream is empty and reading it would prove nothing.
+        $method = $_SERVER['REQUEST_METHOD'] ?? null;
+        $ctype  = $_SERVER['CONTENT_TYPE'] ?? null;
+
+        try {
+            $_SERVER['REQUEST_METHOD'] = 'GET';
+            unset($_SERVER['CONTENT_TYPE']);
+            $this->assertSame([], os_gate_request_body());
+
+            $_SERVER['REQUEST_METHOD'] = 'POST';
+            $_SERVER['CONTENT_TYPE']   = 'multipart/form-data; boundary=----x';
+            $this->assertSame([], os_gate_request_body());
+        } finally {
+            // Restore exactly, including "was not set at all" — a leftover
+            // REQUEST_METHOD would decide a later test's answer.
+            if ($method === null) {
+                unset($_SERVER['REQUEST_METHOD']);
+            } else {
+                $_SERVER['REQUEST_METHOD'] = $method;
+            }
+            if ($ctype === null) {
+                unset($_SERVER['CONTENT_TYPE']);
+            } else {
+                $_SERVER['CONTENT_TYPE'] = $ctype;
+            }
+        }
+    }
+
+    public function testBodyParsingIsNotKeyedOnTheDeclaredContentType(): void
+    {
+        // Reading the body only for application/json put the gate under the CLIENT's
+        // control: a POST labelled text/plain, or carrying no Content-Type at all,
+        // sailed past untouched while the endpoint parsed the same bytes as JSON. The
+        // per-endpoint gates meant it was never an open door, but "closed by default"
+        // has to hold whatever the request claims to be sending.
+        //
+        // Comments are stripped first — the explanation above this function in the
+        // source names the old content type, and matching that would make this pass
+        // for the wrong reason.
+        $src = '';
+        foreach (token_get_all((string) file_get_contents(__DIR__ . '/../../includes/api_helpers.php')) as $t) {
+            $src .= is_array($t) ? (in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true) ? '' : $t[1]) : $t;
+        }
+
+        $this->assertStringNotContainsString(
+            "\$_SERVER['CONTENT_TYPE'] ?? '', 'application/json'",
+            $src,
+            'The gate must not decide whether to read the body from the declared content type.'
+        );
+        $this->assertStringContainsString(
+            "'multipart/form-data'",
+            $src,
+            'multipart is the one content type the gate must skip — PHP already consumed that stream.'
+        );
+    }
+
+    public function testBoundaryGateWalksArrayValuedParameters(): void
+    {
+        // ?table[]=secret is a shape the CLIENT picks, and a bare is_string() test used
+        // to skip it. Skipping is the one outcome a gate must never have for something
+        // the caller controls — the endpoint would still resolve the value its own way.
+        $this->seedConfig('schema', ['tables' => ['orders' => [], 'secret' => []]]);
+        $this->seed(['136' => ['tables' => ['orders']]]);
+        $_SESSION['user_id'] = 136;
+
+        $_GET['table'] = ['secret'];
+        $this->assertSame(['tables', 'secret'], os_request_scope_violation());
+
+        $_GET['table'] = ['orders', 'secret'];
+        $this->assertSame(
+            ['tables', 'secret'],
+            os_request_scope_violation(),
+            'An allowed name earlier in the list must not shadow a refused one.'
+        );
+
+        $_GET['table'] = ['orders'];
+        $this->assertNull(os_request_scope_violation());
+    }
+
+    public function testBoundaryGateIgnoresNonStringNoise(): void
+    {
+        // Ints, nulls, nested arrays and objects reach no endpoint as a table name —
+        // they must not throw here either, and must not be mistaken for a violation.
+        $this->seedConfig('schema', ['tables' => ['orders' => [], 'secret' => []]]);
+        $this->seed(['137' => ['tables' => ['orders']]]);
+        $_SESSION['user_id'] = 137;
+
+        foreach ([42, null, '', ['secret' => 'x'], [['secret']], [null, 7]] as $noise) {
+            $_GET['table'] = $noise;
+            $this->assertNull(
+                os_request_scope_violation(),
+                'Non-string parameter shapes must fall through, not error or refuse.'
+            );
+        }
+    }
+
     public function testBoundaryGateHonoursPerParameterOverrides(): void
     {
         $this->seedConfig('schema', ['tables' => ['orders' => [], 'secret' => []]]);

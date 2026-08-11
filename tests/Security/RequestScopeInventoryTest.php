@@ -73,7 +73,15 @@ final class RequestScopeInventoryTest extends TestCase
     /** Source files that can receive a request. */
     private function scannedFiles(): array
     {
-        $globs = ['public/*.php', 'public/api/*.php', 'includes/*.php', 'includes/admin/*.php', 'templates/*.php'];
+        // public/admin/*.php belongs here even though every read it could hold would be
+        // decided 'admin': the admin front controller and its two sibling endpoints are
+        // reachable HTTP entry points, and leaving them out meant a ?table= added to one
+        // of them would keep this test green. includes/admin/*.php was already scanned,
+        // which is what made the omission a gap rather than a boundary.
+        $globs = [
+            'public/*.php', 'public/api/*.php', 'public/admin/*.php',
+            'includes/*.php', 'includes/admin/*.php', 'templates/*.php',
+        ];
         $files = [];
         foreach ($globs as $glob) {
             foreach (glob(self::$root . '/' . $glob) ?: [] as $path) {
@@ -251,5 +259,36 @@ final class RequestScopeInventoryTest extends TestCase
         // superglobal-only scanner would call this page clean while it is anything but.
         $this->assertContains('query().table', $scan['public/edit.php'] ?? [], 'Scanner missed a $request->query() read.');
         $this->assertNotEmpty($scan, 'Scanner found nothing at all — the globs are wrong.');
+    }
+
+    /**
+     * Every directory that can receive an HTTP request is in range.
+     *
+     * scan() reports only files that CONTAIN a protected read, so a glob covering a
+     * directory with none today looks identical to a glob that is missing — which is
+     * how public/admin/ went unscanned. Assert the file list instead of the findings.
+     */
+    public function testEveryRequestReachableDirectoryIsScanned(): void
+    {
+        $files = $this->scannedFiles();
+
+        $expected = [
+            'public/index.php'            => 'the front controller',
+            'public/api.php'              => 'the main API gateway',
+            'public/api/files.php'        => 'the specialized endpoints',
+            'public/admin/api.php'        => 'the admin front controller',
+            'public/admin/api_migrations.php' => 'the admin sibling endpoints',
+            'includes/api_helpers.php'    => 'the shared backend helpers',
+            'includes/admin/schema.php'   => 'the admin API modules',
+            'templates/menu.php'          => 'the FE templates',
+        ];
+        foreach ($expected as $file => $what) {
+            $this->assertContains(
+                $file,
+                $files,
+                "{$file} is not scanned, so {$what} could grow a request-supplied "
+                . "table/view/print/board/workflow name without this test noticing."
+            );
+        }
     }
 }

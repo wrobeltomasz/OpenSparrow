@@ -171,13 +171,37 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testWorkflowListIsFilteredByStepTables(): void
     {
-        $src = $this->code('public/api.php');
-
         $this->assertCodeHas(
-            'user_can_access_table($stepTable)',
-            $src,
+            'workflow_tables_in_scope',
+            $this->code('public/api.php'),
             'Workflows whose steps land outside the user\'s tables must not be listed.'
         );
+        $this->assertCodeHas(
+            'workflow_tables_in_scope($wfItem)',
+            $this->code('templates/menu.php'),
+            'The workflow submenu must apply the same step-table rule as the endpoint.'
+        );
+    }
+
+    /**
+     * The step-table rule has four call sites and only one implementation. It used to
+     * be written out inline, which is how the two DISPLAY sites got it and the one
+     * that FIRES a workflow did not — so pin the predicate itself, not a copy of it.
+     */
+    public function testStepTableRuleHasASingleImplementation(): void
+    {
+        $this->assertCodeHas(
+            'function workflow_tables_in_scope(',
+            $this->code('includes/api_helpers.php'),
+            'The step-table rule must live in one place.'
+        );
+
+        foreach (['public/api.php', 'templates/menu.php', 'public/index.php'] as $file) {
+            $this->assertFalse(
+                str_contains($this->code($file), 'user_can_access_table($stepTable)'),
+                "{$file} must call workflow_tables_in_scope(), not re-implement it inline."
+            );
+        }
     }
 
     public function testWorkflowProcedureIsGatedByWorkflowScope(): void
@@ -190,6 +214,26 @@ final class AccessScopeEndpointGuardTest extends TestCase
             "require_access('workflows', \$workflowId)",
             $src,
             'workflow_procedure must gate the request-supplied workflow id.'
+        );
+        // …and gating the id alone is not enough: granting a workflow does not grant
+        // the tables its steps write to, so the endpoint that RUNS one must apply the
+        // same step-table rule the list and the menu apply when they DISPLAY it.
+        $this->assertCodeHas(
+            'workflow_tables_in_scope($wf)',
+            $src,
+            'workflow_procedure must also check the step tables, not just the id.'
+        );
+    }
+
+    public function testWorkflowPageAppliesTheStepTableRule(): void
+    {
+        // The wizard is hosted by index.php while its data comes from api=workflows.
+        // If the page rendered a shell the endpoint refuses to fill, the user would be
+        // left on a form with nothing to submit to.
+        $this->assertCodeHas(
+            'workflow_tables_in_scope($wfItem)',
+            $this->code('public/index.php'),
+            'index.php must apply the step-table rule, not the workflow id alone.'
         );
     }
 

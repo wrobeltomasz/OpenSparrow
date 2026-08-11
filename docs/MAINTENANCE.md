@@ -398,6 +398,15 @@ instead of naming each one — the tab renders whatever the registry describes.
   tables they touch: a board with an out-of-scope table is not listed, and a workflow
   is dropped when any step targets a table the user cannot reach. The two ticks are
   independent and both must hold — see "Files, boards and workflows" below.
+- **A save must never widen a scope it was not asked about.** The document holds one
+  entry per user and a save rewrites that entry whole, so a scope missing from the
+  payload used to land as `[]` — which means unrestricted. `user_tables_save` now
+  validates only the scopes it actually received and hands them to
+  `merge_user_access_selection()`, which carries the stored value over for the rest.
+  An explicit `[]` still clears a scope, and all-empty still deletes the entry; a
+  submitted value that is not a list is treated as absent, because malformed input
+  must not resolve in the widening direction. Anything else that ever writes this
+  document goes through the same helper.
 - **An absent or empty list means UNRESTRICTED for that scope, not "no access."**
   This is what makes the feature safe to ship: every pre-existing account keeps
   working until an admin deliberately ticks entries. Flipping this to "empty means
@@ -544,17 +553,27 @@ to get wrong:
   `status_column` when the bound table is out of scope — the lanes were already empty,
   but the binding itself is schema metadata and must not be named to someone who
   cannot open that table.
-- **`api=workflows`** applies two filters, and both are needed: the workflow's own
-  scope, then a check that every step's table is reachable. Step bindings are
-  config-supplied, which normally means "skip, do not reject" — a workflow is the
-  exception because it is the unit that either runs or does not, so a half-usable
-  wizard is dropped rather than served. `menu.php` repeats the step check for the
-  submenu; that duplication is deliberate and small, and the parent entry is keyed off
-  the surviving children so it disappears with them.
-- **`workflow_procedure`** gates the request-supplied `workflow_id`. Without it the
-  whole scope would be cosmetic: the workflow would vanish from the menu and the list
-  while a direct POST still fired its procedure. Any future endpoint that acts on a
-  workflow id needs the same line.
+- **A workflow needs both ticks, at every one of its four call sites.** The scope
+  grants the workflow by id; `workflow_tables_in_scope()` in `includes/api_helpers.php`
+  is the other half, and it must run wherever a workflow is *served or fired*:
+  `api=workflows`, the `menu.php` submenu, `index.php` (which hosts the wizard) and
+  `workflow_procedure`. Step bindings are config-supplied, which normally means "skip,
+  do not reject" — a workflow is the exception because it is the unit that either runs
+  or does not, so a half-usable wizard is dropped rather than served. The parent menu
+  entry is keyed off the surviving children, so it disappears with them.
+
+  **Do not write the step loop out inline.** It was inline in the two sites that
+  *display* a workflow, and that is precisely why `workflow_procedure` — the one that
+  *runs* it — shipped gating the id alone: a user granted a workflow whose steps target
+  tables they never got could not see it anywhere, yet could POST its id and run the
+  procedure against those tables. `AccessScopeEndpointGuardTest` now pins the shared
+  predicate at all four sites and fails on a re-inlined copy.
+- **`workflow_procedure`** gates the request-supplied `workflow_id` *and* the resolved
+  entry's step tables. Without the first the whole scope would be cosmetic: the
+  workflow would vanish from the menu and the list while a direct POST still fired its
+  procedure. Any future endpoint that acts on a workflow id needs both lines. Unknown
+  ids fall through to the existing 400 — "unknown" and "not yours" stay different
+  answers, the same rule the boundary gate follows.
 
 ### The admin shortcut is about the caller, not the subject
 
@@ -621,6 +640,17 @@ complete would be worse than none, because then nobody would read the inventory
 either. When you touch one of those endpoints, re-read its entry and ask whether the
 reason still holds.
 
+**A directory outside its globs is invisible to it, and that looks exactly like a
+directory with nothing to find.** `public/admin/*.php` was missing from the list while
+`includes/admin/*.php` was in it, and adding it immediately turned up an unrecorded
+`$body['table']` in `public/admin/api_csv_import.php` — a read nobody had decided
+about, sitting there the whole time. The decision was `admin` and nothing had to
+change, but that was the answer only *after* someone looked. So
+`testEveryRequestReachableDirectoryIsScanned` now asserts the **file list** rather
+than the findings: a glob covering a directory with no reads today is otherwise
+indistinguishable from a glob that was never written. Add a new request-reachable
+directory to both the globs and that test.
+
 ### The boundary gate: closed by default
 
 `os_api_bootstrap()` now applies the access rules itself, from
@@ -634,7 +664,7 @@ os_api_bootstrap(['gate' => false]);                 // whole endpoint
 os_api_bootstrap(['gate' => ['table' => false]]);    // one parameter
 ```
 
-Three rules make this safe, and none of them is optional:
+Four rules make this safe, and none of them is optional:
 
 - **Only names that EXIST in the configuration are gated.** An unknown name falls
   through so the endpoint answers 400/404 in its own words; gating it would turn every
@@ -643,10 +673,26 @@ Three rules make this safe, and none of them is optional:
 - **Existence is checked including hidden entries.** A hidden table is
   unreachable-by-menu, not unknown — treating it as unknown would let it through
   ungated, which is the opposite of what this is for.
-- **The body is read, not consumed.** `php://input` is re-readable for the JSON
-  content types in use, so endpoints still parse it themselves. That was verified
-  against a running server, not assumed: a consumed stream would break every POST
-  silently.
+- **The body is read, not consumed.** `php://input` is re-readable, so endpoints still
+  parse it themselves. That was verified against a running server, not assumed: a
+  consumed stream would break every POST silently.
+- **Nothing about the decision may come from a value the client chooses.** Two shapes
+  broke this and both are now closed, so do not reintroduce either:
+  - `os_gate_request_body()` parses the body for **every** content type except
+    `multipart/form-data`, not just `application/json`. Keying it on the declared type
+    handed the client the off switch: a POST labelled `text/plain`, or carrying no
+    `Content-Type` at all, sailed past the gate while the endpoint parsed the same
+    bytes as JSON. `multipart/form-data` is the sole exclusion and it is mechanical,
+    not stylistic — PHP has already consumed that stream into `$_POST`/`$_FILES`, so
+    there is nothing left to read.
+  - Array-valued parameters (`?table[]=secret`) are walked element by element. A bare
+    `is_string()` test skipped them, and "skip" is the one outcome a gate must never
+    have for a shape the caller picks. Nesting deeper than one level still falls
+    through, which is safe only because no endpoint casts that to anything but the
+    string `Array`.
+
+  `TableAccessTest` pins both, including a source check that the content-type
+  condition has not crept back in.
 
 `api/fk.php` is the one built-in exemption — its delegated `$_GET['table']` is skipped
 when `OS_TABLE_ACCESS_DELEGATED` is defined, the same constant the `list` branch reads.

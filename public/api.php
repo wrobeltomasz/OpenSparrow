@@ -183,21 +183,7 @@ try {
             $workflows['workflows'] = filter_by_user_access('workflows', $workflows['workflows']);
             $workflows['workflows'] = array_values(array_filter(
                 $workflows['workflows'],
-                static function ($wf): bool {
-                    // A malformed entry is dropped rather than served: filter_by_user_access()
-                    // does the same, but only for a restricted user, so without this an
-                    // unrestricted one would still receive it.
-                    if (!is_array($wf)) {
-                        return false;
-                    }
-                    foreach ((array) ($wf['steps'] ?? []) as $step) {
-                        $stepTable = is_array($step) ? (string) ($step['table'] ?? '') : '';
-                        if ($stepTable !== '' && !user_can_access_table($stepTable)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
+                'workflow_tables_in_scope'
             ));
         }
 
@@ -1001,6 +987,16 @@ try {
         foreach ($wfConfig['workflows'] ?? [] as $wf) {
             if (($wf['id'] ?? '') !== $workflowId) {
                 continue;
+            }
+            // The step-table half of the rule, the same one the api=workflows list and
+            // the menu apply. Both of those DISPLAY a workflow; this one FIRES it, and
+            // the gate above only covers the id — so without this a user granted a
+            // workflow whose steps target tables they were never granted could not see
+            // it anywhere, yet could still POST its id and run the procedure against
+            // those tables. Unknown ids fall through to the 400 below, untouched:
+            // "unknown" and "not yours" stay different answers.
+            if (!workflow_tables_in_scope($wf)) {
+                jsonError('Forbidden: no access to this workflow.', 403);
             }
             $procCfg = $wf['steps'][$stepIndex]['procedure'] ?? null;
             break;

@@ -171,22 +171,13 @@ if (!empty($boardChildren)) {
 
 // Each defined workflow becomes a submenu child under the Workflows module entry.
 // Same rule as boards: granted by id, and every step's table must be reachable or the
-// wizard would 403 partway through. Mirrors the api=workflows filter.
+// wizard would 403 partway through. Both halves are shared with the api=workflows
+// filter — the second one via workflow_tables_in_scope(), so the menu cannot drift
+// from what that endpoint will actually return.
 $workflowChildren = [];
 foreach (filter_by_user_access('workflows', $wfCfg['workflows'] ?? []) as $wfItem) {
     $wfId = (string) ($wfItem['id'] ?? '');
-    if ($wfId === '') {
-        continue;
-    }
-    $wfStepsOk = true;
-    foreach ((array) ($wfItem['steps'] ?? []) as $wfStep) {
-        $wfStepTable = is_array($wfStep) ? (string) ($wfStep['table'] ?? '') : '';
-        if ($wfStepTable !== '' && !user_can_access_table($wfStepTable)) {
-            $wfStepsOk = false;
-            break;
-        }
-    }
-    if (!$wfStepsOk) {
+    if ($wfId === '' || !workflow_tables_in_scope($wfItem)) {
         continue;
     }
     $workflowChildren[] = [

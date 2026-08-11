@@ -31,6 +31,21 @@ if ($requestedTable !== '') {
 $requestedWorkflow = substr($_GET['workflow'] ?? '', 0, 64);
 if ($requestedWorkflow !== '') {
     os_require_access('workflows', $requestedWorkflow);
+    // And the step-table half of the rule, so the page agrees with the data call that
+    // fills it: api=workflows drops a workflow whose steps target tables the user was
+    // not granted, and rendering the wizard shell anyway would leave them on a form
+    // that has nothing to submit to. An id matching nothing configured falls through —
+    // the page answers for it exactly as it did before.
+    require_once __DIR__ . '/../includes/config_store.php';
+    foreach ((config_get('workflows') ?? [])['workflows'] ?? [] as $wfItem) {
+        if (is_array($wfItem) && ($wfItem['id'] ?? '') === $requestedWorkflow) {
+            if (!workflow_tables_in_scope($wfItem)) {
+                header('Location: index.php');
+                exit;
+            }
+            break;
+        }
+    }
 }
 
 // Load the UI template (schema is no longer injected here)
