@@ -9,8 +9,9 @@
 // record via related_table/related_id, with an optional reminder_date. Reminders are
 // delivered by cron/cron_notifications.php into spw_users_notifications (the bell icon).
 // Auth gate: session + UA enforcement; CSRF via X-CSRF-Token header (default os_api_bootstrap gate)
-// match() action routing: list, add, update, delete — every query scoped to the caller's
-// own user_id, never trusting a client-supplied one. sys_table('notes'); parameterized queries.
+// Action routing via os_api_action()/os_api_dispatch(): list, list_records, add, update, delete —
+// every query scoped to the caller's own user_id, never trusting a client-supplied one.
+// sys_table('notes'); parameterized queries.
 
 declare(strict_types=1);
 
@@ -21,33 +22,15 @@ $conn = os_api_bootstrap();
 const NOTE_BODY_MAX_LEN = 4000;
 const NOTE_RECORD_PICKER_LIMIT = 500;
 
-try {
-    $method = $_SERVER['REQUEST_METHOD'];
-    $action = '';
-    $body   = [];
-    if ($method === 'GET') {
-        $action = $_GET['action'] ?? '';
-    } elseif ($method === 'POST') {
-        $body   = json_decode(file_get_contents('php://input'), true) ?? [];
-        $action = $body['action'] ?? '';
-    }
+['action' => $action, 'body' => $body] = os_api_action();
 
-    if ($action === '') {
-        jsonError('Missing action.', 400);
-    }
-
-    match ($action) {
-        'list'         => actionList($conn),
-        'list_records' => actionListRecords($conn),
-        'add'          => actionAdd($conn, $body),
-        'update'       => actionUpdate($conn, $body),
-        'delete'       => actionDelete($conn, $body),
-        default        => jsonError("Unknown action: {$action}", 400),
-    };
-} catch (Throwable $e) {
-    error_log('[api_notes] ' . $e->getMessage());
-    jsonError('Internal server error.', 500);
-}
+os_api_dispatch($action, [
+    'list'         => fn() => actionList($conn),
+    'list_records' => fn() => actionListRecords($conn),
+    'add'          => fn() => actionAdd($conn, $body),
+    'update'       => fn() => actionUpdate($conn, $body),
+    'delete'       => fn() => actionDelete($conn, $body),
+], 'api_notes');
 
 // Validates an optional (related_table, related_id) pair: both present and sane, or
 // both absent. Returns [related_table, related_id] with null entries when unlinked.

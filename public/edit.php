@@ -514,16 +514,14 @@ document.addEventListener('DOMContentLoaded', function() {
         activateTab(hash);
     }
 
-    // Save-action toggle + cancel navigation — moved off inline onclick so they
-    // work under the page CSP (nonces do not cover inline event-handler attributes).
+    // Save-action toggle — moved off inline onclick so it works under the page CSP
+    // (nonces do not cover inline event-handler attributes). The [data-nav] cancel
+    // button is wired by assets/js/edit/form-behaviours.js, shared with create.php.
     document.querySelectorAll('[data-save-action]').forEach(btn => {
         btn.addEventListener('click', () => {
             const sa = document.getElementById('saveAction');
             if (sa) { sa.value = btn.dataset.saveAction; }
         });
-    });
-    document.querySelectorAll('[data-nav]').forEach(btn => {
-        btn.addEventListener('click', () => { window.location.href = btn.dataset.nav; });
     });
 
     // Delete record
@@ -558,29 +556,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Enum select color update
-    document.querySelectorAll('select[data-enum-colors]').forEach(sel => {
-        const colors = JSON.parse(sel.dataset.enumColors || '{}');
-        const apply  = () => { sel.style.background = colors[sel.value] || ''; };
-        sel.addEventListener('change', apply);
-        apply();
-    });
-
-    // RegExp validation
-    const inputs = document.querySelectorAll('input[data-pattern]');
-    inputs.forEach(input => {
-        const validate = () => {
-            if (!input.value) { input.setCustomValidity(''); return; }
-            try {
-                const regex = new RegExp(input.dataset.pattern);
-                input.setCustomValidity(regex.test(input.value) ? '' : (input.dataset.message || 'Invalid format'));
-            } catch (e) {
-                console.error('Invalid RegExp in schema:', input.dataset.pattern, e);
-            }
-        };
-        input.addEventListener('input', validate);
-        validate();
-    });
+    // Enum select colours and data-pattern validation are wired by
+    // assets/js/edit/form-behaviours.js, shared with create.php.
 
     // Record image gallery — upload + delete (same api/files.php endpoints, gallery mode)
     const btnImgUpload = document.getElementById('btnImageUpload');
@@ -699,6 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script type="module" src="assets/js/edit/form-behaviours.js?v=<?php echo @filemtime('assets/js/edit/form-behaviours.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script type="module" src="assets/js/edit/subtable-tooltip.js?v=<?php echo @filemtime('assets/js/edit/subtable-tooltip.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script type="module" src="assets/js/edit/m2m-picker.js?v=<?php echo @filemtime('assets/js/edit/m2m-picker.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <?php

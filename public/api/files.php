@@ -75,52 +75,33 @@ function saveConfig(array $config): void
     }
 }
 
-try {
-    $method = $_SERVER['REQUEST_METHOD'];
-    $action = '';
-    $body   = [];
-// Catch server-level post_max_size drops
-    if ($method === 'POST' && empty($_POST) && empty($_FILES) && isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0) {
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-        if (str_contains($contentType, 'multipart/form-data')) {
-            jsonError('File is too large. Check php.ini settings.', 413);
-        }
-    }
-
-    // Safely extract action depending on content type
-    if ($method === 'GET') {
-        $action = $_GET['action'] ?? '';
-    } elseif ($method === 'POST') {
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-        if (str_contains($contentType, 'application/json')) {
-            $body   = json_decode(file_get_contents('php://input'), true) ?? [];
-            $action = $body['action'] ?? '';
-        } else {
-            $action = $_POST['action'] ?? '';
-        }
-    }
-
-    if ($action === '') {
-        jsonError('Unknown action or empty request payload.', 400);
-    }
-
-    match ($action) {
-        'list'                 => actionList($conn),
-        'get_config'           => actionGetConfig(),
-        'upload'               => actionUpload($conn),
-        'delete'               => actionDelete($conn, $body),
-        'mass_delete'          => actionMassDelete($conn, $body),
-        'mass_tag'             => actionMassTag($conn, $body),
-        'update_meta'          => actionUpdateMeta($conn, $body),
-        'save_config'          => actionSaveConfig($body),
-        'get_relations_config' => actionGetRelationsConfig(),
-        'get_related_records'  => actionGetRelatedRecords($conn),
-        default                => jsonError("Unknown action: {$action}", 400),
-    };
-} catch (Throwable $e) {
-    error_log('[api_files] ' . $e->getMessage());
-    jsonError('Internal server error.', 500);
+// Catch server-level post_max_size drops. Runs before os_api_action(): when PHP
+// discards an oversized multipart body, $_POST is empty and no action name survives
+// to reach the dispatcher, so the upload would otherwise report a bare 400.
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)
+    && isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0
+    && str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/form-data')
+) {
+    jsonError('File is too large. Check php.ini settings.', 413);
 }
+
+// os_api_action() reads the action from the JSON body or from $_POST depending on
+// the content type — the upload actions post multipart FormData, not JSON.
+['action' => $action, 'body' => $body] = os_api_action();
+
+os_api_dispatch($action, [
+    'list'                 => fn() => actionList($conn),
+    'get_config'           => fn() => actionGetConfig(),
+    'upload'               => fn() => actionUpload($conn),
+    'delete'               => fn() => actionDelete($conn, $body),
+    'mass_delete'          => fn() => actionMassDelete($conn, $body),
+    'mass_tag'             => fn() => actionMassTag($conn, $body),
+    'update_meta'          => fn() => actionUpdateMeta($conn, $body),
+    'save_config'          => fn() => actionSaveConfig($body),
+    'get_relations_config' => fn() => actionGetRelationsConfig(),
+    'get_related_records'  => fn() => actionGetRelatedRecords($conn),
+], 'api_files', 'Unknown action or empty request payload.');
 
 // Handle list action
 function actionList($conn): void

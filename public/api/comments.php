@@ -19,33 +19,15 @@ $conn = os_api_bootstrap(['csrf' => 'manual']);
 // jsonError(), jsonSuccess(), requireLogin(), requireWrite() and validatedTable()
 // are shared via includes/api_helpers.php
 
-try {
-    $method = $_SERVER['REQUEST_METHOD'];
-    $action = '';
-    $body   = [];
-    if ($method === 'GET') {
-        $action = $_GET['action'] ?? '';
-    } elseif ($method === 'POST') {
-        $body   = json_decode(file_get_contents('php://input'), true) ?? [];
-        $action = $body['action'] ?? '';
-    }
+['action' => $action, 'body' => $body] = os_api_action();
 
-    if ($action === '') {
-        jsonError('Missing action.', 400);
-    }
-
-    match ($action) {
-        'list'   => actionList($conn),
-        'mine'   => actionMine($conn),
-        'add'    => actionAdd($conn, $body),
-        'delete' => actionDelete($conn, $body),
-        'counts' => actionCounts($conn),
-        default  => jsonError("Unknown action: {$action}", 400),
-    };
-} catch (Throwable $e) {
-    error_log('[api_comments] ' . $e->getMessage());
-    jsonError('Internal server error.', 500);
-}
+os_api_dispatch($action, [
+    'list'   => fn() => actionList($conn),
+    'mine'   => fn() => actionMine($conn),
+    'add'    => fn() => actionAdd($conn, $body),
+    'delete' => fn() => actionDelete($conn, $body),
+    'counts' => fn() => actionCounts($conn),
+], 'api_comments');
 
 function actionList($conn): void
 {

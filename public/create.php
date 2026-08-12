@@ -155,31 +155,8 @@ ob_start();
 </main>
 <?php
 $pageContent = ob_get_clean();
-$extraScripts = '<script nonce="' . htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8') . '">
-document.addEventListener(\'DOMContentLoaded\', function() {
-    document.querySelectorAll(\'[data-nav]\').forEach(btn => {
-        btn.addEventListener(\'click\', () => { window.location.href = btn.dataset.nav; });
-    });
-    document.querySelectorAll(\'select[data-enum-colors]\').forEach(sel => {
-        const colors = JSON.parse(sel.dataset.enumColors || \'{}\');
-        const apply  = () => { sel.style.background = colors[sel.value] || \'\'; };
-        sel.addEventListener(\'change\', apply);
-        apply();
-    });
-    document.querySelectorAll(\'input[data-pattern]\').forEach(input => {
-        const validate = () => {
-            if (!input.value) { input.setCustomValidity(\'\'); return; }
-            try {
-                const regex = new RegExp(input.dataset.pattern);
-                input.setCustomValidity(regex.test(input.value) ? \'\' : (input.dataset.message || \'Invalid format\'));
-            } catch (e) {
-                console.error(\'Invalid RegExp in schema:\', input.dataset.pattern, e);
-            }
-        };
-        input.addEventListener(\'input\', validate);
-        validate();
-    });
-});
-</script>'
-. os_module_script('assets/js/edit/m2m-picker.js', $cspNonce);
+// [data-nav] / enum colours / data-pattern validation are shared with edit.php —
+// see assets/js/edit/form-behaviours.js.
+$extraScripts = os_module_script('assets/js/edit/form-behaviours.js', $cspNonce)
+    . os_module_script('assets/js/edit/m2m-picker.js', $cspNonce);
 include __DIR__ . '/../templates/layout.php';

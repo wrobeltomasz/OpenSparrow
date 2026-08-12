@@ -20,35 +20,16 @@ $conn = os_api_bootstrap(['csrf' => 'manual']);
 // jsonError(), jsonSuccess(), requireLogin(), requireWrite() and validatedTable()
 // are shared via includes/api_helpers.php
 
-try {
-    $method = $_SERVER['REQUEST_METHOD'];
-    $body   = [];
-    $action = '';
+['action' => $action, 'body' => $body] = os_api_action();
 
-    if ($method === 'GET') {
-        $action = $_GET['action'] ?? '';
-    } elseif ($method === 'POST') {
-        $body   = json_decode(file_get_contents('php://input'), true) ?? [];
-        $action = $body['action'] ?? '';
-    }
-
-    if ($action === '') {
-        jsonError('Missing action.', 400);
-    }
-
-    match ($action) {
-        'get'      => actionGet($conn),
-        'history'  => actionHistory($conn),
-        'editors'  => actionEditors($conn),
-        'mine'     => actionMine($conn),
-        'set'      => actionSet($conn, $body),
-        'mass_set' => actionMassSet($conn, $body),
-        default    => jsonError("Unknown action: {$action}", 400),
-    };
-} catch (Throwable $e) {
-    error_log('[api_owners] ' . $e->getMessage());
-    jsonError('Server error.', 500);
-}
+os_api_dispatch($action, [
+    'get'      => fn() => actionGet($conn),
+    'history'  => fn() => actionHistory($conn),
+    'editors'  => fn() => actionEditors($conn),
+    'mine'     => fn() => actionMine($conn),
+    'set'      => fn() => actionSet($conn, $body),
+    'mass_set' => fn() => actionMassSet($conn, $body),
+], 'api_owners');
 
 function actionGet($conn): void
 {

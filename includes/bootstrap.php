@@ -187,6 +187,73 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
     return ($options['connect'] ?? true) ? db_connect() : null;
 }
 
+// Read the action name and request body of an action-style JSON endpoint —
+// the four-times-duplicated preamble of api/notes.php, api/comments.php,
+// api/owners.php and api/files.php.
+//
+//   GET   → action from the query string, body stays [].
+//   POST  → an 'application/json' body is decoded and the action read from it;
+//           any other content type (multipart uploads, form posts) reads $_POST,
+//           which is what the Files module's upload actions need.
+//   other → action stays '', which os_api_dispatch() reports as a 400.
+//
+// Returns ['method' => …, 'action' => …, 'body' => …]; destructure by key so a
+// caller that does not need the method does not bind an unused variable.
+// Must run after os_api_bootstrap() — that is what loads api_helpers.php.
+function os_api_action(): array
+{
+    $method = $_SERVER['REQUEST_METHOD'];
+    $action = '';
+    $body   = [];
+
+    if ($method === 'GET') {
+        $action = $_GET['action'] ?? '';
+    } elseif ($method === 'POST') {
+        if (str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json')) {
+            $body   = json_decode(file_get_contents('php://input'), true) ?? [];
+            $action = is_array($body) ? ($body['action'] ?? '') : '';
+        } else {
+            $action = $_POST['action'] ?? '';
+        }
+    }
+
+    return [
+        'method' => $method,
+        'action' => (string) $action,
+        'body'   => is_array($body) ? $body : [],
+    ];
+}
+
+// Route an action name to its handler with the endpoint-standard error envelope:
+// an empty action and an unrecognised one are 400s, and any Throwable escaping a
+// handler is logged under $logTag and genericized to a 500 — never leaked to the
+// client. $handlers maps action name => callable; handlers are expected to end the
+// request themselves via jsonSuccess()/jsonError(), exactly as they did under the
+// match() blocks this replaces.
+//
+// $missingMessage overrides the empty-action wording for endpoints whose message
+// is referenced elsewhere (api/files.php — see cypress/e2e/security/headers_upload.cy.js).
+function os_api_dispatch(
+    string $action,
+    array $handlers,
+    string $logTag,
+    string $missingMessage = 'Missing action.'
+): void {
+    if ($action === '') {
+        jsonError($missingMessage, 400);
+    }
+    if (!isset($handlers[$action])) {
+        jsonError("Unknown action: {$action}", 400);
+    }
+
+    try {
+        $handlers[$action]();
+    } catch (Throwable $e) {
+        error_log('[' . $logTag . '] ' . $e->getMessage());
+        jsonError('Internal server error.', 500);
+    }
+}
+
 // Build the full OOP object graph used by the form pages (create.php, edit.php).
 // Sets $GLOBALS['conn'] for legacy api_helpers functions and returns the graph
 // as an associative array for destructuring at the call site.
