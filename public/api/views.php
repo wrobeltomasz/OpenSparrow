@@ -11,8 +11,8 @@ declare(strict_types=1);
 // Auth gate: session + UA enforcement; CSRF on POST
 // actions: list (GET), config (GET, admin), data (GET — runs the view SELECT / drill-down GROUP BY),
 // schemas (GET, admin — lists PostgreSQL schemas + the configured search selection),
-// sync (GET, admin — discovers views via information_schema.VIEWS, scoped to
-// the "views" config "schemas" key for postgres), save (POST, admin)
+// sync (GET, admin — discovers ordinary AND materialized views via pg_class
+// relkind 'v'/'m', scoped to the "views" config "schemas" key), save (POST, admin)
 // Reads/writes the "views" config; column names validated against schema, values parameterized
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
@@ -198,8 +198,17 @@ try {
         }
 
         $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($schemas)));
-        $sql          = "SELECT table_schema, table_name FROM information_schema.views "
-            . "WHERE table_schema IN ($placeholders) ORDER BY table_schema, table_name";
+        // information_schema.VIEWS lists ordinary views only: a materialized view is
+        // relkind 'm' and never appears there, which is why Sync used to miss them
+        // entirely. Read pg_class instead so both kinds are discovered, and keep
+        // information_schema's privilege filtering by requiring SELECT on the
+        // relation — Sync must never offer a view the app's DB user cannot read.
+        $sql = 'SELECT n.nspname AS table_schema, c.relname AS table_name, c.relkind '
+            . 'FROM pg_catalog.pg_class c '
+            . 'JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace '
+            . "WHERE c.relkind IN ('v', 'm') AND n.nspname IN ($placeholders) "
+            . "AND pg_catalog.has_table_privilege(c.oid, 'SELECT') "
+            . 'ORDER BY n.nspname, c.relname';
         $res = @pg_query_params($conn, $sql, $schemas);
         if (!$res) {
             http_response_code(500);
@@ -209,16 +218,28 @@ try {
 
         $dbViews     = [];
         $viewSchemas = [];
+        $viewKinds   = [];
         while ($row = pg_fetch_assoc($res)) {
             $dbViews[]                       = $row['table_name'];
             $viewSchemas[$row['table_name']] = $row['table_schema'];
+            $viewKinds[$row['table_name']]   = $row['relkind'] === 'm' ? 'materialized' : 'view';
         }
         pg_free_result($res);
 
         $viewsColumns = [];
         foreach ($dbViews as $vName) {
-            $colSql = 'SELECT column_name, data_type FROM information_schema.columns '
-                . 'WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position';
+            // pg_attribute for the same reason as above: information_schema.columns
+            // has no rows for a materialized view's columns. format_type() also gives
+            // the precise type ("character varying(255)") rather than the bare
+            // "character varying" — this value is only rendered as a badge.
+            $colSql = 'SELECT a.attname AS column_name, '
+                . 'pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type '
+                . 'FROM pg_catalog.pg_attribute a '
+                . 'JOIN pg_catalog.pg_class c ON c.oid = a.attrelid '
+                . 'JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace '
+                . 'WHERE n.nspname = $1 AND c.relname = $2 '
+                . 'AND a.attnum > 0 AND NOT a.attisdropped '
+                . 'ORDER BY a.attnum';
             $colRes = @pg_query_params($conn, $colSql, [$viewSchemas[$vName], $vName]);
             $cols   = [];
             if ($colRes) {
@@ -235,6 +256,7 @@ try {
             'db_views'     => $dbViews,
             'columns'      => $viewsColumns,
             'view_schemas' => $viewSchemas,
+            'view_kinds'   => $viewKinds,
             'source'       => 'postgres',
         ]);
         exit;

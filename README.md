@@ -102,7 +102,7 @@ https://github.com/user-attachments/assets/62611274-d6e3-41ee-9b88-6e84f8f18827
 - **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab.
 - **Private notes** — a personal notepad in the user menu (`spw_notes`), visible only to its author, optionally linked to a record and carrying a reminder date **and time**, delivered by the notification cron once that moment has passed.
 - **Kanban boards** — drag records between status lanes; multiple boards can be defined in the `board` configuration, each appearing as its own sidebar item.
-- **Saved views** — read-only pages backed by PostgreSQL views, discoverable across multiple schemas and configured from the admin panel.
+- **Saved views** — read-only pages backed by PostgreSQL views, ordinary or materialized, discoverable across multiple schemas and configured from the admin panel.
 - **Printable reports** — configurable print templates with paginated output, defined in the `print` configuration and rendered by `print.php`.
 - **ETL module** — scheduled data transfers from MySQL, MariaDB, PostgreSQL or SQLite sources — or a CSV file fetched over FTP/FTPS — into PostgreSQL targets, with multi-step flows, run logs, and a cron worker.
 - **Data anonymization** — GDPR-oriented column scrubbing with preview, scheduled runs, and an audit trail in `spw_anonymization_log`.

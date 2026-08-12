@@ -409,6 +409,7 @@ ${_ul([
 ${_h3('doc-10b', s.s10b_head)}
 ${_p(s.s10b_desc)}
 ${_ul([
+    `<strong>${s.s10b_matview_label}:</strong> ${s.s10b_matview}`,
     `<strong>${s.s10b_sync_label}:</strong> ${s.s10b_sync}`,
     `<strong>${s.s10b_schemas_label}:</strong> ${s.s10b_schemas}`,
     `<strong>${s.s10b_display_label}:</strong> ${s.s10b_display}`,
