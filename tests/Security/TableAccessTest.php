@@ -717,4 +717,28 @@ final class TableAccessTest extends TestCase
         // No table restriction at all still means null, not a closed-over list.
         $this->assertNull(user_allowed_tables());
     }
+
+    public function testAllDigitTableNameSurvivesTheClosure(): void
+    {
+        // The closure is keyed by table name, and PHP casts an all-digit string key to
+        // an int. user_can_access() compares with a STRICT in_array(), so without a cast
+        // back to string a table named "2024" — legal in PostgreSQL when quoted, and the
+        // obvious shape for a year-partitioned table — silently stops matching the grant
+        // an admin explicitly ticked. It fails closed rather than open, which is why it
+        // would never show up as a leak; it shows up as a table nobody can open.
+        $this->seedSchema([
+            '2024' => ['subtables' => [['table' => '2024_lines']]],
+            '2024_lines' => ['hidden' => true],
+        ]);
+        // 138: user_allowed_items() caches per user id for the whole process, so an id
+        // another test already resolved would answer from that cache and never reach the
+        // fixture above.
+        $this->seedTables('138', ['2024']);
+        $_SESSION['user_id'] = 138;
+
+        $this->assertSame(['2024', '2024_lines'], user_allowed_tables());
+        $this->assertTrue(user_can_access_table('2024'), 'The granted table must stay reachable.');
+        $this->assertTrue(user_can_access_table('2024_lines'), 'Its hidden subtable must too.');
+        $this->assertFalse(user_can_access_table('2025'), 'The gate must still refuse what was not granted.');
+    }
 }

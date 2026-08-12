@@ -688,7 +688,15 @@ function with_hidden_subtables(array $tables): array
         }
     }
 
-    return array_keys($out);
+    // strval, because $out is keyed by table name and PHP silently casts an all-digit
+    // string key to an int: a table named "2024" would come back as int 2024, and
+    // user_can_access() compares with a STRICT in_array(), so the grant an admin
+    // explicitly ticked would stop matching. Fails closed rather than open, but it is
+    // still a table the user was given and cannot reach. Every caller treats this
+    // return value as string[] — user_allowed_items() stores it, and
+    // admin_hidden_children_map() array_diff()s against it — so the cast belongs here,
+    // once, rather than at each of them.
+    return array_map('strval', array_keys($out));
 }
 
 // ── Default-on gating at the API boundary ────────────────────────────────────
