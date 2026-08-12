@@ -1005,8 +1005,14 @@ try {
             // the gate above only covers the id — so without this a user granted a
             // workflow whose steps target tables they were never granted could not see
             // it anywhere, yet could still POST its id and run the procedure against
-            // those tables. Unknown ids fall through to the 400 below, untouched:
-            // "unknown" and "not yours" stay different answers.
+            // those tables. This half only sees ids that match a configured workflow;
+            // anything else falls through to the 400 below. Note that the id gate above
+            // answers first and, for a RESTRICTED user, answers 403 for every id outside
+            // their allow-list — a workflow that does not exist included. So the
+            // "unknown is 400, not yours is 403" split that os_request_scope_violation()
+            // preserves holds here only for unrestricted users. That is deliberate: both
+            // cases are 403, so nothing is disclosed, and narrowing it further would mean
+            // telling a restricted caller which workflow ids exist.
             if (!workflow_tables_in_scope($wf)) {
                 jsonError('Forbidden: no access to this workflow.', 403);
             }

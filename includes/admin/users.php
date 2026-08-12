@@ -516,8 +516,10 @@ if ($action === 'user_tables_save') {
         $users = is_array($row['value']['users'] ?? null) ? $row['value']['users'] : [];
 
         // Drop empty scopes so an unrestricted user leaves no entry behind at all —
-        // an entry of three empty lists and no entry mean exactly the same thing,
-        // and the shorter document is the one worth storing.
+        // an entry of nothing but empty lists and no entry mean exactly the same thing,
+        // and the shorter document is the one worth storing. Phrased without a count on
+        // purpose: USER_ACCESS_SCOPES decides how many there are, and a number written
+        // out here would go stale the next time a scope is added.
         $entry = array_filter($clean, static fn(array $list): bool => $list !== []);
         if ($entry === []) {
             unset($users[(string) $userId]);

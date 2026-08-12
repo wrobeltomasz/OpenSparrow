@@ -130,6 +130,10 @@ function os_page_bootstrap(array $options = []): array
 //                  the endpoint calls os_require_csrf() itself on its mutating actions (default 'header')
 //   'require_ajax' require the X-Requested-With: XMLHttpRequest header (default false)
 //   'role'         require this exact role, e.g. 'editor' (default: any authenticated user)
+//   'gate'         per-user access gate on the request's table/view/print/board/workflow names
+//                  (default true); false opts the endpoint out entirely, ['table' => false] opts
+//                  one parameter out. Either way, say why at the call site — see
+//                  os_gate_request_scopes() and tests/Security/request_scope_inventory.php
 // Always loads db.php + api_helpers.php, so endpoints may call db_connect(), jsonError(), sys_table() etc.
 function os_api_bootstrap(array $options = []): ?\PgSql\Connection
 {
