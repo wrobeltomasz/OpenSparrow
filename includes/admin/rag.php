@@ -295,13 +295,29 @@ if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET
         }
         sort($tables);
 
+        // Ordinary AND materialized views: a materialized view is relkind 'm' and never
+        // appears in information_schema.VIEWS, so listing from there silently hid every
+        // one of them. Same source as the Views module's Sync (public/api/views.php).
+        // has_table_privilege keeps the list to relations this connection can actually
+        // read — rag_aggregate_block() later SELECTs from whatever is attached here.
         $availableViews = [];
-        $res = @pg_query($conn, "SELECT table_schema, table_name FROM information_schema.views WHERE table_schema NOT IN ('pg_catalog', 'information_schema') ORDER BY table_schema, table_name");
+        $res = @pg_query(
+            $conn,
+            'SELECT n.nspname AS table_schema, c.relname AS table_name, c.relkind '
+            . 'FROM pg_catalog.pg_class c '
+            . 'JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace '
+            . "WHERE c.relkind IN ('v', 'm') "
+            . "AND n.nspname NOT IN ('pg_catalog', 'information_schema') "
+            . "AND n.nspname NOT LIKE 'pg\\_toast%' AND n.nspname NOT LIKE 'pg\\_temp%' "
+            . "AND pg_catalog.has_table_privilege(c.oid, 'SELECT') "
+            . 'ORDER BY n.nspname, c.relname'
+        );
         if ($res) {
             while ($row = pg_fetch_assoc($res)) {
                 $availableViews[] = [
-                    'schema' => $row['table_schema'],
-                    'name'   => $row['table_name'],
+                    'schema'       => $row['table_schema'],
+                    'name'         => $row['table_name'],
+                    'materialized' => $row['relkind'] === 'm',
                 ];
             }
         }
@@ -355,9 +371,15 @@ if ($action === 'rag_aggregate_view_save') {
             if ($ref === null) {
                 throw new AdminApiMessage('Invalid view reference. Use the format "schema.view".');
             }
+            // Must accept materialized views too, and must agree with the listing above —
+            // validating against information_schema.VIEWS would reject exactly what the
+            // picker just offered.
             $chk = @pg_query_params(
                 $conn,
-                'SELECT 1 FROM information_schema.views WHERE table_schema = $1 AND table_name = $2',
+                'SELECT 1 FROM pg_catalog.pg_class c '
+                . 'JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace '
+                . "WHERE c.relkind IN ('v', 'm') AND n.nspname = $1 AND c.relname = $2 "
+                . "AND pg_catalog.has_table_privilege(c.oid, 'SELECT')",
                 [$ref['schema'], $ref['view']]
             );
             if (!$chk || pg_num_rows($chk) === 0) {

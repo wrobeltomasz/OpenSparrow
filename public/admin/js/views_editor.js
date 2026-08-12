@@ -125,6 +125,7 @@ export function renderViewsEditor(ctx) {
             if (data.status !== 'ok') { setStatus('Sync failed: ' + (data.error ?? 'unknown'), 'error'); return; }
             const synced      = data.db_views ?? [];
             const viewSchemas = data.view_schemas ?? {};
+            const viewKinds   = data.view_kinds ?? {};
             Object.assign(dbColumns, data.columns ?? {});
 
             synced.forEach(vName => {
@@ -143,6 +144,9 @@ export function renderViewsEditor(ctx) {
                 if (currentSource === 'postgres' && vSchema) {
                     views[vName].schema = vSchema;
                 }
+                // Persisted like `schema` above: both are DB-derived facts the editor
+                // needs after a reload, when no sync has run yet.
+                views[vName].materialized = viewKinds[vName] === 'materialized';
             });
 
             markDirty();
@@ -282,6 +286,17 @@ export function renderViewsEditor(ctx) {
         dbSpan.className = 'block-key';
         dbSpan.textContent = ` (${vName})`;
         nameSpan.appendChild(dbSpan);
+
+        // A materialized view serves the rows from its last REFRESH, not live data —
+        // worth stating on the card, since nothing else distinguishes the two here.
+        if (cfg.materialized) {
+            const matBadge = document.createElement('span');
+            matBadge.className = 'adm-badge adm-badge-muted';
+            matBadge.style.marginLeft = '8px';
+            matBadge.title = 'Materialized view — shows data from its last REFRESH MATERIALIZED VIEW, not live rows.';
+            matBadge.textContent = 'Materialized';
+            nameSpan.appendChild(matBadge);
+        }
 
         const visibleLabel = document.createElement('label');
         visibleLabel.className = 'block-vis';

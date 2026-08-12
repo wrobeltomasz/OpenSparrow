@@ -1155,6 +1155,9 @@ function ragBuildAggregateViewsCard(panel) {
             // Always fully qualified so a view is unambiguous regardless of the
             // selected table's own schema (a view may live in a different schema).
             opt.value = v.schema + '.' + v.name;
+            // Materialized views serve the rows stored at their last refresh, so flag
+            // them in the picker — the datalist renders the label beside the value.
+            if (v.materialized) opt.label = 'materialized';
             viewList.appendChild(opt);
         });
     }

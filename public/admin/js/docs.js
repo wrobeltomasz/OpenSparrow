@@ -575,7 +575,7 @@ ${_ul([
 ${_h4(s.sRagAgg_head)}
 ${_p(s.sRagAgg_desc)}
 ${_ul([
-    s.sRagAgg_li1, s.sRagAgg_li2, s.sRagAgg_li3, s.sRagAgg_li4, s.sRagAgg_li5, s.sRagAgg_li6, s.sRagAgg_li7
+    s.sRagAgg_li1, s.sRagAgg_li2, s.sRagAgg_li3, s.sRagAgg_li4, s.sRagAgg_li5, s.sRagAgg_li6, s.sRagAgg_li7, s.sRagAgg_li8
 ])}
 ${_h4(s.sRagRollup_head)}
 ${_p(s.sRagRollup_desc)}
