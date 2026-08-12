@@ -104,7 +104,7 @@ https://github.com/user-attachments/assets/62611274-d6e3-41ee-9b88-6e84f8f18827
 - **Kanban boards** — drag records between status lanes; multiple boards can be defined in the `board` configuration, each appearing as its own sidebar item.
 - **Saved views** — read-only pages backed by PostgreSQL views, discoverable across multiple schemas and configured from the admin panel.
 - **Printable reports** — configurable print templates with paginated output, defined in the `print` configuration and rendered by `print.php`.
-- **ETL module** — scheduled data transfers from MySQL or PostgreSQL sources into PostgreSQL targets, with multi-step flows, run logs, and a cron worker.
+- **ETL module** — scheduled data transfers from MySQL, MariaDB, PostgreSQL or SQLite sources — or a CSV file fetched over FTP/FTPS — into PostgreSQL targets, with multi-step flows, run logs, and a cron worker.
 - **Data anonymization** — GDPR-oriented column scrubbing with preview, scheduled runs, and an audit trail in `spw_anonymization_log`.
 - **Bulk operations** — mass edit, CSV import, and search-and-replace data cleanup, all with preview before applying.
 - **Outbound webhooks (n8n / Make / custom)** — any automation rule can POST/PUT/PATCH/DELETE a JSON payload to an external endpoint on record create, update or delete. The body carries the rule, event and record (mapped fields or the whole row, plus the pre-change state on update and delete). Requests can be signed with an HMAC SHA-256 `X-Sparrow-Signature` header and/or carry custom headers for the receiver's own auth; signing secrets and header values are stored encrypted. Failed sends optionally retry on timeouts and 5xx/429. Point the URL at an n8n Webhook node and no plugin is needed on either side.

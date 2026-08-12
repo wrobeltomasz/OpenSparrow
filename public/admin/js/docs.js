@@ -182,6 +182,7 @@ ${_ul([
     `<strong>${s.s3_stat_label}:</strong> ${s.s3_stat}`,
     `<strong>${s.s3_bar_label}:</strong> ${s.s3_bar}`,
     `<strong>${s.s3_pie_label}:</strong> ${s.s3_pie}`,
+    `<strong>${s.s3_line_label}:</strong> ${s.s3_line}`,
     `<strong>${s.s3_list_label}:</strong> ${s.s3_list}`
 ])}
 ${_h4(s.s3_props_head)}
@@ -212,6 +213,7 @@ ${_ul([
 ${_h3('doc-4b', s.s4b_head)}
 ${_p(s.s4b_desc)}
 ${_ul([
+    `<strong>${s.s4b_multi_label}:</strong> ${s.s4b_multi}`,
     `<strong>${s.s4b_table_label}:</strong> ${s.s4b_table}`,
     `<strong>${s.s4b_status_label}:</strong> ${s.s4b_status}`,
     `<strong>${s.s4b_cards_label}:</strong> ${s.s4b_cards}`,
@@ -309,8 +311,10 @@ ${_h3('doc-9f', s.s9f_head)}
 ${_p(s.s9f_desc)}
 
 ${_h3('doc-9f2', s.s9f2_head)}
+${_p(s.s9f2_desc)}
 ${_ul([
     `<strong>Edit</strong> — ${s.s9f2_edit}`,
+    `<strong>Duplicate</strong> — ${s.s9f2_dup}`,
     `<strong>Delete</strong> — ${s.s9f2_delete}`,
     s.s9f2_visible
 ])}
@@ -379,7 +383,8 @@ ${_ul([
     `<strong>${s.s9m_tab1_label}:</strong> ${s.s9m_tab1}`,
     `<strong>${s.s9m_tab2_label}:</strong> ${s.s9m_tab2}`,
     `<strong>${s.s9m_tab3_label}:</strong> ${s.s9m_tab3}`,
-    `<strong>${s.s9m_tab4_label}:</strong> ${s.s9m_tab4}`
+    `<strong>${s.s9m_tab4_label}:</strong> ${s.s9m_tab4}`,
+    `<strong>${s.s9m_tab5_label}:</strong> ${s.s9m_tab5}`
 ])}
 
 ${_h3('doc-9n', s.sLogo_head)}
@@ -394,6 +399,9 @@ ${_ul([
 ${_h3('doc-10', s.s10_head)}
 ${_p(s.s10_desc)}
 ${_ul([
+    `<strong>${s.s10_browse_label}:</strong> ${s.s10_browse}`,
+    `<strong>${s.s10_meta_label}:</strong> ${s.s10_meta}`,
+    `<strong>${s.s10_bulk_label}:</strong> ${s.s10_bulk}`,
     `<strong>${s.s10_config_label}:</strong> ${s.s10_config}`,
     `<strong>${s.s10_relations_label}:</strong> ${s.s10_relations}`
 ])}
@@ -421,6 +429,14 @@ ${_ul([
     `<strong>${s.s10d_perm_label}:</strong> ${s.s10d_perm}`
 ])}
 
+${_h3('doc-10e', s.s10e_head)}
+${_p(s.s10e_desc)}
+${_ul([
+    `<strong>${s.s10e_private_label}:</strong> ${s.s10e_private}`,
+    `<strong>${s.s10e_link_label}:</strong> ${s.s10e_link}`,
+    `<strong>${s.s10e_reminder_label}:</strong> ${s.s10e_reminder}`
+])}
+
 ${_h3('doc-11', s.s11_head)}
 ${_p(s.s11_desc)}
 ${_h4(s.s11_dnd_head)}
@@ -445,7 +461,10 @@ ${_h3('doc-11c', s.s11c_head)}
 ${_p(s.s11c_desc)}
 ${_ul([
     `<strong>${s.s11c_step1_label}:</strong> ${s.s11c_step1}`,
+    `<strong>${s.s11c_parse_label}:</strong> ${s.s11c_parse}`,
+    `<strong>${s.s11c_create_label}:</strong> ${s.s11c_create}`,
     `<strong>${s.s11c_step2_label}:</strong> ${s.s11c_step2}`,
+    `<strong>${s.s11c_mode_label}:</strong> ${s.s11c_mode}`,
     `<strong>${s.s11c_upsert_label}:</strong> ${s.s11c_upsert}`,
     `<strong>${s.s11c_types_label}:</strong> ${s.s11c_types}`,
     `<strong>${s.s11c_errors_label}:</strong> ${s.s11c_errors}`,
@@ -497,8 +516,15 @@ ${_h4(s.s12_env_head)}
         <tr><td class="adm-td"><code>FILES_MAX_SIZE_MB</code></td><td class="adm-td"><code>20</code></td><td class="adm-td">${s.env_files}</td></tr>
         <tr><td class="adm-td"><code>RECORD_SNAPSHOTS_ENABLED</code></td><td class="adm-td"><code>false</code></td><td class="adm-td">${s.env_snapshots}</td></tr>
         <tr><td class="adm-td"><code>PGSCHEMA</code></td><td class="adm-td"><code>app</code></td><td class="adm-td">${s.env_pgschema}</td></tr>
+        <tr><td class="adm-td"><code>APP_ENCRYPTION_KEY</code></td><td class="adm-td"><em>${s.env_autogen}</em></td><td class="adm-td">${s.env_enckey}</td></tr>
+        <tr><td class="adm-td"><code>TRUST_PROXY_HEADERS</code></td><td class="adm-td"><code>true</code></td><td class="adm-td">${s.env_proxy}</td></tr>
+        <tr><td class="adm-td"><code>SESSION_SAMESITE</code></td><td class="adm-td"><code>Lax</code></td><td class="adm-td">${s.env_samesite}</td></tr>
+        <tr><td class="adm-td"><code>SESSION_SAVE_PATH</code></td><td class="adm-td"><em>${s.env_none}</em></td><td class="adm-td">${s.env_savepath}</td></tr>
+        <tr><td class="adm-td"><code>HSTS_MAX_AGE</code></td><td class="adm-td"><code>31536000</code></td><td class="adm-td">${s.env_hsts}</td></tr>
+        <tr><td class="adm-td"><code>AUTOMATION_EMAIL_FROM</code></td><td class="adm-td"><em>${s.env_none}</em></td><td class="adm-td">${s.env_mailfrom}</td></tr>
     </tbody>
 </table>
+${_p(s.s12_env_note)}
 
 ${_h3('doc-13', s.s13_head)}
 ${_p(s.s13_desc)}
