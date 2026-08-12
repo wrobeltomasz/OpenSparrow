@@ -182,6 +182,35 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
     }
 
+    /**
+     * Read half of the same policy. The write gate above covers delete, mass-delete,
+     * mass-tag and metadata edit, and file_download.php covers the bytes — but the
+     * LISTING selects from spw_files directly, so none of that touches it, and it used
+     * to hand out the name, tags, uploader and related_id of attachments on rows the
+     * caller does not own.
+     *
+     * Correlated on f.related_table rather than parameterised like owner_restriction_sql(),
+     * because one page of this listing spans many tables. Both halves are pinned so a
+     * refactor cannot quietly drop one and leave the other looking complete.
+     */
+    public function testFileListingIsFilteredByRecordOwnership(): void
+    {
+        $src = $this->code('public/api/files.php');
+
+        $this->assertCodeHas(
+            'ro.table_name = f.related_table AND ro.record_id = f.related_id',
+            $src,
+            'The file listing must drop attachments on records the caller does not own.'
+        );
+        // Scoped to owner_restricted tables: applied to every related_table it would
+        // start hiding files on open tables the moment somebody assigned an owner.
+        $this->assertCodeHas(
+            "!empty(\$tCfg['owner_restricted'])",
+            $src,
+            'The listing predicate must be scoped to the owner-restricted tables.'
+        );
+    }
+
     public function testBoardBindingIsBlankedWhenOutOfScope(): void
     {
         $src = $this->code('public/api.php');
@@ -312,6 +341,30 @@ final class AccessScopeEndpointGuardTest extends TestCase
         $this->assertTrue(
             str_contains($js, 'data.scopes'),
             'users.js must render the sections the server describes.'
+        );
+    }
+
+    /**
+     * The save path keeps the ticked names as ARRAY KEYS to collapse duplicates, and PHP
+     * casts an all-digit string key to an int on the way in. Left uncast, a table named
+     * "2024" comes back from array_keys() as int 2024, merge_user_access_selection()
+     * drops it on its is_string filter, and a scope left with nothing means UNRESTRICTED
+     * — the one grant an admin made would widen access instead of narrowing it. That is
+     * the only place in the access code where the digit-key trap fails OPEN, which is
+     * why it is pinned rather than left to review.
+     *
+     * Not reachable from a unit test: the block runs at include time inside the admin
+     * front controller's action dispatch, so there is no function to call.
+     */
+    public function testAdminSaveKeepsAllDigitNamesAsStrings(): void
+    {
+        $src = $this->code('includes/admin/users.php');
+
+        $this->assertCodeHas(
+            "\$clean[\$scope] = array_map('strval', array_keys(\$seen));",
+            $src,
+            'The Access tab save must cast the collapsed names back to strings, or an '
+            . 'all-digit table name is dropped and its scope silently becomes unrestricted.'
         );
     }
 

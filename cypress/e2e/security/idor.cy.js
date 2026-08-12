@@ -18,6 +18,12 @@
 //   filter_visible_ids()     id-taking side channels (thumbnails, subtable counts)
 // all in includes/api_helpers.php.
 //
+// A fourth surface carries the same policy without using any of those three: the
+// file listing in api/files.php, which hangs files off (related_table, related_id)
+// and so needs its own correlated predicate. It is covered at the bottom of this
+// file — the write paths and the download were gated while the listing was not,
+// which is exactly the drift this suite is for.
+//
 // The fixture is created by cypress_seed.php action=own and undone by
 // action=own_reset, which also restores the owner_restricted flag.
 // ============================================================================
@@ -37,6 +43,14 @@ describe('Security – IDOR / row-level ownership', () => {
   /** @type {{table:string, column:string, id_a:number, id_b:number, was_restricted:boolean}} */
   let fx = null;
 
+  // Probe attachments left by the file-listing test. spw_files is a system table and
+  // the seed cleanup walks schema tables only, so without an explicit delete each run
+  // leaves a row and a blob behind. Cleared in after(), AFTER own_reset has lifted
+  // owner_restricted — while the flag is still on, assertFileAccess() refuses to let
+  // anyone but each file's respective owner touch it.
+  const probeFileUuids = [];
+  let foreignFileUuid  = null;
+
   before(() => {
     cy.seedDatabase();
     seedRequest('own').then(({ body }) => {
@@ -54,6 +68,25 @@ describe('Security – IDOR / row-level ownership', () => {
     if (fx) {
       seedRequest('own_reset', { table: fx.table, was_restricted: fx.was_restricted ? '1' : '0' });
     }
+    if (probeFileUuids.length === 0) {
+      return;
+    }
+    // own_reset above has put owner_restricted back the way it found it, so
+    // can_access_record() short-circuits to true and one editor can remove both.
+    loginAsTestUser();
+    cy.visit('/dashboard.php');
+    cy.csrfToken().then(token => {
+      probeFileUuids.forEach(uuid => {
+        cy.probe({
+          method: 'POST',
+          url: '/api/files.php',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: { action: 'delete', uuid, csrf_token: token },
+        }).then(res => {
+          expect(res.status, `probe attachment ${uuid} must be cleaned up`).to.eq(200);
+        });
+      });
+    });
   });
 
   beforeEach(function () {
@@ -137,6 +170,73 @@ describe('Security – IDOR / row-level ownership', () => {
       const payload = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
       expect(JSON.stringify(payload), 'foreign id must not appear in the counts')
         .to.not.match(new RegExp(`"${fx.id_b}"\\s*:`));
+    });
+  });
+
+  // Must stay ahead of the ownership-transfer test below: that one genuinely hands
+  // record b to `test`, after which seeing its attachment would be correct and this
+  // assertion would report the wrong defect.
+  it('the file listing drops attachments on another user\'s record', () => {
+    // The fourth implementation of the ownership policy. api/files.php hangs files
+    // off (related_table, related_id) rather than selecting a table's rows, so none
+    // of the three helpers above fits and it carries its own correlated predicate.
+    // The write paths (delete, mass_delete, mass_tag, update_meta) and the download
+    // were gated while this listing was not, so it handed out the name, tags,
+    // uploader and related_id of files on rows the caller cannot open.
+    //
+    // Both files are uploaded by the user who OWNS the record they hang off, so
+    // neither upload is itself refused — what is under test is the listing, and an
+    // upload rejected at the door would leave this green without ever reaching it.
+    let mineUuid = null;
+
+    const upload = (table, recordId, label) => cy.csrfToken().then(token => cy.window().then(win => {
+      const form = new win.FormData();
+      form.append('action', 'upload');
+      form.append('csrf_token', token);
+      form.append('related_table', table);
+      form.append('related_id', String(recordId));
+      form.append('file', new win.Blob([`probe,${label}\n`], { type: 'text/csv' }), `${label}.csv`);
+      return win.fetch('/api/files.php', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+        body: form,
+      }).then(res => res.text().then(body => {
+        expect(res.status, `${label} upload must be accepted: ${body}`).to.eq(201);
+        const m = body.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+        expect(m, `${label} upload must return a uuid`).to.not.eq(null);
+        return m[0];
+      }));
+    }));
+
+    // `test2` attaches a file to their own record b …
+    loginAsTestUser2();
+    cy.visit('/dashboard.php');
+    upload(fx.table, fx.id_b, 'cypress-idor-file-b').then(u => {
+      foreignFileUuid = u;
+      probeFileUuids.push(u);
+    });
+
+    // … and `test` attaches one to their own record a. This second file is the
+    // control: without it a listing that returned nothing at all would pass.
+    loginAsTestUser();
+    cy.visit('/dashboard.php');
+    upload(fx.table, fx.id_a, 'cypress-idor-file-a').then(u => {
+      mineUuid = u;
+      probeFileUuids.push(u);
+    });
+
+    cy.then(() => {
+      cy.probe({
+        url: '/api/files.php?action=list&limit=200',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      }).then(res => {
+        expect(res.status, 'file listing').to.eq(200);
+        const uuids = (res.body.files || []).map(f => f.uuid);
+        expect(uuids, 'own attachment stays listed').to.include(mineUuid);
+        expect(uuids, 'attachment on another owner\'s record must not be listed')
+          .to.not.include(foreignFileUuid);
+      });
     });
   });
 

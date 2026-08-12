@@ -480,7 +480,15 @@ if ($action === 'user_tables_save') {
             }
             $seen[$name] = true;
         }
-        $clean[$scope] = array_keys($seen);
+        // strval, because $seen is keyed by name and PHP silently casts an all-digit
+        // string key to an int: ticking a table named "2024" would come back as
+        // int 2024, merge_user_access_selection() would drop it on its is_string
+        // filter, and a scope left with nothing means UNRESTRICTED — so the one grant
+        // an admin made would widen access instead of narrowing it. Same cast, and the
+        // same reason, as the one at the end of with_hidden_subtables(); this is the
+        // save-path half of it. The stored document stays string-only, which is what
+        // lets user_allowed_items() keep rejecting non-strings as malformed input.
+        $clean[$scope] = array_map('strval', array_keys($seen));
     }
     $clean = merge_user_access_selection($clean, admin_user_access_entry($userId));
 

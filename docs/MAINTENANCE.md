@@ -546,6 +546,26 @@ to get wrong:
   user, matching how `actionList()` lists them; a file pointing at a table missing
   from the schema config fails closed and logs, because there is nothing left to check
   ownership against.
+
+  **`actionList()` carries the read half, and it is a separate predicate.** The write
+  gate resolves one uuid at a time; the listing selects from `spw_files` directly and a
+  single page spans many tables, so `owner_restriction_sql()` does not fit — it binds
+  `table_name` to a parameter. The listing correlates on `f.related_table` instead,
+  scoped to the tables actually marked `owner_restricted`, and filters in SQL so
+  `COUNT(*)` and the `LIMIT`/`OFFSET` pagination agree with what is visible. Without it
+  the listing handed out the name, tags, uploader and `related_id` of attachments on
+  rows the caller cannot open, while every other file surface refused them. Admins are
+  exempt, as `can_access_record()` exempts them and as `user_allowed_tables()` already
+  no-ops for them in the same function: the admin Files module lists the whole library
+  through this action. Covered by `idor.cy.js` (behaviour) and
+  `AccessScopeEndpointGuardTest` (both halves pinned, so a refactor cannot drop one and
+  leave the other looking complete).
+
+  Note the asymmetry this leaves: the read path exempts admins, the write path does
+  **not** — `assertFileAccess()` calls `can_access_record()` without the `$role`
+  argument, so an admin is refused a `delete` on a file attached to another user's row
+  in an `owner_restricted` table. Deliberately left as-is rather than changed in
+  passing; it is a decision about the admin Files module, not about this boundary.
 - **`api=board`** resolves `?board=` against the **filtered** list, not the raw
   config. That ordering is the point: the branch falls back to "the first board" when
   the parameter is missing or does not match, and filtering after that fallback would

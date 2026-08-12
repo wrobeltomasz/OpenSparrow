@@ -146,10 +146,56 @@ function actionList($conn): void
     if ($allowedTables !== null) {
         $where[]  = "(f.related_table IS NULL OR f.related_table = '' OR f.related_table = ANY($"
             . (count($params) + 1) . '::text[]))';
-        $params[] = '{' . implode(',', array_map(
-            fn(string $t): string => '"' . str_replace(['\\', '"'], ['\\\\', '\"'], $t) . '"',
-            $allowedTables
-        )) . '}';
+        $params[] = textListToPgArray($allowedTables);
+    }
+
+    // Row-level ownership — the same rule assertFileAccess() applies to the write paths
+    // and file_download.php to the download. A file inherits the visibility of the
+    // record it hangs off, and until now that held everywhere EXCEPT here: the listing
+    // handed out the name, display name, tags, uploader and related_id of attachments on
+    // rows the caller does not own. Metadata only, since the bytes were already gated —
+    // but it is what the ownership policy exists to withhold, and the write gate refuses
+    // to touch those very files, so the listing was the one surface disagreeing.
+    //
+    // Scoped to the tables actually marked owner_restricted rather than applied to every
+    // related_table: a table with no ownership policy has no owner to compare against,
+    // and a blanket predicate would start hiding its files the moment somebody assigned
+    // one. Read as ARRAY KEYS, so all-digit table names arrive as ints — textListToPgArray()
+    // is what casts them back.
+    //
+    // owner_restriction_sql() does not fit: it binds table_name to a PARAMETER, because
+    // every other caller filters one table's rows, whereas a single page of this listing
+    // spans many. The predicate is correlated on f.related_table instead. Same policy
+    // either way — unowned rows pass, rows owned by somebody else drop out. The explicit
+    // IS NOT NULL is what that helper leaves to NULL-comparison semantics; spelled out
+    // here because this one is read next to a correlated join. Unattached files have a
+    // NULL related_id, match no owner row, and stay visible exactly as before.
+    //
+    // Admins are exempt, as can_access_record() exempts them and as user_allowed_tables()
+    // already no-ops for them above: the admin Files module lists the whole library
+    // through this same action.
+    //
+    // In SQL rather than after the fetch, so COUNT(*) and the LIMIT/OFFSET pagination
+    // agree with what is actually visible — the same reason api.php's grid filters there.
+    $ownerRestricted = [];
+    if (($_SESSION['role'] ?? '') !== 'admin') {
+        foreach ((config_get('schema') ?? [])['tables'] ?? [] as $tName => $tCfg) {
+            if (is_array($tCfg) && !empty($tCfg['owner_restricted'])) {
+                $ownerRestricted[] = $tName;
+            }
+        }
+    }
+    if ($ownerRestricted !== []) {
+        $tOwners  = sys_table('record_owners');
+        $ownerIdx = count($params) + 1;
+        $tblIdx   = count($params) + 2;
+        $where[]  = "NOT EXISTS (SELECT 1 FROM {$tOwners} ro"
+            . ' WHERE ro.table_name = f.related_table AND ro.record_id = f.related_id'
+            . ' AND ro.is_current = true'
+            . " AND ro.owner_id IS NOT NULL AND ro.owner_id != \${$ownerIdx}"
+            . " AND f.related_table = ANY(\${$tblIdx}::text[]))";
+        $params[] = (int) $_SESSION['user_id'];
+        $params[] = textListToPgArray($ownerRestricted);
     }
 
     $whereSQL = implode(' AND ', $where);
@@ -362,6 +408,28 @@ function actionUpload($conn): void
     $row = pg_fetch_assoc($res);
 // Return 201 Created on successful upload
     jsonSuccess(['file' => $row], 201);
+}
+
+// A PostgreSQL text[] literal from a list of names, for the two name-list predicates
+// in actionList(). Both bind their list as a single parameter, so the literal has to be
+// assembled here rather than expanded into placeholders.
+//
+// Quoting every element and escaping backslashes and double quotes is what stops a name
+// containing either from closing the literal early. These names are configuration-
+// supplied, never client-supplied, but a literal built by hand has to be correct on its
+// own terms and not because of where its input happened to come from.
+//
+// strval on the way in, because a caller may hand over schema table names read as ARRAY
+// KEYS, and PHP has already cast an all-digit one to an int by then — under
+// declare(strict_types=1) that would be a TypeError against the string-typed closure.
+//
+// @param list<string|int> $names
+function textListToPgArray(array $names): string
+{
+    return '{' . implode(',', array_map(
+        static fn(string $n): string => '"' . str_replace(['\\', '"'], ['\\\\', '\"'], $n) . '"',
+        array_map('strval', $names)
+    )) . '}';
 }
 
 // Validate a client-supplied UUID list and normalize it into a PG array literal.
