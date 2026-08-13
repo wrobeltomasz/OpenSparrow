@@ -29,6 +29,22 @@ $extraScripts ??= '';
 // in <head>, because an import map must precede the first module script.
 require_once __DIR__ . '/../includes/page_helpers.php';
 $moduleGraph = os_fe_module_graph();
+
+// Click statistics (Admin → System → Click Statistics). Off by default, and off
+// means absent: with the flag down no tag below is emitted, so the browser never
+// fetches the collector, no listener is installed and no request is ever made.
+// Never let a config-store problem break page rendering — treat any failure as off.
+// Skipped for guests (the endpoint requires a session) and in Demo Mode (which
+// blocks the write anyway), so no page emits beacons that can only be rejected.
+$clickstatsOn = false;
+if (!empty($_SESSION['user_id']) && !(defined('DEMO_MODE') && DEMO_MODE)) {
+    try {
+        require_once __DIR__ . '/../includes/config_store.php';
+        $clickstatsOn = !empty((config_get('clickstats') ?? [])['enabled']);
+    } catch (Throwable $e) {
+        $clickstatsOn = false;
+    }
+}
 ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8') ?>">
@@ -52,5 +68,10 @@ $moduleGraph = os_fe_module_graph();
 </div><!-- /.app-container -->
 <?php include __DIR__ . '/footer.php'; ?>
 <?= $extraScripts ?>
+<?php if ($clickstatsOn) : ?>
+    <?php // Same ?v= as the import map, so the module is never instantiated twice. ?>
+    <script type="module" src="./assets/js/util/clickstats.js?v=<?= (int) $moduleGraph['version'] ?>"
+            nonce="<?= htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php endif; ?>
 </body>
 </html>

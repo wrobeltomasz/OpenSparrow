@@ -1,0 +1,168 @@
+<?php
+
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
+declare(strict_types=1);
+
+// includes/admin/clickstats.php — admin api.php module: click statistics
+// (clickstats_load, clickstats_save, clickstats_log, clickstats_purge_log).
+// Config lives in the spw_config key "clickstats"; the recorded clicks live in
+// sys_table('clickstats'), written by public/api/clickstats.php.
+// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
+// POST-method enforcement — never include or serve this file directly.
+// Every action block emits its own JSON response and exits.
+
+// Rows returned by one page of the log.
+const CLICKSTATS_LOG_LIMIT = 100;
+
+// Entries in the "Top Elements" rollup.
+const CLICKSTATS_TOP_LIMIT = 20;
+
+// The stored config, normalised so the client never has to guess a default.
+function clickstats_config(): array
+{
+    $cfg = config_get('clickstats') ?? [];
+    return [
+        'enabled'       => !empty($cfg['enabled']),
+        'track_records' => $cfg['track_records'] ?? true,
+    ];
+}
+
+if ($action === 'clickstats_load') {
+    admin_try(static function (): void {
+        $conn  = admin_conn();
+        $table = sys_table('clickstats');
+
+        // A fresh install has the config but not the table yet — report that
+        // instead of failing, so the tab explains what to run.
+        $exists = (bool) @pg_query($conn, "SELECT 1 FROM {$table} LIMIT 0");
+        $total  = null;
+        if ($exists) {
+            $res   = @pg_query($conn, "SELECT COUNT(*) FROM {$table}");
+            $total = $res ? (int) pg_fetch_result($res, 0, 0) : null;
+        }
+
+        $row = config_get_row('clickstats');
+        admin_ok([
+            'config'       => clickstats_config(),
+            'version'      => $row['version'] ?? null,
+            'table_exists' => $exists,
+            'total'        => $total,
+        ]);
+    });
+}
+
+if ($action === 'clickstats_save') {
+    require_not_demo();
+    admin_try(static function (): void {
+        $data = admin_input();
+        admin_config_save_versioned(
+            'clickstats',
+            [
+                'enabled'       => !empty($data['enabled']),
+                'track_records' => !empty($data['track_records']),
+            ],
+            admin_expected_version($data),
+            'Failed to save click statistics config.'
+        );
+    });
+}
+
+if ($action === 'clickstats_log') {
+    admin_try(static function (): void {
+        $conn  = admin_conn();
+        $table = sys_table('clickstats');
+        $users = sys_table('users');
+        admin_require_log_table($conn, $table);
+
+        // Both filters are optional free text matched case-insensitively. They are
+        // bound as parameters — never concatenated — so they cannot reach the SQL.
+        $element = trim((string) ($_GET['element'] ?? ''));
+        $user    = trim((string) ($_GET['user'] ?? ''));
+        $page    = max(1, (int) ($_GET['page'] ?? 1));
+
+        $where  = [];
+        $params = [];
+        if ($element !== '') {
+            $params[] = '%' . $element . '%';
+            $where[]  = 'c.element ILIKE $' . count($params);
+        }
+        if ($user !== '') {
+            $params[] = '%' . $user . '%';
+            $where[]  = 'u.username ILIKE $' . count($params);
+        }
+        $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
+
+        $countRes = @pg_query_params(
+            $conn,
+            "SELECT COUNT(*) FROM {$table} c LEFT JOIN {$users} u ON u.id = c.user_id{$whereSql}",
+            $params
+        );
+        if (!$countRes) {
+            admin_db_fail($conn, 'clickstats_log:count');
+        }
+        $total = (int) pg_fetch_result($countRes, 0, 0);
+
+        $params[] = CLICKSTATS_LOG_LIMIT;
+        $params[] = ($page - 1) * CLICKSTATS_LOG_LIMIT;
+        $rowsRes  = @pg_query_params(
+            $conn,
+            "SELECT c.id, u.username, c.element, c.page, c.table_name, c.record_id, c.created_at
+               FROM {$table} c
+               LEFT JOIN {$users} u ON u.id = c.user_id
+               {$whereSql}
+              ORDER BY c.created_at DESC, c.id DESC
+              LIMIT $" . (count($params) - 1) . " OFFSET $" . count($params),
+            $params
+        );
+        if (!$rowsRes) {
+            admin_db_fail($conn, 'clickstats_log:rows');
+        }
+
+        // The rollup answers the actual question ("which elements are used?") and is
+        // deliberately unfiltered by paging — it summarises the whole filtered set.
+        $topRes = @pg_query_params(
+            $conn,
+            "SELECT c.element, COUNT(*) AS clicks
+               FROM {$table} c
+               LEFT JOIN {$users} u ON u.id = c.user_id
+               {$whereSql}
+              GROUP BY c.element
+              ORDER BY clicks DESC, c.element ASC
+              LIMIT " . CLICKSTATS_TOP_LIMIT,
+            array_slice($params, 0, count($params) - 2)
+        );
+
+        admin_ok([
+            'rows'  => admin_fetch_all($rowsRes),
+            'top'   => $topRes ? admin_fetch_all($topRes) : [],
+            'total' => $total,
+            'page'  => $page,
+            'limit' => CLICKSTATS_LOG_LIMIT,
+        ]);
+    });
+}
+
+if ($action === 'clickstats_purge_log') {
+    require_not_demo();
+    admin_try(static function (): void {
+        $conn  = admin_conn();
+        $table = sys_table('clickstats');
+
+        // Retention is manual by design (no cron worker): "days" trims to a window,
+        // its absence clears the whole log — which is what the tab's button sends.
+        $days = admin_input()['days'] ?? null;
+        if (is_numeric($days) && (int) $days > 0) {
+            admin_purge_log($table, (int) $days, 'clickstats_purge_log', 'created_at');
+        }
+
+        $res = @pg_query($conn, "DELETE FROM {$table}");
+        if (!$res) {
+            admin_db_fail($conn, 'clickstats_purge_log:all');
+        }
+        admin_ok(['deleted' => pg_affected_rows($res)]);
+    });
+}

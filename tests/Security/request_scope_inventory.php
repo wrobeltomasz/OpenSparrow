@@ -42,6 +42,9 @@ return [
         'body.board' => ['scoped', 'move_card resolves the board id against filter_by_user_access(boards, ...); an unmatched id leaves $boardCfg empty and the request is rejected as an invalid board table.'],
         'body.workflow_id' => ['gated', 'workflow_procedure calls require_access(workflows, ...) before looking the procedure up, then workflow_tables_in_scope() on the resolved entry. Both halves are needed: without the first the scope would be cosmetic (a direct POST would fire the procedure of a workflow hidden from the menu and the list), and without the second a workflow granted to someone whose tables do not cover its steps would still run against those tables.'],
     ],
+    'public/api/clickstats.php' => [
+        'input.table' => ['gated', 'Each buffered click may name the table that was in context. It is only ever written into spw_clickstats.table_name as a label - it selects nothing and reaches no identifier - but it is still checked with user_can_access(tables, ...) before being stored, so a user cannot seed the admin-visible log with the names of tables they were never granted. A name outside the scope is stored as NULL rather than rejected: statistics must never fail a request.'],
+    ],
     'public/api/comments.php' => [
         '_GET.related_table'  => ['gated', 'Both read actions go through validatedTable(), which calls require_table_access() itself.'],
         'body.related_table'  => ['gated', 'The add action goes through validatedTable() as well.'],

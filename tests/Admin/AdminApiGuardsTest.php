@@ -54,6 +54,7 @@ final class AdminApiGuardsTest extends TestCase
         'etl_save', 'run_etl', 'etl_purge_log', 'etl_test_connection', 'etl_preview',
         'etl_flow_save', 'run_etl_flow', 'etl_flow_purge_log',
         'demo_install', 'demo_uninstall',
+        'clickstats_save', 'clickstats_purge_log',
     ];
 
     /**

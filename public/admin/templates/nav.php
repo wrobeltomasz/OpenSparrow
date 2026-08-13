@@ -119,6 +119,10 @@
                         <img class="nav-item-icon" src="../assets/icons/inventory.png" alt="">
                         Backup Tables
                     </button>
+                    <button class="admin-tab" data-file="clickstats">
+                        <img class="nav-item-icon" src="../assets/icons/bar_chart.png" alt="">
+                        Click Statistics
+                    </button>
                     <button class="admin-tab" data-file="cron">
                         <img class="nav-item-icon" src="../assets/icons/manage_history.png" alt="">
                         Cron Notifications

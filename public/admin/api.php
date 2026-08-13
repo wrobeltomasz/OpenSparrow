@@ -91,6 +91,7 @@ $postActions = [
     'anonymization_save', 'run_anonymization', 'preview_anonymization', 'anonymization_purge_log',
     'etl_save', 'run_etl', 'etl_purge_log', 'etl_test_connection', 'etl_preview',
     'etl_flow_save', 'run_etl_flow', 'etl_flow_purge_log',
+    'clickstats_save', 'clickstats_purge_log',
     'demo_install', 'demo_uninstall',
 ];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -138,6 +139,10 @@ $adminModules = [
     'cron_log' => 'cron',
     'cron_stats' => 'cron',
     'cron_purge_log' => 'cron',
+    'clickstats_load' => 'clickstats',
+    'clickstats_save' => 'clickstats',
+    'clickstats_log' => 'clickstats',
+    'clickstats_purge_log' => 'clickstats',
     'init_db' => 'migrations',
     'migrations_list' => 'migrations',
     'users_list' => 'users',

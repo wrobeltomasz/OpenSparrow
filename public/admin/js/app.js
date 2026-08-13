@@ -45,6 +45,7 @@ const PAGE_MODULES = {
     print:         () => import('./print_editor.js').then(m => m.renderPrintEditor),
     views:         () => import('./views_editor.js').then(m => m.renderViewsEditor),
     user_records:  () => import('./user_records_editor.js').then(m => m.renderUserRecordsEditor),
+    clickstats:    () => import('./clickstats.js').then(m => m.renderClickstatsPage),
 };
 
 let currentConfig = null;
@@ -63,7 +64,7 @@ const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 // Tabs that save immediately via API — no config file involved, never dirty.
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization', 'clickstats']);
 
 // Sub-views of a config-backed tab that manage their own state/save flow and
 // must never trip the generic "unsaved changes" dirty tracking (Menu Preview
@@ -447,7 +448,7 @@ function renderSidebar() {
         'overview', 'security', 'health', 'docs', 'users', 'backup',
         'migrations', 'performance', 'cron',
         'demo', 'settings', 'csv_import', 'rag', 'views', 'etl', 'anonymization', 'print',
-        'user_records',
+        'user_records', 'clickstats',
     ]);
 
     if (fullPageTabs.has(currentFile)) {
@@ -947,7 +948,7 @@ function renderEditor(key, itemData, isArray) {
     workspaceEl.innerHTML = '';
     const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
 
-    if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER' || key === 'SCHEMA_MAP'))) {
+    if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization', 'clickstats'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER' || key === 'SCHEMA_MAP'))) {
         btnSave.style.display = 'none';
     } else {
         btnSave.style.display = 'inline-block';

@@ -302,10 +302,33 @@ Anonymization (GDPR):
     spw_anonymization_report) shown inline, with a Download button saving it as a
     .json file for the data-protection record
 
+Click Statistics:
+  - Records which page elements users click: user, time, element label, the page, and
+    optionally the table and record that were in context
+  - Disabled by default, and disabled means absent: with the module off no collector
+    script is emitted into any page, so nothing is downloaded, no listener is installed
+    and no request is ever sent. The endpoint re-checks the flag on every request and
+    answers 204 without writing, so a page left open when the module is switched off
+    stops recording immediately
+  - Settings tab: "Enable Click Statistics" and "Record Table And Record" (turn the
+    latter off to keep entries to user, time and element only). Config in the
+    spw_config key "clickstats"
+  - Log tab: recorded clicks newest first, 100 per page, filterable by element and by
+    user, with a Top Elements rollup of the 20 most-clicked elements
+  - Retention is manual: "Clear Log" empties spw_clickstats. There is no cron worker
+    and no automatic expiry
+  - Collection: one delegated click listener matches [data-stat], button, a and .btn;
+    the label is the data-stat value when present, otherwise a derived id/class/text
+    label. Input values, query strings and form contents are never recorded. Clicks are
+    buffered in the browser and delivered in batches via navigator.sendBeacon to
+    public/api/clickstats.php, so a session costs a handful of requests, not one per
+    click. A table name sent by a client is stored only if that user has access to it
+  - Requires the 3.3_clickstats migration (Migrations -> Initialize System Tables)
+
 Migrations:
   - Database migrations tab: list of system migrations (pending / applied),
     "Apply pending migrations" button. Applied migrations are recorded in spw_migrations.
-    Three migrations exist:
+    Five migrations exist:
       3.0_baseline        — the whole spw_* schema (tables, constraints, indexes). The
                             pre-3.0 incremental history was collapsed into this single
                             append-only entry; 3.0 is the first shipped version
@@ -317,7 +340,14 @@ Migrations:
       3.1_notes_reminder_time — widens spw_notes.reminder_date from date to timestamp so a
                             note reminder can carry a time of day, not just a date. This is
                             the only table-layout change in 3.1
-  - A fresh install via the setup wizard applies all three automatically, so new databases
+      3.3_user_contact    — appends four nullable columns to spw_users (first_name,
+                            last_name, email, phone) with their column comments. Admin
+                            panel only: informational, and used by nothing for login,
+                            ownership or notifications
+      3.3_clickstats      — creates spw_clickstats plus its two indexes, the storage for
+                            the optional Click Statistics module. Nothing writes to it
+                            until the module is enabled
+  - A fresh install via the setup wizard applies all of them automatically, so new databases
     are created with the descriptions and the widened reminder column already in place
   - Release migrations tab: config cleanup driven by config/migrations.json —
     tracks files and config keys removed between versions, applied manually on upgrade
@@ -411,6 +441,11 @@ Anonymization (GDPR):
   spw_anonymization_log      — anonymization run history (rules processed, rows scrubbed)
   spw_anonymization_report   — detailed per-run compliance report (JSONB, downloadable)
 
+Click statistics:
+  spw_clickstats             — recorded UI clicks (user, time, element, page, and
+                               optionally the table and record in context). Written
+                               only while the Click Statistics module is enabled
+
 ETL:
   spw_etl_log                — single-job run history (rows read/written, errors)
   spw_etl_flow_run_log       — flow run history, including the failing step index
@@ -459,6 +494,10 @@ Read and written through includes/config_store.php — never as files.
   etl           — external source connection and import job definitions
   etl_flows     — ordered chains ("flows") of existing ETL job ids, run
                   sequentially, stopping on the first step failure
+  clickstats    — click statistics on/off ("enabled") and whether the table and
+                  record in context are stored alongside each click
+                  ("track_records"). Absent or enabled=false means the collector is
+                  never loaded into any page
 
 CONFIGURATION FILES (config/*.json)
 ------------------------------------
