@@ -75,7 +75,8 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE'], true)) {
 // POST, so a mutating action reachable via GET bypasses the token check entirely.
 $postActions = [
     'save', 'init_db',
-    'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'user_policy_save',
+    'users_add', 'users_toggle', 'users_update_role', 'users_update_contact',
+    'users_change_password', 'user_policy_save',
     'user_tables_save',
     'create_table', 'add_column', 'schema_add_table',
     'run_cron_notifications', 'cron_purge_log',
@@ -143,6 +144,7 @@ $adminModules = [
     'users_add' => 'users',
     'users_toggle' => 'users',
     'users_update_role' => 'users',
+    'users_update_contact' => 'users',
     'users_change_password' => 'users',
     'users_stats' => 'users',
     'user_policy_get' => 'users',

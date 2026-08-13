@@ -77,6 +77,19 @@ if ($action === 'init_db') {
                 "ALTER TABLE $tNotes ALTER COLUMN reminder_date TYPE timestamp",
             ],
 
+            // 3.3 — optional contact details on user accounts (admin panel only,
+            // informational). All nullable, no UNIQUE: nothing authenticates on them.
+            '3.3_user_contact' => [
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS first_name varchar(100)",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS last_name varchar(100)",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS email varchar(255)",
+                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS phone varchar(32)",
+                "COMMENT ON COLUMN $tUsers.first_name IS 'Optional given name, admin panel only. Informational - not used for login or notifications.'",
+                "COMMENT ON COLUMN $tUsers.last_name IS 'Optional surname, admin panel only. Informational - not used for login or notifications.'",
+                "COMMENT ON COLUMN $tUsers.email IS 'Optional contact email, admin panel only. Format-checked, not unique, not used for login or notifications.'",
+                "COMMENT ON COLUMN $tUsers.phone IS 'Optional contact phone, admin panel only. Informational.'",
+            ],
+
         ];
 
         // Run each migration that has not been applied yet.
@@ -167,6 +180,7 @@ if ($action === 'migrations_list') {
             '3.0_baseline',
             '3.1_table_comments',
             '3.1_notes_reminder_time',
+            '3.3_user_contact',
         ];
 
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");

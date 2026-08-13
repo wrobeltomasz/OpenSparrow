@@ -341,6 +341,11 @@ Users:
     per user (admin / editor / viewer); activate / deactivate accounts; per-user
     password change dialog with strength meter; add new user form (name + password + role,
     preselected with the configured default role)
+  - Optional contact details per account: first name, last name, email, phone.
+    Entered in the add-user form or the per-row "Edit Details" dialog, shown in the
+    Name / Email / Phone columns. Informational only — admin panel exclusive, never
+    required, not used for login or notifications; the email is format-checked but
+    need not be unique
   - Statistics: total / active / inactive user counts, breakdown by role, and the
     last 10 user-related audit log entries (who did what, when)
   - Global Settings: org-wide user policy — minimum password length and default role

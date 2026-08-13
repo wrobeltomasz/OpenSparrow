@@ -8,8 +8,8 @@
 declare(strict_types=1);
 
 // includes/admin/users.php — admin api.php module: user management (users_list, users_add, users_toggle,
-// users_update_role, users_change_password, users_stats, user_policy_get, user_policy_save,
-// user_tables_get, user_tables_save).
+// users_update_role, users_update_contact, users_change_password, users_stats, user_policy_get,
+// user_policy_save, user_tables_get, user_tables_save).
 // Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
 // POST-method enforcement — never include or serve this file directly.
 // Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
@@ -36,12 +36,49 @@ function admin_user_policy(): array
     ];
 }
 
+/**
+ * Normalises the optional contact fields (first_name, last_name, email, phone)
+ * from a decoded request body. All four are informational, admin-panel-only and
+ * never required: an empty string becomes NULL rather than ''. Shared by
+ * users_add and users_update_contact so the two entry points cannot drift.
+ *
+ * @return array{0: array<int, string|null>, 1: string|null} [values, errorMessage]
+ */
+function admin_user_contact_input(array $data): array
+{
+    $first = trim((string)($data['first_name'] ?? ''));
+    $last  = trim((string)($data['last_name'] ?? ''));
+    $email = trim((string)($data['email'] ?? ''));
+    $phone = trim((string)($data['phone'] ?? ''));
+
+    if (mb_strlen($first) > 100 || mb_strlen($last) > 100) {
+        return [[], 'First name and last name must be at most 100 characters.'];
+    }
+    if (mb_strlen($email) > 255) {
+        return [[], 'Email must be at most 255 characters.'];
+    }
+    if (mb_strlen($phone) > 32) {
+        return [[], 'Phone must be at most 32 characters.'];
+    }
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return [[], 'Invalid email address.'];
+    }
+
+    return [[
+        $first !== '' ? $first : null,
+        $last  !== '' ? $last  : null,
+        $email !== '' ? $email : null,
+        $phone !== '' ? $phone : null,
+    ], null];
+}
+
 // Fetch list of all system users
 if ($action === 'users_list') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
-        $sql = "SELECT id, username, is_active, role FROM " . sys_table('users') . " ORDER BY id ASC";
+        $sql = "SELECT id, username, is_active, role, first_name, last_name, email, phone FROM "
+            . sys_table('users') . " ORDER BY id ASC";
         $res = @pg_query($conn, $sql);
         if (!$res) {
             $err = pg_last_error($conn);
@@ -85,6 +122,11 @@ if ($action === 'users_add') {
         ]);
         exit;
     }
+    [$contact, $contactErr] = admin_user_contact_input(is_array($data) ? $data : []);
+    if ($contactErr !== null) {
+        echo json_encode(['status' => 'error', 'error' => $contactErr]);
+        exit;
+    }
 
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -93,12 +135,13 @@ if ($action === 'users_add') {
         $newSalt = bin2hex(random_bytes(32));
         $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
         $sql     = 'INSERT INTO ' . sys_table('users')
-            . ' (username, password_hash, salt, password_algo, password_params, is_active, role)'
-            . ' VALUES ($1, $2, $3, $4, $5, true, $6) RETURNING id';
-        $res = @pg_query_params($conn, $sql, [
+            . ' (username, password_hash, salt, password_algo, password_params, is_active, role,'
+            . ' first_name, last_name, email, phone)'
+            . ' VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8, $9, $10) RETURNING id';
+        $res = @pg_query_params($conn, $sql, array_merge([
             $username, $hash, $newSalt, 'argon2id',
             json_encode(ARGON2_OPTIONS), $role,
-        ]);
+        ], $contact));
         if (!$res) {
             admin_db_fail($conn, 'users_add');
         }
@@ -165,6 +208,50 @@ if ($action === 'users_update_role') {
         }
         log_user_action($conn, $adminActorId, 'UPDATE_ROLE', 'users', $userId);
         echo json_encode(['status' => 'success']);
+    } catch (Throwable $e) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    }
+    exit;
+}
+
+// Update the optional contact details (informational, admin panel only)
+if ($action === 'users_update_contact') {
+    require_not_demo();
+
+    $data = json_decode(file_get_contents('php://input'), true);
+    $userId = (int)($data['id'] ?? 0);
+
+    if ($userId <= 0) {
+        echo json_encode(['status' => 'error', 'error' => 'Invalid user ID.']);
+        exit;
+    }
+    [$contact, $contactErr] = admin_user_contact_input(is_array($data) ? $data : []);
+    if ($contactErr !== null) {
+        echo json_encode(['status' => 'error', 'error' => $contactErr]);
+        exit;
+    }
+
+    try {
+        require_once __DIR__ . '/../../includes/db.php';
+        require_once __DIR__ . '/../../includes/api_helpers.php';
+        $conn = db_connect();
+        $sql = 'UPDATE ' . sys_table('users')
+            . ' SET first_name = $1, last_name = $2, email = $3, phone = $4 WHERE id = $5';
+        $res = @pg_query_params($conn, $sql, array_merge($contact, [$userId]));
+        if (!$res) {
+            admin_db_fail($conn, 'users_update_contact');
+        }
+        log_user_action($conn, $adminActorId, 'UPDATE_USER_CONTACT', 'users', $userId);
+        echo json_encode([
+            'status' => 'success',
+            'user' => [
+                'id' => $userId,
+                'first_name' => $contact[0],
+                'last_name' => $contact[1],
+                'email' => $contact[2],
+                'phone' => $contact[3],
+            ],
+        ]);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }

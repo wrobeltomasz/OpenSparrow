@@ -16,5 +16,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds per-user access control for tables, views and printouts, gated by default at the API boundary so record listing, delegated FK lookups, workflow runs and the schema/files endpoints are all scoped to what the current user is allowed to see; builds on the existing spw_record_owners ownership history and spw_users access-scope settings, so no new tables or columns are required and there is no database migration to run. Views Sync now discovers materialized views alongside regular views, and RAG accepts materialized views as aggregate views (flagged as such in the docs UI). Adds shared os_api_action()/os_api_dispatch() request handling, used by the comments, files, notes and owners API endpoints. No files, config keys or database schema changes are removed by this release."
+    },
+    "3.3": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "User accounts can now carry optional contact details - first name, last name, email address and phone number - entered in Admin -> Users -> Manage Users, either in the Add New User form or through the per-row Edit Details dialog, and shown in the new Name / Email / Phone columns. The data is informational and admin-panel exclusive: nothing on the frontend reads it, it is never returned by the public API, and it plays no part in login, ownership or notifications. All four fields may stay empty; the email is checked for a valid format only and is not required to be unique. Adds the 3.3_user_contact database migration, which appends the four nullable columns to spw_users together with their column comments - run Admin -> Migrations -> Initialize System Tables to apply it. Until it is applied, the Manage Users tab reports that the database schema is outdated. No files or config keys are removed by this release."
     }
 }

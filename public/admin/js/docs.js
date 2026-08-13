@@ -300,6 +300,14 @@ ${_ul([
     `<strong>${s.s9o_limits_label}:</strong> ${s.s9o_limits}`
 ])}
 
+${_h3('doc-9p', s.s9p_head)}
+${_p(s.s9p_desc)}
+${_ul([
+    `<strong>${s.s9p_where_label}:</strong> ${s.s9p_where}`,
+    `<strong>${s.s9p_optional_label}:</strong> ${s.s9p_optional}`,
+    `<strong>${s.s9p_scope_label}:</strong> ${s.s9p_scope}`
+])}
+
 ${_h3('doc-9e', s.s9e_head)}
 ${_ul([
     `<strong>${s.s9e_sort_label}:</strong> ${s.s9e_sort}`,

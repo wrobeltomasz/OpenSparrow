@@ -1230,6 +1230,8 @@ textarea.adm-input {
 .adm-th-sm { padding: 6px 10px; }
 .adm-td    { padding: 8px 12px; border-bottom: 1px solid var(--border-light); }
 .adm-td-sm { padding: 6px 10px; }
+/* Placeholder for an optional cell left empty by the user (renders an em dash). */
+.adm-td-empty { color: var(--muted); }
 
 /* ── Admin utility: section cards ──────────────────────────────────── */
 .adm-sec-card {

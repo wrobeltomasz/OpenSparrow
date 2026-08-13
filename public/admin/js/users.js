@@ -273,6 +273,9 @@ async function renderManageUsers(panel, ctx) {
                     <tr>
                         <th class="adm-th">ID</th>
                         <th class="adm-th">Username</th>
+                        <th class="adm-th">Name</th>
+                        <th class="adm-th">Email</th>
+                        <th class="adm-th">Phone</th>
                         <th class="adm-th">Status</th>
                         <th class="adm-th">Role</th>
                         <th class="adm-th">Actions</th>
@@ -281,11 +284,20 @@ async function renderManageUsers(panel, ctx) {
                 <tbody>
         `;
 
+        // Optional, informational contact fields — an unset one renders as an em dash.
+        const cell = (v) => (v ?? '').trim()
+            ? escHtml(v)
+            : '<span class="adm-td-empty">&mdash;</span>';
+        const fullName = (u) => [u.first_name ?? '', u.last_name ?? ''].join(' ').trim();
+
         data.users.forEach(u => {
             html += `
                 <tr>
                     <td class="adm-td">${escHtml(u.id)}</td>
                     <td class="adm-td"><strong>${escHtml(u.username)}</strong></td>
+                    <td class="adm-td">${cell(fullName(u))}</td>
+                    <td class="adm-td">${cell(u.email)}</td>
+                    <td class="adm-td">${cell(u.phone)}</td>
                     <td class="adm-td">
                         <span class="adm-badge ${u.is_active ? 'adm-badge-ok' : 'adm-badge-danger'}">
                             ${u.is_active ? 'Active' : 'Inactive'}
@@ -305,6 +317,11 @@ async function renderManageUsers(panel, ctx) {
                         <button class="btn btn-xs btn-secondary btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}">
                             Change pwd
                         </button>
+                        <button class="btn btn-xs btn-secondary btn-edit-contact" data-id="${u.id}" data-username="${escHtml(u.username)}"
+                            data-first-name="${escHtml(u.first_name ?? '')}" data-last-name="${escHtml(u.last_name ?? '')}"
+                            data-email="${escHtml(u.email ?? '')}" data-phone="${escHtml(u.phone ?? '')}">
+                            Edit Details
+                        </button>
                     </td>
                 </tr>
             `;
@@ -317,11 +334,11 @@ async function renderManageUsers(panel, ctx) {
             <div style="background: var(--accent-mid); padding: 20px; border-radius: 6px; border: 1px solid var(--accent-mid);">
                 <h4 style="margin-top: 0; margin-bottom: 15px;">Add New User</h4>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Username</label>
-                    <input type="text" id="newUsername" placeholder="e.g. john_doe" class="adm-input" style="width:100%;">
+                    <label class="adm-field-label">Username</label>
+                    <input type="text" id="newUsername" placeholder="e.g. john_doe" class="adm-input w-full">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Password</label>
+                    <label class="adm-field-label">Password</label>
                     <input type="password" id="newPassword" placeholder="Minimum ${minPasswordLength} characters" class="adm-input" style="width:100%;">
                     <div id="passwordStrengthBar" style="height: 6px; background: var(--accent-mid); border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
                         <div id="passwordStrengthFill" style="height: 100%; width: 0%; transition: width 0.3s, background 0.3s;"></div>
@@ -329,12 +346,28 @@ async function renderManageUsers(panel, ctx) {
                     <small id="passwordStrengthLabel" style=" display: block; margin-top: 4px;"></small>
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Role</label>
-                    <select id="newRole" class="adm-input" style="width:100%;">
+                    <label class="adm-field-label">Role</label>
+                    <select id="newRole" class="adm-input w-full">
                         <option value="editor" ${defaultRole === 'editor' ? 'selected' : ''}>Editor</option>
                         <option value="viewer" ${defaultRole === 'viewer' ? 'selected' : ''}>Viewer</option>
                         <option value="admin" ${defaultRole === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label class="adm-field-label">First Name (Optional)</label>
+                    <input type="text" id="newFirstName" class="adm-input w-full" maxlength="100">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label class="adm-field-label">Last Name (Optional)</label>
+                    <input type="text" id="newLastName" class="adm-input w-full" maxlength="100">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label class="adm-field-label">Email (Optional)</label>
+                    <input type="email" id="newEmail" class="adm-input w-full" maxlength="255">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label class="adm-field-label">Phone (Optional)</label>
+                    <input type="text" id="newPhone" class="adm-input w-full" maxlength="32">
                 </div>
                 <button id="btnAddUser" class="btn btn-success">Create User</button>
             </div>
@@ -522,6 +555,103 @@ async function renderManageUsers(panel, ctx) {
             });
         });
 
+        // Edit the optional contact details (same modal shape as the password dialog)
+        panel.querySelectorAll('.btn-edit-contact').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.getAttribute('data-id'), 10);
+
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+                const box = document.createElement('div');
+                box.style.cssText = 'background:#fff;border-radius:10px;padding:28px 24px;width:340px;box-shadow:0 8px 24px rgba(0,0,0,.2);';
+
+                const h3 = document.createElement('h3');
+                h3.style.cssText = 'margin:0 0 4px;';
+                h3.textContent = 'Edit Details';
+                box.appendChild(h3);
+
+                const userP = document.createElement('p');
+                userP.style.cssText = 'margin:0 0 16px;';
+                userP.textContent = 'User: ';
+                const userStrong = document.createElement('strong');
+                userStrong.textContent = btn.getAttribute('data-username');
+                userP.appendChild(userStrong);
+                box.appendChild(userP);
+
+                const fields = [
+                    { key: 'first_name', attr: 'data-first-name', label: 'First Name', type: 'text',  max: 100 },
+                    { key: 'last_name',  attr: 'data-last-name',  label: 'Last Name',  type: 'text',  max: 100 },
+                    { key: 'email',      attr: 'data-email',      label: 'Email',      type: 'email', max: 255 },
+                    { key: 'phone',      attr: 'data-phone',      label: 'Phone',      type: 'text',  max: 32  },
+                ];
+                const inputs = {};
+                fields.forEach(f => {
+                    const label = document.createElement('label');
+                    label.className = 'adm-field-label';
+                    label.textContent = f.label;
+                    box.appendChild(label);
+
+                    const input = document.createElement('input');
+                    input.type = f.type;
+                    input.className = 'adm-input w-full';
+                    input.maxLength = f.max;
+                    input.value = btn.getAttribute(f.attr) || '';
+                    input.style.marginBottom = '8px';
+                    box.appendChild(input);
+                    inputs[f.key] = input;
+                });
+
+                const msgEl = document.createElement('p');
+                msgEl.style.cssText = 'min-height:18px;margin:4px 0 12px;';
+                box.appendChild(msgEl);
+
+                const buttonDiv = document.createElement('div');
+                buttonDiv.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.className = 'btn btn-secondary';
+                buttonDiv.appendChild(cancelBtn);
+
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = 'Save';
+                saveBtn.className = 'btn btn-primary btn-sm';
+                buttonDiv.appendChild(saveBtn);
+
+                box.appendChild(buttonDiv);
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+                inputs.first_name.focus();
+
+                cancelBtn.addEventListener('click', () => overlay.remove());
+                overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+                saveBtn.addEventListener('click', async () => {
+                    msgEl.textContent = 'Saving…';
+                    const payload = { id };
+                    fields.forEach(f => { payload[f.key] = inputs[f.key].value; });
+                    try {
+                        const res = await apiFetch('api.php?action=users_update_contact', {
+                            method: 'POST',
+                            body: JSON.stringify(payload),
+                        });
+                        const resData = await res.json();
+                        if (resData.status === 'success') {
+                            overlay.remove();
+                            renderManageUsers(panel, ctx);
+                            return;
+                        }
+                        msgEl.style.color = 'var(--error)';
+                        msgEl.textContent = resData.error || 'Error saving details.';
+                    } catch {
+                        msgEl.style.color = 'var(--error)';
+                        msgEl.textContent = 'Network error.';
+                    }
+                });
+            });
+        });
+
         // Password strength indicator
         const passwordInput = panel.querySelector('#newPassword');
         const strengthFill = panel.querySelector('#passwordStrengthFill');
@@ -563,6 +693,11 @@ async function renderManageUsers(panel, ctx) {
             const username = panel.querySelector('#newUsername').value;
             const password = panel.querySelector('#newPassword').value;
             const role = panel.querySelector('#newRole').value;
+            // Contact fields are informational and optional — never blocked on here.
+            const first_name = panel.querySelector('#newFirstName').value;
+            const last_name  = panel.querySelector('#newLastName').value;
+            const email      = panel.querySelector('#newEmail').value;
+            const phone      = panel.querySelector('#newPhone').value;
 
             if (!username || !password) {
                 showStatusPill(addBtn, 'Username and password are required.', 'error');
@@ -572,7 +707,7 @@ async function renderManageUsers(panel, ctx) {
             try {
                 const req = await apiFetch('api.php?action=users_add', {
                     method: 'POST',
-                    body: JSON.stringify({ username, password, role })
+                    body: JSON.stringify({ username, password, role, first_name, last_name, email, phone })
                 });
                 const resData = await req.json();
 

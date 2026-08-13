@@ -37,7 +37,8 @@ final class AdminApiGuardsTest extends TestCase
      */
     private const MUTATING_ACTIONS = [
         'save', 'init_db',
-        'users_add', 'users_toggle', 'users_update_role', 'users_change_password', 'user_policy_save',
+        'users_add', 'users_toggle', 'users_update_role', 'users_update_contact',
+        'users_change_password', 'user_policy_save',
         'user_tables_save',
         'create_table', 'add_column', 'schema_add_table',
         'run_cron_notifications', 'cron_purge_log',
