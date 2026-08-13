@@ -405,13 +405,13 @@ ${_ul([
     `<strong>${s.sLogo_li4_label}:</strong> ${s.sLogo_li4}`
 ])}
 
-${_h3('doc-9o', s.s9o_head)}
-${_p(s.s9o_desc)}
+${_h3('doc-9q', s.s9q_head)}
+${_p(s.s9q_desc)}
 ${_ul([
-    `<strong>${s.s9o_tab1_label}:</strong> ${s.s9o_tab1}`,
-    `<strong>${s.s9o_tab2_label}:</strong> ${s.s9o_tab2}`,
-    `<strong>${s.s9o_off_label}:</strong> ${s.s9o_off}`,
-    `<strong>${s.s9o_privacy_label}:</strong> ${s.s9o_privacy}`
+    `<strong>${s.s9q_tab1_label}:</strong> ${s.s9q_tab1}`,
+    `<strong>${s.s9q_tab2_label}:</strong> ${s.s9q_tab2}`,
+    `<strong>${s.s9q_off_label}:</strong> ${s.s9q_off}`,
+    `<strong>${s.s9q_privacy_label}:</strong> ${s.s9q_privacy}`
 ])}
 
 ${_h3('doc-10', s.s10_head)}

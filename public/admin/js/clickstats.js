@@ -8,7 +8,7 @@
 // Reads/writes via api.php?action=clickstats_*.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
-import { buildInnerTabs, createPageHeader, el, mkTable, mkThead, td } from './ui.js';
+import { buildInnerTabs, buildSectionCard, createPageHeader, el, mkTable, mkThead, td } from './ui.js';
 
 // Every label below comes from the DOM of a user-facing page. It is rendered with
 // textContent (via td()/el()) and never interpolated into innerHTML.
@@ -265,7 +265,9 @@ function renderLog(panel, state) {
             });
             const result = await res.json();
             if (result.status === 'success') {
-                showStatusPill(pillAnchor, `Deleted ${result.deleted ?? 0} row(s)`, 'success');
+                // `note` is the "table not created yet" hint — say that rather than
+                // claiming a deletion that never had anything to delete.
+                showStatusPill(pillAnchor, result.note || `Deleted ${result.deleted ?? 0} row(s)`, 'success');
                 state.page = 1;
                 load();
             } else {
@@ -284,12 +286,7 @@ function renderTop(host, top) {
     host.innerHTML = '';
     if (top.length === 0) return;
 
-    const card = el('div', 'adm-sec-card');
-    const hdr = el('div', 'adm-sec-hdr');
-    hdr.style.display = 'block';
-    hdr.appendChild(el('h3', '', 'Top Elements'));
-    const body = el('div', 'adm-sec-body');
-    card.append(hdr, body);
+    const { card, body } = buildSectionCard('Top Elements');
 
     const table = mkTable();
     mkThead(table, ['Element', 'Clicks']);

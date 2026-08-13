@@ -31,7 +31,6 @@ if ($action === 'init_db') {
         $tMigrations = sys_table('migrations');
         $tUsers      = sys_table('users');
         $tNotes      = sys_table('notes');
-        $tClickstats = sys_table('clickstats');
 
         // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
@@ -79,43 +78,16 @@ if ($action === 'init_db') {
             ],
 
             // 3.3 — optional contact details on user accounts (admin panel only,
-            // informational). All nullable, no UNIQUE: nothing authenticates on them.
-            '3.3_user_contact' => [
-                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS first_name varchar(100)",
-                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS last_name varchar(100)",
-                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS email varchar(255)",
-                "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS phone varchar(32)",
-                "COMMENT ON COLUMN $tUsers.first_name IS 'Optional given name, admin panel only. Informational - not used for login or notifications.'",
-                "COMMENT ON COLUMN $tUsers.last_name IS 'Optional surname, admin panel only. Informational - not used for login or notifications.'",
-                "COMMENT ON COLUMN $tUsers.email IS 'Optional contact email, admin panel only. Format-checked, not unique, not used for login or notifications.'",
-                "COMMENT ON COLUMN $tUsers.phone IS 'Optional contact phone, admin panel only. Informational.'",
-            ],
+            // informational). Body shared with the setup wizard.
+            '3.3_user_contact' => system_tables_user_contact_ddl(
+                static fn(string $n): string => sys_table($n)
+            ),
 
-            // 3.3 — click statistics (Admin -> System -> Click Statistics). One row per
-            // recorded click: who, when, which element, and optionally which record.
-            // user_id is nullable + ON DELETE SET NULL so removing an account does not
-            // delete the usage history it produced.
-            '3.3_clickstats' => [
-                "CREATE TABLE IF NOT EXISTS $tClickstats (
-                    id bigserial NOT NULL,
-                    user_id int4 NULL,
-                    element varchar(120) NOT NULL,
-                    page varchar(120) NULL,
-                    table_name varchar(100) NULL,
-                    record_id int4 NULL,
-                    created_at timestamp DEFAULT now() NOT NULL,
-                    CONSTRAINT spw_clickstats_pkey PRIMARY KEY (id),
-                    CONSTRAINT spw_clickstats_user_fk FOREIGN KEY (user_id)
-                        REFERENCES $tUsers(id) ON DELETE SET NULL
-                )",
-                "CREATE INDEX IF NOT EXISTS idx_spw_clickstats_created ON $tClickstats (created_at DESC)",
-                "CREATE INDEX IF NOT EXISTS idx_spw_clickstats_element ON $tClickstats (element)",
-                "COMMENT ON TABLE $tClickstats IS 'Click statistics. Written only while Admin -> Click Statistics is enabled; one row per UI element click.'",
-                "COMMENT ON COLUMN $tClickstats.element IS 'Element label: the data-stat attribute when present, otherwise a derived id/class/text label.'",
-                "COMMENT ON COLUMN $tClickstats.page IS 'Page script the click happened on, e.g. index.php.'",
-                "COMMENT ON COLUMN $tClickstats.table_name IS 'Table in context when the click happened, or NULL.'",
-                "COMMENT ON COLUMN $tClickstats.record_id IS 'Record in context when the click happened, or NULL.'",
-            ],
+            // 3.3 — click statistics storage (Admin -> System -> Click Statistics).
+            // Body shared with the setup wizard.
+            '3.3_clickstats' => system_tables_clickstats_ddl(
+                static fn(string $n): string => sys_table($n)
+            ),
 
         ];
 

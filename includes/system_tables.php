@@ -16,7 +16,11 @@ declare(strict_types=1);
 // that maps a short table name ("users") to a fully quoted identifier ("app"."spw_users").
 //
 // system_tables_ddl() IS the 3.0_baseline migration body: append-only.
-// (system_tables_comments_ddl() below is the 3.1_table_comments body — see its docblock.) Every statement uses IF NOT EXISTS
+// (The functions below are migration bodies too — system_tables_comments_ddl() is
+// 3.1_table_comments, system_tables_user_contact_ddl() is 3.3_user_contact and
+// system_tables_clickstats_ddl() is 3.3_clickstats; see their docblocks. A migration
+// whose body lands here must be run AND recorded by both callers, or a fresh install
+// drifts from an upgraded one.) Every statement uses IF NOT EXISTS
 // so re-running is safe. Statement order matters — referenced tables come first.
 // The spw_migrations tracker and CREATE SCHEMA are NOT here: both callers bootstrap those
 // themselves before they can consult the migration registry.
@@ -492,5 +496,74 @@ function system_tables_comments_ddl(callable $ident): array
         "COMMENT ON COLUMN $tEtlFlowStepLog.error_message IS 'Failure detail.'",
         "COMMENT ON COLUMN $tEtlFlowStepLog.started_at IS 'Step start.'",
         "COMMENT ON COLUMN $tEtlFlowStepLog.finished_at IS 'Step end.'",
+    ];
+}
+
+/**
+ * Optional contact details on user accounts (admin panel only, informational).
+ * All nullable, no UNIQUE: nothing authenticates on them.
+ *
+ * This IS the body of the 3.3_user_contact migration (includes/admin/migrations.php);
+ * the setup wizard (public/setup_api.php) runs the same list so a fresh install is
+ * created with the columns already in place. Idempotent — safe to re-run.
+ *
+ * @param callable(string): string $ident Short table name → quoted identifier.
+ * @return string[]
+ */
+function system_tables_user_contact_ddl(callable $ident): array
+{
+    $tUsers = $ident('users');
+
+    return [
+        "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS first_name varchar(100)",
+        "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS last_name varchar(100)",
+        "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS email varchar(255)",
+        "ALTER TABLE $tUsers ADD COLUMN IF NOT EXISTS phone varchar(32)",
+        "COMMENT ON COLUMN $tUsers.first_name IS 'Optional given name, admin panel only. Informational - not used for login or notifications.'",
+        "COMMENT ON COLUMN $tUsers.last_name IS 'Optional surname, admin panel only. Informational - not used for login or notifications.'",
+        "COMMENT ON COLUMN $tUsers.email IS 'Optional contact email, admin panel only. Format-checked, not unique, not used for login or notifications.'",
+        "COMMENT ON COLUMN $tUsers.phone IS 'Optional contact phone, admin panel only. Informational.'",
+    ];
+}
+
+/**
+ * Click statistics storage (Admin -> System -> Click Statistics). One row per
+ * recorded click: who, when, which element, and optionally which record.
+ * user_id is nullable + ON DELETE SET NULL so removing an account does not
+ * delete the usage history it produced.
+ *
+ * This IS the body of the 3.3_clickstats migration (includes/admin/migrations.php);
+ * the setup wizard (public/setup_api.php) runs the same list so a fresh install is
+ * created with the table already in place. Nothing writes to it until the module is
+ * enabled. Idempotent — safe to re-run.
+ *
+ * @param callable(string): string $ident Short table name → quoted identifier.
+ * @return string[]
+ */
+function system_tables_clickstats_ddl(callable $ident): array
+{
+    $tClickstats = $ident('clickstats');
+    $tUsers      = $ident('users');
+
+    return [
+        "CREATE TABLE IF NOT EXISTS $tClickstats (
+            id bigserial NOT NULL,
+            user_id int4 NULL,
+            element varchar(120) NOT NULL,
+            page varchar(120) NULL,
+            table_name varchar(100) NULL,
+            record_id int4 NULL,
+            created_at timestamp DEFAULT now() NOT NULL,
+            CONSTRAINT spw_clickstats_pkey PRIMARY KEY (id),
+            CONSTRAINT spw_clickstats_user_fk FOREIGN KEY (user_id)
+                REFERENCES $tUsers(id) ON DELETE SET NULL
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_spw_clickstats_created ON $tClickstats (created_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_spw_clickstats_element ON $tClickstats (element)",
+        "COMMENT ON TABLE $tClickstats IS 'Click statistics. Written only while Admin -> Click Statistics is enabled; one row per UI element click.'",
+        "COMMENT ON COLUMN $tClickstats.element IS 'Element label: the data-stat attribute when present, otherwise a derived id/class/text label.'",
+        "COMMENT ON COLUMN $tClickstats.page IS 'Page script the click happened on, e.g. index.php.'",
+        "COMMENT ON COLUMN $tClickstats.table_name IS 'Table in context when the click happened, or NULL.'",
+        "COMMENT ON COLUMN $tClickstats.record_id IS 'Record in context when the click happened, or NULL.'",
     ];
 }

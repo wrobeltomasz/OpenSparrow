@@ -10,7 +10,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
-import { buildInnerTabs, createPageHeader } from './ui.js';
+import { buildInnerTabs, buildModal, createPageHeader } from './ui.js';
 import { showStatusPill } from './app.js';
 
 export async function renderUsersEditor(ctx) {
@@ -433,24 +433,16 @@ async function renderManageUsers(panel, ctx) {
                 const username = btn.getAttribute('data-username');
                 const isSelf   = id === currentUserId;
 
-                const overlay = document.createElement('div');
-                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;';
-
-                const box = document.createElement('div');
-                box.style.cssText = 'background:#fff;border-radius:10px;padding:28px 24px;width:340px;box-shadow:0 8px 24px rgba(0,0,0,.2);';
-
-                const h3 = document.createElement('h3');
-                h3.style.cssText = 'margin:0 0 4px;';
-                h3.textContent = 'Change password';
-                box.appendChild(h3);
-
-                const userP = document.createElement('p');
-                userP.style.cssText = 'margin:0 0 16px;';
-                userP.textContent = 'User: ';
-                const userStrong = document.createElement('strong');
-                userStrong.textContent = username;
-                userP.appendChild(userStrong);
-                box.appendChild(userP);
+                const { box, body, msgEl, cancelBtn, saveBtn, close } = buildModal({
+                    title: 'Change password',
+                    subtitleLabel: 'User: ',
+                    subtitleValue: username,
+                });
+                // The cpw-* ids stay on the nodes: they are long-standing selector
+                // hooks, and dropping them in a refactor is how E2E specs break.
+                msgEl.id = 'cpw-msg';
+                cancelBtn.id = 'cpw-cancel';
+                saveBtn.id = 'cpw-save';
 
                 if (isSelf) {
                     const currentInput = document.createElement('input');
@@ -459,7 +451,7 @@ async function renderManageUsers(panel, ctx) {
                     currentInput.placeholder = 'Current password';
                     currentInput.className = 'adm-input w-full';
                     currentInput.style.marginBottom = '8px';
-                    box.appendChild(currentInput);
+                    body.appendChild(currentInput);
                 }
 
                 const newInput = document.createElement('input');
@@ -468,7 +460,7 @@ async function renderManageUsers(panel, ctx) {
                 newInput.placeholder = `New password (min ${minPasswordLength} chars)`;
                 newInput.className = 'adm-input w-full';
                 newInput.style.marginBottom = '8px';
-                box.appendChild(newInput);
+                body.appendChild(newInput);
 
                 const confirmInput = document.createElement('input');
                 confirmInput.type = 'password';
@@ -476,38 +468,11 @@ async function renderManageUsers(panel, ctx) {
                 confirmInput.placeholder = 'Confirm new password';
                 confirmInput.className = 'adm-input w-full';
                 confirmInput.style.marginBottom = '12px';
-                box.appendChild(confirmInput);
-
-                const msgEl = document.createElement('p');
-                msgEl.id = 'cpw-msg';
-                msgEl.style.cssText = 'min-height:18px;margin:0 0 12px;';
-                box.appendChild(msgEl);
-
-                const buttonDiv = document.createElement('div');
-                buttonDiv.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
-
-                const cancelBtn = document.createElement('button');
-                cancelBtn.id = 'cpw-cancel';
-                cancelBtn.textContent = 'Cancel';
-                cancelBtn.className = 'btn btn-secondary';
-                buttonDiv.appendChild(cancelBtn);
-
-                const saveBtn = document.createElement('button');
-                saveBtn.id = 'cpw-save';
-                saveBtn.textContent = 'Save';
-                saveBtn.className = 'btn btn-primary btn-sm';
-                buttonDiv.appendChild(saveBtn);
-
-                box.appendChild(buttonDiv);
-                overlay.appendChild(box);
-                document.body.appendChild(overlay);
+                body.appendChild(confirmInput);
 
                 (box.querySelector('#cpw-current') ?? newInput).focus();
 
-                box.querySelector('#cpw-cancel').addEventListener('click', () => overlay.remove());
-                overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-
-                box.querySelector('#cpw-save').addEventListener('click', async () => {
+                saveBtn.addEventListener('click', async () => {
                     const pwd     = newInput.value;
                     const confirm = box.querySelector('#cpw-confirm').value;
                     if (isSelf && !box.querySelector('#cpw-current').value) {
@@ -535,7 +500,7 @@ async function renderManageUsers(panel, ctx) {
                                 body: JSON.stringify({ current_password: box.querySelector('#cpw-current').value, new_password: pwd }),
                             });
                             data = await res.json();
-                            if (data.ok) { overlay.remove(); return; }
+                            if (data.ok) { close(); return; }
                         } else {
                             // Other user — admin override, no current password check
                             res  = await apiFetch('api.php?action=users_change_password', {
@@ -543,7 +508,7 @@ async function renderManageUsers(panel, ctx) {
                                 body: JSON.stringify({ id, password: pwd }),
                             });
                             data = await res.json();
-                            if (data.status === 'success') { overlay.remove(); return; }
+                            if (data.status === 'success') { close(); return; }
                         }
                         msgEl.style.color = 'var(--error)';
                         msgEl.textContent = data.error || 'Error saving password.';
@@ -560,24 +525,11 @@ async function renderManageUsers(panel, ctx) {
             btn.addEventListener('click', () => {
                 const id = parseInt(btn.getAttribute('data-id'), 10);
 
-                const overlay = document.createElement('div');
-                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;';
-
-                const box = document.createElement('div');
-                box.style.cssText = 'background:#fff;border-radius:10px;padding:28px 24px;width:340px;box-shadow:0 8px 24px rgba(0,0,0,.2);';
-
-                const h3 = document.createElement('h3');
-                h3.style.cssText = 'margin:0 0 4px;';
-                h3.textContent = 'Edit Details';
-                box.appendChild(h3);
-
-                const userP = document.createElement('p');
-                userP.style.cssText = 'margin:0 0 16px;';
-                userP.textContent = 'User: ';
-                const userStrong = document.createElement('strong');
-                userStrong.textContent = btn.getAttribute('data-username');
-                userP.appendChild(userStrong);
-                box.appendChild(userP);
+                const { body, msgEl, saveBtn, close } = buildModal({
+                    title: 'Edit Details',
+                    subtitleLabel: 'User: ',
+                    subtitleValue: btn.getAttribute('data-username'),
+                });
 
                 const fields = [
                     { key: 'first_name', attr: 'data-first-name', label: 'First Name', type: 'text',  max: 100 },
@@ -590,7 +542,7 @@ async function renderManageUsers(panel, ctx) {
                     const label = document.createElement('label');
                     label.className = 'adm-field-label';
                     label.textContent = f.label;
-                    box.appendChild(label);
+                    body.appendChild(label);
 
                     const input = document.createElement('input');
                     input.type = f.type;
@@ -598,34 +550,11 @@ async function renderManageUsers(panel, ctx) {
                     input.maxLength = f.max;
                     input.value = btn.getAttribute(f.attr) || '';
                     input.style.marginBottom = '8px';
-                    box.appendChild(input);
+                    body.appendChild(input);
                     inputs[f.key] = input;
                 });
 
-                const msgEl = document.createElement('p');
-                msgEl.style.cssText = 'min-height:18px;margin:4px 0 12px;';
-                box.appendChild(msgEl);
-
-                const buttonDiv = document.createElement('div');
-                buttonDiv.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
-
-                const cancelBtn = document.createElement('button');
-                cancelBtn.textContent = 'Cancel';
-                cancelBtn.className = 'btn btn-secondary';
-                buttonDiv.appendChild(cancelBtn);
-
-                const saveBtn = document.createElement('button');
-                saveBtn.textContent = 'Save';
-                saveBtn.className = 'btn btn-primary btn-sm';
-                buttonDiv.appendChild(saveBtn);
-
-                box.appendChild(buttonDiv);
-                overlay.appendChild(box);
-                document.body.appendChild(overlay);
                 inputs.first_name.focus();
-
-                cancelBtn.addEventListener('click', () => overlay.remove());
-                overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
                 saveBtn.addEventListener('click', async () => {
                     msgEl.textContent = 'Saving…';
@@ -638,7 +567,7 @@ async function renderManageUsers(panel, ctx) {
                         });
                         const resData = await res.json();
                         if (resData.status === 'success') {
-                            overlay.remove();
+                            close();
                             renderManageUsers(panel, ctx);
                             return;
                         }

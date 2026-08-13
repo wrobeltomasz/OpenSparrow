@@ -348,7 +348,8 @@ Migrations:
                             the optional Click Statistics module. Nothing writes to it
                             until the module is enabled
   - A fresh install via the setup wizard applies all of them automatically, so new databases
-    are created with the descriptions and the widened reminder column already in place
+    are created with the descriptions, the widened reminder column, the user contact
+    columns and spw_clickstats already in place, and with nothing reported as pending
   - Release migrations tab: config cleanup driven by config/migrations.json —
     tracks files and config keys removed between versions, applied manually on upgrade
 

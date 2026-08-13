@@ -854,3 +854,59 @@ export function buildSectionCard(title, description = '', id = '') {
 
     return { card, body };
 }
+
+// ── Modal dialog ──────────────────────────────────────────────────────────────
+// The overlay + card chrome that the Manage Users dialogs (change password, edit
+// contact details) each hand-rolled byte-for-byte, down to a literal #fff that
+// ignored the panel token. The chrome lives in .adm-modal* in admin/style.css, so
+// nothing here sets box-model styling inline.
+//
+// The caller appends its fields to `body`, writes feedback into `msgEl` and gets
+// a ready Cancel/Save pair in `actions`. Closes on Cancel, on the backdrop and on
+// Escape — the last of those the hand-rolled copies were both missing.
+//
+// `subtitle` renders as "<label> <strong>value</strong>", the "User: name" line
+// both dialogs carry. Always set via textContent: the value is a username.
+export function buildModal({ title, subtitleLabel = '', subtitleValue = '', saveLabel = 'Save' }) {
+    const overlay = el('div', 'adm-modal-overlay');
+
+    const box = el('div', 'adm-modal');
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.appendChild(el('h3', 'adm-modal-title', title));
+
+    if (subtitleLabel || subtitleValue) {
+        const sub = el('p', 'adm-modal-sub', subtitleLabel);
+        sub.appendChild(el('strong', '', subtitleValue));
+        box.appendChild(sub);
+    }
+
+    const body = el('div');
+    box.appendChild(body);
+
+    const msgEl = el('p', 'adm-modal-msg');
+    box.appendChild(msgEl);
+
+    const actions   = el('div', 'adm-modal-actions');
+    const cancelBtn = el('button', 'btn btn-secondary', 'Cancel');
+    const saveBtn   = el('button', 'btn btn-primary', saveLabel);
+    actions.append(cancelBtn, saveBtn);
+    box.appendChild(actions);
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // Listener is on document, so it must come off again with the overlay or every
+    // dialog ever opened keeps handling Escape for the rest of the page's life.
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    function close() {
+        document.removeEventListener('keydown', onKey);
+        overlay.remove();
+    }
+    document.addEventListener('keydown', onKey);
+
+    cancelBtn.addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    return { overlay, box, body, msgEl, actions, cancelBtn, saveBtn, close };
+}

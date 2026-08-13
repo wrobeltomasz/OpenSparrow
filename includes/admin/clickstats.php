@@ -151,6 +151,9 @@ if ($action === 'clickstats_purge_log') {
     admin_try(static function (): void {
         $conn  = admin_conn();
         $table = sys_table('clickstats');
+        // Before the migration there is nothing to purge; answer with the same hint
+        // the Log tab gives rather than failing on a missing relation.
+        admin_require_log_table($conn, $table);
 
         // Retention is manual by design (no cron worker): "days" trims to a window,
         // its absence clears the whole log — which is what the tab's button sends.

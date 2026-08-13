@@ -27,6 +27,22 @@ const CLICKSTATS_MAX_EVENTS = 50;
 const CLICKSTATS_MAX_ELEMENT = 120;
 const CLICKSTATS_MAX_PAGE    = 120;
 
+// Upper bound of the int4 record_id column.
+const CLICKSTATS_MAX_RECORD_ID = 2147483647;
+
+// Ceiling on rows one session may store per minute. Retention is manual (no cron
+// worker), so without a ceiling a client that ignores the collector's own pacing
+// could grow the table until someone notices. Set well above any human: the
+// collector flushes at most MAX_BUFFER rows every FLUSH_MS, and real clicking is
+// orders of magnitude below that, so this never trims an honest session.
+//
+// Deliberately per session, not per user: the window lives in the session itself,
+// which costs nothing (the session is already open and written) and needs no
+// filesystem or APCu state on a fire-and-forget path. A user holding several
+// sessions gets that multiple of the budget — this is a brake on runaway volume,
+// not an access control.
+const CLICKSTATS_MAX_ROWS_PER_MIN = 1000;
+
 // connect=false: nothing here needs a connection until the flag has been checked and
 // there are rows to write. (config_get() opens one itself on an APCu cache miss — the
 // real "costs nothing when off" guarantee is that no page emits the collector at all,
@@ -44,6 +60,37 @@ function clickstats_done(int $code = 204): never
 {
     http_response_code($code);
     exit;
+}
+
+// Sliding one-minute window over the rows this session has already stored.
+// Returns how many of $wanted may still be written — 0 once the budget is spent,
+// in which case the batch is dropped silently like every other rejection here.
+//
+// Charges the whole slice up front rather than the rows that survive validation.
+// That can over-charge by a few rows on a batch full of unusable events, which is
+// the harmless direction for a brake: it never rejects a request outright, only
+// trims how much of one very noisy minute reaches the table.
+function clickstats_budget(int $wanted): int
+{
+    $now     = time();
+    $stored  = $_SESSION['clickstats_window'] ?? null;
+    $window  = [];
+    $used    = 0;
+    foreach (is_array($stored) ? $stored : [] as $entry) {
+        if (!is_array($entry) || ($now - (int) ($entry[0] ?? 0)) >= 60) {
+            continue;
+        }
+        $window[] = $entry;
+        $used    += (int) ($entry[1] ?? 0);
+    }
+
+    $take = max(0, min($wanted, CLICKSTATS_MAX_ROWS_PER_MIN - $used));
+    if ($take > 0) {
+        $window[] = [$now, $take];
+    }
+    $_SESSION['clickstats_window'] = $window;
+
+    return $take;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -73,11 +120,15 @@ if (!is_array($events) || $events === []) {
 $userId       = (int) $_SESSION['user_id'];
 $trackRecords = !empty($cfg['track_records']);
 
-$values       = [];
 $params       = [];
 $placeholders = [];
 
-foreach (array_slice($events, 0, CLICKSTATS_MAX_EVENTS) as $input) {
+$budget = clickstats_budget(min(count($events), CLICKSTATS_MAX_EVENTS));
+if ($budget <= 0) {
+    clickstats_done();
+}
+
+foreach (array_slice($events, 0, $budget) as $input) {
     if (!is_array($input)) {
         continue;
     }
@@ -94,10 +145,19 @@ foreach (array_slice($events, 0, CLICKSTATS_MAX_EVENTS) as $input) {
         // user must not be able to seed the admin's log with names from tables they cannot
         // open. Out of scope is dropped, not rejected: telemetry never fails a request.
         if ($candidate !== '' && user_can_access('tables', $candidate)) {
-            $table    = $candidate;
-            $recordId = isset($input['record_id']) && is_numeric($input['record_id'])
-                ? (int) $input['record_id']
-                : null;
+            $table = $candidate;
+            // record_id is an int4 column. is_numeric() alone would let "1e20" or a
+            // 64-bit value through, and Postgres then rejects the whole multi-row
+            // INSERT over one bad id — losing the entire batch. Out of range is
+            // simply "no record in context", like every other unusable value here.
+            $recordId = filter_var(
+                $input['record_id'] ?? null,
+                FILTER_VALIDATE_INT,
+                ['options' => ['min_range' => 1, 'max_range' => CLICKSTATS_MAX_RECORD_ID]]
+            );
+            if ($recordId === false) {
+                $recordId = null;
+            }
         }
     }
 

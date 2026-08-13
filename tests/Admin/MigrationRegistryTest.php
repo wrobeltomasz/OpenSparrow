@@ -19,12 +19,15 @@ use PHPUnit\Framework\TestCase;
  *                     actually runs the DDL,
  *   2. $known       — includes/admin/migrations.php, feeding migrations_list,
  *   3. $knownMig    — includes/admin/overview.php, feeding the dashboard's
- *                     pending-migration counter.
+ *                     pending-migration counter,
+ *   4. the INSERT INTO spw_migrations list in public/setup_api.php, which records
+ *                     what a fresh install already has.
  *
  * Drift is silent: a migration missing from $known simply never appears in the
- * admin list, and one missing from $knownMig makes the dashboard under-report
- * pending work. This test compares the three literals so a release that updates
- * only one of them fails the build.
+ * admin list, one missing from $knownMig makes the dashboard under-report
+ * pending work, and one missing from the wizard means fresh installs never get
+ * the DDL at all. This test compares the four literals so a release that updates
+ * only some of them fails the build.
  *
  * It reads the source rather than executing it — the registry lives inside an
  * action block that needs a session, a database and the front controller's
@@ -34,6 +37,7 @@ final class MigrationRegistryTest extends TestCase
 {
     private const MIGRATIONS_PHP = __DIR__ . '/../../includes/admin/migrations.php';
     private const OVERVIEW_PHP   = __DIR__ . '/../../includes/admin/overview.php';
+    private const SETUP_API_PHP  = __DIR__ . '/../../public/setup_api.php';
 
     /** Extracts the quoted migration keys of a named array literal. */
     private static function arrayKeys(string $file, string $variable, bool $keysOnly): array
@@ -80,6 +84,33 @@ final class MigrationRegistryTest extends TestCase
             '3.0_baseline',
             $registry[0] ?? null,
             '3.0_baseline is the append-only floor and must stay first.'
+        );
+    }
+
+    /**
+     * The setup wizard builds a fresh database without consulting the admin
+     * registry, then records the migrations it applied. A key added to the
+     * registry but not to the wizard leaves fresh installs behind upgraded ones:
+     * the DDL never runs, yet the dashboard reports the migration as pending on a
+     * brand-new database. That is invisible until someone actually installs from
+     * scratch, so it is asserted here.
+     */
+    public function testSetupWizardRecordsEveryMigration(): void
+    {
+        $registry = self::arrayKeys(self::MIGRATIONS_PHP, '$migrations', true);
+        $source   = (string) file_get_contents(self::SETUP_API_PHP);
+
+        preg_match_all(
+            "/INSERT INTO \\\$tMigrations \(name\) VALUES \('([0-9]+\.[0-9]+_[a-z0-9_]+)'\)/",
+            $source,
+            $found
+        );
+
+        $this->assertSame(
+            $registry,
+            $found[1],
+            'public/setup_api.php must record every migration in the includes/admin/migrations.php '
+            . 'registry, in the same order — and must actually run its DDL (see system_tables.php).'
         );
     }
 }

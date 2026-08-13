@@ -228,8 +228,9 @@ if ($action === 'init_database') {
         // The spw_* DDL is shared with the admin init_db action so the two entry points
         // cannot drift apart — see includes/system_tables.php. This wizard only adds the
         // bootstrap (schema + migration tracker) around it, applies the table/column
-        // descriptions plus the 3.1 note-reminder column change, and records the
-        // migrations as applied.
+        // descriptions, the 3.1 note-reminder column change and the 3.3 bodies, and
+        // records every migration as applied. Adding a migration to the admin registry
+        // without adding it here leaves fresh installs behind upgraded ones.
         require_once __DIR__ . '/../includes/system_tables.php';
         $queries = array_merge(
             [
@@ -238,12 +239,18 @@ if ($action === 'init_database') {
             ],
             system_tables_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
             system_tables_comments_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
+            system_tables_user_contact_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
+            system_tables_clickstats_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
             [
                 // Note reminders carry a time — see 3.1_notes_reminder_time in the admin registry.
                 "ALTER TABLE " . table_ident($schema, 'spw_notes') . " ALTER COLUMN reminder_date TYPE timestamp",
+                // Every migration key in the admin registry must be recorded here too, or a
+                // fresh install reports pending migrations it has in fact already applied.
                 "INSERT INTO $tMigrations (name) VALUES ('3.0_baseline') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $tMigrations (name) VALUES ('3.1_table_comments') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $tMigrations (name) VALUES ('3.1_notes_reminder_time') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $tMigrations (name) VALUES ('3.3_user_contact') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $tMigrations (name) VALUES ('3.3_clickstats') ON CONFLICT (name) DO NOTHING",
             ]
         );
 

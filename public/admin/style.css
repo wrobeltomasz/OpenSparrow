@@ -1233,6 +1233,30 @@ textarea.adm-input {
 /* Placeholder for an optional cell left empty by the user (renders an em dash). */
 .adm-td-empty { color: var(--muted); }
 
+/* ── Admin utility: modal dialog ───────────────────────────────────── */
+/* Chrome for buildModal() in admin/js/ui.js. Lives here rather than inline so
+   the dialog follows the panel token instead of a hardcoded white. */
+.adm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.adm-modal {
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 28px 24px;
+    width: 340px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
+}
+.adm-modal-title   { margin: 0 0 4px; }
+.adm-modal-sub     { margin: 0 0 16px; }
+.adm-modal-msg     { min-height: 18px; margin: 4px 0 12px; }
+.adm-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
 /* ── Admin utility: section cards ──────────────────────────────────── */
 .adm-sec-card {
     border: 1px solid var(--border);
