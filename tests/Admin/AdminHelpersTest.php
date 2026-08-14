@@ -150,6 +150,48 @@ final class AdminHelpersTest extends TestCase
         admin_purge_scope($input);
     }
 
+    /**
+     * admin_purge_older_than() is the entry point that takes the window already
+     * resolved, so it is the one that bypasses admin_purge_days(). Its own guard has
+     * to hold, because "older than 0 days" is NOW() — the whole table — and a
+     * negative window reaches further still.
+     *
+     * Reached without a database on purpose: the check runs before admin_conn(), so
+     * a bad window can never get as far as opening a connection, let alone a DELETE.
+     *
+     * @return array<string, array{0: int}>
+     */
+    public static function unusableResolvedWindows(): array
+    {
+        require_once __DIR__ . '/../../includes/admin/helpers.php';
+
+        return [
+            'zero deletes everything' => [0],
+            'negative'                => [-1],
+            'far negative'            => [-3650],
+            'over the cap'            => [ADMIN_PURGE_MAX_DAYS + 1],
+        ];
+    }
+
+    /**
+     * Asserts the MESSAGE, not just the type. admin_db_fail() throws the same
+     * AdminApiMessage class, so a type-only assertion passes even with the guard
+     * removed: the call reaches the database, the DELETE fails on the missing table
+     * and that failure satisfies the expectation. The test would then be green while
+     * proving nothing — and on an install where the table does exist the same path
+     * would have deleted all of it.
+     *
+     * The table name is deliberately one that cannot exist, so a future regression
+     * of the guard makes this test fail rather than destroy data.
+     */
+    #[DataProvider('unusableResolvedWindows')]
+    public function testPurgeOlderThanRefusesAnUnusableWindow(int $days): void
+    {
+        $this->expectException(\AdminApiMessage::class);
+        $this->expectExceptionMessage('Retention window must be a whole number of days');
+        admin_purge_older_than('"app"."spw_no_such_table_for_tests"', $days, 'test', 'created_at');
+    }
+
     public function testHelpersAreDefinedOnce(): void
     {
         foreach (

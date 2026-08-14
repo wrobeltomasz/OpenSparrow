@@ -255,6 +255,8 @@ function admin_purge_scope(array $input): int|string
  * body by the time they get here and must not have it re-read behind them.
  * Callers that only ever want "the window this request asked for" use
  * admin_purge_log() below.
+ *
+ * @throws AdminApiMessage when $days is not a usable window.
  */
 function admin_purge_older_than(
     string $table,
@@ -263,6 +265,20 @@ function admin_purge_older_than(
     string $timeColumn = 'started_at',
     ?callable $afterDelete = null
 ): never {
+    // Checked before anything else, and never coerced. Both callers resolve the
+    // window through admin_purge_days()/admin_purge_scope(), which reject anything
+    // outside 1..ADMIN_PURGE_MAX_DAYS — but this entry point takes the number on
+    // trust, and "older than 0 days" is NOW(), i.e. the whole table (a negative
+    // window is worse still). A future caller passing request input straight
+    // through must not be one typo away from that. Same reasoning and same bounds
+    // as admin_purge_days(); this is that guard on the path which bypasses it.
+    if ($days < 1 || $days > ADMIN_PURGE_MAX_DAYS) {
+        throw new AdminApiMessage(
+            'Retention window must be a whole number of days between 1 and '
+            . ADMIN_PURGE_MAX_DAYS . '.'
+        );
+    }
+
     $conn = admin_conn();
     $res  = @pg_query_params(
         $conn,
