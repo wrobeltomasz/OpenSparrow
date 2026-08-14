@@ -64,7 +64,13 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-version }}
-        tools: phpstan
+        # Pinned, unlike the phpcs job above. PHPStan adds rules in minor releases,
+        # so an unpinned `tools: phpstan` can turn this check red with no change to
+        # the code — and this check gates releases (release-zip.yml requires
+        # 'phpstan (8.4)' / 'phpstan (8.5)'), so a floating version means an upstream
+        # release can block ours. Bump deliberately: raise it here, run PHPStan
+        # locally, fix or re-baseline whatever the new version reports, commit both.
+        tools: phpstan:2.2.8
         coverage: none
 
     # No composer install: phpstan.neon does not analyse tests/, and the App\

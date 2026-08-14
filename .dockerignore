@@ -48,6 +48,9 @@ phpcs.phar
 phpcbf.phar
 phpunit.xml
 .phpunit.result.cache
+phpstan.neon
+phpstan-baseline.neon
+phpstan.phar
 composer.json
 composer.lock
 vendor/

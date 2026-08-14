@@ -120,7 +120,7 @@ if ($secretFiles) {
     Write-Host "  OK: no .secret_salt / .secret_key in package"
 }
 
-$devLeftovers = @("Dockerfile", "docker-compose.yml", "composer.json", "package.json", "phpcs.xml", "phpunit.xml", ".github", ".claude", "tests", "cypress", "creator") |
+$devLeftovers = @("Dockerfile", "docker-compose.yml", "composer.json", "package.json", "phpcs.xml", "phpunit.xml", "phpstan.neon", "phpstan-baseline.neon", ".github", ".claude", "tests", "cypress", "creator") |
     Where-Object { Test-Path "$stage\$_" }
 if ($devLeftovers) {
     Write-Host "  FAIL: dev-only files/dirs present that should have been excluded:"
