@@ -157,8 +157,9 @@ final class AdminHelpersTest extends TestCase
                 'admin_conn', 'admin_user_id', 'admin_input', 'admin_ok', 'admin_err',
                 'admin_try', 'admin_fetch_all', 'admin_config_save_versioned',
                 'admin_expected_version', 'admin_require_log_table', 'admin_purge_log',
-                'admin_purge_days', 'admin_purge_scope', 'admin_read_settings',
-                'admin_write_settings', 'admin_save_settings', 'admin_run_cron_script',
+                'admin_purge_older_than', 'admin_purge_days', 'admin_purge_scope',
+                'admin_read_settings', 'admin_write_settings', 'admin_save_settings',
+                'admin_run_cron_script',
             ] as $fn
         ) {
             $this->assertTrue(function_exists($fn), "Helper {$fn}() is missing.");

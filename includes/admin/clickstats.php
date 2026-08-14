@@ -172,9 +172,12 @@ if ($action === 'clickstats_purge_log') {
         // both, or names a window it cannot read. The refusal is an AdminApiMessage,
         // which admin_try() turns into the standard error envelope — nothing reaches
         // the DELETE below.
+        // admin_purge_older_than(), not admin_purge_log(): the window is already
+        // resolved above, and the wrapper would read and validate the body a second
+        // time to arrive at the same number.
         $scope = admin_purge_scope(admin_input());
         if (is_int($scope)) {
-            admin_purge_log($table, $scope, 'clickstats_purge_log', 'created_at');
+            admin_purge_older_than($table, $scope, 'clickstats_purge_log', 'created_at');
         }
 
         $res = @pg_query($conn, "DELETE FROM {$table}");

@@ -218,6 +218,31 @@ link back to the linked record when one was set. Notes can be edited or deleted 
 the same panel.
 
 
+USAGE STATISTICS (what is recorded about you)
+---------------------------------------------
+Your administrator can switch on a Click Statistics module. It is off by default, and while
+it is off nothing about it reaches the page at all — no script is loaded, nothing is
+watched and no data is sent.
+
+When it is on, clicking a button or a link records: who you are, the time, a short label
+for the element you clicked, the page you were on, and — if the admin left that option on —
+the table and record you had open. Clicks are collected in the browser and sent in batches,
+not one request per click.
+
+What is NOT recorded: anything you type. Field values, search terms, form contents and the
+parameters in the address bar are all left out.
+
+One thing worth knowing: when an element has no label of its own, the label falls back to
+the text you can see on it — and in a list of records that text is record content, such as
+a file name or a record title. So the log can contain record names, though never data you
+entered into a form.
+
+Only administrators can read this log, in the Admin panel. Entries are deleted automatically
+after a period the admin sets (90 days by default), and an admin can clear the log at any
+time. If you need to know whether it is switched on for your installation, or want your
+entries removed, ask an administrator.
+
+
 MOBILE & ACCESSIBILITY
 ----------------------
 The interface is responsive and usable on mobile devices.

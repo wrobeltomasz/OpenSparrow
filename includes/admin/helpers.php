@@ -244,25 +244,26 @@ function admin_purge_scope(array $input): int|string
 }
 
 /**
- * Delete log rows older than the requested retention window and emit the
- * standard {deleted: n} response. Replaces four near-identical purge blocks.
+ * Delete log rows older than $days and emit the standard {deleted: n} response.
  * $timeColumn is a trusted literal from the calling module, never user input.
  * $afterDelete receives ($conn, $days) for modules that must sweep a companion
  * table with the same retention window. Never returns.
  *
- * $defaultDays applies only when the request names no window at all; a window it
- * does name is validated by admin_purge_days() — see the note there on why an
- * unusable value is rejected instead of falling back to one day.
+ * Takes the window already resolved, for callers that worked it out for themselves.
+ * admin_purge_scope() callers are the ones that do: their module also has a "clear
+ * everything" branch to tell apart, so they have already read and validated the
+ * body by the time they get here and must not have it re-read behind them.
+ * Callers that only ever want "the window this request asked for" use
+ * admin_purge_log() below.
  */
-function admin_purge_log(
+function admin_purge_older_than(
     string $table,
-    int $defaultDays,
+    int $days,
     string $context,
     string $timeColumn = 'started_at',
     ?callable $afterDelete = null
 ): never {
     $conn = admin_conn();
-    $days = admin_purge_days(admin_input()) ?? max(1, $defaultDays);
     $res  = @pg_query_params(
         $conn,
         "DELETE FROM {$table} WHERE " . pg_ident($timeColumn) . " < NOW() - ($1 || ' days')::interval",
@@ -276,6 +277,30 @@ function admin_purge_log(
         $afterDelete($conn, $days);
     }
     admin_ok(['deleted' => $deleted]);
+}
+
+/**
+ * admin_purge_older_than() with the retention window read from the request body.
+ * Replaces four near-identical purge blocks.
+ *
+ * $defaultDays applies only when the request names no window at all; a window it
+ * does name is validated by admin_purge_days() — see the note there on why an
+ * unusable value is rejected instead of falling back to one day.
+ */
+function admin_purge_log(
+    string $table,
+    int $defaultDays,
+    string $context,
+    string $timeColumn = 'started_at',
+    ?callable $afterDelete = null
+): never {
+    admin_purge_older_than(
+        $table,
+        admin_purge_days(admin_input()) ?? max(1, $defaultDays),
+        $context,
+        $timeColumn,
+        $afterDelete
+    );
 }
 
 /**
