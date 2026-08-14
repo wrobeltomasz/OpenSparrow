@@ -8,7 +8,7 @@
 // Security — response headers and file upload validation
 //
 // Headers come from send_security_headers() in includes/session.php; the upload
-// gauntlet is actionUpload() in public/api/files.php, which checks in order:
+// gauntlet is files_action_upload() in public/api/files.php, which checks in order:
 // size (413) → extension allowlist (415) → type category (415) → finfo content
 // sniff (415). Each step is probed separately so a regression names itself.
 // ============================================================================

@@ -38,6 +38,9 @@ phpcbf.phar
 phpcs.xml
 phpunit.xml
 .phpunit.result.cache
+phpstan.phar
+phpstan.neon
+phpstan-baseline.neon
 .gitignore
 .gitattributes
 scripts

@@ -52,6 +52,11 @@ includes/.secret_key
 phpcs.phar
 phpcbf.phar
 
+# PHPStan — local convenience binary only. CI installs it via setup-php `tools:`,
+# so the phar is never needed in the repo. phpstan.neon and phpstan-baseline.neon
+# ARE tracked; only the binary is ignored.
+phpstan.phar
+
 # Python
 __pycache__/
 *.py

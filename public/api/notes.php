@@ -25,11 +25,11 @@ const NOTE_RECORD_PICKER_LIMIT = 500;
 ['action' => $action, 'body' => $body] = os_api_action();
 
 os_api_dispatch($action, [
-    'list'         => fn() => actionList($conn),
-    'list_records' => fn() => actionListRecords($conn),
-    'add'          => fn() => actionAdd($conn, $body),
-    'update'       => fn() => actionUpdate($conn, $body),
-    'delete'       => fn() => actionDelete($conn, $body),
+    'list'         => fn() => notes_action_list($conn),
+    'list_records' => fn() => notes_action_list_records($conn),
+    'add'          => fn() => notes_action_add($conn, $body),
+    'update'       => fn() => notes_action_update($conn, $body),
+    'delete'       => fn() => notes_action_delete($conn, $body),
 ], 'api_notes');
 
 // Validates an optional (related_table, related_id) pair: both present and sane, or
@@ -100,11 +100,11 @@ function validatedBody(array $src): string
 }
 
 // Record picker for the "link to a record" form field — mirrors the Files module's
-// table+record dropdown pair (public/api/files.php actionGetRelatedRecords): given a
+// table+record dropdown pair (public/api/files.php files_action_get_related_records): given a
 // table name, returns its most recent rows as {id, label}. Label columns come from the
 // same heuristic as the "My records" panel (record_label_columns() in api_helpers.php)
 // since spw_notes has no per-relation column config like the Files module does.
-function actionListRecords($conn): void
+function notes_action_list_records($conn): void
 {
     $table = validatedTable(trim($_GET['table'] ?? ''), 'table');
 
@@ -126,7 +126,7 @@ function actionListRecords($conn): void
     );
     $res = pg_query($conn, $sql);
     if (!$res) {
-        error_log('api_notes actionListRecords failed: ' . pg_last_error($conn));
+        error_log('api_notes notes_action_list_records failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -142,7 +142,7 @@ function actionListRecords($conn): void
     jsonSuccess(['records' => $records]);
 }
 
-function actionList($conn): void
+function notes_action_list($conn): void
 {
     $userId = (int)$_SESSION['user_id'];
     $sql = "
@@ -153,7 +153,7 @@ function actionList($conn): void
     ";
     $res = pg_query_params($conn, $sql, [$userId]);
     if (!$res) {
-        error_log('api_notes actionList failed: ' . pg_last_error($conn));
+        error_log('api_notes notes_action_list failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -170,7 +170,7 @@ function actionList($conn): void
     jsonSuccess(['notes' => $notes]);
 }
 
-function actionAdd($conn, array $body): void
+function notes_action_add($conn, array $body): void
 {
     $userId = (int)$_SESSION['user_id'];
     $noteBody = validatedBody($body);
@@ -185,7 +185,7 @@ function actionAdd($conn, array $body): void
     ";
     $res = pg_query_params($conn, $sql, [$userId, $noteBody, $relatedTable, $relatedId, $reminderDate]);
     if (!$res) {
-        error_log('api_notes actionAdd failed: ' . pg_last_error($conn));
+        error_log('api_notes notes_action_add failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -203,7 +203,7 @@ function actionAdd($conn, array $body): void
     ]], 201);
 }
 
-function actionUpdate($conn, array $body): void
+function notes_action_update($conn, array $body): void
 {
     $userId = (int)$_SESSION['user_id'];
     $id     = (int)($body['id'] ?? 0);
@@ -223,7 +223,7 @@ function actionUpdate($conn, array $body): void
     ";
     $res = pg_query_params($conn, $sql, [$noteBody, $relatedTable, $relatedId, $reminderDate, $id, $userId]);
     if (!$res) {
-        error_log('api_notes actionUpdate failed: ' . pg_last_error($conn));
+        error_log('api_notes notes_action_update failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
     if (pg_num_rows($res) === 0) {
@@ -234,7 +234,7 @@ function actionUpdate($conn, array $body): void
     jsonSuccess(['updated' => true]);
 }
 
-function actionDelete($conn, array $body): void
+function notes_action_delete($conn, array $body): void
 {
     $userId = (int)$_SESSION['user_id'];
     $id     = (int)($body['id'] ?? 0);
@@ -249,7 +249,7 @@ function actionDelete($conn, array $body): void
     ";
     $res = pg_query_params($conn, $sql, [$id, $userId]);
     if (!$res) {
-        error_log('api_notes actionDelete failed: ' . pg_last_error($conn));
+        error_log('api_notes notes_action_delete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
     if (pg_affected_rows($res) === 0) {

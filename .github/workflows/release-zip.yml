@@ -75,6 +75,8 @@ jobs:
           phpunit (8.5)
           phpcs (8.4)
           phpcs (8.5)
+          phpstan (8.4)
+          phpstan (8.5)
           UTF-8 encoding check
           Version files in sync
           Licence files unchanged

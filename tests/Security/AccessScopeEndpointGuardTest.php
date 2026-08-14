@@ -37,6 +37,16 @@ use PHPUnit\Framework\TestCase;
  */
 final class AccessScopeEndpointGuardTest extends TestCase
 {
+    // public/api.php was split into a front controller plus one module per route group
+    // under includes/frontapi/ (see docs/MAINTENANCE.md). The assertions below follow
+    // the code: each one reads the file that now holds the guard it pins. The front
+    // controller keeps only what it still owns — the ?api=schema echo and the single
+    // write gate.
+    private const LIST_MODULE     = 'includes/frontapi/list.php';
+    private const BOARD_MODULE    = 'includes/frontapi/board.php';
+    private const WORKFLOWS_MODULE = 'includes/frontapi/workflows.php';
+    private const WF_PROC_MODULE  = 'includes/frontapi/workflow_procedure.php';
+
     /** Source of a repo file with all comments removed and whitespace collapsed. */
     private function code(string $relPath): string
     {
@@ -112,12 +122,12 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testListBranchHonoursTheFkLabelAllowList(): void
     {
-        $src = $this->code('public/api.php');
+        $src = $this->code(self::LIST_MODULE);
 
         $this->assertCodeHas(
             "defined('OS_FK_LABEL_COLUMNS')",
             $src,
-            "api.php's list branch must narrow its projection when api/fk.php asks it to."
+            'The list route must narrow its projection when api/fk.php asks it to.'
         );
         // Intersected, never assigned: the constant may only ever remove columns from
         // the schema-derived list, so it can never introduce a name of its own.
@@ -138,7 +148,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
      */
     public function testFkLabelAllowListAlsoNarrowsTheFilterColumns(): void
     {
-        $src = $this->code('public/api.php');
+        $src = $this->code(self::LIST_MODULE);
 
         $this->assertCodeHas(
             'array_intersect($allowedFilterCols, $selectCols)',
@@ -150,8 +160,8 @@ final class AccessScopeEndpointGuardTest extends TestCase
         // read as a guard and do nothing. Pinned by position for that reason.
         $narrow = strpos($src, 'array_intersect($allowedFilterCols, $selectCols)');
         $test   = strpos($src, 'in_array($filterCol, $allowedFilterCols, true)');
-        $this->assertIsInt($narrow, 'api.php no longer narrows the FK filter columns.');
-        $this->assertIsInt($test, 'api.php no longer validates filter_col against a list.');
+        $this->assertIsInt($narrow, 'The list route no longer narrows the FK filter columns.');
+        $this->assertIsInt($test, 'The list route no longer validates filter_col against a list.');
         $this->assertLessThan(
             $test,
             $narrow,
@@ -213,7 +223,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testBoardBindingIsBlankedWhenOutOfScope(): void
     {
-        $src = $this->code('public/api.php');
+        $src = $this->code(self::BOARD_MODULE);
 
         // The board's table and status column are schema metadata; an out-of-scope
         // board must answer like an unconfigured one, not name its binding.
@@ -233,7 +243,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
     {
         $this->assertCodeHas(
             'workflow_tables_in_scope',
-            $this->code('public/api.php'),
+            $this->code(self::WORKFLOWS_MODULE),
             'Workflows whose steps land outside the user\'s tables must not be listed.'
         );
         $this->assertCodeHas(
@@ -256,7 +266,14 @@ final class AccessScopeEndpointGuardTest extends TestCase
             'The step-table rule must live in one place.'
         );
 
-        foreach (['public/api.php', 'templates/menu.php', 'public/index.php'] as $file) {
+        $callSites = [
+            'public/api.php',
+            self::WORKFLOWS_MODULE,
+            self::WF_PROC_MODULE,
+            'templates/menu.php',
+            'public/index.php',
+        ];
+        foreach ($callSites as $file) {
             $this->assertFalse(
                 str_contains($this->code($file), 'user_can_access_table($stepTable)'),
                 "{$file} must call workflow_tables_in_scope(), not re-implement it inline."
@@ -266,7 +283,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testWorkflowProcedureIsGatedByWorkflowScope(): void
     {
-        $src = $this->code('public/api.php');
+        $src = $this->code(self::WF_PROC_MODULE);
 
         // The scope is cosmetic without this one: hiding a workflow from the menu and
         // the list still leaves a direct POST able to fire its procedure.
@@ -299,7 +316,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testBoardSelectionStartsFromTheFilteredList(): void
     {
-        $src = $this->code('public/api.php');
+        $src = $this->code(self::BOARD_MODULE);
 
         // The branch falls back to "the first board" when ?board= is missing or does
         // not match. Filtering after that fallback would hand a restricted user a

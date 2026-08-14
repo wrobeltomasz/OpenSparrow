@@ -91,20 +91,20 @@ if (
 ['action' => $action, 'body' => $body] = os_api_action();
 
 os_api_dispatch($action, [
-    'list'                 => fn() => actionList($conn),
-    'get_config'           => fn() => actionGetConfig(),
-    'upload'               => fn() => actionUpload($conn),
-    'delete'               => fn() => actionDelete($conn, $body),
-    'mass_delete'          => fn() => actionMassDelete($conn, $body),
-    'mass_tag'             => fn() => actionMassTag($conn, $body),
-    'update_meta'          => fn() => actionUpdateMeta($conn, $body),
-    'save_config'          => fn() => actionSaveConfig($body),
-    'get_relations_config' => fn() => actionGetRelationsConfig(),
-    'get_related_records'  => fn() => actionGetRelatedRecords($conn),
+    'list'                 => fn() => files_action_list($conn),
+    'get_config'           => fn() => files_action_get_config(),
+    'upload'               => fn() => files_action_upload($conn),
+    'delete'               => fn() => files_action_delete($conn, $body),
+    'mass_delete'          => fn() => files_action_mass_delete($conn, $body),
+    'mass_tag'             => fn() => files_action_mass_tag($conn, $body),
+    'update_meta'          => fn() => files_action_update_meta($conn, $body),
+    'save_config'          => fn() => files_action_save_config($body),
+    'get_relations_config' => fn() => files_action_get_relations_config(),
+    'get_related_records'  => fn() => files_action_get_related_records($conn),
 ], 'api_files', 'Unknown action or empty request payload.');
 
 // Handle list action
-function actionList($conn): void
+function files_action_list($conn): void
 {
 
     requireLogin();
@@ -202,7 +202,7 @@ function actionList($conn): void
     $countSQL = "SELECT COUNT(*) AS cnt FROM " . sys_table('files') . " f WHERE {$whereSQL}";
     $resCount = pg_query_params($conn, $countSQL, $params);
     if (!$resCount) {
-        error_log('api_files actionList count failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_list count failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
     $total = (int) pg_fetch_result($resCount, 0, 'cnt');
@@ -222,7 +222,7 @@ function actionList($conn): void
     $paramsList[] = $offset;
     $resList = pg_query_params($conn, $listSQL, $paramsList);
     if (!$resList) {
-        error_log('api_files actionList list failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_list list failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -240,7 +240,7 @@ function actionList($conn): void
 }
 
 // Handle get config action
-function actionGetConfig(): void
+function files_action_get_config(): void
 {
 
     requireWrite();
@@ -248,7 +248,7 @@ function actionGetConfig(): void
 }
 
 // Provide relation definitions for frontend upload form
-function actionGetRelationsConfig(): void
+function files_action_get_relations_config(): void
 {
 
     requireLogin();
@@ -258,7 +258,7 @@ function actionGetRelationsConfig(): void
 }
 
 // Handle file upload action
-function actionUpload($conn): void
+function files_action_upload($conn): void
 {
 
     // Uploading is a write operation — restrict to write roles, matching
@@ -400,7 +400,7 @@ function actionUpload($conn): void
     ];
     $res = pg_query_params($conn, $sql, $params);
     if (!$res) {
-        error_log('api_files actionUpload insert failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_upload insert failed: ' . pg_last_error($conn));
         unlink($destination);
         jsonError('Database insert failed.', 500);
     }
@@ -411,7 +411,7 @@ function actionUpload($conn): void
 }
 
 // A PostgreSQL text[] literal from a list of names, for the two name-list predicates
-// in actionList(). Both bind their list as a single parameter, so the literal has to be
+// in files_action_list(). Both bind their list as a single parameter, so the literal has to be
 // assembled here rather than expanded into placeholders.
 //
 // Quoting every element and escaping backslashes and double quotes is what stops a name
@@ -462,7 +462,7 @@ function uuidListToPgArray(mixed $uuids): string
 // attachment, and consults the per-user table scope as well as record ownership.
 //
 // Unattached files (no related_table, or no related_id) belong to no record and stay
-// editable by any logged-in user — the same rule actionList() applies when listing
+// editable by any logged-in user — the same rule files_action_list() applies when listing
 // them. A file pointing at a table that is no longer in the schema config fails closed
 // instead: there is nothing left to check ownership against, and a stuck orphan is a
 // better outcome than an unguarded one. The error_log line is there to make that case
@@ -527,7 +527,7 @@ function tagsToPgArray(string $tagsInput): ?string
 }
 
 // Handle bulk soft delete over a selection of files
-function actionMassDelete($conn, array $body): void
+function files_action_mass_delete($conn, array $body): void
 {
 
     requireWrite();
@@ -540,14 +540,14 @@ function actionMassDelete($conn, array $body): void
             RETURNING id";
     $res = pg_query_params($conn, $sql, [$pgUuids]);
     if (!$res) {
-        error_log('api_files actionMassDelete failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_mass_delete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
     jsonSuccess(['deleted' => pg_num_rows($res)]);
 }
 
 // Handle bulk tagging — appends the given tags to each selected file (deduplicated)
-function actionMassTag($conn, array $body): void
+function files_action_mass_tag($conn, array $body): void
 {
 
     requireWrite();
@@ -565,7 +565,7 @@ function actionMassTag($conn, array $body): void
             RETURNING id";
     $res = pg_query_params($conn, $sql, [$pgUuids, $pgTags]);
     if (!$res) {
-        error_log('api_files actionMassTag failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_mass_tag failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
     jsonSuccess(['tagged' => pg_num_rows($res)]);
@@ -574,7 +574,7 @@ function actionMassTag($conn, array $body): void
 // Handle single-file inline metadata edit (grid-parity: editable display name + tags).
 // The physical file name (f.name) is immutable and is never modified here — only the
 // display_name label and the tag list are editable, matching the frontend affordances.
-function actionUpdateMeta($conn, array $body): void
+function files_action_update_meta($conn, array $body): void
 {
 
     requireWrite();
@@ -615,7 +615,7 @@ function actionUpdateMeta($conn, array $body): void
         . " WHERE uuid = $" . $idx . " AND deleted_at IS NULL RETURNING uuid, name, display_name, tags";
     $res = pg_query_params($conn, $sql, $params);
     if (!$res) {
-        error_log('api_files actionUpdateMeta failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_update_meta failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
     if (pg_num_rows($res) === 0) {
@@ -625,7 +625,7 @@ function actionUpdateMeta($conn, array $body): void
 }
 
 // Handle soft delete action
-function actionDelete($conn, array $body): void
+function files_action_delete($conn, array $body): void
 {
 
     requireWrite();
@@ -639,7 +639,7 @@ function actionDelete($conn, array $body): void
     $sql = "UPDATE " . sys_table('files') . " SET deleted_at = NOW() WHERE uuid = $1 AND deleted_at IS NULL RETURNING id";
     $res = pg_query_params($conn, $sql, [$uuid]);
     if (!$res) {
-        error_log('api_files actionDelete failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_delete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -651,7 +651,7 @@ function actionDelete($conn, array $body): void
 }
 
 // Handle config save action (supports multiple relations)
-function actionSaveConfig(array $body): void
+function files_action_save_config(array $body): void
 {
 
     requireWrite();
@@ -704,7 +704,7 @@ function actionSaveConfig(array $body): void
 }
 
 // Fetch records for dynamically selected relation table
-function actionGetRelatedRecords($conn): void
+function files_action_get_related_records($conn): void
 {
 
     requireLogin();
@@ -741,7 +741,7 @@ function actionGetRelatedRecords($conn): void
     $sqlCols = "SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2";
     $resCols = pg_query_params($conn, $sqlCols, [$pgSchema, $reqTable]);
     if (!$resCols) {
-        error_log('api_files actionGetRelatedRecords schema check failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_get_related_records schema check failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -771,7 +771,7 @@ function actionGetRelatedRecords($conn): void
     $sql = "SELECT id, {$quotedCol1} AS val1 {$sel2} FROM {$quotedSchema}.{$quotedTable} ORDER BY id DESC LIMIT 500";
     $res = pg_query($conn, $sql);
     if (!$res) {
-        error_log('api_files actionGetRelatedRecords query failed: ' . pg_last_error($conn));
+        error_log('api_files files_action_get_related_records query failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -803,7 +803,7 @@ function actionGetRelatedRecords($conn): void
  * JSON it is posted, with no per-field validation — so the stored allowlist alone
  * is not a trustworthy input. An extension absent from this map (svg, php, html…)
  * can never be content-checked, so it must never be accepted, whatever the config
- * says. See actionUpload(), which intersects the two.
+ * says. See files_action_upload(), which intersects the two.
  */
 function verifiableExtensionMap(): array
 {

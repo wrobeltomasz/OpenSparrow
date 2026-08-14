@@ -7,16 +7,38 @@
 
 declare(strict_types=1);
 
-// api.php — Main CRUD/data REST API for the frontend (core data endpoint, largest file)
-// Auth gate: session + hard lifetime/UA enforcement + CSRF for POST/PATCH/DELETE; admin blocked, viewer read-only
-// Routes by HTTP method against the "schema" config tables; also self-service profile actions (update_avatar, change_password), i18n_bundle, calendar/board move, mass insert
-// Records stored in PostgreSQL; every write does log_user_action() audit, snapshot_record(), and automations (automations.php)
-// All identifiers via pg_ident(), values parameterized; uses sys_table() for system tables
+// api.php — Main CRUD/data REST API for the frontend: front controller only.
+//
+// The route bodies live in per-domain modules under includes/frontapi/ (outside the
+// docroot), mirroring how public/admin/api.php dispatches to includes/admin/. Unlike
+// those, the frontend modules take an explicit FrontApiContext / FrontApiWriteContext
+// instead of reading ambient variables, so PHPStan can verify them — see
+// includes/frontapi/context.php and docs/MAINTENANCE.md.
+//
+// This file owns, in order:
+//   1. the auth gate, staleness enforcement and header-CSRF (os_api_bootstrap),
+//   2. the self-service profile actions, which are permitted for EVERY authenticated
+//      user and therefore run ahead of the role gates,
+//   3. the admin block and the viewer read-only block,
+//   4. the schema load and the access-filtered copy sent to clients,
+//   5. read-route dispatch,
+//   6. the shared write preamble — body decode, safe_table(), require_table_access()
+//      ONCE for all six mutating routes — and write-route dispatch.
+//
+// public/api/fk.php re-enters this file with $_GET['api'] = 'list' and two constants
+// defined, to reuse the list route for FK label lookups; it must stay re-enterable.
 
 use App\Security\UserRole;
 
 require_once __DIR__ . '/../includes/bootstrap.php';
 require_once __DIR__ . '/../includes/config_store.php';
+require_once __DIR__ . '/../includes/frontapi/context.php';
+
+/** Loads a route module and returns its handler, ready to call. */
+$osFrontApiHandler = static function (string $module, string $function): callable {
+    require_once __DIR__ . '/../includes/frontapi/' . $module . '.php';
+    return $function;
+};
 
 // Auth gate, staleness enforcement and header-CSRF for POST/PATCH/DELETE.
 // connect=false: the DB connection is opened per-branch below.
@@ -25,96 +47,12 @@ os_api_bootstrap(['connect' => false]);
 $method = $_SERVER['REQUEST_METHOD'];
 $role = UserRole::fromSession();
 
-// Self-service profile actions — permitted for every authenticated user regardless of role
+// Self-service profile actions — permitted for every authenticated user regardless of
+// role, so they answer BEFORE the admin and viewer gates below. Do not move them.
 $profileAction = $_GET['action'] ?? '';
 if (in_array($profileAction, ['update_avatar', 'change_password'], true)) {
-    $conn = db_connect();
-    $body = json_decode(file_get_contents('php://input'), true) ?? [];
-    $uid  = (int)$_SESSION['user_id'];
-// POST: save the chosen avatar colour (palette index) or clear it (null = default colour)
-    if ($profileAction === 'update_avatar' && $method === 'POST') {
-        $avatarId = array_key_exists('avatar_id', $body) ? $body['avatar_id'] : false;
-        if ($avatarId === false) {
-            http_response_code(400);
-            exit(json_encode(['error' => 'avatar_id required']));
-        }
-        // Bound by the palette itself (includes/page_helpers.php) so the two cannot drift.
-        $avatarMax = count(OS_AVATAR_COLORS);
-        if ($avatarId !== null && (!is_int($avatarId) || $avatarId < 1 || $avatarId > $avatarMax)) {
-            http_response_code(400);
-            exit(json_encode(['error' => "avatar_id must be 1-$avatarMax or null"]));
-        }
-
-        $sql = 'UPDATE ' . sys_table('users') . ' SET avatar_id = $1 WHERE id = $2';
-        $res = @pg_query_params($conn, $sql, [$avatarId, $uid]);
-        if (!$res) {
-            http_response_code(500);
-            exit(json_encode(['error' => 'Database error']));
-        }
-
-        $_SESSION['avatar_id'] = $avatarId;
-        exit(json_encode(['ok' => true]));
-    }
-
-    // POST: change own password — verify current, enforce minimum length, rehash
-    if ($profileAction === 'change_password' && $method === 'POST') {
-        $current = $body['current_password'] ?? '';
-        $new     = $body['new_password'] ?? '';
-        if ($current === '' || $new === '') {
-            http_response_code(400);
-            exit(json_encode(['error' => 'Both passwords are required.']));
-        }
-        if (strlen($new) < 8) {
-            http_response_code(422);
-            exit(json_encode(['error' => 'New password must be at least 8 characters.']));
-        }
-
-        $sqlFetch = 'SELECT password_hash, salt FROM ' . sys_table('users') . ' WHERE id = $1';
-        $resFetch = @pg_query_params($conn, $sqlFetch, [$uid]);
-        if (!$resFetch) {
-            http_response_code(500);
-            exit(json_encode(['error' => 'Database error']));
-        }
-
-        // A live session whose user row has since been deleted returns no row here.
-        // Guard before password_verify(): under strict_types a null hash is a TypeError,
-        // and this block runs outside the try/catch below, so it would be a blank 500.
-        $row = pg_fetch_assoc($resFetch);
-        if (!is_array($row) || ($row['password_hash'] ?? null) === null) {
-            http_response_code(401);
-            exit(json_encode(['error' => 'Account no longer exists.']));
-        }
-
-        $salt     = $row['salt'] ?? '';
-        $toVerify = $salt !== '' ? $salt . $current : $current;
-        if (!password_verify($toVerify, $row['password_hash'])) {
-            http_response_code(422);
-            exit(json_encode(['error' => 'Current password is incorrect.']));
-        }
-
-        $newSalt    = bin2hex(random_bytes(32));
-        $newHash    = password_hash($newSalt . $new, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
-        $sqlUpd = 'UPDATE ' . sys_table('users')
-            . ' SET password_hash = $1, salt = $2, password_algo = $3, password_params = $4 WHERE id = $5';
-        $params = [
-            $newHash,
-            $newSalt,
-            'argon2id',
-            json_encode(ARGON2_OPTIONS),
-            $uid,
-        ];
-        $resUpd = @pg_query_params($conn, $sqlUpd, $params);
-        if (!$resUpd) {
-            http_response_code(500);
-            exit(json_encode(['error' => 'Database error']));
-        }
-
-        log_user_action($conn, $uid, 'CHANGE_PASSWORD');
-        exit(json_encode(['ok' => true]));
-    }
-
-    http_response_code(405);
-    exit(json_encode(['error' => 'Method not allowed']));
+    $handler = $osFrontApiHandler('profile', 'frontapi_profile');
+    $handler(db_connect(), $method, $profileAction, (int)$_SESSION['user_id']);
 }
 
 // Translation bundle — all authenticated users, no DB required
@@ -157,932 +95,50 @@ $schemaJson = json_encode($schemaPublic);
 $conn = db_connect();
 require_once __DIR__ . '/../includes/automations.php';
 
+// The context every route module reads. $schema is the FULL document (config-supplied
+// lookups resolve against it); $schemaJson is the filtered one that may be sent out.
+$osCtx = new FrontApiContext(
+    $conn,
+    $schema,
+    (string) $schemaJson,
+    $role,
+    (int)$_SESSION['user_id'],
+);
+
+// GET routes: ?api=<name> => [module, handler]. api=schema stays inline — a module
+// for one echo would cost more than it explains.
+$osReadRoutes = [
+    'workflows'       => ['workflows', 'frontapi_workflows'],
+    'dashboard'       => ['dashboard', 'frontapi_dashboard'],
+    'calendar'        => ['calendar', 'frontapi_calendar'],
+    'board'           => ['board', 'frontapi_board'],
+    'm2m_rows'        => ['m2m', 'frontapi_m2m_rows'],
+    'image_rows'      => ['m2m', 'frontapi_image_rows'],
+    'list'            => ['list', 'frontapi_list'],
+    'subtable_counts' => ['list', 'frontapi_subtable_counts'],
+];
+
 try {
-// GET: SCHEMA DATA
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'schema') {
+    $apiParam = $_GET['api'] ?? '';
+
+    // GET: SCHEMA DATA
+    if ($method === 'GET' && $apiParam === 'schema') {
         echo $schemaJson;
         exit;
     }
 
-    // GET: WORKFLOWS DATA
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'workflows') {
-        $workflows = config_get('workflows');
-        if ($workflows === null) {
-            echo json_encode(['menu_name' => 'Workflows', 'workflows' => []]);
-            exit;
-        }
-
-        // Two filters, and both are needed. The first is the workflow's own scope: an
-        // admin grants workflows by id like views and printouts. The second keeps the
-        // table rule honest — every step writes rows into its target table and that
-        // write is gated by the mutating branch below, so a workflow granted to someone
-        // whose tables do not cover its steps would open a wizard that 403s partway
-        // through and name the step tables on the way. Granting a workflow does NOT
-        // grant its tables; the two are ticked separately and both have to hold.
-        if (is_array($workflows['workflows'] ?? null)) {
-            $workflows['workflows'] = filter_by_user_access('workflows', $workflows['workflows']);
-            $workflows['workflows'] = array_values(array_filter(
-                $workflows['workflows'],
-                'workflow_tables_in_scope'
-            ));
-        }
-
-        echo json_encode($workflows);
-        exit;
-    }
-
-    // GET: DASHBOARD DATA
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'dashboard') {
-        require_once __DIR__ . '/../includes/dashboard_query.php';
-        $dashboard = config_get('dashboard');
-        if ($dashboard === null) {
-            echo json_encode(['layout' => [], 'widgets' => []]);
-            exit;
-        }
-// Include menu config so frontend can build the sidebar
-        $response = [
-            'menu_name' => $dashboard['menu_name'] ?? 'Dashboard',
-            'menu_icon' => $dashboard['menu_icon'] ?? '',
-            'hidden' => !empty($dashboard['hidden']),
-            'layout' => $dashboard['layout'] ?? [],
-            'widgets' => []
-        ];
-        foreach ($dashboard['widgets'] ?? [] as $widget) {
-            $table = $widget['table'] ?? '';
-            if (!$table) {
-                continue;
-            }
-            // Config-supplied table: skip the widget rather than 403 the whole
-            // dashboard — one out-of-scope widget must not blank the page.
-            if (!user_can_access_table($table)) {
-                continue;
-            }
-
-            try {
-                $tableCfg = safe_table($schema, $table);
-            } catch (Throwable $e) {
-                continue;
-            }
-
-            $schemaName = $tableCfg['schema'] ?? 'public';
-            $qType = $widget['query']['type'] ?? 'list';
-            $data = null;
-            $sqlWhere = '';
-// Build WHERE from structured conditions (column validated against schema, values escaped)
-            $conditions = is_array($widget['query']['conditions'] ?? null) ? $widget['query']['conditions'] : [];
-            // Parenthesised so the appended date-range AND below cannot rebind a
-            // widget-level OR (AND binds tighter than OR in SQL).
-            $condSql = dashboard_conditions_sql($conn, $tableCfg, $conditions);
-
-            // Apply Global Date Filter if requested and target matches.
-            // $dateSqlPrev covers the equally long window directly before the
-            // current one and powers the previous-period delta on stat cards.
-            $dateFilter = $_GET['date_filter'] ?? 'all';
-            $dateTarget = $_GET['date_target'] ?? 'all';
-            $widgetTargetId = $widget['id'] ?? $widget['table'] ?? '';
-            $dateSqlCur  = null;
-            $dateSqlPrev = null;
-            if ($dateFilter !== 'all' && ($dateTarget === 'all' || $dateTarget === $widgetTargetId)) {
-                // First column that represents a date/time ('time' also matches 'timestamp')
-                $dateCol = array_find_key($tableCfg['columns'], static function (array $cCfg): bool {
-                    $cType = strtolower($cCfg['type'] ?? '');
-                    return str_contains($cType, 'date') || str_contains($cType, 'time');
-                });
-
-                if ($dateCol) {
-                    $dc = pg_ident($dateCol);
-                    [$dateSqlCur, $dateSqlPrev] = match ($dateFilter) {
-                        'today' => [
-                            $dc . ' >= CURRENT_DATE',
-                            '(' . $dc . " >= CURRENT_DATE - INTERVAL '1 day' AND " . $dc . ' < CURRENT_DATE)',
-                        ],
-                        '7d' => [
-                            $dc . " >= CURRENT_DATE - INTERVAL '7 days'",
-                            '(' . $dc . " >= CURRENT_DATE - INTERVAL '14 days' AND " . $dc . " < CURRENT_DATE - INTERVAL '7 days')",
-                        ],
-                        '30d' => [
-                            $dc . " >= CURRENT_DATE - INTERVAL '30 days'",
-                            '(' . $dc . " >= CURRENT_DATE - INTERVAL '60 days' AND " . $dc . " < CURRENT_DATE - INTERVAL '30 days')",
-                        ],
-                        'this_month' => [
-                            "DATE_TRUNC('month', " . $dc . ") = DATE_TRUNC('month', CURRENT_DATE)",
-                            "DATE_TRUNC('month', " . $dc . ") = DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'",
-                        ],
-                        default => [null, null],
-                    };
-                }
-            }
-
-            $whereParts = array_values(array_filter([$condSql, $dateSqlCur ?? '']));
-            $sqlWhere = empty($whereParts) ? '' : ' WHERE ' . implode(' AND ', $whereParts);
-            $sqlWherePrev = null;
-            if ($dateSqlPrev !== null) {
-                $prevParts = array_values(array_filter([$condSql, $dateSqlPrev]));
-                $sqlWherePrev = ' WHERE ' . implode(' AND ', $prevParts);
-            }
-
-            $result = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $widget['query'] ?? [], $widget['display_columns'] ?? [id_column()], $sqlWhere);
-            $data = $result['data'];
-            if (isset($result['sql_error'])) {
-                $widget['sql_error'] = $result['sql_error'];
-            }
-            if (isset($result['column_type'])) {
-                $widget['column_type'] = $result['column_type'];
-            }
-            if (isset($result['column_types'])) {
-                $widget['column_types'] = $result['column_types'];
-            }
-
-            // Previous-period comparison only applies to single-value widgets
-            if ($sqlWherePrev !== null && in_array($qType, ['count', 'sum', 'avg'], true) && !isset($result['sql_error'])) {
-                $prevResult = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $widget['query'] ?? [], $widget['display_columns'] ?? [id_column()], $sqlWherePrev);
-                if (!isset($prevResult['sql_error'])) {
-                    $widget['prev_data'] = $prevResult['data'];
-                }
-            }
-
-            $widget['data'] = $data;
-            $response['widgets'][] = $widget;
-        }
-
-        echo json_encode($response);
-        exit;
-    }
-
-    // GET: CALENDAR DATA
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'calendar') {
-        $calendar = config_get('calendar');
-        if ($calendar === null) {
-            echo json_encode(['events' => []]);
-            exit;
-        }
-
-        // Accept optional year/month params so the frontend can request only the
-        // visible month. Fall back to the current month when omitted.
-        $reqYear  = filter_var($_GET['year']  ?? date('Y'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 9999]]);
-        $reqMonth = filter_var($_GET['month'] ?? date('n'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 12]]);
-        if ($reqYear  === false) {
-            $reqYear  = (int)date('Y');
-        }
-        if ($reqMonth === false) {
-            $reqMonth = (int)date('n');
-        }
-        $dateFrom = sprintf('%04d-%02d-01', $reqYear, $reqMonth);
-        $dateTo   = date('Y-m-t', mktime(0, 0, 0, $reqMonth, 1, $reqYear));
-
-        $events = [];
-        foreach ($calendar['sources'] ?? [] as $src) {
-            $table = $src['table'] ?? '';
-            if (!$table) {
-                continue;
-            }
-            // Config-supplied: drop the source, keep the rest of the calendar.
-            if (!user_can_access_table($table)) {
-                continue;
-            }
-
-            try {
-                $tableCfg = safe_table($schema, $table);
-            } catch (Throwable $e) {
-                continue;
-            }
-
-            $schemaName = $tableCfg['schema'] ?? 'public';
-            $idCol = id_column();
-            $titleCol = $src['title_column'] ?? $idCol;
-            // Optional second column rendered after the title on the event tile.
-            // Ignored when unset or pointing at a column the table no longer has.
-            $subCol = $src['subtitle_column'] ?? '';
-            if ($subCol !== '' && !isset($tableCfg['columns'][$subCol])) {
-                $subCol = '';
-            }
-            $dateCol = $src['date_column'] ?? '';
-            $color = $src['color'] ?? '#3b82f6';
-            if (isset($tableCfg['columns'][$dateCol])) {
-                $cols = column_list($tableCfg);
-                $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
-
-                $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
-
-                // Same row-level ownership rule as api=list, applied per source table:
-                // a calendar must not surface events off records the user cannot see.
-                $qParams  = [$dateFrom, $dateTo];
-                $ownerSql = '';
-                if (!empty($tableCfg['owner_restricted'])) {
-                    $ownerSql  = owner_restriction_sql('_t.' . pg_ident($idCol), 3, 4);
-                    $qParams[] = $table;
-                    $qParams[] = (int)$_SESSION['user_id'];
-                }
-
-                $sql = sprintf(
-                    'SELECT %s FROM %s.%s AS _t WHERE %s IS NOT NULL AND %s BETWEEN $1 AND $2%s',
-                    $selectSql,
-                    pg_ident($schemaName),
-                    pg_ident($table),
-                    pg_ident($dateCol),
-                    pg_ident($dateCol),
-                    $ownerSql
-                );
-                $res = @pg_query_params($conn, $sql, $qParams);
-                if ($res) {
-                    $rows = [];
-                    while ($r = pg_fetch_assoc($res)) {
-                        $rows[] = $r;
-                    }
-                    pg_free_result($res);
-                    $rows = map_fk_display($schema, $tableCfg, $rows);
-                    foreach ($rows as $r) {
-                        $events[] = [
-                            'id' => $r[$idCol],
-                            'table' => $table,
-                            'title' => $r[$titleCol] ?? 'No title',
-                            'subtitle' => $subCol !== ''
-                                ? (string)($r[$subCol . '__display'] ?? $r[$subCol] ?? '')
-                                : '',
-                            'date' => substr($r[$dateCol], 0, 10),
-                            'color' => $color,
-                            'icon' => $src['icon'] ?? null,
-                            'rowData' => $r
-                        ];
-                    }
-                }
-            }
-        }
-
-        echo json_encode([
-            'menu_name' => $calendar['menu_name'] ?? 'Calendar',
-            'menu_icon' => $calendar['menu_icon'] ?? '',
-            'hidden' => !empty($calendar['hidden']),
-            'events' => $events
-        ]);
-        exit;
-    }
-
-    // GET: BOARD (KANBAN) DATA
-    // Returns the board configuration plus its lanes (one per status value) and
-    // the records of the configured table grouped client-side by their status.
-    // Boards are a named list (config key "board" -> "boards": [...]); ?board=
-    // selects which one, falling back to the first configured board.
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'board') {
-        $boardsCfg = config_get('board') ?? [];
-        $boardId   = substr($_GET['board'] ?? '', 0, 64);
-        // Per-user board scope. Filtering the list up front rather than gating the
-        // resolved board matters because of the fallback below: picking "the first
-        // board" out of the unfiltered config would hand a restricted user a board they
-        // were never granted whenever ?board= is missing or does not match.
-        $boards   = filter_by_user_access('boards', $boardsCfg['boards'] ?? []);
-        $boardCfg = null;
-        foreach ($boards as $b) {
-            if (($b['id'] ?? '') === $boardId) {
-                $boardCfg = $b;
-                break;
-            }
-        }
-        if ($boardCfg === null) {
-            $boardCfg = $boards[0] ?? [];
-        }
-
-        $meta = [
-            'menu_name'     => $boardCfg['menu_name'] ?? 'Board',
-            'menu_icon'     => $boardCfg['menu_icon'] ?? '',
-            'hidden'        => !empty($boardCfg['hidden']),
-            'configured'    => false,
-            'table'         => $boardCfg['table'] ?? '',
-            'status_column' => $boardCfg['status_column'] ?? '',
-            'columns'       => [],
-            'cards'         => [],
-            'can_edit'      => $role !== UserRole::Viewer,
-        ];
-
-        $table     = $boardCfg['table'] ?? '';
-        $statusCol = $boardCfg['status_column'] ?? '';
-        if ($table === '' || $statusCol === '') {
-            echo json_encode($meta);
-            exit;
-        }
-        // Config-supplied: an unconfigured-looking board (empty lanes) is the same
-        // answer this branch already gives for a broken binding. The binding itself is
-        // blanked first — the table and status column are schema metadata, and naming
-        // them to someone who may not open that table hands over exactly what the
-        // allow-list exists to withhold.
-        if (!user_can_access_table($table)) {
-            $meta['table']         = '';
-            $meta['status_column'] = '';
-            echo json_encode($meta);
-            exit;
-        }
-
-        try {
-            $tableCfg = safe_table($schema, $table);
-        } catch (Throwable $e) {
-            echo json_encode($meta);
-            exit;
-        }
-
-        if (!isset($tableCfg['columns'][$statusCol])) {
-            echo json_encode($meta);
-            exit;
-        }
-
-        $schemaName   = $tableCfg['schema'] ?? 'public';
-        $idCol        = id_column();
-        $titleCol     = $boardCfg['title_column'] ?? '';
-        if ($titleCol === '' || !isset($tableCfg['columns'][$titleCol])) {
-            $titleCol = $idCol;
-        }
-        $defaultColor = $boardCfg['color'] ?? '#005A9E';
-
-        // Card detail rows: only configured columns that still exist on the table.
-        $cardCols = [];
-        foreach (($boardCfg['card_columns'] ?? []) as $c) {
-            if (is_string($c) && isset($tableCfg['columns'][$c]) && $c !== $statusCol) {
-                $cardCols[] = $c;
-            }
-        }
-
-        // Lanes: an enum status column defines lanes (with colors) from its
-        // declared options; any other column derives lanes from the distinct
-        // values present in the data.
-        $statusDef  = $tableCfg['columns'][$statusCol];
-        $statusType = strtolower($statusDef['type'] ?? '');
-        $enumColors = is_array($statusDef['enum_colors'] ?? null) ? $statusDef['enum_colors'] : [];
-        $lanes      = [];
-        if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
-            foreach ($statusDef['options'] as $opt) {
-                $val = (string)$opt;
-                $lanes[] = [
-                    'value' => $val,
-                    'label' => $val,
-                    'color' => $enumColors[$val] ?? $defaultColor,
-                ];
-            }
-        } else {
-            // Lanes derived from the data must be derived from the *visible* data, or a
-            // restricted board grows empty lanes that only exist in other users' records.
-            // The enum branch above needs no filter: those lanes come from the config.
-            $laneParams = [];
-            $laneOwner  = '';
-            if (!empty($tableCfg['owner_restricted'])) {
-                $laneOwner  = owner_restriction_sql('_t.' . pg_ident($idCol), 1, 2);
-                $laneParams = [$table, (int)$_SESSION['user_id']];
-            }
-            $sqlDistinct = sprintf(
-                'SELECT DISTINCT %s AS v FROM %s.%s AS _t WHERE %s IS NOT NULL%s ORDER BY 1',
-                pg_ident($statusCol),
-                pg_ident($schemaName),
-                pg_ident($table),
-                pg_ident($statusCol),
-                $laneOwner
-            );
-            $rd = @pg_query_params($conn, $sqlDistinct, $laneParams);
-            if ($rd) {
-                while ($r = pg_fetch_assoc($rd)) {
-                    $val = (string)$r['v'];
-                    $lanes[] = ['value' => $val, 'label' => $val, 'color' => $defaultColor];
-                }
-                pg_free_result($rd);
-            }
-        }
-
-        // Records — newest first; FK columns resolved to their display labels.
-        $cols       = column_list($tableCfg);
-        $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $cols)));
-        $cards = [];
-        $selectSql  = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
-
-        $cardParams = [];
-        $cardWhere  = '';
-        if (!empty($tableCfg['owner_restricted'])) {
-            $cardWhere  = ' WHERE TRUE' . owner_restriction_sql('_t.' . pg_ident($idCol), 1, 2);
-            $cardParams = [$table, (int)$_SESSION['user_id']];
-        }
-        $sql = sprintf(
-            'SELECT %s FROM %s.%s AS _t%s ORDER BY %s DESC',
-            $selectSql,
-            pg_ident($schemaName),
-            pg_ident($table),
-            $cardWhere,
-            pg_ident($idCol)
-        );
-        $res  = @pg_query_params($conn, $sql, $cardParams);
-        $rows = [];
-        if ($res) {
-            while ($r = pg_fetch_assoc($res)) {
-                $rows[] = $r;
-            }
-            pg_free_result($res);
-        }
-        $rows = map_fk_display($schema, $tableCfg, $rows);
-        foreach ($rows as $r) {
-            $fields = [];
-            foreach ($cardCols as $c) {
-                $label = $tableCfg['columns'][$c]['display_name'] ?? $c;
-                $value = $r[$c . '__display'] ?? $r[$c] ?? '';
-                if ($value === null || $value === '') {
-                    continue;
-                }
-                $fields[] = ['label' => $label, 'value' => $value];
-            }
-            $cards[] = [
-                'id'      => $r[$idCol],
-                'status'  => (string)($r[$statusCol] ?? ''),
-                'title'   => $r[$titleCol . '__display'] ?? $r[$titleCol] ?? ('#' . $r[$idCol]),
-                'fields'  => $fields,
-                'rowData' => $r,
-            ];
-        }
-
-        $meta['configured']    = true;
-        $meta['title_column']  = $titleCol;
-        $meta['default_color'] = $defaultColor;
-        $meta['status_label']  = $statusDef['display_name'] ?? $statusCol;
-        $meta['table_label']   = $tableCfg['display_name'] ?? $table;
-        $meta['columns']       = $lanes;
-        $meta['cards']         = $cards;
-        echo json_encode($meta);
-        exit;
-    }
-
-    // GET: BATCH M2M RELATED LABELS FOR GRID COLUMN
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'm2m_rows') {
-        $table   = $_GET['table']     ?? '';
-        $m2mIdx  = (int)($_GET['m2m_index'] ?? 0);
-        $idsRaw  = $_GET['ids']       ?? '';
-        if (!isset($schema['tables'][$table])) {
-            exit(json_encode(['data' => (object)[]]));
-        }
-        require_table_access($table);
-
-        $ids = array_values(array_filter(explode(',', $idsRaw), 'ctype_digit'));
-        if (empty($ids)) {
-            exit(json_encode(['data' => (object)[]]));
-        }
-
-        $m2mList = $schema['tables'][$table]['many_to_many'] ?? [];
-        if (!isset($m2mList[$m2mIdx])) {
-            exit(json_encode(['data' => (object)[]]));
-        }
-
-        $cfg        = $m2mList[$m2mIdx];
-        $jt         = $cfg['junction_table'] ?? '';
-        $selfFk     = $cfg['self_fk']        ?? '';
-        $otherFk    = $cfg['other_fk']       ?? '';
-        $otherTable = $cfg['other_table']    ?? '';
-        $displayCol = $cfg['display_column'] ?? 'id';
-
-        if (
-            !$jt || !$selfFk || !$otherFk || !$otherTable
-            || !isset($schema['tables'][$jt], $schema['tables'][$otherTable])
-        ) {
-            exit(json_encode(['data' => (object)[]]));
-        }
-
-        $jtSchema = $schema['tables'][$jt]['schema']         ?? 'public';
-        $otSchema = $schema['tables'][$otherTable]['schema'] ?? 'public';
-        $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($ids)));
-
-        // The row ids come straight from the client, so an owner-restricted parent table
-        // needs the same filter the grid now applies — otherwise a user can enumerate ids
-        // and read the related labels of records they cannot see. The restriction is keyed
-        // on the *parent* record: in the junction table that is j.<self_fk>.
-        // Note this deliberately does not filter on $otherTable's own ownership; dropping
-        // links out of a record you do own would make the relation look broken.
-        $qParams  = $ids;
-        $ownerSql = '';
-        if (!empty($schema['tables'][$table]['owner_restricted'])) {
-            $ownerSql  = owner_restriction_sql('j.' . pg_ident($selfFk), count($ids) + 1, count($ids) + 2);
-            $qParams[] = $table;
-            $qParams[] = (int)$_SESSION['user_id'];
-        }
-
-        $sql = sprintf(
-            'SELECT j.%s AS sid, o.%s AS label
-               FROM %s.%s j
-               JOIN %s.%s o ON o."id" = j.%s
-              WHERE j.%s IN (%s)%s
-              ORDER BY j.%s, o.%s',
-            pg_ident($selfFk),
-            pg_ident($displayCol),
-            pg_ident($jtSchema),
-            pg_ident($jt),
-            pg_ident($otSchema),
-            pg_ident($otherTable),
-            pg_ident($otherFk),
-            pg_ident($selfFk),
-            $placeholders,
-            $ownerSql,
-            pg_ident($selfFk),
-            pg_ident($displayCol)
-        );
-        $res = @pg_query_params($conn, $sql, $qParams);
-        if (!$res) {
-            exit(json_encode(['data' => (object)[]]));
-        }
-
-        $data = [];
-        while ($row = pg_fetch_assoc($res)) {
-            $sid = (string)$row['sid'];
-            $data[$sid][] = (string)$row['label'];
-        }
-
-        exit(json_encode(['data' => $data ?: (object)[]]));
-    }
-
-    // GET: BATCH RECORD IMAGES FOR GRID COLUMN
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'image_rows') {
-        require_once __DIR__ . '/../includes/images.php';
-        $table = $_GET['table'] ?? '';
-        if (!isset($schema['tables'][$table]) || images_config($schema, $table) === null) {
-            exit(json_encode(['data' => (object)[]]));
-        }
-        require_table_access($table);
-
-        $ids = array_values(array_filter(explode(',', $_GET['ids'] ?? ''), 'ctype_digit'));
-        $ids = array_slice($ids, 0, 200);
-        if (empty($ids)) {
-            exit(json_encode(['data' => (object)[]]));
-        }
-
-        // The ids arrive from the client, so they are not necessarily rows api=list would
-        // have returned — drop the ones this user may not see before disclosing image
-        // uuids and names for them.
-        $ids = filter_visible_ids($conn, $schema['tables'][$table], $table, $ids, (int)$_SESSION['user_id']);
-        if (empty($ids)) {
-            exit(json_encode(['data' => (object)[]]));
-        }
-
-        $data = images_for_rows($conn, $table, $ids);
-        exit(json_encode(['data' => $data ?: (object)[]]));
-    }
-
-    // GET: LIST TABLE ROWS
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'list') {
-        $table = $_GET['table'] ?? '';
-        // A table name absent from the configured schema is bad client input, not a
-        // server fault: without this the RuntimeException from safe_table() falls
-        // through to the catch-all at the bottom and every typo, stale bookmark or
-        // probe answers 500 and writes an error_log entry. Mirrors the handling in
-        // api/mass_edit.php.
-        try {
-            $tableCfg = safe_table($schema, $table);
-        } catch (\RuntimeException $e) {
-            http_response_code(400);
-            exit(json_encode(['error' => 'Unknown table']));
-        }
-        // api/fk.php delegates here with a schema-supplied reference table and defines
-        // this constant to say so — that name never came from the client, so gating it
-        // would break FK dropdowns inside tables the user is allowed to use.
-        if (!defined('OS_TABLE_ACCESS_DELEGATED')) {
-            require_table_access($table);
-        }
-        $idCol = id_column();
-        $schemaName = $tableCfg['schema'] ?? 'public';
-        $cols = column_list($tableCfg);
-        $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
-        // The delegation above exempts the reference table from the per-user gate so
-        // FK labels keep resolving. Without narrowing the projection that exemption
-        // would hand back every configured column of a table the user may not open —
-        // api/fk.php therefore names the columns a dropdown actually needs, and the
-        // response carries nothing else. Intersected with the schema-derived list, so
-        // the constant can never introduce a column name of its own.
-        if (defined('OS_FK_LABEL_COLUMNS')) {
-            $keep = array_merge([$idCol], (array) OS_FK_LABEL_COLUMNS);
-            $selectCols = array_values(array_intersect($selectCols, $keep));
-        }
-        $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
-        $filterCol  = $_GET['filter_col'] ?? '';
-        $filterVal  = $_GET['filter_val'] ?? '';
-        $filterFrom = $_GET['filter_from'] ?? '';
-        $filterTo   = $_GET['filter_to'] ?? '';
-        $whereSql = '';
-        $params = [];
-        if ($filterCol !== '' && ($filterVal !== '' || $filterFrom !== '' || $filterTo !== '')) {
-            $allowedFilterCols = array_merge([$idCol], array_keys($tableCfg['columns'] ?? []));
-            // The same narrowing the projection above got, and for a stronger reason: a
-            // filter does not have to appear in the response to disclose what it matched.
-            // Left at the full column list, the FK exemption would let a restricted user
-            // filter an out-of-scope reference table on any column — and filter_from /
-            // filter_to make that a range probe, so a value they may not read is binary-
-            // searched out of which rows come back, keyed to the label that does show.
-            // Deriving the filter and the projection from one list is what makes the
-            // exemption "labels only" rather than "labels, plus anything you can ask
-            // yes/no questions about". The search clause below already spans $selectCols.
-            if (defined('OS_FK_LABEL_COLUMNS')) {
-                $allowedFilterCols = array_values(array_intersect($allowedFilterCols, $selectCols));
-            }
-            if (in_array($filterCol, $allowedFilterCols, true)) {
-                if ($filterFrom !== '' || $filterTo !== '') {
-                    // Half-open range filter [from, to) — used by time-series drill-down
-                    // so a chart bucket maps to every row within that period.
-                    $rangeClauses = [];
-                    if ($filterFrom !== '') {
-                        $rangeClauses[] = sprintf('%s >= $%d', pg_ident($filterCol), count($params) + 1);
-                        $params[] = $filterFrom;
-                    }
-                    if ($filterTo !== '') {
-                        $rangeClauses[] = sprintf('%s < $%d', pg_ident($filterCol), count($params) + 1);
-                        $params[] = $filterTo;
-                    }
-                    $whereSql = ' WHERE ' . implode(' AND ', $rangeClauses);
-                } else {
-                    $whereSql = sprintf(' WHERE %s = $1', pg_ident($filterCol));
-                    $params[] = $filterVal;
-                }
-            }
-        }
-
-        $search = trim($_GET['search'] ?? '');
-        if ($search !== '') {
-            $likeVal  = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
-            $paramNum = count($params) + 1;
-            $searchClauses = array_map(
-                fn($c) => sprintf('%s::text ILIKE $%d', pg_ident($c), $paramNum),
-                $selectCols
-            );
-            $whereSql .= ($whereSql !== '' ? ' AND ' : ' WHERE ') . '(' . implode(' OR ', $searchClauses) . ')';
-            $params[]  = $likeVal;
-        }
-
-        // Row-level ownership filter. Until now owner_restricted only gated writes and file
-        // downloads, so the grid handed every row of a restricted table to any authenticated
-        // user. Applying it here makes reads follow the same policy as can_access_record():
-        // the caller sees rows they own plus unowned rows. No admin exemption is needed —
-        // admin accounts are rejected from this whole API at the top of the file, so only
-        // editors and viewers reach here. Filtering in SQL rather than post-fetch keeps
-        // COUNT(1) OVER() and the LIMIT/OFFSET pagination consistent with what is visible.
-        //
-        // The id expression MUST be table-qualified: spw_record_owners has its own "id"
-        // column, so a bare `id` inside the NOT EXISTS subquery binds to ro.id and the
-        // filter silently degrades to a no-op.
-        if (!empty($tableCfg['owner_restricted'])) {
-            $ownerSql = owner_restriction_sql(
-                '_t.' . pg_ident($idCol),
-                count($params) + 1,
-                count($params) + 2
-            );
-            $params[] = $table;
-            $params[] = (int)$_SESSION['user_id'];
-            $whereSql .= ($whereSql === '' ? ' WHERE TRUE' : '') . $ownerSql;
-        }
-
-        $offset = max(0, (int)($_GET['offset'] ?? 0));
-
-        $defaultSort  = $tableCfg['default_sort'] ?? [];
-        $orderClauses = [];
-        if (is_array($defaultSort)) {
-            foreach ($defaultSort as $rule) {
-                $col = $rule['column'] ?? '';
-                $dir = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
-                if ($col !== '' && (isset($tableCfg['columns'][$col]) || $col === $idCol)) {
-                    $orderClauses[] = pg_ident($col) . ' ' . $dir;
-                }
-            }
-        }
-        if (empty($orderClauses)) {
-            $orderClauses[] = pg_ident($idCol) . ' DESC';
-        }
-
-        $initialLimit = (int)($tableCfg['initial_limit'] ?? 0);
-        $rowCap       = $initialLimit > 0 ? $initialLimit : MAX_LIST_ROWS;
-
-        $sql = sprintf(
-            'SELECT %s, COUNT(1) OVER() AS __spw_total FROM %s.%s AS _t%s ORDER BY %s LIMIT %d OFFSET %d',
-            $selectSql,
-            pg_ident($schemaName),
-            pg_ident($table),
-            $whereSql,
-            implode(', ', $orderClauses),
-            $rowCap,
-            $offset
-        );
-        $res = @pg_query_params($conn, $sql, $params);
-        if (!$res) {
-            error_log('[api][list] ' . pg_last_error($conn));
-            http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
-            exit;
-        }
-
-        $rows = [];
-        $dbTotal = 0;
-        while ($r = pg_fetch_assoc($res)) {
-            if ($dbTotal === 0) {
-                $dbTotal = (int)($r['__spw_total'] ?? 0);
-            }
-            unset($r['__spw_total']);
-            $rows[] = $r;
-        }
-        pg_free_result($res);
-        $rows = map_fk_display($schema, $tableCfg, $rows);
-        $rowCount = count($rows);
-        echo json_encode([
-            'columns'   => $selectCols,
-            'rows'      => $rows,
-            'truncated' => $rowCount === $rowCap,
-            'total'     => $dbTotal,
-            'table'     => [
-                'name'         => $table,
-                'display_name' => to_display_name($tableCfg),
-            ],
-        ]);
-        exit;
-    }
-
-    // GET: SUBTABLE COUNTS — total linked records per row across all configured subtables
-    if ($method === 'GET' && ($_GET['api'] ?? '') === 'subtable_counts') {
-        $table     = $_GET['table'] ?? '';
-        try {
-            $tableCfg = safe_table($schema, $table);
-        } catch (\RuntimeException $e) {
-            http_response_code(400);
-            exit(json_encode(['error' => 'Unknown table']));
-        }
-        require_table_access($table);
-        $subtables = $tableCfg['subtables'] ?? [];
-
-        if (empty($subtables)) {
-            exit(json_encode(['success' => true, 'counts' => (object)[]]));
-        }
-
-        $rawIds = $_GET['ids'] ?? '';
-        $ids = array_values(array_unique(array_filter(
-            array_map('intval', explode(',', $rawIds)),
-            fn($id) => $id > 0
-        )));
-
-        if (empty($ids)) {
-            exit(json_encode(['success' => true, 'counts' => (object)[]]));
-        }
-
-        // Filter the client-supplied parent ids once, before the per-subtable loop, so a
-        // restricted row yields no badge instead of a count of its children. Only the
-        // parent's ownership is applied — see the note on api=m2m_rows for why the child
-        // table's own restriction is deliberately not layered on top.
-        $ids = filter_visible_ids($conn, $tableCfg, $table, $ids, (int)$_SESSION['user_id']);
-        if (empty($ids)) {
-            exit(json_encode(['success' => true, 'counts' => (object)[]]));
-        }
-
-        $idCol  = id_column();
-        $counts = array_fill_keys(array_map('strval', $ids), 0);
-
-        foreach ($subtables as $sub) {
-            $subTable = $sub['table'] ?? '';
-            $fkCol    = $sub['foreign_key'] ?? '';
-            if ($subTable === '' || $fkCol === '') {
-                continue;
-            }
-            if (!isset($schema['tables'][$subTable])) {
-                continue;
-            }
-            // Mirrors the subtable filtering in edit.php: a count is still a fact
-            // about a table the user may not open, so out-of-scope children are
-            // skipped rather than counted.
-            if (!user_can_access_table($subTable)) {
-                continue;
-            }
-            $subCfg  = $schema['tables'][$subTable];
-            $allowed = array_merge([$idCol], array_keys($subCfg['columns'] ?? []));
-            if (!in_array($fkCol, $allowed, true)) {
-                continue;
-            }
-            $subSchema    = $subCfg['schema'] ?? 'public';
-            $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), range(0, count($ids) - 1)));
-            $sql = sprintf(
-                'SELECT %s AS fk_val, COUNT(*) AS cnt FROM %s.%s WHERE %s IN (%s) GROUP BY %s',
-                pg_ident($fkCol),
-                pg_ident($subSchema),
-                pg_ident($subTable),
-                pg_ident($fkCol),
-                $placeholders,
-                pg_ident($fkCol)
-            );
-            $res = @pg_query_params($conn, $sql, $ids);
-            if (!$res) {
-                continue;
-            }
-            while ($r = pg_fetch_assoc($res)) {
-                $key = (string)$r['fk_val'];
-                if (isset($counts[$key])) {
-                    $counts[$key] += (int)$r['cnt'];
-                }
-            }
-            pg_free_result($res);
-        }
-
-        $nonZero = array_filter($counts, fn($v) => $v > 0);
-        exit(json_encode(['success' => true, 'counts' => $nonZero ?: (object)[]]));
+    if ($method === 'GET' && isset($osReadRoutes[$apiParam])) {
+        [$module, $function] = $osReadRoutes[$apiParam];
+        $handler = $osFrontApiHandler($module, $function);
+        $handler($osCtx);
     }
 
     // POST: WORKFLOW STEP PROCEDURE (CALL a configured PostgreSQL procedure)
-    // Deliberately a top-level block: the generic mutating branch below resolves
+    // Deliberately outside the mutating group below: that group resolves
     // $body['table'] through safe_table(), and this request targets no schema table.
-    // CSRF for POST is already enforced by os_api_bootstrap(); Admin/Viewer roles are
-    // blocked by the gates above.
-    if ($method === 'POST' && ($_GET['api'] ?? '') === 'workflow_procedure') {
-        $body       = json_decode(file_get_contents('php://input') ?: '[]', true) ?: [];
-        $workflowId = (string)($body['workflow_id'] ?? '');
-        $stepIndex  = (int)($body['step_index'] ?? -1);
-        $stepValues = is_array($body['step_values'] ?? null) ? $body['step_values'] : [];
-
-        // Per-user workflow scope. The workflow id is request-supplied and selects what
-        // runs, so it is gated here: hiding a workflow from the menu and the list while
-        // leaving this endpoint open would make the whole scope cosmetic — a direct POST
-        // would still fire the procedure.
-        require_access('workflows', $workflowId);
-
-        // The procedure identity comes exclusively from the stored configuration —
-        // never from the request — so a client can only trigger what an admin
-        // already whitelisted by configuring it on this step.
-        $wfConfig = config_get('workflows') ?? [];
-        $procCfg  = null;
-        foreach ($wfConfig['workflows'] ?? [] as $wf) {
-            if (($wf['id'] ?? '') !== $workflowId) {
-                continue;
-            }
-            // The step-table half of the rule, the same one the api=workflows list and
-            // the menu apply. Both of those DISPLAY a workflow; this one FIRES it, and
-            // the gate above only covers the id — so without this a user granted a
-            // workflow whose steps target tables they were never granted could not see
-            // it anywhere, yet could still POST its id and run the procedure against
-            // those tables. This half only sees ids that match a configured workflow;
-            // anything else falls through to the 400 below. Note that the id gate above
-            // answers first and, for a RESTRICTED user, answers 403 for every id outside
-            // their allow-list — a workflow that does not exist included. So the
-            // "unknown is 400, not yours is 403" split that os_request_scope_violation()
-            // preserves holds here only for unrestricted users. That is deliberate: both
-            // cases are 403, so nothing is disclosed, and narrowing it further would mean
-            // telling a restricted caller which workflow ids exist.
-            if (!workflow_tables_in_scope($wf)) {
-                jsonError('Forbidden: no access to this workflow.', 403);
-            }
-            $procCfg = $wf['steps'][$stepIndex]['procedure'] ?? null;
-            break;
-        }
-
-        if (!is_array($procCfg) || empty($procCfg['enabled'])) {
-            http_response_code(400);
-            exit(json_encode(['error' => 'No procedure configured for this step.']));
-        }
-
-        $procSchema = trim((string)($procCfg['schema'] ?? ''));
-        $procName   = trim((string)($procCfg['name'] ?? ''));
-        if ($procSchema === '' || $procName === '') {
-            http_response_code(400);
-            exit(json_encode(['error' => 'Procedure configuration is incomplete.']));
-        }
-
-        // Resolve positional arguments. Field values come from the wizard's buffered
-        // step snapshots; literals from the configuration. Empty string becomes NULL
-        // so non-text parameters (int, date, …) do not fail on an untouched field.
-        $params = [];
-        foreach ($procCfg['params'] ?? [] as $param) {
-            if (($param['source'] ?? '') === 'literal') {
-                $value = (string)($param['value'] ?? '');
-            } else {
-                $srcStep  = (string)($param['step'] ?? '');
-                $srcField = (string)($param['field'] ?? '');
-                $value    = $stepValues[$srcStep][$srcField] ?? null;
-                if (is_bool($value)) {
-                    $value = $value ? 't' : 'f';
-                } elseif ($value !== null) {
-                    $value = (string)$value;
-                }
-            }
-            $params[] = ($value === '' || $value === null) ? null : $value;
-        }
-
-        $placeholders = [];
-        for ($p = 1; $p <= count($params); $p++) {
-            $placeholders[] = '$' . $p;
-        }
-        $callSql = 'CALL ' . pg_ident($procSchema) . '.' . pg_ident($procName)
-            . '(' . implode(', ', $placeholders) . ')';
-
-        // No explicit transaction: a PROCEDURE may COMMIT internally, which errors
-        // out inside an open transaction block. Async send + pg_get_result gives us a
-        // result handle even on failure, so we can return only the RAISE message
-        // (MESSAGE_PRIMARY) instead of the full pg_last_error() context.
-        if (!@pg_send_query_params($conn, $callSql, $params)) {
-            http_response_code(500);
-            exit(json_encode(['error' => 'Could not execute the procedure.']));
-        }
-
-        $procRes = pg_get_result($conn);
-        $sqlErr  = $procRes ? pg_result_error_field($procRes, PGSQL_DIAG_MESSAGE_PRIMARY) : null;
-        // Drain any further results so the connection stays usable for later requests.
-        while (pg_get_result($conn)) {
-            continue;
-        }
-
-        if ($sqlErr !== null && $sqlErr !== '') {
-            error_log('[workflow_procedure] ' . $procSchema . '.' . $procName . ': ' . $sqlErr);
-            http_response_code(400);
-            exit(json_encode(['error' => $sqlErr]));
-        }
-
-        log_user_action($conn, (int)$_SESSION['user_id'], 'CALL_PROCEDURE');
-        exit(json_encode(['success' => true]));
+    if ($method === 'POST' && $apiParam === 'workflow_procedure') {
+        $handler = $osFrontApiHandler('workflow_procedure', 'frontapi_workflow_procedure');
+        $handler($osCtx);
     }
 
     // POST / PATCH / DELETE
@@ -1095,429 +151,73 @@ try {
             http_response_code(400);
             exit(json_encode(['error' => 'Unknown table']));
         }
-        // Every mutating branch below (insert, update, delete, calendar/board move,
+        // Every mutating route below (insert, update, delete, calendar/board move,
         // mass insert) resolves its target from this one $table, so the gate belongs
-        // here — one place, no per-branch copies to forget.
+        // here — one place, no per-route copies to forget. The modules must never
+        // repeat it; tests/Security/FrontApiGuardsTest pins both halves of that.
         require_table_access($table);
         $schemaName = $tableCfg['schema'] ?? 'public';
         $idCol = id_column();
-// POST: CALENDAR MOVE EVENT (Drag & Drop functionality)
-        if ($method === 'POST' && ($body['api'] ?? '') === 'calendar' && ($body['action'] ?? '') === 'move_event') {
-            if ($role === UserRole::Viewer) {
-                http_response_code(403);
-                echo json_encode(['error' => 'Forbidden']);
-                exit;
+
+        $osWriteCtx = FrontApiWriteContext::fromApi(
+            $osCtx,
+            is_array($body) ? $body : [],
+            (string) $table,
+            $tableCfg,
+            (string) $schemaName,
+            $idCol,
+        );
+
+        // Ordered, not a map: these routes are selected by payload shape rather than a
+        // single action name, and the order below is the order the checks were written
+        // in — a PATCH carrying `data` must still be read as a PATCH.
+        $osWriteRoutes = [
+            [
+                fn(): bool => $method === 'POST'
+                    && ($body['api'] ?? '') === 'calendar'
+                    && ($body['action'] ?? '') === 'move_event',
+                'calendar',
+                'frontapi_calendar_move_event',
+            ],
+            [
+                fn(): bool => $method === 'POST'
+                    && ($body['api'] ?? '') === 'board'
+                    && ($body['action'] ?? '') === 'move_card',
+                'board',
+                'frontapi_board_move_card',
+            ],
+            [
+                fn(): bool => $method === 'PATCH' && isset($body['id'], $body['column'], $body['value']),
+                'record',
+                'frontapi_record_patch',
+            ],
+            [
+                fn(): bool => $method === 'POST' && isset($body['data']),
+                'record',
+                'frontapi_record_insert',
+            ],
+            [
+                fn(): bool => $method === 'POST'
+                    && ($body['action'] ?? '') === 'duplicate'
+                    && isset($body['id']),
+                'record',
+                'frontapi_record_duplicate',
+            ],
+            [
+                fn(): bool => $method === 'DELETE' && isset($body['id']),
+                'record',
+                'frontapi_record_delete',
+            ],
+        ];
+
+        foreach ($osWriteRoutes as [$matches, $module, $function]) {
+            if ($matches()) {
+                $handler = $osFrontApiHandler($module, $function);
+                $handler($osWriteCtx);
             }
-
-            // Load calendar configuration to validate source tables
-            $calConfig = config_get('calendar') ?? ['sources' => []];
-            $sources = $calConfig['sources'] ?? [];
-// Whitelist payload table against configured calendar sources
-            $allowedTables = array_column($sources, 'table');
-            if (!in_array($table, $allowedTables, true)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid table']);
-                exit;
-            }
-
-            $id = (int)($body['id'] ?? 0);
-            $newDate = $body['newDate'] ?? '';
-            if ($id <= 0) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid ID']);
-                exit;
-            }
-
-            // Owner-restricted: prevent moving a record owned by someone else.
-            check_record_ownership($conn, $tableCfg, $table, $id, (int)$_SESSION['user_id']);
-
-            // Validate strict YYYY-MM-DD date format
-            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate) || !checkdate((int)substr($newDate, 5, 2), (int)substr($newDate, 8, 2), (int)substr($newDate, 0, 4))) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid date format']);
-                exit;
-            }
-
-            // Get date column for specific table configuration
-            $dateColumn = '';
-            foreach ($sources as $source) {
-                if ($source['table'] === $table) {
-                    $dateColumn = $source['date_column'];
-                    break;
-                }
-            }
-
-            if ($dateColumn === '') {
-                http_response_code(400);
-                echo json_encode(['error' => 'Missing date column config']);
-                exit;
-            }
-
-            // Perform safety regex check on column identifier
-            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $dateColumn)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid column name']);
-                exit;
-            }
-
-            // Update record via native pg_query_params for robust SQL injection prevention
-            $sql = sprintf('UPDATE %s.%s SET %s = $1 WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($dateColumn), pg_ident($idCol));
-            $res = @pg_query_params($conn, $sql, [$newDate, $id]);
-            if (!$res) {
-                http_response_code(500);
-                echo json_encode(['error' => 'Database error']);
-                error_log('Calendar move_event error: ' . pg_last_error($conn));
-                exit;
-            }
-
-            if (pg_affected_rows($res) === 0) {
-                http_response_code(404);
-                echo json_encode(['error' => 'Record not found']);
-                exit;
-            }
-
-            log_user_action($conn, (int)$_SESSION['user_id'], 'CALENDAR_MOVE', $table, $id);
-
-            echo json_encode(['success' => true]);
-            exit;
         }
 
-        // POST: BOARD MOVE CARD (Kanban drag & drop — changes the status column)
-        if ($method === 'POST' && ($body['api'] ?? '') === 'board' && ($body['action'] ?? '') === 'move_card') {
-            if ($role === UserRole::Viewer) {
-                http_response_code(403);
-                echo json_encode(['error' => 'Forbidden']);
-                exit;
-            }
-
-            $boardsCfg = config_get('board') ?? [];
-            $boardId   = substr($body['board'] ?? '', 0, 64);
-            // Per-user board scope, on the write path too. The table gate above already
-            // stops a card being moved in a table the user cannot reach, but a board is
-            // granted separately: without this, someone holding the table could drag
-            // cards on a board that was never theirs. Resolved against the filtered
-            // list for the same reason the read branch is — an unmatched id must not
-            // fall through to something they were not granted.
-            $boardCfg  = null;
-            foreach (filter_by_user_access('boards', $boardsCfg['boards'] ?? []) as $b) {
-                if (($b['id'] ?? '') === $boardId) {
-                    $boardCfg = $b;
-                    break;
-                }
-            }
-            $boardCfg  = $boardCfg ?? [];
-            $cfgTable  = $boardCfg['table'] ?? '';
-            $statusCol = $boardCfg['status_column'] ?? '';
-
-            // Each board is bound to a single configured table — reject anything else.
-            if ($cfgTable === '' || $statusCol === '' || $table !== $cfgTable) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid board table']);
-                exit;
-            }
-            if (!isset($tableCfg['columns'][$statusCol])) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid status column']);
-                exit;
-            }
-
-            $id        = (int)($body['id'] ?? 0);
-            $newStatus = (string)($body['newStatus'] ?? '');
-            if ($id <= 0) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid ID']);
-                exit;
-            }
-
-            // Validate the target lane against the allowed value set so a tampered
-            // request cannot write an arbitrary status into the column.
-            $statusDef  = $tableCfg['columns'][$statusCol];
-            $statusType = strtolower($statusDef['type'] ?? '');
-            $allowed    = [];
-            if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
-                $allowed = array_map('strval', $statusDef['options']);
-            } else {
-                $sqlD = sprintf(
-                    'SELECT DISTINCT %s AS v FROM %s.%s WHERE %s IS NOT NULL',
-                    pg_ident($statusCol),
-                    pg_ident($schemaName),
-                    pg_ident($table),
-                    pg_ident($statusCol)
-                );
-                $rD = @pg_query($conn, $sqlD);
-                if ($rD) {
-                    while ($r = pg_fetch_assoc($rD)) {
-                        $allowed[] = (string)$r['v'];
-                    }
-                    pg_free_result($rD);
-                }
-            }
-            if (!in_array($newStatus, $allowed, true)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid status value']);
-                exit;
-            }
-
-            // Owner-restricted: cannot move a record owned by someone else.
-            check_record_ownership($conn, $tableCfg, $table, $id, (int)$_SESSION['user_id']);
-
-            $sql = sprintf(
-                'UPDATE %s.%s SET %s = $1 WHERE %s = $2',
-                pg_ident($schemaName),
-                pg_ident($table),
-                pg_ident($statusCol),
-                pg_ident($idCol)
-            );
-            $res = @pg_query_params($conn, $sql, [$newStatus, $id]);
-            if (!$res) {
-                http_response_code(500);
-                echo json_encode(['error' => 'Database error']);
-                error_log('Board move_card error: ' . pg_last_error($conn));
-                exit;
-            }
-            if (pg_affected_rows($res) === 0) {
-                http_response_code(404);
-                echo json_encode(['error' => 'Record not found']);
-                exit;
-            }
-
-            log_user_action($conn, (int)$_SESSION['user_id'], 'BOARD_MOVE', $table, $id);
-            echo json_encode(['success' => true]);
-            exit;
-        }
-
-        // PATCH: UPDATE SINGLE CELL
-        if ($method === 'PATCH' && isset($body['id'], $body['column'], $body['value'])) {
-            $recordId = (int)($body['id']);
-            if ($recordId <= 0) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid record ID']);
-                exit;
-            }
-            $col = $body['column'];
-            if (!isset($tableCfg['columns'][$col])) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid column specified']);
-                exit;
-            }
-
-            if ($col === $idCol) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Cannot edit PK']);
-                exit;
-            }
-
-            check_record_ownership($conn, $tableCfg, $table, $recordId, (int)$_SESSION['user_id'], 'Forbidden: you do not own this record.');
-
-            $colType = strtolower($tableCfg['columns'][$col]['type'] ?? '');
-            $cast = '';
-            $val = $body['value'];
-            if (str_contains($colType, 'bool')) {
-                $val = normalize_boolean($val);
-                $cast = '::boolean';
-            } elseif ($val === '') {
-                $val = null;
-            }
-
-            // Server-side validation_regexp enforcement — the client data-pattern
-            // check is advisory only and trivially bypassed with a direct request.
-            if (!str_contains($colType, 'bool') && ($regexpError = validate_column_regexp($tableCfg['columns'][$col], $val)) !== null) {
-                http_response_code(422);
-                echo json_encode(['error' => $regexpError]);
-                exit;
-            }
-
-            // Pre-update state for change-based automation conditions (changed_from/changed_to).
-            $oldRecord = auto_capture_old_record($conn, $schemaName, $table, $recordId);
-
-            $sql = sprintf('UPDATE %s.%s SET %s = $1%s WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($col), $cast, pg_ident($idCol));
-            $res = @pg_query_params($conn, $sql, [$val, $recordId]);
-            if (!$res) {
-                error_log('[api][patch] ' . pg_last_error($conn));
-                http_response_code(422);
-                echo json_encode(['error' => 'Database error']);
-                exit;
-            }
-
-            $logId = log_user_action($conn, (int)$_SESSION['user_id'], 'UPDATE', $table, (int)$body['id']);
-            if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-                snapshot_record($conn, $schemaName, $table, (int) $body['id'], $logId);
-            }
-            evaluate_automation_rules($conn, $schemaName, $table, (int)$body['id'], 'update', (int)$_SESSION['user_id'], $oldRecord);
-            echo json_encode(['ok' => true]);
-            exit;
-        }
-
-        // POST: INSERT NEW ROW
-        if ($method === 'POST' && isset($body['data'])) {
-            $cols = [];
-            $vals = [];
-            $ph   = [];
-            $i    = 1;
-            foreach ($tableCfg['columns'] as $colName => $colCfg) {
-                if ($colName === $idCol) {
-                    continue;
-                }
-
-                $type = strtolower($colCfg['type'] ?? '');
-                $val = $body['data'][$colName] ?? null;
-                if (str_contains($type, 'bool')) {
-                    $val = normalize_boolean($val);
-                } elseif ($val === '') {
-                    $val = null;
-                }
-
-                $isNotNull = !empty($colCfg['not_null']);
-                if ($val === null && $isNotNull) {
-                    $val = type_min_value($type);
-                }
-
-                // Server-side validation_regexp enforcement (client check is advisory)
-                if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($colCfg, $val)) !== null) {
-                    http_response_code(422);
-                    echo json_encode(['error' => $regexpError, 'column' => $colName]);
-                    exit;
-                }
-
-                if ($val !== null) {
-                    $cols[] = $colName;
-                    $vals[] = $val;
-                    $ph[]   = str_contains($type, 'bool') ? '$' . $i . '::boolean' : '$' . $i;
-                    $i++;
-                }
-            }
-
-            if (empty($cols)) {
-                $sql = sprintf('INSERT INTO %s.%s DEFAULT VALUES RETURNING %s', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));
-                $res = @pg_query($conn, $sql);
-            } else {
-                $sql = sprintf('INSERT INTO %s.%s (%s) VALUES (%s) RETURNING %s', pg_ident($schemaName), pg_ident($table), implode(', ', array_map('pg_ident', $cols)), implode(', ', $ph), pg_ident($idCol));
-                $res = @pg_query_params($conn, $sql, $vals);
-            }
-
-            if (!$res) {
-                error_log('[api][insert] ' . pg_last_error($conn));
-                http_response_code(422);
-                echo json_encode(['error' => 'Database error']);
-                exit;
-            }
-
-            $row = pg_fetch_assoc($res);
-            pg_free_result($res);
-            $newId = $row[$idCol] ?? null;
-            if ($newId !== null) {
-                $userId = (int)$_SESSION['user_id'];
-                $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
-                if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-                    snapshot_record($conn, $schemaName, $table, (int) $newId, $logId);
-                }
-                set_record_owner($conn, $table, (int)$newId, $userId, $userId);
-                evaluate_automation_rules($conn, $schemaName, $table, (int)$newId, 'create', $userId);
-            }
-
-            echo json_encode(['ok' => true, 'id' => $newId]);
-            exit;
-        }
-
-        // POST: DUPLICATE ROW
-        if ($method === 'POST' && ($body['action'] ?? '') === 'duplicate' && isset($body['id'])) {
-            $srcId = (int)$body['id'];
-            if ($srcId <= 0) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid ID']);
-                exit;
-            }
-
-            // Duplicating reads the whole source row, so it needs the same ownership gate
-            // as PATCH/DELETE — otherwise a copy is a read of a record the user cannot see.
-            check_record_ownership($conn, $tableCfg, $table, $srcId, (int)$_SESSION['user_id'], 'Forbidden: you do not own this record.');
-
-            $dupCols = [];
-            foreach ($tableCfg['columns'] as $colName => $colCfg) {
-                if ($colName === $idCol) {
-                    continue;
-                }
-                if (strtolower($colCfg['type'] ?? '') === 'virtual') {
-                    continue;
-                }
-                $dupCols[] = $colName;
-            }
-
-            if (empty($dupCols)) {
-                http_response_code(422);
-                echo json_encode(['error' => 'No columns to duplicate']);
-                exit;
-            }
-
-            $colIdents = implode(', ', array_map('pg_ident', $dupCols));
-            $sql = sprintf('INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s WHERE %s = $1 RETURNING %s', pg_ident($schemaName), pg_ident($table), $colIdents, $colIdents, pg_ident($schemaName), pg_ident($table), pg_ident($idCol), pg_ident($idCol));
-            $res = @pg_query_params($conn, $sql, [$srcId]);
-            if (!$res) {
-                $pgErr = pg_last_error($conn);
-                error_log('[api][duplicate] ' . $pgErr);
-                http_response_code(422);
-                if (stripos($pgErr, 'unique') !== false || stripos($pgErr, 'unikaln') !== false) {
-                    $col = '';
-                    if (preg_match('/[Kk]ey\s*\(([^)]+)\)|Klucz\s*\(([^)]+)\)/', $pgErr, $m)) {
-                            $col = $m[1] ?: $m[2];
-                    }
-                    $msg = $col
-                        ? t('grid.duplicate_unique', ['col' => $col])
-                        : t('grid.duplicate_conflict');
-                    echo json_encode(['error' => $msg]);
-                } else {
-                    echo json_encode(['error' => 'Database error']);
-                }
-                exit;
-            }
-
-            $row = pg_fetch_assoc($res);
-            pg_free_result($res);
-            $newId = $row[$idCol] ?? null;
-            if ($newId !== null) {
-                $userId = (int)$_SESSION['user_id'];
-                $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
-                if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-                    snapshot_record($conn, $schemaName, $table, (int)$newId, $logId);
-                }
-                set_record_owner($conn, $table, (int)$newId, $userId, $userId);
-                evaluate_automation_rules($conn, $schemaName, $table, (int)$newId, 'create', $userId);
-            }
-
-            echo json_encode(['ok' => true, 'id' => $newId]);
-            exit;
-        }
-
-        // DELETE: REMOVE ROW
-        if ($method === 'DELETE' && isset($body['id'])) {
-            $deleteId = (int)$body['id'];
-            if ($deleteId <= 0) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid record ID']);
-                exit;
-            }
-
-            check_record_ownership($conn, $tableCfg, $table, $deleteId, (int)$_SESSION['user_id'], 'Forbidden: you do not own this record.');
-
-            // Delete automations only ever see this snapshot — the row is gone afterwards.
-            $deletedRecord = auto_capture_old_record($conn, $schemaName, $table, $deleteId, 'delete');
-
-            $sql = sprintf('DELETE FROM %s.%s WHERE %s=$1', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));
-            $res = @pg_query_params($conn, $sql, [$deleteId]);
-            if (!$res) {
-                error_log('[api][delete] ' . pg_last_error($conn));
-                http_response_code(422);
-                echo json_encode(['error' => 'Database error']);
-                exit;
-            }
-
-            log_user_action($conn, (int)$_SESSION['user_id'], 'DELETE', $table, $deleteId);
-            evaluate_automation_rules($conn, $schemaName, $table, $deleteId, 'delete', (int)$_SESSION['user_id'], $deletedRecord);
-            echo json_encode(['ok' => true]);
-            exit;
-        }
-
-        // Every branch above is guarded by isset()/action equality and exits on its own.
+        // Every route above is guarded by isset()/action equality and exits on its own.
         // Falling through means the payload matched none of them (e.g. a PATCH whose
         // "value" is null, so isset() was false) — answer explicitly instead of ending
         // with HTTP 200 and an empty body, which the client reads as a successful write.
@@ -1531,3 +231,9 @@ try {
     echo json_encode(['error' => 'Internal server error']);
     exit;
 }
+
+// A GET naming no known ?api= route falls through to here and ends the request with
+// HTTP 200 and an empty body. That is pre-existing behaviour, preserved deliberately
+// rather than tightened inside a refactor: index.php requires this file whenever ?api
+// is present, and the frontend treats an empty body as "nothing to do". Worth
+// revisiting on its own, with the client checked alongside.

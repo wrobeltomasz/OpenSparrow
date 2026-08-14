@@ -51,7 +51,7 @@ function noteLink(note) {
 }
 
 // Table's record list for the picker (id, label) — mirrors files.php's chained
-// table+record <select> pair (public/api/files.php actionGetRelatedRecords).
+// table+record <select> pair (public/api/files.php files_action_get_related_records).
 async function fetchRecordOptions(table) {
     const res = await fetch(
         'api/notes.php?action=list_records&table=' + encodeURIComponent(table),

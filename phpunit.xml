@@ -11,6 +11,10 @@
     <source>
         <include>
             <directory>src</directory>
+            <!-- includes/ is where all new backend code goes (src/ is frozen), so it
+                 belongs in the coverage scope too. Without it the numbers describe
+                 only the one directory nobody is allowed to add to. -->
+            <directory>includes</directory>
         </include>
     </source>
 </phpunit>

@@ -23,15 +23,15 @@ $conn = os_api_bootstrap(['csrf' => 'manual']);
 ['action' => $action, 'body' => $body] = os_api_action();
 
 os_api_dispatch($action, [
-    'get'      => fn() => actionGet($conn),
-    'history'  => fn() => actionHistory($conn),
-    'editors'  => fn() => actionEditors($conn),
-    'mine'     => fn() => actionMine($conn),
-    'set'      => fn() => actionSet($conn, $body),
-    'mass_set' => fn() => actionMassSet($conn, $body),
+    'get'      => fn() => owners_action_get($conn),
+    'history'  => fn() => owners_action_history($conn),
+    'editors'  => fn() => owners_action_editors($conn),
+    'mine'     => fn() => owners_action_mine($conn),
+    'set'      => fn() => owners_action_set($conn, $body),
+    'mass_set' => fn() => owners_action_mass_set($conn, $body),
 ], 'api_owners');
 
-function actionGet($conn): void
+function owners_action_get($conn): void
 {
     requireLogin();
 
@@ -51,7 +51,7 @@ function actionGet($conn): void
 
     $res = pg_query_params($conn, $sql, [$table, $recordId]);
     if (!$res) {
-        error_log('[api_owners actionGet] ' . pg_last_error($conn));
+        error_log('[api_owners owners_action_get] ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -70,7 +70,7 @@ function actionGet($conn): void
     jsonSuccess(['owner' => $owner]);
 }
 
-function actionHistory($conn): void
+function owners_action_history($conn): void
 {
     requireLogin();
 
@@ -92,7 +92,7 @@ function actionHistory($conn): void
 
     $res = pg_query_params($conn, $sql, [$table, $recordId]);
     if (!$res) {
-        error_log('[api_owners actionHistory] ' . pg_last_error($conn));
+        error_log('[api_owners owners_action_history] ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -109,7 +109,7 @@ function actionHistory($conn): void
     jsonSuccess(['history' => $rows]);
 }
 
-function actionEditors($conn): void
+function owners_action_editors($conn): void
 {
     requireLogin();
 
@@ -122,7 +122,7 @@ function actionEditors($conn): void
 
     $res = pg_query($conn, $sql);
     if (!$res) {
-        error_log('[api_owners actionEditors] ' . pg_last_error($conn));
+        error_log('[api_owners owners_action_editors] ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -138,7 +138,7 @@ function actionEditors($conn): void
 // the logged-in user, each with a best-effort display label and the date it was assigned.
 // Label columns and the per-table record cap come from the "user_records" config (admin
 // "User Records" tab). Presentation mirrors the "My comments" panel.
-function actionMine($conn): void
+function owners_action_mine($conn): void
 {
     requireLogin();
 
@@ -155,7 +155,7 @@ function actionMine($conn): void
 
     $res = pg_query_params($conn, $sql, [$userId]);
     if (!$res) {
-        error_log('[api_owners actionMine] ' . pg_last_error($conn));
+        error_log('[api_owners owners_action_mine] ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -204,7 +204,7 @@ function actionMine($conn): void
 
         $rowsRes = pg_query_params($conn, $rowsSql, [$arrParam]);
         if (!$rowsRes) {
-            error_log('[api_owners actionMine] ' . pg_last_error($conn));
+            error_log('[api_owners owners_action_mine] ' . pg_last_error($conn));
             continue;
         }
 
@@ -228,7 +228,7 @@ function actionMine($conn): void
     jsonSuccess(['records' => $records]);
 }
 
-function actionMassSet($conn, array $body): void
+function owners_action_mass_set($conn, array $body): void
 {
     requireWrite();
     os_require_csrf('body', $body);
@@ -303,7 +303,7 @@ function actionMassSet($conn, array $body): void
     jsonSuccess(['updated' => $affected]);
 }
 
-function actionSet($conn, array $body): void
+function owners_action_set($conn, array $body): void
 {
     requireWrite();
     os_require_csrf('body', $body);

@@ -1,0 +1,223 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Constant AUTOMATION_EMAIL_FROM not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: cron/cron_notifications.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/anonymization.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: includes/admin/automations.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/backup.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/clickstats.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: includes/admin/config_files.php
+
+		-
+			message: '#^Variable \$file might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/admin/config_files.php
+
+		-
+			message: '#^Variable \$isDemoMode might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/config_files.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/cron.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/dashboard.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/etl.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/etl_flow.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/health.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/m2m.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/migrations.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/overview.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/performance.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/procedures.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/rag.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/schema.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/settings.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/admin/users.php
+
+		-
+			message: '#^Variable \$rawIds in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: includes/automations.php
+
+		-
+			message: '#^Constant APP_ENCRYPTION_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/crypto.php
+
+		-
+			message: '#^Constant APP_TIMEZONE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/db.php
+
+		-
+			message: '#^Constant DB_HOST not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/db.php
+
+		-
+			message: '#^Constant DB_PORT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/db.php
+
+		-
+			message: '#^Constant SESSION_SAMESITE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/session.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: public/admin/demo/seed.php
+
+		-
+			message: '#^Variable \$isDemoMode might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: public/admin/demo/seed.php
+
+		-
+			message: '#^Variable \$firstRun might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: public/admin/templates/header.php
+
+		-
+			message: '#^Constant RECORD_SNAPSHOTS_ENABLED not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: includes/frontapi/record.php
+
+		-
+			message: '#^Constant RECORD_SNAPSHOTS_ENABLED not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: public/create.php
+
+		-
+			message: '#^Constant APP_ENV not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: public/cypress_seed.php
+
+		-
+			message: '#^Constant RECORD_SNAPSHOTS_ENABLED not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: public/edit.php
+
+		-
+			message: '#^Constant IP_HASH_SALT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: public/login.php
+
+		-
+			message: '#^Variable \$userRole on left side of \?\? is never defined\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: templates/template.php

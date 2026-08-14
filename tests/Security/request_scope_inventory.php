@@ -35,12 +35,24 @@
 // "It is fine" is not a reason.
 
 return [
+    // The frontend data API is a front controller (public/api.php) plus one module per
+    // route group under includes/frontapi/. The write gate stayed in the front
+    // controller; the read-side names moved into the modules that resolve them.
     'public/api.php' => [
-        '_GET.table' => ['gated', 'Grid/list, m2m_rows, image_rows and subtable_counts all call require_table_access() after resolving the table. The list branch is the one exception and it is explicit: api/fk.php delegates into it with OS_TABLE_ACCESS_DELEGATED for a schema-supplied reference table, and narrows the projection to label columns via OS_FK_LABEL_COLUMNS. That narrowing covers the filter_col allow-list as well as the SELECT list — a filter discloses what it matched without ever being selected, and filter_from/filter_to would otherwise turn the exemption into a range probe over any column of a table the user may not open.'],
-        '_GET.board' => ['scoped', 'The board branch resolves ?board= against filter_by_user_access(boards, ...) and falls back to the first board of that filtered list, so an out-of-scope or unmatched id can never select a board the user was not granted.'],
-        'body.table' => ['gated', 'Single require_table_access() at the top of the POST/PATCH/DELETE branch, before any of the mutating sub-branches (insert, update, delete, calendar move, board move, mass insert) reads it.'],
-        'body.board' => ['scoped', 'move_card resolves the board id against filter_by_user_access(boards, ...); an unmatched id leaves $boardCfg empty and the request is rejected as an invalid board table.'],
-        'body.workflow_id' => ['gated', 'workflow_procedure calls require_access(workflows, ...) before looking the procedure up, then workflow_tables_in_scope() on the resolved entry. Both halves are needed: without the first the scope would be cosmetic (a direct POST would fire the procedure of a workflow hidden from the menu and the list), and without the second a workflow granted to someone whose tables do not cover its steps would still run against those tables.'],
+        'body.table' => ['gated', 'Single require_table_access() in the shared write preamble, before any of the mutating routes (insert, update, delete, calendar move, board move, duplicate) is dispatched. The route modules deliberately do NOT repeat it — one gate, no per-route copies to forget — which tests/Security/FrontApiGuardsTest pins from both directions.'],
+    ],
+    'includes/frontapi/list.php' => [
+        '_GET.table' => ['gated', 'Both routes (list, subtable_counts) call require_table_access() after resolving the table. The list route is the one exception in this API and it is explicit: api/fk.php delegates into it with OS_TABLE_ACCESS_DELEGATED for a schema-supplied reference table, and narrows the projection to label columns via OS_FK_LABEL_COLUMNS. That narrowing covers the filter_col allow-list as well as the SELECT list — a filter discloses what it matched without ever being selected, and filter_from/filter_to would otherwise turn the exemption into a range probe over any column of a table the user may not open.'],
+    ],
+    'includes/frontapi/m2m.php' => [
+        '_GET.table' => ['gated', 'Both batch label lookups (m2m_rows, image_rows) call require_table_access() on the parent table once it is known to be configured. The row ids they take are request-supplied too, so each additionally drops ids the caller cannot see — filter_visible_ids() for image_rows, the owner_restriction_sql() clause keyed on the junction table\'s self_fk for m2m_rows — before disclosing any label, uuid or name for them.'],
+    ],
+    'includes/frontapi/board.php' => [
+        '_GET.board' => ['scoped', 'The read route resolves ?board= against filter_by_user_access(boards, ...) and falls back to the first board of that filtered list, so an out-of-scope or unmatched id can never select a board the user was not granted. The table the resolved board is bound to is checked separately with user_can_access_table(), and an out-of-scope binding is blanked rather than named.'],
+        'body.board' => ['scoped', 'move_card resolves the board id against filter_by_user_access(boards, ...); an unmatched id leaves $boardCfg empty and the request is rejected as an invalid board table. The record table itself was already gated by the write preamble in public/api.php — the board is a separate grant, which is why both apply.'],
+    ],
+    'includes/frontapi/workflow_procedure.php' => [
+        'body.workflow_id' => ['gated', 'Calls require_access(workflows, ...) before looking the procedure up, then workflow_tables_in_scope() on the resolved entry. Both halves are needed: without the first the scope would be cosmetic (a direct POST would fire the procedure of a workflow hidden from the menu and the list), and without the second a workflow granted to someone whose tables do not cover its steps would still run against those tables.'],
     ],
     'public/api/clickstats.php' => [
         'input.table' => ['gated', 'Each buffered click may name the table that was in context. It is only ever written into spw_clickstats.table_name as a label - it selects nothing and reaches no identifier - but it is still checked with user_can_access(tables, ...) before being stored, so a user whose access is restricted cannot seed the admin-visible log with the names of tables they were never granted. A name outside the scope is stored as NULL rather than rejected: statistics must never fail a request. The check is not a validator: for an unrestricted user (user_allowed_items() returning null, the default) any string passes, so the value is truncated to the column width before it is stored and is treated as free text everywhere it is read back.'],
@@ -53,8 +65,8 @@ return [
         'body.table' => ['gated', 'validateInput() calls require_table_access() right after the unknown-table check.'],
     ],
     'public/api/files.php' => [
-        '_GET.table'          => ['gated', 'actionGetRelatedRecords() calls require_table_access() on the requested table before resolving its relation config.'],
-        '_POST.related_table' => ['gated', 'actionUpload() gates it once for both upload paths (gallery and plain attachment), so a file cannot be attached to a record in a table the uploader has no access to.'],
+        '_GET.table'          => ['gated', 'files_action_get_related_records() calls require_table_access() on the requested table before resolving its relation config.'],
+        '_POST.related_table' => ['gated', 'files_action_upload() gates it once for both upload paths (gallery and plain attachment), so a file cannot be attached to a record in a table the uploader has no access to.'],
     ],
     'public/api/fk.php' => [
         '_GET.table' => ['gated', 'The request-supplied SOURCE table is gated. The reference table it resolves to is schema-supplied and deliberately exempt, or FK dropdowns inside permitted tables would break; the projection is narrowed to the key and label columns to keep that exemption to labels.'],

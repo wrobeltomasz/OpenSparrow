@@ -1,0 +1,46 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    # Level 2 is a deliberate starting point, not a ceiling. Levels 0-2 catch the
+    # failure mode this codebase actually has: ~270 global functions loaded through
+    # ~300 hand-written require_once calls, where a missing require, a mistyped
+    # function name or a wrong argument count is invisible to `php -l` and only
+    # surfaces when that one code path runs in a browser.
+    #
+    # Level 3+ is not yet reachable: the 21 procedural modules under includes/admin/
+    # read $action / $file / $isDemoMode from the front controller's scope, which no
+    # static analyser can verify. Raising the level is a separate piece of work that
+    # has to give those modules an explicit contract first — see the
+    # includes/frontapi/ convention in docs/MAINTENANCE.md for the direction.
+    level: 2
+
+    paths:
+        - includes
+        - public
+        - cron
+        - src
+        - templates
+
+    excludePaths:
+        analyseAndScan:
+            # The "(?)" suffix marks a path as optional, so the same config works on a
+            # fresh CI checkout and on a working copy that has been built or scratched
+            # in. dist-local/ is regenerated build output and tmp/ is scratch; neither
+            # is present most of the time, and a missing path here is a hard error
+            # without the marker.
+            - dist-local (?)
+            - tmp (?)
+            - vendor (?)
+            - node_modules (?)
+            - storage (?)
+
+    # Registers the App\ PSR-4 autoloader so src/ classes resolve the same way they
+    # do at runtime. Side-effect free — it only calls spl_autoload_register().
+    bootstrapFiles:
+        - includes/autoload.php
+
+    # The baseline records what was already there on the day PHPStan was introduced.
+    # It is a ratchet: it may shrink, never grow. When a change would add an entry,
+    # fix the code instead of regenerating the file.
+    reportUnmatchedIgnoredErrors: true

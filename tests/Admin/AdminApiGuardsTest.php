@@ -149,6 +149,7 @@ final class AdminApiGuardsTest extends TestCase
         $map      = self::dispatchMap();
         $expected = array_diff(self::MUTATING_ACTIONS, self::DEMO_ALLOWED);
         $ungated  = [];
+        $unlocated = [];
 
         foreach ($expected as $action) {
             $module = $map[$action] ?? null;
@@ -158,12 +159,27 @@ final class AdminApiGuardsTest extends TestCase
             $source = self::stripComments((string) file_get_contents(self::MODULE_DIR . '/' . $module . '.php'));
             $block  = self::actionBlock($source, $action);
             if ($block === null) {
+                // NOT skippable. The map claims this module handles the action, so a
+                // missing block means the registry drifted — and skipping here is what
+                // made this assertion pass vacuously for exactly the action whose
+                // dispatch broke. AdminDispatchRegistryTest catches the drift directly;
+                // this records it too, so the demo-mode guard can never be silently
+                // switched off by a typo in $adminModules.
+                $unlocated[] = "{$action} (expected in {$module}.php)";
                 continue;
             }
             if (!str_contains($block, 'require_not_demo') && !str_contains($block, 'DEMO_MODE')) {
                 $ungated[] = "{$action} ({$module}.php)";
             }
         }
+
+        $this->assertSame(
+            [],
+            $unlocated,
+            'Could not locate the action block for mutating action(s), so their DEMO_MODE '
+            . 'guard could not be checked at all. Fix the $adminModules mapping first — '
+            . 'see AdminDispatchRegistryTest: ' . implode(', ', $unlocated)
+        );
 
         $this->assertSame(
             [],

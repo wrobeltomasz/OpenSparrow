@@ -543,11 +543,11 @@ to get wrong:
   It must **not** filter on `related_field`: doing so is what left every plain
   attachment unchecked while galleries were guarded. Unattached files (no
   `related_table`/`related_id`) belong to no record and stay editable by any logged-in
-  user, matching how `actionList()` lists them; a file pointing at a table missing
+  user, matching how `files_action_list()` lists them; a file pointing at a table missing
   from the schema config fails closed and logs, because there is nothing left to check
   ownership against.
 
-  **`actionList()` carries the read half, and it is a separate predicate.** The write
+  **`files_action_list()` carries the read half, and it is a separate predicate.** The write
   gate resolves one uuid at a time; the listing selects from `spw_files` directly and a
   single page spans many tables, so `owner_restriction_sql()` does not fit — it binds
   `table_name` to a parameter. The listing correlates on `f.related_table` instead,
@@ -725,6 +725,176 @@ The rule and the gate are separate functions on purpose:
 `os_request_scope_violation()` decides and returns, `os_gate_request_scopes()` acts on
 it. `require_access()` ends the process, so merged into one function the rule could not
 be tested at all — `TableAccessTest` covers it directly.
+
+## Frontend data API: front controller + route modules (2026-08-14)
+
+`public/api.php` was 1533 lines: nineteen inline
+`if ($method === 'GET' && ($_GET['api'] ?? '') === '…')` branches, nesting eight levels
+deep, 53 superglobal reads, and no use of the `os_api_dispatch()` helper its own
+siblings in `public/api/` already had. Every new frontend feature landed in it.
+
+It is now a **239-line front controller** plus one module per route group under
+`includes/frontapi/`, mirroring how `public/admin/api.php` dispatches into
+`includes/admin/`.
+
+### What the front controller still owns
+
+Order matters here, and all of it is pinned by `tests/Security/FrontApiGuardsTest`:
+
+1. `os_api_bootstrap()` — auth, staleness, header-CSRF on POST/PATCH/DELETE.
+2. The **self-service profile actions** (`update_avatar`, `change_password`). These
+   run *before* the role gates on purpose: changing your own password must not depend
+   on your role. Do not move them below the gates.
+3. The admin block and the viewer read-only block — both before the schema is read.
+4. The schema load, and the access-filtered copy (`$schemaJson`) that is the only form
+   ever sent to a client. `?api=schema` stays inline: a module for one `echo` would
+   cost more than it explains.
+5. Read-route dispatch.
+6. The **shared write preamble** — see below — and write-route dispatch.
+
+### The one write gate
+
+All six mutating routes (insert, patch, duplicate, delete, calendar move, board move)
+resolve their target from one `$body['table']`, so the preamble decodes the body,
+resolves the table through `safe_table()` (unknown ⇒ 400) and calls
+`require_table_access()` **exactly once**.
+
+Pushing that gate into the modules would recreate a hand-kept list of "routes that
+remembered to gate" — the same shape as the admin `$postActions` whitelist and the
+per-action `DEMO_MODE` calls, both of which have silently drifted before. So:
+
+- `record.php`, `calendar.php` and `board.php` must **never** call
+  `require_table_access()`. They receive a `FrontApiWriteContext`, and constructing
+  one is what proves the gate already ran.
+- `list.php` and `m2m.php` **must** call it: they take a request-supplied `?table=`
+  of their own and run before any write preamble exists.
+
+Both directions are asserted, and both were proven red before being merged.
+
+### Explicit context, not ambient variables
+
+The admin modules read `$action`, `$file` and `$isDemoMode` from the including scope.
+That works, but no static analyser can verify it — those 21 files are the largest
+group in `phpstan-baseline.neon` and the reason the project cannot yet raise PHPStan
+past level 2.
+
+The frontend modules therefore take a typed `FrontApiContext` /
+`FrontApiWriteContext` parameter (`includes/frontapi/context.php`) instead, so a
+mistyped field is a PHPStan error rather than a silent null. **New backend code
+should follow this pattern, not the admin one.**
+
+`$schema` on the context is the FULL document — every config-supplied lookup (FK
+references, subtables, board and calendar bindings) resolves against it. `$schemaJson`
+is the filtered one. Do not confuse them.
+
+### Two couplings to know about before touching this
+
+- **`public/api/fk.php` re-enters `public/api.php`.** It rewrites
+  `$_GET['api'] = 'list'`, points `$_GET['table']` at the reference table, defines
+  `OS_TABLE_ACCESS_DELEGATED` and `OS_FK_LABEL_COLUMNS`, and `require`s the front
+  controller — which boots a second time. `api.php` must stay re-enterable, and the
+  list route must keep honouring both constants.
+- **A GET naming no known `?api=` route answers HTTP 200 with an empty body.** That is
+  pre-existing behaviour, preserved deliberately rather than tightened inside a
+  refactor: `index.php` requires this file whenever `?api` is present and the frontend
+  reads an empty body as "nothing to do". Worth revisiting on its own, with the client
+  checked alongside.
+
+### Verification used for the split
+
+Logged in as the seeded editor and captured all 24 read routes — including the FK
+delegation path, `list` with filter / search / range / offset, and the empty-body edge
+cases — before and after the change: **byte-for-byte identical**. All six mutating
+routes were then exercised against real rows and the rows removed again. Repeat that
+comparison if this dispatch is reorganised; the guard tests cover structure, not
+output.
+
+## Static analysis with PHPStan (2026-08-14)
+
+### Why it was added
+
+The codebase is ~33k lines of PHP with roughly 270 global functions loaded through
+roughly 300 hand-written `require_once` calls. That shape has one dominant failure
+mode: a call to a helper whose `require` is missing, a mistyped function name, or a
+wrong argument count. `php -l` cannot see any of them — it checks syntax, and all
+three are syntactically valid. They surface only when that one code path runs in a
+browser, which is why they tend to reach production in rarely-exercised branches.
+
+PHPStan closes exactly that gap. On its first run against the existing tree it
+flagged two places where a variable was assigned in one conditional block and read
+in a second, separate block testing the same condition — correct only for as long
+as the two conditions stayed identical, with nothing enforcing that. One of them fed
+`set_record_owner()` on an owner-restricted table, where a wrong owner is an
+access-control outcome, not a cosmetic bug. Both were fixed rather than baselined
+(`public/api/mass_edit.php`, `cron/cron_notifications.php`).
+
+### Level 2 is a floor, not a ceiling
+
+`phpstan.neon` pins `level: 2`. Levels 0–2 cover the failure mode above (unknown
+functions and classes, unknown methods, argument counts, always-undefined
+variables).
+
+Level 3+ is **not currently reachable**, and the reason is architectural rather
+than a matter of effort: the 21 procedural modules under `includes/admin/` read
+`$action`, `$file` and `$isDemoMode` from the front controller's scope, and the
+files under `templates/` read variables from whichever page included them. No
+static analyser can verify a variable that arrives by scope inheritance. Raising
+the level means giving those modules an explicit contract first — see the
+`includes/frontapi/` convention, which passes an explicit context object precisely
+so that new code does not add to this debt.
+
+### The baseline is a ratchet
+
+`phpstan-baseline.neon` records the 49 pre-existing findings. It may **shrink,
+never grow**. When a change would add an entry, fix the code instead of
+regenerating the file — a baseline that grows is just a lint suppression list.
+
+Everything in it falls into four accepted categories, all stable:
+
+- `$action` / `$file` / `$isDemoMode` in `includes/admin/*.php` — the documented
+  front-controller scope contract.
+- `$userRole` in `templates/template.php` and `$firstRun` in
+  `public/admin/templates/header.php` — template scope inheritance; both are set by
+  the including page (`public/index.php:16` for the former).
+- 15 constants (`DB_HOST`, `RECORD_SNAPSHOTS_ENABLED`, `APP_ENCRYPTION_KEY`, …) —
+  genuinely defined in `includes/config.php`, but via `define()` inside closures and
+  conditionals, which PHPStan does not resolve across file boundaries.
+- one dead `empty()` check in `includes/automations.php`.
+
+None of these is a bug. Do not "fix" them by namespacing, casting, or adding
+`@phpstan-ignore` comments.
+
+### Running it
+
+```bash
+php phpstan.phar analyse --configuration=phpstan.neon --memory-limit=1G
+```
+
+The phar is a local convenience binary and is gitignored, exactly like
+`phpcs.phar`. CI installs PHPStan through `setup-php`'s `tools:` key instead, so
+nothing is added to `composer.json` and `composer.lock` needs no regeneration.
+
+PHPStan's bundled signature map covers extensions that are not loaded locally
+(`ftp`, `gd`), so a baseline generated on a developer machine matches what CI
+produces. Without that, unmatched baseline entries would fail the CI run.
+
+### The release-gate trap
+
+`release-zip.yml` verifies required checks with `grep -Fxq` — an **exact
+whole-line match** on check-run names — and the `php-version` matrix renames jobs
+to `phpstan (8.4)` / `phpstan (8.5)`. Both names are listed in that workflow's
+`REQUIRED` heredoc.
+
+Two directions to get wrong here, and the second is worse:
+
+- A name missing from `REQUIRED` means a red PHPStan does not block a release.
+- A name present in `REQUIRED` whose job does not run on push-to-main blocks
+  **every** release on a permanently missing check.
+
+So the `phpstan` job must keep the same triggers as `phpcs` (`push: main`,
+`pull_request: main`, `workflow_dispatch`). If a required check is ever absent
+rather than red on a release commit, re-run the workflow from the Actions UI — do
+not reach for `skip_checks=true`.
 
 ## Where binding rules live
 

@@ -42,3 +42,33 @@ jobs:
 
     - name: Run PHP CodeSniffer
       run: phpcs --standard=phpcs.xml --runtime-set ignore_warnings_on_exit 1
+
+  # Separate job, not a step in phpcs, so a red PHPStan is distinguishable from a
+  # red phpcs in the checks list. It must keep the same triggers as the job above:
+  # release-zip.yml requires 'phpstan (8.4)' / 'phpstan (8.5)' to be green on the
+  # released commit, and a required check that never runs on push-to-main would
+  # block every release rather than only the broken ones.
+  phpstan:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.4', '8.5']
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Set up PHP ${{ matrix.php-version }}
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        tools: phpstan
+        coverage: none
+
+    # No composer install: phpstan.neon does not analyse tests/, and the App\
+    # classes it needs are resolved through includes/autoload.php (bootstrapFiles),
+    # not the composer autoloader.
+    - name: Run PHPStan
+      run: phpstan analyse --configuration=phpstan.neon --no-progress --memory-limit=1G

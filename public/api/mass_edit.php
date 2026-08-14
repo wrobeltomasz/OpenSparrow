@@ -261,11 +261,17 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     $tblSql     = pg_ident($schemaName) . '.' . pg_ident($tableName);
     $colIdents  = implode(', ', array_map('pg_ident', $dupCols));
     $arrParam   = pgIntArray($rowIds);
+    // Resolved once, before the transaction. It used to be assigned inside the
+    // owner_restricted branch below and read again in the ownership loop after it, so
+    // the read was correct only as long as those two separate
+    // `if (!empty($tableCfg['owner_restricted']))` conditions stayed identical.
+    // Nothing enforced that, and the value feeds set_record_owner() on an
+    // owner-restricted table, where a wrong owner is an access-control outcome.
+    $uid        = (int)$_SESSION['user_id'];
 
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $uid      = (int)$_SESSION['user_id'];
         $ownerSql = owner_restriction_sql('_t.id', 2, 3);
         $res = @pg_query_params(
             $conn,
@@ -313,7 +319,6 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
 
     @pg_query($conn, 'COMMIT');
 
-    $uid = (int)$_SESSION['user_id'];
     log_user_action($conn, $uid, 'MASS_DUPLICATE', $tableName, null);
 
     exit(json_encode(['duplicated' => $duplicated]));

@@ -78,9 +78,15 @@ final class RequestScopeInventoryTest extends TestCase
         // reachable HTTP entry points, and leaving them out meant a ?table= added to one
         // of them would keep this test green. includes/admin/*.php was already scanned,
         // which is what made the omission a gap rather than a boundary.
+        // includes/frontapi/*.php holds the route bodies of the frontend data API. They
+        // are not HTTP entry points themselves, but they are where that API's
+        // request-supplied ?table= / ?board= / workflow_id reads now live — the same
+        // reason includes/admin/*.php is scanned. Omitting the directory would have let
+        // the api.php split quietly move every one of those reads out of this inventory.
         $globs = [
             'public/*.php', 'public/api/*.php', 'public/admin/*.php',
-            'includes/*.php', 'includes/admin/*.php', 'templates/*.php',
+            'includes/*.php', 'includes/admin/*.php', 'includes/frontapi/*.php',
+            'templates/*.php',
         ];
         $files = [];
         foreach ($globs as $glob) {

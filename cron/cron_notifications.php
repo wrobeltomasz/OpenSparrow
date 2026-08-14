@@ -78,6 +78,12 @@ print_log("Loaded calendar configuration. Number of sources: " . count($config['
 $schemaCfg    = config_get('schema') ?? [];
 $schemaTables = is_array($schemaCfg['tables'] ?? null) ? $schemaCfg['tables'] : [];
 
+// Resolved before the try, because the catch block below also writes to this table.
+// Assigned inside the try it was only in scope for the error path by virtue of having
+// been reached first — true today (the $logId guard there implies it), but a guard on
+// one variable standing in for the definedness of another.
+$tCronLog = sys_table('users_notifications_log');
+
 try {
     print_log("Connecting to the database...");
     $conn = db_connect();
@@ -86,7 +92,6 @@ try {
     // Purge login attempts older than 30 days to prevent unbounded table growth.
     pg_query($conn, "DELETE FROM " . sys_table('login_attempts') . " WHERE attempted_at < NOW() - INTERVAL '30 days'");
 
-    $tCronLog = sys_table('users_notifications_log');
     $logRes = pg_query_params($conn, "INSERT INTO $tCronLog (triggered_by) VALUES ($1) RETURNING id", [$triggeredBy]);
     $logId = $logRes ? (int) pg_fetch_result($logRes, 0, 0) : null;
     $insertedCount = 0;

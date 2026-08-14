@@ -22,14 +22,14 @@ $conn = os_api_bootstrap(['csrf' => 'manual']);
 ['action' => $action, 'body' => $body] = os_api_action();
 
 os_api_dispatch($action, [
-    'list'   => fn() => actionList($conn),
-    'mine'   => fn() => actionMine($conn),
-    'add'    => fn() => actionAdd($conn, $body),
-    'delete' => fn() => actionDelete($conn, $body),
-    'counts' => fn() => actionCounts($conn),
+    'list'   => fn() => comments_action_list($conn),
+    'mine'   => fn() => comments_action_mine($conn),
+    'add'    => fn() => comments_action_add($conn, $body),
+    'delete' => fn() => comments_action_delete($conn, $body),
+    'counts' => fn() => comments_action_counts($conn),
 ], 'api_comments');
 
-function actionList($conn): void
+function comments_action_list($conn): void
 {
     requireLogin();
     $relatedTable = validatedTable(trim($_GET['related_table'] ?? ''), 'related_table');
@@ -59,7 +59,7 @@ function actionList($conn): void
     ";
     $res = pg_query_params($conn, $sql, [$relatedTable, $relatedId]);
     if (!$res) {
-        error_log('api_comments actionList failed: ' . pg_last_error($conn));
+        error_log('api_comments comments_action_list failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -76,7 +76,7 @@ function actionList($conn): void
 // user authored, each resolved to its record's display label so the panel can link straight
 // back to the record's comment tab. Label heuristic is shared with the "My records" panel
 // (record_label_sql() in api_helpers.php).
-function actionMine($conn): void
+function comments_action_mine($conn): void
 {
     requireLogin();
 
@@ -90,7 +90,7 @@ function actionMine($conn): void
 
     $res = pg_query_params($conn, $sql, [$userId]);
     if (!$res) {
-        error_log('api_comments actionMine failed: ' . pg_last_error($conn));
+        error_log('api_comments comments_action_mine failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -128,7 +128,7 @@ function actionMine($conn): void
 
         $labelRes = pg_query_params($conn, $rowsSql, ['{' . implode(',', array_unique($ids)) . '}']);
         if (!$labelRes) {
-            error_log('api_comments actionMine label lookup failed: ' . pg_last_error($conn));
+            error_log('api_comments comments_action_mine label lookup failed: ' . pg_last_error($conn));
             continue;
         }
 
@@ -166,7 +166,7 @@ function actionMine($conn): void
     jsonSuccess(['comments' => $comments]);
 }
 
-function actionAdd($conn, array $body): void
+function comments_action_add($conn, array $body): void
 {
     requireWrite();
     os_require_csrf('body', $body);
@@ -192,7 +192,7 @@ function actionAdd($conn, array $body): void
     ";
     $res = pg_query_params($conn, $sql, [$relatedTable, $relatedId, $userId, $rawBody]);
     if (!$res) {
-        error_log('api_comments actionAdd failed: ' . pg_last_error($conn));
+        error_log('api_comments comments_action_add failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -215,7 +215,7 @@ function actionAdd($conn, array $body): void
     jsonSuccess(['comment' => $comment], 201);
 }
 
-function actionDelete($conn, array $body): void
+function comments_action_delete($conn, array $body): void
 {
     requireLogin();
     os_require_csrf('body', $body);
@@ -241,7 +241,7 @@ function actionDelete($conn, array $body): void
     $sql = "UPDATE " . sys_table('comments') . " SET deleted_at = NOW() WHERE id = \$1 AND deleted_at IS NULL";
     $res = pg_query_params($conn, $sql, [$id]);
     if (!$res) {
-        error_log('api_comments actionDelete failed: ' . pg_last_error($conn));
+        error_log('api_comments comments_action_delete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
@@ -249,7 +249,7 @@ function actionDelete($conn, array $body): void
     jsonSuccess(['deleted' => true]);
 }
 
-function actionCounts($conn): void
+function comments_action_counts($conn): void
 {
     requireLogin();
     $relatedTable = validatedTable(trim($_GET['related_table'] ?? ''), 'related_table');
@@ -275,7 +275,7 @@ function actionCounts($conn): void
     ";
     $res = pg_query_params($conn, $sql, $params);
     if (!$res) {
-        error_log('api_comments actionCounts failed: ' . pg_last_error($conn));
+        error_log('api_comments comments_action_counts failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
