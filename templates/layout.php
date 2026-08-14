@@ -36,11 +36,18 @@ $moduleGraph = os_fe_module_graph();
 // Never let a config-store problem break page rendering — treat any failure as off.
 // Skipped for guests (the endpoint requires a session) and in Demo Mode (which
 // blocks the write anyway), so no page emits beacons that can only be rejected.
+//
+// The 60 here is what keeps "off costs nothing" true. Until an admin saves the
+// module's settings the "clickstats" key has no row at all, and config_get() does
+// not cache a missing key across requests — so without an absent-TTL this lookup
+// would be one extra query on every page render of every install that never uses
+// the feature. Enabling the module goes through config_save(), which replaces the
+// cached entry, so the switch still takes effect immediately.
 $clickstatsOn = false;
 if (!empty($_SESSION['user_id']) && !(defined('DEMO_MODE') && DEMO_MODE)) {
     try {
-        require_once __DIR__ . '/../includes/config_store.php';
-        $clickstatsOn = !empty((config_get('clickstats') ?? [])['enabled']);
+        require_once __DIR__ . '/../includes/clickstats.php';
+        $clickstatsOn = clickstats_settings(60)['enabled'];
     } catch (Throwable $e) {
         $clickstatsOn = false;
     }

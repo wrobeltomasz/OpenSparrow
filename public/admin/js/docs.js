@@ -409,6 +409,7 @@ ${_h3('doc-9q', s.s9q_head)}
 ${_p(s.s9q_desc)}
 ${_ul([
     `<strong>${s.s9q_tab1_label}:</strong> ${s.s9q_tab1}`,
+    `<strong>${s.s9q_retention_label}:</strong> ${s.s9q_retention}`,
     `<strong>${s.s9q_tab2_label}:</strong> ${s.s9q_tab2}`,
     `<strong>${s.s9q_off_label}:</strong> ${s.s9q_off}`,
     `<strong>${s.s9q_privacy_label}:</strong> ${s.s9q_privacy}`,

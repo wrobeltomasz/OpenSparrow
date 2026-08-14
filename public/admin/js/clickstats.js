@@ -13,8 +13,9 @@ import { buildInnerTabs, buildSectionCard, createPageHeader, el, mkTable, mkThea
 // Every label below comes from the DOM of a user-facing page. It is rendered with
 // textContent (via td()/el()) and never interpolated into innerHTML.
 
-// Longest retention window the Log tab offers. Mirrors ADMIN_PURGE_MAX_DAYS in
-// includes/admin/helpers.php, which is what actually enforces it for every module.
+// Longest retention window either tab offers — the automatic one on Settings and
+// the manual trim on Log. Mirrors ADMIN_PURGE_MAX_DAYS in includes/admin/helpers.php
+// and CLICKSTATS_MAX_RETENTION_DAYS in includes/clickstats.php, which enforce it.
 const MAX_RETENTION_DAYS = 3650;
 
 export async function renderClickstatsPage(ctx) {
@@ -45,7 +46,7 @@ export async function renderClickstatsPage(ctx) {
     }
 
     const state = {
-        config: data.config || { enabled: false, track_records: true },
+        config: data.config || { enabled: false, track_records: true, retention_days: 90 },
         version: data.version ?? null,
         tableExists: data.table_exists ?? false,
         total: data.total,
@@ -109,13 +110,36 @@ function renderSettings(panel, state) {
     body.appendChild(enabled.row);
     body.appendChild(records.row);
 
+    // Automatic retention, applied by the notifications cron. This is the only thing
+    // that bounds the table without someone remembering to press a button, so the
+    // "keep everything" option is spelled out rather than being what an empty field
+    // happens to mean.
+    const retentionRow = el('div');
+    retentionRow.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
+    const retentionInput = document.createElement('input');
+    retentionInput.type = 'number';
+    retentionInput.min = '0';
+    retentionInput.max = String(MAX_RETENTION_DAYS);
+    retentionInput.className = 'adm-input w-80';
+    retentionInput.value = String(state.config.retention_days ?? 90);
+    retentionRow.append(
+        el('strong', '', 'Delete Automatically After'),
+        retentionInput,
+        el('span', '', 'days'),
+    );
+    const retentionNote = el('p', 'admin-page-desc',
+        'Applied by the notifications cron. Set to 0 to keep every click until you '
+        + 'purge the log by hand — the log has no other automatic expiry.');
+    body.appendChild(retentionRow);
+    body.appendChild(retentionNote);
+
     // How much is already stored, so the size of the log is visible next to the
     // switch that fills it. Worded as a snapshot on purpose: the count is read once
     // when the tab opens and is not refreshed by a purge on the Log tab.
     if (typeof state.total === 'number') {
         body.appendChild(el('p', 'admin-page-desc',
-            `${state.total} click(s) recorded when this tab was opened. Retention is manual — `
-            + 'trim or clear the log on the Log tab.'));
+            `${state.total} click(s) recorded when this tab was opened. Expired rows are `
+            + 'removed by the notifications cron; the Log tab trims or clears on demand.'));
     }
 
     const actions = el('div');
@@ -127,6 +151,14 @@ function renderSettings(panel, state) {
     body.appendChild(actions);
 
     btn.addEventListener('click', async () => {
+        // Bounds mirror the server, which falls back to the default rather than
+        // rejecting — so an out-of-range field must be caught here, or the admin
+        // sees "saved" against a window they did not choose.
+        const retention = parseInt(retentionInput.value, 10);
+        if (!Number.isFinite(retention) || retention < 0 || retention > MAX_RETENTION_DAYS) {
+            showStatusPill(pillAnchor, `Retention must be 0-${MAX_RETENTION_DAYS} days.`, 'error');
+            return;
+        }
         btn.disabled = true;
         try {
             const res = await apiFetch('api.php?action=clickstats_save', {
@@ -134,6 +166,7 @@ function renderSettings(panel, state) {
                 body: JSON.stringify({
                     enabled: enabled.input.checked,
                     track_records: records.input.checked,
+                    retention_days: retention,
                     version: state.version,
                 }),
             });
@@ -141,6 +174,7 @@ function renderSettings(panel, state) {
             if (result.status === 'success') {
                 state.config.enabled = enabled.input.checked;
                 state.config.track_records = records.input.checked;
+                state.config.retention_days = retention;
                 // Carry the new version forward, or the next save of this open tab
                 // loses the optimistic-lock race against itself.
                 state.version = result.version ?? state.version;
@@ -201,9 +235,9 @@ function renderLog(panel, state) {
     filterBar.append(elementFilter, userFilter, applyBtn, clearBtn, purgeBtn, pillAnchor);
     panel.appendChild(filterBar);
 
-    // Retention. There is no cron worker for this log, so trimming it is a manual
-    // action — but "delete everything" is the wrong tool for keeping a rolling
-    // window, which is what an admin who leaves collection on actually wants.
+    // On-demand purge, on top of the automatic window on the Settings tab: this is
+    // for clearing out history now, not for keeping the table bounded. "Delete
+    // everything" is the wrong tool for a rolling window, hence both buttons.
     const retentionBar = el('div');
     retentionBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
 

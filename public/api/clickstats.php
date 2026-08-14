@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/config_store.php';
+require_once __DIR__ . '/../../includes/clickstats.php';
 
 // Rows accepted per request. Mirrors MAX_BUFFER in assets/js/util/clickstats.js;
 // a client sending more is not trusted to stop at the client-side cap.
@@ -33,9 +34,9 @@ const CLICKSTATS_MAX_TABLE   = 100;
 // Upper bound of the int4 record_id column.
 const CLICKSTATS_MAX_RECORD_ID = 2147483647;
 
-// Ceiling on rows one session may store per minute. Retention is manual (the Log
-// tab trims or clears, there is no cron worker), so without a ceiling a client that
-// ignores the collector's own pacing could grow the table until someone notices.
+// Ceiling on rows one session may store per minute. Retention runs once a day at
+// most (the notifications cron), so without a ceiling a client that ignores the
+// collector's own pacing could grow the table a long way inside a single window.
 // 300 is five clicks a second sustained for a full minute: far past what a person
 // produces, far below the 600/min an unthrottled client could push through the
 // MAX_BUFFER/FLUSH_MS pacing, so it never trims an honest session.
@@ -64,6 +65,19 @@ function clickstats_done(int $code = 204): never
 {
     http_response_code($code);
     exit;
+}
+
+// Trimmed text out of a decoded JSON value.
+//
+// Every field below arrives unvalidated, and a client is free to send an array or an
+// object where a string belongs. A bare (string) cast on those raises "Array to
+// string conversion", which with display_errors off goes straight to the error log —
+// a free way for any logged-in user to write into it, one line per event, 50 events
+// per request. A non-scalar is not a label, so it becomes '' and is dropped by the
+// same checks that drop an empty one.
+function clickstats_text(mixed $value): string
+{
+    return is_scalar($value) ? trim((string) $value) : '';
 }
 
 // Sliding one-minute window over the rows this session has already stored.
@@ -111,8 +125,8 @@ require_not_demo();
 
 // The off switch. Checked on every request, not just at page render: a page loaded
 // while the module was on must stop being recorded the moment it is turned off.
-$cfg = config_get('clickstats') ?? [];
-if (empty($cfg['enabled'])) {
+$cfg = clickstats_settings();
+if (!$cfg['enabled']) {
     clickstats_done();
 }
 
@@ -136,7 +150,7 @@ foreach (array_slice($events, 0, $budget) as $input) {
     if (!is_array($input)) {
         continue;
     }
-    $element = trim((string) ($input['element'] ?? ''));
+    $element = clickstats_text($input['element'] ?? null);
     if ($element === '') {
         continue;
     }
@@ -144,7 +158,7 @@ foreach (array_slice($events, 0, $budget) as $input) {
     $table    = null;
     $recordId = null;
     if ($trackRecords) {
-        $candidate = trim((string) ($input['table'] ?? ''));
+        $candidate = clickstats_text($input['table'] ?? null);
         // The table name is stored as a plain label, never used as an identifier — but a
         // user must not be able to seed the admin's log with names from tables they cannot
         // open. Out of scope is dropped, not rejected: telemetry never fails a request.
@@ -170,7 +184,7 @@ foreach (array_slice($events, 0, $budget) as $input) {
         }
     }
 
-    $page = trim((string) ($input['page'] ?? ''));
+    $page = clickstats_text($input['page'] ?? null);
 
     $base = count($params);
     $placeholders[] = '($' . ($base + 1) . ', $' . ($base + 2) . ', $' . ($base + 3)

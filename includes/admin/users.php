@@ -46,6 +46,16 @@ function admin_user_policy(): array
  */
 function admin_user_contact_input(array $data): array
 {
+    // The body is decoded JSON, so a field can arrive as an array or an object. A
+    // bare (string) cast on those raises "Array to string conversion" into the error
+    // log and then stores the useless "Array". Unlike the telemetry endpoint, which
+    // must never fail a request, an admin form says what is wrong.
+    foreach (['first_name', 'last_name', 'email', 'phone'] as $field) {
+        if (isset($data[$field]) && !is_scalar($data[$field])) {
+            return [[], 'Contact details must be text values.'];
+        }
+    }
+
     $first = trim((string)($data['first_name'] ?? ''));
     $last  = trim((string)($data['last_name'] ?? ''));
     $email = trim((string)($data['email'] ?? ''));
@@ -74,18 +84,23 @@ function admin_user_contact_input(array $data): array
 
 /**
  * Turns "relation/column does not exist" into the actionable message instead of a
- * raw driver error, for the statements that touch the 3.3_user_contact columns.
+ * raw driver error, for the statements that touch the spw_users layout.
  *
- * Every one of them (list, insert, update) fails the same way on a database where
- * the migration has not been run yet, and an admin seeing only a Postgres error
- * has no way to know that Migrations -> Initialize System Tables is the fix.
- * Returns normally on any other failure, leaving it to admin_db_fail().
+ * An admin seeing only a Postgres error has no way to know that Migrations ->
+ * Initialize System Tables is the fix. Returns normally on any other failure,
+ * leaving it to admin_db_fail().
+ *
+ * The match is a phrase test, so an unrelated "... does not exist" (a dropped
+ * sequence, a bad search_path) lands here too and gets described as a schema
+ * problem it is not — hence the log line: this branch is the only one that does
+ * not reach admin_db_fail(), which is what normally records the raw error.
  *
  * @throws AdminApiMessage
  */
 function admin_user_schema_guard(string $err): void
 {
     if (str_contains($err, 'is_active') || str_contains($err, 'does not exist')) {
+        error_log('[admin_api][users:schema_guard] ' . $err);
         throw new AdminApiMessage(
             'Database schema is outdated or missing. Please initialize tables '
             . '(Migrations → Initialize System Tables).'
@@ -93,14 +108,41 @@ function admin_user_schema_guard(string $err): void
     }
 }
 
+/**
+ * Whether the four 3.3_user_contact columns exist. Probed once per request with a
+ * zero-row SELECT.
+ *
+ * The contact details are optional extras, so losing them must not take user
+ * management down with them: on a database upgraded but not yet migrated, listing
+ * accounts, activating them, changing roles and resetting passwords all have to
+ * keep working. Selecting the columns unconditionally would fail the whole
+ * statement and leave an admin with no way to manage users until they find the
+ * migration — including no way to reset a password.
+ *
+ * Returns false when spw_users itself is missing; the caller's own query then
+ * fails and admin_user_schema_guard() reports that properly.
+ */
+function admin_user_contact_columns(\PgSql\Connection $conn): bool
+{
+    static $present = null;
+    if ($present === null) {
+        $present = (bool) @pg_query(
+            $conn,
+            'SELECT first_name, last_name, email, phone FROM ' . sys_table('users') . ' LIMIT 0'
+        );
+    }
+    return $present;
+}
+
 // Fetch list of all system users
 if ($action === 'users_list') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
-        $sql = "SELECT id, username, is_active, role, first_name, last_name, email, phone FROM "
-            . sys_table('users') . " ORDER BY id ASC";
-        $res = @pg_query($conn, $sql);
+        $hasContact = admin_user_contact_columns($conn);
+        $cols = 'id, username, is_active, role'
+            . ($hasContact ? ', first_name, last_name, email, phone' : '');
+        $res = @pg_query($conn, "SELECT {$cols} FROM " . sys_table('users') . ' ORDER BY id ASC');
         if (!$res) {
             admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_list');
@@ -112,7 +154,13 @@ if ($action === 'users_list') {
             $users[] = $row;
         }
 
-        echo json_encode(['status' => 'success', 'users' => $users]);
+        // Tells the client whether to offer the contact fields at all, so it never
+        // renders inputs whose save could only fail.
+        echo json_encode([
+            'status'          => 'success',
+            'users'           => $users,
+            'contact_columns' => $hasContact,
+        ]);
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
@@ -149,21 +197,34 @@ if ($action === 'users_add') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../../includes/api_helpers.php';
-        $conn    = db_connect();
+        $conn = db_connect();
+
+        // Creating accounts has to keep working before 3.3_user_contact, so the four
+        // columns are left out of the statement when they do not exist. Contact data
+        // that was actually typed is never dropped silently, though: that would report
+        // success for values it did not store.
+        $hasContact = admin_user_contact_columns($conn);
+        if (!$hasContact && array_filter($contact, static fn($v) => $v !== null) !== []) {
+            throw new AdminApiMessage(
+                'Contact details need the 3.3_user_contact migration '
+                . '(Migrations → Initialize System Tables). Leave them empty to create '
+                . 'the user without them.'
+            );
+        }
+
         $newSalt = bin2hex(random_bytes(32));
         $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
-        $sql     = 'INSERT INTO ' . sys_table('users')
-            . ' (username, password_hash, salt, password_algo, password_params, is_active, role,'
-            . ' first_name, last_name, email, phone)'
-            . ' VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8, $9, $10) RETURNING id';
-        $res = @pg_query_params($conn, $sql, array_merge([
-            $username, $hash, $newSalt, 'argon2id',
-            json_encode(ARGON2_OPTIONS), $role,
-        ], $contact));
+        $cols    = 'username, password_hash, salt, password_algo, password_params, is_active, role';
+        $vals    = '$1, $2, $3, $4, $5, true, $6';
+        $params  = [$username, $hash, $newSalt, 'argon2id', json_encode(ARGON2_OPTIONS), $role];
+        if ($hasContact) {
+            $cols  .= ', first_name, last_name, email, phone';
+            $vals  .= ', $7, $8, $9, $10';
+            $params = array_merge($params, $contact);
+        }
+        $sql = 'INSERT INTO ' . sys_table('users') . " ({$cols}) VALUES ({$vals}) RETURNING id";
+        $res = @pg_query_params($conn, $sql, $params);
         if (!$res) {
-            // Before 3.3_user_contact the four contact columns are missing, so creating a
-            // user fails outright. users_list already says so; without this it is the one
-            // place where the tab still loads but every action returns a driver error.
             admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_add');
         }
@@ -257,6 +318,15 @@ if ($action === 'users_update_contact') {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../../includes/api_helpers.php';
         $conn = db_connect();
+        // This action is entirely about the 3.3_user_contact columns, so unlike the
+        // list and the insert it has nothing to degrade to — say what to run instead
+        // of letting the UPDATE fail into the generic driver error.
+        if (!admin_user_contact_columns($conn)) {
+            throw new AdminApiMessage(
+                'Contact details need the 3.3_user_contact migration '
+                . '(Migrations → Initialize System Tables).'
+            );
+        }
         $sql = 'UPDATE ' . sys_table('users')
             . ' SET first_name = $1, last_name = $2, email = $3, phone = $4 WHERE id = $5';
         $res = @pg_query_params($conn, $sql, array_merge($contact, [$userId]));

@@ -43,6 +43,23 @@ require_once __DIR__ . '/../includes/api_helpers.php';
 $triggeredBy = (isset($argv[1]) && $argv[1] === 'admin') ? 'admin' : 'cron';
 print_log("<h3>Start CRON - Diagnostics</h3>");
 require_once __DIR__ . '/../includes/config_store.php';
+
+// Click statistics retention (Admin -> System -> Click Statistics). That log has no
+// worker of its own, so this is what bounds it; the module's Log tab only trims on
+// demand. Deliberately here, ABOVE the calendar checks below: those exit early on an
+// install with no configured sources, and housekeeping must not depend on whether
+// this cron's other job has anything to do. Never fatal — a notifications run must
+// not fail over retention.
+try {
+    require_once __DIR__ . '/../includes/clickstats.php';
+    $purged = clickstats_purge_expired(db_connect());
+    if ($purged !== null) {
+        print_log("Click statistics retention: removed {$purged} expired row(s).");
+    }
+} catch (Throwable $e) {
+    error_log('[cron_notifications] clickstats retention failed: ' . $e->getMessage());
+}
+
 $config = config_get('calendar');
 if ($config === null) {
     print_log("<span style='color:red;'>Missing calendar configuration</span>");

@@ -263,19 +263,29 @@ async function renderManageUsers(panel, ctx) {
         const minPasswordLength = policy.status === 'success' ? policy.min_password_length : 8;
         const defaultRole = policy.status === 'success' ? policy.default_role : 'editor';
 
+        // False on a database where 3.3_user_contact has not been run. Everything else
+        // on this tab still works, so the contact fields are simply left out rather
+        // than rendered as controls whose save could only fail.
+        const hasContact = data.contact_columns !== false;
+
         let html = `
             <h2 class="admin-page-title">System Users Management</h2>
             <p class="admin-page-desc">
                 Manage user accounts and roles. Roles: <strong>Admin</strong> – admin panel only; <strong>Editor</strong> – full frontend CRUD; <strong>Viewer</strong> – read-only frontend.
             </p>
+            ${hasContact ? '' : `<p class="admin-page-desc" style="color:var(--error);">
+                Contact details (name, email, phone) are unavailable: run
+                Migrations &rarr; Initialize System Tables to apply the
+                <code>3.3_user_contact</code> migration.
+            </p>`}
             <table class="adm-tbl" style="margin-bottom: 30px;">
                 <thead>
                     <tr>
                         <th class="adm-th">ID</th>
                         <th class="adm-th">Username</th>
-                        <th class="adm-th">Name</th>
+                        ${hasContact ? `<th class="adm-th">Name</th>
                         <th class="adm-th">Email</th>
-                        <th class="adm-th">Phone</th>
+                        <th class="adm-th">Phone</th>` : ''}
                         <th class="adm-th">Status</th>
                         <th class="adm-th">Role</th>
                         <th class="adm-th">Actions</th>
@@ -295,9 +305,9 @@ async function renderManageUsers(panel, ctx) {
                 <tr>
                     <td class="adm-td">${escHtml(u.id)}</td>
                     <td class="adm-td"><strong>${escHtml(u.username)}</strong></td>
-                    <td class="adm-td">${cell(fullName(u))}</td>
+                    ${hasContact ? `<td class="adm-td">${cell(fullName(u))}</td>
                     <td class="adm-td">${cell(u.email)}</td>
-                    <td class="adm-td">${cell(u.phone)}</td>
+                    <td class="adm-td">${cell(u.phone)}</td>` : ''}
                     <td class="adm-td">
                         <span class="adm-badge ${u.is_active ? 'adm-badge-ok' : 'adm-badge-danger'}">
                             ${u.is_active ? 'Active' : 'Inactive'}
@@ -317,11 +327,11 @@ async function renderManageUsers(panel, ctx) {
                         <button class="btn btn-xs btn-secondary btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}">
                             Change pwd
                         </button>
-                        <button class="btn btn-xs btn-secondary btn-edit-contact" data-id="${u.id}" data-username="${escHtml(u.username)}"
+                        ${hasContact ? `<button class="btn btn-xs btn-secondary btn-edit-contact" data-id="${u.id}" data-username="${escHtml(u.username)}"
                             data-first-name="${escHtml(u.first_name ?? '')}" data-last-name="${escHtml(u.last_name ?? '')}"
                             data-email="${escHtml(u.email ?? '')}" data-phone="${escHtml(u.phone ?? '')}">
                             Edit Details
-                        </button>
+                        </button>` : ''}
                     </td>
                 </tr>
             `;
@@ -353,7 +363,7 @@ async function renderManageUsers(panel, ctx) {
                         <option value="admin" ${defaultRole === 'admin' ? 'selected' : ''}>Admin</option>
                     </select>
                 </div>
-                <div style="margin-bottom: 15px;">
+                ${hasContact ? `<div style="margin-bottom: 15px;">
                     <label class="adm-field-label">First Name (Optional)</label>
                     <input type="text" id="newFirstName" class="adm-input w-full" maxlength="100">
                 </div>
@@ -368,7 +378,7 @@ async function renderManageUsers(panel, ctx) {
                 <div style="margin-bottom: 15px;">
                     <label class="adm-field-label">Phone (Optional)</label>
                     <input type="text" id="newPhone" class="adm-input w-full" maxlength="32">
-                </div>
+                </div>` : ''}
                 <button id="btnAddUser" class="btn btn-success">Create User</button>
             </div>
         `;
@@ -625,11 +635,13 @@ async function renderManageUsers(panel, ctx) {
             const username = panel.querySelector('#newUsername').value;
             const password = panel.querySelector('#newPassword').value;
             const role = panel.querySelector('#newRole').value;
-            // Contact fields are informational and optional — never blocked on here.
-            const first_name = panel.querySelector('#newFirstName').value;
-            const last_name  = panel.querySelector('#newLastName').value;
-            const email      = panel.querySelector('#newEmail').value;
-            const phone      = panel.querySelector('#newPhone').value;
+            // Contact fields are informational and optional — never blocked on here,
+            // and absent entirely when 3.3_user_contact has not been applied.
+            const contactValue = (id) => panel.querySelector(id)?.value ?? '';
+            const first_name = contactValue('#newFirstName');
+            const last_name  = contactValue('#newLastName');
+            const email      = contactValue('#newEmail');
+            const phone      = contactValue('#newPhone');
 
             if (!username || !password) {
                 showStatusPill(addBtn, 'Username and password are required.', 'error');

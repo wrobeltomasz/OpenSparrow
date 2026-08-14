@@ -310,14 +310,17 @@ Click Statistics:
     and no request is ever sent. The endpoint re-checks the flag on every request and
     answers 204 without writing, so a page left open when the module is switched off
     stops recording immediately
-  - Settings tab: "Enable Click Statistics" and "Record Table And Record" (turn the
-    latter off to keep entries to user, time and element only). Config in the
-    spw_config key "clickstats"
+  - Settings tab: "Enable Click Statistics", "Record Table And Record" (turn the
+    latter off to keep entries to user, time and element only) and "Delete
+    Automatically After N days". Config in the spw_config key "clickstats"
   - Log tab: recorded clicks newest first, 100 per page, filterable by element and by
     user, with a Top Elements rollup of the 20 most-clicked elements
-  - Retention is manual: "Delete Older Than N day(s)" trims the log to a rolling
-    window and "Clear Log" empties spw_clickstats entirely. There is no cron worker
-    and no automatic expiry
+  - Retention: "Delete Automatically After N days" (default 90) is applied by the
+    notifications cron and is what bounds the table without anyone remembering to
+    purge it; 0 means keep everything until cleared by hand. An unusable value falls
+    back to the default, never to "keep everything". On top of that the Log tab
+    purges on demand: "Delete Older Than N day(s)" trims to a rolling window and
+    "Clear Log" empties spw_clickstats entirely
   - Collection: one delegated click listener matches [data-stat], button, a and .btn;
     the label is the data-stat value when present, otherwise a derived id/class/text
     label. Input values, query strings and form contents are never recorded. Clicks are

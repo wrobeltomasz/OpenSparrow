@@ -27,15 +27,10 @@ const CLICKSTATS_TOP_LIMIT = 20;
 // a 500 where an empty page is the honest answer.
 const CLICKSTATS_MAX_PAGE = 10000;
 
-// The stored config, normalised so the client never has to guess a default.
-function clickstats_config(): array
-{
-    $cfg = config_get('clickstats') ?? [];
-    return [
-        'enabled'       => !empty($cfg['enabled']),
-        'track_records' => $cfg['track_records'] ?? true,
-    ];
-}
+// clickstats_settings() / clickstats_retention_days() and the retention constants.
+// Shared with the collector endpoint and the cron sweep so all three agree on what
+// the stored config means.
+require_once __DIR__ . '/../clickstats.php';
 
 if ($action === 'clickstats_load') {
     admin_try(static function (): void {
@@ -53,7 +48,7 @@ if ($action === 'clickstats_load') {
 
         $row = config_get_row('clickstats');
         admin_ok([
-            'config'       => clickstats_config(),
+            'config'       => clickstats_settings(),
             'version'      => $row['version'] ?? null,
             'table_exists' => $exists,
             'total'        => $total,
@@ -70,6 +65,12 @@ if ($action === 'clickstats_save') {
             [
                 'enabled'       => !empty($data['enabled']),
                 'track_records' => !empty($data['track_records']),
+                // Normalised on the way in, so the cron never reads a window it
+                // cannot use. Unlike the manual purge this one does not reject a
+                // bad value: a config save must not fail over a field the form
+                // bounds anyway, and the fallback here is the safe direction
+                // (the default window, never "keep everything").
+                'retention_days' => clickstats_retention_days($data['retention_days'] ?? null),
             ],
             admin_expected_version($data),
             'Failed to save click statistics config.'
@@ -161,8 +162,9 @@ if ($action === 'clickstats_purge_log') {
         // the Log tab gives rather than failing on a missing relation.
         admin_require_log_table($conn, $table);
 
-        // Retention is manual by design (no cron worker): "days" trims to a window,
-        // {"all": true} clears the log entirely — which is what Clear Log sends.
+        // On-demand purge, separate from the automatic window the notifications cron
+        // applies (clickstats_purge_expired()): "days" trims to a window, {"all": true}
+        // clears the log entirely — which is what Clear Log sends.
         //
         // Nothing here is implied. This is the one purge whose fallback branch deletes
         // every row, so it is never reached by a field being absent, misspelled or
