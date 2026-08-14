@@ -411,7 +411,8 @@ ${_ul([
     `<strong>${s.s9q_tab1_label}:</strong> ${s.s9q_tab1}`,
     `<strong>${s.s9q_tab2_label}:</strong> ${s.s9q_tab2}`,
     `<strong>${s.s9q_off_label}:</strong> ${s.s9q_off}`,
-    `<strong>${s.s9q_privacy_label}:</strong> ${s.s9q_privacy}`
+    `<strong>${s.s9q_privacy_label}:</strong> ${s.s9q_privacy}`,
+    `<strong>${s.s9q_labels_label}:</strong> ${s.s9q_labels}`
 ])}
 
 ${_h3('doc-10', s.s10_head)}

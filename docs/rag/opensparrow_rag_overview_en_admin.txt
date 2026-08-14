@@ -315,7 +315,8 @@ Click Statistics:
     spw_config key "clickstats"
   - Log tab: recorded clicks newest first, 100 per page, filterable by element and by
     user, with a Top Elements rollup of the 20 most-clicked elements
-  - Retention is manual: "Clear Log" empties spw_clickstats. There is no cron worker
+  - Retention is manual: "Delete Older Than N day(s)" trims the log to a rolling
+    window and "Clear Log" empties spw_clickstats entirely. There is no cron worker
     and no automatic expiry
   - Collection: one delegated click listener matches [data-stat], button, a and .btn;
     the label is the data-stat value when present, otherwise a derived id/class/text
@@ -323,6 +324,14 @@ Click Statistics:
     buffered in the browser and delivered in batches via navigator.sendBeacon to
     public/api/clickstats.php, so a session costs a handful of requests, not one per
     click. A table name sent by a client is stored only if that user has access to it
+  - Labels can contain record data: with no data-stat and no id the label falls back to
+    the element's own visible text (up to 40 chars), which in a list of records is
+    record content — a file name on the Files page, a record title in a row link.
+    Unchecking "Record Table And Record" does not change that; it governs only the
+    separate table_name/record_id columns. Annotate an element with data-stat to pin
+    exactly what is stored for it
+  - The endpoint accepts at most 50 events per request and 300 rows per minute per
+    session; anything past that is dropped silently
   - Requires the 3.3_clickstats migration (Migrations -> Initialize System Tables)
 
 Migrations:

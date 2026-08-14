@@ -443,6 +443,9 @@ async function renderManageUsers(panel, ctx) {
                 msgEl.id = 'cpw-msg';
                 cancelBtn.id = 'cpw-cancel';
                 saveBtn.id = 'cpw-save';
+                // Kept from the hand-rolled dialog this replaced — appended, not
+                // swapped, so the button keeps every class it had before.
+                saveBtn.classList.add('btn-sm');
 
                 if (isSelf) {
                     const currentInput = document.createElement('input');

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Tests\Admin;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -60,6 +61,60 @@ final class AdminHelpersTest extends TestCase
         $this->assertNull(admin_expected_version(['version' => 'latest']));
     }
 
+    /**
+     * A request that names no window gets the caller's default, and only a missing
+     * key or an explicit null counts as "none named". '' must NOT land here: the
+     * clickstats purge clears its whole table when no window is given, so an empty
+     * field arriving as "no window" would answer a retention request with a wipe.
+     */
+    public function testPurgeDaysIsNullOnlyWhenNoWindowIsNamed(): void
+    {
+        $this->assertNull(admin_purge_days([]));
+        $this->assertNull(admin_purge_days(['days' => null]));
+    }
+
+    public function testPurgeDaysAcceptsWholeDayCounts(): void
+    {
+        $this->assertSame(30, admin_purge_days(['days' => 30]));
+        $this->assertSame(30, admin_purge_days(['days' => '30']));
+        $this->assertSame(1, admin_purge_days(['days' => 1]));
+        $this->assertSame(ADMIN_PURGE_MAX_DAYS, admin_purge_days(['days' => ADMIN_PURGE_MAX_DAYS]));
+    }
+
+    /**
+     * Every one of these used to become "older than 1 day" via max(1, (int) $raw) —
+     * a near-total delete produced by input that was never a day count. They must
+     * now be refused, not coerced.
+     *
+     * @return array<string, array{0: mixed}>
+     */
+    public static function unusableDayCounts(): array
+    {
+        // Data providers run before setUpBeforeClass(), so the constant this case
+        // list is built from is not loaded yet unless we ask for it here.
+        require_once __DIR__ . '/../../includes/admin/helpers.php';
+
+        return [
+            'zero'            => [0],
+            'negative'        => [-5],
+            'empty string'    => [''],
+            'not a number'    => ['abc'],
+            'number and text' => ['30 dni'],
+            'true'            => [true],
+            'array'           => [[30]],
+            'fractional'      => [3.5],
+            'over the cap'    => [ADMIN_PURGE_MAX_DAYS + 1],
+            'int overflow'    => ['9999999999999999999'],
+        ];
+    }
+
+    #[DataProvider('unusableDayCounts')]
+    public function testPurgeDaysRejectsAnUnusableWindow(mixed $raw): void
+    {
+        $this->expectException(\AdminApiMessage::class);
+        admin_purge_days(['days' => $raw]);
+    }
+
     public function testHelpersAreDefinedOnce(): void
     {
         foreach (
@@ -67,8 +122,8 @@ final class AdminHelpersTest extends TestCase
                 'admin_conn', 'admin_user_id', 'admin_input', 'admin_ok', 'admin_err',
                 'admin_try', 'admin_fetch_all', 'admin_config_save_versioned',
                 'admin_expected_version', 'admin_require_log_table', 'admin_purge_log',
-                'admin_read_settings', 'admin_write_settings', 'admin_save_settings',
-                'admin_run_cron_script',
+                'admin_purge_days', 'admin_read_settings', 'admin_write_settings',
+                'admin_save_settings', 'admin_run_cron_script',
             ] as $fn
         ) {
             $this->assertTrue(function_exists($fn), "Helper {$fn}() is missing.");

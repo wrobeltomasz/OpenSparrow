@@ -865,6 +865,9 @@ export function buildSectionCard(title, description = '', id = '') {
 // a ready Cancel/Save pair in `actions`. Closes on Cancel, on the backdrop and on
 // Escape — the last of those the hand-rolled copies were both missing.
 //
+// Tab is trapped inside the dialog and focus returns to whatever opened it, so a
+// keyboard user is not dropped behind the overlay onto controls they cannot see.
+//
 // `subtitle` renders as "<label> <strong>value</strong>", the "User: name" line
 // both dialogs carry. Always set via textContent: the value is a username.
 export function buildModal({ title, subtitleLabel = '', subtitleValue = '', saveLabel = 'Save' }) {
@@ -896,12 +899,49 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
+    // Whatever had focus when the dialog opened — usually the row button that
+    // opened it. Restored on close, unless the caller re-rendered it away.
+    const opener = document.activeElement;
+
+    // Enabled, reachable controls inside the dialog, in DOM order. Read on every
+    // Tab rather than once: callers append their fields after buildModal returns.
+    const focusables = () => [...box.querySelectorAll(
+        'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
+    )];
+
     // Listener is on document, so it must come off again with the overlay or every
     // dialog ever opened keeps handling Escape for the rest of the page's life.
-    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const onKey = (e) => {
+        if (e.key === 'Escape') {
+            close();
+            return;
+        }
+        if (e.key !== 'Tab') {
+            return;
+        }
+        const items = focusables();
+        if (items.length === 0) {
+            return;
+        }
+        // Wrap at both ends, and pull focus back in when it has escaped the box
+        // (the backdrop click target and the page behind it are not in `items`).
+        const first  = items[0];
+        const last   = items[items.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || !box.contains(active))) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && (active === last || !box.contains(active))) {
+            e.preventDefault();
+            first.focus();
+        }
+    };
     function close() {
         document.removeEventListener('keydown', onKey);
         overlay.remove();
+        if (opener instanceof HTMLElement && document.contains(opener)) {
+            opener.focus();
+        }
     }
     document.addEventListener('keydown', onKey);
 

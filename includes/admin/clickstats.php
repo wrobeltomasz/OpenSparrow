@@ -21,6 +21,12 @@ const CLICKSTATS_LOG_LIMIT = 100;
 // Entries in the "Top Elements" rollup.
 const CLICKSTATS_TOP_LIMIT = 20;
 
+// Highest page number the log will page to (a million rows deep). The pager never
+// asks for more, but ?page= is a query parameter: without a ceiling a large enough
+// value overflows the OFFSET multiplication into a float, which Postgres rejects —
+// a 500 where an empty page is the honest answer.
+const CLICKSTATS_MAX_PAGE = 10000;
+
 // The stored config, normalised so the client never has to guess a default.
 function clickstats_config(): array
 {
@@ -82,7 +88,7 @@ if ($action === 'clickstats_log') {
         // bound as parameters — never concatenated — so they cannot reach the SQL.
         $element = trim((string) ($_GET['element'] ?? ''));
         $user    = trim((string) ($_GET['user'] ?? ''));
-        $page    = max(1, (int) ($_GET['page'] ?? 1));
+        $page    = min(CLICKSTATS_MAX_PAGE, max(1, (int) ($_GET['page'] ?? 1)));
 
         $where  = [];
         $params = [];
@@ -156,10 +162,17 @@ if ($action === 'clickstats_purge_log') {
         admin_require_log_table($conn, $table);
 
         // Retention is manual by design (no cron worker): "days" trims to a window,
-        // its absence clears the whole log — which is what the tab's button sends.
-        $days = admin_input()['days'] ?? null;
-        if (is_numeric($days) && (int) $days > 0) {
-            admin_purge_log($table, (int) $days, 'clickstats_purge_log', 'created_at');
+        // its absence clears the whole log — which is what Clear Log sends.
+        //
+        // This module is why admin_purge_days() rejects an unusable "days" instead of
+        // coercing it: here the no-window branch below deletes everything, so reading a
+        // typo, a 0 or "30 dni" as "no window given" would answer a retention request
+        // with total data loss and no warning. The helper throws AdminApiMessage, which
+        // admin_try() turns into the standard error envelope — nothing reaches the
+        // DELETE below.
+        $days = admin_purge_days(admin_input());
+        if ($days !== null) {
+            admin_purge_log($table, $days, 'clickstats_purge_log', 'created_at');
         }
 
         $res = @pg_query($conn, "DELETE FROM {$table}");

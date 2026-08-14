@@ -13,6 +13,10 @@ import { buildInnerTabs, buildSectionCard, createPageHeader, el, mkTable, mkThea
 // Every label below comes from the DOM of a user-facing page. It is rendered with
 // textContent (via td()/el()) and never interpolated into innerHTML.
 
+// Longest retention window the Log tab offers. Mirrors ADMIN_PURGE_MAX_DAYS in
+// includes/admin/helpers.php, which is what actually enforces it for every module.
+const MAX_RETENTION_DAYS = 3650;
+
 export async function renderClickstatsPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '<h3>Loading click statistics...</h3>';
@@ -105,6 +109,15 @@ function renderSettings(panel, state) {
     body.appendChild(enabled.row);
     body.appendChild(records.row);
 
+    // How much is already stored, so the size of the log is visible next to the
+    // switch that fills it. Worded as a snapshot on purpose: the count is read once
+    // when the tab opens and is not refreshed by a purge on the Log tab.
+    if (typeof state.total === 'number') {
+        body.appendChild(el('p', 'admin-page-desc',
+            `${state.total} click(s) recorded when this tab was opened. Retention is manual — `
+            + 'trim or clear the log on the Log tab.'));
+    }
+
     const actions = el('div');
     actions.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:16px;';
     const btn = el('button', 'btn btn-primary', 'Save');
@@ -188,6 +201,27 @@ function renderLog(panel, state) {
     filterBar.append(elementFilter, userFilter, applyBtn, clearBtn, purgeBtn, pillAnchor);
     panel.appendChild(filterBar);
 
+    // Retention. There is no cron worker for this log, so trimming it is a manual
+    // action — but "delete everything" is the wrong tool for keeping a rolling
+    // window, which is what an admin who leaves collection on actually wants.
+    const retentionBar = el('div');
+    retentionBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
+
+    // Bounds mirror the server's ADMIN_PURGE_MAX_DAYS, which rejects anything
+    // outside them — this only keeps the spinner honest.
+    const daysInput = document.createElement('input');
+    daysInput.type = 'number';
+    daysInput.min = '1';
+    daysInput.max = String(MAX_RETENTION_DAYS);
+    daysInput.value = '30';
+    daysInput.className = 'adm-input w-80';
+
+    const trimBtn = el('button', 'btn btn-secondary', 'Delete Older Than');
+    const trimPill = el('span');
+
+    retentionBar.append(trimBtn, daysInput, el('span', '', 'days'), trimPill);
+    panel.appendChild(retentionBar);
+
     const summary = el('p', 'admin-page-desc', '');
     panel.appendChild(summary);
 
@@ -255,28 +289,47 @@ function renderLog(panel, state) {
         state.page = 1;
         load();
     });
-    purgeBtn.addEventListener('click', async () => {
-        if (!confirm('Delete every recorded click? This cannot be undone.')) return;
-        purgeBtn.disabled = true;
+    // Both buttons hit the same endpoint: an empty body clears the whole log, a
+    // positive `days` trims to that window. Kept in one place so the two paths
+    // cannot report their result differently.
+    async function purge(btn, pill, payload) {
+        btn.disabled = true;
         try {
             const res = await apiFetch('api.php?action=clickstats_purge_log', {
                 method: 'POST',
-                body: JSON.stringify({}),
+                body: JSON.stringify(payload),
             });
             const result = await res.json();
             if (result.status === 'success') {
                 // `note` is the "table not created yet" hint — say that rather than
                 // claiming a deletion that never had anything to delete.
-                showStatusPill(pillAnchor, result.note || `Deleted ${result.deleted ?? 0} row(s)`, 'success');
+                showStatusPill(pill, result.note || `Deleted ${result.deleted ?? 0} row(s)`, 'success');
                 state.page = 1;
                 load();
             } else {
-                showStatusPill(pillAnchor, result.error || 'Could not clear the log', 'error');
+                showStatusPill(pill, result.error || 'Could not clear the log', 'error');
             }
         } catch (e) {
-            showStatusPill(pillAnchor, 'Request failed', 'error');
+            showStatusPill(pill, 'Request failed', 'error');
         }
-        purgeBtn.disabled = false;
+        btn.disabled = false;
+    }
+
+    purgeBtn.addEventListener('click', () => {
+        if (!confirm('Delete every recorded click? This cannot be undone.')) return;
+        purge(purgeBtn, pillAnchor, {});
+    });
+
+    trimBtn.addEventListener('click', () => {
+        const days = parseInt(daysInput.value, 10);
+        // Never send an unusable value: an empty or malformed field must not turn a
+        // "trim to N days" click into a request the server could read as anything else.
+        if (!Number.isFinite(days) || days < 1 || days > MAX_RETENTION_DAYS) {
+            showStatusPill(trimPill, `Enter a valid number of days (1-${MAX_RETENTION_DAYS}).`, 'error');
+            return;
+        }
+        if (!confirm(`Delete recorded clicks older than ${days} day(s)? This cannot be undone.`)) return;
+        purge(trimBtn, trimPill, { days });
     });
 
     load();

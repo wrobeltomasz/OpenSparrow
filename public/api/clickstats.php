@@ -33,18 +33,19 @@ const CLICKSTATS_MAX_TABLE   = 100;
 // Upper bound of the int4 record_id column.
 const CLICKSTATS_MAX_RECORD_ID = 2147483647;
 
-// Ceiling on rows one session may store per minute. Retention is manual (no cron
-// worker), so without a ceiling a client that ignores the collector's own pacing
-// could grow the table until someone notices. Set well above any human: the
-// collector flushes at most MAX_BUFFER rows every FLUSH_MS, and real clicking is
-// orders of magnitude below that, so this never trims an honest session.
+// Ceiling on rows one session may store per minute. Retention is manual (the Log
+// tab trims or clears, there is no cron worker), so without a ceiling a client that
+// ignores the collector's own pacing could grow the table until someone notices.
+// 300 is five clicks a second sustained for a full minute: far past what a person
+// produces, far below the 600/min an unthrottled client could push through the
+// MAX_BUFFER/FLUSH_MS pacing, so it never trims an honest session.
 //
 // Deliberately per session, not per user: the window lives in the session itself,
 // which costs nothing (the session is already open and written) and needs no
 // filesystem or APCu state on a fire-and-forget path. A user holding several
 // sessions gets that multiple of the budget — this is a brake on runaway volume,
 // not an access control.
-const CLICKSTATS_MAX_ROWS_PER_MIN = 1000;
+const CLICKSTATS_MAX_ROWS_PER_MIN = 300;
 
 // connect=false: nothing here needs a connection until the flag has been checked and
 // there are rows to write. (config_get() opens one itself on an APCu cache miss — the

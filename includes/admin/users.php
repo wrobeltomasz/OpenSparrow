@@ -264,6 +264,14 @@ if ($action === 'users_update_contact') {
             admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_update_contact');
         }
+        // An UPDATE that matched nothing is a success as far as Postgres is concerned.
+        // Without this check a stale row (the account was deleted in another tab) would
+        // report "saved", log an action against an id that no longer exists, and put the
+        // values back on screen as though they had been stored.
+        if (pg_affected_rows($res) === 0) {
+            echo json_encode(['status' => 'error', 'error' => 'User not found.']);
+            exit;
+        }
         log_user_action($conn, $adminActorId, 'UPDATE_USER_CONTACT', 'users', $userId);
         echo json_encode([
             'status' => 'success',

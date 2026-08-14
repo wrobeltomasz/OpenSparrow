@@ -42,8 +42,16 @@ function findTarget(node) {
 }
 
 // Element label, in order of preference: the explicit data-stat annotation, the
-// element id, then a derived class+text label. Only ever descriptive text — never
-// input values, which could carry personal data.
+// element id, then a derived class+text label. Never reads input values, and the
+// page name is stored without its query string, so nothing the user typed is
+// recorded.
+//
+// The last branch is the one to keep in mind: it stores the element's own visible
+// text, and on a list of records that text IS record content — a file name on
+// files.php, a record title in a row link. That is unavoidable for a label meant
+// to be readable, and it does not depend on the "Record Table And Record" switch,
+// which only governs the separate table/record_id columns. Annotate an element
+// with data-stat to pin exactly what gets stored for it.
 function labelFor(el) {
     const explicit = el.getAttribute('data-stat');
     if (explicit) return explicit.trim().slice(0, MAX_LABEL);

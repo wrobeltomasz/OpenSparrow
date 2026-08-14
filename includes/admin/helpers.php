@@ -153,11 +153,63 @@ function admin_require_log_table(\PgSql\Connection $conn, string $table): void
 }
 
 /**
+ * Longest retention window a purge request may ask for, in days (10 years).
+ * Beyond this the value is a mistyped one, not a real window — and an unbounded
+ * day count overflows the '<n> days'::interval that admin_purge_log() builds.
+ */
+const ADMIN_PURGE_MAX_DAYS = 3650;
+
+/**
+ * The retention window a purge request asked for, or null when it named none
+ * (the caller's own default then applies).
+ *
+ * A 'days' that is present but unusable is REJECTED, never coerced. The previous
+ * `max(1, (int) $raw)` turned every unusable value — 0, -5, '', 'abc', true — into
+ * "delete everything older than one day", which is a near-total wipe of the log
+ * from input that was never a day count. In the one module whose no-window branch
+ * clears the whole table (clickstats), the same coercion would have been total.
+ *
+ * Absence must stay distinguishable from a bad value, so only a missing key or an
+ * explicit null count as "not requested": '' is a rejected value, not a default.
+ *
+ * @throws AdminApiMessage when 'days' is present and not a usable day count.
+ */
+function admin_purge_days(array $input): ?int
+{
+    if (!array_key_exists('days', $input) || $input['days'] === null) {
+        return null;
+    }
+
+    // The type test is not redundant: FILTER_VALIDATE_INT turns true into 1, and a
+    // bare true was never a day count.
+    $raw  = $input['days'];
+    $days = is_int($raw) || is_string($raw)
+        ? filter_var(
+            $raw,
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1, 'max_range' => ADMIN_PURGE_MAX_DAYS]]
+        )
+        : false;
+
+    if ($days === false) {
+        throw new AdminApiMessage(
+            'Retention window must be a whole number of days between 1 and '
+            . ADMIN_PURGE_MAX_DAYS . '.'
+        );
+    }
+    return $days;
+}
+
+/**
  * Delete log rows older than the requested retention window and emit the
  * standard {deleted: n} response. Replaces four near-identical purge blocks.
  * $timeColumn is a trusted literal from the calling module, never user input.
  * $afterDelete receives ($conn, $days) for modules that must sweep a companion
  * table with the same retention window. Never returns.
+ *
+ * $defaultDays applies only when the request names no window at all; a window it
+ * does name is validated by admin_purge_days() — see the note there on why an
+ * unusable value is rejected instead of falling back to one day.
  */
 function admin_purge_log(
     string $table,
@@ -167,7 +219,7 @@ function admin_purge_log(
     ?callable $afterDelete = null
 ): never {
     $conn = admin_conn();
-    $days = max(1, (int) (admin_input()['days'] ?? $defaultDays));
+    $days = admin_purge_days(admin_input()) ?? max(1, $defaultDays);
     $res  = @pg_query_params(
         $conn,
         "DELETE FROM {$table} WHERE " . pg_ident($timeColumn) . " < NOW() - ($1 || ' days')::interval",
