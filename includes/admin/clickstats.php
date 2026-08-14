@@ -162,17 +162,17 @@ if ($action === 'clickstats_purge_log') {
         admin_require_log_table($conn, $table);
 
         // Retention is manual by design (no cron worker): "days" trims to a window,
-        // its absence clears the whole log — which is what Clear Log sends.
+        // {"all": true} clears the log entirely — which is what Clear Log sends.
         //
-        // This module is why admin_purge_days() rejects an unusable "days" instead of
-        // coercing it: here the no-window branch below deletes everything, so reading a
-        // typo, a 0 or "30 dni" as "no window given" would answer a retention request
-        // with total data loss and no warning. The helper throws AdminApiMessage, which
-        // admin_try() turns into the standard error envelope — nothing reaches the
-        // DELETE below.
-        $days = admin_purge_days(admin_input());
-        if ($days !== null) {
-            admin_purge_log($table, $days, 'clickstats_purge_log', 'created_at');
+        // Nothing here is implied. This is the one purge whose fallback branch deletes
+        // every row, so it is never reached by a field being absent, misspelled or
+        // unusable: admin_purge_scope() refuses a request that names neither, names
+        // both, or names a window it cannot read. The refusal is an AdminApiMessage,
+        // which admin_try() turns into the standard error envelope — nothing reaches
+        // the DELETE below.
+        $scope = admin_purge_scope(admin_input());
+        if (is_int($scope)) {
+            admin_purge_log($table, $scope, 'clickstats_purge_log', 'created_at');
         }
 
         $res = @pg_query($conn, "DELETE FROM {$table}");

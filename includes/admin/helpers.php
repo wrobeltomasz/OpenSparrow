@@ -200,6 +200,49 @@ function admin_purge_days(array $input): ?int
     return $days;
 }
 
+/** What admin_purge_scope() returns for "clear the whole table". */
+const ADMIN_PURGE_ALL = 'all';
+
+/**
+ * What a purge request asked for: a window in days, or ADMIN_PURGE_ALL.
+ *
+ * For callers whose no-window branch is destructive — clickstats clears its entire
+ * log — absence must not be an instruction. "Delete everything" is the largest
+ * operation the module has, so it has to be asked for explicitly with {"all": true}
+ * and can never be the reading of a field that was left out, misspelled or dropped
+ * by a client bug. A request naming neither is refused rather than guessed at.
+ *
+ * Only a real boolean true counts: 1, "true" and "yes" are near-misses of exactly
+ * the kind an explicit flag exists to stop, so they are refused too.
+ *
+ * Naming both is refused as well. It is a caller bug either way, and the two
+ * possible readings differ by the whole table.
+ *
+ * Callers whose no-window branch is harmless (cron, ETL, anonymization: they fall
+ * back to their own default window) keep using admin_purge_days() instead.
+ *
+ * @throws AdminApiMessage when the request names neither, both, or an unusable one.
+ */
+function admin_purge_scope(array $input): int|string
+{
+    // Delegated, so a bad window is rejected identically wherever it arrives.
+    $days = admin_purge_days($input);
+    $all  = $input['all'] ?? null;
+
+    if ($days !== null && $all !== null) {
+        throw new AdminApiMessage('Send either a retention window or "all": true, not both.');
+    }
+    if ($days !== null) {
+        return $days;
+    }
+    if ($all === true) {
+        return ADMIN_PURGE_ALL;
+    }
+    throw new AdminApiMessage(
+        'A purge must ask for a retention window in days, or for "all": true to clear everything.'
+    );
+}
+
 /**
  * Delete log rows older than the requested retention window and emit the
  * standard {deleted: n} response. Replaces four near-identical purge blocks.

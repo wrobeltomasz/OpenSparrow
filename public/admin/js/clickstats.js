@@ -289,9 +289,10 @@ function renderLog(panel, state) {
         state.page = 1;
         load();
     });
-    // Both buttons hit the same endpoint: an empty body clears the whole log, a
-    // positive `days` trims to that window. Kept in one place so the two paths
-    // cannot report their result differently.
+    // Both buttons hit the same endpoint: {all: true} clears the whole log, a
+    // positive {days} trims to that window. Neither is implied — the server refuses
+    // a body naming neither or both — so send exactly one, spelled out. Kept in one
+    // place so the two paths cannot report their result differently.
     async function purge(btn, pill, payload) {
         btn.disabled = true;
         try {
@@ -317,7 +318,7 @@ function renderLog(panel, state) {
 
     purgeBtn.addEventListener('click', () => {
         if (!confirm('Delete every recorded click? This cannot be undone.')) return;
-        purge(purgeBtn, pillAnchor, {});
+        purge(purgeBtn, pillAnchor, { all: true });
     });
 
     trimBtn.addEventListener('click', () => {

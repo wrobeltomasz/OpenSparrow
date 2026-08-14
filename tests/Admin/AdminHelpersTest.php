@@ -115,6 +115,41 @@ final class AdminHelpersTest extends TestCase
         admin_purge_days(['days' => $raw]);
     }
 
+    public function testPurgeScopeReadsAWindowOrAnExplicitClearAll(): void
+    {
+        $this->assertSame(30, admin_purge_scope(['days' => 30]));
+        $this->assertSame(30, admin_purge_scope(['days' => '30']));
+        $this->assertSame(ADMIN_PURGE_ALL, admin_purge_scope(['all' => true]));
+    }
+
+    /**
+     * The caller of this helper deletes its entire table when no window comes back,
+     * so "delete everything" must always be something the request said, never
+     * something its silence was read as.
+     *
+     * @return array<string, array{0: array<string, mixed>}>
+     */
+    public static function refusedPurgeScopes(): array
+    {
+        return [
+            'names nothing'      => [[]],
+            'all is false'       => [['all' => false]],
+            'all is null'        => [['all' => null]],
+            'all is 1 not true'  => [['all' => 1]],
+            'all is the string'  => [['all' => 'true']],
+            'window and all'     => [['days' => 30, 'all' => true]],
+            'window and all off' => [['days' => 30, 'all' => false]],
+            'unusable window'    => [['days' => '30 dni']],
+        ];
+    }
+
+    #[DataProvider('refusedPurgeScopes')]
+    public function testPurgeScopeRefusesAnythingImplicitOrAmbiguous(array $input): void
+    {
+        $this->expectException(\AdminApiMessage::class);
+        admin_purge_scope($input);
+    }
+
     public function testHelpersAreDefinedOnce(): void
     {
         foreach (
@@ -122,8 +157,8 @@ final class AdminHelpersTest extends TestCase
                 'admin_conn', 'admin_user_id', 'admin_input', 'admin_ok', 'admin_err',
                 'admin_try', 'admin_fetch_all', 'admin_config_save_versioned',
                 'admin_expected_version', 'admin_require_log_table', 'admin_purge_log',
-                'admin_purge_days', 'admin_read_settings', 'admin_write_settings',
-                'admin_save_settings', 'admin_run_cron_script',
+                'admin_purge_days', 'admin_purge_scope', 'admin_read_settings',
+                'admin_write_settings', 'admin_save_settings', 'admin_run_cron_script',
             ] as $fn
         ) {
             $this->assertTrue(function_exists($fn), "Helper {$fn}() is missing.");
