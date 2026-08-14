@@ -72,6 +72,27 @@ function admin_user_contact_input(array $data): array
     ], null];
 }
 
+/**
+ * Turns "relation/column does not exist" into the actionable message instead of a
+ * raw driver error, for the statements that touch the 3.3_user_contact columns.
+ *
+ * Every one of them (list, insert, update) fails the same way on a database where
+ * the migration has not been run yet, and an admin seeing only a Postgres error
+ * has no way to know that Migrations -> Initialize System Tables is the fix.
+ * Returns normally on any other failure, leaving it to admin_db_fail().
+ *
+ * @throws AdminApiMessage
+ */
+function admin_user_schema_guard(string $err): void
+{
+    if (str_contains($err, 'is_active') || str_contains($err, 'does not exist')) {
+        throw new AdminApiMessage(
+            'Database schema is outdated or missing. Please initialize tables '
+            . '(Migrations → Initialize System Tables).'
+        );
+    }
+}
+
 // Fetch list of all system users
 if ($action === 'users_list') {
     try {
@@ -81,10 +102,7 @@ if ($action === 'users_list') {
             . sys_table('users') . " ORDER BY id ASC";
         $res = @pg_query($conn, $sql);
         if (!$res) {
-            $err = pg_last_error($conn);
-            if (str_contains($err, 'is_active') || str_contains($err, 'does not exist')) {
-                throw new AdminApiMessage("Database schema is outdated or missing. Please initialize tables.");
-            }
+            admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_list');
         }
 
@@ -143,6 +161,10 @@ if ($action === 'users_add') {
             json_encode(ARGON2_OPTIONS), $role,
         ], $contact));
         if (!$res) {
+            // Before 3.3_user_contact the four contact columns are missing, so creating a
+            // user fails outright. users_list already says so; without this it is the one
+            // place where the tab still loads but every action returns a driver error.
+            admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_add');
         }
         $newRow = pg_fetch_assoc($res);
@@ -239,6 +261,7 @@ if ($action === 'users_update_contact') {
             . ' SET first_name = $1, last_name = $2, email = $3, phone = $4 WHERE id = $5';
         $res = @pg_query_params($conn, $sql, array_merge($contact, [$userId]));
         if (!$res) {
+            admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_update_contact');
         }
         log_user_action($conn, $adminActorId, 'UPDATE_USER_CONTACT', 'users', $userId);

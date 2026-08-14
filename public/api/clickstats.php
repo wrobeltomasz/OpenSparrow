@@ -22,10 +22,13 @@ require_once __DIR__ . '/../../includes/config_store.php';
 // a client sending more is not trusted to stop at the client-side cap.
 const CLICKSTATS_MAX_EVENTS = 50;
 
-// varchar widths of spw_clickstats.element / .page — truncate rather than let
-// Postgres reject the whole batch over one long label.
+// varchar widths of spw_clickstats.element / .page / .table_name — truncate rather
+// than let Postgres reject the whole batch over one long label. Every string column
+// written below needs an entry here: a value that overflows its column takes the
+// entire multi-row INSERT down with it, not just its own row.
 const CLICKSTATS_MAX_ELEMENT = 120;
 const CLICKSTATS_MAX_PAGE    = 120;
+const CLICKSTATS_MAX_TABLE   = 100;
 
 // Upper bound of the int4 record_id column.
 const CLICKSTATS_MAX_RECORD_ID = 2147483647;
@@ -144,8 +147,13 @@ foreach (array_slice($events, 0, $budget) as $input) {
         // The table name is stored as a plain label, never used as an identifier — but a
         // user must not be able to seed the admin's log with names from tables they cannot
         // open. Out of scope is dropped, not rejected: telemetry never fails a request.
+        //
+        // The check narrows nothing for an unrestricted user: user_can_access() answers
+        // true for any string once user_allowed_items() returns null, which is the default
+        // state. So the value still has to be truncated like element and page — an
+        // over-long label would otherwise take the whole batch's INSERT down with it.
         if ($candidate !== '' && user_can_access('tables', $candidate)) {
-            $table = $candidate;
+            $table = mb_substr($candidate, 0, CLICKSTATS_MAX_TABLE);
             // record_id is an int4 column. is_numeric() alone would let "1e20" or a
             // 64-bit value through, and Postgres then rejects the whole multi-row
             // INSERT over one bad id — losing the entire batch. Out of range is
