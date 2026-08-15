@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/dashboard/widgets/stat-card.js — Registers the 'stat_card' widget; large value tile (optional coloured background) + drill-down.
-
 import { applyDrillDown, firstEqCondition } from '../drill-down.js';
 import { buildDelta } from '../delta.js';
 import { WidgetRegistry } from '../registry.js';

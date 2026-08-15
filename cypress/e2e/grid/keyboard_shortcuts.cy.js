@@ -3,17 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/grid/keyboard_shortcuts.cy.js
-// ============================================================================
-// Grid Keyboard Shortcuts + Nav-Mode + Help Modal Tests
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 const TEST_TABLE = 'companies';
-
-// ============================================================================
-// Test Suite: Help Modal
-// ============================================================================
 
 describe('OpenSparrow – Grid Keyboard Help Modal', () => {
   beforeEach(() => {
@@ -112,10 +103,6 @@ describe('OpenSparrow – Grid Keyboard Help Modal', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: ARIA Live Region
-// ============================================================================
-
 describe('OpenSparrow – Grid ARIA Live Region', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -130,10 +117,6 @@ describe('OpenSparrow – Grid ARIA Live Region', () => {
       .and('have.attr', 'aria-live', 'polite');
   });
 });
-
-// ============================================================================
-// Test Suite: Cell Focus & Navigation
-// ============================================================================
 
 describe('OpenSparrow – Grid Keyboard Navigation', () => {
   beforeEach(() => {
@@ -186,10 +169,8 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
 
         cy.wrap($cells).first().focus().should('have.class', 'kg-focused');
 
-        // Escape exits click-edit mode → enters nav-mode so arrow keys are not blocked
         cy.focused().trigger('keydown', { key: 'Escape', bubbles: true, cancelable: true });
 
-        // Use body.type consistent with other shortcut tests — trigger on element alone is insufficient
         cy.get('body').type('{downArrow}');
 
         cy.get('#grid tbody td[data-column]').first()
@@ -203,7 +184,7 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
       if (res.type !== 'grid') return;
 
       cy.get('#grid tbody td[data-column]').first().focus();
-      // Exit click-edit mode first so global shortcuts are not blocked
+
       cy.focused().trigger('keydown', { key: 'Escape', bubbles: true, cancelable: true });
       cy.get('body').type('{ctrl}a');
 
@@ -217,7 +198,7 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
       if (res.type !== 'grid') return;
 
       cy.get('#grid tbody td[data-column]').first().focus();
-      // Exit click-edit mode first so global shortcuts are not blocked
+
       cy.focused().trigger('keydown', { key: 'Escape', bubbles: true, cancelable: true });
       cy.get('body').type('{ctrl}f');
 
@@ -232,12 +213,11 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
 
       cy.get('#globalSearch').then($input => {
         if (!$input.length) return;
-        cy.wrap($input).clear().type('a'); // common letter
+        cy.wrap($input).clear().type('a');
 
         cy.get('#grid tbody td[data-column]').first().focus();
         cy.get('body').type('{ctrl}f');
 
-        // kg-search-match cells may or may not appear depending on data
         cy.get('#grid tbody td[data-column]').then($cells => {
           const matched = $cells.toArray().some(c => c.classList.contains('kg-search-match'));
           if (matched) {
@@ -251,10 +231,6 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Nav-Mode (contentEditable toggle)
-// ============================================================================
-
 describe('OpenSparrow – Grid Nav-Mode', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -267,15 +243,12 @@ describe('OpenSparrow – Grid Nav-Mode', () => {
 
       cy.get('#grid tbody td[data-column]').first().focus();
 
-      // Exit click-edit mode → nav-mode so ArrowDown fires correctly
       cy.focused().trigger('keydown', { key: 'Escape', bubbles: true, cancelable: true });
 
       cy.get('body').type('{downArrow}');
 
-      // After arrow navigation, active cell should not be in contenteditable editing state
       cy.get('#grid tbody td.kg-focused').then($focused => {
         if ($focused.length > 0) {
-          // contentEditable should be 'false' (nav-mode) or absent — not 'true' (editing)
           const ce = $focused.first().attr('contenteditable');
           expect(ce).to.not.equal('true');
         }

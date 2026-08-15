@@ -7,13 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/m2m.php — admin api.php module: many-to-many relation management (list_m2m, create_m2m, delete_m2m).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
 require_once __DIR__ . '/../config_store.php';
 require_once __DIR__ . '/../api_helpers.php';
 
@@ -65,7 +58,6 @@ if ($action === 'create_m2m') {
     $label      = $body['label']         ?? '';
     $displayCol = $body['display_column'] ?? 'name';
 
-    // Validate identifiers: only a-z, 0-9, underscore
     $identRe = '/^[a-z][a-z0-9_]*$/';
     foreach (['tableA' => $tableA, 'tableB' => $tableB, 'jt' => $jt, 'selfFk' => $selfFk, 'otherFk' => $otherFk] as $field => $val) {
         if (!preg_match($identRe, $val)) {
@@ -84,7 +76,6 @@ if ($action === 'create_m2m') {
         exit;
     }
 
-    // Check for duplicate M2M entry
     foreach ($schema['tables'][$tableA]['many_to_many'] ?? [] as $existing) {
         if (($existing['junction_table'] ?? '') === $jt) {
             echo json_encode(['status' => 'error', 'error' => "M2M via $jt already exists on $tableA."]);
@@ -97,9 +88,6 @@ if ($action === 'create_m2m') {
         $conn = db_connect();
         $pgSchema = $schema['tables'][$tableA]['schema'] ?? 'public';
 
-        // Create junction table in PostgreSQL. Every identifier — including
-        // $pgSchema, which comes from the schema config and is not covered by
-        // the $identRe check above — goes through pg_ident().
         $sql = sprintf(
             'CREATE TABLE IF NOT EXISTS %s.%s (
                 id         SERIAL PRIMARY KEY,
@@ -123,7 +111,6 @@ if ($action === 'create_m2m') {
             admin_db_fail($conn, 'create_m2m');
         }
 
-        // Add hidden junction table entry to schema.json (if not exists)
         if (!isset($schema['tables'][$jt])) {
             $schema['tables'][$jt] = [
                 'display_name' => str_replace('_', '–', $jt),
@@ -142,7 +129,6 @@ if ($action === 'create_m2m') {
             ];
         }
 
-        // Add many_to_many entry to table_a
         if (!isset($schema['tables'][$tableA]['many_to_many']) || !is_array($schema['tables'][$tableA]['many_to_many'])) {
             $schema['tables'][$tableA]['many_to_many'] = [];
         }
@@ -190,7 +176,6 @@ if ($action === 'delete_m2m') {
         exit;
     }
 
-    // Remove the M2M entry
     array_splice($schema['tables'][$tableA]['many_to_many'], $m2mIndex, 1);
     if (empty($schema['tables'][$tableA]['many_to_many'])) {
         unset($schema['tables'][$tableA]['many_to_many']);
@@ -204,9 +189,7 @@ if ($action === 'delete_m2m') {
             @pg_query($conn, sprintf('DROP TABLE IF EXISTS %s.%s', pg_ident($pgSchema), pg_ident($junctionTable)));
         }
 
-        // Remove hidden junction table entry from schema.json
         if ($junctionTable && isset($schema['tables'][$junctionTable]['hidden']) && $schema['tables'][$junctionTable]['hidden'] === true) {
-            // Only remove if no other table's M2M still references this junction
             $stillUsed = false;
             foreach ($schema['tables'] as $tCfg) {
                 foreach ($tCfg['many_to_many'] ?? [] as $m) {

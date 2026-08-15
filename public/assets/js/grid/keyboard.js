@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/keyboard.js — Keyboard navigation/shortcuts for the grid (arrow keys, page step, Ctrl/Cmd combos; Mac-aware). Skips action/m2m cells.
-
 import { I18n } from '../i18n.js';
 import { state } from './state.js';
 
@@ -89,7 +87,7 @@ export class GridKeyboard {
         this._anchorCol = -1;
         this._selected  = new Set();
         this._searchMatches   = new Set();
-        this._navModeEditable = new Map(); // cells where contentEditable is temp-disabled
+        this._navModeEditable = new Map();
         this._ctrlHoldTimer   = null;
         this._helpEl    = null;
         this._backdropEl = null;
@@ -194,7 +192,6 @@ export class GridKeyboard {
         }
     }
 
-    // navMode=true: temporarily disables contentEditable so arrow keys work after focus
     _focusCell(r, c, announce = true, navMode = false) {
         if (r < 0 || r >= this._grid.length) return;
         const row = this._grid[r];
@@ -230,7 +227,6 @@ export class GridKeyboard {
         }
     }
 
-    // All keyboard-driven navigation uses navMode=true
     _navFocus(r, c, announce = true) { this._focusCell(r, c, announce, true); }
 
     _handleFocusin(e) {
@@ -362,7 +358,6 @@ export class GridKeyboard {
         const cell = this._grid[this._focusRow]?.[this._focusCol];
         if (!cell) return;
 
-        // Nav-mode cell: restore contentEditable and enter text editing
         if (this._navModeEditable.has(cell)) {
             cell.contentEditable = this._navModeEditable.get(cell);
             this._navModeEditable.delete(cell);
@@ -376,9 +371,8 @@ export class GridKeyboard {
             return;
         }
 
-        if (cell.contentEditable === 'true') return; // already editing (click-focused)
+        if (cell.contentEditable === 'true') return;
 
-        // Non-editable cell → navigate to edit form
         const rowId = cell.dataset.id || this._getRowId(cell);
         if (rowId && state.currentTable) {
             window.location.href = `edit.php?table=${encodeURIComponent(state.currentTable)}&id=${encodeURIComponent(rowId)}`;
@@ -527,7 +521,6 @@ export class GridKeyboard {
             return;
         }
 
-        // Ctrl hold for help overlay
         if (isCtrl(e) && !e.shiftKey && !e.altKey && !e.repeat) {
             if (!this._ctrlHoldTimer) {
                 this._ctrlHoldTimer = setTimeout(() => {
@@ -539,13 +532,11 @@ export class GridKeyboard {
 
         const sc = this._sc;
 
-        // Tab always intercepted when grid position is known
         if (this._focusRow >= 0) {
             if (matchShortcut(e, sc.navigate.tabNext)) { e.preventDefault(); this._clearSelection(); this._tabMove(true);  return; }
             if (matchShortcut(e, sc.navigate.tabPrev)) { e.preventDefault(); this._clearSelection(); this._tabMove(false); return; }
         }
 
-        // contentEditable cell in EDIT mode (not nav mode — user is typing)
         const active = document.activeElement;
         const isCellEdit = active?.tagName === 'TD'
             && active.contentEditable === 'true'
@@ -554,7 +545,7 @@ export class GridKeyboard {
         if (isCellEdit) {
             if (e.key === 'Escape') {
                 e.preventDefault();
-                // Exit edit mode: stay on cell but disable text editing
+
                 active.contentEditable = 'false';
                 this._navModeEditable.set(active, 'true');
                 active.focus({ preventScroll: false });
@@ -562,10 +553,8 @@ export class GridKeyboard {
             return;
         }
 
-        // Block shortcuts in regular form inputs / dialogs
         if (inEditContext()) return;
 
-        // Global shortcuts (work regardless of grid focus)
         if (matchShortcut(e, sc.search))           { e.preventDefault(); this._openSearch(); return; }
         if (matchShortcut(e, sc.clipboard.copy))   { e.preventDefault(); this._copySelection(); return; }
         if (matchShortcut(e, sc.clipboard.cut))    { e.preventDefault(); this._copySelection(); return; }
@@ -576,17 +565,14 @@ export class GridKeyboard {
         const inGrid = this._focusRow >= 0 || this._container.contains(active);
         if (!inGrid) return;
 
-        // Grid boundary (Ctrl+Home/End) before plain Home/End
         if (matchShortcut(e, sc.navigate.gridFirst)) { e.preventDefault(); this._clearSelection(); this._moveToGridBoundary(false); return; }
         if (matchShortcut(e, sc.navigate.gridLast))  { e.preventDefault(); this._clearSelection(); this._moveToGridBoundary(true);  return; }
 
-        // Shift+arrow selection before plain arrows
         if (matchShortcut(e, sc.select.extendUp))    { e.preventDefault(); this._extendSelection(-1, 0);  return; }
         if (matchShortcut(e, sc.select.extendDown))  { e.preventDefault(); this._extendSelection(1, 0);   return; }
         if (matchShortcut(e, sc.select.extendLeft))  { e.preventDefault(); this._extendSelection(0, -1);  return; }
         if (matchShortcut(e, sc.select.extendRight)) { e.preventDefault(); this._extendSelection(0, 1);   return; }
 
-        // Navigation
         if (matchShortcut(e, sc.navigate.up))       { e.preventDefault(); this._clearSelection(); this._moveFocus(-1, 0);           return; }
         if (matchShortcut(e, sc.navigate.down))     { e.preventDefault(); this._clearSelection(); this._moveFocus(1, 0);            return; }
         if (matchShortcut(e, sc.navigate.left))     { e.preventDefault(); this._clearSelection(); this._moveFocus(0, -1);           return; }
@@ -596,7 +582,6 @@ export class GridKeyboard {
         if (matchShortcut(e, sc.navigate.pageUp))   { e.preventDefault(); this._clearSelection(); this._moveByPage(false);          return; }
         if (matchShortcut(e, sc.navigate.pageDown)) { e.preventDefault(); this._clearSelection(); this._moveByPage(true);           return; }
 
-        // Edit
         if (matchShortcut(e, sc.edit.enter) || matchShortcut(e, sc.edit.f2)) { e.preventDefault(); this._enterEditMode(); return; }
         if (matchShortcut(e, sc.edit.escape)) { this._clearSelection(); return; }
     }
@@ -621,7 +606,7 @@ export class GridKeyboard {
                 else                         { td.classList.add('kg-selected');    this._selected.add(td); }
             } else {
                 this._clearSelection();
-                // navMode=false: preserve contentEditable so clicking starts editing immediately
+
                 this._focusCell(r, c, false, false);
             }
             break;

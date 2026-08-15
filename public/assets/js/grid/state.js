@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/state.js — Singleton grid state + helpers (sortRows, reorderColumns, selection)
-// Shared mutable `state` (current table, full/filtered data, displayed columns, sort, fkCache, selectedIds, search mode) imported by all grid sub-modules.
 export const state = {
     currentTable: null,
     fullData: [],
@@ -29,7 +27,6 @@ export function clearSelection() {
     state.selectedIds.clear();
 }
 
-// Public read-only snapshot used by external modules (pagination, export_csv, app.js)
 export function getState() {
     return {
         currentTable: state.currentTable,
@@ -60,7 +57,6 @@ export function resetFiltersState() {
     state.searchTerm = '';
 }
 
-// Pure sort — returns new array, never mutates
 export function sortRows(rows, sortState) {
     if (!sortState.column) return rows;
     const col = sortState.column;

@@ -1,25 +1,11 @@
 /*
- * This file is part of OpenSparrow - https://opensparrow.org
- * SPDX-License-Identifier: LGPL-3.0-or-later
- * Copyright (C) 2024-2026 OpenSparrow Contributors
- * Licensed under LGPL v3. See COPYING.LESSER file for details.
- */
+  * This file is part of OpenSparrow - https://opensparrow.org
+  * SPDX-License-Identifier: LGPL-3.0-or-later
+  * Copyright (C) 2024-2026 OpenSparrow Contributors
+  * Licensed under LGPL v3. See COPYING.LESSER file for details.
+*/
 
 :root {
-  /* ============================================================
-     OpenSparrow FE — "Business" theme.
-     4 + 2 COLOUR SYSTEM. Four neutral/accent hues carry the whole UI; two
-     semantic hues are admitted for status and nothing else.
-       1. --c-paper  white       surfaces
-       2. --c-stone  cool grey   page ground, rules, muted text
-       3. --c-ink    graphite    text, dark bars, caution
-       4. --c-navy   #003366     the single accent: links, actions, selection
-       5. --c-ok     #0E7E4F     success / positive state
-       6. --c-error  #AB0000     failure and destructive actions
-     Everything else below is one of those, tinted towards paper or ink.
-     Do not introduce a seventh hue, and do not reach for --c-ok / --c-error
-     for decoration: they mean "this succeeded" and "this failed or destroys".
-     ============================================================ */
   --c-paper: #FFFFFF;
   --c-stone: #8A9199;
   --c-ink:   #1F2A37;
@@ -27,33 +13,30 @@
   --c-ok:    #0E7E4F;
   --c-error: #AB0000;
 
-  --bg:           #F5F6F7;   /* stone @ 8% on paper */
+  --bg:           #F5F6F7;
   --panel:        var(--c-paper);
 
   --text:         var(--c-ink);
-  --muted:        #6E767F;   /* ink @ 62% on paper */
+  --muted:        #6E767F;
 
   --accent:       var(--c-navy);
-  --accent-dark:  #002245;   /* navy + ink */
-  --accent-light: #F1F4F8;   /* navy @ 6% */
-  --accent-mid:   #D0DAE6;   /* navy @ 18% */
+  --accent-dark:  #002245;
+  --accent-light: #F1F4F8;
+  --accent-mid:   #D0DAE6;
 
-  /* The two semantic hues. One shade each: hover states darken with
-     filter: brightness() instead of a second token. There is no --danger
-     token - a failed request and a delete button are the same red. */
   --error:        var(--c-error);
-  --error-light:  #FBEDED;   /* error @ 7% on paper */
+  --error-light:  #FBEDED;
   --ok:           var(--c-ok);
   --ok-light:     #EAF5F0;
-  /* Caution has no hue of its own — amber would be a seventh colour. */
+
   --warn:         var(--c-ink);
   --warn-light:   #F0F2F4;
 
-  --border:       #D8DBDF;   /* stone @ 34% */
-  --border-light: #E9EBED;   /* stone @ 18% */
-  /* grid crosshair — row + column hover stripe */
+  --border:       #D8DBDF;
+  --border-light: #E9EBED;
+
   --row-col-hover: #F3F6F9;
-  /* the exact hovered cell — darker than the stripe above so it stands out */
+
   --cell-hover:   #DEE6EF;
 
   --shadow-sm:    0 1px 2px rgba(31, 42, 55, 0.06);
@@ -65,10 +48,6 @@
   --header-h:     60px;
   --transition:   150ms ease;
 
-  /* Typography. Inter is NOT bundled and never was — the old stacks asked for
-     it and silently fell through, so the app rendered in whatever the OS chose.
-     These two tokens are the only font declarations in the project; every rule
-     below uses them or `inherit`. Do not name a family inline. */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
@@ -90,12 +69,10 @@ html, body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-/* ===== HIDDEN ON DESKTOP ===== */
 .hamburger, #mobileActions {
   display: none !important;
 }
 
-/* ===== HEADER ===== */
 header {
   display: flex;
   align-items: center;
@@ -136,7 +113,6 @@ header h1 {
   white-space: nowrap;
 }
 
-/* SEARCH BAR (grid #globalSearch, board #boardSearch, calendar #calendarSearch) */
 header #globalSearch,
 header input[type="search"] {
   flex: 1;
@@ -159,7 +135,6 @@ header input[type="search"]:focus {
   border-color: rgba(255,255,255,.8);
 }
 
-/* COLUMN FILTER DROPDOWN */
 header select {
   padding: 0.42rem 2rem 0.42rem 0.75rem;
   border-radius: 999px;
@@ -178,7 +153,6 @@ header select {
 header select:focus { outline: none; border-color: rgba(255,255,255,.8); }
 header select option { background: var(--accent-dark); color: #fff; }
 
-/* DATE FILTERS IN HEADER */
 #dateFiltersContainer {
   display: flex;
   align-items: center;
@@ -216,7 +190,6 @@ header input.date-filter:focus {
   border-color: rgba(255,255,255,.8);
 }
 
-/* DYNAMIC COLUMN FILTER BAR (grid header) */
 #filterBar {
   display: flex;
   align-items: center;
@@ -264,8 +237,6 @@ header #clearFilters {
   white-space: nowrap;
 }
 
-/* The global `button { display: inline-flex }` rule would defeat the UA [hidden]
-   style — pages with a strict CSP toggle visibility via the hidden attribute */
 header #clearFilters[hidden] { display: none; }
 
 header #clearFilters:hover:not(:disabled) {
@@ -274,7 +245,6 @@ header #clearFilters:hover:not(:disabled) {
   color: #fff;
 }
 
-/* Filter chips rendered inside the dark header (board lanes, calendar sources, dashboard widgets) */
 header .filter-chip {
   border-color: rgba(255,255,255,.25);
   background: rgba(255,255,255,.12);
@@ -285,7 +255,6 @@ header .filter-chip:hover {
   background: rgba(255,255,255,.22);
 }
 
-/* Many chips must not wrap and grow the header — keep one line, scroll horizontally */
 header .board-filters,
 header .calendar-filters,
 header .dashboard-filters,
@@ -312,15 +281,12 @@ header .print-filters::-webkit-scrollbar-thumb {
   border-radius: 3px;
 }
 
-/* Report parameter selects (print.php) — same label + pill-select pattern as the
-   dashboard's period filter (header .dash-filter-label / header select) */
 header .print-filter-label {
   font-size: 13px;
   color: #ffffff;
   white-space: nowrap;
 }
 
-/* USER MENU */
 .header-user-menu {
   margin-left: auto;
   display: flex;
@@ -328,7 +294,6 @@ header .print-filter-label {
   gap: 15px;
 }
 
-/* ===== AVATAR ===== */
 .avatar {
   width: 32px;
   height: 32px;
@@ -342,7 +307,6 @@ header .print-filter-label {
   object-fit: cover;
 }
 
-/* ===== USER AVATAR BUTTON + TOOLTIP ===== */
 .user-avatar-btn {
   position: relative;
   background: none;
@@ -380,7 +344,6 @@ header .print-filter-label {
   opacity: 1;
 }
 
-/* ===== NAV COLLAPSED TOOLTIP ===== */
 #nav-tip {
   position: fixed;
   background: var(--text);
@@ -397,7 +360,6 @@ header .print-filter-label {
 }
 #nav-tip.nav-tip-visible { opacity: 1; }
 
-/* ===== USER AVATAR DROPDOWN ===== */
 .user-avatar-wrap {
   position: relative;
 }
@@ -451,7 +413,6 @@ header .print-filter-label {
   margin: 4px 0;
 }
 
-/* ===== USER AVATAR MODAL ===== */
 .um-overlay {
   display: none;
   position: fixed;
@@ -495,7 +456,6 @@ header .print-filter-label {
   color: var(--text);
 }
 
-/* avatar colour picker: label + preview + coloured option list */
 .um-picker {
   margin-bottom: 1rem;
 }
@@ -532,7 +492,6 @@ header .print-filter-label {
   box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.20);
 }
 
-/* password change form */
 .um-form label {
   display: block;
   color: var(--muted);
@@ -606,16 +565,14 @@ header .print-filter-label {
   display: block;
 }
 
-/* ===== LAYOUT CONTAINER ===== */
 .app-container {
   display: flex;
   min-height: calc(100vh - var(--header-h));
   align-items: stretch;
-  /* overflow: clip preserves sticky positioning unlike overflow: hidden */
+
   overflow: clip;
 }
 
-/* ===== NAVIGATION ===== */
 nav {
   background: var(--panel);
   border-right: 1px solid var(--border-light);
@@ -666,7 +623,6 @@ nav.collapsed .menu-text { display: none; }
 
 nav.collapsed .menu-submenu-details { display: none; }
 
-/* Preserve exact casing from config — prevent any inherited text-transform */
 .menu-text {
   text-transform: none;
   vertical-align: middle;
@@ -696,7 +652,6 @@ nav li a.active {
 
 nav li a.active img { opacity: 1; }
 
-/* ===== MAIN ===== */
 main {
   padding: 0;
   flex-grow: 1;
@@ -726,7 +681,6 @@ main {
   display: none;
 }
 
-/* ===== TABLE CONTAINER ===== */
 #grid {
   overflow-x: auto;
   overflow-y: auto;
@@ -742,8 +696,6 @@ table {
   position: relative;
 }
 
-/* Header row is one solid band — the fill lives on the TH itself, not on an
-   inner pill, so the header reads as a single table header bar. */
 thead th {
   position: sticky;
   top: 0;
@@ -760,7 +712,6 @@ thead th {
 thead th:first-child { padding-left: 0.6rem; }
 thead th:last-child  { padding-right: 0.6rem; }
 
-/* Text-cell URL/email links */
 .cell-link {
   color: var(--accent);
   text-decoration: underline;
@@ -799,7 +750,6 @@ thead th:last-child  { padding-right: 0.6rem; }
   color: var(--muted);
 }
 
-/* Shared "card" hover-popup shape (see .c-preview-popup); z-index differs intentionally per stacking context */
 .m2m-popup, .c-preview-popup {
   position: fixed;
   pointer-events: auto;
@@ -837,7 +787,6 @@ thead th:last-child  { padding-right: 0.6rem; }
   border-bottom: none;
 }
 
-/* Record image gallery — grid column + hover popup */
 .th-images,
 .td-images {
   width: 70px;
@@ -905,7 +854,6 @@ thead th:last-child  { padding-right: 0.6rem; }
   display: block;
 }
 
-/* Record form gallery (edit.php) */
 .img-gallery {
   display: flex;
   flex-wrap: wrap;
@@ -964,7 +912,6 @@ thead th:last-child  { padding-right: 0.6rem; }
   overflow: visible;
 }
 
-/* ===== GRID ROW ACTIONS MENU (single trigger, reveals icons on hover/click) ===== */
 .td-actions-menu {
   position: relative;
   display: inline-flex;
@@ -1041,7 +988,6 @@ thead th:last-child  { padding-right: 0.6rem; }
   pointer-events: none;
 }
 
-/* Plain text span — the header fill is on `thead th` (see above). */
 .th-label {
   display: block;
   color: inherit;
@@ -1069,15 +1015,14 @@ tbody td {
 tbody td:first-child { padding-left: 1.25rem; }
 
 tbody tr:nth-child(even) td { background: var(--bg); }
-/* Crosshair hover highlight — row (CSS) + column (.col-hover, set by grid/crosshair.js) — same tint for both stripes */
+
 tbody tr:hover td { background: var(--row-col-hover) !important; }
 tbody td.col-hover:not(.cell-error):not(.cell-success) { background: var(--row-col-hover) !important; }
 thead th.col-hover { background: var(--row-col-hover); }
-/* exact hovered cell (.cell-hover, set by grid/crosshair.js) — darker than the stripes; must outrank the row+col rules above */
+
 tbody tr:hover td.cell-hover:not(.cell-error):not(.cell-success),
 tbody td.col-hover.cell-hover:not(.cell-error):not(.cell-success) { background: var(--cell-hover) !important; }
 
-/* ===== TABLE INNER INPUTS ===== */
 td select,
 td input[type="date"],
 td input[type="datetime-local"],
@@ -1138,7 +1083,6 @@ td.cell-error   { background-color: var(--error-light) !important; transition: n
 td.cell-success { background-color: var(--ok-light) !important; transition: none; }
 tbody tr:hover td.cell-error, tbody tr:hover td.cell-success { filter: brightness(0.95); }
 
-/* ===== ACTIONS BAR ===== */
 .actions {
   display: flex;
   justify-content: space-between;
@@ -1151,13 +1095,11 @@ tbody tr:hover td.cell-error, tbody tr:hover td.cell-success { filter: brightnes
 .actions .left { display: flex; gap: 8px; align-items: center; }
 .actions .pagination { display: flex; gap: 6px; align-items: center; }
 
-/* ===== BUTTONS ===== */
 button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  /* Same box as .btn in buttons.css - an unclassed <button> must not be
-     a different height from a .btn sitting next to it. */
+
   padding: 8px 14px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -1220,7 +1162,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
   background: var(--panel);
 }
 
-/* ===== DEBUG PANEL ===== */
 #debug {
   background: var(--text);
   color: var(--border-light);
@@ -1234,12 +1175,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
   white-space: pre-wrap;
   margin: 0 1.25rem 1.25rem 1.25rem;
   display: block;
-  /* Lives at the end of <main> (below the grid, above the footer): as a flex
-     child it must not shrink, and it must never squeeze the grid. */
+
   flex: 0 0 auto;
 }
 
-/* ===== FOOTER ===== */
 footer {
   padding: 1.5rem 1.25rem;
   color: var(--muted);
@@ -1280,9 +1219,6 @@ footer {
   opacity: 0.8;
 }
 
-/* =========================================
-   DASHBOARD
-========================================= */
 .dash-widget {
   background: var(--panel);
   border: 1px solid var(--border-light);
@@ -1294,7 +1230,6 @@ footer {
   position: relative;
 }
 
-/* Per-widget CSV export (visible on hover, requires canExport) */
 .dash-export-btn {
   position: absolute;
   top: 8px;
@@ -1327,12 +1262,10 @@ footer {
   align-items: start;
 }
 
-/* Widget proportions — width (columns spanned) */
 .dash-widget[data-w="1"] { grid-column: span 1; }
 .dash-widget[data-w="2"] { grid-column: span 2; }
 .dash-widget[data-w="3"] { grid-column: span 3; }
 
-/* Widget proportions — height */
 .dash-widget[data-h="1"] { min-height: 140px; }
 .dash-widget[data-h="2"] { min-height: 280px; }
 .dash-widget[data-h="3"] { min-height: 440px; }
@@ -1343,7 +1276,6 @@ footer {
   font-weight: 700;
 }
 
-/* Global period filter + widget chips (rendered in the app header) */
 header .dash-filter-label {
   font-size: 13px;
   color: #ffffff;
@@ -1356,7 +1288,6 @@ header .dash-filter-label {
   gap: 8px;
 }
 
-/* Previous-period trend badge on stat cards */
 .dash-delta {
   margin-top: 4px;
   font-weight: 700;
@@ -1372,7 +1303,6 @@ header .dash-filter-label {
   padding: 1px 8px;
 }
 
-/* Bar Chart */
 .bar-row {
   display: flex;
   align-items: center;
@@ -1406,7 +1336,6 @@ header .dash-filter-label {
   color: var(--text);
 }
 
-/* List Widget */
 .dash-list ul {
   list-style: none;
   padding: 0; margin: 0;
@@ -1418,7 +1347,6 @@ header .dash-filter-label {
 }
 .dash-list li:last-child { border-bottom: none; }
 
-/* Stat Card */
 .dash-stat-card {
   display: flex;
   flex-direction: column;
@@ -1440,7 +1368,6 @@ header .dash-filter-label {
   font-size: 0.9rem;
 }
 
-/* Vertical Bar Chart */
 .dash-vbar-chart {
   display: flex;
   align-items: flex-end;
@@ -1487,7 +1414,6 @@ header .dash-filter-label {
   width: 100%;
 }
 
-/* Pie Chart */
 .dash-pie-wrapper {
   display: flex;
   align-items: center;
@@ -1522,7 +1448,6 @@ header .dash-filter-label {
   flex-shrink: 0;
 }
 
-/* Line / Area Chart (time series) */
 .dash-line-wrapper {
   display: flex;
   flex-direction: column;
@@ -1578,7 +1503,6 @@ header .dash-filter-label {
   text-overflow: ellipsis;
 }
 
-/* Dashboard error / loading states */
 .dash-error {
   grid-column: 1 / -1;
   color: var(--error);
@@ -1590,16 +1514,11 @@ header .dash-filter-label {
   color: var(--muted);
 }
 
-/* =========================================
-   DRILLDOWN / SUB-GRID
-========================================= */
 .drilldown-row td {
   background-color: var(--bg) !important;
   padding: 15px 20px !important;
   border-bottom: 2px solid var(--border-light);
-  /* Cancel the grid-wide `tbody td` truncation (nowrap + overflow:hidden +
-     ellipsis) — it would inherit into the expanded sub-grid and cut off
-     longer child-record labels instead of wrapping them. */
+
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
@@ -1666,9 +1585,6 @@ header .dash-filter-label {
   font-family: var(--font-mono);
 }
 
-/* =========================================
-   SUB-TABLE (edit.php)
-========================================= */
 .edit-subtable-wrapper {
   background: var(--panel);
   border: 1px solid var(--border-light);
@@ -1701,9 +1617,6 @@ header .dash-filter-label {
   transition: background-color var(--transition);
 }
 
-/* The global `tbody td` grid rule (nowrap + overflow:hidden + ellipsis) also
-   matches sub-table cells and truncated the action button to a bare "…".
-   Action cells size to their button instead. */
 .edit-subtable-wrapper td.subtable-actions,
 .edit-subtable-wrapper th.subtable-actions {
   overflow: visible;
@@ -1719,12 +1632,6 @@ header .dash-filter-label {
   background-color: var(--accent-light);
 }
 
-/* =========================================
-   FORMS
-========================================= */
-/* .btn-add / .btn-action are defined in assets/css/buttons.css (shared
-   button component). */
-
 .password-container {
   position: relative;
 }
@@ -1737,7 +1644,6 @@ header .dash-filter-label {
   cursor: pointer;
 }
 
-/* ===== CALENDAR ===== */
 .calendar-header {
   display: flex;
   justify-content: space-between;
@@ -1762,7 +1668,7 @@ header .dash-filter-label {
   border: 1px solid var(--border-light);
   border-radius: 4px;
 }
-/* Weekday header band — same solid fill as the grid's `thead th`. */
+
 .calendar-day-name {
   background: var(--accent-mid);
   color: var(--accent-dark);
@@ -1822,10 +1728,8 @@ header .dash-filter-label {
 }
 .calendar-event:hover { opacity: 0.9; }
 
-/* Secondary value from a source's subtitle_column, inline after the title */
 .calendar-event-sub { opacity: 0.8; }
 
-/* Small red ✕ delete button on each calendar event (editors only) */
 .calendar-event-del {
   position: absolute;
   top: 50%;
@@ -1863,7 +1767,6 @@ header .dash-filter-label {
   font-weight: 700;
 }
 
-/* ===== Calendar "add event" modal (cal-) ===== */
 .cal-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1930,8 +1833,6 @@ header .dash-filter-label {
   margin-top: 20px;
 }
 
-/* ===== FILTER CHIPS (shared: calendar, board, grid pills) ===== */
-/* Shared pill shape with .filter-pill below; .filter-chip is the toggle-chip, .filter-pill the removable active-filter pill */
 .filter-chip, .filter-pill {
   display: inline-flex;
   align-items: center;
@@ -1960,7 +1861,7 @@ header .dash-filter-label {
   height: 10px;
   border-radius: 50%;
 }
-/* Active-filter pills on the grid page (below the grid title) */
+
 #filterPills {
   display: none;
   flex-wrap: wrap;
@@ -1986,7 +1887,6 @@ header .dash-filter-label {
   padding-left: 4px;
 }
 
-/* ===== CALENDAR FILTER BAR (rendered in the app header) ===== */
 .calendar-filters {
   display: flex;
   flex-wrap: wrap;
@@ -1994,7 +1894,6 @@ header .dash-filter-label {
   gap: 8px;
 }
 
-/* ===== BOARD (KANBAN) VIEW ===== */
 #boardMain {
   padding: 20px;
   width: 100%;
@@ -2024,7 +1923,6 @@ header .dash-filter-label {
   gap: 8px;
 }
 
-/* ===== PRINT (report parameter filters, rendered in the app header) ===== */
 .print-filters {
   display: flex;
   flex-wrap: wrap;
@@ -2168,7 +2066,6 @@ header .dash-filter-label {
   font-family: var(--font-mono);
 }
 
-/* ===== GRID LOADER (Spinner) ===== */
 .spinner {
   width: 40px;
   height: 40px;
@@ -2183,9 +2080,6 @@ header .dash-filter-label {
   100% { transform: rotate(360deg); }
 }
 
-/* =========================================
-   COLUMN RESIZE AND DRAG & DROP
-========================================= */
 th {
   position: relative;
   user-select: none;
@@ -2219,44 +2113,38 @@ thead th.drag-over {
   outline: 2px solid var(--warn);
   outline-offset: -2px;
 }
-/* container for parent item: allow absolute positioning of the arrow */
-/* Wrapper for parent item */
+
 .menu-has-children {
     position: relative;
     display: flex;
     flex-direction: column;
 }
 
-/* Make sure link text does not overlap with arrow */
-.menu-has-children > a, 
+.menu-has-children > a,
 .menu-has-children > .custom-nav-link {
-    padding-right: 40px; 
+    padding-right: 40px;
 }
 
-/* Details container */
 .menu-submenu-details {
     width: 100%;
 }
 
-/* Position summary to the top right corner */
 .menu-submenu-details > summary.menu-toggle-arrow {
     position: absolute;
     top: 0;
     right: 0;
-    padding: 10px; 
+    padding: 10px;
     list-style: none;
     cursor: pointer;
     display: flex;
     align-items: center;
-    height: 40px; 
+    height: 40px;
 }
 
-/* Hide native marker */
-.menu-submenu-details > summary::-webkit-details-marker { 
-    display: none; 
+.menu-submenu-details > summary::-webkit-details-marker {
+    display: none;
 }
 
-/* Improve arrow visibility */
 .menu-arrow {
     font-size: 18px;
     opacity: 0.9;
@@ -2264,12 +2152,10 @@ thead th.drag-over {
     transition: transform 0.3s ease;
 }
 
-/* Rotate arrow when open */
 .menu-submenu-details[open] > summary .menu-arrow {
     transform: rotate(180deg);
 }
 
-/* Submenu list */
 .menu-submenu {
     list-style: none;
     margin: 2px 0 0;
@@ -2279,15 +2165,11 @@ thead th.drag-over {
     gap: 2px;
 }
 
-/* Submenu links */
 .menu-submenu .custom-nav-link {
     padding-left: 2.6rem;
     font-size: 13px;
 }
 
-/* =========================================
-   EDIT PAGE TABS
-========================================= */
 .tab-list {
   display: flex;
   gap: 2px;
@@ -2329,9 +2211,6 @@ thead th.drag-over {
   display: block;
 }
 
-/* =========================================
-   COMMENTS MODULE  (c- prefix)
-========================================= */
 .c-thread {
   display: flex;
   flex-direction: column;
@@ -2445,8 +2324,6 @@ thead th.drag-over {
   border-color: var(--accent);
 }
 
-/* .c-send-btn removed - comments.js now uses the shared .btn.btn-primary */
-
 .c-toolbar {
   display: flex;
   gap: 4px;
@@ -2473,9 +2350,6 @@ thead th.drag-over {
   padding: 32px 0;
 }
 
-/* =========================================
-   NOTES PANEL (User menu > Notes)
-========================================= */
 .note-form {
   display: flex;
   flex-direction: column;
@@ -2578,9 +2452,6 @@ thead th.drag-over {
   gap: 8px;
 }
 
-/* =========================================
-   USER MENU PANELS (My comments, My records)
-========================================= */
 .um-list {
   display: flex;
   flex-direction: column;
@@ -2617,9 +2488,6 @@ thead th.drag-over {
   margin-top: 4px;
 }
 
-/* =========================================
-   COMMENT PREVIEW POPUP (grid hover)
-========================================= */
 .c-preview-popup {
   z-index: 500;
   background: var(--panel);
@@ -2688,9 +2556,6 @@ thead th.drag-over {
   text-align: center;
 }
 
-/* =========================================
-   COMMENT COUNT BADGE (grid)
-========================================= */
 .c-count-badge {
   display: inline-block;
   background: var(--accent-light);
@@ -2711,9 +2576,6 @@ thead th.drag-over {
   background: var(--accent-mid);
 }
 
-/* =========================================
-   SIDEBAR TOGGLE BUTTON
-========================================= */
 #sidebarToggle {
   background: none;
   border: none;
@@ -2726,15 +2588,10 @@ thead th.drag-over {
   padding: 0 4px;
 }
 
-/* Transparent wrapper; children join header flex row directly on desktop */
 .header-controls { display: contents; }
 
-/* Search drawer toggle — only shown on mobile (mobile.css overrides to display:flex) */
 .header-search-toggle { display: none; }
 
-/* =========================================
-   NOTIFICATIONS IN HEADER
-========================================= */
 .notifications-wrapper {
   position: relative;
   cursor: pointer;
@@ -2804,9 +2661,7 @@ thead th.drag-over {
   height: 20px;
   display: block;
 }
-/* =========================================
-   EDITOR FORM — create.php / edit.php
-========================================= */
+
 .form-wrapper {
   background: var(--panel);
   border-radius: var(--radius-lg);
@@ -2844,9 +2699,6 @@ thead th.drag-over {
   gap: 20px 36px;
 }
 
-/* Scoped to the record editor and setup wizard so the flex-column layout and
-   uppercase labels do NOT leak onto the admin panel's own .form-group (which is
-   styled block-level in admin/style.css). */
 .editor-form .form-group,
 .setup-card .form-group {
   display: flex;
@@ -3017,7 +2869,6 @@ thead th.drag-over {
   .form-wrapper { padding: 20px; }
 }
 
-/* === login === */
 .login-page {
   display: flex;
   flex-direction: column;
@@ -3099,9 +2950,6 @@ thead th.drag-over {
   opacity: 0.5;
 }
 
-/* === files — the table, actions bar and pagination reuse the grid's global styles
-   (table/thead th/tbody td/.th-label/.td-actions/.btn-icon); only the upload card
-   and type/tag badges keep module-specific rules === */
 :root {
   --f-primary: var(--accent-dark);
   --f-accent: var(--accent);
@@ -3124,7 +2972,7 @@ thead th.drag-over {
   max-height: calc(100vh - var(--header-h) - 50px);
 }
 #filesGrid th[data-sort] { cursor: pointer; }
-/* Minimal single-row upload bar below the table — same proportions as the .actions bar */
+
 .f-upload-bar {
   display: flex;
   align-items: center;
@@ -3153,11 +3001,10 @@ thead th.drag-over {
 .editable-tags { cursor: pointer; }
 .f-tag-add { color: var(--muted); font-style: italic; font-size: 12px; }
 .f-tag-edit { width: 100%; min-width: 140px; }
-/* === dashboard === */
+
 #dashboardMain { padding: 20px; width: 100%; overflow-y: auto; }
 #gridTitle { margin-bottom: 20px; }
 
-/* === 404 === */
 .error-page {
   display: flex;
   flex-direction: column;
@@ -3190,7 +3037,6 @@ thead th.drag-over {
 }
 .btn-home:hover { background: var(--accent-dark); }
 
-/* === admin-403 === */
 .admin-403-page {
   display: flex;
   justify-content: center;
@@ -3212,7 +3058,6 @@ thead th.drag-over {
 .admin-403-card p { color: var(--muted); }
 .admin-403-card a { color: var(--accent); text-decoration: none; font-weight: 700; }
 
-/* === Side drawers — data cleanup (dc-) + bulk panel (bp-) share one layout === */
 .dc-overlay, .bp-overlay {
     display: none;
     position: fixed;
@@ -3227,9 +3072,7 @@ thead th.drag-over {
     top: 0;
     right: -440px;
     width: 420px;
-    /* 100vh is the *large* viewport on mobile (browser toolbars excluded), so the
-       footer with the Apply button ends up below the fold. dvh tracks the visible
-       viewport; the vh line stays as a fallback for browsers without dvh. */
+
     height: 100vh;
     height: 100dvh;
     background: var(--panel);
@@ -3340,7 +3183,6 @@ thead th.drag-over {
 .dc-ins { background: var(--ok-light); color: var(--ok); border-radius: 2px; padding: 0 2px; }
 .dc-empty { color: var(--muted); font-style: italic; }
 
-/* padding-bottom keeps the Apply button clear of the iOS home indicator */
 .dc-footer, .bp-footer {
     padding: 16px 20px;
     padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -3364,13 +3206,10 @@ thead th.drag-over {
 @media (max-width: 768px) {
     .dc-panel, .bp-panel { width: 100%; right: -100%; }
     .dc-panel.active, .bp-panel.active { right: 0; }
-    /* 44px touch target per WCAG 2.5.5, matching mobile.css */
+
     .dc-apply-btn, .bp-apply-btn { min-height: 44px; font-size: 15px; }
 }
 
-/* ── Mass Edit (me-) ─────────────────────────────────────────────────────── */
-
-/* Checkbox column in grid header/body */
 .th-select, .td-select {
     width: 36px;
     min-width: 36px;
@@ -3390,7 +3229,6 @@ thead th.drag-over {
     margin: 0 auto;
 }
 
-/* Floating selection bar */
 .me-bar {
     position: fixed;
     bottom: -64px;
@@ -3399,7 +3237,7 @@ thead th.drag-over {
     display: flex;
     align-items: center;
     gap: 14px;
-    /* Portal palette: same navy as the app header (shared by grid and files) */
+
     background: var(--accent-dark);
     color: var(--bg);
     padding: 12px 20px;
@@ -3413,7 +3251,6 @@ thead th.drag-over {
 .me-bar-count { font-weight: 700; }
 .me-bar-actions { display: flex; gap: 8px; }
 
-/* Shared shape for every dark-bar action button; only background/color/border vary per variant */
 .me-bar-dup-btn, .me-bar-export-btn, .me-bar-owner-btn, .me-bar-clear-btn,
 .me-bar-edit-btn, .me-bar-delete-btn {
     border-radius: var(--radius);
@@ -3425,7 +3262,6 @@ thead th.drag-over {
     transition: background var(--transition);
 }
 
-/* Ghost buttons on the dark bar: dup/export/owner share one look, clear is the muted variant */
 .me-bar-dup-btn, .me-bar-export-btn, .me-bar-owner-btn, .me-bar-clear-btn {
     padding: 8px 14px;
     font-size: 13px;
@@ -3454,7 +3290,6 @@ thead th.drag-over {
 }
 .me-bar-delete-btn:hover { background: var(--error); color: #fff; border-color: var(--error); }
 
-/* Column picker (export) */
 .me-col-picker-quick {
     display: flex;
     gap: 8px;
@@ -3498,7 +3333,6 @@ thead th.drag-over {
     flex-shrink: 0;
 }
 
-/* Mass edit panel body extras */
 .me-scope-info {
     margin: 0;
     padding: 10px 14px;
@@ -3549,7 +3383,6 @@ thead th.drag-over {
     flex-shrink: 0;
 }
 
-/* ── Keyboard Grid (kg-) ─────────────────────────────────────────────────── */
 .kg-focused {
     outline: 2px solid var(--accent);
     outline-offset: -2px;
@@ -3647,8 +3480,6 @@ thead th.drag-over {
     .kg-help-overlay { min-width: calc(100vw - 40px); padding: 18px 16px 14px; }
     .kg-help-key { min-width: 100px; }
 }
-
-/* ── Agent Panel (ag-) ─────────────────────────────────────────────────────── */
 
 .ag-overlay {
     display: none;
@@ -3819,11 +3650,6 @@ thead th.drag-over {
     margin-top: 8px;
     justify-content: flex-end;
 }
-/* .ag-send-btn / .ag-stop-btn / .ag-clear-btn removed - agent-panel.js now
-   uses the shared .btn.btn-primary / .btn.btn-danger / .btn.btn-secondary */
-
-/* ── Markdown content inside assistant bubbles (emitted by rag-render.js;
-      ported from the removed rag.css) ──────────────────────────────────── */
 
 .rag-md-p {
     margin: 0 0 8px;
@@ -3878,19 +3704,12 @@ thead th.drag-over {
     .ag-panel.active { right: 0; }
 }
 
-/* ===== EDIT / CREATE FORM PAGE (extracted from inline styles) ===== */
 .form-page { padding: 20px; max-width: 1060px; margin: 0 auto; }
 
-/* Save/error banners — shared by create.php + edit.php */
 .form-alert { margin-bottom: 15px; padding: 10px; border-radius: var(--radius); border: 1px solid transparent; }
 .form-alert.error   { color: var(--error);  border-color: var(--error); background: var(--error-light); }
 .form-alert.success { color: var(--ok); border-color: var(--ok); background: var(--ok-light); padding: 10px 14px; }
 
-/* Workflow step form — reuses the record-editor form classes (.form-page,
-   .form-wrapper, .editor-form, .form-grid, .form-group, .form-actions) so a
-   workflow step looks identical to edit.php. These are the only workflow-only
-   bits: a step description, inline checkboxes, the "show related" toggle, and
-   the save-status message line. */
 .wf-form-page { max-width: 760px; }
 .wf-step-title { display: flex; align-items: center; gap: 10px; }
 .wf-step-title-icon { flex: 0 0 auto; width: 24px; height: 24px; object-fit: contain; line-height: 1; }
@@ -3910,7 +3729,6 @@ thead th.drag-over {
 }
 .wf-form-msg { margin-top: 15px; font-weight: 500; }
 
-/* Deferred-save workflow: buffered multi-record list + review screen */
 .wf-buffered-list { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 4px; }
 .wf-buffered-row {
   display: flex;
@@ -3940,9 +3758,6 @@ thead th.drag-over {
 .wf-review-fields dt { color: var(--muted); font-weight: 600; }
 .wf-review-fields dd { margin: 0; word-break: break-word; }
 
-/* Many-to-many picker — collapsible <details> with a searchable checkbox panel.
-   Markup comes from os_m2m_group() (includes/page_helpers.php); the summary chips
-   reuse .m2m-chip from the grid so a relation looks the same in list and form. */
 .m2m-block { border-top: 1px solid var(--border-light); margin: 20px 0 4px; padding-top: 18px; }
 .m2m-group { margin-bottom: 18px; }
 .m2m-group-label { font-weight: 700; color: var(--text); margin-bottom: 10px; }
@@ -3991,24 +3806,20 @@ thead th.drag-over {
 .m2m-options { display: flex; flex-direction: column; gap: 2px; max-height: 260px; overflow-y: auto; }
 .m2m-option { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 4px; color: var(--text); cursor: pointer; }
 .m2m-option:hover { background: var(--bg); }
-/* The search filter hides options with the `hidden` attribute — the display rule
-   above would otherwise win over the UA stylesheet and keep them visible. */
+
 .m2m-option[hidden] { display: none; }
 .m2m-no-matches { color: var(--muted); margin: 8px 2px 2px; }
 
-/* Subtable / Files / History tab panels */
 .ef-panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .ef-panel-title { color: var(--text); margin: 0; }
 .ef-empty { color: var(--muted); margin-top: 10px; }
 
-/* File upload bar */
 .ef-upload-bar { background: var(--bg); padding: 15px; border: 1px dashed var(--border); border-radius: var(--radius); margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .ef-upload-input { padding: 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); }
 .ef-upload-text { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; width: 180px; }
 .ef-upload-btn { background: var(--accent); padding: 8px 14px; border: 1px solid transparent; border-radius: var(--radius); color: #fff; cursor: pointer; font-size: 13px; font-weight: 500; line-height: 1.2; }
 .ef-upload-status { margin-left: 10px; }
 
-/* Files table */
 .ef-files-table { width: 100%; border-collapse: collapse; text-align: left; }
 .ef-files-table thead tr { border-bottom: 2px solid var(--border-light); background: var(--bg); }
 .ef-files-table th, .ef-files-table td { padding: 10px; }
@@ -4021,7 +3832,6 @@ thead th.drag-over {
 .ef-download-btn { background: var(--accent); padding: 4px 10px; border-radius: var(--radius); color: #fff; text-decoration: none; display: inline-block; }
 .ef-col-actions { width: 100px; }
 
-/* Owner / history */
 .ow-panel { margin-top: 20px; padding: 16px 20px; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--bg); }
 .ow-section-title { margin: 0 0 10px; font-weight: 700; color: var(--muted); }
 .ow-current { color: var(--text); margin-bottom: 12px; }

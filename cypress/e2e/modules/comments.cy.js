@@ -3,17 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/comments.cy.js
-// ============================================================================
-// Comments Module Tests — edit.php Comments tab
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 const TEST_TABLE = 'companies';
-
-// ============================================================================
-// Test Suite: Comments Tab Structure
-// ============================================================================
 
 describe('OpenSparrow – Comments: Tab Structure', () => {
   beforeEach(() => {
@@ -105,10 +96,6 @@ describe('OpenSparrow – Comments: Tab Structure', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Comments Add
-// ============================================================================
-
 describe('OpenSparrow – Comments: Add Comment', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -176,10 +163,6 @@ describe('OpenSparrow – Comments: Add Comment', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Comments Delete
-// ============================================================================
-
 describe('OpenSparrow – Comments: Delete Comment', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -215,7 +198,6 @@ describe('OpenSparrow – Comments: Delete Comment', () => {
     cy.url().then(url => {
       if (!url.includes('edit.php')) return;
       cy.get('#c-panel', { timeout: CypressHelpers.TIMEOUTS.medium }).then($panel => {
-        // Add comment first so we own a deletable message
         if ($panel.find('.c-input').length === 0) return;
         cy.get('.c-input').type(`del-test-${Date.now()}`);
         cy.get('.c-send-btn').click();
@@ -254,10 +236,6 @@ describe('OpenSparrow – Comments: Delete Comment', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: My Comments panel (avatar menu)
-// ============================================================================
-
 describe('OpenSparrow – Comments: My Comments panel', () => {
   const openPanel = () => {
     cy.get('[data-cy=user-avatar]').click();
@@ -295,7 +273,6 @@ describe('OpenSparrow – Comments: My Comments panel', () => {
   });
 
   it('a listed comment links to its record comment tab', () => {
-    // Guarantee at least one own comment before opening the panel.
     waitForGridOrEmpty().then(res => {
       if (res.type !== 'grid') return;
       cy.get('#grid tbody tr')
@@ -324,10 +301,6 @@ describe('OpenSparrow – Comments: My Comments panel', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Comments API Integration
-// ============================================================================
 
 describe('OpenSparrow – Comments: API Integration', () => {
   it('activating Comments tab triggers GET to api/comments.php', () => {

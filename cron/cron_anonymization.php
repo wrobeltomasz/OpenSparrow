@@ -5,12 +5,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cron/cron_anonymization.php — Data anonymization worker
-// CLI-only. Reads the "anonymization" config from the spw_config store and runs
-// UPDATE statements for each rule.
-// Logs each execution to spw_anonymization_log.
-// Usage: php cron_anonymization.php [admin]
-
 declare(strict_types=1);
 
 if (php_sapi_name() !== 'cli') {
@@ -32,18 +26,9 @@ function anon_log(string $msg): void
     flush();
 }
 
-/**
- * Map an anonymization technique to an EDPB-style residual-risk assessment
- * (singling-out / linkability / inference), per EDPB/WP29 WP216 criteria.
- * OpenSparrow currently applies retention-based static replacement only;
- * the match keeps the report extensible for future techniques.
- */
 function anon_edpb_assessment(string $method): array
 {
     return match ($method) {
-        // Column value is irreversibly overwritten with a constant token:
-        // that attribute can no longer single out a data subject, but other
-        // remaining attributes may still allow linkage / inference.
         'static_replacement' => [
             'single_out_risk'  => 'none',
             'linkability_risk' => 'low',
@@ -99,7 +84,6 @@ try {
 $tLog    = sys_table('anonymization_log');
 $tReport = sys_table('anonymization_report');
 
-// Frequency guard — skip if a successful run already occurred within the window.
 if ($triggeredBy === 'cron' && $frequency !== 'manual') {
     $intervalMap = ['daily' => '1 day', 'weekly' => '7 days', 'monthly' => '30 days'];
     $interval    = $intervalMap[$frequency] ?? '1 day';
@@ -119,7 +103,6 @@ if ($frequency === 'manual' && $triggeredBy === 'cron') {
     exit(0);
 }
 
-// Insert log entry (skipped for dry runs — previews are not audited).
 $logId = null;
 if (!$dryRun) {
     $logRes = @pg_query_params(
@@ -135,9 +118,8 @@ if (!$dryRun) {
 $rulesProcessed = 0;
 $rowsAnonymized = 0;
 $errorMessage   = null;
-$reportDetails  = []; // per-rule entries for the structured JSON report
+$reportDetails  = [];
 
-// Load the schema config once for per-table schema lookup.
 $schemaCfg = [];
 {
     $decoded = config_get('schema');
@@ -162,7 +144,6 @@ foreach ($rules as $rule) {
         continue;
     }
 
-    // Determine the DB schema for this table.
     $tableSchema = sys_schema();
     if (isset($schemaCfg[$table]['schema']) && $schemaCfg[$table]['schema'] !== '') {
         $tableSchema = (string)$schemaCfg[$table]['schema'];
@@ -249,8 +230,6 @@ if ($logId !== null) {
         [$finalStatus, $rulesProcessed, $rowsAnonymized, $errorMessage, $logId]
     );
 
-    // Build a structured, GDPR/EDPB-style processing report and persist it as
-    // JSON on the log row (report column added in migration 2.9_anonymization_report).
     $affectedTables = [];
     foreach ($reportDetails as $d) {
         if ($d['rows_affected'] > 0) {

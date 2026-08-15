@@ -3,16 +3,12 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/schema.js — Schema editor (tables, columns, FKs, grid settings)
-// Core editor for the "schema" config: renderSchemaEditor / renderSchemaGlobalSettings, syncSchemaTables. XSS-escapes output.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createTextInput, createNumberInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';
 import { showStatusPill, markDirty } from './app.js';
 
-// Utility function to escape HTML strings safely against XSS
 import { escHtml } from '../../assets/js/util/esc.js';
 
-// Global grid settings form (page size, etc.)
 export function renderSchemaGlobalSettings(config, ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '';
@@ -31,7 +27,6 @@ export function renderSchemaGlobalSettings(config, ctx) {
     sub.textContent = 'Settings that apply to all data grids in the frontend application.';
     card.append(h3, sub);
 
-    // Page size setting
     const row = document.createElement('div');
     row.style.cssText = 'display:flex; align-items:center; gap:16px; padding:16px; background:white; border:1px solid var(--border); border-radius:6px;';
 
@@ -71,7 +66,6 @@ export function renderSchemaGlobalSettings(config, ctx) {
     workspaceEl.appendChild(card);
 }
 
-// Function to generate the Add Table button and handle its logic
 export function createAddTableButton(currentConfig, defaultSchema, onSuccess, onError) {
     const btnAddTable = document.createElement('button');
     btnAddTable.type = 'button';
@@ -85,34 +79,29 @@ export function createAddTableButton(currentConfig, defaultSchema, onSuccess, on
         const tableName = prompt('Enter new table name (lowercase, no spaces):');
         if (!tableName) return;
 
-        // Force proper formatting
         const formattedName = tableName.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
-        // Prevent duplicates
         if (currentConfig.tables && currentConfig.tables[formattedName]) {
             onError('Table already exists in configuration.');
             return;
         }
 
-        // Prompt user for schema name using the provided default
         const schemaInput = prompt('Enter database schema name:', defaultSchema || 'public');
         if (!schemaInput) return;
-        
-        // Format schema name safely
+
         const formattedSchema = schemaInput.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
         try {
             const response = await apiFetch('api.php?action=create_table', {
                 method: 'POST',
-                // Send formatted schema and table name
+
                 body: JSON.stringify({ schema: formattedSchema, table: formattedName })
             });
 
             const result = await response.json();
             if (result.status === 'success') {
                 if (!currentConfig.tables) currentConfig.tables = {};
-                
-                // Initialize basic table structure in memory with the chosen schema
+
                 currentConfig.tables[formattedName] = {
                     display_name: formattedName.replace(/_/g, ' ').toUpperCase(),
                     schema: formattedSchema,
@@ -133,9 +122,6 @@ export function createAddTableButton(currentConfig, defaultSchema, onSuccess, on
     return btnAddTable;
 }
 
-// Sync tables from database
-// Uses POST with JSON body so that shared-hosting WAFs (ModSecurity / OWASP CRS)
-// do not flag the request as SQL injection based on the query string.
 export async function syncSchemaTables(currentConfig, schemaName, onSuccess, onError) {
     try {
         const res = await apiFetch('api.php?action=sync_schema', {
@@ -143,13 +129,12 @@ export async function syncSchemaTables(currentConfig, schemaName, onSuccess, onE
             body: JSON.stringify({ schema_name: schemaName })
         });
         const data = await res.json();
-        
+
         if (data.status === 'success') {
             let addedCount = 0;
             if (!currentConfig.tables || Array.isArray(currentConfig.tables)) currentConfig.tables = {};
-            
+
             data.tables.forEach(tbl => {
-                // Skip OpenSparrow system tables — they must never appear as user tables.
                 if (tbl.startsWith('spw_')) return;
                 if (!currentConfig.tables[tbl]) {
                     currentConfig.tables[tbl] = { display_name: tbl.replace(/_/g, ' ').toUpperCase(), schema: schemaName, columns: {} };
@@ -240,14 +225,11 @@ function buildDefaultSortUI(tableData) {
     return wrapper;
 }
 
-// Render the schema editor UI
 export function renderSchemaEditor(tableName, tableData, ctx) {
     const { workspaceEl, getTableOptions, renderEditor } = ctx;
-    
+
     workspaceEl.innerHTML = '';
 
-    // Table title. Deletion is handled by the red ✕ in the card header (buildItemCard),
-    // consistent with every other card tab — no separate in-editor delete button.
     const titleEl = document.createElement('h3');
     titleEl.innerHTML = `Table Properties: ${escHtml(tableName)}`;
     titleEl.style.margin = '0 0 20px';
@@ -262,11 +244,10 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     btnSyncCols.className = 'btn btn-sm';
     btnSyncCols.innerHTML = 'Sync Columns from DB';
 
-    // Fetch and sync columns from database
     btnSyncCols.onclick = async () => {
         try {
             const schemaName = tableData.schema || 'app';
-            // POST with JSON body — avoids WAF false positives on GET query strings.
+
             const res = await apiFetch('api.php?action=get_db_columns', {
                 method: 'POST',
                 body: JSON.stringify({ schema_name: schemaName, table: tableName })
@@ -293,14 +274,12 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                 let added = 0;
                 data.columns.forEach(col => {
                     if (!tableData.columns[col.column_name]) {
-                        
                         const isEnum = Array.isArray(col.enum_values);
-                        const isNotNull = col.is_nullable === 'NO'; 
-                        
-                        // Extremely robust mapping catching different backend array keys
+                        const isNotNull = col.is_nullable === 'NO';
+
                         const rawType = String(col.data_type || col.type || col.udt_name || col.datatype || '').toLowerCase();
                         let mappedType = 'text';
-                        
+
                         if (isEnum || rawType === 'user-defined' || rawType.includes('enum')) {
                             mappedType = 'enum';
                         } else if (/int|num|float|double|real|serial|dec/i.test(rawType)) {
@@ -313,7 +292,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                             mappedType = 'date';
                         }
 
-                        // Make ID readonly by default
                         const isIdColumn = col.column_name.toLowerCase() === 'id';
 
                         tableData.columns[col.column_name] = {
@@ -334,11 +312,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                 });
                 if (added > 0) markDirty();
                 showStatusPill(btnSyncCols, `Added ${added} new column${added === 1 ? '' : 's'}.`, added > 0 ? 'success' : 'info');
-                // renderEditor() rebuilds workspaceEl, which would wipe the status
-                // pill (anchored to btnSyncCols, also in workspaceEl) on the same
-                // tick — defer it so the "Added N columns" / "0 columns" feedback
-                // is actually visible. Matters most when added === 0, where the
-                // re-render is otherwise identical and looks like nothing happened.
+
                 setTimeout(() => renderEditor(tableName, tableData, false), 900);
             } else {
                 showStatusPill(btnSyncCols, 'API Error: ' + (data.error || 'Failed to sync columns.'), 'error');
@@ -350,7 +324,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     };
     workspaceEl.appendChild(btnSyncCols);
 
-    // New code for dynamic column addition
     const btnAddCol = document.createElement('button');
     btnAddCol.type = 'button';
     btnAddCol.className = 'btn btn-sm';
@@ -363,10 +336,8 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         const colName = prompt('Enter new column name (lowercase, no spaces):');
         if (!colName) return;
 
-        // Force proper formatting
         const formattedColName = colName.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
-        // Prevent duplicates
         if (tableData.columns && tableData.columns[formattedColName]) {
             showStatusPill(btnAddCol, 'Column already exists.', 'error');
             return;
@@ -378,7 +349,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         try {
             const response = await apiFetch('api.php?action=add_column', {
                 method: 'POST',
-                // Pass schema context accurately to backend
+
                 body: JSON.stringify({ schema: tableData.schema || 'app', table: tableName, column: formattedColName, type: colType })
             });
 
@@ -400,7 +371,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     };
     workspaceEl.appendChild(btnAddCol);
 
-    // Add Virtual Column — schema-only, no DB interaction
     const btnAddVirtual = document.createElement('button');
     btnAddVirtual.type = 'button';
     btnAddVirtual.className = 'btn btn-primary btn-sm';
@@ -440,10 +410,8 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         tableData.hidden = val;
     }, false));
 
-    // Default Sort
     workspaceEl.appendChild(buildDefaultSortUI(tableData));
 
-    // Initial Load Limit
     workspaceEl.appendChild(createTextInput(
         'initial_limit',
         'Initial Load Limit (rows, 0 = unlimited)',
@@ -469,7 +437,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         workspaceEl.appendChild(idWarn);
     }
 
-    // Standard field types allowed in the application
     const dataTypeOptions = [
         { value: 'text',      label: 'Text' },
         { value: 'number',    label: 'Number' },
@@ -519,7 +486,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         h4.textContent = `Column: ${colName}`;
 
         const moveControls = document.createElement('div');
-        
+
         const btnUp = document.createElement('button');
         btnUp.type = 'button';
         btnUp.textContent = '▲';
@@ -555,7 +522,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             else delete colCfg.description;
         }));
 
-        // Clean up any rogue legacy DB types just in case they slipped through earlier
         let currentType = String(colCfg.type || 'text').toLowerCase();
         if (!['text', 'number', 'boolean', 'date', 'timestamp', 'enum', 'virtual'].includes(currentType)) {
             if (/int|num|float|double|real|serial|dec/i.test(currentType)) currentType = 'number';
@@ -566,7 +532,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             colCfg.type = currentType;
         }
 
-        // Dropdown instead of input field for clean type selection
         block.appendChild(createSelectInput('type', 'Data Type', dataTypeOptions, currentType, (val) => {
             colCfg.type = val;
             if (val === 'virtual' && !colCfg.formula) {
@@ -574,8 +539,7 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             }
             renderEditor(tableName, tableData, false);
         }));
-        
-        // ── Virtual column formula builder ────────────────────────────────────
+
         if (currentType === 'virtual') {
             if (!colCfg.formula || typeof colCfg.formula !== 'object') {
                 colCfg.formula = { op: 'sum', cols: [] };
@@ -590,17 +554,14 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             vTitle.style.cssText = 'margin-top:0;margin-bottom:10px;color:var(--muted);';
             vBlock.appendChild(vTitle);
 
-            // Operation selector
             vBlock.appendChild(createSelectInput('v_op', 'Operation', virtualOpsNumeric, f.op || 'sum', val => {
                 f.op = val;
             }));
 
-            // Available non-virtual columns for this table
             const nonVirtualCols = Object.entries(tableData.columns)
                 .filter(([n, c]) => c.type !== 'virtual' && n !== colName)
                 .map(([n, c]) => ({ value: n, label: c.display_name || n }));
 
-            // Selected columns list
             const colsContainer = document.createElement('div');
             colsContainer.style.cssText = 'margin-top:4px;';
 
@@ -640,7 +601,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             rebuildSelectedList();
             colsContainer.appendChild(selectedList);
 
-            // Add column picker
             const addRow = document.createElement('div');
             addRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
 
@@ -668,7 +628,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             colsContainer.appendChild(addRow);
             vBlock.appendChild(colsContainer);
 
-            // Separator (concat only)
             const sepWrapper = document.createElement('div');
             sepWrapper.style.display = (f.op === 'concat') ? '' : 'none';
             sepWrapper.appendChild(createTextInput('v_sep', 'Separator', f.separator ?? ' ', val => {
@@ -676,7 +635,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             }));
             vBlock.appendChild(sepWrapper);
 
-            // Show/hide separator when op changes
             const opSel = vBlock.querySelector('select');
             opSel?.addEventListener('change', e => {
                 sepWrapper.style.display = e.target.value === 'concat' ? '' : 'none';
@@ -684,7 +642,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
             block.appendChild(vBlock);
 
-            // Virtual columns: skip enum, FK, regex, not_null, readonly sections
             block.appendChild(createCheckbox('show_in_grid', 'Show in Grid', colCfg.show_in_grid, val => colCfg.show_in_grid = val, true));
 
             const btnDelVirtual = document.createElement('button');
@@ -703,15 +660,11 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
             makeCollapsible(block);
             workspaceEl.appendChild(block);
-            return; // skip remaining non-virtual fields for this column
+            return;
         }
 
         const optsStr = colCfg.options ? colCfg.options.join(', ') : '';
-        // Build this input inline (instead of createTextInput) so we can update
-        // the model on every keystroke without re-rendering the whole editor —
-        // the full re-render was stealing focus and resetting the scroll on
-        // every keypress. Color pickers depend on colCfg.options, so the
-        // re-render is deferred to the `change` event (fires on blur).
+
         const enumWrapper = document.createElement('div');
         enumWrapper.className = 'form-group';
         const enumLabel = document.createElement('label');
@@ -731,13 +684,9 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         };
 
         enumInput.addEventListener('input', (e) => {
-            // Keep the in-memory config in sync so that clicking "Save config"
-            // mid-typing does not lose the current value.
             applyEnumValue(e.target.value);
         });
         enumInput.addEventListener('change', (e) => {
-            // Blur / Enter — now it is safe to re-render the editor so the
-            // color-picker rows appear for the freshly entered options.
             applyEnumValue(e.target.value);
             renderEditor(tableName, tableData, false);
         });
@@ -747,14 +696,13 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
         const isTypeEnum = String(colCfg.type || '').toLowerCase() === 'enum';
 
-        // Render color picker for ENUM types
         if (isTypeEnum && colCfg.options && colCfg.options.length > 0) {
             const colorsContainer = document.createElement('div');
             colorsContainer.style.marginLeft = '20px';
             colorsContainer.style.paddingLeft = '10px';
             colorsContainer.style.borderLeft = '2px solid var(--muted)';
             colorsContainer.style.marginBottom = '15px';
-            
+
             const colorsTitle = document.createElement('h5');
             colorsTitle.textContent = 'Enum Colors (Optional)';
             colorsTitle.style.marginTop = '0';
@@ -778,18 +726,17 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         block.appendChild(createSelectInput('fk_ref', 'Foreign Key Reference Table', getTableOptions(), fkData.reference_table || '', (val) => {
             if (val) tableData.foreign_keys[colName] = { reference_table: val, reference_column: fkData.reference_column || 'id', display_column: fkData.display_column || ['name'] };
             else delete tableData.foreign_keys[colName];
-            renderEditor(tableName, tableData, false); 
+            renderEditor(tableName, tableData, false);
         }));
 
-        // Render additional foreign key settings if referenced table is chosen
         if (tableData.foreign_keys[colName] && tableData.foreign_keys[colName].reference_table) {
             const fkContainer = document.createElement('div');
             fkContainer.style.marginLeft = '20px'; fkContainer.style.paddingLeft = '10px'; fkContainer.style.borderLeft = '2px solid var(--accent)'; fkContainer.style.marginBottom = '15px';
             fkContainer.appendChild(createTextInput('fk_ref_col', 'Reference Column (e.g., id)', tableData.foreign_keys[colName].reference_column, (val) => tableData.foreign_keys[colName].reference_column = val));
-            
+
             const fkDispData = tableData.foreign_keys[colName].display_column;
             const fkDispStr = Array.isArray(fkDispData) ? fkDispData.join(', ') : (fkDispData || '');
-            
+
             fkContainer.appendChild(createTextInput('fk_disp_col', 'Display Columns (Comma separated, e.g., first_name, last_name)', fkDispStr, (val) => {
                 if(val) {
                     tableData.foreign_keys[colName].display_column = val.split(',').map(s => s.trim()).filter(s => s !== '');
@@ -797,15 +744,14 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
                     tableData.foreign_keys[colName].display_column = [];
                 }
             }));
-            
+
             block.appendChild(fkContainer);
         }
 
-        // New feature: Validation Regex and Message configuration block
         const regexContainer = document.createElement('div');
-        regexContainer.style.marginLeft = '20px'; 
-        regexContainer.style.paddingLeft = '10px'; 
-        regexContainer.style.borderLeft = '2px solid var(--muted)'; 
+        regexContainer.style.marginLeft = '20px';
+        regexContainer.style.paddingLeft = '10px';
+        regexContainer.style.borderLeft = '2px solid var(--muted)';
         regexContainer.style.marginBottom = '15px';
 
         const regexTitle = document.createElement('h5');
@@ -815,27 +761,27 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
         regexContainer.appendChild(regexTitle);
 
         regexContainer.appendChild(createTextInput(
-            'validation_regexp', 
-            'RegExp Pattern (e.g., ^[A-Z]{2}\\d{4}$)', 
-            colCfg.validation_regexp || '', 
-            (val) => { 
-                if (val) colCfg.validation_regexp = val; 
-                else delete colCfg.validation_regexp; 
+            'validation_regexp',
+            'RegExp Pattern (e.g., ^[A-Z]{2}\\d{4}$)',
+            colCfg.validation_regexp || '',
+            (val) => {
+                if (val) colCfg.validation_regexp = val;
+                else delete colCfg.validation_regexp;
             }
         ));
 
         regexContainer.appendChild(createTextInput(
-            'validation_message', 
-            'Error Message (e.g., Invalid code format)', 
-            colCfg.validation_message || '', 
-            (val) => { 
-                if (val) colCfg.validation_message = val; 
-                else delete colCfg.validation_message; 
+            'validation_message',
+            'Error Message (e.g., Invalid code format)',
+            colCfg.validation_message || '',
+            (val) => {
+                if (val) colCfg.validation_message = val;
+                else delete colCfg.validation_message;
             }
         ));
 
         block.appendChild(regexContainer);
-        
+
         block.appendChild(createCheckbox('show_in_grid', 'Show in Grid', colCfg.show_in_grid, (val) => colCfg.show_in_grid = val, true));
         block.appendChild(createCheckbox('show_in_edit', 'Show in Edit Form', colCfg.show_in_edit, (val) => colCfg.show_in_edit = val, true));
         block.appendChild(createCheckbox('not_null', 'Is Required (Not Null)', colCfg.not_null, (val) => colCfg.not_null = val, false));
@@ -853,7 +799,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     const subContainer = document.createElement('div');
     workspaceEl.appendChild(subContainer);
 
-    // Render configuration for subtables
     const renderSubtables = () => {
         subContainer.innerHTML = '';
         tableData.subtables.forEach((subCfg, index) => {
@@ -892,11 +837,11 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
             block.appendChild(createSelectInput('sub_table', 'Child Table (Target)', getTableOptions(), subCfg.table || '', (val) => subCfg.table = val));
             block.appendChild(createTextInput('sub_fk', 'Foreign Key Column in Child Table', subCfg.foreign_key, (val) => subCfg.foreign_key = val));
             block.appendChild(createTextInput('sub_label', 'Display Label', subCfg.label, (val) => subCfg.label = val));
-            
+
             const colsStr = subCfg.columns_to_show ? subCfg.columns_to_show.join(', ') : '';
             block.appendChild(createTextInput('sub_cols', 'Columns to Show (Comma separated)', colsStr, (val) => {
                 if(val) {
-                    subCfg.columns_to_show = val.split(',').map(s => s.trim()).filter(s => s !== ''); 
+                    subCfg.columns_to_show = val.split(',').map(s => s.trim()).filter(s => s !== '');
                 } else {
                     subCfg.columns_to_show = [];
                 }
@@ -919,7 +864,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
     renderSubtables();
 
-    // ── Many-to-Many Relationships ────────────────────────────────────────────
     if (!Array.isArray(tableData.many_to_many)) tableData.many_to_many = [];
 
     const m2mTitle = document.createElement('h3');
@@ -1018,17 +962,10 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
 
     renderM2m();
 
-    // ── Images ────────────────────────────────────────────────────────────────
-    // Kept out of tableData until the user actually changes something, so opening a
-    // table's editor never adds an empty "images" key to the saved schema.
     const imagesCfg = (typeof tableData.images === 'object' && tableData.images !== null)
         ? tableData.images
         : {};
-    // createCheckbox/createNumberInput fire onChange synchronously while building the
-    // field, to seed a default for an unset value. That seeding must not count as an
-    // edit — otherwise merely expanding a table marks the config dirty and writes an
-    // "images" key into tables that never used images. Only changes after the block is
-    // built come from the user.
+
     let imagesReady = false;
     const touchImages = () => {
         if (!imagesReady) return;
@@ -1069,11 +1006,6 @@ export function renderSchemaEditor(tableName, tableData, ctx) {
     workspaceEl.appendChild(imgBlock);
     imagesReady = true;
 
-    // ── Highlight Rules ─────────────────────────────────────────────────────
-    // Row-level conditional formatting for the grid, mirroring the Views module's
-    // color_rules mechanism (public/admin/js/views_editor.js buildRuleRow).
-    // Held locally and attached to tableData only on a real edit, so merely opening a
-    // table's editor never adds an empty "highlight_rules" array to the saved schema.
     const hlRules = Array.isArray(tableData.highlight_rules) ? tableData.highlight_rules : [];
     const touchHighlights = () => { tableData.highlight_rules = hlRules; markDirty(); };
 

@@ -7,16 +7,11 @@
 
 declare(strict_types=1);
 
-// admin/demo/crm.php — CRM demo app definition (data only, no auth/routing)
-// demo_def_crm($conn): returns the spw_crm schema spec — DDL (companies, contacts, deals, activities, leads), view names, seed data,
-// plus config payloads: dashboard widgets, calendar sources, Kanban board, workflows, views, menu, files relations, automations (incl. email action), anonymization rules, print templates, RAG knowledge-base documents and aggregate view, and User Records column mapping
-// Consumed by demo/seed.php during demo_install
-
 function demo_def_crm($conn): array
 {
     return [
         'pg_schema'  => 'spw_crm',
-        // Every view this definition creates, for the uninstall drop pass.
+
         'view_names' => ['v_demo_crm_company_pipeline', 'v_demo_crm_leads_funnel', 'v_demo_crm_pipeline_report', 'v_demo_crm_activity_agenda', 'v_demo_crm_deals_aggregate'],
         'ddl' => [
             'CREATE SCHEMA IF NOT EXISTS spw_crm',
@@ -25,16 +20,9 @@ function demo_def_crm($conn): array
             "CREATE TABLE IF NOT EXISTS spw_crm.deals (id SERIAL PRIMARY KEY, company_id INTEGER REFERENCES spw_crm.companies(id) ON DELETE SET NULL, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE SET NULL, title VARCHAR(255) NOT NULL, value NUMERIC(12,2), stage VARCHAR(50) DEFAULT 'Lead', expected_close DATE, created_at TIMESTAMP DEFAULT NOW())",
             "CREATE TABLE IF NOT EXISTS spw_crm.activities (id SERIAL PRIMARY KEY, deal_id INTEGER REFERENCES spw_crm.deals(id) ON DELETE CASCADE, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE SET NULL, type VARCHAR(50) DEFAULT 'Call', notes TEXT, scheduled_at TIMESTAMP, done BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW())",
             "CREATE TABLE IF NOT EXISTS spw_crm.leads (id SERIAL PRIMARY KEY, source VARCHAR(50) DEFAULT 'Web', first_name VARCHAR(100) NOT NULL, last_name VARCHAR(100) NOT NULL, email VARCHAR(255), phone VARCHAR(50), company_name VARCHAR(255), status VARCHAR(50) DEFAULT 'New', converted_contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE SET NULL, created_at TIMESTAMP DEFAULT NOW())",
-            // Many-to-many: extra stakeholder contacts on a deal, beyond the single
-            // primary deals.contact_id FK — showcases the many_to_many field type on
-            // a table that stays visible in the slimmed-down demo menu.
+
             "CREATE TABLE IF NOT EXISTS spw_crm.deal_contacts (id SERIAL PRIMARY KEY, deal_id INTEGER REFERENCES spw_crm.deals(id) ON DELETE CASCADE, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE CASCADE, role VARCHAR(100), added_at TIMESTAMP DEFAULT NOW())",
-            // Company x stage aggregate feeding the Pipeline Summary view: deal count /
-            // value stats, the expected-close window and overdue count per group, plus
-            // activity totals. Activities are pre-aggregated per deal in the subquery so
-            // the join fan-out cannot skew COUNT(d.id) / AVG / MAX / MIN over d.value.
-            // Contact count is a correlated subquery — it belongs to the company, not to
-            // the company x stage group, so it repeats across a company's stage rows.
+
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_company_pipeline AS '
                 . 'SELECT c.name AS company_name, c.industry AS industry, d.stage AS stage, '
                 . '(SELECT COUNT(*) FROM spw_crm.contacts ct WHERE ct.company_id = c.id) AS contact_count, '
@@ -60,11 +48,7 @@ function demo_def_crm($conn): array
                 . 'GROUP BY c.id, c.name, c.industry, d.stage '
                 . 'ORDER BY c.name, d.stage',
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_leads_funnel AS SELECT status, COUNT(*) AS lead_count FROM spw_crm.leads GROUP BY status ORDER BY status',
-            // Report views for the print templates below — multi-row lists over the tables
-            // the demo actually exposes (deals / activities), joined out to company and
-            // contact. 'done_label' is a text mirror of activities.done: the print
-            // parameter picker runs DISTINCT on the bound column, and a raw boolean would
-            // offer 't'/'f' in the dropdown (same trick as 'paid' in the revenue view).
+
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_pipeline_report AS '
                 . 'SELECT d.id, d.title, d.stage, d.value, d.expected_close, '
                 . 'c.name AS company_name, c.industry AS company_industry, '
@@ -85,24 +69,7 @@ function demo_def_crm($conn): array
                 . 'LEFT JOIN spw_crm.companies c ON c.id = d.company_id '
                 . 'LEFT JOIN spw_crm.contacts ct ON ct.id = a.contact_id '
                 . 'ORDER BY a.scheduled_at DESC',
-            // Aggregate view for the RAG "Ask AI" panel (spw_config rag.aggregate_views,
-            // mapped to the deals table below). Read verbatim as SELECT * ... LIMIT n by
-            // rag_view_aggregate(), so the column aliases ARE the semantics the model
-            // sees — hence the long, self-describing names, and hence the grain has to
-            // match them exactly: one row per company x stage, nothing finer. Grouping by
-            // contact_id as well would put Acme's three Proposal deals (45k + 25k + 88k)
-            // on three rows while the aliases still promise a per-company-and-stage total
-            // — and the demo's own acme-account-summary.csv attachment states 158000.
-            // Contacts are therefore aggregated into one cell instead of splitting rows.
-            // CONCAT (not ||) so a NULL email or phone blanks one part, not the whole
-            // label; FILTER drops deals that have no primary contact at all.
-            // The string_agg delimiter must NOT be " | ": rag_view_aggregate() joins the
-            // COLUMNS of each row with exactly that string, so a multi-contact cell would
-            // read as extra columns and shift every field after it.
-            // Company phone/website/email are deliberately absent: they would repeat
-            // verbatim on every stage row of the same company, and the model can already
-            // read them from the companies knowledge-base document. The expected-close
-            // window is here instead — it is the one thing the block could not answer.
+
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_deals_aggregate AS '
                 . 'SELECT '
                 . 'co.name AS company_name, '
@@ -122,11 +89,7 @@ function demo_def_crm($conn): array
                 . 'LEFT JOIN spw_crm.contacts ct ON ct.id = de.contact_id '
                 . 'GROUP BY co.id, co.name, co.industry, de.stage '
                 . 'ORDER BY co.name, de.stage',
-            // Validation procedure for the "Add Contact" workflow below: the wizard
-            // CALLs it when the user clicks "Next step", and a RAISE EXCEPTION here
-            // blocks the step and surfaces the message in the UI. Phone separators
-            // (- . space parentheses) are stripped before the digit check, so
-            // "+1-555-1001" and "+1 (555) 1001" both pass.
+
             'CREATE OR REPLACE PROCEDURE spw_crm.validate_contact(p_email text, p_phone text) '
                 . 'LANGUAGE plpgsql AS $proc$ '
                 . 'DECLARE v_digits text; '
@@ -246,11 +209,7 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (22, 'Dorothy', 'Parker', 'dorothy.p@insightdata.io', '+1-555-2028', 'Analytics Head')",
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (23, 'Edward', 'Evans', 'edward.e@safeguardsec.com', '+1-555-2029', 'Security Director')",
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (24, 'Barbara', 'Edwards', 'barbara.e@futureworks.io', '+1-555-2030', 'Research Manager')",
-            // Second named contact for companies 6-24 (which had only one). Deals carry both
-            // a primary contact and "Other Stakeholders" links, and both must belong to the
-            // deal's own company — with a single contact per company the stakeholder would
-            // have to be the primary contact again, or someone from an unrelated company.
-            // Email domains follow companies.website, as with the contacts above.
+
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (6, 'Laura', 'Turner', 'laura.t@cloudfirst.io', '+1-555-2031', 'Procurement Lead')",
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (7, 'Peter', 'Baker', 'peter.b@datastream.io', '+1-555-2032', 'Head of Platform')",
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) VALUES (8, 'Alice', 'Hughes', 'alice.h@securenet.com', '+1-555-2033', 'Compliance Manager')",
@@ -300,11 +259,7 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (8, 14, 'Security Operations Center', 160000.00, 'Qualified', '2026-07-20')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (10, 16, 'Executive Coaching Program', 38000.00, 'Lead', '2026-08-12')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (12, 18, 'Data Platform Extension', 92000.00, 'Proposal', '2026-09-10')",
-            // Deals 31-35 deliberately land on a company + stage that already has one, so
-            // v_demo_crm_deals_aggregate (fed to the RAG "Ask AI" panel) shows real groups
-            // instead of 29 rows that all read COUNT = 1. Acme/Proposal ends up with three.
-            // Each uses a contact belonging to that same company, and the expected_close
-            // dates sit outside the existing ones so the first/last close window is visible.
+
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (1, 7, 'Managed Services Retainer', 88000.00, 'Proposal', '2026-08-14')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (2, 8, 'Change Management Programme', 210000.00, 'Negotiation', '2026-09-05')",
             "INSERT INTO spw_crm.deals (company_id, contact_id, title, value, stage, expected_close) VALUES (3, 9, 'Developer Training Package', 32000.00, 'Qualified', '2026-06-28')",
@@ -369,15 +324,7 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (24, 48, 'Call', 'Coaching engagement initiated', NOW() + INTERVAL '10 days', false)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (6, 1, 'Note', 'Payment terms finalized', NOW() - INTERVAL '4 days', true)",
             "INSERT INTO spw_crm.activities (deal_id, contact_id, type, notes, scheduled_at, done) VALUES (12, 17, 'Email', 'SOC alignment meeting scheduled', NOW() + INTERVAL '3 days', false)",
-            // Bulk volume for the Pipeline Summary view (v_demo_crm_company_pipeline):
-            // the hand-written rows above only cover companies 1-24 with ~1 deal per
-            // company and stage, which makes avg/max/min collapse onto the same number.
-            // Two set-based inserts: extra contacts for every company, and 1-3 extra
-            // activities per deal (the deal list stays at the 35 hand-written rows above,
-            // all of which have deal_contacts m2m links). Activities are scheduled across
-            // a 3-month window (previous, current and next month, business hours
-            // 08:00-16:00) so the calendar is not clumped into single days. Values derive
-            // from id arithmetic rather than random(), so a demo install is reproducible.
+
             "INSERT INTO spw_crm.contacts (company_id, first_name, last_name, email, phone, position) "
                 . "SELECT c.id, "
                 . "(ARRAY['Adam','Bella','Carlos','Diana','Elias','Farah','Grace','Hugo','Iris','Jonas','Klara','Liam'])[1 + (c.id + g) % 12], "
@@ -407,7 +354,7 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Web', 'Hiroshi', 'Tanaka', 'h.tanaka@sakuranet.jp', '+81-3-5555-0110', 'SakuraNet KK', 'New', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Ads', 'Isabella', 'Romano', 'i.romano@milanodigital.it', '+39-02-555-0111', 'Milano Digital', 'Qualified', 3)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Cold Call', 'Daniel', 'Wright', 'daniel.w@blackpine.co', '+1-555-3012', 'Black Pine Holdings', 'Lost', NULL)",
-            // Stale leads (created_at > 1 year ago) — matched by the demo anonymization rules, visible in Anonymization dry-run preview
+
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id, created_at) VALUES ('Web', 'Victor', 'Lindqvist', 'victor.l@oldnordic.se', '+46-8-555-0161', 'Old Nordic AB', 'Lost', NULL, NOW() - INTERVAL '18 months')",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id, created_at) VALUES ('Event', 'Helena', 'Novak', 'helena.n@pragueretail.cz', '+420-2-555-0162', 'Prague Retail sro', 'Lost', NULL, NOW() - INTERVAL '2 years')",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id, created_at) VALUES ('Cold Call', 'Bruno', 'Ferreira', 'bruno.f@lisboatech.pt', '+351-21-555-0163', 'Lisboa Tech Lda', 'Lost', NULL, NOW() - INTERVAL '14 months')",
@@ -443,24 +390,20 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (28, 33, 'Legal Reviewer')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (29, 35, 'Executive Sponsor')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (30, 37, 'Champion')",
-            // Stakeholders for deals 31-35, all drawn from the deal's own company.
+
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (31, 1, 'Economic Buyer')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (31, 2, 'Technical Evaluator')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (32, 3, 'Executive Sponsor')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (33, 4, 'Champion')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (34, 5, 'Economic Buyer')",
             "INSERT INTO spw_crm.deal_contacts (deal_id, contact_id, role) VALUES (35, 6, 'Champion')",
-            // Spread created_at over past weeks/months so the dashboard period filter
-            // (Today/7d/30d) and stat card trend deltas have history to compare against.
-            // The WHERE guard on leads keeps the intentionally stale GDPR-demo rows intact.
+
             "UPDATE spw_crm.companies SET created_at = NOW() - (id % 180) * INTERVAL '1 day'",
             "UPDATE spw_crm.contacts  SET created_at = NOW() - (id % 120) * INTERVAL '1 day'",
-            // Deals spread across ~3 months (id * 3, capped at 90 days) so the
-            // "Deals Value Over Time" line chart shows several monthly buckets.
+
             "UPDATE spw_crm.deals     SET created_at = NOW() - ((id * 3) % 90) * INTERVAL '1 day'",
             "UPDATE spw_crm.leads     SET created_at = NOW() - (id % 60)  * INTERVAL '1 day' WHERE created_at >= NOW() - INTERVAL '7 days'",
-            // Activities spread across ~2 months so the weekly "Activities Over Time"
-            // line chart has history; scheduled_at (calendar) is left untouched.
+
             "UPDATE spw_crm.activities SET created_at = NOW() - (id % 75) * INTERVAL '1 day'",
         ],
         'schema_tables' => [
@@ -500,23 +443,16 @@ function demo_def_crm($conn): array
                 'expected_close' => ['type' => 'date',   'show_in_grid' => true, 'display_name' => 'Expected Close', 'description' => 'Projected closing date'],
                 'created_at'     => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when deal record was created'],
             ], 'foreign_keys' => [
-                // Contacts are labelled by first + last name everywhere in this demo:
-                // the bulk seed below reuses 12 first names across ~180 contacts, so a
-                // single-column label makes the picker ambiguous. display_column accepts
-                // a list and the parts are joined with " - " (includes/api_helpers.php,
-                // src/Repository/FkOptionsLoader.php, grid/cells/fk-cell.js).
+
                 'company_id' => ['reference_table' => 'companies', 'reference_column' => 'id', 'display_column' => 'name'],
                 'contact_id' => ['reference_table' => 'contacts',  'reference_column' => 'id', 'display_column' => ['first_name', 'last_name']],
             ], 'subtables' => [
                 ['table' => 'activities', 'foreign_key' => 'deal_id', 'label' => 'Activities', 'columns_to_show' => ['type', 'scheduled_at', 'done', 'notes']],
             ], 'many_to_many' => [
-                // Single column on purpose, unlike the foreign_keys above: m2m_options()
-                // feeds display_column straight to pg_ident() (includes/m2m.php), so a
-                // list would be a fatal, not a joined label.
+
                 ['label' => 'Other Stakeholders', 'junction_table' => 'deal_contacts', 'self_fk' => 'deal_id', 'other_fk' => 'contact_id', 'other_table' => 'contacts', 'display_column' => 'last_name'],
             ], 'highlight_rules' => [
-                // Evaluated in order, first match wins. Thresholds are picked against the
-                // seeded deal values in seed_data above (25k-500k) so both rules fire.
+
                 ['column' => 'value', 'op' => '>=', 'value' => '150000', 'color' => '#dcfce7'],
                 ['column' => 'value', 'op' => '<',  'value' => '40000',  'color' => '#fee2e2'],
             ], 'images' => ['enabled' => true, 'label' => 'Attachments', 'max_per_record' => 5, 'show_in_grid' => true]],
@@ -563,9 +499,7 @@ function demo_def_crm($conn): array
             ['id' => 'demo_crm_004', 'type' => 'stat_card', 'title' => 'Pipeline Value',       'table' => 'deals',      'width' => 1, 'height' => 1, 'query' => ['type' => 'sum', 'column' => 'value', 'conditions' => [['col' => 'stage', 'op' => '!=', 'val' => 'Won'], ['col' => 'stage', 'op' => '!=', 'val' => 'Lost']]], 'icon' => 'assets/icons/payments.png',     'color' => '#e2b932', 'display_columns' => []],
             ['id' => 'demo_crm_003', 'type' => 'bar_chart', 'title' => 'Deals by Stage',       'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'stage',  'conditions' => []], 'icon' => 'assets/icons/point_of_sale.png','color' => '#fcd34d', 'display_columns' => []],
             ['id' => 'demo_crm_005', 'type' => 'pie_chart', 'title' => 'Activities Status',    'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'done',   'conditions' => []], 'icon' => 'assets/icons/calendar.png',     'color' => '#c4b5fd', 'display_columns' => []],
-            // Time-series line/area charts — one row (1/3 + 2/3). Both read a spread
-            // created_at (see the UPDATE ... created_at seed statements) so the axis
-            // covers the last few months.
+
             ['id' => 'demo_crm_011', 'type' => 'line_chart', 'title' => 'Deals Value Over Time', 'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'month', 'agg_column' => 'value', 'agg_type' => 'sum',   'area' => true, 'conditions' => []], 'icon' => 'assets/icons/point_of_sale.png', 'color' => '#289f6f', 'display_columns' => []],
             ['id' => 'demo_crm_012', 'type' => 'line_chart', 'title' => 'Activities Over Time',  'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'week',  'agg_column' => 'id',    'agg_type' => 'count', 'area' => true, 'conditions' => []], 'icon' => 'assets/icons/calendar.png',      'color' => '#553eb1', 'display_columns' => []],
         ],
@@ -573,9 +507,7 @@ function demo_def_crm($conn): array
             ['table' => 'activities', 'date_column' => 'scheduled_at', 'title_column' => 'type', 'subtitle_column' => 'notes', 'color' => '#93c5fd', 'notify_before_days' => 1, 'url_template' => 'edit.php?table=activities&id={id}', 'icon' => 'assets/icons/calendar.png', 'notified_users' => []],
             ['table' => 'deals', 'date_column' => 'expected_close', 'title_column' => 'title', 'color' => '#fcd34d', 'notify_before_days' => 3, 'url_template' => 'edit.php?table=deals&id={id}', 'icon' => 'assets/icons/point_of_sale.png', 'notified_users' => []],
         ],
-        // Kanban board — Deals grouped by their sales Stage. Dragging a card
-        // between lanes moves the deal along the pipeline (updates deals.stage).
-        // "board" holds a named list (boards[]) — each entry is its own sidebar item.
+
         'board' => [
             'boards' => [
                 [
@@ -604,9 +536,7 @@ function demo_def_crm($conn): array
                 ['title' => 'Add Contact',   'table' => 'contacts',  'foreign_key' => 'company_id', 'link_to_step' => 1, 'allow_multiple' => false],
                 ['title' => 'Create Deal',   'table' => 'deals',     'foreign_key' => 'company_id', 'link_to_step' => 1, 'allow_multiple' => false],
             ]],
-            // Single-step workflow demonstrating the per-step stored-procedure hook:
-            // spw_crm.validate_contact runs on "Next step" and rejects a malformed
-            // email or phone before anything is written to the database.
+
             ['id' => 'wf_demo_crm_003', 'title' => 'Add Contact', 'icon' => 'assets/icons/person_text.png', 'description' => 'CRM: add a single contact, validated by a PostgreSQL procedure.', 'steps' => [
                 ['title' => 'Add Contact', 'table' => 'contacts', 'foreign_key' => '', 'link_to_step' => 0, 'allow_multiple' => false, 'procedure' => [
                     'enabled' => true,
@@ -620,9 +550,7 @@ function demo_def_crm($conn): array
             ]],
         ],
         'views' => [
-            // Showcase view: company x stage measures with default row grouping
-            // (group_rows) by stage plus per-group aggregates, and drill-down enabled.
-            // Mirrors the config as tuned in the admin Views editor.
+
             'v_demo_crm_company_pipeline' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => false, 'description' => 'Deal and activity measures per company and sales stage, with subtotals and drill-down by stage and industry.', 'group_rows' => 'stage', 'columns' => [
                 'company_name'   => ['display_name' => 'Company',        'aggregate' => 'count'],
                 'industry'       => ['display_name' => 'Industry',       'aggregate' => ''],
@@ -652,8 +580,7 @@ function demo_def_crm($conn): array
                 'status'     => ['display_name' => 'Status'],
                 'lead_count' => ['display_name' => 'Leads', 'summary' => 'sum'],
             ], 'drill_down' => ['enabled' => false]],
-            // Report views backing the print templates — not meant to be browsed as
-            // reports, so hidden from the Views module listing.
+
             'v_demo_crm_pipeline_report' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Pipeline Report Source', 'menu_name' => 'Pipeline Report Source', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => true, 'description' => 'One row per deal with joined company and contact fields for the Sales Pipeline Report print template.', 'columns' => [
                 'title'          => ['display_name' => 'Deal'],
                 'company_name'   => ['display_name' => 'Company'],
@@ -721,8 +648,7 @@ function demo_def_crm($conn): array
                 ],
             ],
         ],
-        // User Records ("My records" panel) column mapping — which columns are
-        // CONCAT_WS'd into each record's label when a user owns a record in that table.
+
         'user_records' => [
             'companies' => ['name'],
             'contacts'  => ['first_name', 'last_name'],
@@ -730,19 +656,13 @@ function demo_def_crm($conn): array
             'activities' => ['type'],
             'leads'     => ['first_name', 'last_name'],
         ],
-        // Demo users — 3 sample accounts used to seed cross-user comments,
-        // per-user "My Notes", record ownership and notifications below. Password
-        // is fixed to 'test' for all of them, hashed centrally in seed.php (not
-        // stored here). avatar_id is the avatar colour index (OS_AVATAR_COLORS in
-        // includes/page_helpers.php) — the avatar itself is the username's initial.
+
         'demo_users' => [
             ['username' => 'demo.anna',  'role' => 'editor', 'avatar_id' => 3],
             ['username' => 'demo.marek', 'role' => 'editor', 'avatar_id' => 9],
             ['username' => 'demo.julia', 'role' => 'viewer', 'avatar_id' => 15],
         ],
-        // Demo comments — cross-user discussion threads seeded onto CRM records.
-        // 'author' indexes into demo_users above; related ids are literal, matching
-        // the sequential insertion order of seed_data above (fresh spw_crm schema).
+
         'demo_comments' => [
             ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'body' => "Talked to John Smith today, he's leaning towards the annual plan. Sending updated pricing tomorrow."],
             ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'body' => 'Good — flag me before you send it, I want to double check the discount tier.'],
@@ -775,10 +695,7 @@ function demo_def_crm($conn): array
             ['related_table' => 'leads', 'related_id' => 2, 'author' => 2, 'body' => 'Marcus from Apex Logistics asked for pricing on the mid-tier package. Passing to sales.'],
             ['related_table' => 'leads', 'related_id' => 6, 'author' => 0, 'body' => 'Marked as Lost — they went with an in-house solution. Worth re-approaching in six months.'],
         ],
-        // Demo notes — private "My Notes" entries seeded per demo user, some linked
-        // to a CRM record and some standalone (related_table/related_id null). Two
-        // carry a reminder_date (computed at install time) to demonstrate the
-        // cron_notifications.php note-reminder flow firing a real notification.
+
         'demo_notes' => [
             ['author' => 0, 'related_table' => 'deals', 'related_id' => 1, 'body' => 'Follow up with John Smith about the annual plan pricing.', 'reminder_date' => date('Y-m-d', strtotime('+1 day'))],
             ['author' => 0, 'related_table' => 'deals', 'related_id' => 4, 'body' => 'Send the Support & Maintenance renewal confirmation.', 'reminder_date' => null],
@@ -789,9 +706,7 @@ function demo_def_crm($conn): array
             ['author' => 2, 'related_table' => 'companies', 'related_id' => 1, 'body' => 'Acme tickets are high priority — check queue every morning.', 'reminder_date' => null],
             ['author' => 2, 'related_table' => 'deals', 'related_id' => 7, 'body' => 'Schedule a check-in call about the infrastructure buildout timeline.', 'reminder_date' => null],
         ],
-        // Demo files — small CSV attachments on CRM records, written both to disk
-        // (storage_path convention mirrors public/api/files.php's upload handler) and
-        // to spw_files. 'author' indexes into demo_users above (uploaded_by).
+
         'demo_files' => [
             [
                 'related_table' => 'deals', 'related_id' => 1, 'author' => 0,
@@ -809,9 +724,7 @@ function demo_def_crm($conn): array
                 'related_table' => 'companies', 'related_id' => 1, 'author' => 1,
                 'filename' => 'acme-account-summary.csv',
                 'description' => 'Quarterly account summary for Acme Corporation.',
-                // Must match the seeded deals for company 1 (ids 1, 6 and 31 — all still
-                // open): the RAG panel reads this attachment and the deals aggregate view
-                // side by side, so a stale total here reads as a contradiction.
+
                 'content' => "Metric,Value\nOpen Deals,3\nTotal Pipeline Value,158000\nSupport Tickets (Open),3\n",
             ],
             [
@@ -821,13 +734,7 @@ function demo_def_crm($conn): array
                 'content' => "Date,Channel,Summary\n2026-06-01,Email,Sent updated proposal\n2026-06-05,Call,Discussed contract terms\n",
             ],
         ],
-        // Demo images — record image gallery for deals. 'source_file' names a PNG in
-        // admin/demo/assets/images/ (copies of the app's own assets/icons artwork, so the
-        // demo ships no third-party media); seed.php copies it into storage/files/ and
-        // tags the spw_files row with IMAGES_FIELD. Contacts used to carry photographs of
-        // faces here, which were dropped for licensing/likeness reasons — hence icons.
-        // 'author' indexes into demo_users above (uploaded_by). Keep at most
-        // max_per_record (5) entries per deal, matching the 'images' config above.
+
         'demo_images' => [
             ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'source_file' => 'docs.png',           'display_name' => 'Signed Contract Scan'],
             ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'source_file' => 'fact_check.png',     'display_name' => 'Approved Terms Sheet'],
@@ -837,9 +744,7 @@ function demo_def_crm($conn): array
             ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'source_file' => 'order_approve.png',  'display_name' => 'Signed Order Form'],
             ['related_table' => 'deals', 'related_id' => 7, 'author' => 2, 'source_file' => 'warehouse.png',      'display_name' => 'Data Centre Site Photo'],
         ],
-        // Demo record ownership ("My records" panel) — assigns a few CRM records to
-        // demo users so the panel isn't empty right after install. 'author' indexes
-        // into demo_users above and becomes the owner_id.
+
         'demo_record_owners' => [
             ['related_table' => 'deals',      'related_id' => 1, 'author' => 0],
             ['related_table' => 'deals',      'related_id' => 4, 'author' => 0],
@@ -848,18 +753,14 @@ function demo_def_crm($conn): array
             ['related_table' => 'companies',  'related_id' => 1, 'author' => 1],
             ['related_table' => 'deals',      'related_id' => 7, 'author' => 2],
         ],
-        // Demo notifications — a few pre-seeded bell-icon entries per demo user so
-        // the notification panel isn't empty right after install. 'author' indexes
-        // into demo_users above and becomes the recipient (user_id).
+
         'demo_notifications' => [
             ['author' => 0, 'title' => 'New comment on deal: Enterprise License Q2', 'related_table' => 'deals', 'related_id' => 1, 'is_read' => false],
             ['author' => 1, 'title' => 'New comment on deal: Digital Transformation Project', 'related_table' => 'deals', 'related_id' => 2, 'is_read' => false],
             ['author' => 2, 'title' => 'New comment on deal: Cloud Infrastructure Buildout', 'related_table' => 'deals', 'related_id' => 7, 'is_read' => false],
             ['author' => 0, 'title' => 'You were assigned as owner of: Support & Maintenance', 'related_table' => 'deals', 'related_id' => 4, 'is_read' => true],
             ['author' => 1, 'title' => 'You were assigned as owner of: Acme Corporation', 'related_table' => 'companies', 'related_id' => 1, 'is_read' => true],
-            // One notification per new comment thread above, addressed to a demo user
-            // other than the thread's last commenter. The unique key on spw_notifications
-            // is (user_id, source_table, source_id, notify_date) — keep these pairs distinct.
+
             ['author' => 0, 'title' => 'New comment on deal: Cloud Migration Services', 'related_table' => 'deals', 'related_id' => 3, 'is_read' => false],
             ['author' => 0, 'title' => 'New comment on deal: Data Analytics Platform', 'related_table' => 'deals', 'related_id' => 8, 'is_read' => false],
             ['author' => 0, 'title' => 'New comment on deal: Growth Fund Round A', 'related_table' => 'deals', 'related_id' => 14, 'is_read' => false],
@@ -872,45 +773,35 @@ function demo_def_crm($conn): array
             ['author' => 0, 'title' => 'New comment on lead: Marcus Bennett', 'related_table' => 'leads', 'related_id' => 2, 'is_read' => false],
             ['author' => 2, 'title' => 'New comment on lead: Lucas Müller', 'related_table' => 'leads', 'related_id' => 6, 'is_read' => true],
         ],
-        // Demo audit trail — backdated spw_users_log entries plus the matching
-        // spw_record_snapshots rows, so the Audit module and per-record history are
-        // populated straight after install instead of staying empty until the first
-        // manual edit. Opt-in via the "audit history" checkbox on the Demo page.
-        //
-        // 'author' indexes into demo_users, so this block requires them (the checkbox
-        // is disabled without demo users). 'days_ago' backdates created_at on both the
-        // log row and its snapshot. 'changes' is an overlay applied on top of the
-        // record's CURRENT state, which seed.php reads with fetch_record_json() — only
-        // the columns that differed at that point in time are listed here, so the
-        // snapshots stay in sync with seed_data instead of duplicating whole rows.
+
         'demo_audit' => [
-            // Enterprise License Q2 — Lead → Qualified → Proposal, value revised up
+
             ['author' => 0, 'table' => 'deals', 'record_id' => 1, 'action' => 'create', 'days_ago' => 48, 'changes' => ['stage' => 'Lead',      'value' => 30000.00]],
             ['author' => 0, 'table' => 'deals', 'record_id' => 1, 'action' => 'update', 'days_ago' => 35, 'changes' => ['stage' => 'Qualified', 'value' => 30000.00]],
             ['author' => 1, 'table' => 'deals', 'record_id' => 1, 'action' => 'update', 'days_ago' => 21, 'changes' => ['stage' => 'Qualified', 'value' => 45000.00]],
             ['author' => 0, 'table' => 'deals', 'record_id' => 1, 'action' => 'update', 'days_ago' => 9,  'changes' => []],
-            // Digital Transformation Project — long negotiation, close date pushed back
+
             ['author' => 1, 'table' => 'deals', 'record_id' => 2, 'action' => 'create', 'days_ago' => 62, 'changes' => ['stage' => 'Qualified',   'expected_close' => '2026-06-15']],
             ['author' => 1, 'table' => 'deals', 'record_id' => 2, 'action' => 'update', 'days_ago' => 30, 'changes' => ['stage' => 'Proposal',    'expected_close' => '2026-06-15']],
             ['author' => 1, 'table' => 'deals', 'record_id' => 2, 'action' => 'update', 'days_ago' => 11, 'changes' => []],
-            // Cloud Migration Services — migration window confirmed, date moved
+
             ['author' => 1, 'table' => 'deals', 'record_id' => 3, 'action' => 'create', 'days_ago' => 40, 'changes' => ['stage' => 'Lead', 'expected_close' => '2026-05-15']],
             ['author' => 0, 'table' => 'deals', 'record_id' => 3, 'action' => 'update', 'days_ago' => 14, 'changes' => []],
-            // Support & Maintenance — the full path to Won
+
             ['author' => 0, 'table' => 'deals', 'record_id' => 4, 'action' => 'create', 'days_ago' => 75, 'changes' => ['stage' => 'Lead']],
             ['author' => 0, 'table' => 'deals', 'record_id' => 4, 'action' => 'update', 'days_ago' => 52, 'changes' => ['stage' => 'Proposal']],
             ['author' => 0, 'table' => 'deals', 'record_id' => 4, 'action' => 'update', 'days_ago' => 33, 'changes' => ['stage' => 'Negotiation']],
             ['author' => 0, 'table' => 'deals', 'record_id' => 4, 'action' => 'update', 'days_ago' => 18, 'changes' => []],
-            // Data Analytics Platform — reference customer request stalled it
+
             ['author' => 2, 'table' => 'deals', 'record_id' => 8, 'action' => 'create', 'days_ago' => 44, 'changes' => ['stage' => 'Qualified', 'value' => 120000.00]],
             ['author' => 2, 'table' => 'deals', 'record_id' => 8, 'action' => 'update', 'days_ago' => 16, 'changes' => ['stage' => 'Proposal',  'value' => 150000.00]],
             ['author' => 0, 'table' => 'deals', 'record_id' => 8, 'action' => 'update', 'days_ago' => 5,  'changes' => []],
-            // Contact and company edits — history is not deals-only
+
             ['author' => 0, 'table' => 'contacts',  'record_id' => 1, 'action' => 'create', 'days_ago' => 90, 'changes' => ['position' => 'Sales Manager', 'phone' => null]],
             ['author' => 0, 'table' => 'contacts',  'record_id' => 1, 'action' => 'update', 'days_ago' => 27, 'changes' => []],
             ['author' => 1, 'table' => 'companies', 'record_id' => 1, 'action' => 'create', 'days_ago' => 96, 'changes' => ['industry' => 'IT', 'website' => null]],
             ['author' => 1, 'table' => 'companies', 'record_id' => 1, 'action' => 'update', 'days_ago' => 60, 'changes' => []],
-            // Lead qualification — the record the anonymization rules also target
+
             ['author' => 2, 'table' => 'leads', 'record_id' => 2, 'action' => 'create', 'days_ago' => 22, 'changes' => ['status' => 'New']],
             ['author' => 2, 'table' => 'leads', 'record_id' => 2, 'action' => 'update', 'days_ago' => 8,  'changes' => []],
         ],
@@ -983,7 +874,7 @@ function demo_def_crm($conn): array
                         ['field' => 'email', 'operator' => 'is_not_empty', 'value' => ''],
                     ],
                 ],
-                // Email action (2.9): queues to spw_automation_emails, delivered by cron_notifications.php
+
                 'actions' => [
                     [
                         'type'       => 'email',
@@ -994,12 +885,7 @@ function demo_def_crm($conn): array
                 ],
             ],
         ],
-        // Data Anonymization (2.9) — GDPR retention rules for lead PII. Frequency
-        // 'manual' so nothing runs unattended; use Anonymization > Preview (dry run)
-        // to see matches (seed includes stale leads older than 1 year).
-        // No 'dictionary' key here on purpose: it would only repeat the module's own
-        // defaults (includes/admin/anonymization.php). seed.php skips an empty
-        // dictionary, so anonymization_load merges those defaults in instead.
+
         'anonymization' => [
             'enabled'    => true,
             'frequency'  => 'manual',
@@ -1010,14 +896,7 @@ function demo_def_crm($conn): array
                 ['table' => 'leads', 'date_column' => 'created_at', 'days' => 365, 'column' => 'last_name',  'replacement' => '[REDACTED]'],
             ],
         ],
-        // RAG knowledge base — the sample documents describing this demo, loaded into
-        // spw_rag_files so the "Ask AI" panel has something to retrieve straight after
-        // install. Content is read from docs/rag-samples/ at install time rather than
-        // duplicated here, so the docs stay single-sourced; 'file' is resolved against
-        // that directory only (see seed.php, which rejects anything with a separator).
-        // Ingest is offline: retrieval is PostgreSQL full-text search, so no Ollama call
-        // happens here — Ollama is only needed later, to answer a question.
-        // Tags mirror the table in docs/rag-samples/README.md.
+
         'rag_docs' => [
             ['file' => 'crm_overview.txt',           'tag' => 'crm'],
             ['file' => 'crm_companies_contacts.txt', 'tag' => 'companies'],
@@ -1029,12 +908,7 @@ function demo_def_crm($conn): array
             ['file' => 'crm_reports_print.txt',      'tag' => 'reports'],
             ['file' => 'crm_collaboration.txt',      'tag' => 'collaboration'],
         ],
-        // RAG aggregate views (spw_config key "rag", section aggregate_views, shown in
-        // Admin → RAG → Aggregate Views). table => "schema.view": when the Ask AI panel
-        // is opened on that table, the view's rows are appended to the prompt as exact
-        // totals computed over the FULL set, not just the page the user can see.
-        // Capped by rag.aggregate_view_limit (default 100) — this view yields one row per
-        // company x stage, 29 for the seeded deals, so nothing is truncated.
+
         'rag_aggregate_views' => [
             'deals' => 'spw_crm.v_demo_crm_deals_aggregate',
         ],

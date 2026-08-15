@@ -13,9 +13,6 @@ use App\Domain\Schema\ColumnConfig;
 
 final readonly class FieldTypeRegistry
 {
-    /**
-     * @param list<FieldTypeInterface> $types Ordered by specificity; last entry must be a universal fallback.
-     */
     public function __construct(private array $types)
     {
     }

@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/header/resize.js — initColumnResize(): adds a drag handle to a header cell to resize the column width.
-
 export function initColumnResize(th) {
     const resizer = document.createElement('div');
     resizer.className = 'col-resizer';

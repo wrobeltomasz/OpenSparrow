@@ -7,20 +7,9 @@
 
 declare(strict_types=1);
 
-// includes/admin/automations.php — admin api.php module: workflow automations CRUD (automations_runs,
-// automations_list, automations_save, automations_delete).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
-// Rule-engine helpers: AUTO_WEBHOOK_RESERVED_HEADERS (save validation) and the
-// secret encryption convention shared with the runtime.
 require_once __DIR__ . '/../automations.php';
 require_once __DIR__ . '/../crypto.php';
 
-// GET: list automation run history
 if ($action === 'automations_runs' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -56,14 +45,6 @@ if ($action === 'automations_runs' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-// ── Automations CRUD (JSON-backed) ───────────────────────────────────────────
-
-/**
- * Strip webhook credentials out of rules before they leave the server: the signing
- * secret and every custom header value. The editor only ever learns *whether* each
- * is set, never its value — mirrors the ollama_api_key_configured convention in
- * includes/admin/rag.php. Header names stay visible so the editor can list them.
- */
 function auto_redact_secrets(array $rules): array
 {
     foreach ($rules as &$rule) {
@@ -85,10 +66,7 @@ function auto_redact_secrets(array $rules): array
                 $configured[(string) $name] ??= (string) $val !== '';
             }
             unset($act['headers_enc']);
-            // Values blanked; the editor renders the names and a "saved" placeholder.
-            // Cast to object: an empty PHP array encodes as JSON `[]`, which reaches
-            // the editor as a JS Array — string keys assigned to it are dropped by
-            // JSON.stringify() on save, silently losing every header the user adds.
+
             $act['headers']            = (object) array_map(static fn(): string => '', $configured);
             $act['headers_configured'] = (object) $configured;
             $act['payload']            = (object) ((array) ($act['payload'] ?? []));
@@ -100,7 +78,6 @@ function auto_redact_secrets(array $rules): array
     return $rules;
 }
 
-// GET: list all automation rules
 if ($action === 'automations_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         echo json_encode(['status' => 'success', 'automations' => auto_redact_secrets(auto_cfg_read())]);
@@ -110,7 +87,6 @@ if ($action === 'automations_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-// POST: create or update automation rule
 if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (DEMO_MODE) {
         http_response_code(403);
@@ -139,7 +115,6 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Per-action validation for outbound action types (webhook, email).
         foreach ((array) $actions as $idx => $act) {
             $aType = is_array($act) ? (string) ($act['type'] ?? '') : '';
             $label = 'Action ' . ($idx + 1);
@@ -158,8 +133,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                     exit;
                 }
-                // Header names must be RFC 7230 tokens, and the rule may not
-                // override headers the transport controls (signature, content type…).
+
                 foreach (array_keys((array) ($act['headers'] ?? [])) as $hName) {
                     $hName = trim((string) $hName);
                     if ($hName === '' || preg_match('/^[A-Za-z0-9!#$%&\'*+.^_`|~-]+$/', $hName) !== 1) {
@@ -206,9 +180,6 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $list  = auto_cfg_read();
         $found = false;
 
-        // Webhook secrets never travel back to the editor (see auto_redact_secrets),
-        // so a blank field means "keep what is stored", not "clear it". Match the
-        // previous version of this rule by action position to carry the value over.
         $prevActions = [];
         if ($id !== null) {
             foreach ($list as $item) {
@@ -230,7 +201,6 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif (empty($act['secret_clear'])) {
                 $prev = is_array($prevActions[$idx] ?? null) ? $prevActions[$idx] : [];
                 if (($prev['type'] ?? '') === 'webhook') {
-                    // Re-encrypt legacy plaintext secrets on the first re-save.
                     if (($prev['secret_enc'] ?? '') !== '') {
                         $act['secret_enc'] = $prev['secret_enc'];
                     } elseif (($prev['secret'] ?? '') !== '') {
@@ -238,10 +208,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
-            // Header values are credentials too. Same rule as the secret: a blank
-            // value keeps whatever is stored under that name, so the editor can show
-            // the header list without ever receiving the values. Renaming a header
-            // therefore drops its value — it has to be retyped.
+
             $prev        = is_array($prevActions[$idx] ?? null) ? $prevActions[$idx] : [];
             $prevEnc     = ($prev['type'] ?? '') === 'webhook' ? (array) ($prev['headers_enc'] ?? []) : [];
             $prevPlain   = ($prev['type'] ?? '') === 'webhook' ? (array) ($prev['headers'] ?? []) : [];
@@ -257,10 +224,8 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif (($prevEnc[$hName] ?? '') !== '') {
                     $headersEnc[$hName] = (string) $prevEnc[$hName];
                 } elseif (($prevPlain[$hName] ?? '') !== '') {
-                    // Re-encrypt a legacy plaintext header on the first re-save.
                     $headersEnc[$hName] = secret_encrypt((string) $prevPlain[$hName]);
                 } else {
-                    // Name declared in the editor, no value yet.
                     $headersEnc[$hName] = '';
                 }
             }
@@ -302,7 +267,6 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// POST: delete automation rule
 if ($action === 'automations_delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (DEMO_MODE) {
         http_response_code(403);

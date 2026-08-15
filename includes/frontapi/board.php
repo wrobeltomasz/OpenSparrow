@@ -7,25 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/frontapi/board.php — frontend API route module: the Kanban board's read
-// (GET ?api=board) and its drag-and-drop write (POST api=board, action=move_card).
-// Read and write live together because they are one feature and share the same
-// board-resolution rule.
-//
-// Dispatched by public/api.php AFTER the auth gate, the admin/viewer role gates and
-// the schema load. The write route additionally runs behind the shared write
-// preamble, which already resolved and gated $ctx->table — it must not repeat
-// require_table_access().
-//
-// Both routes resolve ?board= / body.board against the ACCESS-FILTERED board list.
-// Pinned by tests/Security/AccessScopeEndpointGuardTest.
-
-/**
- * One board: its lanes and its cards, or an unconfigured-looking shell.
- *
- * Boards are a named list (config key "board" -> "boards": [...]); ?board= selects
- * which one, falling back to the first board the caller may actually see.
- */
 function frontapi_board(FrontApiContext $ctx): never
 {
     $conn   = $ctx->conn;
@@ -33,10 +14,7 @@ function frontapi_board(FrontApiContext $ctx): never
 
     $boardsCfg = config_get('board') ?? [];
     $boardId   = substr($_GET['board'] ?? '', 0, 64);
-    // Per-user board scope. Filtering the list up front rather than gating the
-    // resolved board matters because of the fallback below: picking "the first
-    // board" out of the unfiltered config would hand a restricted user a board they
-    // were never granted whenever ?board= is missing or does not match.
+
     $boards   = filter_by_user_access('boards', $boardsCfg['boards'] ?? []);
     $boardCfg = null;
     foreach ($boards as $b) {
@@ -67,11 +45,7 @@ function frontapi_board(FrontApiContext $ctx): never
         echo json_encode($meta);
         exit;
     }
-    // Config-supplied: an unconfigured-looking board (empty lanes) is the same
-    // answer this branch already gives for a broken binding. The binding itself is
-    // blanked first — the table and status column are schema metadata, and naming
-    // them to someone who may not open that table hands over exactly what the
-    // allow-list exists to withhold.
+
     if (!user_can_access_table($table)) {
         $meta['table']         = '';
         $meta['status_column'] = '';
@@ -99,7 +73,6 @@ function frontapi_board(FrontApiContext $ctx): never
     }
     $defaultColor = $boardCfg['color'] ?? '#005A9E';
 
-    // Card detail rows: only configured columns that still exist on the table.
     $cardCols = [];
     foreach (($boardCfg['card_columns'] ?? []) as $c) {
         if (is_string($c) && isset($tableCfg['columns'][$c]) && $c !== $statusCol) {
@@ -107,9 +80,6 @@ function frontapi_board(FrontApiContext $ctx): never
         }
     }
 
-    // Lanes: an enum status column defines lanes (with colors) from its
-    // declared options; any other column derives lanes from the distinct
-    // values present in the data.
     $statusDef  = $tableCfg['columns'][$statusCol];
     $statusType = strtolower($statusDef['type'] ?? '');
     $enumColors = is_array($statusDef['enum_colors'] ?? null) ? $statusDef['enum_colors'] : [];
@@ -124,9 +94,6 @@ function frontapi_board(FrontApiContext $ctx): never
             ];
         }
     } else {
-        // Lanes derived from the data must be derived from the *visible* data, or a
-        // restricted board grows empty lanes that only exist in other users' records.
-        // The enum branch above needs no filter: those lanes come from the config.
         $laneParams = [];
         $laneOwner  = '';
         if (!empty($tableCfg['owner_restricted'])) {
@@ -151,7 +118,6 @@ function frontapi_board(FrontApiContext $ctx): never
         }
     }
 
-    // Records — newest first; FK columns resolved to their display labels.
     $cols       = column_list($tableCfg);
     $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $cols)));
     $cards = [];
@@ -210,9 +176,6 @@ function frontapi_board(FrontApiContext $ctx): never
     exit;
 }
 
-/**
- * Drag-and-drop: move one card to another lane (writes the status column).
- */
 function frontapi_board_move_card(FrontApiWriteContext $ctx): never
 {
     $conn       = $ctx->conn;
@@ -230,12 +193,7 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
 
     $boardsCfg = config_get('board') ?? [];
     $boardId   = substr($body['board'] ?? '', 0, 64);
-    // Per-user board scope, on the write path too. The table gate in the write
-    // preamble already stops a card being moved in a table the user cannot reach, but
-    // a board is granted separately: without this, someone holding the table could drag
-    // cards on a board that was never theirs. Resolved against the filtered
-    // list for the same reason the read branch is — an unmatched id must not
-    // fall through to something they were not granted.
+
     $boardCfg  = null;
     foreach (filter_by_user_access('boards', $boardsCfg['boards'] ?? []) as $b) {
         if (($b['id'] ?? '') === $boardId) {
@@ -247,7 +205,6 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
     $cfgTable  = $boardCfg['table'] ?? '';
     $statusCol = $boardCfg['status_column'] ?? '';
 
-    // Each board is bound to a single configured table — reject anything else.
     if ($cfgTable === '' || $statusCol === '' || $table !== $cfgTable) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid board table']);
@@ -267,8 +224,6 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
         exit;
     }
 
-    // Validate the target lane against the allowed value set so a tampered
-    // request cannot write an arbitrary status into the column.
     $statusDef  = $tableCfg['columns'][$statusCol];
     $statusType = strtolower($statusDef['type'] ?? '');
     $allowed    = [];
@@ -296,7 +251,6 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
         exit;
     }
 
-    // Owner-restricted: cannot move a record owned by someone else.
     check_record_ownership($conn, $tableCfg, $table, $id, $ctx->userId);
 
     $sql = sprintf(

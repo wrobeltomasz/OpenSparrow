@@ -5,19 +5,12 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// api/schema.php — Public schema descriptor endpoint for the client UI (AJAX, GET-only)
-// Auth gate: session + UA enforcement; GET + X-Requested-With required; no-store
-// Returns a sanitised view of the "schema" config (tables, columns, FK reference_table, default_page_size); strips sensitive config
-// Role-aware; read-only
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Read-only AJAX endpoint: auth + AJAX gates, no CSRF, no DB — data comes from schema.json
 os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none']);
 
-// Prevent caching of the schema descriptor
 header('Cache-Control: no-store, no-cache, must-revalidate');
-// Restrict to GET method
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     exit;
@@ -36,19 +29,16 @@ if (!is_array($schemaData) || !isset($schemaData['tables'])) {
 $publicSchema = [];
 $includeHidden = ($_GET['include_hidden'] ?? '0') === '1';
 foreach ($schemaData['tables'] as $tableName => $tableConfig) {
-// Skip hidden tables unless caller explicitly requests them (e.g. workflow context)
     if (!$includeHidden && !empty($tableConfig['hidden'])) {
         continue;
     }
-    // Per-user table access. Unlike 'hidden', this one is NOT overridable by
-    // include_hidden — it is an access rule, not a display preference.
+
     if (!user_can_access_table($tableName)) {
         continue;
     }
 
     $publicColumns = [];
     foreach ($tableConfig['columns'] as $colName => $colDef) {
-    // Build minimal column object
         $pub = [
             'display_name'  => $colDef['display_name'] ?? $colName,
             'type'          => $colDef['type'] ?? 'text',
@@ -57,7 +47,7 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
             'readonly'      => $colDef['readonly'] ?? false,
             'not_null'      => $colDef['not_null'] ?? false,
         ];
-    // Send validation rules only to users with full access
+
         if ($userRole === 'editor') {
             if (!empty($colDef['validation_regexp'])) {
                 $pub['validation_regexp'] = $colDef['validation_regexp'];
@@ -71,12 +61,10 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
             $pub['description'] = $colDef['description'];
         }
 
-        // Pass formula definition for virtual (computed) columns
         if (!empty($colDef['formula'])) {
             $pub['formula'] = $colDef['formula'];
         }
 
-        // Keep dropdown options for UI
         if (!empty($colDef['options'])) {
             $pub['options'] = $colDef['options'];
         }
@@ -87,7 +75,6 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
         $publicColumns[$colName] = $pub;
     }
 
-    // Filter foreign keys
     $foreignKeys = [];
     if (!empty($tableConfig['foreign_keys'])) {
         foreach ($tableConfig['foreign_keys'] as $col => $fk) {
@@ -112,7 +99,6 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
         ];
     }
 
-    // Row-level conditional formatting rules for the grid
     $highlightRules = [];
     foreach ($tableConfig['highlight_rules'] ?? [] as $rule) {
         if (empty($rule['column']) || empty($rule['op']) || !isset($rule['value']) || empty($rule['color'])) {
@@ -136,7 +122,6 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
         'highlight_rules' => $highlightRules,
     ];
 
-    // Image gallery config (normalised; absent key = feature off for this table)
     $imagesCfg = images_config($schemaData, $tableName);
     if ($imagesCfg !== null) {
         $publicSchema[$tableName]['images'] = $imagesCfg;

@@ -3,25 +3,16 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-/* assets/js/print.js — Frontend print-templates renderer (print.php page)
-   Fetches templates from api/print.php and renders block-based printable reports
-   (header / text / table). All dynamic values are inserted via textContent /
-   programmatic DOM building — never innerHTML — so view data cannot inject markup.
-   The Print button calls window.print(); print.css provides the @media print layout. */
-
 import { I18n } from './i18n.js';
 import { apiJson as apiFetch } from './util/api.js';
 
 const containerEl = document.getElementById('printContainer');
 
-/* ── {column} placeholder substitution (values come from the first data row) ── */
 function substitute(text, row) {
     return String(text ?? '').replace(/\{([a-zA-Z_][a-zA-Z0-9_ ]*)\}/g, (match, key) =>
         row && Object.prototype.hasOwnProperty.call(row, key) ? String(row[key] ?? '') : match);
 }
 
-/* ── report parameters: p_<key>=value query args, read/written on the print.php URL
-   so a filtered report (e.g. one employee's assets) can be bookmarked/shared ── */
 function readParamsFromLocation() {
     const values = {};
     new URLSearchParams(window.location.search).forEach((val, key) => {
@@ -54,10 +45,6 @@ async function fetchParamOptions(printName, key) {
     }
 }
 
-/* ── parameter filter selects (rendered in the blue app header, same pattern as the
-   board/calendar/dashboard filter bars — see #printFilters in print.php). Each select
-   applies immediately on change, like every other header filter in the app; there is
-   no separate "generate" step. ── */
 let currentPrintName = null;
 
 function initClearFilters() {
@@ -123,7 +110,6 @@ function showError(message) {
     containerEl.appendChild(err);
 }
 
-/* ── render one template block into the printable sheet ── */
 function renderBlock(block, rows, columns) {
     const firstRow = rows[0] ?? null;
 
@@ -143,7 +129,6 @@ function renderBlock(block, rows, columns) {
     }
 
     if (block.type === 'table') {
-        // Column entries are {name, width?, align?}; older templates may still store bare name strings.
         const cols = (Array.isArray(block.columns) && block.columns.length > 0
             ? block.columns
             : Object.keys(rows[0] ?? {})
@@ -165,8 +150,7 @@ function renderBlock(block, rows, columns) {
             const th = document.createElement('th');
             th.textContent = columns[col.name]?.display_name ?? col.name;
             if (col.width) th.style.width = `${col.width}%`;
-            // Header alignment is fixed (always centered, see .pr-block-table th in print.css);
-            // per-column align only applies to body cells.
+
             headTr.appendChild(th);
         });
         thead.appendChild(headTr);
@@ -190,14 +174,8 @@ function renderBlock(block, rows, columns) {
     return null;
 }
 
-/* ── pagination: split the rendered sheet into A4-sized .pr-page chunks with a
-   "current / total" footer on each. Browsers don't expose page count/breaks to
-   script or CSS (no @page margin-box counter support in Chromium/Firefox print),
-   so page boundaries are estimated here from measured element heights against
-   the @page geometry declared in print.css (size: A4; margin: 15mm). Table rows
-   are split across pages (repeating the header); other blocks are kept whole. ── */
 const MM_TO_PX = 96 / 25.4;
-const PAGE_CONTENT_HEIGHT_PX = 257 * MM_TO_PX; // 297mm A4 − 15mm×2 @page margin − ~10mm footer reserve
+const PAGE_CONTENT_HEIGHT_PX = 257 * MM_TO_PX;
 
 function paginateSheet(sheet) {
     const blocks = Array.from(sheet.children);
@@ -258,8 +236,6 @@ function paginateSheet(sheet) {
     });
 }
 
-/* ── load and render one print template. paramValues holds p_<key> filter values
-   already applied (from the URL on first load, or from a header select's change event) ── */
 async function loadPrint(printName, paramValues = {}) {
     currentPrintName = printName;
     const loadEl = document.createElement('div');
@@ -280,7 +256,6 @@ async function loadPrint(printName, paramValues = {}) {
     updateUrl(printName, data.applied_params ?? {});
     await renderParamsBar(printName, data.params ?? [], data.applied_params ?? {});
 
-    /* toolbar (hidden by @media print) */
     const toolbar = document.createElement('div');
     toolbar.className = 'pr-toolbar';
 
@@ -298,7 +273,6 @@ async function loadPrint(printName, paramValues = {}) {
 
     containerEl.appendChild(toolbar);
 
-    /* printable sheet */
     const sheet = document.createElement('div');
     sheet.id = 'printSheet';
     sheet.className = 'pr-sheet';
@@ -318,11 +292,10 @@ async function loadPrint(printName, paramValues = {}) {
     }
 
     containerEl.appendChild(sheet);
-    // Requires layout of the just-appended nodes, so pagination runs after the sheet is in the DOM.
+
     paginateSheet(sheet);
 }
 
-/* ── selector cards (same pattern as the Views selector) ── */
 async function loadSelector() {
     const loadEl = document.createElement('div');
     loadEl.className = 'pr-loading';
@@ -399,7 +372,6 @@ async function loadSelector() {
     containerEl.appendChild(grid);
 }
 
-/* ── entry point ── */
 document.addEventListener('DOMContentLoaded', async () => {
     await I18n.load();
     initClearFilters();

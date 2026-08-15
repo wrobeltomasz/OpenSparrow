@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/comments/preview-popup.js — Hover popup showing a row's latest comments (cached); fetched via api.js, avatars via renderAvatar.
-
 import { renderAvatar } from '../../avatar.js';
 import { fetchCommentPreview } from '../api.js';
 import { state } from '../state.js';
@@ -36,7 +34,6 @@ export function initPreviewPopup() {
                 const comments = await fetchCommentPreview(state.currentTable, rowId);
                 previewCache.set(cacheKey, comments);
             } catch {
-                // Do not cache on error — next hover will retry
                 if (!popup.el.hidden) renderContent([]);
                 return;
             }

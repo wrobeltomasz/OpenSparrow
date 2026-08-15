@@ -7,51 +7,23 @@
 
 declare(strict_types=1);
 
-// includes/etl_engine.php — ETL engine: extract rows from an external source database
-// (MySQL, MariaDB, PostgreSQL, SQLite; extensible to Oracle/DB2/SQL Server) and load
-// them into a local PostgreSQL target table. Pure procedural helpers, reused by the
-// admin preview action and the cron worker. Builds its own source PDO from the "etl"
-// config connection block (independent of the removed MySQL Gateway / MYSQL_* constants).
-//
-// Security: all target identifiers via pg_ident(); all values as bound params.
-// The source query is restricted to a single read-only SELECT.
-
 require_once __DIR__ . '/db.php';
 
-// Drivers that connect over host/port/user/password. SQLite is file-based and handled
-// separately (see etl_source_is_file_driver()) — it has no meaningful port. csv_ftp is a
-// remote-file source (see etl_source_is_remote_file_driver()) — it fetches a CSV file over
-// FTP/FTPS rather than querying a database (see etl_fetch_csv_rows()).
-// Add oracle ('oci' 1521), db2 ('ibm' 50000), sqlserver ('sqlsrv' 1433) here (plus a
-// DSN case in etl_source_pdo) when those PDO extensions are available in the target
-// environment.
 function etl_source_drivers(): array
 {
     return ['mysql' => 3306, 'mariadb' => 3306, 'pgsql' => 5432, 'sqlite' => 0, 'csv_ftp' => 21];
 }
 
-// Whether $driver is a file-based source (no host/port/user/password — just a path
-// stored in the "database" field).
 function etl_source_is_file_driver(string $driver): bool
 {
     return $driver === 'sqlite';
 }
 
-// Whether $driver fetches a CSV file over FTP/FTPS instead of querying a database.
-// Such sources have no source_query / PDO connection — see etl_fetch_csv_rows().
 function etl_source_is_remote_file_driver(string $driver): bool
 {
     return $driver === 'csv_ftp';
 }
 
-/**
- * Open and log into an FTP/FTPS connection for a csv_ftp source. Returns null on any
- * failure (missing ext-ftp, connect/login/chdir failure). Sets passive mode per
- * $conn['passive_mode'] (default true — required behind most NAT/firewalls).
- *
- * @param array<string,mixed> $conn host/port/user/password/protocol/remote_dir/passive_mode
- * @return resource|null
- */
 function etl_ftp_connect(array $conn, string $logTag = 'etl')
 {
     if (!function_exists('ftp_connect')) {
@@ -91,16 +63,6 @@ function etl_ftp_connect(array $conn, string $logTag = 'etl')
     return $ftp;
 }
 
-/**
- * Download the configured CSV file from a csv_ftp source and parse it into an array of
- * associative rows keyed by header column name (or "0", "1", … when csv_has_header is
- * false). Returns null on any connection/download/parse failure. $limit caps the number
- * of parsed rows (used by the admin preview action) — null reads the whole file.
- *
- * @param array<string,mixed> $conn host/port/user/password/protocol/remote_dir/file_name/
- *                                   csv_delimiter/csv_has_header/passive_mode
- * @return ?list<array<string,mixed>>
- */
 function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = null): ?array
 {
     $fileName = trim((string)($conn['file_name'] ?? ''));
@@ -156,37 +118,20 @@ function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = n
     return $rows;
 }
 
-// Retry policy for transient source-DB errors (connection drops, lock/timeout waits):
-// 3 attempts total, sleeping between them — 1s, then 5s.
 const ETL_RETRY_DELAYS = [1, 5];
 
-/**
- * Whether a PDOException looks like a transient/retryable condition (network drop,
- * connection refused, lock wait timeout, deadlock) rather than a permanent one
- * (bad credentials, syntax error, unknown table/column).
- */
 function etl_is_transient_pdo_error(\PDOException $e): bool
 {
     $sqlstate = (string)($e->errorInfo[0] ?? substr((string)$e->getCode(), 0, 2));
-    if (str_starts_with($sqlstate, '08')) { // SQLSTATE class 08 = connection exception
+    if (str_starts_with($sqlstate, '08')) {
         return true;
     }
     $driverCode = (int)($e->errorInfo[1] ?? 0);
-    // MySQL: 2002/2003/2006/2013 connection drop, 1205 lock wait timeout, 1213 deadlock.
-    // PostgreSQL: 57P03 cannot connect now, 53300 too many connections, 40001 serialization failure.
+
     return in_array($driverCode, [2002, 2003, 2006, 2013, 1205, 1213], true)
         || in_array($sqlstate, ['57P03', '53300', '40001'], true);
 }
 
-/**
- * Run $fn with retry-on-transient-error: up to count(ETL_RETRY_DELAYS)+1 attempts,
- * sleeping ETL_RETRY_DELAYS[$i] seconds between them. Re-throws the last exception
- * immediately on a non-transient error, or after the final attempt.
- *
- * @template T
- * @param callable(): T $fn
- * @return T
- */
 function etl_with_retry(callable $fn, string $logTag)
 {
     $attempts = count(ETL_RETRY_DELAYS) + 1;
@@ -204,18 +149,10 @@ function etl_with_retry(callable $fn, string $logTag)
             sleep($delay);
         }
     }
-    // Unreachable — the loop always returns or throws.
+
     throw new \RuntimeException('etl_with_retry: exhausted attempts without result.');
 }
 
-/**
- * Build a source-database PDO from an "etl" config connection block, dispatching on
- * $conn['driver']. Returns null when the connection is not configured or the driver
- * is unsupported. Timeout-bounded and fail-safe. Retries transient connection errors
- * per ETL_RETRY_DELAYS.
- *
- * @param array<string,mixed> $conn driver/host/port/database/user/password
- */
 function etl_source_pdo(array $conn, string $logTag = 'etl'): ?\PDO
 {
     $driver = strtolower(trim((string)($conn['driver'] ?? 'mysql')));
@@ -278,12 +215,6 @@ function etl_source_pdo(array $conn, string $logTag = 'etl'): ?\PDO
     }
 }
 
-/**
- * Read the "etl" config row straight from the database, bypassing the per-request/APCu
- * cache in config_store.php. Needed by concurrent job runners (each a separate CLI
- * process) so a watermark-persist retry sees the other runner's just-committed write
- * instead of a stale cached copy.
- */
 function etl_reload_config_row(): ?array
 {
     $conn = config_store_conn();
@@ -304,17 +235,6 @@ function etl_reload_config_row(): ?array
     return is_array($decoded) ? ['value' => $decoded, 'version' => (int)$row['version']] : null;
 }
 
-/**
- * Read-modify-write a spw_config key under optimistic locking, retrying on conflict.
- * $mutator receives the decoded config by reference and returns false to abort the
- * write (nothing to change / already applied) or any other value to persist it.
- * Best-effort: logs and gives up after a few attempts rather than blocking a caller.
- * $reader lets a caller bypass the config-store cache (see etl_reload_config_row),
- * needed when concurrent CLI processes write the same row.
- *
- * @param callable(array &$config): mixed $mutator
- * @param ?callable(): ?array             $reader
- */
 function etl_config_optimistic_update(
     string $key,
     callable $mutator,
@@ -344,18 +264,13 @@ function etl_config_optimistic_update(
     error_log('[' . $logTag . '] could not persist config after retries (lock conflict).');
 }
 
-/**
- * Persist a job's new incremental watermark into the "etl" config, retrying on an
- * optimistic-lock conflict (concurrent job runners writing to the same config row).
- * Bypasses the config-store cache so a retry sees another runner's committed write.
- */
 function etl_persist_watermark(string $jobId, string $newWatermark, string $logTag): void
 {
     etl_config_optimistic_update('etl', static function (array &$config) use ($jobId, $newWatermark) {
         foreach ($config['jobs'] ?? [] as $i => $j) {
             if ((string)($j['id'] ?? '') === $jobId) {
                 if ((string)($j['last_watermark'] ?? '') === $newWatermark) {
-                    return false; // another runner already advanced it to this value.
+                    return false;
                 }
                 $config['jobs'][$i]['last_watermark'] = $newWatermark;
                 return true;
@@ -365,13 +280,6 @@ function etl_persist_watermark(string $jobId, string $newWatermark, string $logT
     }, $logTag . '[etl]', 'etl_reload_config_row');
 }
 
-/**
- * Resolve a job's source connection config from the "sources" list by id.
- * Returns null when the source id is unset or no longer exists (e.g. the source
- * was deleted after the job was created).
- *
- * @param array<int,array<string,mixed>> $sources the etl config "sources" array
- */
 function etl_resolve_source(array $sources, string $sourceId): ?array
 {
     if ($sourceId === '') {
@@ -385,28 +293,20 @@ function etl_resolve_source(array $sources, string $sourceId): ?array
     return null;
 }
 
-/**
- * Validate that a source query is a single read-only SELECT. Returns an error
- * string, or null when the query is acceptable.
- */
 function etl_validate_source_query(string $sql): ?string
 {
     $trimmed = trim($sql);
     if ($trimmed === '') {
         return 'Source query is empty.';
     }
-    // Reject statement batching — a single SELECT only.
+
     if (str_contains(rtrim($trimmed, "; \t\n\r"), ';')) {
         return 'Source query must be a single statement (no ";").';
     }
     if (!preg_match('/^\s*(SELECT|WITH)\b/i', $trimmed)) {
         return 'Source query must start with SELECT (or WITH).';
     }
-    // Block obvious DML/DDL statements defensively. Match only where the keyword begins a
-    // statement (start of string or right after "(" / ";" / whitespace-then-newline), so
-    // read-only calls like SELECT REPLACE(name, …) or a column aliased "update" are not
-    // rejected. REPLACE is intentionally NOT blocked as a bare word for this reason —
-    // MySQL's writing form is "REPLACE INTO", covered below.
+
     if (preg_match('/(?:^|\(|;)\s*(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|CALL|MERGE)\b/i', $trimmed)) {
         return 'Source query must be read-only (no INSERT/UPDATE/DELETE/DDL).';
     }
@@ -416,11 +316,6 @@ function etl_validate_source_query(string $sql): ?string
     return null;
 }
 
-/**
- * Compare two incremental-watermark values for "is $a strictly greater than $b?".
- * Numeric when both sides are numeric (so 9 < 10, unlike a string compare), otherwise
- * a plain string compare (correct for ISO-8601 dates/timestamps and text keys).
- */
 function etl_watermark_gt(mixed $a, mixed $b): bool
 {
     if (is_numeric($a) && is_numeric($b)) {
@@ -429,13 +324,6 @@ function etl_watermark_gt(mixed $a, mixed $b): bool
     return (string)$a > (string)$b;
 }
 
-/**
- * Return the target columns whose type is text-like (character/text). Used so an empty
- * source string is stored as '' for text columns but coerced to NULL for non-text
- * columns (where '' would be an invalid literal for e.g. integer/date/numeric).
- *
- * @return list<string>
- */
 function etl_pg_text_columns(\PgSql\Connection $conn, string $schema, string $table): array
 {
     $res = @pg_query_params(
@@ -456,11 +344,6 @@ function etl_pg_text_columns(\PgSql\Connection $conn, string $schema, string $ta
     return $cols;
 }
 
-/**
- * Return the real column names of a PostgreSQL table (excludes generated columns).
- *
- * @return list<string>
- */
 function etl_pg_columns(\PgSql\Connection $conn, string $schema, string $table): array
 {
     $res = @pg_query_params(
@@ -480,17 +363,6 @@ function etl_pg_columns(\PgSql\Connection $conn, string $schema, string $table):
     return $cols;
 }
 
-/**
- * Run one ETL job: extract via the source query and load into the target table.
- * Returns ['status' => 'success'|'error', 'rows_read' => int, 'rows_written' => int,
- * 'error' => ?string, 'new_watermark' => ?string]. Never throws — failures are
- * captured in the return value.
- *
- * @param array<string,mixed> $job       one entry from etl config "jobs"
- * @param array<string,mixed> $connCfg   the etl config "connection" block
- * @param ?string             $watermark current incremental watermark value (for
- *                                        substitution into the {{watermark}} placeholder)
- */
 function etl_run_job(
     \PgSql\Connection $pgConn,
     array $job,
@@ -544,9 +416,6 @@ function etl_run_job(
     }
 
     if ($isRemoteFile) {
-        // File sources have no SQL query or watermark placeholder to substitute — the
-        // whole CSV file is read on every run (incremental_column, if set, still marks
-        // the highest value seen for display/history, but does not filter the fetch).
         $rows = etl_fetch_csv_rows($connCfg, 'etl:' . $name);
         if ($rows === null) {
             $out['error'] = 'Could not fetch/parse the source CSV file — check connection, path and file name.';
@@ -559,16 +428,11 @@ function etl_run_job(
             return $out;
         }
 
-        // Incremental: substitute the {{watermark}} placeholder with the last-seen value,
-        // quoted for the source driver. Falls back to incremental_initial_value, then '0'.
         if ($incCol !== '' && str_contains($sourceSql, '{{watermark}}')) {
             $wm = $watermark ?? (string)($job['incremental_initial_value'] ?? '0');
             $sourceSql = str_replace('{{watermark}}', $pdo->quote($wm), $sourceSql);
         }
 
-        // Extract. Reconnects and retries on a transient error (dropped connection, lock
-        // wait timeout, deadlock) via etl_with_retry; a permanent error (bad SQL, unknown
-        // column) fails immediately.
         try {
             $rows = etl_with_retry(static function () use (&$pdo, $connCfg, $name, $sourceSql) {
                 if ($pdo === null) {
@@ -580,7 +444,7 @@ function etl_run_job(
                 try {
                     return $pdo->query($sourceSql)->fetchAll();
                 } catch (\PDOException $e) {
-                    $pdo = null; // force a fresh connection on the next attempt
+                    $pdo = null;
                     throw $e;
                 }
             }, 'etl:' . $name);
@@ -611,7 +475,6 @@ function etl_run_job(
         return $out;
     }
 
-    // Column mapping: explicit source→target pairs when configured, else match by name.
     $sourceCols = empty($rows) ? [] : array_keys($rows[0]);
     if (!empty($colMap)) {
         $pairs = [];
@@ -624,12 +487,12 @@ function etl_run_job(
         $matched = array_values(array_intersect($sourceCols, $targetCols));
         $pairs   = array_combine($matched, $matched) ?: [];
     }
-    $cols = array_keys($pairs); // source-side keys used to read row values
+    $cols = array_keys($pairs);
     if (empty($cols) && !empty($rows)) {
         $out['error'] = 'No source columns map to the target table columns.';
         return $out;
     }
-    // Upsert key names are target-side column names.
+
     $targetNames = array_values($pairs);
     if ($loadMode === 'upsert') {
         foreach ($upsertKey as $k) {
@@ -655,9 +518,6 @@ function etl_run_job(
     $textCols    = etl_pg_text_columns($pgConn, $schema, $target);
     $written     = 0;
 
-    // Guard against wiping the target on a transient empty extract: a full_refresh with
-    // zero source rows is treated as a no-op rather than a TRUNCATE (which would empty
-    // the table). Nothing to insert either, so return early as a successful no-op.
     if ($loadMode === 'full_refresh' && empty($rows)) {
         error_log('[etl][' . $name . '] full_refresh skipped TRUNCATE: source returned 0 rows.');
         $out['status'] = 'success';
@@ -675,7 +535,6 @@ function etl_run_job(
             }
         }
 
-        // Batch INSERT in chunks to keep statement size and memory bounded (configurable per job).
         $chunkSize = $batchSize;
         $onConflict = '';
         if ($loadMode === 'upsert') {
@@ -695,8 +554,7 @@ function etl_run_job(
                 $slots = [];
                 foreach ($cols as $c) {
                     $val = $row[$c] ?? null;
-                    // Coerce '' to NULL only for non-text target columns, where an empty
-                    // string is not a valid literal (int/date/numeric). Text columns keep ''.
+
                     if ($val === '' && !in_array($pairs[$c], $textCols, true)) {
                         $val = null;
                     }

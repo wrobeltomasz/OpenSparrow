@@ -3,16 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/views.cy.js
-// ============================================================================
-// Views Module Tests — views.php
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
-
-// ============================================================================
-// Test Suite: Views Page Structure
-// ============================================================================
 
 describe('OpenSparrow – Views: Page Structure', () => {
   beforeEach(() => {
@@ -31,19 +22,13 @@ describe('OpenSparrow – Views: Page Structure', () => {
   });
 
   it('shows loading state initially', () => {
-    // Loading may flash quickly; just verify container renders
     cy.get('#viewContainer').should('exist');
   });
 
   it('shows global search input', () => {
     cy.get('#globalSearch').should('exist');
   });
-
 });
-
-// ============================================================================
-// Test Suite: Views Selector Loading
-// ============================================================================
 
 describe('OpenSparrow – Views: Selector Loading', () => {
   beforeEach(() => {
@@ -52,13 +37,11 @@ describe('OpenSparrow – Views: Selector Loading', () => {
   });
 
   it('view container transitions out of loading state', () => {
-    // The .vw-loading div is a child of #viewContainer, not the container itself
     cy.get('#viewContainer .vw-loading', { timeout: CypressHelpers.TIMEOUTS.long })
       .should('not.exist');
   });
 
   it('shows selector cards, empty message, or error after load', () => {
-    // Wait for loading child to disappear first, then check resulting state
     cy.get('#viewContainer .vw-loading').should('not.exist');
     cy.get('#viewContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should($el => {
       const hasCards = $el.find('.vw-selector-card').length > 0;
@@ -106,21 +89,15 @@ describe('OpenSparrow – Views: Selector Loading', () => {
   });
 
   it('if no views: shows empty state message', () => {
-    // Wait for JS to finish rendering before checking state
     cy.get('#viewContainer .vw-loading').should('not.exist');
     cy.get('#viewContainer').should($el => {
-      // Only assert .vw-empty if no cards and no error rendered
       const hasCards = $el.find('.vw-selector-card').length > 0;
       const hasError = $el.find('.vw-error').length > 0;
-      if (hasCards || hasError) return; // skip — views exist or error shown
+      if (hasCards || hasError) return;
       expect($el.find('.vw-empty').length, '.vw-empty should exist when no views').to.be.gte(1);
     });
   });
 });
-
-// ============================================================================
-// Test Suite: View Opening
-// ============================================================================
 
 describe('OpenSparrow – Views: Open View', () => {
   beforeEach(() => {
@@ -175,10 +152,6 @@ describe('OpenSparrow – Views: Open View', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Views via URL param
-// ============================================================================
-
 describe('OpenSparrow – Views: URL param', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -187,7 +160,7 @@ describe('OpenSparrow – Views: URL param', () => {
   it('views.php with ?view= param auto-opens view if valid', () => {
     cy.visit(`${BASE}/views.php?view=nonexistent_xyz`);
     cy.get('#viewContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
-    // Wait for loading to finish, then assert rendered state
+
     cy.get('#viewContainer .vw-loading').should('not.exist');
     cy.get('#viewContainer').should($el => {
       const hasSomething = $el.find('.vw-error, .vw-selector-card, .vw-empty, .vw-table-wrap').length > 0;
@@ -195,10 +168,6 @@ describe('OpenSparrow – Views: URL param', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Views Column Filters (grid-style, added with row grouping)
-// ============================================================================
 
 describe('OpenSparrow – Views: Column Filters', () => {
   beforeEach(() => {
@@ -217,7 +186,7 @@ describe('OpenSparrow – Views: Column Filters', () => {
       cy.get('.vw-table-wrap, .vw-empty', { timeout: CypressHelpers.TIMEOUTS.long }).then($state => {
         if (!$state.hasClass('vw-table-wrap')) return;
         cy.get('#columnFilter').should('not.have.attr', 'hidden');
-        cy.get('#columnFilter option').should('have.length.gte', 2); // default + at least one column
+        cy.get('#columnFilter option').should('have.length.gte', 2);
       });
     });
   });
@@ -262,10 +231,6 @@ describe('OpenSparrow – Views: Column Filters', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Views Grouping (collapsible groups + subtotals)
-// ============================================================================
 
 describe('OpenSparrow – Views: Grouping', () => {
   beforeEach(() => {

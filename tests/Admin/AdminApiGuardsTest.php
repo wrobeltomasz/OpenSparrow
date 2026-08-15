@@ -11,30 +11,12 @@ namespace Tests\Admin;
 
 use PHPUnit\Framework\TestCase;
 
-/**
- * Static guards over the admin API front controller and its per-domain modules.
- *
- * These are source-level assertions rather than HTTP tests: the admin endpoint
- * has no central write gate, so its safety rests on two hand-maintained lists
- * (the $postActions whitelist and the per-action require_not_demo() calls).
- * Both have silently drifted before — an action added to the dispatch map but
- * forgotten in $postActions becomes reachable by GET, where CSRF is not
- * validated. These tests fail the build when that happens again.
- */
 final class AdminApiGuardsTest extends TestCase
 {
     private const API_PHP     = __DIR__ . '/../../public/admin/api.php';
     private const MODULE_DIR  = __DIR__ . '/../../includes/admin';
     private const CSV_ENDPOINT = __DIR__ . '/../../public/admin/api_csv_import.php';
 
-    /**
-     * Actions that change server state (data, configuration, files, or a spawned
-     * process). Every one of them must be POST-only, because the front
-     * controller validates CSRF on POST/PATCH/DELETE but not on GET.
-     *
-     * When you add a mutating admin action, add it here as well — that is the
-     * point of this list being independent from the source.
-     */
     private const MUTATING_ACTIONS = [
         'save', 'init_db',
         'users_add', 'users_toggle', 'users_update_role', 'users_update_contact',
@@ -57,11 +39,6 @@ final class AdminApiGuardsTest extends TestCase
         'clickstats_save', 'clickstats_purge_log',
     ];
 
-    /**
-     * Mutating actions that are legitimately reachable in Demo Mode because they
-     * change nothing durable: preview_anonymization is a dry run (COUNT(*) only)
-     * and the connection/preview probes are read-only.
-     */
     private const DEMO_ALLOWED = [
         'preview_anonymization',
         'etl_test_connection',
@@ -78,7 +55,6 @@ final class AdminApiGuardsTest extends TestCase
         return (string) file_get_contents(self::API_PHP);
     }
 
-    /** Parses the $postActions = [...] literal out of the front controller. */
     private static function postActions(): array
     {
         preg_match('/\$postActions\s*=\s*\[(.*?)\];/s', self::apiSource(), $m);
@@ -86,7 +62,6 @@ final class AdminApiGuardsTest extends TestCase
         return $found[1];
     }
 
-    /** Parses the $adminModules action => module dispatch map. */
     private static function dispatchMap(): array
     {
         preg_match('/\$adminModules\s*=\s*\[(.*?)\];/s', self::apiSource(), $m);
@@ -139,11 +114,6 @@ final class AdminApiGuardsTest extends TestCase
         $this->assertStringContainsString("ini_set('display_errors', '0')", $src);
     }
 
-    /**
-     * Every mutating action must gate itself on DEMO_MODE — there is no central
-     * guard, so a module that forgets the call writes to the database in a
-     * published demo instance.
-     */
     public function testEveryMutatingActionGuardsDemoMode(): void
     {
         $map      = self::dispatchMap();
@@ -154,17 +124,11 @@ final class AdminApiGuardsTest extends TestCase
         foreach ($expected as $action) {
             $module = $map[$action] ?? null;
             if ($module === null) {
-                continue; // handled outside includes/admin/ (demo/seed.php, csv endpoint)
+                continue;
             }
             $source = self::stripComments((string) file_get_contents(self::MODULE_DIR . '/' . $module . '.php'));
             $block  = self::actionBlock($source, $action);
             if ($block === null) {
-                // NOT skippable. The map claims this module handles the action, so a
-                // missing block means the registry drifted — and skipping here is what
-                // made this assertion pass vacuously for exactly the action whose
-                // dispatch broke. AdminDispatchRegistryTest catches the drift directly;
-                // this records it too, so the demo-mode guard can never be silently
-                // switched off by a typo in $adminModules.
                 $unlocated[] = "{$action} (expected in {$module}.php)";
                 continue;
             }
@@ -202,11 +166,6 @@ final class AdminApiGuardsTest extends TestCase
         }
     }
 
-    /**
-     * Removes comments from PHP source. Without this the guard checks are
-     * defeated by prose: a module that merely *mentions* require_not_demo() in
-     * a comment would read as guarded even with no call in the code.
-     */
     private static function stripComments(string $source): string
     {
         $out = '';
@@ -223,10 +182,6 @@ final class AdminApiGuardsTest extends TestCase
         return $out;
     }
 
-    /**
-     * Returns the source of an `if ($action === '<name>')` block, up to the next
-     * top-level `if ($action`, or null when the block is absent.
-     */
     private static function actionBlock(string $source, string $action): ?string
     {
         $start = strpos($source, "\$action === '{$action}'");

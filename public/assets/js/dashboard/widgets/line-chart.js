@@ -3,23 +3,19 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/dashboard/widgets/line-chart.js — Registers the 'line_chart' widget; hand-drawn inline SVG time-series line (optional area fill under the line), with drill-down and formatted time-bucket labels on the X axis.
-
 import { applyDrillDown } from '../drill-down.js';
 import { WidgetRegistry } from '../registry.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-// Plot geometry (viewBox units). preserveAspectRatio="none" stretches the plot to
-// the widget box; strokes stay constant via vector-effect="non-scaling-stroke".
 const VB_W = 600;
 const VB_H = 220;
 const PAD_L = 8;
 const PAD_R = 8;
 const PAD_T = 12;
-const PAD_B = 30; // room for X-axis labels
+const PAD_B = 30;
 
-const DEFAULT_COLOR = '#003366';  // literal: goes into SVG attributes, var() would not resolve
+const DEFAULT_COLOR = '#003366';
 const MAX_X_LABELS = 8;
 
 function svgEl(tag, attrs) {
@@ -30,8 +26,6 @@ function svgEl(tag, attrs) {
     return el;
 }
 
-// Half-open [from, to) date range for a bucket, so drilling a time point filters
-// the grid to every row in that period (not an impossible exact-timestamp match).
 function bucketRange(raw, granularity) {
     const m = String(raw ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (!m) return null;
@@ -47,8 +41,6 @@ function bucketRange(raw, granularity) {
     return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
 }
 
-// DATE_TRUNC returns a timestamp string ("2026-03-01 00:00:00"); trim it to the
-// chosen granularity so the axis stays readable.
 function formatBucketLabel(raw, granularity) {
     const s = String(raw ?? '');
     const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -88,7 +80,6 @@ function renderLineChart(widget) {
     const innerH = VB_H - PAD_T - PAD_B;
     const baseY = PAD_T + innerH;
 
-    // Map each point to plot coordinates. Single point sits in the middle.
     const pts = data.map((d, i) => {
         const x = data.length === 1
             ? PAD_L + innerW / 2
@@ -104,14 +95,12 @@ function renderLineChart(widget) {
         role: 'img',
     });
 
-    // Baseline
     svg.appendChild(svgEl('line', {
         class: 'dash-line-baseline',
         x1: PAD_L, y1: baseY, x2: PAD_L + innerW, y2: baseY,
         'vector-effect': 'non-scaling-stroke',
     }));
 
-    // Area fill under the line (optional)
     if (area && pts.length > 1) {
         const dPath = `M ${pts[0].x} ${baseY} `
             + pts.map(p => `L ${p.x} ${p.y}`).join(' ')
@@ -121,7 +110,6 @@ function renderLineChart(widget) {
         svg.appendChild(areaEl);
     }
 
-    // The line itself
     if (pts.length > 1) {
         const line = svgEl('polyline', {
             class: 'dash-line-path',
@@ -132,7 +120,6 @@ function renderLineChart(widget) {
         svg.appendChild(line);
     }
 
-    // Data points (with tooltip + drill-down)
     pts.forEach((p) => {
         const dot = svgEl('circle', {
             class: 'dash-line-point',
@@ -148,14 +135,13 @@ function renderLineChart(widget) {
 
     wrapper.appendChild(svg);
 
-    // X-axis labels (DOM, evenly thinned to avoid overlap)
     const axis = document.createElement('div');
     axis.className = 'dash-line-axis';
     const step = Math.max(1, Math.ceil(data.length / MAX_X_LABELS));
     data.forEach((d, i) => {
         const span = document.createElement('span');
         span.className = 'dash-line-tick';
-        // Show first, last, and every `step`-th label; blank the rest to keep spacing.
+
         const show = i === 0 || i === data.length - 1 || i % step === 0;
         span.textContent = show ? formatBucketLabel(d.label, granularity) : '';
         axis.appendChild(span);

@@ -3,39 +3,11 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/api/api_contracts.cy.js
-// ============================================================================
-// API Contract Tests — pure cy.request(), no DOM
-//
-// Asserts the JSON *shapes* of the backend endpoints the frontend depends on.
-// These catch contract drift (renamed keys, changed status codes) long before
-// an e2e spec fails on a missing DOM element.
-//
-// Covered:
-//  - api.php            api=list shape, action=i18n_bundle shape, api=board shape
-//  - api/notifications.php  get_count / get_list shapes
-//  - api/files.php      action=list shape
-//  - api/owners.php     action=mine shape
-//  - api/comments.php   action=mine shape
-//  - api/print.php      action=list/data/param_options shapes, unknown print/key 404s
-//
-// NOT covered here: the auth (401), CSRF (403) and role (403) gates. Those live
-// in cypress/e2e/security/ — authorization.cy.js sweeps every guarded path and
-// csrf.cy.js every mutating verb, both asserting the exact status code *and*
-// that the error body leaks no server internals (cy.expectDenied). Repeating a
-// weaker version of those assertions here only bought a second place to update.
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 
-/** Parse a response body that may arrive as a string or as parsed JSON. */
 function asJson(body) {
   return typeof body === 'string' ? JSON.parse(body) : body;
 }
-
-// ============================================================================
-// Test Suite: Response shapes (as editor test user)
-// ============================================================================
 
 describe('OpenSparrow – API Contracts: Response Shapes', () => {
   before(() => {
@@ -79,7 +51,7 @@ describe('OpenSparrow – API Contracts: Response Shapes', () => {
       const bundle = asJson(res.body);
       expect(bundle, 'bundle').to.be.an('object');
       expect(bundle['common.save'], 'common.save key').to.be.a('string').and.not.be.empty;
-      // Flat map: no nested namespace objects at the top level
+
       expect(bundle.common, 'no nested "common" object').to.be.undefined;
     });
   });
@@ -161,20 +133,10 @@ describe('OpenSparrow – API Contracts: Response Shapes', () => {
       url: `${BASE}/api.php?api=list&table=definitely_not_a_table`,
       failOnStatusCode: false,
     }).then(res => {
-      // Currently surfaces as 500 via the global catch; any 4xx/5xx is a pass —
-      // the contract is only that unknown tables never return data.
       expect(res.status, 'unknown table must be rejected').to.be.gte(400);
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Print module (api/print.php)
-// ============================================================================
-// Print templates are admin-configured (spw_config key "print"), so most tests below
-// look up whatever is actually configured via action=list/data first, and skip
-// with a logged message when the environment has none — same defensive pattern
-// used throughout cypress/e2e/print.cy.js.
 
 describe('OpenSparrow – API Contracts: Print Module', () => {
   before(() => {

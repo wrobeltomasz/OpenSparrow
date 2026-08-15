@@ -3,17 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/grid/data_cleanup.cy.js
-// ============================================================================
-// Quick Data Cleanup Grid Module Tests
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 const TEST_TABLE = 'companies';
-
-// ============================================================================
-// Test Suite: Data Cleanup Panel UI
-// ============================================================================
 
 describe('OpenSparrow – Data Cleanup Panel', () => {
   beforeEach(() => {
@@ -101,7 +92,7 @@ describe('OpenSparrow – Data Cleanup Panel', () => {
       if ($body.find('#dataCleanupBtn').length === 0) return;
       cy.get('#dataCleanupBtn').click({ force: true });
       cy.get('#dc-find').type('test');
-      // Apply must remain disabled until preview runs and hash matches
+
       cy.get('#dc-apply').should('be.disabled');
     });
   });
@@ -110,11 +101,11 @@ describe('OpenSparrow – Data Cleanup Panel', () => {
     cy.get('body').then($body => {
       if ($body.find('#dataCleanupBtn').length === 0) return;
       cy.get('#dataCleanupBtn').click({ force: true });
-      // Wait for column select to be populated — confirms gridState.currentTable is set
+
       cy.get('#dc-column option', { timeout: CypressHelpers.TIMEOUTS.medium })
         .should('have.length.greaterThan', 0);
       cy.get('#dc-find').type('test');
-      // Status updates after 400ms debounce + fetch
+
       cy.get('#dc-status', { timeout: CypressHelpers.TIMEOUTS.long })
         .invoke('text')
         .should('not.be.empty');
@@ -142,10 +133,6 @@ describe('OpenSparrow – Data Cleanup Panel', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Data Cleanup Preview Table
-// ============================================================================
-
 describe('OpenSparrow – Data Cleanup Preview', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -165,11 +152,11 @@ describe('OpenSparrow – Data Cleanup Preview', () => {
     cy.get('body').then($body => {
       if ($body.find('#dataCleanupBtn').length === 0) return;
       cy.get('#dataCleanupBtn').click({ force: true });
-      // Wait for column select — confirms gridState.currentTable is set
+
       cy.get('#dc-column option', { timeout: CypressHelpers.TIMEOUTS.medium })
         .should('have.length.greaterThan', 0);
-      cy.get('#dc-find').type('e'); // common letter — likely matches
-      // Wait for fetch + debounce
+      cy.get('#dc-find').type('e');
+
       cy.get('#dc-status', { timeout: CypressHelpers.TIMEOUTS.long })
         .invoke('text')
         .should('not.be.empty');
@@ -224,10 +211,6 @@ describe('OpenSparrow – Data Cleanup Preview', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Data Cleanup Apply Flow
-// ============================================================================
 
 describe('OpenSparrow – Data Cleanup Apply', () => {
   beforeEach(() => {

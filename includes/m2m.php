@@ -7,20 +7,10 @@
 
 declare(strict_types=1);
 
-// m2m.php — Many-to-many relationship helpers (junction table sync)
-// Functions: m2m_options() fetches selectable "other" side records, m2m_selected() gets currently linked IDs, m2m_sync() replaces junction rows atomically (DELETE + INSERT in transaction)
-// All SQL identifiers quoted with pg_ident(); values parameterised; logs errors but does not throw
-// Reads schema.json for table metadata; used by create.php and edit.php
-
-/**
- * Fetch all selectable options from the "other" side of the M2M relation.
- * Returns array of ['id' => string, 'label' => string].
- */
 function m2m_options(mixed $conn, array $cfg, array $rawSchema): array
 {
     $otherTable = $cfg['other_table'] ?? '';
 
-    // Auto-detect from junction FK config when other_table is omitted
     if ($otherTable === '') {
         $jt  = $cfg['junction_table'] ?? '';
         $ofk = $cfg['other_fk']       ?? '';
@@ -55,10 +45,6 @@ function m2m_options(mixed $conn, array $cfg, array $rawSchema): array
     return $rows;
 }
 
-/**
- * Fetch IDs currently linked to a record in the junction table.
- * Returns array of string IDs.
- */
 function m2m_selected(mixed $conn, array $cfg, int $recordId, array $rawSchema): array
 {
     $jt       = $cfg['junction_table'] ?? '';
@@ -92,11 +78,6 @@ function m2m_selected(mixed $conn, array $cfg, int $recordId, array $rawSchema):
     return $ids;
 }
 
-/**
- * Replace all junction rows for a record with the new selection.
- * Runs atomically: DELETE all + INSERT selected, rolled back on any failure.
- * Returns true on success.
- */
 function m2m_sync(mixed $conn, array $cfg, int $recordId, array $selectedIds, array $rawSchema): bool
 {
     $jt      = $cfg['junction_table'] ?? '';
@@ -125,7 +106,7 @@ function m2m_sync(mixed $conn, array $cfg, int $recordId, array $selectedIds, ar
 
     foreach ($selectedIds as $otherId) {
         if (!ctype_digit((string)$otherId)) {
-            continue; // skip non-integer values
+            continue;
         }
         $ins = sprintf(
             'INSERT INTO %s.%s (%s, %s) VALUES ($1, $2)',

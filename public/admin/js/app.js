@@ -3,30 +3,15 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/app.js — Admin panel SPA controller / router (loaded by admin/index.php)
-// Builds the sidebar tabs and dispatches each to its render*() module (schema, dashboard, users, rag, performance, cron, ...); owns currentConfig, dirty-state tracking and the "Save config" action (#btnSave). Exports showStatusPill, markDirty.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { moveArrayItem, moveObjectKey, renderGlobalSettings, createFullMenuPreview } from './ui.js';
-// Static imports are limited to the modules the router needs synchronously:
-// schema/dashboard/calendar/board/workflows are called from renderEditorIntoCard
-// while building a config card. Every other tab is loaded on demand — see
-// PAGE_MODULES below.
+
 import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings } from './schema.js';
 import { renderDashboardLayout, renderDashboardEditor } from './dashboard.js';
 import { renderCalendarEditor } from './calendar.js';
 import { renderBoardEditor } from './board.js';
 import { renderWorkflowsEditor } from './workflows.js';
 
-// ── Lazy tab modules ──────────────────────────────────────────────────────────
-// The panel used to statically import all 35 tab modules, so opening any tab
-// downloaded every one of them (~19k lines) before first paint. Each entry
-// resolves to that tab's render function on first use; the browser caches the
-// module afterwards, so switching back is free.
-//
-// The dynamic specifiers below must stay byte-identical to the ones in the
-// import map emitted by os_module_graph() (includes/page_helpers.php) —
-// otherwise a module would be fetched twice under two URLs and instantiated
-// twice (see the app.js double-instantiation incident).
 const PAGE_MODULES = {
     overview:      () => import('./overview.js').then(m => m.renderOverviewPage),
     health:        () => import('./health.js').then(m => m.renderHealthDashboard),
@@ -53,8 +38,7 @@ let currentFile = 'overview';
 let currentItemKey = null;
 let globalSchemaObj = null;
 let isDirty = false;
-// Set by a tab's render*() via ctx.setSaveHandler() when it needs #btnSave to
-// call its own validating endpoint instead of the generic config_files.php save.
+
 let activeSaveHandler = null;
 function setSaveHandler(fn) { activeSaveHandler = fn; }
 
@@ -63,17 +47,10 @@ const workspaceEl = document.getElementById('editorForm');
 const btnSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
-// Tabs that save immediately via API — no config file involved, never dirty.
 const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization', 'clickstats']);
 
-// Sub-views of a config-backed tab that manage their own state/save flow and
-// must never trip the generic "unsaved changes" dirty tracking (Menu Preview
-// autosaves on drag; Add Table / M2M Builder post directly and reset their own form;
-// Schema Map is a read-only diagram).
 const NON_CONFIG_SCHEMA_KEYS = new Set(['MENU_PREVIEW', 'ADD_TABLE', 'M2M_BUILDER', 'SCHEMA_MAP']);
 
-// Dirty-state guards: every edit marks the config dirty; navigation and reload
-// refuse to drop pending changes silently.
 export function markDirty() {
     if (NON_CONFIG_TABS.has(currentFile)) return;
     if (currentFile === 'schema' && NON_CONFIG_SCHEMA_KEYS.has(currentItemKey)) return;
@@ -84,8 +61,6 @@ function confirmDiscard() {
     return !isDirty || confirm('You have unsaved changes that will be lost. Continue?');
 }
 
-// Inline status pill — lightweight replacement for alert() after async
-// operations. The pill fades out on its own so the workflow is not blocked.
 export function showStatusPill(anchor, message, variant = 'success') {
     if (!anchor) return;
     const existing = anchor.parentNode && anchor.parentNode.querySelector(':scope > .status-pill');
@@ -109,10 +84,7 @@ export function showStatusPill(anchor, message, variant = 'success') {
     }, ttl);
 }
 
-// Utility function to escape HTML strings safely against XSS
 import { escHtml } from '../../assets/js/util/esc.js';
-
-// Retrieve the CSRF token from the meta tag
 
 document.addEventListener('DOMContentLoaded', async () => {
     await getGlobalSchema();
@@ -136,15 +108,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabs.forEach(t => t.classList.remove('active'));
             e.currentTarget.classList.add('active');
             currentFile = e.currentTarget.dataset.file;
-            // Invalidate any in-flight async render (e.g. overview awaiting its
-            // stats fetch) so it cannot clobber the newly selected tab's DOM.
+
             workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
             markClean();
             loadConfigFile(currentFile);
         });
     });
 
-    // Any keyboard or widget change anywhere in the workspace counts as dirty.
     workspaceEl.addEventListener('input', markDirty);
     workspaceEl.addEventListener('change', markDirty);
 
@@ -154,11 +124,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.returnValue = '';
         }
     });
-
 });
 
-// In-flight request, so concurrent callers share one round trip instead of each
-// issuing their own. Cleared by invalidateGlobalSchema() after a schema save.
 let globalSchemaPromise = null;
 
 async function fetchGlobalSchema() {
@@ -167,8 +134,6 @@ async function fetchGlobalSchema() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         globalSchemaObj = await res.json();
     } catch (e) {
-        // Leaving this silent used to empty every table/column picker in the
-        // panel with no visible reason — surface it instead.
         globalSchemaObj = null;
         console.warn('Could not load global schema', e);
         showStatusPill(document.getElementById('workspace'), 'Could not load the schema — table and column lists will be empty.', 'error');
@@ -176,11 +141,6 @@ async function fetchGlobalSchema() {
     return globalSchemaObj;
 }
 
-/**
- * The "schema" config, shared by every admin tab. Previously eight modules each
- * fetched api.php?action=get&file=schema on their own; they now await this
- * cache. Pass force = true only when the schema itself has just been written.
- */
 export function getGlobalSchema({ force = false } = {}) {
     if (force) invalidateGlobalSchema();
     if (globalSchemaObj) return Promise.resolve(globalSchemaObj);
@@ -195,10 +155,6 @@ export function invalidateGlobalSchema() {
     globalSchemaPromise = null;
 }
 
-/**
- * Tables from the shared schema, hidden ones removed, sorted by display name —
- * the derivation several editors used to reimplement after their own fetch.
- */
 export async function getSchemaTables() {
     const schema = await getGlobalSchema();
     return Object.entries(schema?.tables ?? {})
@@ -224,8 +180,6 @@ function getColumnOptionsForTable(tableName) {
     return options;
 }
 
-// Enum-typed columns of a table — used by the Board editor to offer sensible
-// status-column candidates whose values map cleanly onto board lanes.
 function getEnumColumnsForTable(tableName) {
     const options = [];
     const cols = globalSchemaObj?.tables?.[tableName]?.columns;
@@ -244,8 +198,6 @@ function getColumnMeta(tableName, colName) {
 }
 
 async function loadConfigFile(fileName) {
-    // A prior tab may have registered its own save routine; every tab switch
-    // starts fresh so a stale handler can never fire for the wrong tab.
     activeSaveHandler = null;
     if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print') {
         currentConfig = null;
@@ -268,8 +220,6 @@ async function loadConfigFile(fileName) {
             if (!currentConfig.sources || !Array.isArray(currentConfig.sources)) currentConfig.sources = [];
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Calendar';
         } else if (fileName === 'board') {
-            // Legacy installs stored a single board directly on the config root;
-            // fold it into boards[0] once so it keeps appearing in the sidebar.
             if (!Array.isArray(currentConfig.boards)) {
                 currentConfig.boards = currentConfig.table ? [{
                     id: 'brd_' + Date.now().toString(36),
@@ -334,7 +284,7 @@ async function loadConfigFile(fileName) {
             renderSidebar();
             workspaceEl.innerHTML = `<h2>Select an item from the left menu to edit</h2>`;
         }
-        // Freshly loaded config is clean; any subsequent edit flips the flag.
+
         markClean();
     } catch (err) {
         showStatusPill(btnSave, `Failed to load ${fileName}.json`, 'error');
@@ -380,9 +330,6 @@ function clearConfig() {
     }
 }
 
-// Appends the "Clear Entire Config" danger action to the bottom of a Global
-// Settings panel. Replaces the old top-row action button so the destructive
-// action lives with the section's global config (mirrors user_records editor).
 function appendClearConfigButton(ctx) {
     const { workspaceEl } = ctx;
     const dangerGrp = document.createElement('div');
@@ -404,9 +351,6 @@ function appendClearConfigButton(ctx) {
     workspaceEl.appendChild(dangerGrp);
 }
 
-// Icon for the fixed (non-dynamic) item-panel-items tab bar buttons — matches the
-// buildInnerTabs()/module-tab icon convention (15x15, opacity .6) so this tab bar
-// looks identical to every other tab strip in the admin panel.
 function tabIcon(name) {
     const img = document.createElement('img');
     img.src = '../assets/icons/' + name;
@@ -415,8 +359,6 @@ function tabIcon(name) {
     return img;
 }
 
-// Icon for a dynamic per-item tab button (one per schema table / dashboard widget /
-// calendar source / workflow), based on the current module.
 function itemTabIcon() {
     const name = currentFile === 'schema'    ? 'data_table.png'
                : currentFile === 'dashboard' ? 'bar_chart.png'
@@ -427,11 +369,6 @@ function itemTabIcon() {
     return tabIcon(name);
 }
 
-// Page title/description for modules whose content is entirely built by the shared
-// itemPanel/renderItemCards() system (they own no header of their own — unlike ETL,
-// RAG, Board, etc. which build their own admin-page-title). Kept out of the loop for
-// 'automations'/'files': those already render their own admin-page-title in their
-// respective module file.
 const CARD_MODULE_HEADER = {
     schema:    ['Schema', 'Define PostgreSQL tables, columns, and grid behavior. Use "Sync DB Tables" to discover existing tables, or add columns manually.'],
     dashboard: ['Dashboard', 'Build the dashboard from stat, bar, pie, and list widgets bound to your tables.'],
@@ -457,12 +394,10 @@ function renderSidebar() {
 
     const isCardTab = currentFile === 'schema' || currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board';
 
-    // ── Tab bar — appended first so DOM order matches ETL: tabs, then title/desc ──
     const itemsRow = document.createElement('div');
     itemsRow.className = 'item-panel-items';
     itemPanelEl.appendChild(itemsRow);
 
-    // ── Page header (title + description), same template as ETL ───────────────
     if (CARD_MODULE_HEADER[currentFile]) {
         const [title, desc] = CARD_MODULE_HEADER[currentFile];
         const h2 = document.createElement('h2');
@@ -538,14 +473,11 @@ function renderSidebar() {
         itemsRow.appendChild(btn);
     }
 
-    // Automations: the two rule kinds (record actions vs. outgoing n8n webhooks) are
-    // tabs in THIS bar. Building a second tab strip inside the workspace would stack
-    // two tab rows on top of each other.
     if (currentFile === 'automations') {
         const activeMode = currentItemKey === 'N8N' ? 'N8N'
                          : currentItemKey === 'LAYOUT' ? 'LAYOUT'
                          : 'ALL';
-        // Inserted at the front, so build in reverse to keep the visual order.
+
         [
             { key: 'N8N', label: 'n8n Automations',    icon: 'arrow_split.png' },
             { key: 'ALL', label: 'Record Automations', icon: 'automation.png' },
@@ -564,7 +496,6 @@ function renderSidebar() {
         return;
     }
 
-    // Card tabs: prepend "All X" button then return
     if (isCardTab) {
         const btnAll = document.createElement('button');
         btnAll.type = 'button';
@@ -592,7 +523,6 @@ function renderSidebar() {
         return;
     }
 
-    // Calendar sources / boards: tab bar with up/down reorder buttons
     let itemsToIterate = currentFile === 'board' ? (currentConfig.boards || []) : (currentConfig.sources || []);
     const isArray = Array.isArray(itemsToIterate);
     const keys = isArray ? itemsToIterate.map((_, i) => i) : Object.keys(itemsToIterate);
@@ -644,8 +574,6 @@ function renderSidebar() {
     });
 }
 
-// ── Card-based item list (schema / dashboard / calendar) ─────────────────────
-
 function renderItemCards() {
     workspaceEl.innerHTML = '';
     btnSave.style.display = 'inline-block';
@@ -668,7 +596,6 @@ function renderItemCards() {
         return isArray ? items.map((_, i) => i) : Object.keys(items);
     }
 
-    // ── Action bar (Sync / Add New) — same placement as ETL's "+ Add source" bar ──
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
 
@@ -741,7 +668,6 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     const card = document.createElement('div');
     card.className = 'column-block collapsed';
 
-    // ── Header ───────────────────────────────────────────────────────────────
     const hdr = document.createElement('div');
     hdr.className = 'block-header';
 
@@ -795,8 +721,6 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
         redraw();
     };
 
-    // Delete — every card tab. Removes the entry from the config (reversible: a
-    // re-sync / re-add brings it back; the DB object itself is never touched).
     const btnDel = document.createElement('button');
     btnDel.type = 'button';
     btnDel.title = 'Delete';
@@ -824,7 +748,6 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
 
     card.appendChild(hdr);
 
-    // ── Body ─────────────────────────────────────────────────────────────────
     const body = document.createElement('div');
     body.className = 'block-body';
     card.appendChild(body);
@@ -885,8 +808,6 @@ function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
     else                  renderCalendarEditor(key, item, isArray, cardCtx);
 }
 
-// Full drag-and-drop FE menu preview — surfaced as the Schema "Menu Preview" tab
-// (it reflects every module's menu entry, not just tables, so it lives under Schema).
 function renderMenuPreview(ctx) {
     const { workspaceEl } = ctx;
     (async () => {
@@ -916,14 +837,6 @@ function renderMenuPreview(ctx) {
     })();
 }
 
-/**
- * Loads a lazy tab module and invokes its render function.
- *
- * Respects the same workspaceEl._renderId generation counter the tab click
- * handler bumps, so a module that finishes downloading after the user has moved
- * on cannot paint over the newly selected tab. A failed download reports itself
- * instead of leaving the workspace blank.
- */
 function loadAndRender(loader, ctx, invoke = null) {
     const myId = workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
     return loader().then(
@@ -954,7 +867,6 @@ function renderEditor(key, itemData, isArray) {
         btnSave.style.display = 'inline-block';
     }
 
-    // Single-render tab modules, loaded on demand.
     const pageLoader = PAGE_MODULES[currentFile];
     if (pageLoader) return loadAndRender(pageLoader, ctx);
 
@@ -973,7 +885,7 @@ function renderEditor(key, itemData, isArray) {
             workspaceEl.appendChild(msg);
             return;
         }
-        // The item-panel tab bar owns the record/n8n split — pass the picked mode down.
+
         return loadAndRender(
             () => import('./automations.js').then(m => m.renderAutomationsPage),
             ctx,
@@ -1025,10 +937,10 @@ function renderEditor(key, itemData, isArray) {
 
     const headerDiv = document.createElement('div');
     headerDiv.style.display = 'flex'; headerDiv.style.justifyContent = 'space-between'; headerDiv.style.alignItems = 'center';
-    const title = document.createElement('h3'); 
+    const title = document.createElement('h3');
     title.textContent = `Edit: ${isArray ? 'Item ' + key : key}`;
     headerDiv.appendChild(title);
-    
+
     const btnDelete = document.createElement('button');
     btnDelete.className = 'btn btn-danger'; btnDelete.textContent = 'Delete this item';
     btnDelete.onclick = () => {
@@ -1052,7 +964,6 @@ function renderEditor(key, itemData, isArray) {
     else if (currentFile === 'board') renderBoardEditor(key, itemData, isArray, ctx);
 }
 
-// Show pending-release-migrations banner if any versions are unresolved
 (async () => {
     try {
         const res  = await apiFetch('api_migrations.php?action=scan');
@@ -1068,13 +979,9 @@ function renderEditor(key, itemData, isArray) {
             ' (' + pending.map(v => 'v' + v.version).join(', ') + '). Go to System → Migrations to apply.';
         banner.style.display = 'block';
     } catch {
-        // silently ignore — banner is non-critical
     }
 })();
 
-// Validate a workflows config before saving — a workflow cannot be saved while
-// any step is incomplete (missing name or target table) or it has no steps at
-// all. Returns an error string, or null when valid.
 function validateWorkflowsConfig(config) {
     const workflows = config.workflows || [];
     for (let w = 0; w < workflows.length; w++) {
@@ -1092,8 +999,7 @@ function validateWorkflowsConfig(config) {
             if (!step.table || step.table.trim() === '') {
                 return `"${label}" — Step ${s + 1} ("${step.title.trim()}") has no target table.`;
             }
-            // A half-configured procedure hook would fail at runtime with a generic
-            // server error, so reject it here while the admin can still see why.
+
             const proc = step.procedure;
             if (proc && proc.enabled) {
                 const stepLabel = `"${label}" — Step ${s + 1} ("${step.title.trim()}")`;
@@ -1115,9 +1021,6 @@ function validateWorkflowsConfig(config) {
 }
 
 btnSave.addEventListener('click', async () => {
-    // Guard against double-submission (double-click / slow network): a second
-    // request sent before the first resolves would echo the same now-stale
-    // optimistic-lock version and get rejected as a false-positive conflict.
     if (btnSave.disabled) return;
     btnSave.disabled = true;
 
@@ -1157,8 +1060,7 @@ btnSave.addEventListener('click', async () => {
             if (result.status === 'success') {
                 markClean();
                 showStatusPill(btnSave, `${currentFile}.json saved`, 'success');
-                // Only a schema write can change the shared schema cache —
-                // saving calendar/board/workflows/… must not trigger a refetch.
+
                 if (currentFile === 'schema') getGlobalSchema({ force: true });
             } else {
                 showStatusPill(btnSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');

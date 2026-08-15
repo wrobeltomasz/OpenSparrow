@@ -7,24 +7,15 @@
 
 declare(strict_types=1);
 
-// api/notifications.php — User notifications API
-// Auth gate: session + UA enforcement; CSRF on POST; all queries scoped to the authenticated user_id (prevents IDOR)
-// actions: get_count (unread badge), get_list (dropdown), mark_read
-// sys_table('users_notifications'); parameterized queries
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Auth gate + header CSRF on POST; returns an open DB connection
 $conn = os_api_bootstrap();
 
-// Safely cast the authenticated user ID
 $userId = (int)$_SESSION['user_id'];
 $action = $_GET['action'] ?? 'get_count';
 
 try {
-// Fetch the count of unread notifications for the user
     if ($action === 'get_count') {
-// Removed notify_date <= today to show upcoming notifications immediately
         $sql = 'SELECT COUNT(*) FROM ' . sys_table('users_notifications') . ' WHERE user_id = $1 AND is_read = FALSE';
         $res = pg_query_params($conn, $sql, [$userId]);
         $count = pg_fetch_result($res, 0, 0);
@@ -32,9 +23,7 @@ try {
         exit;
     }
 
-    // Fetch the list of notifications for the dropdown menu
     if ($action === 'get_list') {
-// Removed notify_date <= today to show upcoming notifications immediately
         $sql = 'SELECT * FROM ' . sys_table('users_notifications') . ' WHERE user_id = $1 ORDER BY is_read ASC, created_at DESC LIMIT ' . NOTIFICATIONS_DROPDOWN_LIMIT;
         $res = pg_query_params($conn, $sql, [$userId]);
         $notifications = pg_fetch_all($res) ?: [];
@@ -42,7 +31,6 @@ try {
         exit;
     }
 
-    // Mark a specific notification as read
     if ($action === 'mark_read') {
         $data = json_decode(file_get_contents('php://input'), true);
         $notifId = (int)($data['id'] ?? 0);
@@ -57,11 +45,9 @@ try {
         exit;
     }
 
-    // Fallback for unknown actions
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
 } catch (Throwable $e) {
-// Return generic error message to prevent sensitive data leakage
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Internal server error']);
 }

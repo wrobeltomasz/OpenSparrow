@@ -17,8 +17,6 @@ $tShortcutsHelp     = htmlspecialchars(t('shortcuts.help_title'), ENT_QUOTES, 'U
 $tAdd               = htmlspecialchars(t('common.add'), ENT_QUOTES, 'UTF-8');
 $jsonFlags          = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 
-// Single source of truth for the grid actions row, rendered below into both
-// the mobile <select> and the desktop buttons so the role gate isn't repeated per target.
 $gridActions = [
     [
         'value' => 'add',

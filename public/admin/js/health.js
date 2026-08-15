@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/health.js — System health dashboard (renderHealthDashboard): fetches api.php?action=health and shows the status checks.
-
 import { apiFetch } from '../../assets/js/util/api.js';
 
 export async function renderHealthDashboard(ctx) {
@@ -40,7 +38,6 @@ export async function renderHealthDashboard(ctx) {
             <div style="display:grid; gap:10px;">
         `;
 
-        // --- PHP environment ---
         html += section('PHP Environment');
         html += card('PHP Version', data.php_version_ok,
             `Detected: <strong>${data.php_version}</strong> — required: PHP &gt;= 8.1`);
@@ -51,7 +48,6 @@ export async function renderHealthDashboard(ctx) {
         html += card('display_errors = Off', data.display_errors_off,
             data.display_errors_off ? 'Disabled — correct for production.' : 'Should be Off in production to avoid leaking error details.');
 
-        // --- Extensions ---
         html += section('PHP Extensions');
         html += card('ext/pgsql', data.pgsql_ok,
             data.pgsql_ok ? 'PostgreSQL driver active.' : 'Missing — enable pgsql in php.ini.');
@@ -66,7 +62,6 @@ export async function renderHealthDashboard(ctx) {
         html += card('ext/openssl', data.openssl_ok,
             data.openssl_ok ? 'OpenSSL active.' : 'Missing — required for CSRF token generation.');
 
-        // --- Security functions ---
         html += section('Security Functions');
         html += card('PASSWORD_ARGON2ID', data.argon2id_ok,
             data.argon2id_ok ? 'Argon2id hashing available.' : 'Not available — libargon2 not compiled in. Login will fail.');
@@ -77,13 +72,12 @@ export async function renderHealthDashboard(ctx) {
         html += card('bin2hex()', data.bin2hex_ok,
             data.bin2hex_ok ? 'Token hex encoding available.' : 'Missing.');
 
-        // --- Database ---
         html += section('Database');
         html += card('PostgreSQL Connection', data.db_connected,
             data.db_connected
                 ? `Connected: <strong>PostgreSQL ${data.pg_version}</strong>`
                 : `Connection failed: <strong>${data.db_error}</strong> — check database.json.`);
-        // --- Filesystem ---
+
         html += section('Filesystem');
         html += card('includes/ writable', data.dir_writable,
             data.dir_writable ? 'Config JSON files can be saved.' : 'Not writable — chmod 755 on includes/.');
@@ -92,7 +86,6 @@ export async function renderHealthDashboard(ctx) {
         html += card('storage/files/ writable', data.storage_files_writable,
             data.storage_files_writable ? 'Upload directory is writable.' : 'Not writable — chmod 755 on storage/files/.');
 
-        // --- Config files ---
         html += section('Config Files');
         html += card('config/database.json', data.database_json_ok,
             data.database_json_ok ? 'Present and valid JSON.' : 'Missing or invalid — create via FTP after first deploy.');
@@ -103,7 +96,6 @@ export async function renderHealthDashboard(ctx) {
 
         html += `</div>`;
 
-        // --- First time setup ---
         if (data.db_connected) {
             html += `
                 <div style="margin-top:30px; padding:20px; background:var(--bg); border:1px dashed var(--accent); border-radius:8px;">
@@ -113,7 +105,7 @@ export async function renderHealthDashboard(ctx) {
                 </div>`;
         }
 
-        html += `</div>`; // /.admin-page
+        html += `</div>`;
 
         if (workspaceEl._renderId !== myId) return;
         workspaceEl.innerHTML = html;
@@ -125,7 +117,6 @@ export async function renderHealthDashboard(ctx) {
                 if (tab) tab.click();
             });
         }
-
     } catch (e) {
         if (workspaceEl._renderId !== myId) return;
         workspaceEl.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;

@@ -5,8 +5,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// templates/menu.php
-
 if (!function_exists('safeReadJson')) {
     function safeReadJson(string $path, int $maxBytes = 524288): ?array
     {
@@ -28,8 +26,7 @@ if (!function_exists('loadMenuConfig')) {
         if (!preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $baseName)) {
             return [];
         }
-        // Config-store keys first (spw_config with legacy-file fallback built in);
-        // the candidate loop below stays for configs not yet migrated to the store.
+
         require_once __DIR__ . '/../includes/config_store.php';
         $stored = config_get($baseName);
         if ($stored !== null) {
@@ -59,8 +56,6 @@ if (!function_exists('loadMenuConfig')) {
     }
 }
 
-// Validates icon paths against a local assets/ whitelist — blocks javascript:/data:
-// payloads, external URLs (offline policy) and path traversal.
 if (!function_exists('renderMenuIcon')) {
     function renderMenuIcon(string $icon): string
     {
@@ -81,10 +76,7 @@ if (!function_exists('renderMenuIcon')) {
 $includeDir   = __DIR__ . '/../config';
 require_once __DIR__ . '/../includes/config_store.php';
 require_once __DIR__ . '/../includes/api_helpers.php';
-// Per-user table access: the menu only lists what this user may open. This is
-// presentation — every endpoint enforces the same rule server-side (see
-// require_table_access() in includes/api_helpers.php), so hiding an entry here is
-// convenience, never the security boundary.
+
 $tables       = filter_tables_for_user((config_get('schema') ?? [])['tables'] ?? []);
 
 $currentPage  = basename($_SERVER['PHP_SELF']);
@@ -102,7 +94,6 @@ $filesCfg = loadMenuConfig('files', $includeDir);
 $wfCfg    = loadMenuConfig('workflows', $includeDir);
 $viewsCfg = loadMenuConfig('views', $includeDir);
 
-// Build catalog: key → display data
 $menuCatalog = [
     'dashboard' => [
         'type'   => 'dashboard',
@@ -130,13 +121,8 @@ $menuCatalog = [
     ],
 ];
 
-// Each configured board (bound to a table+status column) becomes a submenu
-// child under the Board module entry — mirrors Workflows below (configurable
-// parent name/icon via the admin "Global Settings" tab, one child per board).
 $boardChildren = [];
-// Boards are granted by id (the 'boards' scope) and additionally need their bound
-// table: opening a board the user was granted but whose table they were not would
-// answer with empty lanes, so it is not offered.
+
 foreach (filter_by_user_access('boards', $boardCfg['boards'] ?? []) as $bItem) {
     if (empty($bItem['table']) || empty($bItem['status_column']) || !empty($bItem['hidden'])) {
         continue;
@@ -169,11 +155,6 @@ if (!empty($boardChildren)) {
     ];
 }
 
-// Each defined workflow becomes a submenu child under the Workflows module entry.
-// Same rule as boards: granted by id, and every step's table must be reachable or the
-// wizard would 403 partway through. Both halves are shared with the api=workflows
-// filter — the second one via workflow_tables_in_scope(), so the menu cannot drift
-// from what that endpoint will actually return.
 $workflowChildren = [];
 foreach (filter_by_user_access('workflows', $wfCfg['workflows'] ?? []) as $wfItem) {
     $wfId = (string) ($wfItem['id'] ?? '');
@@ -190,8 +171,7 @@ foreach (filter_by_user_access('workflows', $wfCfg['workflows'] ?? []) as $wfIte
         'data-workflow-id' => $wfId,
     ];
 }
-// Keyed off the surviving children, like the Board entry above: a parent whose every
-// child was filtered away would lead to an empty page.
+
 if (!empty($workflowChildren)) {
     $menuCatalog['workflows'] = [
         'type'      => 'workflows',
@@ -205,7 +185,6 @@ if (!empty($workflowChildren)) {
     ];
 }
 
-// Each visible view becomes a submenu child under the Views module entry.
 $viewChildren = [];
 foreach ($viewsCfg['views'] ?? [] as $vName => $vConfig) {
     if (!empty($vConfig['hidden'])) {
@@ -236,7 +215,6 @@ if (!empty($viewChildren)) {
     ];
 }
 
-// Each visible print template becomes a submenu child under the Print module entry.
 $printCfg      = loadMenuConfig('print', $includeDir);
 $printChildren = [];
 foreach ($printCfg['prints'] ?? [] as $pName => $pConfig) {
@@ -288,7 +266,6 @@ foreach ($tables as $tName => $tConfig) {
     ];
 }
 
-// Build structured item list (from menu.json if it exists, else flat catalog order)
 $menuJson   = config_get('menu');
 $menuItems  = [];
 $menuPlaced = [];
@@ -300,7 +277,7 @@ if ($menuJson !== null && isset($menuJson['items']) && is_array($menuJson['items
             continue;
         }
         $item             = $menuCatalog[$key];
-        // Preserve catalog-provided children (e.g. the Views submenu)
+
         $item['children'] = $item['children'] ?? [];
         foreach ($entry['children'] ?? [] as $ce) {
             $ck = $ce['key'] ?? '';
@@ -326,7 +303,6 @@ if ($menuJson !== null && isset($menuJson['items']) && is_array($menuJson['items
     }
 }
 
-// Render a single menu link <a>
 if (!function_exists('renderMenuLink')) {
     function renderMenuLink(array $item, string $extraClass = ''): string
     {
@@ -344,7 +320,6 @@ if (!function_exists('renderMenuLink')) {
         }
         $icon = renderMenuIcon((string)($item['icon'] ?? ''));
         if ($icon === '') {
-            // No-emoji policy: fall back to a local PNG, never a Unicode glyph.
             $icon = '<img src="assets/icons/table_chart_view.png" alt="" />';
         }
         if (!empty($item['active'])) {
@@ -368,7 +343,7 @@ if (!function_exists('renderMenuLink')) {
 
             <?php if (!empty($item['children'])) : ?>
                 <?php
-                // Parent item with submenu: link navigates to grid, arrow toggles submenu
+
                 $anyChildActive = false;
                 foreach ($item['children'] as $child) {
                     if (!empty($child['active'])) {
@@ -384,10 +359,8 @@ if (!function_exists('renderMenuLink')) {
                 );
                 ?>
                 <li class="menu-has-children">
-                    <!-- Main link: navigates to grid/page -->
                     <?php echo renderMenuLink($item); ?>
-                    
-                    <!-- Details toggle: only arrow for expanding/collapsing submenu -->
+
                     <details class="menu-submenu-details"<?php echo $isOpen ? ' open' : ''; ?>>
                         <summary class="menu-toggle-arrow" aria-label="<?php echo $toggleLabel; ?>">
                             <span class="menu-arrow" aria-hidden="true">▾</span>

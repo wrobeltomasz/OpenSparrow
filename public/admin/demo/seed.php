@@ -7,24 +7,14 @@
 
 declare(strict_types=1);
 
-// admin/demo/seed.php — Demo sample-app handler (included at the end of admin/api.php, not called directly)
-// Relies on $action, $isDemoMode and DEMO_MODE from the parent; aborts 403 if DEMO_MODE undefined
-// actions: demo_status, demo_install, demo_uninstall — installs/removes the ready-made CRM schema + seed data
-// Loads the schema definition from demo/crm.php; app config goes to spw_config via config_store;
-// writes config/demo_meta.json; install blocked when running in read-only demo mode
-
 if (!defined('DEMO_MODE')) {
     http_response_code(403);
     exit;
 }
 
-/* ── Demo: status ────────────────────────────────────────────────── */
 if ($action === 'demo_status') {
     $metaPath = realpath(__DIR__ . '/../../../config') . '/demo_meta.json';
-    // The install form's "audit history" option needs to know whether the record
-    // snapshot setting is pinned by the environment, so it can explain why it is
-    // unavailable instead of silently doing nothing (same env gate as
-    // includes/admin/settings.php's set_snapshot_setting).
+
     $snapEnv = getenv('RECORD_SNAPSHOTS_ENABLED');
     $snapshotsLockedByEnv = ($snapEnv !== false && $snapEnv !== '');
     if (file_exists($metaPath)) {
@@ -45,25 +35,6 @@ if ($action === 'demo_status') {
     exit;
 }
 
-/* ── Demo: install ───────────────────────────────────────────────── */
-// demo_install_run() holds the actual install logic so it can be reused
-// outside the admin/api.php request cycle (see public/setup_api.php, which
-// calls it directly — after establishing a session for the freshly created
-// admin account — to offer "install demo CRM" as part of the setup wizard).
-//
-// $withRagDocs loads the demo's sample knowledge-base documents into spw_rag_files.
-// It defaults to true so the setup wizard gets them without a second checkbox; the
-// admin Demo page passes the state of its own checkbox.
-//
-// $withUsers creates the demo user accounts and everything keyed to them: comments,
-// personal notes, record ownership and notifications. It is a real opt-out, not a
-// convenience one — the accounts share a fixed, publicly documented password, so an
-// installation reachable from a network may not want them. With it off, file and
-// image attachments are still installed but attributed to the installing admin.
-//
-// $withAudit backfills spw_users_log + spw_record_snapshots and turns the record
-// snapshot setting on. It requires $withUsers (the log entries are attributed to the
-// demo accounts) and is skipped when RECORD_SNAPSHOTS_ENABLED locks the setting.
 function demo_install_run(string $type, bool $withRagDocs = true, bool $withUsers = true, bool $withAudit = true): array
 {
     try {
@@ -71,7 +42,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         $conn     = db_connect();
         $demoData = demo_get_definition($type, $conn);
 
-        // Run DDL
         foreach ($demoData['ddl'] as $sql) {
             $res = @pg_query($conn, $sql);
             if ($res === false) {
@@ -79,7 +49,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // Seed data
         foreach ($demoData['seed_data'] as $sql) {
             $res = @pg_query($conn, $sql);
             if ($res === false) {
@@ -87,19 +56,10 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // Everything from here to the end of the notifications block is the demo's
-        // collaboration layer, installed as a unit under $withUsers: the accounts plus
-        // the comments, notes, ownership rows and notifications that carry their user_id.
-        // $demoUserIds stays empty when it is skipped — see $authorId() below, which is
-        // what the always-installed file/image attachments use to attribute an uploader.
         $demoUserPassword = 'test';
         $tUsers = sys_table('users');
         $demoUserIds = [];
 
-        // Demo users — fixed password for all demo accounts, hashed the same way as
-        // includes/admin/users.php's users_add (ARGON2_OPTIONS is defined in
-        // includes/config.php, already loaded via the admin bootstrap chain).
-        // ON CONFLICT ... RETURNING id makes this safe to re-run after a prior install.
         foreach (($withUsers ? $demoData['demo_users'] : []) as $i => $du) {
             $salt = bin2hex(random_bytes(32));
             $hash = password_hash($salt . $demoUserPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
@@ -118,13 +78,9 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             $demoUserIds[$i] = (int) pg_fetch_result($res, 0, 'id');
         }
 
-        // Author resolver for the blocks that are installed regardless of $withUsers
-        // (files, images): fall back to the installing admin when the demo accounts
-        // were declined, so uploaded_by never lands on a non-existent user id.
         $fallbackUserId = (int) ($_SESSION['user_id'] ?? 0);
         $authorId = static fn(int $i): int => $demoUserIds[$i] ?? $fallbackUserId;
 
-        // Demo comments — cross-user discussion threads on CRM records
         $tComments = sys_table('comments');
         foreach (($withUsers ? $demoData['demo_comments'] : []) as $c) {
             $res = pg_query_params($conn, "
@@ -135,7 +91,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // Demo notes — per-user "My Notes"
         $tNotes = sys_table('notes');
         foreach (($withUsers ? $demoData['demo_notes'] : []) as $n) {
             $res = pg_query_params($conn, "
@@ -146,8 +101,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // Demo record ownership ("My records" panel) — assigns each listed record to
-        // its demo-user owner, mirroring api/owners.php's mass_set insert shape.
         $tOwners = sys_table('record_owners');
         $ownerChangedBy = (int) ($_SESSION['user_id'] ?? 0);
         foreach (($withUsers ? $demoData['demo_record_owners'] : []) as $o) {
@@ -160,7 +113,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // Demo notifications — pre-seeded bell-icon entries for the demo users
         $tNotifications = sys_table('users_notifications');
         $notifyDate = date('Y-m-d');
         foreach (($withUsers ? $demoData['demo_notifications'] : []) as $note) {
@@ -175,17 +127,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // Demo audit trail — backdated spw_users_log entries with a matching
-        // spw_record_snapshots row each, so Admin > Audit and the per-record history
-        // have something to show before the first manual edit.
-        //
-        // Requires the demo accounts: the log rows are attributed to them, and the
-        // caller already forces $withAudit off when $withUsers is off.
-        //
-        // Each snapshot is the record's CURRENT state (fetch_record_json) with the
-        // definition's 'changes' overlay applied, so the historical rows track
-        // seed_data automatically instead of duplicating it. The base JSON is fetched
-        // once per record, not once per entry.
         $auditLogIds = [];
         if ($withAudit && $withUsers && !empty($demoData['demo_audit']) && is_array($demoData['demo_audit'])) {
             require_once __DIR__ . '/../../../includes/api_helpers.php';
@@ -202,8 +143,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                     $raw = fetch_record_json($conn, $demoSchema, $table, $recordId);
                     $baseJson[$cacheKey] = is_string($raw) ? json_decode($raw, true) : null;
                 }
-                // A record the seed data never created (or a definition typo) must not
-                // sink the install — the CRM data is the point, the history is on top.
+
                 if (!is_array($baseJson[$cacheKey])) {
                     continue;
                 }
@@ -232,7 +172,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
 
         $configDir = realpath(__DIR__ . '/../../../config');
 
-        // schema config (spw_config key "schema")
         require_once __DIR__ . '/../../../includes/config_store.php';
         $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
         $schemaCfg = config_get('schema') ?? [];
@@ -244,7 +183,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         }
         config_save('schema', $schemaCfg, null, $seedUserId);
 
-        // dashboard config (spw_config key "dashboard")
         $dashCfg = config_get('dashboard') ?? [];
         if (!isset($dashCfg['widgets']) || !is_array($dashCfg['widgets'])) {
             $dashCfg['widgets'] = [];
@@ -259,7 +197,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             );
             $dashCfg['widgets'][] = $w;
         }
-        // Rebuild in correct order: layout, widgets, menu fields
+
         $dashCfgOrdered = [
             'layout' => $dashCfg['layout'],
             'widgets' => $dashCfg['widgets'],
@@ -275,7 +213,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         }
         config_save('dashboard', $dashCfgOrdered, null, $seedUserId);
 
-        // calendar config (spw_config key "calendar")
         $calCfg = config_get('calendar') ?? [];
         if (!isset($calCfg['sources']) || !is_array($calCfg['sources'])) {
             $calCfg['sources'] = [];
@@ -284,8 +221,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         $calCfg['sources'] = array_values(
             array_filter($calCfg['sources'], fn($s) => !in_array($s['table'] ?? '', $demoTbls, true))
         );
-        // Subscribe the installing admin to due-date reminders so the cron
-        // notification worker has a recipient out of the box.
+
         $installerUid = (int)($_SESSION['user_id'] ?? 0);
         foreach ($demoData['calendar_sources'] as $s) {
             if ($installerUid > 0 && empty($s['notified_users'])) {
@@ -295,9 +231,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         }
         config_save('calendar', $calCfg, null, $seedUserId);
 
-        // board config — a named list (boards[]), mirrors the structure produced
-        // by the admin Board editor. Merge in any demo-defined boards without
-        // disturbing boards the user already configured for their own tables.
         if (!empty($demoData['board']['boards']) && is_array($demoData['board']['boards'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
             $boardCfg = config_get('board') ?? [];
@@ -313,9 +246,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('board', $boardCfg, null, $seedUserId);
         }
 
-        // anonymization config — merge demo GDPR rules if provided. Existing user
-        // settings (enabled/frequency/dictionary) win; demo rules replace any
-        // previous rules pointing at demo tables.
         if (!empty($demoData['anonymization']) && is_array($demoData['anonymization'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
             $anonCfg  = config_get('anonymization') ?? [];
@@ -336,9 +266,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 'enabled'   => $anonCfg['enabled'],
                 'frequency' => $anonCfg['frequency'],
             ];
-            // Persist the dictionary only when there is one. Writing an empty array
-            // would beat the module defaults, since anonymization_load merges the
-            // stored value over them.
+
             if ($anonCfg['dictionary']) {
                 $anonCfgOrdered['dictionary'] = $anonCfg['dictionary'];
             }
@@ -347,7 +275,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('anonymization', $anonCfgOrdered, null, $seedUserId);
         }
 
-        // workflows config (spw_config key "workflows")
         $wfCfg = config_get('workflows') ?? [];
         if (!isset($wfCfg['workflows']) || !is_array($wfCfg['workflows'])) {
             $wfCfg['workflows'] = [];
@@ -359,18 +286,17 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             );
             $wfCfg['workflows'][] = $wf;
         }
-        // Preserve/add menu fields
+
         if (!isset($wfCfg['menu_name'])) {
             $wfCfg['menu_name'] = 'Workflows';
         }
         if (!isset($wfCfg['menu_icon'])) {
             $wfCfg['menu_icon'] = 'assets/icons/automation.png';
         }
-        // Rebuild in correct order: workflows, menu_name, menu_icon
+
         $wfCfgOrdered = ['workflows' => $wfCfg['workflows'], 'menu_name' => $wfCfg['menu_name'], 'menu_icon' => $wfCfg['menu_icon']];
         config_save('workflows', $wfCfgOrdered, null, $seedUserId);
 
-        // views config (spw_config key "views")
         $viewsCfg = config_get('views') ?? [];
         if (!isset($viewsCfg['views']) || !is_array($viewsCfg['views'])) {
             $viewsCfg['views'] = [];
@@ -380,7 +306,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         }
         config_save('views', $viewsCfg, null, $seedUserId);
 
-        // files config (spw_config key "files") — merge demo relations if provided
         if (!empty($demoData['files_relations']) && is_array($demoData['files_relations'])) {
             $filesCfg = config_get('files') ?? [];
             if (!isset($filesCfg['menu_name'])) {
@@ -399,10 +324,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $filesCfg['allowed_types'] = ['image', 'spreadsheet', 'archive', 'other'];
             }
             if (!isset($filesCfg['allowed_extensions']) || !is_array($filesCfg['allowed_extensions'])) {
-                // No 'svg': it is script-bearing markup, and file_download.php can
-                // serve it inline. Keeping it off the allowlist means the refusal no
-                // longer depends on the finfo content sniff, which is itself guarded
-                // by class_exists('finfo') and absent on some builds.
                 $filesCfg['allowed_extensions'] = [
                     'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf',
                     'doc', 'docx', 'odt', 'rtf',
@@ -422,10 +343,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('files', $filesCfg, null, $seedUserId);
         }
 
-        // Demo files — small CSV attachments on CRM records, written both to disk
-        // (mirrors public/api/files.php's upload flow) and to spw_files. Reads the
-        // files config fresh (rather than reusing $filesCfg above, which is only set
-        // when files_relations is non-empty) so storage_path is always available.
         $demoFileIds   = [];
         $demoFilePaths = [];
         if (!empty($demoData['demo_files']) && is_array($demoData['demo_files'])) {
@@ -464,10 +381,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // Demo images — record image gallery entries (spw_files rows tagged
-        // related_field = IMAGES_FIELD), sourced from static PNGs checked into
-        // admin/demo/assets/images/ and copied into storage/files/, same convention
-        // as demo_files above.
         $demoImageIds   = [];
         $demoImagePaths = [];
         if (!empty($demoData['demo_images']) && is_array($demoData['demo_images'])) {
@@ -514,16 +427,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // RAG knowledge base — load the demo's sample documents into spw_rag_files so the
-        // "Ask AI" panel can retrieve them straight after install. Opt-out via $withRagDocs.
-        //
-        // This deliberately writes the same rows admin/rag.php's rag_upload would, rather
-        // than calling that action: the upload handler is guarded by require_not_demo()
-        // and reads $_FILES/$_SESSION, neither of which applies on the setup-wizard path.
-        //
-        // No network call happens here. Retrieval is PostgreSQL full-text search over
-        // to_tsvector(content), so ingest is pure SQL — Ollama is needed only later, when
-        // a question is actually answered. Installing on a host without Ollama is fine.
         $ragFileIds = [];
         if ($withRagDocs && !empty($demoData['rag_docs']) && is_array($demoData['rag_docs'])) {
             require_once __DIR__ . '/../../../includes/rag_helpers.php';
@@ -533,8 +436,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             $ragUserId  = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
             foreach ($demoData['rag_docs'] as $doc) {
                 $name = (string) ($doc['file'] ?? '');
-                // Definition-supplied name: keep it a plain basename inside the samples
-                // directory — no separators, no traversal, no absolute path.
+
                 if ($samplesDir === false || $name === '' || basename($name) !== $name) {
                     continue;
                 }
@@ -559,8 +461,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                         $ragUserId,
                     ]
                 );
-                // A missing knowledge base must not sink the whole demo install — the
-                // CRM data is the point, the documents are a convenience on top.
+
                 if ($res === false) {
                     error_log('demo_install: RAG doc insert failed for ' . $name . ' — ' . pg_last_error($conn));
                     continue;
@@ -573,13 +474,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // RAG aggregate views (spw_config key "rag", section aggregate_views) — attach the
-        // demo's aggregate views to their tables, exactly as Admin → RAG → Aggregate Views
-        // would. Written whether or not the sample documents were requested: this is a
-        // config mapping over the demo's own data, not a knowledge-base document. The
-        // views themselves are created by the DDL above, so no existence check is needed.
-        // Owner-restricted tables are skipped for the same reason the admin action rejects
-        // them — a plain view has no session user to filter rows by.
         if (!empty($demoData['rag_aggregate_views']) && is_array($demoData['rag_aggregate_views'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
             $ragViewCfg = config_get('rag') ?? [];
@@ -594,7 +488,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('rag', $ragViewCfg, null, $seedUserId);
         }
 
-        // menu config (spw_config key "menu") — apply nested menu layout from demo definition
         $menuKeys = [];
         if (!empty($demoData['menu_items']) && is_array($demoData['menu_items'])) {
             $menuCfg = config_get('menu') ?? [];
@@ -615,7 +508,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('menu', $menuCfg, null, $seedUserId);
         }
 
-        // automations config (spw_config key "automations") — merge demo rules if provided
         $automationIds = [];
         if (!empty($demoData['automations']) && is_array($demoData['automations'])) {
             $rawAuto = config_get('automations') ?? [];
@@ -632,8 +524,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('automations', ['automations' => $rules], null, $seedUserId);
         }
 
-        // print config (spw_config key "print") — merge demo print templates if provided
-        // (keyed by template name, same merge-by-key pattern as the views config above)
         $printKeys = [];
         if (!empty($demoData['prints']) && is_array($demoData['prints'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
@@ -649,9 +539,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('print', $printCfg, null, $seedUserId);
         }
 
-        // user_records config — merge demo column-label mappings if provided (keyed by
-        // table name; the global "limit" setting is a user preference and is left
-        // untouched, only defaulted if the file didn't exist yet).
         if (!empty($demoData['user_records']) && is_array($demoData['user_records'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
             $urCfg = config_get('user_records') ?? [];
@@ -668,11 +555,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('user_records', $urCfg, null, $seedUserId);
         }
 
-        // settings config — turn record snapshots on so the history keeps growing past
-        // the seeded entries. Only when the demo actually flipped it: an installation
-        // that already had it on must not have it switched off again on uninstall, and
-        // RECORD_SNAPSHOTS_ENABLED takes precedence over the stored value anyway
-        // (includes/admin/settings.php), so writing it there would be a silent no-op.
         $snapshotsEnabledByDemo = false;
         $snapEnv = getenv('RECORD_SNAPSHOTS_ENABLED');
         if ($withAudit && $withUsers && ($snapEnv === false || $snapEnv === '')) {
@@ -686,7 +568,6 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             }
         }
 
-        // demo_meta.json
         $meta = [
             'type'           => $type,
             'schema'         => $demoData['pg_schema'],
@@ -731,12 +612,10 @@ if ($action === 'demo_install') {
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $type    = $body['type']    ?? '';
     $confirm = $body['confirm'] ?? '';
-    // Checkboxes on the admin Demo page; an absent body key means "yes", matching the
-    // defaults the setup wizard gets.
+
     $withRag   = !isset($body['rag_docs'])   || (bool) $body['rag_docs'];
     $withUsers = !isset($body['demo_users']) || (bool) $body['demo_users'];
-    // Audit history is attributed to the demo accounts, so it cannot outlive them —
-    // enforced here as well as in the UI, which disables the checkbox.
+
     $withAudit = (!isset($body['audit_history']) || (bool) $body['audit_history']) && $withUsers;
 
     if ($type !== 'crm') {
@@ -752,7 +631,6 @@ if ($action === 'demo_install') {
     exit;
 }
 
-/* ── Demo: uninstall ─────────────────────────────────────────────── */
 if ($action === 'demo_uninstall') {
     if ($isDemoMode) {
         echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
@@ -779,18 +657,15 @@ if ($action === 'demo_uninstall') {
         require_once __DIR__ . '/../../../includes/db.php';
         $conn = db_connect();
 
-        // Drop demo schema + all objects
         $pgSchema = $meta['schema'] ?? '';
         if ($pgSchema === 'spw_crm') {
             @pg_query($conn, 'DROP SCHEMA IF EXISTS ' . pg_ident($pgSchema) . ' CASCADE');
         }
 
-        // Remove demo record ownership seeded on the (about to be dropped) demo CRM tables
         foreach ($meta['tables'] ?? [] as $t) {
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('record_owners') . ' WHERE table_name = $1', [$t]);
         }
 
-        // Remove demo files — DB rows plus the physical files written under storage/files/
         $demoFileIds = $meta['demo_file_ids'] ?? [];
         if (!empty($demoFileIds)) {
             $fileIdList = '{' . implode(',', array_map('intval', $demoFileIds)) . '}';
@@ -804,7 +679,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Remove demo images — DB rows plus the physical files
         $demoImageIds = $meta['demo_image_ids'] ?? [];
         if (!empty($demoImageIds)) {
             $imgIdList = '{' . implode(',', array_map('intval', $demoImageIds)) . '}';
@@ -817,9 +691,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Remove the demo's RAG documents. Only the ids this install recorded are
-        // touched, so a knowledge base the user built themselves survives. Chunks go
-        // with them: spw_rag_chunks.file_id is ON DELETE CASCADE.
         $ragFileIds = $meta['rag_file_ids'] ?? [];
         if (!empty($ragFileIds)) {
             $ragIdList = '{' . implode(',', array_map('intval', $ragFileIds)) . '}';
@@ -827,11 +698,6 @@ if ($action === 'demo_uninstall') {
             @pg_query_params($conn, "DELETE FROM {$tRagFiles} WHERE id = ANY(\$1::int[])", [$ragIdList]);
         }
 
-        // Remove the demo's seeded audit history. Only the log ids this install
-        // recorded are touched, so real audit rows survive; the snapshots go with them
-        // via spw_record_snapshots.log_id ON DELETE CASCADE. This runs before the demo
-        // users are deleted, but the order does not matter — spw_users_log.user_id has
-        // no FK to spw_users, precisely so audit rows outlive the accounts.
         $auditLogIds = $meta['audit_log_ids'] ?? [];
         if (!empty($auditLogIds)) {
             $logIdList = '{' . implode(',', array_map('intval', $auditLogIds)) . '}';
@@ -839,7 +705,6 @@ if ($action === 'demo_uninstall') {
             @pg_query_params($conn, "DELETE FROM {$tUsersLog} WHERE id = ANY(\$1::int[])", [$logIdList]);
         }
 
-        // Remove demo comments/notes/notifications/users seeded for the demo accounts
         $demoUserIds = $meta['demo_user_ids'] ?? [];
         if (!empty($demoUserIds)) {
             $idList = '{' . implode(',', array_map('intval', $demoUserIds)) . '}';
@@ -849,9 +714,6 @@ if ($action === 'demo_uninstall') {
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('users') . ' WHERE id = ANY($1::int[])', [$idList]);
         }
 
-        // Drop views. The DROP SCHEMA ... CASCADE above already takes them when the demo
-        // owns its own schema; this stays for the case where pg_schema is the app schema,
-        // where CASCADE never runs. The name pattern keeps the drop to demo views only.
         $demoSchema = $meta['schema'] ?? '';
         if ($demoSchema !== '') {
             foreach ($meta['view_names'] ?? [] as $vName) {
@@ -865,8 +727,6 @@ if ($action === 'demo_uninstall') {
         require_once __DIR__ . '/../../../includes/config_store.php';
         $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
 
-        // Revert the record-snapshot setting only if the demo is the one that turned it
-        // on — an install that found it already enabled leaves it that way.
         if (!empty($meta['snapshots_enabled_by_demo'])) {
             $setCfg = config_get('settings') ?? [];
             if (!empty($setCfg['record_snapshots_enabled'])) {
@@ -875,10 +735,8 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean schema config (delete the key if no tables remain)
         $cfg = config_get('schema');
         if (is_array($cfg)) {
-            // Collect hidden junction tables referenced by demo tables before removing them
             $m2mJunctions = [];
             foreach ($meta['tables'] ?? [] as $t) {
                 foreach ($cfg['tables'][$t]['many_to_many'] ?? [] as $m2m) {
@@ -889,7 +747,7 @@ if ($action === 'demo_uninstall') {
                 }
                 unset($cfg['tables'][$t]);
             }
-            // Remove orphaned hidden junction tables (not tracked in meta, added via M2M Builder)
+
             foreach ($m2mJunctions as $jt) {
                 if (isset($cfg['tables'][$jt])) {
                     $stillUsed = false;
@@ -913,7 +771,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean dashboard config (delete the key if no widgets remain)
         $dashCfg = config_get('dashboard');
         if (is_array($dashCfg)) {
             $ids = $meta['widget_ids'] ?? [];
@@ -927,7 +784,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean calendar config (delete the key if no sources remain)
         $calCfg = config_get('calendar');
         if (is_array($calCfg)) {
             $tbls = $meta['tables'] ?? [];
@@ -941,8 +797,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean board config (remove only the demo-added board entries, keeping
-        // any boards the user configured for their own tables)
         $boardCfg = config_get('board');
         if (is_array($boardCfg) && !empty($boardCfg['boards'])) {
             $tbls = $meta['tables'] ?? [];
@@ -959,8 +813,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean anonymization config (drop rules pointing at demo tables; delete the
-        // spw_config key if no rules remain)
         $anonCfg = config_get('anonymization');
         if (is_array($anonCfg)) {
             $tbls = $meta['tables'] ?? [];
@@ -974,7 +826,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean workflows config (delete the key if none remain)
         $wfCfg = config_get('workflows');
         if (is_array($wfCfg)) {
             $ids = $meta['workflow_ids'] ?? [];
@@ -988,7 +839,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean views config (delete the key if none remain)
         $viewsCfg = config_get('views');
         if (is_array($viewsCfg)) {
             foreach ($meta['view_keys'] ?? [] as $k) {
@@ -1001,7 +851,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean menu config (delete the key if no items remain)
         $menuCfg = config_get('menu');
         if (is_array($menuCfg)) {
             $keys = $meta['menu_keys'] ?? [];
@@ -1017,7 +866,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean automations config (delete the key if no rules remain)
         $rawAuto = config_get('automations');
         if (is_array($rawAuto)) {
             $rules = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
@@ -1032,7 +880,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean print config in the spw_config store (delete the key if no templates remain)
         require_once __DIR__ . '/../../../includes/config_store.php';
         $printCfg = config_get('print');
         if (is_array($printCfg)) {
@@ -1048,9 +895,6 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        // Clean RAG aggregate views (drop mappings pointing at demo tables). The "rag"
-        // key itself is never deleted — unlike the module configs above it also holds the
-        // user's global RAG settings (model, chunking, limits), which the demo never owned.
         $ragViewCfg = config_get('rag');
         if (is_array($ragViewCfg) && !empty($ragViewCfg['aggregate_views'])) {
             $tbls = $meta['tables'] ?? [];
@@ -1063,8 +907,6 @@ if ($action === 'demo_uninstall') {
             config_save('rag', $ragViewCfg, null, $cleanUserId);
         }
 
-        // Clean user_records config (drop column mappings for demo tables; delete the
-        // spw_config key if none remain)
         $urCfg = config_get('user_records');
         if (is_array($urCfg)) {
             $tbls = $meta['tables'] ?? [];
@@ -1087,8 +929,6 @@ if ($action === 'demo_uninstall') {
     exit;
 }
 
-
-/* -- Demo: definition helper ----------------------------------------- */
 function demo_get_definition(string $type, $conn): array
 {
     if ($type !== 'crm') {

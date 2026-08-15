@@ -12,23 +12,13 @@ namespace Tests\I18n;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * Validates every languages/*.json file against en.json (the reference locale):
- *  - no UTF-8 BOM (a BOM makes json_decode() fail and silently empties the locale),
- *  - valid JSON object,
- *  - _meta.name and _meta.dir present,
- *  - full key parity with en.json (no missing, no extra keys),
- *  - identical {placeholder} sets for every translated value.
- */
 final class LanguageFilesTest extends TestCase
 {
     private const LANG_DIR = __DIR__ . '/../../languages';
     private const REFERENCE = 'en';
 
-    /** Plural-form dictionaries are leaves, not nested namespaces. */
     private const PLURAL_FORMS = ['zero', 'one', 'two', 'few', 'many', 'other'];
 
-    /** @return array<string, array{0: string}> */
     public static function languageFileProvider(): array
     {
         $cases = [];
@@ -105,7 +95,7 @@ final class LanguageFilesTest extends TestCase
         $mismatches = [];
         foreach ($locale as $key => $value) {
             if (!array_key_exists($key, $reference)) {
-                continue; // reported by testKeyParityWithReference
+                continue;
             }
             $expected = $this->placeholders($reference[$key]);
             $actual   = $this->placeholders($value);
@@ -126,18 +116,15 @@ final class LanguageFilesTest extends TestCase
         );
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
     private function referencePath(): string
     {
         return self::LANG_DIR . '/' . self::REFERENCE . '.json';
     }
 
-    /** @return array<string, mixed> */
     private function decode(string $path): array
     {
         $content = (string) file_get_contents($path);
-        // Tolerate a BOM here so parity tests still run; testFileHasNoBom reports it.
+
         if (str_starts_with($content, "\xEF\xBB\xBF")) {
             $content = substr($content, 3);
         }
@@ -145,21 +132,12 @@ final class LanguageFilesTest extends TestCase
         return is_array($decoded) ? $decoded : [];
     }
 
-    /** @param array<string, mixed> $data
-     *  @return array<string, mixed> */
     private function withoutMeta(array $data): array
     {
         unset($data['_meta']);
         return $data;
     }
 
-    /**
-     * Flatten the nested translation tree into dot-notation keys. A nested
-     * object whose keys are all CLDR plural categories is a leaf value.
-     *
-     * @param array<string, mixed> $tree
-     * @return array<string, mixed>
-     */
     private function flatten(array $tree, string $prefix = ''): array
     {
         $flat = [];
@@ -176,13 +154,6 @@ final class LanguageFilesTest extends TestCase
         return $flat;
     }
 
-    /**
-     * Extract the sorted set of {placeholder} names from a value
-     * (plural leaves are scanned across all their forms).
-     *
-     * @param mixed $value
-     * @return string[]
-     */
     private function placeholders($value): array
     {
         $text = is_array($value) ? implode(' ', array_map('strval', $value)) : (string) $value;

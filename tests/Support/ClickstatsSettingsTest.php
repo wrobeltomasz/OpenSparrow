@@ -12,13 +12,6 @@ namespace Tests\Support;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * Click Statistics retention normalisation (includes/clickstats.php).
- *
- * The window this produces is the only thing that bounds spw_clickstats without
- * someone pressing a button, so the direction of every fallback matters: an
- * unusable value must land on the default window, never on "keep everything".
- */
 final class ClickstatsSettingsTest extends TestCase
 {
     public static function setUpBeforeClass(): void
@@ -42,16 +35,12 @@ final class ClickstatsSettingsTest extends TestCase
         );
     }
 
-    /** Opting out of automatic expiry has to be possible, and explicit. */
     public function testZeroMeansKeepForever(): void
     {
         $this->assertSame(CLICKSTATS_RETENTION_FOREVER, clickstats_retention_days(0));
         $this->assertSame(CLICKSTATS_RETENTION_FOREVER, clickstats_retention_days('0'));
     }
 
-    /**
-     * @return array<string, array{0: mixed}>
-     */
     public static function unusableWindows(): array
     {
         require_once __DIR__ . '/../../includes/clickstats.php';
@@ -69,11 +58,6 @@ final class ClickstatsSettingsTest extends TestCase
         ];
     }
 
-    /**
-     * Note which way this falls: to the default window, NOT to "keep everything".
-     * A typo or a client bug must not be able to silently switch off the only
-     * automatic bound the table has.
-     */
     #[DataProvider('unusableWindows')]
     public function testUnusableWindowFallsBackToTheDefaultNotToForever(mixed $raw): void
     {
@@ -81,10 +65,6 @@ final class ClickstatsSettingsTest extends TestCase
         $this->assertNotSame(CLICKSTATS_RETENTION_FOREVER, clickstats_retention_days($raw));
     }
 
-    /**
-     * A config written before retention existed has no such key, and those installs
-     * are precisely the ones already accumulating rows with nothing to trim them.
-     */
     public function testConfigWithoutRetentionGetsTheDefault(): void
     {
         config_cache('clickstats', ['value' => ['enabled' => true], 'version' => 1], true);
@@ -107,11 +87,6 @@ final class ClickstatsSettingsTest extends TestCase
         );
     }
 
-    /**
-     * The ceiling is written twice — here and as ADMIN_PURGE_MAX_DAYS for the manual
-     * purge — because the admin helpers need a request context this file must not.
-     * Drift would let the Settings tab accept a window the Log tab rejects.
-     */
     public function testRetentionCeilingMatchesTheManualPurgeCeiling(): void
     {
         require_once __DIR__ . '/../../includes/admin/helpers.php';

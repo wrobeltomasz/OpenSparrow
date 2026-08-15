@@ -2,17 +2,10 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// board.js — Board (Kanban) view (ES module)
-// Visualises records of a single table as cards laid out in lanes, one lane per
-// value of the configured status column. Dragging a card to another lane updates
-// that record's status via api.php (api=board). CSRF via apiFetch(); i18n via /api.php?action=i18n_bundle.
-// A search box above the lanes filters cards client-side by typed phrase.
 
 import { apiFetch } from './util/api.js';
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/record-tooltip.js';
 
-// ── i18n bridge ──────────────────────────────────────────────────────────────
 let _i18nBundle = {};
 async function fetchI18n() {
     try {
@@ -20,7 +13,7 @@ async function fetchI18n() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         if (res.ok) _i18nBundle = await res.json();
-    } catch (_) { /* fall back to key tail */ }
+    } catch (_) {  }
 }
 function t(key, vars = {}) {
     const v = _i18nBundle[key];
@@ -30,14 +23,11 @@ function t(key, vars = {}) {
 
 const UNMATCHED = '__unmatched__';
 
-let board = null;          // full payload from the API
-let cards = [];            // working copy of cards (status mutated optimistically)
+let board = null;
+let cards = [];
 let canEdit = false;
-let appSchema = null;      // secure schema, for tooltip labels + enum colors
+let appSchema = null;
 
-// ── Search: simple client-side phrase filter ─────────────────────────────────
-// Cards whose title, extra fields, or id do not contain the typed text are
-// hidden from the lanes; clearing the box shows everything again.
 let searchTerm = '';
 
 function cardMatchesSearch(card) {
@@ -59,7 +49,6 @@ function initSearch() {
     });
 }
 
-// ── Clear filters: header button resets the search box and all lane chips ────
 function updateClearButton() {
     const btn = document.getElementById('clearFilters');
     if (btn) btn.hidden = !searchTerm && hiddenLanes.size === 0;
@@ -78,7 +67,6 @@ function initClearFilters() {
     });
 }
 
-// ── Filters: lane visibility (chips) ──────────────────────────────────────────
 const FILTER_STORAGE_KEY = 'sparrow_board_filters';
 let hiddenLanes = new Set();
 
@@ -136,8 +124,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     render();
 });
 
-// Secure schema definition — used to label and color the hover tooltip rows the
-// same way the grid does (display names, enum swatches).
 async function fetchSchema() {
     try {
         const res = await fetch('api/schema.php', {
@@ -187,7 +173,6 @@ function render() {
         return;
     }
 
-    // Subtitle: which table is shown and which column drives the lanes.
     if (board.table_label) {
         const lane = document.createElement('span');
         lane.textContent = board.table_label;
@@ -200,7 +185,6 @@ function render() {
         }
     }
 
-    // Group cards by status value for quick lane population.
     const byStatus = {};
     const laneValues = new Set((board.columns || []).map(l => l.value));
     cards.filter(cardMatchesSearch).forEach(card => {
@@ -208,7 +192,6 @@ function render() {
         (byStatus[key] = byStatus[key] || []).push(card);
     });
 
-    // Filter bar: one chip per configured lane, plus Uncategorized when it has cards.
     const filterLanes = (board.columns || []).map(l => ({ value: l.value, label: l.label, color: l.color }));
     const hasUnmatched = (byStatus[UNMATCHED] || []).length > 0;
     if (hasUnmatched) {
@@ -221,15 +204,10 @@ function render() {
         container.appendChild(buildLane(lane.value, lane.label, lane.color, byStatus[lane.value] || [], true));
     });
 
-    // Records whose status matches no configured lane still need to be visible.
     if (hasUnmatched && !hiddenLanes.has(UNMATCHED)) {
         container.appendChild(buildLane(UNMATCHED, t('board.uncategorized'), '#8A9199', byStatus[UNMATCHED], false));
     }
 
-    // A configured board can still produce zero lanes (status column with no
-    // lane values and no records) — never leave the container blank. Only
-    // applies when there is genuinely nothing to show, not when the user has
-    // filtered every lane out via the chips.
     if (container.children.length === 0 && filterLanes.length === 0) {
         renderNotice(container, t('board.not_configured'));
     }
@@ -247,7 +225,6 @@ function buildLane(value, label, color, laneCards, droppable) {
     lane.className = 'board-lane';
     lane.dataset.status = value;
 
-    // ── Lane header ──────────────────────────────────────────────────────────
     const header = document.createElement('div');
     header.className = 'board-lane-header';
     header.style.borderTopColor = color;
@@ -269,7 +246,6 @@ function buildLane(value, label, color, laneCards, droppable) {
     header.appendChild(count);
     lane.appendChild(header);
 
-    // ── Lane body (drop target) ────────────────────────────────────────────
     const body = document.createElement('div');
     body.className = 'board-lane-body';
 
@@ -349,15 +325,10 @@ function buildCard(card, laneColor) {
     idTag.textContent = '#' + card.id;
     el.appendChild(idTag);
 
-    // Open the record in the standard edit form.
     el.addEventListener('click', () => {
         window.location.href = `edit.php?table=${encodeURIComponent(board.table)}&id=${encodeURIComponent(card.id)}`;
     });
 
-    // Hover tooltip: shared floating record tooltip (grid/calendar/board). Shows
-    // the full record — all columns with display names and enum swatches — from
-    // the card's rowData, falling back to the compact card fields when the
-    // schema/rowData are unavailable.
     el.addEventListener('mouseenter', () => {
         const columns = appSchema?.tables?.[board.table]?.columns || {};
         const rows = card.rowData
@@ -370,8 +341,6 @@ function buildCard(card, laneColor) {
     return el;
 }
 
-// Optimistically move the card to the new lane, then persist. On any failure the
-// status is reverted and the board re-rendered so the UI matches the database.
 async function moveCard(id, newStatus, oldStatus) {
     const card = cards.find(c => String(c.id) === String(id));
     if (!card) return;

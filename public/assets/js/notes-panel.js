@@ -3,11 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/notes-panel.js — User menu > Notes: private per-user notepad, optionally
-// linked to a record (table+id) with an optional reminder date delivered via the bell
-// icon (cron/cron_notifications.php -> spw_users_notifications). CRUD via api/notes.php.
-// Opened from user-menu.js (notesBtn). CSS prefix: note-.
-
 import { I18n } from './i18n.js';
 import { BulkPanel } from './bulk_panel.js';
 import { apiFetch } from './util/api.js';
@@ -27,20 +22,17 @@ async function loadTableOptions() {
     return tableOptions;
 }
 
-// datetime-local wants local wall-clock 'YYYY-MM-DDTHH:MM' — toISOString() would shift by UTC.
 function localDateTimeValue(d) {
     const pad = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// Stored values are 'YYYY-MM-DDTHH:MM'; older notes may still be a bare 'YYYY-MM-DD'.
 function toInputValue(stored) {
     if (!stored) return '';
     const v = String(stored).replace(' ', 'T').slice(0, 16);
     return v.length === 10 ? v + 'T00:00' : v;
 }
 
-// Human-readable reminder for the badge: 'YYYY-MM-DD HH:MM'.
 function formatReminder(stored) {
     return toInputValue(stored).replace('T', ' ');
 }
@@ -50,8 +42,6 @@ function noteLink(note) {
     return 'edit.php?table=' + encodeURIComponent(note.related_table) + '&id=' + encodeURIComponent(note.related_id);
 }
 
-// Table's record list for the picker (id, label) — mirrors files.php's chained
-// table+record <select> pair (public/api/files.php files_action_get_related_records).
 async function fetchRecordOptions(table) {
     const res = await fetch(
         'api/notes.php?action=list_records&table=' + encodeURIComponent(table),
@@ -61,8 +51,6 @@ async function fetchRecordOptions(table) {
     if (!data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
     return data.records ?? [];
 }
-
-// ── API calls ────────────────────────────────────────────────────────────
 
 async function fetchNotes() {
     const res = await fetch('api/notes.php?action=list', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
@@ -101,8 +89,6 @@ async function deleteNote(id) {
     const data = await res.json();
     if (!data.success) throw new Error(data.error ?? I18n.t('notes.error_saving'));
 }
-
-// ── DOM builders ─────────────────────────────────────────────────────────
 
 function buildForm(tables, onSubmit, initial = null) {
     const form = document.createElement('div');
@@ -312,8 +298,6 @@ function buildNoteRow(note, tables, { onSave, onDelete }) {
     renderView();
     return row;
 }
-
-// ── Panel ────────────────────────────────────────────────────────────────
 
 export async function openNotesPanel() {
     if (!panel) {

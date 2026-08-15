@@ -3,15 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/rag-render.js — shared RAG answer renderer (Markdown + record links).
-// Converts an LLM answer into safe HTML. Code regions are extracted before record
-// markers are processed, so a [View: table:id] marker inside a code span or fenced
-// block stays literal and is never turned into a link.
-
-// HTML-escape a string for safe insertion as text content.
 import { escHtml } from './util/esc.js';
 
-// Build the anchor HTML for a validated record marker.
 function buildRecordLink(table, id, linkClass) {
     return '<a href="edit.php?table=' + encodeURIComponent(table)
         + '&id=' + encodeURIComponent(id)
@@ -19,15 +12,12 @@ function buildRecordLink(table, id, linkClass) {
         + escHtml(table) + ':' + id + '</a>';
 }
 
-// Apply inline bold and italic to already-escaped, code-free text.
 function inlineFormat(s) {
     s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
     return s;
 }
 
-// Render the code-free, marker-free Markdown skeleton into block-level HTML.
-// Inline placeholders (\x00I tokens) are restored per line via restoreInline.
 function renderBlocks(s, restoreInline) {
     const lines = s.split('\n');
     const out   = [];
@@ -36,7 +26,6 @@ function renderBlocks(s, restoreInline) {
     while (i < lines.length) {
         const ln = lines[i];
 
-        // A standalone fenced-code placeholder line is emitted as-is for later restore.
         if (/^\x00B(\d+)\x00$/.test(ln)) { out.push(ln); i++; continue; }
 
         const hm = ln.match(/^(#{1,3}) (.+)/);
@@ -82,10 +71,6 @@ function renderBlocks(s, restoreInline) {
     return out.join('');
 }
 
-// Render an LLM answer to safe HTML.
-// opts.allowedTables — table names permitted for record links (others are erased).
-// opts.linkClass     — CSS class applied to generated record-link anchors.
-// opts.markdown      — when false, plain text with links only (no Markdown, no code).
 export function renderAnswer(raw, opts = {}) {
     const allowed   = Array.isArray(opts.allowedTables) ? opts.allowedTables : [];
     const linkClass = opts.linkClass || '';
@@ -98,28 +83,23 @@ export function renderAnswer(raw, opts = {}) {
     let s = String(raw ?? '');
 
     if (markdown) {
-        // Protect fenced code blocks first so nothing inside is interpreted.
         s = s.replace(/```[\w]*\r?\n?([\s\S]*?)```/g, (_, code) => {
             blocks.push(escHtml(code.trimEnd()));
             return '\x00B' + (blocks.length - 1) + '\x00';
         });
-        // Protect inline code spans next.
+
         s = s.replace(/`([^`\n]+)`/g, (_, code) => {
             inline.push('<code class="rag-md-code">' + escHtml(code) + '</code>');
             return '\x00I' + (inline.length - 1) + '\x00';
         });
     }
 
-    // Convert record markers on the now code-free text. Unknown tables are erased.
     s = s.replace(/\[View:\s*([a-zA-Z0-9_]+):(\d+)\]/g, (_, table, id) => {
         if (!allowed.includes(table)) return '';
         inline.push(buildRecordLink(table, id, linkClass));
         return '\x00I' + (inline.length - 1) + '\x00';
     });
 
-    // Swallow any remaining [View: ...] markers the model emitted in a malformed
-    // shape (missing id, a wildcard like ":*", an unknown table) so they never
-    // render as literal text. Code regions are already protected as placeholders.
     s = s.replace(/\s*\[View:[^\]]*\]/g, '');
 
     if (!markdown) {

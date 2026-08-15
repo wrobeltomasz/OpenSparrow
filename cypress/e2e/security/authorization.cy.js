@@ -3,23 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/security/authorization.cy.js
-// ============================================================================
-// Security — Authentication & authorisation gates
-//
-// Every request here is expected to be REFUSED. The point of the suite is not
-// that the app works, but that it keeps saying no: an exact status code per
-// surface, and no server internals in the error body.
-//
-// Covers the gates in includes/bootstrap.php (os_page_bootstrap /
-// os_api_bootstrap), includes/api_helpers.php (requireLogin / requireWrite),
-// public/admin/index.php and the per-action admin checks inside
-// public/api/views.php and public/api/print.php.
-// ============================================================================
-
 const TABLE = 'companies';
 
-// HTML controllers that must never render to an anonymous visitor.
 const GUARDED_PAGES = [
   '/dashboard.php',
   '/calendar.php',
@@ -31,7 +16,6 @@ const GUARDED_PAGES = [
   `/edit.php?table=${TABLE}&id=1`,
 ];
 
-// JSON endpoints that must answer 401 to an anonymous caller.
 const GUARDED_APIS = [
   `/api.php?api=list&table=${TABLE}`,
   '/api/notifications.php?action=get_count',
@@ -65,9 +49,6 @@ describe('Security – anonymous access', () => {
     });
   });
 
-  // The GUARDED_APIS sweep above is GET-only. The file bulk actions are POST and
-  // route through a different branch of api/files.php, so an anonymous caller has
-  // to be refused there too — not just on the listing.
   ['mass_delete', 'mass_tag'].forEach(action => {
     it(`api/files.php action=${action} rejects an anonymous POST with 401`, () => {
       cy.probe({
@@ -92,8 +73,6 @@ describe('Security – anonymous access', () => {
   });
 
   it('setup_api.php is dead on a configured instance', () => {
-    // config/database.json exists once the wizard has run, so the endpoint must
-    // refuse to re-run init_database against a live database.
     cy.probe({ url: '/setup_api.php', method: 'POST', form: true, body: { action: 'init_database' } })
       .then(res => cy.expectDenied(res, [403, 404], 'setup_api.php'));
   });
@@ -138,10 +117,6 @@ describe('Security – editor may not act as admin', () => {
       .then(res => cy.expectDenied(res, [403], 'api_csv_import.php'));
   });
 
-  // views.php / print.php gate their admin-only actions inside the action block
-  // rather than at the bootstrap, so a non-admin falls through to a generic
-  // 400/404 instead of a 403. The status is therefore not the interesting part —
-  // what matters is that no configuration or schema listing comes back.
   const ADMIN_ONLY = [
     '/api/views.php?action=config',
     '/api/views.php?action=schemas',
@@ -161,9 +136,6 @@ describe('Security – editor may not act as admin', () => {
   });
 
   it('require_ajax endpoints refuse a plain browser request', () => {
-    // os_api_bootstrap(['require_ajax' => true]) — a cross-origin form post or an
-    // <img> tag cannot set X-Requested-With, so this header is a cheap extra
-    // barrier in front of the CSRF-exempt GET-only endpoints.
     ['/api/schema.php', '/api/fk.php'].forEach(path => {
       cy.probe({ url: path }).then(res => cy.expectDenied(res, [403], path));
     });

@@ -1,22 +1,16 @@
 <?php
 
-// api/rag.php — RAG knowledge base query endpoint
 // This file is part of OpenSparrow - https://opensparrow.org
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// Auth gate: session + UA enforcement; CSRF on POST; set_time_limit(240) — higher than Ollama timeout
-// actions: tags (GET, distinct KB tags), files (GET), query (POST, the RAG question)
-// Delegates retrieval/prompt/LLM call to rag_helpers.php and rate-limit/concurrency to rag_throttle.php; returns JSON answer + suggested follow-ups
 
 declare(strict_types=1);
 
-set_time_limit(240); // Set execution limit higher than Ollama timeout to prevent early termination
+set_time_limit(240);
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Auth gate + header CSRF on POST; connect=false — actions open their own connection
 os_api_bootstrap(['connect' => false]);
 
 $action = $_GET['action'] ?? '';
@@ -25,7 +19,6 @@ $method = $_SERVER['REQUEST_METHOD'];
 require_once __DIR__ . '/../../includes/rag_helpers.php';
 require_once __DIR__ . '/../../includes/rag_throttle.php';
 
-// GET: distinct tags available in the knowledge base
 if ($action === 'tags' && $method === 'GET') {
     try {
         $conn = db_connect();
@@ -46,7 +39,6 @@ if ($action === 'tags' && $method === 'GET') {
     }
 }
 
-// GET: list all documents available for direct selection
 if ($action === 'files' && $method === 'GET') {
     try {
         $conn  = db_connect();
@@ -78,7 +70,6 @@ if ($action === 'files' && $method === 'GET') {
     }
 }
 
-// POST: run a RAG query against the knowledge base
 if ($action === 'query' && $method === 'POST') {
     try {
         $body        = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -100,9 +91,7 @@ if ($action === 'query' && $method === 'POST') {
             http_response_code(400);
             exit(json_encode(['error' => 'Query is required.']));
         }
-        // The table drives the aggregate view fed into the prompt — a client-supplied
-        // name, so it is gated. Without this the assistant would happily summarise
-        // rows from a table the user cannot open in the grid.
+
         if ($table !== '') {
             require_table_access($table);
         }
@@ -137,20 +126,18 @@ if ($action === 'query' && $method === 'POST') {
             ]));
         }
 
-        // Per-user rate limit: shed excess load before touching the database or Ollama.
         $userId = (int) ($_SESSION['user_id'] ?? 0);
         if (!rag_rate_limit_ok($userId, RAG_RATE_LIMIT_PER_MIN)) {
             http_response_code(429);
             exit(json_encode(['error' => 'Rate limit exceeded. Please wait a moment before asking again.']));
         }
 
-        // Global concurrency cap: fail fast instead of blocking a PHP-FPM worker on Ollama.
         $semaphore = rag_semaphore_acquire(RAG_MAX_CONCURRENT);
         if (RAG_MAX_CONCURRENT > 0 && $semaphore === null) {
             http_response_code(503);
             exit(json_encode(['error' => 'The assistant is busy right now. Please try again in a few seconds.']));
         }
-        // Release the slot even if the request aborts or times out mid-generation.
+
         register_shutdown_function('rag_semaphore_release', $semaphore);
 
         $conn        = db_connect();
@@ -182,8 +169,6 @@ if ($action === 'query' && $method === 'POST') {
                 $tagFallback = !empty($files);
             }
         } else {
-            // No tags and no file IDs selected: do not pull in any documents.
-            // The model answers from the page/grid context alone (if provided).
             $files = [];
         }
 
@@ -238,7 +223,7 @@ if ($action === 'query' && $method === 'POST') {
             'sources'      => $sources,
             'tag_fallback' => $tagFallback,
             'suggestions'  => $suggestions,
-            // Lets the panel keep a refusal out of the conversation memory it sends back.
+
             'no_answer'    => rag_is_no_answer($answer, $suggestions),
         ]));
     } catch (Throwable $e) {

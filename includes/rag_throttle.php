@@ -7,14 +7,6 @@
 
 declare(strict_types=1);
 
-// rag_throttle.php — File-based rate limiting and concurrency control for RAG
-// Per-user sliding window (60s) using JSON files in storage/ratelimit; global semaphore (exclusive flock) limits concurrent Ollama requests
-// Drops .htaccess deny-all for defence in depth; fails open (never blocks) on filesystem errors
-// Functions: rag_rate_limit_ok($userId, $maxPerMinute) -> bool; rag_semaphore_acquire($maxConcurrent) -> file handle or null; rag_semaphore_release($handle)
-
-// Returns the directory holding throttle state, creating it on first use.
-// Drops a deny-all .htaccess as defense-in-depth for Apache deployments (Nginx
-// deployments are covered by the server-level deny list).
 function rag_throttle_dir(): string
 {
     $dir = __DIR__ . '/../storage/ratelimit';
@@ -28,8 +20,6 @@ function rag_throttle_dir(): string
     return $dir;
 }
 
-// Enforces a per-user sliding-window rate limit. Returns true when the request is
-// within the limit, false when the user exceeded $maxPerMinute in the last 60s.
 function rag_rate_limit_ok(int $userId, int $maxPerMinute): bool
 {
     if ($maxPerMinute <= 0) {
@@ -39,14 +29,13 @@ function rag_rate_limit_ok(int $userId, int $maxPerMinute): bool
     $file = rag_throttle_dir() . '/user_' . $userId . '.json';
     $fh   = @fopen($file, 'c+');
     if ($fh === false) {
-        // Fail open: never block users because of a transient filesystem issue.
         return true;
     }
     $allowed = true;
     if (flock($fh, LOCK_EX)) {
         $raw    = stream_get_contents($fh);
         $stamps = (is_string($raw) && $raw !== '') ? (json_decode($raw, true) ?: []) : [];
-        // Drop timestamps that fall outside the 60-second sliding window.
+
         $stamps = array_values(array_filter($stamps, static fn($t): bool => ($now - (int) $t) < 60));
         if (count($stamps) >= $maxPerMinute) {
             $allowed = false;
@@ -63,9 +52,6 @@ function rag_rate_limit_ok(int $userId, int $maxPerMinute): bool
     return $allowed;
 }
 
-// Acquires one of $maxConcurrent global slots. Returns an open file handle that
-// holds the slot, or null when every slot is busy or concurrency control is off.
-// The OS releases the slot when the handle closes, even on fatal error or timeout.
 function rag_semaphore_acquire(int $maxConcurrent)
 {
     if ($maxConcurrent <= 0) {
@@ -85,7 +71,6 @@ function rag_semaphore_acquire(int $maxConcurrent)
     return null;
 }
 
-// Releases a slot previously obtained from rag_semaphore_acquire().
 function rag_semaphore_release($handle): void
 {
     if (is_resource($handle)) {

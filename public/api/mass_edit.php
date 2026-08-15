@@ -7,14 +7,8 @@
 
 declare(strict_types=1);
 
-// api/mass_edit.php — Mass record operations API (editor-only)
-// Auth gate: session + UA enforcement; requires editor role; CSRF on POST
-// POST actions: mass_edit_preview, mass_edit_apply, mass_duplicate, mass_delete — operate on a selected set of record IDs, preview before apply
-// Reads the "schema" config; parameterized queries; sys_table()
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Auth gate + editor-role gate + header CSRF on POST; returns an open DB connection
 $conn = os_api_bootstrap(['role' => 'editor']);
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -23,7 +17,6 @@ $action = $_GET['action'] ?? '';
 require_once __DIR__ . '/../../includes/config_store.php';
 $schema = config_get('schema') ?? ['tables' => []];
 
-// Validate table + column against schema. Returns [$tableCfg, $tableName, $colCfg, $colSql, $tblSql].
 function validateTableColumn(array $body, array $schema): array
 {
     $tableName = $body['table']  ?? '';
@@ -62,7 +55,6 @@ function validateTableColumn(array $body, array $schema): array
     return [$tableCfg, $tableName, $cols[$colName], $colSql, $tblSql];
 }
 
-// Sanitize row_ids to a list of positive integers. Rejects anything else.
 function sanitizeRowIds(mixed $raw): array
 {
     if (!is_array($raw)) {
@@ -80,7 +72,6 @@ function sanitizeRowIds(mixed $raw): array
     return array_values(array_unique($ids));
 }
 
-// Build a PostgreSQL integer array literal from a sanitized id list: {1,2,3}
 function pgIntArray(array $ids): string
 {
     return '{' . implode(',', array_map('intval', $ids)) . '}';
@@ -171,14 +162,12 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
         exit(json_encode(['error' => 'No rows selected']));
     }
 
-    // value: PHP null → SQL NULL; string → the value (PG handles type cast)
     $value = array_key_exists('value', $body)
         ? ($body['value'] === null ? null : (string)$body['value'])
         : null;
 
     [$tableCfg, $tableName, $colCfg, $colSql, $tblSql] = validateTableColumn($body, $schema);
 
-    // Server-side validation_regexp enforcement (client check is advisory)
     if (($regexpError = validate_column_regexp($colCfg, $value)) !== null) {
         http_response_code(422);
         exit(json_encode(['error' => $regexpError]));
@@ -240,7 +229,6 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
 
     require_table_access($tableName);
 
-    // Build column list — exclude id and virtual columns
     $dupCols = [];
     foreach ($tableCfg['columns'] as $colName => $colCfg) {
         if ($colName === 'id') {
@@ -261,12 +249,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     $tblSql     = pg_ident($schemaName) . '.' . pg_ident($tableName);
     $colIdents  = implode(', ', array_map('pg_ident', $dupCols));
     $arrParam   = pgIntArray($rowIds);
-    // Resolved once, before the transaction. It used to be assigned inside the
-    // owner_restricted branch below and read again in the ownership loop after it, so
-    // the read was correct only as long as those two separate
-    // `if (!empty($tableCfg['owner_restricted']))` conditions stayed identical.
-    // Nothing enforced that, and the value feeds set_record_owner() on an
-    // owner-restricted table, where a wrong owner is an access-control outcome.
+
     $uid        = (int)$_SESSION['user_id'];
 
     @pg_query($conn, 'BEGIN');
@@ -310,7 +293,6 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     $duplicated = count($newIds);
     pg_free_result($res);
 
-    // Register ownership for every new row so owner-restricted tables stay protected.
     if (!empty($tableCfg['owner_restricted'])) {
         foreach ($newIds as $newId) {
             set_record_owner($conn, $tableName, $newId, $uid, $uid);

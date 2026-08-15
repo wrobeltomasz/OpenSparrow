@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// user-menu.js — Header user menu: avatar colour picker (1..24) and change-password, saved via api.php (update_avatar / change_password). CSRF via apiFetch().
 
 import { showToast } from './toast.js';
 import { I18n } from './i18n.js';
@@ -14,8 +12,6 @@ import { AVATAR_COLORS, avatarColor, renderAvatar } from './avatar.js';
 
 const AVATAR_COUNT = AVATAR_COLORS.length;
 
-// The header button is the single source of truth for the current user's name and
-// colour: the tooltip carries the username, data-avatar-id the palette index.
 function headerUsername() {
     const tooltip = document.querySelector('#userAvatarBtn .user-avatar-tooltip');
     return tooltip?.textContent?.trim() || '?';
@@ -30,8 +26,6 @@ function apiFetch(action, body) {
         body,
     });
 }
-
-// ── Avatar picker modal ────────────────────────────────────────────────────
 
 function buildAvatarModal(currentId, username) {
     const overlay = document.createElement('div');
@@ -61,8 +55,6 @@ function buildAvatarModal(currentId, username) {
     const preview = box.querySelector('.um-color-preview');
     let selected = currentId ?? null;
 
-    // One coloured <option> per palette entry — the colour has to sit on the option
-    // itself, not only on the <select>, or the closed list is the only thing tinted.
     for (let i = 1; i <= AVATAR_COUNT; i++) {
         const opt = document.createElement('option');
         opt.value = String(i);
@@ -88,7 +80,6 @@ function buildAvatarModal(currentId, username) {
     box.querySelector('.um-close').addEventListener('click', () => closeModal(overlay));
     overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay); });
 
-    // "Use initial" clears the avatar
     box.querySelector('#umAvatarClear').addEventListener('click', async () => {
         await saveAvatar(overlay, null);
     });
@@ -97,7 +88,6 @@ function buildAvatarModal(currentId, username) {
         await saveAvatar(overlay, selected);
     });
 
-    // Trap focus inside modal
     overlay.addEventListener('keydown', e => {
         if (e.key === 'Escape') closeModal(overlay);
     });
@@ -132,15 +122,13 @@ function updateHeaderAvatar(avatarId) {
     if (!existing) return;
 
     existing.replaceWith(renderAvatar(avatarId, tooltip?.textContent?.trim() ?? '?'));
-    // Keep the button in sync so reopening the picker preselects the saved colour.
+
     if (avatarId) {
         btn.dataset.avatarId = String(avatarId);
     } else {
         delete btn.dataset.avatarId;
     }
 }
-
-// ── Password change modal ─────────────────────────────────────────────────
 
 function buildPasswordModal() {
     const overlay = document.createElement('div');
@@ -214,11 +202,9 @@ function buildPasswordModal() {
     return overlay;
 }
 
-// ── Modal helpers ─────────────────────────────────────────────────────────
-
 function openModal(overlay) {
     document.body.appendChild(overlay);
-    // Trigger CSS transition on next frame
+
     requestAnimationFrame(() => overlay.classList.add('open'));
     overlay.querySelector('button')?.focus();
 }
@@ -226,12 +212,10 @@ function openModal(overlay) {
 function closeModal(overlay) {
     overlay.classList.remove('open');
     overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
-    // Fallback if no transition fires
+
     setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 300);
     document.getElementById('userAvatarBtn')?.focus();
 }
-
-// ── My records panel ────────────────────────────────────────────────────────
 
 let myRecordsPanel = null;
 
@@ -301,8 +285,6 @@ async function openMyRecordsPanel() {
     }
 }
 
-// ── My comments panel ───────────────────────────────────────────────────────
-
 const MY_COMMENT_SNIPPET_MAX = 140;
 
 let myCommentsPanel = null;
@@ -335,8 +317,7 @@ function renderMyComments(bodyEl, comments) {
 
         const link = document.createElement('a');
         link.className = 'um-item-link';
-        // #tab-comments opens the record straight on its comment thread — same deep
-        // link the grid comment badges use.
+
         link.href = 'edit.php?table=' + encodeURIComponent(comment.related_table)
             + '&id=' + encodeURIComponent(comment.related_id) + '#tab-comments';
         link.textContent = `${comment.table_display} → ${comment.record_label}`;
@@ -380,8 +361,6 @@ async function openMyCommentsPanel() {
         myCommentsPanel.setStatus(err.message, true);
     }
 }
-
-// ── Dropdown ──────────────────────────────────────────────────────────────
 
 function initUserMenu() {
     const btn  = document.getElementById('userAvatarBtn');
@@ -442,9 +421,6 @@ function initUserMenu() {
     });
 }
 
-// Every menu label and modal in this module goes through I18n.t(), so the bundle must be
-// in place before any handler can run — otherwise clicking the avatar early renders raw
-// keys ("header.choose_avatar").
 document.addEventListener('DOMContentLoaded', async () => {
     await I18n.load();
     initUserMenu();

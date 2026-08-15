@@ -7,21 +7,12 @@
 
 declare(strict_types=1);
 
-// print.php — Printable reports page (frontend HTML), mirrors views.php
-// Boots via includes/bootstrap.php: os_page_bootstrap (default strict CSP) — auth gate,
-// UA/lifetime enforcement, CSRF token, CSP nonce + headers
-// ?print= selects the print template (max 64 chars)
-// Renders the print-template UI (print.css); data via api/print.php; window.print() to print
-// Report parameter selects render in the blue app header (via $headerControls, like the grid
-// page) into #printFilters — populated by print.js once the template's params are known
-
 require_once __DIR__ . '/../includes/bootstrap.php';
 
 $page      = os_page_bootstrap();
 $cspNonce  = $page['nonce'];
 $printName = substr($_GET['print'] ?? '', 0, 64);
-// A ?print= outside the user's scope (stale bookmark, hand-edited URL) drops them
-// back on the default grid instead of rendering a shell whose data call 403s.
+
 if ($printName !== '') {
     os_require_access('prints', $printName);
 }

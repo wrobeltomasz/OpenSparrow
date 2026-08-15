@@ -3,18 +3,14 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/erd.js — Schema Map: renders an SVG ERD of FK / subtable / many-to-many relationships from the "schema" config. Layout constants below (node width/height, row height, etc.).
-
 import { getGlobalSchema } from './app.js';
 
 const NS  = 'http://www.w3.org/2000/svg';
-const NW  = 195;   // node width
-const NHD = 36;    // header height
-const NRH = 21;    // column row height
-const NMC = 9;     // max columns shown
-const NPD = 8;     // bottom padding inside node
-
-// ── entry ─────────────────────────────────────────────────────────────────────
+const NW  = 195;
+const NHD = 36;
+const NRH = 21;
+const NMC = 9;
+const NPD = 8;
 
 export async function renderErdPage(ctx) {
     const { workspaceEl } = ctx;
@@ -94,8 +90,6 @@ export async function renderErdPage(ctx) {
     startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, searchEl, statsEl);
 }
 
-// ── graph ─────────────────────────────────────────────────────────────────────
-
 function buildGraph(rawSchema, showHidden) {
     const tables = rawSchema.tables || {};
     const nodes = [], edges = [];
@@ -149,8 +143,6 @@ function buildGraph(rawSchema, showHidden) {
     return { nodes, edges };
 }
 
-// ── force layout ──────────────────────────────────────────────────────────────
-
 function layoutForce(nodes, edges) {
     if (!nodes.length) return;
     const cols = Math.ceil(Math.sqrt(nodes.length));
@@ -196,8 +188,6 @@ function layoutForce(nodes, edges) {
     nodes.forEach(n => { n.x -= mnX - 60; n.y -= mnY - 60; });
 }
 
-// ── SVG helpers ───────────────────────────────────────────────────────────────
-
 function svgEl(tag, attrs = {}) {
     const e = document.createElementNS(NS, tag);
     for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
@@ -242,12 +232,9 @@ function bezierD(x1, y1, x2, y2) {
     return `M${x1},${y1} C${x1},${y1+c*sy} ${x2},${y2-c*sy} ${x2},${y2}`;
 }
 
-// SVG path for a rect with only top corners rounded
 function topRoundedRect(x, y, w, h, r) {
     return `M${x+r},${y} H${x+w-r} Q${x+w},${y} ${x+w},${y+r} V${y+h} H${x} V${y+r} Q${x},${y} ${x+r},${y}Z`;
 }
-
-// ── rendering ─────────────────────────────────────────────────────────────────
 
 const EDGE_STYLE = {
     fk:  { color: '#6E767F', dash: '' },
@@ -284,7 +271,6 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
             .flatMap(e => [e.src, e.tgt]));
     }
 
-    // ── edges ──
     for (const e of edges) {
         const a = nMap.get(e.src), b = nMap.get(e.tgt);
         if (!a || !b) continue;
@@ -307,7 +293,6 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
         }
     }
 
-    // ── nodes ──
     for (const n of nodes) {
         const dim   = linked && !linked.has(n.id);
         const isSel = n.id === selId;
@@ -319,35 +304,26 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
         const g = svgEl('g', { 'data-id': n.id, opacity: dim ? 0.2 : 1 });
         g.style.cursor = 'pointer';
 
-        // Drop shadow
         g.appendChild(svgEl('rect', { x:x+3, y:y+3, width:n.w, height:n.h, rx:7, fill:'#00000016' }));
 
-        // Body
-        // Selected node is filled with --accent-light: with one accent colour the
-        // stroke alone was too weak to spot. Literal hex - SVG attrs ignore var().
         g.appendChild(svgEl('rect', { x, y, width:n.w, height:n.h, rx:7,
             fill: isSel ? '#F1F4F8' : '#fff',
             stroke: isSel ? '#003366' : isNbr ? '#1F2A37' : '#D0DAE6',
             'stroke-width': (isSel || isNbr) ? 2 : 1,
         }));
 
-        // Header (top-rounded only)
         g.appendChild(svgEl('path', { d: topRoundedRect(x, y, n.w, NHD, 7), fill: hdrC }));
 
-        // Table name
         g.appendChild(svgTxt(n.label, x+n.w/2, y+NHD/2+1,
             { ta:'middle', fill:'#fff', weight:'600', sz:13, max:22 }));
 
-        // Schema badge (non-default schemas)
         if (n.schema !== 'public') {
             g.appendChild(svgTxt(n.schema, x+n.w-7, y+NHD/2+1,
                 { ta:'end', fill:'rgba(255,255,255,.5)', sz:9, max:12 }));
         }
 
-        // Separator
         g.appendChild(svgEl('line', { x1:x, y1:y+NHD, x2:x+n.w, y2:y+NHD, stroke:'#D0DAE6', 'stroke-width':1 }));
 
-        // Columns
         n.cols.forEach((col, ci) => {
             const cy = y + NHD + ci*NRH + NRH/2 + 2;
             if (col.isFk) g.appendChild(svgTxt('→', x+6, cy, { fill:'#6E767F', sz:10 }));
@@ -367,14 +343,11 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
     }
 }
 
-// ── pan / zoom / drag ─────────────────────────────────────────────────────────
-
 function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, searchEl, statsEl) {
     const svg = document.createElementNS(NS, 'svg');
     svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;';
     container.appendChild(svg);
 
-    // Arrow markers
     const defs = svgEl('defs');
     for (const [type, c] of Object.entries(EDGE_STYLE)) {
         const mk   = svgEl('marker', { id:`mk-${type}`, markerWidth:8, markerHeight:8, refX:7, refY:3, orient:'auto' });
@@ -386,7 +359,6 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
     const gAll = svgEl('g'), gE = svgEl('g'), gN = svgEl('g');
     gAll.appendChild(gE); gAll.appendChild(gN); svg.appendChild(gAll);
 
-    // Legend overlay
     const leg = document.createElement('div');
     leg.style.cssText = 'position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.95);border:1px solid var(--border);border-radius:6px;padding:8px 12px;line-height:2;pointer-events:none;z-index:5;';
     leg.innerHTML = [
@@ -444,7 +416,6 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
         fitView();
     }
 
-    // Canvas pan
     container.addEventListener('mousedown', ev => {
         if (dragId) return;
         panning  = true;
@@ -481,7 +452,6 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
         container.style.cursor = 'grab';
     });
 
-    // Scroll zoom
     container.addEventListener('wheel', ev => {
         ev.preventDefault();
         const rect = container.getBoundingClientRect();
@@ -507,8 +477,6 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
     rebuild();
 }
 
-// ── PNG export ────────────────────────────────────────────────────────────────
-
 function exportPng(svg, nodes) {
     if (!nodes.length) return;
 
@@ -519,7 +487,6 @@ function exportPng(svg, nodes) {
     const mxY = Math.max(...nodes.map(n => n.y + n.h/2)) + pad;
     const vw = mxX - mnX, vh = mxY - mnY;
 
-    // Clone SVG, set viewBox to full content, remove pan/zoom transform
     const clone = svg.cloneNode(true);
     clone.setAttribute('width',   String(vw));
     clone.setAttribute('height',  String(vh));
@@ -527,7 +494,6 @@ function exportPng(svg, nodes) {
     const gAllClone = clone.querySelector('g');
     if (gAllClone) gAllClone.removeAttribute('transform');
 
-    // White background rect
     const bg = document.createElementNS(NS, 'rect');
     bg.setAttribute('x', String(mnX)); bg.setAttribute('y', String(mnY));
     bg.setAttribute('width', String(vw)); bg.setAttribute('height', String(vh));

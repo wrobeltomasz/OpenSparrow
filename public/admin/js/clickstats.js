@@ -2,27 +2,17 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// admin/js/clickstats.js — Click Statistics tab (renderClickstatsPage): the on/off
-// switch for click collection, and the recorded log with a top-elements rollup.
-// Reads/writes via api.php?action=clickstats_*.
+
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 import { buildInnerTabs, buildSectionCard, createPageHeader, el, mkTable, mkThead, td } from './ui.js';
 
-// Every label below comes from the DOM of a user-facing page. It is rendered with
-// textContent (via td()/el()) and never interpolated into innerHTML.
-
-// Longest retention window either tab offers — the automatic one on Settings and
-// the manual trim on Log. Mirrors ADMIN_PURGE_MAX_DAYS in includes/admin/helpers.php
-// and CLICKSTATS_MAX_RETENTION_DAYS in includes/clickstats.php, which enforce it.
 const MAX_RETENTION_DAYS = 3650;
 
 export async function renderClickstatsPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '<h3>Loading click statistics...</h3>';
 
-    // Guards against a slow response landing after the user switched tabs.
     workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
     const myId = workspaceEl._renderId;
 
@@ -65,8 +55,6 @@ export async function renderClickstatsPage(ctx) {
         + 'no request is made, so the application behaves exactly as if the module did not exist.'
     ));
 
-    // Same container as the header, so the tab strip is inserted above the title
-    // and the panels land after the description — the shared ETL layout order.
     const [settingsPanel, logPanel] = buildInnerTabs(wrap, [
         { label: 'Settings', icon: 'build.png' },
         { label: 'Log', icon: 'bar_chart.png' },
@@ -74,8 +62,6 @@ export async function renderClickstatsPage(ctx) {
     renderSettings(settingsPanel, state);
     renderLog(logPanel, state);
 }
-
-// ── Settings ────────────────────────────────────────────────────────────────
 
 function renderSettings(panel, state) {
     panel.innerHTML = '';
@@ -110,10 +96,6 @@ function renderSettings(panel, state) {
     body.appendChild(enabled.row);
     body.appendChild(records.row);
 
-    // Automatic retention, applied by the notifications cron. This is the only thing
-    // that bounds the table without someone remembering to press a button, so the
-    // "keep everything" option is spelled out rather than being what an empty field
-    // happens to mean.
     const retentionRow = el('div');
     retentionRow.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
     const retentionInput = document.createElement('input');
@@ -133,9 +115,6 @@ function renderSettings(panel, state) {
     body.appendChild(retentionRow);
     body.appendChild(retentionNote);
 
-    // How much is already stored, so the size of the log is visible next to the
-    // switch that fills it. Worded as a snapshot on purpose: the count is read once
-    // when the tab opens and is not refreshed by a purge on the Log tab.
     if (typeof state.total === 'number') {
         body.appendChild(el('p', 'admin-page-desc',
             `${state.total} click(s) recorded when this tab was opened. Expired rows are `
@@ -151,9 +130,6 @@ function renderSettings(panel, state) {
     body.appendChild(actions);
 
     btn.addEventListener('click', async () => {
-        // Bounds mirror the server, which falls back to the default rather than
-        // rejecting — so an out-of-range field must be caught here, or the admin
-        // sees "saved" against a window they did not choose.
         const retention = parseInt(retentionInput.value, 10);
         if (!Number.isFinite(retention) || retention < 0 || retention > MAX_RETENTION_DAYS) {
             showStatusPill(pillAnchor, `Retention must be 0-${MAX_RETENTION_DAYS} days.`, 'error');
@@ -175,8 +151,7 @@ function renderSettings(panel, state) {
                 state.config.enabled = enabled.input.checked;
                 state.config.track_records = records.input.checked;
                 state.config.retention_days = retention;
-                // Carry the new version forward, or the next save of this open tab
-                // loses the optimistic-lock race against itself.
+
                 state.version = result.version ?? state.version;
                 showStatusPill(pillAnchor, enabled.input.checked ? 'Collection enabled' : 'Collection disabled', 'success');
             } else {
@@ -209,8 +184,6 @@ function checkboxRow(title, description, checked) {
     return { row, input };
 }
 
-// ── Log ─────────────────────────────────────────────────────────────────────
-
 function renderLog(panel, state) {
     panel.innerHTML = '';
 
@@ -235,14 +208,9 @@ function renderLog(panel, state) {
     filterBar.append(elementFilter, userFilter, applyBtn, clearBtn, purgeBtn, pillAnchor);
     panel.appendChild(filterBar);
 
-    // On-demand purge, on top of the automatic window on the Settings tab: this is
-    // for clearing out history now, not for keeping the table bounded. "Delete
-    // everything" is the wrong tool for a rolling window, hence both buttons.
     const retentionBar = el('div');
     retentionBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
 
-    // Bounds mirror the server's ADMIN_PURGE_MAX_DAYS, which rejects anything
-    // outside them — this only keeps the spinner honest.
     const daysInput = document.createElement('input');
     daysInput.type = 'number';
     daysInput.min = '1';
@@ -323,10 +291,7 @@ function renderLog(panel, state) {
         state.page = 1;
         load();
     });
-    // Both buttons hit the same endpoint: {all: true} clears the whole log, a
-    // positive {days} trims to that window. Neither is implied — the server refuses
-    // a body naming neither or both — so send exactly one, spelled out. Kept in one
-    // place so the two paths cannot report their result differently.
+
     async function purge(btn, pill, payload) {
         btn.disabled = true;
         try {
@@ -336,8 +301,6 @@ function renderLog(panel, state) {
             });
             const result = await res.json();
             if (result.status === 'success') {
-                // `note` is the "table not created yet" hint — say that rather than
-                // claiming a deletion that never had anything to delete.
                 showStatusPill(pill, result.note || `Deleted ${result.deleted ?? 0} row(s)`, 'success');
                 state.page = 1;
                 load();
@@ -357,8 +320,7 @@ function renderLog(panel, state) {
 
     trimBtn.addEventListener('click', () => {
         const days = parseInt(daysInput.value, 10);
-        // Never send an unusable value: an empty or malformed field must not turn a
-        // "trim to N days" click into a request the server could read as anything else.
+
         if (!Number.isFinite(days) || days < 1 || days > MAX_RETENTION_DAYS) {
             showStatusPill(trimPill, `Enter a valid number of days (1-${MAX_RETENTION_DAYS}).`, 'error');
             return;

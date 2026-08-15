@@ -7,23 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/frontapi/record.php — frontend API route module: the generic record
-// mutations of the data grid — PATCH one cell, INSERT a row, duplicate a row,
-// DELETE a row.
-//
-// All four run behind the shared write preamble in public/api.php, which decoded the
-// body, resolved $table through safe_table() (unknown table => 400) and called
-// require_table_access() ONCE for every mutating route. These functions must never
-// repeat that gate — a per-route copy is a list to keep by hand. Pinned by
-// tests/Security/FrontApiGuardsTest.
-//
-// Every write here logs through log_user_action(), snapshots the row when
-// RECORD_SNAPSHOTS_ENABLED, and evaluates the automation rules
-// (includes/automations.php).
-
-/**
- * PATCH: update a single cell from the grid's inline editor.
- */
 function frontapi_record_patch(FrontApiWriteContext $ctx): never
 {
     $conn       = $ctx->conn;
@@ -65,15 +48,12 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
         $val = null;
     }
 
-    // Server-side validation_regexp enforcement — the client data-pattern
-    // check is advisory only and trivially bypassed with a direct request.
     if (!str_contains($colType, 'bool') && ($regexpError = validate_column_regexp($tableCfg['columns'][$col], $val)) !== null) {
         http_response_code(422);
         echo json_encode(['error' => $regexpError]);
         exit;
     }
 
-    // Pre-update state for change-based automation conditions (changed_from/changed_to).
     $oldRecord = auto_capture_old_record($conn, $schemaName, $table, $recordId);
 
     $sql = sprintf('UPDATE %s.%s SET %s = $1%s WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($col), $cast, pg_ident($idCol));
@@ -94,9 +74,6 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
     exit;
 }
 
-/**
- * POST: insert a new row from the grid's create form.
- */
 function frontapi_record_insert(FrontApiWriteContext $ctx): never
 {
     $conn       = $ctx->conn;
@@ -128,7 +105,6 @@ function frontapi_record_insert(FrontApiWriteContext $ctx): never
             $val = type_min_value($type);
         }
 
-        // Server-side validation_regexp enforcement (client check is advisory)
         if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($colCfg, $val)) !== null) {
             http_response_code(422);
             echo json_encode(['error' => $regexpError, 'column' => $colName]);
@@ -175,9 +151,6 @@ function frontapi_record_insert(FrontApiWriteContext $ctx): never
     exit;
 }
 
-/**
- * POST action=duplicate: copy one row, skipping virtual columns.
- */
 function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
 {
     $conn       = $ctx->conn;
@@ -194,8 +167,6 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
         exit;
     }
 
-    // Duplicating reads the whole source row, so it needs the same ownership gate
-    // as PATCH/DELETE — otherwise a copy is a read of a record the user cannot see.
     check_record_ownership($conn, $tableCfg, $table, $srcId, $ctx->userId, 'Forbidden: you do not own this record.');
 
     $dupCols = [];
@@ -254,9 +225,6 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
     exit;
 }
 
-/**
- * DELETE: remove one row.
- */
 function frontapi_record_delete(FrontApiWriteContext $ctx): never
 {
     $conn       = $ctx->conn;
@@ -276,7 +244,6 @@ function frontapi_record_delete(FrontApiWriteContext $ctx): never
 
     check_record_ownership($conn, $tableCfg, $table, $deleteId, $userId, 'Forbidden: you do not own this record.');
 
-    // Delete automations only ever see this snapshot — the row is gone afterwards.
     $deletedRecord = auto_capture_old_record($conn, $schemaName, $table, $deleteId, 'delete');
 
     $sql = sprintf('DELETE FROM %s.%s WHERE %s=$1', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));

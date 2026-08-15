@@ -3,11 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/edit/subtable-tooltip.js — record tooltip for edit.php generic
-// subtables, reusing the same shared tooltip as the grid (util/record-tooltip.js).
-// Row data + column metadata are embedded server-side as data-row/data-columns
-// JSON attributes (see public/edit.php), so no extra fetch is needed on hover.
-
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from '../util/record-tooltip.js';
 
 document.addEventListener('DOMContentLoaded', () => {

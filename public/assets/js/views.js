@@ -3,14 +3,10 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-/* assets/js/views.js — Frontend custom-views renderer (views.php page)
-   Fetches saved views from api/views.php and renders read-only tables with client-side sorting and per-cell colour rules (applyColorRules). */
-
 import { sortRows } from './grid/state.js';
 import { I18n } from './i18n.js';
 import { apiJson as apiFetch } from './util/api.js';
 
-/* ── colour rule engine ── */
 function applyColorRules(rawValue, rules) {
     if (!Array.isArray(rules) || rules.length === 0) return null;
     const num = parseFloat(rawValue);
@@ -27,21 +23,19 @@ function applyColorRules(rawValue, rules) {
     return null;
 }
 
-/* ── module-level state ── */
 let viewSortState  = { column: null, asc: true };
 let viewSearchTerm = '';
 let searchTimer    = null;
 let _searchHandler = null;
-let colFilters     = {};         // col -> { type: 'dict'|'bool'|'date'|'number', ... } (grid-identical)
-let viewGroupBy    = '';         // column the rows are grouped by ('' = no grouping)
-let collapsedGroups = new Set(); // group keys collapsed by the user (per view load)
-let _applyFilters  = null;       // set per-view by renderView(); re-filters + re-renders rows
-let _curRows       = [];         // rows of the currently rendered view level
-let _curColumns    = {};         // columns config of the currently rendered view
+let colFilters     = {};
+let viewGroupBy    = '';
+let collapsedGroups = new Set();
+let _applyFilters  = null;
+let _curRows       = [];
+let _curColumns    = {};
 
 const VIEW_FN_KEYS = { sum: 'views.fn_sum', avg: 'views.fn_avg', min: 'views.fn_min', max: 'views.fn_max', count: 'views.fn_count' };
 
-/* ── conditional summary (SUMIF/COUNTIF): does a row match a summary_if condition? ── */
 function summaryCondMatch(row, cond) {
     const raw = row[cond.column];
     const op  = cond.op ?? '==';
@@ -66,7 +60,6 @@ function summaryCondMatch(row, cond) {
     return false;
 }
 
-/* ── DOM refs ── */
 const breadcrumbEl = document.getElementById('viewBreadcrumb');
 const containerEl  = document.getElementById('viewContainer');
 const searchEl       = document.getElementById('globalSearch');
@@ -74,14 +67,12 @@ const columnFilterEl = document.getElementById('columnFilter');
 const filterBarEl    = document.getElementById('filterBar');
 const groupByEl      = document.getElementById('groupBy');
 
-/* Active-filter pills container — same id/classes as the grid page, above the table */
 const pillsEl = document.createElement('div');
 pillsEl.id = 'filterPills';
 breadcrumbEl.after(pillsEl);
 let exportBtn  = null;
 let actionsBar = null;
 
-/* ── Clear filters: header button resets search + column filters ── */
 const clearFiltersEl = document.getElementById('clearFilters');
 
 function syncClearBtn() {
@@ -103,7 +94,6 @@ if (clearFiltersEl && searchEl) {
     });
 }
 
-/* ── column type detection from the loaded rows (views have no schema types) ── */
 function detectColType(col) {
     const vals = _curRows.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '');
     if (vals.length === 0) return 'dict';
@@ -118,7 +108,6 @@ function colDisplayName(col) {
     return _curColumns[col]?.display_name ?? col;
 }
 
-/* ── update cumulative filter state (grid-identical semantics) ── */
 function updateColumnFilterState(col, type, data) {
     if (!data || data.empty) {
         delete colFilters[col];
@@ -127,7 +116,6 @@ function updateColumnFilterState(col, type, data) {
     }
 }
 
-/* ── render the type-appropriate control into #filterBar for the selected column ── */
 function handleColumnFilterChange() {
     if (!filterBarEl) return;
     filterBarEl.replaceChildren();
@@ -261,7 +249,6 @@ function handleColumnFilterChange() {
 
 if (columnFilterEl) columnFilterEl.addEventListener('change', handleColumnFilterChange);
 
-/* ── grouping: header dropdown selects the group-rows column ── */
 if (groupByEl) {
     groupByEl.addEventListener('change', () => {
         viewGroupBy = groupByEl.value;
@@ -287,7 +274,6 @@ function populateGroupBy(allKeys) {
     groupByEl.hidden = false;
 }
 
-/* ── active filters as removable pills (grid-identical) ── */
 function renderFilterPills() {
     pillsEl.replaceChildren();
     let hasPills = false;
@@ -351,7 +337,6 @@ function renderFilterPills() {
     pillsEl.classList.toggle('active', hasPills);
 }
 
-/* ── apply the cumulative column filters to a row (grid-identical semantics) ── */
 function rowPassesColFilters(row) {
     for (const [col, filter] of Object.entries(colFilters)) {
         if (filter.type === 'dict') {
@@ -375,7 +360,6 @@ function rowPassesColFilters(row) {
     return true;
 }
 
-/* ── (re)populate the header column dropdown for the current view ── */
 function populateColumnFilter(allKeys) {
     if (!columnFilterEl) return;
     columnFilterEl.replaceChildren();
@@ -392,7 +376,6 @@ function populateColumnFilter(allKeys) {
     columnFilterEl.hidden = false;
 }
 
-/* ── disconnect search/export from current view ── */
 function _clearHandlers() {
     if (searchEl && _searchHandler) {
         searchEl.removeEventListener('input', _searchHandler);
@@ -420,11 +403,10 @@ function _clearHandlers() {
     pillsEl.replaceChildren();
     pillsEl.classList.remove('active');
     syncClearBtn();
-    // No table is on screen while at the selector — agent-panel.js must not offer "current table data".
+
     window.CURRENT_VIEW = null;
 }
 
-/* ── back to selector ── */
 function showSelector() {
     _clearHandlers();
     if (searchEl) searchEl.value = '';
@@ -432,7 +414,6 @@ function showSelector() {
     loadViewSelector();
 }
 
-/* ── load and render view data ── */
 async function loadView(viewName, level, filterCol, filterVal) {
     _clearHandlers();
     clearTimeout(searchTimer);
@@ -458,19 +439,17 @@ async function loadView(viewName, level, filterCol, filterVal) {
     }
 }
 
-/* ── render the view table (grid-identical structure) ── */
 function renderView(data) {
     containerEl.innerHTML = '';
     const { view, level, max_level, group_by, drill_enabled, rows, columns, group_rows, display_name } = data;
 
     if (rows.length === 0) {
         containerEl.insertAdjacentHTML('beforeend', `<div class="vw-empty">${I18n.t('views.no_data')}</div>`);
-        // No table rendered — agent-panel.js must not offer "current table data".
+
         window.CURRENT_VIEW = null;
         return;
     }
 
-    // Exposed for agent-panel.js's "current table data" opt-in (views have no ?table= URL param).
     window.CURRENT_VIEW = { name: view, display: display_name ?? view };
 
     const allKeys      = Object.keys(rows[0]);
@@ -478,7 +457,6 @@ function renderView(data) {
     const drillColCount = canDrillDown ? 1 : 0;
     let currentFilteredRows = [];
 
-    /* ── table — same HTML as grid ── */
     const tableWrap = document.createElement('div');
     tableWrap.className = 'vw-table-wrap';
 
@@ -531,9 +509,8 @@ function renderView(data) {
     const tbody = document.createElement('tbody');
     table.appendChild(tbody);
 
-    /* ── summary engine (shared by the tfoot Σ row and per-group subtotal rows) ── */
     const summaryFns   = {};
-    const summaryConds = {};   // key -> valid summary_if condition (SUMIF/COUNTIF), or absent
+    const summaryConds = {};
     allKeys.forEach(key => {
         const fn = (columns[key]?.summary ?? '').toLowerCase();
         if (fn && fn !== 'none') summaryFns[key] = fn;
@@ -577,7 +554,6 @@ function renderView(data) {
         td.appendChild(badge);
     }
 
-    /* ── summary tfoot ── */
     const tfoot         = document.createElement('tfoot');
     const summaryTr     = document.createElement('tr');
     summaryTr.className = 'vw-summary-row';
@@ -611,7 +587,6 @@ function renderView(data) {
     tableWrap.appendChild(table);
     containerEl.appendChild(tableWrap);
 
-    /* ── grid-style actions bar below the table ── */
     actionsBar = document.createElement('div');
     actionsBar.className = 'actions';
     const actionsLeft = document.createElement('div');
@@ -623,7 +598,6 @@ function renderView(data) {
     actionsBar.appendChild(actionsLeft);
     containerEl.appendChild(actionsBar);
 
-    /* ── filter + sort + populate tbody ── */
     function applyViewFilters() {
         let result = rows;
         if (viewSearchTerm) {
@@ -688,14 +662,13 @@ function renderView(data) {
             return;
         }
 
-        /* ── grouped rendering: collapsible sections + per-group subtotals ── */
         const groups = new Map();
         result.forEach(row => {
             const k = String(row[viewGroupBy] ?? '');
             if (!groups.has(k)) groups.set(k, []);
             groups.get(k).push(row);
         });
-        // No explicit sort → order groups by key; otherwise keep sort-derived appearance order
+
         const groupKeys = [...groups.keys()];
         if (!viewSortState.column) groupKeys.sort();
 
@@ -732,7 +705,6 @@ function renderView(data) {
             tbody.appendChild(headerTr);
 
             if (collapsed) {
-                // Collapsed: keep the subtotal visible so the group still reads as a summary line
                 if (hasSummary) tbody.appendChild(makeSubtotalRow(groupRows));
                 return;
             }
@@ -766,7 +738,6 @@ function renderView(data) {
         }
     }
 
-    /* ── wire #globalSearch ── */
     if (searchEl) {
         searchEl.value   = viewSearchTerm;
         _searchHandler   = () => {
@@ -779,7 +750,6 @@ function renderView(data) {
         searchEl.addEventListener('input', _searchHandler);
     }
 
-    /* ── wire #exportCsv ── */
     if (exportBtn) {
         exportBtn.onclick = () => {
             const headers = allKeys.map(k => columns[k]?.display_name ?? k);
@@ -796,14 +766,12 @@ function renderView(data) {
         };
     }
 
-    /* ── wire header column filter to this view's data ── */
     _curRows      = rows;
     _curColumns   = columns;
     _applyFilters = applyViewFilters;
     populateColumnFilter(allKeys);
     handleColumnFilterChange();
 
-    /* default grouping from config (views.json "group_rows"), only at the root level */
     if (!viewGroupBy && level === 0 && group_rows && allKeys.includes(group_rows)) {
         viewGroupBy = group_rows;
     }
@@ -812,7 +780,6 @@ function renderView(data) {
     applyViewFilters();
 }
 
-/* ── inline drill-down: expand/collapse a group's next level beneath its row, recursively ── */
 function buildLevelTable(data) {
     const { view, level, max_level, group_by, drill_enabled, rows, columns } = data;
 
@@ -923,7 +890,6 @@ async function toggleNestedDrill(tr, arrowEl, view, level, filterCol, filterVal,
     }
 }
 
-/* ── load list of all views and show selector ── */
 async function loadViewSelector() {
     const loadEl = document.createElement('div');
     loadEl.className = 'vw-loading';
@@ -945,7 +911,6 @@ async function loadViewSelector() {
     }
 }
 
-/* ── render view selector cards (workflows-style) ── */
 function renderSelector(views) {
     containerEl.innerHTML = '';
     const grid = document.createElement('div');
@@ -1000,14 +965,12 @@ function renderSelector(views) {
     containerEl.appendChild(grid);
 }
 
-/* ── initialise a specific view (resets search) ── */
 function initView(viewName) {
     viewSearchTerm = '';
     if (searchEl) searchEl.value = '';
     loadView(viewName, 0, null, null);
 }
 
-/* ── entry point ── */
 document.addEventListener('DOMContentLoaded', async () => {
     await I18n.load();
     const initial = window.VIEWS_INITIAL;

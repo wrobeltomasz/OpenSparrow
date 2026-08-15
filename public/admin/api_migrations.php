@@ -4,11 +4,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// admin/api_migrations.php — Schema migrations admin API
-// Auth/CSRF gate: os_api_bootstrap (401 guest / 403 non-admin, X-CSRF-Token on mutations)
-// actions: scan (detect drift between schema.json and the live DB) and apply (run the generated migration SQL)
-// Reversible migrations; parameterized/quoted identifiers
 
 declare(strict_types=1);
 
@@ -64,9 +59,6 @@ function rm_db_and_applied(): array
     return [$conn, $out];
 }
 
-// Manifest "file" fields name a spw_config key, historically spelled with the
-// legacy config/*.json file name ("schema.json" → key "schema"). Normalize both
-// spellings to the bare key; returns '' when the value is unusable.
 function rm_config_key(string $file): string
 {
     $key = basename(trim($file));
@@ -76,8 +68,6 @@ function rm_config_key(string $file): string
     return config_valid_key($key) ? $key : '';
 }
 
-// Remove a JSON key identified by a simple JSONPath expression.
-// Supports: $.key, $.key.subkey, $.key[*].subkey (iterates object values too).
 function rm_jsonpath_remove(array &$data, string $path): int
 {
     if (strncmp($path, '$.', 2) !== 0) {
@@ -125,14 +115,12 @@ function rm_jsonpath_remove(array &$data, string $path): int
     return rm_jsonpath_remove($data[$head], $tail);
 }
 
-// ---- SCAN ---------------------------------------------------------------
 if ($action === 'scan') {
     $manifest = rm_load_manifest($manifestPath);
 
     try {
         [, $applied] = rm_db_and_applied();
     } catch (Exception $e) {
-        // Table may not exist yet before init_db is run on 2.4.0
         $applied = [];
     }
 
@@ -218,7 +206,6 @@ if ($action === 'scan') {
     exit;
 }
 
-// ---- APPLY ---------------------------------------------------------------
 if ($action === 'apply') {
     $body = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($body)) {
@@ -257,7 +244,6 @@ if ($action === 'apply') {
 
     $entry = $manifest[$version];
 
-    // Build ordered action list — same order as scan
     $allActions = [];
     foreach ($entry['removed_files'] ?? [] as $relPath) {
         $allActions[] = ['type' => 'file_remove', 'path' => (string) $relPath];
@@ -273,7 +259,6 @@ if ($action === 'apply') {
         ];
     }
 
-    // Determine which indices to run; null = all non-deprecated
     $selectedIdxs = $body['selected'] ?? null;
     $toRun        = [];
     if ($selectedIdxs === null) {
@@ -302,7 +287,7 @@ if ($action === 'apply') {
 
         if ($a['type'] === 'file_remove') {
             $relPath = $a['path'];
-            // Paths come from the manifest (whitelist), not user input; realpath validates traversal.
+
             $absPath = realpath($root . '/' . ltrim($relPath, '/'));
             if ($absPath === false || strncmp($absPath, $root . DIRECTORY_SEPARATOR, strlen($root) + 1) !== 0) {
                 $warnings[] = 'Unsafe path rejected: ' . $relPath;
@@ -337,8 +322,7 @@ if ($action === 'apply') {
                 $warnings[] = 'Invalid config_key_remove entry.';
                 continue;
             }
-            // Read the row (not just the value) so the write can assert the version it
-            // scrubbed — a concurrent admin save must lose, not get silently overwritten.
+
             $cfgRow = config_get_row($cfgKey);
             if ($cfgRow === null) {
                 $log[] = [
@@ -362,8 +346,7 @@ if ($action === 'apply') {
                 ];
                 continue;
             }
-            // config_save writes the pre-change value into spw_config_log, which is the
-            // backup for this action — no file copy under storage/migrations_backup.
+
             $saved = config_save($cfgKey, $cfg, (int) $cfgRow['version'], $userId ?: null);
             if ($saved['status'] === 'conflict') {
                 $warnings[] = 'Config changed concurrently, skipped: ' . $cfgKey;
@@ -386,7 +369,6 @@ if ($action === 'apply') {
         }
     }
 
-    // Record in spw_release_migrations
     $tRelMig = sys_table('release_migrations');
     $actJson = (string) json_encode($log);
 

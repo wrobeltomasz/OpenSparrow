@@ -7,15 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/frontapi/dashboard.php — frontend API route module: GET ?api=dashboard.
-// Runs every configured widget's query and returns the layout plus the results.
-// Dispatched by public/api.php AFTER the auth gate, the admin/viewer role gates and
-// the schema load. The query building itself lives in includes/dashboard_query.php,
-// shared with the admin widget editor's dashboard_calculate preview.
-
-/**
- * The dashboard layout with each widget's data, honouring the global date filter.
- */
 function frontapi_dashboard(FrontApiContext $ctx): never
 {
     require_once __DIR__ . '/../dashboard_query.php';
@@ -28,7 +19,7 @@ function frontapi_dashboard(FrontApiContext $ctx): never
         echo json_encode(['layout' => [], 'widgets' => []]);
         exit;
     }
-    // Include menu config so frontend can build the sidebar
+
     $response = [
         'menu_name' => $dashboard['menu_name'] ?? 'Dashboard',
         'menu_icon' => $dashboard['menu_icon'] ?? '',
@@ -41,8 +32,7 @@ function frontapi_dashboard(FrontApiContext $ctx): never
         if (!$table) {
             continue;
         }
-        // Config-supplied table: skip the widget rather than 403 the whole
-        // dashboard — one out-of-scope widget must not blank the page.
+
         if (!user_can_access_table($table)) {
             continue;
         }
@@ -57,22 +47,17 @@ function frontapi_dashboard(FrontApiContext $ctx): never
         $qType = $widget['query']['type'] ?? 'list';
         $data = null;
         $sqlWhere = '';
-        // Build WHERE from structured conditions (column validated against schema, values escaped)
+
         $conditions = is_array($widget['query']['conditions'] ?? null) ? $widget['query']['conditions'] : [];
-        // Parenthesised so the appended date-range AND below cannot rebind a
-        // widget-level OR (AND binds tighter than OR in SQL).
+
         $condSql = dashboard_conditions_sql($conn, $tableCfg, $conditions);
 
-        // Apply Global Date Filter if requested and target matches.
-        // $dateSqlPrev covers the equally long window directly before the
-        // current one and powers the previous-period delta on stat cards.
         $dateFilter = $_GET['date_filter'] ?? 'all';
         $dateTarget = $_GET['date_target'] ?? 'all';
         $widgetTargetId = $widget['id'] ?? $widget['table'] ?? '';
         $dateSqlCur  = null;
         $dateSqlPrev = null;
         if ($dateFilter !== 'all' && ($dateTarget === 'all' || $dateTarget === $widgetTargetId)) {
-            // First column that represents a date/time ('time' also matches 'timestamp')
             $dateCol = array_find_key($tableCfg['columns'], static function (array $cCfg): bool {
                 $cType = strtolower($cCfg['type'] ?? '');
                 return str_contains($cType, 'date') || str_contains($cType, 'time');
@@ -122,7 +107,6 @@ function frontapi_dashboard(FrontApiContext $ctx): never
             $widget['column_types'] = $result['column_types'];
         }
 
-        // Previous-period comparison only applies to single-value widgets
         if ($sqlWherePrev !== null && in_array($qType, ['count', 'sum', 'avg'], true) && !isset($result['sql_error'])) {
             $prevResult = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $widget['query'] ?? [], $widget['display_columns'] ?? [id_column()], $sqlWherePrev);
             if (!isset($prevResult['sql_error'])) {

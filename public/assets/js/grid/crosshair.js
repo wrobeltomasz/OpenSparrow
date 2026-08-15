@@ -3,10 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/crosshair.js — row + column hover highlight (crosshair) for the data grid.
-// The row half is pure CSS (tbody tr:hover td); the column half needs JS because CSS
-// cannot express "cells sharing the hovered cell's index".
-
 const COL_CLASS = 'col-hover';
 const CELL_CLASS = 'cell-hover';
 

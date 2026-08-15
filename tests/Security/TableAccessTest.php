@@ -11,24 +11,6 @@ namespace Tests\Security;
 
 use PHPUnit\Framework\TestCase;
 
-/**
- * Unit tests for the per-user allow-lists in includes/api_helpers.php, covering all
- * three scopes: tables, views and printouts.
- *
- * The decision these helpers make is an access decision, so the edge cases matter
- * more than the happy path. In particular the "empty list means UNRESTRICTED"
- * contract is deliberate and load-bearing: it is what keeps every pre-existing
- * user working after the feature ships. If someone ever flips that to "empty means
- * no access" without migrating the stored config first, the whole frontend goes
- * dark for everyone — these tests pin the contract down.
- *
- * The config store is seeded through config_cache() rather than a database: the
- * helpers read via config_get(), which consults that cache first.
- *
- * Every test uses a distinct user id on purpose. user_allowed_items() memoises per
- * id for the request, so reusing an id across tests would silently assert against
- * the previous test's fixture.
- */
 final class TableAccessTest extends TestCase
 {
     public static function setUpBeforeClass(): void
@@ -40,27 +22,18 @@ final class TableAccessTest extends TestCase
     protected function setUp(): void
     {
         $_SESSION['role'] = 'editor';
-        // The closure and the pick lists read config documents, so a fixture from one
-        // test would otherwise decide another test's answer depending on execution
-        // order. Start every test from empty documents; those that need content seed
-        // their own. Driven off the registry so a new scope is reset automatically.
+
         $this->seedSchema([]);
         foreach (USER_ACCESS_SCOPES as $def) {
             $this->seedConfig($def['config'], [$def['path'] => []]);
         }
     }
 
-    /**
-     * Replace the whole user_table_access document.
-     *
-     * @param array<string, array<string, list<string>>|list<string>> $users
-     */
     private function seed(array $users): void
     {
         config_cache('user_table_access', ['value' => ['users' => $users], 'version' => 1], true);
     }
 
-    /** Shorthand for the common "tables only" fixture. */
     private function seedTables(string $userId, array $tables): void
     {
         $this->seed([$userId => ['tables' => $tables]]);
@@ -111,17 +84,13 @@ final class TableAccessTest extends TestCase
 
     public function testAdminShortcutDoesNotApplyToAnotherUser(): void
     {
-        // The shortcut answers "is the CALLER an admin". Asked about somebody else —
-        // a "what does this user see" preview, a per-user notification job — the
-        // caller's role says nothing about the subject, and reading it anyway would
-        // report every user as unrestricted from the admin panel.
         $this->seedTables('124', ['orders']);
         $_SESSION['user_id'] = 999;
         $_SESSION['role']    = 'admin';
 
         $this->assertSame(['orders'], user_allowed_tables(124));
         $this->assertFalse(user_can_access_table('invoices', 124));
-        // The caller's own answer is unaffected.
+
         $this->assertNull(user_allowed_tables());
     }
 
@@ -138,7 +107,6 @@ final class TableAccessTest extends TestCase
 
     public function testNonStringEntriesAreDiscarded(): void
     {
-        // A hand-edited or half-migrated config must not turn into a table named "1".
         $this->seedTables('106', ['orders', 42, null, 'clients']);
         $_SESSION['user_id'] = 106;
 
@@ -185,12 +153,9 @@ final class TableAccessTest extends TestCase
         $this->assertTrue(user_can_access_table('orders'));
         $this->assertFalse(user_can_access_table('invoices'));
 
-        // Explicit id argument, not the session — used by admin-side callers.
         $this->assertTrue(user_can_access_table('invoices', 111));
         $this->assertFalse(user_can_access_table('orders', 111));
     }
-
-    // ── Views and printouts ─────────────────────────────────────────────────
 
     public function testViewsAndPrintsAreGrantedByName(): void
     {
@@ -209,8 +174,6 @@ final class TableAccessTest extends TestCase
 
     public function testScopesAreIndependent(): void
     {
-        // Tables restricted, views and printouts left alone — the most common real
-        // configuration, and the one most easily broken by a shared code path.
         $this->seed(['113' => ['tables' => ['orders']]]);
         $_SESSION['user_id'] = 113;
 
@@ -231,9 +194,6 @@ final class TableAccessTest extends TestCase
 
     public function testBareListIsReadAsTablesOnly(): void
     {
-        // The pre-scopes document shape. A config written before views and printouts
-        // existed must keep restricting tables — and must NOT be read as an empty
-        // (= unrestricted) tables list, which would silently widen access on upgrade.
         $this->seed(['115' => ['orders', 'clients']]);
         $_SESSION['user_id'] = 115;
 
@@ -244,7 +204,6 @@ final class TableAccessTest extends TestCase
 
     public function testUnknownScopeThrows(): void
     {
-        // A typo in a scope name must be a hard error, never a silent "unrestricted".
         $this->seed(['116' => ['tables' => ['orders']]]);
         $_SESSION['user_id'] = 116;
 
@@ -261,13 +220,6 @@ final class TableAccessTest extends TestCase
         $this->assertSame(['v_sales'], array_keys(filter_by_user_access('views', $views)));
     }
 
-    // ── The scope registry ───────────────────────────────────────────────────
-    // Scopes come in two config shapes: name-keyed maps (tables, views, printouts)
-    // and lists of objects identified by a field (boards, workflows). Every helper
-    // has to handle both without its callers knowing which is which — that is the
-    // whole point of the registry, and these tests pin it.
-
-    /** Replace one config document. */
     private function seedConfig(string $key, array $value): void
     {
         config_cache($key, ['value' => $value, 'version' => 1], true);
@@ -278,7 +230,6 @@ final class TableAccessTest extends TestCase
         $this->seedConfig('views', ['views' => ['v_sales' => ['display_name' => 'Sales']]]);
         $this->seedConfig('board', ['boards' => [['id' => 'brd_1', 'menu_name' => 'Sales Board']]]);
 
-        // A map yields its keys, a list yields its id field — same shape out.
         $this->assertSame(['v_sales' => 'Sales'], access_scope_items('views'));
         $this->assertSame(['brd_1' => 'Sales Board'], access_scope_items('boards'));
     }
@@ -307,14 +258,11 @@ final class TableAccessTest extends TestCase
 
     public function testEveryScopeCarriesTheKeysItsConsumersRead(): void
     {
-        // A row added to the registry with a field missing would surface as an undefined
-        // index deep inside the admin tab or a 403 message, far from the typo.
         foreach (USER_ACCESS_SCOPES as $scope => $def) {
             foreach (['config', 'path', 'id', 'label', 'noun', 'plural', 'title', 'empty'] as $field) {
                 $this->assertArrayHasKey($field, $def, "Scope '{$scope}' is missing '{$field}'.");
             }
-            // Singular for the 403, plural for the tab's count badge — conflating them
-            // is how "Restricted to 2 of 5 table" gets shipped.
+
             $this->assertNotSame(
                 $def['noun'],
                 $def['plural'],
@@ -338,7 +286,7 @@ final class TableAccessTest extends TestCase
         $this->assertFalse(user_can_access('boards', 'brd_2'));
         $this->assertTrue(user_can_access('workflows', 'wf_1'));
         $this->assertFalse(user_can_access('workflows', 'wf_2'));
-        // Independent of every other scope, as always.
+
         $this->assertNull(user_allowed_items('tables'));
     }
 
@@ -376,11 +324,6 @@ final class TableAccessTest extends TestCase
         $boards = [['id' => 'brd_1'], ['id' => 'brd_2']];
         $this->assertSame($boards, filter_by_user_access('boards', $boards));
     }
-
-    // ── Default-on gating at the API boundary ────────────────────────────────
-    // os_request_scope_violation() is the rule os_api_bootstrap() applies to every API
-    // request. The two are separate so the rule can be tested at all: the gate itself
-    // ends the process.
 
     protected function tearDown(): void
     {
@@ -420,9 +363,6 @@ final class TableAccessTest extends TestCase
 
     public function testBoundaryGateIgnoresUnknownNames(): void
     {
-        // An unknown name must fall through so the endpoint can answer 400/404 in its
-        // own words. Turning a typo into 403 would collapse the "unknown is 400, not
-        // yours is 403" distinction the endpoints and their tests rely on.
         $this->seedConfig('schema', ['tables' => ['orders' => []]]);
         $this->seed(['131' => ['tables' => ['orders']]]);
         $_SESSION['user_id'] = 131;
@@ -433,8 +373,6 @@ final class TableAccessTest extends TestCase
 
     public function testBoundaryGateStillSeesHiddenEntries(): void
     {
-        // Hidden means unreachable-by-menu, not unknown. Treating it as unknown here
-        // would let a hidden table through the boundary gate ungated.
         $this->seedConfig('schema', ['tables' => ['orders' => [], 'ukryta' => ['hidden' => true]]]);
         $this->seed(['132' => ['tables' => ['orders']]]);
         $_SESSION['user_id'] = 132;
@@ -443,15 +381,10 @@ final class TableAccessTest extends TestCase
         $this->assertSame(['tables', 'ukryta'], os_request_scope_violation());
     }
 
-    // ── Saving a selection ───────────────────────────────────────────────────
-    // A save replaces the user's whole entry, so what happens to a scope the payload
-    // does not mention is a security decision, not a detail: [] means UNRESTRICTED.
-
     public function testOmittedScopeKeepsItsStoredValue(): void
     {
         $stored = ['tables' => ['orders'], 'views' => ['v_ok'], 'boards' => ['brd_1']];
 
-        // A caller that only knows about tables must not widen views and boards.
         $merged = merge_user_access_selection(['tables' => ['clients']], $stored);
 
         $this->assertSame(['clients'], $merged['tables'], 'The submitted scope must win.');
@@ -462,8 +395,6 @@ final class TableAccessTest extends TestCase
 
     public function testExplicitEmptyListStillClearsAScope(): void
     {
-        // This is how the Access tab removes a restriction — it must keep working, or
-        // an admin could never hand access back.
         $merged = merge_user_access_selection(
             ['views' => []],
             ['tables' => ['orders'], 'views' => ['v_ok']]
@@ -475,8 +406,6 @@ final class TableAccessTest extends TestCase
 
     public function testMalformedScopeValueDoesNotWiden(): void
     {
-        // Not a list = not an instruction to clear. Malformed input must never resolve
-        // in the widening direction.
         foreach (['orders', 42, null, false] as $junk) {
             $merged = merge_user_access_selection(['tables' => $junk], ['tables' => ['orders']]);
             $this->assertSame(
@@ -489,8 +418,6 @@ final class TableAccessTest extends TestCase
 
     public function testMergeCoversEveryRegisteredScope(): void
     {
-        // The stored document is written from this result, so a scope missing from it
-        // would be dropped from the entry on the next save.
         $merged = merge_user_access_selection([], []);
 
         $this->assertSame(array_keys(USER_ACCESS_SCOPES), array_keys($merged));
@@ -498,9 +425,6 @@ final class TableAccessTest extends TestCase
 
     public function testBodyIsNotReadWhenThereCannotBeOne(): void
     {
-        // Both branches short-circuit before touching php://input. GET/HEAD carry no
-        // body; multipart/form-data has already been consumed by PHP while filling
-        // $_POST/$_FILES, so the stream is empty and reading it would prove nothing.
         $method = $_SERVER['REQUEST_METHOD'] ?? null;
         $ctype  = $_SERVER['CONTENT_TYPE'] ?? null;
 
@@ -513,8 +437,6 @@ final class TableAccessTest extends TestCase
             $_SERVER['CONTENT_TYPE']   = 'multipart/form-data; boundary=----x';
             $this->assertSame([], os_gate_request_body());
         } finally {
-            // Restore exactly, including "was not set at all" — a leftover
-            // REQUEST_METHOD would decide a later test's answer.
             if ($method === null) {
                 unset($_SERVER['REQUEST_METHOD']);
             } else {
@@ -530,15 +452,6 @@ final class TableAccessTest extends TestCase
 
     public function testBodyParsingIsNotKeyedOnTheDeclaredContentType(): void
     {
-        // Reading the body only for application/json put the gate under the CLIENT's
-        // control: a POST labelled text/plain, or carrying no Content-Type at all,
-        // sailed past untouched while the endpoint parsed the same bytes as JSON. The
-        // per-endpoint gates meant it was never an open door, but "closed by default"
-        // has to hold whatever the request claims to be sending.
-        //
-        // Comments are stripped first — the explanation above this function in the
-        // source names the old content type, and matching that would make this pass
-        // for the wrong reason.
         $src = '';
         foreach (token_get_all((string) file_get_contents(__DIR__ . '/../../includes/api_helpers.php')) as $t) {
             $src .= is_array($t) ? (in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true) ? '' : $t[1]) : $t;
@@ -558,9 +471,6 @@ final class TableAccessTest extends TestCase
 
     public function testBoundaryGateWalksArrayValuedParameters(): void
     {
-        // ?table[]=secret is a shape the CLIENT picks, and a bare is_string() test used
-        // to skip it. Skipping is the one outcome a gate must never have for something
-        // the caller controls — the endpoint would still resolve the value its own way.
         $this->seedConfig('schema', ['tables' => ['orders' => [], 'secret' => []]]);
         $this->seed(['136' => ['tables' => ['orders']]]);
         $_SESSION['user_id'] = 136;
@@ -581,8 +491,6 @@ final class TableAccessTest extends TestCase
 
     public function testBoundaryGateIgnoresNonStringNoise(): void
     {
-        // Ints, nulls, nested arrays and objects reach no endpoint as a table name —
-        // they must not throw here either, and must not be mistaken for a violation.
         $this->seedConfig('schema', ['tables' => ['orders' => [], 'secret' => []]]);
         $this->seed(['137' => ['tables' => ['orders']]]);
         $_SESSION['user_id'] = 137;
@@ -617,13 +525,6 @@ final class TableAccessTest extends TestCase
         $this->assertNull(os_request_scope_violation());
     }
 
-    // ── Hidden-subtable closure ──────────────────────────────────────────────
-    // A hidden table cannot be ticked in the admin picker, so its access has to
-    // follow its parent's or it is unreachable for every restricted user — see
-    // with_hidden_subtables(). These tests pin both halves of that rule: hidden
-    // children are pulled in, visible ones stay a deliberate admin choice.
-
-    /** Replace the schema document. Only the keys the closure reads are needed. */
     private function seedSchema(array $tables): void
     {
         config_cache('schema', ['value' => ['tables' => $tables], 'version' => 1], true);
@@ -655,8 +556,6 @@ final class TableAccessTest extends TestCase
         $this->seedTables('119', ['zadania']);
         $_SESSION['user_id'] = 119;
 
-        // komentarze is a normal table: it has a menu entry and a grid of its own, so
-        // an admin who did not tick it meant not to grant it.
         $this->assertFalse(
             user_can_access_table('komentarze'),
             'A visible subtable must stay an explicit choice.'
@@ -665,8 +564,6 @@ final class TableAccessTest extends TestCase
 
     public function testHiddenClosureIsTransitive(): void
     {
-        // projekty → zadania (hidden) → checklisty (hidden): granting the root has to
-        // reach the whole hidden chain, not just its first link.
         $this->seedSchema([
             'projekty'   => ['subtables' => [['table' => 'zadania']]],
             'zadania'    => ['hidden' => true, 'subtables' => [['table' => 'checklisty']]],
@@ -681,8 +578,6 @@ final class TableAccessTest extends TestCase
 
     public function testSubtableCycleTerminates(): void
     {
-        // A misconfigured schema must not hang the request. Reaching the assertion at
-        // all is the point of this test.
         $this->seedSchema([
             'a' => ['subtables' => [['table' => 'b']]],
             'b' => ['hidden' => true, 'subtables' => [['table' => 'a'], ['table' => 'c']]],
@@ -714,25 +609,16 @@ final class TableAccessTest extends TestCase
         $this->seed(['123' => ['views' => ['v_sales']]]);
         $_SESSION['user_id'] = 123;
 
-        // No table restriction at all still means null, not a closed-over list.
         $this->assertNull(user_allowed_tables());
     }
 
     public function testAllDigitTableNameSurvivesTheClosure(): void
     {
-        // The closure is keyed by table name, and PHP casts an all-digit string key to
-        // an int. user_can_access() compares with a STRICT in_array(), so without a cast
-        // back to string a table named "2024" — legal in PostgreSQL when quoted, and the
-        // obvious shape for a year-partitioned table — silently stops matching the grant
-        // an admin explicitly ticked. It fails closed rather than open, which is why it
-        // would never show up as a leak; it shows up as a table nobody can open.
         $this->seedSchema([
             '2024' => ['subtables' => [['table' => '2024_lines']]],
             '2024_lines' => ['hidden' => true],
         ]);
-        // 138: user_allowed_items() caches per user id for the whole process, so an id
-        // another test already resolved would answer from that cache and never reach the
-        // fixture above.
+
         $this->seedTables('138', ['2024']);
         $_SESSION['user_id'] = 138;
 

@@ -4,9 +4,6 @@
   SPDX-License-Identifier: LGPL-3.0-or-later
   Copyright (C) 2024-2026 OpenSparrow Contributors
   Licensed under LGPL v3. See COPYING.LESSER file for details.
-
-  404.php — Static "Page Not Found" error page (pure HTML, no PHP / auth / DB).
-  Served by the .htaccess ErrorDocument directive. Standalone styling (assets/css/styles.css), link back to home.
 -->
 <html lang="en">
 <head>
@@ -29,7 +26,7 @@
         <h1>404</h1>
         <h2>Page Not Found</h2>
         <p>The page you are looking for does not exist or has been moved.</p>
-        
+
         <a href="/">
             <button class="btn-home">Go Back to Home</button>
         </a>

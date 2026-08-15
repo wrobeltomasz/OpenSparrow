@@ -7,35 +7,14 @@
 
 declare(strict_types=1);
 
-// includes/frontapi/profile.php — frontend API route module: the self-service account
-// actions (?action=update_avatar, ?action=change_password).
-//
-// These run EARLIER than every other route in this API, and deliberately so: they are
-// permitted for every authenticated user regardless of role, so they sit ahead of the
-// admin block and the viewer read-only block in public/api.php. That ordering is the
-// whole point of the branch and must be preserved — pinned by
-// tests/Security/FrontApiGuardsTest.
-//
-// They take no FrontApiContext: the schema has not been loaded at that point, and
-// neither action touches it. They act on the caller's own row in spw_users only, so
-// the record id never comes from the request.
-
-/**
- * Handles whichever self-service action was named, then exits.
- *
- * $action is already known to be one of the two; anything else never reaches here.
- * A non-POST request to either answers 405, as before the split.
- */
 function frontapi_profile(\PgSql\Connection $conn, string $method, string $action, int $userId): never
 {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
-    // POST: save the chosen avatar colour (palette index) or clear it (null = default colour)
     if ($action === 'update_avatar' && $method === 'POST') {
         frontapi_profile_update_avatar($conn, $body, $userId);
     }
 
-    // POST: change own password — verify current, enforce minimum length, rehash
     if ($action === 'change_password' && $method === 'POST') {
         frontapi_profile_change_password($conn, $body, $userId);
     }
@@ -51,7 +30,7 @@ function frontapi_profile_update_avatar(\PgSql\Connection $conn, array $body, in
         http_response_code(400);
         exit(json_encode(['error' => 'avatar_id required']));
     }
-    // Bound by the palette itself (includes/page_helpers.php) so the two cannot drift.
+
     $avatarMax = count(OS_AVATAR_COLORS);
     if ($avatarId !== null && (!is_int($avatarId) || $avatarId < 1 || $avatarId > $avatarMax)) {
         http_response_code(400);
@@ -89,10 +68,6 @@ function frontapi_profile_change_password(\PgSql\Connection $conn, array $body, 
         exit(json_encode(['error' => 'Database error']));
     }
 
-    // A live session whose user row has since been deleted returns no row here.
-    // Guard before password_verify(): under strict_types a null hash is a TypeError,
-    // and this block runs outside the front controller's try/catch, so it would be a
-    // blank 500.
     $row = pg_fetch_assoc($resFetch);
     if (!is_array($row) || ($row['password_hash'] ?? null) === null) {
         http_response_code(401);

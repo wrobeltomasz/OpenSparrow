@@ -7,18 +7,11 @@
 
 declare(strict_types=1);
 
-// create.php — Record creation form page (modern OOP path)
-// Boots via includes/bootstrap.php: os_page_bootstrap() (auth gate, UA/lifetime enforcement, CSP nonce + 'unsafe-style' headers) + os_boot_app() (object graph) + includes/m2m.php
-// Editor role required for POST (read-only users get 403)
-// Renders a dynamic create form from schema.json (incl. many_to_many)
-
 require __DIR__ . '/../includes/bootstrap.php';
 require __DIR__ . '/../includes/m2m.php';
 
 use App\Form\RenderContext;
 
-// 'unsafe-style' CSP mode: the form markup uses inline style attributes for
-// dynamic values. Admins are not redirected — the form pages allow them through.
 $pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
 $cspNonce = $pageMeta['nonce'];
 
@@ -68,7 +61,6 @@ if ($request->isPost()) {
         header('Location: edit.php?table=' . urlencode($table) . '&id=' . $newId . $fragment);
         exit;
     } catch (\App\Form\ValidationException $e) {
-        // validation_regexp mismatch — message comes from schema.json and is user-facing
         $error = $e->getMessage();
     } catch (\RuntimeException $e) {
         error_log('[create.php] ' . $e->getMessage());
@@ -76,13 +68,11 @@ if ($request->isPost()) {
     }
 }
 
-// Pre-load FK options for all FK columns.
 $fkOptions = [];
 foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
     $fkOptions[$colName] = $fkLoader->load($fkCfg, $rawSchema);
 }
 
-// Detect GET-prefilled (locked) fields — used for subtable FK pre-population.
 $prefilled = [];
 $locked    = [];
 foreach ($tableCfg->writableColumns() as $col) {
@@ -155,8 +145,7 @@ ob_start();
 </main>
 <?php
 $pageContent = ob_get_clean();
-// [data-nav] / enum colours / data-pattern validation are shared with edit.php —
-// see assets/js/edit/form-behaviours.js.
+
 $extraScripts = os_module_script('assets/js/edit/form-behaviours.js', $cspNonce)
     . os_module_script('assets/js/edit/m2m-picker.js', $cspNonce);
 include __DIR__ . '/../templates/layout.php';

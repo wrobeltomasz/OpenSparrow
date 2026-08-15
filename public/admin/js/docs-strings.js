@@ -3,7 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/docs-strings.js — Localized documentation strings (STRINGS) for the admin docs page, keyed by language (en/pl). Data only; consumed by docs.js.
 export const STRINGS = {
     en: {
         sidebarTitle: 'Contents',

@@ -7,17 +7,7 @@
 
 declare(strict_types=1);
 
-// includes/admin/backup.php — admin api.php module: table snapshots (backup_tables).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
-// Create a timestamped copy of selected tables (structure + data, no indexes/constraints)
 if ($action === 'backup_tables') {
-    // CREATE TABLE ... AS SELECT is a write — gated like the other DDL actions
-    // (create_table / add_column / schema_add_table in schema.php).
     require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
     $tables = $input['tables'] ?? [];

@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/comments/counts.js — loadCommentCounts(): fetches per-row comment counts (api.js) for the visible rows and shows them as badges.
-
 import { debugLog } from '../../debug.js';
 import { fetchCommentCounts } from '../api.js';
 import { state } from '../state.js';

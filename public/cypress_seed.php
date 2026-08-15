@@ -5,27 +5,15 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress_seed.php — Development-only test-data seeder for Cypress E2E tests.
-// SECURITY: dead on production — hard APP_ENV guard (404) runs before the token check,
-// so an accidental deployment exposes nothing (APP_ENV defaults to 'production' in includes/config.php).
-// Second gate: shared token (CYPRESS_SEED_TOKEN env, default 'cypress-dev-seed') compared with hash_equals
-// actions: seed/users — upserts fixed test users (Argon2id hashes) into sys_table('users'); returns JSON results
-
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/config.php';
 
-// Hard environment guard: APP_ENV defaults to 'production' when unset, so this
-// endpoint only comes alive when the operator explicitly opts into a dev
-// environment (docker-compose.override.yml sets APP_ENV=development). A 404
-// with no body mirrors a missing file — existence is not disclosed.
 if (APP_ENV === 'production') {
     http_response_code(404);
     exit;
 }
 
-// Token guard: prevents accidental or malicious triggering.
-// Override with CYPRESS_SEED_TOKEN env var for CI.
 $expectedToken = getenv('CYPRESS_SEED_TOKEN') ?: 'cypress-dev-seed';
 $providedToken = $_POST['token'] ?? $_GET['token'] ?? '';
 if (!hash_equals($expectedToken, $providedToken)) {
@@ -41,11 +29,6 @@ require_once __DIR__ . '/../includes/config_store.php';
 
 header('Content-Type: application/json');
 
-/**
- * First text-like, non-id column of a configured table — the column cypress
- * fixtures write their 'cypress…' marker into. Returns null when the table has
- * none (such tables are skipped by the cleanup and ownership actions).
- */
 function cypress_first_text_column(array $tableCfg): ?string
 {
     foreach ($tableCfg['columns'] ?? [] as $colName => $colCfg) {
@@ -66,7 +49,6 @@ try {
     $action = $_POST['action'] ?? $_GET['action'] ?? 'seed';
     $results = [];
 
-    // ── Upsert test users ─────────────────────────────────────────────────────
     if ($action === 'seed' || $action === 'users') {
         $argonOpts = ['memory_cost' => 1 << 16, 'time_cost' => 2, 'threads' => 1];
         $optsJson  = json_encode($argonOpts);
@@ -95,13 +77,11 @@ try {
         }
     }
 
-    // ── Reset config keys that Cypress specs mutate and rely on defaults for ──
     if ($action === 'seed' || $action === 'cleanup') {
         require_once __DIR__ . '/../includes/config_store.php';
         config_delete('anonymization');
     }
 
-    // ── Clean up cypress-created application records ──────────────────────────
     if ($action === 'seed' || $action === 'cleanup') {
         $schema = config_get('schema');
         if (is_array($schema)) {
@@ -111,7 +91,6 @@ try {
             $tOwners = sys_table('record_owners');
 
             foreach ($schema['tables'] ?? [] as $tableName => $tableCfg) {
-                // Find first text-like column to match cypress-prefixed values against
                 $textCol = cypress_first_text_column($tableCfg);
 
                 if ($textCol === null) {
@@ -121,9 +100,6 @@ try {
                 $pgTable = $appSchema . '.' . pg_ident($tableName);
                 $pgCol   = pg_ident($textCol);
 
-                // RETURNING id so the ownership rows the security specs create in
-                // spw_record_owners are removed together with the records themselves —
-                // orphaned owner rows would keep blocking ids that get reused later.
                 $res = @pg_query($conn, "DELETE FROM $pgTable WHERE $pgCol ILIKE 'cypress%' OR $pgCol ILIKE 'cy-%' RETURNING id");
                 if ($res) {
                     $deletedIds = array_map('intval', array_column(pg_fetch_all($res) ?: [], 'id'));
@@ -142,28 +118,16 @@ try {
         }
     }
 
-    // ── Clear brute-force throttle state ──────────────────────────────────────
-    // The security spec deliberately trips LOGIN_MAX_ATTEMPTS_PER_USERNAME. Those
-    // rows also count towards the per-IP budget shared by every other spec, so the
-    // throttle test must be able to wipe them again immediately afterwards.
     if ($action === 'login_reset') {
         $res = pg_query($conn, 'DELETE FROM ' . sys_table('login_attempts'));
         $results['login_attempts_cleared'] = $res ? pg_affected_rows($res) : 0;
     }
 
-    // ── Owner-restricted fixture for the IDOR security spec ───────────────────
-    // Creates two records in a configured table and assigns them to two *different*
-    // editors (test / test2) via spw_record_owners, then flips owner_restricted on
-    // for that table so the row-level policy in can_access_record() /
-    // owner_restriction_sql() / filter_visible_ids() is actually in force.
-    // Returns was_restricted so the spec can hand it back to own_reset and leave the
-    // configuration exactly as it found it.
     if ($action === 'own') {
         $schema = config_get('schema');
         $table  = (string) ($_POST['table'] ?? $_GET['table'] ?? '');
 
         if ($table === '') {
-            // Default: first configured table that has a text column to mark.
             foreach ($schema['tables'] ?? [] as $name => $cfg) {
                 if (cypress_first_text_column($cfg) !== null) {
                     $table = (string) $name;
@@ -176,7 +140,6 @@ try {
         $textCol  = is_array($tableCfg) ? cypress_first_text_column($tableCfg) : null;
 
         if ($textCol === null) {
-            // No usable table — the spec skips rather than fails.
             echo json_encode(['status' => 'ok', 'results' => ['skipped' => true]]);
             exit;
         }
@@ -196,7 +159,6 @@ try {
         $pgCol   = pg_ident($textCol);
         $tOwners = sys_table('record_owners');
 
-        // Drop any leftovers from a previous run before re-creating the pair.
         $old = @pg_query($conn, "DELETE FROM $pgTable WHERE $pgCol LIKE 'cypress-idor-%' RETURNING id");
         if ($old) {
             $oldIds = array_map('intval', array_column(pg_fetch_all($old) ?: [], 'id'));
@@ -248,9 +210,6 @@ try {
         ];
     }
 
-    // ── Undo the `own` fixture ────────────────────────────────────────────────
-    // Removes both records plus their ownership rows and, unless was_restricted=1
-    // was passed back, clears the owner_restricted flag this seeder switched on.
     if ($action === 'own_reset') {
         $schema   = config_get('schema');
         $table    = (string) ($_POST['table'] ?? $_GET['table'] ?? '');
@@ -287,10 +246,6 @@ try {
         $results['restored'] = $table;
     }
 
-    // ── Row count for a configured table ──────────────────────────────────────
-    // Read-only. The table name is never interpolated from the request: it must
-    // match a key in the configured schema, and the resolved names go through
-    // pg_ident(). Same dev-only + token gates as every other action above.
     if ($action === 'count') {
         $table  = (string) ($_POST['table'] ?? $_GET['table'] ?? '');
         $schema = config_get('schema');

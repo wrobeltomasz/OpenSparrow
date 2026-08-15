@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// admin/js/audit.js — Audit-log settings editor (renderAuditEditor); reads/writes audit config via api.php.
+
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 import { createPageHeader } from './ui.js';
@@ -43,12 +42,9 @@ export async function renderAuditEditor(ctx) {
         'When enabled, every INSERT, UPDATE, and DELETE on user data tables saves a full JSONB snapshot of the record to spw_record_snapshots, linked to the audit log entry in spw_users_log.'
     ));
 
-    // --- Status cards ---
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid; gap:10px; margin-bottom:24px;';
 
-    // title/msg are built as text nodes, not interpolated into innerHTML: these
-    // helpers take API-derived strings at several call sites.
     const buildCard = (borderColor, titleColor, prefix, title, msg) => {
         const div = document.createElement('div');
         div.style.cssText = `padding:12px 16px; border-left:4px solid ${borderColor}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
@@ -92,7 +88,6 @@ export async function renderAuditEditor(ctx) {
 
     wrap.appendChild(grid);
 
-    // --- Toggle ---
     const toggleSection = document.createElement('div');
     toggleSection.className = 'adm-sec-card';
 
@@ -173,7 +168,6 @@ export async function renderAuditEditor(ctx) {
     toggleBody.appendChild(pillAnchor);
     wrap.appendChild(toggleSection);
 
-    // --- Schema info ---
     const schemaSection = document.createElement('div');
     schemaSection.className = 'adm-sec-card';
     schemaSection.innerHTML = `

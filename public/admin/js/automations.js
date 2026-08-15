@@ -3,14 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/automations.js — Automation rules management UI
-// Two views over the same "automations" config: record automations (update / notify /
-// create record / email) and n8n automations (outgoing webhooks). Which one renders is
-// decided by the item-panel tab bar in app.js, which passes `mode` in. CRUD via api.php
-// (automations_list/save/delete) plus run history (automations_runs). CSRF via apiFetch().
-// Field layout follows the Workflows editor: stacked .form-group fields, and the
-// .auto-* classes in admin/style.css for the repeatable builders.
-
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createPageHeader } from './ui.js';
 import { getGlobalSchema } from './app.js';
@@ -49,7 +41,6 @@ const AUTO_OPS = [
     { value: 'changed_to',   label: 'changed to' },
 ];
 
-// Operators that ignore the value input.
 const AUTO_OPS_NO_VALUE = ['is_empty', 'is_not_empty', 'changed', 'not_changed'];
 
 const AUTO_ACTION_LABELS = {
@@ -60,8 +51,6 @@ const AUTO_ACTION_LABELS = {
     email:         'Send email (via cron)',
 };
 
-// Which action types each tab offers. A rule is filed under the n8n tab as soon as
-// it carries one webhook action, so the two lists never overlap.
 const AUTO_TYPES_BY_MODE = {
     record: ['update', 'notify', 'create_record', 'email'],
     n8n:    ['webhook'],
@@ -80,7 +69,6 @@ const AUTO_WEBHOOK_RETRIES = [
     { value: '2', label: 'Retry twice' },
 ];
 
-// Kept in sync with AUTO_WEBHOOK_RESERVED_HEADERS in includes/automations.php.
 const AUTO_RESERVED_HEADERS = ['content-type', 'content-length', 'user-agent', 'host', 'x-sparrow-signature'];
 
 const AUTO_RUN_CLASS = {
@@ -89,10 +77,6 @@ const AUTO_RUN_CLASS = {
     skipped: 'auto-run-skipped',
 };
 
-// PHP encodes an empty associative array as JSON `[]`, so a map that was saved
-// empty comes back as a JS Array. Assigning string keys to an Array works in
-// memory and even renders, but JSON.stringify() serialises only the indexed
-// elements — the entries silently vanish on save. Normalise before editing.
 function autoAsMap(value) {
     return (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
 }
@@ -108,7 +92,6 @@ function autoDefaultAction(type, tableOptions) {
     return defaults[type] ?? defaults.update;
 }
 
-// A rule belongs to the n8n tab when at least one of its actions calls a webhook.
 function autoIsWebhookRule(rule) {
     const actions = typeof rule.actions === 'string' ? safeParse(rule.actions, []) : (rule.actions ?? []);
     return Array.isArray(actions) && actions.some(a => a && a.type === 'webhook');
@@ -118,7 +101,6 @@ function safeParse(text, fallback) {
     try { return JSON.parse(text); } catch (_) { return fallback; }
 }
 
-// ── Small element builders ────────────────────────────────────────
 function makeSelect(options, current, onChange, className = '') {
     const sel = document.createElement('select');
     if (className) sel.className = className;
@@ -133,7 +115,6 @@ function makeSelect(options, current, onChange, className = '') {
     return sel;
 }
 
-// Stacked label + control, matching the Workflows editor's .form-group look.
 function autoField(label, control, help) {
     const wrap = document.createElement('div');
     wrap.className = 'form-group';
@@ -206,7 +187,6 @@ function autoAddBtn(label, onClick) {
     return btn;
 }
 
-// ── Conditions builder (recursive AND/OR groups) ──────────────────
 function buildConditionsSection(parsed, getColumns) {
     const el = autoSectionEl('Conditions');
     el.appendChild(autoHintText(
@@ -219,7 +199,6 @@ function buildConditionsSection(parsed, getColumns) {
     function renderGroup(group, container, depth, onRemove) {
         container.innerHTML = '';
 
-        // Group header: [Match] [AND|OR] [× Group — only if nested]
         const groupHdr = document.createElement('div');
         groupHdr.className = 'auto-group-header';
 
@@ -250,7 +229,6 @@ function buildConditionsSection(parsed, getColumns) {
             rowsEl.innerHTML = '';
             group.rules.forEach((item, i) => {
                 if (item.type !== undefined && item.rules !== undefined) {
-                    // Sub-group
                     const subWrap = document.createElement('div');
                     subWrap.className = 'auto-group-nested';
                     renderGroup(item, subWrap, depth + 1, () => {
@@ -259,7 +237,6 @@ function buildConditionsSection(parsed, getColumns) {
                     });
                     rowsEl.appendChild(subWrap);
                 } else {
-                    // Leaf condition row
                     const row = document.createElement('div');
                     row.className = 'auto-row';
 
@@ -318,9 +295,6 @@ function buildConditionsSection(parsed, getColumns) {
     };
 }
 
-// ── Actions builder ───────────────────────────────────────────────
-// `mode` ('record' | 'n8n') decides which action types are offered. In n8n mode a
-// webhook action needs no type picker at all — the tab is the type.
 function buildActionsSection(parsed, tableOptions, getColumns, users, mode) {
     const allowed  = AUTO_TYPES_BY_MODE[mode] ?? AUTO_TYPES_BY_MODE.record;
     const defType  = allowed[0];
@@ -351,9 +325,6 @@ function buildActionsSection(parsed, tableOptions, getColumns, users, mode) {
             const actHdr = document.createElement('div');
             actHdr.className = 'auto-action-header';
 
-            // A single-option dropdown is noise: in n8n mode the type is fixed, so
-            // show a plain title instead. Legacy rules holding an action type this
-            // tab does not own still get the picker so the value stays editable.
             if (allowed.length > 1 || !allowed.includes(aType)) {
                 const options = allowed.map(t => ({ value: t, label: AUTO_ACTION_LABELS[t] }));
                 if (!allowed.includes(aType)) {
@@ -399,7 +370,6 @@ function buildActionsSection(parsed, tableOptions, getColumns, users, mode) {
     return { el, refresh: renderActRows };
 }
 
-// Shared "column = value" editor used by the update and create_record actions.
 function renderSetMap(bodyEl, action, getTable, getColumns, valuePlaceholder) {
     action.set = autoAsMap(action.set);
 
@@ -466,7 +436,6 @@ function renderUpdateBody(bodyEl, action, triggerTable, getColumns) {
 }
 
 function renderNotifyBody(bodyEl, action, users) {
-    // Migrate legacy single user_id → user_ids array.
     if (!Array.isArray(action.user_ids)) {
         action.user_ids = action.user_id !== undefined
             ? [action.user_id]
@@ -474,7 +443,6 @@ function renderNotifyBody(bodyEl, action, users) {
         delete action.user_id;
     }
 
-    // All selectable options: special "current user" + real users from DB.
     const allOptions = [
         { id: '{{ current_user.id }}', label: 'Current user ({{ current_user.id }})' },
         ...users.map(u => ({
@@ -535,7 +503,6 @@ function renderNotifyBody(bodyEl, action, users) {
             cb.addEventListener('change', () => {
                 if (cb.checked) {
                     if (!action.user_ids.some(u => String(u) === opt.id)) {
-                        // Keep template var as string; real user IDs as integers.
                         action.user_ids.push(
                             opt.id === '{{ current_user.id }}' ? opt.id : parseInt(opt.id, 10)
                         );
@@ -594,11 +561,6 @@ function renderCreateRecordBody(bodyEl, action, tableOptions, getColumns) {
     );
 }
 
-// Editor for a free-form { key: value } map on an action (payload fields, headers).
-// opts: { label, addLabel, newKey, keyPlaceholder, valuePlaceholder, validateKey,
-//         configuredValues } — configuredValues marks keys whose value is stored
-// server-side and never sent to the browser (header credentials): the input shows a
-// placeholder instead, and staying blank keeps the saved value.
 function autoMapEditor(bodyEl, map, opts) {
     bodyEl.appendChild(autoSubTitle(opts.label));
 
@@ -626,8 +588,7 @@ function autoMapEditor(bodyEl, map, opts) {
             keyInp.addEventListener('change', () => {
                 const newKey = keyInp.value.trim();
                 if (newKey === key) return;
-                // Tell the user why the name bounced back — a silent revert reads
-                // as "nothing happened" and is impossible to debug from the UI.
+
                 let reason = '';
                 if (!newKey) {
                     reason = 'Name cannot be empty.';
@@ -644,7 +605,7 @@ function autoMapEditor(bodyEl, map, opts) {
                 const oldVal = map[key];
                 delete map[key];
                 map[newKey] = oldVal;
-                // The server carries stored values over by name, so a rename loses it.
+
                 if (opts.configuredValues) delete opts.configuredValues[key];
                 renderRows();
             });
@@ -687,7 +648,6 @@ function renderWebhookBody(bodyEl, action) {
     action.headers_configured = autoAsMap(action.headers_configured);
     if (!action.method) action.method = 'POST';
 
-    // Method + URL
     const reqRow = document.createElement('div');
     reqRow.className = 'auto-form-row';
     const methodField = autoSelectField('Method', AUTO_WEBHOOK_METHODS, action.method, (v) => {
@@ -706,8 +666,6 @@ function renderWebhookBody(bodyEl, action) {
     reqRow.appendChild(url.field);
     bodyEl.appendChild(reqRow);
 
-    // The stored secret is never sent back to the browser — the server only reports
-    // whether one exists. Blank keeps it; "Clear" removes it on save.
     const secret = autoTextField(
         'Secret',
         action.secret_configured
@@ -728,7 +686,6 @@ function renderWebhookBody(bodyEl, action) {
     }
     bodyEl.appendChild(secret.field);
 
-    // Each retry attempt blocks the saving user, hence the low ceiling.
     bodyEl.appendChild(autoSelectField(
         'On failure',
         AUTO_WEBHOOK_RETRIES,
@@ -767,7 +724,6 @@ function renderWebhookBody(bodyEl, action) {
 }
 
 function renderEmailBody(bodyEl, action) {
-    // Normalize recipients to an array (backend accepts array or comma string).
     if (!Array.isArray(action.recipients)) {
         action.recipients = typeof action.recipients === 'string' && action.recipients !== ''
             ? action.recipients.split(',').map(s => s.trim()).filter(Boolean)
@@ -801,10 +757,6 @@ function renderEmailBody(bodyEl, action) {
     ));
 }
 
-// ── Main page ─────────────────────────────────────────────────────
-// `mode` ('record' | 'n8n') comes from the item-panel tab bar in app.js — that bar
-// owns the split, so this page renders exactly one of the two lists and never builds
-// a tab strip of its own.
 export async function renderAutomationsPage(ctx, mode = 'record') {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '';
@@ -822,7 +774,6 @@ export async function renderAutomationsPage(ctx, mode = 'record') {
               + 'record or queue an email. Configure conditions and actions, then review run history.'
     ));
 
-    // ── Shared data ──────────────────────────────────────────────
     let schemaObj = {};
     try {
         schemaObj = (await getGlobalSchema())?.tables ?? {};
@@ -854,8 +805,6 @@ export async function renderAutomationsPage(ctx, mode = 'record') {
     await loadList();
 }
 
-// The list of rules + inline editor + run-history panel, scoped to `mode`.
-// Returns the list loader so the caller can do the initial fetch.
 function buildAutomationsTab(panel, mode, shared) {
     const { schemaObj, tableOptions, getColumns, users } = shared;
     const isN8n = mode === 'n8n';
@@ -871,7 +820,6 @@ function buildAutomationsTab(panel, mode, shared) {
     histWrap.style.display = 'none';
     panel.appendChild(histWrap);
 
-    // ── List ────────────────────────────────────────────────────
     async function loadList() {
         listWrap.innerHTML = '';
 
@@ -972,7 +920,6 @@ function buildAutomationsTab(panel, mode, shared) {
             hdr.appendChild(btnDel);
             card.appendChild(hdr);
 
-            // Body (lazy render)
             const body = document.createElement('div');
             body.className = 'block-body';
             card.appendChild(body);
@@ -1005,7 +952,6 @@ function buildAutomationsTab(panel, mode, shared) {
         listWrap.appendChild(cardList);
     }
 
-    // ── Run History panel ────────────────────────────────────────
     async function showRunHistory(rule) {
         listWrap.style.display = 'none';
         formWrap.style.display = 'none';
@@ -1105,9 +1051,6 @@ function buildAutomationsTab(panel, mode, shared) {
         }
     }
 
-    // ── Quick save helpers (toggle enable, duplicate) ────────────
-    // Full rule entry for automations_save built from a list row; overrides
-    // let callers flip enabled or clear the id to create a copy.
     function rulePayload(rule, overrides = {}) {
         return {
             id:            rule.id,
@@ -1138,7 +1081,6 @@ function buildAutomationsTab(panel, mode, shared) {
         }
     }
 
-    // ── Delete ───────────────────────────────────────────────────
     async function deleteRule(id, btn) {
         if (!confirm('Delete this automation?')) return;
         try {
@@ -1158,7 +1100,6 @@ function buildAutomationsTab(panel, mode, shared) {
         }
     }
 
-    // ── Form content builder ─────────────────────────────────────
     function buildFormContent(containerEl, rule, onSaved, onCancel) {
         const currentId = rule ? rule.id : null;
 
@@ -1179,15 +1120,13 @@ function buildAutomationsTab(panel, mode, shared) {
             trigger_table: tableOptions[0]?.value ?? '',
             trigger_event: 'create',
             conditions:    { type: 'AND', rules: [] },
-            // A new n8n rule starts with the webhook call already in place — that is
-            // the whole point of the tab.
+
             actions:       isN8n ? [autoDefaultAction('webhook', tableOptions)] : [],
         };
 
         const form = document.createElement('div');
         form.className = 'auto-form';
 
-        // ── General ──────────────────────────────────────────────
         const general = autoSectionEl('General');
 
         general.appendChild(autoTextField(
@@ -1226,15 +1165,12 @@ function buildAutomationsTab(panel, mode, shared) {
 
         form.appendChild(general);
 
-        // ── Conditions ───────────────────────────────────────────
         condSectionRef = buildConditionsSection(parsed, getColumns);
         form.appendChild(condSectionRef.el);
 
-        // ── Actions ──────────────────────────────────────────────
         actSectionRef = buildActionsSection(parsed, tableOptions, getColumns, users, mode);
         form.appendChild(actSectionRef.el);
 
-        // ── Buttons ──────────────────────────────────────────────
         const btnRow = document.createElement('div');
         btnRow.className = 'auto-row-actions';
 
@@ -1279,7 +1215,6 @@ function buildAutomationsTab(panel, mode, shared) {
         containerEl.appendChild(form);
     }
 
-    // ── Form panel (New Automation) ──────────────────────────────
     function openForm(rule = null) {
         formWrap.style.display = '';
         formWrap.innerHTML     = '';

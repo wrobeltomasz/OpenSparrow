@@ -7,23 +7,11 @@
 
 declare(strict_types=1);
 
-// includes/admin/procedures.php — admin api.php module: PostgreSQL stored-procedure
-// introspection (list_procedures) used by the Workflows editor to let an admin pick
-// a procedure and map its IN parameters to workflow form fields.
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
 if ($action === 'list_procedures') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        // Procedures only (not functions) in user schemas, with their IN parameters
-        // in declaration order. Joined on specific_name so overloaded procedures stay
-        // separate rows; the client labels each entry with its full argument list.
         $sql = "SELECT r.routine_schema,
                        r.routine_name,
                        r.specific_name,
@@ -46,7 +34,6 @@ if ($action === 'list_procedures') {
             admin_db_fail($conn, 'list_procedures');
         }
 
-        // Fold the flat parameter rows into one entry per procedure signature.
         $bySpecific = [];
         while ($row = pg_fetch_assoc($res)) {
             $key = (string)$row['specific_name'];
@@ -57,7 +44,7 @@ if ($action === 'list_procedures') {
                     'params' => [],
                 ];
             }
-            // LEFT JOIN yields a single NULL-parameter row for zero-argument procedures.
+
             if ($row['parameter_name'] === null && $row['ordinal_position'] === null) {
                 continue;
             }

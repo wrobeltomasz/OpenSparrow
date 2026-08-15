@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/index.js — Data-grid core orchestrator (real logic behind the grid.js barrel)
-// loadTable/renderGrid: fetches table data + foreign keys (api.js), renders thead/tbody, and wires comment counts/previews, subtable counts, many-to-many columns and virtual (computed) columns.
-
 import { debugLog } from '../debug.js';
 import { showToast } from '../toast.js';
 import { I18n } from '../i18n.js';
@@ -61,7 +58,6 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
             );
         }
 
-        // Pre-compute virtual column values into each row so sort/filter work transparently
         const tableCols = schema.tables[table]?.columns || {};
         for (const [colName, colCfg] of Object.entries(tableCols)) {
             if (colCfg.type !== 'virtual') continue;
@@ -70,9 +66,6 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
             });
         }
 
-        // Build displayedColumns from schema key order — preserves user-defined position
-        // for both real and virtual columns. Real columns must also be present in the
-        // API response; virtual columns are always included (they were just pre-computed).
         const fetchedColSet = new Set(data.columns || []);
         state.displayedColumns = Object.keys(tableCols).filter(c => {
             if (c === 'id') return false;
@@ -90,7 +83,6 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         state.addRowBtn = addRowBtn;
         state.containerEl = document.getElementById('grid');
 
-        // Keep legacy window.AppState in sync for grid_actions.js
         window.AppState = window.AppState || {};
         window.AppState.currentTable = table;
 
@@ -129,8 +121,6 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
     }
 }
 
-// Injected by app.js after all modules load to break circular dependency
-// pagination.js imports renderGrid from grid.js, so grid/index.js must not import pagination.js
 let _getPageRows = () => state.filteredData.slice(0, 10);
 let _setupPagination = () => {};
 

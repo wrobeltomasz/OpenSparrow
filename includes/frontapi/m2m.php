@@ -7,16 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/frontapi/m2m.php — frontend API route module: the two batch label lookups
-// the data grid makes for its many-to-many and image columns
-// (GET ?api=m2m_rows, GET ?api=image_rows).
-// Dispatched by public/api.php AFTER the auth gate, the admin/viewer role gates and
-// the schema load. Both routes take request-supplied row ids, so both filter those
-// ids by what the caller may actually see before disclosing anything about them.
-
-/**
- * Related labels for one m2m column, batched across the visible grid rows.
- */
 function frontapi_m2m_rows(FrontApiContext $ctx): never
 {
     $schema = $ctx->schema;
@@ -56,12 +46,6 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
     $otSchema = $schema['tables'][$otherTable]['schema'] ?? 'public';
     $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($ids)));
 
-    // The row ids come straight from the client, so an owner-restricted parent table
-    // needs the same filter the grid now applies — otherwise a user can enumerate ids
-    // and read the related labels of records they cannot see. The restriction is keyed
-    // on the *parent* record: in the junction table that is j.<self_fk>.
-    // Note this deliberately does not filter on $otherTable's own ownership; dropping
-    // links out of a record you do own would make the relation look broken.
     $qParams  = $ids;
     $ownerSql = '';
     if (!empty($schema['tables'][$table]['owner_restricted'])) {
@@ -103,9 +87,6 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
     exit(json_encode(['data' => $data ?: (object)[]]));
 }
 
-/**
- * Attached images for the grid's image column, batched across the visible rows.
- */
 function frontapi_image_rows(FrontApiContext $ctx): never
 {
     require_once __DIR__ . '/../images.php';
@@ -122,9 +103,6 @@ function frontapi_image_rows(FrontApiContext $ctx): never
         exit(json_encode(['data' => (object)[]]));
     }
 
-    // The ids arrive from the client, so they are not necessarily rows api=list would
-    // have returned — drop the ones this user may not see before disclosing image
-    // uuids and names for them.
     $ids = filter_visible_ids($ctx->conn, $schema['tables'][$table], $table, $ids, $ctx->userId);
     if (empty($ids)) {
         exit(json_encode(['data' => (object)[]]));

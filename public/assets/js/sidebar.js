@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// sidebar.js — Mobile sidebar/search toggle. Injects an overlay and shows/hides the #menu sidebar below 768px. Runs on DOMContentLoaded.
 
 document.addEventListener('DOMContentLoaded', () => {
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -14,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const isMobile = () => window.innerWidth <= 768;
 
-    /* Overlay element injected once; toggled via mob-visible class */
     const overlay = document.createElement('div');
     overlay.id = 'mobOverlay';
     overlay.className = 'mob-overlay';
@@ -43,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
         else sidebar.classList.remove('collapsed');
     }
 
-    /* Sidebar hamburger: off-canvas on mobile, collapse on desktop */
     sidebarToggle.addEventListener('click', () => {
         if (isMobile()) {
             sidebar.classList.contains('mob-open') ? closeSidebar() : openSidebar();
@@ -53,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    /* Search drawer toggle (button only visible on mobile) */
     if (searchToggle) {
         searchToggle.addEventListener('click', () => {
             if (headerEl) headerEl.classList.toggle('mob-search-open');
@@ -61,20 +56,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* Tap overlay to close sidebar */
     overlay.addEventListener('click', closeSidebar);
 
-    /* Close sidebar when a nav link is clicked (mobile navigation) */
     sidebar.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
             if (isMobile()) closeSidebar();
         });
     });
 
-    /* Desktop: restore saved collapsed state */
     if (!isMobile()) restoreDesktopState();
 
-    /* Resize: clean up mobile state when switching back to desktop */
     window.addEventListener('resize', () => {
         if (!isMobile()) {
             closeSidebar();
@@ -82,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    /* Tooltip for collapsed nav icons — body-level div avoids nav overflow clipping */
     const navTip = document.createElement('div');
     navTip.id = 'nav-tip';
     navTip.setAttribute('aria-hidden', 'true');
@@ -117,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebar.addEventListener('mouseleave', hideNavTip);
     sidebar.addEventListener('click', hideNavTip);
 
-    /* Keyboard: mirror hover behavior so collapsed nav labels are reachable via Tab */
     sidebar.addEventListener('focusin', (e) => {
         const link = e.target.closest('.custom-nav-link');
         if (link === tipTarget) return;

@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/rag.js — RAG knowledge base management page
-// Upload/list/delete/rechunk documents, edit settings, test query and Ollama check via api.php (rag_* actions). CSRF via apiFetch().
-
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 import { showStatusPill } from './app.js';
@@ -88,8 +85,6 @@ function ragParseTags(pgArray) {
     return result;
 }
 
-// ── Tab bar ──────────────────────────────────────────────────────────────────
-
 function ragBuildTabs(wrap, tabs) {
     const bar = document.createElement('div');
     bar.className = 'item-panel-items';
@@ -137,10 +132,7 @@ function ragBuildTabs(wrap, tabs) {
     return { panels, activate };
 }
 
-// ── Documents tab ────────────────────────────────────────────────────────────
-
 function ragBuildDocumentsTab(panel) {
-    // Upload card
     const { card: uploadCard, body: uploadBody } = ragCard(
         'Upload Document',
         'Only .txt files accepted. Tags comma-separated, used to filter queries.'
@@ -182,7 +174,6 @@ function ragBuildDocumentsTab(panel) {
     const { group: tagsGroup, inp: tagsInp } = ragField('Tags (comma-separated)', 'rag-tags-input', 'e.g. legal, faq, policy');
     tagsGroup.style.flex = '1';
 
-    // Language select (optional — stored as lang:xx tag)
     const langGroup = document.createElement('div');
     const langUpLbl = document.createElement('label');
     langUpLbl.htmlFor    = 'rag-lang-select';
@@ -198,7 +189,6 @@ function ragBuildDocumentsTab(panel) {
     langGroup.appendChild(langUpLbl);
     langGroup.appendChild(langUpSelect);
 
-    // Populate language dropdown from settings
     (async () => {
         try {
             const res  = await apiFetch('api.php?action=get_language_setting');
@@ -224,7 +214,6 @@ function ragBuildDocumentsTab(panel) {
     uploadForm.appendChild(uploadBtn);
     uploadBody.appendChild(uploadForm);
 
-    // Preparation guidelines (collapsible)
     const guideWrap = document.createElement('div');
     guideWrap.style.cssText = 'margin-top:16px;border-top:1px solid var(--border);padding-top:12px;';
 
@@ -304,7 +293,6 @@ function ragBuildDocumentsTab(panel) {
     guideWrap.appendChild(guideBody);
     uploadBody.appendChild(guideWrap);
 
-    // File list card
     const { card: listCard, body: listBody } = ragCard('Uploaded Documents', '');
     panel.appendChild(listCard);
 
@@ -355,7 +343,6 @@ function ragBuildDocumentsTab(panel) {
         }
     });
 
-    // Stats bar above table
     const statsBar = document.createElement('div');
     statsBar.style.cssText = 'margin-bottom:12px;';
     listBody.insertBefore(statsBar, tableWrap);
@@ -534,8 +521,6 @@ function ragBuildDocumentsTab(panel) {
     loadFiles();
 }
 
-// ── Settings tab ─────────────────────────────────────────────────────────────
-
 function ragFmtModelSize(bytes) {
     bytes = parseInt(bytes, 10) || 0;
     if (bytes === 0) return '';
@@ -544,8 +529,6 @@ function ragFmtModelSize(bytes) {
 }
 
 function ragBuildSettingsTab(panel) {
-
-    // ── Frontend Chat card ───────────────────────────────────────────────────
     const { card: chatCard, body: chatBody } = ragCard(
         'Frontend Chat',
         'Controls whether the AI chat interface is visible to users on the Knowledge Base page.'
@@ -579,14 +562,12 @@ function ragBuildSettingsTab(panel) {
     chatRow.appendChild(chatTextWrap);
     chatBody.appendChild(chatRow);
 
-    // ── Connection card ──────────────────────────────────────────────────────
     const { card: connCard, body: connBody } = ragCard(
         'Ollama Connection',
         'Configure the local Ollama instance. Run "ollama serve" to start it.'
     );
     panel.appendChild(connCard);
 
-    // URL row with inline "Check & load models" button
     const urlLbl = document.createElement('label');
     urlLbl.htmlFor = 'rag-ollama-url';
     urlLbl.textContent = 'Ollama URL';
@@ -612,12 +593,10 @@ function ragBuildSettingsTab(panel) {
     connBody.appendChild(urlLbl);
     connBody.appendChild(urlRow);
 
-    // Status badge line
     const statusLine = document.createElement('div');
     statusLine.style.cssText = 'display:none;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;';
     connBody.appendChild(statusLine);
 
-    // Model row — select (populated after check) + manual fallback input
     const modelLbl = document.createElement('label');
     modelLbl.htmlFor = 'rag-model-select';
     modelLbl.textContent = 'Model';
@@ -661,13 +640,11 @@ function ragBuildSettingsTab(panel) {
     connBody.appendChild(modelLbl);
     connBody.appendChild(modelRow);
 
-    // Models detail table (hidden until check runs)
     const modelsTable = document.createElement('div');
     modelsTable.style.display = 'none';
     modelsTable.style.marginBottom = '16px';
     connBody.appendChild(modelsTable);
 
-    // SSL verify toggle
     const sslRow = document.createElement('div');
     sslRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:10px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);';
 
@@ -695,7 +672,6 @@ function ragBuildSettingsTab(panel) {
     sslRow.appendChild(sslTextWrap);
     connBody.appendChild(sslRow);
 
-    // Ollama Cloud API key (write-only — never populated from stored data)
     const apiKeyLbl = document.createElement('label');
     apiKeyLbl.htmlFor = 'rag-ollama-api-key';
     apiKeyLbl.textContent = 'Ollama Cloud API key';
@@ -741,7 +717,6 @@ function ragBuildSettingsTab(panel) {
         }
     });
 
-        // Other settings grid
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
         const lbl = document.createElement('label');
@@ -815,10 +790,7 @@ function ragBuildSettingsTab(panel) {
         + 'Popular: <code>llama3</code>, <code>mistral</code>, <code>gemma3</code>, <code>phi3</code>, <code>qwen2.5</code>';
     connBody.appendChild(pullHint);
 
-    // ── Helper: populate model select ────────────────────────────────────────
-
     function populateModelSelect(models, currentModel) {
-        // Clear all but placeholder
         while (modelSelect.options.length > 1) modelSelect.remove(1);
 
         models.forEach(m => {
@@ -828,12 +800,11 @@ function ragBuildSettingsTab(panel) {
             modelSelect.appendChild(opt);
         });
 
-        // Select current model if present
         if (currentModel) {
             for (const opt of modelSelect.options) {
                 if (opt.value === currentModel) { opt.selected = true; break; }
             }
-            // If not found, add it
+
             if (!modelSelect.value) {
                 const opt = document.createElement('option');
                 opt.value = currentModel;
@@ -843,8 +814,6 @@ function ragBuildSettingsTab(panel) {
             }
         }
     }
-
-    // ── Helper: render models table ──────────────────────────────────────────
 
     function renderModelsTable(models, version) {
         modelsTable.innerHTML = '';
@@ -892,7 +861,6 @@ function ragBuildSettingsTab(panel) {
             td3.style.cssText = tdStyle + '';
             td3.textContent   = m.modified ? new Date(m.modified).toLocaleDateString() : '—';
 
-            // Click to select
             row.style.cursor = 'pointer';
             row.title        = 'Click to select this model';
             row.addEventListener('mouseover', () => { row.style.background = 'var(--accent-light)'; });
@@ -910,8 +878,6 @@ function ragBuildSettingsTab(panel) {
         tbl.appendChild(tbody);
         modelsTable.appendChild(tbl);
     }
-
-    // ── Check connection handler ─────────────────────────────────────────────
 
     async function doCheck() {
         const url = urlInp.value.trim();
@@ -956,8 +922,6 @@ function ragBuildSettingsTab(panel) {
 
     checkBtn.addEventListener('click', doCheck);
 
-    // ── Load saved settings ──────────────────────────────────────────────────
-
     (async () => {
         try {
             const res  = await apiFetch('api.php?action=rag_settings');
@@ -976,7 +940,6 @@ function ragBuildSettingsTab(panel) {
                 if (s.chat_enabled !== undefined) chatChk.checked = !!s.chat_enabled;
                 renderApiKeyStatus(!!s.ollama_api_key_configured);
 
-                // Pre-populate select with saved model as single option
                 if (s.ollama_model) {
                     const opt = document.createElement('option');
                     opt.value = s.ollama_model;
@@ -987,8 +950,6 @@ function ragBuildSettingsTab(panel) {
             }
         } catch (e) { console.warn('[rag] settings unavailable, using defaults', e); }
     })();
-
-    // ── Save ─────────────────────────────────────────────────────────────────
 
     saveBtn.addEventListener('click', async () => {
         const modelValue = manualMode
@@ -1039,14 +1000,6 @@ function ragBuildSettingsTab(panel) {
 
     ragBuildAggregateViewsCard(panel);
 }
-
-// ── Aggregate views card ────────────────────────────────────────────────────
-// Lets an admin attach a pre-written SQL view (e.g. v_companies_aggr) to a table so the
-// RAG assistant can answer count/sum/average questions with exact numbers computed over
-// the FULL matching set, not just the visible grid page. The model never sees or writes
-// SQL — it only reads the already-computed result of this admin-vetted view. Only tables
-// without row-level ownership restriction may be paired with a view (a plain view has no
-// session/user_id to filter by), enforced server-side in rag_aggregate_view_save.
 
 function ragBuildAggregateViewsCard(panel) {
     const { card, body } = ragCard(
@@ -1152,11 +1105,9 @@ function ragBuildAggregateViewsCard(panel) {
         viewList.innerHTML = '';
         views.forEach(v => {
             const opt = document.createElement('option');
-            // Always fully qualified so a view is unambiguous regardless of the
-            // selected table's own schema (a view may live in a different schema).
+
             opt.value = v.schema + '.' + v.name;
-            // Materialized views serve the rows stored at their last refresh, so flag
-            // them in the picker — the datalist renders the label beside the value.
+
             if (v.materialized) opt.label = 'materialized';
             viewList.appendChild(opt);
         });
@@ -1229,8 +1180,6 @@ function ragBuildAggregateViewsCard(panel) {
     loadAndRender();
 }
 
-// ── Test tab ─────────────────────────────────────────────────────────────────
-
 function ragBuildTestTab(panel) {
     const { card: testCard, body: testBody } = ragCard(
         'Test Query',
@@ -1238,7 +1187,6 @@ function ragBuildTestTab(panel) {
     );
     panel.appendChild(testCard);
 
-    // Tag filter row
     const tagRow = document.createElement('div');
     tagRow.style.cssText = 'margin-bottom:14px;';
     const tagLbl = document.createElement('div');
@@ -1251,7 +1199,6 @@ function ragBuildTestTab(panel) {
     tagRow.appendChild(tagChips);
     testBody.appendChild(tagRow);
 
-    // Load available tags
     (async () => {
         try {
             const res  = await apiFetch('../api/rag.php?action=tags');
@@ -1278,7 +1225,6 @@ function ragBuildTestTab(panel) {
         }
     })();
 
-    // Language hint row
     const langRow = document.createElement('div');
     langRow.style.cssText = 'margin-bottom:14px;';
     const langLbl = document.createElement('div');
@@ -1294,7 +1240,6 @@ function ragBuildTestTab(panel) {
     langRow.appendChild(langSelect);
     testBody.appendChild(langRow);
 
-    // Populate language dropdown from settings
     (async () => {
         try {
             const res  = await apiFetch('api.php?action=get_language_setting');
@@ -1311,7 +1256,6 @@ function ragBuildTestTab(panel) {
         } catch (e) { console.warn('[rag] language hint unavailable', e); }
     })();
 
-    // Query input
     const queryRow = document.createElement('div');
     queryRow.style.cssText = 'display:flex;gap:10px;margin-bottom:16px;';
     const queryInp = document.createElement('input');
@@ -1335,7 +1279,6 @@ function ragBuildTestTab(panel) {
 
     let testAbortCtrl = null;
 
-    // Result area
     const resultWrap = document.createElement('div');
     resultWrap.style.display = 'none';
     testBody.appendChild(resultWrap);
@@ -1359,7 +1302,6 @@ function ragBuildTestTab(panel) {
     resultWrap.appendChild(sourcesLabel);
     resultWrap.appendChild(sourcesRow);
 
-    // Prompt preview card — defined before runQuery so the reference is valid at call time
     const { card: promptCard, body: promptBody } = ragCard(
         'Prompt Preview',
         'Shows the exact prompt sent to Ollama for the last query — useful for debugging context quality.'
@@ -1448,8 +1390,6 @@ function ragBuildTestTab(panel) {
     runBtn.addEventListener('click', runQuery);
     queryInp.addEventListener('keydown', e => { if (e.key === 'Enter') runQuery(); });
 }
-
-// ── Statistics tab ───────────────────────────────────────────────────────────
 
 function ragBuildStatsTab(panel) {
     const { card: summaryCard, body: summaryBody } = ragCard(
@@ -1695,8 +1635,6 @@ function ragBuildStatsTab(panel) {
     refreshBtn.addEventListener('click', load);
     load();
 }
-
-// ── Main export ───────────────────────────────────────────────────────────────
 
 export async function renderRagPage(ctx) {
     const { workspaceEl } = ctx;

@@ -3,25 +3,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/api/db_counts.cy.js
-// ============================================================================
-// Database Row-Count Tests (CRM demo data)
-// ----------------------------------------------------------------------------
-// These specs assert against SELECT COUNT(*) taken straight from PostgreSQL
-// (cy.dbCount → cypress_seed.php?action=count), not against what the grid
-// happens to render. Pattern: baseline count → mutate through the UI →
-// count again → compare.
-// Requires the CRM demo data to be installed (Admin → Demo → CRM).
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 const TABLE = 'companies';
 
-/**
- * Wait for the create/edit form, and if it never shows up, fail with what the
- * page actually contained (server-side error alert, a redirect target, …)
- * instead of a bare "never found form.editor-form".
- */
 function expectCreateForm({ timeout = CypressHelpers.TIMEOUTS.long } = {}) {
   return cy.document({ timeout }).then(doc => {
     const deadline = Date.now() + timeout;
@@ -64,7 +48,7 @@ describe('OpenSparrow – DB row counts: companies', () => {
 
   it('creating a fully filled record increases the row count by exactly 1', () => {
     const stamp = Date.now();
-    // 'cypress'-prefixed name → the seed cleanup action can reclaim the row later
+
     const company = {
       name:     `cypress-co-${stamp}`,
       industry: 'Technology',
@@ -84,8 +68,7 @@ describe('OpenSparrow – DB row counts: companies', () => {
       });
 
       cy.get('button[type="submit"].btn-save').click();
-      // A successful save leaves create.php — it lands on edit.php?id=<new id>
-      // (Save & Continue) or on the grid, depending on the button used.
+
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('not.include', 'create.php');
 
       cy.dbCount(TABLE).then(after => {
@@ -114,7 +97,6 @@ describe('OpenSparrow – DB row counts: companies', () => {
     cy.get('button[type="submit"].btn-save').click();
     cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('not.include', 'create.php');
 
-    // Reopen the saved record and read every value back out of the form
     cy.url().then(url => {
       const id = new URL(url).searchParams.get('id');
       expect(id, 'new record id in the redirect URL').to.not.be.null;
@@ -170,17 +152,9 @@ describe('OpenSparrow – DB row counts: companies', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: deals — every field type on one form
-// ----------------------------------------------------------------------------
-// companies is all-text; deals exercises the remaining renderers: two FK
-// <select>s (company_id, contact_id), an enum <select> (stage), a date input
-// (expected_close) and a numeric field (value, rendered as a text input).
-// ============================================================================
-
 describe('OpenSparrow – DB row counts: deals', () => {
   const DEALS    = 'deals';
-  const JUNCTION = 'deal_contacts';   // m2m table behind "Other Stakeholders"
+  const JUNCTION = 'deal_contacts';
 
   before(() => {
     cy.seedDatabase();
@@ -190,12 +164,6 @@ describe('OpenSparrow – DB row counts: deals', () => {
     loginAsTestUser();
   });
 
-  /**
-   * Fill every editable field on the deals form.
-   * FK selects take the first real option (index 0 is the "-- Select --"
-   * placeholder), so the test does not depend on specific demo row ids.
-   * Yields the values actually submitted, for read-back assertions.
-   */
   function fillDealForm(title) {
     const deal = {
       title,
@@ -218,8 +186,6 @@ describe('OpenSparrow – DB row counts: deals', () => {
     cy.get('select[name="stage"]').select(deal.stage);
     cy.get('input[name="expected_close"]').clear().type(deal.expected_close);
 
-    // "Other Stakeholders" — the m2m picker (deals ↔ contacts via deal_contacts).
-    // Checkboxes live inside a collapsed <details>, hence force:true.
     cy.get('.m2m-picker input[type="checkbox"]').then($boxes => {
       expect($boxes.length, 'stakeholder options available').to.be.at.least(2);
       deal.stakeholders = [$boxes.eq(0).val(), $boxes.eq(1).val()];
@@ -249,7 +215,6 @@ describe('OpenSparrow – DB row counts: deals', () => {
           expect(after, 'count after create').to.eq(beforeDeals + 1);
         });
 
-        // The two ticked stakeholders must land in the junction table
         cy.dbCount(JUNCTION).then(after => {
           expect(after, 'deal_contacts rows after create').to.eq(beforeLinks + 2);
         });
@@ -277,13 +242,10 @@ describe('OpenSparrow – DB row counts: deals', () => {
         cy.get('select[name="stage"]').should('have.value', deal.stage);
         cy.get('input[name="expected_close"]').should('have.value', deal.expected_close);
 
-        // NUMERIC(12,2) round-trips through the DB, so compare numerically
-        // rather than by string ('1500.00' may come back as '1500.0' etc.)
         cy.get('input[name="value"]').invoke('val').then(val => {
           expect(parseFloat(val), 'deal value').to.eq(parseFloat(deal.value));
         });
 
-        // Exactly the two picked stakeholders come back ticked — no more, no less
         deal.stakeholders.forEach(v => {
           cy.get(`.m2m-picker input[type="checkbox"][value="${v}"]`).should('be.checked');
         });
@@ -320,13 +282,6 @@ describe('OpenSparrow – DB row counts: deals', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: contacts — every field of the form
-// ----------------------------------------------------------------------------
-// One FK <select> (company_id → companies) plus five text fields.
-// created_at is show_in_edit => false and never appears on the form.
-// ============================================================================
-
 describe('OpenSparrow – DB row counts: contacts', () => {
   const CONTACTS = 'contacts';
 
@@ -338,12 +293,6 @@ describe('OpenSparrow – DB row counts: contacts', () => {
     loginAsTestUser();
   });
 
-  /**
-   * Fill every editable field on the contacts form.
-   * The company FK takes the first real option (index 0 is "-- Select --"),
-   * so the test does not depend on specific demo row ids.
-   * Yields the values actually submitted, for read-back assertions.
-   */
   function fillContactForm(lastName) {
     const contact = {
       first_name: 'Cypress',

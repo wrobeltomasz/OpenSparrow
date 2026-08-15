@@ -3,13 +3,10 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/dashboard.js — Dashboard layout + widget editor
-// Imports the shared widget modules (self-register into WidgetRegistry) to live-preview widgets; edits the "dashboard" config widgets, queries and conditions.
 import { createTextInput, createSelectInput, createColorInput, createCheckbox, renderGlobalSettings } from './ui.js';
 import { WidgetRegistry } from '../../assets/js/dashboard/registry.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
-// Import widgets so they self-register into WidgetRegistry
 import '../../assets/js/dashboard/widgets/stat-card.js';
 import '../../assets/js/dashboard/widgets/bar-chart.js';
 import '../../assets/js/dashboard/widgets/vertical-bar-chart.js';
@@ -49,7 +46,6 @@ function renderConditionsBuilder(q, colOptions) {
             const row = document.createElement('div');
             row.className = 'dash-cond-row';
 
-            // AND/OR logic selector (hidden for first condition)
             if (idx > 0) {
                 const logicSel = document.createElement('select');
                 logicSel.className = 'adm-input w-70';
@@ -68,7 +64,6 @@ function renderConditionsBuilder(q, colOptions) {
                 row.appendChild(spacer);
             }
 
-            // Column select
             const colSel = document.createElement('select');
             colSel.className = 'adm-input flex-1';
             colOptions.forEach(opt => {
@@ -80,7 +75,6 @@ function renderConditionsBuilder(q, colOptions) {
             colSel.addEventListener('change', e => { cond.col = e.target.value; rebuildList(); });
             row.appendChild(colSel);
 
-            // Operator select
             const opSel = document.createElement('select');
             opSel.className = 'adm-input flex-1';
             CONDITION_OPS.forEach(opt => {
@@ -92,7 +86,6 @@ function renderConditionsBuilder(q, colOptions) {
             opSel.addEventListener('change', e => { cond.op = e.target.value; rebuildList(); });
             row.appendChild(opSel);
 
-            // Value input (hidden for IS NULL / IS NOT NULL)
             const noVal = ['IS NULL', 'IS NOT NULL'].includes(cond.op || '=');
             if (!noVal) {
                 const valIn = document.createElement('input');
@@ -104,7 +97,6 @@ function renderConditionsBuilder(q, colOptions) {
                 row.appendChild(valIn);
             }
 
-            // Remove button
             const rmBtn = document.createElement('button');
             rmBtn.type = 'button';
             rmBtn.textContent = '✕';
@@ -136,10 +128,6 @@ function renderConditionsBuilder(q, colOptions) {
     return wrap;
 }
 
-// Runs the widget's current (unsaved) query/table/conditions against real data via
-// includes/admin/dashboard.php (action=dashboard_calculate), so the operator can verify
-// the WHERE conditions and aggregation before saving — the preview panel only ever shows
-// mock data.
 function renderCalculateButton(itemData) {
     const wrap = document.createElement('div');
     wrap.className = 'form-group';
@@ -197,8 +185,6 @@ function renderCalculateButton(itemData) {
     wrap.append(btn, out);
     return wrap;
 }
-
-// ── Widget Preview ───────────────────────────────────────────────────────────
 
 function getMockData(type, displayColumns) {
     if (type === 'stat_card') return 1337;
@@ -267,8 +253,6 @@ function renderPreviewInto(container, widget) {
     container.appendChild(widgetEl);
 }
 
-// ── Exported editors ─────────────────────────────────────────────────────────
-
 export const WIDGET_TYPES = [
     { value: 'stat_card',         label: 'Stat Card' },
     { value: 'bar_chart',         label: 'Bar Chart (Horizontal)' },
@@ -295,18 +279,15 @@ export function renderDashboardLayout(ctx) {
 }
 
 export function renderDashboardEditor(key, itemData, isArray, ctx) {
-    // Shadow workspaceEl: build a split layout — form on left, preview on right
     const { workspaceEl: containerEl, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar } = ctx;
 
     const split = document.createElement('div');
     split.className = 'dash-editor-split';
     containerEl.appendChild(split);
 
-    // Form panel — all inputs go here (shadows outer workspaceEl)
     const workspaceEl = document.createElement('div');
     workspaceEl.className = 'dash-editor-form';
 
-    // Preview panel — sticky alongside form
     const previewWrap = document.createElement('div');
     previewWrap.className = 'dash-editor-preview';
 
@@ -316,11 +297,8 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
         renderPreviewInto(previewWrap, itemData);
     }
 
-    // Refresh preview on any input/select change inside the form panel
     workspaceEl.addEventListener('input',  refreshPreview);
     workspaceEl.addEventListener('change', refreshPreview);
-
-    // ── Form fields ───────────────────────────────────────────────────────────
 
     workspaceEl.appendChild(createTextInput('id', 'Widget ID (Unique)', itemData.id, v => itemData.id = v));
 
@@ -372,7 +350,6 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
     queryBlock.appendChild(renderCalculateButton(itemData));
     workspaceEl.appendChild(queryBlock);
 
-    // Widget dimensions
     const sizeBlock = document.createElement('div');
     sizeBlock.className = 'dash-size-block';
     sizeBlock.appendChild(createSelectInput('width', 'Width', [
@@ -387,9 +364,6 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
     ], itemData.height || 1, v => { itemData.height = parseInt(v); }));
     workspaceEl.appendChild(sizeBlock);
 
-    // Color also drives the header visibility-filter chip dot for every widget type
-    // (public/assets/js/dashboard/index.js), even though pie-chart.js ignores it for
-    // slice colors — so this control stays for all types.
     workspaceEl.appendChild(createColorInput('color', 'Accent Color', itemData.color, v => { itemData.color = v; refreshPreview(); }));
 
     if (itemData.type === 'list') {
@@ -399,6 +373,5 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
         }));
     }
 
-    // Initial preview render
     refreshPreview();
 }

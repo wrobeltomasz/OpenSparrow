@@ -3,20 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/i18n.js — Client-side i18n bridge (I18n.load/t with pluralisation + {var} interpolation); also sets window.I18n for non-module scripts.
-
-/**
- * i18n JS bridge — mirrors includes/i18n.php for client-side translation.
- * Loads the flat bundle from /api.php?action=i18n_bundle (auth required).
- * Sets window.I18n for non-module scripts.
- *
- * Usage:
- *   import { I18n } from './i18n.js';
- *   await I18n.load();
- *   I18n.t('common.save')
- *   I18n.t('grid.showing', { from: 1, to: 10, total: 42 })
- *   I18n.t('files.count', { count: 3 }, 3)
- */
 const I18n = (() => {
     let _bundle = {};
     let _locale = 'en';
@@ -48,7 +34,7 @@ const I18n = (() => {
         if (count !== null) {
             let forms = value;
             if (typeof value === 'string') {
-                try { forms = JSON.parse(value); } catch { /* scalar string, not plural */ }
+                try { forms = JSON.parse(value); } catch {  }
             }
             if (forms && typeof forms === 'object' && !Array.isArray(forms)) {
                 const form = _pluralForm(_locale, count);

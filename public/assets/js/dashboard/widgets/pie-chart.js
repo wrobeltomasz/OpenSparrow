@@ -3,14 +3,10 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/dashboard/widgets/pie-chart.js — Registers the 'pie_chart' widget; renders an SVG pie with a colour palette, legend and drill-down.
-
 import { applyDrillDown } from '../drill-down.js';
 import { WidgetRegistry } from '../registry.js';
 import { formatCellValue } from '../../util/format-value.js';
 
-// Sequential ramp off --c-navy (#003366). One hue, eight steps: slices stay
-// distinguishable without a second colour. Literal hex - feeds a conic-gradient.
 const COLORS = ['#003366', '#1B4C7E', '#356696', '#5081AE', '#6C9CC6', '#8AB6DA', '#AACFE8', '#CBE2F1'];
 
 function renderPieChart(widget) {

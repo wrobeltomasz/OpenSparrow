@@ -7,15 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/cron.php — admin api.php module: cron worker actions (run_cron_notifications, cron_log, cron_stats,
-// cron_purge_log).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
-// Run cron_notifications.php ad-hoc and return captured output
 if ($action === 'run_cron_notifications') {
     require_not_demo('Demo mode — writes disabled.');
     admin_run_cron_script(__DIR__ . '/../../cron/cron_notifications.php', 'Cron script not found.');

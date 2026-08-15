@@ -5,11 +5,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// api_helpers.php — Shared helper functions for API endpoints
-// Provides safe table/column access, FK display mapping, boolean normalization, type min values, audit logging, ownership checks, and record snapshots
-// All SQL identifiers are quoted with pg_ident(); values are escaped or parameterized; uses sys_table() for system tables
-// Functions: safe_table, column_list, pg_ident, map_fk_display, log_user_action, get_record_owner_id, can_access_record, set_record_owner, snapshot_record, jsonError, jsonSuccess, requireLogin, requireWrite, require_not_demo, validatedTable
-
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/../src/Security/UserRole.php';
 
@@ -26,7 +21,7 @@ function safe_table(array $schema, string $table): array
 function column_list(array $tableCfg): array
 {
     $cols = $tableCfg['columns'] ?? [];
-    // Virtual columns don't exist in the database — exclude from SELECT
+
     return array_keys(array_filter($cols, fn($c) => ($c['type'] ?? '') !== 'virtual'));
 }
 
@@ -67,19 +62,6 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, ?\PgSql\Con
             continue;
         }
 
-        // A foreign key may point at a table that has since been dropped from the
-        // schema config. That is an administrator's configuration error, not a bad
-        // request, so it must not become a 500: this helper runs while mapping
-        // result rows, after the caller has already validated the table it was
-        // asked for, and an exception here would take down the grid, m2m rows and
-        // subtable listings alike. Skip the dangling key and leave the raw value
-        // in place — a column showing an id instead of a label is a far better
-        // failure than three read paths returning "Internal server error" with no
-        // hint as to which reference is broken.
-        //
-        // The name is read defensively: a malformed entry, or one missing the key
-        // altogether, would raise a TypeError rather than the RuntimeException
-        // caught below and so slip straight past this guard.
         $refName = is_array($fkCfg) ? (string) ($fkCfg['reference_table'] ?? '') : '';
         try {
             $refTable = safe_table($schema, $refName);
@@ -94,7 +76,6 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, ?\PgSql\Con
         $refSchema = $refTable['schema'] ?? 'public';
         $refColId  = $fkCfg['reference_column'] ?? 'id';
 
-        // Handle array of display columns dynamically
         $refDispRaw = $fkCfg['display_column'] ?? [$refColId];
         if (!is_array($refDispRaw)) {
             $refDispRaw = [$refDispRaw];
@@ -103,7 +84,6 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, ?\PgSql\Con
             $refDispRaw = [$refColId];
         }
 
-        // Escape all columns and merge them using CONCAT_WS for PostgreSQL
         $escapedDispCols = array_map(pg_ident(...), $refDispRaw);
         if (count($escapedDispCols) > 1) {
             $dispSql = "CONCAT_WS(' - ', " . implode(', ', $escapedDispCols) . ")";
@@ -114,7 +94,6 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, ?\PgSql\Con
         $escapedVals = array_map(fn($v) => pg_escape_literal($conn, (string)$v), $fkValues);
         $inClause = implode(', ', $escapedVals);
 
-        // Build the safe SQL query with concatenated display columns
         $sql = sprintf(
             'SELECT %s AS id, %s AS disp FROM %s.%s WHERE %s IN (%s)',
             pg_ident($refColId),
@@ -167,7 +146,6 @@ function type_min_value(string $type): string|int
     return '';
 }
 
-// Log action to db — returns the new log row id so callers can attach snapshots.
 function log_user_action(\PgSql\Connection $conn, int $userId, string $action, ?string $targetTable = null, ?int $recordId = null): ?int
 {
     $sql = 'INSERT INTO ' . sys_table('users_log')
@@ -179,8 +157,6 @@ function log_user_action(\PgSql\Connection $conn, int $userId, string $action, ?
     return null;
 }
 
-// Fetch a single record as a JSON string using row_to_json().
-// row_to_json requires SELECT * to capture all columns dynamically regardless of schema.
 function fetch_record_json(\PgSql\Connection $conn, string $schemaName, string $table, int $recordId): ?string
 {
     $safeRef = pg_ident($schemaName) . '.' . pg_ident($table);
@@ -196,7 +172,6 @@ function fetch_record_json(\PgSql\Connection $conn, string $schemaName, string $
     return ($row && $row[0] !== null) ? $row[0] : null;
 }
 
-// Returns the current owner_id for a record, or null if no ownership row exists.
 function get_record_owner_id(\PgSql\Connection $conn, string $table, int $recordId): ?int
 {
     $t   = sys_table('record_owners');
@@ -212,10 +187,6 @@ function get_record_owner_id(\PgSql\Connection $conn, string $table, int $record
     return $row['owner_id'] !== null ? (int)$row['owner_id'] : null;
 }
 
-// Row-level access policy for a single record. Tables without the owner_restricted
-// flag are open to any authenticated user. For restricted tables, access is granted
-// only when the record is unowned or owned by the user; admins always pass. Mirrors
-// the ownership policy enforced for PATCH and DELETE in api.php.
 function can_access_record(\PgSql\Connection $conn, array $tableCfg, string $table, int $recordId, int $userId, string $role = ''): bool
 {
     if (empty($tableCfg['owner_restricted'])) {
@@ -228,9 +199,6 @@ function can_access_record(\PgSql\Connection $conn, array $tableCfg, string $tab
     return $ownerId === null || $ownerId === $userId;
 }
 
-// Enforce owner-restricted access on a mutation: emit 403 + JSON error and exit when
-// the record is owned by another user. No-op for open tables or records the user may
-// touch. Wraps can_access_record() so the policy stays defined in one place.
 function check_record_ownership(\PgSql\Connection $conn, array $tableCfg, string $table, int $recordId, int $userId, string $message = 'Forbidden'): void
 {
     if (!can_access_record($conn, $tableCfg, $table, $recordId, $userId)) {
@@ -240,17 +208,6 @@ function check_record_ownership(\PgSql\Connection $conn, array $tableCfg, string
     }
 }
 
-// SQL predicate for bulk statements on owner-restricted tables: excludes rows whose
-// current owner is another user (unowned rows pass, matching can_access_record()).
-// $tableParam and $ownerParam are the 1-based pg placeholder numbers the caller binds
-// the table name and user id to. Bulk counterpart of can_access_record() — keep the
-// two policies in sync.
-//
-// $idExpr MUST be table-qualified ('_t.id', never a bare 'id'): the predicate is a
-// correlated subquery over spw_record_owners, which has its own "id" column, so an
-// unqualified reference resolves to the *inner* ro.id. That turns the condition into
-// `ro.record_id = ro.id`, which is essentially never true, and the whole filter
-// silently degrades to a no-op. Alias the outer table and qualify the reference.
 function owner_restriction_sql(string $idExpr, int $tableParam, int $ownerParam): string
 {
     if (!str_contains($idExpr, '.')) {
@@ -264,17 +221,6 @@ function owner_restriction_sql(string $idExpr, int $tableParam, int $ownerParam)
         . " AND ro.is_current = true AND ro.owner_id != \${$ownerParam})";
 }
 
-// Narrow a client-supplied list of record ids down to the ones the user may see.
-// Read-side counterpart of owner_restriction_sql() for the grid's side-channel
-// endpoints (image thumbnails, subtable counts): those take ids as *input* instead of
-// selecting rows themselves, so there is no outer query to hang a NOT EXISTS off — and
-// without this an id the grid never returned can still be probed directly.
-//
-// Returns $ids unchanged (as ints) for tables that are not owner_restricted. Mirrors
-// can_access_record(): unowned rows pass, rows owned by someone else are dropped.
-//
-// @param  array<int|string> $ids
-// @return int[]
 function filter_visible_ids(
     \PgSql\Connection $conn,
     array $tableCfg,
@@ -299,7 +245,6 @@ function filter_visible_ids(
         '{' . implode(',', $ids) . '}',
     ]);
     if (!$res) {
-        // Fail closed: a broken ownership lookup must not widen visibility.
         error_log('filter_visible_ids failed: ' . pg_last_error($conn));
         return [];
     }
@@ -313,7 +258,6 @@ function filter_visible_ids(
     return $blocked === [] ? $ids : array_values(array_diff($ids, $blocked));
 }
 
-// Record ownership: mark previous current row inactive, insert new current row.
 function set_record_owner(\PgSql\Connection $conn, string $table, int $recordId, int $ownerId, int $changedBy): void
 {
     $t = sys_table('record_owners');
@@ -321,7 +265,6 @@ function set_record_owner(\PgSql\Connection $conn, string $table, int $recordId,
     @pg_query_params($conn, "INSERT INTO $t (table_name, record_id, owner_id, changed_by, is_current) VALUES (\$1, \$2, \$3, \$4, true)", [$table, $recordId, $ownerId, $changedBy]);
 }
 
-// Save a JSONB snapshot of the current record state linked to a log entry.
 function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $table, int $recordId, int $logId): void
 {
     $json = fetch_record_json($conn, $schemaName, $table, $recordId);
@@ -336,13 +279,6 @@ function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $ta
     );
 }
 
-// Record label column(s) for an arbitrary table, concatenated with CONCAT_WS() when
-// there's more than one. Prefers the caller-supplied $configured columns (e.g. from
-// the admin "User Records" > "Column Mapping" tab, config_get('user_records')); falls
-// back to a best-effort guess (first text column shown in the grid, else any grid
-// column, else the id). Shared by api/owners.php (My records), api/comments.php
-// (My comments) and api/notes.php (record picker) — single source of truth for this
-// heuristic.
 function record_label_columns(array $tableCfg, array $configured): array
 {
     $cols = $tableCfg['columns'] ?? [];
@@ -372,10 +308,6 @@ function record_label_columns(array $tableCfg, array $configured): array
     return [$firstGridCol ?? 'id'];
 }
 
-// SELECT expression rendering a record's display label, built from the columns resolved
-// by record_label_columns(). Identifiers are escaped with pg_ident(), so the result is
-// safe to interpolate into a query. Callers still apply their own '#'.$id fallback when
-// the resulting label comes back blank.
 function record_label_sql(array $tableCfg, array $configured): string
 {
     $cols = array_map('pg_ident', record_label_columns($tableCfg, $configured));
@@ -385,11 +317,6 @@ function record_label_sql(array $tableCfg, array $configured): string
         : $cols[0];
 }
 
-// ---------------------------------------------------------------------------
-// Shared JSON response + request-guard helpers for the api/ endpoints
-// ---------------------------------------------------------------------------
-
-// Emit a JSON error envelope and stop. Shape kept stable for the frontend.
 function jsonError(string $msg, int $code = 400): never
 {
     http_response_code($code);
@@ -397,7 +324,6 @@ function jsonError(string $msg, int $code = 400): never
     exit;
 }
 
-// Emit a JSON success envelope (adds success=true) and stop.
 function jsonSuccess(array $data = [], int $code = 200): never
 {
     http_response_code($code);
@@ -406,7 +332,6 @@ function jsonSuccess(array $data = [], int $code = 200): never
     exit;
 }
 
-// Reject unauthenticated requests with 401.
 function requireLogin(): void
 {
     if (empty($_SESSION['user_id'])) {
@@ -414,10 +339,6 @@ function requireLogin(): void
     }
 }
 
-// Reject sessions whose role cannot write (403). Write access means editor or
-// admin; viewers are read-only. Pass a narrower list to restrict an action
-// further (e.g. ['editor']). Single source of truth for API write gates —
-// endpoints must not define their own copies.
 function requireWrite(array $roles = ['editor', 'admin']): void
 {
     requireLogin();
@@ -426,11 +347,6 @@ function requireWrite(array $roles = ['editor', 'admin']): void
     }
 }
 
-// Demo Mode guard for write actions. There is no central gate — every action
-// that mutates data or configuration must call this itself. Emits the standard
-// {status:error} envelope and exits when DEMO_MODE is on; pass $code 0 to leave
-// the HTTP status untouched (legacy call sites that expect a 200 body).
-// Single source of truth — endpoints must not define their own copies.
 function require_not_demo(string $message = 'Action disabled in Demo Mode.', int $code = 403): void
 {
     if (!DEMO_MODE) {
@@ -444,18 +360,13 @@ function require_not_demo(string $message = 'Action disabled in Demo Mode.', int
     exit;
 }
 
-// Server-side mirror of the client data-pattern check (assets/js/grid_actions.js):
-// unanchored match, skipped for NULL/empty values, fail-open on an invalid pattern
-// (logged) so a broken regexp in schema.json cannot lock editing. Returns the
-// column's validation_message (or a default) on mismatch, null when the value passes.
 function validate_column_regexp(array $colCfg, mixed $val): ?string
 {
     $pattern = $colCfg['validation_regexp'] ?? '';
     if (!is_string($pattern) || $pattern === '' || $val === null || $val === '') {
         return null;
     }
-    // '~' delimiter: not a JS regex metacharacter, so schema patterns written for
-    // the client never need it escaped — escaping any literal '~' here is enough.
+
     $result = @preg_match('~' . str_replace('~', '\~', $pattern) . '~u', (string) $val);
     if ($result === false) {
         error_log('[validate_column_regexp] invalid validation_regexp in schema.json: ' . $pattern);
@@ -464,11 +375,6 @@ function validate_column_regexp(array $colCfg, mixed $val): ?string
     return $result === 1 ? null : (string) ($colCfg['validation_message'] ?? 'Invalid format');
 }
 
-// Validate a table name against schema.json. $field names the offending input in
-// the "is required" message so callers preserve their existing error wording.
-// Also enforces the per-user table allow-list: a table that exists but is out of
-// the user's scope is 403 (not 400) — the distinction matters, "unknown" and
-// "not yours" are different answers and only the second one is an access denial.
 function validatedTable(string $table, string $field = 'table'): string
 {
     if ($table === '') {
@@ -483,41 +389,6 @@ function validatedTable(string $table, string $field = 'table'): string
     return $table;
 }
 
-// ── Per-user frontend access ─────────────────────────────────────────────────
-// Admins may restrict a frontend user to a subset of the schema's tables, the
-// configured PostgreSQL views, the print templates, the boards and the workflows.
-// All of it lives in one 'user_table_access' spw_config document:
-//
-//   {"users": {"<user_id>": {"tables": [...], "views": [...], "prints": [...],
-//                            "boards": [...], "workflows": [...]}}}
-//
-// Views, printouts, boards and workflows are named objects granted directly by name
-// (boards and workflows by their stable `id`), because none of them is derived from a
-// single table the way a grid page is.
-//
-// An ABSENT OR EMPTY list means UNRESTRICTED for that scope, not "no access". That
-// is what keeps the feature backward compatible: every existing user keeps working
-// until an admin deliberately ticks entries. "No access at all" is expressed by
-// deactivating the account (is_active = false), not by an empty list. The scopes are
-// independent — restricting tables leaves views untouched.
-//
-// Never cache the resolved lists in $_SESSION: an admin revoking access must take
-// effect on the user's next request, not on their next login. The static cache
-// below is per-request only.
-
-// Every scope, in one place. This map is the single definition: the resolver, the
-// gates, the filters, the admin picker and the Access tab all read it, and none of
-// them enumerates scopes on its own. Adding a scope is adding a row here plus the
-// gate at whatever endpoint serves it — nothing else has a list to keep in step.
-//
-//   config / path — where the configured items live in the config store
-//   id            — null for name-keyed maps (schema tables, views, printouts);
-//                   the identifying field for lists of objects (boards, workflows)
-//   label         — field holding the human-readable name; falls back to the key
-//   noun / plural — singular for a 403 message, plural for the tab's count badge.
-//                   Both spellings are stored rather than derived: "printout" and
-//                   "printouts" are fine, but no rule survives every word
-//   title / empty — section heading and empty-state text in the admin Access tab
 const USER_ACCESS_SCOPES = [
     'tables' => [
         'config' => 'schema',    'path' => 'tables',    'id' => null,
@@ -546,8 +417,6 @@ const USER_ACCESS_SCOPES = [
     ],
 ];
 
-// One scope's definition. Throws on a typo rather than letting an unknown scope
-// resolve to "unrestricted", which would be a silently open gate.
 function access_scope(string $scope): array
 {
     if (!isset(USER_ACCESS_SCOPES[$scope])) {
@@ -556,12 +425,6 @@ function access_scope(string $scope): array
     return USER_ACCESS_SCOPES[$scope];
 }
 
-// name => label for everything grantable in a scope, normalising the two config
-// shapes so no caller has to know which one it is looking at. Hidden entries are
-// dropped: they never reach the frontend menu, so granting them means nothing. (For
-// tables that exclusion is what with_hidden_subtables() compensates for.)
-//
-// @return array<string, string>
 function access_scope_items(string $scope, bool $includeHidden = false): array
 {
     require_once __DIR__ . '/config_store.php';
@@ -576,45 +439,29 @@ function access_scope_items(string $scope, bool $includeHidden = false): array
         if (!is_array($cfg) || (!$includeHidden && !empty($cfg['hidden']))) {
             continue;
         }
-        // A list of objects identifies itself by a field; a map by its key.
+
         $name = $def['id'] === null ? (string) $key : (string) ($cfg[$def['id']] ?? '');
         if ($name === '') {
             continue;
         }
-        // is_string, not a cast: a malformed config where the label is an array would
-        // otherwise raise "Array to string conversion" and render "Array" in the picker.
+
         $label      = $cfg[$def['label']] ?? null;
         $out[$name] = is_string($label) && $label !== '' ? $label : $name;
     }
     return $out;
 }
 
-// The user's allow-list for one scope, or null when unrestricted (no entry, empty
-// list, admin role, or no session at all — cron/CLI contexts must not be filtered).
-// @return string[]|null
 function user_allowed_items(string $scope, ?int $userId = null): ?array
 {
     static $cache = [];
 
-    // Whether the answer is about the session's own user. An explicitly passed id asks
-    // about somebody else, and then the session's role says nothing about them — see
-    // the admin shortcut below.
     $isSelf = ($userId === null);
 
     $userId ??= (int) ($_SESSION['user_id'] ?? 0);
     if ($userId <= 0) {
         return null;
     }
-    // Admins never reach the frontend (bootstrap redirects them to admin/), and the
-    // admin panel must keep seeing everything in order to configure it.
-    //
-    // Only when asking about the session's own user, though. Reading $_SESSION['role']
-    // for an explicitly passed id answers "is the CALLER an admin", which from the
-    // admin panel or a cron impersonating an admin session would report every user as
-    // unrestricted — a "what does this user see" preview would show them everything,
-    // and a per-user notification job would leak across the boundary it is meant to
-    // respect. Callers wanting the admin shortcut for another user must check that
-    // user's role themselves.
+
     if ($isSelf && ($_SESSION['role'] ?? '') === 'admin') {
         return null;
     }
@@ -625,8 +472,6 @@ function user_allowed_items(string $scope, ?int $userId = null): ?array
         $cfg   = config_get('user_table_access');
         $entry = $cfg['users'][(string) $userId] ?? null;
 
-        // A bare list is the pre-scopes shape and means tables only. Kept so a
-        // document written before views/printouts existed keeps working unchanged.
         if (is_array($entry) && array_is_list($entry)) {
             $entry = ['tables' => $entry];
         }
@@ -649,24 +494,6 @@ function user_allowed_items(string $scope, ?int $userId = null): ?array
     return $cache[$userId][$scope];
 }
 
-// Extend an allow-list with the HIDDEN subtables reachable from it, transitively.
-//
-// A hidden table has no standalone presence in the frontend — no menu entry, no grid,
-// no place to navigate to — and admin_assignable_items() excludes it from the picker
-// for exactly that reason. So its access is never something an admin decides; it is a
-// consequence of the parent's. Without this closure, ticking any table at all costs a
-// user every hidden subtable tab in edit.php, the matching drill-down counts, and the
-// create.php/edit.php links those tabs point at — with no admin action able to give
-// them back, because the child cannot be ticked. (Concretely: `checklisty` under
-// `zadania` in the shipped example schema.)
-//
-// VISIBLE children are deliberately NOT closed over. Those an admin grants by ticking
-// them, and a missing tick hiding the tab is the intended, visible outcome — silently
-// widening it would take that decision away. The rule in one line: what an admin can
-// choose stays a choice, what they cannot choose follows its parent.
-//
-// @param string[] $tables
-// @return string[]
 function with_hidden_subtables(array $tables): array
 {
     require_once __DIR__ . '/config_store.php';
@@ -674,8 +501,7 @@ function with_hidden_subtables(array $tables): array
 
     $out   = array_fill_keys($tables, true);
     $queue = $tables;
-    // Breadth-first: a hidden child may itself declare hidden children. $out doubles as
-    // the visited set, so a schema with a subtable cycle terminates instead of hanging.
+
     while ($queue !== []) {
         $parent = (string) array_shift($queue);
         foreach ($schema[$parent]['subtables'] ?? [] as $sub) {
@@ -688,28 +514,9 @@ function with_hidden_subtables(array $tables): array
         }
     }
 
-    // strval, because $out is keyed by table name and PHP silently casts an all-digit
-    // string key to an int: a table named "2024" would come back as int 2024, and
-    // user_can_access() compares with a STRICT in_array(), so the grant an admin
-    // explicitly ticked would stop matching. Fails closed rather than open, but it is
-    // still a table the user was given and cannot reach. Every caller treats this
-    // return value as string[] — user_allowed_items() stores it, and
-    // admin_hidden_children_map() array_diff()s against it — so the cast belongs here,
-    // once, rather than at each of them.
     return array_map('strval', array_keys($out));
 }
 
-// ── Default-on gating at the API boundary ────────────────────────────────────
-// Request parameter name => the scope its value belongs to. os_api_bootstrap() walks
-// this map on every API request, so an endpoint that accepts a ?table= is gated
-// whether or not its author remembered to say so. Every gap in the 2026-08 audit was
-// a forgotten gate; the registry above removed the duplicated scope lists but could
-// not make anyone call a gate, and this is what changes the default from "open unless
-// somebody remembered" to "closed unless somebody opted out".
-//
-// It does NOT replace the per-endpoint gates. They stay: they run closer to the data,
-// they cover names this map cannot see (config-supplied bindings, values nested in a
-// body), and two independent checks are exactly what you want on an access boundary.
 const OS_REQUEST_SCOPE_PARAMS = [
     'table'         => 'tables',
     'related_table' => 'tables',
@@ -720,45 +527,18 @@ const OS_REQUEST_SCOPE_PARAMS = [
     'workflow_id'   => 'workflows',
 ];
 
-// Reject the request when it names an object the user may not reach.
-//
-// Only names that EXIST in the configuration are gated. An unknown name falls through
-// untouched so the endpoint can answer 400/404 in its own words — otherwise a typo
-// would answer 403 and the "unknown is 400, not yours is 403" distinction, which the
-// endpoints and their tests rely on, would collapse. Existence is checked including
-// hidden entries: a hidden table is unreachable-by-menu, not unknown, and treating it
-// as unknown here would let it through ungated.
-//
-// $overrides maps a parameter name to false to skip it, for the rare endpoint whose
-// parameter of that name is not a client-supplied object name.
-// The decision, with no side effect: the first [scope, name] the request names and the
-// user may not reach, or null when there is nothing to refuse. Split out from the gate
-// below because require_access() ends the process, which makes the rule itself
-// untestable if the two are one function.
-//
-// @param  array<string,mixed> $body    decoded request body, if any
-// @param  array<string,bool>  $overrides
-// @return array{0:string,1:string}|null
 function os_request_scope_violation(array $body = [], array $overrides = []): ?array
 {
     foreach (OS_REQUEST_SCOPE_PARAMS as $param => $scope) {
         if (($overrides[$param] ?? true) === false) {
             continue;
         }
-        // api/fk.php rewrites $_GET['table'] to a schema-supplied reference table
-        // before delegating into api.php, which boots a second time. Gating that value
-        // would 403 every FK pointing outside the user's tables — the exact case the
-        // constant exists to mark.
+
         if ($param === 'table' && defined('OS_TABLE_ACCESS_DELEGATED')) {
             continue;
         }
 
         foreach ([$_GET[$param] ?? null, $_POST[$param] ?? null, $body[$param] ?? null] as $value) {
-            // An array-valued parameter (?table[]=x) is walked element by element. A
-            // bare is_string() test would skip it silently, and "skip" is the one
-            // outcome a gate must never have for a shape the client picks. Nesting
-            // deeper than one level falls through: no endpoint casts that to anything
-            // but the string "Array", which matches no configured name.
             foreach (is_array($value) ? $value : [$value] as $name) {
                 if (!is_string($name) || $name === '') {
                     continue;
@@ -775,22 +555,6 @@ function os_request_scope_violation(array $body = [], array $overrides = []): ?a
     return null;
 }
 
-// The decoded request body, for the gate's own use.
-//
-// Parsed for every method that can carry one and every content type EXCEPT
-// multipart/form-data — deliberately not just application/json. Keying this on the
-// declared content type would put the gate under the client's control: a POST labelled
-// text/plain, or carrying no Content-Type at all, would sail past untouched while the
-// endpoint below parsed the very same bytes as JSON. The per-endpoint gates meant that
-// was never an open door, but "closed by default" has to mean closed regardless of
-// what the request claims to be sending.
-//
-// multipart/form-data is the one exclusion, and it is not stylistic: PHP consumes that
-// stream while populating $_POST/$_FILES, so php://input is empty for it and there is
-// nothing here to read. Every other content type leaves the stream re-readable, so the
-// endpoint still parses it itself afterwards — verified, not assumed, because a stream
-// consumed here would break every POST silently. A body that is not JSON decodes to
-// null and answers []; for those the names the gate wants are in $_GET/$_POST anyway.
 function os_gate_request_body(): array
 {
     if (in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
@@ -811,15 +575,11 @@ function os_gate_request_scopes(array $overrides = []): void
     }
 }
 
-// The user's allowed tables, or null when unrestricted. Thin wrapper kept because
-// it reads better at the ~20 table call sites than the scoped form.
-// @return string[]|null
 function user_allowed_tables(?int $userId = null): ?array
 {
     return user_allowed_items('tables', $userId);
 }
 
-// Whether the current (or given) user may touch this item at all.
 function user_can_access(string $scope, string $name, ?int $userId = null): bool
 {
     $allowed = user_allowed_items($scope, $userId);
@@ -841,11 +601,6 @@ function user_can_access_print(string $print, ?int $userId = null): bool
     return user_can_access('prints', $print, $userId);
 }
 
-// JSON gate for API endpoints. Call it only with a REQUEST-supplied name.
-// Config-supplied names (FK reference_table, subtables, calendar bindings) must NOT
-// go through here — gating those would break label lookups inside tables the user is
-// legitimately allowed to see. The noun in the message comes from the scope registry,
-// so a new scope gets a correct 403 without anyone writing one.
 function require_access(string $scope, string $name, ?int $userId = null): void
 {
     if (!user_can_access($scope, $name, $userId)) {
@@ -868,11 +623,6 @@ function require_print_access(string $print, ?int $userId = null): void
     require_access('prints', $print, $userId);
 }
 
-// Narrow a configured collection down to what the user may see, in whichever shape it
-// was stored: a name-keyed map (schema tables, views, printouts) keeps its keys and
-// their order, a list of objects (boards, workflows) comes back as a list. Callers
-// pass the config through and get the same shape back, so none of them has to know
-// which kind it is holding.
 function filter_by_user_access(string $scope, array $items, ?int $userId = null): array
 {
     $allowed = user_allowed_items($scope, $userId);
@@ -896,29 +646,6 @@ function filter_tables_for_user(array $tables, ?int $userId = null): array
     return filter_by_user_access('tables', $tables, $userId);
 }
 
-// Fill a submitted per-scope selection out to the full scope set, keeping whatever is
-// already stored for the scopes that were not submitted.
-//
-// A save replaces the user's whole entry, so a scope missing from the payload used to
-// land as [] — and [] means UNRESTRICTED. That turns "I did not mention boards" into
-// "boards are now unrestricted": an older cached users.js, a script written against an
-// earlier payload shape, or a future caller that only wants to change tables would
-// silently widen access it never meant to touch. Widening has to be something someone
-// asked for, so an absent scope carries over instead.
-//
-// Sending an explicit [] still clears that scope — that is how the Access tab removes
-// a restriction, and how "no ticks anywhere" deletes the entry altogether. A submitted
-// value that is not a list is treated as absent rather than as an instruction to
-// clear: malformed input must never resolve in the widening direction.
-//
-// Names are not validated here. The caller checks the scopes it actually received
-// against its own pick list; carried-over values pass through as stored, so a name
-// that stopped being assignable (a table since dropped from the schema) survives an
-// unrelated save rather than being quietly dropped from someone's grant.
-//
-// @param  array<string, mixed> $submitted per-scope lists the caller received
-// @param  array<string, mixed> $stored    the user's current per-scope lists
-// @return array<string, list<string>>
 function merge_user_access_selection(array $submitted, array $stored): array
 {
     $out = [];
@@ -933,19 +660,6 @@ function merge_user_access_selection(array $submitted, array $stored): array
     return $out;
 }
 
-// Whether every table a workflow's steps write to is inside the user's table scope.
-//
-// Granting a workflow does NOT grant its tables — the two are ticked separately and
-// both have to hold — so this is the second half of the workflow rule, and it belongs
-// everywhere a workflow is served OR fired: the api=workflows list, the menu submenu,
-// the page hosting the wizard and workflow_procedure. It lives here rather than being
-// written out at each of those because a copy that only tracks the DISPLAY sites is
-// exactly how workflow_procedure ended up gating the id alone: the workflow vanished
-// from the menu and the list while a direct POST still ran its procedure.
-//
-// A malformed entry answers false rather than being served. filter_by_user_access()
-// drops one too, but only for a restricted user, so without this an unrestricted one
-// would still receive it.
 function workflow_tables_in_scope(mixed $wf, ?int $userId = null): bool
 {
     if (!is_array($wf)) {

@@ -3,24 +3,14 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/agent_panel.cy.js
-// ============================================================================
-// AI Agent Panel Tests — the sliding panel opened via #openAgentBtn.
-// Panel DOM is built by assets/js/agent-panel.js after DOMContentLoaded.
-// ============================================================================
-
 const BASE       = 'http://localhost:8080';
 const TEST_TABLE = 'companies';
-
-// ============================================================================
-// Test Suite: Panel Structure
-// ============================================================================
 
 describe('OpenSparrow – Agent Panel: Structure', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    // Wait for the agent-panel module to initialise (DOMContentLoaded + I18n.load)
+
     cy.get('#agPanel', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
   });
 
@@ -47,10 +37,6 @@ describe('OpenSparrow – Agent Panel: Structure', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Opening the Panel
-// ============================================================================
-
 describe('OpenSparrow – Agent Panel: Open & Close', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -59,7 +45,6 @@ describe('OpenSparrow – Agent Panel: Open & Close', () => {
   });
 
   function openPanel() {
-    // The page is already loaded; just wait for the button to be interactive
     cy.get('#userAvatarBtn', { timeout: CypressHelpers.TIMEOUTS.medium }).click();
     cy.get('#openAgentBtn', { timeout: CypressHelpers.TIMEOUTS.short }).should('be.visible').click();
     cy.get('#agPanel').should('have.class', 'active');
@@ -110,10 +95,6 @@ describe('OpenSparrow – Agent Panel: Open & Close', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Send Interaction
-// ============================================================================
-
 describe('OpenSparrow – Agent Panel: Send', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -135,11 +116,10 @@ describe('OpenSparrow – Agent Panel: Send', () => {
     cy.intercept('POST', '**/api/rag.php**').as('ragPostGuard');
     cy.get('#agQuery').type('test question');
     cy.get('.ag-send-btn').click();
-    // Either a notice appears (no source selected) or a request fires (grid data auto-selected)
+
     cy.get('#agConv').should('not.be.empty');
     cy.get('@ragPostGuard.all').then($calls => {
       if ($calls.length === 0) {
-        // Notice was shown — conversation has a warning message
         cy.get('#agConv .ag-msg-warning').should('exist');
       }
     });
@@ -151,17 +131,12 @@ describe('OpenSparrow – Agent Panel: Send', () => {
   });
 
   it('Clear button empties the conversation', () => {
-    // Add at least one message (the warning from no-source send)
     cy.get('#agQuery').type('test{enter}');
     cy.get('#agConv').should('not.be.empty');
     cy.get('.ag-clear-btn').click();
     cy.get('#agConv').children().should('have.length', 0);
   });
 });
-
-// ============================================================================
-// Test Suite: Context Bar (grid page)
-// ============================================================================
 
 describe('OpenSparrow – Agent Panel: Grid Context', () => {
   beforeEach(() => {
@@ -194,10 +169,6 @@ describe('OpenSparrow – Agent Panel: Grid Context', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Context Bar (views page)
-// ============================================================================
 
 describe('OpenSparrow – Agent Panel: Views Context', () => {
   beforeEach(() => {

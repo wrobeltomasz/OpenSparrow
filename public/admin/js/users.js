@@ -3,11 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/users.js — User management (renderUsersEditor): Manage Users / Table Access /
-// Statistics / Global Settings inner tabs (list/add/toggle/change-role/change-password,
-// user_stats, user_policy_*, user_tables_* via api.php users_* actions).
-// CSRF via apiFetch(); HTML-escapes output.
-
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 import { buildInnerTabs, buildModal, createPageHeader } from './ui.js';
@@ -36,16 +31,6 @@ export async function renderUsersEditor(ctx) {
     renderUserSettings(settingsPanel, ctx);
 }
 
-// Access tab: pick a user, tick what they may reach on the frontend. Empty
-// selection = full access (no restriction) — same contract as user_allowed_items()
-// in includes/api_helpers.php. The scopes are independent: restricting tables leaves
-// views, printouts, boards and workflows untouched. Admins are excluded — they work
-// in this panel and must keep seeing everything.
-//
-// The sections come from the server (user_tables_get -> scopes), which reads them from
-// USER_ACCESS_SCOPES. This file deliberately keeps no list of its own: a scope added to
-// that registry appears here with no JS change, and a copy kept here is exactly how the
-// picker and the gates would drift apart.
 async function renderUserAccess(panel) {
     panel.innerHTML = '<p class="help-text">Loading users…</p>';
 
@@ -94,11 +79,6 @@ async function renderUserAccess(panel) {
     loadUserAccess(listEl, selectEl.value);
 }
 
-// One checkbox section per scope. Returns a live reader for the ticked values so
-// the shared Save button does not need to know how many scopes there are.
-// hiddenChildren maps a grantable table to the hidden helper tables that ticking it
-// drags in (see admin_hidden_children_map in includes/admin/users.php); it is display
-// only and never part of the payload.
 function renderScopeSection(container, scope, allItems, selected, hiddenChildren = {}) {
     const names = Object.keys(allItems)
         .sort((a, b) => (allItems[a] || a).localeCompare(allItems[b] || b));
@@ -148,7 +128,6 @@ function renderScopeSection(container, scope, allItems, selected, hiddenChildren
     const badge = section.querySelector('.ta-badge');
     const note  = section.querySelector('.ta-note');
 
-    // Nothing ticked reads as "no access" to most people, so say the opposite out loud.
     const refreshBadge = () => {
         const n = boxes.filter(b => b.checked).length;
         badge.innerHTML = n === 0
@@ -156,12 +135,7 @@ function renderScopeSection(container, scope, allItems, selected, hiddenChildren
             : `<span class="adm-badge">Restricted to ${n} of ${boxes.length} ${escHtml(scope.noun)}</span>`;
     };
 
-    // Hidden helper tables have no menu entry and no grid of their own, so they are not
-    // listed above and access to them follows the parent instead. Name what a tick drags
-    // in — a closure nobody can see is a closure nobody can reason about.
     const refreshNote = () => {
-        // Array.isArray, not `|| []`: a table named after an Object prototype key would
-        // otherwise hand flatMap a function instead of a list.
         const extra = [...new Set(
             boxes.filter(b => b.checked)
                 .flatMap(b => (Array.isArray(hiddenChildren[b.value]) ? hiddenChildren[b.value] : []))
@@ -207,14 +181,12 @@ async function loadUserAccess(listEl, userId) {
     const scopes  = Array.isArray(data.scopes) ? data.scopes : [];
     const readers = {};
     scopes.forEach(scope => {
-        // PHP casts these to objects so string keys survive JSON — an empty one
-        // still arrives as {}, never as [].
         readers[scope.key] = renderScopeSection(
             listEl,
             scope,
             (data.items || {})[scope.key] || {},
             new Set((data.selected || {})[scope.key] || []),
-            // Only tables have a hidden-subtable closure to explain.
+
             scope.key === 'tables' ? (data.hidden_children || {}) : {}
         );
     });
@@ -263,9 +235,6 @@ async function renderManageUsers(panel, ctx) {
         const minPasswordLength = policy.status === 'success' ? policy.min_password_length : 8;
         const defaultRole = policy.status === 'success' ? policy.default_role : 'editor';
 
-        // False on a database where 3.3_user_contact has not been run. Everything else
-        // on this tab still works, so the contact fields are simply left out rather
-        // than rendered as controls whose save could only fail.
         const hasContact = data.contact_columns !== false;
 
         let html = `
@@ -294,7 +263,6 @@ async function renderManageUsers(panel, ctx) {
                 <tbody>
         `;
 
-        // Optional, informational contact fields — an unset one renders as an em dash.
         const cell = (v) => (v ?? '').trim()
             ? escHtml(v)
             : '<span class="adm-td-empty">&mdash;</span>';
@@ -385,7 +353,6 @@ async function renderManageUsers(panel, ctx) {
 
         panel.innerHTML = html;
 
-        // Setup toggle active status events
         panel.querySelectorAll('.btn-toggle-user').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const id = e.target.getAttribute('data-id');
@@ -410,7 +377,6 @@ async function renderManageUsers(panel, ctx) {
             });
         });
 
-        // Setup role change events
         panel.querySelectorAll('.select-user-role').forEach(select => {
             select.addEventListener('change', async (e) => {
                 const id = e.target.getAttribute('data-id');
@@ -434,7 +400,6 @@ async function renderManageUsers(panel, ctx) {
             });
         });
 
-        // Change password for existing user
         const currentUserId = parseInt(document.querySelector('meta[name="current-user-id"]')?.content ?? '0', 10);
 
         panel.querySelectorAll('.btn-change-pwd').forEach(btn => {
@@ -448,13 +413,11 @@ async function renderManageUsers(panel, ctx) {
                     subtitleLabel: 'User: ',
                     subtitleValue: username,
                 });
-                // The cpw-* ids stay on the nodes: they are long-standing selector
-                // hooks, and dropping them in a refactor is how E2E specs break.
+
                 msgEl.id = 'cpw-msg';
                 cancelBtn.id = 'cpw-cancel';
                 saveBtn.id = 'cpw-save';
-                // Kept from the hand-rolled dialog this replaced — appended, not
-                // swapped, so the button keeps every class it had before.
+
                 saveBtn.classList.add('btn-sm');
 
                 if (isSelf) {
@@ -507,7 +470,6 @@ async function renderManageUsers(panel, ctx) {
                     try {
                         let res, data;
                         if (isSelf) {
-                            // Own account — verify current password via frontend API
                             res  = await apiFetch('../api.php?action=change_password', {
                                 method: 'POST',
                                 body: JSON.stringify({ current_password: box.querySelector('#cpw-current').value, new_password: pwd }),
@@ -515,7 +477,6 @@ async function renderManageUsers(panel, ctx) {
                             data = await res.json();
                             if (data.ok) { close(); return; }
                         } else {
-                            // Other user — admin override, no current password check
                             res  = await apiFetch('api.php?action=users_change_password', {
                                 method: 'POST',
                                 body: JSON.stringify({ id, password: pwd }),
@@ -533,7 +494,6 @@ async function renderManageUsers(panel, ctx) {
             });
         });
 
-        // Edit the optional contact details (same modal shape as the password dialog)
         panel.querySelectorAll('.btn-edit-contact').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = parseInt(btn.getAttribute('data-id'), 10);
@@ -594,7 +554,6 @@ async function renderManageUsers(panel, ctx) {
             });
         });
 
-        // Password strength indicator
         const passwordInput = panel.querySelector('#newPassword');
         const strengthFill = panel.querySelector('#passwordStrengthFill');
         const strengthLabel = panel.querySelector('#passwordStrengthLabel');
@@ -629,14 +588,12 @@ async function renderManageUsers(panel, ctx) {
             strengthLabel.style.color = result.color;
         });
 
-        // Setup user creation
         panel.querySelector('#btnAddUser').addEventListener('click', async (e) => {
             const addBtn   = e.currentTarget;
             const username = panel.querySelector('#newUsername').value;
             const password = panel.querySelector('#newPassword').value;
             const role = panel.querySelector('#newRole').value;
-            // Contact fields are informational and optional — never blocked on here,
-            // and absent entirely when 3.3_user_contact has not been applied.
+
             const contactValue = (id) => panel.querySelector(id)?.value ?? '';
             const first_name = contactValue('#newFirstName');
             const last_name  = contactValue('#newLastName');
@@ -665,7 +622,6 @@ async function renderManageUsers(panel, ctx) {
                 showStatusPill(addBtn, 'Network error.', 'error');
             }
         });
-
     } catch (e) {
         panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(e.message)}</p>`;
     }

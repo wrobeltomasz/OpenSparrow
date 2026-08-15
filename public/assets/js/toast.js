@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/toast.js — showToast(message, variant, duration): shared non-blocking toast used across FE modules.
-// Stacks bottom-right, auto-dismisses (default 4s). Variants: error/success/info.
 export function showToast(message, variant = 'error', duration = 4000) {
     const colors = {
         error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },

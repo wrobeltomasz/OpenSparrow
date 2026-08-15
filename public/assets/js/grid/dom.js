@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/dom.js — small shared DOM-building helpers reused across grid renderers
-// (row-action icon buttons, inline text-cell links).
-
 export function makeIconButton({ cy, title, icon, className = 'btn-icon', onClick }) {
     const btn = document.createElement('button');
     btn.className = className;

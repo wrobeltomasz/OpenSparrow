@@ -3,17 +3,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// calendar.js — Calendar view (loaded as ES module by calendar.php)
-// Renders records of a table as events positioned by a date column; dragging an
-// event reschedules it via api.php (api=calendar). CSRF via apiFetch(); i18n via /api.php?action=i18n_bundle.
-// Header controls (rendered in the app header by calendar.php):
-//   - chips: per-source visibility (window.CALENDAR_SOURCES), state persisted in localStorage
-//   - search: client-side phrase filter — hides events whose title/fields/id do not contain the typed text
-
 import { apiFetch } from './util/api.js';
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/record-tooltip.js';
 
-// ── i18n bridge (calendar is a non-module script) ────────────────────────────
 let _i18nBundle = {};
 async function fetchI18n() {
     try {
@@ -29,14 +21,12 @@ function t(key, vars = {}) {
     return String(v).replace(/\{(\w+)\}/g, (_, k) => k in vars ? String(vars[k]) : `{${k}}`);
 }
 
-// Store current date state
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let eventsData = [];
 let appSchema = null;
 let canEdit = false;
 
-// ── Filters: source visibility (chips) ───────────────────────────────────────
 const FILTER_STORAGE_KEY = 'sparrow_calendar_filters';
 let hiddenTables = new Set();
 
@@ -63,9 +53,6 @@ function tableLabel(table) {
     return appSchema?.tables?.[table]?.display_name || table;
 }
 
-// ── Search: simple client-side phrase filter ─────────────────────────────────
-// Events whose title, record fields, or id do not contain the typed text are
-// hidden from the grid; clearing the box shows everything again.
 let searchTerm = '';
 
 function eventMatchesSearch(ev) {
@@ -87,7 +74,6 @@ function initSearch() {
     });
 }
 
-// ── Clear filters: header button resets the search box and all source chips ──
 function updateClearButton() {
     const btn = document.getElementById('clearFilters');
     if (btn) btn.hidden = !searchTerm && hiddenTables.size === 0;
@@ -107,7 +93,6 @@ function initClearFilters() {
     });
 }
 
-// Events that pass both the source chips and the search box
 function visibleEvents() {
     return eventsData.filter(ev => !hiddenTables.has(ev.table) && eventMatchesSearch(ev));
 }
@@ -143,7 +128,6 @@ function renderFilterBar() {
     calendarSources().forEach(src => bar.appendChild(buildSourceChip(src)));
 }
 
-// Init calendar when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     canEdit = !!(window.USER_CAPS && window.USER_CAPS.canEdit);
     await fetchI18n();
@@ -176,7 +160,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// Fetch secure schema definition from backend API
 async function fetchSchema() {
     try {
         const res = await fetch('api/schema.php', {
@@ -184,7 +167,7 @@ async function fetchSchema() {
         });
         if (res.ok) {
             appSchema = await res.json();
-            window.schema = appSchema; 
+            window.schema = appSchema;
         } else {
             console.error('Failed to load secure schema');
         }
@@ -193,7 +176,6 @@ async function fetchSchema() {
     }
 }
 
-// Fetch calendar events for the given year/month (1-indexed) via API.
 async function fetchEvents(year, month) {
     try {
         const res = await fetch(`api.php?api=calendar&year=${year}&month=${month}`, {
@@ -208,14 +190,12 @@ async function fetchEvents(year, month) {
     }
 }
 
-// Render the main calendar grid
 function renderCalendar() {
     const container = document.getElementById('calendarContainer');
     const title = document.getElementById('calendarTitle');
     const monthEvents = visibleEvents();
     updateClearButton();
-    
-    // Clear container safely
+
     container.innerHTML = '';
 
     const monthNames = [
@@ -239,7 +219,7 @@ function renderCalendar() {
 
     const firstDay = new Date(currentYear, currentMonth, 1);
     const lastDay = new Date(currentYear, currentMonth + 1, 0);
-    
+
     let startDayOfWeek = firstDay.getDay() - 1;
     if (startDayOfWeek === -1) startDayOfWeek = 6;
 
@@ -252,7 +232,7 @@ function renderCalendar() {
     for (let i = 1; i <= lastDay.getDate(); i++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
-        
+
         const dateNum = document.createElement('div');
         dateNum.className = 'calendar-date-num';
         dateNum.textContent = i;
@@ -275,25 +255,22 @@ function renderCalendar() {
         }
 
         const todayDate = new Date();
-        if (i === todayDate.getDate() && 
-            currentMonth === todayDate.getMonth() && 
+        if (i === todayDate.getDate() &&
+            currentMonth === todayDate.getMonth() &&
             currentYear === todayDate.getFullYear()) {
             cell.classList.add('today');
         }
 
-        // Handle dragover required for dropping
         cell.addEventListener('dragover', (e) => {
-            e.preventDefault(); 
+            e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
-            cell.style.outline = '2px solid var(--accent)'; 
+            cell.style.outline = '2px solid var(--accent)';
         });
 
-        // Handle dragleave
         cell.addEventListener('dragleave', () => {
             cell.style.outline = '';
         });
 
-        // Handle dropping the event into a new date cell
         cell.addEventListener('drop', async (e) => {
             e.preventDefault();
             cell.style.outline = '';
@@ -305,19 +282,16 @@ function renderCalendar() {
                 return;
             }
 
-            // Do nothing if dropped on the exact same date
             if (payload.date === dateString) return;
 
-            // Optimistic UI update immediately reflects changes
             const eventIndex = eventsData.findIndex(ev => ev.id === payload.id && ev.table === payload.table);
             const originalDate = payload.date;
-            
+
             if (eventIndex !== -1) {
                 eventsData[eventIndex].date = dateString;
-                renderCalendar(); 
+                renderCalendar();
             }
 
-            // Dispatch fetch to update backend
             try {
                 const res = await apiFetch('api.php', {
                     method: 'POST',
@@ -333,7 +307,6 @@ function renderCalendar() {
                 const data = await res.json();
 
                 if (!res.ok || data.error) {
-                    // Rollback optimistic update on error
                     if (eventIndex !== -1) {
                         eventsData[eventIndex].date = originalDate;
                         renderCalendar();
@@ -341,7 +314,6 @@ function renderCalendar() {
                     console.error('Failed to move event:', data.error ?? res.status);
                 }
             } catch (err) {
-                // Rollback optimistic update on network failure
                 if (eventIndex !== -1) {
                     eventsData[eventIndex].date = originalDate;
                     renderCalendar();
@@ -355,27 +327,23 @@ function renderCalendar() {
             const evEl = document.createElement('div');
             evEl.className = 'calendar-event';
             evEl.style.backgroundColor = ev.color;
-            
-            // Allow element to be dragged
+
             evEl.draggable = true;
 
-            // Prepare payload and styles when drag starts
             evEl.addEventListener('dragstart', (e) => {
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('application/json', JSON.stringify({
                     id: ev.id,
                     table: ev.table,
-                    date: ev.date 
+                    date: ev.date
                 }));
-                evEl.style.opacity = '0.4'; 
+                evEl.style.opacity = '0.4';
             });
 
-            // Clean up styles when drag ends
             evEl.addEventListener('dragend', () => {
                 evEl.style.opacity = '';
             });
 
-            // Build icon safely
             if (ev.icon) {
                 if (ev.icon.includes('/') || ev.icon.includes('.')) {
                     const img = document.createElement('img');
@@ -389,12 +357,10 @@ function renderCalendar() {
                     evEl.appendChild(iconSpan);
                 }
             }
-            
-            // Append title safely
+
             const titleText = document.createTextNode(ev.title);
             evEl.appendChild(titleText);
 
-            // Optional secondary value (source's subtitle_column) on the same line
             if (ev.subtitle) {
                 const subSpan = document.createElement('span');
                 subSpan.className = 'calendar-event-sub';
@@ -402,13 +368,10 @@ function renderCalendar() {
                 evEl.appendChild(subSpan);
             }
 
-            // Securely encode URL parameters
             evEl.addEventListener('click', () => {
                 window.location.href = `edit.php?table=${encodeURIComponent(ev.table)}&id=${encodeURIComponent(ev.id)}`;
             });
 
-            // Small red ✕ delete button (editors only) — confirm, then remove
-            // the record via api.php with optimistic UI + rollback on failure.
             if (canEdit) {
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
@@ -423,7 +386,6 @@ function renderCalendar() {
                 evEl.appendChild(delBtn);
             }
 
-            // Hover tooltip: shared floating record tooltip (grid/calendar/board).
             evEl.addEventListener('mouseenter', () => {
                 const columns = appSchema?.tables?.[ev.table]?.columns || {};
                 showRecordTooltip(evEl, {
@@ -440,9 +402,6 @@ function renderCalendar() {
     }
 }
 
-// ── Delete: red ✕ on an event removes the record via api.php. Confirms first,
-// removes optimistically, then rolls back (re-inserting at the original index)
-// if the backend rejects the delete or the network fails.
 async function deleteEvent(ev) {
     hideRecordTooltip();
     if (!window.confirm(t('calendar.delete_confirm'))) return;
@@ -451,7 +410,6 @@ async function deleteEvent(ev) {
     if (eventIndex === -1) return;
     const removed = eventsData[eventIndex];
 
-    // Optimistic removal
     eventsData.splice(eventIndex, 1);
     renderCalendar();
 
@@ -463,7 +421,6 @@ async function deleteEvent(ev) {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok || data.error) {
-            // Rollback: re-insert at the original position
             eventsData.splice(eventIndex, 0, removed);
             renderCalendar();
             console.error('Failed to delete event:', data.error ?? res.status);
@@ -475,9 +432,6 @@ async function deleteEvent(ev) {
     }
 }
 
-// ── Quick add: "+" on a day cell opens a calendar-picker modal, then
-// navigates to create.php with the date pre-filled and locked (same
-// GET-prefill mechanism the subtable "add" links use in edit.php).
 function openAddEventModal(dateString) {
     const sources = calendarSources();
 

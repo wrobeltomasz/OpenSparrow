@@ -144,7 +144,6 @@ final class UpdateMapperTest extends TestCase
 
     public function testUnanchoredPatternMatchesSubstringLikeClient(): void
     {
-        // Mirrors the client's RegExp.test() semantics: unanchored search
         $col    = new ColumnConfig('note', 'text', 'Note', validationRegexp: '[0-9]{2}');
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
         $rd     = $mapper->fromPost($this->regexpTable($col), ['note' => 'abc12def']);
@@ -153,7 +152,6 @@ final class UpdateMapperTest extends TestCase
 
     public function testInvalidPatternFailsOpenLikeClient(): void
     {
-        // Broken regexp in schema.json must not lock editing (client behaves the same)
         $col    = new ColumnConfig('code', 'text', 'Code', validationRegexp: '[unclosed');
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
         $rd     = $mapper->fromPost($this->regexpTable($col), ['code' => 'anything']);

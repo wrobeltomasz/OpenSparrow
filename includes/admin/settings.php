@@ -7,20 +7,9 @@
 
 declare(strict_types=1);
 
-// includes/admin/settings.php — admin api.php module: app settings + logo/icons (list_icons,
-// get/set_snapshot_setting, get/set_language_setting,
-// get/set_chat_bubble_setting, get_logo_setting, set_logo_enabled, upload_logo, remove_logo).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
-// Scan directories for available icons
 if ($action === 'list_icons') {
     $icons = [];
-    // assets/icons only — assets/img holds branding (logos) and the custom-logo
-    // upload dir, which must never show up as pickable menu icons.
+
     $dirsToScan = [
         'assets/icons' => __DIR__ . '/../../public/assets/icons',
     ];
@@ -41,7 +30,6 @@ if ($action === 'list_icons') {
     exit;
 }
 
-// GET: return current record-snapshot setting and whether it is locked by env var
 if ($action === 'get_snapshot_setting') {
     $envVal = getenv('RECORD_SNAPSHOTS_ENABLED');
     $lockedByEnv = ($envVal !== false && $envVal !== '');
@@ -74,7 +62,6 @@ if ($action === 'get_snapshot_setting') {
     exit;
 }
 
-// POST: toggle record-snapshot setting in the "settings" config
 if ($action === 'set_snapshot_setting') {
     require_not_demo();
     $envVal = getenv('RECORD_SNAPSHOTS_ENABLED');
@@ -91,10 +78,6 @@ if ($action === 'set_snapshot_setting') {
     exit;
 }
 
-// GET: return the automation email "From" address, SMTP delivery settings, and
-// whether the From address is locked by env var. The SMTP password is never
-// returned — only whether one is currently configured (see rag_settings for
-// the same pattern with the Ollama Cloud API key).
 if ($action === 'get_automation_email_setting') {
     $envVal = getenv('AUTOMATION_EMAIL_FROM');
     $lockedByEnv = ($envVal !== false && $envVal !== '');
@@ -114,9 +97,6 @@ if ($action === 'get_automation_email_setting') {
     exit;
 }
 
-// POST: save the automation email "From" address and SMTP delivery settings to
-// the "settings" config. When smtp_enabled is true, the cron uses SMTP instead
-// of PHP's mail() to deliver spw_automation_emails.
 if ($action === 'set_automation_email_setting') {
     require_not_demo();
     $envVal = getenv('AUTOMATION_EMAIL_FROM');
@@ -167,8 +147,6 @@ if ($action === 'set_automation_email_setting') {
     exit;
 }
 
-// POST: test the configured (or just-entered) SMTP connection without sending
-// an email — connects, EHLO/STARTTLS, AUTH LOGIN if credentials given, QUIT.
 if ($action === 'test_smtp_connection') {
     require_not_demo();
     require_once __DIR__ . '/../smtp_client.php';
@@ -177,9 +155,6 @@ if ($action === 'test_smtp_connection') {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $settings = admin_read_settings();
 
-    // Use the password from the request if the admin typed a new one; otherwise
-    // fall back to the stored (encrypted) password so "Test" works on save data
-    // without requiring the password to be retyped.
     $password = isset($body['smtp_password']) && $body['smtp_password'] !== ''
         ? (string) $body['smtp_password']
         : (string) (secret_decrypt((string) ($settings['smtp_password_enc'] ?? '')) ?? '');
@@ -200,7 +175,6 @@ if ($action === 'test_smtp_connection') {
     exit;
 }
 
-// GET: return language settings and all available locales from languages/*.json
 if ($action === 'get_language_setting') {
     $settings = admin_read_settings();
 
@@ -225,7 +199,6 @@ if ($action === 'get_language_setting') {
     exit;
 }
 
-// POST: save language settings to the "settings" config
 if ($action === 'set_language_setting') {
     require_not_demo();
 
@@ -263,14 +236,12 @@ if ($action === 'set_language_setting') {
     exit;
 }
 
-// GET: return AI chat bubble setting
 if ($action === 'get_chat_bubble_setting') {
     $settings = admin_read_settings();
     echo json_encode(['chat_bubble_enabled' => (bool) ($settings['chat_bubble_enabled'] ?? false)]);
     exit;
 }
 
-// POST: save AI chat bubble setting
 if ($action === 'set_chat_bubble_setting') {
     require_not_demo();
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -284,9 +255,6 @@ if ($action === 'set_chat_bubble_setting') {
     exit;
 }
 
-// GET: return the current custom logo path and whether the header logo is shown at all.
-// logo_enabled defaults to false — a fresh install shows no header logo, matching
-// the layout before this feature existed.
 if ($action === 'get_logo_setting') {
     $settings = admin_read_settings();
     $logoPath = $settings['custom_logo_path'] ?? null;
@@ -299,7 +267,6 @@ if ($action === 'get_logo_setting') {
     exit;
 }
 
-// POST: save the custom application name shown on the login page and browser title
 if ($action === 'set_app_name') {
     require_not_demo();
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -318,7 +285,6 @@ if ($action === 'set_app_name') {
     exit;
 }
 
-// POST: toggle whether the header logo is shown at all (independent of the uploaded file)
 if ($action === 'set_logo_enabled') {
     require_not_demo();
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -332,7 +298,6 @@ if ($action === 'set_logo_enabled') {
     exit;
 }
 
-// POST: upload a replacement logo shown on the frontend footer
 if ($action === 'upload_logo') {
     require_not_demo();
 
@@ -342,15 +307,13 @@ if ($action === 'upload_logo') {
     }
 
     $upload = $_FILES['file'];
-    // A logo has no reason to be large; keeps the upload folder and page weight small.
+
     $maxBytes = 2 * 1024 * 1024;
     if ($upload['size'] > $maxBytes) {
         echo json_encode(['status' => 'error', 'error' => 'Logo must be 2 MB or smaller.']);
         exit;
     }
 
-    // Content-sniff the actual bytes rather than trusting the client-supplied
-    // extension/MIME — SVG is deliberately excluded to avoid inline-script XSS.
     $allowedMimes = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
     $mimeType = 'application/octet-stream';
     if (class_exists('finfo')) {
@@ -365,16 +328,13 @@ if ($action === 'upload_logo') {
     $uploadDir = __DIR__ . '/../../public/assets/img/uploads';
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0755, true);
-        // Defense in depth on top of the MIME whitelist above: this folder must stay
-        // web-readable (the frontend <img> links directly into it), so — unlike
-        // storage/files/.htaccess — script execution is blocked instead of all access.
+
         @file_put_contents(
             $uploadDir . '/.htaccess',
             "<FilesMatch \"\\.(php\\d?|phtml|pl|py|cgi|sh)$\">\n    Require all denied\n</FilesMatch>\n"
         );
     }
 
-    // Server-chosen random filename — never derived from the client's original name.
     $ext         = $allowedMimes[$mimeType];
     $filename    = 'logo-' . bin2hex(random_bytes(8)) . '.' . $ext;
     $destination = $uploadDir . '/' . $filename;
@@ -385,7 +345,6 @@ if ($action === 'upload_logo') {
 
     $settings     = admin_read_settings();
 
-    // Remove the previous custom logo file so uploads don't accumulate on disk.
     $oldPath   = $settings['custom_logo_path'] ?? null;
     $uploadDirReal = realpath($uploadDir) ?: '';
     if (is_string($oldPath) && $oldPath !== '' && $uploadDirReal !== '') {
@@ -396,7 +355,7 @@ if ($action === 'upload_logo') {
     }
 
     $settings['custom_logo_path'] = '/assets/img/uploads/' . $filename;
-    // Uploading a logo implies wanting it shown; the enable toggle can still turn it off later.
+
     $settings['logo_enabled'] = true;
     admin_save_settings($settings);
 
@@ -404,7 +363,6 @@ if ($action === 'upload_logo') {
     exit;
 }
 
-// POST: remove the custom logo and revert to the default OpenSparrow logo
 if ($action === 'remove_logo') {
     require_not_demo();
 
@@ -419,9 +377,7 @@ if ($action === 'remove_logo') {
         }
     }
     unset($settings['custom_logo_path']);
-    // No custom image left to show — revert fully to the no-logo header, matching
-    // the layout before this feature existed, rather than silently falling back
-    // to the default OpenSparrow logo.
+
     $settings['logo_enabled'] = false;
 
     admin_save_settings($settings);

@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/m2m/popup.js — Hover popup listing a row's many-to-many items (read from the m2m loader store).
-
 import { getM2mItems } from './loader.js';
 import { createHoverPopup } from '../hover-popup.js';
 

@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/ui.js — Shared admin UI toolkit
-// Reusable form-field builders (createTextInput/SelectInput/ColorInput/IconPicker/Checkbox/MultiSelect), inner tabs, menu preview, array/object reorder helpers, and field helpTexts. Imported across admin modules.
-
 import { apiFetch } from '../../assets/js/util/api.js';
 export const helpTexts = {
     display_name: "The name that will be shown to users in the interface.",
@@ -15,7 +12,7 @@ export const helpTexts = {
     fk_ref: "Select a related table. If selected, specify the Reference Column (usually 'id') and Display Column (what users see).",
     url_template: "Template for the link when an event is clicked (e.g., edit.php?table=tasks&id={id}).",
     display_columns: "For 'list' widget type only: A comma-separated list of database columns to display in each row.",
-    notified_users: "Select specific active users who will receive notifications.", // Added help text for users
+    notified_users: "Select specific active users who will receive notifications.",
     validation_regexp: "Regular expression pattern for client and server side validation (e.g., ^[A-Z]{2}\\d{4}$).",
     validation_message: "Custom error message displayed when the input does not match the RegExp pattern."
 };
@@ -111,7 +108,7 @@ export function createDatalistInput(key, labelText, listId, value, onChange) {
     wrapper.appendChild(label);
     const input = document.createElement('input');
     input.type = 'text';
-    input.setAttribute('list', listId); 
+    input.setAttribute('list', listId);
     input.value = value || '';
     input.addEventListener('input', (e) => onChange(e.target.value));
     wrapper.appendChild(input);
@@ -121,7 +118,7 @@ export function createDatalistInput(key, labelText, listId, value, onChange) {
 export function createIconPicker(key, labelText, value, onChange) {
     const wrapper = document.createElement('div');
     wrapper.className = 'form-group';
-    
+
     const label = document.createElement('label');
     label.textContent = labelText;
     wrapper.appendChild(label);
@@ -142,22 +139,22 @@ export function createIconPicker(key, labelText, value, onChange) {
     btn.onclick = async () => {
         const modal = document.createElement('div');
         modal.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:10000;`;
-        
+
         const content = document.createElement('div');
         content.style.cssText = `background:#fff; padding:20px; border-radius:8px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);`;
-        
+
         const closeBtn = document.createElement('button');
         closeBtn.textContent = 'Close';
         closeBtn.className = 'btn btn-danger btn-xs';
         closeBtn.style.cssText = 'position:absolute; top:15px; right:15px;';
         closeBtn.onclick = () => modal.remove();
         content.appendChild(closeBtn);
-        
+
         content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:var(--muted); ">Icons are loaded from <code>assets/icons/</code>.</p>';
-        
+
         const grid = document.createElement('div');
         grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;
-        
+
         try {
             const res = await apiFetch('api.php?action=list_icons');
             const data = await res.json();
@@ -167,13 +164,13 @@ export function createIconPicker(key, labelText, value, onChange) {
                     imgBox.style.cssText = `cursor:pointer; text-align:center; padding:10px; border:1px solid var(--border); border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center; height: 70px;`;
                     imgBox.onmouseover = () => { imgBox.style.borderColor = 'var(--muted)'; imgBox.style.background = 'var(--accent-mid)'; };
                     imgBox.onmouseout = () => { imgBox.style.borderColor = 'var(--accent-mid)'; imgBox.style.background = 'transparent'; };
-                    
+
                     const img = document.createElement('img');
-                    img.src = '../' + iconPath; 
+                    img.src = '../' + iconPath;
                     img.style.maxWidth = '100%';
                     img.style.maxHeight = '100%';
                     img.style.objectFit = 'contain';
-                    
+
                     imgBox.appendChild(img);
                     imgBox.onclick = () => {
                         input.value = iconPath;
@@ -188,7 +185,7 @@ export function createIconPicker(key, labelText, value, onChange) {
         } catch(e) {
             grid.innerHTML = '<p style="color:var(--error); grid-column: 1 / -1;">An error occurred while loading icons.</p>';
         }
-        
+
         content.appendChild(grid);
         modal.appendChild(content);
         document.body.appendChild(modal);
@@ -234,7 +231,7 @@ export function createColorInput(key, labelText, value, onChange) {
     wrapper.appendChild(label);
     const input = document.createElement('input');
     input.type = 'color';
-    input.value = value || '#6E767F'; 
+    input.value = value || '#6E767F';
     input.addEventListener('input', (e) => onChange(e.target.value));
     wrapper.appendChild(input);
     return wrapper;
@@ -263,9 +260,6 @@ export function createCheckbox(key, labelText, value, onChange, defaultValue = t
     return container;
 }
 
-// Small visual preview that mirrors how a menu item will be rendered in the FE
-// sidebar. Kept in-sync with templates/menu.php semantics (image when the value
-// looks like a path, text glyph otherwise, dimmed when hidden).
 export function createMenuPreview() {
     const wrapper = document.createElement('div');
     wrapper.className = 'form-group menu-preview';
@@ -316,9 +310,6 @@ export function createMenuPreview() {
     return { el: wrapper, update };
 }
 
-// Shared renderer for per-section global menu settings (Dashboard/Calendar/
-// Workflows/Files). Replaces four near-identical copies and keeps the live
-// sidebar preview consistent across sections.
 export function renderGlobalSettings(ctx, options = {}) {
     const { workspaceEl, currentConfig } = ctx;
     const {
@@ -355,15 +346,10 @@ export function renderGlobalSettings(ctx, options = {}) {
     if (typeof onAfter === 'function') onAfter(ctx);
 }
 
-// Full menu preview with drag-and-drop reordering and 1-level nesting.
-// Mirrors the HTML structure of templates/menu.php so assets/css/styles.css
-// applies the exact FE look. Auto-saves to api.php?action=menu_config on change.
-// config shape: { items: [{ type, key, name, icon, hidden, children: [] }] }
 export function createFullMenuPreview(config) {
     const wrap = document.createElement('div');
     wrap.className = 'menu-preview-wrap';
 
-    // ── state ──────────────────────────────────────────────────────────────
     let state = { items: [] };
     let saveTimer = null;
 
@@ -381,11 +367,10 @@ export function createFullMenuPreview(config) {
                     method: 'POST',
                     body: JSON.stringify(payload),
                 });
-            } catch (_) { /* silent */ }
+            } catch (_) {  }
         }, 350);
     }
 
-    // ── DOM helpers ────────────────────────────────────────────────────────
     function buildIcon(icon) {
         if (!icon) {
             const img = document.createElement('img');
@@ -425,17 +410,14 @@ export function createFullMenuPreview(config) {
         return a;
     }
 
-    // ── drag state ─────────────────────────────────────────────────────────
-    let dragKey = null;        // key of item being dragged
-    let dragParent = null;     // parent key, or null if top-level
+    let dragKey = null;
+    let dragParent = null;
 
-    // ── drop indicator ─────────────────────────────────────────────────────
     function clearIndicators() {
         wrap.querySelectorAll('.menu-drop-line').forEach(el => el.remove());
         wrap.querySelectorAll('.dnd-nest-target').forEach(el => el.classList.remove('dnd-nest-target'));
     }
 
-    // Inspect cursor position within a li: 'before' | 'nest' | 'after'
     function hitZone(e, li, allowNest) {
         const r = li.getBoundingClientRect();
         const pct = (e.clientY - r.top) / r.height;
@@ -443,7 +425,6 @@ export function createFullMenuPreview(config) {
         return pct < 0.5 ? 'before' : 'after';
     }
 
-    // ── state mutations ────────────────────────────────────────────────────
     function removeDragged(items) {
         if (dragParent === null) {
             return items.filter(i => i.key !== dragKey);
@@ -470,12 +451,10 @@ export function createFullMenuPreview(config) {
         let items = removeDragged(state.items);
 
         if (zone === 'nest') {
-            // Make dragged a child of targetKey (top-level only, no further depth)
             items = items.map(p => p.key === targetKey
                 ? { ...p, children: [...(p.children || []), { ...dragged, children: [] }] }
                 : p);
         } else {
-            // Insert before/after targetKey (search top-level first, then children)
             const topIdx = items.findIndex(i => i.key === targetKey);
             if (topIdx !== -1) {
                 const at = zone === 'before' ? topIdx : topIdx + 1;
@@ -496,7 +475,6 @@ export function createFullMenuPreview(config) {
         scheduleSave();
     }
 
-    // ── per-li drag wiring ─────────────────────────────────────────────────
     function wireDrag(li, key, parentKey) {
         li.draggable = true;
 
@@ -504,7 +482,7 @@ export function createFullMenuPreview(config) {
             dragKey = key;
             dragParent = parentKey;
             e.dataTransfer.effectAllowed = 'move';
-            // Delay class add so drag image captures clean look
+
             requestAnimationFrame(() => li.classList.add('dnd-dragging'));
             e.stopPropagation();
         });
@@ -523,10 +501,6 @@ export function createFullMenuPreview(config) {
             e.dataTransfer.dropEffect = 'move';
             clearIndicators();
 
-            // Nesting is allowed only when:
-            // - both dragged and target are top-level
-            // - target has no existing children
-            // - target is not the dragged item itself
             const targetItem = state.items.find(i => i.key === key);
             const allowNest = parentKey === null &&
                               dragParent === null &&
@@ -564,7 +538,6 @@ export function createFullMenuPreview(config) {
         });
     }
 
-    // ── render ─────────────────────────────────────────────────────────────
     function rebuildDOM() {
         wrap.innerHTML = '';
 
@@ -653,11 +626,10 @@ export function createFullMenuPreview(config) {
     return { el: wrap, update };
 }
 
-// New function to handle multiple choices via checkboxes list
 export function createMultiSelect(key, labelText, options, selectedValues, onChange) {
     const wrapper = document.createElement('div');
     wrapper.className = 'form-group';
-    
+
     const label = document.createElement('label');
     label.textContent = labelText;
     wrapper.appendChild(label);
@@ -701,7 +673,7 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
     }
 
     wrapper.appendChild(container);
-    
+
     if (helpTexts[key]) {
         const help = document.createElement('span');
         help.className = 'help-text';
@@ -712,11 +684,6 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
     return wrapper;
 }
 
-// ── Shared inner-tab builder ──────────────────────────────────────────────────
-// tabs = [{label, icon}] — icon is a filename under assets/icons/ (optional).
-// Returns array of panel divs (caller fills each panel).
-// Emits the same .item-panel-items / .item-btn markup as the schema item panel
-// (see admin/style.css) so every inner-tab strip in the panel looks identical.
 export function buildInnerTabs(container, tabs) {
     const bar = document.createElement('div');
     bar.className = 'item-panel-items';
@@ -757,10 +724,6 @@ export function buildInnerTabs(container, tabs) {
     return panels;
 }
 
-// ── Standard page header ──────────────────────────────────────────────────────
-// Returns an <h2 class="admin-page-title"> + optional <p class="admin-page-desc">.
-// Use this instead of hand-rolling headings so title level, size and spacing are
-// consistent across every tab. `description` may contain HTML (or be omitted).
 export function createPageHeader(title, description) {
     const frag = document.createDocumentFragment();
     const h = document.createElement('h2');
@@ -776,9 +739,6 @@ export function createPageHeader(title, description) {
     return frag;
 }
 
-// ── Small DOM builder ─────────────────────────────────────────────────────────
-// The three-line createElement/className/textContent shape that half a dozen
-// modules had each rebuilt under their own name.
 export function el(tag, className = '', text = '') {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -786,24 +746,16 @@ export function el(tag, className = '', text = '') {
     return node;
 }
 
-// ── Table builders ────────────────────────────────────────────────────────────
-// Canonical <table class="adm-tbl"> helpers. performance.js, cron.js,
-// etl_common.js, anonymization.js and csv_import.js each carried a private,
-// byte-identical copy of these (mkTable/cronMkTable/…); import these instead.
-
 export function mkTable() {
     return el('table', 'adm-tbl');
 }
 
-// Appends a <thead> row of <th class="adm-th"> cells to `table`.
 export function mkThead(table, cols) {
     const tr = table.createTHead().insertRow();
     cols.forEach(h => tr.appendChild(el('th', 'adm-th', h)));
     return tr;
 }
 
-// A <td class="adm-td">. `extra` is inline CSS for the rare per-cell tweak
-// (truncation, colour); prefer a class where one exists.
 export function td(text, extra = '') {
     const cell = el('td', 'adm-td');
     if (extra) cell.style.cssText = extra.replace(/^[;\s]+/, '');
@@ -811,7 +763,6 @@ export function td(text, extra = '') {
     return cell;
 }
 
-// A <td class="adm-td"> wrapping an element instead of text.
 export function tdEl(child, extra = '') {
     const cell = el('td', 'adm-td');
     if (extra) cell.style.cssText = extra.replace(/^[;\s]+/, '');
@@ -819,13 +770,11 @@ export function tdEl(child, extra = '') {
     return cell;
 }
 
-// Status badge cell used by every run-history table (ETL, cron, anonymization).
 const STATUS_CLASS = { success: 'ok', error: 'danger', running: 'warn' };
 export function tdStatus(status) {
     return tdEl(el('span', 'adm-badge adm-badge-' + (STATUS_CLASS[status] || 'muted'), status || ''));
 }
 
-// Truncated, danger-coloured error cell for run-history tables.
 export function tdError(text) {
     return td(
         text || '',
@@ -833,10 +782,6 @@ export function tdError(text) {
     );
 }
 
-// ── Section card ──────────────────────────────────────────────────────────────
-// The <div class="adm-sec-card"> shell (header + body) that anonymization.js,
-// cron.js, audit.js and automations.js each hand-rolled. Returns both nodes so
-// the caller fills `body` and appends `card`.
 export function buildSectionCard(title, description = '', id = '') {
     const card = el('div', 'adm-sec-card');
     if (id) card.id = id;
@@ -855,21 +800,6 @@ export function buildSectionCard(title, description = '', id = '') {
     return { card, body };
 }
 
-// ── Modal dialog ──────────────────────────────────────────────────────────────
-// The overlay + card chrome that the Manage Users dialogs (change password, edit
-// contact details) each hand-rolled byte-for-byte, down to a literal #fff that
-// ignored the panel token. The chrome lives in .adm-modal* in admin/style.css, so
-// nothing here sets box-model styling inline.
-//
-// The caller appends its fields to `body`, writes feedback into `msgEl` and gets
-// a ready Cancel/Save pair in `actions`. Closes on Cancel, on the backdrop and on
-// Escape — the last of those the hand-rolled copies were both missing.
-//
-// Tab is trapped inside the dialog and focus returns to whatever opened it, so a
-// keyboard user is not dropped behind the overlay onto controls they cannot see.
-//
-// `subtitle` renders as "<label> <strong>value</strong>", the "User: name" line
-// both dialogs carry. Always set via textContent: the value is a username.
 export function buildModal({ title, subtitleLabel = '', subtitleValue = '', saveLabel = 'Save' }) {
     const overlay = el('div', 'adm-modal-overlay');
 
@@ -899,18 +829,12 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
-    // Whatever had focus when the dialog opened — usually the row button that
-    // opened it. Restored on close, unless the caller re-rendered it away.
     const opener = document.activeElement;
 
-    // Enabled, reachable controls inside the dialog, in DOM order. Read on every
-    // Tab rather than once: callers append their fields after buildModal returns.
     const focusables = () => [...box.querySelectorAll(
         'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
     )];
 
-    // Listener is on document, so it must come off again with the overlay or every
-    // dialog ever opened keeps handling Escape for the rest of the page's life.
     const onKey = (e) => {
         if (e.key === 'Escape') {
             close();
@@ -923,8 +847,7 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
         if (items.length === 0) {
             return;
         }
-        // Wrap at both ends, and pull focus back in when it has escaped the box
-        // (the backdrop click target and the page behind it are not in `items`).
+
         const first  = items[0];
         const last   = items[items.length - 1];
         const active = document.activeElement;

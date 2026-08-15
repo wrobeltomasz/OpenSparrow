@@ -3,23 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/security/injection.cy.js
-// ============================================================================
-// Security — injection resistance
-//
-// SQL injection, stored XSS and path traversal, probed from the outside.
-//
-// A passing SQLi test is a weak signal on its own — parameterised queries make
-// every payload look like an ordinary miss. What each case actually asserts is
-// the trio that a *broken* query cannot satisfy at once: no 500, no SQLSTATE in
-// the body, and a row count identical to the clean request. A payload that
-// changed the query shape would move at least one of them.
-//
-// The grid's identifier-shaped parameters (table, filter_col) are checked against
-// the configured schema before they ever reach SQL — those cases assert that the
-// rejection is quiet, without echoing the schema back.
-// ============================================================================
-
 const TABLE = 'companies';
 const SEED_TOKEN = 'cypress-dev-seed';
 
@@ -31,7 +14,6 @@ const SQL_PAYLOADS = [
   "%' --",
 ];
 
-/** Parse a response body that may arrive as a string or as parsed JSON. */
 function asJson(body) {
   return typeof body === 'string' ? JSON.parse(body) : body;
 }
@@ -53,8 +35,6 @@ describe('Security – SQL injection resistance', () => {
   });
 
   it('reads the table schema and a clean baseline', () => {
-    // The payload tests compare against this baseline, so it is established once
-    // through the same code path they use.
     cy.probe({
       url: `/api.php?api=schema&table=${TABLE}`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -90,8 +70,7 @@ describe('Security – SQL injection resistance', () => {
         expect(JSON.stringify(res.body), 'no database internals leaked')
           .to.not.match(/SQLSTATE|pg_query|syntax error at or near/i);
         const rows = rowsOf(asJson(res.body));
-        // A tautology that reached SQL would return every row; an ILIKE search for
-        // the literal string returns none of the seeded data.
+
         expect(rows.length, 'payload treated as a literal search term')
           .to.be.at.most(cleanCount);
       });
@@ -114,8 +93,6 @@ describe('Security – SQL injection resistance', () => {
       url: '/api.php?api=list&table=spw_users',
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
     }).then(res => {
-      // System tables are not in the configured schema, so they are unreachable
-      // through the generic grid API regardless of role.
       cy.expectDenied(res, [400, 403, 404], 'spw_users via grid API');
     });
   });
@@ -141,8 +118,6 @@ describe('Security – SQL injection resistance', () => {
   });
 
   it('the probes left the database intact', () => {
-    // The blunt end of the suite: if any payload above had executed, this count
-    // would be gone rather than merely different.
     cy.dbCount(TABLE).should('be.a', 'number');
     cy.probe({
       url: `/api.php?api=list&table=${TABLE}`,
@@ -168,7 +143,6 @@ describe('Security – stored XSS', () => {
   it('a script payload stored in a record is rendered as text, never as markup', () => {
     cy.visit('/dashboard.php');
     cy.csrfToken().then(token => {
-      // Discover a writable text column from the schema rather than hardcoding one.
       cy.probe({
         url: `/api.php?api=schema&table=${TABLE}`,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -191,10 +165,6 @@ describe('Security – stored XSS', () => {
           const newId = asJson(res.body).id;
           expect(newId, 'new record id returned').to.not.be.oneOf([null, undefined]);
 
-          // Render the single record rather than the grid: the edit form is
-          // guaranteed to contain the value, whereas a grid page might paginate
-          // it out of sight and quietly make the assertions vacuous. It also puts
-          // the payload in an attribute context, where escaping bugs are commoner.
           cy.visit(`/edit.php?table=${TABLE}&id=${newId}`);
           cy.window().then(win => {
             expect(win.__xss, 'onerror handler must never fire').to.be.undefined;
@@ -203,7 +173,7 @@ describe('Security – stored XSS', () => {
             expect($body.find('img[onerror]').length, 'payload must not become an element').to.eq(0);
             expect($body.find('script:contains("__xss")').length, 'payload must not become a script').to.eq(0);
           });
-          // Still present — as inert text/attribute value, escaped by the renderer.
+
           cy.get(`[value*="cypress-xss"], :contains("cypress-xss")`).should('exist');
         });
       });
@@ -237,8 +207,6 @@ describe('Security – path traversal', () => {
     '/etc/passwd',
   ].forEach(payload => {
     it(`file_download.php refuses uuid=${payload}`, () => {
-      // The uuid is matched against a strict UUIDv4 regex before any filesystem
-      // access, so traversal never gets as far as realpath() confinement.
       cy.probe({ url: `/file_download.php?uuid=${payload}` }).then(res => {
         cy.expectDenied(res, [400, 404], `uuid=${payload}`);
         expect(String(res.body), 'no file contents returned')

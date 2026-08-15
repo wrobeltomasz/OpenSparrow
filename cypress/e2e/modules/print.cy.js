@@ -3,16 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/print.cy.js
-// ============================================================================
-// Print Module Tests — print.php
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
-
-// ============================================================================
-// Test Suite: Print Page Structure
-// ============================================================================
 
 describe('OpenSparrow – Print: Page Structure', () => {
   beforeEach(() => {
@@ -30,10 +21,6 @@ describe('OpenSparrow – Print: Page Structure', () => {
     cy.get('#printContainer').should('exist');
   });
 });
-
-// ============================================================================
-// Test Suite: Print Selector Loading
-// ============================================================================
 
 describe('OpenSparrow – Print: Selector Loading', () => {
   beforeEach(() => {
@@ -96,10 +83,6 @@ describe('OpenSparrow – Print: Selector Loading', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Opening a Print Template
-// ============================================================================
-
 describe('OpenSparrow – Print: Open Template', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -145,10 +128,6 @@ describe('OpenSparrow – Print: Open Template', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Print via URL param
-// ============================================================================
-
 describe('OpenSparrow – Print: URL param', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -178,16 +157,6 @@ describe('OpenSparrow – Print: URL param', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Report Parameters (filters rendered in the blue app header)
-// ============================================================================
-// These templates only exist when an admin has configured "params" on a print
-// (see admin/js/print_editor.js "Report parameters" section), so every test
-// here degrades gracefully to a logged skip when none are configured — same
-// defensive pattern as the selector/open-template suites above. Filters live in
-// #printFilters in the header (same pattern as #boardFilters/#dashboardFilters)
-// and apply immediately on change, like every other header filter in the app.
 
 describe('OpenSparrow – Print: Report Parameters', () => {
   beforeEach(() => {

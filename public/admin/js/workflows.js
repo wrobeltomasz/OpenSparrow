@@ -3,12 +3,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/workflows.js — Workflows multi-step wizard editor (renderWorkflowsEditor): edits workflow steps; global settings (menu_name/icon/hidden) handled centrally in app.js.
 import { createTextInput, createSelectInput, createIconPicker } from './ui.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
-// Stored procedures available for the "call on Next step" hook, fetched once per
-// page load from the admin introspection endpoint and shared by every step editor.
 let procedureCache = null;
 
 async function loadProcedures() {
@@ -24,24 +21,18 @@ async function loadProcedures() {
     return procedureCache;
 }
 
-// Stable key identifying one procedure signature in the select control.
 function procedureKey(proc) {
     return `${proc.schema}.${proc.name}`;
 }
 
-// "app.validate_customer(p_email text, p_note text)"
 function procedureLabel(proc) {
     const args = (proc.params || []).map(p => `${p.name} ${p.type}`).join(', ');
     return `${procedureKey(proc)}(${args})`;
 }
 
-// Render the multi-step wizard configuration interface. Global Workflow
-// settings (menu_name/menu_icon/hidden) are handled centrally in app.js via
-// the shared renderGlobalSettings helper.
 export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
     const { workspaceEl, getTableOptions, getColumnOptionsForTable, renderEditor } = ctx;
 
-    // Ensure array structure for workflow steps
     if (!itemData.steps) itemData.steps = [];
 
     workspaceEl.appendChild(createTextInput('title', 'Workflow Title', itemData.title, v => itemData.title = v));
@@ -56,7 +47,7 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
 
     function renderSteps() {
         stepsContainer.innerHTML = '<h3>Workflow Steps</h3>';
-        
+
         itemData.steps.forEach((step, index) => {
             const incomplete = !step.title || step.title.trim() === '' || !step.table || step.table.trim() === '';
 
@@ -94,17 +85,15 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
             block.appendChild(header);
 
             block.appendChild(createTextInput('step_title', 'Step Name', step.title, v => step.title = v));
-            
-            // Add step description field
+
             block.appendChild(createTextInput('step_description', 'Step Description', step.description || '', v => step.description = v));
-            
+
             block.appendChild(createSelectInput('step_table', 'Target Table', getTableOptions(), step.table || '', v => {
                 step.table = v;
-                step.foreign_key = ''; 
+                step.foreign_key = '';
                 renderSteps();
             }));
 
-            // Multiple records option
             const multiOptions = [
                 { value: 'false', label: 'No (Single record)' },
                 { value: 'true', label: 'Yes (Multiple records)' }
@@ -114,22 +103,18 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
                 step.allow_multiple = (v === 'true');
             }));
 
-            // Map foreign key to previous steps
             if (index > 0 && step.table) {
                 const colOptions = getColumnOptionsForTable(step.table);
                 block.appendChild(createSelectInput('step_fk', 'Foreign Key (link to previous step)', colOptions, step.foreign_key || '', v => step.foreign_key = v));
-                
+
                 const prevSteps = [{value: '', label: '-- Select Previous Step --'}];
                 for (let i = 0; i < index; i++) {
                     prevSteps.push({value: i.toString(), label: `Step ${i + 1}: ${itemData.steps[i].title || 'Unnamed'}`});
                 }
-                
+
                 block.appendChild(createSelectInput('link_to_step', 'Link to ID from Step', prevSteps, (step.link_to_step !== undefined ? step.link_to_step.toString() : ''), v => step.link_to_step = parseInt(v)));
             }
 
-            // ---- Stored procedure called when the user clicks "Next step" ----
-            // Only form values and literals can be passed: the wizard defers all
-            // database writes to the final review screen, so no record id exists yet.
             const proc = step.procedure || {};
             const procEnabledOptions = [
                 { value: 'false', label: 'No' },
@@ -162,8 +147,7 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
                     if (picked) {
                         step.procedure.schema = picked.schema;
                         step.procedure.name = picked.name;
-                        // One positional entry per declared IN parameter — fixed arity
-                        // prevents an argument-count mismatch at call time.
+
                         step.procedure.params = (picked.params || []).map(() => ({ source: 'field', step: index, field: '' }));
                     } else {
                         step.procedure.schema = '';
@@ -206,8 +190,6 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
                                 v => paramCfg.value = v
                             ));
                         } else {
-                            // Fields of the current step and every earlier step are
-                            // available — earlier steps are already buffered by then.
                             const stepOptions = [];
                             for (let i = 0; i <= index; i++) {
                                 stepOptions.push({
@@ -245,7 +227,6 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
                 }
             }
 
-            // Wrap everything after the header into the collapsible body.
             const bodyDiv = document.createElement('div');
             bodyDiv.className = 'block-body';
             while (block.children.length > 1) bodyDiv.appendChild(block.children[1]);
@@ -266,8 +247,6 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
 
     renderSteps();
 
-    // The procedure list arrives asynchronously; re-render once it lands so the
-    // dropdowns populate without blocking the initial paint of the editor.
     if (procedureCache === null) {
         loadProcedures().then(() => renderSteps());
     }

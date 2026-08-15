@@ -7,14 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/dashboard.php — admin api.php module: dashboard widget editor helpers.
-// Action: dashboard_calculate — runs the widget's *unsaved* query (as currently edited
-// in the admin form) against real data, so the operator can verify the WHERE conditions
-// and aggregation before saving. Included by public/admin/api.php AFTER the admin-role
-// gate, CSRF check and POST-method enforcement — never include or serve this file
-// directly. Uses $action / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() helpers defined by the front controller.
-
 if ($action === 'dashboard_calculate') {
     try {
         require_once __DIR__ . '/../../includes/db.php';

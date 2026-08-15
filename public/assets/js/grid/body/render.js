@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/body/render.js — renderTbody(): builds grid rows, delegating each cell to its registered CellRenderer (imports all cell types so they self-register); adds row actions + expand button.
-
 import { I18n } from '../../i18n.js';
 import { deleteRow, duplicateRow } from '../../grid_actions.js';
 import { state } from '../state.js';
@@ -14,7 +12,6 @@ import { makeIconButton } from '../dom.js';
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from '../../util/record-tooltip.js';
 import { matchHighlightRule } from '../highlight-rules.js';
 
-// Import cell renderers so they self-register
 import '../cells/fk-cell.js';
 import '../cells/enum-cell.js';
 import '../cells/boolean-cell.js';
@@ -35,7 +32,7 @@ function resolveCellType(colCfg, hasFk) {
 }
 
 function attachRowTooltip(td, row, schema, col, type) {
-    if (type === 'fk') return; // interactive search widget; native datalist popup breaks hide events
+    if (type === 'fk') return;
     const columns = schema.tables[state.currentTable]?.columns || {};
     td.style.cursor = 'default';
 
@@ -91,7 +88,6 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             tr.appendChild(td);
         }
 
-        // M2M columns — one TD per configured relationship, populated async by loader.js
         const m2mList = schema.tables[state.currentTable]?.many_to_many || [];
         for (let mi = 0; mi < m2mList.length; mi++) {
             const tdM2m = document.createElement('td');
@@ -102,7 +98,6 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             tr.appendChild(tdM2m);
         }
 
-        // Image gallery column — populated async by images/loader.js
         const imagesCfg = schema.tables[state.currentTable]?.images;
         if (imagesCfg?.enabled && imagesCfg.show_in_grid) {
             const tdImg = document.createElement('td');
@@ -112,13 +107,10 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             tr.appendChild(tdImg);
         }
 
-        // Actions column
         if (!isReadOnly) {
             tr.appendChild(buildActionsCell(row, schema, isReadOnly, onTableReload));
         }
 
-        // Applied per-td (not on tr) because tbody tr:nth-child(even) td / :hover td
-        // both set their own background on the td, which would otherwise mask a tr-level color.
         if (highlightColor) {
             tr.querySelectorAll('td').forEach(td => { td.style.backgroundColor = highlightColor; });
         }

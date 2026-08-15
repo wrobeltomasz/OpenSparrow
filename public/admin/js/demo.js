@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/demo.js — Demo sample-app catalog + install UI
-// DEMOS metadata (CRM: label, schema, tables, feature list); installs/uninstalls the demo app via api.php (demo_install / demo_uninstall / demo_status).
-
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createPageHeader } from './ui.js';
 
@@ -26,8 +23,7 @@ const DEMOS = {
         color:       'var(--muted)',
         icon:        'assets/icons/account_box.png',
         recommended: true,
-        // Keep in sync with public/admin/demo/crm.php — these counts are what the
-        // definition actually installs, not what an older build shipped.
+
         features:    [
             '7 dashboard widgets',
             'Stat, bar, pie and line charts',
@@ -52,7 +48,6 @@ const DEMOS = {
         ],
     },
 };
-
 
 function apiPost(action, body) {
     return apiFetch(`api.php?action=${action}`, {
@@ -84,8 +79,6 @@ export function renderDemoPage({ workspaceEl }) {
                 renderInstallForm(workspaceEl, { snapshotsLockedByEnv: !!d.snapshots_locked_by_env });
             }
         } catch (e) {
-            // Exception text often originates from the API — build the node
-            // instead of interpolating it into HTML.
             workspaceEl.innerHTML = '';
             const err = document.createElement('p');
             err.className = 'admin-error';
@@ -95,9 +88,6 @@ export function renderDemoPage({ workspaceEl }) {
     })();
 }
 
-// One install option: checkbox, clickable label and the help text explaining what it
-// installs and why you might want it off. Returns the row so callers can reach the
-// input; keeps the three options below from repeating the same eight nodes.
 function buildInstallOption({ id, label, help, checked = true }) {
     const wrap = document.createElement('div');
     wrap.className = 'demo-install-option';
@@ -157,9 +147,6 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
     confirmInput.placeholder = 'CONFIRM';
     confirmInput.className   = 'demo-confirm-input';
 
-    // Optional parts of the install. All three default to on — the demo is meant to
-    // show the whole platform — but each is separable, and the help text says what you
-    // lose by turning it off so the choice is informed rather than a guess.
     const options = document.createElement('div');
     options.className = 'demo-install-options';
 
@@ -168,9 +155,6 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
     optTitle.textContent = 'What to install';
     options.appendChild(optTitle);
 
-    // Knowledge base. The documents are inert without Ollama (they just sit in
-    // spw_rag_files), but without them the Ask AI panel has nothing to retrieve and
-    // looks broken on a fresh demo.
     const rag = buildInstallOption({
         id:    'demo-rag-docs-chk',
         label: 'RAG knowledge base',
@@ -180,9 +164,6 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
             + 'not plan to use Ask AI — the Ask AI panel will then return nothing.',
     });
 
-    // Demo accounts. A genuine opt-out rather than a convenience one: the accounts
-    // share one fixed password documented in the repository, so an installation
-    // reachable from a network may legitimately not want them.
     const users = buildInstallOption({
         id:    'demo-users-chk',
         label: 'Demo users and collaboration data',
@@ -193,8 +174,6 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
             + 'and automations are unaffected; file attachments are installed under your own account.',
     });
 
-    // Audit history. A bare toggle would leave both the Audit module and the per-record
-    // history empty until the first manual edit, so this seeds backdated entries too.
     const audit = buildInstallOption({
         id:    'demo-audit-chk',
         label: 'Audit history and record snapshots',
@@ -204,8 +183,6 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
             + 'and per-record history stay empty until you make the first edit yourself.',
     });
 
-    // Audit entries are attributed to the demo accounts, so the option cannot outlive
-    // them; the server enforces the same dependency in demo_install.
     const syncAuditAvailability = () => {
         const envLocked = snapshotsLockedByEnv;
         const blocked   = envLocked || !users.chk.checked;

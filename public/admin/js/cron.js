@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/cron.js — Cron notifications management page
-// Shows run log/stats and lets the admin trigger or purge cron via api.php (cron_log, cron_stats, cron_purge_log, run_cron_notifications). CSRF via apiFetch().
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdEl, buildSectionCard } from './ui.js';
 
@@ -18,16 +16,9 @@ function statusBadge(status) {
     return b;
 }
 
-// Table and section-card builders now live in ui.js (mkTable / mkThead / td /
-// tdEl / buildSectionCard) — this module used to carry cron-prefixed copies.
-
-// cronMakeSection(id, title, desc) kept as a thin adapter so the six call sites
-// below stay readable; buildSectionCard takes (title, desc, id).
 function cronMakeSection(id, title, description) {
     return buildSectionCard(title, description, id);
 }
-
-// ─── Section 1: Manual Run ────────────────────────────────────────────────────
 
 function buildManualRunSection() {
     const { card, body } = cronMakeSection('cron-section-0', 'Manual Run', 'Trigger the notification cron immediately outside the scheduler.');
@@ -69,8 +60,6 @@ function buildManualRunSection() {
     body.append(runBtn, output);
     return card;
 }
-
-// ─── Section 2: Run History ───────────────────────────────────────────────────
 
 function buildRunHistorySection() {
     const { card, body } = cronMakeSection('cron-section-1', 'Run History', 'Last 50 cron executions from spw_users_notifications_log.');
@@ -131,8 +120,6 @@ function buildRunHistorySection() {
     body.append(loadBtn, container);
     return card;
 }
-
-// ─── Section 3: Notification Stats ───────────────────────────────────────────
 
 function buildStatsSection() {
     const { card, body } = cronMakeSection('cron-section-2', 'Notification Stats', 'Current totals from spw_users_notifications, top unread per user.');
@@ -227,8 +214,6 @@ function buildStatsSection() {
     return card;
 }
 
-// ─── Section 4: Cron Setup Guide ─────────────────────────────────────────────
-
 function buildSetupSection() {
     const { card, body } = cronMakeSection('cron-section-3', 'Cron Setup', 'How to schedule automatic notification dispatch on your server.');
 
@@ -292,8 +277,6 @@ function buildSetupSection() {
     body.append(content, note);
     return card;
 }
-
-// ─── Section 5: Log Cleanup ───────────────────────────────────────────────────
 
 function buildCleanupSection() {
     const { card, body } = cronMakeSection('cron-section-4', 'Log Cleanup', 'Delete old cron run entries from spw_users_notifications_log.');
@@ -366,8 +349,6 @@ function buildCleanupSection() {
     return card;
 }
 
-// ─── Section 6: Email Delivery ───────────────────────────────────────────────
-
 function cronField(labelText, inputEl) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-bottom:14px;';
@@ -382,7 +363,6 @@ function cronField(labelText, inputEl) {
 function buildEmailSection() {
     const { card, body } = cronMakeSection('cron-section-5', 'Email Delivery', 'Delivery settings for queued automation emails (spw_automation_emails). By default OpenSparrow uses the server\'s PHP mail() — enable SMTP below to send through an authenticated mail server instead.');
 
-    // ── From address ──────────────────────────────────────────────────────
     const fromInput = document.createElement('input');
     fromInput.type = 'email';
     fromInput.id = 'cron-email-from';
@@ -396,7 +376,6 @@ function buildEmailSection() {
 
     body.append(cronField('From address', fromInput), lockNote);
 
-    // ── SMTP enabled toggle ───────────────────────────────────────────────
     const smtpRow = document.createElement('div');
     smtpRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:16px;';
     const smtpChk = document.createElement('input');
@@ -410,7 +389,6 @@ function buildEmailSection() {
     smtpRow.append(smtpChk, smtpLbl);
     body.appendChild(smtpRow);
 
-    // ── SMTP fields ────────────────────────────────────────────────────────
     const smtpFields = document.createElement('div');
     smtpFields.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0 16px;';
 
@@ -452,7 +430,6 @@ function buildEmailSection() {
     );
     body.appendChild(smtpFields);
 
-    // Password — write-only, same pattern as the RAG Ollama API key field.
     const passRow = document.createElement('div');
     passRow.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:6px;';
     const passInput = document.createElement('input');
@@ -487,7 +464,6 @@ function buildEmailSection() {
 
     body.append(cronField('Password', passRow), passStatus);
 
-    // ── Actions ────────────────────────────────────────────────────────────
     const actionRow = document.createElement('div');
     actionRow.style.cssText = 'display:flex; gap:10px; align-items:center; margin-top:6px;';
 
@@ -614,8 +590,6 @@ function buildEmailSection() {
     load();
     return card;
 }
-
-// ─── Main render ──────────────────────────────────────────────────────────────
 
 export function renderCronPage(ctx) {
     const { workspaceEl } = ctx;

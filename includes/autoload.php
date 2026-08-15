@@ -7,10 +7,6 @@
 
 declare(strict_types=1);
 
-// autoload.php — PSR-4 style autoloader for App\ namespace
-// Maps App\* classes to src/ directory; registered via spl_autoload_register
-// No security logic; purely for class loading
-
 spl_autoload_register(static function (string $class): void {
     if (!str_starts_with($class, 'App\\')) {
         return;

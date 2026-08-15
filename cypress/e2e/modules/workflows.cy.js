@@ -3,32 +3,14 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/workflows.cy.js
-// ============================================================================
-// Workflows Module Tests
-// Workflows are rendered in #grid container via index.php?workflows
-// or by clicking the sidebar link a[data-page="workflows"]
-// ============================================================================
-
 const BASE       = 'http://localhost:8080';
 
-// ─── helper ──────────────────────────────────────────────────────────────────
-
-/**
- * Wait for workflow cards or empty/error state inside #grid.
- * Returns true if workflow list rendered, false if no workflows configured.
- */
 function waitForWorkflowList({ timeout = CypressHelpers.TIMEOUTS.long } = {}) {
   return cy.get('#grid, [data-cy=grid]', { timeout }).then($grid => {
-    // Cards have no stable CSS class — use h3 as proxy for card titles
     const hasCards = $grid.find('h3').length > 0;
     return hasCards;
   });
 }
-
-// ============================================================================
-// Test Suite: Workflows Page via URL
-// ============================================================================
 
 describe('OpenSparrow – Workflows: Page Load', () => {
   beforeEach(() => {
@@ -56,10 +38,6 @@ describe('OpenSparrow – Workflows: Page Load', () => {
       .should('exist');
   });
 });
-
-// ============================================================================
-// Test Suite: Workflows List Rendering
-// ============================================================================
 
 describe('OpenSparrow – Workflows: List', () => {
   beforeEach(() => {
@@ -102,10 +80,6 @@ describe('OpenSparrow – Workflows: List', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Workflow Step Wizard
-// ============================================================================
-
 describe('OpenSparrow – Workflows: Step Wizard', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -120,7 +94,6 @@ describe('OpenSparrow – Workflows: Step Wizard', () => {
         return;
       }
 
-      // Click first card (they have no stable class; use first div > div in grid)
       cy.get('#grid').find('h3').first().closest('div').click();
 
       cy.get('#wf-step-bar', { timeout: CypressHelpers.TIMEOUTS.long })
@@ -181,10 +154,6 @@ describe('OpenSparrow – Workflows: Step Wizard', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Workflows Sidebar Link
-// ============================================================================
 
 describe('OpenSparrow – Workflows: Sidebar Navigation', () => {
   beforeEach(() => {

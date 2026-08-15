@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/images/popup.js — Hover popup showing a row's gallery images larger
-// (thumbnails read from the image loader store).
-
 import { getImageEntry, thumbUrl, fullUrl } from './loader.js';
 import { createHoverPopup } from '../hover-popup.js';
 

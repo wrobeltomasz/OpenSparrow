@@ -3,26 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/bulk_panel.js — Reusable slide-in drawer (BulkPanel class) for bulk operations; CSS prefix bp-. Used by grid mass-edit, owner and export panels.
-
-/**
- * BulkPanel — universal reusable slide-in drawer panel for bulk operations.
- *
- * Usage:
- *   const panel = new BulkPanel({ id, title, applyLabel, showApply });
- *   panel.onApply(handler);   // handler receives (panelInstance)
- *   panel.onClose(handler);   // optional
- *   panel.open();
- *   panel.bodyEl              // populate with your form fields
- *   panel.setStatus(msg, isError);
- *   panel.setApplyDisabled(bool);
- *   panel.close();
- *
- * Pass showApply: false for a read-only panel (no footer/Apply button).
- *
- * CSS prefix: bp-
- */
-
 export class BulkPanel {
     constructor({ id, title, applyLabel = 'Apply', showApply = true }) {
         this._id          = id;

@@ -7,27 +7,14 @@
 
 declare(strict_types=1);
 
-// config_store.php — DB-backed configuration store (spw_config / spw_config_log)
-// spw_config is the sole source of truth: 3.0 is the first shipped version, so no instance
-// ever had file-based config to fall back to. config/database.json (and security.json) stay
-// files because they are read before a database connection exists.
-// config_get($key) returns the decoded config value; config_get_row($key) also returns
-// the optimistic-lock version.
-// config_save() is transactional: SELECT ... FOR UPDATE, version check, UPDATE/INSERT,
-// audit row in spw_config_log. Caches per request (static) and in APCu when available.
-
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
 
-/**
- * Shared lazy connection for config reads/writes. Returns null when the database
- * is unreachable — reads then behave as "not configured" and writes report an error.
- */
 function config_store_conn(): ?\PgSql\Connection
 {
     static $conn = null;
     static $failed = false;
-    // db_connect() hands out a shared connection; re-open when other code closed it.
+
     if ($conn !== null && @pg_connection_status($conn) !== PGSQL_CONNECTION_OK) {
         $conn = null;
     }
@@ -41,29 +28,13 @@ function config_store_conn(): ?\PgSql\Connection
     return $conn;
 }
 
-/**
- * Validate a config key (matches the config/{$key}.json file-name convention).
- */
 function config_valid_key(string $key): bool
 {
     return preg_match('/^[a-z0-9_]{1,64}$/', $key) === 1;
 }
 
-/**
- * Marker stored in place of a row for a key that has no row yet, used only when a
- * caller opts into negative caching via config_get_row()'s $absentTtl.
- */
 const CONFIG_CACHE_ABSENT = ['spw_absent' => true];
 
-/**
- * Per-request + APCu cache access. $row is ['value' => array, 'version' => int],
- * CONFIG_CACHE_ABSENT, or null (which clears the entry).
- *
- * By default a missing key is NOT cached across requests — it only means "not saved
- * yet", and a key can appear at any time. $ttl exists for the opt-in negative entry:
- * config_save() writes through to this same APCu key on every successful save, so a
- * cached "absent" is replaced the moment the key is actually created.
- */
 function config_cache(string $key, ?array $row = null, bool $write = false, int $ttl = 300): ?array
 {
     static $cache = [];
@@ -92,17 +63,6 @@ function config_cache(string $key, ?array $row = null, bool $write = false, int 
     return null;
 }
 
-/**
- * Full row lookup. Returns ['value' => array, 'version' => int] or null when the
- * key has no row yet (callers treat that as "not configured" and use their defaults).
- *
- * $absentTtl caches the "no row" answer for that many seconds. Opt-in, because a key
- * normally has to be able to appear at any time — pass it only where the absent case
- * is the steady state and the lookup is on a hot path. A key created through
- * config_save() invalidates the entry immediately (it writes through to the same APCu
- * key); one created by other means stays hidden for up to $absentTtl, which is the
- * same staleness the positive cache already carries.
- */
 function config_get_row(string $key, int $absentTtl = 0): ?array
 {
     if (!config_valid_key($key)) {
@@ -139,23 +99,12 @@ function config_get_row(string $key, int $absentTtl = 0): ?array
     return null;
 }
 
-/**
- * Convenience accessor: decoded config value or null when absent.
- * See config_get_row() for $absentTtl.
- */
 function config_get(string $key, int $absentTtl = 0): ?array
 {
     $row = config_get_row($key, $absentTtl);
     return $row['value'] ?? null;
 }
 
-/**
- * Transactional save with optimistic locking and spw_config_log audit trail.
- * $expectedVersion null = last-write-wins (also used for first-time inserts);
- * a non-null version that no longer matches returns status "conflict".
- * Returns ['status' => 'ok', 'version' => int] | ['status' => 'conflict']
- *       | ['status' => 'error', 'error' => string].
- */
 function config_save(string $key, array $data, ?int $expectedVersion = null, ?int $userId = null): array
 {
     if (!config_valid_key($key)) {
@@ -207,7 +156,6 @@ function config_save(string $key, array $data, ?int $expectedVersion = null, ?in
             );
         } else {
             if ($expectedVersion !== null && $expectedVersion !== 0) {
-                // Caller expected an existing row (it was deleted concurrently).
                 pg_query($conn, 'ROLLBACK');
                 return ['status' => 'conflict'];
             }
@@ -244,9 +192,6 @@ function config_save(string $key, array $data, ?int $expectedVersion = null, ?in
     return ['status' => 'ok', 'version' => $newVersion];
 }
 
-/**
- * Delete a config key (audit-logged). Returns true when the row existed.
- */
 function config_delete(string $key, ?int $userId = null): bool
 {
     if (!config_valid_key($key)) {

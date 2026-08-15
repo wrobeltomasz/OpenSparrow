@@ -3,11 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-/* admin/js/print_editor.js — Printouts module admin editor (renderPrintEditor):
-   edits the "print" config templates via api/print.php (config / columns / save).
-   Each template is bound to a PostgreSQL view from the Views module; the available
-   variables (columns) are fetched live from the database so the user never types them. */
-
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createIconPicker, buildInnerTabs } from './ui.js';
 
@@ -15,13 +10,11 @@ export function renderPrintEditor(ctx) {
     const { workspaceEl, setSaveHandler } = ctx;
     workspaceEl.innerHTML = '';
 
-    /* ---------- state ---------- */
-    let prints      = {};     // "prints" object from the config store (working copy)
-    let cfgVersion  = 0;      // optimistic-lock version echoed back on save
-    let dbViews     = [];     // selectable PostgreSQL view names (from the "views" config)
-    let viewColumns = {};     // view -> [{name, data_type}] (lazy, from action=columns)
+    let prints      = {};
+    let cfgVersion  = 0;
+    let dbViews     = [];
+    let viewColumns = {};
 
-    /* ---------- root layout ---------- */
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
 
@@ -39,7 +32,6 @@ export function renderPrintEditor(ctx) {
         { label: 'Global Settings', icon: 'car_gear.png' },
     ]);
 
-    /* ---------- Global Settings tab ---------- */
     const globalHeading = document.createElement('h3');
     globalHeading.textContent = 'Global Settings';
     const globalDesc = document.createElement('p');
@@ -48,7 +40,6 @@ export function renderPrintEditor(ctx) {
     globalPanel.appendChild(globalHeading);
     globalPanel.appendChild(globalDesc);
 
-    /* ---------- action bar (same placement/style as Schema's "Sync DB Tables") ---------- */
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
     const addBtn = document.createElement('button');
@@ -95,7 +86,6 @@ export function renderPrintEditor(ctx) {
         statusEl.textContent = msg;
     }
 
-    /* ---------- columns of a view (lazy fetch, cached) ---------- */
     async function fetchColumns(viewName) {
         if (!viewName) return [];
         if (viewColumns[viewName]) return viewColumns[viewName];
@@ -110,7 +100,6 @@ export function renderPrintEditor(ctx) {
         }
     }
 
-    /* ---------- form-group helpers ---------- */
     function fg(label, value, onChange) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
@@ -140,7 +129,6 @@ export function renderPrintEditor(ctx) {
         return grp;
     }
 
-    /* ---------- variables badge row (auto-fetched from the view) ---------- */
     function buildVariablesRow(cols) {
         const box = document.createElement('div');
         box.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;';
@@ -161,7 +149,6 @@ export function renderPrintEditor(ctx) {
         return box;
     }
 
-    /* ---------- single template card ---------- */
     function buildPrintCard(pName, cfg) {
         const card = document.createElement('div');
         card.className = 'column-block collapsed';
@@ -232,25 +219,22 @@ export function renderPrintEditor(ctx) {
         return card;
     }
 
-    /* ---------- card body ---------- */
     async function buildCardBody(pName, cfg, body, nameSpan) {
         body.innerHTML = '';
 
-        /* General */
         const genHdr = document.createElement('h4');
         genHdr.textContent = 'General';
         body.appendChild(genHdr);
 
         body.appendChild(fg('Display name', cfg.display_name ?? pName, v => {
             prints[pName].display_name = v;
-            // firstChild is the name text node; keep the trailing .block-key span intact.
+
             nameSpan.firstChild.nodeValue = v || pName;
         }));
         body.appendChild(fg('Menu name', cfg.menu_name ?? pName, v => { prints[pName].menu_name = v; }));
         body.appendChild(fgArea('Description', cfg.description ?? '', v => { prints[pName].description = v; }));
         body.appendChild(createIconPicker('icon', 'Icon', cfg.icon || 'assets/icons/picture_as_pdf.png', v => { prints[pName].icon = v; }));
 
-        /* Data source */
         const srcHdr = document.createElement('h4');
         srcHdr.textContent = 'Data source (PostgreSQL view)';
         body.appendChild(srcHdr);
@@ -283,10 +267,6 @@ export function renderPrintEditor(ctx) {
         let varsRow = buildVariablesRow([]);
         body.appendChild(varsRow);
 
-        /* Parameters — optional filters shown to the user before the report is generated,
-           e.g. "pick an employee". Each filters the report view by one column; the dropdown
-           options come either from a separate lookup view or from distinct values of that
-           column itself. */
         const paramsHdr = document.createElement('h4');
         paramsHdr.textContent = 'Report parameters';
         body.appendChild(paramsHdr);
@@ -305,7 +285,6 @@ export function renderPrintEditor(ctx) {
         if (!Array.isArray(prints[pName].params)) prints[pName].params = [];
         const params = prints[pName].params;
 
-        /* Blocks */
         const blkHdr = document.createElement('h4');
         blkHdr.textContent = 'Template blocks';
         body.appendChild(blkHdr);
@@ -420,7 +399,7 @@ export function renderPrintEditor(ctx) {
                 row.appendChild(colsHint);
 
                 if (!Array.isArray(block.columns)) block.columns = [];
-                // Normalize legacy bare-string entries to {name, align} objects.
+
                 block.columns = block.columns.map(c => (typeof c === 'string' ? { name: c, align: 'left' } : c));
 
                 const colsBox = document.createElement('div');
@@ -569,7 +548,6 @@ export function renderPrintEditor(ctx) {
                 titleSpan.textContent = `${idx + 1}. ${param.label || param.key || 'parameter'}`;
             }));
 
-            /* Filter column — must belong to this template's own report view */
             const colGrp = document.createElement('div');
             colGrp.className = 'form-group';
             const colLbl = document.createElement('label');
@@ -603,8 +581,6 @@ export function renderPrintEditor(ctx) {
             reqLabel.appendChild(document.createTextNode('Required (hides the "— all —" option; user must pick a value)'));
             row.appendChild(reqLabel);
 
-            /* Lookup view (optional) — a separate view supplying nicer value/label pairs
-               for the dropdown, e.g. v_employees.id / v_employees.full_name */
             const srcGrp = document.createElement('div');
             srcGrp.className = 'form-group';
             const srcLbl = document.createElement('label');
@@ -695,7 +671,6 @@ export function renderPrintEditor(ctx) {
         });
         paramsList.after(addParamBtn);
 
-        /* add-block buttons */
         const addRow = document.createElement('div');
         addRow.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap;';
         [
@@ -717,7 +692,6 @@ export function renderPrintEditor(ctx) {
         await refreshVariables();
     }
 
-    /* ---------- list ---------- */
     function renderList() {
         listEl.innerHTML = '';
         const names = Object.keys(prints);
@@ -731,7 +705,6 @@ export function renderPrintEditor(ctx) {
         names.forEach(pName => listEl.appendChild(buildPrintCard(pName, prints[pName] ?? {})));
     }
 
-    /* ---------- add printout ---------- */
     addBtn.addEventListener('click', () => {
         const raw = prompt('Internal key of the new printout (letters, digits, _ or -):', '');
         if (raw === null) return;
@@ -758,7 +731,6 @@ export function renderPrintEditor(ctx) {
         setStatus(`Printout "${key}" added. Configure it below, then click Save config in the top right.`, 'ok');
     });
 
-    /* ---------- init ---------- */
     (async () => {
         try {
             const res  = await apiFetch('../api/print.php?action=config');
@@ -769,8 +741,7 @@ export function renderPrintEditor(ctx) {
             }
             prints     = data.config?.prints ?? {};
             cfgVersion = data.version ?? 0;
-            /* PHP serializes an empty map as [] — normalize to a plain object, otherwise
-               JSON.stringify drops named properties added onto the array on save */
+
             if (!prints || typeof prints !== 'object' || Array.isArray(prints)) {
                 prints = {};
             }

@@ -3,10 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/hover-popup.js — createHoverPopup(): shared body-appended hover popup
-// (viewport-clamped positioning, mouseenter/mouseleave-safe hide-with-grace-period) used
-// by the comment preview popup and the M2M popup.
-
 export function createHoverPopup({ className, width, verticalThreshold, hideDelay = 150 }) {
     const el = document.createElement('div');
     el.className = className;

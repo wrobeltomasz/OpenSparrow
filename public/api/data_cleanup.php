@@ -7,14 +7,8 @@
 
 declare(strict_types=1);
 
-// api/data_cleanup.php — Bulk data-cleanup API (editor-only)
-// Auth gate: session + UA enforcement; requires editor role; CSRF on POST
-// POST actions: data_cleanup_preview (dry-run report), data_cleanup_apply (executes removal of orphaned/stale records based on schema relations)
-// Reads the "schema" config; parameterized queries; sys_table()
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Auth gate + editor-role gate + header CSRF on POST; returns an open DB connection
 $conn = os_api_bootstrap(['role' => 'editor']);
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -23,7 +17,6 @@ $action = $_GET['action'] ?? '';
 require_once __DIR__ . '/../../includes/config_store.php';
 $schema = config_get('schema') ?? ['tables' => []];
 
-// Escape a string for use as a POSIX ERE literal (all metacharacters neutralised).
 function pgRegexEscape(string $s): string
 {
     $special = ['.', '*', '+', '?', '[', ']', '{', '}', '(', ')', '|', '^', '$', '\\'];
@@ -36,11 +29,8 @@ function pgRegexEscape(string $s): string
     return $result;
 }
 
-// Build a POSIX ERE character class for each char that covers its accented variants
-// (both lower and upper case). Non-accented chars are regex-escaped literally.
 function buildAccentPattern(string $text): string
 {
-    // Base → set of all variants (lowercase keys only; uppercase auto-derived).
     $map = [
         'a' => 'aàáâãäåą',
         'c' => 'cćçč',
@@ -69,7 +59,7 @@ function buildAccentPattern(string $text): string
             $lowerVariants = preg_split('//u', $map[$ch], -1, PREG_SPLIT_NO_EMPTY);
             $upperVariants = array_map(fn($c) => mb_strtoupper($c, 'UTF-8'), $lowerVariants);
             $all = array_unique(array_merge($lowerVariants, $upperVariants));
-            // Escape chars that have special meaning inside a POSIX character class.
+
             $escaped = implode('', array_map(function ($c) {
                 return in_array($c, [']', '\\', '^', '-'], true) ? '\\' . $c : $c;
             }, $all));
@@ -81,8 +71,6 @@ function buildAccentPattern(string $text): string
     return $result;
 }
 
-// Validate table + column from request body against schema.json.
-// Returns [tableCfg, schemaName, colSql, tblSql] or exits with error.
 function validateInput(array $body, array $schema, $conn): array
 {
     $tableName = $body['table']  ?? '';
@@ -110,7 +98,6 @@ function validateInput(array $body, array $schema, $conn): array
     return [$tableCfg, $schemaName, $tableName, $colSql, $tblSql];
 }
 
-// Build regex pattern and SQL expression components from request flags.
 function buildExpressions(
     string $find,
     string $replace,
@@ -127,7 +114,6 @@ function buildExpressions(
     $flags   = $caseInsensitive ? 'ig' : 'g';
     $whereOp = $caseInsensitive ? '~*' : '~';
 
-    // Escape backslashes in replacement to prevent regexp_replace backreference substitution.
     $safeReplace = str_replace('\\', '\\\\', $replace);
 
     return [$pattern, $flags, $whereOp, $safeReplace];
@@ -159,9 +145,6 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
     $whereSql   = "{$colSql} {$whereOp} \$1 AND {$colSql} IS NOT NULL";
     $replaceExp = "regexp_replace({$colSql}, \$1, \$2, '{$flags}')";
 
-    // Owner-restricted preview: count and sample rows must match what apply will actually touch.
-    // Param positions differ between count ($1=pattern) and row ($1=pattern,$2=safeReplace),
-    // so the owner params land at $2/$3 vs $3/$4 respectively — separate branches required.
     if (!empty($tableCfg['owner_restricted'])) {
         $uid      = (int)$_SESSION['user_id'];
         $ownerCnt = owner_restriction_sql('_t.id', 2, 3);

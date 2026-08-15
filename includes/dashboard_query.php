@@ -7,14 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/dashboard_query.php — shared dashboard widget query builder/executor.
-// Used by public/api.php (GET api=dashboard, live rendering + global date filter) and
-// includes/admin/dashboard.php (admin "Calculate" preview against real data, no date
-// filter). One implementation so the two never drift apart.
-
-// Builds a parenthesised WHERE fragment (without the WHERE keyword) from a widget's
-// structured conditions array. Column validated against $tableCfg, op against an
-// allowlist, values escaped via pg_escape_string(). Returns '' if nothing is valid.
 function dashboard_conditions_sql($conn, array $tableCfg, array $conditions): string
 {
     $condParts = [];
@@ -47,9 +39,6 @@ function dashboard_conditions_sql($conn, array $tableCfg, array $conditions): st
     return count($condParts) > 1 ? '(' . $built . ')' : $built;
 }
 
-// Executes one widget's query (count/sum/avg/group_by/time_series/list) given an
-// already-built ' WHERE ...' fragment (may be ''). Returns the same shape that
-// api=dashboard merges onto the widget: data / sql_error / column_type / column_types.
 function dashboard_run_widget_query(
     $conn,
     array $tableCfg,

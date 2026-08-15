@@ -3,10 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/dashboard/delta.js — buildDelta(widget): previous-period trend badge for count/sum cards.
-// Compares widget.data with widget.prev_data (sent by api.php only when a global date filter is active);
-// returns a styled element or null when there is nothing to compare.
-
 import { I18n } from '../i18n.js';
 
 function buildDelta(widget) {
@@ -19,7 +15,6 @@ function buildDelta(widget) {
     el.className = 'dash-delta ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat');
 
     if (prev === 0) {
-        // No baseline — a percentage would be meaningless, show the absolute change
         el.textContent = diff === 0 ? '0%' : (diff > 0 ? '+' : '') + String(diff);
     } else {
         const pct = (diff / prev) * 100;

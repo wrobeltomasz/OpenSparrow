@@ -7,29 +7,9 @@
 
 declare(strict_types=1);
 
-// cron/cron_etl_flow.php — ETL Flow worker.
-// CLI-only. Reads the "etl_flows" config from the spw_config store and runs each
-// enabled flow: an ordered chain of existing ETL job ids (from the "etl" config),
-// executed strictly in sequence, stopping at the first failing step. Flows run one
-// at a time in-process — a chain of steps has no parallelism to exploit, unlike
-// independent jobs in cron_etl.php.
-// Logs each flow run to spw_etl_flow_run_log (summary) and spw_etl_flow_step_log
-// (per-step detail), and also logs each step to spw_etl_log (triggered_by = 'flow')
-// so the Jobs > History tab shows flow-triggered runs too — all best-effort,
-// tolerates the tables being absent.
-// Usage:
-//   php cron_etl_flow.php                    — run all scheduled flows (respects frequency guard)
-//   php cron_etl_flow.php admin              — run all enabled flows now
-//   php cron_etl_flow.php admin <flowId>     — run a single flow now
-//   php cron_etl_flow.php admin <flowId> dry — dry run: every step runs with dryRun=true
-
 require_once __DIR__ . '/../includes/etl_cli.php';
 etl_cli_boot();
 
-/**
- * Best-effort: write the flow's last_run_status/last_run_at back into the
- * "etl_flows" config, retrying on an optimistic-lock conflict.
- */
 function etl_flow_persist_last_run(string $flowId, string $status, string $whenIso): void
 {
     etl_config_optimistic_update('etl_flows', static function (array &$config) use ($flowId, $status, $whenIso) {
@@ -44,10 +24,6 @@ function etl_flow_persist_last_run(string $flowId, string $status, string $whenI
     }, 'etl_flow');
 }
 
-/**
- * Run exactly one flow (by id) as a sequential chain of its steps' ETL jobs,
- * stopping at the first failing step. Returns true when every step succeeded.
- */
 function etl_flow_run_single(
     \PgSql\Connection $conn,
     array $etlConfig,
@@ -65,9 +41,6 @@ function etl_flow_run_single(
     $tStepLog = sys_table('etl_flow_step_log');
     $logTable = etl_log_table_ready($conn, $tRunLog);
 
-    // Also log each step to spw_etl_log, the same table cron_etl.php writes to, so a
-    // job's run history (Jobs > History tab) shows flow-triggered runs alongside
-    // directly-triggered ones — tagged triggered_by = 'flow' to tell them apart.
     $tJobLog     = sys_table('etl_log');
     $jobLogTable = etl_log_table_ready($conn, $tJobLog);
 
@@ -250,13 +223,11 @@ foreach ($flows as $flow) {
     if ($onlyFlowId !== null && $flowId !== $onlyFlowId) {
         continue;
     }
-    // Scheduled runs skip disabled flows; an explicit admin single-flow run always runs.
+
     if ($onlyFlowId === null && empty($flow['enabled'])) {
         continue;
     }
 
-    // Frequency guard for scheduled runs — per flow, since flows can have different
-    // last-success times, unlike cron_etl.php's module-wide guard.
     if ($triggeredBy === 'cron' && $logTable) {
         $recent = @pg_query_params(
             $conn,

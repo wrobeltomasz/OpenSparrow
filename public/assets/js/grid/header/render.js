@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/header/render.js — renderThead(): builds the header row (select-all + columns) and wires per-column sort, resize and drag-and-drop reordering.
-
 import { state } from '../state.js';
 import { I18n } from '../../i18n.js';
 import { toggleSortState } from './sort.js';
@@ -83,7 +81,6 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         headRow.appendChild(th);
     }
 
-    // M2M columns — one TH per configured relationship
     const m2mList = schema.tables[state.currentTable]?.many_to_many || [];
     for (const cfg of m2mList) {
         const thM2m = document.createElement('th');
@@ -95,7 +92,6 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         headRow.appendChild(thM2m);
     }
 
-    // Image gallery column — one TH when the table has images enabled
     const imagesCfg = schema.tables[state.currentTable]?.images;
     if (imagesCfg?.enabled && imagesCfg.show_in_grid) {
         const thImg = document.createElement('th');

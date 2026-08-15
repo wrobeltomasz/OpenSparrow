@@ -3,31 +3,15 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/admin/anonymization.cy.js
-// ============================================================================
-// Admin Data Anonymization Module Tests
-// Requires:  testadmin / testadmin user with role = 'admin'
-// Seed:      cy.seedDatabase() in before() creates / resets that account.
-// Scope:     UI + config persistence only — Run Now / Preview shell out to
-//            cron/cron_anonymization.php, so we only assert the request
-//            completes and renders *some* output, not specific row counts.
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 
 function openAnonTab() {
   cy.visit(`${BASE}/admin/index.php`);
   cy.get('header.admin-header', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
-  // app.js attaches the .admin-tab click handlers inside its DOMContentLoaded
-  // callback, but the sidebar is server-rendered PHP and clickable well before
-  // that module boots — an early click is silently swallowed and the panel
-  // stays on Overview. #workspace itself is not a usable signal — it ships with
-  // server-rendered #itemPanel/#editorForm children — so wait for #editorForm
-  // to be *populated* by the first render.
+
   cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.long })
     .should($el => expect($el.children().length).to.be.greaterThan(0));
-  // The Anonymization button lives in a collapsible nav-section closed by
-  // default — expand it before the button is clickable.
+
   cy.get('button.admin-tab[data-file="anonymization"]').then($btn => {
     const $section = $btn.closest('.nav-section');
     if ($section.length && !$section.hasClass('open')) {
@@ -52,15 +36,11 @@ describe('OpenSparrow – Admin Anonymization', () => {
     openAnonTab();
   });
 
-  // ── Navigation ──────────────────────────────────────────────────────────
-
   it('shows all five Anonymization tabs', () => {
     ['Rules', 'Schedule', 'Suggestions', 'Dictionary', 'History'].forEach(label => {
       cy.contains('#workspace .item-btn', label).should('be.visible');
     });
   });
-
-  // ── Rules tab ───────────────────────────────────────────────────────────
 
   it('Rules tab: shows empty state when no rules configured', () => {
     anonTab('Rules');
@@ -78,8 +58,6 @@ describe('OpenSparrow – Admin Anonymization', () => {
     cy.contains('#workspace button:visible', 'Preview (dry run)').click();
     cy.get('#workspace pre:visible', { timeout: CypressHelpers.TIMEOUTS.long }).should('be.visible');
   });
-
-  // ── Schedule tab ────────────────────────────────────────────────────────
 
   it('Schedule tab: toggles enabled + frequency and saves', () => {
     anonTab('Schedule');
@@ -107,8 +85,6 @@ describe('OpenSparrow – Admin Anonymization', () => {
     cy.get('#workspace pre:visible', { timeout: CypressHelpers.TIMEOUTS.long }).should('be.visible');
   });
 
-  // ── Suggestions tab ─────────────────────────────────────────────────────
-
   it('Suggestions tab: Scan Schema surfaces matches or an empty-state message', () => {
     anonTab('Suggestions');
     cy.contains('#workspace button:visible', 'Scan Schema').click();
@@ -120,8 +96,6 @@ describe('OpenSparrow – Admin Anonymization', () => {
       ).to.be.true;
     });
   });
-
-  // ── Dictionary tab ──────────────────────────────────────────────────────
 
   it('Dictionary tab: saves keyword list and persists after reload', () => {
     anonTab('Dictionary');
@@ -138,12 +112,9 @@ describe('OpenSparrow – Admin Anonymization', () => {
     anonTab('Dictionary');
     cy.window().then(win => cy.stub(win, 'confirm').returns(false));
     cy.contains('#workspace button:visible', 'Purge Old Logs').click();
-    // confirm() was stubbed to return false — no request should have been
-    // made, the panel must remain on the same tab without error output.
+
     cy.get('#workspace').should('exist');
   });
-
-  // ── History tab ─────────────────────────────────────────────────────────
 
   it('History tab: Load History shows empty state or note when no runs exist', () => {
     anonTab('History');
@@ -157,10 +128,6 @@ describe('OpenSparrow – Admin Anonymization', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Anonymization Access Control
-// ============================================================================
 
 describe('OpenSparrow – Anonymization Access Control', () => {
   it('editor-role user cannot reach the Anonymization admin action', () => {

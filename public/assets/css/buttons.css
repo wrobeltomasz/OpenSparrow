@@ -1,17 +1,9 @@
 /*
- * This file is part of OpenSparrow - https://opensparrow.org
- * SPDX-License-Identifier: LGPL-3.0-or-later
- * Copyright (C) 2024-2026 OpenSparrow Contributors
- * Licensed under LGPL v3. See COPYING.LESSER file for details.
- */
-
-/* =========================================
-   SHARED BUTTON COMPONENT
-   Single source of truth for button shape, size, and color across the
-   front-end app and the admin panel. Loaded after styles.css (and after
-   admin/style.css's :root) on every page. Do not redeclare .btn* rules
-   elsewhere - add a new variant here instead.
-========================================= */
+  * This file is part of OpenSparrow - https://opensparrow.org
+  * SPDX-License-Identifier: LGPL-3.0-or-later
+  * Copyright (C) 2024-2026 OpenSparrow Contributors
+  * Licensed under LGPL v3. See COPYING.LESSER file for details.
+*/
 
 .btn {
   display: inline-flex;
@@ -122,8 +114,6 @@
   font-size: 11px;
 }
 
-/* .btn-action - legacy alias of .btn-primary, kept for pages/scripts that
-   still emit this class name. New code should use .btn.btn-primary. */
 .btn-action {
   display: inline-flex;
   align-items: center;
@@ -151,8 +141,6 @@
   text-decoration: none;
 }
 
-/* .btn-add - legacy alias of .btn-success, kept for pages/scripts that
-   still emit this class name. New code should use .btn.btn-success. */
 .btn-add {
   display: inline-flex;
   align-items: center;

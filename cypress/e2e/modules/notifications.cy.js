@@ -3,16 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/notifications.cy.js
-// ============================================================================
-// Notifications Bell Tests — header present on all pages
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
-
-// ============================================================================
-// Test Suite: Notification Bell Structure
-// ============================================================================
 
 describe('OpenSparrow – Notifications: Bell Structure', () => {
   beforeEach(() => {
@@ -43,10 +34,6 @@ describe('OpenSparrow – Notifications: Bell Structure', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Notification Bell Interaction
-// ============================================================================
-
 describe('OpenSparrow – Notifications: Interaction', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -55,10 +42,8 @@ describe('OpenSparrow – Notifications: Interaction', () => {
   });
 
   it('clicking bell opens the dropdown when it is closed', () => {
-    // Ensure the dropdown is closed first, then verify clicking opens it
     cy.get('#notif-dropdown').then($dropdown => {
       if ($dropdown.is(':visible')) {
-        // Close it by clicking elsewhere, then reopen
         cy.get('body').click(0, 0);
       }
     });
@@ -94,10 +79,6 @@ describe('OpenSparrow – Notifications: Interaction', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Notifications via API
-// ============================================================================
-
 describe('OpenSparrow – Notifications: API', () => {
   it('page load triggers GET to api/notifications.php', () => {
     cy.intercept('GET', '**/api/notifications.php**').as('notifFetch');
@@ -108,9 +89,6 @@ describe('OpenSparrow – Notifications: API', () => {
   });
 
   it('API response has expected shape', () => {
-    // Page load fires only action=get_count (the badge poll) — it returns
-    // { status, count }, never a notifications array. The list arrives from
-    // action=get_list, which fires when the dropdown opens. Assert both shapes.
     cy.intercept('GET', '**/api/notifications.php?action=get_count*').as('notifCount');
     cy.intercept('GET', '**/api/notifications.php?action=get_list*').as('notifList');
     loginAsTestUser();

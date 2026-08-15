@@ -3,13 +3,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/images/loader.js — Record-image cell data store: batch-loads a page's
-// gallery thumbnails (api=image_rows), caches them per (table:rowId) and renders the cell.
-
 import { debugLog } from '../../debug.js';
 import { state } from '../state.js';
 
-// Keyed: `${table}:${rowId}` → { items: [{uuid, name}], total }
 const store = new Map();
 
 export function getImageEntry(rowId) {

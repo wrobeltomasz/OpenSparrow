@@ -3,17 +3,10 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/dashboard/index.js — Dashboard entry point
-// Imports all widget modules (they self-register into WidgetRegistry), loads i18n, then fetches dashboard.json widget data and renders #dashboardSection.
-// Header controls (rendered in the app header by dashboard.php):
-//   - #dashDateFilter: global period select (All time / Today / 7d / 30d / This month) — reloads all widgets
-//   - chips: per-widget visibility (built from the loaded config), state persisted in localStorage
-
 import { WidgetRegistry } from './registry.js';
 import { buildExportButton } from './export.js';
 import { I18n } from '../i18n.js';
 
-// Import widgets so they self-register
 import './widgets/stat-card.js';
 import './widgets/bar-chart.js';
 import './widgets/vertical-bar-chart.js';
@@ -21,7 +14,6 @@ import './widgets/pie-chart.js';
 import './widgets/line-chart.js';
 import './widgets/list.js';
 
-// ── Filters: widget visibility (chips in the app header) ─────────────────────
 const FILTER_STORAGE_KEY = 'sparrow_dashboard_filters';
 let hiddenWidgets = new Set();
 let lastConfig = null;
@@ -75,7 +67,6 @@ function renderFilterBar(container) {
     (lastConfig?.widgets ?? []).forEach(w => bar.appendChild(buildWidgetChip(w, container)));
 }
 
-// ── Clear filters: header button unhides all widgets and resets the period ───
 function updateClearButton() {
     const btn = document.getElementById('clearFilters');
     if (!btn) return;
@@ -126,8 +117,6 @@ async function initDashboard() {
         return;
     }
 
-    // Global period select rendered server-side in the header (dashboard.php);
-    // changing it reloads all widgets, count/sum cards also get prev_data deltas.
     const dateSelect = document.getElementById('dashDateFilter');
     if (dateSelect) {
         dateSelect.addEventListener('change', () => loadDashboardData(container, dateSelect.value, 'all'));

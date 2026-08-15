@@ -5,11 +5,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// file_download.php — Secure file download / thumbnail proxy
-// Usage: file_download.php?uuid=<uuid>  |  file_download.php?uuid=<uuid>&thumb=1
-// Auth gate: session required (401 otherwise); send_security_headers('download')
-// Validates UUID-v4 format (anti path-traversal), looks up files table, honours soft-delete (deleted_at), then streams bytes with the stored mime_type
-
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/session.php';
@@ -17,7 +12,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/api_helpers.php';
 start_session();
 send_security_headers('', false, 'download');
-// Block access without active session
+
 if (empty($_SESSION['user_id'])) {
     http_response_code(401);
     exit('Unauthorised');
@@ -30,15 +25,13 @@ if ($uuid === '') {
     exit('Missing uuid');
 }
 
-// UUID format sanity check to prevent path traversal
 if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid)) {
     http_response_code(400);
     exit('Invalid uuid');
 }
 
-// Connect to database
 $conn = db_connect();
-// Fetch record from database
+
 $sql = "
     SELECT name, storage_path, mime_type, deleted_at, related_table, related_id
     FROM " . sys_table('files') . "
@@ -52,17 +45,12 @@ if (!$res || pg_num_rows($res) === 0) {
 
 $row = pg_fetch_assoc($res);
 pg_free_result($res);
-// Block access if file was soft deleted
+
 if ($row['deleted_at'] !== null) {
     http_response_code(404);
     exit('File was deleted');
 }
 
-// Row-level authorization: when the file is attached to a record, enforce the same
-// ownership policy used by the rest of the app (can_access_record). Files tied to no
-// record, or to a table without owner_restriction, stay accessible to any logged-in
-// user. A failed check returns the same 404 as a missing file — existence is never
-// disclosed.
 $relatedTable = $row['related_table'] ?? null;
 $relatedId    = $row['related_id'] ?? null;
 if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
@@ -72,8 +60,7 @@ if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
     if (is_array($tableCfg)) {
         $uid  = (int) $_SESSION['user_id'];
         $role = $_SESSION['role'] ?? '';
-        // Table-level scope first: a file attached to a table outside the user's
-        // access is as good as absent. Same 404 — no existence disclosure.
+
         if (!user_can_access_table((string) $relatedTable)) {
             http_response_code(404);
             exit('File not found in database');
@@ -85,7 +72,6 @@ if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
     }
 }
 
-// Construct absolute physical path
 $filePath = __DIR__ . '/../' . $row['storage_path'];
 $realBase = realpath(__DIR__ . '/../storage');
 $realFile = realpath($filePath);
@@ -101,18 +87,14 @@ if (!file_exists($realFile)) {
 
 $mime = $row['mime_type'];
 $name = $row['name'];
-// Serve thumbnail if requested and file is an image (excluding SVG to prevent XSS via thumbnail endpoint)
+
 if ($thumb && str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml') {
     serveThumbnail($realFile, $mime);
     exit;
 }
 
-// Clean and encode filename safely using RFC 5987
 $safeName = rawurlencode(basename(str_replace(["\r","\n","\0"], '', $name)));
-// Only raster images are served inline for in-browser preview. Everything else —
-// including SVG (script-capable) and any file whose stored MIME turned out to be
-// text/html or another renderable type — is forced as an attachment, so the browser
-// downloads it instead of rendering it in the app origin.
+
 $inlineSafe = str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml';
 if ($inlineSafe) {
     header('Content-Type: ' . $mime);
@@ -124,13 +106,12 @@ if ($inlineSafe) {
 
 header('Content-Length: ' . filesize($realFile));
 header('Cache-Control: private, max-age=' . FILE_CACHE_MAX_AGE);
-// Output physical file content
+
 readfile($realFile);
 exit;
-// Thumbnail generation helper function
+
 function serveThumbnail(string $path, string $mime): void
 {
-    // Serve original if GD library is not installed
     if (!extension_loaded('gd')) {
         header('Content-Type: ' . $mime);
         header('Cache-Control: private, max-age=' . FILE_CACHE_MAX_AGE);
@@ -138,7 +119,6 @@ function serveThumbnail(string $path, string $mime): void
         return;
     }
 
-    // Create image resource based on mime type
     $src = match ($mime) {
         'image/jpeg' => @imagecreatefromjpeg($path),
         'image/png'  => @imagecreatefrompng($path),
@@ -146,7 +126,7 @@ function serveThumbnail(string $path, string $mime): void
         'image/webp' => @imagecreatefromwebp($path),
         default      => null,
     };
-// Serve original if format is unsupported by GD like SVG
+
     if (!$src) {
         header('Content-Type: ' . $mime);
         header('Cache-Control: private, max-age=' . FILE_CACHE_MAX_AGE);
@@ -157,14 +137,14 @@ function serveThumbnail(string $path, string $mime): void
     $maxW = THUMBNAIL_MAX_WIDTH;
     $origW = imagesx($src);
     $origH = imagesy($src);
-// Keep original if smaller than max width
+
     if ($origW <= $maxW) {
         $thumb = $src;
     } else {
         $ratio = $maxW / $origW;
         $newH  = (int) round($origH * $ratio);
         $thumb = imagecreatetruecolor($maxW, $newH);
-    // Preserve transparency for PNG images
+
         if ($mime === 'image/png') {
             imagealphablending($thumb, false);
             imagesavealpha($thumb, true);
@@ -173,17 +153,16 @@ function serveThumbnail(string $path, string $mime): void
         imagecopyresampled($thumb, $src, 0, 0, 0, 0, $maxW, $newH, $origW, $origH);
     }
 
-    // Set cache headers for thumbnails
     header('Content-Type: ' . $mime);
     header('Cache-Control: public, max-age=' . THUMBNAIL_CACHE_MAX_AGE);
-// Render scaled image
+
     match ($mime) {
         'image/jpeg' => imagejpeg($thumb, null, 80),
         'image/png'  => imagepng($thumb, null, 6),
         'image/gif'  => imagegif($thumb),
         'image/webp' => imagewebp($thumb, null, 80),
     };
-// Free memory
+
     imagedestroy($thumb);
     if ($thumb !== $src) {
         imagedestroy($src);

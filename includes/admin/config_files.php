@@ -7,21 +7,11 @@
 
 declare(strict_types=1);
 
-// includes/admin/config_files.php — admin api.php module: menu_config GET/POST + whitelisted
-// raw-config editor (get, save) over the spw_config store, plus the database/security files.
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
-// Shared helper for menu_config GET
 $menuSanitizeIcon = static function (string $icon): string {
     if ($icon === '') {
         return '';
     }
-    // Local assets/ paths only — mirrors renderMenuIcon() in templates/menu.php
-    // (offline policy: no external URLs; no path traversal).
+
     if (
         !str_contains($icon, '..')
         && preg_match('#^assets/[a-z0-9_\-/.]+\.(png|svg|gif|jpe?g|webp)$#i', $icon)
@@ -31,9 +21,7 @@ $menuSanitizeIcon = static function (string $icon): string {
     return '';
 };
 
-// GET: return structured (possibly nested) menu item list for the admin Menu Preview tab
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Build catalog: key → full display entry
     $catalog = [];
 
     require_once __DIR__ . '/../config_store.php';
@@ -54,11 +42,6 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         'hidden' => !empty($calRaw['hidden']),
         'children' => [],
     ];
-
-    // Board is now a named list (like Views/Print/Workflows) rendering as a
-    // parent + per-board children directly in templates/menu.php — it is
-    // deliberately excluded from this simpler draggable catalog, same as
-    // those other multi-item modules.
 
     $filesRaw = config_get('files') ?? [];
     $catalog['files'] = [
@@ -105,7 +88,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
             $items[]      = $item;
             $placed[$key] = true;
         }
-        // Append items added after the menu config was last saved
+
         foreach ($catalog as $key => $entry) {
             if (!isset($placed[$key])) {
                 $items[] = $entry;
@@ -119,7 +102,6 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-// POST: save menu structure (order + nesting) to the "menu" config
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     require_not_demo('Demo mode — writes disabled.');
 
@@ -149,9 +131,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!in_array($ck, $validKeys, true) || !in_array($ct, $validTypes, true)) {
                 continue;
             }
-            // 'type' is only used above to validate the incoming item — the renderer
-            // (templates/menu.php) looks up the real type from $menuCatalog by key, so
-            // it is intentionally not persisted here.
+
             $children[] = ['key' => $ck, 'children' => []];
         }
         $sanitized[] = ['key' => $key, 'children' => $children];
@@ -168,21 +148,13 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// Allowed config files for read and write operations via this generic raw-JSON
-// editor. Deliberately excludes 'settings', 'print', 'anonymization', 'rag' and
-// 'menu' — those spw_config keys have dedicated admin tabs with purpose-built
-// editors and are not exposed through this generic passthrough.
 $allowedFiles = [
     'schema', 'dashboard', 'calendar', 'board', 'database', 'security',
     'workflows', 'files', 'views', 'automations', 'user_records',
 ];
 
-// Keys served from the spw_config store (see includes/config_store.php). Everything
-// in $allowedFiles is DB-backed except 'database' and 'security', which stay files
-// because they are read before a database connection exists.
 $dbBackedFiles = ['automations', 'board', 'calendar', 'dashboard', 'files', 'schema', 'user_records', 'views', 'workflows'];
 
-// Get content of a JSON config file
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
     if (in_array($file, $dbBackedFiles, true)) {
         require_once __DIR__ . '/../config_store.php';
@@ -193,7 +165,7 @@ if ($action === 'get' && in_array($file, $allowedFiles, true)) {
     $filePath = __DIR__ . '/../../config/' . $file . '.json';
     if (file_exists($filePath)) {
         $fileContent = file_get_contents($filePath);
-        // Mask sensitive data in Demo Mode
+
         if ($isDemoMode && $file === 'database') {
             $dbData = json_decode($fileContent, true);
             $dbData['host'] = 'hidden-for-demo.postgres.database.azure.com';
@@ -210,9 +182,7 @@ if ($action === 'get' && in_array($file, $allowedFiles, true)) {
     exit;
 }
 
-// Save content to a JSON config file
 if ($action === 'save' && in_array($file, $allowedFiles, true)) {
-    // Block all configuration writes in Demo Mode.
     require_not_demo('Saving ' . $file . ' configuration is disabled in Demo Mode.', 403);
 
     $data = file_get_contents('php://input');
@@ -224,7 +194,7 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
             exit;
         }
         require_once __DIR__ . '/../config_store.php';
-        // Generic editor has no version plumbing — last-write-wins (expected null).
+
         $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
         $result = config_save($file, $parsedData, null, $userId);
         if ($result['status'] !== 'ok') {

@@ -4,27 +4,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// page_helpers.php — Shared HTML fragments for frontend page controllers
-// os_header_search()        — header search pill (search & filter UI standard)
-// os_header_filters()       — header filter-chip container
-// os_header_clear_filters() — the #clearFilters button (last header control on every page)
-// os_inline_globals()       — nonce'd <script> exposing window.* globals (JSON_HEX_* hardened)
-// os_module_script()        — nonce'd <script type="module"> tag with ?v=filemtime cache busting
-// os_module_graph()         — one shared ?v= + import map for a whole ES module tree
-// os_import_map()           — renders that map; must precede the first module script
-// os_avatar_color()         — palette lookup for the initial-and-color avatar
-// os_m2m_group()            — collapsible searchable many-to-many picker (create.php + edit.php)
-// os_require_access()       — page-level per-user access gate (redirect, not JSON)
-// os_require_table_access() — the 'tables' scope of the above
-// Loaded via bootstrap.php; keep ids/classes stable — Cypress specs depend on them.
 
 declare(strict_types=1);
 
-// Page-level counterpart of require_access() (includes/api_helpers.php). HTML pages
-// must not answer with a JSON error envelope, so an out-of-scope item sends the user
-// back to the grid instead. Same decision function underneath — user_can_access()
-// stays the single source of truth for all three scopes.
 function os_require_access(string $scope, string $name): void
 {
     require_once __DIR__ . '/api_helpers.php';
@@ -40,8 +22,6 @@ function os_require_table_access(string $table): void
     os_require_access('tables', $table);
 }
 
-// Search pill for the blue app header. Placeholder defaults to the shared
-// grid.search_placeholder i18n key; pass an explicit string to override.
 function os_header_search(string $id, ?string $placeholder = null): string
 {
     $ph = htmlspecialchars($placeholder ?? t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
@@ -49,24 +29,17 @@ function os_header_search(string $id, ?string $placeholder = null): string
         . ' aria-label="' . $ph . '">';
 }
 
-// Filter-chip container. The class must be listed in the header chip-container
-// selector group in styles.css (single line + horizontal scroll — no wrapping).
 function os_header_filters(string $id, string $class): string
 {
     return '<div id="' . $id . '" class="' . $class . '"></div>';
 }
 
-// Clear-filters button — hidden by default, shown by page JS while any
-// filter/search is active. Always the last header control.
 function os_header_clear_filters(): string
 {
     $label = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
     return '<button id="clearFilters" hidden title="' . $label . '">' . $label . '</button>';
 }
 
-// Nonce'd inline <script> exposing window.<name> = <json> globals.
-// JSON_HEX_* flags make the values safe inside a <script> context — required by the
-// JS/PHP boundary rules in docs/SECURITY.md.
 function os_inline_globals(array $vars, string $nonce): string
 {
     $flags = JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
@@ -78,9 +51,6 @@ function os_inline_globals(array $vars, string $nonce): string
         . $js . '</script>' . "\n";
 }
 
-// Nonce'd module <script src> tag with ?v=filemtime cache busting. $versionFile
-// overrides which file's mtime busts the cache (defaults to $src itself); both
-// resolve relative to the executing page's directory (public/).
 function os_module_script(string $src, string $nonce, ?string $versionFile = null): string
 {
     $v = (string) @filemtime($versionFile ?? $src);
@@ -88,25 +58,8 @@ function os_module_script(string $src, string $nonce, ?string $versionFile = nul
         . ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"></script>' . "\n";
 }
 
-/**
- * Build one cache-busting version plus an import map covering a whole ES module graph.
- *
- * Entry scripts carry a "?v=", but the modules they import do not — so after an upgrade
- * the browser keeps serving every non-entry module from cache and the shipped change
- * never reaches the user. The symptom ("this feature does nothing") gives no hint that
- * stale JavaScript is the cause, and no user knows to hard-refresh.
- *
- * Every module must get the SAME version: a module reachable under two URLs is
- * instantiated twice by the browser (duplicate listeners, split state, lost saves).
- *
- * @param array<string,string> $groups url prefix (as written in import specifiers,
- *                                     resolved against the document base) => filesystem dir
- * @return array{version:int,imports:array<string,string>}
- */
 function os_module_graph(array $groups): array
 {
-    // Memoised: layout.php and any caller asking for the version must not each
-    // walk the asset tree on every request.
     static $cache = [];
     $cacheKey = md5(serialize($groups));
     if (isset($cache[$cacheKey])) {
@@ -140,14 +93,11 @@ function os_module_graph(array $groups): array
     return $cache[$cacheKey] = ['version' => $version, 'imports' => $imports];
 }
 
-// The frontend module tree, in one place so every caller agrees on its shape.
 function os_fe_module_graph(): array
 {
     return os_module_graph(['./assets/js/' => __DIR__ . '/../public/assets/js']);
 }
 
-// Renders the <script type="importmap"> for os_module_graph(). Must appear before the
-// first module script on the page. Pass '' as $nonce on pages that send no CSP.
 function os_import_map(array $imports, string $nonce = ''): string
 {
     $json = json_encode(
@@ -160,13 +110,6 @@ function os_import_map(array $imports, string $nonce = ''): string
     return '<script type="importmap"' . $nonceAttr . '>' . $json . '</script>' . "\n";
 }
 
-// Avatar palette. An avatar is the user's initial on a colour of their choice;
-// spw_users.avatar_id stores the 1-based index into this palette (NULL = default
-// slate). Every colour is dark enough for white text at 4.5:1 or better.
-//
-// KEEP IN SYNC with AVATAR_COLORS in public/assets/js/avatar.js — same order,
-// same values. PHP renders the header avatar server-side, JS renders every other
-// one, and a drift would show the same user in two different colours.
 const OS_AVATAR_COLORS = [
     '#364B60', '#1F6F8B', '#2E7D6B', '#3F7D3F', '#6B7D2E', '#8A6D1F',
     '#A65A2E', '#B04A4A', '#A33F6B', '#7A4FA3', '#4F55A3', '#2F6FA3',
@@ -174,7 +117,6 @@ const OS_AVATAR_COLORS = [
     '#B23A48', '#8E3B6B', '#5E35B1', '#3949AB', '#0277BD', '#00838F',
 ];
 
-// Resolves an avatar_id (1..24, or NULL/out of range) to a palette colour.
 function os_avatar_color(?int $avatarId): string
 {
     if ($avatarId === null || $avatarId < 1 || $avatarId > count(OS_AVATAR_COLORS)) {
@@ -183,18 +125,10 @@ function os_avatar_color(?int $avatarId): string
     return OS_AVATAR_COLORS[$avatarId - 1];
 }
 
-// Options above this count get a search box inside the picker panel.
 const OS_M2M_SEARCH_THRESHOLD = 10;
 
-// Chips rendered in the collapsed summary before it falls back to "N selected".
 const OS_M2M_SUMMARY_CHIPS = 3;
 
-// One many-to-many relation as a collapsible <details> picker: a field-shaped
-// summary listing the current selection, and a scrollable checkbox panel with
-// search + select all/clear. The checkboxes are plain `m2m_<index>[]` inputs and
-// stay in the DOM while collapsed, so POST handling is unchanged and the control
-// still works with JS disabled (assets/js/edit/m2m-picker.js only enhances it).
-// $options are m2m_options() rows, $selected the m2m_selected() id list.
 function os_m2m_group(int $index, array $cfg, array $options, array $selected, bool $readOnly): string
 {
     $esc   = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
@@ -222,8 +156,6 @@ function os_m2m_group(int $index, array $cfg, array $options, array $selected, b
         . '</summary>' . "\n"
         . '<div class="m2m-panel">' . "\n";
 
-    // Short lists need no search box, and a read-only record needs no bulk
-    // toggles — with neither, the head row is skipped entirely.
     $head = '';
     if (count($options) > OS_M2M_SEARCH_THRESHOLD) {
         $ph = $esc(t('form.m2m_search'));
@@ -254,8 +186,6 @@ function os_m2m_group(int $index, array $cfg, array $options, array $selected, b
     return $html;
 }
 
-// Collapsed-summary contents: up to OS_M2M_SUMMARY_CHIPS chips, then a "+N" chip.
-// KEEP IN SYNC with renderSummary() in public/assets/js/edit/m2m-picker.js.
 function os_m2m_summary(array $labels): string
 {
     if ($labels === []) {

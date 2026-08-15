@@ -5,39 +5,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// tests/Security/request_scope_inventory.php — every place the code reads a
-// REQUEST-SUPPLIED name of an access-controlled object (a table, view, printout,
-// board or workflow), and what was decided about it.
-//
-// RequestScopeInventoryTest scans the source for those reads and fails when one is
-// missing from this file, or when an entry here no longer matches any read. That is
-// the whole point: the per-user access boundary is enforced by remembering to call a
-// gate, and this turns "remember" into a red build. A new endpoint that takes a
-// ?table= cannot merge until someone has written down what it does about it.
-//
-// It is NOT a substitute for the gate. Marking something 'gated' does not gate it —
-// it records that a human looked. The test only cross-checks that a file claiming
-// 'gated' contains at least one gate call at all.
-//
-// DECISIONS
-//   gated  — a gate runs on this value before it is used (require_*_access(),
-//            os_require_access(), validatedTable(), or an explicit user_can_access()
-//            check). The normal answer for anything a client can send.
-//   scoped — the value is not gated directly, but everything reached through it is
-//            narrowed by the user's scope first (filter_by_user_access()), so an
-//            out-of-scope name simply resolves to nothing.
-//   admin  — only reachable behind the admin-role gate. Admins are never restricted,
-//            so a per-user scope check would be a no-op by definition.
-//   none   — deliberately not gated. Every one of these needs a reason that says why
-//            it is safe, not just what it does.
-//
-// When adding an entry, write the reason for a reader who does not know the endpoint.
-// "It is fine" is not a reason.
-
 return [
-    // The frontend data API is a front controller (public/api.php) plus one module per
-    // route group under includes/frontapi/. The write gate stayed in the front
-    // controller; the read-side names moved into the modules that resolve them.
+
     'public/api.php' => [
         'body.table' => ['gated', 'Single require_table_access() in the shared write preamble, before any of the mutating routes (insert, update, delete, calendar move, board move, duplicate) is dispatched. The route modules deliberately do NOT repeat it — one gate, no per-route copies to forget — which tests/Security/FrontApiGuardsTest pins from both directions.'],
     ],
@@ -95,8 +64,7 @@ return [
         '_GET.board' => ['gated', 'os_require_access(boards, ...) redirects to the grid rather than rendering a shell whose data call comes back empty.'],
     ],
     'public/create.php' => [
-        // Read through src/Http/PhpRequest, not a superglobal — see the ACCESSORS note
-        // in RequestScopeInventoryTest.
+
         'query().table' => ['gated', 'os_require_table_access() runs right after the hasTable() check, before the form is built, so a table outside the scope never reaches the field rendering or the POST handler below it.'],
     ],
     'public/edit.php' => [

@@ -7,18 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/etl.php — admin api.php module: ETL (external source → PostgreSQL import).
-// Actions: etl_load, etl_save, etl_test_connection, etl_preview, etl_target_schemas,
-// etl_target_tables, run_etl, etl_log, etl_purge_log.
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $isDemoMode and require_not_demo() / admin_db_fail() /
-// admin_error_message() defined by the front controller. Each block emits JSON and exits.
-
-// Upgrade a pre-multi-source config (single top-level "connection" block) into the
-// "sources" list shape, tagging any job without a source_id onto the migrated source.
-// Idempotent — a no-op once "sources" already exists. Not persisted by etl_load itself;
-// the shape sticks once the admin saves the config again.
 function etl_migrate_legacy_connection(array $config): array
 {
     if (!empty($config['sources']) || empty($config['connection'])) {
@@ -54,8 +42,6 @@ function etl_migrate_legacy_connection(array $config): array
     return $config;
 }
 
-// Look up the stored password for a source id, for resolving a masked '********'
-// value sent back by the admin UI (test/preview against an already-saved source).
 function etl_stored_source_password(string $sourceId): string
 {
     if ($sourceId === '') {
@@ -82,16 +68,14 @@ if ($action === 'etl_load') {
     $row    = config_get_row('etl');
     $config = is_array($row['value'] ?? null) ? array_merge($defaults, $row['value']) : $defaults;
     $config = etl_migrate_legacy_connection($config);
-    // Backfill target_schema on jobs saved before schema selection existed.
+
     require_once __DIR__ . '/../db.php';
     foreach ($config['jobs'] as $i => $job) {
         if (is_array($job) && trim((string)($job['target_schema'] ?? '')) === '') {
             $config['jobs'][$i]['target_schema'] = sys_schema();
         }
     }
-    // Backfill empty source ids from a past etl_save bug (empty string survived the
-    // `?? bin2hex(...)` fallback, since `??` only triggers on null/unset). Jobs that
-    // pointed at that blank id are relinked so they keep working after the id is fixed.
+
     foreach ($config['sources'] as $i => $src) {
         if (is_array($src) && trim((string)($src['id'] ?? '')) === '') {
             $oldId = (string)($src['id'] ?? '');
@@ -104,7 +88,7 @@ if ($action === 'etl_load') {
             }
         }
     }
-    // Never echo stored passwords back to the client.
+
     foreach ($config['sources'] as $i => $src) {
         if (isset($src['password'])) {
             $config['sources'][$i]['password'] = ($src['password'] !== '') ? '********' : '';
@@ -153,7 +137,7 @@ if ($action === 'etl_save') {
         if (!in_array($driver, $validDrivers, true)) {
             $driver = 'mysql';
         }
-        // Password: a masked value ('********') means "keep the stored one" for this source id.
+
         $newPass = (string)($src['password'] ?? '');
         if ($newPass === '********') {
             $newPass = $existingPassById[$id] ?? '';
@@ -170,7 +154,7 @@ if ($action === 'etl_save') {
             'database'       => trim((string)($src['database'] ?? '')),
             'user'           => trim((string)($src['user'] ?? '')),
             'password'       => $newPass,
-            // csv_ftp-only fields; harmless (ignored) for database drivers.
+
             'protocol'       => in_array($protocol, ['ftp', 'ftps'], true) ? $protocol : 'ftp',
             'remote_dir'     => trim((string)($src['remote_dir'] ?? '')),
             'file_name'      => trim((string)($src['file_name'] ?? '')),
@@ -221,8 +205,6 @@ if ($action === 'etl_save') {
             $sourceId = $validSourceIds[0] ?? '';
         }
 
-        // Remote-file (csv_ftp) sources have no SQL query — the whole file is read.
-        // Database sources require a non-empty read-only SELECT.
         $isRemoteFileJob = etl_source_is_remote_file_driver($sourceDriverById[$sourceId] ?? '');
         $query = trim((string)($job['source_query'] ?? ''));
         if (!$isRemoteFileJob && $query === '') {
@@ -258,8 +240,7 @@ if ($action === 'etl_save') {
             'incremental_column'        => trim((string)($job['incremental_column'] ?? '')),
             'incremental_initial_value' => trim((string)($job['incremental_initial_value'] ?? '')),
             'column_map'                => $columnMap,
-            // Watermark progress is written by the cron worker, never by the admin form —
-            // always carry the previously-stored value forward so a config edit can't reset it.
+
             'last_watermark'            => $existingJobsById[$id]['last_watermark'] ?? null,
         ];
     }
@@ -272,8 +253,7 @@ if ($action === 'etl_test_connection') {
     require_once __DIR__ . '/../config_store.php';
     $data = json_decode((string) file_get_contents('php://input'), true);
     $conn = is_array($data['connection'] ?? null) ? $data['connection'] : [];
-    // Resolve a masked/empty password to the stored one (matched by source id) so
-    // "Test" works without re-entering it for an already-saved source.
+
     if (($conn['password'] ?? '') === '********' || ($conn['password'] ?? '') === '') {
         $conn['password'] = etl_stored_source_password((string)($conn['id'] ?? ''));
     }
@@ -347,10 +327,6 @@ if ($action === 'etl_preview') {
         exit;
     }
     try {
-        // Run the validated read-only query as-is (do not wrap it in a derived table —
-        // that is invalid SQL for a WITH/CTE query, which the validator permits) and cap
-        // the result to 20 rows by fetching incrementally rather than appending LIMIT
-        // (which would clash with a query that already has its own LIMIT).
         $stmt = $pdo->query($query);
         $rows = [];
         while (count($rows) < 20 && ($row = $stmt->fetch()) !== false) {
@@ -399,8 +375,7 @@ if ($action === 'etl_target_tables') {
             echo json_encode(['status' => 'error', 'error' => 'Invalid schema.']);
             exit;
         }
-        // Excludes spw_* system tables — the ETL target picker is for application
-        // data tables, not the internal schema/config/audit tables.
+
         $res = @pg_query_params(
             $conn,
             "SELECT table_name FROM information_schema.tables "

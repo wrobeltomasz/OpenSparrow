@@ -11,35 +11,12 @@ namespace Tests\Admin;
 
 use PHPUnit\Framework\TestCase;
 
-/**
- * The set of system-table migration keys is written out by hand in three places
- * (all three must be updated together during a release):
- *
- *   1. $migrations  — includes/admin/migrations.php, the init_db registry that
- *                     actually runs the DDL,
- *   2. $known       — includes/admin/migrations.php, feeding migrations_list,
- *   3. $knownMig    — includes/admin/overview.php, feeding the dashboard's
- *                     pending-migration counter,
- *   4. the INSERT INTO spw_migrations list in public/setup_api.php, which records
- *                     what a fresh install already has.
- *
- * Drift is silent: a migration missing from $known simply never appears in the
- * admin list, one missing from $knownMig makes the dashboard under-report
- * pending work, and one missing from the wizard means fresh installs never get
- * the DDL at all. This test compares the four literals so a release that updates
- * only some of them fails the build.
- *
- * It reads the source rather than executing it — the registry lives inside an
- * action block that needs a session, a database and the front controller's
- * scope.
- */
 final class MigrationRegistryTest extends TestCase
 {
     private const MIGRATIONS_PHP = __DIR__ . '/../../includes/admin/migrations.php';
     private const OVERVIEW_PHP   = __DIR__ . '/../../includes/admin/overview.php';
     private const SETUP_API_PHP  = __DIR__ . '/../../public/setup_api.php';
 
-    /** Extracts the quoted migration keys of a named array literal. */
     private static function arrayKeys(string $file, string $variable, bool $keysOnly): array
     {
         $source = (string) file_get_contents($file);
@@ -47,7 +24,6 @@ final class MigrationRegistryTest extends TestCase
         $body = $m[1] ?? '';
 
         if ($keysOnly) {
-            // '3.1_x' => ...  — only entries acting as array keys
             preg_match_all("/'([0-9]+\.[0-9]+_[a-z0-9_]+)'\s*=>/", $body, $found);
         } else {
             preg_match_all("/'([0-9]+\.[0-9]+_[a-z0-9_]+)'/", $body, $found);
@@ -87,14 +63,6 @@ final class MigrationRegistryTest extends TestCase
         );
     }
 
-    /**
-     * The setup wizard builds a fresh database without consulting the admin
-     * registry, then records the migrations it applied. A key added to the
-     * registry but not to the wizard leaves fresh installs behind upgraded ones:
-     * the DDL never runs, yet the dashboard reports the migration as pending on a
-     * brand-new database. That is invisible until someone actually installs from
-     * scratch, so it is asserted here.
-     */
     public function testSetupWizardRecordsEveryMigration(): void
     {
         $registry = self::arrayKeys(self::MIGRATIONS_PHP, '$migrations', true);

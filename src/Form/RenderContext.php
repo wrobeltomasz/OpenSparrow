@@ -11,11 +11,6 @@ namespace App\Form;
 
 final readonly class RenderContext
 {
-    /**
-     * @param array<string, array<string|int, string>> $fkOptions  colName => [value => label]
-     * @param array<string, string>                    $prefilled   colName => value (for create)
-     * @param array<string, bool>                      $locked      colName => true if field is locked
-     */
     public function __construct(
         public bool $readOnly,
         public array $fkOptions = [],
@@ -39,7 +34,6 @@ final readonly class RenderContext
         return $this->prefilled[$colName] ?? '';
     }
 
-    /** True if field should render as disabled + hidden input (cannot be edited by user). */
     public function isLocked(string $colName): bool
     {
         return $this->readOnly || ($this->locked[$colName] ?? false);

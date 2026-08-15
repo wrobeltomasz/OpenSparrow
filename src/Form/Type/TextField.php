@@ -14,7 +14,6 @@ use App\Form\BoundValue;
 use App\Form\FieldTypeInterface;
 use App\Form\RenderContext;
 
-/** Universal fallback — handles all text-like columns. Must be last in FieldTypeRegistry. */
 final class TextField implements FieldTypeInterface
 {
     #[\Override]

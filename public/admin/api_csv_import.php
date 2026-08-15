@@ -7,27 +7,16 @@
 
 declare(strict_types=1);
 
-// admin/api_csv_import.php — CSV import admin API
-// Auth/CSRF gate: os_api_bootstrap (401 guest / 403 non-admin, X-CSRF-Token on mutations)
-// actions: csv_import_upload (parse + preview), csv_import_execute (batched insert), csv_create_table (create table from CSV columns), csv_schemas, csv_import_config, csv_import_history/log
-// Limits: 500 MB max, 1000-row batches, 5 preview rows; parameterized inserts
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/api_helpers.php';
 require_once __DIR__ . '/../../includes/admin_api_errors.php';
 
 os_api_bootstrap(['connect' => false, 'role' => 'admin']);
 
-const CSV_MAX_BYTES   = 524288000; // 500 MB
+const CSV_MAX_BYTES   = 524288000;
 const CSV_BATCH_SIZE  = 1000;
 const CSV_PREVIEW_ROWS = 5;
 
-// ── Domain ────────────────────────────────────────────────────────────────────
-
-/**
- * Reads a CSV file row-by-row using a generator to keep memory usage flat.
- * Yields key 0 => raw headers array, then key N => [header => value] assoc arrays.
- */
 final class CsvReader
 {
     public static function read(string $path, string $delimiter = ',', string $encoding = 'UTF-8'): \Generator
@@ -37,12 +26,11 @@ final class CsvReader
             throw new \RuntimeException('Cannot open CSV file for reading.');
         }
         try {
-            // Explicit enclosure + escape: PHP 8.4 deprecates relying on the defaults
             $headers = fgetcsv($fh, 0, $delimiter, '"', '\\');
             if ($headers === false || $headers === null) {
                 return;
             }
-            $headers[0] = ltrim((string) $headers[0], "\xEF\xBB\xBF"); // strip UTF-8 BOM
+            $headers[0] = ltrim((string) $headers[0], "\xEF\xBB\xBF");
             $headers    = array_map('trim', $headers);
             if ($encoding !== 'UTF-8') {
                 $headers = array_map(fn($h) => mb_convert_encoding($h, 'UTF-8', $encoding), $headers);
@@ -52,7 +40,7 @@ final class CsvReader
             $rowNum = 1;
             while (($row = fgetcsv($fh, 0, $delimiter, '"', '\\')) !== false) {
                 if (count($row) === 1 && $row[0] === null) {
-                    continue; // skip blank lines
+                    continue;
                 }
                 $count = count($headers);
                 $row   = array_pad(array_slice($row, 0, $count), $count, null);
@@ -67,9 +55,6 @@ final class CsvReader
     }
 }
 
-/**
- * Validates a CSV file upload: size, extension, and real MIME type via finfo.
- */
 final class CsvFileValidator
 {
     public static function validate(array $file): void
@@ -103,9 +88,6 @@ final class CsvFileValidator
     }
 }
 
-/**
- * Casts raw CSV string values to PostgreSQL-compatible types based on column schema.
- */
 final class RowCaster
 {
     public static function cast(?string $value, string $colType): mixed
@@ -139,12 +121,11 @@ final class RowCaster
         if (str_contains($t, 'time')) {
             return self::toTime($v);
         }
-        return $v; // text, varchar, uuid, etc.
+        return $v;
     }
 
     private static function toDate(string $v): ?string
     {
-        // Accept dd.mm.yyyy, dd/mm/yyyy, yyyy-mm-dd, or any strtotime-parseable value
         if (preg_match('/^(\d{2})[.\\/](\d{2})[.\\/](\d{4})$/', $v, $m)) {
             $v = "{$m[3]}-{$m[2]}-{$m[1]}";
         }
@@ -165,11 +146,6 @@ final class RowCaster
     }
 }
 
-// ── Infrastructure ────────────────────────────────────────────────────────────
-
-/**
- * Persists and queries import records and per-row error logs.
- */
 final class ImportRepository
 {
     public function __construct(private readonly \PgSql\Connection $conn)
@@ -210,7 +186,6 @@ final class ImportRepository
         @pg_query_params($this->conn, $sql, [$status, $total, $imported, $skipped, $errorMsg, $importId]);
     }
 
-    /** Batch-insert per-row error entries. */
     public function logRows(int $importId, array $rowErrors): void
     {
         if (empty($rowErrors)) {
@@ -232,7 +207,6 @@ final class ImportRepository
         @pg_query_params($this->conn, $sql, $args);
     }
 
-    /** @return list<array<string,mixed>> */
     public function getHistory(): array
     {
         $ti = sys_table('imports');
@@ -253,7 +227,6 @@ final class ImportRepository
         return $rows;
     }
 
-    /** @return list<array<string,mixed>> */
     public function getRowLog(int $importId): array
     {
         $t   = sys_table('import_rows_log');
@@ -273,14 +246,6 @@ final class ImportRepository
     }
 }
 
-// ── Application ───────────────────────────────────────────────────────────────
-
-/**
- * Orchestrates batch import: reads CSV with a generator, casts values, bulk-inserts
- * in transactions of up to CSV_BATCH_SIZE rows. Row-level cast failures are logged
- * and skipped without aborting the import. A DB-level batch failure rolls back only
- * that batch and records all its rows as failed.
- */
 final class CsvImportService
 {
     public function __construct(
@@ -289,11 +254,6 @@ final class CsvImportService
     ) {
     }
 
-    /**
-     * @param  array<string,string|null> $mapping      csvHeader => dbColumn (null = skip)
-     * @param  array<string,string>      $colTypes     dbColumn => schemaType
-     * @return array{0:int,1:int,2:int}  [total, imported, skipped]
-     */
     public function execute(
         string $csvPath,
         string $tableName,
@@ -308,7 +268,6 @@ final class CsvImportService
         $tableIdent = pg_ident($tableSchema) . '.' . pg_ident($tableName);
         $dbCols     = array_values(array_unique(array_filter($mapping)));
 
-        // Dynamic batch size guard: PostgreSQL allows up to 65 535 bind parameters.
         $batchSize = max(1, min(CSV_BATCH_SIZE, (int) floor(65000 / max(1, count($dbCols)))));
 
         $total     = 0;
@@ -319,7 +278,7 @@ final class CsvImportService
 
         foreach (CsvReader::read($csvPath, $delimiter, $encoding) as $rowNum => $rowData) {
             if ($rowNum === 0) {
-                continue; // key 0 is the raw headers array, not a data row
+                continue;
             }
             $total++;
 
@@ -369,11 +328,6 @@ final class CsvImportService
         return [$total, $imported, $skipped];
     }
 
-    /**
-     * Wraps one batch in a transaction. On DB error, rolls back and marks all rows failed.
-     *
-     * @return array{0:int,1:int,2:list<array>} [imported, skipped, errors]
-     */
     private function flushBatch(
         array $batch,
         string $tableIdent,
@@ -444,21 +398,6 @@ final class CsvImportService
         return $params;
     }
 
-    /**
-     * Streams all rows via PostgreSQL COPY FROM STDIN (CSV format).
-     *
-     * Fast path (all CSV columns mapped, no skipping): raw fgets() line streaming
-     * into 512 KB pg_put_line() batches — avoids CSV parsing entirely (~60x faster
-     * than fgetcsv on large-row files).
-     *
-     * Slow path (some columns skipped / reordered): fgets() + str_getcsv() per row,
-     * still ~40% faster than fgetcsv.
-     *
-     * No per-row error tracking — a type mismatch rolls back the entire COPY.
-     *
-     * @param  array<string,string|null> $mapping  csvHeader => dbColumn (null = skip)
-     * @return array{0:int,1:int,2:int}  [total, imported, skipped=0]
-     */
     public function executeCopy(
         string $csvPath,
         string $tableName,
@@ -486,7 +425,6 @@ final class CsvImportService
         }
 
         try {
-            // fgetcsv handles quoted fields with embedded newlines — fgets() does not
             $csvHeaders = fgetcsv($fh, 0, $delimiter, '"', '\\');
             if ($csvHeaders === false || $csvHeaders === null) {
                 throw new \RuntimeException('Empty CSV file.');
@@ -515,12 +453,11 @@ final class CsvImportService
 
             while (($row = fgetcsv($fh, 0, $delimiter, '"', '\\')) !== false) {
                 if (count($row) === 1 && $row[0] === null) {
-                    continue; // blank line
+                    continue;
                 }
                 $total++;
                 $headerCount = count($csvHeaders);
-                // Normalise row length to match header count — prevents "unexpected data" errors
-                // when a data row has extra commas (unquoted) or is shorter than the header.
+
                 $row = array_pad(array_slice($row, 0, $headerCount), $headerCount, '');
                 if ($isDirectStream) {
                     $fields = array_map(function ($v) use ($encoding) {
@@ -587,8 +524,6 @@ final class CsvImportService
     }
 }
 
-// ── HTTP routing ──────────────────────────────────────────────────────────────
-
 $action = $_GET['action'] ?? '';
 
 function csv_fail(string $msg, int $code = 400): never
@@ -598,7 +533,6 @@ function csv_fail(string $msg, int $code = 400): never
     exit;
 }
 
-// GET: import history
 if ($action === 'csv_import_history') {
     try {
         $conn = db_connect();
@@ -610,7 +544,6 @@ if ($action === 'csv_import_history') {
     exit;
 }
 
-// GET: per-row error log for one import
 if ($action === 'csv_import_log') {
     $importId = (int) ($_GET['id'] ?? 0);
     if ($importId <= 0) {
@@ -627,7 +560,6 @@ if ($action === 'csv_import_log') {
     exit;
 }
 
-// POST: upload CSV, validate, parse headers, return preview
 if ($action === 'csv_import_upload') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         csv_fail('POST required.', 405);
@@ -667,11 +599,10 @@ if ($action === 'csv_import_upload') {
         $rowCount++;
     }
 
-    // Move temp file to staging directory
     $importDir = realpath(__DIR__ . '/../../storage/files') . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR;
     if (!is_dir($importDir)) {
         mkdir($importDir, 0750, true);
-        // Deny direct web access to the staging directory
+
         file_put_contents($importDir . '.htaccess', "Require all denied\nOptions -Indexes\n");
     }
 
@@ -693,7 +624,6 @@ if ($action === 'csv_import_upload') {
     exit;
 }
 
-// POST: execute import with mapping config
 if ($action === 'csv_import_execute') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         csv_fail('POST required.', 405);
@@ -734,7 +664,6 @@ if ($action === 'csv_import_execute') {
         csv_fail('Uploaded file not found. Please re-upload the CSV.');
     }
 
-    // Load and validate schema
     require_once __DIR__ . '/../../includes/config_store.php';
     $schema = config_get('schema');
     if (!is_array($schema) || !isset($schema['tables'][$tableName])) {
@@ -821,7 +750,6 @@ if ($action === 'csv_import_execute') {
     exit;
 }
 
-// POST: create DB table + columns in one transaction, then register in schema.json
 if ($action === 'csv_create_table') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         csv_fail('POST required.', 405);
@@ -883,7 +811,6 @@ if ($action === 'csv_create_table') {
 
         @pg_query($conn, 'COMMIT');
 
-        // Map PG types to schema types
         $typeMap = [
             'varchar(255)' => 'text',
             'text'         => 'text',

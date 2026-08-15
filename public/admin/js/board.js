@@ -3,13 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/board.js — Board (Kanban) item editor (renderBoardEditor): one board's
-// table/status column/lanes/menu settings. Config is a named list (currentConfig.boards[])
-// — the list itself (tab bar, "All Sources" overview, "Global Settings") is rendered
-// generically by app.js exactly like Calendar's sources, since each board also gets its
-// own sidebar menu item (see templates/menu.php, public/board.php's ?board= param).
-// Uses ui.js field builders, plus a string-preserving column multi-select (ui.js
-// createMultiSelect coerces values to numbers).
 import {
     createTextInput,
     createSelectInput,
@@ -18,9 +11,6 @@ import {
     createCheckbox,
 } from './ui.js';
 
-// String-preserving multi-select. ui.js's createMultiSelect coerces option
-// values to numbers (it is built for user-ID lists), which would corrupt the
-// string column names the board stores, so the board provides its own.
 function createColumnMultiSelect(labelText, options, selectedValues, onChange) {
     const wrapper = document.createElement('div');
     wrapper.className = 'form-group';
@@ -76,7 +66,6 @@ export function renderBoardEditor(key, itemData, isArray, ctx) {
 
     if (!Array.isArray(itemData.card_columns)) itemData.card_columns = [];
 
-    // ── Source table ─────────────────────────────────────────────────────────
     workspaceEl.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), itemData.table || '', v => {
         itemData.table = v;
         itemData.status_column = '';
@@ -89,7 +78,6 @@ export function renderBoardEditor(key, itemData, isArray, ctx) {
         const enumCols = getEnumColumnsForTable(itemData.table);
         const hasEnum = enumCols.length > 0;
 
-        // ── Status column (the most important setting) ─────────────────────
         const statusOptions = [{ value: '', label: '-- Select Status Column --' }]
             .concat(hasEnum ? enumCols : getColumnOptionsForTable(itemData.table).filter(o => o.value !== ''));
 
@@ -107,7 +95,6 @@ export function renderBoardEditor(key, itemData, isArray, ctx) {
             workspaceEl.appendChild(warn);
         }
 
-        // Lane preview for enum status columns — shows the lanes and their colors.
         if (itemData.status_column) {
             const meta = getColumnMeta(itemData.table, itemData.status_column);
             if (meta && (meta.type || '').toLowerCase() === 'enum' && Array.isArray(meta.options)) {
@@ -136,7 +123,6 @@ export function renderBoardEditor(key, itemData, isArray, ctx) {
             }
         }
 
-        // ── Card content ─────────────────────────────────────────────────────
         workspaceEl.appendChild(createSelectInput('title_column', 'Card Title Column', getColumnOptionsForTable(itemData.table), itemData.title_column || '', v => {
             itemData.title_column = v;
         }));
@@ -152,7 +138,6 @@ export function renderBoardEditor(key, itemData, isArray, ctx) {
         }));
     }
 
-    // ── Menu / sidebar settings ─────────────────────────────────────────────
     const hr = document.createElement('hr');
     hr.style.cssText = 'border:none; border-top:1px solid var(--border); margin:18px 0 14px;';
     workspaceEl.appendChild(hr);

@@ -5,16 +5,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// board.php — Kanban board page (frontend HTML)
-// Boots via includes/bootstrap.php: os_page_bootstrap('no-connect' CSP) — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
-// Exposes capability flags (canEdit/canExport) to the client instead of the raw role
-// ?board= selects which configured board to show (max 64 chars); multiple boards can be
-// configured in the admin panel, each appearing as its own sidebar menu item (templates/menu.php)
-// Renders the board UI; card data and BOARD_MOVE handled by api.php
-// Search box + filter chips render in the app header (via $headerControls, like the grid page):
-//   - chips: per-lane visibility (built from the board's status column values), state persisted in localStorage
-//   - search: client-side phrase filter — hides cards whose title/fields/id do not contain the typed text
-
 require_once __DIR__ . '/../includes/bootstrap.php';
 
 $page      = os_page_bootstrap(['csp' => 'no-connect']);
@@ -22,8 +12,7 @@ $cspNonce  = $page['nonce'];
 $userRole  = $page['role'];
 $userCaps  = $page['caps'];
 $boardId   = substr($_GET['board'] ?? '', 0, 64);
-// A ?board= outside the user's scope (stale bookmark, hand-edited URL) drops them back
-// on the default grid instead of rendering a shell whose data call returns empty lanes.
+
 if ($boardId !== '') {
     os_require_access('boards', $boardId);
 }

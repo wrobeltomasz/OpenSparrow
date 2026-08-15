@@ -3,10 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/etl_flow.js — ETL Flows tab (ordered chains of existing ETL jobs: start
-// tile, job tile, job tile, ..., end tile; stops on first failing step).
-// Persists the "etl_flows" config via etl_flow_save (optimistic-lock version).
-// Cron worker: cron/cron_etl_flow.php.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 import {
@@ -160,7 +156,7 @@ function buildFlowCard(flow, idx, redraw, status) {
     btnRun.className = 'btn btn-success';
     btnRun.textContent = 'Run now';
     btnRun.onclick = async () => {
-        if (!(await saveFlowsConfig(status))) return; // persist so the cron reads the latest flow
+        if (!(await saveFlowsConfig(status))) return;
         await runCronAction('run_etl_flow', { flow_id: flow.id }, out);
     };
 
@@ -188,7 +184,6 @@ function buildFlowCard(flow, idx, redraw, status) {
     return card;
 }
 
-/* ---------- entry ---------- */
 export async function renderFlowsTab(panel) {
     panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading flows…</p>';
 

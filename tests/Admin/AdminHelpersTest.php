@@ -12,14 +12,6 @@ namespace Tests\Admin;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * Unit tests for the pure helpers in includes/admin/helpers.php — the shared
- * layer the admin modules were refactored onto.
- *
- * Only the side-effect-free helpers are covered here. The rest either exit
- * (admin_ok/admin_err/admin_try) or need a database connection, and are
- * exercised end-to-end through the admin endpoint instead.
- */
 final class AdminHelpersTest extends TestCase
 {
     public static function setUpBeforeClass(): void
@@ -50,10 +42,6 @@ final class AdminHelpersTest extends TestCase
         $this->assertSame(7, admin_expected_version(['version' => 7]));
     }
 
-    /**
-     * A missing or non-numeric version means "no optimistic lock" — it must not
-     * degrade into version 0, which would collide with a real first revision.
-     */
     public function testExpectedVersionIsNullWhenAbsentOrNonNumeric(): void
     {
         $this->assertNull(admin_expected_version([]));
@@ -61,12 +49,6 @@ final class AdminHelpersTest extends TestCase
         $this->assertNull(admin_expected_version(['version' => 'latest']));
     }
 
-    /**
-     * A request that names no window gets the caller's default, and only a missing
-     * key or an explicit null counts as "none named". '' must NOT land here: the
-     * clickstats purge clears its whole table when no window is given, so an empty
-     * field arriving as "no window" would answer a retention request with a wipe.
-     */
     public function testPurgeDaysIsNullOnlyWhenNoWindowIsNamed(): void
     {
         $this->assertNull(admin_purge_days([]));
@@ -81,17 +63,8 @@ final class AdminHelpersTest extends TestCase
         $this->assertSame(ADMIN_PURGE_MAX_DAYS, admin_purge_days(['days' => ADMIN_PURGE_MAX_DAYS]));
     }
 
-    /**
-     * Every one of these used to become "older than 1 day" via max(1, (int) $raw) —
-     * a near-total delete produced by input that was never a day count. They must
-     * now be refused, not coerced.
-     *
-     * @return array<string, array{0: mixed}>
-     */
     public static function unusableDayCounts(): array
     {
-        // Data providers run before setUpBeforeClass(), so the constant this case
-        // list is built from is not loaded yet unless we ask for it here.
         require_once __DIR__ . '/../../includes/admin/helpers.php';
 
         return [
@@ -122,13 +95,6 @@ final class AdminHelpersTest extends TestCase
         $this->assertSame(ADMIN_PURGE_ALL, admin_purge_scope(['all' => true]));
     }
 
-    /**
-     * The caller of this helper deletes its entire table when no window comes back,
-     * so "delete everything" must always be something the request said, never
-     * something its silence was read as.
-     *
-     * @return array<string, array{0: array<string, mixed>}>
-     */
     public static function refusedPurgeScopes(): array
     {
         return [
@@ -150,17 +116,6 @@ final class AdminHelpersTest extends TestCase
         admin_purge_scope($input);
     }
 
-    /**
-     * admin_purge_older_than() is the entry point that takes the window already
-     * resolved, so it is the one that bypasses admin_purge_days(). Its own guard has
-     * to hold, because "older than 0 days" is NOW() — the whole table — and a
-     * negative window reaches further still.
-     *
-     * Reached without a database on purpose: the check runs before admin_conn(), so
-     * a bad window can never get as far as opening a connection, let alone a DELETE.
-     *
-     * @return array<string, array{0: int}>
-     */
     public static function unusableResolvedWindows(): array
     {
         require_once __DIR__ . '/../../includes/admin/helpers.php';
@@ -173,17 +128,6 @@ final class AdminHelpersTest extends TestCase
         ];
     }
 
-    /**
-     * Asserts the MESSAGE, not just the type. admin_db_fail() throws the same
-     * AdminApiMessage class, so a type-only assertion passes even with the guard
-     * removed: the call reaches the database, the DELETE fails on the missing table
-     * and that failure satisfies the expectation. The test would then be green while
-     * proving nothing — and on an install where the table does exist the same path
-     * would have deleted all of it.
-     *
-     * The table name is deliberately one that cannot exist, so a future regression
-     * of the guard makes this test fail rather than destroy data.
-     */
     #[DataProvider('unusableResolvedWindows')]
     public function testPurgeOlderThanRefusesAnUnusableWindow(int $days): void
     {
@@ -208,11 +152,6 @@ final class AdminHelpersTest extends TestCase
         }
     }
 
-    /**
-     * require_not_demo() must live in the shared helper layer, not be redefined
-     * per endpoint — public/admin/api_csv_import.php uses os_api_bootstrap()
-     * and would otherwise have no access to it.
-     */
     public function testRequireNotDemoIsSharedAndDefaultsTo403(): void
     {
         $this->assertTrue(function_exists('require_not_demo'));

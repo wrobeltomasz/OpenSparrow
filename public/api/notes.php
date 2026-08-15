@@ -4,14 +4,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// api/notes.php — Private user notepad (User menu > Notes), optionally linked to a
-// record via related_table/related_id, with an optional reminder_date. Reminders are
-// delivered by cron/cron_notifications.php into spw_users_notifications (the bell icon).
-// Auth gate: session + UA enforcement; CSRF via X-CSRF-Token header (default os_api_bootstrap gate)
-// Action routing via os_api_action()/os_api_dispatch(): list, list_records, add, update, delete —
-// every query scoped to the caller's own user_id, never trusting a client-supplied one.
-// sys_table('notes'); parameterized queries.
 
 declare(strict_types=1);
 
@@ -32,8 +24,6 @@ os_api_dispatch($action, [
     'delete'       => fn() => notes_action_delete($conn, $body),
 ], 'api_notes');
 
-// Validates an optional (related_table, related_id) pair: both present and sane, or
-// both absent. Returns [related_table, related_id] with null entries when unlinked.
 function validatedRelation(array $src): array
 {
     $relatedTable = trim($src['related_table'] ?? '');
@@ -49,9 +39,6 @@ function validatedRelation(array $src): array
     return [validatedTable($relatedTable, 'related_table'), $relatedId];
 }
 
-// Validates an optional reminder date+time, now or later. Accepts the datetime-local
-// wire format (Y-m-d\TH:i[:s]), a space-separated variant, and a bare Y-m-d (treated as
-// midnight) for backward compatibility. Returns 'Y-m-d H:i:00', or null when unset.
 function validatedReminderDate(array $src): ?string
 {
     $raw = trim($src['reminder_date'] ?? '');
@@ -73,7 +60,7 @@ function validatedReminderDate(array $src): ?string
     if (!$date) {
         jsonError('reminder_date must be a valid date/time (YYYY-MM-DDTHH:MM).', 400);
     }
-    // A bare date means "that day", not "that day at the current clock time".
+
     if (!$hasTime) {
         $date->setTime(0, 0);
         if ($date->format('Y-m-d') < date('Y-m-d')) {
@@ -99,11 +86,6 @@ function validatedBody(array $src): string
     return $rawBody;
 }
 
-// Record picker for the "link to a record" form field — mirrors the Files module's
-// table+record dropdown pair (public/api/files.php files_action_get_related_records): given a
-// table name, returns its most recent rows as {id, label}. Label columns come from the
-// same heuristic as the "My records" panel (record_label_columns() in api_helpers.php)
-// since spw_notes has no per-relation column config like the Files module does.
 function notes_action_list_records($conn): void
 {
     $table = validatedTable(trim($_GET['table'] ?? ''), 'table');
@@ -160,7 +142,7 @@ function notes_action_list($conn): void
     $notes = [];
     while ($row = pg_fetch_assoc($res)) {
         $row['related_id'] = $row['related_id'] !== null ? (int)$row['related_id'] : null;
-        // PG renders timestamps as 'Y-m-d H:i:s'; the client wants minute precision.
+
         if (!empty($row['reminder_date'])) {
             $row['reminder_date'] = substr(str_replace(' ', 'T', $row['reminder_date']), 0, 16);
         }

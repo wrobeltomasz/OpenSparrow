@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// pagination.js — Client-side pagination for the data grid
-// Page-size selector [10/25/50/100] persisted in localStorage (sparrow_page_size); slices grid rows per page and re-renders. Wired to grid.js from app.js to avoid a circular import.
 import { renderGrid, getState } from './grid.js';
 import { debugLog } from './debug.js';
 import { I18n } from './i18n.js';
@@ -15,7 +13,6 @@ const LS_KEY = 'sparrow_page_size';
 let pageSize = 25;
 let currentPage = 1;
 
-// Called once after schema loads. Priority: localStorage > schema default > 25
 export function initPageSize(schema) {
     const saved = Number(localStorage.getItem(LS_KEY));
     if (PAGE_SIZE_OPTIONS.includes(saved)) {
@@ -28,7 +25,6 @@ export function initPageSize(schema) {
     }
 }
 
-// --- Setup pagination container and render controls ---
 export function setupPagination(schema) {
     let paginationEl = document.getElementById('pagination');
 
@@ -48,7 +44,6 @@ export function setupPagination(schema) {
     renderPagination(schema);
 }
 
-// --- Render pagination controls ---
 export function renderPagination(schema) {
     const { filteredData } = getState();
 
@@ -64,8 +59,6 @@ export function renderPagination(schema) {
     paginationEl.innerHTML = '';
     paginationEl.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
 
-    // Rows-per-page selector — leftmost, standard best practice position
-    // (reuses the .pag-size class already styled for the Files module's own pagination)
     const sizeLabel = document.createElement('label');
     sizeLabel.className = 'pag-size';
     sizeLabel.textContent = I18n.t('grid.rows_per_page') + ':';
@@ -87,15 +80,12 @@ export function renderPagination(schema) {
     sizeLabel.appendChild(sizeSelect);
     paginationEl.appendChild(sizeLabel);
 
-    // Spacer
     const spacer = document.createElement('span');
     spacer.style.flex = '1';
     paginationEl.appendChild(spacer);
 
-    // Showing info
     renderPaginationInfo(filteredData);
 
-    // Prev button
     const prevBtn = document.createElement('button');
     prevBtn.textContent = I18n.t('pagination.prev');
     prevBtn.disabled = currentPage <= 1;
@@ -107,13 +97,11 @@ export function renderPagination(schema) {
     });
     paginationEl.appendChild(prevBtn);
 
-    // Page info
     const info = document.createElement('span');
     info.style.cssText = 'font-size:13px; white-space:nowrap;';
     info.textContent = I18n.t('pagination.page_of', { page: currentPage, total: totalPages });
     paginationEl.appendChild(info);
 
-    // Next button
     const nextBtn = document.createElement('button');
     nextBtn.textContent = I18n.t('pagination.next');
     nextBtn.disabled = currentPage >= totalPages;
@@ -125,7 +113,6 @@ export function renderPagination(schema) {
     });
     paginationEl.appendChild(nextBtn);
 
-    // Load more button — shown when server returned a truncated response
     const { wasTruncated, loadedOffset, totalRows } = getState();
     if (wasTruncated) {
         const remaining = totalRows > loadedOffset ? totalRows - loadedOffset : 0;
@@ -143,7 +130,6 @@ export function renderPagination(schema) {
     debugLog("Pagination rendered", { currentPage, totalPages, pageSize });
 }
 
-// --- Helpers ---
 export function getPageState() {
     return { currentPage, pageSize };
 }
@@ -157,7 +143,6 @@ export function resetPagination() {
     currentPage = 1;
 }
 
-// --- Get paginated rows ---
 export function getPageRows() {
     const { filteredData } = getState();
 
@@ -172,7 +157,6 @@ export function getPageRows() {
     return filteredData.slice(start, end);
 }
 
-// --- Pagination info renderer ---
 function renderPaginationInfo(filteredData) {
     const totalRecords = filteredData.length;
 

@@ -3,16 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/board.cy.js
-// ============================================================================
-// Board (Kanban) Module Tests — board.php
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
-
-// ============================================================================
-// Test Suite: Board Page Structure
-// ============================================================================
 
 describe('OpenSparrow – Board: Page Structure', () => {
   beforeEach(() => {
@@ -34,21 +25,13 @@ describe('OpenSparrow – Board: Page Structure', () => {
   });
 
   it('renders lanes or a configuration notice', () => {
-    // .should() retries until the async board fetch + render completes;
-    // a one-shot .then() raced the render because #boardContainer exists
-    // in the server HTML long before lanes are painted.
     cy.get('#boardContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should($c => {
       const lanes = $c.find('.board-lane').length;
       const notice = $c.find('.board-notice').length;
       expect(lanes + notice, 'lanes or notice present').to.be.greaterThan(0);
     });
   });
-
 });
-
-// ============================================================================
-// Test Suite: Board Lanes & Cards (only when configured)
-// ============================================================================
 
 describe('OpenSparrow – Board: Lanes & Cards', () => {
   beforeEach(() => {
@@ -101,10 +84,6 @@ describe('OpenSparrow – Board: Lanes & Cards', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Board Search
-// ============================================================================
-
 describe('OpenSparrow – Board: Search', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -126,24 +105,17 @@ describe('OpenSparrow – Board: Search', () => {
       const total = $cards.length;
       const firstTitle = $cards.first().find('.board-card-title').text().trim();
 
-      // A phrase from the first card keeps that card visible.
       cy.get('#boardSearch').type(firstTitle);
       cy.get('.board-card-title').should('contain.text', firstTitle);
 
-      // A phrase matching nothing hides every card.
       cy.get('#boardSearch').clear().type('zzz-no-such-card-zzz');
       cy.get('.board-card').should('have.length', 0);
 
-      // Clearing the box restores the full board.
       cy.get('#boardSearch').clear();
       cy.get('.board-card').should('have.length', total);
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Board Filters
-// ============================================================================
 
 describe('OpenSparrow – Board: Filters', () => {
   beforeEach(() => {
@@ -185,10 +157,6 @@ describe('OpenSparrow – Board: Filters', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Board Mobile
-// ============================================================================
-
 describe('OpenSparrow – Board: Mobile', () => {
   beforeEach(() => {
     cy.viewport('iphone-x');
@@ -200,10 +168,6 @@ describe('OpenSparrow – Board: Mobile', () => {
     assertMobileSmoke(['#boardMain', '#boardTitle']);
   });
 });
-
-// ============================================================================
-// Test Suite: Board API contract (api.php?api=board)
-// ============================================================================
 
 describe('OpenSparrow – Board: API contract', () => {
   beforeEach(() => {
@@ -223,8 +187,6 @@ describe('OpenSparrow – Board: API contract', () => {
       expect(body.columns).to.be.an('array');
       expect(body.cards).to.be.an('array');
 
-      // When the board is configured, lanes expose value/label/color and
-      // every card carries an id + status.
       if (body.configured) {
         expect(body).to.have.property('status_column').that.is.a('string');
         if (body.columns.length > 0) {
@@ -245,7 +207,6 @@ describe('OpenSparrow – Board: API contract', () => {
       failOnStatusCode: false,
       body: { api: 'board', action: 'move_card', table: 'deals', id: 1, newStatus: 'Won' },
     }).then(({ status }) => {
-      // 403 = CSRF rejected (expected); other 4xx also acceptable as a rejection.
       expect(status).to.be.gte(400);
     });
   });

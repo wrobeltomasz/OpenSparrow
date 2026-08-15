@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/dashboard/widgets/list.js — Registers the 'list' widget; compact table of the configured display_columns rows.
-
 import { WidgetRegistry } from '../registry.js';
 import { formatCellValue } from '../../util/format-value.js';
 

@@ -7,20 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/migrations.php — admin api.php module: system-table migrations (init_db, migrations_list). The
-// $migrations registry and
-// the $known list MUST stay in this single file and match exactly — the release
-// process appends to both during a version bump. A third copy of the key list lives in
-// includes/admin/overview.php ($knownMig, for the dashboard pending count) and must be kept in
-// sync too. 3.0_baseline is the append-only floor: the pre-3.0 incremental history was collapsed
-// into it (3.0 is the first shipped version); append future releases as new keys, never edit it.
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
-// Initialize database tables and migrations
 if ($action === 'init_db') {
     require_not_demo('Disabled in Demo Mode.', 403);
     try {
@@ -32,7 +18,6 @@ if ($action === 'init_db') {
         $tUsers      = sys_table('users');
         $tNotes      = sys_table('notes');
 
-        // Bootstrap: schema + migrations tracker must exist before anything else.
         $bootstrap = [
             "CREATE SCHEMA IF NOT EXISTS $schemaIdent",
             "CREATE TABLE IF NOT EXISTS $tMigrations ( id serial4 NOT NULL, name varchar(100) NOT NULL, applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id), CONSTRAINT spw_migrations_name_key UNIQUE (name) )",
@@ -43,7 +28,6 @@ if ($action === 'init_db') {
             }
         }
 
-        // Load already-applied migration names.
         $appliedRes = pg_query($conn, "SELECT name FROM $tMigrations");
         if (!$appliedRes) {
             admin_db_fail($conn, 'init_db:load_migrations');
@@ -53,45 +37,29 @@ if ($action === 'init_db') {
             $applied[$r[0]] = true;
         }
 
-        // Migration registry — 3.0_baseline is the append-only floor. Everything before
-        // OpenSparrow 3.0 was collapsed into this single idempotent baseline (3.0 is the first
-        // shipped version; no earlier database exists). Append future releases as new keys below
-        // 3.0_baseline — never edit this entry. All DDL uses IF NOT EXISTS so re-running is safe.
-        // The baseline body lives in includes/system_tables.php because the setup wizard creates
-        // the same tables and must not drift from this list.
         require_once __DIR__ . '/../system_tables.php';
         $migrations = [
 
             '3.0_baseline' => system_tables_ddl(static fn(string $n): string => sys_table($n)),
 
-            // Add future migrations below — never modify the 3.0_baseline entry above.
-
-            // 3.1 — table/column descriptions (COMMENT ON). Metadata only, re-runnable.
             '3.1_table_comments' => system_tables_comments_ddl(
                 static fn(string $n): string => sys_table($n)
             ),
 
-            // 3.1 — note reminders gained a time component (User menu > Notes).
-            // date -> timestamp; existing rows keep their day at 00:00.
             '3.1_notes_reminder_time' => [
                 "ALTER TABLE $tNotes ALTER COLUMN reminder_date TYPE timestamp",
             ],
 
-            // 3.3 — optional contact details on user accounts (admin panel only,
-            // informational). Body shared with the setup wizard.
             '3.3_user_contact' => system_tables_user_contact_ddl(
                 static fn(string $n): string => sys_table($n)
             ),
 
-            // 3.3 — click statistics storage (Admin -> System -> Click Statistics).
-            // Body shared with the setup wizard.
             '3.3_clickstats' => system_tables_clickstats_ddl(
                 static fn(string $n): string => sys_table($n)
             ),
 
         ];
 
-        // Run each migration that has not been applied yet.
         $applied_count = 0;
         foreach ($migrations as $name => $queries) {
             if (isset($applied[$name])) {
@@ -109,11 +77,6 @@ if ($action === 'init_db') {
             $applied_count++;
         }
 
-        // Prune migration rows no longer in the registry. The pre-3.0 incremental history was
-        // collapsed into 3.0_baseline, so stale 2.x rows on already-migrated databases are removed
-        // here to keep the Database Migrations list honest (a fresh install never had them).
-        // spw_migrations is a state tracker, not an audit log; this runs inside the sanctioned
-        // Initialize System Tables flow. Generic — always keeps only the current registry keys.
         $registryNames = array_keys($migrations);
         $prunePlaceholders = implode(', ', array_map(
             static fn(int $i): string => '$' . ($i + 1),
@@ -129,8 +92,6 @@ if ($action === 'init_db') {
         }
         $pruned_count = pg_affected_rows($pruneRes);
 
-        // Create default admin account for a clean installation (only when no users exist at all).
-        // Generates a random temporary password logged to PHP error_log — must be changed immediately.
         $tmpPassword    = bin2hex(random_bytes(12));
         $firstAdminSalt = bin2hex(random_bytes(32));
         $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
@@ -167,14 +128,12 @@ if ($action === 'init_db') {
     exit;
 }
 
-// List all migrations: known registry vs applied in DB
 if ($action === 'migrations_list') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
         $tMigrations = sys_table('migrations');
 
-        // Must match keys in init_db $migrations registry — append only below 3.0_baseline.
         $known = [
             '3.0_baseline',
             '3.1_table_comments',

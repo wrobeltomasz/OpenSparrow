@@ -3,22 +3,13 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/dashboard/drill-down.js — Drill-down helpers for dashboard widgets: firstEqCondition() + applyDrillDown() make a widget element clickable to open the pre-filtered table view.
-
 import { I18n } from '../i18n.js';
 
-/**
- * Returns first condition with op '=' from conditions array, or null.
- * Used by stat cards to navigate to pre-filtered table view.
- */
 export function firstEqCondition(conditions) {
     if (!Array.isArray(conditions)) return null;
     return conditions.find(c => c.op === '=' && c.col && c.val !== undefined && c.val !== null) ?? null;
 }
 
-// range (optional) = { from, to } — when set, drills down to a half-open period
-// [from, to) instead of an exact-value match. Used by the time-series line chart,
-// whose bucket labels never equal the raw stored timestamps.
 export function applyDrillDown(element, table, filterCol = null, filterVal = null, range = null) {
     element.style.cursor = 'pointer';
     element.title = I18n.t('dashboard.click_details');

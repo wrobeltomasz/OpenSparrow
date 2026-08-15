@@ -1,13 +1,9 @@
 /*
- * This file is part of OpenSparrow - https://opensparrow.org
- * SPDX-License-Identifier: LGPL-3.0-or-later
- * Copyright (C) 2024-2026 OpenSparrow Contributors
- * Licensed under LGPL v3. See COPYING.LESSER file for details.
- */
-
-/* === setup === */
-/* First-run wizard styles. Standalone page, loaded alongside styles.css. */
-/* Global rules (*, html/body, :root) are provided by styles.css. */
+  * This file is part of OpenSparrow - https://opensparrow.org
+  * SPDX-License-Identifier: LGPL-3.0-or-later
+  * Copyright (C) 2024-2026 OpenSparrow Contributors
+  * Licensed under LGPL v3. See COPYING.LESSER file for details.
+*/
 
 .setup-container {
   min-height: 100vh;
@@ -135,8 +131,7 @@
   display: none;
 }
 .status-message.show { display: block; }
-/* 4 + 2 palette (see styles.css): success and error carry their own hue,
-   info stays on the accent. */
+
 .status-message.success { background: var(--ok-light);    color: var(--ok); border: 1px solid var(--ok); }
 .status-message.error   { background: var(--error-light); color: var(--error);   border: 1px solid var(--error); }
 .status-message.info    { background: var(--accent-light); color: var(--accent);  border: 1px solid var(--border); }
@@ -162,8 +157,6 @@
 }
 
 .setup-card button {
-  /* Deliberately larger than the app's .btn - this is a full-page wizard.
-     The transparent border keeps .primary and .secondary the same height. */
   padding: 10px 20px;
   border: 1px solid transparent;
   border-radius: var(--radius);

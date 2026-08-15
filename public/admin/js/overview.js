@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/overview.js — Admin home / overview page
-// Summary cards (record counts, DB size, etc.) via api.php (overview). Local HTML-escape + byte-format helpers.
-
 import { escHtml } from '../../assets/js/util/esc.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
@@ -191,7 +188,6 @@ export async function renderOverviewPage(ctx) {
         return;
     }
 
-    // ── Welcome bar ────────────────────────────────────────────────────────────
     const welcomeBar = document.createElement('div');
     welcomeBar.className = 'ov-welcome-bar';
 
@@ -211,7 +207,6 @@ export async function renderOverviewPage(ctx) {
     welcomeBar.appendChild(welcomeLeft);
     workspaceEl.appendChild(welcomeBar);
 
-    // ── Stat cards ─────────────────────────────────────────────────────────────
     const statsRow = document.createElement('div');
     statsRow.className = 'ov-stats-row';
 
@@ -293,17 +288,14 @@ export async function renderOverviewPage(ctx) {
 
     workspaceEl.appendChild(statsRow);
 
-    // ── Middle row: activity feed + system status ───────────────────────────
     const midRow = document.createElement('div');
     midRow.className = 'ov-mid-row';
 
-    // Activity feed
     const feedPanel = document.createElement('div');
     feedPanel.className = 'ov-panel';
 
     feedPanel.appendChild(ovSection('Recent Activity'));
 
-    // Merge cron + audit into a unified feed sorted by time desc (show 8 total)
     const feedItems = [];
     (data.cron_recent ?? []).forEach(c => {
         feedItems.push({ ts: c.started_at, type: 'cron', data: c });
@@ -331,7 +323,6 @@ export async function renderOverviewPage(ctx) {
 
     midRow.appendChild(feedPanel);
 
-    // System status
     const statusPanel = document.createElement('div');
     statusPanel.className = 'ov-panel';
 
@@ -421,7 +412,6 @@ export async function renderOverviewPage(ctx) {
     midRow.appendChild(statusPanel);
     workspaceEl.appendChild(midRow);
 
-    // ── Table records grid ─────────────────────────────────────────────────────
     if ((data.tables ?? []).length > 0) {
         const tablesSection = document.createElement('div');
         tablesSection.className = 'ov-panel ov-tables-panel';

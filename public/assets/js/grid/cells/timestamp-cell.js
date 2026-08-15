@@ -3,14 +3,12 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/cells/timestamp-cell.js — Timestamp cell: normalizes display (T->space, strips milliseconds + timezone); registers 'timestamp'.
-
 import { CellRenderer } from './registry.js';
 import { createInputCell } from './shared.js';
 
 function normalizeTimestampDisplay(value) {
     if (!value) return '';
-    // Replace T separator, strip milliseconds and timezone
+
     return String(value)
         .replace('T', ' ')
         .replace(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\.\d+/, '$1')

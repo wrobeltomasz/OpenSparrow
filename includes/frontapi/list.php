@@ -7,49 +7,20 @@
 
 declare(strict_types=1);
 
-// includes/frontapi/list.php — frontend API route module: the data grid's row listing
-// (GET ?api=list) and its subtable badge counts (GET ?api=subtable_counts).
-// Dispatched by public/api.php AFTER the auth gate, the admin/viewer role gates and
-// the schema load.
-//
-// SECURITY: the list route is the one place in this API where the per-user table
-// allow-list is deliberately NOT enforced by a plain require_table_access() call.
-// public/api/fk.php delegates into it for a SCHEMA-supplied reference table so FK
-// dropdowns keep resolving, and marks that delegation with two constants:
-//
-//   OS_TABLE_ACCESS_DELEGATED  the table name came from the config, not the client
-//   OS_FK_LABEL_COLUMNS        narrow the projection to the key + label columns
-//
-// The narrowing is what makes the exemption defensible, and it has to cover the
-// filter_col allow-list as well as the SELECT list: a filter discloses what it
-// matched without ever being selected, and filter_from/filter_to would otherwise
-// turn the exemption into a range probe over any column of a table the caller may
-// not open. Pinned by tests/Security/AccessScopeEndpointGuardTest.
-
-/**
- * One page of rows for the data grid, with filtering, search, sorting and the
- * row-level ownership rule applied in SQL.
- */
 function frontapi_list(FrontApiContext $ctx): never
 {
     $conn   = $ctx->conn;
     $schema = $ctx->schema;
 
     $table = $_GET['table'] ?? '';
-    // A table name absent from the configured schema is bad client input, not a
-    // server fault: without this the RuntimeException from safe_table() falls
-    // through to the catch-all in the front controller and every typo, stale
-    // bookmark or probe answers 500 and writes an error_log entry. Mirrors the
-    // handling in api/mass_edit.php.
+
     try {
         $tableCfg = safe_table($schema, $table);
     } catch (\RuntimeException $e) {
         http_response_code(400);
         exit(json_encode(['error' => 'Unknown table']));
     }
-    // api/fk.php delegates here with a schema-supplied reference table and defines
-    // this constant to say so — that name never came from the client, so gating it
-    // would break FK dropdowns inside tables the user is allowed to use.
+
     if (!defined('OS_TABLE_ACCESS_DELEGATED')) {
         require_table_access($table);
     }
@@ -57,12 +28,7 @@ function frontapi_list(FrontApiContext $ctx): never
     $schemaName = $tableCfg['schema'] ?? 'public';
     $cols = column_list($tableCfg);
     $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
-    // The delegation above exempts the reference table from the per-user gate so
-    // FK labels keep resolving. Without narrowing the projection that exemption
-    // would hand back every configured column of a table the user may not open —
-    // api/fk.php therefore names the columns a dropdown actually needs, and the
-    // response carries nothing else. Intersected with the schema-derived list, so
-    // the constant can never introduce a column name of its own.
+
     if (defined('OS_FK_LABEL_COLUMNS')) {
         $keep = array_merge([$idCol], (array) OS_FK_LABEL_COLUMNS);
         $selectCols = array_values(array_intersect($selectCols, $keep));
@@ -76,22 +42,12 @@ function frontapi_list(FrontApiContext $ctx): never
     $params = [];
     if ($filterCol !== '' && ($filterVal !== '' || $filterFrom !== '' || $filterTo !== '')) {
         $allowedFilterCols = array_merge([$idCol], array_keys($tableCfg['columns'] ?? []));
-        // The same narrowing the projection above got, and for a stronger reason: a
-        // filter does not have to appear in the response to disclose what it matched.
-        // Left at the full column list, the FK exemption would let a restricted user
-        // filter an out-of-scope reference table on any column — and filter_from /
-        // filter_to make that a range probe, so a value they may not read is binary-
-        // searched out of which rows come back, keyed to the label that does show.
-        // Deriving the filter and the projection from one list is what makes the
-        // exemption "labels only" rather than "labels, plus anything you can ask
-        // yes/no questions about". The search clause below already spans $selectCols.
+
         if (defined('OS_FK_LABEL_COLUMNS')) {
             $allowedFilterCols = array_values(array_intersect($allowedFilterCols, $selectCols));
         }
         if (in_array($filterCol, $allowedFilterCols, true)) {
             if ($filterFrom !== '' || $filterTo !== '') {
-                // Half-open range filter [from, to) — used by time-series drill-down
-                // so a chart bucket maps to every row within that period.
                 $rangeClauses = [];
                 if ($filterFrom !== '') {
                     $rangeClauses[] = sprintf('%s >= $%d', pg_ident($filterCol), count($params) + 1);
@@ -121,17 +77,6 @@ function frontapi_list(FrontApiContext $ctx): never
         $params[]  = $likeVal;
     }
 
-    // Row-level ownership filter. Until now owner_restricted only gated writes and file
-    // downloads, so the grid handed every row of a restricted table to any authenticated
-    // user. Applying it here makes reads follow the same policy as can_access_record():
-    // the caller sees rows they own plus unowned rows. No admin exemption is needed —
-    // admin accounts are rejected from this whole API in the front controller, so only
-    // editors and viewers reach here. Filtering in SQL rather than post-fetch keeps
-    // COUNT(1) OVER() and the LIMIT/OFFSET pagination consistent with what is visible.
-    //
-    // The id expression MUST be table-qualified: spw_record_owners has its own "id"
-    // column, so a bare `id` inside the NOT EXISTS subquery binds to ro.id and the
-    // filter silently degrades to a no-op.
     if (!empty($tableCfg['owner_restricted'])) {
         $ownerSql = owner_restriction_sql(
             '_t.' . pg_ident($idCol),
@@ -206,9 +151,6 @@ function frontapi_list(FrontApiContext $ctx): never
     exit;
 }
 
-/**
- * Total linked records per row across all configured subtables — the grid's badges.
- */
 function frontapi_subtable_counts(FrontApiContext $ctx): never
 {
     $conn   = $ctx->conn;
@@ -238,10 +180,6 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
         exit(json_encode(['success' => true, 'counts' => (object)[]]));
     }
 
-    // Filter the client-supplied parent ids once, before the per-subtable loop, so a
-    // restricted row yields no badge instead of a count of its children. Only the
-    // parent's ownership is applied — see the note on api=m2m_rows for why the child
-    // table's own restriction is deliberately not layered on top.
     $ids = filter_visible_ids($conn, $tableCfg, $table, $ids, $ctx->userId);
     if (empty($ids)) {
         exit(json_encode(['success' => true, 'counts' => (object)[]]));
@@ -259,9 +197,7 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
         if (!isset($schema['tables'][$subTable])) {
             continue;
         }
-        // Mirrors the subtable filtering in edit.php: a count is still a fact
-        // about a table the user may not open, so out-of-scope children are
-        // skipped rather than counted.
+
         if (!user_can_access_table($subTable)) {
             continue;
         }

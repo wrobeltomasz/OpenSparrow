@@ -4,11 +4,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// rag_helpers.php — RAG (Retrieval-Augmented Generation) core logic
-// Implements: config loading, PostgreSQL text array conversion, document chunking, full-text search retrieval (tsvector/tsquery), aggregate-view reading with server-computed roll-up subtotals, prompt building (with page context and conversation history), Ollama API calls (cURL), query logging, and suggestion extraction (FOLLOW_UP: markers)
-// Supports hybrid chunk-level and file-level retrieval; uses sys_table('rag_*') for system tables; respects chunking settings from rag.json
-// Called by api_rag.php
 
 declare(strict_types=1);
 
@@ -48,8 +43,7 @@ function pg_text_array_to_php(string $pgArray): array
     if ($inner === '') {
         return [];
     }
-    // Explicit '\\' escape: PostgreSQL array output escapes quotes with a
-    // backslash, and PHP 8.4 deprecates omitting the $escape parameter.
+
     return str_getcsv($inner, ',', '"', '\\');
 }
 
@@ -119,7 +113,6 @@ function rag_chunk_text(string $text, int $chunkSize = 1000, int $overlap = 200)
     return array_values(array_filter(array_map('trim', $chunks)));
 }
 
-
 function rag_store_chunks(\PgSql\Connection $conn, int $fileId, string $content, array $cfg): int
 {
     $tChunks   = sys_table('rag_chunks');
@@ -148,8 +141,6 @@ function rag_store_chunks(\PgSql\Connection $conn, int $fileId, string $content,
     return $stored;
 }
 
-// Shared full-text ranking expression: derives a tsquery from query parameter $1,
-// OR-ing its lexemes and falling back to plainto_tsquery for unindexable input.
 function rag_tsquery_expr(): string
 {
     return "(SELECT COALESCE(string_agg(lexeme, ' | ')::tsquery, plainto_tsquery('english', \$1))"
@@ -252,11 +243,6 @@ function rag_retrieve(\PgSql\Connection $conn, string $query, array $tags, int $
     return $files;
 }
 
-// Parses an admin-supplied "schema.view" reference into ['schema' => ..., 'view' => ...],
-// validating both parts as safe SQL identifiers. Always requires an explicit schema — no
-// implicit fallback to the table's own schema, since a view is free to live anywhere.
-// Returns null when the input doesn't match. Shared by the admin save action
-// (includes/admin/rag.php) and rag_view_aggregate() below, so the two never drift.
 function rag_parse_qualified_view(string $raw): ?array
 {
     $raw = trim($raw);
@@ -267,11 +253,6 @@ function rag_parse_qualified_view(string $raw): ?array
     return null;
 }
 
-// Reads a pre-configured, admin-vetted aggregate view for the current table (spw_config
-// 'rag'.aggregate_views, stored as "schema.view") and returns its result formatted as
-// plain text, or '' when no view is attached, the table doesn't qualify, or the query
-// fails. The model never chooses the table/view or writes SQL — this only ever runs a
-// fixed, already-validated SELECT built entirely from trusted config, never from request input.
 function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $table, array $cfg): string
 {
     if ($table === '') {
@@ -280,10 +261,6 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
 
     $tableCfg = $schema['tables'][$table] ?? null;
     if ($tableCfg === null || !empty($tableCfg['owner_restricted'])) {
-        // Defence in depth: a plain view has no session/user_id to filter by, so an
-        // owner-restricted table must never reach a live query here, even if the
-        // config somehow held a stale mapping (e.g. the table was made owner-restricted
-        // after the mapping was saved).
         return '';
     }
 
@@ -293,9 +270,6 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
         return '';
     }
 
-    // Row cap for the aggregate block, configurable in the global RAG settings.
-    // Too low a value silently truncates the block and the model then correctly
-    // answers "not in the context" for rows that never reached the prompt.
     $limit = (int) ($cfg['aggregate_view_limit'] ?? 100);
     $limit = max(1, min(1000, $limit));
 
@@ -323,13 +297,9 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
         $text .= implode(' | ', array_map(fn($v) => $v === null ? '' : (string) $v, $row)) . "\n";
     }
     if (count($rows) === $limit) {
-        // The view may hold more rows than the cap — say so, so the model does not
-        // present a truncated list as if it were the complete aggregate.
         $text .= "NOTE: this list was cut off at the configured limit of {$limit} row(s);"
             . " further rows of the view are NOT shown here.\n";
     } else {
-        // Subtotals per grouping column. Skipped for a truncated list, where they would
-        // silently cover only the rows that happened to fit under the cap.
         $rollups = rag_aggregate_rollups($rows);
         if ($rollups !== '') {
             $text .= "\n" . $rollups;
@@ -339,44 +309,27 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
     return $text;
 }
 
-// Column names that must never be summed across rows, however numeric they look:
-// an average of averages, a min of mins or a sum of ids is always wrong.
 const RAG_NON_ADDITIVE_RE = '/(^|_)(avg|average|mean|median|min|max|first|last'
     . '|pct|percent|percentage|ratio|rate|id)(_|$)/i';
-// A count-like measure, used to derive an average for the roll-up rows.
+
 const RAG_COUNT_COL_RE    = '/(^|_)(count|cnt|num|qty|quantity)(_|$)/i';
 
-// Number of decimals in a numeric string, capped so a stray float never blows up the scale.
 function rag_decimal_scale(string $value): int
 {
     $dot = strrpos($value, '.');
     return $dot === false ? 0 : min(6, strlen($value) - $dot - 1);
 }
 
-// Rolls the aggregate view up one grouping column at a time and returns the subtotals as
-// plain text, or '' when the shape of the view makes that meaningless.
-//
-// The point is that the model never has to add anything up itself: a grouped view
-// (company x stage) holds the answer to "total for stage X" only as several rows, and the
-// prompt forbids combining figures — so without this block the assistant correctly, but
-// uselessly, answers "not in the context".
-//
-// Pure by design (rows are the raw strings from pg_fetch_assoc, no DB types involved) so it
-// can be unit-tested without a connection.
 function rag_aggregate_rollups(array $rows): string
 {
     $rowCount = count($rows);
-    // Above this the view is a data dump rather than an aggregate; rolling it up would
-    // add more prompt noise than answers.
+
     if ($rowCount < 2 || $rowCount > 200) {
         return '';
     }
 
     $columns = array_keys($rows[0]);
 
-    // A measure is a column that is numeric everywhere it is filled and whose name does not
-    // announce a non-additive statistic. Value-based detection keeps dates and labels out
-    // without needing the view's SQL types.
     $measures = [];
     $scales   = [];
     foreach ($columns as $col) {
@@ -406,9 +359,6 @@ function rag_aggregate_rollups(array $rows): string
         return '';
     }
 
-    // A grouping column has to actually group: several distinct values, but clearly fewer
-    // than there are rows, and short enough to read as a label. That last test is what keeps
-    // a per-row blob (an aggregated contact list, a description) out of the prompt.
     $candidates = [];
     foreach ($columns as $pos => $col) {
         if (in_array($col, $measures, true)) {
@@ -436,19 +386,12 @@ function rag_aggregate_rollups(array $rows): string
         return '';
     }
 
-    // Coarsest grouping first: a 5-value status column answers far more questions per line
-    // than a near-unique name column, and it must never be the one dropped by the line cap.
     usort($candidates, fn($a, $b) => ($a['distinct'] <=> $b['distinct']) ?: ($a['pos'] <=> $b['pos']));
     $groupKeys = array_column(array_slice($candidates, 0, 3), 'col');
 
-    // Average is derivable only when the view carries exactly one count column, otherwise
-    // there is no way to tell which count belongs to which sum.
     $countCols = array_values(array_filter($measures, fn($c) => preg_match(RAG_COUNT_COL_RE, $c) === 1));
     $countCol  = count($countCols) === 1 ? $countCols[0] : null;
 
-    // Prompt budget. A grouping is taken all-or-nothing: half a list would read as if the
-    // missing values had no data. Coarsest grouping first, so the cheapest and most useful
-    // block is always the one that fits.
     $lines  = [];
     $budget = 6000;
     foreach ($groupKeys as $groupCol) {
@@ -460,7 +403,7 @@ function rag_aggregate_rollups(array $rows): string
         $budget -= $size;
         $lines   = array_merge($lines, $block);
     }
-    // Grand total over every row, so "total value of all deals" needs no arithmetic either.
+
     $all = rag_rollup_sum($rows, $measures, $scales, $countCol);
     if ($all !== '') {
         $lines[] = 'ALL ROWS: ' . $all;
@@ -469,8 +412,6 @@ function rag_aggregate_rollups(array $rows): string
         return '';
     }
 
-    // Only the statistics that cannot be re-derived from subtotals are worth naming: an
-    // average of averages or a min of mins would be wrong, and the model must not try.
     $nonAdditive = array_values(array_filter(
         $columns,
         fn($c) => !in_array($c, $measures, true) && preg_match(RAG_NON_ADDITIVE_RE, $c) === 1
@@ -486,8 +427,6 @@ function rag_aggregate_rollups(array $rows): string
     return $text;
 }
 
-// One "by <column>" block: the measures summed per distinct value of $groupCol,
-// in order of first appearance.
 function rag_rollup_group(array $rows, string $groupCol, array $measures, array $scales, ?string $countCol): array
 {
     $buckets = [];
@@ -509,9 +448,6 @@ function rag_rollup_group(array $rows, string $groupCol, array $measures, array 
     return $lines;
 }
 
-// Sums each measure over $rows and formats them as "col=value | col=value".
-// Scaled-integer arithmetic keeps money exact (0.1 + 0.2 stays 0.30); a column whose
-// magnitude could overflow the integer range is dropped rather than reported wrong.
 function rag_rollup_sum(array $rows, array $measures, array $scales, ?string $countCol): string
 {
     $parts    = [];
@@ -543,7 +479,6 @@ function rag_rollup_sum(array $rows, array $measures, array $scales, ?string $co
         $parts[]          = "{$col}={$value}";
     }
 
-    // Derived average: only where a single count column pins down the denominator.
     if ($countCol !== null && isset($sumsByCol[$countCol]) && $sumsByCol[$countCol] > 0) {
         foreach ($sumsByCol as $col => $sum) {
             if ($col === $countCol) {
@@ -556,11 +491,6 @@ function rag_rollup_sum(array $rows, array $measures, array $scales, ?string $co
     return implode(' | ', $parts);
 }
 
-// True when the model declined to answer. Used to keep a refusal out of the conversation
-// memory: feeding "I cannot find this information" back in as history strongly primes the
-// next refusal. The suggestion-based branch catches translated refusals (the prompt ties an
-// empty FOLLOW_UP list to the no-answer phrase); a false positive only costs one turn of
-// memory, a false negative recreates the bug — so the test is deliberately lenient.
 function rag_is_no_answer(string $answer, array $suggestions): bool
 {
     $normalized = mb_strtolower(trim($answer));
@@ -576,23 +506,18 @@ function rag_is_no_answer(string $answer, array $suggestions): bool
 function rag_build_prompt(string $query, array $files, string $pageContext = '', string $language = '', array $history = [], string $aggregateView = ''): string
 {
     $langHint = $language !== '' ? "Respond in the language with locale code: {$language}.\n" : '';
-    // Fenced so record values can never be read as instructions (prompt injection via cell content).
-    // Strip the fence markers from the payload so cell content cannot close the block early.
+
     $pageContext = str_replace(['<<<PAGE_DATA', 'PAGE_DATA>>>'], '', $pageContext);
     $ctxBlock    = $pageContext !== ''
         ? "Current page data:\n<<<PAGE_DATA\n{$pageContext}\nPAGE_DATA>>>\n\n"
         : '';
-    // Same fencing discipline as PAGE_DATA for consistency, even though this block is
-    // 100% server-generated from an admin-vetted view, never from user/record content.
+
     $aggregateView = str_replace(['<<<AGGREGATES', 'AGGREGATES>>>'], '', $aggregateView);
     $aggBlock      = $aggregateView !== ''
         ? "Aggregate totals (exact, computed over the FULL matching set — not just the visible page):\n<<<AGGREGATES\n{$aggregateView}\nAGGREGATES>>>\n\n"
         : '';
     $noAnswer = 'I cannot find this information in the provided context.';
 
-    // Grouped into short titled sections rather than one flat list of rules: a long
-    // undifferentiated wall of constraints is where smaller local models start dropping
-    // instructions, and the COUNTING section below only works if it is actually read.
     $preamble = "You are a strict technical assistant for the OpenSparrow platform."
         . " Answer the user's question using EXCLUSIVELY the context below, which may hold"
         . " live table data, server-computed totals and documentation chunks.\n\n"
@@ -658,8 +583,7 @@ function rag_build_prompt(string $query, array $files, string $pageContext = '',
         $lines = [];
         foreach ($history as $turn) {
             $role = $turn['role'] === 'assistant' ? 'Assistant' : 'User';
-            // Same fencing discipline as PAGE_DATA, and strip the [View: table:id] markers so
-            // stale record references from the previous answer cannot be echoed as current ones.
+
             $content = str_replace(['<<<HISTORY', 'HISTORY>>>'], '', $turn['content']);
             $content = preg_replace('/\[View:\s*[^\]]*\]/', '', $content) ?? $content;
             $lines[] = $role . ': ' . trim($content);
@@ -684,54 +608,39 @@ function rag_build_prompt(string $query, array $files, string $pageContext = '',
     return "{$preamble}\nContext:\n{$context}{$historyBlock}\n{$questionLabel}:\n{$query}";
 }
 
-// Removes bracketed asides in which the model explains where a figure came from —
-// "[derived from the ROLLUPS line: stage=Negotiation | total_deals_count_...=7]". The prompt
-// forbids them (rule O4), but a small local model imitates the [View: ...] marker it is also
-// taught, so the leak is scrubbed here as well. Deliberately narrow: only brackets naming an
-// internal block or holding a raw column=value pair are dropped, never the [View: ...] marker
-// and never ordinary brackets in prose.
 function rag_strip_context_leaks(string $answer): string
 {
     $internal = 'PAGE_DATA|AGGREGATES|ROLLUPS|HISTORY';
     $patterns = [
-        // "[derived from the ROLLUPS line: stage=X | total_...=7]" — never [View: ...].
+
         '/\s*\[(?![Vv]iew:)[^\]]*(?:' . $internal . '|\w+=[^\]\s]+)[^\]]*\]/u',
-        // The same aside in round brackets: "(see AGGREGATES)", "(stage=Negotiation)".
+
         '/\s*\((?:[^)]*(?:' . $internal . ')[^)]*|[^)=\s]*\w+=[^)\s]+[^)]*)\)/u',
-        // A whole roll-up or fence line pasted verbatim into the answer.
+
         '/^\s*(?:by \w+:|ALL ROWS:|<<<(?:' . $internal . ')|(?:' . $internal . ')>>>).*$/mu',
-        // A section heading of the preamble echoed back.
+
         '/^\s*==\s*[A-Z][A-Z &]*\s*==\s*$/mu',
     ];
 
     $cleaned = $answer;
     foreach ($patterns as $pattern) {
-        // A failed match returns null and would blank out a valid answer — keep the last good text.
         $cleaned = preg_replace($pattern, '', $cleaned) ?? $cleaned;
     }
-    // Collapse the double space / space-before-period / blank lines left behind.
+
     $cleaned = preg_replace('/[ \t]{2,}/u', ' ', $cleaned) ?? $cleaned;
     $cleaned = preg_replace('/\s+([.,;:!?])/u', '$1', $cleaned) ?? $cleaned;
     $cleaned = preg_replace('/\n{3,}/u', "\n\n", $cleaned) ?? $cleaned;
 
-    // Everything was an aside: return the original rather than an empty bubble.
     return trim($cleaned) === '' ? trim($answer) : trim($cleaned);
 }
 
 function rag_extract_suggestions(string $response): array
 {
-    // The FOLLOW_UP marker can appear anywhere — including inline on the same line
-    // as the answer when the model ignores the "new line" instruction. Match it
-    // regardless of position so the block is ALWAYS stripped and never leaks into
-    // the visible answer, even when its payload is malformed.
-    // Accept the near misses too (FOLLOW UP:, FOLLOW-UP :, **FOLLOW_UP**:) — a marker the
-    // model spelled slightly differently would otherwise be shown to the user as answer text.
     $marker = '/\**FOLLOW[ _-]?UP\**\s*:/i';
     if (!preg_match($marker, $response)) {
         return ['answer' => trim($response), 'suggestions' => []];
     }
 
-    // Everything before the first marker is the answer; everything after is the block.
     [$answer, $block] = array_pad(preg_split($marker, $response, 2), 2, '');
     $answer = trim((string) $answer);
     $block  = trim((string) $block);
@@ -739,23 +648,18 @@ function rag_extract_suggestions(string $response): array
     $suggestions = [];
 
     if (preg_match('/\[.*\]/s', $block, $m)) {
-        // Preferred format: a JSON array — FOLLOW_UP: ["q1", "q2"]
         $parsed = json_decode($m[0], true);
         if (is_array($parsed)) {
             $suggestions = $parsed;
         } elseif (preg_match_all('/"([^"]*)"/', $m[0], $qm)) {
-            // Malformed JSON (e.g. a stray quote): salvage the quoted strings.
             $suggestions = $qm[1];
         }
     } else {
-        // Plain text, bullet list, or numbered list fallback.
         foreach (preg_split('/\r?\n/', $block) as $line) {
             $suggestions[] = preg_replace('/^(?:[-*]|\d+[.)])\s*/', '', trim((string) $line));
         }
     }
 
-    // Keep only non-empty entries that contain at least one letter (drops salvage
-    // noise such as a lone ", " left behind by malformed JSON), capped at three.
     $suggestions = array_slice(
         array_values(array_filter(
             array_map('trim', array_map('strval', $suggestions)),

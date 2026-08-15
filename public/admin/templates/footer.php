@@ -4,16 +4,9 @@
   Copyright (C) 2024-2026 OpenSparrow Contributors
   Licensed under LGPL v3. See COPYING.LESSER file for details.
 -->
-</div><!-- /admin-layout -->
-
+</div>
 <?php
-// One cache-busting version for the whole admin module graph: app.js pulls in ~30
-// sibling modules with bare specifiers, so versioning the entry file alone left every
-// one of them frozen in the browser cache after an update. The entry tag below must
-// use the same version as the map — app.js is both the entry AND an import target,
-// and a module reachable under two URLs gets instantiated twice (duplicate listeners,
-// split state: lost saves, phantom dirty flags).
-// Admin pages send no CSP, hence the empty nonce.
+
 require_once __DIR__ . '/../../../includes/page_helpers.php';
 $adminGraph = os_module_graph([
     './js/'                   => __DIR__ . '/../js',

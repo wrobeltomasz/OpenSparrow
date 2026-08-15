@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/cells/shared.js — createInputCell(): shared <td> wiring for simple
-// input/select cell renderers (dataset.column/id, readonly, attachCellEvents).
-
 import { attachCellEvents } from '../../grid_actions.js';
 
 export function createInputCell({ row, col, colCfg, isReadOnly, makeControl }) {

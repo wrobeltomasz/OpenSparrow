@@ -1,17 +1,11 @@
 /*
- * This file is part of OpenSparrow - https://opensparrow.org
- * SPDX-License-Identifier: LGPL-3.0-or-later
- * Copyright (C) 2024-2026 OpenSparrow Contributors
- * Licensed under LGPL v3. See COPYING.LESSER file for details.
- */
-
-/* Mobile styles for OpenSparrow (max-width: 768px) */
-/* Loaded via <link media="only screen and (max-width: 768px)"> — desktop unaffected */
+  * This file is part of OpenSparrow - https://opensparrow.org
+  * SPDX-License-Identifier: LGPL-3.0-or-later
+  * Copyright (C) 2024-2026 OpenSparrow Contributors
+  * Licensed under LGPL v3. See COPYING.LESSER file for details.
+*/
 
 @media only screen and (max-width: 768px) {
-
-    /* ===== HEADER ===== */
-
     header {
         flex-wrap: wrap;
         padding: 0 0.75rem;
@@ -20,7 +14,6 @@
         min-height: var(--header-h);
     }
 
-    /* Touch target: 44×44 minimum per WCAG 2.5.5 */
     #sidebarToggle {
         min-width: 44px;
         min-height: 44px;
@@ -29,7 +22,6 @@
         justify-content: center;
     }
 
-    /* Search toggle: same visual style as sidebar toggle */
     .header-search-toggle {
         display: flex;
         align-items: center;
@@ -51,12 +43,10 @@
         height: 22px;
     }
 
-    /* Push user menu to right of header row */
     .header-user-menu {
         margin-left: auto;
     }
 
-    /* Search/filter drawer: hidden by default, drops below header on toggle */
     .header-controls {
         display: none;
         position: absolute;
@@ -72,12 +62,10 @@
         box-sizing: border-box;
     }
 
-    /* JS adds mob-search-open to <header> to open the drawer */
     header.mob-search-open .header-controls {
         display: flex;
     }
 
-    /* font-size:16px prevents iOS auto-zoom on input focus */
     .header-controls #globalSearch,
     .header-controls input[type="search"],
     .header-controls #columnFilter,
@@ -110,16 +98,12 @@
         font-size: 14px;
     }
 
-    /* ===== OFF-CANVAS SIDEBAR ===== */
-
-    /* Nav slides in from left; JS adds mob-open class to reveal */
     nav#menu.menu {
         position: fixed;
         top: var(--header-h);
         left: -240px;
         width: 240px;
-        /* dvh, not vh: with the browser toolbar visible 100vh overshoots the visible
-           viewport, so the tail of a long menu sits under it. vh line = fallback. */
+
         height: calc(100vh - var(--header-h));
         height: calc(100dvh - var(--header-h));
         z-index: 200;
@@ -134,7 +118,6 @@
         box-shadow: 6px 0 24px rgba(31, 42, 55, 0.22);
     }
 
-    /* Dark overlay behind open sidebar; JS adds mob-visible to show it */
     .mob-overlay {
         display: none;
         position: fixed;
@@ -147,14 +130,11 @@
         display: block;
     }
 
-    /* Touch targets in nav */
     nav li a,
     .custom-nav-link {
         min-height: 44px;
         padding: 0.75rem 1rem;
     }
-
-    /* ===== LAYOUT — nav is a fixed overlay; main takes full width ===== */
 
     .app-container {
         display: block;
@@ -170,17 +150,12 @@
         padding: 10px 12px 4px;
     }
 
-    /* ===== GRID TABLE ===== */
-
-    /* Horizontal scroll; inset right shadow signals there is content to scroll */
     #grid,
     #filesGrid {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         box-shadow: inset -10px 0 14px -6px rgba(31, 42, 55, 0.09);
-        /* styles.css sizes these with 100vh, which overshoots the visible viewport
-           while the browser toolbar is up and pushes the last rows off-screen.
-           Browsers without dvh drop this line and keep the vh value. */
+
         max-height: calc(100dvh - var(--header-h) - 50px);
     }
 
@@ -188,8 +163,6 @@
     #filesGrid table {
         min-width: 600px;
     }
-
-    /* ===== ACTIONS BAR ===== */
 
     #actions.actions,
     #filesActions.actions {
@@ -205,7 +178,6 @@
         gap: 8px;
     }
 
-    /* Upload bar stacks vertically, full-width controls */
     .f-upload-bar {
         padding: 10px 12px;
     }
@@ -216,12 +188,10 @@
         max-width: none;
     }
 
-    /* Dropdown replaced by FAB + dedicated export button */
     #mobileActions {
         display: none;
     }
 
-    /* Export: full-width, touch-friendly */
     #exportCsv {
         width: 100%;
         padding: 0.7rem;
@@ -229,7 +199,6 @@
         justify-content: center;
     }
 
-    /* Add Row: FAB pinned to bottom-right corner */
     #addRow {
         position: fixed;
         bottom: 1.5rem;
@@ -241,7 +210,7 @@
         min-height: 56px;
         border-radius: 50%;
         padding: 0;
-        font-size: 0; /* button text hidden; + rendered via ::before */
+        font-size: 0;
         background: var(--ok);
         border-color: var(--ok);
         box-shadow: 0 4px 16px rgba(31, 42, 55, 0.28);
@@ -258,8 +227,6 @@
         line-height: 1;
     }
 
-    /* ===== PAGINATION ===== */
-
     .pagination {
         flex-direction: row;
         flex-wrap: wrap;
@@ -275,14 +242,11 @@
         font-size: 14px;
     }
 
-    /* Page info text rendered above nav buttons */
     .pagination span {
         width: 100%;
         text-align: center;
         order: -1;
     }
-
-    /* ===== DASHBOARD ===== */
 
     .dashboard-grid {
         grid-template-columns: 1fr;
@@ -290,7 +254,6 @@
         padding: 10px;
     }
 
-    /* All widget widths collapse to single column */
     .dash-widget[data-w="1"],
     .dash-widget[data-w="2"],
     .dash-widget[data-w="3"] {

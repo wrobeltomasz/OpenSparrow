@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/cells/enum-cell.js — Enum cell: <select> of allowed values with optional per-value background colour; registers 'enum'.
-
 import { CellRenderer } from './registry.js';
 import { createInputCell } from './shared.js';
 

@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/m2m.js — Many-to-Many relationship builder wizard
-// Lists/creates/deletes junction tables via api.php (list_m2m / create_m2m / delete_m2m). CSRF via apiFetch().
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 
@@ -15,8 +13,6 @@ export async function renderM2mPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.textContent = '';
 
-
-    // ── Fetch current state ────────────────────────────────────────────────────
     let tables = [];
     let relationships = [];
     try {
@@ -35,7 +31,6 @@ export async function renderM2mPage(ctx) {
         return;
     }
 
-    // ── Page header ────────────────────────────────────────────────────────────
     const h2 = document.createElement('h2');
     h2.style.cssText = 'margin:0 0 6px;';
     h2.textContent = 'Many-to-Many Relationship Builder';
@@ -46,7 +41,6 @@ export async function renderM2mPage(ctx) {
 
     workspaceEl.append(h2, sub);
 
-    // ── Create card ────────────────────────────────────────────────────────────
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); padding:28px; max-width:680px; margin-bottom:44px;';
 
@@ -61,7 +55,6 @@ export async function renderM2mPage(ctx) {
     cardHeader.append(cardBadge, cardH3);
     card.appendChild(cardHeader);
 
-    // Table A / Table B selects ─────────────────────────────────────────────────
     const selectRow = document.createElement('div');
     selectRow.style.cssText = 'display:flex; align-items:flex-end; gap:10px; margin-bottom:22px;';
 
@@ -95,7 +88,6 @@ export async function renderM2mPage(ctx) {
     selectRow.append(wrapA, arrowEl, wrapB);
     card.appendChild(selectRow);
 
-    // Options grid ─────────────────────────────────────────────────────────────
     const optGrid = document.createElement('div');
     optGrid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:10px;';
 
@@ -128,7 +120,6 @@ export async function renderM2mPage(ctx) {
     optGrid.append(wJunction, wLabel, wSelfFk, wOtherFk, wDisp);
     card.appendChild(optGrid);
 
-    // Auto-fill ─────────────────────────────────────────────────────────────────
     const GUESSES = ['name', 'title', 'label', 'code', 'description'];
 
     function autoFill() {
@@ -152,7 +143,6 @@ export async function renderM2mPage(ctx) {
     selA.addEventListener('change', autoFill);
     selB.addEventListener('change', autoFill);
 
-    // Preview pill (shows what will be created) ────────────────────────────────
     const preview = document.createElement('div');
     preview.style.cssText = '  margin:6px 0 20px; min-height:18px;';
 
@@ -166,7 +156,6 @@ export async function renderM2mPage(ctx) {
     [selA, selB].forEach(el => el.addEventListener('change', updatePreview));
     card.appendChild(preview);
 
-    // Create button ─────────────────────────────────────────────────────────────
     const btnCreate = document.createElement('button');
     btnCreate.type = 'button';
     btnCreate.className = 'btn btn-primary';
@@ -214,7 +203,6 @@ export async function renderM2mPage(ctx) {
 
     workspaceEl.appendChild(card);
 
-    // ── Existing relationships ─────────────────────────────────────────────────
     const listH3 = document.createElement('h3');
     listH3.style.cssText = 'margin:0 0 14px;';
     listH3.textContent = 'Existing Many-to-Many Relationships';

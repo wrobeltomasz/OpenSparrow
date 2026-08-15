@@ -4,11 +4,9 @@
   Copyright (C) 2024-2026 OpenSparrow Contributors
   Licensed under LGPL v3. See COPYING.LESSER file for details.
 -->
-    <!-- Navigation sidebar -->
     <nav class="admin-nav" id="adminNav">
         <div class="nav-sections">
 
-            <!-- OVERVIEW -->
             <div class="nav-section open">
                 <div class="nav-section-items" style="padding-top:4px;">
                     <button class="admin-tab active" data-file="overview">
@@ -18,7 +16,6 @@
                 </div>
             </div>
 
-            <!-- DATA MANAGEMENT -->
             <div class="nav-section">
                 <div class="nav-section-header">
                     <img class="nav-section-icon" src="../assets/icons/data_table.png" alt="">
@@ -69,7 +66,6 @@
                 </div>
             </div>
 
-            <!-- WORKFLOWS -->
             <div class="nav-section">
                 <div class="nav-section-header">
                     <img class="nav-section-icon" src="../assets/icons/build.png" alt="">
@@ -88,7 +84,6 @@
                 </div>
             </div>
 
-            <!-- KNOWLEDGE BASE -->
             <div class="nav-section">
                 <div class="nav-section-header">
                     <img class="nav-section-icon" src="../assets/icons/menu_book.png" alt="">
@@ -103,7 +98,6 @@
                 </div>
             </div>
 
-            <!-- SYSTEM -->
             <div class="nav-section">
                 <div class="nav-section-header">
                     <img class="nav-section-icon" src="../assets/icons/database.png" alt="">
@@ -154,23 +148,17 @@
                 </div>
             </div>
 
-        </div><!-- /nav-sections -->
-    </nav><!-- /admin-nav -->
-
-    <!-- Left nav edge collapse tab -->
+        </div>    </nav>
     <button class="nav-edge-toggle" id="navEdgeToggle" title="Toggle navigation" aria-label="Toggle navigation">&#8249;</button>
 
-    <!-- Main content area -->
     <div class="admin-main">
 
-        <!-- Breadcrumb -->
         <div class="admin-breadcrumb">
             <span class="breadcrumb-root">Admin</span>
             <span class="breadcrumb-sep">›</span>
             <span class="breadcrumb-current" id="breadcrumbCurrent">Schema</span>
         </div>
 
-        <!-- Editor area: workspace -->
         <div class="admin-content">
 
             <section class="admin-workspace" id="workspace">
@@ -180,4 +168,4 @@
 
         </div>
 
-    </div><!-- /admin-main -->
+    </div>

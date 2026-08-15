@@ -3,21 +3,12 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/util/record-tooltip.js — shared floating record tooltip.
-//
-// A single body-appended container reused by the grid row tooltip, the calendar
-// event tooltip and the board card tooltip so the three modules share one look,
-// one positioning logic and one source of truth. Populated on mouseenter from a
-// { title, rows } model and positioned below (or above, when space runs out) the
-// hovered anchor element. Values are set via textContent — safe against XSS.
-
 const TOOLTIP_ID = 'record-tooltip';
 const TOOLTIP_STYLE = 'position:absolute;display:none;background:#fff;border:1px solid var(--border);'
     + 'padding:12px;border-radius:6px;box-shadow:0 5px 15px rgba(0,0,0,0.2);font-size:13px;'
     + 'z-index:10000;pointer-events:none;min-width:220px;max-width:340px;max-height:400px;'
     + 'overflow-y:auto;color:var(--text);';
 
-// Lazily create (once) and return the shared tooltip container.
 export function getRecordTooltip() {
     let el = document.getElementById(TOOLTIP_ID);
     if (!el) {
@@ -29,15 +20,9 @@ export function getRecordTooltip() {
     return el;
 }
 
-// Build [{ label, value, color }] rows from a raw record map plus its column
-// definitions. Iterates the schema column order when available (falling back to
-// the record's own keys), skips `id`, the `*__display` helper keys and empty
-// values, prefers the `key__display` label, and derives an enum swatch color
-// from the column's `enum_colors`.
 export function rowsFromRecord(rowData = {}, columns = {}) {
     const rows = [];
-    // Schema column order first (nice, stable ordering + labels/colors), then any
-    // remaining record keys not described by the schema so nothing is dropped.
+
     const seen = new Set();
     const keys = [];
     for (const k of Object.keys(columns)) { keys.push(k); seen.add(k); }
@@ -62,8 +47,6 @@ export function rowsFromRecord(rowData = {}, columns = {}) {
 
 let showTimer = null;
 
-// Populate the shared tooltip with the model and position it against an anchor.
-// model: { title: string, rows: [{ label, value, color }] }
 function renderTooltipNow(anchor, { title, rows } = {}) {
     const el = getRecordTooltip();
     el.innerHTML = '';
@@ -111,15 +94,11 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
     el.style.top = topPos + 'px';
 }
 
-// Schedule showing the tooltip after `delay` ms of continuous hover; cancels any
-// pending show for a previous anchor so only the latest hover target wins.
 export function showRecordTooltip(anchor, model = {}, delay = 1000) {
     clearTimeout(showTimer);
     showTimer = setTimeout(() => renderTooltipNow(anchor, model), delay);
 }
 
-// Hide the shared tooltip (no-op if it was never created) and cancel any pending
-// scheduled show, so a hover that ends before `delay` elapses never shows at all.
 export function hideRecordTooltip() {
     clearTimeout(showTimer);
     showTimer = null;

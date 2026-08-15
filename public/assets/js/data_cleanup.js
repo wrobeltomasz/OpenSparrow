@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/data_cleanup.js — Bulk find/replace (regex) cleanup panel (editor feature)
-// Slide-in panel over the current grid table: debounced, hashed preview then apply via api/data_cleanup.php. Skips numeric/boolean column types.
-
 import { I18n } from './i18n.js';
 import { state as gridState } from './grid/state.js';
 import { loadTable } from './grid.js';
@@ -17,7 +14,6 @@ let previewHash    = null;
 let currentPayload = null;
 let lastCount      = 0;
 
-// Column types that REPLACE/regex operations do not make sense on.
 const SKIP_TYPES = new Set([
     'boolean', 'bool',
     'integer', 'int', 'int2', 'int4', 'int8', 'bigint', 'smallint', 'serial', 'bigserial',

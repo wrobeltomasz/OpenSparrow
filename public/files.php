@@ -5,18 +5,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// files.php — Files module page (frontend HTML)
-// Boots via includes/bootstrap.php: os_page_bootstrap() — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
-// Exposes capability flags (canEdit/canExport) to the client
-// Search box + type filter render in the app header (via $headerControls, like the grid page)
-// Table mirrors the data grid look/behavior: th-label header pills, column sort, actions bar with
-// grid-style pagination (rows-per-page persisted in localStorage). A slim single-row upload bar
-// (styled like the actions bar) sits below the table.
-// Bulk operations (delete, tagging) over row-checkbox selection — same me-bar/BulkPanel UI as the grid.
-// Grid-parity inline editing: the immutable File Name and an editable display Name sit side by side,
-// and per-row Tags are edited in place (click-to-edit). Single-file edits go to api/files.php update_meta.
-// Renders the file manager UI; data and uploads via api/files.php, downloads via file_download.php
-
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/bootstrap.php';

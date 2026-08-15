@@ -7,17 +7,8 @@
 
 declare(strict_types=1);
 
-// api/views.php — Saved/custom views API (backed by PostgreSQL views)
-// Auth gate: session + UA enforcement; CSRF on POST
-// actions: list (GET), config (GET, admin), data (GET — runs the view SELECT / drill-down GROUP BY),
-// schemas (GET, admin — lists PostgreSQL schemas + the configured search selection),
-// sync (GET, admin — discovers ordinary AND materialized views via pg_class
-// relkind 'v'/'m', scoped to the "views" config "schemas" key), save (POST, admin)
-// Reads/writes the "views" config; column names validated against schema, values parameterized
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// Auth gate + header CSRF on POST; connect=false — actions open their own connection
 os_api_bootstrap(['connect' => false]);
 
 $role   = $_SESSION['role'] ?? 'viewer';
@@ -29,15 +20,13 @@ $viewsConfig = config_get('views') ?? [];
 $views       = $viewsConfig['views'] ?? [];
 
 try {
-    /* LIST — visible views for FE menu/selector */
     if ($action === 'list' && $method === 'GET') {
         $result = [];
         foreach ($views as $name => $cfg) {
             if (!empty($cfg['hidden'])) {
                 continue;
             }
-            // Per-user view access. Unlike 'hidden' this is an access rule, so it also
-            // guards the data action below — hiding a menu entry is not a boundary.
+
             if (!user_can_access_view((string) $name)) {
                 continue;
             }
@@ -53,13 +42,11 @@ try {
         exit;
     }
 
-    /* CONFIG — full config for admin editor */
     if ($action === 'config' && $method === 'GET' && $role === 'admin') {
         echo json_encode(['status' => 'ok', 'config' => $viewsConfig]);
         exit;
     }
 
-    /* DATA — query view data with optional drill-down */
     if ($action === 'data' && $method === 'GET') {
         $viewName = $_GET['view'] ?? '';
         if (!isset($views[$viewName])) {
@@ -159,7 +146,6 @@ try {
         exit;
     }
 
-    /* SCHEMAS — list PostgreSQL schemas + the currently configured search selection (admin only) */
     if ($action === 'schemas' && $method === 'GET' && $role === 'admin') {
         $conn = db_connect();
         $sql  = 'SELECT schema_name FROM information_schema.schemata '
@@ -188,7 +174,6 @@ try {
         exit;
     }
 
-    /* SYNC — read DB views list and column metadata (admin only) */
     if ($action === 'sync' && $method === 'GET' && $role === 'admin') {
         $conn    = db_connect();
         $schemas = is_array($viewsConfig['schemas'] ?? null) ? $viewsConfig['schemas'] : [];
@@ -198,11 +183,7 @@ try {
         }
 
         $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($schemas)));
-        // information_schema.VIEWS lists ordinary views only: a materialized view is
-        // relkind 'm' and never appears there, which is why Sync used to miss them
-        // entirely. Read pg_class instead so both kinds are discovered, and keep
-        // information_schema's privilege filtering by requiring SELECT on the
-        // relation — Sync must never offer a view the app's DB user cannot read.
+
         $sql = 'SELECT n.nspname AS table_schema, c.relname AS table_name, c.relkind '
             . 'FROM pg_catalog.pg_class c '
             . 'JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace '
@@ -228,10 +209,6 @@ try {
 
         $viewsColumns = [];
         foreach ($dbViews as $vName) {
-            // pg_attribute for the same reason as above: information_schema.columns
-            // has no rows for a materialized view's columns. format_type() also gives
-            // the precise type ("character varying(255)") rather than the bare
-            // "character varying" — this value is only rendered as a badge.
             $colSql = 'SELECT a.attname AS column_name, '
                 . 'pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type '
                 . 'FROM pg_catalog.pg_attribute a '
@@ -262,7 +239,6 @@ try {
         exit;
     }
 
-    /* SAVE CONFIG — persist to the spw_config store, key "views" (admin only) */
     if ($action === 'save' && $method === 'POST' && $role === 'admin') {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!is_array($body) || !isset($body['views'])) {
@@ -271,8 +247,6 @@ try {
             exit;
         }
 
-        // Preserve the top-level "schemas" selection (multi-schema sync scope) —
-        // this action only replaces the views map.
         $newConfig = ['views' => $body['views']];
         if (is_array($viewsConfig['schemas'] ?? null)) {
             $newConfig['schemas'] = $viewsConfig['schemas'];

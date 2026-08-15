@@ -5,34 +5,16 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// api/files.php — Files module API (upload, list, soft-delete, config)
-// Auth gate: session + UA enforcement; CSRF where applicable; JSON via jsonError()/jsonSuccess()
-// match() action routing: list, get_config, upload, delete, mass_delete, mass_tag, update_meta,
-// save_config, get_relations_config, get_related_records
-// Multipart upload with post_max_size-drop detection (-> 413); soft-delete (deleted_at); pagination
-// Parameterized queries; sys_table('files')
-
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// csrf=manual: mutating actions validate the FormData/body token via os_require_csrf() themselves
 $conn = os_api_bootstrap(['csrf' => 'manual']);
 
-// jsonError(), jsonSuccess(), requireLogin() and requireWrite() are shared via includes/api_helpers.php
-
-// Files-module config via the spw_config store (key "files").
 require_once __DIR__ . '/../../includes/config_store.php';
-// Record image galleries: IMAGES_FIELD discriminator + images_config()/images_count()
+
 require_once __DIR__ . '/../../includes/images.php';
 
-/**
- * Validate a gallery upload target: the table must have images enabled in the schema
- * config, the record must be accessible to the current user, and the per-record limit
- * must not be reached. Exits with a JSON error otherwise.
- *
- * @return array{table:string,id:int}
- */
 function validateImageTarget($conn, string $table, int $recordId): array
 {
     if ($table === '' || $recordId <= 0) {
@@ -75,9 +57,6 @@ function saveConfig(array $config): void
     }
 }
 
-// Catch server-level post_max_size drops. Runs before os_api_action(): when PHP
-// discards an oversized multipart body, $_POST is empty and no action name survives
-// to reach the dispatcher, so the upload would otherwise report a bare 400.
 if (
     $_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)
     && isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0
@@ -86,8 +65,6 @@ if (
     jsonError('File is too large. Check php.ini settings.', 413);
 }
 
-// os_api_action() reads the action from the JSON body or from $_POST depending on
-// the content type — the upload actions post multipart FormData, not JSON.
 ['action' => $action, 'body' => $body] = os_api_action();
 
 os_api_dispatch($action, [
@@ -103,17 +80,15 @@ os_api_dispatch($action, [
     'get_related_records'  => fn() => files_action_get_related_records($conn),
 ], 'api_files', 'Unknown action or empty request payload.');
 
-// Handle list action
 function files_action_list($conn): void
 {
-
     requireLogin();
     $page   = max(1, (int) ($_GET['page']   ?? 1));
     $limit  = min(FILES_PAGE_LIMIT_MAX, max(1, (int) ($_GET['limit'] ?? FILES_PAGE_LIMIT)));
     $offset = ($page - 1) * $limit;
     $type   = $_GET['type']   ?? 'all';
     $search = trim($_GET['search'] ?? '');
-    // Column sort (grid-parity) — identifiers come from a hardcoded whitelist, never from input
+
     $sortMap = [
         'type'       => 'f.type',
         'name'       => 'LOWER(f.name)',
@@ -133,15 +108,11 @@ function files_action_list($conn): void
     }
 
     if ($search !== '') {
-// Convert array to string for easy partial text matching
         $paramIdx = count($params) + 1;
         $where[]  = '(f.name ILIKE $' . $paramIdx . ' OR f.display_name ILIKE $' . $paramIdx . ' OR array_to_string(f.tags, \' \') ILIKE $' . $paramIdx . ')';
         $params[] = '%' . $search . '%';
     }
 
-    // Per-user table scope: files attached to a table the user may not reach are
-    // dropped from both the count and the page. Unattached files (related_table
-    // NULL or empty) belong to no table and stay visible to every logged-in user.
     $allowedTables = user_allowed_tables();
     if ($allowedTables !== null) {
         $where[]  = "(f.related_table IS NULL OR f.related_table = '' OR f.related_table = ANY($"
@@ -149,34 +120,6 @@ function files_action_list($conn): void
         $params[] = textListToPgArray($allowedTables);
     }
 
-    // Row-level ownership — the same rule assertFileAccess() applies to the write paths
-    // and file_download.php to the download. A file inherits the visibility of the
-    // record it hangs off, and until now that held everywhere EXCEPT here: the listing
-    // handed out the name, display name, tags, uploader and related_id of attachments on
-    // rows the caller does not own. Metadata only, since the bytes were already gated —
-    // but it is what the ownership policy exists to withhold, and the write gate refuses
-    // to touch those very files, so the listing was the one surface disagreeing.
-    //
-    // Scoped to the tables actually marked owner_restricted rather than applied to every
-    // related_table: a table with no ownership policy has no owner to compare against,
-    // and a blanket predicate would start hiding its files the moment somebody assigned
-    // one. Read as ARRAY KEYS, so all-digit table names arrive as ints — textListToPgArray()
-    // is what casts them back.
-    //
-    // owner_restriction_sql() does not fit: it binds table_name to a PARAMETER, because
-    // every other caller filters one table's rows, whereas a single page of this listing
-    // spans many. The predicate is correlated on f.related_table instead. Same policy
-    // either way — unowned rows pass, rows owned by somebody else drop out. The explicit
-    // IS NOT NULL is what that helper leaves to NULL-comparison semantics; spelled out
-    // here because this one is read next to a correlated join. Unattached files have a
-    // NULL related_id, match no owner row, and stay visible exactly as before.
-    //
-    // Admins are exempt, as can_access_record() exempts them and as user_allowed_tables()
-    // already no-ops for them above: the admin Files module lists the whole library
-    // through this same action.
-    //
-    // In SQL rather than after the fetch, so COUNT(*) and the LIMIT/OFFSET pagination
-    // agree with what is actually visible — the same reason api.php's grid filters there.
     $ownerRestricted = [];
     if (($_SESSION['role'] ?? '') !== 'admin') {
         foreach ((config_get('schema') ?? [])['tables'] ?? [] as $tName => $tCfg) {
@@ -239,31 +182,22 @@ function files_action_list($conn): void
     ]);
 }
 
-// Handle get config action
 function files_action_get_config(): void
 {
-
     requireWrite();
     jsonSuccess(['config' => loadConfig()]);
 }
 
-// Provide relation definitions for frontend upload form
 function files_action_get_relations_config(): void
 {
-
     requireLogin();
     $config    = loadConfig();
     $relations = $config['relations'] ?? [];
     jsonSuccess(['relations' => $relations]);
 }
 
-// Handle file upload action
 function files_action_upload($conn): void
 {
-
-    // Uploading is a write operation — restrict to write roles, matching
-    // delete/save_config. Viewers are read-only; the UI hides the upload control
-    // for them but the server must enforce it too.
     requireWrite();
     os_require_csrf('body');
     if (!isset($_FILES['file'])) {
@@ -283,11 +217,7 @@ function files_action_upload($conn): void
 
     $originalName = $file['name'];
     $ext          = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-    // Never honour a configured extension the server cannot content-verify. The
-    // admin panel saves the Files config verbatim, so allowed_extensions is not a
-    // trusted input on its own — intersecting it with verifiableExtensionMap()
-    // keeps svg/php/html out no matter what is stored. This also holds when finfo
-    // is missing, where the mimeMatchesExtension() sniff below never runs at all.
+
     $allowedExts = array_intersect($config['allowed_extensions'] ?? [], array_keys(verifiableExtensionMap()));
     if (!in_array($ext, $allowedExts, true)) {
         jsonError('Extension is not allowed.', 415);
@@ -298,13 +228,9 @@ function files_action_upload($conn): void
         jsonError('File type category is not allowed.', 415);
     }
 
-    // Gallery mode: the upload targets a record's image gallery instead of the plain
-    // attachment list. Validated against the schema config, not the Files relations.
     $imageMode   = ($_POST['related_field'] ?? '') === IMAGES_FIELD;
     $imageTarget = null;
-    // related_table is request-supplied on both paths below (gallery and plain
-    // attachment), so it is gated here once — attaching a file to a record in a
-    // table the user has no access to must not be possible.
+
     $reqRelatedTable = trim($_POST['related_table'] ?? '');
     if ($reqRelatedTable !== '') {
         require_table_access($reqRelatedTable);
@@ -316,11 +242,6 @@ function files_action_upload($conn): void
         $imageTarget = validateImageTarget($conn, trim($_POST['related_table'] ?? ''), (int)($_POST['related_id'] ?? 0));
     }
 
-    // Read the REAL content type and reject any file whose bytes do not match the
-    // extension the client claimed. Extension/category checks above are trivially
-    // spoofable (rename virus.html -> photo.jpg); this closes both the spoofing gap
-    // and a stored-content vector where a text/html payload named .jpg would later be
-    // served inline by file_download.php. Only enforced when finfo is available.
     $mimeType = 'application/octet-stream';
     if (class_exists('finfo')) {
         $finfo    = new finfo(FILEINFO_MIME_TYPE);
@@ -336,7 +257,7 @@ function files_action_upload($conn): void
     $dir         = rtrim(__DIR__ . '/../../' . ($config['storage_path'] ?? 'storage/files'), '/');
     if (!is_dir($dir)) {
         mkdir($dir, 0750, true);
-        // Deny direct web access on Apache — mirrors the protection on storage/files/.htaccess.
+
         @file_put_contents($dir . '/.htaccess', "Require all denied\n");
     }
 
@@ -347,18 +268,16 @@ function files_action_upload($conn): void
 
     $displayName = trim($_POST['display_name'] ?? '') ?: $originalName;
     $dbPath      = trim($config['storage_path'] ?? 'storage/files', '/') . '/' . $filename;
-// Process related record data automatically linked to the configured tables
+
     $relatedTableReq = trim($_POST['related_table'] ?? '');
     $relatedId       = isset($_POST['related_id']) && $_POST['related_id'] !== '' ? (int)$_POST['related_id'] : null;
     $relatedTable    = null;
     $relatedField    = null;
     if ($imageMode) {
-        // Already validated (table has a gallery, record accessible, limit not reached)
         $relatedTable = $imageTarget['table'];
         $relatedId    = $imageTarget['id'];
         $relatedField = IMAGES_FIELD;
     } elseif ($relatedTableReq && $relatedId) {
-// Validate that the requested table exists in config
         $relations = $config['relations'] ?? [];
         foreach ($relations as $rel) {
             if ($rel['table'] === $relatedTableReq) {
@@ -367,13 +286,11 @@ function files_action_upload($conn): void
             }
         }
 
-        // Security fallback if table is not in the allowed relations list
         if (!$relatedTable) {
             $relatedId = null;
         }
     }
 
-    // Extract and format tags as PostgreSQL array — shared with mass_tag
     $tagsPgArray = tagsToPgArray($_POST['tags'] ?? '');
 
     $sql = "
@@ -406,24 +323,10 @@ function files_action_upload($conn): void
     }
 
     $row = pg_fetch_assoc($res);
-// Return 201 Created on successful upload
+
     jsonSuccess(['file' => $row], 201);
 }
 
-// A PostgreSQL text[] literal from a list of names, for the two name-list predicates
-// in files_action_list(). Both bind their list as a single parameter, so the literal has to be
-// assembled here rather than expanded into placeholders.
-//
-// Quoting every element and escaping backslashes and double quotes is what stops a name
-// containing either from closing the literal early. These names are configuration-
-// supplied, never client-supplied, but a literal built by hand has to be correct on its
-// own terms and not because of where its input happened to come from.
-//
-// strval on the way in, because a caller may hand over schema table names read as ARRAY
-// KEYS, and PHP has already cast an all-digit one to an int by then — under
-// declare(strict_types=1) that would be a TypeError against the string-typed closure.
-//
-// @param list<string|int> $names
 function textListToPgArray(array $names): string
 {
     return '{' . implode(',', array_map(
@@ -432,12 +335,8 @@ function textListToPgArray(array $names): string
     )) . '}';
 }
 
-// Validate a client-supplied UUID list and normalize it into a PG array literal.
-// Every element must match the canonical UUID format — this both rejects garbage
-// and guarantees the assembled literal needs no further escaping.
 function uuidListToPgArray(mixed $uuids): string
 {
-
     if (!is_array($uuids) || count($uuids) === 0 || count($uuids) > 500) {
         jsonError('uuids must be a non-empty array (max 500).', 400);
     }
@@ -451,28 +350,8 @@ function uuidListToPgArray(mixed $uuids): string
     return '{' . implode(',', array_unique($clean)) . '}';
 }
 
-// A file inherits the visibility of the record it hangs off: a user who cannot reach
-// that row — because the table is outside their access scope, or because the row
-// belongs to someone else in an owner-restricted table — must not be able to touch its
-// files either (mirrors file_download.php).
-//
-// This used to look at gallery rows only (`related_field = IMAGES_FIELD`), which left
-// every plain attachment unchecked on delete, mass-delete, mass-tag and metadata edit
-// — the read paths were gated while the write paths were not. It now covers every
-// attachment, and consults the per-user table scope as well as record ownership.
-//
-// Unattached files (no related_table, or no related_id) belong to no record and stay
-// editable by any logged-in user — the same rule files_action_list() applies when listing
-// them. A file pointing at a table that is no longer in the schema config fails closed
-// instead: there is nothing left to check ownership against, and a stuck orphan is a
-// better outcome than an unguarded one. The error_log line is there to make that case
-// diagnosable rather than mysterious.
-//
-// Fails closed with the same 404 the single-file paths use, so an inaccessible uuid is
-// indistinguishable from a missing one. $pgUuids is a PG uuid[] literal.
 function assertFileAccess($conn, string $pgUuids): void
 {
-
     $res = pg_query_params(
         $conn,
         "SELECT DISTINCT related_table, related_id FROM " . sys_table('files')
@@ -506,11 +385,8 @@ function assertFileAccess($conn, string $pgUuids): void
     }
 }
 
-// Normalize a comma-separated tag string into a PG text[] literal — capped to
-// prevent oversized payloads; empty entries dropped; quotes/backslashes escaped.
 function tagsToPgArray(string $tagsInput): ?string
 {
-
     $tagsInput = mb_substr(trim($tagsInput), 0, 500);
     if ($tagsInput === '') {
         return null;
@@ -526,10 +402,8 @@ function tagsToPgArray(string $tagsInput): ?string
     return '{' . implode(',', array_map(fn($t) => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $t) . '"', $tagsList)) . '}';
 }
 
-// Handle bulk soft delete over a selection of files
 function files_action_mass_delete($conn, array $body): void
 {
-
     requireWrite();
     os_require_csrf('body', $body);
     $pgUuids = uuidListToPgArray($body['uuids'] ?? null);
@@ -546,10 +420,8 @@ function files_action_mass_delete($conn, array $body): void
     jsonSuccess(['deleted' => pg_num_rows($res)]);
 }
 
-// Handle bulk tagging — appends the given tags to each selected file (deduplicated)
 function files_action_mass_tag($conn, array $body): void
 {
-
     requireWrite();
     os_require_csrf('body', $body);
     $pgUuids = uuidListToPgArray($body['uuids'] ?? null);
@@ -571,12 +443,8 @@ function files_action_mass_tag($conn, array $body): void
     jsonSuccess(['tagged' => pg_num_rows($res)]);
 }
 
-// Handle single-file inline metadata edit (grid-parity: editable display name + tags).
-// The physical file name (f.name) is immutable and is never modified here — only the
-// display_name label and the tag list are editable, matching the frontend affordances.
 function files_action_update_meta($conn, array $body): void
 {
-
     requireWrite();
     os_require_csrf('body', $body);
     $uuid = trim($body['uuid'] ?? '');
@@ -589,7 +457,6 @@ function files_action_update_meta($conn, array $body): void
     $params = [];
     $idx    = 1;
 
-    // Rename the display label only — the underlying file name stays fixed.
     if (array_key_exists('display_name', $body)) {
         $displayName = mb_substr(trim((string) $body['display_name']), 0, 255);
         if ($displayName === '') {
@@ -599,7 +466,6 @@ function files_action_update_meta($conn, array $body): void
         $params[] = $displayName;
     }
 
-    // Replace the whole tag list (tagsToPgArray returns null for an empty string → clears tags).
     if (array_key_exists('tags', $body)) {
         $sets[]   = 'tags = $' . $idx++ . '::text[]';
         $params[] = tagsToPgArray((string) $body['tags']);
@@ -624,10 +490,8 @@ function files_action_update_meta($conn, array $body): void
     jsonSuccess(['file' => pg_fetch_assoc($res)]);
 }
 
-// Handle soft delete action
 function files_action_delete($conn, array $body): void
 {
-
     requireWrite();
     os_require_csrf('body', $body);
     $uuid = trim($body['uuid'] ?? '');
@@ -650,10 +514,8 @@ function files_action_delete($conn, array $body): void
     jsonSuccess(['deleted' => true]);
 }
 
-// Handle config save action (supports multiple relations)
 function files_action_save_config(array $body): void
 {
-
     requireWrite();
     os_require_csrf('body', $body);
     $current = loadConfig();
@@ -662,16 +524,13 @@ function files_action_save_config(array $body): void
     }
 
     if (isset($body['storage_path'])) {
-// Allow only letters, numbers, dashes, underscores and slashes
         $raw = preg_replace('/[^a-zA-Z0-9\-_\/]/', '', $body['storage_path']);
-// Remove double dot sequences
+
         $raw = preg_replace('/\.{2,}/', '', $raw);
-// Normalize multiple slashes to a single slash
+
         $raw = preg_replace('/\/+/', '/', $raw);
         $raw = trim($raw, '/');
-// Constrain to storage/ subtree — prevents uploads landing in web-accessible directories.
-// "storage" alone is accepted; anything that merely *starts with* "storage" as a prefix
-// (e.g. "storage-pub") is not, hence the explicit two-case check.
+
         if ($raw !== 'storage' && !str_starts_with($raw, 'storage/')) {
             $raw = 'storage/files';
         }
@@ -683,7 +542,6 @@ function files_action_save_config(array $body): void
         $current['allowed_types'] = array_values(array_intersect($body['allowed_types'], $valid));
     }
 
-    // Process new multi-relations array
     if (isset($body['relations']) && is_array($body['relations'])) {
         $current['relations'] = [];
         foreach ($body['relations'] as $rel) {
@@ -697,16 +555,13 @@ function files_action_save_config(array $body): void
         }
     }
 
-    // Clean up legacy single-relation fields from old config if they exist
     unset($current['related_table'], $current['display_column_1'], $current['display_column_2']);
     saveConfig($current);
     jsonSuccess(['config' => $current]);
 }
 
-// Fetch records for dynamically selected relation table
 function files_action_get_related_records($conn): void
 {
-
     requireLogin();
     $reqTable = trim($_GET['table'] ?? '');
     if (!$reqTable) {
@@ -731,13 +586,9 @@ function files_action_get_related_records($conn): void
     $col1 = $relConfig['col1'] ?: 'id';
     $col2 = $relConfig['col2'] ?: '';
 
-    // Resolve the table's actual PostgreSQL schema from the schema config (tables can live
-    // outside the default app schema, e.g. a demo app's own schema) — mirrors the
-    // $tableCfg['schema'] ?? 'public' pattern used across api.php/mass_edit.php/etc.
     $schemaCfg  = config_get('schema');
     $pgSchema   = (is_array($schemaCfg) ? ($schemaCfg['tables'][$reqTable]['schema'] ?? null) : null) ?? 'public';
 
-// Validate columns directly from database schema
     $sqlCols = "SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2";
     $resCols = pg_query_params($conn, $sqlCols, [$pgSchema, $reqTable]);
     if (!$resCols) {
@@ -761,9 +612,6 @@ function files_action_get_related_records($conn): void
         $col2 = '';
     }
 
-    // Table name and column names are validated against information_schema and a strict regex above.
-    // pg_query_params does not support identifiers as parameters, so verified values are interpolated
-    // with double-quote escaping as the standard PostgreSQL safe identifier quoting mechanism.
     $quotedTable = '"' . str_replace('"', '""', $reqTable) . '"';
     $quotedCol1  = '"' . str_replace('"', '""', $col1) . '"';
     $sel2        = $col2 ? ', "' . str_replace('"', '""', $col2) . '"' : '';
@@ -788,23 +636,6 @@ function files_action_get_related_records($conn): void
     jsonSuccess(['records' => $records]);
 }
 
-// Verify that the finfo-detected MIME type is consistent with the claimed extension.
-// Each extension maps to the set of MIME types finfo legitimately reports for it
-// (finfo is conservative and sometimes generic, e.g. application/octet-stream for
-// modern Office/archive formats), so the allowlist is intentionally permissive on the
-// generic side but still blocks the dangerous mismatches (text/html, scripts, executables
-// masquerading as images). An unknown extension has no entry and is rejected.
-/**
- * Extensions whose bytes the server can actually verify, mapped to the MIME types
- * finfo may report for them.
- *
- * This doubles as the ceiling on allowed_extensions. The Files config is written
- * verbatim by the admin panel — includes/admin/config_files.php stores whatever
- * JSON it is posted, with no per-field validation — so the stored allowlist alone
- * is not a trustworthy input. An extension absent from this map (svg, php, html…)
- * can never be content-checked, so it must never be accepted, whatever the config
- * says. See files_action_upload(), which intersects the two.
- */
 function verifiableExtensionMap(): array
 {
     $octet = 'application/octet-stream';
@@ -831,7 +662,6 @@ function verifiableExtensionMap(): array
 
 function mimeMatchesExtension(string $ext, string $mime): bool
 {
-
     $mime = strtolower(trim($mime));
     $map  = verifiableExtensionMap();
     if (!isset($map[$ext])) {
@@ -840,12 +670,8 @@ function mimeMatchesExtension(string $ext, string $mime): bool
     return in_array($mime, $map[$ext], true);
 }
 
-// Translate a PHP $_FILES error code into an actionable message. The raw numeric
-// code (esp. 6 = UPLOAD_ERR_NO_TMP_DIR, common on locked-down shared hosts where
-// /tmp is blocked) is meaningless to an admin; these point at the actual cause.
 function uploadErrorMessage(int $code): string
 {
-
     return match ($code) {
         UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
             'File is too large (exceeds the server upload limit).',
@@ -860,12 +686,10 @@ function uploadErrorMessage(int $code): string
     };
 }
 
-// File type detection logic
 function detectType(string $ext): string
 {
-
     $map = [
-        // SVG excluded from allowed images to prevent XSS via inline script in SVG content
+
         'image'       => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
         'pdf'         => ['pdf'],
         'doc'         => ['doc', 'docx', 'odt', 'rtf'],
@@ -880,10 +704,8 @@ function detectType(string $ext): string
     return 'other';
 }
 
-// Generate secure unique identifier
 function generateUuid(): string
 {
-
     $data    = random_bytes(16);
     $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
     $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);

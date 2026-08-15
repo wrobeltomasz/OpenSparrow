@@ -5,12 +5,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// dashboard.php — Dashboard page with widgets (frontend HTML)
-// Boots via includes/bootstrap.php: os_page_bootstrap('no-connect' CSP) — auth gate, admin redirect, UA/lifetime enforcement, CSRF token, CSP nonce + headers
-// Exposes capability flags (canEdit/canExport) to the client instead of the raw role
-// Global period filter + widget visibility chips render in the app header (via $headerControls, like the grid page)
-// Renders the dashboard UI; widget definitions from dashboard.json, data via api.php
-
 require_once __DIR__ . '/../includes/bootstrap.php';
 
 $page     = os_page_bootstrap(['csp' => 'no-connect']);

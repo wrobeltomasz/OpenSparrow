@@ -11,53 +11,13 @@ namespace Tests\Admin;
 
 use PHPUnit\Framework\TestCase;
 
-/**
- * Cross-checks the admin API dispatch registry against the modules it points at.
- *
- * The action name of every admin endpoint is written by hand in TWO places:
- *
- *   1. the $adminModules map in public/admin/api.php (action => module), which
- *      decides which file gets required, and
- *   2. the `if ($action === '<name>')` guard inside that module, which decides
- *      whether the block runs.
- *
- * Nothing connected the two, and the drift is silent in a way that also disables
- * an existing security guard. A map entry pointing at the wrong module (typo in
- * either half) means:
- *
- *   - the required module contains no matching guard, so nothing runs and the
- *     request falls through to demo/seed.php — the client gets the wrong
- *     response rather than an error, and
- *   - AdminApiGuardsTest::testEveryMutatingActionGuardsDemoMode() looks the
- *     action's block up through this same map, finds nothing, and (before the
- *     companion change to that test) skipped it. The DEMO_MODE assertion for
- *     that action passed vacuously.
- *
- * So a single typo could both break the action and silently drop its
- * demo-mode coverage. These tests fail the build instead.
- *
- * Like MigrationRegistryTest, this reads the source rather than executing it:
- * the registry and the guards live inside action blocks that need a session, a
- * database and the front controller's scope.
- */
 final class AdminDispatchRegistryTest extends TestCase
 {
     private const API_PHP    = __DIR__ . '/../../public/admin/api.php';
     private const MODULE_DIR = __DIR__ . '/../../includes/admin';
 
-    /**
-     * Helper files under includes/admin/ that are not action modules: they are
-     * required by the front controller for their functions and legitimately
-     * contain no `if ($action === …)` guard.
-     */
     private const NON_ACTION_MODULES = ['helpers', 'etl_common'];
 
-    /**
-     * Parses the $adminModules action => module dispatch map out of the front
-     * controller. Same literal AdminApiGuardsTest reads.
-     *
-     * @return array<string, string>
-     */
     private static function dispatchMap(): array
     {
         $source = (string) file_get_contents(self::API_PHP);
@@ -71,22 +31,6 @@ final class AdminDispatchRegistryTest extends TestCase
         return $map;
     }
 
-    /**
-     * Every action name guarded by `if ($action === '<name>')` in a module,
-     * keyed by module base name.
-     *
-     * Comments are stripped first. Without that a commented-out guard — or a
-     * module that merely names an action in its header prose — would read as a
-     * live guard, which is the same trap AdminApiGuardsTest::stripComments()
-     * exists to close.
-     *
-     * An action may legitimately appear more than once in one module: config_files.php
-     * guards 'menu_config' twice, splitting the GET and POST paths. The names are
-     * de-duplicated here because this test is about which actions a module handles,
-     * not how many branches it uses to do it.
-     *
-     * @return array<string, list<string>>
-     */
     private static function moduleActions(): array
     {
         $actions = [];
@@ -99,7 +43,6 @@ final class AdminDispatchRegistryTest extends TestCase
         return $actions;
     }
 
-    /** Removes comments so prose and commented-out code cannot pose as a guard. */
     private static function stripComments(string $source): string
     {
         $out = '';
@@ -126,10 +69,6 @@ final class AdminDispatchRegistryTest extends TestCase
         );
     }
 
-    /**
-     * The core invariant: an action is handled by the module the map sends it to,
-     * not merely by some module somewhere.
-     */
     public function testEveryMappedActionIsGuardedInItsOwnModule(): void
     {
         $moduleActions = self::moduleActions();
@@ -157,13 +96,6 @@ final class AdminDispatchRegistryTest extends TestCase
         );
     }
 
-    /**
-     * The reverse direction: an action block nobody can reach. The front
-     * controller only requires a module when the map names it, so a guard whose
-     * action is absent from the map is dead code — unless another action in the
-     * same module happens to pull the file in, which makes reachability depend
-     * on an unrelated entry and is worse than plainly dead.
-     */
     public function testEveryGuardedActionIsInTheDispatchMap(): void
     {
         $map        = self::dispatchMap();
@@ -205,10 +137,6 @@ final class AdminDispatchRegistryTest extends TestCase
         );
     }
 
-    /**
-     * Guards the helper-file list itself. A new action module that nobody wired
-     * into the map would otherwise be indistinguishable from a helper.
-     */
     public function testEveryModuleFileIsEitherMappedOrAKnownHelper(): void
     {
         $mapped   = array_unique(array_values(self::dispatchMap()));

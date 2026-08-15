@@ -19,13 +19,6 @@ final readonly class FkOptionsLoader
     {
     }
 
-    /**
-     * Return a [value => displayLabel] map for a foreign key select widget.
-     *
-     * @param array<string, mixed> $fkCfg     raw FK config from schema JSON
-     * @param array<string, mixed> $rawSchema  full raw schema for ref-table schema lookup
-     * @return array<string|int, string>
-     */
     public function load(array $fkCfg, array $rawSchema): array
     {
         $refTable  = $fkCfg['reference_table'];
@@ -75,12 +68,6 @@ final readonly class FkOptionsLoader
         return $options;
     }
 
-    /**
-     * Annotate a result-set with __display suffixed keys for FK columns.
-     * Replaces the global map_fk_display() for OOP callers.
-     *
-     * @param array<string, mixed> $rawSchema
-     */
     public function expandDisplay(TableConfig $cfg, array $rows, array $rawSchema): array
     {
         if (empty($rows) || empty($cfg->foreignKeys)) {

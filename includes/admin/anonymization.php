@@ -7,15 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/anonymization.php — admin api.php module: GDPR anonymization (anonymization_load/save,
-// run_anonymization, preview_anonymization,
-// anonymization_log, anonymization_purge_log).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
 if ($action === 'anonymization_load') {
     require_once __DIR__ . '/../config_store.php';
     $defaults = [
@@ -68,8 +59,7 @@ if ($action === 'anonymization_save') {
             'replacement' => $r,
         ];
     }
-    // Optimistic lock: the editor echoes back the version it loaded (the field is
-    // stripped here — the whitelist rebuild above never copies it into $config).
+
     admin_config_save_versioned('anonymization', $config, admin_expected_version($data));
 }
 
@@ -82,8 +72,6 @@ if ($action === 'run_anonymization') {
 }
 
 if ($action === 'preview_anonymization') {
-    // Dry run — read-only COUNT(*), modifies no data, so it is allowed even in
-    // demo mode. It still spawns a process, so it is POST-only ($postActions).
     admin_run_cron_script(
         __DIR__ . '/../../cron/cron_anonymization.php',
         'Anonymization cron script not found.',
@@ -101,7 +89,7 @@ if ($action === 'anonymization_log') {
         $cols = 'l.id, l.started_at, l.finished_at, l.status, l.triggered_by, l.rules_processed, '
               . 'l.rows_anonymized, l.error_message';
         $dur  = 'EXTRACT(EPOCH FROM (COALESCE(l.finished_at, now()) - l.started_at)) AS duration_sec';
-        // Reports live in their own table (spw_anonymization_report); join the latest one per run.
+
         $res  = @pg_query(
             $conn,
             "SELECT {$cols}, r.report, {$dur}
@@ -110,7 +98,6 @@ if ($action === 'anonymization_log') {
              ORDER BY l.started_at DESC LIMIT 50"
         );
         if (!$res) {
-            // Backward compatibility: report table not yet created (migration 2.9_anonymization_report).
             $res = @pg_query(
                 $conn,
                 "SELECT {$cols}, {$dur} FROM {$tLog} l ORDER BY l.started_at DESC LIMIT 50"
@@ -130,7 +117,6 @@ if ($action === 'anonymization_purge_log') {
         90,
         'anonymization_purge_log',
         'started_at',
-        // Keep the report table in sync (best-effort: it may not exist on older installs).
         static function (\PgSql\Connection $conn, int $days): void {
             @pg_query_params(
                 $conn,
@@ -141,5 +127,3 @@ if ($action === 'anonymization_purge_log') {
         }
     ));
 }
-
-// ── RAG Knowledge Base ────────────────────────────────────────────────────────

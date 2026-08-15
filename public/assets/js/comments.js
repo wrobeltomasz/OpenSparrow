@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// comments.js — Record comment thread on edit.php (window.EDIT_TABLE/EDIT_ID)
-// Lists/adds comments via api/comments.php, polls every 15s; read-only for non-editors. Includes an XSS-safe mini markdown formatter (escapes HTML, incl. quotes, before auto-linking URLs).
 
 import { renderAvatar } from './avatar.js';
 import { I18n } from './i18n.js';
@@ -22,11 +19,7 @@ import { escHtml } from './util/esc.js';
 import { apiFetch } from './util/api.js';
 import { formatDateTime as formatTime } from './util/format-value.js';
 
-// ── Tiny markdown-like formatter (no external libs) ────────────────────────
 function formatBody(raw) {
-    // Escape HTML first — including quotes, since the auto-linked URL below is
-    // placed inside an href="" attribute. Without escaping " an attacker could
-    // close the attribute and inject an event handler (stored XSS).
     const esc = escHtml(raw);
 
     return esc
@@ -34,8 +27,6 @@ function formatBody(raw) {
         .replace(/\*(.+?)\*/g,     '<em>$1</em>')
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 }
-
-// ── DOM builders ───────────────────────────────────────────────────────────
 
 function buildMsg(c) {
     const isMine   = parseInt(c.user_id, 10) === myId;
@@ -83,7 +74,6 @@ function buildMsg(c) {
     bubble.appendChild(meta);
     bubble.appendChild(body);
 
-    // Delete button — visible to author or admin, only if not already deleted
     if (!deleted && (isMine || isAdmin)) {
         const delBtn = document.createElement('button');
         delBtn.className = 'c-msg-del-btn';
@@ -103,8 +93,6 @@ function buildEmptyState() {
     p.textContent = I18n.t('comments.none');
     return p;
 }
-
-// ── API calls ──────────────────────────────────────────────────────────────
 
 async function fetchComments() {
     const res = await fetch(
@@ -149,7 +137,7 @@ async function deleteComment(id, msgEl) {
         alert(data.error ?? 'Failed to delete comment.');
         return;
     }
-    // Mark as deleted in DOM without full reload
+
     msgEl.classList.add('c-msg-deleted');
     const bodyEl = msgEl.querySelector('.c-msg-body');
     if (bodyEl) {
@@ -162,8 +150,6 @@ async function deleteComment(id, msgEl) {
     if (delBtn) delBtn.remove();
 }
 
-// ── Render ─────────────────────────────────────────────────────────────────
-
 let knownIds = new Set();
 
 function renderComments(thread, comments) {
@@ -172,11 +158,9 @@ function renderComments(thread, comments) {
         return;
     }
 
-    // Remove empty state if present
     const empty = thread.querySelector('.c-empty');
     if (empty && comments.length > 0) empty.remove();
 
-    // Append only new comments (poll-safe)
     let appended = false;
     for (const c of comments) {
         const cid = String(c.id);
@@ -192,14 +176,11 @@ function renderComments(thread, comments) {
     }
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
-
 async function init() {
     await I18n.load();
     const panel = document.getElementById('c-panel');
     if (!panel || !table || !recordId) return;
 
-    // Build thread + input area
     const thread = document.createElement('div');
     thread.className = 'c-thread';
     thread.setAttribute('aria-live', 'polite');
@@ -244,7 +225,6 @@ async function init() {
         inputArea.appendChild(sendBtn);
         panel.appendChild(inputArea);
 
-        // Toolbar actions — wrap selection
         function wrapSelection(before, after) {
             const start = textarea.selectionStart;
             const end   = textarea.selectionEnd;
@@ -259,7 +239,6 @@ async function init() {
         boldBtn.addEventListener('click', () => wrapSelection('**', '**'));
         italicBtn.addEventListener('click', () => wrapSelection('*', '*'));
 
-        // Ctrl+Enter submits
         textarea.addEventListener('keydown', e => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
@@ -275,7 +254,7 @@ async function init() {
             try {
                 const comment = await postComment(body);
                 textarea.value = '';
-                // Remove empty state if present
+
                 const empty = thread.querySelector('.c-empty');
                 if (empty) empty.remove();
                 knownIds.add(String(comment.id));
@@ -290,12 +269,10 @@ async function init() {
         });
     }
 
-    // Initial load
     fetchComments()
         .then(comments => renderComments(thread, comments))
         .catch(err => console.error('Comments load failed:', err));
 
-    // Poll only when the Comments tab is visible
     let pollTimer = null;
 
     function startPolling() {
@@ -321,7 +298,6 @@ async function init() {
         commentsTabBtn.addEventListener('click', () => startPolling());
     }
 
-    // Watch for tab-panel visibility changes
     if (typeof IntersectionObserver !== 'undefined' && commentsPanel) {
         const observer = new IntersectionObserver(entries => {
             entries.forEach(entry => {

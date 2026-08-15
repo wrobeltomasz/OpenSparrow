@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// admin/js/user_records_editor.js — User Records module admin editor (renderUserRecordsEditor):
-// edits the "user_records" config, which drives the front-end "My records" panel opened from the
-// avatar menu (public/assets/js/user-menu.js -> public/api/owners.php action=mine). Two tabs:
-// "Column Mapping" (per table, which columns are CONCAT_WS'd into each record's label) and
-// "Global Settings" (how many recently-assigned records are shown per table).
+
 import { markDirty, getGlobalSchema } from './app.js';
 import { createPageHeader, buildInnerTabs } from './ui.js';
 
@@ -75,9 +70,6 @@ function renderColumnsPanel(panel, currentConfig) {
         });
 }
 
-// Collapsible table card — same .column-block / .block-header / .block-chevron /
-// .block-body markup as the Schema tab's per-column editor (admin/style.css), so this
-// tab matches the rest of the admin panel instead of introducing a new look.
 function buildTableBlock(tableName, tableCfg, currentConfig) {
     const block = document.createElement('div');
     block.className = 'column-block collapsed';
@@ -123,9 +115,6 @@ function buildTableBlock(tableName, tableCfg, currentConfig) {
     return block;
 }
 
-// String-preserving multi-select for a table's own columns. ui.js's createMultiSelect
-// coerces option values to numbers (it is built for user-ID lists), which would corrupt
-// string column names — same reasoning as board.js's local createColumnMultiSelect.
 function createColumnMultiSelect(options, selectedValues, onChange) {
     const container = document.createElement('div');
     container.style.cssText = 'max-height:150px; overflow-y:auto; border:1px solid var(--border); '
@@ -192,9 +181,6 @@ function renderSettingsPanel(panel, ctx) {
 
     panel.appendChild(grp);
 
-    // Reset action — replaces the old sidebar "Clear Entire Config" button. Mutates
-    // currentConfig in place (same reference app.js reads on save) so the cleared
-    // state persists once "Save config" is pressed.
     const dangerGrp = document.createElement('div');
     dangerGrp.className = 'form-group';
     dangerGrp.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';

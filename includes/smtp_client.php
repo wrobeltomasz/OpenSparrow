@@ -4,15 +4,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// smtp_client.php — Minimal dependency-free SMTP client (EHLO / STARTTLS / AUTH LOGIN / DATA)
-// via native PHP stream sockets. No external library (project convention: no composer/npm
-// runtime dependencies). Used by cron/cron_notifications.php to deliver spw_automation_emails
-// when SMTP is configured in the "settings" spw_config key; falls back to mail() otherwise.
 
 declare(strict_types=1);
 
-// Reads one SMTP response, following multi-line replies ("250-...\n250 ...").
 if (!function_exists('smtp_read_response')) {
     function smtp_read_response($sock): array
     {
@@ -31,10 +25,8 @@ if (!function_exists('smtp_read_response')) {
         }
         return ['code' => $code, 'text' => implode("\n", $lines)];
     }
-
 }
 
-// Sends one SMTP command and validates the response code.
 if (!function_exists('smtp_command')) {
     function smtp_command($sock, string $command, int $expectCode): array
     {
@@ -45,18 +37,14 @@ if (!function_exists('smtp_command')) {
         }
         return ['ok' => true, 'response' => $resp];
     }
-
 }
 
-// Opens the connection, performs EHLO, optional STARTTLS and optional AUTH LOGIN.
-// Returns ['ok' => bool, 'sock' => resource|null, 'error' => ?string]. The caller
-// is responsible for fclose()-ing the socket once done.
 if (!function_exists('smtp_connect_and_auth')) {
     function smtp_connect_and_auth(array $cfg): array
     {
         $host       = (string) ($cfg['host'] ?? '');
         $port       = (int) ($cfg['port'] ?? 587);
-        $encryption = (string) ($cfg['encryption'] ?? 'tls'); // none|ssl|tls
+        $encryption = (string) ($cfg['encryption'] ?? 'tls');
         $username   = (string) ($cfg['username'] ?? '');
         $password   = (string) ($cfg['password'] ?? '');
         $timeout    = (int) ($cfg['timeout'] ?? 10);
@@ -102,7 +90,7 @@ if (!function_exists('smtp_connect_and_auth')) {
                 fclose($sock);
                 return ['ok' => false, 'sock' => null, 'error' => 'TLS negotiation (STARTTLS) failed.'];
             }
-            // Re-issue EHLO after STARTTLS, per RFC 3207.
+
             $ehlo = smtp_command($sock, 'EHLO ' . $heloDomain, 250);
             if (!$ehlo['ok']) {
                 fclose($sock);
@@ -130,11 +118,8 @@ if (!function_exists('smtp_connect_and_auth')) {
 
         return ['ok' => true, 'sock' => $sock, 'error' => null];
     }
-
 }
 
-// Connects, authenticates (if credentials given) and immediately QUITs — used by
-// the admin "Test connection" button to validate settings without sending mail.
 if (!function_exists('smtp_test_connection')) {
     function smtp_test_connection(array $cfg): array
     {
@@ -146,10 +131,8 @@ if (!function_exists('smtp_test_connection')) {
         fclose($conn['sock']);
         return ['ok' => true, 'error' => null];
     }
-
 }
 
-// Sends one plain-text email via SMTP. $cfg needs host/port/encryption/username/password/from.
 if (!function_exists('smtp_send')) {
     function smtp_send(array $cfg, string $to, string $subject, string $body): array
     {
@@ -183,7 +166,6 @@ if (!function_exists('smtp_send')) {
             return ['ok' => false, 'error' => $data['error']];
         }
 
-        // Normalize to CRLF, then dot-stuff lines starting with "." per RFC 5321 §4.5.2.
         $bodyNormalized = str_replace("\r\n", "\n", $body);
         $bodyNormalized = str_replace("\n", "\r\n", $bodyNormalized);
         $bodyStuffed = preg_replace('/^\./m', '..', $bodyNormalized) ?? $bodyNormalized;
@@ -208,5 +190,4 @@ if (!function_exists('smtp_send')) {
         fclose($sock);
         return ['ok' => true, 'error' => null];
     }
-
 }

@@ -7,21 +7,10 @@
 
 declare(strict_types=1);
 
-// includes/admin/schema.php — admin api.php module: table/column DDL + schema.json sync (create_table, add_column,
-// schema_add_table,
-// list_system_tables, sync_schema, get_db_columns).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
-// Handle table creation
 if ($action === 'create_table') {
     require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
 
-    // Sanitize schema and table variables
     $schemaName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['schema'] ?? 'public'));
     $tableName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['table'] ?? ''));
 
@@ -34,11 +23,9 @@ if ($action === 'create_table') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        // Prepare schema-prefixed identifiers
         $safeSchema = pg_escape_identifier($conn, $schemaName);
         $safeTable = pg_escape_identifier($conn, $tableName);
 
-        // Execute table creation query
         $sql = "CREATE TABLE " . $safeSchema . "." . $safeTable . " (id serial4 NOT NULL PRIMARY KEY)";
         $res = @pg_query($conn, $sql);
 
@@ -57,7 +44,6 @@ if ($action === 'add_column') {
     require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
 
-    // Strict input sanitization
     $schemaName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['schema'] ?? ''));
     $tableName  = preg_replace('/[^a-z0-9_]/', '', strtolower($input['table']  ?? ''));
     $colName    = preg_replace('/[^a-z0-9_]/', '', strtolower($input['column'] ?? ''));
@@ -152,7 +138,6 @@ if ($action === 'add_column') {
     exit;
 }
 
-// Register a newly created table in schema.json
 if ($action === 'schema_add_table') {
     require_not_demo('Disabled in Demo Mode.', 403);
 
@@ -239,7 +224,6 @@ if ($action === 'schema_add_table') {
     exit;
 }
 
-// List spw_* system tables from the database for the backup page
 if ($action === 'list_system_tables') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -263,17 +247,13 @@ if ($action === 'list_system_tables') {
     exit;
 }
 
-// Fetch all tables from a specific database schema
-// Parameters are accepted via POST JSON body (preferred — avoids WAF/ModSecurity
-// rules that flag SQL-looking GET query strings on shared hosting) with a GET
-// fallback for backward compatibility.
 if ($action === 'sync_schema') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
         $body = json_decode((string) file_get_contents('php://input'), true) ?: [];
         $schemaName = $body['schema_name'] ?? $_POST['schema_name'] ?? $_GET['schema_name'] ?? 'public';
-        // Exclude OpenSparrow system tables (spw_*) so they cannot be imported as user tables.
+
         $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'spw\\_%' ESCAPE '\\'";
         $res = @pg_query_params($conn, $sql, [$schemaName]);
         if (!$res) {
@@ -292,10 +272,6 @@ if ($action === 'sync_schema') {
     exit;
 }
 
-// Fetch all columns and their data types for a specific table
-// Parameters are accepted via POST JSON body (preferred — avoids WAF/ModSecurity
-// rules that flag SQL-looking GET query strings on shared hosting) with a GET
-// fallback for backward compatibility.
 if ($action === 'get_db_columns') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -330,7 +306,7 @@ if ($action === 'get_db_columns') {
             $dataType = $row['data_type'];
             $udtName = $row['udt_name'];
             $enumValues = null;
-            // Fetch ENUM values only for user-defined types safely using pg_escape_identifier
+
             if ($dataType === 'USER-DEFINED') {
                 $safeSchema = pg_escape_identifier($conn, $schemaName);
                 $safeUdt = pg_escape_identifier($conn, $udtName);
@@ -344,7 +320,6 @@ if ($action === 'get_db_columns') {
                 }
             }
 
-            // Create standard array and append column name
             $colData = [
                 'column_name' => $colName,
                 'type' => $dataType,
@@ -358,7 +333,6 @@ if ($action === 'get_db_columns') {
                 $colData['enum_values'] = $enumValues;
             }
 
-            // Append element to array to force PHP to output JSON Array
             $columns[] = $colData;
         }
 

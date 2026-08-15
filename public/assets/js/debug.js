@@ -3,18 +3,12 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/debug.js — Debug logging helpers
-// isDebugEnabled() (localStorage 'sparrow_debug_mode'); debugLog(msg, obj) writes to the #debug panel (falls back to console), capped at MAX_LOG_LENGTH.
-
 export function isDebugEnabled() {
   return localStorage.getItem('sparrow_debug_mode') === 'true';
 }
 
-const MAX_LOG_LENGTH = 10000; 
+const MAX_LOG_LENGTH = 10000;
 
-/**
- * Log a message to the debug panel (and console as fallback).
- */
 export function debugLog(msg, obj) {
   let dbg = document.getElementById('debug');
 
@@ -26,7 +20,7 @@ export function debugLog(msg, obj) {
   if (!dbg) {
     dbg = document.createElement('pre');
     dbg.id = 'debug';
-    
+
     dbg.style.cssText = `
       position: fixed;
       bottom: 20px;
@@ -45,7 +39,7 @@ export function debugLog(msg, obj) {
     `;
     document.body.appendChild(dbg);
   }
-  
+
   dbg.style.display = 'block';
 
   let text = `[${new Date().toLocaleTimeString()}] ${msg}`;
@@ -61,9 +55,9 @@ export function debugLog(msg, obj) {
   if (currentText.length > MAX_LOG_LENGTH) {
     currentText = "..." + currentText.slice(-MAX_LOG_LENGTH);
   }
-  
+
   dbg.textContent = currentText;
-  
+
   dbg.scrollTop = dbg.scrollHeight;
 
   if (obj !== undefined) {
@@ -73,9 +67,6 @@ export function debugLog(msg, obj) {
   }
 }
 
-/**
- * Clear the debug panel.
- */
 export function clearDebug() {
   const dbg = document.getElementById('debug');
   if (dbg) dbg.textContent = '';

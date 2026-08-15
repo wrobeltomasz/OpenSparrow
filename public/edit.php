@@ -7,19 +7,12 @@
 
 declare(strict_types=1);
 
-// edit.php — Record edit form page (modern OOP path)
-// Boots via includes/bootstrap.php: os_page_bootstrap() (auth gate, UA/lifetime enforcement, CSP nonce + 'unsafe-style' headers) + os_boot_app() (object graph) + includes/m2m.php; uses ByteFormatter for file sizes
-// Editor role required for POST (read-only users get 403)
-// Loads existing record by ?id and renders a dynamic edit form from schema.json (incl. many_to_many)
-
 require __DIR__ . '/../includes/bootstrap.php';
 require __DIR__ . '/../includes/m2m.php';
 
 use App\Form\RenderContext;
 use App\Support\ByteFormatter;
 
-// 'unsafe-style' CSP mode: the form markup uses inline style attributes for
-// dynamic values. Admins are not redirected — the form pages allow them through.
 $pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
 $cspNonce = $pageMeta['nonce'];
 
@@ -40,8 +33,7 @@ $id    = $request->query('id');
 if (!$schemas->hasTable($table)) {
     die('Invalid table.');
 }
-// Table-level gate first, row-level ownership gate below — a table the user may not
-// reach at all must not even get as far as the record lookup.
+
 os_require_table_access((string) $table);
 
 $tableCfg   = $schemas->table($table);
@@ -50,9 +42,6 @@ $m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
 $imagesCfg  = images_config($rawSchema, $table);
 $error      = '';
 
-// Row-level authorization gate, applied before any read or write. Records the user
-// may not access return the same 404 as missing records, so existence is never
-// disclosed. Covers both the POST update path below and the GET render path.
 $rawTableCfg = $rawSchema['tables'][$table] ?? [];
 if (!can_access_record($GLOBALS['conn'], $rawTableCfg, $table, (int)$id, $session->userId(), $session->role())) {
     http_response_code(404);
@@ -66,7 +55,7 @@ if ($request->isPost()) {
     }
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
-        // Pre-update state for change-based automation conditions (changed_from/changed_to).
+
         $oldRecord = auto_capture_old_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id);
         $records->update($tableCfg, $id, $data);
         $logId = $audit->log($session->userId(), 'UPDATE', $tableCfg->name, (int)$id);
@@ -85,7 +74,6 @@ if ($request->isPost()) {
         }
         exit;
     } catch (\App\Form\ValidationException $e) {
-        // validation_regexp mismatch — message comes from schema.json and is user-facing
         $error = $e->getMessage();
     } catch (\RuntimeException $e) {
         error_log('[edit.php] ' . $e->getMessage());
@@ -100,19 +88,13 @@ if ($row === null) {
 }
 
 $subtablesData = $records->subtables($tableCfg, $id);
-// Subtable bindings come from the schema config, and config-supplied names are
-// normally exempt from the per-user table gate (that exemption is what keeps FK
-// labels resolving). Subtables are the deliberate exception: a tab renders whole
-// ROWS of the child table, not a single label, so an unfiltered tab hands a user
-// the full contents of a table they may not open. Filtered here rather than in
-// PgRecordRepository::subtables() — src/ is frozen.
+
 $subtablesData = array_values(array_filter(
     $subtablesData,
     static fn(array $sd): bool => user_can_access_table((string) ($sd['config']['table'] ?? ''))
 ));
 $relatedFiles  = $files->forRecord($tableCfg->name, $id);
 
-// Pre-load FK options for all FK columns — eliminates N+1 queries in the template.
 $fkOptions  = [];
 foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
     $fkOptions[$colName] = $fkLoader->load($fkCfg, $rawSchema);
@@ -236,8 +218,7 @@ ob_start();
             </div>
         </form>
     </div>
-    </div><!-- /tab-panel#tab-details -->
-
+    </div>
     <?php foreach ($subtablesData as $si => $sd) : ?>
         <?php
         $sTable      = $sd['config']['table'];
@@ -300,7 +281,7 @@ ob_start();
                 </div>
             <?php endif; ?>
         </div>
-    </div><!-- /tab-panel#tab-sub-<?php echo (int)$si; ?> -->
+    </div>    
     <?php endforeach; ?>
 
     <?php if ($imagesCfg) : ?>
@@ -356,7 +337,7 @@ ob_start();
             <p class="ef-empty"><?= t('images.limit_reached') ?></p>
         <?php endif; ?>
     </div>
-    </div><!-- /tab-panel#tab-images -->
+    </div>    
     <?php endif; ?>
 
     <div class="tab-panel" id="tab-files" role="tabpanel">
@@ -449,12 +430,10 @@ ob_start();
             <p class="ef-empty"><?= t('form.no_files') ?></p>
         <?php endif; ?>
     </div>
-    </div><!-- /tab-panel#tab-files -->
-
+    </div>
     <div class="tab-panel" id="tab-comments" role="tabpanel">
         <div id="c-panel" class="form-wrapper"></div>
-    </div><!-- /tab-panel#tab-comments -->
-
+    </div>
     <div class="tab-panel" id="tab-history" role="tabpanel">
         <div class="form-wrapper">
             <div id="ow-panel" class="owner-panel ow-panel">
@@ -471,8 +450,7 @@ ob_start();
                 <div id="ow-history-body" class="ow-history-body">Loading…</div>
             </div>
         </div>
-    </div><!-- /tab-panel#tab-history -->
-
+    </div>
 </main>
 <?php
 $pageContent = ob_get_clean();

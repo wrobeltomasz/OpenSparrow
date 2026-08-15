@@ -7,18 +7,9 @@
 
 declare(strict_types=1);
 
-// api/owners.php — Record ownership API (current + historical owner per record)
-// Auth gate: session + UA enforcement; CSRF on POST; write actions go through requireWrite()
-// match() action routing: get, history, editors, set, mass_set — keyed by (table_name, record_id), is_current flag
-// sys_table('record_owners'); parameterized queries; JSON via jsonError()/jsonSuccess()
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// csrf=manual: mutating actions validate the body token via os_require_csrf() themselves
 $conn = os_api_bootstrap(['csrf' => 'manual']);
-
-// jsonError(), jsonSuccess(), requireLogin(), requireWrite() and validatedTable()
-// are shared via includes/api_helpers.php
 
 ['action' => $action, 'body' => $body] = os_api_action();
 
@@ -134,18 +125,12 @@ function owners_action_editors($conn): void
     jsonSuccess(['users' => $users]);
 }
 
-// "My records" — flat, most-recently-assigned-first list of the records currently owned by
-// the logged-in user, each with a best-effort display label and the date it was assigned.
-// Label columns and the per-table record cap come from the "user_records" config (admin
-// "User Records" tab). Presentation mirrors the "My comments" panel.
 function owners_action_mine($conn): void
 {
     requireLogin();
 
     $userId = (int)($_SESSION['user_id'] ?? 0);
 
-    // Most-recently-assigned first, per table, so the per-table cap below keeps the
-    // freshest assignments.
     $sql = "
         SELECT table_name, record_id, changed_at
         FROM " . sys_table('record_owners') . "
@@ -181,12 +166,11 @@ function owners_action_mine($conn): void
     $records = [];
     foreach ($byTable as $tableName => $ids) {
         $tableCfg = $schema['tables'][$tableName] ?? null;
-        // Ownership rows can outlive their table (renamed/removed from schema.json).
+
         if ($tableCfg === null || !empty($tableCfg['hidden'])) {
             continue;
         }
-        // A record can stay assigned to a user whose table access was revoked since —
-        // "My records" must not keep surfacing labels from a table they can no longer open.
+
         if (!user_can_access_table($tableName)) {
             continue;
         }
@@ -222,7 +206,6 @@ function owners_action_mine($conn): void
         }
     }
 
-    // Newest assignment first across all tables — the panel is a flat chronological list.
     usort($records, fn($a, $b) => strcmp((string)$b['assigned_at'], (string)$a['assigned_at']));
 
     jsonSuccess(['records' => $records]);
@@ -319,7 +302,6 @@ function owners_action_set($conn, array $body): void
         jsonError('owner_id must be a positive integer.', 400);
     }
 
-    // Verify the new owner exists and has editor or admin role.
     $checkRes = pg_query_params(
         $conn,
         "SELECT id FROM " . sys_table('users') . " WHERE id = \$1 AND is_active = true AND role IN ('editor', 'admin')",

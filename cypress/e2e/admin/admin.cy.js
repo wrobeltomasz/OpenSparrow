@@ -3,20 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/admin/admin.cy.js
-// ============================================================================
-// Admin Panel Tests
-// Requires:  testadmin / testadmin user with role = 'admin'
-// Seed:      cy.seedDatabase() in before() creates / resets that account.
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 
-/**
- * Click a sidebar admin-tab button, first expanding its parent .nav-section
- * (collapsible groups default to closed — only "Overview" starts open) so the
- * button is actually visible/clickable.
- */
 function clickAdminTab(dataFile) {
   cy.get(`button.admin-tab[data-file="${dataFile}"]`).then($btn => {
     const $section = $btn.closest('.nav-section');
@@ -27,10 +15,6 @@ function clickAdminTab(dataFile) {
   cy.get(`button.admin-tab[data-file="${dataFile}"]`).scrollIntoView().should('be.visible').click();
 }
 
-// ============================================================================
-// Test Suite: Admin Panel Navigation
-// ============================================================================
-
 describe('OpenSparrow – Admin Panel', () => {
   before(() => {
     cy.seedDatabase();
@@ -40,24 +24,20 @@ describe('OpenSparrow – Admin Panel', () => {
     loginAsAdmin();
     cy.visit(`${BASE}/admin/index.php`);
     cy.get('header.admin-header', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
-    // Wait until the admin JS has rendered the initial tab — clicking nav
-    // buttons before the listeners attach silently does nothing.
+
     cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.long })
       .should($el => {
         expect($el.children().length, 'admin JS rendered initial tab').to.be.gte(1);
       });
   });
 
-  // ── Header Elements ────────────────────────────────────────────────────────
-
   it('displays admin header', () => {
     cy.get('header.admin-header').should('be.visible');
   });
 
   it('Save Config button is hidden on Overview and shown on config tabs', () => {
-    // On the Overview landing tab the Save button is hidden by design
     cy.get('#btnSave').should('exist').and('not.be.visible');
-    // It appears once a config-editing tab (e.g. schema) is opened
+
     clickAdminTab('schema');
     cy.get('#btnSave', { timeout: CypressHelpers.TIMEOUTS.medium })
       .should('be.visible')
@@ -72,11 +52,6 @@ describe('OpenSparrow – Admin Panel', () => {
     cy.get('nav.admin-nav, #adminNav').should('exist');
   });
 
-  // ── Data Management Tabs ───────────────────────────────────────────────────
-
-  // Note: the nav has overflow-y:auto — tabs below the fold must be scrolled
-  // into view first, otherwise Cypress treats them as hidden.
-
   ['schema', 'dashboard', 'calendar', 'files', 'views', 'csv_import'].forEach(tab => {
     it(`navigates to data tab: ${tab}`, () => {
       clickAdminTab(tab);
@@ -84,16 +59,11 @@ describe('OpenSparrow – Admin Panel', () => {
     });
   });
 
-  // Add Table / M2M / Menu Preview live inside the Schema tab, not as their own
-  // sidebar entries — moved there in commit 0b6e119. "Add New Table" is an
-  // item-btn in the Schema tab's table list, not a #workspace button.
   it('Schema tab exposes Add New Table', () => {
     clickAdminTab('schema');
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
     cy.contains('.item-btn', 'Add New Table').should('be.visible');
   });
-
-  // ── System Tabs ────────────────────────────────────────────────────────────
 
   ['users', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings'].forEach(tab => {
     it(`navigates to system tab: ${tab}`, () => {
@@ -102,8 +72,6 @@ describe('OpenSparrow – Admin Panel', () => {
     });
   });
 
-  // Database / Audit & Snapshots live inside the Settings tab as inner tabs,
-  // not as their own sidebar entries — moved there in commit 0b6e119.
   it('Settings tab exposes Database and Audit & Snapshots inner tabs', () => {
     clickAdminTab('settings');
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
@@ -112,8 +80,6 @@ describe('OpenSparrow – Admin Panel', () => {
     cy.contains('#workspace .item-btn', 'Audit & Snapshots').should('be.visible').click();
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
   });
-
-  // ── AI / Automation Tabs ───────────────────────────────────────────────────
 
   ['workflows', 'automations', 'rag', 'anonymization', 'etl'].forEach(tab => {
     it(`navigates to advanced tab: ${tab}`, () => {
@@ -132,8 +98,6 @@ describe('OpenSparrow – Admin Panel', () => {
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
   });
 
-  // ── Config Buttons ─────────────────────────────────────────────────────────
-
   it('Save Config button is clickable and panel survives', () => {
     clickAdminTab('schema');
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium }).should('exist');
@@ -141,19 +105,13 @@ describe('OpenSparrow – Admin Panel', () => {
     cy.get('#workspace').should('exist');
   });
 
-  // ── Users Tab: add / list ──────────────────────────────────────────────────
-
   it('Users tab lists existing users', () => {
     clickAdminTab('users');
-    // The seeded testadmin account must appear in the user list
+
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.long })
       .should('contain.text', 'testadmin');
   });
 });
-
-// ============================================================================
-// Test Suite: Admin Access Control
-// ============================================================================
 
 describe('OpenSparrow – Admin Access Control', () => {
   it('unauthenticated user is redirected to login', () => {
@@ -181,10 +139,6 @@ describe('OpenSparrow – Admin Access Control', () => {
     cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', 'login.php');
   });
 });
-
-// ============================================================================
-// Test Suite: Admin Panel Mobile
-// ============================================================================
 
 describe('OpenSparrow – Admin Panel Mobile', () => {
   before(() => {

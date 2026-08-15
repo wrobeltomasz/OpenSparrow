@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// grid_actions.js — Inline cell editing + row actions for the data grid
-// attachCellEvents (PATCH edited cells to api.php), deleteRow, duplicateRow; toasts + debug-panel error logging; CSRF via apiFetch().
 import { debugLog } from './debug.js';
 import { showToast } from './toast.js';
 import { loadTable } from './grid.js';
@@ -13,7 +11,6 @@ import { state } from './grid/state.js';
 import { apiFetch } from './util/api.js';
 import { I18n } from './i18n.js';
 
-// Show errors in debug panel
 function debugError(message, data = {}) {
   const debugEl = document.getElementById('debug');
   if (!debugEl) return;
@@ -31,13 +28,11 @@ function getCurrentTable() {
   return window.AppState?.currentTable;
 }
 
-// Shared fetch/parse for the row-mutation endpoints below; caller keeps its own
-// error logging/toast since that differs per action.
 async function postJson(url, method, body) {
   const res = await apiFetch(url, { method, body });
 
   let payload = null;
-  // Handle edge cases where server returns an empty or non-JSON response
+
   try { payload = await res.json(); } catch {}
 
   return { res, payload };
@@ -45,31 +40,28 @@ async function postJson(url, method, body) {
 
 function normalizeValue(el) {
   if (el.type === 'checkbox') {
-    return el.checked; 
+    return el.checked;
   }
   if (el.type === 'date') {
     return (el.value || '').toString().slice(0, 10);
   }
-  
-  // Extract real ID from datalist elements
+
   if (el.hasAttribute('list')) {
     const dl = document.getElementById(el.getAttribute('list'));
     if (dl) {
       const opt = Array.from(dl.options).find(o => o.value === el.value);
-      if (opt) return opt.dataset.realId; // Found? Return the real ID
-      if (el.value === '') return null;   // Empty field? Return null
-      return el._originalValue;           // Invalid text? Ignore the change and protect the database
+      if (opt) return opt.dataset.realId;
+      if (el.value === '') return null;
+      return el._originalValue;
     }
   }
 
-  // Handle contenteditable elements like divs or spans
   if (el.isContentEditable) {
-    return el.textContent.trim(); 
+    return el.textContent.trim();
   }
   return el.value ?? el.textContent;
 }
 
-// Visual feedback helpers
 function markCell(td, ok) {
   if (!td) return;
   td.classList.remove('cell-success', 'cell-error');
@@ -77,26 +69,20 @@ function markCell(td, ok) {
   setTimeout(() => td.classList.remove('cell-success', 'cell-error'), 2000);
 }
 
-// UNIVERSAL EVENT ATTACHER (exported for grid.js)
 export function attachCellEvents(el) {
-  // Save original value as a JS property (not in dataset) to preserve strict types
   el.addEventListener("focus", () => {
     el._originalValue = normalizeValue(el);
   });
 
   el.addEventListener("input", onInputChange);
 
-  // Event optimization: avoid duplicate requests
   if (el.tagName === 'SELECT' || el.type === 'checkbox') {
-    // Checkboxes and selects are best caught immediately on change
     el.addEventListener("change", onCellBlur);
   } else {
-    // Regular text and dates are caught only when the user leaves the cell
     el.addEventListener("blur", onCellBlur);
   }
 }
 
-// Shared update function
 async function performUpdate(el, table, id, column, value) {
   debugLog("Updating cell", { id, col: column, value, table });
   const td = el.closest('td');
@@ -118,7 +104,6 @@ async function performUpdate(el, table, id, column, value) {
     markCell(td, true);
     el._originalValue = value;
 
-    // Reload the grid row so automation-triggered field changes become visible.
     if (state.currentTable && window.schema) {
       loadTable(
         window.schema, state.currentTable,
@@ -126,25 +111,20 @@ async function performUpdate(el, table, id, column, value) {
         document.getElementById('addRow')
       );
     }
-
   } catch (err) {
     console.error("Network error during update", err);
     markCell(td, false);
   }
 }
 
-// Exported but NO DB call - just keeps compatibility
 export function onInputChange(e) {
   const el = e.target;
   const table = getCurrentTable();
   const id = el.dataset.id;
   const column = el.dataset.column;
   const value = normalizeValue(el);
-
-  // You can log typing if you want here
 }
 
-// Update ONLY on blur/change
 export function onCellBlur(e) {
   const el = e.target;
   const table = getCurrentTable();
@@ -154,12 +134,10 @@ export function onCellBlur(e) {
 
   const original = el._originalValue;
 
-  // Skip if unchanged (now uses strict type and value comparison)
   if (original !== undefined && original === value) {
     return;
   }
 
-  // Validate using RegExp if pattern is provided in dataset safely avoiding 'v' flag errors
   const pattern = el.dataset.pattern;
   if (pattern && value !== '' && value !== null) {
       try {
@@ -168,21 +146,18 @@ export function onCellBlur(e) {
               const msg = el.dataset.message || 'Invalid input format';
               showToast(msg, 'error');
 
-              // Revert visual change back to original value
               if (el.isContentEditable) el.textContent = original ?? '';
               else el.value = original ?? '';
-              
-              return; // Abort update
+
+              return;
           }
       } catch (err) {
           console.error("Invalid regex pattern provided from schema", err);
       }
   }
 
-  // IMMEDIATELY protect against race conditions (fire only one request if the event triggers twice)
   el._originalValue = value;
 
-  // Ensure all required context parameters exist before firing network request
   if (!table || !id || !column) {
     console.warn("Missing update context", { table, id, column });
     return;
@@ -191,7 +166,6 @@ export function onCellBlur(e) {
   performUpdate(el, table, id, column, value);
 }
 
-// Delete row
 export async function deleteRow(id) {
   const table = getCurrentTable();
   if (!table || !id) return;
@@ -216,7 +190,6 @@ export async function deleteRow(id) {
   }
 }
 
-// Duplicate row
 export async function duplicateRow(id) {
   const table = getCurrentTable();
   if (!table || !id) return;
@@ -237,7 +210,6 @@ export async function duplicateRow(id) {
   }
 }
 
-// Add row
 export async function addRow() {
   const table = getCurrentTable();
   if (!table) return;

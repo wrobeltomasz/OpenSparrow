@@ -3,16 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/calendar.cy.js
-// ============================================================================
-// Calendar Module Tests — calendar.php
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
-
-// ============================================================================
-// Test Suite: Calendar Page Structure
-// ============================================================================
 
 describe('OpenSparrow – Calendar: Page Structure', () => {
   beforeEach(() => {
@@ -54,12 +45,7 @@ describe('OpenSparrow – Calendar: Page Structure', () => {
       .find('.calendar-cell.today')
       .should('have.length', 1);
   });
-
 });
-
-// ============================================================================
-// Test Suite: Calendar Navigation
-// ============================================================================
 
 describe('OpenSparrow – Calendar: Navigation', () => {
   beforeEach(() => {
@@ -103,10 +89,6 @@ describe('OpenSparrow – Calendar: Navigation', () => {
       .should('have.length.gte', 28);
   });
 });
-
-// ============================================================================
-// Test Suite: Calendar Events
-// ============================================================================
 
 describe('OpenSparrow – Calendar: Events', () => {
   beforeEach(() => {
@@ -157,14 +139,6 @@ describe('OpenSparrow – Calendar: Events', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Calendar Event Deletion (red ✕ on each chip)
-// ============================================================================
-// The test user has the editor role, so the delete button renders. All tests
-// stub the DELETE request via cy.intercept so the real (seeded) records are
-// never mutated — we only assert the client behaviour (fire, optimistic remove,
-// rollback, no navigation).
-
 describe('OpenSparrow – Calendar: Event Deletion', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -174,7 +148,6 @@ describe('OpenSparrow – Calendar: Event Deletion', () => {
       .should('have.length', 7);
   });
 
-  // Runs `fn` only when at least one event chip is present, otherwise logs a skip.
   const withEvents = (fn) => {
     cy.get('body').then($body => {
       if ($body.find('.calendar-event').length === 0) {
@@ -200,7 +173,7 @@ describe('OpenSparrow – Calendar: Event Deletion', () => {
   it('cancelling the confirm dialog fires no request and keeps the event', () => {
     withEvents(() => {
       cy.intercept('DELETE', '**/api.php*', cy.spy().as('deleteReq'));
-      cy.on('window:confirm', () => false); // user clicks "Cancel"
+      cy.on('window:confirm', () => false);
 
       cy.get('.calendar-event').then($chips => {
         const before = $chips.length;
@@ -214,7 +187,7 @@ describe('OpenSparrow – Calendar: Event Deletion', () => {
   it('confirming the delete fires a DELETE to api.php and removes the chip optimistically', () => {
     withEvents(() => {
       cy.intercept('DELETE', '**/api.php*', { statusCode: 200, body: { ok: true } }).as('del');
-      cy.on('window:confirm', () => true); // user accepts
+      cy.on('window:confirm', () => true);
 
       cy.get('.calendar-event').then($chips => {
         const before = $chips.length;
@@ -238,7 +211,7 @@ describe('OpenSparrow – Calendar: Event Deletion', () => {
         const before = $chips.length;
         cy.get('.calendar-event').first().find('.calendar-event-del').click({ force: true });
         cy.wait('@delFail');
-        // Optimistically removed, then restored on the failure response.
+
         cy.get('.calendar-event').should('have.length', before);
       });
     });
@@ -255,10 +228,6 @@ describe('OpenSparrow – Calendar: Event Deletion', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Calendar Search & Filters
-// ============================================================================
 
 describe('OpenSparrow – Calendar: Search & Filters', () => {
   beforeEach(() => {
@@ -316,10 +285,6 @@ describe('OpenSparrow – Calendar: Search & Filters', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Calendar Mobile
-// ============================================================================
 
 describe('OpenSparrow – Calendar: Mobile', () => {
   beforeEach(() => {

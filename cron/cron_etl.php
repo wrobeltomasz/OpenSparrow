@@ -7,32 +7,11 @@
 
 declare(strict_types=1);
 
-// cron/cron_etl.php — ETL worker
-// CLI-only. Reads the "etl" config from the spw_config store and runs each enabled
-// job (extract from an external source → load into PostgreSQL target). Logs each job run
-// to spw_etl_log (best-effort — tolerates the table being absent). When more than one
-// job needs to run for real (not a dry run), jobs are executed in parallel as separate
-// CLI child processes (see ETL_MAX_PARALLEL_JOBS), each logging and persisting its own
-// incremental watermark independently — safe because config_save() is optimistic-locked
-// and etl_persist_watermark() retries on conflict.
-// Usage:
-//   php cron_etl.php                 — run all scheduled jobs (respects frequency guard)
-//   php cron_etl.php admin           — run all enabled jobs now (bypasses the window)
-//   php cron_etl.php admin <jobId>   — run a single job now
-//   php cron_etl.php admin <jobId> dry — dry run (validate + count, no writes)
-//   php cron_etl.php _run <jobId> <triggeredBy> — internal: one job, invoked by the
-//                                                  parallel dispatcher below. Not for
-//                                                  direct/manual use.
-
 const ETL_MAX_PARALLEL_JOBS = 4;
 
 require_once __DIR__ . '/../includes/etl_cli.php';
 etl_cli_boot();
 
-/**
- * Run exactly one job (by id) against the current config and log the result to
- * spw_etl_log. Persists any new incremental watermark. Returns true on success.
- */
 function etl_run_single_job(
     \PgSql\Connection $conn,
     array $config,
@@ -102,7 +81,6 @@ function etl_run_single_job(
     return $result['status'] === 'success';
 }
 
-// ---- internal worker mode: run exactly one job, invoked as a child process ----
 if (($argv[1] ?? '') === '_run') {
     $jobId       = (string)($argv[2] ?? '');
     $triggeredBy = in_array($argv[3] ?? '', ['cron', 'admin'], true) ? $argv[3] : 'cron';
@@ -166,11 +144,6 @@ if (!$logTable) {
 }
 $interval = etl_interval_expr($frequency);
 
-/**
- * Whether a scheduled run already succeeded for this job inside the frequency window.
- * Per-job and scoped to triggered_by = 'cron', so a manual (admin) or flow-triggered
- * run — and other jobs' successes — never suppress this job's scheduled run.
- */
 $ranInWindow = static function (string $jobId) use ($conn, $tLog, $interval): bool {
     $recent = @pg_query_params(
         $conn,
@@ -181,7 +154,6 @@ $ranInWindow = static function (string $jobId) use ($conn, $tLog, $interval): bo
     return $recent && pg_num_rows($recent) > 0;
 };
 
-// Which job ids will actually run.
 $jobIds = [];
 foreach ($jobs as $job) {
     if (!is_array($job)) {
@@ -191,11 +163,11 @@ foreach ($jobs as $job) {
     if ($onlyJobId !== null && $jobId !== $onlyJobId) {
         continue;
     }
-    // Scheduled runs skip disabled jobs; an explicit admin single-job run always runs.
+
     if ($onlyJobId === null && empty($job['enabled'])) {
         continue;
     }
-    // Per-job frequency guard for scheduled runs.
+
     if ($triggeredBy === 'cron' && $logTable && $ranInWindow($jobId)) {
         etl_cli_log("[etl] Skipping job '{$jobId}': a scheduled run already succeeded within the '{$frequency}' window.");
         continue;
@@ -206,19 +178,16 @@ foreach ($jobs as $job) {
 $anyError = false;
 
 if ($dryRun || count($jobIds) <= 1) {
-    // Dry runs and single-job runs stay in-process — no benefit from spawning children.
     foreach ($jobIds as $jobId) {
         if (!etl_run_single_job($conn, $config, $jobId, $triggeredBy, $dryRun)) {
             $anyError = true;
         }
     }
 } else {
-    // Multiple real jobs: run them concurrently as child processes, each independently
-    // logging to spw_etl_log and persisting its own watermark.
     etl_cli_log('[etl] Running ' . count($jobIds) . ' jobs in parallel (max ' . ETL_MAX_PARALLEL_JOBS . ' at once)...');
     $cronScript = __FILE__;
     $queue      = $jobIds;
-    $running    = []; // jobId => ['proc' => resource, 'pipes' => array]
+    $running    = [];
 
     while ($queue !== [] || $running !== []) {
         while ($queue !== [] && count($running) < ETL_MAX_PARALLEL_JOBS) {

@@ -7,15 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/performance.php — admin api.php module: PostgreSQL diagnostics (performance_check,
-// performance_slow_queries, performance_table_stats,
-// performance_db_health, performance_unused_indexes, performance_schema_warnings).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
 if ($action === 'performance_check') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -27,13 +18,11 @@ if ($action === 'performance_check') {
         $tables       = $schemaCfg['tables'] ?? [];
         $widgets      = $dashCfg['widgets']  ?? [];
 
-        // Collect [pgSchema][tableName][column] = [reasons]
         $needed = [];
 
         foreach ($tables as $tableName => $tableCfg) {
             $pgSchema = $tableCfg['schema'] ?? 'app';
 
-            // FK columns on this table (child side of a relation)
             foreach (($tableCfg['foreign_keys'] ?? []) as $fkCol => $fkDef) {
                 if (!is_string($fkCol)) {
                     continue;
@@ -41,7 +30,6 @@ if ($action === 'performance_check') {
                 $needed[$pgSchema][$tableName][$fkCol][] = 'Foreign key column';
             }
 
-            // Subtables: FK column lives on child table
             foreach (($tableCfg['subtables'] ?? []) as $sub) {
                 $child   = $sub['table']       ?? '';
                 $fkCol   = $sub['foreign_key'] ?? '';
@@ -52,7 +40,6 @@ if ($action === 'performance_check') {
                 $needed[$childSchema][$child][$fkCol][] = "Subtable join from {$tableName}";
             }
 
-            // Default sort columns
             foreach (($tableCfg['default_sort'] ?? []) as $rule) {
                 $col = $rule['column'] ?? '';
                 if ($col !== '' && $col !== 'id') {
@@ -61,7 +48,6 @@ if ($action === 'performance_check') {
             }
         }
 
-        // Dashboard widget columns
         foreach ($widgets as $widget) {
             $wTable = $widget['table'] ?? '';
             if ($wTable === '' || !isset($tables[$wTable])) {
@@ -88,7 +74,6 @@ if ($action === 'performance_check') {
             }
         }
 
-        // For each table fetch existing pg_indexes, build set of already-indexed leading columns
         $suggestions = [];
 
         foreach ($needed as $pgSchema => $schemaTables) {
@@ -101,7 +86,6 @@ if ($action === 'performance_check') {
                 $indexedCols = [];
                 if ($res) {
                     while ($row = pg_fetch_row($res)) {
-                        // Extract column list from indexdef: "... ON schema.table USING btree (col1, col2)"
                         if (preg_match('/\(([^)]+)\)/', $row[0], $m)) {
                             foreach (explode(',', $m[1]) as $ic) {
                                 $ic = trim(preg_replace('/\s+(ASC|DESC|NULLS\s+(FIRST|LAST))\s*$/i', '', trim($ic)));
@@ -137,7 +121,6 @@ if ($action === 'performance_check') {
             }
         }
 
-        // High priority first, then alpha by table+column
         usort($suggestions, static function ($a, $b) {
             $pa = $a['priority'] === 'high' ? 0 : 1;
             $pb = $b['priority'] === 'high' ? 0 : 1;
@@ -161,7 +144,6 @@ if ($action === 'performance_slow_queries') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        // Check extension available
         $extRes = @pg_query($conn, "SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'");
         if (!$extRes || pg_num_rows($extRes) === 0) {
             echo json_encode(['status' => 'unavailable', 'message' => 'pg_stat_statements extension is not installed. Run: CREATE EXTENSION pg_stat_statements;']);
@@ -205,7 +187,6 @@ if ($action === 'performance_table_stats') {
         $schemaCfg  = config_get('schema') ?? [];
         $tables     = $schemaCfg['tables'] ?? [];
 
-        // Build set of (pgSchema, tableName) pairs from schema.json
         $tracked = [];
         foreach ($tables as $tableName => $cfg) {
             $tracked[] = [$cfg['schema'] ?? 'app', $tableName];
@@ -239,9 +220,6 @@ if ($action === 'performance_table_stats') {
             ORDER BY s.n_dead_tup DESC, s.seq_scan DESC
         ";
 
-        // Build the text[][] literal. Inside a Postgres array literal a quoted
-        // element must backslash-escape both " and \, otherwise a schema/table
-        // name containing either character corrupts the whole literal.
         $arrEsc = static fn(string $v): string => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $v) . '"';
         $pairs = '{' . implode(',', array_map(
             static fn($p) => '{' . $arrEsc((string) $p[0]) . ',' . $arrEsc((string) $p[1]) . '}',
@@ -249,7 +227,6 @@ if ($action === 'performance_table_stats') {
         )) . '}';
         $res = @pg_query_params($conn, $sql, [$pairs]);
         if (!$res) {
-            // Fallback: query per table if array-of-arrays not supported
             $rows = [];
             foreach ($tracked as [$pgSchema, $tableName]) {
                 $r2 = @pg_query_params($conn, "
@@ -381,7 +358,6 @@ if ($action === 'performance_schema_warnings') {
 
         $warnings = [];
 
-        // Get estimated row counts from pg_class
         $rowCounts = [];
         foreach ($tables as $tableName => $cfg) {
             $pgSchema = $cfg['schema'] ?? 'app';
@@ -401,7 +377,6 @@ if ($action === 'performance_schema_warnings') {
             $estRows  = $rowCounts[$tableName] ?? 0;
             $display  = $cfg['display_name'] ?? $tableName;
 
-            // Too many columns
             if ($colCount > 20) {
                 $warnings[] = [
                     'severity' => 'medium',
@@ -412,7 +387,6 @@ if ($action === 'performance_schema_warnings') {
                 ];
             }
 
-            // Large table without initial_limit
             if ($estRows > 5000 && empty($cfg['initial_limit'])) {
                 $warnings[] = [
                     'severity' => 'high',
@@ -423,7 +397,6 @@ if ($action === 'performance_schema_warnings') {
                 ];
             }
 
-            // Large table without default_sort
             if ($estRows > 1000 && empty($cfg['default_sort'])) {
                 $warnings[] = [
                     'severity' => 'low',
@@ -434,7 +407,6 @@ if ($action === 'performance_schema_warnings') {
                 ];
             }
 
-            // Subtables without columns_to_show
             foreach (($cfg['subtables'] ?? []) as $sub) {
                 if (empty($sub['columns_to_show'])) {
                     $warnings[] = [
@@ -448,7 +420,6 @@ if ($action === 'performance_schema_warnings') {
             }
         }
 
-        // Widgets without table or on large tables without limit
         foreach ($widgets as $widget) {
             $wTable = $widget['table'] ?? '';
             $wTitle = $widget['title'] ?? ($widget['id'] ?? 'widget');
@@ -468,7 +439,6 @@ if ($action === 'performance_schema_warnings') {
             }
         }
 
-        // Sort: high → medium → low
         $order = ['high' => 0, 'medium' => 1, 'low' => 2];
         usort($warnings, fn($a, $b) => ($order[$a['severity']] ?? 9) - ($order[$b['severity']] ?? 9));
 

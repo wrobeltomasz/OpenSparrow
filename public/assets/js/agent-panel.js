@@ -1,11 +1,7 @@
-// assets/js/agent-panel.js — Sliding AI agent panel
 // This file is part of OpenSparrow - https://opensparrow.org
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// Slide-in AI assistant over the grid: sends the current page rows (max 50x12) as page context + the question to api/rag.php, renders answers via rag-render.js. Tag filter, conversation history, abort/stop, clear. CSRF via apiFetch().
-// Grid context comes from window.CURRENT_GRID_CONTEXT (grid/ai-context.js, data-model based); DOM scraping below is the fallback for views.php.
 
 import { I18n } from './i18n.js';
 import { renderAnswer } from './rag-render.js';
@@ -14,7 +10,6 @@ import { apiFetch } from './util/api.js';
 const API  = 'api/rag.php';
 const t    = (k, v) => I18n.t(k, v);
 
-// Maximum grid rows and columns included in the page context sent to the model.
 const MAX_CONTEXT_ROWS = 50;
 const MAX_CONTEXT_COLS = 12;
 
@@ -27,11 +22,8 @@ let contextBarEl, gridOptEl, fabEl;
 let tagsLoaded = false;
 let currentAbortController = null;
 let abortedByUser = false;
-// Last completed turn (question + answer) sent back as `history` so the model keeps
-// context. Deliberately one turn only — the server trims it further via conversation_turns.
-let lastTurn = null;
 
-// ── Build DOM ─────────────────────────────────────────────────────────────────
+let lastTurn = null;
 
 function buildPanel() {
     overlayEl           = document.createElement('div');
@@ -46,7 +38,6 @@ function buildPanel() {
     panelEl.setAttribute('aria-label', t('agent.title'));
     panelEl.setAttribute('aria-modal', 'true');
 
-    // Header
     const header  = document.createElement('div');
     header.className = 'ag-header';
     const titleEl = document.createElement('span');
@@ -59,31 +50,26 @@ function buildPanel() {
     header.appendChild(titleEl);
     header.appendChild(closeBtn);
 
-    // Context bar (table indicator)
     contextBarEl           = document.createElement('div');
     contextBarEl.className = 'ag-context-bar';
     contextBarEl.id        = 'agContextBar';
     contextBarEl.hidden    = true;
 
-    // Current-table-data option (grid context — opt-in via its own checkbox)
     gridOptEl           = document.createElement('div');
     gridOptEl.className = 'ag-grid-opt';
     gridOptEl.id        = 'agGridOpt';
     gridOptEl.hidden    = true;
 
-    // Tags strip
     tagsEl           = document.createElement('div');
     tagsEl.className = 'ag-tags';
     tagsEl.id        = 'agTags';
 
-    // Conversation area
     convEl = document.createElement('div');
     convEl.className = 'ag-conversation';
     convEl.id        = 'agConv';
     convEl.setAttribute('role', 'log');
     convEl.setAttribute('aria-live', 'polite');
 
-    // Input area
     const inputArea      = document.createElement('div');
     inputArea.className  = 'ag-input-area';
     queryEl              = document.createElement('textarea');
@@ -122,7 +108,6 @@ function buildPanel() {
     panelEl.appendChild(inputArea);
     document.body.appendChild(panelEl);
 
-    // Events
     closeBtn.addEventListener('click', closePanel);
     overlayEl.addEventListener('click', closePanel);
     sendBtn.addEventListener('click', sendQuery);
@@ -138,8 +123,6 @@ function buildPanel() {
         if (e.key === 'Escape' && panelEl.classList.contains('active')) closePanel();
     });
 }
-
-// ── Open / Close ──────────────────────────────────────────────────────────────
 
 function openPanel() {
     panelEl.classList.add('active');
@@ -157,20 +140,14 @@ function closePanel() {
     if (fabEl) fabEl.hidden = false;
 }
 
-// ── Context bar ───────────────────────────────────────────────────────────────
-
 function pageTableName() {
-    // Table switches on the grid page are client-side (app.js pushes the URL down to the
-    // bare pathname, no reload), so ?table= only reflects the table that was loaded on the
-    // original page load. window.CURRENT_GRID_TABLE (published by app.js) tracks the live
-    // grid model and is the source of truth whenever it's available.
     if (typeof window.CURRENT_GRID_TABLE === 'function') {
         const live = window.CURRENT_GRID_TABLE();
         if (live) return live;
     }
     const fromUrl = new URLSearchParams(window.location.search).get('table');
     if (fromUrl) return fromUrl;
-    // views.php has no ?table= URL param — views.js exposes the active view instead.
+
     return window.CURRENT_VIEW?.name ?? '';
 }
 
@@ -203,8 +180,6 @@ function updateContextBar() {
     contextBarEl.appendChild(label);
 }
 
-// ── FAB ───────────────────────────────────────────────────────────────────────
-
 function buildFab() {
     if (!window.CHAT_BUBBLE_ENABLED) return;
     fabEl           = document.createElement('button');
@@ -222,11 +197,7 @@ function buildFab() {
     document.body.appendChild(fabEl);
 }
 
-// ── Tags ──────────────────────────────────────────────────────────────────────
-
 function readGridContext() {
-    // Grid page: app.js publishes a data-model-based provider (raw values, real record counts,
-    // schema-driven column choice). Fall back to DOM scraping for views.php, which has no such model.
     if (typeof window.CURRENT_GRID_CONTEXT === 'function') {
         try {
             const text = window.CURRENT_GRID_CONTEXT();
@@ -239,23 +210,20 @@ function readGridContext() {
 }
 
 function readGridContextFromDom() {
-    // #grid table on the grid page; views.php renders its table under #viewContainer (same th[data-col]/tbody shape).
     const table = document.querySelector('#grid table, #viewContainer table');
     if (!table) return '';
     const tableName = pageTableName();
 
-    // headers: only th[data-col] elements, preserving their index among all ths
     const allThs       = Array.from(table.querySelectorAll('thead th'));
     let   headerEls    = allThs.filter(th => th.dataset.col);
     if (headerEls.length === 0) return '';
 
-    // Limit to essential columns: always keep an "id" column, then fill up to the cap.
     const totalCols = headerEls.length;
     if (headerEls.length > MAX_CONTEXT_COLS) {
         const idEls   = headerEls.filter(th => th.dataset.col.toLowerCase() === 'id');
         const restEls = headerEls.filter(th => th.dataset.col.toLowerCase() !== 'id');
         headerEls     = idEls.concat(restEls).slice(0, MAX_CONTEXT_COLS);
-        // Restore original left-to-right order for readability.
+
         headerEls.sort((a, b) => allThs.indexOf(a) - allThs.indexOf(b));
     }
 
@@ -263,7 +231,7 @@ function readGridContextFromDom() {
     const colIndexes = headerEls.map(th => allThs.indexOf(th));
 
     const allRows = [];
-    // views.php grouped tables interleave group-header/subtotal rows that don't align to `headers` — skip them.
+
     table.querySelectorAll('tbody tr:not(.vw-group-header):not(.vw-group-subtotal)').forEach(tr => {
         const allTds  = Array.from(tr.querySelectorAll('td'));
         const cells   = colIndexes.map(i => (allTds[i]?.textContent.trim() ?? '').replace(/\s+/g, ' '));
@@ -272,13 +240,10 @@ function readGridContextFromDom() {
 
     if (allRows.length === 0) return '';
 
-    // Truncate by whole rows rather than mid-string to keep every row well-formed.
     const rows        = allRows.slice(0, MAX_CONTEXT_ROWS);
     const hiddenRows  = allRows.length - rows.length;
     const hiddenCols  = totalCols - headers.length;
 
-    // Same completeness contract as the data-model path (grid/ai-context.js): say plainly
-    // whether every row is present, otherwise the model must refuse aggregate questions.
     let text = hiddenRows === 0
         ? `table: ${tableName} — COMPLETE SET: all ${allRows.length} row(s) of this report are`
           + ' included below. No rows are missing, so you MAY count, sum and average over these rows.\n'
@@ -316,7 +281,7 @@ function renderTags(tags) {
         tagsEl.appendChild(msg);
         return;
     }
-    // Tags start unchecked: documents are attached only when the user picks them.
+
     tags.forEach(tag => {
         const label     = document.createElement('label');
         label.className = 'ag-tag-item';
@@ -333,8 +298,6 @@ function selectedTags() {
     return Array.from(tagsEl.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
 }
 
-// Opt-in "current table data" checkbox. The grid context is sent to the model
-// only when this box is checked — never attached automatically.
 function renderGridDataOption() {
     if (readGridContext() === '') {
         gridOptEl.hidden    = true;
@@ -359,8 +322,6 @@ function renderGridDataOption() {
 function gridDataSelected() {
     return gridOptEl.querySelector('#agGridDataCb')?.checked ?? false;
 }
-
-// ── Conversation ──────────────────────────────────────────────────────────────
 
 function appendUserMsg(text) {
     const wrap      = document.createElement('div');
@@ -390,8 +351,6 @@ function appendThinking() {
     return wrap;
 }
 
-// Standalone notice (e.g. "select at least one source"). Does not consume the
-// typed query, so the user can tick a checkbox and resend without retyping.
 function appendNotice(text) {
     const wrap     = document.createElement('div');
     wrap.className = 'ag-msg ag-msg-assistant';
@@ -472,15 +431,13 @@ function scrollDown() {
     convEl.scrollTop = convEl.scrollHeight;
 }
 
-// ── Send ──────────────────────────────────────────────────────────────────────
-
 async function sendQuery() {
     const query = queryEl.value.trim();
     if (!query) return;
 
     const tags        = selectedTags();
     const includeGrid = gridDataSelected();
-    // Require an explicit source: at least one document tag, or the current table data.
+
     if (tags.length === 0 && !includeGrid) {
         appendNotice(t('agent.select_one'));
         return;
@@ -525,9 +482,7 @@ async function sendQuery() {
             replaceWithError(thinkWrap, data.error ?? 'Request failed.');
         } else {
             replaceWithAnswer(thinkWrap, data.answer, data.sources ?? [], data.tag_fallback ?? false, data.suggestions ?? []);
-            // A refusal must never become memory: fed back as history it primes the next
-            // refusal. The server flags it (rag_is_no_answer) since a translated
-            // "not in the context" is not recognisable here.
+
             const answer = String(data.answer ?? '').trim();
             lastTurn = (answer === '' || data.no_answer) ? null : { query, answer };
         }
@@ -549,8 +504,6 @@ async function sendQuery() {
         queryEl.focus();
     }
 }
-
-// ── Init ──────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
     await I18n.load();

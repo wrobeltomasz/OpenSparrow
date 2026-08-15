@@ -4,30 +4,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// i18n.php — Internationalisation engine (PHP side) with pluralisation and locale detection
-// Loads language JSON files from languages/; supports variable interpolation {key} and CLDR plural rules (pl, ru, uk, cs, sk, ro, hr, lt, sl, lv)
-// Detects locale via: GET ?lang= -> session (version-stamped) -> user preference -> settings.json -> Accept-Language -> 'en'
-// Provides t() helper, I18n::flatBundle() for JS bridge, and availableLanguageMeta() for language switcher
-// Initialised automatically via start_session()
 
 declare(strict_types=1);
 
-// settings_value() lives in config.php; required explicitly so i18n is self-sufficient
 require_once __DIR__ . '/config.php';
 
-/**
- * Lightweight i18n engine — zero external dependencies.
- *
- * Bootstrap (called automatically from start_session()):
- *   I18n::init()
- *
- * Usage:
- *   t('common.save')
- *   t('grid.showing', ['from' => 1, 'to' => 10, 'total' => 42])
- *   t('files.count', ['count' => 3], 3)
- *   I18n::locale()  → 'pl'
- */
 final class I18n
 {
     private static ?self $instance = null;
@@ -36,9 +17,8 @@ final class I18n
     private const string FALLBACK      = 'en';
     private const string LANGUAGES_DIR = __DIR__ . '/../languages/';
 
-    /** @var array<string,mixed> */
     private array $strings = [];
-    /** @var array<string,mixed> */
+
     private array $fallback = [];
 
     private function __construct(string $locale)
@@ -49,8 +29,6 @@ final class I18n
             ? self::loadFileStatic($locale)
             : $this->fallback;
     }
-
-    // ── Bootstrap ────────────────────────────────────────────────────────────
 
     public static function init(?string $override = null): void
     {
@@ -70,21 +48,11 @@ final class I18n
         return self::instance()->locale;
     }
 
-    // ── Locale detection (priority chain) ────────────────────────────────────
-
-    /**
-     * 1. explicit $override  2. GET ?lang=  3. session (version-validated)
-     * 4. user pref from session  5. settings.json default  6. Accept-Language  7. 'en'
-     *
-     * Session locale is invalidated when admin changes default_language (locale_version bump).
-     * This ensures a global default change takes effect for all active sessions immediately.
-     */
     public static function detectLocale(?string $override = null): string
     {
         $available       = self::availableLocales();
         $currentVersion  = self::localeVersion();
 
-        // Session locale is only valid when locale_version matches (or no versioning yet).
         $sessionLocale = null;
         if (isset($_SESSION['locale'])) {
             $versionOk = $currentVersion === ''
@@ -106,7 +74,6 @@ final class I18n
         foreach ($candidates as $candidate) {
             $safe = self::sanitize($candidate);
             if (in_array($safe, $available, true)) {
-                // Persist explicit switch to session with current version stamp
                 if (
                     isset($_GET['lang'])
                     && $safe === self::sanitize((string)$_GET['lang'])
@@ -122,15 +89,6 @@ final class I18n
         return self::FALLBACK;
     }
 
-    // ── Translation ───────────────────────────────────────────────────────────
-
-    /**
-     * Translate a dot-notation key with optional variable interpolation and pluralization.
-     *
-     * @param string               $key   e.g. "files.count"
-     * @param array<string,scalar> $vars  e.g. ['count' => 3]
-     * @param int|null             $count triggers plural-form selection when set
-     */
     public static function t(string $key, array $vars = [], ?int $count = null): string
     {
         $inst  = self::instance();
@@ -166,12 +124,6 @@ final class I18n
         return $value;
     }
 
-    /**
-     * Flat key→value map for the JS bridge (fallback merged with current locale).
-     * Plural nodes serialized as JSON strings so JS can parse them.
-     *
-     * @return array<string,string>
-     */
     public static function flatBundle(): array
     {
         $inst   = self::instance();
@@ -180,9 +132,6 @@ final class I18n
         return self::flatten($merged);
     }
 
-    /**
-     * @return array<string,array{name:string,dir:string}>
-     */
     public static function availableLanguageMeta(): array
     {
         $meta = [];
@@ -196,9 +145,6 @@ final class I18n
         return $meta;
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
-
-    /** @param array<string,mixed> $tree */
     private function resolve(string $key, array $tree): string|array|null
     {
         $node = $tree;
@@ -211,7 +157,6 @@ final class I18n
         return (is_string($node) || is_array($node)) ? $node : null;
     }
 
-    /** @return array<string,mixed> */
     private static function loadFileStatic(string $locale): array
     {
         $path = self::LANGUAGES_DIR . self::sanitize($locale) . '.json';
@@ -222,8 +167,7 @@ final class I18n
         if ($content === false) {
             return [];
         }
-        // Language files saved by some editors carry a UTF-8 BOM, which makes
-        // json_decode() return null and silently empties the whole locale.
+
         if (str_starts_with($content, "\xEF\xBB\xBF")) {
             $content = substr($content, 3);
         }
@@ -231,7 +175,6 @@ final class I18n
         return is_array($decoded) ? $decoded : [];
     }
 
-    /** @return string[] locales that have a language file on disk */
     private static function availableLocales(): array
     {
         static $cache = null;
@@ -285,8 +228,6 @@ final class I18n
         }
         return $version = '';
     }
-
-    // ── CLDR plural rules ─────────────────────────────────────────────────────
 
     private static function pluralForm(string $locale, int $n): string
     {
@@ -391,10 +332,6 @@ final class I18n
         return 'other';
     }
 
-    /**
-     * @param  array<string,mixed> $array
-     * @return array<string,string>
-     */
     private static function flatten(array $array, string $prefix = ''): array
     {
         $result = [];
@@ -413,11 +350,6 @@ final class I18n
     }
 }
 
-/**
- * Global shorthand — keeps templates clean.
- *
- * @param array<string,scalar> $vars
- */
 function t(string $key, array $vars = [], ?int $count = null): string
 {
     return I18n::t($key, $vars, $count);

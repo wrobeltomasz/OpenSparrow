@@ -7,19 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/frontapi/calendar.php — frontend API route module: the calendar's read
-// (GET ?api=calendar) and its drag-and-drop write (POST api=calendar,
-// action=move_event). Read and write live together because they are one feature:
-// both resolve against the same configured source list.
-//
-// Dispatched by public/api.php AFTER the auth gate, the admin/viewer role gates and
-// the schema load. The write route additionally runs behind the shared write
-// preamble, which already resolved and gated $ctx->table — it must not repeat
-// require_table_access().
-
-/**
- * Events of one month, gathered across every configured calendar source.
- */
 function frontapi_calendar(FrontApiContext $ctx): never
 {
     $conn   = $ctx->conn;
@@ -31,8 +18,6 @@ function frontapi_calendar(FrontApiContext $ctx): never
         exit;
     }
 
-    // Accept optional year/month params so the frontend can request only the
-    // visible month. Fall back to the current month when omitted.
     $reqYear  = filter_var($_GET['year']  ?? date('Y'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 9999]]);
     $reqMonth = filter_var($_GET['month'] ?? date('n'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 12]]);
     if ($reqYear  === false) {
@@ -50,7 +35,7 @@ function frontapi_calendar(FrontApiContext $ctx): never
         if (!$table) {
             continue;
         }
-        // Config-supplied: drop the source, keep the rest of the calendar.
+
         if (!user_can_access_table($table)) {
             continue;
         }
@@ -64,8 +49,7 @@ function frontapi_calendar(FrontApiContext $ctx): never
         $schemaName = $tableCfg['schema'] ?? 'public';
         $idCol = id_column();
         $titleCol = $src['title_column'] ?? $idCol;
-        // Optional second column rendered after the title on the event tile.
-        // Ignored when unset or pointing at a column the table no longer has.
+
         $subCol = $src['subtitle_column'] ?? '';
         if ($subCol !== '' && !isset($tableCfg['columns'][$subCol])) {
             $subCol = '';
@@ -78,8 +62,6 @@ function frontapi_calendar(FrontApiContext $ctx): never
 
             $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
 
-            // Same row-level ownership rule as api=list, applied per source table:
-            // a calendar must not surface events off records the user cannot see.
             $qParams  = [$dateFrom, $dateTo];
             $ownerSql = '';
             if (!empty($tableCfg['owner_restricted'])) {
@@ -132,9 +114,6 @@ function frontapi_calendar(FrontApiContext $ctx): never
     exit;
 }
 
-/**
- * Drag-and-drop: move one event to a new date.
- */
 function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
 {
     $conn       = $ctx->conn;
@@ -150,10 +129,9 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
         exit;
     }
 
-    // Load calendar configuration to validate source tables
     $calConfig = config_get('calendar') ?? ['sources' => []];
     $sources = $calConfig['sources'] ?? [];
-    // Whitelist payload table against configured calendar sources
+
     $allowedTables = array_column($sources, 'table');
     if (!in_array($table, $allowedTables, true)) {
         http_response_code(400);
@@ -169,17 +147,14 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
         exit;
     }
 
-    // Owner-restricted: prevent moving a record owned by someone else.
     check_record_ownership($conn, $tableCfg, $table, $id, $ctx->userId);
 
-    // Validate strict YYYY-MM-DD date format
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate) || !checkdate((int)substr($newDate, 5, 2), (int)substr($newDate, 8, 2), (int)substr($newDate, 0, 4))) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid date format']);
         exit;
     }
 
-    // Get date column for specific table configuration
     $dateColumn = '';
     foreach ($sources as $source) {
         if ($source['table'] === $table) {
@@ -194,14 +169,12 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
         exit;
     }
 
-    // Perform safety regex check on column identifier
     if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $dateColumn)) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid column name']);
         exit;
     }
 
-    // Update record via native pg_query_params for robust SQL injection prevention
     $sql = sprintf('UPDATE %s.%s SET %s = $1 WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($dateColumn), pg_ident($idCol));
     $res = @pg_query_params($conn, $sql, [$newDate, $id]);
     if (!$res) {

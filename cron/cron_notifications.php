@@ -5,11 +5,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cron/cron_notifications.php — CLI cron: calendar-based in-app notifications + automation email delivery
-// Reads the "calendar" config sources and inserts spw_users_notifications rows (daily de-duplication)
-// Also delivers pending rows from spw_automation_emails (queued by the "email" automation action)
-// via SMTP (includes/smtp_client.php) when configured in Admin > Cron > Email, else PHP mail();
-// requires AUTOMATION_EMAIL_FROM, retries up to AUTOMATION_EMAIL_MAX_ATTEMPTS, header-injection safe
 declare(strict_types=1);
 
 if (php_sapi_name() !== 'cli') {
@@ -17,22 +12,18 @@ if (php_sapi_name() !== 'cli') {
     exit;
 }
 
-// Disable output buffering to force real-time rendering in the browser
 @ini_set('output_buffering', 'off');
 @ini_set('zlib.output_compression', '0');
 while (ob_get_level() > 0) {
     ob_end_clean();
 }
 
-// Fix for PHP 8 strict typing: ob_implicit_flush requires a boolean parameter
 ob_implicit_flush(true);
 
-// Helper function to print logs in real-time
 function print_log(string $msg): void
 {
-
     echo $msg . "<br>\n";
-// Pad with empty spaces to bypass internal browser buffers
+
     echo str_pad('', 4096) . "\n";
     flush();
 }
@@ -44,12 +35,6 @@ $triggeredBy = (isset($argv[1]) && $argv[1] === 'admin') ? 'admin' : 'cron';
 print_log("<h3>Start CRON - Diagnostics</h3>");
 require_once __DIR__ . '/../includes/config_store.php';
 
-// Click statistics retention (Admin -> System -> Click Statistics). That log has no
-// worker of its own, so this is what bounds it; the module's Log tab only trims on
-// demand. Deliberately here, ABOVE the calendar checks below: those exit early on an
-// install with no configured sources, and housekeeping must not depend on whether
-// this cron's other job has anything to do. Never fatal — a notifications run must
-// not fail over retention.
 try {
     require_once __DIR__ . '/../includes/clickstats.php';
     $purged = clickstats_purge_expired(db_connect());
@@ -73,15 +58,9 @@ if (empty($config['sources'])) {
 
 print_log("Loaded calendar configuration. Number of sources: " . count($config['sources']) . "<br>");
 
-// Table → PG schema map from schema.json; tables without an explicit schema
-// (or missing from schema.json) fall back to the system schema.
 $schemaCfg    = config_get('schema') ?? [];
 $schemaTables = is_array($schemaCfg['tables'] ?? null) ? $schemaCfg['tables'] : [];
 
-// Resolved before the try, because the catch block below also writes to this table.
-// Assigned inside the try it was only in scope for the error path by virtue of having
-// been reached first — true today (the $logId guard there implies it), but a guard on
-// one variable standing in for the definedness of another.
 $tCronLog = sys_table('users_notifications_log');
 
 try {
@@ -89,7 +68,6 @@ try {
     $conn = db_connect();
     print_log("Database connected successfully.<br><hr>");
 
-    // Purge login attempts older than 30 days to prevent unbounded table growth.
     pg_query($conn, "DELETE FROM " . sys_table('login_attempts') . " WHERE attempted_at < NOW() - INTERVAL '30 days'");
 
     $logRes = pg_query_params($conn, "INSERT INTO $tCronLog (triggered_by) VALUES ($1) RETURNING id", [$triggeredBy]);
@@ -103,7 +81,7 @@ try {
         $notifiedUsers = $source['notified_users'] ?? [];
         $days = (int)($source['notify_before_days'] ?? 0);
         $urlTemplate = $source['url_template'] ?? '';
-    // Check if all required fields and at least one user are present
+
         if (!$table || !$dateCol || !$titleCol || empty($notifiedUsers) || !is_array($notifiedUsers)) {
             print_log("Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8') . "</b> (missing required columns or no users assigned).");
             continue;
@@ -116,7 +94,7 @@ try {
             . " (looking for date: <b>" . htmlspecialchars($targetDate, ENT_QUOTES, 'UTF-8') . "</b>"
             . " in column <b>" . htmlspecialchars($dateCol, ENT_QUOTES, 'UTF-8') . "</b>)"
         );
-    // Fetch records from PostgreSQL
+
         $tableSchema = (string)($schemaTables[$table]['schema'] ?? sys_schema());
         $sql         = sprintf(
             'SELECT id AS record_id, %s AS title FROM %s.%s WHERE DATE(%s) = $1',
@@ -132,7 +110,6 @@ try {
         }
         $rows = pg_fetch_all($result) ?: [];
 
-        // Resolve only user IDs that actually exist and are active
         $uidList = '{' . implode(',', array_map('intval', $notifiedUsers)) . '}';
         $validRes = pg_query_params($conn, "SELECT id FROM " . sys_table('users') . " WHERE id = ANY($1::int[]) AND is_active = TRUE", [$uidList]);
         $validUserIds = $validRes ? array_map('intval', array_column(pg_fetch_all($validRes) ?: [], 'id')) : [];
@@ -145,10 +122,10 @@ try {
         print_log("Found matching records in database: <b>$rowCount</b>");
         foreach ($rows as $row) {
             $recordId = (int)$row['record_id'];
-        // Prepend target date to the title
+
             $titleText = $targetDate . ": " . $row['title'];
             $link = str_replace('{id}', (string)$recordId, $urlTemplate);
-        // Insert a notification for every valid user
+
             foreach ($validUserIds as $userId) {
                 $userId = (int)$userId;
                 $insertSql = "
@@ -168,11 +145,6 @@ try {
         print_log("<hr>");
     }
 
-    // ── Note reminders (spw_notes) ───────────────────────────────────────────
-    // Private per-user notes (User menu > Notes) with an optional reminder_date (date+time)
-    // fire into the same spw_users_notifications table/dedup as the calendar sources above.
-    // Due-or-overdue rather than an exact match, so a reminder set for 14:30 still fires on
-    // the next run and a missed run does not swallow it (dedup keeps it to one per note).
     print_log("<h3>Note reminders</h3>");
     $today = date('Y-m-d');
     $noteRes = pg_query(
@@ -194,7 +166,7 @@ try {
             VALUES ($1, $2, $3, 'notes', $4, $5)
             ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
         ";
-        // Dedup on the reminder's own day, so an overdue note still notifies exactly once.
+
         $noteDay = $note['reminder_day'] ?: $today;
         $noteParams = [$noteUserId, $noteTitle, $noteLink, (int)$note['id'], $noteDay];
         $noteInsertRes = pg_query_params($conn, $noteInsertSql, $noteParams);
@@ -205,9 +177,6 @@ try {
     }
     print_log("<hr>");
 
-    // ── Automation email queue (spw_automation_emails) ──────────────────────
-    // Rows are queued by the "email" automation action (includes/automations.php)
-    // and delivered here so record writes never block on SMTP.
     print_log("<h3>Automation email queue</h3>");
     $tAutoEmails = sys_table('automation_emails');
     $emailsSent  = 0;
@@ -251,7 +220,6 @@ try {
         $pending = $pendRes ? (pg_fetch_all($pendRes) ?: []) : [];
         print_log("Pending emails picked up: <b>" . count($pending) . "</b>");
 
-        // Strip CR/LF so user-templated values cannot inject extra mail headers.
         $hdrSafe = static fn(string $s): string => str_replace(["\r", "\n"], ' ', $s);
 
         foreach ($pending as $mailRow) {
@@ -287,7 +255,6 @@ try {
                 $emailsSent++;
                 print_log("&nbsp;&nbsp; Sent email #$mailId to " . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8'));
             } else {
-                // Mark as error once the attempt budget is exhausted; otherwise retry next run.
                 pg_query_params(
                     $conn,
                     "UPDATE $tAutoEmails

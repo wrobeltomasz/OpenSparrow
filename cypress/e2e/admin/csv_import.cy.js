@@ -3,42 +3,14 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/admin/csv_import.cy.js
-// ============================================================================
-// CSV Import Admin Panel Tests
-//
-// Feature lives in: admin/index.php → tab[data-file="csv_import"]
-// Rendered by: admin/js/csv_import.js into #editorForm (fully dynamic DOM)
-// Backend API: admin/api_csv_import.php
-//
-// Behavioral notes (from csv_import.js):
-//  - The workspace builds asynchronously; the table select is populated from
-//    GET api.php?action=get&file=schema.
-//  - Selecting a CSV file does NOT upload unless a target table is selected
-//    first (or "Create new table" mode is on with a name entered) — it only
-//    flashes "Select a target table first."
-//  - After upload, mapping selects render as select[data-header] and the
-//    execute button is labelled "Execute Import".
-//
-// Fixture: cypress/fixtures/test_companies.csv  (3 rows: name, email, phone)
-// Values are prefixed "Cypress CSV Import" so cypress_seed.php cleanup removes them.
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Open the CSV Import tab and wait for its async workspace to build. */
 function openCsvImportTab() {
   cy.visit(`${BASE}/admin/index.php`);
-  // Wait until the Overview tab has FULLY rendered — not just its loading
-  // placeholder. Switching tabs while the overview stats fetch is still in
-  // flight can leave the workspace in a mixed state where the overview
-  // content later replaces the CSV workspace mid-test.
+
   cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.long })
     .should('contain.text', 'Admin Overview');
-  // The csv_import button lives in the "Data Management" collapsible
-  // nav-section, which is closed by default — expand it first.
+
   cy.get('button.admin-tab[data-file="csv_import"]').then($btn => {
     const $section = $btn.closest('.nav-section');
     if ($section.length && !$section.hasClass('open')) {
@@ -49,21 +21,19 @@ function openCsvImportTab() {
     .scrollIntoView()
     .should('be.visible')
     .click();
-  // The CSV workspace must fully replace the overview before tests proceed
+
   cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.long })
     .should('contain.text', 'CSV Import')
     .and('not.contain.text', 'Admin Overview');
-  // The drop-zone file input appears once the async build completes
+
   cy.get('#editorForm input[type="file"][accept*=".csv"]', { timeout: CypressHelpers.TIMEOUTS.long })
     .should('exist');
 }
 
-/** Select the first real table in the target-table select (prefers "companies"). */
 function selectTargetTable() {
-  // Retryable: wait until the schema fetch has populated the table options
   cy.get('#editorForm select').first()
     .find('option')
-    .should('have.length.gte', 2); // placeholder + at least one table
+    .should('have.length.gte', 2);
   cy.get('#editorForm select').first().should('not.be.disabled').then($sel => {
     const real = [...$sel.find('option')].filter(o => o.value !== '');
     const preferred = real.find(o => o.value === 'companies') || real[0];
@@ -71,7 +41,6 @@ function selectTargetTable() {
   });
 }
 
-/** Select table, upload the fixture, and wait for the upload POST. */
 function uploadFixture() {
   selectTargetTable();
   cy.intercept('POST', '**/api_csv_import.php*').as('csvUpload');
@@ -79,10 +48,6 @@ function uploadFixture() {
     .selectFile('cypress/fixtures/test_companies.csv', { force: true });
   return cy.wait('@csvUpload', { timeout: CypressHelpers.TIMEOUTS.long });
 }
-
-// ============================================================================
-// Test Suite: CSV Import Tab Structure
-// ============================================================================
 
 describe('OpenSparrow – CSV Import: Tab Structure', () => {
   before(() => {
@@ -117,7 +82,7 @@ describe('OpenSparrow – CSV Import: Tab Structure', () => {
   it('target table select has a placeholder and table options', () => {
     cy.get('#editorForm select').first().within(() => {
       cy.get('option').first().should('have.value', '');
-      cy.get('option').should('have.length.gte', 2); // placeholder + at least one table
+      cy.get('option').should('have.length.gte', 2);
     });
   });
 
@@ -126,7 +91,6 @@ describe('OpenSparrow – CSV Import: Tab Structure', () => {
   });
 
   it('delimiter and encoding selects are rendered', () => {
-    // table select + delimiter + encoding at minimum
     cy.get('#editorForm select').should('have.length.gte', 3);
   });
 
@@ -135,10 +99,6 @@ describe('OpenSparrow – CSV Import: Tab Structure', () => {
     cy.get('#editorForm').should('contain.text', 'Import History');
   });
 });
-
-// ============================================================================
-// Test Suite: CSV Import Upload Guard
-// ============================================================================
 
 describe('OpenSparrow – CSV Import: Upload Guard', () => {
   before(() => {
@@ -154,15 +114,11 @@ describe('OpenSparrow – CSV Import: Upload Guard', () => {
     cy.intercept('POST', '**/api_csv_import.php*').as('blockedUpload');
     cy.get('#editorForm input[type="file"]')
       .selectFile('cypress/fixtures/test_companies.csv', { force: true });
-    // The drop zone flashes "Select a target table first." — no POST fires
+
     cy.get('#editorForm').should('contain.text', 'Select a target table first');
     cy.get('@blockedUpload.all').should('have.length', 0);
   });
 });
-
-// ============================================================================
-// Test Suite: CSV Import File Upload
-// ============================================================================
 
 describe('OpenSparrow – CSV Import: File Upload', () => {
   before(() => {
@@ -192,10 +148,6 @@ describe('OpenSparrow – CSV Import: File Upload', () => {
       .should('contain.text', 'test_companies.csv');
   });
 });
-
-// ============================================================================
-// Test Suite: CSV Import Column Mapping
-// ============================================================================
 
 describe('OpenSparrow – CSV Import: Column Mapping', () => {
   before(() => {
@@ -228,10 +180,6 @@ describe('OpenSparrow – CSV Import: Column Mapping', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: CSV Import Execute
-// ============================================================================
-
 describe('OpenSparrow – CSV Import: Execute', () => {
   before(() => {
     cy.seedDatabase();
@@ -245,7 +193,6 @@ describe('OpenSparrow – CSV Import: Execute', () => {
     cy.get('#editorForm select[data-header]', { timeout: CypressHelpers.TIMEOUTS.long })
       .should('have.length', 3);
 
-    // Map each CSV header to a same-named table column where one exists
     cy.get('#editorForm select[data-header]').each($sel => {
       const header = $sel.attr('data-header');
       const match  = [...$sel.find('option')].find(o => o.value === header);
@@ -259,17 +206,15 @@ describe('OpenSparrow – CSV Import: Execute', () => {
 
     cy.wait('@execute', { timeout: CypressHelpers.TIMEOUTS.long })
       .its('response.statusCode')
-      // 200 = imported; 400/422 = server-side validation (still proves the wiring)
+
       .should('be.oneOf', [200, 400, 422]);
 
-    // A result banner appears after execute
     cy.get('#editorForm', { timeout: CypressHelpers.TIMEOUTS.medium })
       .invoke('text')
       .should('not.be.empty');
   });
 
   after(() => {
-    // Remove the imported "Cypress CSV Import ..." rows
     cy.request({
       method: 'POST',
       url: `${BASE}/cypress_seed.php`,

@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/security.js — Security settings tab (renderSecurityEditor): informational; points the admin to System -> Users for password changes.
-
 export function renderSecurityEditor(key, itemData, isArray, ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = `

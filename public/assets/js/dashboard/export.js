@@ -3,10 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/dashboard/export.js — buildExportButton(widget): per-widget CSV download built
-// client-side from widget.data (no server call). Returns null when the user lacks the
-// canExport capability or the widget has no exportable data.
-
 import { I18n } from '../i18n.js';
 
 function csvCell(value) {
@@ -17,7 +13,6 @@ function csvCell(value) {
 function widgetRows(widget) {
     const data = widget.data;
     if (typeof data === 'number') {
-        // stat_card (count, sum, avg) — single metric, optional previous period
         const header = ['metric', 'value'];
         const row = [widget.title, data];
         if (typeof widget.prev_data === 'number') {
@@ -27,7 +22,6 @@ function widgetRows(widget) {
         return [header, row];
     }
     if (Array.isArray(data) && data.length > 0) {
-        // group_by ({label, value}) and list widgets — columns from the first row
         const cols = Object.keys(data[0]);
         return [cols, ...data.map(r => cols.map(c => r[c]))];
     }
@@ -36,7 +30,7 @@ function widgetRows(widget) {
 
 function downloadCSV(rows, title) {
     const csv = rows.map(r => r.map(csvCell).join(',')).join('\r\n');
-    // BOM so Excel opens UTF-8 labels correctly
+
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -57,7 +51,6 @@ function buildExportButton(widget) {
     btn.textContent = 'CSV';
     btn.title = I18n.t('grid.export_csv');
     btn.addEventListener('click', (e) => {
-        // Cards are drill-down clickable — keep the export click local
         e.stopPropagation();
         const rows = widgetRows(widget);
         if (rows) downloadCSV(rows, widget.title);

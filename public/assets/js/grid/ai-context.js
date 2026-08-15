@@ -3,21 +3,12 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/ai-context.js — builds the "current table data" context block for the AI assistant.
-// Reads the grid DATA MODEL (state + pagination), not the rendered DOM, so the model gets raw
-// values (unformatted numbers/dates), the real record counts and a schema-driven column choice.
-// Published as window.CURRENT_GRID_CONTEXT by app.js; consumed by agent-panel.js.
-
 import { getState } from '../grid.js';
 import { getPageRows, getPageState } from '../pagination.js';
 
-// Maximum grid rows and columns included in the page context sent to the model.
 export const MAX_CONTEXT_ROWS = 50;
 export const MAX_CONTEXT_COLS = 12;
 
-// Column importance for the MAX_CONTEXT_COLS budget: lower rank wins.
-// Position in the grid is only the tie-breaker, so reordering columns by drag-and-drop
-// no longer changes which data the assistant sees.
 function columnRank(col, colCfg, isFk) {
     if (col.toLowerCase() === 'id') return 0;
     if (colCfg.required) return 1;
@@ -29,7 +20,6 @@ function columnRank(col, colCfg, isFk) {
 }
 
 function formatValue(row, col) {
-    // Foreign keys carry a human-readable label; a bare id would be meaningless to the model.
     const raw = row[col + '__display'] ?? row[col];
     if (raw === null || raw === undefined) return '';
     if (typeof raw === 'boolean') return raw ? 'true' : 'false';
@@ -37,7 +27,6 @@ function formatValue(row, col) {
     return String(raw).replace(/\s+/g, ' ').trim();
 }
 
-// Returns the context text, or '' when no grid data is on screen.
 export function buildGridContext() {
     const { currentTable, displayedColumns, filteredData, totalRows, wasTruncated } = getState();
     if (!currentTable || !Array.isArray(displayedColumns) || displayedColumns.length === 0) return '';
@@ -56,7 +45,7 @@ export function buildGridContext() {
             .map((col, pos) => ({ col, pos, rank: columnRank(col, colCfgs[col] || {}, !!fks[col]) }))
             .sort((a, b) => (a.rank - b.rank) || (a.pos - b.pos))
             .slice(0, MAX_CONTEXT_COLS)
-            .sort((a, b) => a.pos - b.pos)   // restore left-to-right order for readability
+            .sort((a, b) => a.pos - b.pos)
             .map(c => c.col);
     }
 
@@ -69,9 +58,6 @@ export function buildGridContext() {
     const from          = (currentPage - 1) * pageSize + 1;
     const to            = from + rows.length - 1;
 
-    // The header is binding for the model (see the COUNTING section of the prompt): it either
-    // declares the block a complete set — every matching record is here, so totals are fair
-    // game — or ONE PAGE of a larger set, where aggregate questions must be refused.
     const isCompleteSet = rows.length === filteredTotal
         && totalPages === 1
         && hiddenRows === 0

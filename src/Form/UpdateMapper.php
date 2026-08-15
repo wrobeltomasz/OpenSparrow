@@ -30,17 +30,12 @@ final readonly class UpdateMapper
         return new RecordData($bindings);
     }
 
-    // Server-side mirror of the client data-pattern check (TextField renders it,
-    // assets/js validates it): unanchored match, skipped for NULL/empty values,
-    // fail-open on an invalid pattern so a broken regexp in schema.json cannot
-    // lock editing. Throws ValidationException with the column's user-facing message.
     private function assertMatchesRegexp(ColumnConfig $col, mixed $value): void
     {
         if ($col->validationRegexp === null || !is_string($value) || $value === '') {
             return;
         }
-        // '~' delimiter: not a JS regex metacharacter, so schema patterns written
-        // for the client never need it escaped — escaping any literal '~' is enough.
+
         $result = @preg_match('~' . str_replace('~', '\~', $col->validationRegexp) . '~u', $value);
         if ($result === false) {
             error_log('[UpdateMapper] invalid validation_regexp in schema.json: ' . $col->validationRegexp);

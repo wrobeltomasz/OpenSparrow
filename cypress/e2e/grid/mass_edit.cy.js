@@ -3,20 +3,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/grid/mass_edit.cy.js
-// ============================================================================
-// Mass Edit Module Tests
-// Covers: checkbox selection, floating me-bar, Edit Fields panel,
-//         Export column picker, Assign Owner panel, duplicate/delete guards.
-// All suites gate on .row-select-cb presence (editor role only).
-// ============================================================================
-
 const BASE       = 'http://localhost:8080';
 const TEST_TABLE = 'companies';
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
-/** Select first row checkbox and return whether it existed. */
 function selectFirstRow() {
   return cy.get('body').then($body => {
     if ($body.find('.row-select-cb').length === 0) return false;
@@ -24,10 +13,6 @@ function selectFirstRow() {
     return true;
   });
 }
-
-// ============================================================================
-// Suite: Checkbox column & floating bar
-// ============================================================================
 
 describe('OpenSparrow – Mass Edit: Selection & Bar', () => {
   beforeEach(() => {
@@ -116,10 +101,6 @@ describe('OpenSparrow – Mass Edit: Selection & Bar', () => {
     });
   });
 });
-
-// ============================================================================
-// Suite: Edit Fields Panel
-// ============================================================================
 
 describe('OpenSparrow – Mass Edit: Edit Fields Panel', () => {
   beforeEach(() => {
@@ -222,10 +203,6 @@ describe('OpenSparrow – Mass Edit: Edit Fields Panel', () => {
   });
 });
 
-// ============================================================================
-// Suite: Export Column Picker
-// ============================================================================
-
 describe('OpenSparrow – Mass Edit: Export Column Picker', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -294,9 +271,9 @@ describe('OpenSparrow – Mass Edit: Export Column Picker', () => {
       cy.get('.me-bar-export-btn').click({ force: true });
       cy.get('.me-col-picker-quick-btn', { timeout: CypressHelpers.TIMEOUTS.medium })
         .last()
-        .click({ force: true }); // deselect all
+        .click({ force: true });
       cy.get('#me-export-panel .bp-apply-btn').should('be.disabled');
-      cy.get('.me-col-picker-quick-btn').first().click({ force: true }); // select all
+      cy.get('.me-col-picker-quick-btn').first().click({ force: true });
       cy.get('#me-export-panel .bp-apply-btn').should('not.be.disabled');
     });
   });
@@ -333,10 +310,6 @@ describe('OpenSparrow – Mass Edit: Export Column Picker', () => {
     });
   });
 });
-
-// ============================================================================
-// Suite: Assign Owner Panel
-// ============================================================================
 
 describe('OpenSparrow – Mass Edit: Assign Owner Panel', () => {
   beforeEach(() => {
@@ -413,10 +386,6 @@ describe('OpenSparrow – Mass Edit: Assign Owner Panel', () => {
     });
   });
 });
-
-// ============================================================================
-// Suite: Mass Duplicate & Delete guards
-// ============================================================================
 
 describe('OpenSparrow – Mass Edit: Duplicate & Delete Guards', () => {
   beforeEach(() => {

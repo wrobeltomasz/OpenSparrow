@@ -3,10 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/database.js — PostgreSQL connection settings editor (renderDatabaseSection):
-// self-contained tab panel (used inside Settings) — fetches/saves config/database.json
-// directly via api.php (get&file=database / save&file=database), independent of the
-// global currentConfig/"Save config" flow used by config_store-backed modules.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createTextInput } from './ui.js';
 import { showStatusPill } from './app.js';

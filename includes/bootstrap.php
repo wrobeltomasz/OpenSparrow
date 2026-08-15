@@ -4,13 +4,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// bootstrap.php — Central bootstrap for every public entry point
-// os_page_bootstrap() — HTML controllers: session, setup check, auth redirect, staleness enforcement, admin redirect, CSRF token, CSP nonce + security headers
-// os_api_bootstrap()  — JSON endpoints: silences HTML errors, JSON Content-Type, security headers, session, 401 gate, staleness enforcement, optional AJAX/role gates, header CSRF, optional DB connection
-// os_require_csrf()   — CSRF validation from the X-CSRF-Token header or a body/form csrf_token field
-// os_user_caps()      — capability flags (canEdit/canExport) exposed to the client instead of the raw role
-// os_boot_app()       — full OOP object graph for form pages (create.php, edit.php): repositories, field registry, CSRF manager, audit logger
 
 declare(strict_types=1);
 
@@ -37,7 +30,6 @@ use App\Repository\PgFileRepository;
 use App\Repository\PgRecordRepository;
 use App\Security\UserRole;
 
-// Redirect to the first-run wizard when the app has not been configured yet.
 function os_require_setup(): void
 {
     if (!file_exists(__DIR__ . '/../config/database.json')) {
@@ -46,8 +38,6 @@ function os_require_setup(): void
     }
 }
 
-// Capability flags exposed to the client instead of the raw role name
-// to reduce attack surface during reconnaissance.
 function os_user_caps(?string $role = null): array
 {
     $r = $role !== null
@@ -59,7 +49,6 @@ function os_user_caps(?string $role = null): array
     ];
 }
 
-// Make sure the session owns a CSRF token and return it.
 function os_ensure_csrf_token(): string
 {
     if (empty($_SESSION['csrf_token'])) {
@@ -68,8 +57,6 @@ function os_ensure_csrf_token(): string
     return $_SESSION['csrf_token'];
 }
 
-// Validate the CSRF token against the session; stop with 403 JSON on mismatch.
-// 'header' reads X-CSRF-Token; 'body' reads csrf_token from $_POST or a decoded JSON body.
 function os_require_csrf(string $source = 'header', array $body = []): void
 {
     $stored = $_SESSION['csrf_token'] ?? '';
@@ -82,20 +69,12 @@ function os_require_csrf(string $source = 'header', array $body = []): void
     }
 }
 
-// Standard guard for HTML page controllers. Options:
-//   'csp'            CSP mode passed to send_security_headers() (default 'default')
-//   'hsts'           include the HSTS header (default true)
-//   'guest'          page is reachable without login — skips the auth/admin gates (default false)
-//   'redirect_admin' send admin users to /admin (default true)
-//   'setup_check'    redirect to setup.php when config/database.json is missing (default false)
-// Returns ['nonce' => CSP nonce, 'csrf' => token, 'role' => role, 'caps' => capability flags].
 function os_page_bootstrap(array $options = []): array
 {
     start_session();
 
     $guest = !empty($options['guest']);
 
-    // Guest pages (login) check unconditionally; authenticated pages only before first login
     if (!empty($options['setup_check']) && ($guest || !isset($_SESSION['user_id']))) {
         os_require_setup();
     }
@@ -105,9 +84,9 @@ function os_page_bootstrap(array $options = []): array
             header('Location: login.php');
             exit;
         }
-        // Hard session-lifetime + User-Agent enforcement (centralised in session.php)
+
         enforce_session_redirect();
-        // Admin role belongs in the admin panel, not the frontend
+
         if (($options['redirect_admin'] ?? true) && UserRole::fromSession() === UserRole::Admin) {
             header('Location: admin/');
             exit;
@@ -118,23 +97,11 @@ function os_page_bootstrap(array $options = []): array
     $nonce = bin2hex(random_bytes(16));
     send_security_headers($nonce, $options['hsts'] ?? true, $options['csp'] ?? 'default');
 
-    // Normalised via the enum: unknown session values degrade to 'viewer'
     $role = UserRole::fromSession()->value;
 
     return ['nonce' => $nonce, 'csrf' => $csrf, 'role' => $role, 'caps' => os_user_caps($role)];
 }
 
-// Standard guard for JSON API endpoints. Options:
-//   'connect'      open and return a PostgreSQL connection (default true)
-//   'csrf'         'header' validates X-CSRF-Token on POST/PATCH/DELETE; 'manual' skips —
-//                  the endpoint calls os_require_csrf() itself on its mutating actions (default 'header')
-//   'require_ajax' require the X-Requested-With: XMLHttpRequest header (default false)
-//   'role'         require this exact role, e.g. 'editor' (default: any authenticated user)
-//   'gate'         per-user access gate on the request's table/view/print/board/workflow names
-//                  (default true); false opts the endpoint out entirely, ['table' => false] opts
-//                  one parameter out. Either way, say why at the call site — see
-//                  os_gate_request_scopes() and tests/Security/request_scope_inventory.php
-// Always loads db.php + api_helpers.php, so endpoints may call db_connect(), jsonError(), sys_table() etc.
 function os_api_bootstrap(array $options = []): ?\PgSql\Connection
 {
     ini_set('display_errors', '0');
@@ -150,7 +117,7 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
         http_response_code(401);
         exit(json_encode(['error' => 'Unauthorized']));
     }
-    // Hard session-lifetime + User-Agent enforcement (centralised in session.php)
+
     enforce_session_json();
 
     if (
@@ -161,8 +128,6 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
         exit(json_encode(['error' => 'Forbidden']));
     }
 
-    // UserRole::from() throws on an unknown option value, so a typo in an
-    // endpoint's required role surfaces as a hard error instead of a silent 403.
     if (isset($options['role']) && UserRole::fromSession() !== UserRole::from($options['role'])) {
         http_response_code(403);
         exit(json_encode(['error' => 'Forbidden: ' . $options['role'] . ' role required']));
@@ -175,10 +140,6 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
         os_require_csrf('header');
     }
 
-    // Per-user access, applied by default rather than per endpoint. 'gate' => false
-    // opts the whole endpoint out; ['gate' => ['table' => false]] opts one parameter
-    // out. Both need a comment at the call site saying why — see os_gate_request_scopes()
-    // and tests/Security/request_scope_inventory.php.
     $gate = $options['gate'] ?? true;
     if ($gate !== false) {
         os_gate_request_scopes(is_array($gate) ? $gate : []);
@@ -187,19 +148,6 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
     return ($options['connect'] ?? true) ? db_connect() : null;
 }
 
-// Read the action name and request body of an action-style JSON endpoint —
-// the four-times-duplicated preamble of api/notes.php, api/comments.php,
-// api/owners.php and api/files.php.
-//
-//   GET   → action from the query string, body stays [].
-//   POST  → an 'application/json' body is decoded and the action read from it;
-//           any other content type (multipart uploads, form posts) reads $_POST,
-//           which is what the Files module's upload actions need.
-//   other → action stays '', which os_api_dispatch() reports as a 400.
-//
-// Returns ['method' => …, 'action' => …, 'body' => …]; destructure by key so a
-// caller that does not need the method does not bind an unused variable.
-// Must run after os_api_bootstrap() — that is what loads api_helpers.php.
 function os_api_action(): array
 {
     $method = $_SERVER['REQUEST_METHOD'];
@@ -224,15 +172,6 @@ function os_api_action(): array
     ];
 }
 
-// Route an action name to its handler with the endpoint-standard error envelope:
-// an empty action and an unrecognised one are 400s, and any Throwable escaping a
-// handler is logged under $logTag and genericized to a 500 — never leaked to the
-// client. $handlers maps action name => callable; handlers are expected to end the
-// request themselves via jsonSuccess()/jsonError(), exactly as they did under the
-// match() blocks this replaces.
-//
-// $missingMessage overrides the empty-action wording for endpoints whose message
-// is referenced elsewhere (api/files.php — see cypress/e2e/security/headers_upload.cy.js).
 function os_api_dispatch(
     string $action,
     array $handlers,
@@ -254,9 +193,6 @@ function os_api_dispatch(
     }
 }
 
-// Build the full OOP object graph used by the form pages (create.php, edit.php).
-// Sets $GLOBALS['conn'] for legacy api_helpers functions and returns the graph
-// as an associative array for destructuring at the call site.
 function os_boot_app(): array
 {
     require_once __DIR__ . '/autoload.php';
@@ -271,7 +207,7 @@ function os_boot_app(): array
 
     $pgConn          = db_connect();
     $db              = new PgConnection($pgConn);
-    $GLOBALS['conn'] = $pgConn; // backward-compat: raw PgSql\Connection for legacy api_helpers functions
+    $GLOBALS['conn'] = $pgConn;
 
     require_once __DIR__ . '/config_store.php';
     $schemas  = new JsonSchemaRepository(config_get('schema') ?? ['tables' => []]);
@@ -283,7 +219,7 @@ function os_boot_app(): array
         new EnumField(),
         new TimestampField(),
         new DateField(),
-        new TextField(), // universal fallback — must be last
+        new TextField(),
     ]);
 
     $records = new PgRecordRepository($db, $schemas, $fkLoader);

@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/api.js — Grid data-fetch layer (api.php?api=list and friends)
-// fetchTableData (paged/filtered/searched), preloadForeignKeys, and comment/subtable count + comment-preview fetchers. All requests send X-Requested-With.
-
 import { debugLog } from '../debug.js';
 import { state } from './state.js';
 

@@ -3,9 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/csv_import.js — CSV import UI (delimiter/encoding/copy-mode persisted in localStorage)
-// Upload + preview, then execute import or create-table via admin/api_csv_import.php (csv_import_*, csv_create_table).
-
 import { apiFetch } from '../../assets/js/util/api.js';
 import { getGlobalSchema } from './app.js';
 
@@ -35,8 +32,6 @@ export async function renderCsvImportPage(ctx) {
     workspaceEl._csvImportGen = (workspaceEl._csvImportGen || 0) + 1;
     const myGen = workspaceEl._csvImportGen;
 
-
-    // ── Module state ──────────────────────────────────────────────────────────
     let csvHeaders          = [];
     let csvPreview          = [];
     let csvRowCount         = 0;
@@ -53,7 +48,6 @@ export async function renderCsvImportPage(ctx) {
     let csvDelimiter        = localStorage.getItem(LS_DELIMITER) || ',';
     let csvEncoding         = localStorage.getItem(LS_ENCODING)  || 'UTF-8';
 
-    // ── Root ──────────────────────────────────────────────────────────────────
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
     wrap.style.paddingBottom = '60px';
@@ -63,7 +57,6 @@ export async function renderCsvImportPage(ctx) {
     heading.textContent = 'CSV Import';
     wrap.appendChild(heading);
 
-    // ── Tabs ──────────────────────────────────────────────────────────────────
     const { panels, activate } = buildCsvTabs(wrap, [
         { id: 'import',  label: 'Import',         icon: 'upload.png' },
         { id: 'config',  label: 'Configuration',  icon: 'car_gear.png' },
@@ -74,18 +67,14 @@ export async function renderCsvImportPage(ctx) {
     const configPanel  = panels['config'];
     const historyPanel = panels['history'];
 
-    // ── TAB 1: Import ─────────────────────────────────────────────────────────
-
     const desc = document.createElement('p');
     desc.style.cssText = 'color:var(--muted);margin:0 0 20px;';
     desc.textContent = 'Import rows from a CSV file into an existing table, or create a new table directly from CSV headers.';
     importPanel.appendChild(desc);
 
-    // Step 1 card
     const card1 = buildCard('Step 1 — Select Table & Upload CSV');
     importPanel.appendChild(card1.el);
 
-    // Table selector row
     const tableRow = buildRow();
     const tableLabel = buildLabel('Target table:');
     tableLabel.style.minWidth = '110px';
@@ -102,12 +91,11 @@ export async function renderCsvImportPage(ctx) {
                 opt.dataset.cols = JSON.stringify(cfg.columns || {});
             }
         }
-    } catch (_) { /* schema unavailable */ }
+    } catch (_) {  }
 
     tableRow.append(tableLabel, tableSelect);
     card1.body.appendChild(tableRow);
 
-    // "Create new table" checkbox
     const createToggleRow = buildRow();
     const createChk = document.createElement('input');
     createChk.type  = 'checkbox';
@@ -119,7 +107,6 @@ export async function renderCsvImportPage(ctx) {
     createToggleRow.append(createChk, createChkLabel);
     card1.body.appendChild(createToggleRow);
 
-    // Delimiter selector
     const delimRow = buildRow();
     const delimLabel = buildLabel('Delimiter:');
     delimLabel.style.minWidth = '80px';
@@ -132,7 +119,6 @@ export async function renderCsvImportPage(ctx) {
     delimRow.append(delimLabel, delimSelect);
     card1.body.appendChild(delimRow);
 
-    // Encoding selector
     const encRow = buildRow();
     const encLabel = buildLabel('Encoding:');
     encLabel.style.minWidth = '80px';
@@ -145,7 +131,6 @@ export async function renderCsvImportPage(ctx) {
     encRow.append(encLabel, encSelect);
     card1.body.appendChild(encRow);
 
-    // New-table form — stacked grid: label column | input column
     const newTableForm = document.createElement('div');
     newTableForm.style.cssText = 'display:none;grid-template-columns:140px 1fr;gap:10px 16px;align-items:center;margin-bottom:16px;max-width:560px;';
 
@@ -171,7 +156,6 @@ export async function renderCsvImportPage(ctx) {
     newTableForm.append(schemaLabel, schemaSelect, nameLabel, nameInput, dispLabel, dispInput);
     card1.body.appendChild(newTableForm);
 
-    // Upload drop zone
     const dropZone = document.createElement('div');
     dropZone.style.cssText = 'border:2px dashed var(--border);border-radius:8px;padding:32px 20px;text-align:center;background:#fff;cursor:pointer;transition:border-color .2s,background .2s;margin-top:16px;';
 
@@ -196,19 +180,16 @@ export async function renderCsvImportPage(ctx) {
     dropZone.append(uploadIcon, uploadMsg, uploadHint, fileInput);
     card1.body.appendChild(dropZone);
 
-    // Step 2 card
     const card2 = buildCard('Step 2 — Map Columns & Execute');
     card2.el.style.display = 'none';
     importPanel.appendChild(card2.el);
 
-    // Persistent result banner — lives outside card2 so resetUploadZone() doesn't erase it
     const resultArea = document.createElement('div');
     importPanel.appendChild(resultArea);
 
     const mappingContainer = document.createElement('div');
     card2.body.appendChild(mappingContainer);
 
-    // Conflict column row
     const conflictRow = buildRow();
     conflictRow.style.cssText = 'display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:20px;';
 
@@ -230,7 +211,6 @@ export async function renderCsvImportPage(ctx) {
     card2.body.appendChild(conflictRow);
     card2.body.appendChild(conflictWarn);
 
-    // Import mode indicator (reads default from config tab / localStorage)
     const modeRow = buildRow();
     modeRow.style.cssText = 'margin-top:16px;margin-bottom:0;gap:10px;align-items:center;';
     const copyModeChk = document.createElement('input');
@@ -259,14 +239,11 @@ export async function renderCsvImportPage(ctx) {
     if (workspaceEl._csvImportGen !== myGen) return;
     workspaceEl.appendChild(wrap);
 
-    // ── TAB 2: Configuration ──────────────────────────────────────────────────
-
     const cfgHeading = document.createElement('h3');
     cfgHeading.style.cssText = 'margin:0 0 20px;';
     cfgHeading.textContent = 'Import Settings';
     configPanel.appendChild(cfgHeading);
 
-    // Default import mode
     const modeCard = buildCard('Default Import Mode');
     configPanel.appendChild(modeCard.el);
 
@@ -322,12 +299,10 @@ export async function renderCsvImportPage(ctx) {
     radioNormal.addEventListener('change', syncModeRadios);
     radioCopy.addEventListener('change', syncModeRadios);
 
-    // Apply initial state from saved default
     if (savedCopy) {
         conflictRow.style.display = 'none';
     }
 
-    // Default delimiter section
     const delimCard = buildCard('Default Delimiter');
     configPanel.appendChild(delimCard.el);
 
@@ -352,7 +327,6 @@ export async function renderCsvImportPage(ctx) {
         }
     });
 
-    // Default encoding section
     const encCard = buildCard('Default Encoding');
     configPanel.appendChild(encCard.el);
 
@@ -377,7 +351,6 @@ export async function renderCsvImportPage(ctx) {
         }
     });
 
-    // Server limits section
     const limitsCard = buildCard('Server Limits');
     configPanel.appendChild(limitsCard.el);
 
@@ -400,7 +373,6 @@ export async function renderCsvImportPage(ctx) {
         limitsGrid.append(lbl, val);
     }
 
-    // Fetch live limits from server
     try {
         const cfgRes  = await apiFetch('api_csv_import.php?action=csv_import_config');
         const cfgData = await cfgRes.json();
@@ -417,16 +389,12 @@ export async function renderCsvImportPage(ctx) {
         limitsCard.body.appendChild(err);
     }
 
-    // ── TAB 3: History ────────────────────────────────────────────────────────
-
     const histTitle = document.createElement('h3');
     histTitle.style.cssText = 'margin:0 0 12px;';
     histTitle.textContent = 'Import History';
 
     const histContainer = document.createElement('div');
     historyPanel.append(histTitle, histContainer);
-
-    // ── Event wiring ──────────────────────────────────────────────────────────
 
     tableSelect.addEventListener('change', () => {
         selectedTable = tableSelect.value;
@@ -504,7 +472,7 @@ export async function renderCsvImportPage(ctx) {
         const isCopy = copyModeChk.checked;
         conflictRow.style.display  = isCopy ? 'none' : '';
         conflictWarn.style.display = 'none';
-        // Sync config tab radios
+
         radioNormal.checked = !isCopy;
         radioCopy.checked   = isCopy;
         localStorage.setItem(LS_COPY_MODE, isCopy ? '1' : '0');
@@ -543,7 +511,6 @@ export async function renderCsvImportPage(ctx) {
 
     execBtn.addEventListener('click', () => (createMode ? createTableAndImport() : executeImport()));
 
-    // Lazy-load history when tab is activated
     const origActivate = activate;
     const wrappedActivate = (id) => {
         origActivate(id);
@@ -552,14 +519,12 @@ export async function renderCsvImportPage(ctx) {
             loadHistory();
         }
     };
-    // Patch tab buttons (re-register after building)
+
     historyPanel.parentElement?.querySelectorAll('button[data-tab]').forEach(btn => {
         if (btn.dataset.tab === 'history') {
             btn.addEventListener('click', () => { if (!historyLoaded) { historyLoaded = true; loadHistory(); } });
         }
     });
-
-    // ── Functions ─────────────────────────────────────────────────────────────
 
     async function loadSchemas() {
         if (schemaSelect.dataset.loaded === '1') return;
@@ -575,7 +540,7 @@ export async function renderCsvImportPage(ctx) {
                 }
                 newTableSchema = schemaSelect.value;
             }
-        } catch (_) { /* keep default */ }
+        } catch (_) {  }
     }
 
     async function handleUpload(file) {
@@ -1022,7 +987,7 @@ export async function renderCsvImportPage(ctx) {
                 return;
             }
             container.appendChild(buildRowLogTable(data.rows));
-        } catch (_) { /* ignore */ }
+        } catch (_) {  }
     }
 
     function buildRowLogTable(rows) {
@@ -1146,8 +1111,6 @@ export async function renderCsvImportPage(ctx) {
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
     function resetDropZone() {
         dropZone.style.borderColor = 'var(--accent-mid)';
         dropZone.style.background  = '#fff';
@@ -1188,8 +1151,6 @@ export async function renderCsvImportPage(ctx) {
         container.appendChild(div);
     }
 }
-
-// ── CSV client-side preview helpers ──────────────────────────────────────────
 
 function loadCSVPreviewLocal(file, delimiter = ',', encoding = 'UTF-8') {
     return new Promise((resolve, reject) => {
@@ -1259,18 +1220,14 @@ function parseCsvLine(line, delimiter = ',') {
 function guessColType(samples) {
     const nonEmpty = samples.filter(v => v !== null && v !== '');
     if (!nonEmpty.length) return 'varchar(255)';
-    // JSON-like or long value → text (safe: no false positives)
+
     if (nonEmpty.some(v => v.length > 200 || ((v[0] === '{' || v[0] === '[') && v.length > 5))) return 'text';
-    // Date/timestamp patterns are distinctive enough to be reliable
+
     if (nonEmpty.every(v => /^\d{4}-\d{2}-\d{2}$/.test(v))) return 'date';
     if (nonEmpty.every(v => /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(v))) return 'timestamp';
-    // int/boolean skipped — 5-row sample is not representative enough;
-    // a column with "0"/"1" in early rows may hold strings like "Physical/motor disability" later.
-    // User must select int4/int8/boolean manually when needed.
+
     return 'varchar(255)';
 }
-
-// ── Tab builder (same pattern as ragBuildTabs) ────────────────────────────────
 
 function buildCsvTabs(wrap, tabs) {
     const bar = document.createElement('div');
@@ -1319,8 +1276,6 @@ function buildCsvTabs(wrap, tabs) {
 
     return { panels, activate };
 }
-
-// ── Micro DOM helpers (module-private) ────────────────────────────────────────
 
 function buildCard(title) {
     const el = document.createElement('div');

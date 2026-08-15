@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/cells/registry.js — CellRenderer: maps column type -> cell renderer fn (register/render/has). Cell modules self-register; render() throws on an unknown type.
-
 const renderers = new Map();
 
 export const CellRenderer = {

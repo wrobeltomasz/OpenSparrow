@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/mass_edit.js — Mass-edit selection bar + bulk panels (edit / owner / export) over selected rows; previews then applies via api/mass_edit.php. Built on BulkPanel.
-
 import { I18n } from '../i18n.js';
 import { showToast } from '../toast.js';
 import { state, clearSelection } from './state.js';
@@ -18,7 +16,6 @@ let panel        = null;
 let ownerPanel   = null;
 let exportPanel  = null;
 
-// Preview state — tracks whether the current payload has been previewed server-side.
 let previewLoaded      = false;
 let lastPreviewPayload = null;
 
@@ -29,8 +26,6 @@ function isEditableCol(name, cfg) {
     return !SKIP_TYPES.has((cfg.type ?? '').toLowerCase().split('(')[0].trim());
 }
 
-// Shared fetch/parse for the api/mass_edit.php CSRF-protected POST actions below;
-// caller keeps its own error handling since that differs (toast vs panel status).
 async function postMassEditJson(url, body) {
     const res = await apiFetch(url, {
         method: 'POST',
@@ -40,7 +35,6 @@ async function postMassEditJson(url, body) {
     return res.json();
 }
 
-// Shared "<label> + control" field wrapper for panel bodies below.
 function makeField(className, labelText, forId, controlEl) {
     const field = document.createElement('div');
     field.className = className;
@@ -52,7 +46,6 @@ function makeField(className, labelText, forId, controlEl) {
     return field;
 }
 
-// Shared "select all/none" quick button for the export column picker below.
 function makeColPickerQuickBtn(label, checked, body, panelInstance) {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -64,8 +57,6 @@ function makeColPickerQuickBtn(label, checked, body, panelInstance) {
     });
     return btn;
 }
-
-// ─── Floating selection bar ───────────────────────────────────────────────────
 
 function getBar() {
     if (bar) return bar;
@@ -145,8 +136,6 @@ function updateBar() {
     }
 }
 
-// ─── Mass duplicate ───────────────────────────────────────────────────────────
-
 async function massDuplicateSelected() {
     const n = state.selectedIds.size;
     if (n === 0) return;
@@ -177,8 +166,6 @@ async function massDuplicateSelected() {
     reloadGrid();
 }
 
-// ─── Mass delete ──────────────────────────────────────────────────────────────
-
 async function massDeleteSelected() {
     const n = state.selectedIds.size;
     if (n === 0) return;
@@ -206,10 +193,7 @@ async function massDeleteSelected() {
     reloadGrid();
 }
 
-// ─── Value input factory ──────────────────────────────────────────────────────
-
 async function buildValueInput(colCfg, colName = '') {
-    // FK column → render a select populated from the reference table
     const fks = window.schema?.tables?.[state.currentTable]?.foreign_keys ?? {};
     if (colName && fks[colName]) {
         const fkCfg   = fks[colName];
@@ -236,7 +220,7 @@ async function buildValueInput(colCfg, colName = '') {
                 );
                 const json = await res.json();
                 refData = json.rows ?? [];
-            } catch { /* leave select empty */ }
+            } catch {  }
         }
 
         refData.forEach(r => {
@@ -300,8 +284,6 @@ async function buildValueInput(colCfg, colName = '') {
     return inp;
 }
 
-// ─── Panel body ───────────────────────────────────────────────────────────────
-
 function clearPreviewUI(panelInstance) {
     previewLoaded      = false;
     lastPreviewPayload = null;
@@ -335,13 +317,11 @@ async function buildMassEditBody(panelInstance) {
     const cols  = window.schema.tables[table].columns ?? {};
     const count = state.selectedIds.size;
 
-    // Scope info
     const scopeEl = document.createElement('p');
     scopeEl.className = 'me-scope-info';
     scopeEl.textContent = I18n.t('mass_edit.scope_info').replace('{n}', count);
     body.appendChild(scopeEl);
 
-    // Column select
     const colSel = document.createElement('select');
     colSel.id = 'me-column';
 
@@ -355,12 +335,10 @@ async function buildMassEditBody(panelInstance) {
     }
     body.appendChild(makeField('bp-field', I18n.t('mass_edit.column'), 'me-column', colSel));
 
-    // Value input
     const valField = makeField('bp-field me-val-field', I18n.t('mass_edit.new_value'), 'me-value', null);
     if (firstKey) valField.appendChild(await buildValueInput(cols[firstKey] ?? {}, firstKey));
     body.appendChild(valField);
 
-    // Null toggle
     const nullRow = document.createElement('label');
     nullRow.className = 'me-null-row';
     const nullCb = document.createElement('input');
@@ -370,7 +348,6 @@ async function buildMassEditBody(panelInstance) {
     nullRow.appendChild(nullCb); nullRow.appendChild(nullSpan);
     body.appendChild(nullRow);
 
-    // Preview button
     const previewBtn = document.createElement('button');
     previewBtn.className = 'me-preview-btn';
     previewBtn.id = 'me-preview-btn';
@@ -378,12 +355,10 @@ async function buildMassEditBody(panelInstance) {
     previewBtn.addEventListener('click', () => runPreview(panelInstance));
     body.appendChild(previewBtn);
 
-    // Preview area
     const previewArea = document.createElement('div');
     previewArea.className = 'me-preview-area';
     body.appendChild(previewArea);
 
-    // Wire change handlers
     colSel.addEventListener('change', () => rebuildValueInput(panelInstance));
     nullCb.addEventListener('change', () => {
         const valEl = body.querySelector('#me-value');
@@ -397,8 +372,6 @@ async function buildMassEditBody(panelInstance) {
         if (e.target.id === 'me-value') clearPreviewUI(panelInstance);
     });
 }
-
-// ─── Preview ──────────────────────────────────────────────────────────────────
 
 async function runPreview(panelInstance) {
     const payload = getPayload(panelInstance);
@@ -469,8 +442,6 @@ async function runPreview(panelInstance) {
     panelInstance.setApplyDisabled(false);
 }
 
-// ─── Apply ────────────────────────────────────────────────────────────────────
-
 function getPayload(panelInstance) {
     const body   = panelInstance.bodyEl;
     const colSel = body.querySelector('#me-column');
@@ -500,7 +471,6 @@ async function applyMassEdit(panelInstance) {
     const payload = getPayload(panelInstance);
     if (!payload) return;
 
-    // Guard: form changed after preview was run
     if (JSON.stringify(payload) !== lastPreviewPayload) {
         panelInstance.setStatus(I18n.t('mass_edit.run_preview_first'), true);
         panelInstance.setApplyDisabled(true);
@@ -549,8 +519,6 @@ function reloadGrid() {
     }
 }
 
-// ─── Panel open ───────────────────────────────────────────────────────────────
-
 async function openPanel() {
     if (!panel) {
         panel = new BulkPanel({
@@ -565,8 +533,6 @@ async function openPanel() {
     panel.clearStatus();
     panel.open();
 }
-
-// ─── Export with column picker ────────────────────────────────────────────────
 
 function buildExportBody(panelInstance) {
     const body = panelInstance.bodyEl;
@@ -653,8 +619,6 @@ function openExportPanel() {
     exportPanel.clearStatus();
     exportPanel.open();
 }
-
-// ─── Mass owner panel ─────────────────────────────────────────────────────────
 
 async function buildOwnerBody(panelInstance) {
     const body = panelInstance.bodyEl;
@@ -753,8 +717,6 @@ function openOwnerPanel() {
     ownerPanel.clearStatus();
     ownerPanel.open();
 }
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
 
 export function initMassEdit() {
     if ((window.USER_ROLE || 'viewer') !== 'editor') return;

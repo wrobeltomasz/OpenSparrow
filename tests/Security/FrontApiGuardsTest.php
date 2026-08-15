@@ -11,46 +11,13 @@ namespace Tests\Security;
 
 use PHPUnit\Framework\TestCase;
 
-/**
- * Structural guards over the frontend data API front controller
- * (public/api.php) and its route modules under includes/frontapi/.
- *
- * The api.php split moved ~1300 lines out of the front controller. Three properties
- * of the original file were load-bearing for access control and none of them is
- * visible in any single module afterwards, which is exactly the kind of invariant a
- * later refactor drops without anything going red:
- *
- *  1. ONE write gate. All six mutating routes resolve their target from one
- *     $body['table'], so require_table_access() runs once, in the shared preamble.
- *     Pushing it into the modules would recreate a hand-kept list of "routes that
- *     remembered to gate" — the same shape as the admin $postActions whitelist and
- *     the per-action DEMO_MODE calls, both of which have silently drifted before.
- *  2. GATE ORDER. The self-service profile actions are permitted for every
- *     authenticated user and therefore run BEFORE the admin block and the viewer
- *     read-only block. The role gates in turn run before the schema is loaded and
- *     filtered. Reordering any of those changes who can reach what.
- *  3. DISPATCH COMPLETENESS. A route naming a module that does not exist, or a
- *     module no route reaches, is dead or broken code — the frontend equivalent of
- *     the $adminModules drift that AdminDispatchRegistryTest covers.
- *
- * Source-level assertions: the front controller needs a session, a database and a
- * live request, so none of this is reachable from a unit test. Comments are stripped
- * first — these passages are heavily commented, and a guard a comment could satisfy
- * is no guard.
- */
 final class FrontApiGuardsTest extends TestCase
 {
     private const API_PHP    = 'public/api.php';
     private const MODULE_DIR = 'includes/frontapi';
 
-    /**
-     * Route modules that run behind the shared write preamble. Their target table is
-     * already resolved and gated by the time they are called, so none of them may
-     * gate it again — nor skip it and gate something of its own.
-     */
     private const WRITE_MODULES = ['record.php', 'calendar.php', 'board.php'];
 
-    /** Modules that legitimately gate a request-supplied ?table= of their own. */
     private const READ_GATING_MODULES = ['list.php', 'm2m.php'];
 
     private static string $root;
@@ -60,7 +27,6 @@ final class FrontApiGuardsTest extends TestCase
         self::$root = dirname(__DIR__, 2);
     }
 
-    /** File contents with comments removed and whitespace collapsed. */
     private function code(string $relPath): string
     {
         $path = self::$root . '/' . $relPath;
@@ -80,7 +46,6 @@ final class FrontApiGuardsTest extends TestCase
         return (string) preg_replace('/\s+/', ' ', $out);
     }
 
-    /** @return list<string> module file names, e.g. ['board.php', …] */
     private function moduleFiles(): array
     {
         $files = [];
@@ -90,8 +55,6 @@ final class FrontApiGuardsTest extends TestCase
         sort($files);
         return $files;
     }
-
-    // ── 1. One write gate ────────────────────────────────────────────────────────
 
     public function testFrontControllerGatesTheWriteTargetExactlyOnce(): void
     {
@@ -141,11 +104,6 @@ final class FrontApiGuardsTest extends TestCase
         }
     }
 
-    /**
-     * The write modules must take the context that only exists once the preamble ran.
-     * A write handler accepting the plain read context would be reachable with an
-     * unresolved, ungated table.
-     */
     public function testWriteHandlersTakeTheWriteContext(): void
     {
         foreach (self::WRITE_MODULES as $module) {
@@ -158,10 +116,6 @@ final class FrontApiGuardsTest extends TestCase
         }
     }
 
-    /**
-     * Read routes that take their own request-supplied ?table= must still gate it
-     * themselves: they run before the write preamble exists.
-     */
     public function testReadModulesGateTheirOwnRequestSuppliedTable(): void
     {
         foreach (self::READ_GATING_MODULES as $module) {
@@ -173,8 +127,6 @@ final class FrontApiGuardsTest extends TestCase
             );
         }
     }
-
-    // ── 2. Gate order ───────────────────────────────────────────────────────────
 
     public function testProfileActionsAnswerBeforeTheRoleGates(): void
     {
@@ -188,7 +140,6 @@ final class FrontApiGuardsTest extends TestCase
         $this->assertIsInt($admin, 'The admin block is gone from public/api.php.');
         $this->assertIsInt($viewer, 'The viewer read-only block is gone from public/api.php.');
 
-        // Deliberate: changing your own password must not depend on your role.
         $this->assertLessThan($admin, $profile, 'The profile actions must answer before the admin block.');
         $this->assertLessThan($viewer, $profile, 'The profile actions must answer before the viewer block.');
     }
@@ -206,11 +157,6 @@ final class FrontApiGuardsTest extends TestCase
         $this->assertLessThan($schema, $viewer, 'The viewer block must run before the schema is read.');
     }
 
-    /**
-     * Only the access-filtered document may be sent to a client. The unfiltered
-     * $schema stays internal so config-supplied lookups keep resolving — see
-     * AccessScopeEndpointGuardTest::testSchemaEndpointIsFilteredByTableAccess().
-     */
     public function testOnlyTheFilteredSchemaIsHandedToTheContext(): void
     {
         $src = $this->code(self::API_PHP);
@@ -225,9 +171,6 @@ final class FrontApiGuardsTest extends TestCase
         );
     }
 
-    // ── 3. Dispatch completeness ────────────────────────────────────────────────
-
-    /** Module base names named anywhere in the front controller's route tables. */
     private function referencedModules(): array
     {
         $src = $this->code(self::API_PHP);
@@ -238,7 +181,7 @@ final class FrontApiGuardsTest extends TestCase
         foreach (array_merge($read, $write) as $m) {
             $modules[$m[1] . '.php'] = true;
         }
-        // Reached by a direct call rather than a route table.
+
         preg_match_all("/osFrontApiHandler\('([a-z_0-9]+)'/", $src, $direct, PREG_SET_ORDER);
         foreach ($direct as $m) {
             $modules[$m[1] . '.php'] = true;
@@ -263,7 +206,6 @@ final class FrontApiGuardsTest extends TestCase
 
     public function testEveryModuleIsReachable(): void
     {
-        // context.php holds the two context classes, not a route.
         $routable = array_values(array_diff($this->moduleFiles(), ['context.php']));
         $orphans  = array_values(array_diff($routable, $this->referencedModules()));
 
@@ -277,8 +219,6 @@ final class FrontApiGuardsTest extends TestCase
 
     public function testReferencedModulesWereActuallyParsed(): void
     {
-        // Guards the regexes above: if the route tables are reformatted and stop
-        // matching, every assertion in this section would pass on an empty list.
         $this->assertGreaterThanOrEqual(
             8,
             count($this->referencedModules()),

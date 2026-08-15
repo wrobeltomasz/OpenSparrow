@@ -3,12 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/etl.js — ETL admin module (external source → PostgreSQL import; MySQL,
-// MariaDB, PostgreSQL, SQLite)
-// 5 tabs: Sources (2+ named source connections), Jobs (each picks a source), Schedule,
-// History, Flows (ordered chains of existing jobs — see etl_flow.js).
-// Persists the "etl" config via etl_save (optimistic-lock version).
-// Cron worker: cron/cron_etl.php.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs } from './ui.js';
 import { escHtml } from '../../assets/js/util/esc.js';
@@ -74,7 +68,6 @@ function sourceLabel(src) {
     return (src.name || '(unnamed source)') + ' — ' + (src.driver || 'mysql') + '://' + where;
 }
 
-/* ---------- Sources tab ---------- */
 function renderSourcesTab(panel) {
     const status = mkStatus();
     const list = document.createElement('div');
@@ -249,7 +242,6 @@ function buildSourceCard(src, idx, redraw, status) {
     return card;
 }
 
-/* ---------- Jobs tab ---------- */
 function renderJobsTab(panel) {
     const status = mkStatus();
     const list = document.createElement('div');
@@ -358,7 +350,7 @@ function buildJobCard(job, idx, redraw, status) {
             if (job.target_table === t) o.selected = true;
             targetTable.appendChild(o);
         });
-        // Keep the stored value if it's still present; otherwise default to the first table.
+
         if (!tables.includes(job.target_table)) {
             job.target_table = tables[0];
         }
@@ -488,7 +480,7 @@ function buildJobCard(job, idx, redraw, status) {
     btnRun.textContent = 'Run now';
     btnRun.style.marginLeft = '8px';
     btnRun.onclick = async () => {
-        if (!(await saveConfig(status))) return; // persist so the cron reads the latest job
+        if (!(await saveConfig(status))) return;
         await runCronAction('run_etl', { job_id: job.id }, out);
     };
 
@@ -507,7 +499,6 @@ function renderPreview(columns, rows) {
     return head + '\n' + '-'.repeat(head.length) + '\n' + lines.join('\n');
 }
 
-/* ---------- Schedule tab ---------- */
 function renderScheduleTab(panel) {
     const status = mkStatus();
 
@@ -538,7 +529,6 @@ function renderScheduleTab(panel) {
     panel.append(fg('', enabledLbl), fg('Frequency', freq), btnSave, status, guide);
 }
 
-/* ---------- History tab ---------- */
 async function renderHistoryTab(panel) {
     const status = mkStatus();
     const tableWrap = document.createElement('div');
@@ -593,13 +583,10 @@ function buildJobHistory(rows) {
     );
 }
 
-/* ---------- entry ---------- */
 export async function renderEtlPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '<p class="c-muted" style="padding:16px;">Loading ETL configuration…</p>';
 
-    // Reset the per-session schema/table caches so reopening the page re-reads them
-    // (schemas/tables may have changed since the last visit).
     schemasPromise = null;
     tablesCache.clear();
 

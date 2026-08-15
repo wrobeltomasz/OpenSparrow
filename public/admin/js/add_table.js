@@ -3,7 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/add_table.js — "Add Table" wizard: builds a new DB table from column definitions/presets and creates it via api.php (create_table). COLUMN_TYPES list.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 
@@ -17,12 +16,10 @@ const COLUMN_TYPES = [
     { value: 'timestamp',    label: 'timestamp' },
 ];
 
-// Preset column definitions
 const PRESET_TIMESTAMPS = [
     { name: 'created_at', type: 'timestamp', not_null: true,  default: 'now()', index: '', comment: '', fk_table: '', fk_column: '' },
     { name: 'updated_at', type: 'timestamp', not_null: true,  default: 'now()', index: '', comment: '', fk_table: '', fk_column: '' },
 ];
-
 
 function post(action, body) {
     return apiFetch('api.php?action=' + action, {
@@ -31,7 +28,6 @@ function post(action, body) {
     }).then(r => r.json());
 }
 
-// Returns all columns to be created: user-defined + active presets
 function buildAllColumns(state) {
     const all = [...state.columns];
     if (state.presetTimestamps) all.push(...PRESET_TIMESTAMPS);
@@ -51,7 +47,6 @@ export function renderAddTableEditor(ctx) {
         registerInSchema: true,
     };
 
-    // -- Page header -------------------------------------------------------
     const h2 = document.createElement('h2');
     h2.style.marginTop = '0';
     h2.textContent = 'Add New Table';
@@ -66,7 +61,6 @@ export function renderAddTableEditor(ctx) {
     form.style.maxWidth = '640px';
     workspaceEl.appendChild(form);
 
-    // -- Table Name --------------------------------------------------------
     const nameGroup = document.createElement('div');
     nameGroup.className = 'form-group';
     const nameLabel = document.createElement('label');
@@ -91,7 +85,6 @@ export function renderAddTableEditor(ctx) {
     nameGroup.appendChild(nameHint);
     form.appendChild(nameGroup);
 
-    // -- Database Schema ---------------------------------------------------
     const schemaGroup = document.createElement('div');
     schemaGroup.className = 'form-group';
     const schemaLabel = document.createElement('label');
@@ -112,7 +105,6 @@ export function renderAddTableEditor(ctx) {
     schemaGroup.appendChild(schemaHint);
     form.appendChild(schemaGroup);
 
-    // -- Display Name ------------------------------------------------------
     let displayNameTouched = false;
     const displayNameGroup = document.createElement('div');
     displayNameGroup.className = 'form-group';
@@ -134,7 +126,6 @@ export function renderAddTableEditor(ctx) {
     displayNameGroup.appendChild(displayNameHint);
     form.appendChild(displayNameGroup);
 
-    // -- Preset Columns ----------------------------------------------------
     const presetsWrap = document.createElement('div');
     presetsWrap.style.cssText = 'margin-top:24px;padding:16px;background:var(--accent-light);border-radius:var(--radius);border:1px solid var(--border-light);';
 
@@ -171,7 +162,6 @@ export function renderAddTableEditor(ctx) {
 
     form.appendChild(presetsWrap);
 
-    // -- User-defined Columns ----------------------------------------------
     const columnsWrap = document.createElement('div');
     columnsWrap.style.marginTop = '28px';
     form.appendChild(columnsWrap);
@@ -184,7 +174,6 @@ export function renderAddTableEditor(ctx) {
         colTitle.textContent = 'Additional Columns';
         columnsWrap.appendChild(colTitle);
 
-        // Fixed id row (read-only)
         const idRow = document.createElement('div');
         idRow.className = 'column-block';
         idRow.style.cssText = 'border-left:4px solid var(--muted);opacity:.7;display:flex;align-items:center;gap:16px;padding:12px 16px;';
@@ -196,7 +185,6 @@ export function renderAddTableEditor(ctx) {
             block.className = 'column-block';
             block.style.borderLeft = '4px solid var(--accent)';
 
-            // Block header
             const blockHead = document.createElement('div');
             blockHead.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;';
             const colNum = document.createElement('h4');
@@ -210,7 +198,6 @@ export function renderAddTableEditor(ctx) {
             blockHead.appendChild(removeBtn);
             block.appendChild(blockHead);
 
-            // Name
             appendField(block, 'Column Name', () => {
                 const inp = document.createElement('input');
                 inp.type = 'text';
@@ -225,7 +212,6 @@ export function renderAddTableEditor(ctx) {
                 return inp;
             });
 
-            // Type
             appendField(block, 'Type', () => {
                 const sel = document.createElement('select');
                 sel.style.maxWidth = '300px';
@@ -239,7 +225,6 @@ export function renderAddTableEditor(ctx) {
                 return sel;
             });
 
-            // NOT NULL
             appendField(block, 'Not Null', () => {
                 const wrap = document.createElement('div');
                 wrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
@@ -255,7 +240,6 @@ export function renderAddTableEditor(ctx) {
                 return wrap;
             });
 
-            // Default
             appendField(block, 'Default', () => {
                 const inp = document.createElement('input');
                 inp.type = 'text';
@@ -266,7 +250,6 @@ export function renderAddTableEditor(ctx) {
                 return inp;
             }, 'Expressions: now(), current_timestamp, true, false, null. Numbers and quoted strings also accepted.');
 
-            // Index
             appendField(block, 'Index', () => {
                 const sel = document.createElement('select');
                 sel.style.maxWidth = '260px';
@@ -285,7 +268,6 @@ export function renderAddTableEditor(ctx) {
                 return sel;
             });
 
-            // Comment
             appendField(block, 'Comment', () => {
                 const inp = document.createElement('input');
                 inp.type = 'text';
@@ -295,7 +277,6 @@ export function renderAddTableEditor(ctx) {
                 return inp;
             });
 
-            // Foreign Key
             appendField(block, 'Foreign Key', () => {
                 const row = document.createElement('div');
                 row.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
@@ -340,7 +321,6 @@ export function renderAddTableEditor(ctx) {
             columnsWrap.appendChild(block);
         });
 
-        // + Add Column
         const addColBtn = document.createElement('button');
         addColBtn.className = 'btn btn-success';
         addColBtn.textContent = '+ Add Column';
@@ -356,7 +336,6 @@ export function renderAddTableEditor(ctx) {
 
     renderColumns();
 
-    // -- Register in the app schema config -------------------------------------------
     const registerWrap = document.createElement('div');
     registerWrap.style.cssText = 'margin-top:24px;padding:16px;background:var(--accent-light);border-radius:var(--radius);border:1px solid var(--border-light);';
 
@@ -380,7 +359,6 @@ export function renderAddTableEditor(ctx) {
     registerWrap.appendChild(registerLabel);
     form.appendChild(registerWrap);
 
-    // -- Submit ------------------------------------------------------------
     const submitWrap = document.createElement('div');
     submitWrap.style.marginTop = '32px';
     const submitBtn = document.createElement('button');
@@ -408,14 +386,12 @@ export function renderAddTableEditor(ctx) {
         submitBtn.textContent = 'Creating…';
 
         try {
-            // 1. Create table (id only)
             const createData = await post('create_table', { schema: state.schema, table: state.tableName });
             if (createData.status !== 'success') {
                 showStatusPill(statusAnchor, createData.error || 'Failed to create table.', 'error');
                 return;
             }
 
-            // 2. Add all columns (user-defined + presets)
             for (const col of buildAllColumns(state)) {
                 const payload = { schema: state.schema, table: state.tableName, column: col.name, type: col.type };
                 if (col.not_null)                    payload.not_null  = true;
@@ -431,7 +407,6 @@ export function renderAddTableEditor(ctx) {
                 }
             }
 
-            // 3. Register in the app schema config if requested
             if (state.registerInSchema) {
                 const regData = await post('schema_add_table', {
                     table:        state.tableName,
@@ -455,7 +430,6 @@ export function renderAddTableEditor(ctx) {
 
             showStatusPill(statusAnchor, `Table "${state.tableName}" created successfully!`, 'success');
 
-            // Reset form
             state.tableName = '';
             state.displayName = '';
             state.columns = [];
@@ -465,7 +439,6 @@ export function renderAddTableEditor(ctx) {
             displayNameInput.value = '';
             schemaInput.value = state.schema;
             renderColumns();
-
         } catch (err) {
             showStatusPill(statusAnchor, 'Network error: ' + err.message, 'error');
         } finally {
@@ -475,7 +448,6 @@ export function renderAddTableEditor(ctx) {
     });
 }
 
-// Helper: appends a form-group with label + control + optional hint to parent
 function appendField(parent, labelText, buildControl, hintText) {
     const grp = document.createElement('div');
     grp.className = 'form-group';

@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// admin/js/settings.js — General settings page (renderSettingsPage): loads/saves app + chat-bubble + custom-logo settings via api.php (get/set_*_setting, upload_logo, remove_logo).
+
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 import { createPageHeader, buildInnerTabs } from './ui.js';
@@ -49,8 +48,6 @@ export async function renderSettingsPage(ctx) {
     renderDatabaseSection(databasePanel);
     renderAuditEditor({ workspaceEl: auditPanel });
 
-    // ── Language Settings card ─────────────────────────────────────────────
-
     const card = document.createElement('div');
     card.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
 
@@ -64,7 +61,6 @@ export async function renderSettingsPage(ctx) {
     cardDesc.textContent = 'Set the site-wide default language. Language files live in languages/*.json.';
     card.appendChild(cardDesc);
 
-    // Default language select
     const defRow = document.createElement('div');
     defRow.style.cssText = 'margin-bottom:20px;';
 
@@ -87,7 +83,6 @@ export async function renderSettingsPage(ctx) {
     defRow.appendChild(defSelect);
     card.appendChild(defRow);
 
-    // Save button + status pill anchor
     const saveRow = document.createElement('div');
     saveRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
 
@@ -123,8 +118,6 @@ export async function renderSettingsPage(ctx) {
     card.appendChild(saveRow);
 
     languagePanel.appendChild(card);
-
-    // ── AI Chat Bubble card ────────────────────────────────────────────────
 
     const bubbleCard = document.createElement('div');
     bubbleCard.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
@@ -186,8 +179,6 @@ export async function renderSettingsPage(ctx) {
 
     chatBubblePanel.appendChild(bubbleCard);
 
-    // ── Custom Logo card ────────────────────────────────────────────────────
-
     const logoCard = document.createElement('div');
     logoCard.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';
 
@@ -201,7 +192,6 @@ export async function renderSettingsPage(ctx) {
     logoDesc.textContent = 'Replace the default OpenSparrow logo shown in the frontend header with your own image. PNG, JPEG or WEBP, up to 2 MB.';
     logoCard.appendChild(logoDesc);
 
-    // App name — shown as the heading on the login page in place of "OpenSparrow"
     const appNameRow = document.createElement('div');
     appNameRow.style.cssText = 'margin-bottom:20px;';
 
@@ -387,8 +377,6 @@ export async function renderSettingsPage(ctx) {
     logoCard.appendChild(logoBtnRow);
 
     brandingPanel.appendChild(logoCard);
-
-    // ── Info card ──────────────────────────────────────────────────────────
 
     const infoCard = document.createElement('div');
     infoCard.style.cssText = 'padding:14px 18px; background:var(--bg); border:1px solid var(--border); border-radius:8px;   max-width:540px;';

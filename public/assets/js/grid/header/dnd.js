@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/header/dnd.js — initColumnDnD(): drag-and-drop column reordering (updates state via reorderColumns).
-
 import { state, reorderColumns } from '../state.js';
 
 export function initColumnDnD(th, col, onReorder) {

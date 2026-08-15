@@ -32,7 +32,6 @@
 </div>
 <?php endif; ?>
 
-<!-- Header -->
 <header class="admin-header">
     <div class="admin-header-left">
         <a href="/" class="brand-logo">
@@ -58,5 +57,4 @@
     </div>
 </header>
 
-<!-- Main layout -->
 <div class="admin-layout">

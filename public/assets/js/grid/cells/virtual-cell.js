@@ -3,16 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/cells/virtual-cell.js — Computed/virtual column: computeVirtual(formula, row) evaluates op over cols (used at load-time pre-compute and in the renderer); registers 'virtual'.
-
 import { CellRenderer } from './registry.js';
 
-/**
- * Compute a virtual column value from a row using a formula definition.
- * Called both at load time (pre-compute into row) and in the cell renderer.
- *
- * formula: { op, cols: string[], separator?: string }
- */
 export function computeVirtual(formula, row) {
     if (!formula?.op || !Array.isArray(formula.cols) || formula.cols.length === 0) return '';
 
@@ -59,7 +51,6 @@ function renderVirtualCell({ row, col, colCfg }) {
     td.dataset.column = col;
     td.dataset.id = row['id'];
 
-    // Value already pre-computed by loadTable; fall back to on-the-fly compute
     const value = row[col] !== undefined
         ? row[col]
         : computeVirtual(colCfg.formula, row);

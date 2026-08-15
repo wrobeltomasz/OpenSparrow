@@ -7,20 +7,9 @@
 
 declare(strict_types=1);
 
-// api/print.php — Print templates API (print.php page + admin Printouts editor)
-// Auth gate: session + UA enforcement; CSRF on POST
-// actions: list (GET), config (GET, admin), columns (GET, admin — live column list of a
-// PostgreSQL view), data (GET — template blocks + view rows, optionally filtered by
-// p_<param key> query args), param_options (GET — dropdown values for one report
-// parameter), save (POST, admin)
-// Templates live in the spw_config store under key "print" (see includes/config_store.php);
-// each template is bound to a PostgreSQL view registered in the "views" config —
-// never to raw SQL from the client.
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/config_store.php';
 
-// Auth gate + header CSRF on POST; connect=false — actions open their own connection
 os_api_bootstrap(['connect' => false]);
 
 $role   = $_SESSION['role'] ?? 'viewer';
@@ -32,10 +21,6 @@ $printConfig  = $printRow['value'] ?? [];
 $printVersion = $printRow['version'] ?? 0;
 $prints       = $printConfig['prints'] ?? [];
 
-/**
- * PostgreSQL-sourced views registered in the "views" config — the only allowed
- * data sources for print templates. Returns name => view config.
- */
 function print_available_views(): array
 {
     $decoded = config_get('views');
@@ -55,10 +40,6 @@ function print_available_views(): array
     return $out;
 }
 
-/**
- * Whitelist-validate one template payload from the admin editor.
- * Returns the sanitized template, or null when structurally invalid.
- */
 function print_sanitize_template(array $tpl, array $availableViews): ?array
 {
     $view = (string) ($tpl['view'] ?? '');
@@ -95,7 +76,6 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
         } elseif ($type === 'table') {
             $cols = [];
             foreach (array_slice((array) ($block['columns'] ?? []), 0, 50) as $col) {
-                // Accepts a legacy bare column-name string, or {name, width?, align?}.
                 $name = is_string($col) ? $col : (string) ($col['name'] ?? '');
                 if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $name)) {
                     continue;
@@ -144,8 +124,6 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
             'required' => !empty($prm['required']),
         ];
 
-        // Optional lookup source (e.g. an employees view) for the dropdown options;
-        // falls back to DISTINCT values of the main view's own $column when absent.
         $sourceView = (string) ($prm['source_view'] ?? '');
         $valueCol   = (string) ($prm['value_column'] ?? '');
         $labelCol   = (string) ($prm['label_column'] ?? '');
@@ -176,15 +154,13 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
 }
 
 try {
-    /* LIST — visible print templates for FE menu/selector */
     if ($action === 'list' && $method === 'GET') {
         $result = [];
         foreach ($prints as $name => $cfg) {
             if (!empty($cfg['hidden'])) {
                 continue;
             }
-            // Per-user printout access. Unlike 'hidden' this is an access rule, so it
-            // also guards data/param_options below — a hidden menu entry is not a boundary.
+
             if (!user_can_access_print((string) $name)) {
                 continue;
             }
@@ -200,11 +176,10 @@ try {
         exit;
     }
 
-    /* CONFIG — full config + selectable PostgreSQL views for the admin editor */
     if ($action === 'config' && $method === 'GET' && $role === 'admin') {
         echo json_encode([
             'status' => 'ok',
-            // (object) keeps an empty map as {} in JSON — [] would become a JS array
+
             'config'  => ['prints' => (object) $prints],
             'version' => $printVersion,
             'views'   => array_keys(print_available_views()),
@@ -212,7 +187,6 @@ try {
         exit;
     }
 
-    /* COLUMNS — live column list of one registered PostgreSQL view (admin editor variables) */
     if ($action === 'columns' && $method === 'GET' && $role === 'admin') {
         $viewName = $_GET['view'] ?? '';
         $views    = print_available_views();
@@ -244,7 +218,6 @@ try {
         exit;
     }
 
-    /* DATA — template blocks + rows of the bound view for the print page */
     if ($action === 'data' && $method === 'GET') {
         $printName = $_GET['print'] ?? '';
         if (!isset($prints[$printName])) {
@@ -266,9 +239,6 @@ try {
             $conn       = db_connect();
             $schemaName = $views[$viewName]['schema'] ?? sys_schema();
 
-            // Params are filtered server-side to those declared on this template — the
-            // column identifier comes only from print.json (admin-sanitized), never
-            // directly from the request; the value is always bound via pg_query_params.
             $where       = [];
             $queryParams = [];
             foreach ($paramDefs as $p) {
@@ -315,7 +285,6 @@ try {
         exit;
     }
 
-    /* PARAM OPTIONS — selectable values for one report parameter's dropdown */
     if ($action === 'param_options' && $method === 'GET') {
         $printName = $_GET['print'] ?? '';
         $paramKey  = $_GET['key'] ?? '';
@@ -344,8 +313,6 @@ try {
         $conn = db_connect();
 
         if (!empty($param['source_view']) && isset($views[$param['source_view']])) {
-            // Lookup source: a separate registered view supplies value/label pairs
-            // (e.g. v_employees.id / v_employees.full_name for an employee picker).
             $srcView    = $param['source_view'];
             $schemaName = $views[$srcView]['schema'] ?? sys_schema();
             $valueIdent = pg_ident($param['value_column']);
@@ -360,7 +327,6 @@ try {
                 $labelIdent
             );
         } else {
-            // Self-source: distinct values of the template's own filter column.
             $viewName = (string) ($cfg['view'] ?? '');
             if ($viewName === '' || !isset($views[$viewName])) {
                 echo json_encode(['status' => 'ok', 'options' => []]);
@@ -393,7 +359,6 @@ try {
         exit;
     }
 
-    /* SAVE CONFIG — persist to the spw_config store, key "print" (admin only) */
     if ($action === 'save' && $method === 'POST' && $role === 'admin') {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!is_array($body) || !isset($body['prints']) || !is_array($body['prints'])) {
@@ -401,8 +366,7 @@ try {
             echo json_encode(['error' => 'Invalid payload']);
             exit;
         }
-        // Optimistic lock: the editor echoes back the version it loaded; a stale
-        // version means someone else saved in the meantime — reject with 409.
+
         $expectedVersion = isset($body['version']) && is_numeric($body['version'])
             ? (int) $body['version'] : null;
 

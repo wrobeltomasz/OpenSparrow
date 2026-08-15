@@ -5,17 +5,10 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// setup_api.php — First-run setup wizard API endpoint
-// Refuses to run (403) if config/database.json already exists — single-use by design
-// actions: test_connection (validate PG credentials) and init_database (create schema/tables + admin user, then write config/database.json)
-// SSRF guard: rejects private/loopback IPs (is_private_ip); libpq connstr values escaped (pg_connstr_escape); request body size-limited
-
-// Prevent PHP warnings/notices from polluting JSON output
 ini_set('display_errors', '0');
 
 header('Content-Type: application/json');
 
-// Check if already configured - reject setup if database.json exists
 if (file_exists(__DIR__ . '/../config/database.json')) {
     http_response_code(403);
     echo json_encode([
@@ -27,26 +20,20 @@ if (file_exists(__DIR__ . '/../config/database.json')) {
 
 $action = $_GET['action'] ?? '';
 
-// Escape a value for use in a libpq keyword=value connection string.
-// Single-quote the value and escape backslashes and single quotes inside it.
 function pg_connstr_escape(string $value): string
 {
     return "'" . str_replace(['\\', "'"], ['\\\\', "\\'"], $value) . "'";
 }
 
-// Reject private/loopback IP ranges to prevent SSRF via test_connection.
-// Only applies when the host parses as a numeric IP; hostnames are not blocked
-// (the PG server may legitimately live on an internal DNS name).
 function is_private_ip(string $host): bool
 {
     $ip = filter_var($host, FILTER_VALIDATE_IP);
     if ($ip === false) {
-        return false; // hostname — allow
+        return false;
     }
     return !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
 }
 
-// Read and size-limit the JSON request body.
 function read_json_body(int $maxBytes = 8192): ?array
 {
     $raw = fread(fopen('php://input', 'r'), $maxBytes + 1);
@@ -57,8 +44,6 @@ function read_json_body(int $maxBytes = 8192): ?array
     return is_array($data) ? $data : null;
 }
 
-// Action: test_connection
-// Tests PostgreSQL connectivity with provided credentials
 if ($action === 'test_connection') {
     $data = read_json_body();
     if ($data === null) {
@@ -80,7 +65,6 @@ if ($action === 'test_connection') {
         exit;
     }
 
-    // Validate port
     if ($port < 1 || $port > 65535) {
         echo json_encode([
             'success' => false,
@@ -89,7 +73,6 @@ if ($action === 'test_connection') {
         exit;
     }
 
-    // Reject private/reserved IPs to prevent SSRF probing
     if (is_private_ip($host)) {
         echo json_encode([
             'success' => false,
@@ -98,7 +81,6 @@ if ($action === 'test_connection') {
         exit;
     }
 
-    // Build connection string
     $connStr = "host=" . pg_connstr_escape($host) .
                " port=" . (int)$port .
                " dbname=" . pg_connstr_escape($dbname) .
@@ -106,11 +88,9 @@ if ($action === 'test_connection') {
                " password=" . pg_connstr_escape($password) .
                " connect_timeout=5";
 
-    // Attempt connection
     $conn = @pg_connect($connStr);
 
     if (!$conn) {
-        // Sanitize error message (don't expose internal PG details)
         $safeError = 'Connection failed. Check host, port, database name, username, or password.';
         echo json_encode([
             'success' => false,
@@ -119,7 +99,6 @@ if ($action === 'test_connection') {
         exit;
     }
 
-    // Connection successful - get schema list
     $schemas = [];
     $res = @pg_query($conn, "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('pg_catalog', 'information_schema') ORDER BY schema_name");
     if ($res) {
@@ -138,8 +117,6 @@ if ($action === 'test_connection') {
     exit;
 }
 
-// Action: init_database
-// Initializes database schema, tables, and default admin account
 if ($action === 'init_database') {
     $data = read_json_body();
     if ($data === null) {
@@ -165,7 +142,6 @@ if ($action === 'init_database') {
         exit;
     }
 
-    // Validate schema name (alphanumeric + underscore)
     if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $schema)) {
         echo json_encode([
             'success' => false,
@@ -174,8 +150,6 @@ if ($action === 'init_database') {
         exit;
     }
 
-    // Never let the wizard drop 'public' — it is PostgreSQL's own default
-    // schema and almost never something the operator actually meant to wipe.
     if ($dropSchema && strtolower($schema) === 'public') {
         echo json_encode([
             'success' => false,
@@ -184,7 +158,6 @@ if ($action === 'init_database') {
         exit;
     }
 
-    // Reject private/reserved IPs (same SSRF guard as test_connection)
     if (is_private_ip($host)) {
         echo json_encode([
             'success' => false,
@@ -194,7 +167,6 @@ if ($action === 'init_database') {
     }
 
     try {
-        // Connect to database
         $connStr = "host=" . pg_connstr_escape($host) .
                    " port=" . (int)$port .
                    " dbname=" . pg_connstr_escape($dbname) .
@@ -208,7 +180,6 @@ if ($action === 'init_database') {
             throw new Exception('Could not connect to database. Verify credentials and try again.');
         }
 
-        // Helper function to build table identifier
         function table_ident($schema, $table)
         {
             return '"' . str_replace('"', '""', $schema) . '"."' . str_replace('"', '""', $table) . '"';
@@ -225,12 +196,6 @@ if ($action === 'init_database') {
             }
         }
 
-        // The spw_* DDL is shared with the admin init_db action so the two entry points
-        // cannot drift apart — see includes/system_tables.php. This wizard only adds the
-        // bootstrap (schema + migration tracker) around it, applies the table/column
-        // descriptions, the 3.1 note-reminder column change and the 3.3 bodies, and
-        // records every migration as applied. Adding a migration to the admin registry
-        // without adding it here leaves fresh installs behind upgraded ones.
         require_once __DIR__ . '/../includes/system_tables.php';
         $queries = array_merge(
             [
@@ -242,10 +207,9 @@ if ($action === 'init_database') {
             system_tables_user_contact_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
             system_tables_clickstats_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
             [
-                // Note reminders carry a time — see 3.1_notes_reminder_time in the admin registry.
+
                 "ALTER TABLE " . table_ident($schema, 'spw_notes') . " ALTER COLUMN reminder_date TYPE timestamp",
-                // Every migration key in the admin registry must be recorded here too, or a
-                // fresh install reports pending migrations it has in fact already applied.
+
                 "INSERT INTO $tMigrations (name) VALUES ('3.0_baseline') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $tMigrations (name) VALUES ('3.1_table_comments') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $tMigrations (name) VALUES ('3.1_notes_reminder_time') ON CONFLICT (name) DO NOTHING",
@@ -254,7 +218,6 @@ if ($action === 'init_database') {
             ]
         );
 
-        // Execute DDL queries
         foreach ($queries as $q) {
             $res = @pg_query($conn, $q);
             if (!$res) {
@@ -263,13 +226,9 @@ if ($action === 'init_database') {
             }
         }
 
-        // Create default admin account (only if no users exist).
-        // Generates a random temporary password returned to the setup wizard for display.
-        // Do not log the password — it is already visible in the wizard response.
         $tmpPassword    = bin2hex(random_bytes(12));
         $firstAdminSalt = bin2hex(random_bytes(32));
-        // setup_api.php runs standalone (before config exists), so it cannot use
-        // the ARGON2_OPTIONS constant from includes/config.php — keep in sync.
+
         $argonOpts      = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
         $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, $argonOpts);
         error_log('[OpenSparrow] First-run admin account created. Change the password shown in the setup wizard immediately after login.');
@@ -288,7 +247,6 @@ if ($action === 'init_database') {
 
         pg_close($conn);
 
-        // Write database.json configuration file
         $configData = [
             'host' => $host,
             'port' => $port,
@@ -310,16 +268,10 @@ if ($action === 'init_database') {
             throw new Exception('Failed to write database.json configuration file.');
         }
 
-        // Verify database.json was written correctly
         if (!file_exists($configPath)) {
             throw new Exception('Configuration file was not created.');
         }
 
-        // Optionally seed the CRM demo app right away. Reuses demo_install_run()
-        // from admin/demo/seed.php (the same code the admin panel's "Demo" page
-        // calls) by establishing a real admin session for this request — safe
-        // here only because setup_api.php is single-use and unreachable once
-        // config/database.json exists (guarded at the top of this file).
         $demoInstalled = false;
         $demoError = null;
         if ($installDemo && $adminId === null) {
@@ -354,9 +306,6 @@ if ($action === 'init_database') {
             }
         }
 
-        // The seed INSERT is a no-op when the database already holds users, so $adminId is
-        // null and $tmpPassword was never stored — handing it to the operator would give
-        // them credentials that cannot log in.
         echo json_encode([
             'success'         => true,
             'message'         => $adminId !== null
@@ -379,7 +328,6 @@ if ($action === 'init_database') {
     exit;
 }
 
-// Invalid action
 http_response_code(400);
 echo json_encode([
     'success' => false,

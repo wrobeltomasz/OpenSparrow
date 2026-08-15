@@ -3,20 +3,14 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/backup.js — Backup & restore page (renderBackupPage): per-table export/import and full backup via api.php (export / import / backup_tables). CSRF via apiFetch().
-
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';
 
 import { escHtml } from '../../assets/js/util/esc.js';
 import { getGlobalSchema } from './app.js';
 
-// spw_config holds the whole application configuration (schema, menu, dashboard,
-// workflows, ...) as one JSONB row per key — treated as "Global Settings" rather
-// than a regular system table, and pulled out of the System Tables (spw_*) group.
 const GLOBAL_SETTINGS_TABLES = ['spw_config', 'spw_config_log'];
 
-// Renders one tab's worth of table checkboxes + its own select-all/backup controls.
 function buildGroupPanel(panel, tables) {
     if (tables.length === 0) {
         const empty = document.createElement('p');
@@ -63,7 +57,6 @@ function buildGroupPanel(panel, tables) {
     btnAll.addEventListener('click',  () => checkboxes.forEach(cb => cb.checked = true));
     btnNone.addEventListener('click', () => checkboxes.forEach(cb => cb.checked = false));
 
-    // Backup button + result area
     const actionRow = document.createElement('div');
     actionRow.style.cssText = 'margin-top:22px;display:flex;align-items:center;gap:14px;';
     const btnBackup = document.createElement('button');
@@ -136,7 +129,6 @@ export async function renderBackupPage(ctx) {
 
     workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
     const myId = workspaceEl._renderId;
-
 
     let userTables = [];
     let systemTables = [];

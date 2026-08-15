@@ -29,7 +29,7 @@ final class TimestampField implements FieldTypeInterface
         if ($val === '' || $val === null) {
             return new BoundValue(null);
         }
-        // Convert datetime-local format (2026-05-07T20:55:15) to PostgreSQL format
+
         return new BoundValue(str_replace('T', ' ', (string) $val));
     }
 
@@ -54,9 +54,9 @@ final class TimestampField implements FieldTypeInterface
             return '';
         }
         $v = str_replace(' ', 'T', $val);
-        // Strip milliseconds: 2026-05-07T20:55:15.208 → 2026-05-07T20:55:15
+
         $v = (string) preg_replace('/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\.\d+/', '$1', $v);
-        // Strip timezone offset/Z
+
         $v = (string) preg_replace('/([+-]\d{2}(:\d{2})?|Z)$/', '', $v);
         return $v;
     }

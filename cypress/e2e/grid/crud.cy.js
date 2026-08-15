@@ -3,17 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/grid/crud.cy.js
-// ============================================================================
-// Create, Read, Update, Delete Record Tests
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 const TEST_TABLE = 'companies';
-
-// ============================================================================
-// Test Suite: Create Record
-// ============================================================================
 
 describe('OpenSparrow – Create Record Flow', () => {
   before(() => {
@@ -93,7 +84,6 @@ describe('OpenSparrow – Create Record Flow', () => {
   it('handles enum fields with dropdown if present', () => {
     cy.visit(`${BASE}/create.php?table=${TEST_TABLE}`);
 
-    // Enum fields optional — companies table may not have them
     cy.get('body').then($body => {
       const $enums = $body.find('select[data-enum-colors], select[data-enum-status], select');
       if ($enums.length > 0) {
@@ -118,17 +108,12 @@ describe('OpenSparrow – Create Record Flow', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Edit Record
-// ============================================================================
-
 describe('OpenSparrow – Edit Record Flow', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
     waitForGridOrEmpty().then(res => {
       if (res.type === 'grid') {
-        // Edit buttons are hidden behind CSS overflow:hidden; use force:true
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
           .find('[data-cy=row-edit]')
@@ -164,7 +149,7 @@ describe('OpenSparrow – Edit Record Flow', () => {
     tabs.forEach(tab => {
       cy.get('button.tab-btn').then($tabs => {
         const tabNames = $tabs.toArray().map(t => t.textContent.toLowerCase());
-        // Check if at least some of the tabs exist
+
         const hasTab = tabNames.some(name => name.includes(tab.toLowerCase()));
         if (hasTab) {
           cy.contains('button.tab-btn', tab).should('exist');
@@ -229,17 +214,12 @@ describe('OpenSparrow – Edit Record Flow', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Delete Record
-// ============================================================================
-
 describe('OpenSparrow – Delete Record', () => {
   beforeEach(() => {
     loginAsTestUser();
   });
 
   it('displays Delete button in grid row actions', () => {
-    // Delete is in grid row actions, not on edit.php
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
     waitForGridOrEmpty().then(res => {
       if (res.type === 'grid') {
@@ -259,7 +239,6 @@ describe('OpenSparrow – Delete Record', () => {
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
     waitForGridOrEmpty().then(res => {
       if (res.type === 'grid') {
-        // Delete buttons are hidden (overflow:hidden CSS) — check existence not visibility
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
           .find('[data-cy=row-delete]')
@@ -273,10 +252,6 @@ describe('OpenSparrow – Delete Record', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Form Validation
-// ============================================================================
-
 describe('OpenSparrow – Form Validation', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -284,13 +259,10 @@ describe('OpenSparrow – Form Validation', () => {
   });
 
   it('prevents submit with empty required fields', () => {
-    // HTML5 validation should prevent submit
     cy.get('button[type="submit"]').click();
 
-    // Check for validation messages
     cy.get(':invalid, [aria-invalid="true"]').then($invalid => {
       if ($invalid.length > 0) {
-        // Some fields are required
         expect($invalid.length).to.be.greaterThan(0);
       }
     });
@@ -319,10 +291,6 @@ describe('OpenSparrow – Form Validation', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Subtables (M2M, related records)
-// ============================================================================
-
 describe('OpenSparrow – Subtables (if present)', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -340,7 +308,6 @@ describe('OpenSparrow – Subtables (if present)', () => {
   });
 
   it('displays subtable containers if present', () => {
-    // Subtables exist in DOM but may be in hidden tab panels; check existence
     cy.get('div.subtable-container').then($containers => {
       if ($containers.length > 0) {
         cy.wrap($containers).should('exist');
@@ -351,7 +318,6 @@ describe('OpenSparrow – Subtables (if present)', () => {
   });
 
   it('displays Add subtable links if present', () => {
-    // Links exist in DOM but may be in hidden tab panels; check existence
     cy.get('a.btn-add[href*="create.php"]').then($links => {
       if ($links.length > 0) {
         cy.wrap($links).should('exist');
@@ -372,10 +338,6 @@ describe('OpenSparrow – Subtables (if present)', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Create Record — Actual Save
-// ============================================================================
-
 describe('OpenSparrow – Create Record: Actual Save', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -395,12 +357,10 @@ describe('OpenSparrow – Create Record: Actual Save', () => {
       cy.wrap($inputs).first().clear().type(uniqueVal);
       cy.get('button[type="submit"].btn-save').click();
 
-      // Either redirects to grid (success) or stays with an error (missing required fields)
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).then(url => {
         if (url.includes('index.php')) {
           cy.url().should('include', `table=${TEST_TABLE}`);
         } else {
-          // Stayed on create.php — form likely has more required fields
           cy.url().should('include', 'create.php');
           Cypress.log({ message: 'Form has more required fields — stayed on create page' });
         }
@@ -409,15 +369,12 @@ describe('OpenSparrow – Create Record: Actual Save', () => {
   });
 
   it('empty required field shows native validation or stays on page', () => {
-    // Click submit without filling any fields
     cy.get('button[type="submit"].btn-save').click();
 
-    // Either HTML5 :invalid OR still on create.php
     cy.url().then(url => {
       if (url.includes('create.php')) {
         cy.url().should('include', 'create.php');
       } else {
-        // Redirected — table had no required fields
         Cypress.log({ message: 'No required fields — record created with empty values' });
       }
     });
@@ -428,10 +385,6 @@ describe('OpenSparrow – Create Record: Actual Save', () => {
     cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).should('include', `table=${TEST_TABLE}`);
   });
 });
-
-// ============================================================================
-// Test Suite: Edit Record — Actual Save
-// ============================================================================
 
 describe('OpenSparrow – Edit Record: Actual Save', () => {
   beforeEach(() => {
@@ -466,7 +419,6 @@ describe('OpenSparrow – Edit Record: Actual Save', () => {
           cy.wrap($inp).clear().type(newVal);
         });
 
-        // Click "Save & Exit"
         cy.get('button.btn-save[type="submit"], button[onclick*="saveAction"]')
           .first()
           .click();
@@ -475,7 +427,6 @@ describe('OpenSparrow – Edit Record: Actual Save', () => {
           if (afterUrl.includes('index.php') || afterUrl.includes('?saved=1')) {
             cy.url().should('include', TEST_TABLE);
           } else {
-            // Some tables redirect back to edit with ?saved=1
             Cypress.log({ message: 'Stayed on edit page after save' });
           }
         });
@@ -491,7 +442,6 @@ describe('OpenSparrow – Edit Record: Actual Save', () => {
         .first()
         .click();
 
-      // Look for success indicator: ?saved=1 param, toast, or redirect to grid
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).then(afterUrl => {
         const isSuccess = afterUrl.includes('saved=1')
           || afterUrl.includes('index.php')
@@ -500,17 +450,12 @@ describe('OpenSparrow – Edit Record: Actual Save', () => {
         if (isSuccess) {
           expect(isSuccess).to.be.true;
         } else {
-          // Could be inline success message on same page
           cy.get('.toast, .success-msg, [class*="success"]').should('exist');
         }
       });
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Delete Record — Actual Flow
-// ============================================================================
 
 describe('OpenSparrow – Delete Record: Actual Flow', () => {
   beforeEach(() => {
@@ -561,8 +506,6 @@ describe('OpenSparrow – Delete Record: Actual Flow', () => {
 
           cy.wait('@deleteReq', { timeout: CypressHelpers.TIMEOUTS.medium });
 
-          // When pagination active, page repopulates to same count after delete.
-          // Only assert count decrease when all rows fit on one page.
           cy.get('body').then($body => {
             const hasPagination = $body.find('#pagination, .pagination').length > 0;
             if (!hasPagination) {
@@ -576,10 +519,6 @@ describe('OpenSparrow – Delete Record: Actual Flow', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Duplicate Record — Actual Flow
-// ============================================================================
 
 describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
   beforeEach(() => {
@@ -626,7 +565,7 @@ describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
   it('duplicate adds a row on success (no unique constraint)', () => {
     cy.intercept('POST', /index\.php.*duplicate|api.*duplicate/, req => {
       req.continue(res => {
-        res.body = res.body; // passthrough — just observe
+        res.body = res.body;
       });
     }).as('dupCheck');
 
@@ -656,10 +595,6 @@ describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Viewer Role UI
-// ============================================================================
-
 describe('OpenSparrow – Role-Based UI', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -668,7 +603,6 @@ describe('OpenSparrow – Role-Based UI', () => {
   });
 
   it('editor role: Add button is visible; it navigates to create.php', () => {
-    // test user is editor — Add button must be present and functional
     cy.get('#addRow, [data-cy=add]').should('exist').and('be.visible');
   });
 
@@ -677,14 +611,13 @@ describe('OpenSparrow – Role-Based UI', () => {
   });
 
   it('editor role: Data Cleanup button is present', () => {
-    // test user is editor — button must appear
     cy.get('#dataCleanupBtn, [data-cy=data-cleanup]').should('exist');
   });
 
   it('editor role: contenteditable cells are present', () => {
     waitForGridOrEmpty().then(res => {
       if (res.type !== 'grid') return;
-      // test user is editor — at least one text column should be editable inline
+
       cy.get('[contenteditable="true"]').should('have.length.gte', 1);
     });
   });

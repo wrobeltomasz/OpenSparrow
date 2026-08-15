@@ -3,14 +3,11 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/docs.js — Admin documentation page renderer; builds HTML from docs-strings.js STRINGS, language switch persisted in localStorage (sparrow_docs_lang). Languages: en/pl only.
 import { STRINGS } from './docs-strings.js';
 
-// Configuration constants - documentation is maintained in English and Polish only
 const ALL_LANGS = ['en', 'pl'];
 const STORAGE_KEY = 'sparrow_docs_lang';
 
-// HTML generators
 const _h2 = (t) => `<h2 style="border-bottom:2px solid var(--accent-mid);padding-bottom:10px;margin-top:0;color:var(--text);">${t}</h2>`;
 const _h3 = (id, t) => `<h3 id="${id}" style="color:var(--muted);margin-top:30px;">${t}</h3>`;
 const _h4 = (t, c = 'var(--accent-mid)') => `<h4 style="color:var(--muted);margin-top:20px;border-left:3px solid ${c};padding-left:15px;">${t}</h4>`;
@@ -20,24 +17,21 @@ const _ol = (items) => `<ol style="padding-left:20px;">${items.map(i => `<li>${i
 const _warn = (s, t) => `<p style="background:var(--warn-light);padding:10px 14px;border-left:3px solid var(--warn);border-radius:4px;"><strong>${s}</strong> ${t}</p>`;
 
 export function renderDocumentation(ctx) {
-    // Guard against missing context
     if (!ctx || !ctx.workspaceEl) return;
 
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '';
 
-    // Resolve language state
     let lang = localStorage.getItem(STORAGE_KEY) || 'en';
     if (!ALL_LANGS.includes(lang)) lang = 'en';
     const s = STRINGS[lang] || STRINGS.en;
 
-    // Build main wrapper
     const wrapper = document.createElement('div');
     wrapper.appendChild(createLanguageBar(lang, ctx));
-    
+
     const contentArea = createContentArea(s);
     wrapper.appendChild(contentArea);
-    
+
     workspaceEl.appendChild(wrapper);
 }
 
@@ -48,17 +42,16 @@ function createLanguageBar(currentLang, ctx) {
     ALL_LANGS.forEach(l => {
         const btn = document.createElement('button');
         const isActive = currentLang === l;
-        
+
         btn.textContent = l.toUpperCase();
         btn.dataset.lang = l;
         btn.className = 'btn btn-xs ' + (isActive ? 'btn-primary' : 'btn-secondary');
-        
-        // Handle language switch
+
         btn.addEventListener('click', () => {
             localStorage.setItem(STORAGE_KEY, l);
             renderDocumentation(ctx);
         });
-        
+
         langBar.appendChild(btn);
     });
 
@@ -71,7 +64,6 @@ function createContentArea(s) {
     content.innerHTML = buildContent(s);
     return content;
 }
-
 
 function buildContent(s) {
     return `<div>

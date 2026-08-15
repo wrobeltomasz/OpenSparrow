@@ -3,29 +3,21 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/etl_common.js — shared building blocks for the ETL admin modules
-// (etl.js and etl_flow.js). Factors out the form-field helpers, collapsible-card
-// scaffold, run-history table and config persist/run-cron calls those two modules
-// used to each copy verbatim. Inline styles here are layout-only (margin/flex/
-// display); colors use CSS variables per the admin UI standard.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { mkTable, mkThead, td, tdStatus, tdError } from './ui.js';
 
-/** A hidden status line, shown by showStatus(). */
 export function mkStatus() {
     const el = document.createElement('p');
     el.style.cssText = 'margin-top:10px; display:none;';
     return el;
 }
 
-/** Show a status message in an element created by mkStatus(), green on ok / red on error. */
 export function showStatus(el, msg, ok) {
     el.textContent = msg;
     el.style.color = ok ? 'var(--ok)' : 'var(--error)';
     el.style.display = '';
 }
 
-/** A labelled form-group wrapping a control node. */
 export function fg(label, node) {
     const g = document.createElement('div');
     g.className = 'form-group';
@@ -35,7 +27,6 @@ export function fg(label, node) {
     return g;
 }
 
-/** A styled input of the given type. */
 export function input(value, type = 'text') {
     const i = document.createElement('input');
     i.type = type;
@@ -44,10 +35,6 @@ export function input(value, type = 'text') {
     return i;
 }
 
-/**
- * A checkbox paired with an inline label. onChange receives the new checked state.
- * Returns { input, label } so callers can place the label and reference the box.
- */
 export function checkbox(labelText, checked, onChange) {
     const box = input('', 'checkbox');
     box.className = 'adm-check';
@@ -59,11 +46,6 @@ export function checkbox(labelText, checked, onChange) {
     return { input: box, label: lbl };
 }
 
-/**
- * A collapsible column-block card with a chevron header, editable title and a red
- * delete button. Returns { card, body, title }; append fields to body and update
- * title.textContent when the name changes. onDelete runs after an optional confirm.
- */
 export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onDelete, confirmMsg }) {
     const card = document.createElement('div');
     card.className = 'column-block collapsed';
@@ -96,17 +78,10 @@ export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onD
     return { card, body, title };
 }
 
-/**
- * Build a run-history table. `headers` are the column labels; `rowFn(row, helpers)`
- * returns the <td> cells for one row, using helpers.td(text, css),
- * helpers.statusCell(status) (colored badge) and helpers.errorCell(text).
- */
 export function buildHistoryTable(headers, rows, rowFn) {
     const tbl = mkTable();
     mkThead(tbl, headers);
 
-    // Cell builders come from ui.js; the rowFn contract (td/statusCell/errorCell)
-    // is preserved so etl.js and etl_flow.js need no changes.
     const statusCell = tdStatus;
     const errorCell  = tdError;
 
@@ -122,10 +97,6 @@ export function buildHistoryTable(headers, rows, rowFn) {
     return wrap;
 }
 
-/**
- * POST a config payload to the given save action. Returns { ok, version } on success
- * or { ok:false, error } otherwise — callers surface it via showStatus().
- */
 export async function persistConfig(action, payload) {
     try {
         const res  = await apiFetch('api.php?action=' + action, {
@@ -142,11 +113,6 @@ export async function persistConfig(action, payload) {
     }
 }
 
-/**
- * Trigger a cron run action and stream its output into `out`. The backend reports
- * status:'error' when the run exits non-zero, but the captured output is shown either
- * way so failures are visible.
- */
 export async function runCronAction(action, body, out) {
     out.style.display = '';
     out.textContent = 'Running…';

@@ -3,16 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/files.cy.js
-// ============================================================================
-// File Manager Module Tests — files.php
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
-
-// ============================================================================
-// Test Suite: Files Page Structure
-// ============================================================================
 
 describe('OpenSparrow – Files: Page Structure', () => {
   beforeEach(() => {
@@ -76,10 +67,6 @@ describe('OpenSparrow – Files: Page Structure', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Files List Loading
-// ============================================================================
-
 describe('OpenSparrow – Files: List Loading', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -122,10 +109,6 @@ describe('OpenSparrow – Files: List Loading', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Files Search & Filter
-// ============================================================================
-
 describe('OpenSparrow – Files: Search & Filter', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -164,10 +147,6 @@ describe('OpenSparrow – Files: Search & Filter', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Files Clear Filters
-// ============================================================================
-
 describe('OpenSparrow – Files: Clear Filters', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -175,8 +154,6 @@ describe('OpenSparrow – Files: Clear Filters', () => {
     cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
   });
 
-  // The file list reloads asynchronously after every filter change; each step of
-  // the contract has to wait that out before asserting on #clearFilters.
   const listSettled = () =>
     cy.get('#fileTableBody', { timeout: CypressHelpers.TIMEOUTS.medium })
       .invoke('text')
@@ -214,10 +191,6 @@ describe('OpenSparrow – Files: Clear Filters', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Files Upload Form Validation
-// ============================================================================
-
 describe('OpenSparrow – Files: Upload Form', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -241,8 +214,7 @@ describe('OpenSparrow – Files: Upload Form', () => {
         Cypress.log({ message: 'No relation tables available — skipping' });
         return;
       }
-      // The record select only becomes enabled when get_related_records
-      // succeeds — verify against the actual API outcome instead of assuming.
+
       cy.intercept('GET', '**/api/files.php?action=get_related_records*').as('relRecords');
       cy.wrap($sel).select(opts[0].value);
       cy.wait('@relRecords', { timeout: CypressHelpers.TIMEOUTS.long }).then(({ response }) => {
@@ -260,7 +232,7 @@ describe('OpenSparrow – Files: Upload Form', () => {
 
   it('selecting a file populates the file name input', () => {
     cy.get('#fileInput').selectFile('cypress/fixtures/test_upload.txt', { force: true });
-    // After selectFile, the name input should be auto-populated or the input should register
+
     cy.get('#fileInput').then($input => {
       expect($input[0].files.length).to.be.gte(1);
     });
@@ -279,7 +251,7 @@ describe('OpenSparrow – Files: Upload Form', () => {
 
     cy.wait('@uploadReq', { timeout: CypressHelpers.TIMEOUTS.long })
       .its('response.statusCode')
-      // 200/201 = success; 415 = .txt not in allowed_extensions (config-dependent)
+
       .should('be.oneOf', [200, 201, 415]);
 
     cy.get('#uploadStatus', { timeout: CypressHelpers.TIMEOUTS.medium })
@@ -287,10 +259,6 @@ describe('OpenSparrow – Files: Upload Form', () => {
       .should('not.be.empty');
   });
 });
-
-// ============================================================================
-// Test Suite: Files Delete Guard
-// ============================================================================
 
 describe('OpenSparrow – Files: Delete Guard', () => {
   beforeEach(() => {
@@ -322,10 +290,6 @@ describe('OpenSparrow – Files: Delete Guard', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Files Bulk Operations
-// ============================================================================
 
 describe('OpenSparrow – Files: Bulk Operations', () => {
   beforeEach(() => {
@@ -377,7 +341,7 @@ describe('OpenSparrow – Files: Bulk Operations', () => {
       cy.get('#fileBulkTagBtn').click();
       cy.get('#fileTagPanel').should('have.class', 'active');
       cy.get('#fileBulkTagsInput').should('be.visible');
-      // Apply enables only after typing tags
+
       cy.get('#fileTagPanel .bp-apply-btn').should('be.disabled');
       cy.get('#fileBulkTagsInput').type('cypress-tag');
       cy.get('#fileTagPanel .bp-apply-btn').should('not.be.disabled');
@@ -400,10 +364,6 @@ describe('OpenSparrow – Files: Bulk Operations', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Files Mobile
-// ============================================================================
 
 describe('OpenSparrow – Files: Mobile', () => {
   beforeEach(() => {

@@ -18,8 +18,5 @@ interface RecordRepositoryInterface
     public function update(TableConfig $cfg, string|int $id, RecordData $data): void;
     public function insert(TableConfig $cfg, RecordData $data): string|int;
 
-    /**
-     * @return list<array{config: array, rows: list<array>, schema: TableConfig}>
-     */
     public function subtables(TableConfig $cfg, string|int $parentId): array;
 }

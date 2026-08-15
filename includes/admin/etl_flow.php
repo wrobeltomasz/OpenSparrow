@@ -7,14 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/etl_flow.php — admin api.php module: ETL Flows (ordered chains of
-// existing ETL jobs, run sequentially, stop on first failing step).
-// Actions: etl_flow_load, etl_flow_save, run_etl_flow, etl_flow_log, etl_flow_purge_log.
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $isDemoMode and require_not_demo() / admin_db_fail() /
-// admin_error_message() defined by the front controller. Each block emits JSON and exits.
-
 if ($action === 'etl_flow_load') {
     require_once __DIR__ . '/../config_store.php';
     $defaults = [
@@ -103,8 +95,7 @@ if ($action === 'etl_flow_save') {
             'name'            => $name,
             'enabled'         => (bool)($flow['enabled'] ?? true),
             'steps'           => $steps,
-            // Written only by the cron worker — always carry the previous value forward,
-            // matching etl_save's "last_watermark" preservation rule.
+
             'last_run_status' => $prev['last_run_status'] ?? null,
             'last_run_at'     => $prev['last_run_at'] ?? null,
         ];
@@ -158,8 +149,6 @@ if ($action === 'etl_flow_purge_log') {
         90,
         'etl_flow_purge_log',
         'started_at',
-        // Step rows normally cascade away with their parent run (FK ON DELETE CASCADE);
-        // this also sweeps any orphans left over from an interrupted/legacy delete.
         static function (\PgSql\Connection $conn): void {
             $tRunLog  = sys_table('etl_flow_run_log');
             $tStepLog = sys_table('etl_flow_step_log');

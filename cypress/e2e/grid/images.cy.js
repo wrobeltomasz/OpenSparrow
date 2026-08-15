@@ -3,17 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/grid/images.cy.js
-// ============================================================================
-// Record image galleries — admin schema switch, grid column, batch API contract
-// Requires: test / testadmin users (cy.seedDatabase()).
-// The spec is non-destructive: it never enables images on a table, it only checks
-// that the controls and the API behave correctly for the current configuration.
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
 
-/** Click a sidebar admin-tab, expanding its collapsed .nav-section first. */
 function clickAdminTab(dataFile) {
   cy.get(`button.admin-tab[data-file="${dataFile}"]`).then($btn => {
     const $section = $btn.closest('.nav-section');
@@ -42,9 +33,6 @@ describe('OpenSparrow – Images: admin schema editor', () => {
   });
 
   it('table editor exposes an Images section', () => {
-    // Open the first real table card (schema tables render as .column-block
-    // cards, not .item-btn — those are the tab-strip utility buttons like
-    // "All PostgreSQL tables" / "Add New Table" / "M2M Builder").
     cy.get('#workspace .column-block .block-header').first().click();
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.medium })
       .contains('h3', 'Images')

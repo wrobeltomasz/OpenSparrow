@@ -3,12 +3,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/m2m/loader.js — Many-to-many cell data store: loads + caches related items per (table:rowId:m2mIdx); getM2mItems/clearM2mStore.
-
 import { debugLog } from '../../debug.js';
 import { state } from '../state.js';
 
-// Keyed: `${table}:${rowId}:${m2mIdx}` → string[]
 const store = new Map();
 
 export function getM2mItems(rowId, m2mIdx) {

@@ -5,29 +5,20 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// setup.php — First-run database configuration wizard (HTML, standalone)
-// Intentionally standalone (no config.php / db require) so it runs before config/database.json exists
-// Aborts to login.php if database.json already exists; sets its own security headers (X-Frame-Options, CSP, etc.)
-// Renders a 4-step wizard (welcome -> DB connection -> init -> done); all actions POST to setup_api.php
-
-// Check if already configured
 if (file_exists(__DIR__ . '/../config/database.json')) {
     header('Location: login.php');
     exit;
 }
 
-// Standalone i18n: i18n.php only loads language files from disk. Locale detection
-// falls back safely to Accept-Language / 'en' when no DB/config exists yet
-// (settings_value() is guarded and config.php does not open a DB connection on load).
 require_once __DIR__ . '/../includes/i18n.php';
 $lang = htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8');
-// Escaped translation shorthand for this template.
+
 $e = static fn(string $k, array $v = []): string => htmlspecialchars(t($k, $v), ENT_QUOTES, 'UTF-8');
 
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-// 'unsafe-inline' for <script> blocks; styles served from assets/css/ via <link>
+
 header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'");
 ?>
 <!DOCTYPE html>
@@ -49,7 +40,6 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
 
             <div class="step-counter"><span id="step-counter"><?= $e('setup.step_of', ['current' => 1]) ?></span></div>
 
-            <!-- STEP 1: Welcome -->
             <div class="setup-step active" id="step-1">
                 <h2 style="font-size: 16px; margin-top: 0;"><?= $e('setup.welcome_title') ?></h2>
                 <div class="welcome-text">
@@ -66,7 +56,6 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                 </div>
             </div>
 
-            <!-- STEP 2: Database Connection -->
             <div class="setup-step" id="step-2">
                 <h2 style="font-size: 16px; margin-top: 0;"><?= $e('setup.db_conn_title') ?></h2>
                 <div id="status-message-2" class="status-message"></div>
@@ -115,7 +104,6 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                 </div>
             </div>
 
-            <!-- STEP 3: Schema & Info -->
             <div class="setup-step" id="step-3">
                 <h2 style="font-size: 16px; margin-top: 0;"><?= $e('setup.schema_title') ?></h2>
 
@@ -161,7 +149,6 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                 </div>
             </div>
 
-            <!-- STEP 4: Summary & Initialize -->
             <div class="setup-step" id="step-4">
                 <h2 style="font-size: 16px; margin-top: 0;"><?= $e('setup.review_title') ?></h2>
                 <div id="status-message-4" class="status-message"></div>
@@ -197,7 +184,6 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                 </div>
             </div>
 
-            <!-- STEP 5: Complete -->
             <div class="setup-step" id="step-5">
                 <div style="text-align: center;">
                     <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
@@ -211,8 +197,6 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <div><?= $e('setup.password_colon') ?> <code id="created-admin-password"></code></div>
                 </div>
 
-                <!-- Shown instead of the credentials block when the database already held
-                     user accounts, so the seed INSERT was a no-op and there is no password. -->
                 <div id="admin-account-note" class="status-message" hidden></div>
 
                 <div id="demo-install-msg" class="status-message" hidden></div>

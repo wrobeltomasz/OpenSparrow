@@ -3,16 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// cypress/e2e/modules/dashboard.cy.js
-// ============================================================================
-// Dashboard Module Tests — dashboard.php
-// ============================================================================
-
 const BASE = 'http://localhost:8080';
-
-// ============================================================================
-// Test Suite: Dashboard Page Structure
-// ============================================================================
 
 describe('OpenSparrow – Dashboard: Page Structure', () => {
   beforeEach(() => {
@@ -38,10 +29,6 @@ describe('OpenSparrow – Dashboard: Page Structure', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Dashboard Widget Loading
-// ============================================================================
-
 describe('OpenSparrow – Dashboard: Widget Loading', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -54,7 +41,7 @@ describe('OpenSparrow – Dashboard: Widget Loading', () => {
       const loading = $sec.find('.dash-loading').length;
       const widgets = $sec.find('.dash-widget').length;
       const error   = $sec.find('.dash-error').length;
-      // Either loaded or error — not stuck loading
+
       if (loading > 0 && widgets === 0 && error === 0) {
         throw new Error('Dashboard still in loading state');
       }
@@ -100,10 +87,6 @@ describe('OpenSparrow – Dashboard: Widget Loading', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Dashboard Period Filter
-// ============================================================================
-
 describe('OpenSparrow – Dashboard: Period Filter', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
@@ -130,10 +113,6 @@ describe('OpenSparrow – Dashboard: Period Filter', () => {
     });
   });
 });
-
-// ============================================================================
-// Test Suite: Dashboard Widget Visibility Filters
-// ============================================================================
 
 describe('OpenSparrow – Dashboard: Widget Visibility Filters', () => {
   beforeEach(() => {
@@ -190,10 +169,6 @@ describe('OpenSparrow – Dashboard: Widget Visibility Filters', () => {
   });
 });
 
-// ============================================================================
-// Test Suite: Dashboard Navigation
-// ============================================================================
-
 describe('OpenSparrow – Dashboard: Navigation', () => {
   beforeEach(() => {
     loginAsTestUser();
@@ -219,12 +194,7 @@ describe('OpenSparrow – Dashboard: Navigation', () => {
   it('sidebar toggle button exists', () => {
     cy.get('#sidebarToggle, [data-cy=sidebar-toggle]').should('exist');
   });
-
 });
-
-// ============================================================================
-// Test Suite: Dashboard Mobile
-// ============================================================================
 
 describe('OpenSparrow – Dashboard: Mobile', () => {
   beforeEach(() => {

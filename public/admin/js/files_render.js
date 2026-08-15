@@ -3,15 +3,12 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/files_render.js — Files module UI (admin): lists/filters/paginates files via api/files.php (FILES_API). Text type tags ([IMG]/[PDF]/...), 25 per page.
-
 import { apiFetch } from '../../assets/js/util/api.js';
 import { getCsrfToken } from '../../assets/js/util/csrf.js';
 import { showStatusPill } from './app.js';
 
 const FILES_API = '../api/files.php';
 
-// Text indicators for file types
 const TYPE_ICONS = {
     image: '[IMG]', pdf: '[PDF]', doc: '[DOC]',
     spreadsheet: '[XLS]', archive: '[ZIP]', other: '[FILE]',
@@ -19,7 +16,6 @@ const TYPE_ICONS = {
 const ALL_TYPES  = ['image', 'pdf', 'doc', 'spreadsheet', 'archive', 'other'];
 const PER_PAGE   = 25;
 
-// Module state reset on each render
 let _state = {};
 
 function resetState() {
@@ -37,22 +33,18 @@ function resetState() {
     };
 }
 
-// Entry point called by app.js
 export async function renderFilesEditor(ctx) {
     const { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable } = ctx;
     resetState();
     _state.getTableOptions = getTableOptions;
     _state.getColumnOptionsForTable = getColumnOptionsForTable;
-    
-    // Bind directly to global config to avoid overwriting menu settings!
-    _state.config = currentConfig; 
 
-    // Ensure defaults exist in global config
+    _state.config = currentConfig;
+
     if (!_state.config.max_file_size_mb) _state.config.max_file_size_mb = 20;
     if (!_state.config.storage_path) _state.config.storage_path = 'storage/files/';
     if (!_state.config.allowed_types) _state.config.allowed_types = ['image', 'spreadsheet', 'archive', 'other'];
-    // No 'svg' — script-bearing markup, kept off the allowlist so the refusal does
-    // not rely on the finfo sniff. Keep in step with seed.php's default list.
+
     if (!_state.config.allowed_extensions) _state.config.allowed_extensions = ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "odt", "rtf", "xls", "xlsx", "ods", "csv", "zip", "tar", "gz"];
     if (!_state.config.relations) _state.config.relations = [];
 
@@ -65,7 +57,6 @@ export async function renderFilesEditor(ctx) {
     await loadList();
 }
 
-// Skeleton HTML construction
 function buildSkeleton() {
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
@@ -159,7 +150,6 @@ function buildSkeleton() {
     return wrap;
 }
 
-// Bind UI events
 function bindEvents(root) {
     root.querySelector('#f-save-cfg').addEventListener('click', saveConfig);
     root.querySelector('#f-upload-btn').addEventListener('click', uploadFile);
@@ -180,7 +170,6 @@ function bindEvents(root) {
     root.querySelector('#f-refresh').addEventListener('click', loadList);
 }
 
-// Add dynamic relation row
 function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     const list = document.getElementById('f-relations-list');
     const row = document.createElement('div');
@@ -188,7 +177,7 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     row.style.cssText = 'display:flex; gap:10px; background:var(--bg); padding:10px; border:1px solid var(--border); border-radius:4px; align-items:flex-end;';
 
     const tables = _state.getTableOptions ? _state.getTableOptions() : [];
-    
+
     let tableOpts = '<option value="">-- Target Table --</option>';
     tables.forEach(t => tableOpts += `<option value="${escHtml(t.value)}" ${data.table === t.value ? 'selected' : ''}>${escHtml(t.label)}</option>`);
 
@@ -227,12 +216,11 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
 
     tableSel.addEventListener('change', updateCols);
     row.querySelector('.btn-del-rel').addEventListener('click', () => row.remove());
-    
+
     updateCols();
     list.appendChild(row);
 }
 
-// Fill UI config form
 function fillConfigForm(cfg) {
     const maxEl  = document.getElementById('f-max-size');
     const pathEl = document.getElementById('f-storage-path');
@@ -258,7 +246,6 @@ function fillConfigForm(cfg) {
     relations.forEach(r => addRelationRow(r));
 }
 
-// Save config handler - syncs with global app state and saves via core api
 async function saveConfig() {
     const maxEl   = document.getElementById('f-max-size');
     const pathEl  = document.getElementById('f-storage-path');
@@ -276,7 +263,6 @@ async function saveConfig() {
 
     const extsArray = extsEl.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
 
-    // Assign directly to _state.config (which is a reference to the global currentConfig)
     _state.config.storage_path       = pathEl?.value || 'storage/files/';
     _state.config.max_file_size_mb   = parseInt(maxEl?.value || '20', 10);
     _state.config.allowed_types      = [...checks].map(c => c.value);
@@ -295,7 +281,6 @@ async function saveConfig() {
     }
 }
 
-// API Upload file
 async function uploadFile() {
     const fileInput = document.getElementById('f-upload-file');
     const nameInput = document.getElementById('f-upload-name');
@@ -309,11 +294,11 @@ async function uploadFile() {
     const csrfToken = getCsrfToken();
     const file = fileInput.files[0];
     const formData = new FormData();
-    
+
     formData.append('action', 'upload');
     formData.append('file', file);
     formData.append('csrf_token', csrfToken);
-    
+
     if (nameInput.value.trim()) {
         formData.append('display_name', nameInput.value.trim());
     }
@@ -341,7 +326,6 @@ async function uploadFile() {
     }
 }
 
-// API File list
 async function loadList() {
     if (_state.loading) return;
     _state.loading = true;
@@ -379,7 +363,6 @@ async function loadList() {
     }
 }
 
-// Render table structure
 function renderTable(files) {
     if (!files.length) {
         setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--muted)">No files found.</td></tr>');
@@ -417,7 +400,6 @@ function renderTable(files) {
     });
 }
 
-// Delete file handler
 async function deleteFile(uuid, name) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
@@ -437,7 +419,6 @@ async function deleteFile(uuid, name) {
     }
 }
 
-// Pagination handler
 function renderPager() {
     const bar = document.getElementById('f-pages');
     if (!bar) return;
@@ -462,13 +443,11 @@ function renderPager() {
     });
 }
 
-// UI element manipulation
 function setTbody(html) {
     const el = document.getElementById('f-tbody');
     if (el) el.innerHTML = html;
 }
 
-// Custom UI message
 function showMsg(el, text, ok) {
     if (!el) return;
     el.textContent = text;
@@ -476,7 +455,6 @@ function showMsg(el, text, ok) {
     setTimeout(() => { el.textContent = ''; }, 4000);
 }
 
-// Byte format converter
 function formatBytes(b) {
     if (!b) return '0 B';
     const u = ['B', 'KB', 'MB', 'GB'];
@@ -485,19 +463,15 @@ function formatBytes(b) {
     return `${v.toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
 }
 
-// Date formatter
 function formatDate(iso) {
     if (!iso) return '-';
     try { return new Date(iso).toLocaleDateString('en-GB'); } catch { return iso; }
 }
 
-// Security HTML escape
 import { escHtml } from '../../assets/js/util/esc.js';
 
-// String capitalization
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
-// Debounce util for search
 function debounce(fn, ms) {
     let t;
     return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };

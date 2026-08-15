@@ -7,28 +7,13 @@
 
 declare(strict_types=1);
 
-// admin/api.php — Admin-panel REST API front controller
-// Auth gate: session + role === 'admin' (403 otherwise); CSRF on POST/PATCH/DELETE;
-// DEMO_MODE disables writes (per-action require_not_demo(), no central gate).
-// ~85 actions dispatched via $adminModules (action → per-domain module under includes/admin/:
-// migrations, users, schema, health, backup, settings, config_files, performance, cron, m2m,
-// anonymization, rag, automations, dashboard, overview). Demo actions + unknown-action fallback: demo/seed.php.
-// Error envelope: deliberate messages thrown as AdminApiMessage pass to the client via admin_error_message();
-// any other Throwable is logged and genericized (never leaks paths/SQL/credentials);
-// admin_db_fail() logs raw pg errors and throws AdminApiMessage with a generic message.
-
 require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/api_helpers.php';
 
-// This endpoint keeps its own gate order (it needs $isDemoMode and a per-action
-// dispatch) instead of os_api_bootstrap(), so it has to send the same hardening
-// that os_api_bootstrap() does: errors off + security headers.
 ini_set('display_errors', '0');
 start_session();
 send_security_headers();
 
-// Every action of this endpoint answers with JSON, so the type is set once here
-// instead of being repeated in each of the ~90 action blocks.
 header('Content-Type: application/json');
 
 if (empty($_SESSION['user_id'])) {
@@ -46,20 +31,10 @@ $action = $_GET['action'] ?? '';
 $file = $_GET['file'] ?? '';
 $isDemoMode = DEMO_MODE;
 
-// Deliberate, user-facing API errors (AdminApiMessage) and the generic error-envelope
-// helpers (admin_error_message, admin_db_fail) live in includes/admin_api_errors.php
-// so public/setup_api.php can reuse demo_install_run() without duplicating them.
-// Note: a plain instanceof-RuntimeException whitelist would not work for
-// admin_error_message() — PDOException extends RuntimeException too.
 require_once __DIR__ . '/../../includes/admin_api_errors.php';
 
-// Shared response/connection/config helpers for the includes/admin/ modules
-// (admin_try, admin_ok, admin_err, admin_conn, admin_purge_log, …).
 require_once __DIR__ . '/../../includes/admin/helpers.php';
 
-// CSRF Protection for state-changing requests. Mirrors os_api_bootstrap()
-// (includes/bootstrap.php) — POST/PATCH/DELETE — so a mutating action that
-// slips off the $postActions whitelist below is still covered on those verbs.
 if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE'], true)) {
     $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
     if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
@@ -70,9 +45,6 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE'], true)) {
     }
 }
 
-// Ensure state-changing actions use POST method to prevent CSRF via GET
-// Every action with a side effect must be listed here: CSRF is only validated on
-// POST, so a mutating action reachable via GET bypasses the token check entirely.
 $postActions = [
     'save', 'init_db',
     'users_add', 'users_toggle', 'users_update_role', 'users_update_contact',
@@ -101,9 +73,6 @@ if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POS
     exit;
 }
 
-// Automations config helpers (spw_config key "automations", via the config
-// store) — shared by the automations and overview modules, so they live in
-// the front controller.
 require_once __DIR__ . '/../../includes/config_store.php';
 
 function auto_cfg_read(): array
@@ -112,10 +81,6 @@ function auto_cfg_read(): array
     return is_array($data) ? ($data['automations'] ?? []) : [];
 }
 
-// Throws AdminApiMessage on failure so the callers' try/catch reports it — reporting
-// "saved" on a rejected write leaves the admin believing an edited rule is live when
-// the stored rule is unchanged. Mirrors admin_config_save_versioned() in
-// includes/admin/helpers.php, minus the optimistic-lock version (not echoed here).
 function auto_cfg_write(array $automations): void
 {
     $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
@@ -128,12 +93,6 @@ function auto_cfg_write(array $automations): void
     }
 }
 
-// ── Action → module dispatch ─────────────────────────────────────────────────
-// The action blocks live in per-domain modules under includes/admin/ (outside
-// the docroot). Every block is self-contained: it sets its own Content-Type
-// and exits. An action absent from this map — or a block whose guard does not
-// match (e.g. 'get' with a non-whitelisted file) — falls through to
-// demo/seed.php, exactly as before the split.
 $adminModules = [
     'run_cron_notifications' => 'cron',
     'cron_log' => 'cron',

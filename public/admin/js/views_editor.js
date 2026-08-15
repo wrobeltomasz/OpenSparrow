@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-/* admin/js/views_editor.js — Views module admin editor (renderViewsEditor): edits the "views" config saved views (source, columns, colour rules, icon). */
-
 import { markDirty } from './app.js';
 import { createIconPicker, createTextInput, createCheckbox } from './ui.js';
 import { apiFetch } from '../../assets/js/util/api.js';
@@ -13,31 +11,25 @@ export function renderViewsEditor(ctx) {
     const { workspaceEl, currentConfig } = ctx;
     workspaceEl.innerHTML = '';
 
-    /* ensure views is a plain object */
     if (!currentConfig.views || typeof currentConfig.views !== 'object' || Array.isArray(currentConfig.views)) {
         currentConfig.views = {};
     }
     const views = currentConfig.views;
 
-    /* ensure schemas is a plain array (PostgreSQL schemas searched by sync) */
     if (!Array.isArray(currentConfig.schemas)) {
         currentConfig.schemas = [];
     }
 
-    /* migrate untagged views to the postgres source */
     Object.keys(views).forEach(v => {
         if (!views[v].source) views[v].source = 'postgres';
     });
 
-    /* ---------- state ---------- */
     let currentSource = 'postgres';
     let dbColumns     = {};
 
-    /* ---------- root layout ---------- */
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
 
-    /* ---------- source tabs (first, same DOM order as ETL's buildInnerTabs) ---------- */
     const tabBar = document.createElement('div');
     tabBar.className = 'item-panel-items';
 
@@ -92,7 +84,6 @@ export function renderViewsEditor(ctx) {
     statusEl.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px;';
     wrap.appendChild(statusEl);
 
-    // Action bar — same placement as ETL's "+ Add source" bar.
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
     const syncBtn = document.createElement('button');
@@ -115,7 +106,6 @@ export function renderViewsEditor(ctx) {
         statusEl.textContent = msg;
     }
 
-    /* ---------- sync from DB ---------- */
     async function syncFromDb() {
         const label = 'PostgreSQL';
         setStatus(`Syncing ${label} views…`, 'info');
@@ -144,8 +134,7 @@ export function renderViewsEditor(ctx) {
                 if (currentSource === 'postgres' && vSchema) {
                     views[vName].schema = vSchema;
                 }
-                // Persisted like `schema` above: both are DB-derived facts the editor
-                // needs after a reload, when no sync has run yet.
+
                 views[vName].materialized = viewKinds[vName] === 'materialized';
             });
 
@@ -157,7 +146,6 @@ export function renderViewsEditor(ctx) {
         }
     }
 
-    /* ---------- render list ---------- */
     function viewNamesForSource(src) {
         return Object.keys(views).filter(v => (views[v].source || 'postgres') === src);
     }
@@ -184,7 +172,6 @@ export function renderViewsEditor(ctx) {
         names.forEach(vName => listEl.appendChild(buildViewCard(vName, views[vName] ?? {})));
     }
 
-    /* ---------- schemas panel (which PostgreSQL schemas sync searches) ---------- */
     async function renderSchemasPanel() {
         listEl.innerHTML = '<p style=" padding:16px;">Loading schemas…</p>';
         try {
@@ -199,7 +186,6 @@ export function renderViewsEditor(ctx) {
                 return;
             }
 
-            /* seed the selection from the server default only if nothing chosen yet */
             if (currentConfig.schemas.length === 0) {
                 currentConfig.schemas = [...(data.selected ?? [])];
             }
@@ -241,8 +227,6 @@ export function renderViewsEditor(ctx) {
         }
     }
 
-    /* ---------- settings panel (module-level menu name/icon, same fields as ---------- */
-    /* Dashboard/Calendar/Workflows/Board/Files "Global Settings" — see renderGlobalSettings() in ui.js) */
     function renderSettingsPanel() {
         const heading = document.createElement('h3');
         heading.textContent = 'Views Global Settings';
@@ -264,14 +248,12 @@ export function renderViewsEditor(ctx) {
             }, false));
     }
 
-    /* ---------- single view card (column-block style) ---------- */
     function buildViewCard(vName, cfg) {
         const card = document.createElement('div');
         card.className = 'column-block collapsed';
         card.dataset.view = vName;
         if (cfg.hidden) card.style.opacity = '0.6';
 
-        /* header: view name + collapse + visible toggle */
         const cardHdr = document.createElement('div');
         cardHdr.className = 'block-header';
 
@@ -287,8 +269,6 @@ export function renderViewsEditor(ctx) {
         dbSpan.textContent = ` (${vName})`;
         nameSpan.appendChild(dbSpan);
 
-        // A materialized view serves the rows from its last REFRESH, not live data —
-        // worth stating on the card, since nothing else distinguishes the two here.
         if (cfg.materialized) {
             const matBadge = document.createElement('span');
             matBadge.className = 'adm-badge adm-badge-muted';
@@ -330,7 +310,6 @@ export function renderViewsEditor(ctx) {
         cardHdr.appendChild(delBtn);
         card.appendChild(cardHdr);
 
-        /* collapsible body */
         const body = document.createElement('div');
         body.className = 'block-body';
         body.appendChild(buildCardBody(vName, cfg));
@@ -344,11 +323,9 @@ export function renderViewsEditor(ctx) {
         return card;
     }
 
-    /* ---------- card body ---------- */
     function buildCardBody(vName, cfg) {
         const frag = document.createDocumentFragment();
 
-        /* General section */
         const genHdr = document.createElement('h4');
         genHdr.textContent = 'General';
         frag.appendChild(genHdr);
@@ -362,7 +339,6 @@ export function renderViewsEditor(ctx) {
         divider1.style.cssText = 'border:none; border-top:1px solid var(--border-light); margin:20px 0;';
         frag.appendChild(divider1);
 
-        /* Columns section */
         const colHdr = document.createElement('h4');
         colHdr.textContent = 'Columns';
         frag.appendChild(colHdr);
@@ -372,7 +348,6 @@ export function renderViewsEditor(ctx) {
         divider2.style.cssText = 'border:none; border-top:1px solid var(--border-light); margin:20px 0;';
         frag.appendChild(divider2);
 
-        /* Drill-down section */
         const drillHdr = document.createElement('h4');
         drillHdr.textContent = 'Drill-down';
         frag.appendChild(drillHdr);
@@ -381,7 +356,6 @@ export function renderViewsEditor(ctx) {
         return frag;
     }
 
-    /* ---------- .form-group field helper ---------- */
     function fg(label, type, value, onChange) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
@@ -409,7 +383,6 @@ export function renderViewsEditor(ctx) {
         return grp;
     }
 
-    /* ---------- columns editor ---------- */
     function buildColumnsEditor(vName, colsCfg) {
         const wrap = document.createElement('div');
 
@@ -447,7 +420,6 @@ export function renderViewsEditor(ctx) {
                 views[vName].columns[colName].display_name = v;
             }));
 
-            /* summary function */
             const summaryGrp = document.createElement('div');
             summaryGrp.className = 'form-group';
             const summaryLbl = document.createElement('label');
@@ -476,7 +448,6 @@ export function renderViewsEditor(ctx) {
             summaryGrp.appendChild(summarySel);
             colBlock.appendChild(summaryGrp);
 
-            /* summary condition (SUMIF/COUNTIF): aggregate only rows matching column-op-value */
             const condGrp = document.createElement('div');
             condGrp.className = 'form-group';
             condGrp.style.display = (colCfg.summary ?? 'none') === 'none' ? 'none' : 'block';
@@ -554,7 +525,6 @@ export function renderViewsEditor(ctx) {
             condGrp.appendChild(condRow);
             colBlock.appendChild(condGrp);
 
-            /* color rules */
             const rulesLabel = document.createElement('label');
             rulesLabel.textContent = 'Color rules';
             rulesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
@@ -589,7 +559,6 @@ export function renderViewsEditor(ctx) {
         return wrap;
     }
 
-    /* ---------- single color rule row ---------- */
     function buildRuleRow(rule, idx, rules, onUpdate) {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex; align-items:center; gap:8px;';
@@ -625,13 +594,11 @@ export function renderViewsEditor(ctx) {
         return row;
     }
 
-    /* ---------- drill-down editor ---------- */
     function buildDrillEditor(vName, cfg) {
         const wrap = document.createElement('div');
         const dd   = cfg.drill_down ?? { enabled: false, levels: [] };
         views[vName].drill_down = dd;
 
-        /* enable toggle as form-group */
         const enableGrp = document.createElement('div');
         enableGrp.className = 'form-group';
         const enableLbl = document.createElement('label');
@@ -709,7 +676,6 @@ export function renderViewsEditor(ctx) {
         return wrap;
     }
 
-    /* ---------- init ---------- */
     syncBtn.addEventListener('click', syncFromDb);
 
     Object.keys(views).forEach(v => {

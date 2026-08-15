@@ -3,22 +3,16 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/anonymization.js — Data Anonymization admin module
-// 4 tabs: Rules, Schedule, Suggestions, Dictionary.
-// Persists the "anonymization" config via anonymization_save.
-// Cron worker: cron/cron_anonymization.php.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdStatus, buildSectionCard } from './ui.js';
 
 let anonConfig  = null;
-let anonVersion = 0;   // optimistic-lock version echoed back on save
+let anonVersion = 0;
 let schemaCache = null;
 
 import { escHtml } from '../../assets/js/util/esc.js';
 import { getGlobalSchema } from './app.js';
 
-// Section cards come from ui.js (buildSectionCard) — this module used to carry
-// its own byte-identical copy.
 const mkSection = (title, desc) => buildSectionCard(title, desc);
 
 function mkStatusEl() {
@@ -58,12 +52,9 @@ function isDateType(type) {
 }
 
 async function getSchema() {
-    // Shared with every other tab (app.js caches and de-duplicates the request).
     schemaCache = await getGlobalSchema();
     return schemaCache ?? {};
 }
-
-// ─── Tab 1: Rules ─────────────────────────────────────────────────────────────
 
 function buildRulesTab(ctx) {
     const { card, body } = mkSection(
@@ -258,7 +249,6 @@ function buildAddForm(container, tableOptions, onAdded) {
             return;
         }
 
-        // PII column — all columns via ctx helper
         const allOpts = window._anonColOptions ? window._anonColOptions(tbl) : [];
         if (allOpts.length === 0) {
             const o = document.createElement('option');
@@ -272,7 +262,6 @@ function buildAddForm(container, tableOptions, onAdded) {
             });
         }
 
-        // Date column — only date / timestamp types
         try {
             const schema   = await getSchema();
             const tDef     = (schema.tables || {})[tbl] || {};
@@ -358,15 +347,12 @@ function buildAddForm(container, tableOptions, onAdded) {
     container.appendChild(formCard);
 }
 
-// ─── Tab 2: Schedule ──────────────────────────────────────────────────────────
-
 function buildScheduleTab() {
     const { card, body } = mkSection(
         'Schedule',
         'Configure when anonymization runs. Frequency is enforced by the cron script itself — set your OS scheduler to run daily and let the module handle the window.'
     );
 
-    // Enabled toggle
     const enabledRow = document.createElement('div');
     enabledRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:20px;';
     const enabledChk = document.createElement('input');
@@ -381,7 +367,6 @@ function buildScheduleTab() {
     enabledRow.append(enabledChk, enabledLbl);
     body.appendChild(enabledRow);
 
-    // Frequency
     const freqRow = document.createElement('div');
     freqRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:20px;';
     const freqLabel = document.createElement('label');
@@ -419,7 +404,6 @@ function buildScheduleTab() {
     });
     body.append(saveBtn, saveSt);
 
-    // Run now section
     const { card: runCard, body: runBody } = mkSection(
         'Run Anonymization Now',
         'Trigger the anonymization cron immediately, bypassing the frequency check.'
@@ -460,7 +444,6 @@ function buildScheduleTab() {
     runBody.append(runBtn, output);
     body.appendChild(runCard);
 
-    // Cron setup guide
     const { card: setupCard, body: setupBody } = mkSection(
         'Cron Setup Guide',
         'Configure your OS scheduler to invoke the anonymization script automatically.'
@@ -507,8 +490,6 @@ function buildScheduleTab() {
 
     return card;
 }
-
-// ─── Tab 3: Suggestions ───────────────────────────────────────────────────────
 
 function buildSuggestionsTab() {
     const { card, body } = mkSection(
@@ -736,8 +717,6 @@ function buildSuggestionsTab() {
     return card;
 }
 
-// ─── Tab 4: Dictionary ────────────────────────────────────────────────────────
-
 function buildDictionaryTab() {
     const { card, body } = mkSection(
         'PII Keyword Dictionary',
@@ -775,7 +754,6 @@ function buildDictionaryTab() {
 
     body.append(textarea, hint, saveBtn, st);
 
-    // Log cleanup section
     const { card: logCard, body: logBody } = mkSection(
         'Log Cleanup',
         'Delete old anonymization run entries from spw_anonymization_log.'
@@ -840,10 +818,6 @@ function buildDictionaryTab() {
     return card;
 }
 
-// ─── Tab 2 supplement: Run History ───────────────────────────────────────────
-
-// Renders the per-run "Report" cell: a View toggle that expands the structured
-// GDPR/EDPB JSON report below the row, plus a Download button.
 function buildReportCell(r, tbody, colspan) {
     const cell = document.createElement('td');
     cell.className = 'adm-td';
@@ -984,13 +958,10 @@ function buildHistorySection() {
     return card;
 }
 
-// ─── Main render ──────────────────────────────────────────────────────────────
-
 export async function renderAnonymizationPage(ctx) {
     const { workspaceEl } = ctx;
     workspaceEl.innerHTML = '<p style="padding:20px;">Loading configuration…</p>';
 
-    // Expose column options for the add-rule form.
     if (ctx.getColumnOptionsForTable) {
         window._anonColOptions = ctx.getColumnOptionsForTable;
     }

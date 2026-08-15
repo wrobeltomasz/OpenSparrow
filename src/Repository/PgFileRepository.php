@@ -25,7 +25,6 @@ final readonly class PgFileRepository
                   AND related_field IS DISTINCT FROM $3
                 ORDER BY created_at DESC';
 
-        // Gallery images live in the same table but belong to the Images tab, not here.
         $res = @pg_query_params($this->conn->native(), $sql, [$table, (string)$id, IMAGES_FIELD]);
         if (!$res) {
             return [];

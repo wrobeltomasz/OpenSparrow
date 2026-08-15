@@ -4,20 +4,12 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// api/comments.php — Comments module API (discussion threads attached to records)
-// Auth gate: session + UA enforcement + CSRF on POST; JSON responses via jsonError()/jsonSuccess()
-// match() action routing: list, mine, add, delete, counts — comments keyed by (related_table, related_id), table validated against schema.json
-// Parameterized queries; sys_table('comments')
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-// csrf=manual: mutating actions validate the body token via os_require_csrf() themselves
 $conn = os_api_bootstrap(['csrf' => 'manual']);
-// jsonError(), jsonSuccess(), requireLogin(), requireWrite() and validatedTable()
-// are shared via includes/api_helpers.php
 
 ['action' => $action, 'body' => $body] = os_api_action();
 
@@ -39,8 +31,6 @@ function comments_action_list($conn): void
         jsonError('related_id must be a positive integer.', 400);
     }
 
-    // When a limit is requested (preview), return newest-first so the caller
-    // gets the most recent N without client-side sorting.
     $orderDir    = $limit ? 'DESC' : 'ASC';
     $limitClause = $limit ? " LIMIT {$limit}" : '';
     $sql = "
@@ -72,10 +62,6 @@ function comments_action_list($conn): void
     jsonSuccess(['comments' => $comments]);
 }
 
-// "My comments" (avatar menu panel) — flat, newest-first list of the comments the logged-in
-// user authored, each resolved to its record's display label so the panel can link straight
-// back to the record's comment tab. Label heuristic is shared with the "My records" panel
-// (record_label_sql() in api_helpers.php).
 function comments_action_mine($conn): void
 {
     requireLogin();
@@ -105,16 +91,14 @@ function comments_action_mine($conn): void
     $userRecordsCfg = config_get('user_records') ?? [];
     $configuredCols = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
 
-    // table => ['display' => string, 'labels' => [record_id => label]]
     $resolved = [];
     foreach ($idsBy as $tableName => $ids) {
         $tableCfg = $schema['tables'][$tableName] ?? null;
-        // Comments can outlive their table (renamed/removed from the schema editor).
+
         if ($tableCfg === null || !empty($tableCfg['hidden'])) {
             continue;
         }
-        // Own comments on a table whose access was revoked since: drop the labels,
-        // the record they point at is no longer reachable for this user.
+
         if (!user_can_access_table($tableName)) {
             continue;
         }
@@ -157,7 +141,7 @@ function comments_action_mine($conn): void
             'related_table' => $tableName,
             'related_id'    => $recordId,
             'table_display' => $resolved[$tableName]['display'],
-            // A comment can outlive its record when the row was hard-deleted.
+
             'record_label'  => $resolved[$tableName]['labels'][$recordId] ?? ('#' . $recordId),
             'created_at'    => $row['created_at'],
         ];
@@ -198,7 +182,7 @@ function comments_action_add($conn, array $body): void
 
     $inserted = pg_fetch_assoc($res);
     log_user_action($conn, $userId, 'COMMENT_ADD', $relatedTable, $relatedId);
-// Return the full comment row including user info for immediate render
+
     $fetchSql = "
         SELECT c.id, c.body, c.created_at, c.deleted_at, c.user_id,
                u.username, u.avatar_id
@@ -226,7 +210,6 @@ function comments_action_delete($conn, array $body): void
         jsonError('id is required.', 400);
     }
 
-    // Fetch the comment to check ownership
     $fetchSql = "SELECT user_id, related_table, related_id FROM " . sys_table('comments') . " WHERE id = \$1 AND deleted_at IS NULL";
     $fetchRes = pg_query_params($conn, $fetchSql, [$id]);
     if (!$fetchRes || pg_num_rows($fetchRes) === 0) {
@@ -258,13 +241,11 @@ function comments_action_counts($conn): void
         jsonSuccess(['counts' => []]);
     }
 
-    // Parse and validate IDs — integers only
     $ids = array_values(array_filter(array_map('intval', explode(',', $rawIds)), fn($id) => $id > 0));
     if (empty($ids)) {
         jsonSuccess(['counts' => []]);
     }
 
-    // Build safe parameterized IN clause
     $placeholders = implode(', ', array_map(fn($i) => '$' . ($i + 2), array_keys($ids)));
     $params       = array_merge([$relatedTable], $ids);
     $sql = "

@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/performance.js — Performance & Index Advisor page
-// Tabs over api.php performance_* actions (check, slow_queries, table_stats, db_health, unused_indexes, schema_warnings); severity badges.
 import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdEl } from './ui.js';
 
 import { escHtml } from '../../assets/js/util/esc.js';
@@ -30,8 +28,6 @@ function copyBtn(getText, label = 'Copy SQL', small = true) {
     });
     return btn;
 }
-
-// ─── Section builder ────────────────────────────────────────────────────────
 
 function makeSection(title, description) {
     const card = document.createElement('div');
@@ -94,8 +90,6 @@ function setBodyEmpty(body, msg) {
     body.appendChild(p);
 }
 
-// ─── 1. Index Advisor ───────────────────────────────────────────────────────
-
 function renderIndexAdvisor(body, data) {
     body.replaceChildren();
     const suggestions = data.suggestions || [];
@@ -156,8 +150,6 @@ function renderIndexAdvisor(body, data) {
     });
 }
 
-// ─── 2. Unused Indexes ──────────────────────────────────────────────────────
-
 function renderUnusedIndexes(body, data) {
     body.replaceChildren();
     const rows = data.rows || [];
@@ -196,8 +188,6 @@ function renderUnusedIndexes(body, data) {
     t.appendChild(tbody);
     body.appendChild(t);
 }
-
-// ─── 3. Slow Queries ────────────────────────────────────────────────────────
 
 function renderSlowQueries(body, data) {
     body.replaceChildren();
@@ -244,8 +234,6 @@ function renderSlowQueries(body, data) {
     body.appendChild(t);
 }
 
-// ─── 4. Table Statistics & Bloat ────────────────────────────────────────────
-
 function renderTableStats(body, data) {
     body.replaceChildren();
     const rows = data.rows || [];
@@ -282,8 +270,6 @@ function renderTableStats(body, data) {
     t.appendChild(tbody);
     body.appendChild(t);
 }
-
-// ─── 5. DB Health ───────────────────────────────────────────────────────────
 
 function renderDbHealth(body, data) {
     body.replaceChildren();
@@ -349,8 +335,6 @@ function renderDbHealth(body, data) {
     }
 }
 
-// ─── 6. Schema Warnings ─────────────────────────────────────────────────────
-
 function renderSchemaWarnings(body, data) {
     body.replaceChildren();
     const warnings = data.warnings || [];
@@ -378,8 +362,6 @@ function renderSchemaWarnings(body, data) {
     t.appendChild(tbody);
     body.appendChild(t);
 }
-
-// ─── Main render ────────────────────────────────────────────────────────────
 
 async function runSection(apiAction, renderFn, btn, body) {
     btn.disabled = true;

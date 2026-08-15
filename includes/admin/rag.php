@@ -7,15 +7,6 @@
 
 declare(strict_types=1);
 
-// includes/admin/rag.php — admin api.php module: RAG knowledge base (rag_list, rag_upload, rag_delete, rag_rechunk,
-// rag_rechunk_all,
-// rag_settings, rag_settings_save, rag_test_query, rag_ollama_check, rag_stats).
-// Included by public/admin/api.php AFTER the admin-role gate, CSRF check and
-// POST-method enforcement — never include or serve this file directly.
-// Uses $action / $file / $isDemoMode and the AdminApiMessage / admin_error_message()
-// / admin_db_fail() / require_not_demo() helpers defined by the front controller.
-// Every action block emits its own JSON response and exits.
-
 if ($action === 'rag_list') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -84,11 +75,10 @@ if ($action === 'rag_upload') {
             throw new AdminApiMessage('Could not read uploaded file.');
         }
 
-        // Reject non-UTF-8 or binary content
         if (!mb_check_encoding($content, 'UTF-8')) {
             throw new AdminApiMessage('File is not valid UTF-8 text.');
         }
-        // Reject files with high density of non-printable bytes (binary detection)
+
         $nonPrintable = preg_match_all('/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/', $content);
         if ($nonPrintable > 0 && ($nonPrintable / max(1, strlen($content))) > 0.05) {
             throw new AdminApiMessage('File appears to contain binary content and was rejected.');
@@ -201,8 +191,7 @@ if ($action === 'rag_settings') {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         $cfg = rag_config();
         unset($cfg['__cached']);
-        // Never return the encrypted (or decrypted) API key to the frontend —
-        // only whether one is configured.
+
         $cfg['ollama_api_key_configured'] = !empty($cfg['ollama_api_key_enc']);
         unset($cfg['ollama_api_key_enc']);
         echo json_encode(['status' => 'success', 'settings' => $cfg]);
@@ -240,7 +229,6 @@ if ($action === 'rag_settings_save') {
 
         require_once __DIR__ . '/../config_store.php';
 
-        // Preserve keys not exposed in the UI (chunk_size, chunk_overlap, etc.)
         $existingCfg = config_get('rag') ?? [];
 
         $cfg = array_merge($existingCfg, [
@@ -275,7 +263,6 @@ if ($action === 'rag_settings_save') {
     exit;
 }
 
-// GET: current table -> aggregate view mappings + pickable tables/views for the admin UI.
 if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -285,8 +272,6 @@ if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET
         $cfg    = config_get('rag') ?? [];
         $views  = is_array($cfg['aggregate_views'] ?? null) ? $cfg['aggregate_views'] : [];
 
-        // Only tables without owner-level row restriction can be paired with a
-        // static view — a plain SQL view has no session/user_id to filter by.
         $tables = [];
         foreach (($schema['tables'] ?? []) as $name => $tableCfg) {
             if (empty($tableCfg['owner_restricted'])) {
@@ -295,11 +280,6 @@ if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET
         }
         sort($tables);
 
-        // Ordinary AND materialized views: a materialized view is relkind 'm' and never
-        // appears in information_schema.VIEWS, so listing from there silently hid every
-        // one of them. Same source as the Views module's Sync (public/api/views.php).
-        // has_table_privilege keeps the list to relations this connection can actually
-        // read — rag_aggregate_block() later SELECTs from whatever is attached here.
         $availableViews = [];
         $res = @pg_query(
             $conn,
@@ -334,7 +314,6 @@ if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET
     exit;
 }
 
-// POST: attach (or clear, when view === '') an aggregate view to a table.
 if ($action === 'rag_aggregate_view_save') {
     require_not_demo();
     try {
@@ -365,15 +344,11 @@ if ($action === 'rag_aggregate_view_save') {
         if ($view === '') {
             unset($views[$table]);
         } else {
-            // Always requires an explicit "schema.view" (e.g. spw_crm.v_deals_aggr) — a
-            // view is not assumed to live in the same schema as the table it's attached to.
             $ref = rag_parse_qualified_view($view);
             if ($ref === null) {
                 throw new AdminApiMessage('Invalid view reference. Use the format "schema.view".');
             }
-            // Must accept materialized views too, and must agree with the listing above —
-            // validating against information_schema.VIEWS would reject exactly what the
-            // picker just offered.
+
             $chk = @pg_query_params(
                 $conn,
                 'SELECT 1 FROM pg_catalog.pg_class c '
@@ -451,7 +426,6 @@ if ($action === 'rag_test_query') {
     exit;
 }
 
-// POST: proxy to Ollama /api/tags — returns available local models + version
 if ($action === 'rag_ollama_check') {
     try {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
@@ -472,7 +446,6 @@ if ($action === 'rag_ollama_check') {
             throw new AdminApiMessage('cURL extension required.');
         }
 
-        // Fetch model list
         $tagsUrl = rtrim($ollamaUrl, '/') . '/api/tags';
         $ch      = curl_init($tagsUrl);
         if ($ch === false) {
@@ -512,7 +485,6 @@ if ($action === 'rag_ollama_check') {
             ];
         }
 
-        // Also try /api/version for server info
         $version = '';
         $vCh = curl_init(rtrim($ollamaUrl, '/') . '/api/version');
         if ($vCh !== false) {
@@ -539,7 +511,6 @@ if ($action === 'rag_ollama_check') {
     exit;
 }
 
-// GET: RAG query statistics summary + recent queries with source attribution
 if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         require_once __DIR__ . '/../../includes/db.php';

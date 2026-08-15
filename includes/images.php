@@ -5,23 +5,12 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// includes/images.php — Record image galleries (spw_files rows tagged related_field = IMAGES_FIELD)
-// Functions: images_config, images_for_record, images_count, images_for_rows
-
 require_once __DIR__ . '/db.php';
 
-// Discriminator stored in spw_files.related_field to tell gallery images apart from
-// ordinary record attachments uploaded through the Files tab.
 const IMAGES_FIELD = '__image';
 
-// Max thumbnails fetched per row for the grid column.
 const IMAGES_GRID_LIMIT = 4;
 
-/**
- * Normalised image-gallery config for a table, or null when the table has none.
- *
- * @param array $schema Raw "schema" config (config_get('schema')).
- */
 function images_config(array $schema, string $table): ?array
 {
     $cfg = $schema['tables'][$table]['images'] ?? null;
@@ -44,11 +33,6 @@ function images_config(array $schema, string $table): ?array
     ];
 }
 
-/**
- * All gallery images of a single record, oldest first.
- *
- * @return array<int, array{uuid:string,name:string,display_name:?string,size_bytes:string,created_at:string}>
- */
 function images_for_record(\PgSql\Connection $conn, string $table, int $recordId): array
 {
     $sql = 'SELECT uuid, name, display_name, size_bytes, created_at
@@ -72,7 +56,6 @@ function images_for_record(\PgSql\Connection $conn, string $table, int $recordId
     return $out;
 }
 
-/** Number of gallery images attached to a record (used to enforce max_per_record). */
 function images_count(\PgSql\Connection $conn, string $table, int $recordId): int
 {
     $sql = 'SELECT COUNT(*) AS c
@@ -90,12 +73,6 @@ function images_count(\PgSql\Connection $conn, string $table, int $recordId): in
     return (int)(pg_fetch_result($res, 0, 'c') ?: 0);
 }
 
-/**
- * Batch lookup for the grid column: record id => list of images (capped per row).
- *
- * @param  int[] $ids
- * @return array<string, array<int, array{uuid:string,name:string}>>
- */
 function images_for_rows(\PgSql\Connection $conn, string $table, array $ids, int $perRow = IMAGES_GRID_LIMIT): array
 {
     if (empty($ids)) {

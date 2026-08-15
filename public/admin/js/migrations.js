@@ -3,7 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// admin/js/migrations.js — Migrations page (renderMigrationsPage): scan for schema drift and apply pending migrations via admin/api_migrations.php (scan/apply); inner tabs.
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';
 import { escHtml } from '../../assets/js/util/esc.js';
@@ -27,7 +26,6 @@ export async function renderMigrationsPage(ctx) {
         { label: 'Release Migrations', icon: 'box.png' },
     ]);
 
-    // --- Tab 0: DB migrations ---
     const sub = document.createElement('p');
     sub.style.cssText = 'margin:0 0 20px;  ';
     sub.textContent = 'Each migration runs once and is recorded in spw_migrations. Running "Apply Migrations" is safe to repeat.';
@@ -48,7 +46,6 @@ export async function renderMigrationsPage(ctx) {
 
     panel0.append(sub, runBtn, statusEl, tableWrap);
 
-    // --- Tab 1: Release migrations ---
     const relSub = document.createElement('p');
     relSub.style.cssText = 'margin:0 0 20px;  ';
     relSub.textContent = 'File and config cleanup tasks defined in config/migrations.json. Run after upgrading to a new version.';
@@ -59,10 +56,6 @@ export async function renderMigrationsPage(ctx) {
 
     panel1.append(relSub, relContainer);
 
-    // Append ALL DOM to workspace synchronously before any await
-    // (outer already appended above)
-
-    // Event listener before async work
     runBtn.addEventListener('click', async () => {
         if (!confirm('Apply all pending migrations now?')) return;
 
@@ -93,7 +86,6 @@ export async function renderMigrationsPage(ctx) {
         }
     });
 
-    // Async data loading fills pre-created containers
     await loadMigrations(tableWrap);
     loadReleaseMigrations(relContainer);
 }

@@ -3,8 +3,6 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// assets/js/grid/body/drilldown.js — buildExpandButton(): per-row expander that loads and shows subtable (child) records inline beneath the row.
-
 import { state } from '../state.js';
 import { I18n } from '../../i18n.js';
 
@@ -29,10 +27,7 @@ export function buildExpandButton(row, schema, tr) {
         const ddTr = document.createElement('tr');
         ddTr.className = 'drilldown-row';
         const ddTd = document.createElement('td');
-        // Count the row's real cells rather than re-deriving the total: the row also
-        // carries one td per m2m relationship and one for the image gallery, which a
-        // hand-kept formula kept missing. Falls back to the old arithmetic if the row
-        // has somehow been detached.
+
         ddTd.colSpan = tr.cells.length || (state.displayedColumns.length + (isReadOnly ? 2 : 3));
 
         const loading = document.createElement('em');

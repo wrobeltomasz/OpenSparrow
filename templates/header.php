@@ -4,16 +4,10 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-// templates/header.php — unified application header for all app pages.
-// Optional variables (set before include):
-//   $headerControls (string) — extra HTML inside <header>, e.g. search/filter bar for the grid page
-//   $cspNonce       (string) — CSP nonce for the user-menu script tag
-
 $userRole  = $_SESSION['role']      ?? 'viewer';
 $avatarId  = $_SESSION['avatar_id'] ?? null;
 $uname     = $_SESSION['username']  ?? '';
-// The avatar is the username's initial on the colour the user picked; avatar_id is
-// the palette index (NULL = default). mb_* so a multibyte initial stays one character.
+
 $initial     = htmlspecialchars(mb_strtoupper(mb_substr($uname, 0, 1)), ENT_QUOTES, 'UTF-8');
 $avatarColor = os_avatar_color($avatarId !== null ? (int)$avatarId : null);
 $unameEsc  = htmlspecialchars($uname, ENT_QUOTES, 'UTF-8');
@@ -39,8 +33,6 @@ $vSidebarJs = @filemtime(__DIR__ . '/../public/assets/js/sidebar.js');
 $vNotifJs   = @filemtime(__DIR__ . '/../public/assets/js/notifications.js');
 $vAgentJs   = @filemtime(__DIR__ . '/../public/assets/js/agent-panel.js');
 
-// Logo is opt-in: a fresh install shows no logo (matches the header layout before
-// this feature existed). Admin → Settings → Custom Logo must enable it explicitly.
 $logoEnabled    = (bool) settings_value('logo_enabled', false);
 $customLogoPath = settings_value('custom_logo_path', null);
 $logoSrc        = null;

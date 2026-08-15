@@ -4,14 +4,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// crypto.php — Symmetric encryption for secrets stored at rest in spw_config
-// (e.g. third-party API keys). AES-256-GCM via openssl, keyed by APP_ENCRYPTION_KEY
-// (defined in config.php). Never used for passwords — those stay one-way (Argon2id).
 
 declare(strict_types=1);
 
-// Encrypts $plaintext for storage. Returns base64(iv . tag . ciphertext).
 function secret_encrypt(string $plaintext): string
 {
     $key = hash('sha256', APP_ENCRYPTION_KEY, true);
@@ -24,9 +19,6 @@ function secret_encrypt(string $plaintext): string
     return base64_encode($iv . $tag . $ciphertext);
 }
 
-// Decrypts a value produced by secret_encrypt(). Returns null on any failure
-// (corrupt data, wrong key, empty input) instead of throwing — callers treat
-// null the same as "no secret configured".
 function secret_decrypt(string $encoded): ?string
 {
     if ($encoded === '') {

@@ -1,32 +1,11 @@
 /*
- * This file is part of OpenSparrow - https://opensparrow.org
- * SPDX-License-Identifier: LGPL-3.0-or-later
- * Copyright (C) 2024-2026 OpenSparrow Contributors
- * Licensed under LGPL v3. See COPYING.LESSER file for details.
- */
+  * This file is part of OpenSparrow - https://opensparrow.org
+  * SPDX-License-Identifier: LGPL-3.0-or-later
+  * Copyright (C) 2024-2026 OpenSparrow Contributors
+  * Licensed under LGPL v3. See COPYING.LESSER file for details.
+*/
 
-/* admin/style.css */
-/* Modern UI configuration variables.
-   NOTE: index.php loads assets/css/styles.css, then assets/css/buttons.css
-   (shared .btn component - see that file), then this file. These :root
-   tokens intentionally override the app's equivalents so the admin panel
-   owns its own palette regardless of load order. Do not redeclare .btn*
-   rules here - add admin-only button variants to buttons.css instead. */
 :root {
-  /* ============================================================
-     Admin — "Business" theme. Keep in sync with assets/css/styles.css.
-     4 + 2 COLOUR SYSTEM. Four neutral/accent hues carry the whole UI; two
-     semantic hues are admitted for status and nothing else.
-       1. --c-paper  white       surfaces
-       2. --c-stone  cool grey   page ground, rules, muted text
-       3. --c-ink    graphite    text, dark bars, caution
-       4. --c-navy   #003366     the single accent: links, actions, selection
-       5. --c-ok     #0E7E4F     success / positive state
-       6. --c-error  #AB0000     failure and destructive actions
-     Everything else below is one of those, tinted towards paper or ink.
-     Do not introduce a seventh hue, and do not reach for --c-ok / --c-error
-     for decoration: they mean "this succeeded" and "this failed or destroys".
-     ============================================================ */
   --c-paper: #FFFFFF;
   --c-stone: #8A9199;
   --c-ink:   #1F2A37;
@@ -44,14 +23,11 @@
   --accent-light: #F1F4F8;
   --accent-mid:   #D0DAE6;
 
-  /* The two semantic hues. One shade each: hover states darken with
-     filter: brightness() instead of a second token. There is no --danger
-     token - a failed request and a delete button are the same red. */
   --error:        var(--c-error);
-  --error-light:  #FBEDED;   /* error @ 7% on paper */
+  --error-light:  #FBEDED;
   --ok:           var(--c-ok);
   --ok-light:     #EAF5F0;
-  /* Caution has no hue of its own — amber would be a seventh colour. */
+
   --warn:         var(--c-ink);
   --warn-light:   #F0F2F4;
 
@@ -66,13 +42,10 @@
   --transition:   150ms ease;
   --admin-font-size: 14px;
 
-  /* Kept in sync with assets/css/styles.css — see the note there.
-     Inter is not bundled; do not reintroduce it. */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
 
-/* ===== Base ===== */
 * { box-sizing: border-box; }
 
 body {
@@ -85,12 +58,6 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* ===== Uniform admin typography ===== */
-/* Content area uses a single font size + colour + style. Differentiate only
-   with font-weight:700 or italic. EXEMPT: the left nav (.admin-nav) keeps its
-   own sizing; monospace (.mono/.block-key/code/SQL) and semantic status colours
-   (.adm-badge-*, .ov-badge-*, .c-ok/.c-danger/.c-warn/.c-error) are deliberate exceptions.
-   The .admin-nav rule below re-asserts the menu's own font-size after inheritance. */
 .admin-nav,
 .admin-nav * {
     font-size: 13px;
@@ -98,7 +65,6 @@ body {
 .admin-nav .nav-section-label { font-size: 11px; }
 .admin-nav .nav-chevron { font-size: 10px; }
 
-/* ===== First-run banner ===== */
 .first-run-banner {
     background: var(--warn-light);
     border-bottom: 2px solid var(--warn);
@@ -113,7 +79,6 @@ body {
     font-weight: bold;
 }
 
-/* ===== Header ===== */
 .admin-header {
     background-color: var(--accent-dark);
     display: flex;
@@ -139,7 +104,6 @@ body {
     gap: 10px;
 }
 
-/* Brand logo + name */
 .brand-logo img {
     display: block;
     height: 28px;
@@ -152,7 +116,6 @@ body {
     white-space: nowrap;
 }
 
-/* Debug toggle */
 .debug-toggle-label {
     display: flex;
     align-items: center;
@@ -170,7 +133,6 @@ body {
     cursor: pointer;
 }
 
-/* Save button */
 .btn-save {
     background: var(--ok);
     color: #fff;
@@ -186,7 +148,6 @@ body {
 
 .btn-save:hover { background: var(--ok); filter: brightness(0.88); }
 
-/* Docs button in header */
 .btn-header-icon {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.18);
@@ -212,7 +173,6 @@ body {
     opacity: 0.9;
 }
 
-/* Logout button */
 .btn-header-logout {
     background: var(--error);
     color: #fff;
@@ -228,14 +188,12 @@ body {
 
 .btn-header-logout:hover { background: var(--error); filter: brightness(0.88); }
 
-/* ===== Main layout: nav + content ===== */
 .admin-layout {
     display: flex;
     height: calc(100vh - var(--header-h));
     overflow: hidden;
 }
 
-/* ===== Navigation sidebar ===== */
 .admin-nav {
     flex: 0 0 var(--nav-w);
     width: var(--nav-w);
@@ -258,12 +216,10 @@ body {
     flex: 1;
 }
 
-/* Section group */
 .nav-section {
     margin-bottom: 4px;
 }
 
-/* Section header (clickable, collapsible) */
 .nav-section-header {
     display: flex;
     align-items: center;
@@ -307,7 +263,6 @@ body {
     transform: rotate(180deg);
 }
 
-/* Section items container */
 .nav-section-items {
     display: none;
     padding: 2px 0 6px 0;
@@ -317,7 +272,6 @@ body {
     display: block;
 }
 
-/* Nav item — admin-tab inside sidebar */
 .admin-nav .admin-tab {
     display: flex;
     align-items: center;
@@ -349,7 +303,6 @@ body {
     padding-left: 17px;
 }
 
-/* Nav item icon */
 .nav-item-icon {
     width: 15px;
     height: 15px;
@@ -362,7 +315,6 @@ body {
     opacity: 0.75;
 }
 
-/* ===== Main content column ===== */
 .admin-main {
     flex: 1;
     min-width: 0;
@@ -371,7 +323,6 @@ body {
     overflow: hidden;
 }
 
-/* Breadcrumb bar */
 .admin-breadcrumb {
     display: flex;
     align-items: center;
@@ -397,14 +348,12 @@ body {
     font-weight: 700;
 }
 
-/* Editor area: workspace */
 .admin-content {
     flex: 1;
     display: flex;
     overflow: hidden;
 }
 
-/* ===== Left nav edge collapse tab ===== */
 .nav-edge-toggle {
     flex: 0 0 14px;
     width: 14px;
@@ -429,7 +378,6 @@ body {
     color: var(--accent);
 }
 
-/* ===== Item panel (replaces right sidebar) ===== */
 .admin-item-panel:empty {
     display: none;
 }
@@ -453,7 +401,6 @@ body {
     border-bottom: 2px solid var(--border);
     margin-bottom: 24px;
 }
-
 
 .item-btn-wrapper {
     display: flex;
@@ -505,10 +452,6 @@ body {
     color: var(--accent);
 }
 
-/* ===== Collapsible column / subtable blocks ===== */
-/* Canonical collapsible-card header — used by EVERY admin module that renders a
-   collapsible block/card (schema, user_records, print, views, automations, …).
-   All header layout lives here so every card looks identical before expansion. */
 .block-header {
     display: flex;
     align-items: center;
@@ -520,10 +463,6 @@ body {
     user-select: none;
 }
 
-/* Title inside a block header — flex:1 pushes any right-side controls to the end.
-   The .column-block prefix on the h4 selector raises specificity above the generic
-   ".column-block h4" section-heading rule below, which would otherwise re-add a
-   border-bottom under the title in modules that use an <h4> (Schema, User Records). */
 .column-block .block-header h4,
 .block-header .block-title {
     margin: 0;
@@ -544,7 +483,6 @@ body {
     flex-shrink: 0;
 }
 
-/* Right-aligned visibility toggle in a block header. */
 .block-vis {
     display: flex;
     align-items: center;
@@ -571,14 +509,12 @@ body {
     display: none;
 }
 
-/* Collapsed card = just the title row: drop the header divider and its spacing. */
 .column-block.collapsed .block-header {
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
 }
 
-/* ===== Main workspace area ===== */
 .admin-workspace {
     flex: 1 1 auto;
     min-width: 0;
@@ -587,9 +523,6 @@ body {
     background-color: var(--bg);
 }
 
-/* ===== Standard page header ===== */
-/* Every tab opens with the same title + description block. Use createPageHeader()
-   from ui.js to emit this markup so heading level and spacing stay consistent. */
 .admin-page {
     max-width: 960px;
 }
@@ -604,7 +537,6 @@ body {
     line-height: 1.5;
 }
 
-/* ===== Form elements ===== */
 .form-group {
     margin-bottom: 24px;
 }
@@ -679,7 +611,6 @@ body {
     cursor: pointer;
 }
 
-/* ===== Section blocks (column/subtable editors) ===== */
 .column-block,
 .subtable-block {
     background: var(--panel);
@@ -699,15 +630,6 @@ body {
     font-weight: 700;
 }
 
-/* Utility buttons: .btn / .btn-primary / .btn-secondary / .btn-danger /
-   .btn-success / .btn-sm / .btn-xs are defined in assets/css/buttons.css
-   (shared with the front-end app). .btn-action is an alias of .btn-primary
-   kept for backwards compatibility, defined in the same shared file. */
-
-/* ===== Utility inputs ===== */
-/* Compact field for inline rows / tables. Single source of truth for the
-   compact input look; .form-input is a kept-for-compat alias. Regulate width
-   with the .w-* helpers below, never with inline styles. */
 .adm-input,
 .form-input,
 select.adm-input,
@@ -734,7 +656,6 @@ textarea.adm-input {
     cursor: default;
 }
 
-/* Field width helpers — use instead of inline width on compact inputs/selects. */
 .w-60  { width: 60px;  }
 .w-64  { width: 64px;  }
 .w-70  { width: 70px;  }
@@ -751,7 +672,6 @@ textarea.adm-input {
 .flex-1  { flex: 1; }
 .mono    { font-family: var(--font-mono); }
 
-/* Compact color-swatch input for inline rule rows. */
 .adm-color {
     width: 44px;
     height: 34px;
@@ -762,8 +682,6 @@ textarea.adm-input {
     cursor: pointer;
 }
 
-/* Bare chevron/expander toggle button (no button chrome). Shared by the
-   collapsible card headers across app/print/views/automations editors. */
 .chevron-btn {
     background: none;
     border: none;
@@ -777,7 +695,6 @@ textarea.adm-input {
 }
 .chevron-btn:hover { color: var(--accent); }
 
-/* Borderless icon-only button (e.g. ✕ delete in a card header row). */
 .icon-btn {
     background: none;
     border: none;
@@ -793,7 +710,6 @@ textarea.adm-input {
 .icon-btn-danger { color: var(--error); }
 .icon-btn-danger:hover { color: var(--error); filter: brightness(0.85); }
 
-/* ETL Flow step builder: start -> job -> job -> ... -> end tile strip. */
 .flow-tile-row {
     display: flex;
     flex-wrap: nowrap;
@@ -842,7 +758,6 @@ textarea.adm-input {
     border-color: var(--accent);
 }
 
-/* Compact uppercase field label (for inline field groups outside .form-group). */
 .adm-field-label {
     display: block;
     font-weight: 700;
@@ -850,14 +765,13 @@ textarea.adm-input {
     margin-bottom: 6px;
 }
 
-/* Field layout helpers — replace inline flex on ui.js field factories. */
 .field-inline-group {
     display: flex;
     gap: 10px;
     align-items: center;
 }
 .field-checkbox-wrap { margin-bottom: 15px; }
-/* Standalone checkbox (outside .form-group) — consistent 16x16 accent box. */
+
 .adm-check {
     width: 16px;
     height: 16px;
@@ -892,14 +806,8 @@ textarea.adm-input {
     font-weight: normal;
 }
 
-/* ===== Legacy section buttons ===== */
-/* The .btn-add / .btn-remove box model (padding/font/border/colour) is the single
-   shared definition in assets/css/buttons.css — do NOT redeclare it here. Admin
-   only preserves the legacy bottom spacing on standalone "add" buttons; the
-   .item-panel-actions override above removes it inside action rows. */
 .btn-add { margin-bottom: 15px; }
 
-/* ===== Data tables ===== */
 .admin-table {
     width: 100%;
     border-collapse: collapse;
@@ -925,7 +833,6 @@ textarea.adm-input {
     color: var(--text);
 }
 
-/* ===== Menu Preview tab ===== */
 .menu-preview-wrap {
     display: inline-block;
 }
@@ -962,7 +869,6 @@ textarea.adm-input {
     margin: 0;
 }
 
-/* ===== Drag-and-drop: Menu Preview ===== */
 .menu-dnd-item {
     cursor: grab;
     position: relative;
@@ -1005,7 +911,6 @@ textarea.adm-input {
     background: var(--accent);
 }
 
-/* ── Demo Systems tab ─────────────────────────────────────────────── */
 .demo-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1197,7 +1102,6 @@ textarea.adm-input {
     margin-top: 12px;
 }
 
-/* ── Admin utility: badges ─────────────────────────────────────────── */
 .adm-badge {
     display: inline-block;
     padding: 2px 8px;
@@ -1206,8 +1110,7 @@ textarea.adm-input {
     font-weight: 700;
     white-space: nowrap;
 }
-/* Ok and danger carry hue; caution has none, so it keeps an outline to stay
-   distinct from the flat "low"/"muted" tint. */
+
 .adm-badge-ok     { background: var(--ok-light);     color: var(--ok); }
 .adm-badge-danger { background: var(--error-light); color: var(--error); }
 .adm-badge-warn   { background: var(--warn-light);   color: var(--text);  box-shadow: inset 0 0 0 1px var(--muted); }
@@ -1216,7 +1119,6 @@ textarea.adm-input {
 .adm-badge-medium { background: var(--warn-light);   color: var(--text);  box-shadow: inset 0 0 0 1px var(--muted); }
 .adm-badge-low    { background: var(--border-light); color: var(--muted); }
 
-/* ── Admin utility: tables ─────────────────────────────────────────── */
 .adm-tbl { width: 100%; border-collapse: collapse; }
 .adm-th  {
     text-align: left;
@@ -1230,12 +1132,9 @@ textarea.adm-input {
 .adm-th-sm { padding: 6px 10px; }
 .adm-td    { padding: 8px 12px; border-bottom: 1px solid var(--border-light); }
 .adm-td-sm { padding: 6px 10px; }
-/* Placeholder for an optional cell left empty by the user (renders an em dash). */
+
 .adm-td-empty { color: var(--muted); }
 
-/* ── Admin utility: modal dialog ───────────────────────────────────── */
-/* Chrome for buildModal() in admin/js/ui.js. Lives here rather than inline so
-   the dialog follows the panel token instead of a hardcoded white. */
 .adm-modal-overlay {
     position: fixed;
     inset: 0;
@@ -1257,7 +1156,6 @@ textarea.adm-input {
 .adm-modal-msg     { min-height: 18px; margin: 4px 0 12px; }
 .adm-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-/* ── Admin utility: section cards ──────────────────────────────────── */
 .adm-sec-card {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -1275,7 +1173,6 @@ textarea.adm-input {
 }
 .adm-sec-body { padding: 16px 18px; }
 
-/* ── Admin utility: stat tiles (centered count + label) ────────────── */
 .stat-tile {
     padding: 16px 18px;
     text-align: center;
@@ -1283,23 +1180,18 @@ textarea.adm-input {
 .stat-tile-label { font-size: 13px; margin: 0 0 6px; }
 .stat-tile-value { font-size: 28px; font-weight: bold; }
 
-/* ── Admin utility: text colour helpers ────────────────────────────── */
 .c-muted  { color: var(--muted); }
 .c-danger { color: var(--error); }
-/* .c-danger and .c-error now resolve to the same red; both are kept because
-   both are in use. Prefer .c-error for failure messages. */
+
 .c-error  { color: var(--error); }
 .c-ok     { color: var(--ok); }
 .c-warn   { color: var(--warn); }
 .c-text   { color: var(--text); }
 
-/* ── Dashboard widget editor ────────────────────────────────────────── */
-/* Split layout: form panel on the left, sticky live-preview panel on the right. */
 .dash-editor-split { display: flex; gap: 24px; align-items: flex-start; }
 .dash-editor-form { flex: 1 1 0; min-width: 0; }
 .dash-editor-preview { flex: 0 0 280px; position: sticky; top: 28px; }
 
-/* Preview panel header. */
 .dash-preview-hdr {
     font-weight: 600;
     border-bottom: 1px solid var(--border-light);
@@ -1307,7 +1199,6 @@ textarea.adm-input {
     margin-bottom: 12px;
 }
 
-/* Query configuration block (accent-bordered group). */
 .dash-query-block {
     border-left: 2px solid var(--accent);
     padding-left: 15px;
@@ -1315,15 +1206,12 @@ textarea.adm-input {
     margin-bottom: 20px;
 }
 
-/* Width/height selectors row. */
 .dash-size-block { display: flex; gap: 16px; margin-bottom: 16px; }
 
-/* WHERE-conditions builder. */
 .dash-cond-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .dash-cond-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .dash-cond-where { width: 70px; text-align: center; }
 
-/* "Calculate (real data)" JSON output pane. */
 .dash-calc-out {
     margin-top: 8px;
     padding: 8px 10px;
@@ -1336,7 +1224,6 @@ textarea.adm-input {
     white-space: pre-wrap;
 }
 
-/* ── Overview dashboard ─────────────────────────────────────────────── */
 .ov-loading {
     color: var(--text);
     padding: 24px 0;
@@ -1530,10 +1417,6 @@ textarea.adm-input {
     margin: 4px 0 0;
 }
 
-/* ===== Automations editor ===== */
-/* Field layout mirrors the Workflows editor: stacked .form-group fields for the
-   single-value inputs, and these row/section classes for the repeatable builders
-   (conditions, actions, key = value maps) that cannot be stacked. */
 .auto-form {
     display: flex;
     flex-direction: column;
@@ -1550,7 +1433,6 @@ textarea.adm-input {
     max-width: 100%;
 }
 
-/* Two fields side by side (trigger table + event). */
 .auto-form-row {
     display: flex;
     gap: 16px;
@@ -1575,7 +1457,6 @@ textarea.adm-input {
     margin-right: 0;
 }
 
-/* Titled section (Conditions, Actions). */
 .auto-section {
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
@@ -1594,7 +1475,6 @@ textarea.adm-input {
     margin: 12px 0 6px;
 }
 
-/* One repeatable row: [field] [operator] [value] [x] */
 .auto-row {
     display: flex;
     gap: 8px;
@@ -1631,8 +1511,7 @@ textarea.adm-input {
     font-family: inherit;
 }
 .auto-row > input:disabled { opacity: .45; }
-/* Width modifiers — kept element-qualified so they outrank the generic
-   `.auto-row > input/select` flex rule above. */
+
 .auto-row > select.auto-row-op     { flex: 0 0 150px; }
 .auto-row > input.auto-row-narrow,
 .auto-row > select.auto-row-narrow { flex: 0 0 110px; }
@@ -1654,7 +1533,6 @@ textarea.adm-input {
     margin-top: 8px;
 }
 
-/* Condition group (recursive AND/OR nesting). */
 .auto-group-header {
     display: flex;
     align-items: center;
@@ -1677,7 +1555,6 @@ textarea.adm-input {
     margin: 0 0 10px 8px;
 }
 
-/* One action card inside the Actions section. */
 .auto-action {
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -1697,7 +1574,6 @@ textarea.adm-input {
     color: var(--text);
 }
 
-/* Inline explanatory text inside an action body. */
 .auto-hint {
     color: var(--text);
     font-style: italic;
@@ -1705,7 +1581,6 @@ textarea.adm-input {
     line-height: 1.5;
 }
 
-/* Notification recipient picker. */
 .auto-chips {
     display: flex;
     flex-wrap: wrap;
@@ -1745,7 +1620,6 @@ textarea.adm-input {
 }
 .auto-picker-row.selected { background: rgba(31, 42, 55, .04); }
 
-/* Transient inline feedback pill next to a control. */
 .auto-status-pill {
     display: inline-flex;
     align-items: center;
@@ -1772,7 +1646,6 @@ textarea.adm-input {
     color: var(--text);
 }
 
-/* Run-history status cell. */
 .auto-run-badge {
     display: inline-block;
     padding: 2px 8px;

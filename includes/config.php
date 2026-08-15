@@ -4,40 +4,20 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
-//
-// config.php — Central configuration loader (environment variables + JSON files)
-// Defines constants for DB, session, security, rate limiting, file uploads, comments, notifications, snapshots, chat bubble, RAG, MySQL (ETL source)
-// Sets session.save_path to absolute path under project root; configures session.gc_maxlifetime; detects HTTPS behind reverse proxies
-// Generates IP_HASH_SALT for login throttling if not set via env; resolves TRUST_PROXY_HEADERS for client_ip()
-// Includes version.php and defines OPENSPARROW_CONFIG_LOADED guard to prevent double inclusion
 
 declare(strict_types=1);
 
-// Functions are declared OUTSIDE the OPENSPARROW_CONFIG_LOADED guard and
-// wrapped in function_exists(). If something (e.g. auto_prepend_file, an
-// opcache-cached older copy of this file, or an unrelated define()) sets
-// OPENSPARROW_CONFIG_LOADED before this file runs, the guard short-circuits
-// the constants block — but get_env() / client_ip() must still be defined or
-// login.php fatals with "Call to undefined function client_ip()".
 if (!function_exists('get_env')) {
     function get_env(string $key, string $default = ''): string
     {
         $v = getenv($key);
         return ($v === false || $v === '') ? $default : $v;
     }
-
 }
 
-// Resolve the real client IP. Behind a reverse proxy (CloudFlare, Nginx), $_SERVER['REMOTE_ADDR']
-// points to the proxy, not the user — breaking rate limiting (all users appear to share one IP).
-// CloudFlare adds HTTP_CF_CONNECTING_IP + HTTP_CF_RAY signature; we only trust them together.
-// Generic proxies set HTTP_X_REAL_IP. Falls back to REMOTE_ADDR for direct connections (localhost).
 if (!function_exists('client_ip')) {
     function client_ip(): string
     {
-        // When the app is directly reachable (not strictly behind the trusted
-        // proxy), operators can set TRUST_PROXY_HEADERS=false so spoofed
-        // forwarding headers cannot be used to evade per-IP login rate limiting.
         if (defined('TRUST_PROXY_HEADERS') && !TRUST_PROXY_HEADERS) {
             return $_SERVER['REMOTE_ADDR'] ?? '';
         }
@@ -49,12 +29,8 @@ if (!function_exists('client_ip')) {
         }
         return $_SERVER['REMOTE_ADDR'] ?? '';
     }
-
 }
 
-// Read a single key from the "settings" config (spw_config store),
-// returning $default when absent. Cached for
-// the request so repeated lookups resolve the config once.
 if (!function_exists('settings_value')) {
     function settings_value(string $key, mixed $default = null): mixed
     {
@@ -68,12 +44,10 @@ if (!function_exists('settings_value')) {
                     $settings = $decoded;
                 }
             } catch (Throwable $e) {
-                // Bootstrap must never fail on config lookup problems.
             }
         }
         return array_key_exists($key, $settings) ? $settings[$key] : $default;
     }
-
 }
 
 if (defined('OPENSPARROW_CONFIG_LOADED')) {
@@ -81,9 +55,7 @@ if (defined('OPENSPARROW_CONFIG_LOADED')) {
 }
 define('OPENSPARROW_CONFIG_LOADED', true);
 require_once __DIR__ . '/version.php';
-// Detect HTTPS through reverse proxy (CloudFlare, Nginx, load balancer).
-// Required: when behind proxy, $_SERVER['HTTPS'] is empty even though client uses HTTPS.
-// PHP's session secure cookie flag depends on this — without it, sessions break.
+
 if (
     (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
     (!empty($_SERVER['HTTP_CF_VISITOR']) && stripos($_SERVER['HTTP_CF_VISITOR'], '"scheme":"https"') !== false) ||
@@ -93,15 +65,6 @@ if (
     $_SERVER['SERVER_PORT'] = 443;
 }
 
-// Force absolute path for session storage.
-// PHP-FPM may chdir to the script's directory, so a relative save_path like "tmp"
-// resolves to "./tmp" — different folder per script location, breaking session
-// continuity between /login.php and /admin/index.php.
-// Resolves relative paths against project root (parent of includes/).
-// Force an absolute session save path so that PHP-FPM pools that inherit
-// a system-level session.save_path (e.g. /tmp, blocked by open_basedir on
-// shared hosts) do not break session continuity between subdirectories.
-// Priority: SESSION_SAVE_PATH env var > project storage/sessions fallback.
 $_projectRoot = realpath(__DIR__ . '/..');
 $_envSessPath = get_env('SESSION_SAVE_PATH', '');
 if ($_envSessPath !== '') {
@@ -123,17 +86,6 @@ if ($_envSessPath !== '') {
 }
 unset($_projectRoot, $_envSessPath);
 
-// Soft fallback for the system temp directory (mirrors the session.save_path
-// handling above). On locked-down shared hosts the default /tmp is often blocked
-// (open_basedir / 403 on home.pl), which breaks app-level temp operations that go
-// through sys_get_temp_dir() — tempnam()/tmpfile(), GD thumbnail buffers, etc.
-// Pointing them at storage/tmp inside the project keeps those working everywhere.
-//
-// NOTE: this does NOT redirect PHP's *file-upload* temp dir. That is governed by
-// upload_tmp_dir (PHP_INI_SYSTEM), resolved before any script runs, so it cannot be
-// changed here — a host with a broken /tmp will still emit UPLOAD_ERR_NO_TMP_DIR
-// until upload_tmp_dir is set in .user.ini / the hosting panel. See docs.
-// Priority: SYS_TEMP_DIR env var > project storage/tmp fallback.
 $_projectRoot = realpath(__DIR__ . '/..');
 $_envTmpPath  = get_env('SYS_TEMP_DIR', '');
 if ($_envTmpPath !== '') {
@@ -156,55 +108,26 @@ if ($_envTmpPath !== '') {
     unset($_absTmp);
 }
 unset($_projectRoot, $_envTmpPath);
-// -------------------------------------------------------------------------
-// Runtime environment
-// -------------------------------------------------------------------------
 
-// Application environment. Controls environment-specific behaviour such as
-// error reporting verbosity. Set to "development" during local development.
 define('APP_ENV', get_env('APP_ENV', 'production'));
-// -------------------------------------------------------------------------
-// Database connection
-// -------------------------------------------------------------------------
 
-// Hostname of the PostgreSQL server. Falls back to the standard PGHOST env var.
 define('DB_HOST', get_env('DB_HOST', get_env('PGHOST', 'localhost')));
-// Port the PostgreSQL server listens on. Falls back to the standard PGPORT env var.
+
 define('DB_PORT', get_env('DB_PORT', get_env('PGPORT', '5432')));
-// Maximum number of seconds to wait when establishing a database connection
-// before giving up and throwing a RuntimeException.
+
 define('DB_CONNECT_TIMEOUT', (int) get_env('DB_CONNECT_TIMEOUT', '5'));
-// PostgreSQL time zone applied at the session level immediately after connecting.
-// Must be a valid IANA tz database identifier (e.g. "UTC", "Europe/Warsaw").
+
 define('APP_TIMEZONE', get_env('APP_TIMEZONE', 'Europe/Warsaw'));
-// -------------------------------------------------------------------------
-// Session & cookies
-// -------------------------------------------------------------------------
 
-// Controls the Secure flag on session cookies. Set to "false" on plain HTTP
-// (local development without TLS); always "true" in production.
 define('SECURE_COOKIES', get_env('SECURE_COOKIES', 'true') === 'true');
-// SameSite policy for session cookies. "Lax" is the recommended value — it
-// blocks cross-site POST requests while allowing same-site redirects.
-// "Strict" breaks logins that redirect across paths (e.g. login.php → admin/).
+
 define('SESSION_SAMESITE', get_env('SESSION_SAMESITE', 'Lax'));
-// Maximum session lifetime in seconds. After this period the user is logged out
-// regardless of browser cookie state. Default is 8 hours (28 800 s).
+
 define('SESSION_MAX_LIFETIME', (int) get_env('SESSION_MAX_LIFETIME', '28800'));
-// Sync PHP's garbage collector with our app-level session lifetime.
-// Default php.ini session.gc_maxlifetime is 1440 s (24 min) — PHP could delete
-// session files long before SESSION_MAX_LIFETIME, silently logging users out.
+
 ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
-// -------------------------------------------------------------------------
-// Authentication & rate limiting
-// -------------------------------------------------------------------------
 
-// HMAC-SHA256 secret used to pseudonymise client IP addresses before storing
-// them in the login_attempts table. Prefer the IP_HASH_SALT env var in production.
-// When neither env nor stored file is present, generate a 64-char random salt
-// and persist to includes/.secret_salt (web-denied by includes/.htaccess + gitignored).
 (static function (): void {
-
     $env = get_env('IP_HASH_SALT', '');
     if ($env !== '') {
         define('IP_HASH_SALT', $env);
@@ -219,11 +142,7 @@ ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
     }
     define('IP_HASH_SALT', $stored);
 })();
-// Symmetric key used to encrypt secrets stored at rest in spw_config (e.g. the
-// RAG module's Ollama Cloud API key). Prefer the APP_ENCRYPTION_KEY env var in
-// production. When neither env nor stored file is present, generate a 64-char
-// random key and persist to includes/.secret_key (web-denied by includes/.htaccess
-// + gitignored), mirroring the IP_HASH_SALT bootstrap above.
+
 (static function (): void {
     $env = get_env('APP_ENCRYPTION_KEY', '');
     if ($env !== '') {
@@ -240,124 +159,60 @@ ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
     define('APP_ENCRYPTION_KEY', $stored);
 })();
 require_once __DIR__ . '/crypto.php';
-// Argon2id parameters used for every password hash in the application.
-// Centralised because login.php's password_needs_rehash() check and every
-// writer (setup, admin user management, change_password) must agree —
-// divergent options silently force a rehash of each password on next login.
+
 define('ARGON2_OPTIONS', ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1]);
-// Maximum number of failed login attempts allowed from a single IP address
-// within the lockout window before that IP is temporarily blocked.
+
 define('LOGIN_MAX_ATTEMPTS_PER_IP', (int) get_env('LOGIN_MAX_ATTEMPTS_PER_IP', '20'));
-// Maximum number of failed login attempts allowed for a single username
-// within the lockout window before that account is temporarily blocked.
+
 define('LOGIN_MAX_ATTEMPTS_PER_USERNAME', (int) get_env('LOGIN_MAX_ATTEMPTS_PER_USERNAME', '5'));
-// Duration in minutes for which a locked-out IP or username is blocked
-// after exceeding the respective attempt threshold.
+
 define('LOGIN_LOCKOUT_MINUTES', (int) get_env('LOGIN_LOCKOUT_MINUTES', '15'));
-// Whether to trust reverse-proxy client-IP headers (CF-Connecting-IP, X-Real-IP)
-// when resolving the client address for login rate limiting. Keep "true" behind
-// the bundled nginx/Cloudflare setup; set "false" when the app is directly
-// reachable so a client cannot spoof these headers to bypass per-IP throttling.
+
 define('TRUST_PROXY_HEADERS', get_env('TRUST_PROXY_HEADERS', 'true') === 'true');
-// -------------------------------------------------------------------------
-// Demo mode
-// -------------------------------------------------------------------------
 
-// When true, write operations (save, delete, import) are blocked in the admin
-// panel API, allowing safe public demonstrations without risking data changes.
 define('DEMO_MODE', get_env('DEMO_MODE', 'false') === 'true');
-// -------------------------------------------------------------------------
-// File storage & uploads
-// -------------------------------------------------------------------------
 
-// Default maximum upload size in megabytes, used when the value is not
-// specified in the files module configuration ("files" config key).
 define('FILES_MAX_SIZE_MB', (int) get_env('FILES_MAX_SIZE_MB', '20'));
-// Default number of file records returned per page in the file listing API.
-define('FILES_PAGE_LIMIT', (int) get_env('FILES_PAGE_LIMIT', '25'));
-// Hard ceiling on the number of file records a single API request may return,
-// regardless of the "limit" query parameter supplied by the client.
-define('FILES_PAGE_LIMIT_MAX', (int) get_env('FILES_PAGE_LIMIT_MAX', '100'));
-// Maximum pixel width for generated image thumbnails. The height is scaled
-// proportionally. Images narrower than this value are served as-is.
-define('THUMBNAIL_MAX_WIDTH', (int) get_env('THUMBNAIL_MAX_WIDTH', '300'));
-// Cache-Control max-age in seconds for standard file downloads (private cache).
-define('FILE_CACHE_MAX_AGE', (int) get_env('FILE_CACHE_MAX_AGE', '3600'));
-// Cache-Control max-age in seconds for generated thumbnails (public cache).
-// Longer than FILE_CACHE_MAX_AGE because thumbnails are deterministic and safe
-// to store in shared caches.
-define('THUMBNAIL_CACHE_MAX_AGE', (int) get_env('THUMBNAIL_CACHE_MAX_AGE', '86400'));
-// -------------------------------------------------------------------------
-// Comments
-// -------------------------------------------------------------------------
 
-// Hard ceiling on the number of comments a single API request may return when
-// a "limit" query parameter is provided (used for preview/inline widgets).
+define('FILES_PAGE_LIMIT', (int) get_env('FILES_PAGE_LIMIT', '25'));
+
+define('FILES_PAGE_LIMIT_MAX', (int) get_env('FILES_PAGE_LIMIT_MAX', '100'));
+
+define('THUMBNAIL_MAX_WIDTH', (int) get_env('THUMBNAIL_MAX_WIDTH', '300'));
+
+define('FILE_CACHE_MAX_AGE', (int) get_env('FILE_CACHE_MAX_AGE', '3600'));
+
+define('THUMBNAIL_CACHE_MAX_AGE', (int) get_env('THUMBNAIL_CACHE_MAX_AGE', '86400'));
+
 define('COMMENTS_PAGE_LIMIT_MAX', (int) get_env('COMMENTS_PAGE_LIMIT_MAX', '50'));
 
-// Number of own comments listed in the "My comments" panel (avatar menu), newest first.
 define('COMMENTS_MINE_LIMIT', (int) get_env('COMMENTS_MINE_LIMIT', '50'));
-// -------------------------------------------------------------------------
-// Notifications
-// -------------------------------------------------------------------------
 
-// Maximum number of notifications fetched for the dropdown bell menu.
-// Increasing this value affects header rendering time for every page load.
 define('NOTIFICATIONS_DROPDOWN_LIMIT', (int) get_env('NOTIFICATIONS_DROPDOWN_LIMIT', '10'));
-// From address for automation emails queued in spw_automation_emails and sent
-// by cron/cron_notifications.php. When empty, queued emails stay pending and
-// the cron logs a warning. Env var takes precedence over settings.json.
+
 define('AUTOMATION_EMAIL_FROM', (function (): string {
     $env = get_env('AUTOMATION_EMAIL_FROM', '');
     return $env !== '' ? $env : (string) settings_value('automation_email_from', '');
 })());
-// Maximum number of queued automation emails delivered per cron run.
+
 define('AUTOMATION_EMAIL_BATCH_LIMIT', (int) get_env('AUTOMATION_EMAIL_BATCH_LIMIT', '50'));
-// Delivery attempts per queued email before it is marked as permanently failed.
+
 define('AUTOMATION_EMAIL_MAX_ATTEMPTS', (int) get_env('AUTOMATION_EMAIL_MAX_ATTEMPTS', '3'));
-// -------------------------------------------------------------------------
-// Admin panel
-// -------------------------------------------------------------------------
 
-// Maximum allowed size in bytes for a single configuration value (the serialized
-// JSON of a spw_config key such as "schema" or "menu"). Enforced by config_save();
-// prevents memory exhaustion from unexpectedly large or corrupt configuration.
 define('CONFIG_FILE_MAX_BYTES', (int) get_env('CONFIG_FILE_MAX_BYTES', '524288'));
-// Hard ceiling on the number of rows returned by the grid list API (api=list).
-// Prevents PHP memory exhaustion on very large tables. Per-table initial_limit
-// in schema.json takes precedence when set; this is the global fallback.
-// Override via env var for installations with high-memory PHP pools.
+
 define('MAX_LIST_ROWS', (int) get_env('MAX_LIST_ROWS', '10000'));
-// -------------------------------------------------------------------------
-// HTTP security headers
-// -------------------------------------------------------------------------
 
-// max-age value (in seconds) for the Strict-Transport-Security header.
-// Default is 1 year (31 536 000 s). Set to 0 to disable HSTS on plain HTTP.
 define('HSTS_MAX_AGE', (int) get_env('HSTS_MAX_AGE', '31536000'));
-// -------------------------------------------------------------------------
-// Audit & record snapshots
-// -------------------------------------------------------------------------
 
-// When true, a JSONB snapshot of every inserted/updated/deleted record is
-// saved to spw_record_snapshots and linked to the corresponding audit log entry.
-// Can be toggled at runtime via Admin → System → Audit & Snapshots.
-// The RECORD_SNAPSHOTS_ENABLED env var takes precedence over the settings file.
 define('RECORD_SNAPSHOTS_ENABLED', (function (): bool {
-
     $env = get_env('RECORD_SNAPSHOTS_ENABLED', '');
     if ($env !== '') {
         return $env === 'true';
     }
     return (bool) settings_value('record_snapshots_enabled', false);
 })());
-// -------------------------------------------------------------------------
-// AI Chat Bubble
-// -------------------------------------------------------------------------
 
-// When true, a floating chat button appears in the bottom-right corner of
-// every app page. Can be toggled via Admin → Settings.
-// The CHAT_BUBBLE_ENABLED env var takes precedence over the settings file.
 define('CHAT_BUBBLE_ENABLED', (function (): bool {
     $env = get_env('CHAT_BUBBLE_ENABLED', '');
     if ($env !== '') {
@@ -365,21 +220,13 @@ define('CHAT_BUBBLE_ENABLED', (function (): bool {
     }
     return (bool) settings_value('chat_bubble_enabled', false);
 })());
-// -------------------------------------------------------------------------
-// RAG (Retrieval-Augmented Generation)
-// -------------------------------------------------------------------------
 
-// Base URL of the local Ollama instance. Override via env or the "rag" config.
 define('OLLAMA_URL', get_env('OLLAMA_URL', 'http://localhost:11434'));
-// Default Ollama model name. Override via env or the "rag" config.
+
 define('OLLAMA_MODEL', get_env('OLLAMA_MODEL', 'llama3'));
-// Maximum number of assistant queries a single user may submit per minute.
-// Set to 0 to disable per-user rate limiting.
+
 define('RAG_RATE_LIMIT_PER_MIN', (int) get_env('RAG_RATE_LIMIT_PER_MIN', '10'));
-// Maximum number of assistant queries processed concurrently across the server.
-// Protects the PHP-FPM pool from being exhausted by slow Ollama calls. Set to 0 to disable.
+
 define('RAG_MAX_CONCURRENT', (int) get_env('RAG_MAX_CONCURRENT', '2'));
-// Hard backstop on the character length of the grid page context accepted from the
-// client. The client already limits rows and columns; this guards against a tampered
-// client sending an oversized payload.
+
 define('RAG_PAGE_CONTEXT_MAX_CHARS', (int) get_env('RAG_PAGE_CONTEXT_MAX_CHARS', '12000'));
