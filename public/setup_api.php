@@ -5,17 +5,23 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
+require_once __DIR__ . '/../includes/exception_handler.php';
+
+use App\Exception\BadRequestException;
+use App\Exception\ControlFlowException;
+use App\Exception\ForbiddenException;
+use App\Exception\ResponseException;
+
 ini_set('display_errors', '0');
+os_register_exception_handler('json');
 
 header('Content-Type: application/json');
 
 if (file_exists(__DIR__ . '/../config/database.json')) {
-    http_response_code(403);
-    echo json_encode([
+    throw new ForbiddenException('System is already configured. Access denied.', [
         'success' => false,
         'message' => 'System is already configured. Access denied.'
     ]);
-    exit;
 }
 
 $action = $_GET['action'] ?? '';
@@ -47,8 +53,7 @@ function read_json_body(int $maxBytes = 8192): ?array
 if ($action === 'test_connection') {
     $data = read_json_body();
     if ($data === null) {
-        echo json_encode(['success' => false, 'message' => 'Invalid or oversized request body']);
-        exit;
+        throw ResponseException::encoded(['success' => false, 'message' => 'Invalid or oversized request body']);
     }
 
     $host = $data['host'] ?? '';
@@ -58,27 +63,24 @@ if ($action === 'test_connection') {
     $password = $data['password'] ?? '';
 
     if (!$host || !$dbname || !$user) {
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => 'Missing required fields'
         ]);
-        exit;
     }
 
     if ($port < 1 || $port > 65535) {
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => 'Invalid port number'
         ]);
-        exit;
     }
 
     if (is_private_ip($host)) {
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => 'Connection failed. Check host, port, database name, username, or password.'
         ]);
-        exit;
     }
 
     $connStr = "host=" . pg_connstr_escape($host) .
@@ -92,11 +94,10 @@ if ($action === 'test_connection') {
 
     if (!$conn) {
         $safeError = 'Connection failed. Check host, port, database name, username, or password.';
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => $safeError
         ]);
-        exit;
     }
 
     $schemas = [];
@@ -113,19 +114,17 @@ if ($action === 'test_connection') {
 
     pg_close($conn);
 
-    echo json_encode([
+    throw ResponseException::encoded([
         'success' => true,
         'message' => 'Connection successful',
         'schemas' => $schemas
     ]);
-    exit;
 }
 
 if ($action === 'init_database') {
     $data = read_json_body();
     if ($data === null) {
-        echo json_encode(['success' => false, 'message' => 'Invalid or oversized request body']);
-        exit;
+        throw ResponseException::encoded(['success' => false, 'message' => 'Invalid or oversized request body']);
     }
 
     $host = $data['host'] ?? '';
@@ -139,35 +138,31 @@ if ($action === 'init_database') {
     $installDemo = (bool)($data['install_demo'] ?? false);
 
     if (!$host || !$dbname || !$user || !$schema) {
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => 'Missing required fields'
         ]);
-        exit;
     }
 
     if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $schema)) {
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => 'Invalid schema name. Use alphanumeric characters and underscores only.'
         ]);
-        exit;
     }
 
     if ($dropSchema && strtolower($schema) === 'public') {
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => 'Refusing to drop the "public" schema. Choose a dedicated schema name instead.'
         ]);
-        exit;
     }
 
     if (is_private_ip($host)) {
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => 'Connection failed. Check host, port, database name, username, or password.'
         ]);
-        exit;
     }
 
     try {
@@ -313,13 +308,15 @@ if ($action === 'init_database') {
                 if (!$demoInstalled) {
                     $demoError = $demoResult['error'] ?? 'Demo installation failed.';
                 }
+            } catch (ControlFlowException $signal) {
+                throw $signal;
             } catch (Throwable $e) {
                 error_log('setup demo install error: ' . $e->getMessage());
                 $demoError = 'Demo installation failed. Check server logs for details.';
             }
         }
 
-        echo json_encode([
+        throw ResponseException::encoded([
             'success'         => true,
             'message'         => $adminId !== null
                 ? 'System initialized successfully.'
@@ -331,19 +328,17 @@ if ($action === 'init_database') {
             'demo_installed'  => $demoInstalled,
             'demo_error'      => $demoError,
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Exception $e) {
-        echo json_encode([
+        throw ResponseException::encoded([
             'success' => false,
             'message' => $e->getMessage()
         ]);
     }
-
-    exit;
 }
 
-http_response_code(400);
-echo json_encode([
+throw new BadRequestException('Invalid action', [
     'success' => false,
     'message' => 'Invalid action'
 ]);
-exit;

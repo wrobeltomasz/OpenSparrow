@@ -7,9 +7,14 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../includes/exception_handler.php';
+
+use App\Exception\ControlFlowException;
+use App\Exception\ForbiddenException;
+
 if (php_sapi_name() !== 'cli') {
-    http_response_code(403);
-    exit;
+    os_register_exception_handler('html');
+    throw new ForbiddenException('This script may only be run from the command line.');
 }
 
 @ini_set('output_buffering', 'off');
@@ -41,6 +46,8 @@ try {
     if ($purged !== null) {
         print_log("Click statistics retention: removed {$purged} expired row(s).");
     }
+} catch (ControlFlowException $signal) {
+    throw $signal;
 } catch (Throwable $e) {
     error_log('[cron_notifications] clickstats retention failed: ' . $e->getMessage());
 }
@@ -48,12 +55,12 @@ try {
 $config = config_get('calendar');
 if ($config === null) {
     print_log("<span style='color:red;'>Missing calendar configuration</span>");
-    exit;
+    exit(0);
 }
 
 if (empty($config['sources'])) {
     print_log("<span style='color:red;'>No sources defined in calendar.</span>");
-    exit;
+    exit(0);
 }
 
 print_log("Loaded calendar configuration. Number of sources: " . count($config['sources']) . "<br>");
@@ -311,6 +318,8 @@ try {
             [$sourcesProcessed, $insertedCount, $logId]
         );
     }
+} catch (ControlFlowException $signal) {
+    throw $signal;
 } catch (Throwable $e) {
     print_log("<span style='color:red;'>Critical error: " . htmlspecialchars($e->getMessage()) . "</span>");
     if (!empty($logId) && !empty($conn)) {

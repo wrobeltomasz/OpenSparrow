@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if ($action === 'rag_list') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -31,10 +34,12 @@ if ($action === 'rag_list') {
             $files[] = $row;
         }
         echo json_encode(['status' => 'success', 'files' => $files]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_upload') {
@@ -107,10 +112,12 @@ if ($action === 'rag_upload') {
             rag_store_chunks($conn, $fileId, $content, $ragCfg);
         }
         echo json_encode(['status' => 'success', 'id' => $fileId]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_delete') {
@@ -129,10 +136,12 @@ if ($action === 'rag_delete') {
             admin_db_fail($conn, 'rag_delete');
         }
         echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_rechunk') {
@@ -158,10 +167,12 @@ if ($action === 'rag_rechunk') {
         $cfg    = rag_config();
         $stored = rag_store_chunks($conn, $id, (string) $row['content'], $cfg);
         echo json_encode(['status' => 'success', 'chunks' => $stored]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_rechunk_all') {
@@ -185,10 +196,12 @@ if ($action === 'rag_rechunk_all') {
         }
 
         echo json_encode(['status' => 'success', 'processed' => $processed]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_settings') {
@@ -200,10 +213,12 @@ if ($action === 'rag_settings') {
         $cfg['ollama_api_key_configured'] = !empty($cfg['ollama_api_key_enc']);
         unset($cfg['ollama_api_key_enc']);
         echo json_encode(['status' => 'success', 'settings' => $cfg]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_settings_save') {
@@ -262,10 +277,12 @@ if ($action === 'rag_settings_save') {
             throw new AdminApiMessage($result['error'] ?? 'Could not save RAG configuration.');
         }
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -313,10 +330,12 @@ if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET
             'tables'          => $tables,
             'available_views' => $availableViews,
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_aggregate_view_save') {
@@ -375,10 +394,12 @@ if ($action === 'rag_aggregate_view_save') {
             throw new AdminApiMessage($result['error'] ?? 'Could not save the aggregate view mapping.');
         }
         echo json_encode(['status' => 'success', 'mappings' => $views]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_test_query') {
@@ -430,10 +451,12 @@ if ($action === 'rag_test_query') {
             $resp['prompt'] = $prompt;
         }
         echo json_encode($resp);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_ollama_check') {
@@ -515,10 +538,12 @@ if ($action === 'rag_ollama_check') {
         }
 
         echo json_encode(['status' => 'success', 'models' => $models, 'version' => $version]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -596,8 +621,10 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         unset($row);
 
         echo json_encode(['status' => 'success', 'summary' => $summary, 'recent' => $recent]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

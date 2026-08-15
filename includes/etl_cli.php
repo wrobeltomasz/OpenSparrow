@@ -11,12 +11,15 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/api_helpers.php';
 require_once __DIR__ . '/config_store.php';
 require_once __DIR__ . '/etl_engine.php';
+require_once __DIR__ . '/exception_handler.php';
+
+use App\Exception\ForbiddenException;
 
 function etl_cli_boot(): void
 {
     if (php_sapi_name() !== 'cli') {
-        http_response_code(403);
-        exit;
+        os_register_exception_handler('html');
+        throw new ForbiddenException('This script may only be run from the command line.');
     }
     @ini_set('output_buffering', 'off');
     while (ob_get_level() > 0) {

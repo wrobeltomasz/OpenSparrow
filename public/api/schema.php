@@ -7,13 +7,16 @@
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
+use App\Exception\HttpException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
 os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none']);
 
 header('Cache-Control: no-store, no-cache, must-revalidate');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    http_response_code(405);
-    exit;
+    throw HttpException::fromStatus(405, 'Method Not Allowed');
 }
 
 $userRole = $_SESSION['role'] ?? 'viewer';
@@ -21,9 +24,7 @@ require_once __DIR__ . '/../../includes/config_store.php';
 require_once __DIR__ . '/../../includes/images.php';
 $schemaData = config_get('schema');
 if (!is_array($schemaData) || !isset($schemaData['tables'])) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Invalid schema format']);
-    exit;
+    throw new ServerErrorException('Invalid schema format');
 }
 
 $publicSchema = [];
@@ -140,4 +141,4 @@ $response = ['tables' => $publicSchema];
 if ($pageSize !== null) {
     $response['default_page_size'] = $pageSize;
 }
-echo json_encode($response);
+throw ResponseException::encoded($response);

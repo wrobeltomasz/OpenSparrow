@@ -10,24 +10,30 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/api_helpers.php';
+require_once __DIR__ . '/../includes/bootstrap.php';
+
+use App\Exception\BadRequestException;
+use App\Exception\ForbiddenException;
+use App\Exception\NotFoundException;
+use App\Exception\ResponseException;
+use App\Exception\UnauthorizedException;
+
+os_register_exception_handler('html');
 start_session();
 send_security_headers('', false, 'download');
 
 if (empty($_SESSION['user_id'])) {
-    http_response_code(401);
-    exit('Unauthorised');
+    throw new UnauthorizedException('Unauthorised');
 }
 
 $uuid  = trim($_GET['uuid'] ?? '');
 $thumb = !empty($_GET['thumb']);
 if ($uuid === '') {
-    http_response_code(400);
-    exit('Missing uuid');
+    throw new BadRequestException('Missing uuid');
 }
 
 if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid)) {
-    http_response_code(400);
-    exit('Invalid uuid');
+    throw new BadRequestException('Invalid uuid');
 }
 
 $conn = db_connect();
@@ -39,16 +45,14 @@ $sql = "
 ";
 $res = @pg_query_params($conn, $sql, [$uuid]);
 if (!$res || pg_num_rows($res) === 0) {
-    http_response_code(404);
-    exit('File not found in database');
+    throw new NotFoundException('File not found in database');
 }
 
 $row = pg_fetch_assoc($res);
 pg_free_result($res);
 
 if ($row['deleted_at'] !== null) {
-    http_response_code(404);
-    exit('File was deleted');
+    throw new NotFoundException('File was deleted');
 }
 
 $relatedTable = $row['related_table'] ?? null;
@@ -62,12 +66,10 @@ if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
         $role = $_SESSION['role'] ?? '';
 
         if (!user_can_access_table((string) $relatedTable)) {
-            http_response_code(404);
-            exit('File not found in database');
+            throw new NotFoundException('File not found in database');
         }
         if (!can_access_record($conn, $tableCfg, $relatedTable, (int) $relatedId, $uid, $role)) {
-            http_response_code(404);
-            exit('File not found in database');
+            throw new NotFoundException('File not found in database');
         }
     }
 }
@@ -76,13 +78,11 @@ $filePath = __DIR__ . '/../' . $row['storage_path'];
 $realBase = realpath(__DIR__ . '/../storage');
 $realFile = realpath($filePath);
 if ($realFile === false || !str_starts_with($realFile, $realBase . DIRECTORY_SEPARATOR)) {
-    http_response_code(403);
-    exit('Access denied');
+    throw new ForbiddenException('Access denied');
 }
 
 if (!file_exists($realFile)) {
-    http_response_code(404);
-    exit('Physical file is missing from storage');
+    throw new NotFoundException('Physical file is missing from storage');
 }
 
 $mime = $row['mime_type'];
@@ -90,7 +90,7 @@ $name = $row['name'];
 
 if ($thumb && str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml') {
     serveThumbnail($realFile, $mime);
-    exit;
+    throw ResponseException::sent();
 }
 
 $safeName = rawurlencode(basename(str_replace(["\r","\n","\0"], '', $name)));
@@ -108,7 +108,7 @@ header('Content-Length: ' . filesize($realFile));
 header('Cache-Control: private, max-age=' . FILE_CACHE_MAX_AGE);
 
 readfile($realFile);
-exit;
+throw ResponseException::sent();
 
 function serveThumbnail(string $path, string $mime): void
 {

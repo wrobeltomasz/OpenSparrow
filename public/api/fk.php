@@ -7,6 +7,8 @@
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
+use App\Exception\ResponseException;
+
 os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none']);
 
 $table = $_GET['table'] ?? '';
@@ -15,18 +17,14 @@ require_once __DIR__ . '/../../includes/config_store.php';
 $schemaData = config_get('schema');
 
 if (!is_array($schemaData) || !isset($schemaData['tables'][$table]['foreign_keys'][$col])) {
-    header('Content-Type: application/json');
-    echo json_encode(['rows' => []]);
-    exit;
+    throw ResponseException::json(['rows' => []]);
 }
 
 require_table_access($table);
 
 $refTable = $schemaData['tables'][$table]['foreign_keys'][$col]['reference_table'] ?? '';
 if (empty($refTable)) {
-    header('Content-Type: application/json');
-    echo json_encode(['rows' => []]);
-    exit;
+    throw ResponseException::json(['rows' => []]);
 }
 
 $filterCol = $_GET['filter_col'] ?? '';
@@ -58,4 +56,4 @@ $_GET['api'] = 'list';
 $_GET['table'] = $refTable;
 
 require __DIR__ . '/../api.php';
-exit;
+throw ResponseException::sent();

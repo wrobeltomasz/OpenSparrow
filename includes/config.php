@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/autoload.php';
+
 if (!function_exists('get_env')) {
     function get_env(string $key, string $default = ''): string
     {
@@ -43,6 +45,8 @@ if (!function_exists('settings_value')) {
                 if (is_array($decoded)) {
                     $settings = $decoded;
                 }
+            } catch (\App\Exception\ControlFlowException $signal) {
+                throw $signal;
             } catch (Throwable $e) {
             }
         }

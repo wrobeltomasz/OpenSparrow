@@ -305,13 +305,13 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
 
         $this->assertCodeHas(
-            'echo $schemaJson;',
+            'throw ResponseException::raw((string) $schemaJson);',
             $src,
-            'The schema branch must echo the filtered document, not $schema itself.'
+            'The schema branch must return the filtered document, not $schema itself.'
         );
         $this->assertFalse(
-            str_contains($src, 'echo json_encode($schema);'),
-            'The schema branch must not echo the unfiltered internal $schema.'
+            str_contains($src, 'json_encode($schema)'),
+            'The schema branch must not return the unfiltered internal $schema.'
         );
     }
 }

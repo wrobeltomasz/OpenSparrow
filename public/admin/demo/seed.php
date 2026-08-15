@@ -7,9 +7,12 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if (!defined('DEMO_MODE')) {
     http_response_code(403);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'demo_status') {
@@ -32,7 +35,7 @@ if ($action === 'demo_status') {
             'snapshots_locked_by_env' => $snapshotsLockedByEnv,
         ]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 function demo_install_run(string $type, bool $withRagDocs = true, bool $withUsers = true, bool $withAudit = true): array
@@ -624,6 +627,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
 
         log_user_action($conn, (int)($_SESSION['user_id'] ?? 0), 'DEMO_INSTALL', 'demo', null);
         return ['status' => 'success', 'meta' => $meta];
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Exception $e) {
         return ['status' => 'error', 'error' => $e->getMessage()];
     }
@@ -631,8 +636,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
 
 if ($action === 'demo_install') {
     if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
-        exit;
+        throw ResponseException::encoded(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
     }
 
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -645,36 +649,30 @@ if ($action === 'demo_install') {
     $withAudit = (!isset($body['audit_history']) || (bool) $body['audit_history']) && $withUsers;
 
     if ($type !== 'crm') {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid demo type.']);
-        exit;
+        throw ResponseException::encoded(['status' => 'error', 'error' => 'Invalid demo type.']);
     }
     if ($confirm !== 'CONFIRM') {
-        echo json_encode(['status' => 'error', 'error' => 'Confirmation required.']);
-        exit;
+        throw ResponseException::encoded(['status' => 'error', 'error' => 'Confirmation required.']);
     }
 
-    echo json_encode(demo_install_run($type, $withRag, $withUsers, $withAudit));
-    exit;
+    throw ResponseException::encoded(demo_install_run($type, $withRag, $withUsers, $withAudit));
 }
 
 if ($action === 'demo_uninstall') {
     if ($isDemoMode) {
-        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
-        exit;
+        throw ResponseException::encoded(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
     }
 
     $body    = json_decode(file_get_contents('php://input'), true) ?? [];
     $confirm = $body['confirm'] ?? '';
     if ($confirm !== 'CONFIRM') {
-        echo json_encode(['status' => 'error', 'error' => 'Confirmation required.']);
-        exit;
+        throw ResponseException::encoded(['status' => 'error', 'error' => 'Confirmation required.']);
     }
 
     $configDir = realpath(__DIR__ . '/../../../config');
     $metaPath = $configDir . '/demo_meta.json';
     if (!file_exists($metaPath)) {
-        echo json_encode(['status' => 'error', 'error' => 'No demo installed.']);
-        exit;
+        throw ResponseException::encoded(['status' => 'error', 'error' => 'No demo installed.']);
     }
 
     $meta = json_decode(file_get_contents($metaPath), true) ?? [];
@@ -957,10 +955,12 @@ if ($action === 'demo_uninstall') {
         @unlink($metaPath);
         log_user_action($conn, (int)($_SESSION['user_id'] ?? 0), 'DEMO_UNINSTALL', 'demo', null);
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 function demo_get_definition(string $type, $conn): array

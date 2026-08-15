@@ -17,16 +17,14 @@ if ($action === 'anonymization_load') {
     ];
     $row    = config_get_row('anonymization');
     $config = is_array($row['value'] ?? null) ? array_merge($defaults, $row['value']) : $defaults;
-    echo json_encode(['status' => 'success', 'config' => $config, 'version' => $row['version'] ?? 0]);
-    exit;
+    admin_ok(['config' => $config, 'version' => $row['version'] ?? 0]);
 }
 
 if ($action === 'anonymization_save') {
     require_not_demo('Demo mode — writes disabled.');
     $data = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($data)) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid JSON.']);
-        exit;
+        admin_err('Invalid JSON.');
     }
     $validFrequencies = ['manual', 'daily', 'weekly', 'monthly'];
     $config = [

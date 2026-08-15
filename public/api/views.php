@@ -7,6 +7,12 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ControlFlowException;
+use App\Exception\NotFoundException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
 os_api_bootstrap(['connect' => false]);
@@ -38,21 +44,17 @@ try {
                 'menu_name'    => $cfg['menu_name'] ?? ($cfg['display_name'] ?? $name),
             ];
         }
-        echo json_encode(['status' => 'ok', 'views' => $result]);
-        exit;
+        throw ResponseException::encoded(['status' => 'ok', 'views' => $result]);
     }
 
     if ($action === 'config' && $method === 'GET' && $role === 'admin') {
-        echo json_encode(['status' => 'ok', 'config' => $viewsConfig]);
-        exit;
+        throw ResponseException::encoded(['status' => 'ok', 'config' => $viewsConfig]);
     }
 
     if ($action === 'data' && $method === 'GET') {
         $viewName = $_GET['view'] ?? '';
         if (!isset($views[$viewName])) {
-            http_response_code(404);
-            echo json_encode(['error' => 'View not found']);
-            exit;
+            throw new NotFoundException('View not found');
         }
         require_view_access((string) $viewName);
 
@@ -74,9 +76,7 @@ try {
 
         if ($filterCol !== '' && $filterVal !== null) {
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $filterCol)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid filter column']);
-                exit;
+                throw new BadRequestException('Invalid filter column');
             }
             $params[]    = $filterVal;
             $whereClause = 'WHERE ' . pg_ident($filterCol) . ' = $1';
@@ -121,9 +121,7 @@ try {
         $res = @pg_query_params($conn, $sql, $params);
         if (!$res) {
             error_log('[api_views][data] ' . pg_last_error($conn));
-            http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
-            exit;
+            throw new ServerErrorException('Database error');
         }
 
         $rows = pg_fetch_all($res) ?: [];
@@ -143,7 +141,7 @@ try {
             'group_rows'   => $cfg['group_rows'] ?? '',
             'icon'         => $cfg['icon'] ?? '',
         ]);
-        exit;
+        throw ResponseException::sent();
     }
 
     if ($action === 'schemas' && $method === 'GET' && $role === 'admin') {
@@ -154,9 +152,7 @@ try {
             . 'ORDER BY schema_name';
         $res = @pg_query($conn, $sql);
         if (!$res) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
-            exit;
+            throw new ServerErrorException('Database error');
         }
 
         $schemas = [];
@@ -170,8 +166,7 @@ try {
             $selected = [sys_schema()];
         }
 
-        echo json_encode(['status' => 'ok', 'schemas' => $schemas, 'selected' => $selected]);
-        exit;
+        throw ResponseException::encoded(['status' => 'ok', 'schemas' => $schemas, 'selected' => $selected]);
     }
 
     if ($action === 'sync' && $method === 'GET' && $role === 'admin') {
@@ -192,9 +187,7 @@ try {
             . 'ORDER BY n.nspname, c.relname';
         $res = @pg_query_params($conn, $sql, $schemas);
         if (!$res) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
-            exit;
+            throw new ServerErrorException('Database error');
         }
 
         $dbViews     = [];
@@ -236,15 +229,13 @@ try {
             'view_kinds'   => $viewKinds,
             'source'       => 'postgres',
         ]);
-        exit;
+        throw ResponseException::sent();
     }
 
     if ($action === 'save' && $method === 'POST' && $role === 'admin') {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!is_array($body) || !isset($body['views'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Invalid payload']);
-            exit;
+            throw new BadRequestException('Invalid payload');
         }
 
         $newConfig = ['views' => $body['views']];
@@ -257,16 +248,16 @@ try {
         if ($result['status'] !== 'ok') {
             $tooLarge = ($result['error'] ?? '') === 'Config too large';
             http_response_code($tooLarge ? 413 : 500);
-            echo json_encode(['error' => $result['error'] ?? 'Write failed']);
-            exit;
+            throw ResponseException::encoded(['error' => $result['error'] ?? 'Write failed']);
         }
 
-        echo json_encode(['status' => 'ok']);
-        exit;
+        throw ResponseException::encoded(['status' => 'ok']);
     }
 
     http_response_code(400);
     echo json_encode(['error' => 'Invalid action or insufficient permissions']);
+} catch (ControlFlowException $signal) {
+    throw $signal;
 } catch (Throwable $e) {
     error_log('[api_views][exception] ' . $e->getMessage());
     http_response_code(500);

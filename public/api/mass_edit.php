@@ -7,6 +7,11 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\HttpException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
 $conn = os_api_bootstrap(['role' => 'editor']);
@@ -25,8 +30,7 @@ function validateTableColumn(array $body, array $schema): array
     try {
         $tableCfg = safe_table($schema, $tableName);
     } catch (\RuntimeException $e) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Unknown table']));
+        throw new BadRequestException('Unknown table');
     }
 
     require_table_access($tableName);
@@ -34,18 +38,15 @@ function validateTableColumn(array $body, array $schema): array
     $cols = $tableCfg['columns'] ?? [];
 
     if ($colName === 'id') {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Cannot edit id column']));
+        throw new BadRequestException('Cannot edit id column');
     }
 
     if (!isset($cols[$colName])) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Invalid column']));
+        throw new BadRequestException('Invalid column');
     }
 
     if (($cols[$colName]['type'] ?? '') === 'virtual') {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Cannot edit virtual columns']));
+        throw new BadRequestException('Cannot edit virtual columns');
     }
 
     $schemaName = $tableCfg['schema'] ?? 'public';
@@ -82,8 +83,7 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
     $rowIds = sanitizeRowIds($body['row_ids'] ?? []);
 
     if (empty($rowIds)) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'No rows selected']));
+        throw new BadRequestException('No rows selected');
     }
 
     [$tableCfg, $tableName, , $colSql, $tblSql] = validateTableColumn($body, $schema);
@@ -100,8 +100,7 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
             [$arrParam, $tableName, $uid]
         );
         if (!$countRes) {
-            http_response_code(500);
-            exit(json_encode(['error' => 'Database query failed.']));
+            throw new ServerErrorException('Database query failed.');
         }
         $count = (int)pg_fetch_result($countRes, 0, 0);
         pg_free_result($countRes);
@@ -122,8 +121,7 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
             [$arrParam]
         );
         if (!$countRes) {
-            http_response_code(500);
-            exit(json_encode(['error' => 'Database query failed.']));
+            throw new ServerErrorException('Database query failed.');
         }
         $count = (int)pg_fetch_result($countRes, 0, 0);
         pg_free_result($countRes);
@@ -140,8 +138,7 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
     }
 
     if (!$rowRes) {
-        http_response_code(500);
-        exit(json_encode(['error' => 'Database query failed.']));
+        throw new ServerErrorException('Database query failed.');
     }
 
     $rows = [];
@@ -150,7 +147,7 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
     }
     pg_free_result($rowRes);
 
-    exit(json_encode(['count' => $count, 'rows' => $rows]));
+    throw ResponseException::encoded(['count' => $count, 'rows' => $rows]);
 }
 
 if ($action === 'mass_edit_apply' && $method === 'POST') {
@@ -158,8 +155,7 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
     $rowIds = sanitizeRowIds($body['row_ids'] ?? []);
 
     if (empty($rowIds)) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'No rows selected']));
+        throw new BadRequestException('No rows selected');
     }
 
     $value = array_key_exists('value', $body)
@@ -169,8 +165,7 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
     [$tableCfg, $tableName, $colCfg, $colSql, $tblSql] = validateTableColumn($body, $schema);
 
     if (($regexpError = validate_column_regexp($colCfg, $value)) !== null) {
-        http_response_code(422);
-        exit(json_encode(['error' => $regexpError]));
+        throw HttpException::fromStatus(422, (string) $regexpError);
     }
 
     $arrParam = pgIntArray($rowIds);
@@ -195,8 +190,7 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
 
     if (!$res) {
         @pg_query($conn, 'ROLLBACK');
-        http_response_code(500);
-        exit(json_encode(['error' => 'Database update failed.']));
+        throw new ServerErrorException('Database update failed.');
     }
 
     $affected = pg_affected_rows($res);
@@ -206,7 +200,7 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
     $uid = (int)$_SESSION['user_id'];
     log_user_action($conn, $uid, 'MASS_EDIT', $tableName, null);
 
-    exit(json_encode(['updated' => $affected]));
+    throw ResponseException::encoded(['updated' => $affected]);
 }
 
 if ($action === 'mass_duplicate' && $method === 'POST') {
@@ -214,8 +208,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     $rowIds = sanitizeRowIds($body['row_ids'] ?? []);
 
     if (empty($rowIds)) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'No rows selected']));
+        throw new BadRequestException('No rows selected');
     }
 
     $tableName = $body['table'] ?? '';
@@ -223,8 +216,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     try {
         $tableCfg = safe_table($schema, $tableName);
     } catch (\RuntimeException $e) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Unknown table']));
+        throw new BadRequestException('Unknown table');
     }
 
     require_table_access($tableName);
@@ -241,8 +233,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     }
 
     if (empty($dupCols)) {
-        http_response_code(422);
-        exit(json_encode(['error' => 'No columns to duplicate']));
+        throw HttpException::fromStatus(422, 'No columns to duplicate');
     }
 
     $schemaName = $tableCfg['schema'] ?? 'public';
@@ -279,11 +270,14 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
         @pg_query($conn, 'ROLLBACK');
         $pgErr    = pg_last_error($conn);
         $isUnique = stripos($pgErr, 'unique') !== false || stripos($pgErr, 'unikaln') !== false;
-        http_response_code(422);
-        exit(json_encode([
-            'error'     => $isUnique ? 'unique_violation' : 'Database duplicate failed.',
-            'is_unique' => $isUnique,
-        ]));
+        throw HttpException::fromStatus(
+            422,
+            $isUnique ? 'unique_violation' : 'Database duplicate failed.',
+            [
+                'error'     => $isUnique ? 'unique_violation' : 'Database duplicate failed.',
+                'is_unique' => $isUnique,
+            ]
+        );
     }
 
     $newIds = [];
@@ -303,7 +297,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
 
     log_user_action($conn, $uid, 'MASS_DUPLICATE', $tableName, null);
 
-    exit(json_encode(['duplicated' => $duplicated]));
+    throw ResponseException::encoded(['duplicated' => $duplicated]);
 }
 
 if ($action === 'mass_delete' && $method === 'POST') {
@@ -311,8 +305,7 @@ if ($action === 'mass_delete' && $method === 'POST') {
     $rowIds = sanitizeRowIds($body['row_ids'] ?? []);
 
     if (empty($rowIds)) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'No rows selected']));
+        throw new BadRequestException('No rows selected');
     }
 
     $tableName = $body['table'] ?? '';
@@ -320,8 +313,7 @@ if ($action === 'mass_delete' && $method === 'POST') {
     try {
         $tableCfg = safe_table($schema, $tableName);
     } catch (\RuntimeException $e) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Unknown table']));
+        throw new BadRequestException('Unknown table');
     }
 
     require_table_access($tableName);
@@ -350,8 +342,7 @@ if ($action === 'mass_delete' && $method === 'POST') {
 
     if (!$res) {
         @pg_query($conn, 'ROLLBACK');
-        http_response_code(500);
-        exit(json_encode(['error' => 'Database delete failed.']));
+        throw new ServerErrorException('Database delete failed.');
     }
 
     $affected = pg_affected_rows($res);
@@ -361,8 +352,7 @@ if ($action === 'mass_delete' && $method === 'POST') {
     $uid = (int)$_SESSION['user_id'];
     log_user_action($conn, $uid, 'MASS_DELETE', $tableName, null);
 
-    exit(json_encode(['deleted' => $affected]));
+    throw ResponseException::encoded(['deleted' => $affected]);
 }
 
-http_response_code(400);
-exit(json_encode(['error' => 'Unknown action']));
+throw new BadRequestException('Unknown action');

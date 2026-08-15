@@ -7,6 +7,12 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ControlFlowException;
+use App\Exception\ForbiddenException;
+use App\Exception\NotFoundException;
+use App\Exception\ResponseException;
+
 function frontapi_board(FrontApiContext $ctx): never
 {
     $conn   = $ctx->conn;
@@ -42,27 +48,25 @@ function frontapi_board(FrontApiContext $ctx): never
     $table     = $boardCfg['table'] ?? '';
     $statusCol = $boardCfg['status_column'] ?? '';
     if ($table === '' || $statusCol === '') {
-        echo json_encode($meta);
-        exit;
+        throw ResponseException::encoded($meta);
     }
 
     if (!user_can_access_table($table)) {
         $meta['table']         = '';
         $meta['status_column'] = '';
-        echo json_encode($meta);
-        exit;
+        throw ResponseException::encoded($meta);
     }
 
     try {
         $tableCfg = safe_table($schema, $table);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
-        echo json_encode($meta);
-        exit;
+        throw ResponseException::encoded($meta);
     }
 
     if (!isset($tableCfg['columns'][$statusCol])) {
-        echo json_encode($meta);
-        exit;
+        throw ResponseException::encoded($meta);
     }
 
     $schemaName   = $tableCfg['schema'] ?? 'public';
@@ -172,8 +176,7 @@ function frontapi_board(FrontApiContext $ctx): never
     $meta['table_label']   = $tableCfg['display_name'] ?? $table;
     $meta['columns']       = $lanes;
     $meta['cards']         = $cards;
-    echo json_encode($meta);
-    exit;
+    throw ResponseException::encoded($meta);
 }
 
 function frontapi_board_move_card(FrontApiWriteContext $ctx): never
@@ -186,9 +189,7 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
     $idCol      = $ctx->idCol;
 
     if ($ctx->isViewer()) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Forbidden']);
-        exit;
+        throw new ForbiddenException('Forbidden');
     }
 
     $boardsCfg = config_get('board') ?? [];
@@ -206,22 +207,16 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
     $statusCol = $boardCfg['status_column'] ?? '';
 
     if ($cfgTable === '' || $statusCol === '' || $table !== $cfgTable) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid board table']);
-        exit;
+        throw new BadRequestException('Invalid board table');
     }
     if (!isset($tableCfg['columns'][$statusCol])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid status column']);
-        exit;
+        throw new BadRequestException('Invalid status column');
     }
 
     $id        = (int)($body['id'] ?? 0);
     $newStatus = (string)($body['newStatus'] ?? '');
     if ($id <= 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid ID']);
-        exit;
+        throw new BadRequestException('Invalid ID');
     }
 
     $statusDef  = $tableCfg['columns'][$statusCol];
@@ -246,9 +241,7 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
         }
     }
     if (!in_array($newStatus, $allowed, true)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid status value']);
-        exit;
+        throw new BadRequestException('Invalid status value');
     }
 
     check_record_ownership($conn, $tableCfg, $table, $id, $ctx->userId);
@@ -265,15 +258,12 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
         http_response_code(500);
         echo json_encode(['error' => 'Database error']);
         error_log('Board move_card error: ' . pg_last_error($conn));
-        exit;
+        throw ResponseException::sent();
     }
     if (pg_affected_rows($res) === 0) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Record not found']);
-        exit;
+        throw new NotFoundException('Record not found');
     }
 
     log_user_action($conn, $ctx->userId, 'BOARD_MOVE', $table, $id);
-    echo json_encode(['success' => true]);
-    exit;
+    throw ResponseException::encoded(['success' => true]);
 }

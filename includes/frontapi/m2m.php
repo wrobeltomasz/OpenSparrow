@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use App\Exception\ResponseException;
+
 function frontapi_m2m_rows(FrontApiContext $ctx): never
 {
     $schema = $ctx->schema;
@@ -14,18 +16,18 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
     $m2mIdx = (int)($_GET['m2m_index'] ?? 0);
     $idsRaw = $_GET['ids']       ?? '';
     if (!isset($schema['tables'][$table])) {
-        exit(json_encode(['data' => (object)[]]));
+        throw ResponseException::encoded(['data' => (object)[]]);
     }
     require_table_access($table);
 
     $ids = array_values(array_filter(explode(',', $idsRaw), 'ctype_digit'));
     if (empty($ids)) {
-        exit(json_encode(['data' => (object)[]]));
+        throw ResponseException::encoded(['data' => (object)[]]);
     }
 
     $m2mList = $schema['tables'][$table]['many_to_many'] ?? [];
     if (!isset($m2mList[$m2mIdx])) {
-        exit(json_encode(['data' => (object)[]]));
+        throw ResponseException::encoded(['data' => (object)[]]);
     }
 
     $cfg        = $m2mList[$m2mIdx];
@@ -39,7 +41,7 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
         !$jt || !$selfFk || !$otherFk || !$otherTable
         || !isset($schema['tables'][$jt], $schema['tables'][$otherTable])
     ) {
-        exit(json_encode(['data' => (object)[]]));
+        throw ResponseException::encoded(['data' => (object)[]]);
     }
 
     $jtSchema = $schema['tables'][$jt]['schema']         ?? 'public';
@@ -75,7 +77,7 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
     );
     $res = @pg_query_params($ctx->conn, $sql, $qParams);
     if (!$res) {
-        exit(json_encode(['data' => (object)[]]));
+        throw ResponseException::encoded(['data' => (object)[]]);
     }
 
     $data = [];
@@ -84,7 +86,7 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
         $data[$sid][] = (string)$row['label'];
     }
 
-    exit(json_encode(['data' => $data ?: (object)[]]));
+    throw ResponseException::encoded(['data' => $data ?: (object)[]]);
 }
 
 function frontapi_image_rows(FrontApiContext $ctx): never
@@ -93,21 +95,21 @@ function frontapi_image_rows(FrontApiContext $ctx): never
     $schema = $ctx->schema;
     $table  = $_GET['table'] ?? '';
     if (!isset($schema['tables'][$table]) || images_config($schema, $table) === null) {
-        exit(json_encode(['data' => (object)[]]));
+        throw ResponseException::encoded(['data' => (object)[]]);
     }
     require_table_access($table);
 
     $ids = array_values(array_filter(explode(',', $_GET['ids'] ?? ''), 'ctype_digit'));
     $ids = array_slice($ids, 0, 200);
     if (empty($ids)) {
-        exit(json_encode(['data' => (object)[]]));
+        throw ResponseException::encoded(['data' => (object)[]]);
     }
 
     $ids = filter_visible_ids($ctx->conn, $schema['tables'][$table], $table, $ids, $ctx->userId);
     if (empty($ids)) {
-        exit(json_encode(['data' => (object)[]]));
+        throw ResponseException::encoded(['data' => (object)[]]);
     }
 
     $data = images_for_rows($ctx->conn, $table, $ids);
-    exit(json_encode(['data' => $data ?: (object)[]]));
+    throw ResponseException::encoded(['data' => $data ?: (object)[]]);
 }

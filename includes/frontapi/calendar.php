@@ -7,6 +7,12 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ControlFlowException;
+use App\Exception\ForbiddenException;
+use App\Exception\NotFoundException;
+use App\Exception\ResponseException;
+
 function frontapi_calendar(FrontApiContext $ctx): never
 {
     $conn   = $ctx->conn;
@@ -14,8 +20,7 @@ function frontapi_calendar(FrontApiContext $ctx): never
 
     $calendar = config_get('calendar');
     if ($calendar === null) {
-        echo json_encode(['events' => []]);
-        exit;
+        throw ResponseException::encoded(['events' => []]);
     }
 
     $reqYear  = filter_var(
@@ -50,6 +55,8 @@ function frontapi_calendar(FrontApiContext $ctx): never
 
         try {
             $tableCfg = safe_table($schema, $table);
+        } catch (ControlFlowException $signal) {
+            throw $signal;
         } catch (Throwable $e) {
             continue;
         }
@@ -119,7 +126,7 @@ function frontapi_calendar(FrontApiContext $ctx): never
         'hidden' => !empty($calendar['hidden']),
         'events' => $events
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
@@ -132,9 +139,7 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
     $idCol      = $ctx->idCol;
 
     if ($ctx->isViewer()) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Forbidden']);
-        exit;
+        throw new ForbiddenException('Forbidden');
     }
 
     $calConfig = config_get('calendar') ?? ['sources' => []];
@@ -142,17 +147,13 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
 
     $allowedTables = array_column($sources, 'table');
     if (!in_array($table, $allowedTables, true)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid table']);
-        exit;
+        throw new BadRequestException('Invalid table');
     }
 
     $id = (int)($body['id'] ?? 0);
     $newDate = $body['newDate'] ?? '';
     if ($id <= 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid ID']);
-        exit;
+        throw new BadRequestException('Invalid ID');
     }
 
     check_record_ownership($conn, $tableCfg, $table, $id, $ctx->userId);
@@ -163,9 +164,7 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
         (int)substr($newDate, 0, 4)
     );
     if (!$dateIsValid) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid date format']);
-        exit;
+        throw new BadRequestException('Invalid date format');
     }
 
     $dateColumn = '';
@@ -177,15 +176,11 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
     }
 
     if ($dateColumn === '') {
-        http_response_code(400);
-        echo json_encode(['error' => 'Missing date column config']);
-        exit;
+        throw new BadRequestException('Missing date column config');
     }
 
     if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $dateColumn)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid column name']);
-        exit;
+        throw new BadRequestException('Invalid column name');
     }
 
     $sql = sprintf(
@@ -200,17 +195,14 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
         http_response_code(500);
         echo json_encode(['error' => 'Database error']);
         error_log('Calendar move_event error: ' . pg_last_error($conn));
-        exit;
+        throw ResponseException::sent();
     }
 
     if (pg_affected_rows($res) === 0) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Record not found']);
-        exit;
+        throw new NotFoundException('Record not found');
     }
 
     log_user_action($conn, $ctx->userId, 'CALENDAR_MOVE', $table, $id);
 
-    echo json_encode(['success' => true]);
-    exit;
+    throw ResponseException::encoded(['success' => true]);
 }

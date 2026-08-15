@@ -7,6 +7,13 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ConflictException;
+use App\Exception\ControlFlowException;
+use App\Exception\NotFoundException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/config_store.php';
 
@@ -172,8 +179,7 @@ try {
                 'menu_name'    => $cfg['menu_name'] ?? ($cfg['display_name'] ?? $name),
             ];
         }
-        echo json_encode(['status' => 'ok', 'prints' => $result]);
-        exit;
+        throw ResponseException::encoded(['status' => 'ok', 'prints' => $result]);
     }
 
     if ($action === 'config' && $method === 'GET' && $role === 'admin') {
@@ -184,16 +190,14 @@ try {
             'version' => $printVersion,
             'views'   => array_keys(print_available_views()),
         ]);
-        exit;
+        throw ResponseException::sent();
     }
 
     if ($action === 'columns' && $method === 'GET' && $role === 'admin') {
         $viewName = $_GET['view'] ?? '';
         $views    = print_available_views();
         if (!isset($views[$viewName])) {
-            http_response_code(404);
-            echo json_encode(['error' => 'View not found']);
-            exit;
+            throw new NotFoundException('View not found');
         }
 
         $conn       = db_connect();
@@ -203,9 +207,7 @@ try {
         $res        = @pg_query_params($conn, $sql, [$schemaName, $viewName]);
         if (!$res) {
             error_log('[api_print][columns] ' . pg_last_error($conn));
-            http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
-            exit;
+            throw new ServerErrorException('Database error');
         }
 
         $cols = [];
@@ -214,16 +216,13 @@ try {
         }
         pg_free_result($res);
 
-        echo json_encode(['status' => 'ok', 'view' => $viewName, 'columns' => $cols]);
-        exit;
+        throw ResponseException::encoded(['status' => 'ok', 'view' => $viewName, 'columns' => $cols]);
     }
 
     if ($action === 'data' && $method === 'GET') {
         $printName = $_GET['print'] ?? '';
         if (!isset($prints[$printName])) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Print template not found']);
-            exit;
+            throw new NotFoundException('Print template not found');
         }
         require_print_access((string) $printName);
 
@@ -261,9 +260,7 @@ try {
             $res = @pg_query_params($conn, $sql, $queryParams);
             if (!$res) {
                 error_log('[api_print][data] ' . pg_last_error($conn));
-                http_response_code(500);
-                echo json_encode(['error' => 'Database error']);
-                exit;
+                throw new ServerErrorException('Database error');
             }
             $rows = pg_fetch_all($res) ?: [];
             pg_free_result($res);
@@ -282,16 +279,14 @@ try {
             'params'         => $paramDefs,
             'applied_params' => (object) $appliedParams,
         ]);
-        exit;
+        throw ResponseException::sent();
     }
 
     if ($action === 'param_options' && $method === 'GET') {
         $printName = $_GET['print'] ?? '';
         $paramKey  = $_GET['key'] ?? '';
         if (!isset($prints[$printName])) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Print template not found']);
-            exit;
+            throw new NotFoundException('Print template not found');
         }
         require_print_access((string) $printName);
 
@@ -305,9 +300,7 @@ try {
             }
         }
         if ($param === null) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Parameter not found']);
-            exit;
+            throw new NotFoundException('Parameter not found');
         }
 
         $conn = db_connect();
@@ -329,8 +322,7 @@ try {
         } else {
             $viewName = (string) ($cfg['view'] ?? '');
             if ($viewName === '' || !isset($views[$viewName])) {
-                echo json_encode(['status' => 'ok', 'options' => []]);
-                exit;
+                throw ResponseException::encoded(['status' => 'ok', 'options' => []]);
             }
             $schemaName = $views[$viewName]['schema'] ?? sys_schema();
             $colIdent   = pg_ident($param['column']);
@@ -348,23 +340,18 @@ try {
         $res = @pg_query_params($conn, $sql, []);
         if (!$res) {
             error_log('[api_print][param_options] ' . pg_last_error($conn));
-            http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
-            exit;
+            throw new ServerErrorException('Database error');
         }
         $options = pg_fetch_all($res) ?: [];
         pg_free_result($res);
 
-        echo json_encode(['status' => 'ok', 'options' => $options]);
-        exit;
+        throw ResponseException::encoded(['status' => 'ok', 'options' => $options]);
     }
 
     if ($action === 'save' && $method === 'POST' && $role === 'admin') {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!is_array($body) || !isset($body['prints']) || !is_array($body['prints'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Invalid payload']);
-            exit;
+            throw new BadRequestException('Invalid payload');
         }
 
         $expectedVersion = isset($body['version']) && is_numeric($body['version'])
@@ -374,15 +361,11 @@ try {
         $sanitized = [];
         foreach ($body['prints'] as $name => $tpl) {
             if (!is_string($name) || !preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $name) || !is_array($tpl)) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid template key: ' . mb_substr((string) $name, 0, 64)]);
-                exit;
+                throw new BadRequestException((string) 'Invalid template key: ' . mb_substr((string) $name, 0, 64));
             }
             $clean = print_sanitize_template($tpl, $views);
             if ($clean === null) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Invalid template: ' . $name]);
-                exit;
+                throw new BadRequestException((string) 'Invalid template: ' . $name);
             }
             $sanitized[$name] = $clean;
         }
@@ -390,23 +373,21 @@ try {
         $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
         $result = config_save('print', ['prints' => $sanitized], $expectedVersion, $userId);
         if ($result['status'] === 'conflict') {
-            http_response_code(409);
-            echo json_encode(['error' => 'Config was modified by someone else — reload and retry']);
-            exit;
+            throw new ConflictException('Config was modified by someone else — reload and retry');
         }
         if ($result['status'] !== 'ok') {
             $tooLarge = ($result['error'] ?? '') === 'Config too large';
             http_response_code($tooLarge ? 413 : 500);
-            echo json_encode(['error' => $result['error'] ?? 'Write failed']);
-            exit;
+            throw ResponseException::encoded(['error' => $result['error'] ?? 'Write failed']);
         }
 
-        echo json_encode(['status' => 'ok', 'version' => $result['version']]);
-        exit;
+        throw ResponseException::encoded(['status' => 'ok', 'version' => $result['version']]);
     }
 
     http_response_code(400);
     echo json_encode(['error' => 'Invalid action or insufficient permissions']);
+} catch (ControlFlowException $signal) {
+    throw $signal;
 } catch (Throwable $e) {
     error_log('[api_print][exception] ' . $e->getMessage());
     http_response_code(500);

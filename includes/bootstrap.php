@@ -7,11 +7,16 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/exception_handler.php';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/page_helpers.php';
 require_once __DIR__ . '/../src/Security/UserRole.php';
 
 use App\Audit\DbAuditLogger;
+use App\Exception\ControlFlowException;
+use App\Exception\ForbiddenException;
+use App\Exception\RedirectException;
+use App\Exception\UnauthorizedException;
 use App\Csrf\SessionCsrfTokenManager;
 use App\Domain\Schema\JsonSchemaRepository;
 use App\Form\FieldTypeRegistry;
@@ -34,8 +39,7 @@ use App\Service\ServiceContainer;
 function os_require_setup(): void
 {
     if (!file_exists(__DIR__ . '/../config/database.json')) {
-        header('Location: setup.php');
-        exit;
+        throw new RedirectException('setup.php');
     }
 }
 
@@ -65,13 +69,13 @@ function os_require_csrf(string $source = 'header', array $body = []): void
         ? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')
         : ($_POST['csrf_token'] ?? $body['csrf_token'] ?? '');
     if ($stored === '' || !hash_equals($stored, (string) $given)) {
-        http_response_code(403);
-        exit(json_encode(['error' => 'CSRF token mismatch']));
+        throw new ForbiddenException('CSRF token mismatch');
     }
 }
 
 function os_page_bootstrap(array $options = []): array
 {
+    os_register_exception_handler('html');
     start_session();
 
     $guest = !empty($options['guest']);
@@ -82,15 +86,13 @@ function os_page_bootstrap(array $options = []): array
 
     if (!$guest) {
         if (!isset($_SESSION['user_id'])) {
-            header('Location: login.php');
-            exit;
+            throw new RedirectException('login.php');
         }
 
         enforce_session_redirect();
 
         if (($options['redirect_admin'] ?? true) && UserRole::fromSession() === UserRole::Admin) {
-            header('Location: admin/');
-            exit;
+            throw new RedirectException('admin/');
         }
     }
 
@@ -110,13 +112,14 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
     require_once __DIR__ . '/db.php';
     require_once __DIR__ . '/api_helpers.php';
 
+    os_register_exception_handler('json');
+
     header('Content-Type: application/json; charset=utf-8');
     send_security_headers();
     start_session();
 
     if (empty($_SESSION['user_id'])) {
-        http_response_code(401);
-        exit(json_encode(['error' => 'Unauthorized']));
+        throw new UnauthorizedException('Unauthorized');
     }
 
     enforce_session_json();
@@ -125,13 +128,11 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
         !empty($options['require_ajax'])
         && strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'xmlhttprequest'
     ) {
-        http_response_code(403);
-        exit(json_encode(['error' => 'Forbidden']));
+        throw new ForbiddenException('Forbidden');
     }
 
     if (isset($options['role']) && UserRole::fromSession() !== UserRole::from($options['role'])) {
-        http_response_code(403);
-        exit(json_encode(['error' => 'Forbidden: ' . $options['role'] . ' role required']));
+        throw new ForbiddenException('Forbidden: ' . $options['role'] . ' role required');
     }
 
     if (
@@ -188,6 +189,8 @@ function os_api_dispatch(
 
     try {
         $handlers[$action]();
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         error_log('[' . $logTag . '] ' . $e->getMessage());
         jsonError('Internal server error.', 500);

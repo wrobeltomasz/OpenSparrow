@@ -1065,6 +1065,91 @@ warning a file-scope `require_once` would add.
 Suite: 388 tests, 956 assertions, 0 phpcs errors on the touched files (the three
 remaining `SideEffects` warnings are unchanged from `HEAD`).
 
+## Exceptions instead of `die()` / `exit()` (2026-08-15)
+
+Request-path code no longer terminates itself. Every `die()` and `exit()` outside
+`cron/` — 437 of them, across 60 files — was replaced by a thrown exception, and
+a single handler turns that exception into the HTTP response.
+
+**The hierarchy** lives in `includes/Exception/` under `App\Exception\`
+(`includes/` is where new backend code goes; `src/` is frozen). `includes/autoload.php`
+maps the namespace, and `includes/config.php` requires the autoloader, so the
+classes are reachable from every entry point.
+
+- `ControlFlowException` — marker interface extending `\Throwable`, implemented by
+  all three families below. It is what `catch` blocks test against.
+- `HttpException` — carries a status code and an optional response body.
+  Subclasses fix the status: `BadRequestException` (400), `UnauthorizedException`
+  (401), `ForbiddenException` (403), `NotFoundException` (404),
+  `ConflictException` (409), `ServerErrorException` (500).
+  `HttpException::fromStatus($code, $message, $body)` returns the right subclass
+  for a status computed at runtime, and any other status as a plain
+  `HttpException`.
+- `RedirectException` — a `Location:` header and status. Replaces every
+  `header('Location: …'); exit;` pair.
+- `ResponseException` — a response that is already decided. `::json($data, $status)`,
+  `::encoded($data, $flags)` (preserves `json_encode` flags and leaves the status
+  untouched), `::raw($payload, $contentType)` and `::sent()` for output that was
+  already streamed, e.g. `readfile()` in `file_download.php`.
+
+`HttpException` deliberately extends `\Exception`, **not** `\RuntimeException`.
+The codebase has many `catch (\RuntimeException)` blocks that exist to catch
+`safe_table()` failures; making the new hierarchy a sibling keeps those blocks
+from swallowing responses. A status code of `0` means "leave the current
+`http_response_code()` alone" — that is how `admin_err()` and `admin_ok()` keep
+their old behaviour of not touching the status.
+
+**The handler** is `includes/exception_handler.php`, required by
+`includes/bootstrap.php`. It is a separate file precisely so that pre-install and
+lightweight entry points (`setup_api.php`, `cypress_seed.php`, `logout.php`,
+`etl_cli.php`) can install it without pulling in session and config bootstrap.
+
+`os_register_exception_handler($mode)` installs `os_handle_exception()` and sets
+the response mode: `json`, `html`, or `cli` (chosen automatically for
+`PHP_SAPI === 'cli'`). `os_page_bootstrap()` registers `html`,
+`os_api_bootstrap()` registers `json`, and entry points that use neither register
+it themselves as their first statement. The handler renders redirects, decided
+responses and HTTP errors, guards every write with `headers_sent()`, and logs any
+non-`ControlFlowException` throwable before answering with a generic 500 — the
+original message is never sent to the client.
+
+**Terminating helpers throw.** `jsonError()`, `jsonSuccess()`,
+`require_not_demo()`, `check_record_ownership()`, `os_require_csrf()`,
+`admin_ok()`, `admin_err()`, `admin_try()` and `admin_require_log_table()` all
+keep their `never` return type and their exact JSON body shape — the wire format
+is unchanged, only the mechanism is. That is why one conversion covered several
+hundred call sites for free.
+
+**The trap: broad `catch` blocks.** Once a helper throws instead of exiting, any
+enclosing `catch (Throwable)` or `catch (Exception)` swallows the response and
+turns a finished 200 into a generic error. Every such block must rethrow first:
+
+```php
+} catch (ControlFlowException $signal) {
+    throw $signal;
+} catch (Throwable $e) {
+```
+
+73 catch blocks were patched this way, including the two central ones —
+`admin_try()` and `os_api_dispatch()`.
+
+**`cron/` keeps `exit($code)`.** A CLI script's exit status is its interface with
+cron, and `exit(1)` there is a return value, not an escape from control flow.
+What the cron scripts no longer do is use a bare `exit;` as an error path: the
+"this must run from the command line" guards throw `ForbiddenException`, and the
+process-status calls were normalised to an explicit integer.
+
+`tests/Http/ExitFreeRequestPathTest` enforces all three rules — no `die`/`exit`
+tokens in `includes/`, `public/`, `templates/` or `src/`; only `exit(<int>)` in
+`cron/`; and no unguarded broad `catch`. It scans with `token_get_all`, and was
+proven red by reintroducing an `echo`+`exit` pair, a bare `exit;` in
+`cron_etl.php` and an unguarded `catch (Throwable)` before being committed green.
+
+Verified end to end against a running instance: guest redirects, `401`/`403`/`400`
+JSON envelopes, the admin API's eight read modules and its `admin_err` write
+paths, the CSRF and method-not-allowed guards, and a frontend insert/patch/delete
+round trip. Suite: 391 tests, 959 assertions, 0 phpcs errors.
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and

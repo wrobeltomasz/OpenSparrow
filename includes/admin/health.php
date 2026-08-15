@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if ($action === 'health') {
     $db_connected = false;
     $db_error = 'Unknown error';
@@ -26,6 +29,8 @@ if ($action === 'health') {
                 }
             }
         }
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         $db_error = $e->getMessage();
     }
@@ -81,6 +86,5 @@ if ($action === 'health') {
             return file_exists($f) && is_array(@json_decode(@file_get_contents($f), true));
         })(),
     ];
-    echo json_encode($data);
-    exit;
+    throw ResponseException::encoded($data);
 }

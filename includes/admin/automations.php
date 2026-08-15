@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\HttpException;
+use App\Exception\ResponseException;
+
 require_once __DIR__ . '/../automations.php';
 require_once __DIR__ . '/../crypto.php';
 
@@ -39,10 +43,12 @@ if ($action === 'automations_runs' && $_SERVER['REQUEST_METHOD'] === 'GET') {
             }
         }
         echo json_encode(['status' => 'success', 'runs' => $runs]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 function auto_redact_secrets(array $rules): array
@@ -81,17 +87,21 @@ function auto_redact_secrets(array $rules): array
 if ($action === 'automations_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         echo json_encode(['status' => 'success', 'automations' => auto_redact_secrets(auto_cfg_read())]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (DEMO_MODE) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
-        exit;
+        throw HttpException::fromStatus(
+            403,
+            'Demo mode — writes disabled.',
+            ['status' => 'error', 'error' => 'Demo mode — writes disabled.'],
+        );
     }
     try {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -107,12 +117,10 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             : null;
 
         if ($name === '') {
-            echo json_encode(['status' => 'error', 'error' => 'Name is required.']);
-            exit;
+            admin_err('Name is required.');
         }
         if (!in_array($triggerEvent, ['create', 'update', 'delete'], true)) {
-            echo json_encode(['status' => 'error', 'error' => 'Invalid trigger_event.']);
-            exit;
+            admin_err('Invalid trigger_event.');
         }
 
         foreach ((array) $actions as $idx => $act) {
@@ -126,7 +134,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         'status' => 'error',
                         'error'  => $label . ' (webhook): a valid http(s) URL is required.',
                     ]);
-                    exit;
+                    throw ResponseException::sent();
                 }
                 $allowedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
                 if (!in_array(strtoupper((string) ($act['method'] ?? 'POST')), $allowedMethods, true)) {
@@ -134,7 +142,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         'ok'    => false,
                         'error' => $label . ' (webhook): method must be one of ' . implode(', ', $allowedMethods) . '.',
                     ]);
-                    exit;
+                    throw ResponseException::sent();
                 }
 
                 foreach (array_keys((array) ($act['headers'] ?? [])) as $hName) {
@@ -144,14 +152,14 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                             'ok'    => false,
                             'error' => $label . ' (webhook): invalid header name "' . $hName . '".',
                         ]);
-                        exit;
+                        throw ResponseException::sent();
                     }
                     if (in_array(strtolower($hName), AUTO_WEBHOOK_RESERVED_HEADERS, true)) {
                         echo json_encode([
                             'ok'    => false,
                             'error' => $label . ' (webhook): header "' . $hName . '" is reserved.',
                         ]);
-                        exit;
+                        throw ResponseException::sent();
                     }
                 }
                 $retries = (int) ($act['retries'] ?? 0);
@@ -160,7 +168,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         'ok'    => false,
                         'error' => $label . ' (webhook): retries must be between 0 and 2.',
                     ]);
-                    exit;
+                    throw ResponseException::sent();
                 }
             }
             if ($aType === 'email') {
@@ -174,11 +182,10 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         'status' => 'error',
                         'error'  => $label . ' (email): at least one recipient is required.',
                     ]);
-                    exit;
+                    throw ResponseException::sent();
                 }
                 if (trim((string) ($act['subject'] ?? '')) === '') {
-                    echo json_encode(['status' => 'error', 'error' => $label . ' (email): subject is required.']);
-                    exit;
+                    admin_err($label . ' (email): subject is required.');
                 }
             }
         }
@@ -267,32 +274,37 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         auto_cfg_write($list);
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'automations_delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (DEMO_MODE) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'Demo mode — writes disabled.']);
-        exit;
+        throw HttpException::fromStatus(
+            403,
+            'Demo mode — writes disabled.',
+            ['status' => 'error', 'error' => 'Demo mode — writes disabled.'],
+        );
     }
     try {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $id   = (string) ($body['id'] ?? '');
         if ($id === '') {
-            echo json_encode(['status' => 'error', 'error' => 'Invalid id.']);
-            exit;
+            admin_err('Invalid id.');
         }
 
         $list    = auto_cfg_read();
         $filtered = array_filter($list, static fn(array $item) => ($item['id'] ?? '') !== $id);
         auto_cfg_write($filtered);
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

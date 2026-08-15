@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\HttpException;
+
 if ($action === 'list_procedures') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -55,11 +58,14 @@ if ($action === 'list_procedures') {
             ];
         }
 
-        echo json_encode(['status' => 'success', 'procedures' => array_values($bySpecific)]);
-        exit;
+        admin_ok(['procedures' => array_values($bySpecific)]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
-        exit;
+        throw HttpException::fromStatus(
+            500,
+            (string) admin_error_message($e),
+            ['status' => 'error', 'error' => admin_error_message($e)],
+        );
     }
 }

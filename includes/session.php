@@ -78,9 +78,7 @@ function enforce_session_json(): void
     }
     if (session_is_stale()) {
         session_destroy();
-        http_response_code(401);
-        header('Content-Type: application/json; charset=utf-8');
-        exit(json_encode(['error' => 'Session expired']));
+        throw new \App\Exception\UnauthorizedException('Session expired', ['error' => 'Session expired']);
     }
 }
 
@@ -91,7 +89,6 @@ function enforce_session_redirect(string $loginUrl = 'login.php'): void
     }
     if (session_is_stale()) {
         session_destroy();
-        header('Location: ' . $loginUrl);
-        exit;
+        throw new \App\Exception\RedirectException($loginUrl);
     }
 }

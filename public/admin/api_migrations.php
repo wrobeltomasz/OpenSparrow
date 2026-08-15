@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\HttpException;
+use App\Exception\ResponseException;
+
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/config_store.php';
 
@@ -16,14 +20,18 @@ $action = $_GET['action'] ?? '';
 
 if ($action === 'apply') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        http_response_code(405);
-        echo json_encode(['status' => 'error', 'error' => 'Method Not Allowed.']);
-        exit;
+        throw HttpException::fromStatus(
+            405,
+            'Method Not Allowed.',
+            ['status' => 'error', 'error' => 'Method Not Allowed.'],
+        );
     }
     if (DEMO_MODE) {
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'Blocked in demo mode.']);
-        exit;
+        throw HttpException::fromStatus(
+            403,
+            'Blocked in demo mode.',
+            ['status' => 'error', 'error' => 'Blocked in demo mode.'],
+        );
     }
 }
 
@@ -120,6 +128,8 @@ if ($action === 'scan') {
 
     try {
         [, $applied] = rm_db_and_applied();
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Exception $e) {
         $applied = [];
     }
@@ -203,43 +213,51 @@ if ($action === 'scan') {
         'versions'        => $result,
         'current_version' => $currentVersion,
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'apply') {
     $body = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($body)) {
-        http_response_code(400);
-        echo json_encode(['status' => 'error', 'error' => 'Invalid request body.']);
-        exit;
+        throw HttpException::fromStatus(
+            400,
+            'Invalid request body.',
+            ['status' => 'error', 'error' => 'Invalid request body.'],
+        );
     }
 
     $version = trim((string) ($body['version'] ?? ''));
     if ($version === '') {
-        http_response_code(400);
-        echo json_encode(['status' => 'error', 'error' => 'Missing version.']);
-        exit;
+        throw HttpException::fromStatus(400, 'Missing version.', ['status' => 'error', 'error' => 'Missing version.']);
     }
 
     $manifest = rm_load_manifest($manifestPath);
     if (!isset($manifest[$version])) {
-        http_response_code(400);
-        echo json_encode(['status' => 'error', 'error' => 'Version not found in manifest.']);
-        exit;
+        throw HttpException::fromStatus(
+            400,
+            'Version not found in manifest.',
+            ['status' => 'error', 'error' => 'Version not found in manifest.'],
+        );
     }
 
     try {
         [$conn, $applied] = rm_db_and_applied();
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['status' => 'error', 'error' => 'Database connection failed.']);
-        exit;
+        throw HttpException::fromStatus(
+            500,
+            'Database connection failed.',
+            ['status' => 'error', 'error' => 'Database connection failed.'],
+        );
     }
 
     if (isset($applied[$version])) {
-        http_response_code(409);
-        echo json_encode(['status' => 'error', 'error' => 'Version already applied.']);
-        exit;
+        throw HttpException::fromStatus(
+            409,
+            'Version already applied.',
+            ['status' => 'error', 'error' => 'Version already applied.'],
+        );
     }
 
     $entry = $manifest[$version];
@@ -381,9 +399,11 @@ if ($action === 'apply') {
     if (!$res) {
         $raw = pg_last_error($conn);
         error_log('[api_migrations][apply] ' . $raw);
-        http_response_code(500);
-        echo json_encode(['status' => 'error', 'error' => 'Database write failed.']);
-        exit;
+        throw HttpException::fromStatus(
+            500,
+            'Database write failed.',
+            ['status' => 'error', 'error' => 'Database write failed.'],
+        );
     }
 
     log_user_action($conn, $userId, 'release_migration_applied:' . $version, 'spw_release_migrations', null);
@@ -392,8 +412,7 @@ if ($action === 'apply') {
     if (!empty($warnings)) {
         $response['warnings'] = $warnings;
     }
-    echo json_encode($response);
-    exit;
+    throw ResponseException::encoded($response);
 }
 
 http_response_code(400);

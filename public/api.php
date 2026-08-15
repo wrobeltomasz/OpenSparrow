@@ -7,6 +7,11 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ControlFlowException;
+use App\Exception\ForbiddenException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
 use App\Security\UserRole;
 
 require_once __DIR__ . '/../includes/bootstrap.php';
@@ -30,27 +35,24 @@ if (in_array($profileAction, ['update_avatar', 'change_password'], true)) {
 }
 
 if ($profileAction === 'i18n_bundle' && $method === 'GET') {
-    header('Content-Type: application/json; charset=UTF-8');
     header('Cache-Control: public, max-age=3600');
-    echo json_encode(I18n::flatBundle(), JSON_UNESCAPED_UNICODE);
-    exit;
+    throw ResponseException::raw(
+        (string) json_encode(I18n::flatBundle(), JSON_UNESCAPED_UNICODE),
+        'application/json; charset=UTF-8'
+    );
 }
 
 if ($role === UserRole::Admin) {
-    http_response_code(403);
-    exit(json_encode(['error' => 'Forbidden: Admin accounts cannot access the frontend data API.']));
+    throw new ForbiddenException('Forbidden: Admin accounts cannot access the frontend data API.');
 }
 
 if ($role === UserRole::Viewer && in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
-    http_response_code(403);
-    exit(json_encode(['error' => 'Forbidden: Read-only access']));
+    throw new ForbiddenException('Forbidden: Read-only access');
 }
 
 $schema = config_get('schema');
 if ($schema === null) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Cannot read schema configuration']);
-    exit;
+    throw new ServerErrorException('Cannot read schema configuration');
 }
 
 $schemaPublic = $schema;
@@ -84,8 +86,7 @@ try {
     $apiParam = $_GET['api'] ?? '';
 
     if ($method === 'GET' && $apiParam === 'schema') {
-        echo $schemaJson;
-        exit;
+        throw ResponseException::raw((string) $schemaJson);
     }
 
     if ($method === 'GET' && isset($osReadRoutes[$apiParam])) {
@@ -105,8 +106,7 @@ try {
         try {
             $tableCfg = safe_table($schema, $table);
         } catch (\RuntimeException $e) {
-            http_response_code(400);
-            exit(json_encode(['error' => 'Unknown table']));
+            throw new BadRequestException('Unknown table');
         }
 
         require_table_access($table);
@@ -168,13 +168,11 @@ try {
             }
         }
 
-        http_response_code(400);
-        echo json_encode(['error' => 'Unsupported action or malformed request body']);
-        exit;
+        throw new BadRequestException('Unsupported action or malformed request body');
     }
+} catch (ControlFlowException $signal) {
+    throw $signal;
 } catch (Throwable $e) {
     error_log('[api][exception] ' . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['error' => 'Internal server error']);
-    exit;
+    throw new ServerErrorException('Internal server error');
 }

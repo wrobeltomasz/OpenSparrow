@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if ($action === 'dashboard_calculate') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -29,6 +32,8 @@ if ($action === 'dashboard_calculate') {
         $schemaCfg = config_get('schema') ?? [];
         try {
             $tableCfg = safe_table($schemaCfg, $table);
+        } catch (ControlFlowException $signal) {
+            throw $signal;
         } catch (Throwable $e) {
             throw new AdminApiMessage('Unknown table: ' . $table);
         }
@@ -45,13 +50,14 @@ if ($action === 'dashboard_calculate') {
         $result = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $query, $displayColumns, $sqlWhere);
 
         if (isset($result['sql_error'])) {
-            echo json_encode(['status' => 'error', 'error' => $result['sql_error']]);
-            exit;
+            admin_err($result['sql_error']);
         }
 
         echo json_encode(['status' => 'success', 'data' => $result['data']]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

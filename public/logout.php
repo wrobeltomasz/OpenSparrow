@@ -6,6 +6,11 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../includes/bootstrap.php';
+
+use App\Exception\RedirectException;
+
+os_register_exception_handler('html');
 start_session();
 
 if (isset($_SESSION['user_id'])) {
@@ -32,5 +37,4 @@ if (ini_get('session.use_cookies')) {
 
 session_unset();
 session_destroy();
-header('Location: login.php');
-exit;
+throw new RedirectException('login.php');

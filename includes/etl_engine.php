@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+
 require_once __DIR__ . '/db.php';
 
 function etl_source_drivers(): array
@@ -448,6 +450,8 @@ function etl_run_job(
                     throw $e;
                 }
             }, 'etl:' . $name);
+        } catch (ControlFlowException $signal) {
+            throw $signal;
         } catch (\Throwable $e) {
             error_log('[etl][' . $name . '] extract failed: ' . $e->getMessage());
             $out['error'] = 'Source query failed.';
@@ -578,6 +582,8 @@ function etl_run_job(
         if (!@pg_query($pgConn, 'COMMIT')) {
             throw new \RuntimeException('COMMIT failed: ' . pg_last_error($pgConn));
         }
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (\Throwable $e) {
         @pg_query($pgConn, 'ROLLBACK');
         error_log('[etl][' . $name . '] load failed: ' . $e->getMessage());

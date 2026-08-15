@@ -9,6 +9,10 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/bootstrap.php';
 
+use App\Exception\BadRequestException;
+use App\Exception\ForbiddenException;
+use App\Exception\NotFoundException;
+use App\Exception\RedirectException;
 use App\Form\RenderContext;
 use App\Service\ImageService;
 use App\Support\ByteFormatter;
@@ -30,15 +34,14 @@ $automation = $services->automations();
 $isReadOnly = $session->role() !== 'editor';
 
 if ($isReadOnly && $request->isPost()) {
-    http_response_code(403);
-    die('Forbidden: Read-only access');
+    throw new ForbiddenException('Read-only access');
 }
 
 $table = $request->query('table');
 $id    = $request->query('id');
 
 if (!$schemas->hasTable($table)) {
-    die('Invalid table.');
+    throw new BadRequestException('Invalid table.');
 }
 
 os_require_table_access((string) $table);
@@ -51,14 +54,12 @@ $error      = '';
 
 $rawTableCfg = $rawSchema['tables'][$table] ?? [];
 if (!$ownership->canAccess($rawTableCfg, $table, (int)$id, $session->userId(), $session->role())) {
-    http_response_code(404);
-    die('Record not found.');
+    throw new NotFoundException('Record not found.');
 }
 
 if ($request->isPost()) {
     if (!$csrf->isValid($request->post('csrf_token'))) {
-        http_response_code(403);
-        die('Invalid CSRF token.');
+        throw new ForbiddenException('Invalid CSRF token.');
     }
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
@@ -81,12 +82,11 @@ if ($request->isPost()) {
             $selected = array_values(array_filter((array)($_POST['m2m_' . $m2mIndex] ?? []), 'ctype_digit'));
             $m2m->sync($m2mCfg, (int)$id, $selected, $rawSchema);
         }
-        if (($request->post('_save_action') ?? 'exit') === 'stay') {
-            header('Location: edit.php?table=' . urlencode($table) . '&id=' . urlencode((string)$id) . '&saved=1');
-        } else {
-            header('Location: index.php?table=' . urlencode($table));
-        }
-        exit;
+        throw new RedirectException(
+            ($request->post('_save_action') ?? 'exit') === 'stay'
+                ? 'edit.php?table=' . urlencode($table) . '&id=' . urlencode((string)$id) . '&saved=1'
+                : 'index.php?table=' . urlencode($table)
+        );
     } catch (\App\Form\ValidationException $e) {
         $error = $e->getMessage();
     } catch (\RuntimeException $e) {
@@ -97,8 +97,7 @@ if ($request->isPost()) {
 
 $row = $records->find($tableCfg, $id);
 if ($row === null) {
-    http_response_code(404);
-    die('Record not found.');
+    throw new NotFoundException('Record not found.');
 }
 
 $subtablesData = $records->subtables($tableCfg, $id);

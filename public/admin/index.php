@@ -6,10 +6,15 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 require_once __DIR__ . '/../../includes/session.php';
+require_once __DIR__ . '/../../includes/bootstrap.php';
+
+use App\Exception\RedirectException;
+use App\Exception\ResponseException;
+
+os_register_exception_handler('html');
 
 if (!file_exists(__DIR__ . '/../../config/database.json')) {
-    header('Location: ../setup.php');
-    exit;
+    throw new RedirectException('../setup.php');
 }
 
 start_session();
@@ -34,8 +39,7 @@ if ($_conn) {
 unset($_conn, $chk, $sqlState, $tUsers);
 
 if (!$firstRun && !isset($_SESSION['user_id'])) {
-    header("Location: ../login.php");
-    exit;
+    throw new RedirectException('../login.php');
 }
 
 if (!$firstRun && ($_SESSION['role'] ?? '') !== 'admin') {
@@ -43,7 +47,7 @@ if (!$firstRun && ($_SESSION['role'] ?? '') !== 'admin') {
     $forbiddenUser = $_SESSION['username'] ?? 'unknown';
     $forbiddenRole = $_SESSION['role'] ?? 'none';
     require __DIR__ . '/templates/forbidden.php';
-    exit;
+    throw ResponseException::sent(403);
 }
 
 if (empty($_SESSION['csrf_token'])) {

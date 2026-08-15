@@ -7,14 +7,16 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 require_once __DIR__ . '/../config_store.php';
 require_once __DIR__ . '/../api_helpers.php';
 
 if ($action === 'list_m2m') {
     $schema = config_get('schema');
     if (!is_array($schema['tables'] ?? null)) {
-        echo json_encode(['tables' => [], 'relationships' => []]);
-        exit;
+        throw ResponseException::encoded(['tables' => [], 'relationships' => []]);
     }
 
     $tables = [];
@@ -42,8 +44,7 @@ if ($action === 'list_m2m') {
             ];
         }
     }
-    echo json_encode(['tables' => $tables, 'relationships' => $relationships]);
-    exit;
+    throw ResponseException::encoded(['tables' => $tables, 'relationships' => $relationships]);
 }
 
 if ($action === 'create_m2m') {
@@ -62,25 +63,21 @@ if ($action === 'create_m2m') {
     $identifiers = ['tableA' => $tableA, 'tableB' => $tableB, 'jt' => $jt, 'selfFk' => $selfFk, 'otherFk' => $otherFk];
     foreach ($identifiers as $field => $val) {
         if (!preg_match($identRe, $val)) {
-            echo json_encode(['status' => 'error', 'error' => "Invalid identifier: $val"]);
-            exit;
+            admin_err("Invalid identifier: $val");
         }
     }
     if ($tableA === $tableB) {
-        echo json_encode(['status' => 'error', 'error' => 'Tables must be different.']);
-        exit;
+        admin_err('Tables must be different.');
     }
 
     $schema = config_get('schema') ?? [];
     if (!isset($schema['tables'][$tableA]) || !isset($schema['tables'][$tableB])) {
-        echo json_encode(['status' => 'error', 'error' => 'One or both tables not found in schema.']);
-        exit;
+        admin_err('One or both tables not found in schema.');
     }
 
     foreach ($schema['tables'][$tableA]['many_to_many'] ?? [] as $existing) {
         if (($existing['junction_table'] ?? '') === $jt) {
-            echo json_encode(['status' => 'error', 'error' => "M2M via $jt already exists on $tableA."]);
-            exit;
+            admin_err("M2M via $jt already exists on $tableA.");
         }
     }
 
@@ -162,15 +159,16 @@ if ($action === 'create_m2m') {
         $m2mUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
         $m2mResult = config_save('schema', $schema, null, $m2mUserId);
         if ($m2mResult['status'] !== 'ok') {
-            echo json_encode(['status' => 'error', 'error' => $m2mResult['error'] ?? 'Failed to save schema.']);
-            exit;
+            admin_err($m2mResult['error'] ?? 'Failed to save schema.');
         }
 
         echo json_encode(['status' => 'success', 'junction_table' => $jt]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (\Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'delete_m2m') {
@@ -183,15 +181,13 @@ if ($action === 'delete_m2m') {
     $dropTable     = !empty($body['drop_table']);
 
     if (!preg_match('/^[a-z][a-z0-9_]*$/', $tableA)) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid table_a.']);
-        exit;
+        admin_err('Invalid table_a.');
     }
 
     $schema = config_get('schema') ?? [];
 
     if (!isset($schema['tables'][$tableA]['many_to_many'][$m2mIndex])) {
-        echo json_encode(['status' => 'error', 'error' => 'M2M entry not found.']);
-        exit;
+        admin_err('M2M entry not found.');
     }
 
     array_splice($schema['tables'][$tableA]['many_to_many'], $m2mIndex, 1);
@@ -226,13 +222,14 @@ if ($action === 'delete_m2m') {
         $m2mUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
         $m2mResult = config_save('schema', $schema, null, $m2mUserId);
         if ($m2mResult['status'] !== 'ok') {
-            echo json_encode(['status' => 'error', 'error' => $m2mResult['error'] ?? 'Failed to save schema.']);
-            exit;
+            admin_err($m2mResult['error'] ?? 'Failed to save schema.');
         }
 
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

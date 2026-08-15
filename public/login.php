@@ -5,6 +5,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
+use App\Exception\ControlFlowException;
+use App\Exception\ForbiddenException;
+use App\Exception\RedirectException;
 use App\Security\UserRole;
 
 require_once __DIR__ . '/../includes/bootstrap.php';
@@ -18,6 +21,8 @@ function resolve_landing_page(): string
     $isHidden = static function (string $configKey): bool {
         try {
             $cfg = config_get($configKey);
+        } catch (ControlFlowException $signal) {
+            throw $signal;
         } catch (Throwable $e) {
             return false;
         }
@@ -44,8 +49,7 @@ if (is_file($versionFile)) {
 }
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: " . resolve_landing_page());
-    exit;
+    throw new RedirectException(resolve_landing_page());
 }
 
 $loginLogoSrc = 'assets/img/logo-brown.png';
@@ -66,8 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tokenSession = $_SESSION['csrf_token'] ?? '';
 
     if (!hash_equals($tokenSession, $tokenPost)) {
-        http_response_code(403);
-        exit('Invalid CSRF token.');
+        throw new ForbiddenException('Invalid CSRF token.');
     }
 
     $username = trim($_POST['username'] ?? '');
@@ -153,12 +156,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     session_write_close();
 
-                    if (UserRole::fromSession() === UserRole::Admin) {
-                        header("Location: admin/");
-                        exit;
-                    }
-                    header("Location: " . resolve_landing_page());
-                    exit;
+                    throw new RedirectException(
+                        UserRole::fromSession() === UserRole::Admin ? 'admin/' : resolve_landing_page()
+                    );
                 } else {
                     $sqlInsert = 'INSERT INTO ' . sys_table('login_attempts') . ' (username, ip_hash) VALUES ($1, $2)';
                     pg_query_params($conn, $sqlInsert, [$username, $ipHash]);

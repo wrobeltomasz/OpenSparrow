@@ -13,8 +13,7 @@ function os_require_access(string $scope, string $name): void
     if (user_can_access($scope, $name)) {
         return;
     }
-    header('Location: index.php');
-    exit;
+    throw new \App\Exception\RedirectException('index.php');
 }
 
 function os_require_table_access(string $table): void

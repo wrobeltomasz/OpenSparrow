@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ResponseException;
+
 function frontapi_record_patch(FrontApiWriteContext $ctx): never
 {
     $conn       = $ctx->conn;
@@ -19,21 +22,15 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
 
     $recordId = (int)($body['id']);
     if ($recordId <= 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid record ID']);
-        exit;
+        throw new BadRequestException('Invalid record ID');
     }
     $col = $body['column'];
     if (!isset($tableCfg['columns'][$col])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid column specified']);
-        exit;
+        throw new BadRequestException('Invalid column specified');
     }
 
     if ($col === $idCol) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Cannot edit PK']);
-        exit;
+        throw new BadRequestException('Cannot edit PK');
     }
 
     check_record_ownership($conn, $tableCfg, $table, $recordId, $userId, 'Forbidden: you do not own this record.');
@@ -51,8 +48,7 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
     $regexpError = validate_column_regexp($tableCfg['columns'][$col], $val);
     if (!str_contains($colType, 'bool') && $regexpError !== null) {
         http_response_code(422);
-        echo json_encode(['error' => $regexpError]);
-        exit;
+        throw ResponseException::encoded(['error' => $regexpError]);
     }
 
     $oldRecord = auto_capture_old_record($conn, $schemaName, $table, $recordId);
@@ -69,8 +65,7 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
     if (!$res) {
         error_log('[api][patch] ' . pg_last_error($conn));
         http_response_code(422);
-        echo json_encode(['error' => 'Database error']);
-        exit;
+        throw ResponseException::encoded(['error' => 'Database error']);
     }
 
     $logId = log_user_action($conn, $userId, 'UPDATE', $table, $recordId);
@@ -78,8 +73,7 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
         snapshot_record($conn, $schemaName, $table, $recordId, $logId);
     }
     evaluate_automation_rules($conn, $schemaName, $table, $recordId, 'update', $userId, $oldRecord);
-    echo json_encode(['ok' => true]);
-    exit;
+    throw ResponseException::encoded(['ok' => true]);
 }
 
 function frontapi_record_insert(FrontApiWriteContext $ctx): never
@@ -115,8 +109,7 @@ function frontapi_record_insert(FrontApiWriteContext $ctx): never
 
         if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($colCfg, $val)) !== null) {
             http_response_code(422);
-            echo json_encode(['error' => $regexpError, 'column' => $colName]);
-            exit;
+            throw ResponseException::encoded(['error' => $regexpError, 'column' => $colName]);
         }
 
         if ($val !== null) {
@@ -150,8 +143,7 @@ function frontapi_record_insert(FrontApiWriteContext $ctx): never
     if (!$res) {
         error_log('[api][insert] ' . pg_last_error($conn));
         http_response_code(422);
-        echo json_encode(['error' => 'Database error']);
-        exit;
+        throw ResponseException::encoded(['error' => 'Database error']);
     }
 
     $row = pg_fetch_assoc($res);
@@ -167,8 +159,7 @@ function frontapi_record_insert(FrontApiWriteContext $ctx): never
         evaluate_automation_rules($conn, $schemaName, $table, (int)$newId, 'create', $userId);
     }
 
-    echo json_encode(['ok' => true, 'id' => $newId]);
-    exit;
+    throw ResponseException::encoded(['ok' => true, 'id' => $newId]);
 }
 
 function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
@@ -182,9 +173,7 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
 
     $srcId = (int)$body['id'];
     if ($srcId <= 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid ID']);
-        exit;
+        throw new BadRequestException('Invalid ID');
     }
 
     check_record_ownership($conn, $tableCfg, $table, $srcId, $ctx->userId, 'Forbidden: you do not own this record.');
@@ -202,8 +191,7 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
 
     if (empty($dupCols)) {
         http_response_code(422);
-        echo json_encode(['error' => 'No columns to duplicate']);
-        exit;
+        throw ResponseException::encoded(['error' => 'No columns to duplicate']);
     }
 
     $colIdents = implode(', ', array_map('pg_ident', $dupCols));
@@ -235,7 +223,7 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
         } else {
             echo json_encode(['error' => 'Database error']);
         }
-        exit;
+        throw ResponseException::sent();
     }
 
     $row = pg_fetch_assoc($res);
@@ -251,8 +239,7 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
         evaluate_automation_rules($conn, $schemaName, $table, (int)$newId, 'create', $userId);
     }
 
-    echo json_encode(['ok' => true, 'id' => $newId]);
-    exit;
+    throw ResponseException::encoded(['ok' => true, 'id' => $newId]);
 }
 
 function frontapi_record_delete(FrontApiWriteContext $ctx): never
@@ -267,9 +254,7 @@ function frontapi_record_delete(FrontApiWriteContext $ctx): never
 
     $deleteId = (int)$body['id'];
     if ($deleteId <= 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid record ID']);
-        exit;
+        throw new BadRequestException('Invalid record ID');
     }
 
     check_record_ownership($conn, $tableCfg, $table, $deleteId, $userId, 'Forbidden: you do not own this record.');
@@ -281,12 +266,10 @@ function frontapi_record_delete(FrontApiWriteContext $ctx): never
     if (!$res) {
         error_log('[api][delete] ' . pg_last_error($conn));
         http_response_code(422);
-        echo json_encode(['error' => 'Database error']);
-        exit;
+        throw ResponseException::encoded(['error' => 'Database error']);
     }
 
     log_user_action($conn, $userId, 'DELETE', $table, $deleteId);
     evaluate_automation_rules($conn, $schemaName, $table, $deleteId, 'delete', $userId, $deletedRecord);
-    echo json_encode(['ok' => true]);
-    exit;
+    throw ResponseException::encoded(['ok' => true]);
 }

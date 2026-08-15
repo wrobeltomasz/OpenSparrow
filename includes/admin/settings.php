@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if ($action === 'list_icons') {
     $icons = [];
 
@@ -26,8 +29,7 @@ if ($action === 'list_icons') {
             }
         }
     }
-    echo json_encode(['status' => 'success', 'icons' => array_values(array_unique($icons))]);
-    exit;
+    admin_ok(['icons' => array_values(array_unique($icons))]);
 }
 
 if ($action === 'get_snapshot_setting') {
@@ -48,6 +50,8 @@ if ($action === 'get_snapshot_setting') {
         $countRes = $conn ? @pg_query($conn, "SELECT COUNT(*) FROM $tSnap") : false;
         $snapshotCount = ($countRes && ($cr = pg_fetch_row($countRes))) ? (int) $cr[0] : null;
         $tableExists = ($countRes !== false);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         $snapshotCount = null;
         $tableExists = false;
@@ -59,7 +63,7 @@ if ($action === 'get_snapshot_setting') {
         'table_exists'   => $tableExists,
         'snapshot_count' => $snapshotCount,
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'set_snapshot_setting') {
@@ -71,15 +75,14 @@ if ($action === 'set_snapshot_setting') {
             'error'  => 'Controlled by RECORD_SNAPSHOTS_ENABLED environment variable — cannot override'
                 . ' from admin panel.',
         ]);
-        exit;
+        throw ResponseException::sent();
     }
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $enabled = (bool) ($body['enabled'] ?? false);
     $settings = admin_read_settings();
     $settings['record_snapshots_enabled'] = $enabled;
     admin_save_settings($settings);
-    echo json_encode(['status' => 'success', 'enabled' => $enabled]);
-    exit;
+    admin_ok(['enabled' => $enabled]);
 }
 
 if ($action === 'get_automation_email_setting') {
@@ -98,7 +101,7 @@ if ($action === 'get_automation_email_setting') {
         'smtp_username'           => (string) ($settings['smtp_username'] ?? ''),
         'smtp_password_configured' => !empty($settings['smtp_password_enc']),
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'set_automation_email_setting') {
@@ -109,8 +112,7 @@ if ($action === 'set_automation_email_setting') {
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $from = trim((string) ($body['from'] ?? ''));
     if ($from !== '' && !filter_var($from, FILTER_VALIDATE_EMAIL)) {
-        echo json_encode(['status' => 'error', 'error' => 'Enter a valid "From" email address, or leave empty.']);
-        exit;
+        admin_err('Enter a valid "From" email address, or leave empty.');
     }
 
     $smtpEnabled    = !empty($body['smtp_enabled']);
@@ -125,8 +127,7 @@ if ($action === 'set_automation_email_setting') {
     $clearPassword  = !empty($body['smtp_password_clear']);
 
     if ($smtpEnabled && $smtpHost === '') {
-        echo json_encode(['status' => 'error', 'error' => 'SMTP host is required when SMTP delivery is enabled.']);
-        exit;
+        admin_err('SMTP host is required when SMTP delivery is enabled.');
     }
 
     $settings = admin_read_settings();
@@ -147,8 +148,7 @@ if ($action === 'set_automation_email_setting') {
     }
 
     admin_save_settings($settings);
-    echo json_encode(['status' => 'success']);
-    exit;
+    admin_ok();
 }
 
 if ($action === 'test_smtp_connection') {
@@ -176,7 +176,7 @@ if ($action === 'test_smtp_connection') {
     echo json_encode($result['ok']
         ? ['status' => 'success']
         : ['status' => 'error', 'error' => $result['error']]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'get_language_setting') {
@@ -200,7 +200,7 @@ if ($action === 'get_language_setting') {
         'available_languages' => array_column($allLocales, 'code'),
         'all_locales'         => $allLocales,
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'set_language_setting') {
@@ -217,8 +217,7 @@ if ($action === 'set_language_setting') {
         glob($langDir . '*.json') ?: []
     );
     if (!in_array($defaultLang, $installed, true)) {
-        echo json_encode(['status' => 'error', 'error' => 'Default language must be an installed language.']);
-        exit;
+        admin_err('Default language must be an installed language.');
     }
 
     $settings = admin_read_settings();
@@ -237,13 +236,12 @@ if ($action === 'set_language_setting') {
         'status'           => 'success',
         'default_language' => $defaultLang,
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'get_chat_bubble_setting') {
     $settings = admin_read_settings();
-    echo json_encode(['chat_bubble_enabled' => (bool) ($settings['chat_bubble_enabled'] ?? false)]);
-    exit;
+    throw ResponseException::encoded(['chat_bubble_enabled' => (bool) ($settings['chat_bubble_enabled'] ?? false)]);
 }
 
 if ($action === 'set_chat_bubble_setting') {
@@ -255,8 +253,7 @@ if ($action === 'set_chat_bubble_setting') {
     $settings['chat_bubble_enabled'] = $enabled;
 
     admin_save_settings($settings);
-    echo json_encode(['status' => 'success', 'chat_bubble_enabled' => $enabled]);
-    exit;
+    admin_ok(['chat_bubble_enabled' => $enabled]);
 }
 
 if ($action === 'get_logo_setting') {
@@ -268,7 +265,7 @@ if ($action === 'get_logo_setting') {
         'logo_enabled' => (bool) ($settings['logo_enabled'] ?? false),
         'app_name'     => is_string($appName) && $appName !== '' ? $appName : 'OpenSparrow',
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'set_app_name') {
@@ -277,16 +274,14 @@ if ($action === 'set_app_name') {
     $appName = trim((string) ($body['app_name'] ?? ''));
 
     if ($appName === '' || mb_strlen($appName) > 60) {
-        echo json_encode(['status' => 'error', 'error' => 'App name must be 1-60 characters.']);
-        exit;
+        admin_err('App name must be 1-60 characters.');
     }
 
     $settings = admin_read_settings();
     $settings['app_name'] = $appName;
 
     admin_save_settings($settings);
-    echo json_encode(['status' => 'success', 'app_name' => $appName]);
-    exit;
+    admin_ok(['app_name' => $appName]);
 }
 
 if ($action === 'set_logo_enabled') {
@@ -298,24 +293,21 @@ if ($action === 'set_logo_enabled') {
     $settings['logo_enabled'] = $enabled;
 
     admin_save_settings($settings);
-    echo json_encode(['status' => 'success', 'logo_enabled' => $enabled]);
-    exit;
+    admin_ok(['logo_enabled' => $enabled]);
 }
 
 if ($action === 'upload_logo') {
     require_not_demo();
 
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['status' => 'error', 'error' => 'No file received or upload error.']);
-        exit;
+        admin_err('No file received or upload error.');
     }
 
     $upload = $_FILES['file'];
 
     $maxBytes = 2 * 1024 * 1024;
     if ($upload['size'] > $maxBytes) {
-        echo json_encode(['status' => 'error', 'error' => 'Logo must be 2 MB or smaller.']);
-        exit;
+        admin_err('Logo must be 2 MB or smaller.');
     }
 
     $allowedMimes = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
@@ -325,8 +317,7 @@ if ($action === 'upload_logo') {
         $mimeType = $finfo->file($upload['tmp_name']) ?: 'application/octet-stream';
     }
     if (!isset($allowedMimes[$mimeType])) {
-        echo json_encode(['status' => 'error', 'error' => 'Only PNG, JPEG or WEBP images are allowed.']);
-        exit;
+        admin_err('Only PNG, JPEG or WEBP images are allowed.');
     }
 
     $uploadDir = __DIR__ . '/../../public/assets/img/uploads';
@@ -343,8 +334,7 @@ if ($action === 'upload_logo') {
     $filename    = 'logo-' . bin2hex(random_bytes(8)) . '.' . $ext;
     $destination = $uploadDir . '/' . $filename;
     if (!move_uploaded_file($upload['tmp_name'], $destination)) {
-        echo json_encode(['status' => 'error', 'error' => 'Failed to save the uploaded file.']);
-        exit;
+        admin_err('Failed to save the uploaded file.');
     }
 
     $settings     = admin_read_settings();
@@ -363,8 +353,7 @@ if ($action === 'upload_logo') {
     $settings['logo_enabled'] = true;
     admin_save_settings($settings);
 
-    echo json_encode(['status' => 'success', 'logo_path' => $settings['custom_logo_path'], 'logo_enabled' => true]);
-    exit;
+    admin_ok(['logo_path' => $settings['custom_logo_path'], 'logo_enabled' => true]);
 }
 
 if ($action === 'remove_logo') {
@@ -386,6 +375,5 @@ if ($action === 'remove_logo') {
 
     admin_save_settings($settings);
 
-    echo json_encode(['status' => 'success', 'logo_enabled' => false]);
-    exit;
+    admin_ok(['logo_enabled' => false]);
 }

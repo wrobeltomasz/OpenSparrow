@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/api_helpers.php';
 require_once __DIR__ . '/../../includes/admin_api_errors.php';
@@ -540,8 +543,7 @@ $action = $_GET['action'] ?? '';
 function csv_fail(string $msg, int $code = 400): never
 {
     http_response_code($code);
-    echo json_encode(['status' => 'error', 'error' => $msg]);
-    exit;
+    throw ResponseException::encoded(['status' => 'error', 'error' => $msg]);
 }
 
 if ($action === 'csv_import_history') {
@@ -549,10 +551,12 @@ if ($action === 'csv_import_history') {
         $conn = db_connect();
         $repo = new ImportRepository($conn);
         echo json_encode(['status' => 'success', 'imports' => $repo->getHistory()]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (\Exception $e) {
         csv_fail(admin_error_message($e));
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'csv_import_log') {
@@ -565,10 +569,12 @@ if ($action === 'csv_import_log') {
         $repo = new ImportRepository($conn);
         $rows = $repo->getRowLog($importId);
         echo json_encode(['status' => 'success', 'rows' => $rows, 'count' => count($rows)]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (\Exception $e) {
         csv_fail(admin_error_message($e));
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'csv_import_upload') {
@@ -632,7 +638,7 @@ if ($action === 'csv_import_upload') {
         'original_name' => basename((string) $file['name']),
         'tmp_name'      => $tmpName,
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'csv_import_execute') {
@@ -752,6 +758,8 @@ if ($action === 'csv_import_execute') {
             'has_errors'       => $skipped > 0,
             'elapsed_seconds'  => round(microtime(true) - $startTime, 1),
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (\Exception $e) {
         if ($importId > 0 && isset($repo)) {
             $repo->finalize($importId, 'failed', 0, 0, 0, $e->getMessage());
@@ -759,7 +767,7 @@ if ($action === 'csv_import_execute') {
         @unlink($csvPath);
         csv_fail($e->getMessage());
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'csv_create_table') {
@@ -881,10 +889,12 @@ if ($action === 'csv_create_table') {
         }
 
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (\Exception $e) {
         csv_fail($e->getMessage());
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'csv_schemas') {
@@ -905,10 +915,12 @@ if ($action === 'csv_schemas') {
             $schemas[] = $row[0];
         }
         echo json_encode(['status' => 'success', 'schemas' => $schemas]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (\Exception $e) {
         csv_fail(admin_error_message($e));
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'csv_import_config') {
@@ -919,7 +931,7 @@ if ($action === 'csv_import_config') {
         'memory_limit'      => ini_get('memory_limit'),
         'batch_size'        => CSV_BATCH_SIZE,
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 csv_fail('Unknown action.', 404);

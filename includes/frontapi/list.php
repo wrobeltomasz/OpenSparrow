@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
 function frontapi_list(FrontApiContext $ctx): never
 {
     $conn   = $ctx->conn;
@@ -17,8 +21,7 @@ function frontapi_list(FrontApiContext $ctx): never
     try {
         $tableCfg = safe_table($schema, $table);
     } catch (\RuntimeException $e) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Unknown table']));
+        throw new BadRequestException('Unknown table');
     }
 
     if (!defined('OS_TABLE_ACCESS_DELEGATED')) {
@@ -121,9 +124,7 @@ function frontapi_list(FrontApiContext $ctx): never
     $res = @pg_query_params($conn, $sql, $params);
     if (!$res) {
         error_log('[api][list] ' . pg_last_error($conn));
-        http_response_code(500);
-        echo json_encode(['error' => 'Database error']);
-        exit;
+        throw new ServerErrorException('Database error');
     }
 
     $rows = [];
@@ -148,7 +149,7 @@ function frontapi_list(FrontApiContext $ctx): never
             'display_name' => to_display_name($tableCfg),
         ],
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 function frontapi_subtable_counts(FrontApiContext $ctx): never
@@ -160,14 +161,13 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
     try {
         $tableCfg = safe_table($schema, $table);
     } catch (\RuntimeException $e) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Unknown table']));
+        throw new BadRequestException('Unknown table');
     }
     require_table_access($table);
     $subtables = $tableCfg['subtables'] ?? [];
 
     if (empty($subtables)) {
-        exit(json_encode(['success' => true, 'counts' => (object)[]]));
+        throw ResponseException::encoded(['success' => true, 'counts' => (object)[]]);
     }
 
     $rawIds = $_GET['ids'] ?? '';
@@ -177,12 +177,12 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
     )));
 
     if (empty($ids)) {
-        exit(json_encode(['success' => true, 'counts' => (object)[]]));
+        throw ResponseException::encoded(['success' => true, 'counts' => (object)[]]);
     }
 
     $ids = filter_visible_ids($conn, $tableCfg, $table, $ids, $ctx->userId);
     if (empty($ids)) {
-        exit(json_encode(['success' => true, 'counts' => (object)[]]));
+        throw ResponseException::encoded(['success' => true, 'counts' => (object)[]]);
     }
 
     $idCol  = id_column();
@@ -231,5 +231,5 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
     }
 
     $nonZero = array_filter($counts, fn($v) => $v > 0);
-    exit(json_encode(['success' => true, 'counts' => $nonZero ?: (object)[]]));
+    throw ResponseException::encoded(['success' => true, 'counts' => $nonZero ?: (object)[]]);
 }

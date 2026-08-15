@@ -11,6 +11,11 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../api_helpers.php';
 require_once __DIR__ . '/../admin_api_errors.php';
 require_once __DIR__ . '/../config_store.php';
+require_once __DIR__ . '/../bootstrap.php';
+
+use App\Exception\ControlFlowException;
+use App\Exception\HttpException;
+use App\Exception\ResponseException;
 
 function admin_conn(): \PgSql\Connection
 {
@@ -30,27 +35,24 @@ function admin_input(): array
 
 function admin_ok(array $extra = []): never
 {
-    echo json_encode(['status' => 'success'] + $extra);
-    exit;
+    throw ResponseException::json(['status' => 'success'] + $extra, 0);
 }
 
 function admin_err(string $message, int $code = 0): never
 {
-    if ($code !== 0) {
-        http_response_code($code);
-    }
-    echo json_encode(['status' => 'error', 'error' => $message]);
-    exit;
+    throw HttpException::fromStatus($code, $message, ['status' => 'error', 'error' => $message]);
 }
 
 function admin_try(callable $body): never
 {
     try {
         $body();
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+        throw ResponseException::json(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 function admin_fetch_all(\PgSql\Result $res): array
@@ -88,12 +90,11 @@ function admin_require_log_table(\PgSql\Connection $conn, string $table): void
     if (@pg_query($conn, "SELECT 1 FROM {$table} LIMIT 0")) {
         return;
     }
-    echo json_encode([
+    throw ResponseException::json([
         'status' => 'success',
         'rows'   => [],
         'note'   => 'Run Initialize System Tables to create the log table.',
-    ]);
-    exit;
+    ], 0);
 }
 
 const ADMIN_PURGE_MAX_DAYS = 3650;
@@ -239,5 +240,5 @@ function admin_run_cron_script(
         'output'    => implode("\n", $lines),
         'exit_code' => $code,
     ]);
-    exit;
+    throw ResponseException::sent();
 }

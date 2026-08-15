@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use App\Exception\ResponseException;
+
 $menuSanitizeIcon = static function (string $icon): string {
     if ($icon === '') {
         return '';
@@ -98,8 +100,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $items = array_values($catalog);
     }
 
-    echo json_encode(['items' => $items]);
-    exit;
+    throw ResponseException::encoded(['items' => $items]);
 }
 
 if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -108,8 +109,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $body = json_decode(file_get_contents('php://input'), true);
     if (!is_array($body) || !isset($body['items']) || !is_array($body['items'])) {
         http_response_code(400);
-        echo json_encode(['status' => 'error', 'error' => 'Invalid payload']);
-        exit;
+        admin_err('Invalid payload');
     }
 
     require_once __DIR__ . '/../config_store.php';
@@ -141,11 +141,9 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $menuResult = config_save('menu', ['items' => $sanitized], null, $menuUserId);
     if ($menuResult['status'] !== 'ok') {
         http_response_code(500);
-        echo json_encode(['status' => 'error', 'error' => $menuResult['error'] ?? 'Write failed']);
-        exit;
+        admin_err($menuResult['error'] ?? 'Write failed');
     }
-    echo json_encode(['status' => 'success']);
-    exit;
+    admin_ok();
 }
 
 $allowedFiles = [
@@ -163,7 +161,7 @@ if ($action === 'get' && in_array($file, $allowedFiles, true)) {
         require_once __DIR__ . '/../config_store.php';
         $cfg = config_get($file);
         echo $cfg !== null ? json_encode($cfg) : json_encode(new stdClass());
-        exit;
+        throw ResponseException::sent();
     }
     $filePath = __DIR__ . '/../../config/' . $file . '.json';
     if (file_exists($filePath)) {
@@ -182,7 +180,7 @@ if ($action === 'get' && in_array($file, $allowedFiles, true)) {
     } else {
         echo json_encode(new stdClass());
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'save' && in_array($file, $allowedFiles, true)) {
@@ -193,19 +191,16 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
     $parsedData = json_decode($data, true);
     if (in_array($file, $dbBackedFiles, true)) {
         if (!is_array($parsedData)) {
-            echo json_encode(['status' => 'error', 'error' => 'Invalid JSON']);
-            exit;
+            admin_err('Invalid JSON');
         }
         require_once __DIR__ . '/../config_store.php';
 
         $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
         $result = config_save($file, $parsedData, null, $userId);
         if ($result['status'] !== 'ok') {
-            echo json_encode(['status' => 'error', 'error' => $result['error'] ?? 'Save failed']);
-            exit;
+            admin_err($result['error'] ?? 'Save failed');
         }
-        echo json_encode(['status' => 'success']);
-        exit;
+        admin_ok();
     }
     if ($parsedData !== null) {
         if (!is_dir(__DIR__ . '/../../config/')) {
@@ -216,5 +211,5 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
     } else {
         echo json_encode(['status' => 'error', 'error' => 'Invalid JSON']);
     }
-    exit;
+    throw ResponseException::sent();
 }

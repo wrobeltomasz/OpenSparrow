@@ -7,9 +7,13 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../includes/exception_handler.php';
+
+use App\Exception\ForbiddenException;
+
 if (php_sapi_name() !== 'cli') {
-    http_response_code(403);
-    exit;
+    os_register_exception_handler('html');
+    throw new ForbiddenException('This script may only be run from the command line.');
 }
 
 @ini_set('output_buffering', 'off');

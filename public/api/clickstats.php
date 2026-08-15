@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use App\Exception\ResponseException;
+
 require_once __DIR__ . '/../../includes/bootstrap.php';
 require_once __DIR__ . '/../../includes/config_store.php';
 require_once __DIR__ . '/../../includes/clickstats.php';
@@ -26,7 +28,7 @@ os_api_bootstrap(['connect' => false, 'csrf' => 'manual', 'gate' => false]);
 function clickstats_done(int $code = 204): never
 {
     http_response_code($code);
-    exit;
+    throw ResponseException::sent();
 }
 
 function clickstats_text(mixed $value): string

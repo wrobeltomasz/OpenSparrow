@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 function etl_migrate_legacy_connection(array $config): array
 {
     if (!empty($config['sources']) || empty($config['connection'])) {
@@ -94,16 +97,14 @@ if ($action === 'etl_load') {
             $config['sources'][$i]['password'] = ($src['password'] !== '') ? '********' : '';
         }
     }
-    echo json_encode(['status' => 'success', 'config' => $config, 'version' => $row['version'] ?? 0]);
-    exit;
+    admin_ok(['config' => $config, 'version' => $row['version'] ?? 0]);
 }
 
 if ($action === 'etl_save') {
     require_not_demo('Demo mode — writes disabled.');
     $data = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($data)) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid JSON.']);
-        exit;
+        admin_err('Invalid JSON.');
     }
     require_once __DIR__ . '/../config_store.php';
     require_once __DIR__ . '/../etl_engine.php';
@@ -267,7 +268,7 @@ if ($action === 'etl_test_connection') {
                 'status' => 'error',
                 'error'  => 'Could not connect — check host, port, protocol, directory, user and password.',
             ]);
-            exit;
+            throw ResponseException::sent();
         }
         $fileName = trim((string)($conn['file_name'] ?? ''));
         $fileExists = ($fileName === '')
@@ -279,11 +280,10 @@ if ($action === 'etl_test_connection') {
                 'status' => 'error',
                 'error'  => 'Connected, but the file "' . $fileName . '" was not found in the configured directory.',
             ]);
-            exit;
+            throw ResponseException::sent();
         }
         @ftp_close($ftp);
-        echo json_encode(['status' => 'success', 'message' => 'Connection OK.']);
-        exit;
+        admin_ok(['message' => 'Connection OK.']);
     }
 
     $pdo = etl_source_pdo($conn, 'etl:test');
@@ -292,10 +292,9 @@ if ($action === 'etl_test_connection') {
             'status' => 'error',
             'error'  => 'Could not connect — check driver, host, database, user and password.',
         ]);
-        exit;
+        throw ResponseException::sent();
     }
-    echo json_encode(['status' => 'success', 'message' => 'Connection OK.']);
-    exit;
+    admin_ok(['message' => 'Connection OK.']);
 }
 
 if ($action === 'etl_preview') {
@@ -315,21 +314,18 @@ if ($action === 'etl_preview') {
                 'status' => 'error',
                 'error'  => 'Could not fetch/parse the source CSV file — check connection, path and file name.',
             ]);
-            exit;
+            throw ResponseException::sent();
         }
         $columns = empty($rows) ? [] : array_keys($rows[0]);
-        echo json_encode(['status' => 'success', 'columns' => $columns, 'rows' => $rows]);
-        exit;
+        admin_ok(['columns' => $columns, 'rows' => $rows]);
     }
 
     if (($err = etl_validate_source_query($query)) !== null) {
-        echo json_encode(['status' => 'error', 'error' => $err]);
-        exit;
+        admin_err($err);
     }
     $pdo = etl_source_pdo($connIn, 'etl:preview');
     if ($pdo === null) {
-        echo json_encode(['status' => 'error', 'error' => 'Source connection is not configured or unavailable.']);
-        exit;
+        admin_err('Source connection is not configured or unavailable.');
     }
     try {
         $stmt = $pdo->query($query);
@@ -340,12 +336,10 @@ if ($action === 'etl_preview') {
         $stmt->closeCursor();
     } catch (\PDOException $e) {
         error_log('[etl][preview] ' . $e->getMessage());
-        echo json_encode(['status' => 'error', 'error' => 'Preview query failed.']);
-        exit;
+        admin_err('Preview query failed.');
     }
     $columns = empty($rows) ? [] : array_keys($rows[0]);
-    echo json_encode(['status' => 'success', 'columns' => $columns, 'rows' => $rows]);
-    exit;
+    admin_ok(['columns' => $columns, 'rows' => $rows]);
 }
 
 if ($action === 'etl_target_schemas') {
@@ -365,10 +359,12 @@ if ($action === 'etl_target_schemas') {
             $schemas[] = $row['schema_name'];
         }
         echo json_encode(['status' => 'success', 'schemas' => $schemas]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'etl_target_tables') {
@@ -377,8 +373,7 @@ if ($action === 'etl_target_tables') {
         $conn   = db_connect();
         $schema = trim((string)($_GET['schema'] ?? ''));
         if ($schema === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $schema)) {
-            echo json_encode(['status' => 'error', 'error' => 'Invalid schema.']);
-            exit;
+            admin_err('Invalid schema.');
         }
 
         $res = @pg_query_params(
@@ -397,10 +392,12 @@ if ($action === 'etl_target_tables') {
             $tables[] = $row['table_name'];
         }
         echo json_encode(['status' => 'success', 'tables' => $tables]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'run_etl') {

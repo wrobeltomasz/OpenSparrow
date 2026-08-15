@@ -7,13 +7,15 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if ($action === 'backup_tables') {
     require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
     $tables = $input['tables'] ?? [];
     if (empty($tables) || !is_array($tables)) {
-        echo json_encode(['status' => 'error', 'error' => 'No tables provided.']);
-        exit;
+        admin_err('No tables provided.');
     }
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -46,8 +48,10 @@ if ($action === 'backup_tables') {
             }
         }
         echo json_encode(['status' => 'success', 'results' => $results]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

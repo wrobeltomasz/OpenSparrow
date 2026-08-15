@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if ($action === 'create_table') {
     require_not_demo('Disabled in Demo Mode.', 403);
     $input = json_decode(file_get_contents('php://input'), true);
@@ -15,8 +18,7 @@ if ($action === 'create_table') {
     $tableName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['table'] ?? ''));
 
     if (empty($tableName) || empty($schemaName)) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid schema or table name.']);
-        exit;
+        admin_err('Invalid schema or table name.');
     }
 
     try {
@@ -34,10 +36,12 @@ if ($action === 'create_table') {
         }
 
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'add_column') {
@@ -56,8 +60,7 @@ if ($action === 'add_column') {
     $default    = trim((string)($input['default'] ?? ''));
 
     if (empty($tableName) || empty($colName)) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid table or column name.']);
-        exit;
+        admin_err('Invalid table or column name.');
     }
 
     try {
@@ -133,10 +136,12 @@ if ($action === 'add_column') {
         }
 
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'schema_add_table') {
@@ -149,8 +154,7 @@ if ($action === 'schema_add_table') {
     $columns     = is_array($input['columns'] ?? null) ? $input['columns'] : [];
 
     if (empty($tableName)) {
-        echo json_encode(['status' => 'error', 'error' => 'Table name is required.']);
-        exit;
+        admin_err('Table name is required.');
     }
 
     if ($displayName === '') {
@@ -221,11 +225,9 @@ if ($action === 'schema_add_table') {
     $schemaUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
     $schemaResult = config_save('schema', $schemaData, null, $schemaUserId);
     if ($schemaResult['status'] !== 'ok') {
-        echo json_encode(['status' => 'error', 'error' => $schemaResult['error'] ?? 'Could not save schema.']);
-        exit;
+        admin_err($schemaResult['error'] ?? 'Could not save schema.');
     }
-    echo json_encode(['status' => 'success']);
-    exit;
+    admin_ok();
 }
 
 if ($action === 'list_system_tables') {
@@ -245,10 +247,12 @@ if ($action === 'list_system_tables') {
             $tables[] = ['name' => $row['table_name'], 'schema' => $row['table_schema']];
         }
         echo json_encode(['status' => 'success', 'tables' => $tables]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'sync_schema') {
@@ -271,10 +275,12 @@ if ($action === 'sync_schema') {
         }
 
         echo json_encode(['status' => 'success', 'tables' => $tables]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'get_db_columns') {
@@ -342,8 +348,10 @@ if ($action === 'get_db_columns') {
         }
 
         echo json_encode(['status' => 'success', 'columns' => $columns]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

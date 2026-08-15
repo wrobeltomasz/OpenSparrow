@@ -8,19 +8,25 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/exception_handler.php';
+
+use App\Exception\BadRequestException;
+use App\Exception\ControlFlowException;
+use App\Exception\ForbiddenException;
+use App\Exception\NotFoundException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
+os_register_exception_handler('json');
 
 if (APP_ENV === 'production') {
-    http_response_code(404);
-    exit;
+    throw new NotFoundException('Seeding is disabled in production.');
 }
 
 $expectedToken = getenv('CYPRESS_SEED_TOKEN') ?: 'cypress-dev-seed';
 $providedToken = $_POST['token'] ?? $_GET['token'] ?? '';
 if (!hash_equals($expectedToken, $providedToken)) {
-    http_response_code(403);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => 'Invalid seed token']);
-    exit;
+    throw new ForbiddenException('Invalid seed token');
 }
 
 require_once __DIR__ . '/../includes/db.php';
@@ -143,17 +149,17 @@ try {
         $textCol  = is_array($tableCfg) ? cypress_first_text_column($tableCfg) : null;
 
         if ($textCol === null) {
-            echo json_encode(['status' => 'ok', 'results' => ['skipped' => true]]);
-            exit;
+            throw ResponseException::encoded(['status' => 'ok', 'results' => ['skipped' => true]]);
         }
 
         $userIds = [];
         foreach (['test', 'test2'] as $u) {
             $userRes = pg_query_params($conn, "SELECT id FROM $tUsers WHERE username = \$1", [$u]);
             if (!$userRes || pg_num_rows($userRes) === 0) {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'error' => "Missing user $u — run action=seed first"]);
-                exit;
+                throw new ServerErrorException("Missing user $u — run action=seed first", [
+                    'status' => 'error',
+                    'error'  => "Missing user $u — run action=seed first",
+                ]);
             }
             $userIds[$u] = (int) pg_fetch_result($userRes, 0, 'id');
         }
@@ -182,9 +188,10 @@ try {
                 ["cypress-idor-$slot"]
             );
             if (!$res) {
-                http_response_code(500);
-                echo json_encode(['status' => 'error', 'error' => 'Insert failed: ' . pg_last_error($conn)]);
-                exit;
+                throw new ServerErrorException('Insert failed: ' . pg_last_error($conn), [
+                    'status' => 'error',
+                    'error'  => 'Insert failed: ' . pg_last_error($conn),
+                ]);
             }
             $recordId = (int) pg_fetch_result($res, 0, 'id');
             pg_query_params(
@@ -202,11 +209,10 @@ try {
             $saved = config_save('schema', $schema);
             if (($saved['status'] ?? '') !== 'ok') {
                 http_response_code(500);
-                echo json_encode([
+                throw ResponseException::encoded([
                     'status' => 'error',
                     'error'  => 'Could not enable owner_restricted: ' . ($saved['error'] ?? $saved['status']),
                 ]);
-                exit;
             }
         }
 
@@ -227,9 +233,7 @@ try {
         $tableCfg = $schema['tables'][$table] ?? null;
 
         if (!is_array($tableCfg)) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'error' => 'Unknown table']);
-            exit;
+            throw new BadRequestException('Unknown table', ['status' => 'error', 'error' => 'Unknown table']);
         }
 
         $textCol = cypress_first_text_column($tableCfg);
@@ -267,25 +271,25 @@ try {
         $tableCfg = $schema['tables'][$table] ?? null;
 
         if (!is_array($tableCfg)) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'error' => 'Unknown table']);
-            exit;
+            throw new BadRequestException('Unknown table', ['status' => 'error', 'error' => 'Unknown table']);
         }
 
         $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
         $res = pg_query($conn, "SELECT COUNT(*) AS c FROM $pgTable");
         if (!$res) {
-            http_response_code(500);
-            echo json_encode(['status' => 'error', 'error' => pg_last_error($conn)]);
-            exit;
+            throw new ServerErrorException(pg_last_error($conn), [
+                'status' => 'error',
+                'error'  => pg_last_error($conn),
+            ]);
         }
 
         $results['table'] = $table;
         $results['count'] = (int) pg_fetch_result($res, 0, 'c');
     }
 
-    echo json_encode(['status' => 'ok', 'results' => $results]);
+    throw ResponseException::encoded(['status' => 'ok', 'results' => $results]);
+} catch (ControlFlowException $signal) {
+    throw $signal;
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    throw new ServerErrorException($e->getMessage(), ['status' => 'error', 'error' => $e->getMessage()]);
 }

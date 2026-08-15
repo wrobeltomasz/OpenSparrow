@@ -7,13 +7,16 @@
 
 require_once __DIR__ . '/../includes/bootstrap.php';
 
+use App\Exception\RedirectException;
+use App\Exception\ResponseException;
+
 $page     = os_page_bootstrap(['csp' => 'unsafe-style', 'setup_check' => true]);
 $cspNonce = $page['nonce'];
 $userRole = $page['role'];
 
 if (isset($_GET['api'])) {
     require __DIR__ . '/api.php';
-    exit;
+    throw ResponseException::sent();
 }
 
 $requestedTable = substr($_GET['table'] ?? '', 0, 64);
@@ -29,8 +32,7 @@ if ($requestedWorkflow !== '') {
     foreach ((config_get('workflows') ?? [])['workflows'] ?? [] as $wfItem) {
         if (is_array($wfItem) && ($wfItem['id'] ?? '') === $requestedWorkflow) {
             if (!workflow_tables_in_scope($wfItem)) {
-                header('Location: index.php');
-                exit;
+                throw new RedirectException('index.php');
             }
             break;
         }

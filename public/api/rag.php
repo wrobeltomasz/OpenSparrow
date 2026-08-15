@@ -7,6 +7,12 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ControlFlowException;
+use App\Exception\HttpException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
 set_time_limit(240);
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
@@ -32,10 +38,11 @@ if ($action === 'tags' && $method === 'GET') {
                 }
             }
         }
-        exit(json_encode(['tags' => $tags]));
+        throw ResponseException::encoded(['tags' => $tags]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
-        http_response_code(500);
-        exit(json_encode(['error' => 'Failed to load tags.']));
+        throw new ServerErrorException('Failed to load tags.');
     }
 }
 
@@ -60,13 +67,14 @@ if ($action === 'files' && $method === 'GET') {
             }
         }
         $cfg = rag_config();
-        exit(json_encode([
+        throw ResponseException::encoded([
             'files'             => $files,
             'conversation_turns' => (int) ($cfg['conversation_turns'] ?? 0),
-        ]));
+        ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
-        http_response_code(500);
-        exit(json_encode(['error' => 'Failed to load files.']));
+        throw new ServerErrorException('Failed to load files.');
     }
 }
 
@@ -88,16 +96,14 @@ if ($action === 'query' && $method === 'POST') {
         $rawHistory  = (array) ($body['history'] ?? []);
 
         if ($query === '') {
-            http_response_code(400);
-            exit(json_encode(['error' => 'Query is required.']));
+            throw new BadRequestException('Query is required.');
         }
 
         if ($table !== '') {
             require_table_access($table);
         }
         if (mb_strlen($query) > 2000) {
-            http_response_code(400);
-            exit(json_encode(['error' => 'Query too long (max 2000 characters).']));
+            throw new BadRequestException('Query too long (max 2000 characters).');
         }
 
         $cfg = rag_config();
@@ -120,22 +126,20 @@ if ($action === 'query' && $method === 'POST') {
         }
 
         if (DEMO_MODE) {
-            exit(json_encode([
+            throw ResponseException::encoded([
                 'answer'  => '[Demo mode] Ollama integration is disabled. This is a placeholder answer.',
                 'sources' => [],
-            ]));
+            ]);
         }
 
         $userId = (int) ($_SESSION['user_id'] ?? 0);
         if (!rag_rate_limit_ok($userId, RAG_RATE_LIMIT_PER_MIN)) {
-            http_response_code(429);
-            exit(json_encode(['error' => 'Rate limit exceeded. Please wait a moment before asking again.']));
+            throw HttpException::fromStatus(429, 'Rate limit exceeded. Please wait a moment before asking again.');
         }
 
         $semaphore = rag_semaphore_acquire(RAG_MAX_CONCURRENT);
         if (RAG_MAX_CONCURRENT > 0 && $semaphore === null) {
-            http_response_code(503);
-            exit(json_encode(['error' => 'The assistant is busy right now. Please try again in a few seconds.']));
+            throw HttpException::fromStatus(503, 'The assistant is busy right now. Please try again in a few seconds.');
         }
 
         register_shutdown_function('rag_semaphore_release', $semaphore);
@@ -218,20 +222,20 @@ if ($action === 'query' && $method === 'POST') {
             'sources'           => $files,
         ]);
 
-        exit(json_encode([
+        throw ResponseException::encoded([
             'answer'       => $answer,
             'sources'      => $sources,
             'tag_fallback' => $tagFallback,
             'suggestions'  => $suggestions,
 
             'no_answer'    => rag_is_no_answer($answer, $suggestions),
-        ]));
+        ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         error_log('[api_rag][query] ' . $e->getMessage());
-        http_response_code(500);
-        exit(json_encode(['error' => 'The assistant failed to answer. Please try again.']));
+        throw new ServerErrorException('The assistant failed to answer. Please try again.');
     }
 }
 
-http_response_code(400);
-exit(json_encode(['error' => 'Unknown action.']));
+throw new BadRequestException('Unknown action.');

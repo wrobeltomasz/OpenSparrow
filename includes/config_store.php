@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
 
@@ -21,6 +23,8 @@ function config_store_conn(): ?\PgSql\Connection
     if ($conn === null && !$failed) {
         try {
             $conn = db_connect();
+        } catch (ControlFlowException $signal) {
+            throw $signal;
         } catch (Throwable $e) {
             $failed = true;
         }
@@ -182,6 +186,8 @@ function config_save(string $key, array $data, ?int $expectedVersion = null, ?in
         if (!@pg_query($conn, 'COMMIT')) {
             throw new RuntimeException('config_save: commit failed — ' . pg_last_error($conn));
         }
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         @pg_query($conn, 'ROLLBACK');
         error_log('[config_store] ' . $e->getMessage());

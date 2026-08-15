@@ -8,9 +8,12 @@
 declare(strict_types=1);
 
 spl_autoload_register(static function (string $class): void {
-    if (str_starts_with($class, 'App\\Service\\')) {
-        $relative = substr($class, 12);
-        $path = __DIR__ . '/Service/' . str_replace('\\', DIRECTORY_SEPARATOR, $relative) . '.php';
+    foreach (['App\\Service\\' => 'Service', 'App\\Exception\\' => 'Exception'] as $prefix => $directory) {
+        if (!str_starts_with($class, $prefix)) {
+            continue;
+        }
+        $relative = substr($class, strlen($prefix));
+        $path = __DIR__ . '/' . $directory . '/' . str_replace('\\', DIRECTORY_SEPARATOR, $relative) . '.php';
         if (is_file($path)) {
             require $path;
         }

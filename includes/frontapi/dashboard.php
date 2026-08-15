@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 function frontapi_dashboard(FrontApiContext $ctx): never
 {
     require_once __DIR__ . '/../dashboard_query.php';
@@ -16,8 +19,7 @@ function frontapi_dashboard(FrontApiContext $ctx): never
 
     $dashboard = config_get('dashboard');
     if ($dashboard === null) {
-        echo json_encode(['layout' => [], 'widgets' => []]);
-        exit;
+        throw ResponseException::encoded(['layout' => [], 'widgets' => []]);
     }
 
     $response = [
@@ -39,6 +41,8 @@ function frontapi_dashboard(FrontApiContext $ctx): never
 
         try {
             $tableCfg = safe_table($schema, $table);
+        } catch (ControlFlowException $signal) {
+            throw $signal;
         } catch (Throwable $e) {
             continue;
         }
@@ -136,6 +140,5 @@ function frontapi_dashboard(FrontApiContext $ctx): never
         $response['widgets'][] = $widget;
     }
 
-    echo json_encode($response);
-    exit;
+    throw ResponseException::encoded($response);
 }

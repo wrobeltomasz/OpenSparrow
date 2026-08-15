@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 const USER_ROLES = ['admin', 'editor', 'viewer'];
 
 $adminActorId = (int) ($_SESSION['user_id'] ?? 0);
@@ -103,10 +106,12 @@ if ($action === 'users_list') {
             'users'           => $users,
             'contact_columns' => $hasContact,
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'users_add') {
@@ -119,20 +124,18 @@ if ($action === 'users_add') {
     $role = in_array($data['role'] ?? '', USER_ROLES, true) ? $data['role'] : $policy['default_role'];
 
     if (empty($username) || empty($password)) {
-        echo json_encode(['status' => 'error', 'error' => 'Username and password are required.']);
-        exit;
+        admin_err('Username and password are required.');
     }
     if (strlen($password) < $policy['min_password_length']) {
         echo json_encode([
             'status' => 'error',
             'error' => "Password must be at least {$policy['min_password_length']} characters.",
         ]);
-        exit;
+        throw ResponseException::sent();
     }
     [$contact, $contactErr] = admin_user_contact_input(is_array($data) ? $data : []);
     if ($contactErr !== null) {
-        echo json_encode(['status' => 'error', 'error' => $contactErr]);
-        exit;
+        admin_err($contactErr);
     }
 
     try {
@@ -169,10 +172,12 @@ if ($action === 'users_add') {
         $newUserId = (int)($newRow['id'] ?? 0);
         log_user_action($conn, $adminActorId, 'ADD_USER', 'users', $newUserId);
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'users_toggle') {
@@ -182,8 +187,7 @@ if ($action === 'users_toggle') {
     $userId = (int)($data['id'] ?? 0);
     $isActive = (bool)($data['is_active'] ?? false);
     if ($userId <= 0) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid user ID.']);
-        exit;
+        admin_err('Invalid user ID.');
     }
 
     try {
@@ -197,10 +201,12 @@ if ($action === 'users_toggle') {
         }
         log_user_action($conn, $adminActorId, 'TOGGLE_USER', 'users', $userId);
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'users_update_role') {
@@ -211,8 +217,7 @@ if ($action === 'users_update_role') {
     $role = in_array($data['role'] ?? '', USER_ROLES, true) ? $data['role'] : admin_user_policy()['default_role'];
 
     if ($userId <= 0) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid user ID.']);
-        exit;
+        admin_err('Invalid user ID.');
     }
 
     try {
@@ -226,10 +231,12 @@ if ($action === 'users_update_role') {
         }
         log_user_action($conn, $adminActorId, 'UPDATE_ROLE', 'users', $userId);
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'users_update_contact') {
@@ -239,13 +246,11 @@ if ($action === 'users_update_contact') {
     $userId = (int)($data['id'] ?? 0);
 
     if ($userId <= 0) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid user ID.']);
-        exit;
+        admin_err('Invalid user ID.');
     }
     [$contact, $contactErr] = admin_user_contact_input(is_array($data) ? $data : []);
     if ($contactErr !== null) {
-        echo json_encode(['status' => 'error', 'error' => $contactErr]);
-        exit;
+        admin_err($contactErr);
     }
 
     try {
@@ -268,8 +273,7 @@ if ($action === 'users_update_contact') {
         }
 
         if (pg_affected_rows($res) === 0) {
-            echo json_encode(['status' => 'error', 'error' => 'User not found.']);
-            exit;
+            admin_err('User not found.');
         }
         log_user_action($conn, $adminActorId, 'UPDATE_USER_CONTACT', 'users', $userId);
         echo json_encode([
@@ -282,10 +286,12 @@ if ($action === 'users_update_contact') {
                 'phone' => $contact[3],
             ],
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'users_change_password') {
@@ -296,13 +302,11 @@ if ($action === 'users_change_password') {
     $password = $data['password'] ?? '';
 
     if ($userId <= 0 || $password === '') {
-        echo json_encode(['status' => 'error', 'error' => 'User ID and password are required.']);
-        exit;
+        admin_err('User ID and password are required.');
     }
     $minLen = admin_user_policy()['min_password_length'];
     if (strlen($password) < $minLen) {
-        echo json_encode(['status' => 'error', 'error' => "Password must be at least {$minLen} characters."]);
-        exit;
+        admin_err("Password must be at least {$minLen} characters.");
     }
 
     try {
@@ -323,10 +327,12 @@ if ($action === 'users_change_password') {
         }
         log_user_action($conn, $adminActorId, 'CHANGE_PASSWORD', 'users', $userId);
         echo json_encode(['status' => 'success']);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'users_stats') {
@@ -379,15 +385,16 @@ if ($action === 'users_stats') {
             'by_role' => $byRole,
             'recent' => $recent,
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'user_policy_get') {
-    echo json_encode(['status' => 'success'] + admin_user_policy());
-    exit;
+    throw ResponseException::encoded(['status' => 'success'] + admin_user_policy());
 }
 
 if ($action === 'user_policy_save') {
@@ -398,12 +405,10 @@ if ($action === 'user_policy_save') {
     $defaultRole = $data['default_role'] ?? '';
 
     if ($minLen < 6) {
-        echo json_encode(['status' => 'error', 'error' => 'Minimum password length must be at least 6.']);
-        exit;
+        admin_err('Minimum password length must be at least 6.');
     }
     if (!in_array($defaultRole, USER_ROLES, true)) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid default role.']);
-        exit;
+        admin_err('Invalid default role.');
     }
 
     $result = config_save('user_policy', [
@@ -411,15 +416,13 @@ if ($action === 'user_policy_save') {
         'default_role' => $defaultRole,
     ], null, $adminActorId ?: null);
     if ($result['status'] !== 'ok') {
-        echo json_encode(['status' => 'error', 'error' => $result['error'] ?? 'Save failed.']);
-        exit;
+        admin_err($result['error'] ?? 'Save failed.');
     }
 
     require_once __DIR__ . '/../../includes/db.php';
     require_once __DIR__ . '/../../includes/api_helpers.php';
     log_user_action(db_connect(), $adminActorId, 'UPDATE_USER_POLICY', 'users', 0);
-    echo json_encode(['status' => 'success']);
-    exit;
+    admin_ok();
 }
 
 require_once __DIR__ . '/../api_helpers.php';
@@ -470,8 +473,7 @@ function admin_hidden_children_map(array $tables): array
 if ($action === 'user_tables_get') {
     $userId = (int) ($_GET['user_id'] ?? 0);
     if ($userId <= 0) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid user ID.']);
-        exit;
+        admin_err('Invalid user ID.');
     }
 
     $entry      = admin_user_access_entry($userId);
@@ -500,7 +502,7 @@ if ($action === 'user_tables_get') {
 
         'hidden_children' => (object) admin_hidden_children_map(array_keys($assignable['tables'])),
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'user_tables_save') {
@@ -510,8 +512,7 @@ if ($action === 'user_tables_save') {
     $userId = (int) ($data['user_id'] ?? 0);
 
     if ($userId <= 0) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid user ID.']);
-        exit;
+        admin_err('Invalid user ID.');
     }
 
     $assignable = admin_assignable_items();
@@ -527,7 +528,7 @@ if ($action === 'user_tables_save') {
                     'status' => 'error',
                     'error'  => 'Unknown ' . $def['noun'] . ' in selection.',
                 ]);
-                exit;
+                throw ResponseException::sent();
             }
             $seen[$name] = true;
         }
@@ -551,8 +552,7 @@ if ($action === 'user_tables_save') {
         }
         $target = pg_fetch_assoc($uRes);
         if (!$target) {
-            echo json_encode(['status' => 'error', 'error' => 'User not found.']);
-            exit;
+            admin_err('User not found.');
         }
 
         if (($target['role'] ?? '') === 'admin') {
@@ -560,7 +560,7 @@ if ($action === 'user_tables_save') {
                 'status' => 'error',
                 'error'  => 'Table access does not apply to admin accounts.',
             ]);
-            exit;
+            throw ResponseException::sent();
         }
 
         $row   = config_get_row('user_table_access');
@@ -593,17 +593,18 @@ if ($action === 'user_tables_save') {
                 'status' => 'error',
                 'error'  => 'Someone else changed table access meanwhile. Reload and try again.',
             ]);
-            exit;
+            throw ResponseException::sent();
         }
         if ($result['status'] !== 'ok') {
-            echo json_encode(['status' => 'error', 'error' => $result['error'] ?? 'Save failed.']);
-            exit;
+            admin_err($result['error'] ?? 'Save failed.');
         }
 
         log_user_action($conn, $adminActorId, 'UPDATE_USER_TABLES', 'users', $userId);
         echo json_encode(['status' => 'success'] + $clean);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

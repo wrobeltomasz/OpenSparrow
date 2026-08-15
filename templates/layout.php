@@ -20,6 +20,8 @@ if (!empty($_SESSION['user_id']) && !(defined('DEMO_MODE') && DEMO_MODE)) {
     try {
         require_once __DIR__ . '/../includes/clickstats.php';
         $clickstatsOn = clickstats_settings(60)['enabled'];
+    } catch (\App\Exception\ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         $clickstatsOn = false;
     }

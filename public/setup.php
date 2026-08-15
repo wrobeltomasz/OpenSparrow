@@ -5,9 +5,14 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
+require_once __DIR__ . '/../includes/bootstrap.php';
+
+use App\Exception\RedirectException;
+
+os_register_exception_handler('html');
+
 if (file_exists(__DIR__ . '/../config/database.json')) {
-    header('Location: login.php');
-    exit;
+    throw new RedirectException('login.php');
 }
 
 require_once __DIR__ . '/../includes/i18n.php';

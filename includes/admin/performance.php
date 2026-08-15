@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if ($action === 'performance_check') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -134,10 +137,12 @@ if ($action === 'performance_check') {
         });
 
         echo json_encode(['status' => 'success', 'suggestions' => $suggestions, 'total' => count($suggestions)]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'performance_slow_queries') {
@@ -151,7 +156,7 @@ if ($action === 'performance_slow_queries') {
                 'status'  => 'unavailable',
                 'message' => 'pg_stat_statements extension is not installed. Run: CREATE EXTENSION pg_stat_statements;',
             ]);
-            exit;
+            throw ResponseException::sent();
         }
 
         $sql = "
@@ -176,10 +181,12 @@ if ($action === 'performance_slow_queries') {
             $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'performance_table_stats') {
@@ -197,8 +204,7 @@ if ($action === 'performance_table_stats') {
         }
 
         if (empty($tracked)) {
-            echo json_encode(['status' => 'success', 'rows' => []]);
-            exit;
+            admin_ok(['rows' => []]);
         }
 
         $sql = "
@@ -257,8 +263,7 @@ if ($action === 'performance_table_stats') {
                     $rows[] = $row;
                 }
             }
-            echo json_encode(['status' => 'success', 'rows' => $rows]);
-            exit;
+            admin_ok(['rows' => $rows]);
         }
 
         $rows = [];
@@ -266,10 +271,12 @@ if ($action === 'performance_table_stats') {
             $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'performance_db_health') {
@@ -310,10 +317,12 @@ if ($action === 'performance_db_health') {
             'active_conn'  => $activeConn,
             'pg_version'   => $version,
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'performance_unused_indexes') {
@@ -351,10 +360,12 @@ if ($action === 'performance_unused_indexes') {
             $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'performance_schema_warnings') {
@@ -463,8 +474,10 @@ if ($action === 'performance_schema_warnings') {
         usort($warnings, fn($a, $b) => ($order[$a['severity']] ?? 9) - ($order[$b['severity']] ?? 9));
 
         echo json_encode(['status' => 'success', 'warnings' => $warnings, 'total' => count($warnings)]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

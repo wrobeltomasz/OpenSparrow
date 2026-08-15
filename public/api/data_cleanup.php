@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
 $conn = os_api_bootstrap(['role' => 'editor']);
@@ -79,16 +83,14 @@ function validateInput(array $body, array $schema, $conn): array
     try {
         $tableCfg = safe_table($schema, $tableName);
     } catch (\RuntimeException $e) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Unknown table']));
+        throw new BadRequestException('Unknown table');
     }
 
     require_table_access($tableName);
 
     $cols = $tableCfg['columns'] ?? [];
     if (!isset($cols[$colName]) || ($cols[$colName]['type'] ?? '') === 'virtual') {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Invalid column']));
+        throw new BadRequestException('Invalid column');
     }
 
     $schemaName = $tableCfg['schema'] ?? 'public';
@@ -129,7 +131,7 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
     $ignoreAccents   = !empty($body['ignore_accents']);
 
     if ($find === '') {
-        exit(json_encode(['count' => 0, 'rows' => []]));
+        throw ResponseException::encoded(['count' => 0, 'rows' => []]);
     }
 
     [$tableCfg, , $tableName, $colSql, $tblSql] = validateInput($body, $schema, $conn);
@@ -156,8 +158,7 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
             [$pattern, $tableName, $uid]
         );
         if (!$cntRes) {
-            http_response_code(500);
-            exit(json_encode(['error' => 'Database query failed.']));
+            throw new ServerErrorException('Database query failed.');
         }
         $count = (int)pg_fetch_result($cntRes, 0, 0);
         pg_free_result($cntRes);
@@ -177,8 +178,7 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
             [$pattern]
         );
         if (!$cntRes) {
-            http_response_code(500);
-            exit(json_encode(['error' => 'Database query failed.']));
+            throw new ServerErrorException('Database query failed.');
         }
         $count = (int)pg_fetch_result($cntRes, 0, 0);
         pg_free_result($cntRes);
@@ -194,8 +194,7 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
     }
 
     if (!$rowRes) {
-        http_response_code(500);
-        exit(json_encode(['error' => 'Database query failed.']));
+        throw new ServerErrorException('Database query failed.');
     }
 
     $rows = [];
@@ -204,7 +203,7 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
     }
     pg_free_result($rowRes);
 
-    exit(json_encode(['count' => $count, 'rows' => $rows]));
+    throw ResponseException::encoded(['count' => $count, 'rows' => $rows]);
 }
 
 if ($action === 'data_cleanup_apply' && $method === 'POST') {
@@ -217,8 +216,7 @@ if ($action === 'data_cleanup_apply' && $method === 'POST') {
     $ignoreAccents   = !empty($body['ignore_accents']);
 
     if ($find === '') {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Find string required']));
+        throw new BadRequestException('Find string required');
     }
 
     [$tableCfg, , $tableName, $colSql, $tblSql] = validateInput($body, $schema, $conn);
@@ -254,8 +252,7 @@ if ($action === 'data_cleanup_apply' && $method === 'POST') {
 
     if (!$res) {
         @pg_query($conn, 'ROLLBACK');
-        http_response_code(500);
-        exit(json_encode(['error' => 'Database update failed.']));
+        throw new ServerErrorException('Database update failed.');
     }
 
     $affected = pg_affected_rows($res);
@@ -265,8 +262,7 @@ if ($action === 'data_cleanup_apply' && $method === 'POST') {
     $uid = (int)$_SESSION['user_id'];
     log_user_action($conn, $uid, 'DATA_CLEANUP', $tableName, null);
 
-    exit(json_encode(['updated' => $affected]));
+    throw ResponseException::encoded(['updated' => $affected]);
 }
 
-http_response_code(400);
-exit(json_encode(['error' => 'Unknown action']));
+throw new BadRequestException('Unknown action');

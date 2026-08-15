@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+use App\Exception\BadRequestException;
+use App\Exception\ResponseException;
+use App\Exception\ServerErrorException;
+
 function frontapi_workflow_procedure(FrontApiContext $ctx): never
 {
     $conn = $ctx->conn;
@@ -33,15 +37,13 @@ function frontapi_workflow_procedure(FrontApiContext $ctx): never
     }
 
     if (!is_array($procCfg) || empty($procCfg['enabled'])) {
-        http_response_code(400);
-        exit(json_encode(['error' => 'No procedure configured for this step.']));
+        throw new BadRequestException('No procedure configured for this step.');
     }
 
     $procSchema = trim((string)($procCfg['schema'] ?? ''));
     $procName   = trim((string)($procCfg['name'] ?? ''));
     if ($procSchema === '' || $procName === '') {
-        http_response_code(400);
-        exit(json_encode(['error' => 'Procedure configuration is incomplete.']));
+        throw new BadRequestException('Procedure configuration is incomplete.');
     }
 
     $params = [];
@@ -69,8 +71,7 @@ function frontapi_workflow_procedure(FrontApiContext $ctx): never
         . '(' . implode(', ', $placeholders) . ')';
 
     if (!@pg_send_query_params($conn, $callSql, $params)) {
-        http_response_code(500);
-        exit(json_encode(['error' => 'Could not execute the procedure.']));
+        throw new ServerErrorException('Could not execute the procedure.');
     }
 
     $procRes = pg_get_result($conn);
@@ -82,10 +83,9 @@ function frontapi_workflow_procedure(FrontApiContext $ctx): never
 
     if ($sqlErr !== null && $sqlErr !== '') {
         error_log('[workflow_procedure] ' . $procSchema . '.' . $procName . ': ' . $sqlErr);
-        http_response_code(400);
-        exit(json_encode(['error' => $sqlErr]));
+        throw new BadRequestException((string) $sqlErr);
     }
 
     log_user_action($conn, $ctx->userId, 'CALL_PROCEDURE');
-    exit(json_encode(['success' => true]));
+    throw ResponseException::encoded(['success' => true]);
 }

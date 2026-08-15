@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use App\Exception\ResponseException;
+
 if ($action === 'etl_flow_load') {
     require_once __DIR__ . '/../config_store.php';
     $defaults = [
@@ -36,15 +38,14 @@ if ($action === 'etl_flow_load') {
         'jobs'    => $jobs,
         'version' => $row['version'] ?? 0,
     ]);
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'etl_flow_save') {
     require_not_demo('Demo mode — writes disabled.');
     $data = json_decode((string) file_get_contents('php://input'), true);
     if (!is_array($data)) {
-        echo json_encode(['status' => 'error', 'error' => 'Invalid JSON.']);
-        exit;
+        admin_err('Invalid JSON.');
     }
     require_once __DIR__ . '/../config_store.php';
     $existing = config_get('etl_flows');

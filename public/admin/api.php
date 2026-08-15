@@ -9,22 +9,30 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/api_helpers.php';
+require_once __DIR__ . '/../../includes/bootstrap.php';
+
+use App\Exception\ForbiddenException;
+use App\Exception\HttpException;
+use App\Exception\UnauthorizedException;
 
 ini_set('display_errors', '0');
+os_register_exception_handler('json');
 start_session();
 send_security_headers();
 
 header('Content-Type: application/json');
 
 if (empty($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['status' => 'error', 'error' => 'Unauthorized access. Log in first.']);
-    exit;
+    throw new UnauthorizedException(
+        'Unauthorized access. Log in first.',
+        ['status' => 'error', 'error' => 'Unauthorized access. Log in first.']
+    );
 }
 if (($_SESSION['role'] ?? '') !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'error' => 'Forbidden: admin role required.']);
-    exit;
+    throw new ForbiddenException(
+        'Forbidden: admin role required.',
+        ['status' => 'error', 'error' => 'Forbidden: admin role required.']
+    );
 }
 
 $action = $_GET['action'] ?? '';
@@ -38,10 +46,10 @@ require_once __DIR__ . '/../../includes/admin/helpers.php';
 if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE'], true)) {
     $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
     if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-        header('Content-Type: application/json');
-        http_response_code(403);
-        echo json_encode(['status' => 'error', 'error' => 'CSRF token mismatch.']);
-        exit;
+        throw new ForbiddenException(
+            'CSRF token mismatch.',
+            ['status' => 'error', 'error' => 'CSRF token mismatch.']
+        );
     }
 }
 
@@ -67,10 +75,11 @@ $postActions = [
     'demo_install', 'demo_uninstall',
 ];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Content-Type: application/json');
-    http_response_code(405);
-    echo json_encode(['status' => 'error', 'error' => 'Method Not Allowed. Use POST.']);
-    exit;
+    throw HttpException::fromStatus(
+        405,
+        'Method Not Allowed. Use POST.',
+        ['status' => 'error', 'error' => 'Method Not Allowed. Use POST.']
+    );
 }
 
 require_once __DIR__ . '/../../includes/config_store.php';

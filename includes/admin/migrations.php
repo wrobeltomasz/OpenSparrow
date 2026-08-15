@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 if ($action === 'init_db') {
     require_not_demo('Disabled in Demo Mode.', 403);
     try {
@@ -124,10 +127,12 @@ if ($action === 'init_db') {
             'status'  => 'success',
             'message' => $message,
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }
 
 if ($action === 'migrations_list') {
@@ -167,8 +172,10 @@ if ($action === 'migrations_list') {
         }
 
         echo json_encode(['status' => 'success', 'migrations' => $list]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

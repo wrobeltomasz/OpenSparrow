@@ -9,6 +9,9 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/autoload.php';
 require_once __DIR__ . '/../src/Security/UserRole.php';
 
+use App\Exception\ForbiddenException;
+use App\Exception\HttpException;
+use App\Exception\ResponseException;
 use App\Service\RecordOwnershipService;
 use App\Service\RecordSnapshotService;
 
@@ -190,9 +193,7 @@ function check_record_ownership(
     string $message = 'Forbidden'
 ): void {
     if (!can_access_record($conn, $tableCfg, $table, $recordId, $userId)) {
-        http_response_code(403);
-        echo json_encode(['error' => $message]);
-        exit;
+        throw new ForbiddenException($message, ['error' => $message]);
     }
 }
 
@@ -261,17 +262,13 @@ function record_label_sql(array $tableCfg, array $configured): string
 
 function jsonError(string $msg, int $code = 400): never
 {
-    http_response_code($code);
-    echo json_encode(['success' => false, 'error' => $msg]);
-    exit;
+    throw HttpException::fromStatus($code, $msg, ['success' => false, 'error' => $msg]);
 }
 
 function jsonSuccess(array $data = [], int $code = 200): never
 {
-    http_response_code($code);
     $data['success'] = true;
-    echo json_encode($data);
-    exit;
+    throw ResponseException::json($data, $code);
 }
 
 function requireLogin(): void
@@ -294,12 +291,7 @@ function require_not_demo(string $message = 'Action disabled in Demo Mode.', int
     if (!DEMO_MODE) {
         return;
     }
-    if ($code !== 0) {
-        http_response_code($code);
-    }
-    header('Content-Type: application/json');
-    echo json_encode(['status' => 'error', 'error' => $message]);
-    exit;
+    throw HttpException::fromStatus($code, $message, ['status' => 'error', 'error' => $message]);
 }
 
 function validate_column_regexp(array $colCfg, mixed $val): ?string

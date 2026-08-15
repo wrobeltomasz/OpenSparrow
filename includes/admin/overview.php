@@ -7,6 +7,9 @@
 
 declare(strict_types=1);
 
+use App\Exception\ControlFlowException;
+use App\Exception\ResponseException;
+
 require_once __DIR__ . '/../api_helpers.php';
 
 if ($action === 'overview') {
@@ -180,8 +183,10 @@ if ($action === 'overview') {
             'ip_hash_salt_ok'    => $ipHashSaltOk,
             'session_lifetime'   => $sessionLifetime,
         ]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
     } catch (Throwable $e) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
     }
-    exit;
+    throw ResponseException::sent();
 }

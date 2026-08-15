@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/bootstrap.php';
 
+use App\Exception\BadRequestException;
+use App\Exception\ForbiddenException;
+use App\Exception\RedirectException;
 use App\Form\RenderContext;
 use App\Service\ImageService;
 
@@ -27,14 +30,13 @@ $automation = $services->automations();
 $isReadOnly = $session->role() !== 'editor';
 
 if ($isReadOnly && $request->isPost()) {
-    http_response_code(403);
-    die('Forbidden: Read-only access');
+    throw new ForbiddenException('Read-only access');
 }
 
 $table = $request->query('table');
 
 if (!$schemas->hasTable($table)) {
-    die('Invalid table.');
+    throw new BadRequestException('Invalid table.');
 }
 os_require_table_access((string) $table);
 
@@ -45,8 +47,7 @@ $error      = '';
 
 if ($request->isPost()) {
     if (!$csrf->isValid($request->post('csrf_token'))) {
-        http_response_code(403);
-        die('Invalid CSRF token.');
+        throw new ForbiddenException('Invalid CSRF token.');
     }
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
@@ -63,8 +64,7 @@ if ($request->isPost()) {
             $m2m->sync($m2mCfg, (int)$newId, $selected, $rawSchema);
         }
         $fragment = ImageService::config($rawSchema, $table) ? '#tab-images' : '#tab-files';
-        header('Location: edit.php?table=' . urlencode($table) . '&id=' . $newId . $fragment);
-        exit;
+        throw new RedirectException('edit.php?table=' . urlencode($table) . '&id=' . $newId . $fragment);
     } catch (\App\Form\ValidationException $e) {
         $error = $e->getMessage();
     } catch (\RuntimeException $e) {

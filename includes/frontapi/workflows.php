@@ -7,12 +7,13 @@
 
 declare(strict_types=1);
 
+use App\Exception\ResponseException;
+
 function frontapi_workflows(FrontApiContext $ctx): never
 {
     $workflows = config_get('workflows');
     if ($workflows === null) {
-        echo json_encode(['menu_name' => 'Workflows', 'workflows' => []]);
-        exit;
+        throw ResponseException::encoded(['menu_name' => 'Workflows', 'workflows' => []]);
     }
 
     if (is_array($workflows['workflows'] ?? null)) {
@@ -23,6 +24,5 @@ function frontapi_workflows(FrontApiContext $ctx): never
         ));
     }
 
-    echo json_encode($workflows);
-    exit;
+    throw ResponseException::encoded($workflows);
 }
