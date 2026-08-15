@@ -37,14 +37,14 @@ if ($isReadOnly && $request->isPost()) {
     throw new ForbiddenException('Read-only access');
 }
 
-$table = $request->query('table');
-$id    = $request->query('id');
+$table = os_validated_table_name($request->query('table'));
+$id    = os_validated_record_id($request->query('id'));
 
 if (!$schemas->hasTable($table)) {
     throw new BadRequestException('Invalid table.');
 }
 
-os_require_table_access((string) $table);
+os_require_table_access($table);
 
 $tableCfg   = $schemas->table($table);
 $rawSchema  = $schemas->raw();
@@ -53,7 +53,7 @@ $imagesCfg  = ImageService::config($rawSchema, $table);
 $error      = '';
 
 $rawTableCfg = $rawSchema['tables'][$table] ?? [];
-if (!$ownership->canAccess($rawTableCfg, $table, (int)$id, $session->userId(), $session->role())) {
+if (!$ownership->canAccess($rawTableCfg, $table, $id, $session->userId(), $session->role())) {
     throw new NotFoundException('Record not found.');
 }
 
@@ -64,16 +64,16 @@ if ($request->isPost()) {
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
 
-        $oldRecord = $automation->captureOldRecord($tableCfg->schema, $tableCfg->name, (int)$id);
+        $oldRecord = $automation->captureOldRecord($tableCfg->schema, $tableCfg->name, $id);
         $records->update($tableCfg, $id, $data);
-        $logId = $audit->log($session->userId(), 'UPDATE', $tableCfg->name, (int)$id);
+        $logId = $audit->log($session->userId(), 'UPDATE', $tableCfg->name, $id);
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-            $snapshots->capture($tableCfg->schema, $tableCfg->name, (int)$id, $logId);
+            $snapshots->capture($tableCfg->schema, $tableCfg->name, $id, $logId);
         }
         $automation->evaluate(
             $tableCfg->schema,
             $tableCfg->name,
-            (int)$id,
+            $id,
             'update',
             $session->userId(),
             $oldRecord
@@ -83,7 +83,7 @@ if ($request->isPost()) {
                 (array) $request->post('m2m_' . $m2mIndex, []),
                 'ctype_digit'
             ));
-            $m2m->sync($m2mCfg, (int)$id, $selected, $rawSchema);
+            $m2m->sync($m2mCfg, $id, $selected, $rawSchema);
         }
         throw new RedirectException(
             ($request->post('_save_action') ?? 'exit') === 'stay'
@@ -140,7 +140,7 @@ foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
         (int)$m2mIndex,
         $m2mCfg,
         $m2m->options($m2mCfg, $rawSchema),
-        $m2m->selected($m2mCfg, (int)$id, $rawSchema),
+        $m2m->selected($m2mCfg, $id, $rawSchema),
         $isReadOnly
     );
 }
@@ -198,7 +198,7 @@ foreach ($subtablesData as $subtableIndex => $subtableData) {
 
 $imagesPanel = null;
 if ($imagesCfg) {
-    $galleryImages = $images->forRecord($table, (int)$id);
+    $galleryImages = $images->forRecord($table, $id);
     $imageItems    = [];
     foreach ($galleryImages as $galleryImage) {
         $galleryImageUrl = 'file_download.php?uuid=' . urlencode($galleryImage['uuid']);
@@ -315,7 +315,7 @@ ob_start();
 <?= os_inline_globals([
     'CSRF_TOKEN'      => $csrf->token(),
     'EDIT_TABLE'      => $tableCfg->name,
-    'EDIT_ID'         => (int) $id,
+    'EDIT_ID'         => $id,
     'CURRENT_USER_ID' => $session->userId(),
     'USER_ROLE'       => $session->role(),
     'IMAGE_TEXT'      => [

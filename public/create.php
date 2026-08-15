@@ -33,12 +33,12 @@ if ($isReadOnly && $request->isPost()) {
     throw new ForbiddenException('Read-only access');
 }
 
-$table = $request->query('table');
+$table = os_validated_table_name($request->query('table'));
 
 if (!$schemas->hasTable($table)) {
     throw new BadRequestException('Invalid table.');
 }
-os_require_table_access((string) $table);
+os_require_table_access($table);
 
 $tableCfg   = $schemas->table($table);
 $rawSchema  = $schemas->raw();

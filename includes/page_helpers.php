@@ -58,6 +58,22 @@ function os_require_table_access(string $table): void
     os_require_access('tables', $table);
 }
 
+function os_validated_table_name(string $table): string
+{
+    if (preg_match('/^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/', $table) !== 1) {
+        throw new \App\Exception\BadRequestException('Invalid table.');
+    }
+    return $table;
+}
+
+function os_validated_record_id(string $id): int
+{
+    if (preg_match('/^[1-9][0-9]{0,17}$/', $id) !== 1) {
+        throw new \App\Exception\BadRequestException('Invalid record id.');
+    }
+    return (int) $id;
+}
+
 function os_header_search(string $id, ?string $placeholder = null): string
 {
     $ph = htmlspecialchars($placeholder ?? t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');

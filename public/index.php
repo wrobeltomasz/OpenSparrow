@@ -19,9 +19,9 @@ if (isset($_GET['api'])) {
     throw ResponseException::sent();
 }
 
-$requestedTable = substr($_GET['table'] ?? '', 0, 64);
+$requestedTable = is_string($_GET['table'] ?? '') ? (string) $_GET['table'] : '';
 if ($requestedTable !== '') {
-    os_require_table_access($requestedTable);
+    os_require_table_access(os_validated_table_name($requestedTable));
 }
 
 $requestedWorkflow = substr($_GET['workflow'] ?? '', 0, 64);
