@@ -21,9 +21,9 @@ final class PhpRequest
         return (string)($_GET[$key] ?? $default);
     }
 
-    public function post(string $key, string $default = ''): string
+    public function post(string $key, mixed $default = ''): mixed
     {
-        return (string)($_POST[$key] ?? $default);
+        return $_POST[$key] ?? $default;
     }
 
     public function postAll(): array

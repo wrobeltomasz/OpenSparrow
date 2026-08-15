@@ -58,7 +58,7 @@ if (!$ownership->canAccess($rawTableCfg, $table, (int)$id, $session->userId(), $
 }
 
 if ($request->isPost()) {
-    if (!$csrf->isValid($request->post('csrf_token'))) {
+    if (!$csrf->isValid((string) $request->post('csrf_token'))) {
         throw new ForbiddenException('Invalid CSRF token.');
     }
     try {
@@ -79,7 +79,10 @@ if ($request->isPost()) {
             $oldRecord
         );
         foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
-            $selected = array_values(array_filter((array)($_POST['m2m_' . $m2mIndex] ?? []), 'ctype_digit'));
+            $selected = array_values(array_filter(
+                (array) $request->post('m2m_' . $m2mIndex, []),
+                'ctype_digit'
+            ));
             $m2m->sync($m2mCfg, (int)$id, $selected, $rawSchema);
         }
         throw new RedirectException(

@@ -46,7 +46,7 @@ $m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
 $error      = '';
 
 if ($request->isPost()) {
-    if (!$csrf->isValid($request->post('csrf_token'))) {
+    if (!$csrf->isValid((string) $request->post('csrf_token'))) {
         throw new ForbiddenException('Invalid CSRF token.');
     }
     try {
@@ -60,7 +60,10 @@ if ($request->isPost()) {
         $ownership->assign($tableCfg->name, (int)$newId, $userId, $userId);
         $automation->evaluate($tableCfg->schema, $tableCfg->name, (int)$newId, 'create', $userId);
         foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
-            $selected = array_values(array_filter((array)($_POST['m2m_' . $m2mIndex] ?? []), 'ctype_digit'));
+            $selected = array_values(array_filter(
+                (array) $request->post('m2m_' . $m2mIndex, []),
+                'ctype_digit'
+            ));
             $m2m->sync($m2mCfg, (int)$newId, $selected, $rawSchema);
         }
         $fragment = ImageService::config($rawSchema, $table) ? '#tab-images' : '#tab-files';
