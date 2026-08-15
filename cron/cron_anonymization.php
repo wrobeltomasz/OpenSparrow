@@ -156,15 +156,15 @@ function cron_anonymization_main(array $argv): int
             $tableSchema = (string)$schemaCfg[$table]['schema'];
         }
 
-        $schemaIdent  = pg_ident($tableSchema);
-        $tableIdent   = pg_ident($table);
-        $columnIdent  = pg_ident($column);
-        $dateColIdent = pg_ident($dateColumn);
+        $schemaIdentifier  = pg_ident($tableSchema);
+        $tableIdentifier   = pg_ident($table);
+        $columnIdentifier  = pg_ident($column);
+        $dateColumnIdentifier = pg_ident($dateColumn);
 
         if ($dryRun) {
-            $sql = "SELECT COUNT(*) AS cnt FROM {$schemaIdent}.{$tableIdent}
-                    WHERE {$columnIdent} IS NOT NULL AND {$columnIdent} != \$1
-                      AND {$dateColIdent} < NOW() - (\$2::int * INTERVAL '1 day')";
+            $sql = "SELECT COUNT(*) AS cnt FROM {$schemaIdentifier}.{$tableIdentifier}
+                    WHERE {$columnIdentifier} IS NOT NULL AND {$columnIdentifier} != \$1
+                      AND {$dateColumnIdentifier} < NOW() - (\$2::int * INTERVAL '1 day')";
             $result = @pg_query_params($conn, $sql, [$replacement, $days]);
             if (!$result) {
                 $dbErr = pg_last_error($conn);
@@ -188,10 +188,10 @@ function cron_anonymization_main(array $argv): int
         anon_log("[anonymization] Rule: {$tableSchema}.{$table}.{$column}"
             . " (date: {$dateColumn}, older than {$days} days) -> '{$replacement}'");
 
-        $sql = "UPDATE {$schemaIdent}.{$tableIdent}
-                SET {$columnIdent} = \$1
-                WHERE {$columnIdent} IS NOT NULL AND {$columnIdent} != \$1
-                  AND {$dateColIdent} < NOW() - (\$2::int * INTERVAL '1 day')";
+        $sql = "UPDATE {$schemaIdentifier}.{$tableIdentifier}
+                SET {$columnIdentifier} = \$1
+                WHERE {$columnIdentifier} IS NOT NULL AND {$columnIdentifier} != \$1
+                  AND {$dateColumnIdentifier} < NOW() - (\$2::int * INTERVAL '1 day')";
 
         $result = @pg_query_params($conn, $sql, [$replacement, $days]);
         if (!$result) {

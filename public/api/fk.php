@@ -27,28 +27,28 @@ if (empty($refTable)) {
     throw ResponseException::json(['rows' => []]);
 }
 
-$filterCol = $_GET['filter_col'] ?? '';
+$filterColumn = $_GET['filter_col'] ?? '';
 $filterVal = $_GET['filter_val'] ?? '';
-if ($filterCol !== '') {
+if ($filterColumn !== '') {
     $refColumns = array_keys($schemaData['tables'][$refTable]['columns'] ?? []);
-    if (!in_array($filterCol, $refColumns, true)) {
+    if (!in_array($filterColumn, $refColumns, true)) {
         unset($_GET['filter_col'], $_GET['filter_val']);
     }
 }
 
 if (!user_can_access_table($refTable)) {
     $foreignKeyConfig   = $schemaData['tables'][$table]['foreign_keys'][$column];
-    $labelCols = [(string) ($foreignKeyConfig['reference_column'] ?? 'id')];
+    $labelColumns = [(string) ($foreignKeyConfig['reference_column'] ?? 'id')];
 
     foreach (['display_column', 'display_columns'] as $key) {
         $rawDisplay = $foreignKeyConfig[$key] ?? null;
         foreach (is_array($rawDisplay) ? $rawDisplay : [$rawDisplay] as $name) {
             if (is_string($name) && $name !== '') {
-                $labelCols[] = $name;
+                $labelColumns[] = $name;
             }
         }
     }
-    define('OS_FK_LABEL_COLUMNS', array_values(array_unique($labelCols)));
+    define('OS_FK_LABEL_COLUMNS', array_values(array_unique($labelColumns)));
 }
 
 define('OS_TABLE_ACCESS_DELEGATED', true);

@@ -184,12 +184,12 @@ if ($action === 'init_database') {
             return '"' . str_replace('"', '""', $schema) . '"."' . str_replace('"', '""', $table) . '"';
         }
 
-        $schemaIdent = '"' . str_replace('"', '""', $schema) . '"';
+        $schemaIdentifier = '"' . str_replace('"', '""', $schema) . '"';
         $usersTable = table_ident($schema, 'spw_users');
         $migrationsTable = table_ident($schema, 'spw_migrations');
 
         if ($dropSchema) {
-            $dropResult = @pg_query($conn, "DROP SCHEMA IF EXISTS $schemaIdent CASCADE");
+            $dropResult = @pg_query($conn, "DROP SCHEMA IF EXISTS $schemaIdentifier CASCADE");
             if (!$dropResult) {
                 throw new Exception('Failed to drop existing schema "' . $schema . '": ' . pg_last_error($conn));
             }
@@ -198,7 +198,7 @@ if ($action === 'init_database') {
         require_once __DIR__ . '/../includes/system_tables.php';
         $queries = array_merge(
             [
-                "CREATE SCHEMA IF NOT EXISTS $schemaIdent",
+                "CREATE SCHEMA IF NOT EXISTS $schemaIdentifier",
                 "CREATE TABLE IF NOT EXISTS $migrationsTable ( id serial4 NOT NULL, name varchar(100) NOT NULL, "
                     . "applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id), "
                     . "CONSTRAINT spw_migrations_name_key UNIQUE (name) )",

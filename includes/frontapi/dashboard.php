@@ -62,32 +62,32 @@ function frontapi_dashboard(FrontApiContext $context): never
         $dateSqlCur  = null;
         $dateSqlPrev = null;
         if ($dateFilter !== 'all' && ($dateTarget === 'all' || $dateTarget === $widgetTargetId)) {
-            $dateCol = array_find_key($tableCfg['columns'], static function (array $calendarConfig): bool {
+            $dateColumn = array_find_key($tableCfg['columns'], static function (array $calendarConfig): bool {
                 $cType = strtolower($calendarConfig['type'] ?? '');
                 return str_contains($cType, 'date') || str_contains($cType, 'time');
             });
 
-            if ($dateCol) {
-                $dateColumn = pg_ident($dateCol);
+            if ($dateColumn) {
+                $dateColumnIdentifier = pg_ident($dateColumn);
                 [$dateSqlCur, $dateSqlPrev] = match ($dateFilter) {
                     'today' => [
-                        $dateColumn . ' >= CURRENT_DATE',
-                        '(' . $dateColumn . " >= CURRENT_DATE - INTERVAL '1 day' AND " . $dateColumn
+                        $dateColumnIdentifier . ' >= CURRENT_DATE',
+                        '(' . $dateColumnIdentifier . " >= CURRENT_DATE - INTERVAL '1 day' AND " . $dateColumnIdentifier
                             . ' < CURRENT_DATE)',
                     ],
                     '7d' => [
-                        $dateColumn . " >= CURRENT_DATE - INTERVAL '7 days'",
-                        '(' . $dateColumn . " >= CURRENT_DATE - INTERVAL '14 days' AND " . $dateColumn
-                            . " < CURRENT_DATE - INTERVAL '7 days')",
+                        $dateColumnIdentifier . " >= CURRENT_DATE - INTERVAL '7 days'",
+                        '(' . $dateColumnIdentifier . " >= CURRENT_DATE - INTERVAL '14 days' AND "
+                            . $dateColumnIdentifier . " < CURRENT_DATE - INTERVAL '7 days')",
                     ],
                     '30d' => [
-                        $dateColumn . " >= CURRENT_DATE - INTERVAL '30 days'",
-                        '(' . $dateColumn . " >= CURRENT_DATE - INTERVAL '60 days' AND " . $dateColumn
-                            . " < CURRENT_DATE - INTERVAL '30 days')",
+                        $dateColumnIdentifier . " >= CURRENT_DATE - INTERVAL '30 days'",
+                        '(' . $dateColumnIdentifier . " >= CURRENT_DATE - INTERVAL '60 days' AND "
+                            . $dateColumnIdentifier . " < CURRENT_DATE - INTERVAL '30 days')",
                     ],
                     'this_month' => [
-                        "DATE_TRUNC('month', " . $dateColumn . ") = DATE_TRUNC('month', CURRENT_DATE)",
-                        "DATE_TRUNC('month', " . $dateColumn
+                        "DATE_TRUNC('month', " . $dateColumnIdentifier . ") = DATE_TRUNC('month', CURRENT_DATE)",
+                        "DATE_TRUNC('month', " . $dateColumnIdentifier
                             . ") = DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'",
                     ],
                     default => [null, null],

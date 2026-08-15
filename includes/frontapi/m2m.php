@@ -13,7 +13,7 @@ function frontapi_m2m_rows(FrontApiContext $context): never
 {
     $schema = $context->schema;
     $table  = $_GET['table']     ?? '';
-    $m2mIdx = (int)($_GET['m2m_index'] ?? 0);
+    $m2mIndex = (int)($_GET['m2m_index'] ?? 0);
     $idsRaw = $_GET['ids']       ?? '';
     if (!isset($schema['tables'][$table])) {
         throw ResponseException::encoded(['data' => (object)[]]);
@@ -26,16 +26,16 @@ function frontapi_m2m_rows(FrontApiContext $context): never
     }
 
     $m2mList = $schema['tables'][$table]['many_to_many'] ?? [];
-    if (!isset($m2mList[$m2mIdx])) {
+    if (!isset($m2mList[$m2mIndex])) {
         throw ResponseException::encoded(['data' => (object)[]]);
     }
 
-    $cfg        = $m2mList[$m2mIdx];
+    $cfg        = $m2mList[$m2mIndex];
     $junctionTable         = $cfg['junction_table'] ?? '';
     $selfFk     = $cfg['self_fk']        ?? '';
     $otherFk    = $cfg['other_fk']       ?? '';
     $otherTable = $cfg['other_table']    ?? '';
-    $displayCol = $cfg['display_column'] ?? 'id';
+    $displayColumn = $cfg['display_column'] ?? 'id';
 
     if (
         !$junctionTable || !$selfFk || !$otherFk || !$otherTable
@@ -63,7 +63,7 @@ function frontapi_m2m_rows(FrontApiContext $context): never
           WHERE j.%s IN (%s)%s
           ORDER BY j.%s, o.%s',
         pg_ident($selfFk),
-        pg_ident($displayCol),
+        pg_ident($displayColumn),
         pg_ident($jtSchema),
         pg_ident($junctionTable),
         pg_ident($otSchema),
@@ -73,7 +73,7 @@ function frontapi_m2m_rows(FrontApiContext $context): never
         $placeholders,
         $ownerSql,
         pg_ident($selfFk),
-        pg_ident($displayCol)
+        pg_ident($displayColumn)
     );
     $result = @pg_query_params($context->conn, $sql, $qParams);
     if (!$result) {

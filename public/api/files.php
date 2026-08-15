@@ -110,9 +110,9 @@ function files_action_list($conn): void
     }
 
     if ($search !== '') {
-        $paramIdx = count($params) + 1;
-        $where[]  = '(f.name ILIKE $' . $paramIdx . ' OR f.display_name ILIKE $' . $paramIdx
-            . ' OR array_to_string(f.tags, \' \') ILIKE $' . $paramIdx . ')';
+        $parameterIndex = count($params) + 1;
+        $where[]  = '(f.name ILIKE $' . $parameterIndex . ' OR f.display_name ILIKE $' . $parameterIndex
+            . ' OR array_to_string(f.tags, \' \') ILIKE $' . $parameterIndex . ')';
         $params[] = '%' . $search . '%';
     }
 
@@ -133,13 +133,13 @@ function files_action_list($conn): void
     }
     if ($ownerRestricted !== []) {
         $recordOwnersTable  = sys_table('record_owners');
-        $ownerIdx = count($params) + 1;
-        $tblIdx   = count($params) + 2;
+        $ownerParameterIndex = count($params) + 1;
+        $tableParameterIndex   = count($params) + 2;
         $where[]  = "NOT EXISTS (SELECT 1 FROM {$recordOwnersTable} ro"
             . ' WHERE ro.table_name = f.related_table AND ro.record_id = f.related_id'
             . ' AND ro.is_current = true'
-            . " AND ro.owner_id IS NOT NULL AND ro.owner_id != \${$ownerIdx}"
-            . " AND f.related_table = ANY(\${$tblIdx}::text[]))";
+            . " AND ro.owner_id IS NOT NULL AND ro.owner_id != \${$ownerParameterIndex}"
+            . " AND f.related_table = ANY(\${$tableParameterIndex}::text[]))";
         $params[] = (int) $_SESSION['user_id'];
         $params[] = textListToPgArray($ownerRestricted);
     }
@@ -602,26 +602,26 @@ function files_action_get_related_records($conn): void
     $schemaCfg  = config_get('schema');
     $pgSchema   = (is_array($schemaCfg) ? ($schemaCfg['tables'][$reqTable]['schema'] ?? null) : null) ?? 'public';
 
-    $sqlCols = "SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2";
-    $resCols = pg_query_params($conn, $sqlCols, [$pgSchema, $reqTable]);
-    if (!$resCols) {
+    $columnsSql = "SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2";
+    $columnsResult = pg_query_params($conn, $columnsSql, [$pgSchema, $reqTable]);
+    if (!$columnsResult) {
         error_log('api_files files_action_get_related_records schema check failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
-    $validCols = [];
-    while ($row = pg_fetch_assoc($resCols)) {
-        $validCols[] = $row['column_name'];
+    $validColumns = [];
+    while ($row = pg_fetch_assoc($columnsResult)) {
+        $validColumns[] = $row['column_name'];
     }
 
-    if (!$validCols) {
+    if (!$validColumns) {
         jsonSuccess(['records' => []]);
     }
 
-    if (!in_array($col1, $validCols, true)) {
+    if (!in_array($col1, $validColumns, true)) {
         $col1 = 'id';
     }
-    if ($col2 && !in_array($col2, $validCols, true)) {
+    if ($col2 && !in_array($col2, $validColumns, true)) {
         $col2 = '';
     }
 

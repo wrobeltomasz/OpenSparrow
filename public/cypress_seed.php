@@ -100,18 +100,18 @@ try {
             $recordOwnersTable = sys_table('record_owners');
 
             foreach ($schema['tables'] ?? [] as $tableName => $tableCfg) {
-                $textCol = cypress_first_text_column($tableCfg);
+                $textColumn = cypress_first_text_column($tableCfg);
 
-                if ($textCol === null) {
+                if ($textColumn === null) {
                     continue;
                 }
 
                 $pgTable = $appSchema . '.' . pg_ident($tableName);
-                $pgCol   = pg_ident($textCol);
+                $pgColumn   = pg_ident($textColumn);
 
                 $result = @pg_query(
                     $conn,
-                    "DELETE FROM $pgTable WHERE $pgCol ILIKE 'cypress%' OR $pgCol ILIKE 'cy-%' RETURNING id"
+                    "DELETE FROM $pgTable WHERE $pgColumn ILIKE 'cypress%' OR $pgColumn ILIKE 'cy-%' RETURNING id"
                 );
                 if ($result) {
                     $deletedIds = array_map('intval', array_column(pg_fetch_all($result) ?: [], 'id'));
@@ -149,9 +149,9 @@ try {
         }
 
         $tableCfg = $schema['tables'][$table] ?? null;
-        $textCol  = is_array($tableCfg) ? cypress_first_text_column($tableCfg) : null;
+        $textColumn  = is_array($tableCfg) ? cypress_first_text_column($tableCfg) : null;
 
-        if ($textCol === null) {
+        if ($textColumn === null) {
             throw ResponseException::encoded(['status' => 'ok', 'results' => ['skipped' => true]]);
         }
 
@@ -168,10 +168,10 @@ try {
         }
 
         $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
-        $pgCol   = pg_ident($textCol);
+        $pgColumn   = pg_ident($textColumn);
         $recordOwnersTable = sys_table('record_owners');
 
-        $old = @pg_query($conn, "DELETE FROM $pgTable WHERE $pgCol LIKE 'cypress-idor-%' RETURNING id");
+        $old = @pg_query($conn, "DELETE FROM $pgTable WHERE $pgColumn LIKE 'cypress-idor-%' RETURNING id");
         if ($old) {
             $oldIds = array_map('intval', array_column(pg_fetch_all($old) ?: [], 'id'));
             if ($oldIds !== []) {
@@ -187,7 +187,7 @@ try {
         foreach (['a' => 'test', 'b' => 'test2'] as $slot => $owner) {
             $result = pg_query_params(
                 $conn,
-                "INSERT INTO $pgTable ($pgCol) VALUES (\$1) RETURNING id",
+                "INSERT INTO $pgTable ($pgColumn) VALUES (\$1) RETURNING id",
                 ["cypress-idor-$slot"]
             );
             if (!$result) {
@@ -221,7 +221,7 @@ try {
 
         $results = [
             'table'          => $table,
-            'column'         => $textCol,
+            'column'         => $textColumn,
             'was_restricted' => $wasRestricted,
             'id_a'           => $ids['a'],
             'id_b'           => $ids['b'],
@@ -239,12 +239,12 @@ try {
             throw new BadRequestException('Unknown table', ['status' => 'error', 'error' => 'Unknown table']);
         }
 
-        $textCol = cypress_first_text_column($tableCfg);
-        if ($textCol !== null) {
+        $textColumn = cypress_first_text_column($tableCfg);
+        if ($textColumn !== null) {
             $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
             $result = @pg_query(
                 $conn,
-                "DELETE FROM $pgTable WHERE " . pg_ident($textCol) . " LIKE 'cypress-idor-%' RETURNING id"
+                "DELETE FROM $pgTable WHERE " . pg_ident($textColumn) . " LIKE 'cypress-idor-%' RETURNING id"
             );
             if ($result) {
                 $ids = array_map('intval', array_column(pg_fetch_all($result) ?: [], 'id'));

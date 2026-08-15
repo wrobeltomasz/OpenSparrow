@@ -54,7 +54,7 @@ if ($action === 'add_column') {
     $colType    = $input['type'] ?? 'varchar(255)';
     $comment    = isset($input['comment']) ? trim((string)$input['comment']) : '';
     $fkTable    = preg_replace('/[^a-z0-9_]/', '', strtolower($input['fk_table']  ?? ''));
-    $fkCol      = preg_replace('/[^a-z0-9_]/', '', strtolower($input['fk_column'] ?? ''));
+    $fkColumn      = preg_replace('/[^a-z0-9_]/', '', strtolower($input['fk_column'] ?? ''));
     $indexType  = $input['index'] ?? '';
     $notNull    = !empty($input['not_null']);
     $default    = trim((string)($input['default'] ?? ''));
@@ -72,14 +72,14 @@ if ($action === 'add_column') {
         }
         $safeSchema = pg_escape_identifier($conn, $schemaName);
         $safeTable  = pg_escape_identifier($conn, $tableName);
-        $safeCol    = pg_escape_identifier($conn, $colName);
+        $safeColumn    = pg_escape_identifier($conn, $colName);
 
         $allowedTypes = ['varchar(255)', 'int4', 'int8', 'boolean', 'text', 'date', 'timestamp', 'timestamptz'];
         if (!in_array($colType, $allowedTypes, true)) {
             throw new AdminApiMessage('Invalid data type provided.');
         }
 
-        $sql = "ALTER TABLE " . $safeSchema . "." . $safeTable . " ADD COLUMN " . $safeCol . " " . $colType;
+        $sql = "ALTER TABLE " . $safeSchema . "." . $safeTable . " ADD COLUMN " . $safeColumn . " " . $colType;
 
         if ($default !== '') {
             $safeExpressions = ['now()', 'current_timestamp', 'current_date', 'current_time', 'true', 'false', 'null'];
@@ -103,19 +103,19 @@ if ($action === 'add_column') {
 
         if ($comment !== '') {
             $safeComment = pg_escape_literal($conn, $comment);
-            $sqlComment = "COMMENT ON COLUMN " . $safeSchema . "." . $safeTable . "." . $safeCol
+            $sqlComment = "COMMENT ON COLUMN " . $safeSchema . "." . $safeTable . "." . $safeColumn
                 . " IS " . $safeComment;
             @pg_query($conn, $sqlComment);
         }
 
-        if ($fkTable !== '' && $fkCol !== '') {
+        if ($fkTable !== '' && $fkColumn !== '') {
             $safeFkTable  = pg_escape_identifier($conn, $fkTable);
-            $safeFkCol    = pg_escape_identifier($conn, $fkCol);
+            $safeFkColumn    = pg_escape_identifier($conn, $fkColumn);
             $constraintName = pg_escape_identifier($conn, 'fk_' . $tableName . '_' . $colName);
             $foreignKeySql = "ALTER TABLE " . $safeSchema . "." . $safeTable
                 . " ADD CONSTRAINT " . $constraintName
-                . " FOREIGN KEY (" . $safeCol . ")"
-                . " REFERENCES " . $safeSchema . "." . $safeFkTable . " (" . $safeFkCol . ")";
+                . " FOREIGN KEY (" . $safeColumn . ")"
+                . " REFERENCES " . $safeSchema . "." . $safeFkTable . " (" . $safeFkColumn . ")";
             $resFk = @pg_query($conn, $foreignKeySql);
             if (!$resFk) {
                 admin_db_fail($conn, 'add_column_fk');
@@ -127,10 +127,10 @@ if ($action === 'add_column') {
             $idxName = pg_escape_identifier($conn, 'idx_' . $tableName . '_' . $colName);
             $unique  = $indexType === 'unique' ? 'UNIQUE ' : '';
             $using   = $indexType === 'hash' ? 'HASH' : 'BTREE';
-            $sqlIdx  = "CREATE {$unique}INDEX {$idxName} ON " . $safeSchema . "." . $safeTable
-                . " USING {$using} (" . $safeCol . ")";
-            $resIdx  = @pg_query($conn, $sqlIdx);
-            if (!$resIdx) {
+            $indexSql  = "CREATE {$unique}INDEX {$idxName} ON " . $safeSchema . "." . $safeTable
+                . " USING {$using} (" . $safeColumn . ")";
+            $indexResult  = @pg_query($conn, $indexSql);
+            if (!$indexResult) {
                 admin_db_fail($conn, 'add_column_index');
             }
         }

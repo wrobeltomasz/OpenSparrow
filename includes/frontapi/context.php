@@ -39,7 +39,7 @@ final class FrontApiWriteContext
         public readonly string $table,
         public readonly array $tableCfg,
         public readonly string $schemaName,
-        public readonly string $idCol,
+        public readonly string $idColumn,
     ) {
     }
 
@@ -49,7 +49,7 @@ final class FrontApiWriteContext
         string $table,
         array $tableCfg,
         string $schemaName,
-        string $idCol,
+        string $idColumn,
     ): self {
         return new self(
             $apiContext->conn,
@@ -60,7 +60,7 @@ final class FrontApiWriteContext
             $table,
             $tableCfg,
             $schemaName,
-            $idCol,
+            $idColumn,
         );
     }
 

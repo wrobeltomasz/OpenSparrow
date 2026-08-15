@@ -111,21 +111,21 @@ function dashboard_run_widget_query(
             }
         }
     } elseif ($qType === 'group_by') {
-        $grpCol = $query['group_column'] ?? '';
-        $aggCol = $query['agg_column'] ?? id_column();
+        $groupColumn = $query['group_column'] ?? '';
+        $aggregateColumn = $query['agg_column'] ?? id_column();
         $aggType = strtoupper($query['agg_type'] ?? 'COUNT');
         $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
         $aggType = in_array($aggType, $allowedAgg, true) ? $aggType : 'COUNT';
-        if (isset($tableCfg['columns'][$grpCol])) {
+        if (isset($tableCfg['columns'][$groupColumn])) {
             $sql = sprintf(
                 'SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY %s ORDER BY value DESC',
-                pg_ident($grpCol),
+                pg_ident($groupColumn),
                 $aggType,
-                pg_ident($aggCol),
+                pg_ident($aggregateColumn),
                 pg_ident($schemaName),
                 pg_ident($table),
                 $sqlWhere,
-                pg_ident($grpCol)
+                pg_ident($groupColumn)
             );
             $result = @pg_query($conn, $sql);
             if ($result) {
@@ -136,27 +136,27 @@ function dashboard_run_widget_query(
                 }
                 pg_free_result($result);
                 $output['data'] = $data;
-                $output['column_type'] = $tableCfg['columns'][$grpCol]['type'] ?? 'text';
+                $output['column_type'] = $tableCfg['columns'][$groupColumn]['type'] ?? 'text';
             } else {
                 $output['sql_error'] = 'Query failed.';
             }
         }
     } elseif ($qType === 'time_series') {
-        $xCol = $query['x_column'] ?? '';
-        $aggCol = $query['agg_column'] ?? id_column();
+        $xColumn = $query['x_column'] ?? '';
+        $aggregateColumn = $query['agg_column'] ?? id_column();
         $aggType = strtoupper($query['agg_type'] ?? 'COUNT');
         $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
         $aggType = in_array($aggType, $allowedAgg, true) ? $aggType : 'COUNT';
         $granularity = strtolower($query['granularity'] ?? 'month');
         $allowedGran = ['day', 'week', 'month', 'year'];
         $granularity = in_array($granularity, $allowedGran, true) ? $granularity : 'month';
-        if (isset($tableCfg['columns'][$xCol])) {
-            $bucket = sprintf("DATE_TRUNC('%s', %s)", $granularity, pg_ident($xCol));
+        if (isset($tableCfg['columns'][$xColumn])) {
+            $bucket = sprintf("DATE_TRUNC('%s', %s)", $granularity, pg_ident($xColumn));
             $sql = sprintf(
                 'SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY 1 ORDER BY 1 ASC',
                 $bucket,
                 $aggType,
-                pg_ident($aggCol),
+                pg_ident($aggregateColumn),
                 pg_ident($schemaName),
                 pg_ident($table),
                 $sqlWhere
@@ -170,7 +170,7 @@ function dashboard_run_widget_query(
                 }
                 pg_free_result($result);
                 $output['data'] = $data;
-                $output['column_type'] = $tableCfg['columns'][$xCol]['type'] ?? 'text';
+                $output['column_type'] = $tableCfg['columns'][$xColumn]['type'] ?? 'text';
             } else {
                 $output['sql_error'] = 'Query failed.';
             }
@@ -179,16 +179,16 @@ function dashboard_run_widget_query(
         $limit = (int)($query['limit'] ?? 5);
         $orderBy = $query['order_by'] ?? id_column();
         $dir = strtoupper($query['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
-        $displayCols = $displayColumns ?: [id_column()];
-        $validCols = array_filter(
-            $displayCols,
+        $resolvedDisplayColumns = $displayColumns ?: [id_column()];
+        $validColumns = array_filter(
+            $resolvedDisplayColumns,
             fn($column) => isset($tableCfg['columns'][$column]) || $column === id_column()
         );
-        if (empty($validCols)) {
-            $validCols = [id_column()];
+        if (empty($validColumns)) {
+            $validColumns = [id_column()];
         }
 
-        $selectSql = implode(', ', array_map('pg_ident', $validCols));
+        $selectSql = implode(', ', array_map('pg_ident', $validColumns));
         if (isset($tableCfg['columns'][$orderBy]) || $orderBy === id_column()) {
             $sql = sprintf(
                 'SELECT %s FROM %s.%s%s ORDER BY %s %s LIMIT %d',
@@ -209,7 +209,7 @@ function dashboard_run_widget_query(
                 pg_free_result($result);
                 $output['data'] = $data;
                 $colTypes = [];
-                foreach ($validCols as $columnName) {
+                foreach ($validColumns as $columnName) {
                     $colTypes[$columnName] = $tableCfg['columns'][$columnName]['type'] ?? 'text';
                 }
                 $output['column_types'] = $colTypes;

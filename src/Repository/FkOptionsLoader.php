@@ -74,9 +74,9 @@ final readonly class FkOptionsLoader
             return $rows;
         }
 
-        foreach ($cfg->foreignKeys as $fkCol => $foreignKeyConfig) {
+        foreach ($cfg->foreignKeys as $fkColumn => $foreignKeyConfig) {
             $fkValues = array_unique(
-                array_filter(array_column($rows, $fkCol), fn($value) => $value !== null && $value !== '')
+                array_filter(array_column($rows, $fkColumn), fn($value) => $value !== null && $value !== '')
             );
             if (empty($fkValues)) {
                 continue;
@@ -93,10 +93,10 @@ final readonly class FkOptionsLoader
                 $dispRaw = [$refPk];
             }
 
-            $escapedCols = array_map([Identifier::class, 'quote'], $dispRaw);
-            $dispSql     = count($escapedCols) > 1
-                ? 'CONCAT_WS(\' - \', ' . implode(', ', $escapedCols) . ')'
-                : $escapedCols[0];
+            $escapedColumns = array_map([Identifier::class, 'quote'], $dispRaw);
+            $dispSql     = count($escapedColumns) > 1
+                ? 'CONCAT_WS(\' - \', ' . implode(', ', $escapedColumns) . ')'
+                : $escapedColumns[0];
 
             $escapedVals = array_map(
                 fn($value) => pg_escape_literal($this->conn->native(), (string)$value),
@@ -133,8 +133,8 @@ final readonly class FkOptionsLoader
             }
 
             foreach ($rows as &$row) {
-                if (isset($row[$fkCol]) && array_key_exists($row[$fkCol], $map)) {
-                    $row[$fkCol . '__display'] = $map[$row[$fkCol]];
+                if (isset($row[$fkColumn]) && array_key_exists($row[$fkColumn], $map)) {
+                    $row[$fkColumn . '__display'] = $map[$row[$fkColumn]];
                 }
             }
             unset($row);

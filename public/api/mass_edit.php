@@ -221,7 +221,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
 
     require_table_access($tableName);
 
-    $dupCols = [];
+    $duplicateColumns = [];
     foreach ($tableCfg['columns'] as $colName => $colCfg) {
         if ($colName === 'id') {
             continue;
@@ -229,16 +229,16 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
         if (strtolower($colCfg['type'] ?? '') === 'virtual') {
             continue;
         }
-        $dupCols[] = $colName;
+        $duplicateColumns[] = $colName;
     }
 
-    if (empty($dupCols)) {
+    if (empty($duplicateColumns)) {
         throw HttpException::fromStatus(422, 'No columns to duplicate');
     }
 
     $schemaName = $tableCfg['schema'] ?? 'public';
     $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
-    $colIdents  = implode(', ', array_map('pg_ident', $dupCols));
+    $colIdents  = implode(', ', array_map('pg_ident', $duplicateColumns));
     $arrParam   = pgIntArray($rowIds);
 
     $userId        = (int)$_SESSION['user_id'];

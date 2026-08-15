@@ -16,13 +16,13 @@ if ($action === 'init_db') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        $schemaIdent = '"' . str_replace('"', '""', sys_schema()) . '"';
+        $schemaIdentifier = '"' . str_replace('"', '""', sys_schema()) . '"';
         $migrationsTable = sys_table('migrations');
         $usersTable      = sys_table('users');
         $notesTable      = sys_table('notes');
 
         $bootstrap = [
-            "CREATE SCHEMA IF NOT EXISTS $schemaIdent",
+            "CREATE SCHEMA IF NOT EXISTS $schemaIdentifier",
             "CREATE TABLE IF NOT EXISTS $migrationsTable ( id serial4 NOT NULL, name varchar(100) NOT NULL,"
                 . " applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id),"
                 . " CONSTRAINT spw_migrations_name_key UNIQUE (name) )",

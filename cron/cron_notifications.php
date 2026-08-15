@@ -92,13 +92,13 @@ function cron_notifications_main(array $argv): int
         $sourcesProcessed = 0;
         foreach ($config['sources'] as $source) {
             $table = $source['table'] ?? '';
-            $dateCol = $source['date_column'] ?? '';
-            $titleCol = $source['title_column'] ?? '';
+            $dateColumn = $source['date_column'] ?? '';
+            $titleColumn = $source['title_column'] ?? '';
             $notifiedUsers = $source['notified_users'] ?? [];
             $days = (int)($source['notify_before_days'] ?? 0);
             $urlTemplate = $source['url_template'] ?? '';
 
-            if (!$table || !$dateCol || !$titleCol || empty($notifiedUsers) || !is_array($notifiedUsers)) {
+            if (!$table || !$dateColumn || !$titleColumn || empty($notifiedUsers) || !is_array($notifiedUsers)) {
                 print_log(
                     "Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8')
                     . "</b> (missing required columns or no users assigned)."
@@ -111,16 +111,16 @@ function cron_notifications_main(array $argv): int
             print_log(
                 "Analyzing table: <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8') . "</b>"
                 . " (looking for date: <b>" . htmlspecialchars($targetDate, ENT_QUOTES, 'UTF-8') . "</b>"
-                . " in column <b>" . htmlspecialchars($dateCol, ENT_QUOTES, 'UTF-8') . "</b>)"
+                . " in column <b>" . htmlspecialchars($dateColumn, ENT_QUOTES, 'UTF-8') . "</b>)"
             );
 
             $tableSchema = (string)($schemaTables[$table]['schema'] ?? sys_schema());
             $sql         = sprintf(
                 'SELECT id AS record_id, %s AS title FROM %s.%s WHERE DATE(%s) = $1',
-                pg_ident($titleCol),
+                pg_ident($titleColumn),
                 pg_ident($tableSchema),
                 pg_ident($table),
-                pg_ident($dateCol)
+                pg_ident($dateColumn)
             );
             $result = pg_query_params($conn, $sql, [$targetDate]);
             if (!$result) {

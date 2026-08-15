@@ -97,7 +97,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
 
         $this->assertCodeHas(
-            'array_intersect($selectCols, $keep)',
+            'array_intersect($selectColumns, $keep)',
             $source,
             'The narrowed projection must be an intersection with the schema-derived columns.'
         );
@@ -108,13 +108,13 @@ final class AccessScopeEndpointGuardTest extends TestCase
         $source = $this->code(self::LIST_MODULE);
 
         $this->assertCodeHas(
-            'array_intersect($allowedFilterCols, $selectCols)',
+            'array_intersect($allowedFilterColumns, $selectColumns)',
             $source,
             'The FK label allow-list must narrow filter_col too, not the projection alone.'
         );
 
-        $narrow = strpos($source, 'array_intersect($allowedFilterCols, $selectCols)');
-        $test   = strpos($source, 'in_array($filterCol, $allowedFilterCols, true)');
+        $narrow = strpos($source, 'array_intersect($allowedFilterColumns, $selectColumns)');
+        $test   = strpos($source, 'in_array($filterColumn, $allowedFilterColumns, true)');
         $this->assertIsInt($narrow, 'The list route no longer narrows the FK filter columns.');
         $this->assertIsInt($test, 'The list route no longer validates filter_col against a list.');
         $this->assertLessThan(

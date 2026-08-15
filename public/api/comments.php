@@ -89,7 +89,7 @@ function comments_action_mine($conn): void
     require_once __DIR__ . '/../../includes/config_store.php';
     $schema         = config_get('schema') ?? [];
     $userRecordsCfg = config_get('user_records') ?? [];
-    $configuredCols = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
+    $configuredColumns = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
 
     $resolved = [];
     foreach ($idsBy as $tableName => $ids) {
@@ -105,7 +105,7 @@ function comments_action_mine($conn): void
 
         $rowsSql = sprintf(
             'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',
-            record_label_sql($tableCfg, $configuredCols[$tableName] ?? []),
+            record_label_sql($tableCfg, $configuredColumns[$tableName] ?? []),
             pg_ident($tableCfg['schema'] ?? 'public'),
             pg_ident($tableName)
         );

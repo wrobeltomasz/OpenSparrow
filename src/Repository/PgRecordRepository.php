@@ -116,8 +116,8 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
             $sTableCfg = $this->schemas->table($sName);
             $foreignKey       = $subtable['foreign_key'];
 
-            $selCols    = array_unique(array_merge(['id'], array_keys($sTableCfg->dbColumns())));
-            $selColsSql = implode(', ', array_map([Identifier::class, 'quote'], $selCols));
+            $selectColumns    = array_unique(array_merge(['id'], array_keys($sTableCfg->dbColumns())));
+            $selColsSql = implode(', ', array_map([Identifier::class, 'quote'], $selectColumns));
 
             $sql = sprintf(
                 'SELECT %s FROM %s WHERE %s = $1 ORDER BY id DESC',

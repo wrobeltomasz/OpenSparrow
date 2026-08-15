@@ -51,11 +51,11 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
         return $rows;
     }
 
-    foreach ($tableCfg['foreign_keys'] as $fkCol => $foreignKeyConfig) {
+    foreach ($tableCfg['foreign_keys'] as $fkColumn => $foreignKeyConfig) {
         $fkValues = [];
         foreach ($rows as $row) {
-            if (isset($row[$fkCol]) && $row[$fkCol] !== '' && $row[$fkCol] !== null) {
-                $fkValues[] = $row[$fkCol];
+            if (isset($row[$fkColumn]) && $row[$fkColumn] !== '' && $row[$fkColumn] !== null) {
+                $fkValues[] = $row[$fkColumn];
             }
         }
         $fkValues = array_unique($fkValues);
@@ -69,7 +69,7 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
         } catch (\RuntimeException $exception) {
             error_log(sprintf(
                 '[map_fk_display] dangling foreign key %s -> %s: reference table not in schema config',
-                (string) $fkCol,
+                (string) $fkColumn,
                 $refName === '' ? '(missing reference_table)' : $refName
             ));
             continue;
@@ -85,11 +85,11 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
             $refDispRaw = [$refColId];
         }
 
-        $escapedDispCols = array_map(pg_ident(...), $refDispRaw);
-        if (count($escapedDispCols) > 1) {
-            $dispSql = "CONCAT_WS(' - ', " . implode(', ', $escapedDispCols) . ")";
+        $escapedDisplayColumns = array_map(pg_ident(...), $refDispRaw);
+        if (count($escapedDisplayColumns) > 1) {
+            $dispSql = "CONCAT_WS(' - ', " . implode(', ', $escapedDisplayColumns) . ")";
         } else {
-            $dispSql = $escapedDispCols[0];
+            $dispSql = $escapedDisplayColumns[0];
         }
 
         $escapedVals = array_map(fn($value) => pg_escape_literal($conn, (string)$value), $fkValues);
@@ -115,8 +115,8 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
         }
 
         foreach ($rows as &$row) {
-            if (isset($row[$fkCol]) && array_key_exists($row[$fkCol], $map)) {
-                $row[$fkCol . '__display'] = $map[$row[$fkCol]];
+            if (isset($row[$fkColumn]) && array_key_exists($row[$fkColumn], $map)) {
+                $row[$fkColumn . '__display'] = $map[$row[$fkColumn]];
             }
         }
         unset($row);
@@ -242,19 +242,19 @@ function record_label_columns(array $tableCfg, array $configured): array
         }
     }
 
-    $firstGridCol = null;
+    $firstGridColumn = null;
     foreach ($columns as $colName => $colCfg) {
         if (empty($colCfg['show_in_grid'])) {
             continue;
         }
-        if ($firstGridCol === null) {
-            $firstGridCol = $colName;
+        if ($firstGridColumn === null) {
+            $firstGridColumn = $colName;
         }
         if (($colCfg['type'] ?? '') === 'text') {
             return [$colName];
         }
     }
-    return [$firstGridCol ?? 'id'];
+    return [$firstGridColumn ?? 'id'];
 }
 
 function record_label_sql(array $tableCfg, array $configured): string

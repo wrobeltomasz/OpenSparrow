@@ -17,7 +17,7 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
     $table      = $context->table;
     $tableCfg   = $context->tableCfg;
     $schemaName = $context->schemaName;
-    $idCol      = $context->idCol;
+    $idColumn   = $context->idColumn;
     $userId     = $context->userId;
 
     $recordId = (int)($body['id']);
@@ -29,7 +29,7 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
         throw new BadRequestException('Invalid column specified');
     }
 
-    if ($column === $idCol) {
+    if ($column === $idColumn) {
         throw new BadRequestException('Cannot edit PK');
     }
 
@@ -59,7 +59,7 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
         pg_ident($table),
         pg_ident($column),
         $cast,
-        pg_ident($idCol)
+        pg_ident($idColumn)
     );
     $result = @pg_query_params($conn, $sql, [$value, $recordId]);
     if (!$result) {
@@ -83,14 +83,14 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
     $table      = $context->table;
     $tableCfg   = $context->tableCfg;
     $schemaName = $context->schemaName;
-    $idCol      = $context->idCol;
+    $idColumn   = $context->idColumn;
 
     $columns = [];
     $vals = [];
     $placeholders   = [];
     $placeholderIndex    = 1;
     foreach ($tableCfg['columns'] as $colName => $colCfg) {
-        if ($colName === $idCol) {
+        if ($colName === $idColumn) {
             continue;
         }
 
@@ -127,7 +127,7 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
             'INSERT INTO %s.%s DEFAULT VALUES RETURNING %s',
             pg_ident($schemaName),
             pg_ident($table),
-            pg_ident($idCol)
+            pg_ident($idColumn)
         );
         $result = @pg_query($conn, $sql);
     } else {
@@ -137,7 +137,7 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
             pg_ident($table),
             implode(', ', array_map('pg_ident', $columns)),
             implode(', ', $placeholders),
-            pg_ident($idCol)
+            pg_ident($idColumn)
         );
         $result = @pg_query_params($conn, $sql, $vals);
     }
@@ -150,7 +150,7 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
 
     $row = pg_fetch_assoc($result);
     pg_free_result($result);
-    $newId = $row[$idCol] ?? null;
+    $newId = $row[$idColumn] ?? null;
     if ($newId !== null) {
         $userId = $context->userId;
         $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
@@ -171,7 +171,7 @@ function frontapi_record_duplicate(FrontApiWriteContext $context): never
     $table      = $context->table;
     $tableCfg   = $context->tableCfg;
     $schemaName = $context->schemaName;
-    $idCol      = $context->idCol;
+    $idColumn   = $context->idColumn;
 
     $srcId = (int)$body['id'];
     if ($srcId <= 0) {
@@ -187,23 +187,23 @@ function frontapi_record_duplicate(FrontApiWriteContext $context): never
         'Forbidden: you do not own this record.'
     );
 
-    $dupCols = [];
+    $duplicateColumns = [];
     foreach ($tableCfg['columns'] as $colName => $colCfg) {
-        if ($colName === $idCol) {
+        if ($colName === $idColumn) {
             continue;
         }
         if (strtolower($colCfg['type'] ?? '') === 'virtual') {
             continue;
         }
-        $dupCols[] = $colName;
+        $duplicateColumns[] = $colName;
     }
 
-    if (empty($dupCols)) {
+    if (empty($duplicateColumns)) {
         http_response_code(422);
         throw ResponseException::encoded(['error' => 'No columns to duplicate']);
     }
 
-    $colIdents = implode(', ', array_map('pg_ident', $dupCols));
+    $colIdents = implode(', ', array_map('pg_ident', $duplicateColumns));
     $sql = sprintf(
         'INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s WHERE %s = $1 RETURNING %s',
         pg_ident($schemaName),
@@ -212,8 +212,8 @@ function frontapi_record_duplicate(FrontApiWriteContext $context): never
         $colIdents,
         pg_ident($schemaName),
         pg_ident($table),
-        pg_ident($idCol),
-        pg_ident($idCol)
+        pg_ident($idColumn),
+        pg_ident($idColumn)
     );
     $result = @pg_query_params($conn, $sql, [$srcId]);
     if (!$result) {
@@ -237,7 +237,7 @@ function frontapi_record_duplicate(FrontApiWriteContext $context): never
 
     $row = pg_fetch_assoc($result);
     pg_free_result($result);
-    $newId = $row[$idCol] ?? null;
+    $newId = $row[$idColumn] ?? null;
     if ($newId !== null) {
         $userId = $context->userId;
         $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
@@ -258,7 +258,7 @@ function frontapi_record_delete(FrontApiWriteContext $context): never
     $table      = $context->table;
     $tableCfg   = $context->tableCfg;
     $schemaName = $context->schemaName;
-    $idCol      = $context->idCol;
+    $idColumn   = $context->idColumn;
     $userId     = $context->userId;
 
     $deleteId = (int)$body['id'];
@@ -270,7 +270,7 @@ function frontapi_record_delete(FrontApiWriteContext $context): never
 
     $deletedRecord = auto_capture_old_record($conn, $schemaName, $table, $deleteId, 'delete');
 
-    $sql = sprintf('DELETE FROM %s.%s WHERE %s=$1', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));
+    $sql = sprintf('DELETE FROM %s.%s WHERE %s=$1', pg_ident($schemaName), pg_ident($table), pg_ident($idColumn));
     $result = @pg_query_params($conn, $sql, [$deleteId]);
     if (!$result) {
         error_log('[api][delete] ' . pg_last_error($conn));

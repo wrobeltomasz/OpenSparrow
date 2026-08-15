@@ -62,25 +62,25 @@ function frontapi_calendar(FrontApiContext $context): never
         }
 
         $schemaName = $tableCfg['schema'] ?? 'public';
-        $idCol = id_column();
-        $titleCol = $sourceEntry['title_column'] ?? $idCol;
+        $idColumn = id_column();
+        $titleColumn = $sourceEntry['title_column'] ?? $idColumn;
 
-        $subCol = $sourceEntry['subtitle_column'] ?? '';
-        if ($subCol !== '' && !isset($tableCfg['columns'][$subCol])) {
-            $subCol = '';
+        $subtitleColumn = $sourceEntry['subtitle_column'] ?? '';
+        if ($subtitleColumn !== '' && !isset($tableCfg['columns'][$subtitleColumn])) {
+            $subtitleColumn = '';
         }
-        $dateCol = $sourceEntry['date_column'] ?? '';
+        $dateColumn = $sourceEntry['date_column'] ?? '';
         $color = $sourceEntry['color'] ?? '#3b82f6';
-        if (isset($tableCfg['columns'][$dateCol])) {
+        if (isset($tableCfg['columns'][$dateColumn])) {
             $columns = column_list($tableCfg);
-            $selectCols = array_values(array_unique(array_merge([$idCol], $columns)));
+            $selectColumns = array_values(array_unique(array_merge([$idColumn], $columns)));
 
-            $selectSql = implode(', ', array_map(fn($column) => pg_ident($column), $selectCols));
+            $selectSql = implode(', ', array_map(fn($column) => pg_ident($column), $selectColumns));
 
             $qParams  = [$dateFrom, $dateTo];
             $ownerSql = '';
             if (!empty($tableCfg['owner_restricted'])) {
-                $ownerSql  = owner_restriction_sql('_t.' . pg_ident($idCol), 3, 4);
+                $ownerSql  = owner_restriction_sql('_t.' . pg_ident($idColumn), 3, 4);
                 $qParams[] = $table;
                 $qParams[] = $context->userId;
             }
@@ -90,8 +90,8 @@ function frontapi_calendar(FrontApiContext $context): never
                 $selectSql,
                 pg_ident($schemaName),
                 pg_ident($table),
-                pg_ident($dateCol),
-                pg_ident($dateCol),
+                pg_ident($dateColumn),
+                pg_ident($dateColumn),
                 $ownerSql
             );
             $result = @pg_query_params($conn, $sql, $qParams);
@@ -104,13 +104,13 @@ function frontapi_calendar(FrontApiContext $context): never
                 $rows = map_fk_display($schema, $tableCfg, $rows, $conn);
                 foreach ($rows as $row) {
                     $events[] = [
-                        'id' => $row[$idCol],
+                        'id' => $row[$idColumn],
                         'table' => $table,
-                        'title' => $row[$titleCol] ?? 'No title',
-                        'subtitle' => $subCol !== ''
-                            ? (string)($row[$subCol . '__display'] ?? $row[$subCol] ?? '')
+                        'title' => $row[$titleColumn] ?? 'No title',
+                        'subtitle' => $subtitleColumn !== ''
+                            ? (string)($row[$subtitleColumn . '__display'] ?? $row[$subtitleColumn] ?? '')
                             : '',
-                        'date' => substr($row[$dateCol], 0, 10),
+                        'date' => substr($row[$dateColumn], 0, 10),
                         'color' => $color,
                         'icon' => $sourceEntry['icon'] ?? null,
                         'rowData' => $row
@@ -136,7 +136,7 @@ function frontapi_calendar_move_event(FrontApiWriteContext $context): never
     $table      = $context->table;
     $tableCfg   = $context->tableCfg;
     $schemaName = $context->schemaName;
-    $idCol      = $context->idCol;
+    $idColumn   = $context->idColumn;
 
     if ($context->isViewer()) {
         throw new ForbiddenException('Forbidden');
@@ -188,7 +188,7 @@ function frontapi_calendar_move_event(FrontApiWriteContext $context): never
         pg_ident($schemaName),
         pg_ident($table),
         pg_ident($dateColumn),
-        pg_ident($idCol)
+        pg_ident($idColumn)
     );
     $result = @pg_query_params($conn, $sql, [$newDate, $id]);
     if (!$result) {

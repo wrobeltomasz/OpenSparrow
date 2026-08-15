@@ -26,21 +26,21 @@ if ($action === 'performance_check') {
         foreach ($tables as $tableName => $tableCfg) {
             $pgSchema = $tableCfg['schema'] ?? 'app';
 
-            foreach (($tableCfg['foreign_keys'] ?? []) as $fkCol => $fkDef) {
-                if (!is_string($fkCol)) {
+            foreach (($tableCfg['foreign_keys'] ?? []) as $fkColumn => $fkDef) {
+                if (!is_string($fkColumn)) {
                     continue;
                 }
-                $needed[$pgSchema][$tableName][$fkCol][] = 'Foreign key column';
+                $needed[$pgSchema][$tableName][$fkColumn][] = 'Foreign key column';
             }
 
             foreach (($tableCfg['subtables'] ?? []) as $subtable) {
                 $child   = $subtable['table']       ?? '';
-                $fkCol   = $subtable['foreign_key'] ?? '';
-                if ($child === '' || $fkCol === '') {
+                $fkColumn   = $subtable['foreign_key'] ?? '';
+                if ($child === '' || $fkColumn === '') {
                     continue;
                 }
                 $childSchema = $tables[$child]['schema'] ?? 'app';
-                $needed[$childSchema][$child][$fkCol][] = "Subtable join from {$tableName}";
+                $needed[$childSchema][$child][$fkColumn][] = "Subtable join from {$tableName}";
             }
 
             foreach (($tableCfg['default_sort'] ?? []) as $rule) {
@@ -67,13 +67,13 @@ if ($action === 'performance_check') {
                 }
             }
             $orderBy  = $query['order_by']      ?? '';
-            $groupCol = $query['group_column']   ?? '';
-            $aggCol   = $query['agg_column']     ?? '';
+            $groupColumn = $query['group_column']   ?? '';
+            $aggregateColumn   = $query['agg_column']     ?? '';
             if ($orderBy  !== '' && $orderBy  !== 'id') {
                 $needed[$wSchema][$wTable][$orderBy][]  = "Widget ORDER BY: \"{$wTitle}\"";
             }
-            if ($groupCol !== '' && $groupCol !== 'id') {
-                $needed[$wSchema][$wTable][$groupCol][] = "Widget GROUP BY: \"{$wTitle}\"";
+            if ($groupColumn !== '' && $groupColumn !== 'id') {
+                $needed[$wSchema][$wTable][$groupColumn][] = "Widget GROUP BY: \"{$wTitle}\"";
             }
         }
 
@@ -86,7 +86,7 @@ if ($action === 'performance_check') {
                     "SELECT indexdef FROM pg_indexes WHERE schemaname = \$1 AND tablename = \$2",
                     [$pgSchema, $tableName]
                 );
-                $indexedCols = [];
+                $indexedColumns = [];
                 if ($result) {
                     while ($row = pg_fetch_row($result)) {
                         if (preg_match('/\(([^)]+)\)/', $row[0], $matches)) {
@@ -96,14 +96,14 @@ if ($action === 'performance_check') {
                                     '',
                                     trim($indexColumn)
                                 ));
-                                $indexedCols[] = $indexColumn;
+                                $indexedColumns[] = $indexColumn;
                             }
                         }
                     }
                 }
 
                 foreach ($columns as $column => $reasons) {
-                    if (in_array($column, $indexedCols, true)) {
+                    if (in_array($column, $indexedColumns, true)) {
                         continue;
                     }
 

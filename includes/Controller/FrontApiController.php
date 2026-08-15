@@ -123,7 +123,7 @@ final class FrontApiController
 
                 require_table_access($table);
                 $schemaName = $tableCfg['schema'] ?? 'public';
-                $idCol = id_column();
+                $idColumn = id_column();
 
                 $osWriteCtx = FrontApiWriteContext::fromApi(
                     $osCtx,
@@ -131,7 +131,7 @@ final class FrontApiController
                     (string) $table,
                     $tableCfg,
                     (string) $schemaName,
-                    $idCol,
+                    $idColumn,
                 );
 
                 $osWriteRoutes = [

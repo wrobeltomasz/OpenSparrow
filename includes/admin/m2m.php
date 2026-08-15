@@ -57,7 +57,7 @@ if ($action === 'create_m2m') {
     $selfFk     = $body['self_fk']       ?? '';
     $otherFk    = $body['other_fk']      ?? '';
     $label      = $body['label']         ?? '';
-    $displayCol = $body['display_column'] ?? 'name';
+    $displayColumn = $body['display_column'] ?? 'name';
 
     $identRe = '/^[a-z][a-z0-9_]*$/';
     $identifiers = [
@@ -142,7 +142,7 @@ if ($action === 'create_m2m') {
                     $otherFk => [
                         'reference_table' => $tableB,
                         'reference_column' => 'id',
-                        'display_column' => $displayCol,
+                        'display_column' => $displayColumn,
                     ],
                 ],
                 'subtables' => [],
@@ -159,7 +159,7 @@ if ($action === 'create_m2m') {
             'self_fk'        => $selfFk,
             'other_fk'       => $otherFk,
             'other_table'    => $tableB,
-            'display_column' => $displayCol,
+            'display_column' => $displayColumn,
         ];
 
         $m2mUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;

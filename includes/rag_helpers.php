@@ -394,13 +394,13 @@ function rag_aggregate_rollups(array $rows): string
     );
     $groupKeys = array_column(array_slice($candidates, 0, 3), 'col');
 
-    $countCols = array_values(array_filter($measures, fn($column) => preg_match(RAG_COUNT_COL_RE, $column) === 1));
-    $countCol  = count($countCols) === 1 ? $countCols[0] : null;
+    $countColumns = array_values(array_filter($measures, fn($column) => preg_match(RAG_COUNT_COL_RE, $column) === 1));
+    $countColumn  = count($countColumns) === 1 ? $countColumns[0] : null;
 
     $lines  = [];
     $budget = 6000;
-    foreach ($groupKeys as $groupCol) {
-        $block = rag_rollup_group($rows, $groupCol, $measures, $scales, $countCol);
+    foreach ($groupKeys as $groupColumn) {
+        $block = rag_rollup_group($rows, $groupColumn, $measures, $scales, $countColumn);
         $size  = array_sum(array_map('strlen', $block)) + count($block);
         if (empty($block) || $size > $budget || count($lines) + count($block) > 45) {
             continue;
@@ -409,7 +409,7 @@ function rag_aggregate_rollups(array $rows): string
         $lines   = array_merge($lines, $block);
     }
 
-    $all = rag_rollup_sum($rows, $measures, $scales, $countCol);
+    $all = rag_rollup_sum($rows, $measures, $scales, $countColumn);
     if ($all !== '') {
         $lines[] = 'ALL ROWS: ' . $all;
     }
@@ -432,11 +432,11 @@ function rag_aggregate_rollups(array $rows): string
     return $text;
 }
 
-function rag_rollup_group(array $rows, string $groupCol, array $measures, array $scales, ?string $countCol): array
+function rag_rollup_group(array $rows, string $groupColumn, array $measures, array $scales, ?string $countColumn): array
 {
     $buckets = [];
     foreach ($rows as $row) {
-        $key = trim((string) ($row[$groupCol] ?? ''));
+        $key = trim((string) ($row[$groupColumn] ?? ''));
         if ($key === '') {
             continue;
         }
@@ -445,18 +445,18 @@ function rag_rollup_group(array $rows, string $groupCol, array $measures, array 
 
     $lines = [];
     foreach ($buckets as $key => $bucketRows) {
-        $sums = rag_rollup_sum($bucketRows, $measures, $scales, $countCol);
+        $sums = rag_rollup_sum($bucketRows, $measures, $scales, $countColumn);
         if ($sums !== '') {
-            $lines[] = "by {$groupCol}: {$groupCol}={$key} | " . $sums;
+            $lines[] = "by {$groupColumn}: {$groupColumn}={$key} | " . $sums;
         }
     }
     return $lines;
 }
 
-function rag_rollup_sum(array $rows, array $measures, array $scales, ?string $countCol): string
+function rag_rollup_sum(array $rows, array $measures, array $scales, ?string $countColumn): string
 {
     $parts    = [];
-    $sumsByCol = [];
+    $sumsByColumn = [];
     foreach ($measures as $columnName) {
         $scale  = $scales[$columnName] ?? 0;
         $factor = 10 ** $scale;
@@ -480,16 +480,17 @@ function rag_rollup_sum(array $rows, array $measures, array $scales, ?string $co
             continue;
         }
         $value            = $scale === 0 ? (string) $total : number_format($total / $factor, $scale, '.', '');
-        $sumsByCol[$columnName]  = $total / $factor;
+        $sumsByColumn[$columnName]  = $total / $factor;
         $parts[]          = "{$columnName}={$value}";
     }
 
-    if ($countCol !== null && isset($sumsByCol[$countCol]) && $sumsByCol[$countCol] > 0) {
-        foreach ($sumsByCol as $columnName => $sum) {
-            if ($columnName === $countCol) {
+    if ($countColumn !== null && isset($sumsByColumn[$countColumn]) && $sumsByColumn[$countColumn] > 0) {
+        foreach ($sumsByColumn as $columnName => $sum) {
+            if ($columnName === $countColumn) {
                 continue;
             }
-            $parts[] = 'derived_avg_' . $columnName . '=' . number_format($sum / $sumsByCol[$countCol], 2, '.', '');
+            $parts[] = 'derived_avg_' . $columnName . '='
+                . number_format($sum / $sumsByColumn[$countColumn], 2, '.', '');
         }
     }
 
@@ -752,14 +753,14 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
     $ragQuerySourcesTable = sys_table('rag_query_sources');
     $tags             = php_array_to_pg_text(array_values($data['tags'] ?? []));
 
-    static $hasPromptCol = null;
-    if ($hasPromptCol === null) {
+    static $hasPromptColumn = null;
+    if ($hasPromptColumn === null) {
         $columnsResult      = @pg_query(
             $conn,
             "SELECT 1 FROM information_schema.columns"
                 . " WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1"
         );
-        $hasPromptCol = ($columnsResult && pg_num_rows($columnsResult) > 0);
+        $hasPromptColumn = ($columnsResult && pg_num_rows($columnsResult) > 0);
     }
 
     $baseParams = [
@@ -773,7 +774,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
         isset($data['user_id']) ? (int) $data['user_id'] : null,
     ];
 
-    if ($hasPromptCol) {
+    if ($hasPromptColumn) {
         $baseParams[] = mb_substr((string) ($data['prompt_snapshot'] ?? ''), 0, 50000) ?: null;
         $queryResult = @pg_query_params(
             $conn,
@@ -820,7 +821,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
     foreach ($sources as $position => $source) {
         $fileId   = isset($source['file_id']) ? (int) $source['file_id'] : 0;
         $chunkId  = (isset($source['chunk_id']) && $source['chunk_id'] !== null) ? (int) $source['chunk_id'] : null;
-        $chunkIdx = isset($source['chunk_index']) ? (int) $source['chunk_index'] : -1;
+        $chunkIndex = isset($source['chunk_index']) ? (int) $source['chunk_index'] : -1;
         $filename = mb_substr((string) ($source['filename'] ?? ''), 0, 255);
         $snippet  = mb_substr((string) ($source['content'] ?? ''), 0, 400);
         $srcType  = in_array($source['source_type'] ?? '', ['chunk', 'file'], true)
@@ -833,7 +834,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
             "INSERT INTO {$ragQuerySourcesTable}
                 (query_id, file_id, chunk_id, chunk_index, filename, snippet, source_type, rank_position)
              VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8)",
-            [$queryId, $fileId, $chunkId, $chunkIdx, $filename, $snippet, $srcType, (int) $position]
+            [$queryId, $fileId, $chunkId, $chunkIndex, $filename, $snippet, $srcType, (int) $position]
         );
     }
 }

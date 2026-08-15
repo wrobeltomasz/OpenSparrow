@@ -132,17 +132,17 @@ function print_sanitize_template(array $template, array $availableViews): ?array
         ];
 
         $sourceView = (string) ($parameter['source_view'] ?? '');
-        $valueCol   = (string) ($parameter['value_column'] ?? '');
-        $labelCol   = (string) ($parameter['label_column'] ?? '');
+        $valueColumn   = (string) ($parameter['value_column'] ?? '');
+        $labelColumn   = (string) ($parameter['label_column'] ?? '');
         if (
             $sourceView !== ''
             && isset($availableViews[$sourceView])
-            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $valueCol)
-            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $labelCol)
+            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $valueColumn)
+            && preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $labelColumn)
         ) {
             $entry['source_view']  = $sourceView;
-            $entry['value_column'] = $valueCol;
-            $entry['label_column'] = $labelCol;
+            $entry['value_column'] = $valueColumn;
+            $entry['label_column'] = $labelColumn;
         }
 
         $params[] = $entry;
@@ -231,7 +231,7 @@ try {
         $viewName      = (string) ($cfg['view'] ?? '');
         $paramDefs     = $cfg['params'] ?? [];
         $rows          = [];
-        $viewCols      = [];
+        $viewColumns      = [];
         $appliedParams = [];
 
         if ($viewName !== '' && isset($views[$viewName])) {
@@ -264,7 +264,7 @@ try {
             }
             $rows = pg_fetch_all($queryResult) ?: [];
             pg_free_result($queryResult);
-            $viewCols = $views[$viewName]['columns'] ?? [];
+            $viewColumns = $views[$viewName]['columns'] ?? [];
         }
 
         echo json_encode([
@@ -275,7 +275,7 @@ try {
             'view'           => $viewName,
             'blocks'         => $cfg['blocks'] ?? [],
             'rows'           => $rows,
-            'columns'        => $viewCols,
+            'columns'        => $viewColumns,
             'params'         => $paramDefs,
             'applied_params' => (object) $appliedParams,
         ]);
@@ -308,16 +308,16 @@ try {
         if (!empty($param['source_view']) && isset($views[$param['source_view']])) {
             $srcView    = $param['source_view'];
             $schemaName = $views[$srcView]['schema'] ?? sys_schema();
-            $valueIdent = pg_ident($param['value_column']);
-            $labelIdent = pg_ident($param['label_column']);
+            $valueColumnIdentifier = pg_ident($param['value_column']);
+            $labelColumnIdentifier = pg_ident($param['label_column']);
             $sql        = sprintf(
                 'SELECT DISTINCT %s AS value, %s AS label FROM %s.%s WHERE %s IS NOT NULL ORDER BY %s LIMIT 500',
-                $valueIdent,
-                $labelIdent,
+                $valueColumnIdentifier,
+                $labelColumnIdentifier,
                 pg_ident($schemaName),
                 pg_ident($srcView),
-                $valueIdent,
-                $labelIdent
+                $valueColumnIdentifier,
+                $labelColumnIdentifier
             );
         } else {
             $viewName = (string) ($cfg['view'] ?? '');
@@ -325,15 +325,15 @@ try {
                 throw ResponseException::encoded(['status' => 'ok', 'options' => []]);
             }
             $schemaName = $views[$viewName]['schema'] ?? sys_schema();
-            $colIdent   = pg_ident($param['column']);
+            $columnIdentifier   = pg_ident($param['column']);
             $sql        = sprintf(
                 'SELECT DISTINCT %s AS value, %s AS label FROM %s.%s WHERE %s IS NOT NULL ORDER BY %s LIMIT 500',
-                $colIdent,
-                $colIdent,
+                $columnIdentifier,
+                $columnIdentifier,
                 pg_ident($schemaName),
                 pg_ident($viewName),
-                $colIdent,
-                $colIdent
+                $columnIdentifier,
+                $columnIdentifier
             );
         }
 

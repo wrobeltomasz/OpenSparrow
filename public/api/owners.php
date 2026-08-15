@@ -146,7 +146,7 @@ function owners_action_mine($conn): void
 
     require_once __DIR__ . '/../../includes/config_store.php';
     $userRecordsCfg  = config_get('user_records') ?? [];
-    $configuredCols  = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
+    $configuredColumns  = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
     $limit           = (int)($userRecordsCfg['limit'] ?? 20);
 
     $byTable    = [];
@@ -177,7 +177,7 @@ function owners_action_mine($conn): void
 
         $pgSchema = $tableCfg['schema'] ?? 'public';
         $arrParam = '{' . implode(',', $ids) . '}';
-        $labelSql = record_label_sql($tableCfg, $configuredCols[$tableName] ?? []);
+        $labelSql = record_label_sql($tableCfg, $configuredColumns[$tableName] ?? []);
 
         $rowsSql = sprintf(
             'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',

@@ -96,8 +96,8 @@ function notes_action_list_records($conn): void
     $pgSchema = $tableCfg['schema'] ?? 'public';
 
     $userRecordsCfg = config_get('user_records') ?? [];
-    $configuredCols = is_array($userRecordsCfg['columns'][$table] ?? null) ? $userRecordsCfg['columns'][$table] : [];
-    $labelSql       = record_label_sql($tableCfg, $configuredCols);
+    $configuredColumns = is_array($userRecordsCfg['columns'][$table] ?? null) ? $userRecordsCfg['columns'][$table] : [];
+    $labelSql       = record_label_sql($tableCfg, $configuredColumns);
 
     $sql = sprintf(
         'SELECT id, %s AS label FROM %s.%s ORDER BY id DESC LIMIT %d',

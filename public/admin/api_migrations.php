@@ -277,16 +277,16 @@ if ($action === 'apply') {
         ];
     }
 
-    $selectedIdxs = $body['selected'] ?? null;
+    $selectedIndexes = $body['selected'] ?? null;
     $toRun        = [];
-    if ($selectedIdxs === null) {
+    if ($selectedIndexes === null) {
         foreach ($allActions as $index => $migrationAction) {
             if ($migrationAction['type'] !== 'file_deprecated') {
                 $toRun[] = $index;
             }
         }
     } else {
-        foreach ((array) $selectedIdxs as $raw) {
+        foreach ((array) $selectedIndexes as $raw) {
             $index = (int) $raw;
             if (isset($allActions[$index])) {
                 $toRun[] = $index;

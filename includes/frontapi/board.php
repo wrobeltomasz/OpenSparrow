@@ -46,8 +46,8 @@ function frontapi_board(FrontApiContext $context): never
     ];
 
     $table     = $boardCfg['table'] ?? '';
-    $statusCol = $boardCfg['status_column'] ?? '';
-    if ($table === '' || $statusCol === '') {
+    $statusColumn = $boardCfg['status_column'] ?? '';
+    if ($table === '' || $statusColumn === '') {
         throw ResponseException::encoded($meta);
     }
 
@@ -65,26 +65,26 @@ function frontapi_board(FrontApiContext $context): never
         throw ResponseException::encoded($meta);
     }
 
-    if (!isset($tableCfg['columns'][$statusCol])) {
+    if (!isset($tableCfg['columns'][$statusColumn])) {
         throw ResponseException::encoded($meta);
     }
 
     $schemaName   = $tableCfg['schema'] ?? 'public';
-    $idCol        = id_column();
-    $titleCol     = $boardCfg['title_column'] ?? '';
-    if ($titleCol === '' || !isset($tableCfg['columns'][$titleCol])) {
-        $titleCol = $idCol;
+    $idColumn        = id_column();
+    $titleColumn     = $boardCfg['title_column'] ?? '';
+    if ($titleColumn === '' || !isset($tableCfg['columns'][$titleColumn])) {
+        $titleColumn = $idColumn;
     }
     $defaultColor = $boardCfg['color'] ?? '#005A9E';
 
-    $cardCols = [];
+    $cardColumns = [];
     foreach (($boardCfg['card_columns'] ?? []) as $column) {
-        if (is_string($column) && isset($tableCfg['columns'][$column]) && $column !== $statusCol) {
-            $cardCols[] = $column;
+        if (is_string($column) && isset($tableCfg['columns'][$column]) && $column !== $statusColumn) {
+            $cardColumns[] = $column;
         }
     }
 
-    $statusDef  = $tableCfg['columns'][$statusCol];
+    $statusDef  = $tableCfg['columns'][$statusColumn];
     $statusType = strtolower($statusDef['type'] ?? '');
     $enumColors = is_array($statusDef['enum_colors'] ?? null) ? $statusDef['enum_colors'] : [];
     $lanes      = [];
@@ -101,15 +101,15 @@ function frontapi_board(FrontApiContext $context): never
         $laneParams = [];
         $laneOwner  = '';
         if (!empty($tableCfg['owner_restricted'])) {
-            $laneOwner  = owner_restriction_sql('_t.' . pg_ident($idCol), 1, 2);
+            $laneOwner  = owner_restriction_sql('_t.' . pg_ident($idColumn), 1, 2);
             $laneParams = [$table, $context->userId];
         }
         $sqlDistinct = sprintf(
             'SELECT DISTINCT %s AS v FROM %s.%s AS _t WHERE %s IS NOT NULL%s ORDER BY 1',
-            pg_ident($statusCol),
+            pg_ident($statusColumn),
             pg_ident($schemaName),
             pg_ident($table),
-            pg_ident($statusCol),
+            pg_ident($statusColumn),
             $laneOwner
         );
         $laneDistinctResult = @pg_query_params($conn, $sqlDistinct, $laneParams);
@@ -123,14 +123,14 @@ function frontapi_board(FrontApiContext $context): never
     }
 
     $columns       = column_list($tableCfg);
-    $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $columns)));
+    $selectColumns = array_values(array_unique(array_merge([$idColumn, $statusColumn, $titleColumn], $columns)));
     $cards = [];
-    $selectSql  = implode(', ', array_map(fn($column) => pg_ident($column), $selectCols));
+    $selectSql  = implode(', ', array_map(fn($column) => pg_ident($column), $selectColumns));
 
     $cardParams = [];
     $cardWhere  = '';
     if (!empty($tableCfg['owner_restricted'])) {
-        $cardWhere  = ' WHERE TRUE' . owner_restriction_sql('_t.' . pg_ident($idCol), 1, 2);
+        $cardWhere  = ' WHERE TRUE' . owner_restriction_sql('_t.' . pg_ident($idColumn), 1, 2);
         $cardParams = [$table, $context->userId];
     }
     $sql = sprintf(
@@ -139,7 +139,7 @@ function frontapi_board(FrontApiContext $context): never
         pg_ident($schemaName),
         pg_ident($table),
         $cardWhere,
-        pg_ident($idCol)
+        pg_ident($idColumn)
     );
     $result  = @pg_query_params($conn, $sql, $cardParams);
     $rows = [];
@@ -152,7 +152,7 @@ function frontapi_board(FrontApiContext $context): never
     $rows = map_fk_display($schema, $tableCfg, $rows, $conn);
     foreach ($rows as $row) {
         $fields = [];
-        foreach ($cardCols as $column) {
+        foreach ($cardColumns as $column) {
             $label = $tableCfg['columns'][$column]['display_name'] ?? $column;
             $value = $row[$column . '__display'] ?? $row[$column] ?? '';
             if ($value === null || $value === '') {
@@ -161,18 +161,18 @@ function frontapi_board(FrontApiContext $context): never
             $fields[] = ['label' => $label, 'value' => $value];
         }
         $cards[] = [
-            'id'      => $row[$idCol],
-            'status'  => (string)($row[$statusCol] ?? ''),
-            'title'   => $row[$titleCol . '__display'] ?? $row[$titleCol] ?? ('#' . $row[$idCol]),
+            'id'      => $row[$idColumn],
+            'status'  => (string)($row[$statusColumn] ?? ''),
+            'title'   => $row[$titleColumn . '__display'] ?? $row[$titleColumn] ?? ('#' . $row[$idColumn]),
             'fields'  => $fields,
             'rowData' => $row,
         ];
     }
 
     $meta['configured']    = true;
-    $meta['title_column']  = $titleCol;
+    $meta['title_column']  = $titleColumn;
     $meta['default_color'] = $defaultColor;
-    $meta['status_label']  = $statusDef['display_name'] ?? $statusCol;
+    $meta['status_label']  = $statusDef['display_name'] ?? $statusColumn;
     $meta['table_label']   = $tableCfg['display_name'] ?? $table;
     $meta['columns']       = $lanes;
     $meta['cards']         = $cards;
@@ -186,7 +186,7 @@ function frontapi_board_move_card(FrontApiWriteContext $context): never
     $table      = $context->table;
     $tableCfg   = $context->tableCfg;
     $schemaName = $context->schemaName;
-    $idCol      = $context->idCol;
+    $idColumn   = $context->idColumn;
 
     if ($context->isViewer()) {
         throw new ForbiddenException('Forbidden');
@@ -204,12 +204,12 @@ function frontapi_board_move_card(FrontApiWriteContext $context): never
     }
     $boardCfg  = $boardCfg ?? [];
     $cfgTable  = $boardCfg['table'] ?? '';
-    $statusCol = $boardCfg['status_column'] ?? '';
+    $statusColumn = $boardCfg['status_column'] ?? '';
 
-    if ($cfgTable === '' || $statusCol === '' || $table !== $cfgTable) {
+    if ($cfgTable === '' || $statusColumn === '' || $table !== $cfgTable) {
         throw new BadRequestException('Invalid board table');
     }
-    if (!isset($tableCfg['columns'][$statusCol])) {
+    if (!isset($tableCfg['columns'][$statusColumn])) {
         throw new BadRequestException('Invalid status column');
     }
 
@@ -219,7 +219,7 @@ function frontapi_board_move_card(FrontApiWriteContext $context): never
         throw new BadRequestException('Invalid ID');
     }
 
-    $statusDef  = $tableCfg['columns'][$statusCol];
+    $statusDef  = $tableCfg['columns'][$statusColumn];
     $statusType = strtolower($statusDef['type'] ?? '');
     $allowed    = [];
     if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
@@ -227,10 +227,10 @@ function frontapi_board_move_card(FrontApiWriteContext $context): never
     } else {
         $distinctSql = sprintf(
             'SELECT DISTINCT %s AS v FROM %s.%s WHERE %s IS NOT NULL',
-            pg_ident($statusCol),
+            pg_ident($statusColumn),
             pg_ident($schemaName),
             pg_ident($table),
-            pg_ident($statusCol)
+            pg_ident($statusColumn)
         );
         $distinctResult = @pg_query($conn, $distinctSql);
         if ($distinctResult) {
@@ -250,8 +250,8 @@ function frontapi_board_move_card(FrontApiWriteContext $context): never
         'UPDATE %s.%s SET %s = $1 WHERE %s = $2',
         pg_ident($schemaName),
         pg_ident($table),
-        pg_ident($statusCol),
-        pg_ident($idCol)
+        pg_ident($statusColumn),
+        pg_ident($idColumn)
     );
     $result = @pg_query_params($conn, $sql, [$newStatus, $id]);
     if (!$result) {

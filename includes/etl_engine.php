@@ -382,7 +382,7 @@ function etl_run_job(
         static fn($upsertColumn) => trim((string)$upsertColumn),
         (array)($job['upsert_key'] ?? [])
     ), static fn($upsertColumn) => $upsertColumn !== ''));
-    $incCol     = trim((string)($job['incremental_column'] ?? ''));
+    $incrementalColumn     = trim((string)($job['incremental_column'] ?? ''));
     $batchSize  = max(50, min(5000, (int)($job['batch_size'] ?? 500) ?: 500));
     $colMap     = [];
     foreach ((array)($job['column_map'] ?? []) as $mapping) {
@@ -431,7 +431,7 @@ function etl_run_job(
             return $output;
         }
 
-        if ($incCol !== '' && str_contains($sourceSql, '{{watermark}}')) {
+        if ($incrementalColumn !== '' && str_contains($sourceSql, '{{watermark}}')) {
             $watermarkValue = $watermark ?? (string)($job['incremental_initial_value'] ?? '0');
             $sourceSql = str_replace('{{watermark}}', $pdo->quote($watermarkValue), $sourceSql);
         }
@@ -461,10 +461,10 @@ function etl_run_job(
     }
     $output['rows_read'] = count($rows);
 
-    if ($incCol !== '' && !empty($rows)) {
+    if ($incrementalColumn !== '' && !empty($rows)) {
         $max = null;
         foreach ($rows as $row) {
-            $incrementalValue = $row[$incCol] ?? null;
+            $incrementalValue = $row[$incrementalColumn] ?? null;
             if ($incrementalValue !== null && ($max === null || etl_watermark_gt($incrementalValue, $max))) {
                 $max = $incrementalValue;
             }
@@ -474,22 +474,22 @@ function etl_run_job(
         }
     }
 
-    $targetCols = etl_pg_columns($pgConn, $schema, $target);
-    if (empty($targetCols)) {
+    $targetColumns = etl_pg_columns($pgConn, $schema, $target);
+    if (empty($targetColumns)) {
         $output['error'] = "Target table '{$schema}.{$target}' not found or has no columns.";
         return $output;
     }
 
-    $sourceCols = empty($rows) ? [] : array_keys($rows[0]);
+    $sourceColumns = empty($rows) ? [] : array_keys($rows[0]);
     if (!empty($colMap)) {
         $pairs = [];
         foreach ($colMap as $source => $targetColumn) {
-            if (in_array($source, $sourceCols, true) && in_array($targetColumn, $targetCols, true)) {
+            if (in_array($source, $sourceColumns, true) && in_array($targetColumn, $targetColumns, true)) {
                 $pairs[$source] = $targetColumn;
             }
         }
     } else {
-        $matched = array_values(array_intersect($sourceCols, $targetCols));
+        $matched = array_values(array_intersect($sourceColumns, $targetColumns));
         $pairs   = array_combine($matched, $matched) ?: [];
     }
     $columns = array_keys($pairs);
@@ -517,10 +517,10 @@ function etl_run_job(
         return $output;
     }
 
-    $schemaIdent = pg_ident($schema);
-    $tableIdent  = pg_ident($target);
+    $schemaIdentifier = pg_ident($schema);
+    $tableIdentifier  = pg_ident($target);
     $colIdents   = array_map('pg_ident', $targetNames);
-    $textCols    = etl_pg_text_columns($pgConn, $schema, $target);
+    $textColumns    = etl_pg_text_columns($pgConn, $schema, $target);
     $written     = 0;
 
     if ($loadMode === 'full_refresh' && empty($rows)) {
@@ -535,7 +535,7 @@ function etl_run_job(
     }
     try {
         if ($loadMode === 'full_refresh') {
-            if (!@pg_query($pgConn, "TRUNCATE {$schemaIdent}.{$tableIdent}")) {
+            if (!@pg_query($pgConn, "TRUNCATE {$schemaIdentifier}.{$tableIdentifier}")) {
                 throw new \RuntimeException('TRUNCATE failed: ' . pg_last_error($pgConn));
             }
         }
@@ -544,11 +544,11 @@ function etl_run_job(
         $onConflict = '';
         if ($loadMode === 'upsert') {
             $keyIdents = implode(', ', array_map('pg_ident', $upsertKey));
-            $updateCols = array_values(array_diff($targetNames, $upsertKey));
-            $setCols = empty($updateCols) ? $targetNames : $updateCols;
+            $updateColumns = array_values(array_diff($targetNames, $upsertKey));
+            $setColumns = empty($updateColumns) ? $targetNames : $updateColumns;
             $setSql  = implode(
                 ', ',
-                array_map(fn($column) => pg_ident($column) . ' = EXCLUDED.' . pg_ident($column), $setCols)
+                array_map(fn($column) => pg_ident($column) . ' = EXCLUDED.' . pg_ident($column), $setColumns)
             );
             $onConflict = " ON CONFLICT ({$keyIdents}) DO UPDATE SET {$setSql}";
         }
@@ -562,7 +562,7 @@ function etl_run_job(
                 foreach ($columns as $column) {
                     $value = $row[$column] ?? null;
 
-                    if ($value === '' && !in_array($pairs[$column], $textCols, true)) {
+                    if ($value === '' && !in_array($pairs[$column], $textColumns, true)) {
                         $value = null;
                     }
                     $params[] = $value;
@@ -570,7 +570,7 @@ function etl_run_job(
                 }
                 $valueSql[] = '(' . implode(', ', $slots) . ')';
             }
-            $sql = 'INSERT INTO ' . $schemaIdent . '.' . $tableIdent
+            $sql = 'INSERT INTO ' . $schemaIdentifier . '.' . $tableIdentifier
                 . ' (' . implode(', ', $colIdents) . ') VALUES '
                 . implode(', ', $valueSql) . $onConflict;
             $result = @pg_query_params($pgConn, $sql, $params);

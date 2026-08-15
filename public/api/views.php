@@ -62,7 +62,7 @@ try {
         $conn       = db_connect();
         $schemaName = $cfg['schema'] ?? sys_schema();
         $level      = max(0, (int)($_GET['level'] ?? 0));
-        $filterCol  = $_GET['filter_col'] ?? '';
+        $filterColumn  = $_GET['filter_col'] ?? '';
         $filterVal  = isset($_GET['filter_val']) ? $_GET['filter_val'] : null;
 
         $drillLevels = $cfg['drill_down']['levels'] ?? [];
@@ -74,12 +74,12 @@ try {
         $params      = [];
         $whereClause = '';
 
-        if ($filterCol !== '' && $filterVal !== null) {
-            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $filterCol)) {
+        if ($filterColumn !== '' && $filterVal !== null) {
+            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $filterColumn)) {
                 throw new BadRequestException('Invalid filter column');
             }
             $params[]    = $filterVal;
-            $whereClause = 'WHERE ' . pg_ident($filterCol) . ' = $1';
+            $whereClause = 'WHERE ' . pg_ident($filterColumn) . ' = $1';
         }
 
         if ($groupBy !== null) {

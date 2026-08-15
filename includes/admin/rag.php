@@ -568,16 +568,16 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         );
         $summary = $summaryResult ? (pg_fetch_assoc($summaryResult) ?: []) : [];
 
-        $hasPromptCol = false;
+        $hasPromptColumn = false;
         $colChk = @pg_query(
             $conn,
             "SELECT 1 FROM information_schema.columns"
                 . " WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1"
         );
         if ($colChk && pg_num_rows($colChk) > 0) {
-            $hasPromptCol = true;
+            $hasPromptColumn = true;
         }
-        $promptSelect = $hasPromptCol ? ', prompt_snapshot' : ', NULL AS prompt_snapshot';
+        $promptSelect = $hasPromptColumn ? ', prompt_snapshot' : ', NULL AS prompt_snapshot';
 
         $recentResult = @pg_query(
             $conn,

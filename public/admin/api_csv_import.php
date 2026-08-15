@@ -166,14 +166,14 @@ final class ImportRepository
         string $filename,
         string $tableName,
         array $mapping,
-        ?string $conflictCol
+        ?string $conflictColumn
     ): int {
         $sql = 'INSERT INTO ' . sys_table('imports')
             . ' (user_id, filename, target_table, column_mapping, conflict_column, status)'
             . ' VALUES ($1,$2,$3,$4,$5,$6) RETURNING id';
         $result = @pg_query_params($this->conn, $sql, [
             $userId, $filename, $tableName,
-            json_encode($mapping), $conflictCol, 'running',
+            json_encode($mapping), $conflictColumn, 'running',
         ]);
         if ($result === false) {
             throw new \RuntimeException(
@@ -275,15 +275,15 @@ final class CsvImportService
         string $tableSchema,
         array $mapping,
         array $colTypes,
-        ?string $conflictCol,
+        ?string $conflictColumn,
         int $importId,
         string $delimiter = ',',
         string $encoding = 'UTF-8'
     ): array {
-        $tableIdent = pg_ident($tableSchema) . '.' . pg_ident($tableName);
-        $dbCols     = array_values(array_unique(array_filter($mapping)));
+        $tableIdentifier = pg_ident($tableSchema) . '.' . pg_ident($tableName);
+        $dbColumns     = array_values(array_unique(array_filter($mapping)));
 
-        $batchSize = max(1, min(CSV_BATCH_SIZE, (int) floor(65000 / max(1, count($dbCols)))));
+        $batchSize = max(1, min(CSV_BATCH_SIZE, (int) floor(65000 / max(1, count($dbColumns)))));
 
         $total     = 0;
         $imported  = 0;
@@ -300,14 +300,14 @@ final class CsvImportService
             $castRow   = [];
             $castError = null;
 
-            foreach ($mapping as $csvHeader => $dbCol) {
-                if ($dbCol === null || $dbCol === '') {
+            foreach ($mapping as $csvHeader => $dbColumn) {
+                if ($dbColumn === null || $dbColumn === '') {
                     continue;
                 }
                 $rawVal  = isset($rowData[$csvHeader]) ? (string) $rowData[$csvHeader] : null;
-                $colType = $colTypes[$dbCol] ?? 'text';
+                $colType = $colTypes[$dbColumn] ?? 'text';
                 $casted  = RowCaster::cast($rawVal, $colType);
-                $castRow[$dbCol] = $casted;
+                $castRow[$dbColumn] = $casted;
             }
 
             if (empty($castRow)) {
@@ -323,7 +323,12 @@ final class CsvImportService
             $batch[] = ['rowNum' => $rowNum, 'data' => $castRow, 'raw' => $rowData];
 
             if (count($batch) >= $batchSize) {
-                [$importedCount, $skip, $errs] = $this->flushBatch($batch, $tableIdent, $dbCols, $conflictCol);
+                [$importedCount, $skip, $errs] = $this->flushBatch(
+                    $batch,
+                    $tableIdentifier,
+                    $dbColumns,
+                    $conflictColumn
+                );
                 $imported += $importedCount;
                 $skipped  += $skip;
                 array_push($rowErrors, ...$errs);
@@ -332,7 +337,7 @@ final class CsvImportService
         }
 
         if (!empty($batch)) {
-            [$importedCount, $skip, $errs] = $this->flushBatch($batch, $tableIdent, $dbCols, $conflictCol);
+            [$importedCount, $skip, $errs] = $this->flushBatch($batch, $tableIdentifier, $dbColumns, $conflictColumn);
             $imported += $importedCount;
             $skipped  += $skip;
             array_push($rowErrors, ...$errs);
@@ -345,14 +350,14 @@ final class CsvImportService
 
     private function flushBatch(
         array $batch,
-        string $tableIdent,
-        array $dbCols,
-        ?string $conflictCol
+        string $tableIdentifier,
+        array $dbColumns,
+        ?string $conflictColumn
     ): array {
         @pg_query($this->conn, 'BEGIN');
 
-        $sql    = $this->buildInsertSql($batch, $tableIdent, $dbCols, $conflictCol);
-        $params = $this->buildParams($batch, $dbCols);
+        $sql    = $this->buildInsertSql($batch, $tableIdentifier, $dbColumns, $conflictColumn);
+        $params = $this->buildParams($batch, $dbColumns);
         $result    = @pg_query_params($this->conn, $sql, $params);
 
         if ($result === false) {
@@ -375,42 +380,42 @@ final class CsvImportService
 
     private function buildInsertSql(
         array $batch,
-        string $tableIdent,
-        array $dbCols,
-        ?string $conflictCol
+        string $tableIdentifier,
+        array $dbColumns,
+        ?string $conflictColumn
     ): string {
-        $colList = implode(',', array_map('pg_ident', $dbCols));
-        $numCols = count($dbCols);
+        $colList = implode(',', array_map('pg_ident', $dbColumns));
+        $columnCount = count($dbColumns);
         $rows    = [];
         $index     = 1;
         foreach ($batch as $_) {
             $placeholders = [];
-            for ($column = 0; $column < $numCols; $column++) {
+            for ($column = 0; $column < $columnCount; $column++) {
                 $placeholders[] = '$' . $index++;
             }
             $rows[] = '(' . implode(',', $placeholders) . ')';
         }
-        $sql = "INSERT INTO {$tableIdent} ({$colList}) VALUES " . implode(',', $rows);
+        $sql = "INSERT INTO {$tableIdentifier} ({$colList}) VALUES " . implode(',', $rows);
 
-        if ($conflictCol !== null && $conflictCol !== '') {
-            $conflictIdent         = pg_ident($conflictCol);
-            $updateCols = array_filter($dbCols, fn($column) => $column !== $conflictCol);
-            if (!empty($updateCols)) {
-                $sets = array_map(fn($column) => pg_ident($column) . '=EXCLUDED.' . pg_ident($column), $updateCols);
-                $sql .= " ON CONFLICT ({$conflictIdent}) DO UPDATE SET " . implode(',', $sets);
+        if ($conflictColumn !== null && $conflictColumn !== '') {
+            $conflictIdentifier         = pg_ident($conflictColumn);
+            $updateColumns = array_filter($dbColumns, fn($column) => $column !== $conflictColumn);
+            if (!empty($updateColumns)) {
+                $sets = array_map(fn($column) => pg_ident($column) . '=EXCLUDED.' . pg_ident($column), $updateColumns);
+                $sql .= " ON CONFLICT ({$conflictIdentifier}) DO UPDATE SET " . implode(',', $sets);
             } else {
-                $sql .= " ON CONFLICT ({$conflictIdent}) DO NOTHING";
+                $sql .= " ON CONFLICT ({$conflictIdentifier}) DO NOTHING";
             }
         }
 
         return $sql;
     }
 
-    private function buildParams(array $batch, array $dbCols): array
+    private function buildParams(array $batch, array $dbColumns): array
     {
         $params = [];
         foreach ($batch as $entry) {
-            foreach ($dbCols as $columnName) {
+            foreach ($dbColumns as $columnName) {
                 $params[] = $entry['data'][$columnName] ?? null;
             }
         }
@@ -426,12 +431,12 @@ final class CsvImportService
         string $delimiter = ',',
         string $encoding = 'UTF-8'
     ): array {
-        $tableIdent = pg_ident($tableSchema) . '.' . pg_ident($tableName);
+        $tableIdentifier = pg_ident($tableSchema) . '.' . pg_ident($tableName);
 
         $colMap = [];
-        foreach ($mapping as $csvHeaderName => $dbCol) {
-            if ($dbCol !== null && $dbCol !== '' && !isset($colMap[$dbCol])) {
-                $colMap[$dbCol] = $csvHeaderName;
+        foreach ($mapping as $csvHeaderName => $dbColumn) {
+            if ($dbColumn !== null && $dbColumn !== '' && !isset($colMap[$dbColumn])) {
+                $colMap[$dbColumn] = $csvHeaderName;
             }
         }
         if (empty($colMap)) {
@@ -457,14 +462,14 @@ final class CsvImportService
             ));
             $isDirectStream = $mappedCount === count($csvHeaders);
 
-            $headerIdx  = array_flip($csvHeaders);
+            $headerIndexes  = array_flip($csvHeaders);
             $colIndices = $isDirectStream ? null : array_map(
-                fn($csvHeaderName) => $headerIdx[$csvHeaderName] ?? null,
+                fn($csvHeaderName) => $headerIndexes[$csvHeaderName] ?? null,
                 array_values($colMap)
             );
 
             $colList = implode(',', array_map(pg_ident(...), array_keys($colMap)));
-            $sql     = "COPY {$tableIdent} ({$colList}) FROM STDIN WITH (FORMAT CSV, NULL '')";
+            $sql     = "COPY {$tableIdentifier} ({$colList}) FROM STDIN WITH (FORMAT CSV, NULL '')";
 
             if (@pg_query($this->conn, $sql) === false) {
                 throw new \RuntimeException('COPY init failed: ' . substr(pg_last_error($this->conn), 0, 300));
@@ -669,7 +674,7 @@ if ($action === 'csv_import_execute') {
     $tmpName      = (string) ($body['tmp_name']        ?? '');
     $tableName    = (string) ($body['table']           ?? '');
     $mapping      = $body['mapping']                   ?? [];
-    $conflictCol  = ($body['conflict_column'] ?? '') ?: null;
+    $conflictColumn  = ($body['conflict_column'] ?? '') ?: null;
     $copyMode     = !empty($body['copy_mode']);
     $originalName = (string) ($body['original_name']   ?? 'file.csv');
     $allowed      = [',', ';', "\t", '|'];
@@ -705,22 +710,22 @@ if ($action === 'csv_import_execute') {
 
     $tableConfig = $schema['tables'][$tableName];
     $tableSchema = (string) ($tableConfig['schema'] ?? 'public');
-    $schemaCols  = $tableConfig['columns'] ?? [];
+    $schemaColumns  = $tableConfig['columns'] ?? [];
 
-    foreach ($mapping as $csvHeader => $dbCol) {
-        if ($dbCol !== null && $dbCol !== '' && !isset($schemaCols[$dbCol])) {
+    foreach ($mapping as $csvHeader => $dbColumn) {
+        if ($dbColumn !== null && $dbColumn !== '' && !isset($schemaColumns[$dbColumn])) {
             @unlink($csvPath);
-            csv_fail("Column '{$dbCol}' does not exist in table '{$tableName}'.");
+            csv_fail("Column '{$dbColumn}' does not exist in table '{$tableName}'.");
         }
     }
 
-    $dbCols = array_values(array_unique(array_filter($mapping)));
-    if ($conflictCol !== null && $conflictCol !== '' && !in_array($conflictCol, $dbCols, true)) {
+    $dbColumns = array_values(array_unique(array_filter($mapping)));
+    if ($conflictColumn !== null && $conflictColumn !== '' && !in_array($conflictColumn, $dbColumns, true)) {
         @unlink($csvPath);
-        csv_fail("Conflict column '{$conflictCol}' must be included in the column mapping.");
+        csv_fail("Conflict column '{$conflictColumn}' must be included in the column mapping.");
     }
 
-    $colTypes = array_map(fn($column) => (string) ($column['type'] ?? 'text'), $schemaCols);
+    $colTypes = array_map(fn($column) => (string) ($column['type'] ?? 'text'), $schemaColumns);
     $userId   = (int) ($_SESSION['user_id'] ?? 0);
 
     $importId = 0;
@@ -729,7 +734,13 @@ if ($action === 'csv_import_execute') {
         $repo    = new ImportRepository($conn);
         $service = new CsvImportService($conn, $repo);
 
-        $importId  = $repo->createRecord($userId, $originalName, $tableName, $mapping, $copyMode ? null : $conflictCol);
+        $importId  = $repo->createRecord(
+            $userId,
+            $originalName,
+            $tableName,
+            $mapping,
+            $copyMode ? null : $conflictColumn
+        );
         $startTime = microtime(true);
 
         if ($copyMode) {
@@ -749,7 +760,7 @@ if ($action === 'csv_import_execute') {
                 $tableSchema,
                 $mapping,
                 $colTypes,
-                $conflictCol,
+                $conflictColumn,
                 $importId,
                 $delimiter,
                 $encoding
@@ -797,7 +808,7 @@ if ($action === 'csv_create_table') {
         $schemaName = 'public';
     }
     $displayName = trim(strip_tags((string) ($body['display_name'] ?? '')));
-    $rawCols     = is_array($body['columns'] ?? null) ? $body['columns'] : [];
+    $rawColumns     = is_array($body['columns'] ?? null) ? $body['columns'] : [];
 
     if ($tableName === '') {
         csv_fail('Table name is required.');
@@ -807,7 +818,7 @@ if ($action === 'csv_create_table') {
 
     $colDefs = [];
     $seen    = [];
-    foreach ($rawCols as $columnDefinition) {
+    foreach ($rawColumns as $columnDefinition) {
         $cName = preg_replace('/[^a-z0-9_]/', '', strtolower((string) ($columnDefinition['name'] ?? '')));
         $cType = in_array((string) ($columnDefinition['type'] ?? ''), $allowedTypes, true)
             ? (string) $columnDefinition['type']
@@ -834,10 +845,10 @@ if ($action === 'csv_create_table') {
         }
 
         foreach ($colDefs as $columnDefinition) {
-            $safeCol = pg_escape_identifier($conn, $columnDefinition['name']);
+            $safeColumn = pg_escape_identifier($conn, $columnDefinition['name']);
             $result = @pg_query(
                 $conn,
-                "ALTER TABLE {$safeSchema}.{$safeTable} ADD COLUMN {$safeCol} {$columnDefinition['type']}"
+                "ALTER TABLE {$safeSchema}.{$safeTable} ADD COLUMN {$safeColumn} {$columnDefinition['type']}"
             );
             if ($result === false) {
                 $error = substr(pg_last_error($conn), 0, 300);
@@ -863,7 +874,7 @@ if ($action === 'csv_create_table') {
             $displayName = ucwords(str_replace('_', ' ', $tableName));
         }
 
-        $schemaCols = [
+        $schemaColumns = [
             'id' => [
                 'display_name' => 'ID',
                 'type'         => 'number',
@@ -874,7 +885,7 @@ if ($action === 'csv_create_table') {
             ],
         ];
         foreach ($colDefs as $columnDefinition) {
-            $schemaCols[$columnDefinition['name']] = [
+            $schemaColumns[$columnDefinition['name']] = [
                 'display_name' => ucwords(str_replace('_', ' ', $columnDefinition['name'])),
                 'type'         => $typeMap[$columnDefinition['type']] ?? 'text',
                 'not_null'     => false,
@@ -892,7 +903,7 @@ if ($action === 'csv_create_table') {
         $schemaData['tables'][$tableName] = [
             'display_name' => $displayName,
             'schema'       => $schemaName,
-            'columns'      => $schemaCols,
+            'columns'      => $schemaColumns,
             'foreign_keys' => [],
             'subtables'    => [],
             'hidden'       => false,
