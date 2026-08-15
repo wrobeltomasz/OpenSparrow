@@ -12,7 +12,7 @@ use App\Exception\ResponseException;
 
 if (!defined('DEMO_MODE')) {
     http_response_code(403);
-    throw ResponseException::sent();
+    return;
 }
 
 if ($action === 'demo_status') {
