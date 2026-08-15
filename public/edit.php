@@ -63,8 +63,8 @@ if ($request->isPost()) {
             snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
         }
         evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId(), $oldRecord);
-        foreach ($m2mConfigs as $mi => $m2mCfg) {
-            $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
+        foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
+            $selected = array_values(array_filter((array)($_POST['m2m_' . $m2mIndex] ?? []), 'ctype_digit'));
             m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
         }
         if (($request->post('_save_action') ?? 'exit') === 'stay') {
@@ -91,7 +91,7 @@ $subtablesData = $records->subtables($tableCfg, $id);
 
 $subtablesData = array_values(array_filter(
     $subtablesData,
-    static fn(array $sd): bool => user_can_access_table((string) ($sd['config']['table'] ?? ''))
+    static fn(array $subtableData): bool => user_can_access_table((string) ($subtableData['config']['table'] ?? ''))
 ));
 $relatedFiles  = $files->forRecord($tableCfg->name, $id);
 
@@ -119,9 +119,9 @@ foreach ($tableCfg->visibleColumns() as $col) {
 }
 
 $m2mGroups = [];
-foreach ($m2mConfigs as $mi => $m2mCfg) {
+foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
     $m2mGroups[] = os_m2m_group(
-        (int)$mi,
+        (int)$m2mIndex,
         $m2mCfg,
         m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema),
         m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema),
@@ -130,14 +130,14 @@ foreach ($m2mConfigs as $mi => $m2mCfg) {
 }
 
 $subtablePanels = [];
-foreach ($subtablesData as $si => $sd) {
-    $sTable  = $sd['config']['table'];
-    $sFk     = $sd['config']['foreign_key'];
-    $sCols   = $sd['config']['columns_to_show'] ?? ['id'];
-    $siLabel = $sd['config']['label'] ?? ($sd['schema']->displayName ?? $sTable);
+foreach ($subtablesData as $subtableIndex => $subtableData) {
+    $sTable  = $subtableData['config']['table'];
+    $sFk     = $subtableData['config']['foreign_key'];
+    $sCols   = $subtableData['config']['columns_to_show'] ?? ['id'];
+    $subtableLabel = $subtableData['config']['label'] ?? ($subtableData['schema']->displayName ?? $sTable);
 
     $sColumnsMap = [];
-    foreach ($sd['schema']->columns as $sColName => $sColCfg) {
+    foreach ($subtableData['schema']->columns as $sColName => $sColCfg) {
         $sColumnsMap[$sColName] = [
             'display_name' => $sColCfg->displayName,
             'type'         => $sColCfg->type,
@@ -146,29 +146,29 @@ foreach ($subtablesData as $si => $sd) {
     }
 
     $sHeaders = [];
-    foreach ($sCols as $c) {
-        $sHeaders[] = $sd['schema']->columns[$c]->displayName ?? $c;
+    foreach ($sCols as $column) {
+        $sHeaders[] = $subtableData['schema']->columns[$column]->displayName ?? $column;
     }
 
     $sRows = [];
-    foreach ($sd['rows'] as $r) {
+    foreach ($subtableData['rows'] as $row) {
         $sCells = [];
-        foreach ($sCols as $c) {
-            $sCells[] = (string)($r[$c . '__display'] ?? $r[$c] ?? '');
+        foreach ($sCols as $column) {
+            $sCells[] = (string)($row[$column . '__display'] ?? $row[$column] ?? '');
         }
         $sRows[] = [
-            'json'    => (string) json_encode($r, $jsonFlags),
+            'json'    => (string) json_encode($row, $jsonFlags),
             'cells'   => $sCells,
-            'editUrl' => 'edit.php?table=' . urlencode($sTable) . '&id=' . urlencode((string)$r['id']),
+            'editUrl' => 'edit.php?table=' . urlencode($sTable) . '&id=' . urlencode((string)$row['id']),
         ];
     }
 
     $subtablePanels[] = [
-        'id'           => 'tab-sub-' . (int)$si,
-        'label'        => $siLabel,
-        'icon'         => $sd['schema']->icon ?? '',
+        'id'           => 'tab-sub-' . (int)$subtableIndex,
+        'label'        => $subtableLabel,
+        'icon'         => $subtableData['schema']->icon ?? '',
         'addUrl'       => 'create.php?table=' . urlencode($sTable) . '&' . urlencode($sFk) . '=' . urlencode((string)$id),
-        'addLabel'     => t('form.add_subtable', ['label' => $siLabel]),
+        'addLabel'     => t('form.add_subtable', ['label' => $subtableLabel]),
         'emptyText'    => t('form.no_records'),
         'actionsLabel' => t('common.actions'),
         'viewLabel'    => t('common.view'),
@@ -183,13 +183,13 @@ $imagesPanel = null;
 if ($imagesCfg) {
     $galleryImages = images_for_record($GLOBALS['conn'], $table, (int)$id);
     $imageItems    = [];
-    foreach ($galleryImages as $gi) {
-        $giUrl = 'file_download.php?uuid=' . urlencode($gi['uuid']);
+    foreach ($galleryImages as $galleryImage) {
+        $galleryImageUrl = 'file_download.php?uuid=' . urlencode($galleryImage['uuid']);
         $imageItems[] = [
-            'url'      => $giUrl,
-            'thumbUrl' => $giUrl . '&thumb=1',
-            'name'     => $gi['display_name'] ?: $gi['name'],
-            'uuid'     => $gi['uuid'],
+            'url'      => $galleryImageUrl,
+            'thumbUrl' => $galleryImageUrl . '&thumb=1',
+            'name'     => $galleryImage['display_name'] ?: $galleryImage['name'],
+            'uuid'     => $galleryImage['uuid'],
         ];
     }
     $imagesPanel = [

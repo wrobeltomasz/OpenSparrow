@@ -74,9 +74,9 @@ function frontapi_board(FrontApiContext $ctx): never
     $defaultColor = $boardCfg['color'] ?? '#005A9E';
 
     $cardCols = [];
-    foreach (($boardCfg['card_columns'] ?? []) as $c) {
-        if (is_string($c) && isset($tableCfg['columns'][$c]) && $c !== $statusCol) {
-            $cardCols[] = $c;
+    foreach (($boardCfg['card_columns'] ?? []) as $column) {
+        if (is_string($column) && isset($tableCfg['columns'][$column]) && $column !== $statusCol) {
+            $cardCols[] = $column;
         }
     }
 
@@ -110,8 +110,8 @@ function frontapi_board(FrontApiContext $ctx): never
         );
         $rd = @pg_query_params($conn, $sqlDistinct, $laneParams);
         if ($rd) {
-            while ($r = pg_fetch_assoc($rd)) {
-                $val = (string)$r['v'];
+            while ($row = pg_fetch_assoc($rd)) {
+                $val = (string)$row['v'];
                 $lanes[] = ['value' => $val, 'label' => $val, 'color' => $defaultColor];
             }
             pg_free_result($rd);
@@ -121,7 +121,7 @@ function frontapi_board(FrontApiContext $ctx): never
     $cols       = column_list($tableCfg);
     $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $cols)));
     $cards = [];
-    $selectSql  = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
+    $selectSql  = implode(', ', array_map(fn($column) => pg_ident($column), $selectCols));
 
     $cardParams = [];
     $cardWhere  = '';
@@ -140,28 +140,28 @@ function frontapi_board(FrontApiContext $ctx): never
     $res  = @pg_query_params($conn, $sql, $cardParams);
     $rows = [];
     if ($res) {
-        while ($r = pg_fetch_assoc($res)) {
-            $rows[] = $r;
+        while ($row = pg_fetch_assoc($res)) {
+            $rows[] = $row;
         }
         pg_free_result($res);
     }
     $rows = map_fk_display($schema, $tableCfg, $rows);
-    foreach ($rows as $r) {
+    foreach ($rows as $row) {
         $fields = [];
-        foreach ($cardCols as $c) {
-            $label = $tableCfg['columns'][$c]['display_name'] ?? $c;
-            $value = $r[$c . '__display'] ?? $r[$c] ?? '';
+        foreach ($cardCols as $column) {
+            $label = $tableCfg['columns'][$column]['display_name'] ?? $column;
+            $value = $row[$column . '__display'] ?? $row[$column] ?? '';
             if ($value === null || $value === '') {
                 continue;
             }
             $fields[] = ['label' => $label, 'value' => $value];
         }
         $cards[] = [
-            'id'      => $r[$idCol],
-            'status'  => (string)($r[$statusCol] ?? ''),
-            'title'   => $r[$titleCol . '__display'] ?? $r[$titleCol] ?? ('#' . $r[$idCol]),
+            'id'      => $row[$idCol],
+            'status'  => (string)($row[$statusCol] ?? ''),
+            'title'   => $row[$titleCol . '__display'] ?? $row[$titleCol] ?? ('#' . $row[$idCol]),
             'fields'  => $fields,
-            'rowData' => $r,
+            'rowData' => $row,
         ];
     }
 
@@ -239,8 +239,8 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
         );
         $rD = @pg_query($conn, $sqlD);
         if ($rD) {
-            while ($r = pg_fetch_assoc($rD)) {
-                $allowed[] = (string)$r['v'];
+            while ($row = pg_fetch_assoc($rD)) {
+                $allowed[] = (string)$row['v'];
             }
             pg_free_result($rD);
         }

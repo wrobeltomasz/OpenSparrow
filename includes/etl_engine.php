@@ -337,8 +337,8 @@ function etl_pg_text_columns(\PgSql\Connection $conn, string $schema, string $ta
         return [];
     }
     $cols = [];
-    while ($r = pg_fetch_assoc($res)) {
-        $cols[] = $r['column_name'];
+    while ($row = pg_fetch_assoc($res)) {
+        $cols[] = $row['column_name'];
     }
     pg_free_result($res);
     return $cols;
@@ -356,8 +356,8 @@ function etl_pg_columns(\PgSql\Connection $conn, string $schema, string $table):
         return [];
     }
     $cols = [];
-    while ($r = pg_fetch_assoc($res)) {
-        $cols[] = $r['column_name'];
+    while ($row = pg_fetch_assoc($res)) {
+        $cols[] = $row['column_name'];
     }
     pg_free_result($res);
     return $cols;
@@ -458,8 +458,8 @@ function etl_run_job(
 
     if ($incCol !== '' && !empty($rows)) {
         $max = null;
-        foreach ($rows as $r) {
-            $v = $r[$incCol] ?? null;
+        foreach ($rows as $row) {
+            $v = $row[$incCol] ?? null;
             if ($v !== null && ($max === null || etl_watermark_gt($v, $max))) {
                 $max = $v;
             }
@@ -540,9 +540,11 @@ function etl_run_job(
         if ($loadMode === 'upsert') {
             $keyIdents = implode(', ', array_map('pg_ident', $upsertKey));
             $updateCols = array_values(array_diff($targetNames, $upsertKey));
-            $setSql = empty($updateCols)
-                ? implode(', ', array_map(fn($c) => pg_ident($c) . ' = EXCLUDED.' . pg_ident($c), $targetNames))
-                : implode(', ', array_map(fn($c) => pg_ident($c) . ' = EXCLUDED.' . pg_ident($c), $updateCols));
+            $setCols = empty($updateCols) ? $targetNames : $updateCols;
+            $setSql  = implode(
+                ', ',
+                array_map(fn($column) => pg_ident($column) . ' = EXCLUDED.' . pg_ident($column), $setCols)
+            );
             $onConflict = " ON CONFLICT ({$keyIdents}) DO UPDATE SET {$setSql}";
         }
 
@@ -552,10 +554,10 @@ function etl_run_job(
             $ph        = 1;
             foreach ($chunk as $row) {
                 $slots = [];
-                foreach ($cols as $c) {
-                    $val = $row[$c] ?? null;
+                foreach ($cols as $column) {
+                    $val = $row[$column] ?? null;
 
-                    if ($val === '' && !in_array($pairs[$c], $textCols, true)) {
+                    if ($val === '' && !in_array($pairs[$column], $textCols, true)) {
                         $val = null;
                     }
                     $params[] = $val;

@@ -53,8 +53,8 @@ if ($request->isPost()) {
         }
         set_record_owner($GLOBALS['conn'], $tableCfg->name, (int)$newId, $userId, $userId);
         evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, 'create', $userId);
-        foreach ($m2mConfigs as $mi => $m2mCfg) {
-            $selected = array_values(array_filter((array)($_POST['m2m_' . $mi] ?? []), 'ctype_digit'));
+        foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
+            $selected = array_values(array_filter((array)($_POST['m2m_' . $m2mIndex] ?? []), 'ctype_digit'));
             m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$newId, $selected, $rawSchema);
         }
         $fragment = images_config($rawSchema, $table) ? '#tab-images' : '#tab-files';
@@ -99,9 +99,9 @@ foreach ($tableCfg->visibleColumns() as $col) {
 }
 
 $m2mGroups = [];
-foreach ($m2mConfigs as $mi => $m2mCfg) {
+foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
     $m2mGroups[] = os_m2m_group(
-        (int)$mi,
+        (int)$m2mIndex,
         $m2mCfg,
         m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema),
         [],

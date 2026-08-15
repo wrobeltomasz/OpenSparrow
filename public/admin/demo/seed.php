@@ -82,10 +82,10 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         $authorId = static fn(int $i): int => $demoUserIds[$i] ?? $fallbackUserId;
 
         $tComments = sys_table('comments');
-        foreach (($withUsers ? $demoData['demo_comments'] : []) as $c) {
+        foreach (($withUsers ? $demoData['demo_comments'] : []) as $comment) {
             $res = pg_query_params($conn, "
                 INSERT INTO $tComments (related_table, related_id, user_id, body) VALUES (\$1, \$2, \$3, \$4)
-            ", [$c['related_table'], $c['related_id'], $demoUserIds[$c['author']], $c['body']]);
+            ", [$comment['related_table'], $comment['related_id'], $demoUserIds[$comment['author']], $comment['body']]);
             if ($res === false) {
                 admin_db_fail($conn, "demo_install:demo_comments:{$type}");
             }
@@ -257,9 +257,11 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 : ($demoAnon['dictionary'] ?? []);
             $demoTblsAnon = array_keys($demoData['schema_tables']);
             $rules = is_array($anonCfg['rules'] ?? null) ? $anonCfg['rules'] : [];
-            $rules = array_values(array_filter($rules, fn($r) => !in_array($r['table'] ?? '', $demoTblsAnon, true)));
-            foreach ($demoAnon['rules'] ?? [] as $r) {
-                $rules[] = $r;
+            $rules = array_values(
+                array_filter($rules, fn($rule) => !in_array($rule['table'] ?? '', $demoTblsAnon, true))
+            );
+            foreach ($demoAnon['rules'] ?? [] as $rule) {
+                $rules[] = $rule;
             }
             $anonCfg['rules'] = $rules;
             $anonCfgOrdered = [
@@ -518,7 +520,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                     continue;
                 }
                 $automationIds[] = $rid;
-                $rules = array_values(array_filter($rules, fn($r) => ($r['id'] ?? '') !== $rid));
+                $rules = array_values(array_filter($rules, fn($rule) => ($rule['id'] ?? '') !== $rid));
                 $rules[] = $rule;
             }
             config_save('automations', ['automations' => $rules], null, $seedUserId);
@@ -817,7 +819,7 @@ if ($action === 'demo_uninstall') {
         if (is_array($anonCfg)) {
             $tbls = $meta['tables'] ?? [];
             $anonCfg['rules'] = array_values(
-                array_filter($anonCfg['rules'] ?? [], fn($r) => !in_array($r['table'] ?? '', $tbls, true))
+                array_filter($anonCfg['rules'] ?? [], fn($rule) => !in_array($rule['table'] ?? '', $tbls, true))
             );
             if (empty($anonCfg['rules'])) {
                 config_delete('anonymization', $cleanUserId);
@@ -871,7 +873,7 @@ if ($action === 'demo_uninstall') {
             $rules = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
             $ids   = $meta['automation_ids'] ?? [];
             if (!empty($ids)) {
-                $rules = array_values(array_filter($rules, fn($r) => !in_array($r['id'] ?? '', $ids, true)));
+                $rules = array_values(array_filter($rules, fn($rule) => !in_array($rule['id'] ?? '', $ids, true)));
                 if (empty($rules)) {
                     config_delete('automations', $cleanUserId);
                 } else {

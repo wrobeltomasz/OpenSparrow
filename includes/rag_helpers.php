@@ -389,7 +389,7 @@ function rag_aggregate_rollups(array $rows): string
     usort($candidates, fn($a, $b) => ($a['distinct'] <=> $b['distinct']) ?: ($a['pos'] <=> $b['pos']));
     $groupKeys = array_column(array_slice($candidates, 0, 3), 'col');
 
-    $countCols = array_values(array_filter($measures, fn($c) => preg_match(RAG_COUNT_COL_RE, $c) === 1));
+    $countCols = array_values(array_filter($measures, fn($column) => preg_match(RAG_COUNT_COL_RE, $column) === 1));
     $countCol  = count($countCols) === 1 ? $countCols[0] : null;
 
     $lines  = [];
@@ -414,7 +414,7 @@ function rag_aggregate_rollups(array $rows): string
 
     $nonAdditive = array_values(array_filter(
         $columns,
-        fn($c) => !in_array($c, $measures, true) && preg_match(RAG_NON_ADDITIVE_RE, $c) === 1
+        fn($column) => !in_array($column, $measures, true) && preg_match(RAG_NON_ADDITIVE_RE, $column) === 1
     ));
 
     $text = "ROLLUPS (computed by the server over EVERY row of the view above — exact, quote directly;"

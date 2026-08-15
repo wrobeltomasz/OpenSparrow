@@ -193,9 +193,9 @@ function owners_action_mine($conn): void
         }
 
         $tableDisplay = to_display_name($tableCfg);
-        while ($r = pg_fetch_assoc($rowsRes)) {
-            $recordId = (int)$r['id'];
-            $label    = trim((string)($r['label'] ?? ''));
+        while ($row = pg_fetch_assoc($rowsRes)) {
+            $recordId = (int)$row['id'];
+            $label    = trim((string)($row['label'] ?? ''));
             $records[] = [
                 'table'         => $tableName,
                 'table_display' => $tableDisplay,

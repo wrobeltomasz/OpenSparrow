@@ -33,7 +33,7 @@ function frontapi_list(FrontApiContext $ctx): never
         $keep = array_merge([$idCol], (array) OS_FK_LABEL_COLUMNS);
         $selectCols = array_values(array_intersect($selectCols, $keep));
     }
-    $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
+    $selectSql = implode(', ', array_map(fn($column) => pg_ident($column), $selectCols));
     $filterCol  = $_GET['filter_col'] ?? '';
     $filterVal  = $_GET['filter_val'] ?? '';
     $filterFrom = $_GET['filter_from'] ?? '';
@@ -70,7 +70,7 @@ function frontapi_list(FrontApiContext $ctx): never
         $likeVal  = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
         $paramNum = count($params) + 1;
         $searchClauses = array_map(
-            fn($c) => sprintf('%s::text ILIKE $%d', pg_ident($c), $paramNum),
+            fn($column) => sprintf('%s::text ILIKE $%d', pg_ident($column), $paramNum),
             $selectCols
         );
         $whereSql .= ($whereSql !== '' ? ' AND ' : ' WHERE ') . '(' . implode(' OR ', $searchClauses) . ')';
@@ -128,12 +128,12 @@ function frontapi_list(FrontApiContext $ctx): never
 
     $rows = [];
     $dbTotal = 0;
-    while ($r = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($res)) {
         if ($dbTotal === 0) {
-            $dbTotal = (int)($r['__spw_total'] ?? 0);
+            $dbTotal = (int)($row['__spw_total'] ?? 0);
         }
-        unset($r['__spw_total']);
-        $rows[] = $r;
+        unset($row['__spw_total']);
+        $rows[] = $row;
     }
     pg_free_result($res);
     $rows = map_fk_display($schema, $tableCfg, $rows);
@@ -221,10 +221,10 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
         if (!$res) {
             continue;
         }
-        while ($r = pg_fetch_assoc($res)) {
-            $key = (string)$r['fk_val'];
+        while ($row = pg_fetch_assoc($res)) {
+            $key = (string)$row['fk_val'];
             if (isset($counts[$key])) {
-                $counts[$key] += (int)$r['cnt'];
+                $counts[$key] += (int)$row['cnt'];
             }
         }
         pg_free_result($res);

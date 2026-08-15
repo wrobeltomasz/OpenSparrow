@@ -146,13 +146,13 @@ try {
 
         $userIds = [];
         foreach (['test', 'test2'] as $u) {
-            $r = pg_query_params($conn, "SELECT id FROM $tUsers WHERE username = \$1", [$u]);
-            if (!$r || pg_num_rows($r) === 0) {
+            $userRes = pg_query_params($conn, "SELECT id FROM $tUsers WHERE username = \$1", [$u]);
+            if (!$userRes || pg_num_rows($userRes) === 0) {
                 http_response_code(500);
                 echo json_encode(['status' => 'error', 'error' => "Missing user $u — run action=seed first"]);
                 exit;
             }
-            $userIds[$u] = (int) pg_fetch_result($r, 0, 'id');
+            $userIds[$u] = (int) pg_fetch_result($userRes, 0, 'id');
         }
 
         $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);

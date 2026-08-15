@@ -50,8 +50,8 @@ function etl_run_single_job(
             "INSERT INTO {$tLog} (job_id, job_name, triggered_by, status) VALUES ($1, $2, $3, 'running') RETURNING id",
             [$jobId, $jobName, $triggeredBy]
         );
-        if ($ins && ($r = pg_fetch_assoc($ins))) {
-            $logId = (int)$r['id'];
+        if ($ins && ($row = pg_fetch_assoc($ins))) {
+            $logId = (int)$row['id'];
         }
     }
 

@@ -33,8 +33,8 @@ if ($action === 'init_db') {
             admin_db_fail($conn, 'init_db:load_migrations');
         }
         $applied = [];
-        while ($r = pg_fetch_row($appliedRes)) {
-            $applied[$r[0]] = true;
+        while ($row = pg_fetch_row($appliedRes)) {
+            $applied[$row[0]] = true;
         }
 
         require_once __DIR__ . '/../system_tables.php';
@@ -145,8 +145,8 @@ if ($action === 'migrations_list') {
         $appliedRes = @pg_query($conn, "SELECT name, applied_at FROM $tMigrations ORDER BY applied_at ASC");
         $applied = [];
         if ($appliedRes) {
-            while ($r = pg_fetch_assoc($appliedRes)) {
-                $applied[$r['name']] = $r['applied_at'];
+            while ($row = pg_fetch_assoc($appliedRes)) {
+                $applied[$row['name']] = $row['applied_at'];
             }
         }
 

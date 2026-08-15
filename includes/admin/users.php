@@ -576,8 +576,8 @@ if ($action === 'user_tables_save') {
         $idRes = @pg_query($conn, 'SELECT id FROM ' . sys_table('users'));
         if ($idRes) {
             $live = [];
-            while ($r = pg_fetch_assoc($idRes)) {
-                $live[(string) (int) $r['id']] = true;
+            while ($row = pg_fetch_assoc($idRes)) {
+                $live[(string) (int) $row['id']] = true;
             }
             $users = array_intersect_key($users, $live);
         }

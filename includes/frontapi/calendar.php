@@ -60,7 +60,7 @@ function frontapi_calendar(FrontApiContext $ctx): never
             $cols = column_list($tableCfg);
             $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
 
-            $selectSql = implode(', ', array_map(fn($c) => pg_ident($c), $selectCols));
+            $selectSql = implode(', ', array_map(fn($column) => pg_ident($column), $selectCols));
 
             $qParams  = [$dateFrom, $dateTo];
             $ownerSql = '';
@@ -82,23 +82,23 @@ function frontapi_calendar(FrontApiContext $ctx): never
             $res = @pg_query_params($conn, $sql, $qParams);
             if ($res) {
                 $rows = [];
-                while ($r = pg_fetch_assoc($res)) {
-                    $rows[] = $r;
+                while ($row = pg_fetch_assoc($res)) {
+                    $rows[] = $row;
                 }
                 pg_free_result($res);
                 $rows = map_fk_display($schema, $tableCfg, $rows);
-                foreach ($rows as $r) {
+                foreach ($rows as $row) {
                     $events[] = [
-                        'id' => $r[$idCol],
+                        'id' => $row[$idCol],
                         'table' => $table,
-                        'title' => $r[$titleCol] ?? 'No title',
+                        'title' => $row[$titleCol] ?? 'No title',
                         'subtitle' => $subCol !== ''
-                            ? (string)($r[$subCol . '__display'] ?? $r[$subCol] ?? '')
+                            ? (string)($row[$subCol . '__display'] ?? $row[$subCol] ?? '')
                             : '',
-                        'date' => substr($r[$dateCol], 0, 10),
+                        'date' => substr($row[$dateCol], 0, 10),
                         'color' => $color,
                         'icon' => $src['icon'] ?? null,
-                        'rowData' => $r
+                        'rowData' => $row
                     ];
                 }
             }

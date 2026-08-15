@@ -545,9 +545,9 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $recent = [];
         $ids    = [];
         if ($recentRes) {
-            while ($r = pg_fetch_assoc($recentRes)) {
-                $recent[] = $r;
-                $ids[]    = (int) $r['id'];
+            while ($row = pg_fetch_assoc($recentRes)) {
+                $recent[] = $row;
+                $ids[]    = (int) $row['id'];
             }
         }
 

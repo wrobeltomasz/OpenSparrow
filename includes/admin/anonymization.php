@@ -44,19 +44,19 @@ if ($action === 'anonymization_save') {
             continue;
         }
         $t  = trim((string)($rule['table']       ?? ''));
-        $c  = trim((string)($rule['column']      ?? ''));
+        $column  = trim((string)($rule['column']      ?? ''));
         $dc = trim((string)($rule['date_column'] ?? ''));
         $d  = (int)($rule['days'] ?? 0);
-        $r  = (string)($rule['replacement'] ?? '');
-        if ($t === '' || $c === '' || $dc === '' || $d < 1) {
+        $replacement  = (string)($rule['replacement'] ?? '');
+        if ($t === '' || $column === '' || $dc === '' || $d < 1) {
             continue;
         }
         $config['rules'][] = [
             'table'       => $t,
             'date_column' => $dc,
             'days'        => $d,
-            'column'      => $c,
-            'replacement' => $r,
+            'column'      => $column,
+            'replacement' => $replacement,
         ];
     }
 

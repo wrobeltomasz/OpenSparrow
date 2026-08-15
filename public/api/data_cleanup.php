@@ -57,11 +57,11 @@ function buildAccentPattern(string $text): string
         $ch = mb_substr($lower, $i, 1, 'UTF-8');
         if (isset($map[$ch])) {
             $lowerVariants = preg_split('//u', $map[$ch], -1, PREG_SPLIT_NO_EMPTY);
-            $upperVariants = array_map(fn($c) => mb_strtoupper($c, 'UTF-8'), $lowerVariants);
+            $upperVariants = array_map(fn($char) => mb_strtoupper($char, 'UTF-8'), $lowerVariants);
             $all = array_unique(array_merge($lowerVariants, $upperVariants));
 
-            $escaped = implode('', array_map(function ($c) {
-                return in_array($c, [']', '\\', '^', '-'], true) ? '\\' . $c : $c;
+            $escaped = implode('', array_map(function ($char) {
+                return in_array($char, [']', '\\', '^', '-'], true) ? '\\' . $char : $char;
             }, $all));
             $result .= '[' . $escaped . ']';
         } else {

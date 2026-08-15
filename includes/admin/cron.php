@@ -75,7 +75,7 @@ if ($action === 'cron_stats') {
             FROM " . sys_table('users_notifications_log') . "
             ORDER BY started_at DESC LIMIT 1
         ");
-        $lastRun = ($lastRunRes && $r = pg_fetch_assoc($lastRunRes)) ? $r : null;
+        $lastRun = ($lastRunRes && $row = pg_fetch_assoc($lastRunRes)) ? $row : null;
 
         admin_ok(['totals' => $totals, 'per_user' => $perUser, 'last_run' => $lastRun]);
     });

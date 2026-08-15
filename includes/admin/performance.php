@@ -101,8 +101,8 @@ if ($action === 'performance_check') {
                     }
 
                     $priority = 'medium';
-                    foreach ($reasons as $r) {
-                        if (str_contains($r, 'Foreign key') || str_contains($r, 'Subtable join')) {
+                    foreach ($reasons as $row) {
+                        if (str_contains($row, 'Foreign key') || str_contains($row, 'Subtable join')) {
                             $priority = 'high';
                             break;
                         }
@@ -168,8 +168,8 @@ if ($action === 'performance_slow_queries') {
         }
 
         $rows = [];
-        while ($r = pg_fetch_assoc($res)) {
-            $rows[] = $r;
+        while ($row = pg_fetch_assoc($res)) {
+            $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (Throwable $e) {
@@ -254,8 +254,8 @@ if ($action === 'performance_table_stats') {
         }
 
         $rows = [];
-        while ($r = pg_fetch_assoc($res)) {
-            $rows[] = $r;
+        while ($row = pg_fetch_assoc($res)) {
+            $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (Throwable $e) {
@@ -334,9 +334,13 @@ if ($action === 'performance_unused_indexes') {
         }
 
         $rows = [];
-        while ($r = pg_fetch_assoc($res)) {
-            $r['drop_sql'] = 'DROP INDEX IF EXISTS ' . pg_escape_identifier($conn, $r['schemaname']) . '.' . pg_escape_identifier($conn, $r['indexname']) . ';';
-            $rows[] = $r;
+        while ($row = pg_fetch_assoc($res)) {
+            $row['drop_sql'] = 'DROP INDEX IF EXISTS '
+                . pg_escape_identifier($conn, $row['schemaname'])
+                . '.'
+                . pg_escape_identifier($conn, $row['indexname'])
+                . ';';
+            $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (Throwable $e) {
@@ -361,12 +365,12 @@ if ($action === 'performance_schema_warnings') {
         $rowCounts = [];
         foreach ($tables as $tableName => $cfg) {
             $pgSchema = $cfg['schema'] ?? 'app';
-            $r = @pg_query_params(
+            $countRes = @pg_query_params(
                 $conn,
                 "SELECT c.reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = \$1 AND c.relname = \$2",
                 [$pgSchema, $tableName]
             );
-            if ($r && $row = pg_fetch_row($r)) {
+            if ($countRes && $row = pg_fetch_row($countRes)) {
                 $rowCounts[$tableName] = (int)$row[0];
             }
         }

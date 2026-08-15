@@ -25,20 +25,22 @@ final readonly class TableConfig
 
     public function visibleColumns(): array
     {
-        return array_filter($this->columns, fn(ColumnConfig $c) => $c->showInEdit && !$c->isVirtual());
+        return array_filter($this->columns, fn(ColumnConfig $column) => $column->showInEdit && !$column->isVirtual());
     }
 
     public function writableColumns(): array
     {
         return array_filter(
             $this->columns,
-            fn(ColumnConfig $c) => $c->name !== $this->primaryKey && !$c->readonly && !$c->isVirtual()
+            fn(ColumnConfig $column) => $column->name !== $this->primaryKey
+                && !$column->readonly
+                && !$column->isVirtual()
         );
     }
 
     public function dbColumns(): array
     {
-        return array_filter($this->columns, fn(ColumnConfig $c) => !$c->isVirtual());
+        return array_filter($this->columns, fn(ColumnConfig $column) => !$column->isVirtual());
     }
 
     public function column(string $name): ColumnConfig

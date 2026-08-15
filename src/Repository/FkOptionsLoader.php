@@ -115,8 +115,8 @@ final readonly class FkOptionsLoader
             $map = [];
             $res = pg_query($this->conn->native(), $sql);
             if ($res) {
-                while ($r = pg_fetch_assoc($res)) {
-                    $map[$r['id']] = $r['disp'];
+                while ($row = pg_fetch_assoc($res)) {
+                    $map[$row['id']] = $row['disp'];
                 }
                 pg_free_result($res);
             } else {

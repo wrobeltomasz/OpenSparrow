@@ -597,8 +597,8 @@ function files_action_get_related_records($conn): void
     }
 
     $validCols = [];
-    while ($r = pg_fetch_assoc($resCols)) {
-        $validCols[] = $r['column_name'];
+    while ($row = pg_fetch_assoc($resCols)) {
+        $validCols[] = $row['column_name'];
     }
 
     if (!$validCols) {

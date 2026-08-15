@@ -52,8 +52,8 @@ function rm_db_and_applied(): array
     $res     = @pg_query($conn, $sql);
     $out     = [];
     if ($res) {
-        while ($r = pg_fetch_assoc($res)) {
-            $out[$r['version']] = $r;
+        while ($row = pg_fetch_assoc($res)) {
+            $out[$row['version']] = $row;
         }
     }
     return [$conn, $out];

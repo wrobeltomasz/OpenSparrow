@@ -22,7 +22,7 @@ function column_list(array $tableCfg): array
 {
     $cols = $tableCfg['columns'] ?? [];
 
-    return array_keys(array_filter($cols, fn($c) => ($c['type'] ?? '') !== 'virtual'));
+    return array_keys(array_filter($cols, fn($column) => ($column['type'] ?? '') !== 'virtual'));
 }
 
 function id_column(): string
@@ -107,8 +107,8 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, ?\PgSql\Con
         $map = [];
         $res = pg_query($conn, $sql);
         if ($res) {
-            while ($r = pg_fetch_assoc($res)) {
-                $map[$r['id']] = $r['disp'];
+            while ($row = pg_fetch_assoc($res)) {
+                $map[$row['id']] = $row['disp'];
             }
             pg_free_result($res);
         }
@@ -286,7 +286,7 @@ function record_label_columns(array $tableCfg, array $configured): array
     if (!empty($configured)) {
         $valid = array_values(array_filter(
             $configured,
-            fn($c) => is_string($c) && isset($cols[$c]) && ($cols[$c]['type'] ?? '') !== 'virtual'
+            fn($column) => is_string($column) && isset($cols[$column]) && ($cols[$column]['type'] ?? '') !== 'virtual'
         ));
         if (!empty($valid)) {
             return $valid;

@@ -26,9 +26,9 @@ if ($action === 'tags' && $method === 'GET') {
         $res  = @pg_query($conn, "SELECT DISTINCT unnest(tags) AS tag FROM {$tRag} ORDER BY tag");
         $tags = [];
         if ($res) {
-            while ($r = pg_fetch_row($res)) {
-                if ($r[0] !== null && $r[0] !== '') {
-                    $tags[] = $r[0];
+            while ($row = pg_fetch_row($res)) {
+                if ($row[0] !== null && $row[0] !== '') {
+                    $tags[] = $row[0];
                 }
             }
         }
@@ -49,13 +49,13 @@ if ($action === 'files' && $method === 'GET') {
         );
         $files = [];
         if ($res) {
-            while ($r = pg_fetch_assoc($res)) {
+            while ($row = pg_fetch_assoc($res)) {
                 $files[] = [
-                    'id'         => (int) $r['id'],
-                    'filename'   => $r['filename'],
-                    'tags'       => pg_text_array_to_php($r['tags'] ?? '{}'),
-                    'file_size'  => (int) ($r['file_size'] ?? 0),
-                    'char_count' => (int) ($r['char_count'] ?? 0),
+                    'id'         => (int) $row['id'],
+                    'filename'   => $row['filename'],
+                    'tags'       => pg_text_array_to_php($row['tags'] ?? '{}'),
+                    'file_size'  => (int) ($row['file_size'] ?? 0),
+                    'char_count' => (int) ($row['char_count'] ?? 0),
                 ];
             }
         }

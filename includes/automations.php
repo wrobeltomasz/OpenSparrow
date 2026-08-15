@@ -29,9 +29,9 @@ function auto_capture_old_record(
 ): ?array {
     $hasRule = array_any(
         auto_load_config(),
-        static fn(array $r): bool => !empty($r['enabled'])
-            && ($r['trigger_table'] ?? '') === $table
-            && ($r['trigger_event'] ?? '') === $event
+        static fn(array $rule): bool => !empty($rule['enabled'])
+            && ($rule['trigger_table'] ?? '') === $table
+            && ($rule['trigger_event'] ?? '') === $event
     );
     if (!$hasRule) {
         return null;
@@ -57,10 +57,10 @@ function evaluate_automation_rules(
     ?array $oldRecord = null
 ): void {
     $all   = auto_load_config();
-    $rules = array_filter($all, static function (array $r) use ($table, $event): bool {
-        return !empty($r['enabled'])
-            && ($r['trigger_table'] ?? '') === $table
-            && ($r['trigger_event'] ?? '') === $event;
+    $rules = array_filter($all, static function (array $rule) use ($table, $event): bool {
+        return !empty($rule['enabled'])
+            && ($rule['trigger_table'] ?? '') === $table
+            && ($rule['trigger_event'] ?? '') === $event;
     });
 
     if (empty($rules)) {
@@ -593,7 +593,7 @@ function auto_action_email(
     if (is_string($rawRecipients)) {
         $rawRecipients = array_map('trim', explode(',', $rawRecipients));
     }
-    $rawRecipients = array_values(array_filter($rawRecipients, static fn($r) => trim((string) $r) !== ''));
+    $rawRecipients = array_values(array_filter($rawRecipients, static fn($rule) => trim((string) $rule) !== ''));
     if ($rawRecipients === []) {
         return 'email: no recipients';
     }

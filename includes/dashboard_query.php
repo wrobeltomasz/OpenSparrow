@@ -103,9 +103,9 @@ function dashboard_run_widget_query(
             $res = @pg_query($conn, $sql);
             if ($res) {
                 $data = [];
-                while ($r = pg_fetch_assoc($res)) {
-                    $r['value'] = is_numeric($r['value']) ? (float)$r['value'] : $r['value'];
-                    $data[] = $r;
+                while ($row = pg_fetch_assoc($res)) {
+                    $row['value'] = is_numeric($row['value']) ? (float)$row['value'] : $row['value'];
+                    $data[] = $row;
                 }
                 pg_free_result($res);
                 $out['data'] = $data;
@@ -137,9 +137,9 @@ function dashboard_run_widget_query(
             $res = @pg_query($conn, $sql);
             if ($res) {
                 $data = [];
-                while ($r = pg_fetch_assoc($res)) {
-                    $r['value'] = is_numeric($r['value']) ? (float)$r['value'] : $r['value'];
-                    $data[] = $r;
+                while ($row = pg_fetch_assoc($res)) {
+                    $row['value'] = is_numeric($row['value']) ? (float)$row['value'] : $row['value'];
+                    $data[] = $row;
                 }
                 pg_free_result($res);
                 $out['data'] = $data;
@@ -153,7 +153,10 @@ function dashboard_run_widget_query(
         $orderBy = $query['order_by'] ?? id_column();
         $dir = strtoupper($query['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
         $displayCols = $displayColumns ?: [id_column()];
-        $validCols = array_filter($displayCols, fn($c) => isset($tableCfg['columns'][$c]) || $c === id_column());
+        $validCols = array_filter(
+            $displayCols,
+            fn($column) => isset($tableCfg['columns'][$column]) || $column === id_column()
+        );
         if (empty($validCols)) {
             $validCols = [id_column()];
         }
@@ -164,8 +167,8 @@ function dashboard_run_widget_query(
             $res = @pg_query($conn, $sql);
             if ($res) {
                 $data = [];
-                while ($r = pg_fetch_assoc($res)) {
-                    $data[] = $r;
+                while ($row = pg_fetch_assoc($res)) {
+                    $data[] = $row;
                 }
                 pg_free_result($res);
                 $out['data'] = $data;

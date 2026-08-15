@@ -165,7 +165,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (is_string($recips)) {
                     $recips = array_map('trim', explode(',', $recips));
                 }
-                $recips = array_filter((array) $recips, static fn($r) => trim((string) $r) !== '');
+                $recips = array_filter((array) $recips, static fn($row) => trim((string) $row) !== '');
                 if ($recips === []) {
                     echo json_encode(['status' => 'error', 'error' => $label . ' (email): at least one recipient is required.']);
                     exit;

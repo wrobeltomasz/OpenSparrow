@@ -221,8 +221,8 @@ final class ImportRepository
             return [];
         }
         $rows = [];
-        while ($r = pg_fetch_assoc($res)) {
-            $rows[] = $r;
+        while ($row = pg_fetch_assoc($res)) {
+            $rows[] = $row;
         }
         return $rows;
     }
@@ -239,8 +239,8 @@ final class ImportRepository
             return [];
         }
         $rows = [];
-        while ($r = pg_fetch_assoc($res)) {
-            $rows[] = $r;
+        while ($row = pg_fetch_assoc($res)) {
+            $rows[] = $row;
         }
         return $rows;
     }
@@ -366,7 +366,7 @@ final class CsvImportService
         $idx     = 1;
         foreach ($batch as $_) {
             $ph = [];
-            for ($c = 0; $c < $numCols; $c++) {
+            for ($column = 0; $column < $numCols; $column++) {
                 $ph[] = '$' . $idx++;
             }
             $rows[] = '(' . implode(',', $ph) . ')';
@@ -375,9 +375,9 @@ final class CsvImportService
 
         if ($conflictCol !== null && $conflictCol !== '') {
             $ci         = pg_ident($conflictCol);
-            $updateCols = array_filter($dbCols, fn($c) => $c !== $conflictCol);
+            $updateCols = array_filter($dbCols, fn($column) => $column !== $conflictCol);
             if (!empty($updateCols)) {
-                $sets = array_map(fn($c) => pg_ident($c) . '=EXCLUDED.' . pg_ident($c), $updateCols);
+                $sets = array_map(fn($column) => pg_ident($column) . '=EXCLUDED.' . pg_ident($column), $updateCols);
                 $sql .= " ON CONFLICT ({$ci}) DO UPDATE SET " . implode(',', $sets);
             } else {
                 $sql .= " ON CONFLICT ({$ci}) DO NOTHING";
@@ -688,7 +688,7 @@ if ($action === 'csv_import_execute') {
         csv_fail("Conflict column '{$conflictCol}' must be included in the column mapping.");
     }
 
-    $colTypes = array_map(fn($c) => (string) ($c['type'] ?? 'text'), $schemaCols);
+    $colTypes = array_map(fn($column) => (string) ($column['type'] ?? 'text'), $schemaCols);
     $userId   = (int) ($_SESSION['user_id'] ?? 0);
 
     $importId = 0;

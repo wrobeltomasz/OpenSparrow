@@ -40,12 +40,12 @@ function os_require_setup(): void
 
 function os_user_caps(?string $role = null): array
 {
-    $r = $role !== null
+    $userRole = $role !== null
         ? (UserRole::tryFrom($role) ?? UserRole::Viewer)
         : UserRole::fromSession();
     return [
-        'canEdit'   => $r === UserRole::Editor,
-        'canExport' => in_array($r, [UserRole::Editor, UserRole::Export], true),
+        'canEdit'   => $userRole === UserRole::Editor,
+        'canExport' => in_array($userRole, [UserRole::Editor, UserRole::Export], true),
     ];
 }
 

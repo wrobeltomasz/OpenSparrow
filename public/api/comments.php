@@ -117,9 +117,9 @@ function comments_action_mine($conn): void
         }
 
         $labels = [];
-        while ($r = pg_fetch_assoc($labelRes)) {
-            $label = trim((string)($r['label'] ?? ''));
-            $labels[(int)$r['id']] = $label !== '' ? $label : ('#' . $r['id']);
+        while ($row = pg_fetch_assoc($labelRes)) {
+            $label = trim((string)($row['label'] ?? ''));
+            $labels[(int)$row['id']] = $label !== '' ? $label : ('#' . $row['id']);
         }
 
         $resolved[$tableName] = [

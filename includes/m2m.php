@@ -39,8 +39,8 @@ function m2m_options(mixed $conn, array $cfg, array $rawSchema): array
     }
 
     $rows = [];
-    while ($r = pg_fetch_assoc($res)) {
-        $rows[] = ['id' => (string)$r['id'], 'label' => (string)$r['label']];
+    while ($row = pg_fetch_assoc($res)) {
+        $rows[] = ['id' => (string)$row['id'], 'label' => (string)$row['label']];
     }
     return $rows;
 }
@@ -72,8 +72,8 @@ function m2m_selected(mixed $conn, array $cfg, int $recordId, array $rawSchema):
     }
 
     $ids = [];
-    while ($r = pg_fetch_assoc($res)) {
-        $ids[] = (string)$r[$otherFk];
+    while ($row = pg_fetch_assoc($res)) {
+        $ids[] = (string)$row[$otherFk];
     }
     return $ids;
 }

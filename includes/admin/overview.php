@@ -79,11 +79,11 @@ if ($action === 'overview') {
         $cronRecent  = [];
         $lastCronRun = null;
         if ($cLogRes) {
-            while ($r = pg_fetch_assoc($cLogRes)) {
+            while ($row = pg_fetch_assoc($cLogRes)) {
                 if ($lastCronRun === null) {
-                    $lastCronRun = $r['started_at'];
+                    $lastCronRun = $row['started_at'];
                 }
-                $cronRecent[] = $r;
+                $cronRecent[] = $row;
             }
         }
 
@@ -99,8 +99,8 @@ if ($action === 'overview') {
         ");
         $auditRecent = [];
         if ($aRes) {
-            while ($r = pg_fetch_assoc($aRes)) {
-                $auditRecent[] = $r;
+            while ($row = pg_fetch_assoc($aRes)) {
+                $auditRecent[] = $row;
             }
         }
 
@@ -111,8 +111,8 @@ if ($action === 'overview') {
         $mRes   = @pg_query($conn, "SELECT name FROM {$tMig}");
         $applied = [];
         if ($mRes) {
-            while ($r = pg_fetch_row($mRes)) {
-                $applied[$r[0]] = true;
+            while ($row = pg_fetch_row($mRes)) {
+                $applied[$row[0]] = true;
             }
         }
 

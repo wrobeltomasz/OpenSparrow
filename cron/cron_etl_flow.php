@@ -51,8 +51,8 @@ function etl_flow_run_single(
             "INSERT INTO {$tRunLog} (flow_id, flow_name, triggered_by, status) VALUES ($1, $2, $3, 'running') RETURNING id",
             [$flowId, $flowName, $triggeredBy]
         );
-        if ($ins && ($r = pg_fetch_assoc($ins))) {
-            $runLogId = (int)$r['id'];
+        if ($ins && ($row = pg_fetch_assoc($ins))) {
+            $runLogId = (int)$row['id'];
         }
     }
 
@@ -97,8 +97,8 @@ function etl_flow_run_single(
                  VALUES ($1, $2, $3, $4, $5, 'running') RETURNING id",
                 [$runLogId, $flowId, $stepIndex, $jobId, $jobName]
             );
-            if ($ins && ($r = pg_fetch_assoc($ins))) {
-                $stepLogId = (int)$r['id'];
+            if ($ins && ($row = pg_fetch_assoc($ins))) {
+                $stepLogId = (int)$row['id'];
             }
         }
 
@@ -109,8 +109,8 @@ function etl_flow_run_single(
                 "INSERT INTO {$tJobLog} (job_id, job_name, triggered_by, status) VALUES ($1, $2, 'flow', 'running') RETURNING id",
                 [$jobId, $jobName]
             );
-            if ($ins && ($r = pg_fetch_assoc($ins))) {
-                $jobLogId = (int)$r['id'];
+            if ($ins && ($row = pg_fetch_assoc($ins))) {
+                $jobLogId = (int)$row['id'];
             }
         }
 
