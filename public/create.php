@@ -9,128 +9,25 @@ declare(strict_types=1);
 
 require __DIR__ . '/../includes/bootstrap.php';
 
-use App\Exception\BadRequestException;
-use App\Exception\ForbiddenException;
-use App\Exception\RedirectException;
-use App\Form\RenderContext;
-use App\Service\ImageService;
+use App\Controller\CreateController;
 
 $pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
-$cspNonce = $pageMeta['nonce'];
 
 ['session' => $session, 'request' => $request, 'csrf' => $csrf, 'schemas' => $schemas,
  'fieldRegistry' => $fieldRegistry, 'mapper' => $mapper, 'records' => $records,
  'audit' => $audit, 'fkLoader' => $fkLoader, 'services' => $services] = os_boot_app();
 
-$ownership  = $services->ownership();
-$snapshots  = $services->snapshots();
-$m2m        = $services->m2m();
-$automation = $services->automations();
+$controller = new CreateController(
+    $session,
+    $request,
+    $csrf,
+    $schemas,
+    $fieldRegistry,
+    $mapper,
+    $records,
+    $audit,
+    $fkLoader,
+    $services
+);
 
-$isReadOnly = $session->role() !== 'editor';
-
-if ($isReadOnly && $request->isPost()) {
-    throw new ForbiddenException('Read-only access');
-}
-
-$table = os_validated_table_name($request->query('table'));
-
-if (!$schemas->hasTable($table)) {
-    throw new BadRequestException('Invalid table.');
-}
-os_require_table_access($table);
-
-$tableCfg   = $schemas->table($table);
-$rawSchema  = $schemas->raw();
-$m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
-$error      = '';
-
-if ($request->isPost()) {
-    if (!$csrf->isValid((string) $request->post('csrf_token'))) {
-        throw new ForbiddenException('Invalid CSRF token.');
-    }
-    try {
-        $data  = $mapper->fromPost($tableCfg, $request->postAll());
-        $newId  = $records->insert($tableCfg, $data);
-        $userId = $session->userId();
-        $logId  = $audit->log($userId, 'INSERT', $tableCfg->name, (int)$newId);
-        if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-            $snapshots->capture($tableCfg->schema, $tableCfg->name, (int)$newId, $logId);
-        }
-        $ownership->assign($tableCfg->name, (int)$newId, $userId, $userId);
-        $automation->evaluate($tableCfg->schema, $tableCfg->name, (int)$newId, 'create', $userId);
-        foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
-            $selected = array_values(array_filter(
-                (array) $request->post('m2m_' . $m2mIndex, []),
-                'ctype_digit'
-            ));
-            $m2m->sync($m2mCfg, (int)$newId, $selected, $rawSchema);
-        }
-        $fragment = ImageService::config($rawSchema, $table) ? '#tab-images' : '#tab-files';
-        throw new RedirectException('edit.php?table=' . urlencode($table) . '&id=' . $newId . $fragment);
-    } catch (\App\Form\ValidationException $e) {
-        $error = $e->getMessage();
-    } catch (\RuntimeException $e) {
-        error_log('[create.php] ' . $e->getMessage());
-        $error = 'Database error. Please try again.';
-    }
-}
-
-$fkOptions = [];
-foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
-    $fkOptions[$colName] = $fkLoader->load($fkCfg, $rawSchema);
-}
-
-$prefilled = [];
-$locked    = [];
-foreach ($tableCfg->writableColumns() as $col) {
-    if (isset($_GET[$col->name])) {
-        $prefilled[$col->name] = (string)$_GET[$col->name];
-        $locked[$col->name]    = true;
-    }
-}
-
-$ctx = new RenderContext($isReadOnly, $fkOptions, $prefilled, $locked);
-
-$formFields = [];
-foreach ($tableCfg->visibleColumns() as $col) {
-    if ($col->name === $tableCfg->primaryKey || $col->readonly) {
-        continue;
-    }
-    $isColRo = $isReadOnly || ($locked[$col->name] ?? false);
-    $formFields[] = [
-        'label'    => $col->displayName,
-        'required' => $col->notNull && !$isColRo,
-        'html'     => $fieldRegistry->for($col, $tableCfg->hasForeignKey($col->name))
-            ->render($col, null, $ctx),
-    ];
-}
-
-$m2mGroups = [];
-foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
-    $m2mGroups[] = os_m2m_group(
-        (int)$m2mIndex,
-        $m2mCfg,
-        $m2m->options($m2mCfg, $rawSchema),
-        [],
-        $isReadOnly
-    );
-}
-
-$formHeading   = t('form.add_new_record', ['table' => $tableCfg->displayName]);
-$formError     = $error;
-$formCsrfToken = $csrf->token();
-$cancelUrl     = 'index.php?table=' . urlencode((string)$table);
-$formLabels    = [
-    'add'    => t('form.add_record'),
-    'cancel' => t('common.cancel'),
-];
-
-$pageTitle = 'OpenSparrow | Add Record - ' . $tableCfg->displayName;
-ob_start();
-include __DIR__ . '/../templates/create.php';
-$pageContent = ob_get_clean();
-
-$extraScripts = os_module_script('assets/js/edit/form-behaviours.js', $cspNonce)
-    . os_module_script('assets/js/edit/m2m-picker.js', $cspNonce);
-include __DIR__ . '/../templates/layout.php';
+$controller->handle($request, $pageMeta);

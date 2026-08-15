@@ -296,7 +296,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testSchemaEndpointIsFilteredByTableAccess(): void
     {
-        $src = $this->code('public/api.php');
+        $src = $this->code('includes/Controller/FrontApiController.php');
 
         $this->assertCodeHas(
             "\$schemaPublic['tables'] = (object) filter_tables_for_user(",

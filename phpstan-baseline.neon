@@ -190,7 +190,7 @@ parameters:
 			message: '#^Constant RECORD_SNAPSHOTS_ENABLED not found\.$#'
 			identifier: constant.notFound
 			count: 1
-			path: public/create.php
+			path: includes/Controller/CreateController.php
 
 		-
 			message: '#^Constant APP_ENV not found\.$#'
@@ -202,7 +202,7 @@ parameters:
 			message: '#^Constant RECORD_SNAPSHOTS_ENABLED not found\.$#'
 			identifier: constant.notFound
 			count: 1
-			path: public/edit.php
+			path: includes/Controller/EditController.php
 
 		-
 			message: '#^Constant IP_HASH_SALT not found\.$#'

@@ -8,7 +8,12 @@
 declare(strict_types=1);
 
 spl_autoload_register(static function (string $class): void {
-    foreach (['App\\Service\\' => 'Service', 'App\\Exception\\' => 'Exception'] as $prefix => $directory) {
+    $prefixes = [
+        'App\\Service\\'    => 'Service',
+        'App\\Exception\\'  => 'Exception',
+        'App\\Controller\\' => 'Controller',
+    ];
+    foreach ($prefixes as $prefix => $directory) {
         if (!str_starts_with($class, $prefix)) {
             continue;
         }

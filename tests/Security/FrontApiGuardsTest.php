@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 final class FrontApiGuardsTest extends TestCase
 {
-    private const API_PHP    = 'public/api.php';
+    private const API_PHP    = 'includes/Controller/FrontApiController.php';
     private const MODULE_DIR = 'includes/frontapi';
 
     private const WRITE_MODULES = ['record.php', 'calendar.php', 'board.php'];
@@ -64,7 +64,7 @@ final class FrontApiGuardsTest extends TestCase
         $this->assertSame(
             1,
             $count,
-            'public/api.php must call require_table_access() exactly once — the shared '
+            'includes/Controller/FrontApiController.php must call require_table_access() exactly once — the shared '
             . 'write preamble. Found ' . $count . '. More than one means the single gate '
             . 'has been split; none means the mutating routes are ungated.'
         );
@@ -97,7 +97,7 @@ final class FrontApiGuardsTest extends TestCase
             $this->assertFalse(
                 str_contains($src, 'require_table_access('),
                 "includes/frontapi/{$module} must not call require_table_access(): the "
-                . 'shared write preamble in public/api.php already gated $ctx->table. A '
+                . 'shared write preamble in includes/Controller/FrontApiController.php already gated $ctx->table. A '
                 . 'per-route copy is a list to keep by hand, which is how this class of '
                 . 'gate has drifted before.'
             );
@@ -136,9 +136,11 @@ final class FrontApiGuardsTest extends TestCase
         $admin   = strpos($src, '$role === UserRole::Admin');
         $viewer  = strpos($src, '$role === UserRole::Viewer');
 
-        $this->assertIsInt($profile, 'The self-service profile branch is gone from public/api.php.');
-        $this->assertIsInt($admin, 'The admin block is gone from public/api.php.');
-        $this->assertIsInt($viewer, 'The viewer read-only block is gone from public/api.php.');
+        $controller = 'includes/Controller/FrontApiController.php';
+
+        $this->assertIsInt($profile, 'The self-service profile branch is gone from ' . $controller . '.');
+        $this->assertIsInt($admin, 'The admin block is gone from ' . $controller . '.');
+        $this->assertIsInt($viewer, 'The viewer read-only block is gone from ' . $controller . '.');
 
         $this->assertLessThan($admin, $profile, 'The profile actions must answer before the admin block.');
         $this->assertLessThan($viewer, $profile, 'The profile actions must answer before the viewer block.');
@@ -152,7 +154,7 @@ final class FrontApiGuardsTest extends TestCase
         $viewer = strpos($src, '$role === UserRole::Viewer');
         $schema = strpos($src, "config_get('schema')");
 
-        $this->assertIsInt($schema, 'public/api.php no longer loads the schema.');
+        $this->assertIsInt($schema, 'includes/Controller/FrontApiController.php no longer loads the schema.');
         $this->assertLessThan($schema, $admin, 'The admin block must run before the schema is read.');
         $this->assertLessThan($schema, $viewer, 'The viewer block must run before the schema is read.');
     }
@@ -163,7 +165,7 @@ final class FrontApiGuardsTest extends TestCase
 
         $this->assertTrue(
             str_contains($src, 'filter_tables_for_user('),
-            'public/api.php must build the access-filtered schema copy.'
+            'includes/Controller/FrontApiController.php must build the access-filtered schema copy.'
         );
         $this->assertFalse(
             str_contains($src, 'echo json_encode($schema);'),
@@ -199,7 +201,7 @@ final class FrontApiGuardsTest extends TestCase
         $this->assertSame(
             [],
             $missing,
-            'public/api.php routes to module file(s) that do not exist under '
+            'includes/Controller/FrontApiController.php routes to module file(s) that do not exist under '
             . 'includes/frontapi/: ' . implode(', ', $missing)
         );
     }
@@ -212,7 +214,7 @@ final class FrontApiGuardsTest extends TestCase
         $this->assertSame(
             [],
             $orphans,
-            'Module file(s) under includes/frontapi/ that no route in public/api.php '
+            'Module file(s) under includes/frontapi/ that no route in includes/Controller/FrontApiController.php '
             . 'reaches, so their handlers can never run: ' . implode(', ', $orphans)
         );
     }
@@ -222,7 +224,7 @@ final class FrontApiGuardsTest extends TestCase
         $this->assertGreaterThanOrEqual(
             8,
             count($this->referencedModules()),
-            'Could not parse the route tables out of public/api.php. Fix the patterns in '
+            'Could not parse the route tables out of includes/Controller/FrontApiController.php. Fix the patterns in '
             . 'this test — an unparsed route table makes the dispatch assertions vacuous.'
         );
     }

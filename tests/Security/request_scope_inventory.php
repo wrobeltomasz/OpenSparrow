@@ -7,8 +7,8 @@
 
 return [
 
-    'public/api.php' => [
-        'body.table' => ['gated', 'Single require_table_access() in the shared write preamble, before any of the mutating routes (insert, update, delete, calendar move, board move, duplicate) is dispatched. The route modules deliberately do NOT repeat it — one gate, no per-route copies to forget — which tests/Security/FrontApiGuardsTest pins from both directions.'],
+    'includes/Controller/FrontApiController.php' => [
+        'body.table' => ['gated', 'Single require_table_access() in the shared write preamble, before any of the mutating routes (insert, update, delete, calendar move, board move, duplicate) is dispatched. The route modules deliberately do NOT repeat it — one gate, no per-route copies to forget — which tests/Security/FrontApiGuardsTest pins from both directions. public/api.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
     'includes/frontapi/list.php' => [
         '_GET.table' => ['gated', 'Both routes (list, subtable_counts) call require_table_access() after resolving the table. The list route is the one exception in this API and it is explicit: api/fk.php delegates into it with OS_TABLE_ACCESS_DELEGATED for a schema-supplied reference table, and narrows the projection to label columns via OS_FK_LABEL_COLUMNS. That narrowing covers the filter_col allow-list as well as the SELECT list — a filter discloses what it matched without ever being selected, and filter_from/filter_to would otherwise turn the exemption into a range probe over any column of a table the user may not open.'],
@@ -63,12 +63,11 @@ return [
     'public/board.php' => [
         '_GET.board' => ['gated', 'os_require_access(boards, ...) redirects to the grid rather than rendering a shell whose data call comes back empty.'],
     ],
-    'public/create.php' => [
-
-        'query().table' => ['gated', 'os_require_table_access() runs right after the hasTable() check, before the form is built, so a table outside the scope never reaches the field rendering or the POST handler below it.'],
+    'includes/Controller/CreateController.php' => [
+        'query().table' => ['gated', 'os_require_table_access() runs right after the hasTable() check, before the form is built, so a table outside the scope never reaches the field rendering or the POST handler below it. public/create.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
-    'public/edit.php' => [
-        'query().table' => ['gated', 'os_require_table_access() runs before the record lookup, so the table-level gate is applied ahead of the row-level ownership check. The subtable tabs are filtered separately further down, because a tab renders whole rows of the child table.'],
+    'includes/Controller/EditController.php' => [
+        'query().table' => ['gated', 'os_require_table_access() runs before the record lookup, so the table-level gate is applied ahead of the row-level ownership check. The subtable tabs are filtered separately in subtablePanels(), because a tab renders whole rows of the child table. public/edit.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
     'public/index.php' => [
         '_GET.table'    => ['gated', 'os_require_table_access() redirects to the default grid instead of rendering a page whose every XHR would 403.'],

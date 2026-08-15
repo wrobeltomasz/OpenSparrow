@@ -47,7 +47,7 @@ final class RequestScopeInventoryTest extends TestCase
         $globs = [
             'public/*.php', 'public/api/*.php', 'public/admin/*.php',
             'includes/*.php', 'includes/admin/*.php', 'includes/frontapi/*.php',
-            'templates/*.php',
+            'includes/Controller/*.php', 'templates/*.php',
         ];
         $files = [];
         foreach ($globs as $glob) {
@@ -231,7 +231,11 @@ final class RequestScopeInventoryTest extends TestCase
             'Scanner missed a $request->post() read.'
         );
 
-        $this->assertContains('query().table', $scan['public/edit.php'] ?? [], 'Scanner missed a $request->query() read.');
+        $this->assertContains(
+            'query().table',
+            $scan['includes/Controller/EditController.php'] ?? [],
+            'Scanner missed a $request->query() read.'
+        );
         $this->assertNotEmpty($scan, 'Scanner found nothing at all — the globs are wrong.');
     }
 
