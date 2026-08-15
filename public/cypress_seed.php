@@ -100,7 +100,10 @@ try {
                 $pgTable = $appSchema . '.' . pg_ident($tableName);
                 $pgCol   = pg_ident($textCol);
 
-                $res = @pg_query($conn, "DELETE FROM $pgTable WHERE $pgCol ILIKE 'cypress%' OR $pgCol ILIKE 'cy-%' RETURNING id");
+                $res = @pg_query(
+                    $conn,
+                    "DELETE FROM $pgTable WHERE $pgCol ILIKE 'cypress%' OR $pgCol ILIKE 'cy-%' RETURNING id"
+                );
                 if ($res) {
                     $deletedIds = array_map('intval', array_column(pg_fetch_all($res) ?: [], 'id'));
                     if ($deletedIds !== []) {
@@ -173,7 +176,11 @@ try {
 
         $ids = [];
         foreach (['a' => 'test', 'b' => 'test2'] as $slot => $owner) {
-            $res = pg_query_params($conn, "INSERT INTO $pgTable ($pgCol) VALUES (\$1) RETURNING id", ["cypress-idor-$slot"]);
+            $res = pg_query_params(
+                $conn,
+                "INSERT INTO $pgTable ($pgCol) VALUES (\$1) RETURNING id",
+                ["cypress-idor-$slot"]
+            );
             if (!$res) {
                 http_response_code(500);
                 echo json_encode(['status' => 'error', 'error' => 'Insert failed: ' . pg_last_error($conn)]);
@@ -182,7 +189,8 @@ try {
             $recordId = (int) pg_fetch_result($res, 0, 'id');
             pg_query_params(
                 $conn,
-                "INSERT INTO $tOwners (table_name, record_id, owner_id, changed_by, is_current) VALUES (\$1, \$2, \$3, \$3, true)",
+                "INSERT INTO $tOwners (table_name, record_id, owner_id, changed_by, is_current) "
+                    . "VALUES (\$1, \$2, \$3, \$3, true)",
                 [$table, $recordId, $userIds[$owner]]
             );
             $ids[$slot] = $recordId;
@@ -194,7 +202,10 @@ try {
             $saved = config_save('schema', $schema);
             if (($saved['status'] ?? '') !== 'ok') {
                 http_response_code(500);
-                echo json_encode(['status' => 'error', 'error' => 'Could not enable owner_restricted: ' . ($saved['error'] ?? $saved['status'])]);
+                echo json_encode([
+                    'status' => 'error',
+                    'error'  => 'Could not enable owner_restricted: ' . ($saved['error'] ?? $saved['status']),
+                ]);
                 exit;
             }
         }
@@ -224,13 +235,17 @@ try {
         $textCol = cypress_first_text_column($tableCfg);
         if ($textCol !== null) {
             $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
-            $res = @pg_query($conn, "DELETE FROM $pgTable WHERE " . pg_ident($textCol) . " LIKE 'cypress-idor-%' RETURNING id");
+            $res = @pg_query(
+                $conn,
+                "DELETE FROM $pgTable WHERE " . pg_ident($textCol) . " LIKE 'cypress-idor-%' RETURNING id"
+            );
             if ($res) {
                 $ids = array_map('intval', array_column(pg_fetch_all($res) ?: [], 'id'));
                 if ($ids !== []) {
                     @pg_query_params(
                         $conn,
-                        'DELETE FROM ' . sys_table('record_owners') . " WHERE table_name = \$1 AND record_id = ANY(\$2::int[])",
+                        'DELETE FROM ' . sys_table('record_owners')
+                            . " WHERE table_name = \$1 AND record_id = ANY(\$2::int[])",
                         [$table, '{' . implode(',', $ids) . '}']
                     );
                 }

@@ -48,7 +48,8 @@ function etl_flow_run_single(
     if ($logTable && !$dryRun) {
         $ins = @pg_query_params(
             $conn,
-            "INSERT INTO {$tRunLog} (flow_id, flow_name, triggered_by, status) VALUES ($1, $2, $3, 'running') RETURNING id",
+            "INSERT INTO {$tRunLog} (flow_id, flow_name, triggered_by, status) "
+                . "VALUES ($1, $2, $3, 'running') RETURNING id",
             [$flowId, $flowName, $triggeredBy]
         );
         if ($ins && ($row = pg_fetch_assoc($ins))) {
@@ -106,7 +107,8 @@ function etl_flow_run_single(
         if ($jobLogTable && !$dryRun) {
             $ins = @pg_query_params(
                 $conn,
-                "INSERT INTO {$tJobLog} (job_id, job_name, triggered_by, status) VALUES ($1, $2, 'flow', 'running') RETURNING id",
+                "INSERT INTO {$tJobLog} (job_id, job_name, triggered_by, status) "
+                    . "VALUES ($1, $2, 'flow', 'running') RETURNING id",
                 [$jobId, $jobName]
             );
             if ($ins && ($row = pg_fetch_assoc($ins))) {
@@ -121,14 +123,16 @@ function etl_flow_run_single(
         if ($stepLogId !== null) {
             @pg_query_params(
                 $conn,
-                "UPDATE {$tStepLog} SET finished_at = now(), status = $1, rows_read = $2, rows_written = $3, error_message = $4 WHERE id = $5",
+                "UPDATE {$tStepLog} SET finished_at = now(), status = $1, rows_read = $2, "
+                    . "rows_written = $3, error_message = $4 WHERE id = $5",
                 [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $stepLogId]
             );
         }
         if ($jobLogId !== null) {
             @pg_query_params(
                 $conn,
-                "UPDATE {$tJobLog} SET finished_at = now(), status = $1, rows_read = $2, rows_written = $3, error_message = $4 WHERE id = $5",
+                "UPDATE {$tJobLog} SET finished_at = now(), status = $1, rows_read = $2, "
+                    . "rows_written = $3, error_message = $4 WHERE id = $5",
                 [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $jobLogId]
             );
         }
@@ -152,7 +156,8 @@ function etl_flow_run_single(
     if ($runLogId !== null) {
         @pg_query_params(
             $conn,
-            "UPDATE {$tRunLog} SET finished_at = now(), status = $1, failed_step_index = $2, error_message = $3 WHERE id = $4",
+            "UPDATE {$tRunLog} SET finished_at = now(), status = $1, "
+                . "failed_step_index = $2, error_message = $3 WHERE id = $4",
             [$allOk ? 'success' : 'error', $failedStepIndex, $errorMessage, $runLogId]
         );
     }
@@ -231,11 +236,14 @@ foreach ($flows as $flow) {
     if ($triggeredBy === 'cron' && $logTable) {
         $recent = @pg_query_params(
             $conn,
-            "SELECT 1 FROM {$tRunLog} WHERE flow_id = $1 AND status = 'success' AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
+            "SELECT 1 FROM {$tRunLog} WHERE flow_id = $1 AND status = 'success' "
+                . "AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
             [$flowId]
         );
         if ($recent && pg_num_rows($recent) > 0) {
-            etl_cli_log("[etl_flow] Skipping flow '{$flowId}': a successful run exists within the '{$frequency}' window.");
+            etl_cli_log(
+                "[etl_flow] Skipping flow '{$flowId}': a successful run exists within the '{$frequency}' window."
+            );
             continue;
         }
     }

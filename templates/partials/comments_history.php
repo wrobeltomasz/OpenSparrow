@@ -14,7 +14,9 @@ $historyPanel ??= [];
     <div class="form-wrapper">
         <div id="ow-panel" class="owner-panel ow-panel">
             <h3 class="ow-section-title"><?= htmlspecialchars($historyPanel['ownerTitle'], ENT_QUOTES, 'UTF-8') ?></h3>
-            <div id="ow-current" class="ow-current"><?= htmlspecialchars($historyPanel['loadingText'], ENT_QUOTES, 'UTF-8') ?></div>
+            <div id="ow-current" class="ow-current"><?=
+                htmlspecialchars($historyPanel['loadingText'], ENT_QUOTES, 'UTF-8')
+            ?></div>
             <div id="ow-change" class="ow-change" hidden>
                 <select id="ow-select" class="ow-select"></select>
                 <button id="ow-save" type="button" class="btn-action">
@@ -24,8 +26,12 @@ $historyPanel ??= [];
             </div>
         </div>
         <div id="ow-history" class="ow-history-wrap">
-            <h3 class="ow-section-title"><?= htmlspecialchars($historyPanel['historyTitle'], ENT_QUOTES, 'UTF-8') ?></h3>
-            <div id="ow-history-body" class="ow-history-body"><?= htmlspecialchars($historyPanel['loadingText'], ENT_QUOTES, 'UTF-8') ?></div>
+            <h3 class="ow-section-title"><?=
+                htmlspecialchars($historyPanel['historyTitle'], ENT_QUOTES, 'UTF-8')
+            ?></h3>
+            <div id="ow-history-body" class="ow-history-body"><?=
+                htmlspecialchars($historyPanel['loadingText'], ENT_QUOTES, 'UTF-8')
+            ?></div>
         </div>
     </div>
 </div>

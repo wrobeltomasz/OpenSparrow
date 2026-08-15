@@ -100,7 +100,8 @@ if ($action === 'add_column') {
 
         if ($comment !== '') {
             $safeComment = pg_escape_literal($conn, $comment);
-            $sqlComment = "COMMENT ON COLUMN " . $safeSchema . "." . $safeTable . "." . $safeCol . " IS " . $safeComment;
+            $sqlComment = "COMMENT ON COLUMN " . $safeSchema . "." . $safeTable . "." . $safeCol
+                . " IS " . $safeComment;
             @pg_query($conn, $sqlComment);
         }
 
@@ -167,7 +168,10 @@ if ($action === 'schema_add_table') {
     ];
 
     $colsObj = [
-        'id' => ['display_name' => 'ID', 'type' => 'number', 'not_null' => true, 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true],
+        'id' => [
+            'display_name' => 'ID', 'type' => 'number', 'not_null' => true,
+            'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true,
+        ],
     ];
 
     foreach ($columns as $col) {
@@ -254,7 +258,8 @@ if ($action === 'sync_schema') {
         $body = json_decode((string) file_get_contents('php://input'), true) ?: [];
         $schemaName = $body['schema_name'] ?? $_POST['schema_name'] ?? $_GET['schema_name'] ?? 'public';
 
-        $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'spw\\_%' ESCAPE '\\'";
+        $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = $1"
+            . " AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'spw\\_%' ESCAPE '\\'";
         $res = @pg_query_params($conn, $sql, [$schemaName]);
         if (!$res) {
             admin_db_fail($conn, 'sync_schema');

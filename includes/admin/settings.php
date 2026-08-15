@@ -66,7 +66,11 @@ if ($action === 'set_snapshot_setting') {
     require_not_demo();
     $envVal = getenv('RECORD_SNAPSHOTS_ENABLED');
     if ($envVal !== false && $envVal !== '') {
-        echo json_encode(['status' => 'error', 'error' => 'Controlled by RECORD_SNAPSHOTS_ENABLED environment variable — cannot override from admin panel.']);
+        echo json_encode([
+            'status' => 'error',
+            'error'  => 'Controlled by RECORD_SNAPSHOTS_ENABLED environment variable — cannot override'
+                . ' from admin panel.',
+        ]);
         exit;
     }
     $body = json_decode(file_get_contents('php://input'), true) ?? [];

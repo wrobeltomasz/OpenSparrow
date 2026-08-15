@@ -210,7 +210,8 @@ function comments_action_delete($conn, array $body): void
         jsonError('id is required.', 400);
     }
 
-    $fetchSql = "SELECT user_id, related_table, related_id FROM " . sys_table('comments') . " WHERE id = \$1 AND deleted_at IS NULL";
+    $fetchSql = "SELECT user_id, related_table, related_id FROM " . sys_table('comments')
+        . " WHERE id = \$1 AND deleted_at IS NULL";
     $fetchRes = pg_query_params($conn, $fetchSql, [$id]);
     if (!$fetchRes || pg_num_rows($fetchRes) === 0) {
         jsonError('Comment not found.', 404);

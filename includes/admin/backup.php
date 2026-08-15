@@ -38,7 +38,11 @@ if ($action === 'backup_tables') {
                 $results[] = ['table' => $tableName, 'backup' => $backupName, 'status' => 'success', 'rows' => $rows];
             } else {
                 error_log('[admin_api][backup_tables] ' . pg_last_error($conn));
-                $results[] = ['table' => $tableName, 'status' => 'error', 'message' => 'Database error. Check server logs.'];
+                $results[] = [
+                    'table'   => $tableName,
+                    'status'  => 'error',
+                    'message' => 'Database error. Check server logs.',
+                ];
             }
         }
         echo json_encode(['status' => 'success', 'results' => $results]);

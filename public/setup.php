@@ -19,7 +19,10 @@ header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 
-header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'");
+header(
+    "Content-Security-Policy: default-src 'self'; style-src 'self'; "
+        . "script-src 'self' 'unsafe-inline'; connect-src 'self'"
+);
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $lang; ?>">
@@ -89,7 +92,13 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <input type="password" id="db-password" placeholder="••••••••">
                 </div>
 
-                <button type="button" class="primary" id="test-btn" style="width: 100%; margin-bottom: 16px;" onclick="testConnection()">
+                <button
+                    type="button"
+                    class="primary"
+                    id="test-btn"
+                    style="width: 100%; margin-bottom: 16px;"
+                    onclick="testConnection()"
+                >
                     <?= $e('setup.test_conn') ?>
                 </button>
 
@@ -100,7 +109,9 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
 
                 <div class="button-group">
                     <button type="button" class="secondary" onclick="previousStep(1)"><?= $e('setup.back') ?></button>
-                    <button type="button" class="primary" id="next-btn-2" disabled onclick="nextStep(3)"><?= $e('setup.next') ?></button>
+                    <button type="button" class="primary" id="next-btn-2" disabled onclick="nextStep(3)">
+                        <?= $e('setup.next') ?>
+                    </button>
                 </div>
             </div>
 
@@ -118,7 +129,12 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <label for="create-schema"><?= $e('setup.create_schema') ?></label>
                 </div>
 
-                <div id="schema-exists-box" style="background: var(--warn-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--warn); font-size: 13px; color: var(--text); margin-top: 8px; display: none;">
+                <div
+                    id="schema-exists-box"
+                    style="background: var(--warn-light); padding: 12px; border-radius: var(--radius);
+                        border-left: 3px solid var(--warn); font-size: 13px; color: var(--text);
+                        margin-top: 8px; display: none;"
+                >
                     <strong id="schema-exists-text" style="display: block; margin-bottom: 8px;"></strong>
                     <div class="checkbox-group">
                         <input type="checkbox" id="drop-schema">
@@ -138,7 +154,10 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                     <div><?= $e('setup.password_colon') ?> <?= $e('setup.admin_pwd_note') ?></div>
                 </div>
 
-                <div style="background: var(--accent-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--accent); font-size: 13px; color: var(--accent);">
+                <div
+                    style="background: var(--accent-light); padding: 12px; border-radius: var(--radius);
+                        border-left: 3px solid var(--accent); font-size: 13px; color: var(--accent);"
+                >
                     <strong style="display: block; margin-bottom: 4px;">⚠ <?= $e('setup.important') ?></strong>
                     <?= $e('setup.important_text') ?>
                 </div>
@@ -153,7 +172,10 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                 <h2 style="font-size: 16px; margin-top: 0;"><?= $e('setup.review_title') ?></h2>
                 <div id="status-message-4" class="status-message"></div>
 
-                <div style="background: var(--accent-light); padding: 16px; border-radius: var(--radius); margin-bottom: 20px;">
+                <div
+                    style="background: var(--accent-light); padding: 16px; border-radius: var(--radius);
+                        margin-bottom: 20px;"
+                >
                     <div class="summary-item">
                         <div class="summary-label"><?= $e('setup.sum_host') ?></div>
                         <div class="summary-value" id="summary-host">localhost</div>
@@ -177,7 +199,9 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
                 </div>
 
                 <div class="button-group">
-                    <button type="button" class="secondary" id="back-btn-4" onclick="previousStep(3)"><?= $e('setup.back') ?></button>
+                    <button type="button" class="secondary" id="back-btn-4" onclick="previousStep(3)">
+                        <?= $e('setup.back') ?>
+                    </button>
                     <button type="button" class="primary" id="init-btn" onclick="initializeDatabase()">
                         <?= $e('setup.init_btn') ?>
                     </button>
@@ -187,7 +211,9 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             <div class="setup-step" id="step-5">
                 <div style="text-align: center;">
                     <div style="font-size: 48px; margin-bottom: 16px;">✓</div>
-                    <h2 style="font-size: 20px; color: var(--ok); margin: 0 0 8px 0;"><?= $e('setup.complete_title') ?></h2>
+                    <h2 style="font-size: 20px; color: var(--ok); margin: 0 0 8px 0;">
+                        <?= $e('setup.complete_title') ?>
+                    </h2>
                     <p style="color: var(--muted); margin: 0 0 24px 0;"><?= $e('setup.complete_sub') ?></p>
                 </div>
 
@@ -201,7 +227,11 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
 
                 <div id="demo-install-msg" class="status-message" hidden></div>
 
-                <div style="background: var(--accent-light); padding: 12px; border-radius: var(--radius); border-left: 3px solid var(--accent); font-size: 13px; color: var(--accent); margin-bottom: 20px;">
+                <div
+                    style="background: var(--accent-light); padding: 12px; border-radius: var(--radius);
+                        border-left: 3px solid var(--accent); font-size: 13px; color: var(--accent);
+                        margin-bottom: 20px;"
+                >
                     <strong style="display: block; margin-bottom: 4px;"><?= $e('setup.next_steps') ?></strong>
                     <ol style="margin: 0; padding-left: 16px;">
                         <li><?= $e('setup.next_step_1') ?></li>
@@ -238,6 +268,9 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             'schema_exists_text' => t('setup.schema_exists_text', ['schema' => '{schema}']),
         ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     </script>
-    <script type="module" src="assets/js/setup.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/setup.js'); ?>"></script>
+    <script
+        type="module"
+        src="assets/js/setup.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/setup.js'); ?>"
+    ></script>
 </body>
 </html>

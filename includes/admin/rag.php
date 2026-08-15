@@ -17,7 +17,11 @@ if ($action === 'rag_list') {
         $chunkExpr  = $cChk
             ? "(SELECT COUNT(*) FROM {$tRagChunks} c WHERE c.file_id = f.id) AS chunk_count"
             : '0 AS chunk_count';
-        $res        = @pg_query($conn, "SELECT f.id, f.filename, f.tags, f.file_size, f.uploaded_by, f.created_at, {$chunkExpr} FROM {$tRag} f ORDER BY f.created_at DESC");
+        $res        = @pg_query(
+            $conn,
+            "SELECT f.id, f.filename, f.tags, f.file_size, f.uploaded_by, f.created_at, {$chunkExpr}"
+                . " FROM {$tRag} f ORDER BY f.created_at DESC"
+        );
         if (!$res) {
             admin_db_fail($conn, 'rag_list');
         }
@@ -90,7 +94,8 @@ if ($action === 'rag_upload') {
 
         $res = @pg_query_params(
             $conn,
-            "INSERT INTO {$tRag} (filename, content, tags, file_size, uploaded_by) VALUES (\$1, \$2, \$3::text[], \$4, \$5) RETURNING id",
+            "INSERT INTO {$tRag} (filename, content, tags, file_size, uploaded_by)"
+                . " VALUES (\$1, \$2, \$3::text[], \$4, \$5) RETURNING id",
             [$filename, $content, $tagLiteral, $fileSize, $uploadedBy]
         );
         if (!$res) {
@@ -396,7 +401,12 @@ if ($action === 'rag_test_query') {
         $prompt = rag_build_prompt($query, $files, '', $language);
 
         if (DEMO_MODE) {
-            $ollamaResult = ['response' => '[Demo mode] Ollama disabled. Matched ' . count($files) . ' document(s).', 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_ms' => 0];
+            $ollamaResult = [
+                'response' => '[Demo mode] Ollama disabled. Matched ' . count($files) . ' document(s).',
+                'prompt_tokens' => 0,
+                'completion_tokens' => 0,
+                'total_ms' => 0,
+            ];
         } else {
             require_once __DIR__ . '/../crypto.php';
             $ollamaResult = rag_call_ollama(
@@ -529,7 +539,11 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $summary = $summaryRes ? (pg_fetch_assoc($summaryRes) ?: []) : [];
 
         $hasPromptCol = false;
-        $colChk = @pg_query($conn, "SELECT 1 FROM information_schema.columns WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1");
+        $colChk = @pg_query(
+            $conn,
+            "SELECT 1 FROM information_schema.columns"
+                . " WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1"
+        );
         if ($colChk && pg_num_rows($colChk) > 0) {
             $hasPromptCol = true;
         }
@@ -537,7 +551,8 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $recentRes = @pg_query(
             $conn,
-            "SELECT id, query, tags, matched_files, model, prompt_tokens, completion_tokens, total_ms, created_at{$promptSelect}
+            "SELECT id, query, tags, matched_files, model, prompt_tokens, completion_tokens, total_ms,
+                    created_at{$promptSelect}
              FROM {$tRagQueries}
              ORDER BY created_at DESC
              LIMIT 50"

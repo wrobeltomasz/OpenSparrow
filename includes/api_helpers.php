@@ -146,8 +146,13 @@ function type_min_value(string $type): string|int
     return '';
 }
 
-function log_user_action(\PgSql\Connection $conn, int $userId, string $action, ?string $targetTable = null, ?int $recordId = null): ?int
-{
+function log_user_action(
+    \PgSql\Connection $conn,
+    int $userId,
+    string $action,
+    ?string $targetTable = null,
+    ?int $recordId = null
+): ?int {
     $sql = 'INSERT INTO ' . sys_table('users_log')
          . ' (user_id, action, target_table, record_id) VALUES ($1, $2, $3, $4) RETURNING id';
     $res = @pg_query_params($conn, $sql, [$userId, $action, $targetTable, $recordId]);
@@ -187,8 +192,14 @@ function get_record_owner_id(\PgSql\Connection $conn, string $table, int $record
     return $row['owner_id'] !== null ? (int)$row['owner_id'] : null;
 }
 
-function can_access_record(\PgSql\Connection $conn, array $tableCfg, string $table, int $recordId, int $userId, string $role = ''): bool
-{
+function can_access_record(
+    \PgSql\Connection $conn,
+    array $tableCfg,
+    string $table,
+    int $recordId,
+    int $userId,
+    string $role = ''
+): bool {
     if (empty($tableCfg['owner_restricted'])) {
         return true;
     }
@@ -199,8 +210,14 @@ function can_access_record(\PgSql\Connection $conn, array $tableCfg, string $tab
     return $ownerId === null || $ownerId === $userId;
 }
 
-function check_record_ownership(\PgSql\Connection $conn, array $tableCfg, string $table, int $recordId, int $userId, string $message = 'Forbidden'): void
-{
+function check_record_ownership(
+    \PgSql\Connection $conn,
+    array $tableCfg,
+    string $table,
+    int $recordId,
+    int $userId,
+    string $message = 'Forbidden'
+): void {
     if (!can_access_record($conn, $tableCfg, $table, $recordId, $userId)) {
         http_response_code(403);
         echo json_encode(['error' => $message]);
@@ -261,8 +278,16 @@ function filter_visible_ids(
 function set_record_owner(\PgSql\Connection $conn, string $table, int $recordId, int $ownerId, int $changedBy): void
 {
     $t = sys_table('record_owners');
-    @pg_query_params($conn, "UPDATE $t SET is_current = false WHERE table_name = \$1 AND record_id = \$2 AND is_current = true", [$table, $recordId]);
-    @pg_query_params($conn, "INSERT INTO $t (table_name, record_id, owner_id, changed_by, is_current) VALUES (\$1, \$2, \$3, \$4, true)", [$table, $recordId, $ownerId, $changedBy]);
+    @pg_query_params(
+        $conn,
+        "UPDATE $t SET is_current = false WHERE table_name = \$1 AND record_id = \$2 AND is_current = true",
+        [$table, $recordId]
+    );
+    @pg_query_params(
+        $conn,
+        "INSERT INTO $t (table_name, record_id, owner_id, changed_by, is_current) VALUES (\$1, \$2, \$3, \$4, true)",
+        [$table, $recordId, $ownerId, $changedBy]
+    );
 }
 
 function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $table, int $recordId, int $logId): void

@@ -35,7 +35,11 @@ if ($action === 'dashboard_calculate') {
         $schemaName = $tableCfg['schema'] ?? 'public';
 
         $conn = db_connect();
-        $condSql = dashboard_conditions_sql($conn, $tableCfg, is_array($query['conditions'] ?? null) ? $query['conditions'] : []);
+        $condSql = dashboard_conditions_sql(
+            $conn,
+            $tableCfg,
+            is_array($query['conditions'] ?? null) ? $query['conditions'] : []
+        );
         $sqlWhere = $condSql === '' ? '' : ' WHERE ' . $condSql;
 
         $result = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $query, $displayColumns, $sqlWhere);

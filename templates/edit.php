@@ -36,12 +36,18 @@ $isReadOnly    ??= true;
     <div class="tab-panel active" id="tab-details" role="tabpanel">
         <div class="form-wrapper">
             <form method="POST" class="editor-form">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($formCsrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="<?= htmlspecialchars($formCsrfToken, ENT_QUOTES, 'UTF-8') ?>"
+                >
 
                 <?php if ($formRecordId !== null) : ?>
                     <div class="form-id-strip">
                         <span class="form-id-label">ID</span>
-                        <span class="form-id-value"><?= htmlspecialchars((string) $formRecordId, ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="form-id-value"><?=
+                            htmlspecialchars((string) $formRecordId, ENT_QUOTES, 'UTF-8')
+                        ?></span>
                     </div>
                 <?php endif; ?>
 
@@ -81,7 +87,11 @@ $isReadOnly    ??= true;
                             <?= htmlspecialchars($formLabels['saveExit'], ENT_QUOTES, 'UTF-8') ?>
                         </button>
                     <?php endif; ?>
-                    <button type="button" class="btn-cancel" data-nav="<?= htmlspecialchars($cancelUrl, ENT_QUOTES, 'UTF-8') ?>">
+                    <button
+                        type="button"
+                        class="btn-cancel"
+                        data-nav="<?= htmlspecialchars($cancelUrl, ENT_QUOTES, 'UTF-8') ?>"
+                    >
                         <?= htmlspecialchars($formLabels['cancel'], ENT_QUOTES, 'UTF-8') ?>
                     </button>
                     <?php if (!$isReadOnly) : ?>

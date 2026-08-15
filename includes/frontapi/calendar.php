@@ -18,8 +18,16 @@ function frontapi_calendar(FrontApiContext $ctx): never
         exit;
     }
 
-    $reqYear  = filter_var($_GET['year']  ?? date('Y'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 9999]]);
-    $reqMonth = filter_var($_GET['month'] ?? date('n'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 12]]);
+    $reqYear  = filter_var(
+        $_GET['year'] ?? date('Y'),
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 1, 'max_range' => 9999]]
+    );
+    $reqMonth = filter_var(
+        $_GET['month'] ?? date('n'),
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 1, 'max_range' => 12]]
+    );
     if ($reqYear  === false) {
         $reqYear  = (int)date('Y');
     }
@@ -149,7 +157,12 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
 
     check_record_ownership($conn, $tableCfg, $table, $id, $ctx->userId);
 
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate) || !checkdate((int)substr($newDate, 5, 2), (int)substr($newDate, 8, 2), (int)substr($newDate, 0, 4))) {
+    $dateIsValid = preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate) && checkdate(
+        (int)substr($newDate, 5, 2),
+        (int)substr($newDate, 8, 2),
+        (int)substr($newDate, 0, 4)
+    );
+    if (!$dateIsValid) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid date format']);
         exit;
@@ -175,7 +188,13 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
         exit;
     }
 
-    $sql = sprintf('UPDATE %s.%s SET %s = $1 WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($dateColumn), pg_ident($idCol));
+    $sql = sprintf(
+        'UPDATE %s.%s SET %s = $1 WHERE %s = $2',
+        pg_ident($schemaName),
+        pg_ident($table),
+        pg_ident($dateColumn),
+        pg_ident($idCol)
+    );
     $res = @pg_query_params($conn, $sql, [$newDate, $id]);
     if (!$res) {
         http_response_code(500);

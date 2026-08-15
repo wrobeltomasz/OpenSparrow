@@ -13,7 +13,9 @@ $breadcrumbCurrent ??= '';
     <div class="admin-breadcrumb">
         <span class="breadcrumb-root"><?= htmlspecialchars($breadcrumbRoot, ENT_QUOTES, 'UTF-8') ?></span>
         <span class="breadcrumb-sep">›</span>
-        <span class="breadcrumb-current" id="breadcrumbCurrent"><?= htmlspecialchars($breadcrumbCurrent, ENT_QUOTES, 'UTF-8') ?></span>
+        <span class="breadcrumb-current" id="breadcrumbCurrent">
+            <?= htmlspecialchars($breadcrumbCurrent, ENT_QUOTES, 'UTF-8') ?>
+        </span>
     </div>
 
     <div class="admin-content">

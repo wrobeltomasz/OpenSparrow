@@ -43,7 +43,9 @@ $isReadOnly ??= true;
                             <?php foreach ($filesPanel['columns'] as $fileColumn) : ?>
                                 <th><?= htmlspecialchars($fileColumn, ENT_QUOTES, 'UTF-8') ?></th>
                             <?php endforeach; ?>
-                            <th class="ef-col-actions"><?= htmlspecialchars($filesPanel['actionsLabel'], ENT_QUOTES, 'UTF-8') ?></th>
+                            <th class="ef-col-actions"><?=
+                                htmlspecialchars($filesPanel['actionsLabel'], ENT_QUOTES, 'UTF-8')
+                            ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -51,7 +53,11 @@ $isReadOnly ??= true;
                             <tr>
                                 <td class="ef-file-type">
                                     <div class="ef-file-type-inner">
-                                        <img src="<?= htmlspecialchars($fileRow['icon'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="ef-file-icon">
+                                        <img
+                                            src="<?= htmlspecialchars($fileRow['icon'], ENT_QUOTES, 'UTF-8') ?>"
+                                            alt=""
+                                            class="ef-file-icon"
+                                        >
                                         <?= htmlspecialchars($fileRow['type'], ENT_QUOTES, 'UTF-8') ?>
                                     </div>
                                 </td>
@@ -59,17 +65,27 @@ $isReadOnly ??= true;
                                 <td>
                                     <?php if (!empty($fileRow['tags'])) : ?>
                                         <?php foreach ($fileRow['tags'] as $fileTag) : ?>
-                                            <span class="tag-badge"><?= htmlspecialchars($fileTag, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="tag-badge"><?=
+                                                htmlspecialchars($fileTag, ENT_QUOTES, 'UTF-8')
+                                            ?></span>
                                         <?php endforeach; ?>
                                     <?php else : ?>
                                         <span class="ef-file-dash">-</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="ef-file-meta"><?= htmlspecialchars($fileRow['size'], ENT_QUOTES, 'UTF-8') ?></td>
-                                <td class="ef-file-meta"><?= htmlspecialchars($fileRow['date'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td class="ef-file-meta"><?=
+                                    htmlspecialchars($fileRow['size'], ENT_QUOTES, 'UTF-8')
+                                ?></td>
+                                <td class="ef-file-meta"><?=
+                                    htmlspecialchars($fileRow['date'], ENT_QUOTES, 'UTF-8')
+                                ?></td>
                                 <td>
-                                    <a href="<?= htmlspecialchars($fileRow['downloadUrl'], ENT_QUOTES, 'UTF-8') ?>" target="_blank"
-                                       rel="noopener" class="btn-action ef-download-btn">
+                                    <a
+                                        href="<?= htmlspecialchars($fileRow['downloadUrl'], ENT_QUOTES, 'UTF-8') ?>"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="btn-action ef-download-btn"
+                                    >
                                         <?= htmlspecialchars($filesPanel['downloadLabel'], ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                 </td>

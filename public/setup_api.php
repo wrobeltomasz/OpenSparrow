@@ -100,7 +100,11 @@ if ($action === 'test_connection') {
     }
 
     $schemas = [];
-    $res = @pg_query($conn, "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('pg_catalog', 'information_schema') ORDER BY schema_name");
+    $res = @pg_query(
+        $conn,
+        "SELECT schema_name FROM information_schema.schemata "
+            . "WHERE schema_name NOT IN ('pg_catalog', 'information_schema') ORDER BY schema_name"
+    );
     if ($res) {
         while ($row = pg_fetch_assoc($res)) {
             $schemas[] = $row['schema_name'];
@@ -200,7 +204,9 @@ if ($action === 'init_database') {
         $queries = array_merge(
             [
                 "CREATE SCHEMA IF NOT EXISTS $schemaIdent",
-                "CREATE TABLE IF NOT EXISTS $tMigrations ( id serial4 NOT NULL, name varchar(100) NOT NULL, applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id), CONSTRAINT spw_migrations_name_key UNIQUE (name) )",
+                "CREATE TABLE IF NOT EXISTS $tMigrations ( id serial4 NOT NULL, name varchar(100) NOT NULL, "
+                    . "applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id), "
+                    . "CONSTRAINT spw_migrations_name_key UNIQUE (name) )",
             ],
             system_tables_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
             system_tables_comments_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
@@ -222,7 +228,9 @@ if ($action === 'init_database') {
             $res = @pg_query($conn, $q);
             if (!$res) {
                 error_log('setup init_db error: ' . pg_last_error($conn));
-                throw new Exception('Database initialization failed. Check that the user has CREATE privileges on the schema.');
+                throw new Exception(
+                    'Database initialization failed. Check that the user has CREATE privileges on the schema.'
+                );
             }
         }
 
@@ -231,10 +239,15 @@ if ($action === 'init_database') {
 
         $argonOpts      = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
         $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, $argonOpts);
-        error_log('[OpenSparrow] First-run admin account created. Change the password shown in the setup wizard immediately after login.');
+        error_log(
+            '[OpenSparrow] First-run admin account created. '
+                . 'Change the password shown in the setup wizard immediately after login.'
+        );
         $resAdmin = @pg_query_params(
             $conn,
-            "INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role) SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin' WHERE NOT EXISTS (SELECT 1 FROM $tUsers LIMIT 1) RETURNING id",
+            "INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role) "
+                . "SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin' "
+                . "WHERE NOT EXISTS (SELECT 1 FROM $tUsers LIMIT 1) RETURNING id",
             [$firstAdminHash, $firstAdminSalt, 'argon2id', json_encode($argonOpts)]
         );
 

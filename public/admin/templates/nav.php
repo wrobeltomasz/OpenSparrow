@@ -9,6 +9,11 @@
 <nav class="admin-nav" id="adminNav">
     <?php include __DIR__ . '/partials/nav_sections.php'; ?>
 </nav>
-<button class="nav-edge-toggle" id="navEdgeToggle" title="Toggle navigation" aria-label="Toggle navigation">&#8249;</button>
+<button
+    class="nav-edge-toggle"
+    id="navEdgeToggle"
+    title="Toggle navigation"
+    aria-label="Toggle navigation"
+>&#8249;</button>
 
 <?php include __DIR__ . '/partials/workspace.php'; ?>

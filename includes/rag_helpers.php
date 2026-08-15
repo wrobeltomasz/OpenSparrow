@@ -292,7 +292,8 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
     }
 
     $columns = array_keys($rows[0]);
-    $text    = "Aggregate view \"{$ref['schema']}.{$ref['view']}\" for table {$table}:\n" . implode(' | ', $columns) . "\n";
+    $text    = "Aggregate view \"{$ref['schema']}.{$ref['view']}\" for table {$table}:\n"
+        . implode(' | ', $columns) . "\n";
     foreach ($rows as $row) {
         $text .= implode(' | ', array_map(fn($v) => $v === null ? '' : (string) $v, $row)) . "\n";
     }
@@ -503,8 +504,14 @@ function rag_is_no_answer(string $answer, array $suggestions): bool
     return empty($suggestions) && mb_strlen($normalized) < 200;
 }
 
-function rag_build_prompt(string $query, array $files, string $pageContext = '', string $language = '', array $history = [], string $aggregateView = ''): string
-{
+function rag_build_prompt(
+    string $query,
+    array $files,
+    string $pageContext = '',
+    string $language = '',
+    array $history = [],
+    string $aggregateView = ''
+): string {
     $langHint = $language !== '' ? "Respond in the language with locale code: {$language}.\n" : '';
 
     $pageContext = str_replace(['<<<PAGE_DATA', 'PAGE_DATA>>>'], '', $pageContext);
@@ -514,7 +521,8 @@ function rag_build_prompt(string $query, array $files, string $pageContext = '',
 
     $aggregateView = str_replace(['<<<AGGREGATES', 'AGGREGATES>>>'], '', $aggregateView);
     $aggBlock      = $aggregateView !== ''
-        ? "Aggregate totals (exact, computed over the FULL matching set — not just the visible page):\n<<<AGGREGATES\n{$aggregateView}\nAGGREGATES>>>\n\n"
+        ? "Aggregate totals (exact, computed over the FULL matching set — not just the visible page):\n"
+            . "<<<AGGREGATES\n{$aggregateView}\nAGGREGATES>>>\n\n"
         : '';
     $noAnswer = 'I cannot find this information in the provided context.';
 
@@ -742,7 +750,11 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
 
     static $hasPromptCol = null;
     if ($hasPromptCol === null) {
-        $colRes      = @pg_query($conn, "SELECT 1 FROM information_schema.columns WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1");
+        $colRes      = @pg_query(
+            $conn,
+            "SELECT 1 FROM information_schema.columns"
+                . " WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1"
+        );
         $hasPromptCol = ($colRes && pg_num_rows($colRes) > 0);
     }
 
@@ -762,7 +774,8 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
         $qRes = @pg_query_params(
             $conn,
             "INSERT INTO {$tRagQueries}
-                (query, tags, matched_files, prompt_tokens, completion_tokens, total_ms, model, user_id, prompt_snapshot)
+                (query, tags, matched_files, prompt_tokens, completion_tokens, total_ms,
+                 model, user_id, prompt_snapshot)
              VALUES (\$1, \$2::text[], \$3, \$4, \$5, \$6, \$7, \$8, \$9)
              RETURNING id",
             $baseParams

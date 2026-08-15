@@ -116,8 +116,14 @@ ob_start();
         'USER_ROLE'      => $userRole ?? 'viewer',
         'SCHEMA_TABLES'  => $schemaTableNames,
     ], $cspNonce ?? '');
-?>
-<script type="module" src="assets/js/grid/mobile-actions.js?v=<?php echo @filemtime(__DIR__ . '/../public/assets/js/grid/mobile-actions.js'); ?>" nonce="<?php echo $cspNonce ?? ''; ?>"></script>
+    ?>
+<script
+    type="module"
+    src="assets/js/grid/mobile-actions.js?v=<?php
+        echo @filemtime(__DIR__ . '/../public/assets/js/grid/mobile-actions.js');
+    ?>"
+    nonce="<?php echo $cspNonce ?? ''; ?>"
+></script>
 <script type="module" src="assets/js/app.js?v=<?php echo @filemtime('assets/js/app.js'); ?>"></script>
 <?php
 $extraScripts = ob_get_clean();

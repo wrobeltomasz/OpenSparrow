@@ -98,7 +98,18 @@ function evaluate_automation_rules(
 
         $errors = [];
         foreach ($actions as $action) {
-            $err = auto_execute_action($conn, $tableSchema, $table, $recordId, $record, $action, $userId, $ruleId, $event, $oldRecord);
+            $err = auto_execute_action(
+                $conn,
+                $tableSchema,
+                $table,
+                $recordId,
+                $record,
+                $action,
+                $userId,
+                $ruleId,
+                $event,
+                $oldRecord
+            );
             if ($err !== null) {
                 $errors[] = $err;
             }
@@ -212,11 +223,40 @@ function auto_execute_action(
     }
 
     return match ($action['type'] ?? '') {
-        'update'        => auto_action_update($conn, $tableSchema, $table, $recordId, $record, $action, $userId, $oldRecord),
-        'notify'        => auto_action_notify($conn, $recordId, $ruleId, $record, $action, $userId, $oldRecord),
+        'update' => auto_action_update(
+            $conn,
+            $tableSchema,
+            $table,
+            $recordId,
+            $record,
+            $action,
+            $userId,
+            $oldRecord
+        ),
+        'notify' => auto_action_notify($conn, $recordId, $ruleId, $record, $action, $userId, $oldRecord),
         'create_record' => auto_action_create_record($conn, $record, $action, $userId, $oldRecord),
-        'webhook'       => auto_action_webhook($conn, $table, $recordId, $record, $action, $userId, $ruleId, $event, $oldRecord),
-        'email'         => auto_action_email($conn, $table, $recordId, $record, $action, $userId, $ruleId, $oldRecord, $event),
+        'webhook' => auto_action_webhook(
+            $conn,
+            $table,
+            $recordId,
+            $record,
+            $action,
+            $userId,
+            $ruleId,
+            $event,
+            $oldRecord
+        ),
+        'email' => auto_action_email(
+            $conn,
+            $table,
+            $recordId,
+            $record,
+            $action,
+            $userId,
+            $ruleId,
+            $oldRecord,
+            $event
+        ),
         default         => null,
     };
 }

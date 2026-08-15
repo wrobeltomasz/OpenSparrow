@@ -73,7 +73,8 @@ function etl_run_single_job(
     if ($logId !== null) {
         @pg_query_params(
             $conn,
-            "UPDATE {$tLog} SET finished_at = now(), status = $1, rows_read = $2, rows_written = $3, error_message = $4 WHERE id = $5",
+            "UPDATE {$tLog} SET finished_at = now(), status = $1, rows_read = $2, "
+                . "rows_written = $3, error_message = $4 WHERE id = $5",
             [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $logId]
         );
     }
@@ -169,7 +170,9 @@ foreach ($jobs as $job) {
     }
 
     if ($triggeredBy === 'cron' && $logTable && $ranInWindow($jobId)) {
-        etl_cli_log("[etl] Skipping job '{$jobId}': a scheduled run already succeeded within the '{$frequency}' window.");
+        etl_cli_log(
+            "[etl] Skipping job '{$jobId}': a scheduled run already succeeded within the '{$frequency}' window."
+        );
         continue;
     }
     $jobIds[] = $jobId;

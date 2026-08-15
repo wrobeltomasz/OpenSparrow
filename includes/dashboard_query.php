@@ -54,7 +54,13 @@ function dashboard_run_widget_query(
     if ($qType === 'count') {
         $col = $query['column'] ?? id_column();
         if (isset($tableCfg['columns'][$col]) || $col === id_column()) {
-            $sql = sprintf('SELECT COUNT(%s) AS count FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
+            $sql = sprintf(
+                'SELECT COUNT(%s) AS count FROM %s.%s%s',
+                pg_ident($col),
+                pg_ident($schemaName),
+                pg_ident($table),
+                $sqlWhere
+            );
             $res = @pg_query($conn, $sql);
             if ($res) {
                 $row = pg_fetch_assoc($res);
@@ -67,7 +73,13 @@ function dashboard_run_widget_query(
     } elseif ($qType === 'sum') {
         $col = $query['column'] ?? '';
         if (isset($tableCfg['columns'][$col])) {
-            $sql = sprintf('SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
+            $sql = sprintf(
+                'SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s',
+                pg_ident($col),
+                pg_ident($schemaName),
+                pg_ident($table),
+                $sqlWhere
+            );
             $res = @pg_query($conn, $sql);
             if ($res) {
                 $row = pg_fetch_assoc($res);
@@ -81,7 +93,13 @@ function dashboard_run_widget_query(
     } elseif ($qType === 'avg') {
         $col = $query['column'] ?? '';
         if (isset($tableCfg['columns'][$col])) {
-            $sql = sprintf('SELECT COALESCE(AVG(%s), 0) AS total FROM %s.%s%s', pg_ident($col), pg_ident($schemaName), pg_ident($table), $sqlWhere);
+            $sql = sprintf(
+                'SELECT COALESCE(AVG(%s), 0) AS total FROM %s.%s%s',
+                pg_ident($col),
+                pg_ident($schemaName),
+                pg_ident($table),
+                $sqlWhere
+            );
             $res = @pg_query($conn, $sql);
             if ($res) {
                 $row = pg_fetch_assoc($res);
@@ -99,7 +117,16 @@ function dashboard_run_widget_query(
         $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
         $aggType = in_array($aggType, $allowedAgg, true) ? $aggType : 'COUNT';
         if (isset($tableCfg['columns'][$grpCol])) {
-            $sql = sprintf('SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY %s ORDER BY value DESC', pg_ident($grpCol), $aggType, pg_ident($aggCol), pg_ident($schemaName), pg_ident($table), $sqlWhere, pg_ident($grpCol));
+            $sql = sprintf(
+                'SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY %s ORDER BY value DESC',
+                pg_ident($grpCol),
+                $aggType,
+                pg_ident($aggCol),
+                pg_ident($schemaName),
+                pg_ident($table),
+                $sqlWhere,
+                pg_ident($grpCol)
+            );
             $res = @pg_query($conn, $sql);
             if ($res) {
                 $data = [];
@@ -163,7 +190,16 @@ function dashboard_run_widget_query(
 
         $selectSql = implode(', ', array_map('pg_ident', $validCols));
         if (isset($tableCfg['columns'][$orderBy]) || $orderBy === id_column()) {
-            $sql = sprintf('SELECT %s FROM %s.%s%s ORDER BY %s %s LIMIT %d', $selectSql, pg_ident($schemaName), pg_ident($table), $sqlWhere, pg_ident($orderBy), $dir, $limit);
+            $sql = sprintf(
+                'SELECT %s FROM %s.%s%s ORDER BY %s %s LIMIT %d',
+                $selectSql,
+                pg_ident($schemaName),
+                pg_ident($table),
+                $sqlWhere,
+                pg_ident($orderBy),
+                $dir,
+                $limit
+            );
             $res = @pg_query($conn, $sql);
             if ($res) {
                 $data = [];

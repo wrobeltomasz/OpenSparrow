@@ -50,7 +50,8 @@ function send_security_headers(
 
         'no-connect'   => "default-src 'self'; style-src 'self'{$nonce}; script-src 'self'{$nonce}",
 
-        'unsafe-style' => "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'{$nonce}; connect-src 'self'",
+        'unsafe-style' => "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'{$nonce};"
+            . " connect-src 'self'",
         default        => "default-src 'self'; style-src 'self'{$nonce}; script-src 'self'{$nonce}; connect-src 'self'",
     });
 }

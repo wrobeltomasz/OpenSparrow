@@ -83,7 +83,10 @@ try {
         $urlTemplate = $source['url_template'] ?? '';
 
         if (!$table || !$dateCol || !$titleCol || empty($notifiedUsers) || !is_array($notifiedUsers)) {
-            print_log("Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8') . "</b> (missing required columns or no users assigned).");
+            print_log(
+                "Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8')
+                . "</b> (missing required columns or no users assigned)."
+            );
             continue;
         }
         $sourcesProcessed++;
@@ -105,16 +108,26 @@ try {
         );
         $result = pg_query_params($conn, $sql, [$targetDate]);
         if (!$result) {
-            print_log("<span style='color:red;'>SQL QUERY ERROR: " . htmlspecialchars(pg_last_error($conn), ENT_QUOTES, 'UTF-8') . "</span>");
+            print_log(
+                "<span style='color:red;'>SQL QUERY ERROR: "
+                . htmlspecialchars(pg_last_error($conn), ENT_QUOTES, 'UTF-8') . "</span>"
+            );
             continue;
         }
         $rows = pg_fetch_all($result) ?: [];
 
         $uidList = '{' . implode(',', array_map('intval', $notifiedUsers)) . '}';
-        $validRes = pg_query_params($conn, "SELECT id FROM " . sys_table('users') . " WHERE id = ANY($1::int[]) AND is_active = TRUE", [$uidList]);
+        $validRes = pg_query_params(
+            $conn,
+            "SELECT id FROM " . sys_table('users') . " WHERE id = ANY($1::int[]) AND is_active = TRUE",
+            [$uidList]
+        );
         $validUserIds = $validRes ? array_map('intval', array_column(pg_fetch_all($validRes) ?: [], 'id')) : [];
         if (empty($validUserIds)) {
-            print_log("Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8') . "</b> (none of the configured users exist or are active).");
+            print_log(
+                "Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8')
+                . "</b> (none of the configured users exist or are active)."
+            );
             continue;
         }
 
@@ -129,7 +142,9 @@ try {
             foreach ($validUserIds as $userId) {
                 $userId = (int)$userId;
                 $insertSql = "
-                    INSERT INTO " . sys_table('users_notifications') . " (user_id, title, link, source_table, source_id, notify_date)
+                    INSERT INTO " . sys_table('users_notifications') . " (
+                        user_id, title, link, source_table, source_id, notify_date
+                    )
                     VALUES ($1, $2, $3, $4, $5, $6)
                     ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
                 ";
@@ -138,7 +153,9 @@ try {
                     print_log("&nbsp;&nbsp; Added notification for user ID $userId (Record ID: $recordId)");
                     $insertedCount++;
                 } else {
-                    print_log("&nbsp;&nbsp; Skipped (Notification for user $userId for record $recordId already exists).");
+                    print_log(
+                        "&nbsp;&nbsp; Skipped (Notification for user $userId for record $recordId already exists)."
+                    );
                 }
             }
         }
@@ -162,7 +179,9 @@ try {
             ? 'edit.php?table=' . rawurlencode((string)$note['related_table']) . '&id=' . (int)$note['related_id']
             : '';
         $noteInsertSql = "
-            INSERT INTO " . sys_table('users_notifications') . " (user_id, title, link, source_table, source_id, notify_date)
+            INSERT INTO " . sys_table('users_notifications') . " (
+                user_id, title, link, source_table, source_id, notify_date
+            )
             VALUES ($1, $2, $3, 'notes', $4, $5)
             ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
         ";
@@ -202,9 +221,15 @@ try {
     ];
 
     if (AUTOMATION_EMAIL_FROM === '') {
-        print_log("<span style='color:orange;'>AUTOMATION_EMAIL_FROM is not configured — skipping email delivery (queued emails stay pending).</span>");
+        print_log(
+            "<span style='color:orange;'>AUTOMATION_EMAIL_FROM is not configured — "
+            . "skipping email delivery (queued emails stay pending).</span>"
+        );
     } elseif ($smtpEnabled && $smtpConfig['host'] === '') {
-        print_log("<span style='color:orange;'>SMTP delivery is enabled but no SMTP host is configured — skipping email delivery (queued emails stay pending).</span>");
+        print_log(
+            "<span style='color:orange;'>SMTP delivery is enabled but no SMTP host is configured — "
+            . "skipping email delivery (queued emails stay pending).</span>"
+        );
     } else {
         $methodLabel = $smtpEnabled
             ? 'SMTP (' . htmlspecialchars($smtpConfig['host'], ENT_QUOTES, 'UTF-8') . ')'
@@ -249,7 +274,8 @@ try {
             if ($ok) {
                 pg_query_params(
                     $conn,
-                    "UPDATE $tAutoEmails SET status = 'sent', sent_at = NOW(), attempts = attempts + 1, error_msg = NULL WHERE id = \$1",
+                    "UPDATE $tAutoEmails SET status = 'sent', sent_at = NOW(), "
+                        . "attempts = attempts + 1, error_msg = NULL WHERE id = \$1",
                     [$mailId]
                 );
                 $emailsSent++;
@@ -265,7 +291,11 @@ try {
                     [$mailId, $failReason, AUTOMATION_EMAIL_MAX_ATTEMPTS]
                 );
                 $emailsFailed++;
-                print_log("<span style='color:red;'>&nbsp;&nbsp; Failed email #$mailId to " . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8') . ": " . htmlspecialchars($failReason, ENT_QUOTES, 'UTF-8') . "</span>");
+                print_log(
+                    "<span style='color:red;'>&nbsp;&nbsp; Failed email #$mailId to "
+                    . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8') . ": "
+                    . htmlspecialchars($failReason, ENT_QUOTES, 'UTF-8') . "</span>"
+                );
             }
         }
         print_log("Emails sent: <b>$emailsSent</b>, failed this run: <b>$emailsFailed</b>");
@@ -276,7 +306,8 @@ try {
     if ($logId) {
         pg_query_params(
             $conn,
-            "UPDATE $tCronLog SET status='success', finished_at=NOW(), sources_processed=$1, notifications_created=$2 WHERE id=$3",
+            "UPDATE $tCronLog SET status='success', finished_at=NOW(), "
+                . "sources_processed=$1, notifications_created=$2 WHERE id=$3",
             [$sourcesProcessed, $insertedCount, $logId]
         );
     }

@@ -115,7 +115,8 @@ if ($action === 'performance_check') {
                         'column'   => $col,
                         'reasons'  => array_values(array_unique($reasons)),
                         'priority' => $priority,
-                        'sql'      => "CREATE INDEX IF NOT EXISTS {$indexName} ON \"{$pgSchema}\".\"{$tableName}\" ({$col});",
+                        'sql'      => "CREATE INDEX IF NOT EXISTS {$indexName}"
+                            . " ON \"{$pgSchema}\".\"{$tableName}\" ({$col});",
                     ];
                 }
             }
@@ -146,7 +147,10 @@ if ($action === 'performance_slow_queries') {
 
         $extRes = @pg_query($conn, "SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'");
         if (!$extRes || pg_num_rows($extRes) === 0) {
-            echo json_encode(['status' => 'unavailable', 'message' => 'pg_stat_statements extension is not installed. Run: CREATE EXTENSION pg_stat_statements;']);
+            echo json_encode([
+                'status'  => 'unavailable',
+                'message' => 'pg_stat_statements extension is not installed. Run: CREATE EXTENSION pg_stat_statements;',
+            ]);
             exit;
         }
 
@@ -211,7 +215,9 @@ if ($action === 'performance_table_stats') {
                    TO_CHAR(s.last_autovacuum,  'YYYY-MM-DD HH24:MI') AS last_autovacuum,
                    TO_CHAR(s.last_analyze,     'YYYY-MM-DD HH24:MI') AS last_analyze,
                    TO_CHAR(s.last_autoanalyze, 'YYYY-MM-DD HH24:MI') AS last_autoanalyze,
-                   pg_size_pretty(pg_total_relation_size(quote_ident(s.schemaname) || '.' || quote_ident(s.relname))) AS total_size,
+                   pg_size_pretty(
+                       pg_total_relation_size(quote_ident(s.schemaname) || '.' || quote_ident(s.relname))
+                   ) AS total_size,
                    c.reltuples::bigint AS estimated_rows
             FROM pg_stat_user_tables s
             JOIN pg_class c ON c.relname = s.relname
@@ -238,7 +244,9 @@ if ($action === 'performance_table_stats') {
                            s.seq_scan, s.idx_scan,
                            TO_CHAR(s.last_autovacuum,  'YYYY-MM-DD HH24:MI') AS last_autovacuum,
                            TO_CHAR(s.last_autoanalyze, 'YYYY-MM-DD HH24:MI') AS last_autoanalyze,
-                           pg_size_pretty(pg_total_relation_size(quote_ident(s.schemaname) || '.' || quote_ident(s.relname))) AS total_size,
+                           pg_size_pretty(
+                               pg_total_relation_size(quote_ident(s.schemaname) || '.' || quote_ident(s.relname))
+                           ) AS total_size,
                            c.reltuples::bigint AS estimated_rows
                     FROM pg_stat_user_tables s
                     JOIN pg_class c ON c.relname = s.relname
@@ -367,7 +375,8 @@ if ($action === 'performance_schema_warnings') {
             $pgSchema = $cfg['schema'] ?? 'app';
             $countRes = @pg_query_params(
                 $conn,
-                "SELECT c.reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = \$1 AND c.relname = \$2",
+                "SELECT c.reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace"
+                    . " WHERE n.nspname = \$1 AND c.relname = \$2",
                 [$pgSchema, $tableName]
             );
             if ($countRes && $row = pg_fetch_row($countRes)) {
@@ -387,7 +396,8 @@ if ($action === 'performance_schema_warnings') {
                     'category' => 'Schema complexity',
                     'table'    => $tableName,
                     'display'  => $display,
-                    'message'  => "{$colCount} columns defined — consider splitting or hiding non-essential columns (show_in_grid: false).",
+                    'message'  => "{$colCount} columns defined — consider splitting or hiding non-essential"
+                        . " columns (show_in_grid: false).",
                 ];
             }
 
@@ -397,7 +407,9 @@ if ($action === 'performance_schema_warnings') {
                     'category' => 'Load performance',
                     'table'    => $tableName,
                     'display'  => $display,
-                    'message'  => "~" . number_format($estRows) . " rows, no Initial Load Limit set — full table fetched on grid load. Set initial_limit in Schema → Table Properties.",
+                    'message'  => "~" . number_format($estRows)
+                        . " rows, no Initial Load Limit set — full table fetched on grid load."
+                        . " Set initial_limit in Schema → Table Properties.",
                 ];
             }
 
@@ -407,7 +419,9 @@ if ($action === 'performance_schema_warnings') {
                     'category' => 'UX / sort',
                     'table'    => $tableName,
                     'display'  => $display,
-                    'message'  => "~" . number_format($estRows) . " rows, no Default Sort configured — falls back to id DESC. Define default_sort in Schema → Table Properties.",
+                    'message'  => "~" . number_format($estRows)
+                        . " rows, no Default Sort configured — falls back to id DESC."
+                        . " Define default_sort in Schema → Table Properties.",
                 ];
             }
 
@@ -418,7 +432,8 @@ if ($action === 'performance_schema_warnings') {
                         'category' => 'Subtable config',
                         'table'    => $tableName,
                         'display'  => $display,
-                        'message'  => "Subtable \"{$sub['table']}\" has no columns_to_show — all columns fetched in drilldown. Specify columns_to_show in Schema.",
+                        'message'  => "Subtable \"{$sub['table']}\" has no columns_to_show — all columns fetched"
+                            . " in drilldown. Specify columns_to_show in Schema.",
                     ];
                 }
             }
@@ -438,7 +453,8 @@ if ($action === 'performance_schema_warnings') {
                     'category' => 'Widget config',
                     'table'    => $wTable,
                     'display'  => $tables[$wTable]['display_name'] ?? $wTable,
-                    'message'  => "List widget \"{$wTitle}\" has no row limit on a table with ~" . number_format($estRows) . " rows — set query.limit in Dashboard editor.",
+                    'message'  => "List widget \"{$wTitle}\" has no row limit on a table with ~"
+                        . number_format($estRows) . " rows — set query.limit in Dashboard editor.",
                 ];
             }
         }

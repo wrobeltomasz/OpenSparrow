@@ -153,7 +153,10 @@ $allowedFiles = [
     'workflows', 'files', 'views', 'automations', 'user_records',
 ];
 
-$dbBackedFiles = ['automations', 'board', 'calendar', 'dashboard', 'files', 'schema', 'user_records', 'views', 'workflows'];
+$dbBackedFiles = [
+    'automations', 'board', 'calendar', 'dashboard', 'files',
+    'schema', 'user_records', 'views', 'workflows',
+];
 
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
     if (in_array($file, $dbBackedFiles, true)) {

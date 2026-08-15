@@ -21,7 +21,8 @@ $headerControls = os_header_search('fileSearch', t('files.search_placeholder'))
     . '<option value="image">' . htmlspecialchars(t('files.filter_images'), ENT_QUOTES, 'UTF-8') . '</option>'
     . '<option value="pdf">' . htmlspecialchars(t('files.filter_pdfs'), ENT_QUOTES, 'UTF-8') . '</option>'
     . '<option value="doc">' . htmlspecialchars(t('files.filter_documents'), ENT_QUOTES, 'UTF-8') . '</option>'
-    . '<option value="spreadsheet">' . htmlspecialchars(t('files.filter_spreadsheets'), ENT_QUOTES, 'UTF-8') . '</option>'
+    . '<option value="spreadsheet">'
+        . htmlspecialchars(t('files.filter_spreadsheets'), ENT_QUOTES, 'UTF-8') . '</option>'
     . '<option value="archive">' . htmlspecialchars(t('files.filter_archives'), ENT_QUOTES, 'UTF-8') . '</option>'
     . '</select>'
     . os_header_clear_filters();
@@ -95,7 +96,11 @@ ob_start();
     ],
 ], $cspNonce); ?>
 
-<script type="module" src="assets/js/files-page.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/files-page.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
+<script
+    type="module"
+    src="assets/js/files-page.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/files-page.js'); ?>"
+    nonce="<?php echo $cspNonce; ?>"
+></script>
 <?php
 $extraScripts = ob_get_clean();
 include __DIR__ . '/../templates/layout.php';

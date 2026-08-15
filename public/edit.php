@@ -62,7 +62,15 @@ if ($request->isPost()) {
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
             snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
         }
-        evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, 'update', $session->userId(), $oldRecord);
+        evaluate_automation_rules(
+            $GLOBALS['conn'],
+            $tableCfg->schema,
+            $tableCfg->name,
+            (int)$id,
+            'update',
+            $session->userId(),
+            $oldRecord
+        );
         foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
             $selected = array_values(array_filter((array)($_POST['m2m_' . $m2mIndex] ?? []), 'ctype_digit'));
             m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
@@ -167,7 +175,8 @@ foreach ($subtablesData as $subtableIndex => $subtableData) {
         'id'           => 'tab-sub-' . (int)$subtableIndex,
         'label'        => $subtableLabel,
         'icon'         => $subtableData['schema']->icon ?? '',
-        'addUrl'       => 'create.php?table=' . urlencode($sTable) . '&' . urlencode($sFk) . '=' . urlencode((string)$id),
+        'addUrl'       => 'create.php?table=' . urlencode($sTable) . '&' . urlencode($sFk)
+            . '=' . urlencode((string)$id),
         'addLabel'     => t('form.add_subtable', ['label' => $subtableLabel]),
         'emptyText'    => t('form.no_records'),
         'actionsLabel' => t('common.actions'),
@@ -308,13 +317,37 @@ ob_start();
     ],
 ], $cspNonce) ?>
 
-<script type="module" src="assets/js/edit/page-actions.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/edit/page-actions.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script
+    type="module"
+    src="assets/js/edit/page-actions.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/edit/page-actions.js'); ?>"
+    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
+></script>
 
-<script type="module" src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
-<script type="module" src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
-<script type="module" src="assets/js/edit/form-behaviours.js?v=<?php echo @filemtime('assets/js/edit/form-behaviours.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
-<script type="module" src="assets/js/edit/subtable-tooltip.js?v=<?php echo @filemtime('assets/js/edit/subtable-tooltip.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
-<script type="module" src="assets/js/edit/m2m-picker.js?v=<?php echo @filemtime('assets/js/edit/m2m-picker.js'); ?>" nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script
+    type="module"
+    src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>"
+    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
+></script>
+<script
+    type="module"
+    src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>"
+    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
+></script>
+<script
+    type="module"
+    src="assets/js/edit/form-behaviours.js?v=<?php echo @filemtime('assets/js/edit/form-behaviours.js'); ?>"
+    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
+></script>
+<script
+    type="module"
+    src="assets/js/edit/subtable-tooltip.js?v=<?php echo @filemtime('assets/js/edit/subtable-tooltip.js'); ?>"
+    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
+></script>
+<script
+    type="module"
+    src="assets/js/edit/m2m-picker.js?v=<?php echo @filemtime('assets/js/edit/m2m-picker.js'); ?>"
+    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
+></script>
 <?php
 $extraScripts = ob_get_clean();
 include __DIR__ . '/../templates/layout.php';

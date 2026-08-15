@@ -20,7 +20,9 @@ if ($action === 'init_db') {
 
         $bootstrap = [
             "CREATE SCHEMA IF NOT EXISTS $schemaIdent",
-            "CREATE TABLE IF NOT EXISTS $tMigrations ( id serial4 NOT NULL, name varchar(100) NOT NULL, applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id), CONSTRAINT spw_migrations_name_key UNIQUE (name) )",
+            "CREATE TABLE IF NOT EXISTS $tMigrations ( id serial4 NOT NULL, name varchar(100) NOT NULL,"
+                . " applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id),"
+                . " CONSTRAINT spw_migrations_name_key UNIQUE (name) )",
         ];
         foreach ($bootstrap as $q) {
             if (!@pg_query($conn, $q)) {

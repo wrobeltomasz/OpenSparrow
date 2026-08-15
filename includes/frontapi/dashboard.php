@@ -72,11 +72,13 @@ function frontapi_dashboard(FrontApiContext $ctx): never
                     ],
                     '7d' => [
                         $dc . " >= CURRENT_DATE - INTERVAL '7 days'",
-                        '(' . $dc . " >= CURRENT_DATE - INTERVAL '14 days' AND " . $dc . " < CURRENT_DATE - INTERVAL '7 days')",
+                        '(' . $dc . " >= CURRENT_DATE - INTERVAL '14 days' AND " . $dc
+                            . " < CURRENT_DATE - INTERVAL '7 days')",
                     ],
                     '30d' => [
                         $dc . " >= CURRENT_DATE - INTERVAL '30 days'",
-                        '(' . $dc . " >= CURRENT_DATE - INTERVAL '60 days' AND " . $dc . " < CURRENT_DATE - INTERVAL '30 days')",
+                        '(' . $dc . " >= CURRENT_DATE - INTERVAL '60 days' AND " . $dc
+                            . " < CURRENT_DATE - INTERVAL '30 days')",
                     ],
                     'this_month' => [
                         "DATE_TRUNC('month', " . $dc . ") = DATE_TRUNC('month', CURRENT_DATE)",
@@ -95,7 +97,15 @@ function frontapi_dashboard(FrontApiContext $ctx): never
             $sqlWherePrev = ' WHERE ' . implode(' AND ', $prevParts);
         }
 
-        $result = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $widget['query'] ?? [], $widget['display_columns'] ?? [id_column()], $sqlWhere);
+        $result = dashboard_run_widget_query(
+            $conn,
+            $tableCfg,
+            $schemaName,
+            $table,
+            $widget['query'] ?? [],
+            $widget['display_columns'] ?? [id_column()],
+            $sqlWhere
+        );
         $data = $result['data'];
         if (isset($result['sql_error'])) {
             $widget['sql_error'] = $result['sql_error'];
@@ -108,7 +118,15 @@ function frontapi_dashboard(FrontApiContext $ctx): never
         }
 
         if ($sqlWherePrev !== null && in_array($qType, ['count', 'sum', 'avg'], true) && !isset($result['sql_error'])) {
-            $prevResult = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $widget['query'] ?? [], $widget['display_columns'] ?? [id_column()], $sqlWherePrev);
+            $prevResult = dashboard_run_widget_query(
+                $conn,
+                $tableCfg,
+                $schemaName,
+                $table,
+                $widget['query'] ?? [],
+                $widget['display_columns'] ?? [id_column()],
+                $sqlWherePrev
+            );
             if (!isset($prevResult['sql_error'])) {
                 $widget['prev_data'] = $prevResult['data'];
             }

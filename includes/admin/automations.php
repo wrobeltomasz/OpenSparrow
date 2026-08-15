@@ -122,7 +122,10 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $url    = trim((string) ($act['url'] ?? ''));
                 $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
                 if ($url === '' || !in_array($scheme, ['http', 'https'], true)) {
-                    echo json_encode(['status' => 'error', 'error' => $label . ' (webhook): a valid http(s) URL is required.']);
+                    echo json_encode([
+                        'status' => 'error',
+                        'error'  => $label . ' (webhook): a valid http(s) URL is required.',
+                    ]);
                     exit;
                 }
                 $allowedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
@@ -167,7 +170,10 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $recips = array_filter((array) $recips, static fn($row) => trim((string) $row) !== '');
                 if ($recips === []) {
-                    echo json_encode(['status' => 'error', 'error' => $label . ' (email): at least one recipient is required.']);
+                    echo json_encode([
+                        'status' => 'error',
+                        'error'  => $label . ' (email): at least one recipient is required.',
+                    ]);
                     exit;
                 }
                 if (trim((string) ($act['subject'] ?? '')) === '') {

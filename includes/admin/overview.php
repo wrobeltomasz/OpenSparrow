@@ -15,7 +15,10 @@ if ($action === 'overview') {
         $conn = db_connect();
 
         $tUsers  = sys_table('users');
-        $uRes    = @pg_query($conn, "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE is_active) AS active FROM {$tUsers}");
+        $uRes    = @pg_query(
+            $conn,
+            "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE is_active) AS active FROM {$tUsers}"
+        );
         $uRow    = $uRes ? pg_fetch_assoc($uRes) : ['total' => 0, 'active' => 0];
 
         require_once __DIR__ . '/../config_store.php';
@@ -39,7 +42,10 @@ if ($action === 'overview') {
         usort($tables, static fn($a, $b) => $b['count'] - $a['count']);
 
         $tFiles = sys_table('files');
-        $fRes   = @pg_query($conn, "SELECT COUNT(*) AS n, COALESCE(SUM(size_bytes),0) AS total_bytes FROM {$tFiles} WHERE deleted_at IS NULL");
+        $fRes   = @pg_query(
+            $conn,
+            "SELECT COUNT(*) AS n, COALESCE(SUM(size_bytes),0) AS total_bytes FROM {$tFiles} WHERE deleted_at IS NULL"
+        );
         $fRow   = $fRes ? pg_fetch_assoc($fRes) : ['n' => 0, 'total_bytes' => 0];
 
         $tRag   = sys_table('rag_files');
@@ -165,7 +171,8 @@ if ($action === 'overview') {
             'pg_version'        => $pgVersion,
             'php_version'       => PHP_VERSION,
             'php_ok'            => version_compare(PHP_VERSION, '8.1.0', '>='),
-            'display_errors_ok' => ($displayErrors === '' || $displayErrors == '0' || strtolower((string) $displayErrors) === 'off'),
+            'display_errors_ok' => ($displayErrors === '' || $displayErrors == '0'
+                || strtolower((string) $displayErrors) === 'off'),
             'pending_migrations' => $pendingMig,
             'memory_limit'       => $memoryLimit,
             'upload_max_filesize' => $uploadMax,

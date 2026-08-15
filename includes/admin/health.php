@@ -44,7 +44,8 @@ if ($action === 'health') {
         'memory_limit_ok'  => (int) ini_get('memory_limit') >= 64 || ini_get('memory_limit') === '-1',
         'upload_max_filesize'    => ini_get('upload_max_filesize'),
         'upload_max_filesize_ok' => (int) ini_get('upload_max_filesize') >= 8,
-        'display_errors_off'     => $displayErrors === '' || $displayErrors == '0' || strtolower((string) $displayErrors) === 'off',
+        'display_errors_off'     => $displayErrors === '' || $displayErrors == '0'
+            || strtolower((string) $displayErrors) === 'off',
 
         'pgsql_ok'     => extension_loaded('pgsql') || extension_loaded('pdo_pgsql'),
         'json_ok'      => extension_loaded('json'),
@@ -64,7 +65,8 @@ if ($action === 'health') {
 
         'dir_writable'          => is_writable(__DIR__ . '/../../config'),
         'storage_writable'      => is_dir(__DIR__ . '/../../storage') && is_writable(__DIR__ . '/../../storage'),
-        'storage_files_writable' => is_dir(__DIR__ . '/../../storage/files') && is_writable(__DIR__ . '/../../storage/files'),
+        'storage_files_writable' => is_dir(__DIR__ . '/../../storage/files')
+            && is_writable(__DIR__ . '/../../storage/files'),
 
         'database_json_ok' => (static function () {
             $f = __DIR__ . '/../../config/database.json';

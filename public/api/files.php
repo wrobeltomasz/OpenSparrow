@@ -109,7 +109,8 @@ function files_action_list($conn): void
 
     if ($search !== '') {
         $paramIdx = count($params) + 1;
-        $where[]  = '(f.name ILIKE $' . $paramIdx . ' OR f.display_name ILIKE $' . $paramIdx . ' OR array_to_string(f.tags, \' \') ILIKE $' . $paramIdx . ')';
+        $where[]  = '(f.name ILIKE $' . $paramIdx . ' OR f.display_name ILIKE $' . $paramIdx
+            . ' OR array_to_string(f.tags, \' \') ILIKE $' . $paramIdx . ')';
         $params[] = '%' . $search . '%';
     }
 
@@ -239,7 +240,11 @@ function files_action_upload($conn): void
         if ($type !== 'image') {
             jsonError('Only image files can be added to a record gallery.', 415);
         }
-        $imageTarget = validateImageTarget($conn, trim($_POST['related_table'] ?? ''), (int)($_POST['related_id'] ?? 0));
+        $imageTarget = validateImageTarget(
+            $conn,
+            trim($_POST['related_table'] ?? ''),
+            (int)($_POST['related_id'] ?? 0)
+        );
     }
 
     $mimeType = 'application/octet-stream';
@@ -295,7 +300,8 @@ function files_action_upload($conn): void
 
     $sql = "
         INSERT INTO " . sys_table('files') . "
-            (uuid, name, display_name, type, mime_type, extension, size_bytes, storage_path, uploaded_by, related_table, related_id, tags, related_field)
+            (uuid, name, display_name, type, mime_type, extension, size_bytes, storage_path,
+             uploaded_by, related_table, related_id, tags, related_field)
         VALUES
             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING id, uuid
@@ -399,7 +405,10 @@ function tagsToPgArray(string $tagsInput): ?string
     if (count($tagsList) === 0) {
         return null;
     }
-    return '{' . implode(',', array_map(fn($t) => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $t) . '"', $tagsList)) . '}';
+    return '{' . implode(',', array_map(
+        fn($t) => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $t) . '"',
+        $tagsList
+    )) . '}';
 }
 
 function files_action_mass_delete($conn, array $body): void
@@ -500,7 +509,8 @@ function files_action_delete($conn, array $body): void
     }
     assertFileAccess($conn, '{' . strtolower($uuid) . '}');
 
-    $sql = "UPDATE " . sys_table('files') . " SET deleted_at = NOW() WHERE uuid = $1 AND deleted_at IS NULL RETURNING id";
+    $sql = "UPDATE " . sys_table('files')
+        . " SET deleted_at = NOW() WHERE uuid = $1 AND deleted_at IS NULL RETURNING id";
     $res = pg_query_params($conn, $sql, [$uuid]);
     if (!$res) {
         error_log('api_files files_action_delete failed: ' . pg_last_error($conn));
@@ -647,7 +657,11 @@ function verifiableExtensionMap(): array
         'webp' => ['image/webp'],
         'pdf'  => ['application/pdf'],
         'doc'  => ['application/msword', $octet],
-        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', $octet],
+        'docx' => [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/zip',
+            $octet,
+        ],
         'odt'  => ['application/vnd.oasis.opendocument.text', 'application/zip', $octet],
         'rtf'  => ['application/rtf', 'text/rtf', 'text/plain'],
         'xls'  => ['application/vnd.ms-excel', $octet],

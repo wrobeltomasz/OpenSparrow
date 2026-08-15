@@ -112,7 +112,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($error)) {
-            $sqlUser = 'SELECT id, username, password_hash, salt, role, avatar_id FROM ' . sys_table('users') . ' WHERE username = $1';
+            $sqlUser = 'SELECT id, username, password_hash, salt, role, avatar_id FROM '
+                . sys_table('users') . ' WHERE username = $1';
             $resUser = pg_query_params($conn, $sqlUser, [$username]);
 
             if (!$resUser) {
@@ -134,14 +135,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['role'] = $user['role'] ?? 'editor';
-                    $_SESSION['avatar_id'] = ($user['avatar_id'] !== '' && $user['avatar_id'] !== null) ? (int)$user['avatar_id'] : null;
+                    $_SESSION['avatar_id'] = ($user['avatar_id'] !== '' && $user['avatar_id'] !== null)
+                        ? (int)$user['avatar_id']
+                        : null;
                     $_SESSION['created_at'] = time();
                     $_SESSION['user_agent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
 
                     if (password_needs_rehash($user['password_hash'], PASSWORD_ARGON2ID, ARGON2_OPTIONS)) {
                         $newSalt = bin2hex(random_bytes(32));
                         $newHash = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
-                        $sqlUpdate = 'UPDATE ' . sys_table('users') . ' SET password_hash = $1, salt = $2 WHERE id = $3';
+                        $sqlUpdate = 'UPDATE ' . sys_table('users')
+                            . ' SET password_hash = $1, salt = $2 WHERE id = $3';
                         pg_query_params($conn, $sqlUpdate, [$newHash, $newSalt, $user['id']]);
                     }
 
@@ -176,33 +180,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body class="login-page">
     <div class="login-wrapper">
         <div class="login-box" data-cy="login-box">
-            <center><img src="<?php echo htmlspecialchars($loginLogoSrc, ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars(t('common.logo_alt'), ENT_QUOTES, 'UTF-8'); ?>" class="footer-logo" height="48" /></center>
+            <center>
+                <img
+                    src="<?php echo htmlspecialchars($loginLogoSrc, ENT_QUOTES, 'UTF-8'); ?>"
+                    alt="<?php echo htmlspecialchars(t('common.logo_alt'), ENT_QUOTES, 'UTF-8'); ?>"
+                    class="footer-logo"
+                    height="48"
+                />
+            </center>
             <h2><?php echo htmlspecialchars($appName, ENT_QUOTES, 'UTF-8'); ?></h2>
             <?php if ($error) : ?>
                 <div class="error" data-cy="login-error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>" />
-                <input type="text" name="username" data-cy="username" placeholder="<?php echo htmlspecialchars(t('auth.username'), ENT_QUOTES, 'UTF-8'); ?>" required autofocus autocomplete="username" />
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>"
+                />
+                <input
+                    type="text"
+                    name="username"
+                    data-cy="username"
+                    placeholder="<?php echo htmlspecialchars(t('auth.username'), ENT_QUOTES, 'UTF-8'); ?>"
+                    required
+                    autofocus
+                    autocomplete="username"
+                />
                 <div class="password-container">
-                    <input type="password" id="password" name="password" data-cy="password" placeholder="<?php echo htmlspecialchars(t('auth.password'), ENT_QUOTES, 'UTF-8'); ?>" required autocomplete="current-password" />
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        data-cy="password"
+                        placeholder="<?php echo htmlspecialchars(t('auth.password'), ENT_QUOTES, 'UTF-8'); ?>"
+                        required
+                        autocomplete="current-password"
+                    />
                     <span id="togglePassword" class="toggle-password">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#888"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                             <circle cx="12" cy="12" r="3"/>
                         </svg>
                     </span>
                 </div>
-                <button type="submit" data-cy="loginBtn"><?php echo htmlspecialchars(t('auth.login'), ENT_QUOTES, 'UTF-8'); ?></button>
+                <button type="submit" data-cy="loginBtn">
+                    <?php echo htmlspecialchars(t('auth.login'), ENT_QUOTES, 'UTF-8'); ?>
+                </button>
             </form>
             <div class="login-info">
                 <span>v<?php echo htmlspecialchars($version); ?></span>
                 <span class="login-info-separator">·</span>
-                <a href="https://github.com/wrobeltomasz/OpenSparrow" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <a
+                    href="https://github.com/wrobeltomasz/OpenSparrow"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >GitHub</a>
             </div>
         </div>
     </div>
-    <script src="assets/js/login.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/login.js'); ?>" nonce="<?php echo $cspNonce; ?>"></script>
+    <script
+        src="assets/js/login.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/login.js'); ?>"
+        nonce="<?php echo $cspNonce; ?>"
+    ></script>
     <?php require __DIR__ . '/../templates/footer.php'; ?>
 </body>
 </html>

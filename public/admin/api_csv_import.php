@@ -62,7 +62,8 @@ final class CsvFileValidator
         $uploadError = $file['error'] ?? UPLOAD_ERR_NO_FILE;
         if ($uploadError !== UPLOAD_ERR_OK) {
             $uploadMessages = [
-                UPLOAD_ERR_INI_SIZE   => 'File exceeds upload_max_filesize in php.ini (currently ' . ini_get('upload_max_filesize') . '). Restart the PHP server after editing php.ini.',
+                UPLOAD_ERR_INI_SIZE   => 'File exceeds upload_max_filesize in php.ini (currently '
+                    . ini_get('upload_max_filesize') . '). Restart the PHP server after editing php.ini.',
                 UPLOAD_ERR_FORM_SIZE  => 'File exceeds the MAX_FILE_SIZE limit specified in the form.',
                 UPLOAD_ERR_PARTIAL    => 'File was only partially uploaded.',
                 UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
@@ -167,7 +168,9 @@ final class ImportRepository
             json_encode($mapping), $conflictCol, 'running',
         ]);
         if ($res === false) {
-            throw new \RuntimeException('Failed to create import record. Check that spw_imports table exists (run Initialize System Tables).');
+            throw new \RuntimeException(
+                'Failed to create import record. Check that spw_imports table exists (run Initialize System Tables).'
+            );
         }
         return (int) pg_fetch_row($res)[0];
     }
@@ -432,7 +435,10 @@ final class CsvImportService
             $csvHeaders[0] = ltrim((string) $csvHeaders[0], "\xEF\xBB\xBF");
             $csvHeaders    = array_map('trim', $csvHeaders);
 
-            $mappedCount    = count(array_filter($csvHeaders, fn($h) => isset($mapping[$h]) && $mapping[$h] !== null && $mapping[$h] !== ''));
+            $mappedCount    = count(array_filter(
+                $csvHeaders,
+                fn($h) => isset($mapping[$h]) && $mapping[$h] !== null && $mapping[$h] !== ''
+            ));
             $isDirectStream = $mappedCount === count($csvHeaders);
 
             $headerIdx  = array_flip($csvHeaders);
@@ -494,10 +500,15 @@ final class CsvImportService
                 $hint  = '';
                 if (
                     preg_match('/invalid input syntax for type (\w+).*column (\w+)/i', $pgErr, $m)
-                    || preg_match('/niepra.*?dla typu (\w+).*kolumn[ay] (\w+)/iu', $pgErr, $m)
+                    || preg_match(
+                        '/niepra.*?dla typu (\w+).*kolumn[ay] (\w+)/iu',
+                        $pgErr,
+                        $m
+                    )
                 ) {
                     $hint = " Column \"{$m[2]}\" is typed {$m[1]} but received a non-{$m[1]} value."
-                        . ' Cause: an earlier field in that row has an unquoted delimiter, shifting all subsequent columns.'
+                        . ' Cause: an earlier field in that row has an unquoted delimiter, '
+                        . 'shifting all subsequent columns.'
                         . ' Fix: use Normal mode (per-row error reporting) or correct the source CSV quoting.';
                 } elseif (str_contains($pgErr, 'unexpected data') || str_contains($pgErr, 'nieoczekiwane dane')) {
                     $hint = ' A row has more fields than the header.'
@@ -658,7 +669,8 @@ if ($action === 'csv_import_execute') {
         csv_fail('No column mapping provided.');
     }
 
-    $csvPath = realpath(__DIR__ . '/../../storage/files') . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR . $tmpName;
+    $csvPath = realpath(__DIR__ . '/../../storage/files')
+        . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR . $tmpName;
 
     if (!file_exists($csvPath)) {
         csv_fail('Uploaded file not found. Please re-upload the CSV.');

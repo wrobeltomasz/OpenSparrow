@@ -48,7 +48,8 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
         $val = null;
     }
 
-    if (!str_contains($colType, 'bool') && ($regexpError = validate_column_regexp($tableCfg['columns'][$col], $val)) !== null) {
+    $regexpError = validate_column_regexp($tableCfg['columns'][$col], $val);
+    if (!str_contains($colType, 'bool') && $regexpError !== null) {
         http_response_code(422);
         echo json_encode(['error' => $regexpError]);
         exit;
@@ -56,7 +57,14 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
 
     $oldRecord = auto_capture_old_record($conn, $schemaName, $table, $recordId);
 
-    $sql = sprintf('UPDATE %s.%s SET %s = $1%s WHERE %s = $2', pg_ident($schemaName), pg_ident($table), pg_ident($col), $cast, pg_ident($idCol));
+    $sql = sprintf(
+        'UPDATE %s.%s SET %s = $1%s WHERE %s = $2',
+        pg_ident($schemaName),
+        pg_ident($table),
+        pg_ident($col),
+        $cast,
+        pg_ident($idCol)
+    );
     $res = @pg_query_params($conn, $sql, [$val, $recordId]);
     if (!$res) {
         error_log('[api][patch] ' . pg_last_error($conn));
@@ -120,10 +128,22 @@ function frontapi_record_insert(FrontApiWriteContext $ctx): never
     }
 
     if (empty($cols)) {
-        $sql = sprintf('INSERT INTO %s.%s DEFAULT VALUES RETURNING %s', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));
+        $sql = sprintf(
+            'INSERT INTO %s.%s DEFAULT VALUES RETURNING %s',
+            pg_ident($schemaName),
+            pg_ident($table),
+            pg_ident($idCol)
+        );
         $res = @pg_query($conn, $sql);
     } else {
-        $sql = sprintf('INSERT INTO %s.%s (%s) VALUES (%s) RETURNING %s', pg_ident($schemaName), pg_ident($table), implode(', ', array_map('pg_ident', $cols)), implode(', ', $ph), pg_ident($idCol));
+        $sql = sprintf(
+            'INSERT INTO %s.%s (%s) VALUES (%s) RETURNING %s',
+            pg_ident($schemaName),
+            pg_ident($table),
+            implode(', ', array_map('pg_ident', $cols)),
+            implode(', ', $ph),
+            pg_ident($idCol)
+        );
         $res = @pg_query_params($conn, $sql, $vals);
     }
 
@@ -187,7 +207,17 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
     }
 
     $colIdents = implode(', ', array_map('pg_ident', $dupCols));
-    $sql = sprintf('INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s WHERE %s = $1 RETURNING %s', pg_ident($schemaName), pg_ident($table), $colIdents, $colIdents, pg_ident($schemaName), pg_ident($table), pg_ident($idCol), pg_ident($idCol));
+    $sql = sprintf(
+        'INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s WHERE %s = $1 RETURNING %s',
+        pg_ident($schemaName),
+        pg_ident($table),
+        $colIdents,
+        $colIdents,
+        pg_ident($schemaName),
+        pg_ident($table),
+        pg_ident($idCol),
+        pg_ident($idCol)
+    );
     $res = @pg_query_params($conn, $sql, [$srcId]);
     if (!$res) {
         $pgErr = pg_last_error($conn);

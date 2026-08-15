@@ -230,7 +230,9 @@ if ($action === 'etl_save') {
             'source_query'              => $query,
             'target_schema'             => $schema,
             'target_table'              => $target,
-            'load_mode'                 => in_array($job['load_mode'] ?? '', $validModes, true) ? $job['load_mode'] : 'full_refresh',
+            'load_mode'                 => in_array($job['load_mode'] ?? '', $validModes, true)
+                ? $job['load_mode']
+                : 'full_refresh',
             'upsert_key'                => array_values(array_filter(array_map(
                 static fn($k) => trim((string)$k),
                 (array)($job['upsert_key'] ?? [])
@@ -286,7 +288,10 @@ if ($action === 'etl_test_connection') {
 
     $pdo = etl_source_pdo($conn, 'etl:test');
     if ($pdo === null) {
-        echo json_encode(['status' => 'error', 'error' => 'Could not connect — check driver, host, database, user and password.']);
+        echo json_encode([
+            'status' => 'error',
+            'error'  => 'Could not connect — check driver, host, database, user and password.',
+        ]);
         exit;
     }
     echo json_encode(['status' => 'success', 'message' => 'Connection OK.']);

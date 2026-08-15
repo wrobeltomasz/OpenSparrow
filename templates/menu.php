@@ -326,7 +326,8 @@ if (!function_exists('renderMenuLink')) {
             $attrs .= ' aria-current="page"';
         }
         $name = htmlspecialchars($item['name'] ?? '', ENT_QUOTES, 'UTF-8');
-        return '<a href="' . $href . '" class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '"' . $attrs . ' data-tooltip="' . $name . '">'
+        return '<a href="' . $href . '" class="' . htmlspecialchars($classes, ENT_QUOTES, 'UTF-8') . '"'
+             . $attrs . ' data-tooltip="' . $name . '">'
              . $icon
              . '<span class="menu-text">' . $name . '</span>'
              . '</a>';

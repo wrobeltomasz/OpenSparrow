@@ -48,11 +48,19 @@ $isReadOnly    ??= true;
 
             <div class="form-actions">
                 <?php if ($isReadOnly) : ?>
-                    <button type="button" class="btn-save" disabled><?= htmlspecialchars($formLabels['add'], ENT_QUOTES, 'UTF-8') ?></button>
+                    <button type="button" class="btn-save" disabled>
+                        <?= htmlspecialchars($formLabels['add'], ENT_QUOTES, 'UTF-8') ?>
+                    </button>
                 <?php else : ?>
-                    <button type="submit" class="btn-save"><?= htmlspecialchars($formLabels['add'], ENT_QUOTES, 'UTF-8') ?></button>
+                    <button type="submit" class="btn-save">
+                        <?= htmlspecialchars($formLabels['add'], ENT_QUOTES, 'UTF-8') ?>
+                    </button>
                 <?php endif; ?>
-                <button type="button" class="btn-cancel" data-nav="<?= htmlspecialchars($cancelUrl, ENT_QUOTES, 'UTF-8') ?>">
+                <button
+                    type="button"
+                    class="btn-cancel"
+                    data-nav="<?= htmlspecialchars($cancelUrl, ENT_QUOTES, 'UTF-8') ?>"
+                >
                     <?= htmlspecialchars($formLabels['cancel'], ENT_QUOTES, 'UTF-8') ?>
                 </button>
             </div>

@@ -64,7 +64,9 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             $salt = bin2hex(random_bytes(32));
             $hash = password_hash($salt . $demoUserPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
             $res = pg_query_params($conn, "
-                INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role, avatar_id)
+                INSERT INTO $tUsers (
+                    username, password_hash, salt, password_algo, password_params, is_active, role, avatar_id
+                )
                 VALUES (\$1, \$2, \$3, 'argon2id', \$4, true, \$5, \$6)
                 ON CONFLICT (username) DO UPDATE SET
                     password_hash = EXCLUDED.password_hash, salt = EXCLUDED.salt,
@@ -94,8 +96,15 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         $tNotes = sys_table('notes');
         foreach (($withUsers ? $demoData['demo_notes'] : []) as $n) {
             $res = pg_query_params($conn, "
-                INSERT INTO $tNotes (user_id, related_table, related_id, body, reminder_date) VALUES (\$1, \$2, \$3, \$4, \$5)
-            ", [$demoUserIds[$n['author']], $n['related_table'], $n['related_id'], $n['body'], $n['reminder_date'] ?? null]);
+                INSERT INTO $tNotes (user_id, related_table, related_id, body, reminder_date)
+                VALUES (\$1, \$2, \$3, \$4, \$5)
+            ", [
+                $demoUserIds[$n['author']],
+                $n['related_table'],
+                $n['related_id'],
+                $n['body'],
+                $n['reminder_date'] ?? null,
+            ]);
             if ($res === false) {
                 admin_db_fail($conn, "demo_install:demo_notes:{$type}");
             }
@@ -116,12 +125,21 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         $tNotifications = sys_table('users_notifications');
         $notifyDate = date('Y-m-d');
         foreach (($withUsers ? $demoData['demo_notifications'] : []) as $note) {
-            $link = 'edit.php?table=' . rawurlencode((string) $note['related_table']) . '&id=' . (int) $note['related_id'];
+            $link = 'edit.php?table=' . rawurlencode((string) $note['related_table'])
+                . '&id=' . (int) $note['related_id'];
             $res = pg_query_params($conn, "
                 INSERT INTO $tNotifications (user_id, title, link, source_table, source_id, is_read, notify_date)
                 VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7)
                 ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
-            ", [$demoUserIds[$note['author']], $note['title'], $link, $note['related_table'], $note['related_id'], $note['is_read'] ? 't' : 'f', $notifyDate]);
+            ", [
+                $demoUserIds[$note['author']],
+                $note['title'],
+                $link,
+                $note['related_table'],
+                $note['related_id'],
+                $note['is_read'] ? 't' : 'f',
+                $notifyDate,
+            ]);
             if ($res === false) {
                 admin_db_fail($conn, "demo_install:demo_notifications:{$type}");
             }
@@ -296,7 +314,11 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             $wfCfg['menu_icon'] = 'assets/icons/automation.png';
         }
 
-        $wfCfgOrdered = ['workflows' => $wfCfg['workflows'], 'menu_name' => $wfCfg['menu_name'], 'menu_icon' => $wfCfg['menu_icon']];
+        $wfCfgOrdered = [
+            'workflows' => $wfCfg['workflows'],
+            'menu_name' => $wfCfg['menu_name'],
+            'menu_icon' => $wfCfg['menu_icon'],
+        ];
         config_save('workflows', $wfCfgOrdered, null, $seedUserId);
 
         $viewsCfg = config_get('views') ?? [];
@@ -361,7 +383,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $dbPath       = $storagePath . '/' . $physicalName;
                 $res = pg_query_params($conn, "
                     INSERT INTO $tFiles
-                        (name, display_name, type, mime_type, extension, size_bytes, storage_path, uploaded_by, related_table, related_id, description)
+                        (name, display_name, type, mime_type, extension, size_bytes, storage_path,
+                         uploaded_by, related_table, related_id, description)
                     VALUES
                         (\$1, \$1, 'spreadsheet', 'text/csv', 'csv', \$2, \$3, \$4, \$5, \$6, \$7)
                     RETURNING id
@@ -406,7 +429,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $dbPath       = $storagePath . '/' . $physicalName;
                 $res = pg_query_params($conn, "
                     INSERT INTO $tFiles
-                        (name, display_name, type, mime_type, extension, size_bytes, storage_path, uploaded_by, related_table, related_id, related_field)
+                        (name, display_name, type, mime_type, extension, size_bytes, storage_path,
+                         uploaded_by, related_table, related_id, related_field)
                     VALUES
                         (\$1, \$2, 'image', 'image/png', 'png', \$3, \$4, \$5, \$6, \$7, \$8)
                     RETURNING id
@@ -710,9 +734,17 @@ if ($action === 'demo_uninstall') {
         $demoUserIds = $meta['demo_user_ids'] ?? [];
         if (!empty($demoUserIds)) {
             $idList = '{' . implode(',', array_map('intval', $demoUserIds)) . '}';
-            @pg_query_params($conn, 'DELETE FROM ' . sys_table('comments') . ' WHERE user_id = ANY($1::int[])', [$idList]);
+            @pg_query_params(
+                $conn,
+                'DELETE FROM ' . sys_table('comments') . ' WHERE user_id = ANY($1::int[])',
+                [$idList]
+            );
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('notes') . ' WHERE user_id = ANY($1::int[])', [$idList]);
-            @pg_query_params($conn, 'DELETE FROM ' . sys_table('users_notifications') . ' WHERE user_id = ANY($1::int[])', [$idList]);
+            @pg_query_params(
+                $conn,
+                'DELETE FROM ' . sys_table('users_notifications') . ' WHERE user_id = ANY($1::int[])',
+                [$idList]
+            );
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('users') . ' WHERE id = ANY($1::int[])', [$idList]);
         }
 

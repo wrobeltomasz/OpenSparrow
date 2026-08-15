@@ -189,7 +189,9 @@ function os_m2m_group(int $index, array $cfg, array $options, array $selected, b
 function os_m2m_summary(array $labels): string
 {
     if ($labels === []) {
-        return '<span class="m2m-summary-empty">' . htmlspecialchars(t('form.m2m_none_selected'), ENT_QUOTES, 'UTF-8') . '</span>';
+        return '<span class="m2m-summary-empty">'
+            . htmlspecialchars(t('form.m2m_none_selected'), ENT_QUOTES, 'UTF-8')
+            . '</span>';
     }
 
     if (count($labels) > OS_M2M_SUMMARY_CHIPS + 1) {

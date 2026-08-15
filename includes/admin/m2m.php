@@ -59,7 +59,8 @@ if ($action === 'create_m2m') {
     $displayCol = $body['display_column'] ?? 'name';
 
     $identRe = '/^[a-z][a-z0-9_]*$/';
-    foreach (['tableA' => $tableA, 'tableB' => $tableB, 'jt' => $jt, 'selfFk' => $selfFk, 'otherFk' => $otherFk] as $field => $val) {
+    $identifiers = ['tableA' => $tableA, 'tableB' => $tableB, 'jt' => $jt, 'selfFk' => $selfFk, 'otherFk' => $otherFk];
+    foreach ($identifiers as $field => $val) {
         if (!preg_match($identRe, $val)) {
             echo json_encode(['status' => 'error', 'error' => "Invalid identifier: $val"]);
             exit;
@@ -117,19 +118,36 @@ if ($action === 'create_m2m') {
                 'schema'       => $pgSchema,
                 'hidden'       => true,
                 'columns'      => [
-                    'id'      => ['display_name' => 'ID',   'type' => 'number', 'not_null' => true, 'readonly' => true, 'show_in_grid' => true, 'show_in_edit' => true],
-                    $selfFk   => ['display_name' => ucfirst(str_replace('_', ' ', $selfFk)),  'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
-                    $otherFk  => ['display_name' => ucfirst(str_replace('_', ' ', $otherFk)), 'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
+                    'id'     => [
+                        'display_name' => 'ID',
+                        'type' => 'number', 'not_null' => true, 'readonly' => true,
+                        'show_in_grid' => true, 'show_in_edit' => true,
+                    ],
+                    $selfFk  => [
+                        'display_name' => ucfirst(str_replace('_', ' ', $selfFk)),
+                        'type' => 'number', 'not_null' => true, 'readonly' => false,
+                        'show_in_grid' => true, 'show_in_edit' => true,
+                    ],
+                    $otherFk => [
+                        'display_name' => ucfirst(str_replace('_', ' ', $otherFk)),
+                        'type' => 'number', 'not_null' => true, 'readonly' => false,
+                        'show_in_grid' => true, 'show_in_edit' => true,
+                    ],
                 ],
                 'foreign_keys' => [
                     $selfFk  => ['reference_table' => $tableA, 'reference_column' => 'id', 'display_column' => 'id'],
-                    $otherFk => ['reference_table' => $tableB, 'reference_column' => 'id', 'display_column' => $displayCol],
+                    $otherFk => [
+                        'reference_table' => $tableB,
+                        'reference_column' => 'id',
+                        'display_column' => $displayCol,
+                    ],
                 ],
                 'subtables' => [],
             ];
         }
 
-        if (!isset($schema['tables'][$tableA]['many_to_many']) || !is_array($schema['tables'][$tableA]['many_to_many'])) {
+        $existingM2m = $schema['tables'][$tableA]['many_to_many'] ?? null;
+        if (!isset($existingM2m) || !is_array($existingM2m)) {
             $schema['tables'][$tableA]['many_to_many'] = [];
         }
         $schema['tables'][$tableA]['many_to_many'][] = [
@@ -189,7 +207,8 @@ if ($action === 'delete_m2m') {
             @pg_query($conn, sprintf('DROP TABLE IF EXISTS %s.%s', pg_ident($pgSchema), pg_ident($junctionTable)));
         }
 
-        if ($junctionTable && isset($schema['tables'][$junctionTable]['hidden']) && $schema['tables'][$junctionTable]['hidden'] === true) {
+        $junctionIsHidden = $schema['tables'][$junctionTable]['hidden'] ?? null;
+        if ($junctionTable && $junctionIsHidden === true) {
             $stillUsed = false;
             foreach ($schema['tables'] as $tCfg) {
                 foreach ($tCfg['many_to_many'] ?? [] as $m) {

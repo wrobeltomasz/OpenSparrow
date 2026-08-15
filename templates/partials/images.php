@@ -16,14 +16,20 @@ if (!$imagesPanel) {
     <div class="subtable-container form-wrapper">
         <div class="ef-panel-head">
             <h3 class="ef-panel-title"><?= htmlspecialchars($imagesPanel['label'], ENT_QUOTES, 'UTF-8') ?></h3>
-            <span class="img-count" id="imgCount"><?= htmlspecialchars($imagesPanel['countText'], ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="img-count" id="imgCount"><?=
+                htmlspecialchars($imagesPanel['countText'], ENT_QUOTES, 'UTF-8')
+            ?></span>
         </div>
 
         <?php if (!empty($imagesPanel['items'])) : ?>
             <div class="img-gallery">
                 <?php foreach ($imagesPanel['items'] as $image) : ?>
                     <div class="img-gallery-item">
-                        <a href="<?= htmlspecialchars($image['url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
+                        <a
+                            href="<?= htmlspecialchars($image['url'], ENT_QUOTES, 'UTF-8') ?>"
+                            target="_blank"
+                            rel="noopener"
+                        >
                             <img src="<?= htmlspecialchars($image['thumbUrl'], ENT_QUOTES, 'UTF-8') ?>"
                                  alt="<?= htmlspecialchars($image['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
                         </a>

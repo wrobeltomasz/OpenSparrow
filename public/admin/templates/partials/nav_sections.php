@@ -12,8 +12,14 @@ $navSections ??= [];
         <div class="nav-section<?= !empty($navSection['open']) ? ' open' : '' ?>">
             <?php if (!empty($navSection['label'])) : ?>
                 <div class="nav-section-header">
-                    <img class="nav-section-icon" src="<?= htmlspecialchars($navSection['icon'], ENT_QUOTES, 'UTF-8') ?>" alt="">
-                    <span class="nav-section-label"><?= htmlspecialchars($navSection['label'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <img
+                        class="nav-section-icon"
+                        src="<?= htmlspecialchars($navSection['icon'], ENT_QUOTES, 'UTF-8') ?>"
+                        alt=""
+                    >
+                    <span class="nav-section-label">
+                        <?= htmlspecialchars($navSection['label'], ENT_QUOTES, 'UTF-8') ?>
+                    </span>
                     <span class="nav-chevron">▼</span>
                 </div>
             <?php endif; ?>
@@ -21,7 +27,11 @@ $navSections ??= [];
                 <?php foreach ($navSection['items'] as $navItem) : ?>
                     <button class="admin-tab<?= !empty($navItem['active']) ? ' active' : '' ?>"
                             data-file="<?= htmlspecialchars($navItem['file'], ENT_QUOTES, 'UTF-8') ?>">
-                        <img class="nav-item-icon" src="<?= htmlspecialchars($navItem['icon'], ENT_QUOTES, 'UTF-8') ?>" alt="">
+                        <img
+                            class="nav-item-icon"
+                            src="<?= htmlspecialchars($navItem['icon'], ENT_QUOTES, 'UTF-8') ?>"
+                            alt=""
+                        >
                         <?= htmlspecialchars($navItem['label'], ENT_QUOTES, 'UTF-8') ?>
                     </button>
                 <?php endforeach; ?>
