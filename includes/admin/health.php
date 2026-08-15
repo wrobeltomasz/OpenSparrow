@@ -75,7 +75,7 @@ if ($action === 'health') {
 
         'database_json_ok' => (static function () {
             $f = __DIR__ . '/../../config/database.json';
-            return file_exists($f) && is_array(@json_decode(@file_get_contents($f), true));
+            return file_exists($f) && is_array(json_decode((string) @file_get_contents($f), true));
         })(),
         'schema_json_ok' => (static function () {
             require_once __DIR__ . '/../config_store.php';
@@ -83,7 +83,7 @@ if ($action === 'health') {
         })(),
         'security_json_ok' => (static function () {
             $f = __DIR__ . '/../../config/security.json';
-            return file_exists($f) && is_array(@json_decode(@file_get_contents($f), true));
+            return file_exists($f) && is_array(json_decode((string) @file_get_contents($f), true));
         })(),
     ];
     throw ResponseException::encoded($data);

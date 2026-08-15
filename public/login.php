@@ -251,7 +251,7 @@ if ($request->isPost()) {
         </div>
     </div>
     <script
-        src="assets/js/login.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/login.js'); ?>"
+        src="assets/js/login.js?v=<?php echo asset_version(__DIR__ . '/assets/js/login.js'); ?>"
         nonce="<?php echo $cspNonce; ?>"
     ></script>
     <?php require __DIR__ . '/../templates/footer.php'; ?>

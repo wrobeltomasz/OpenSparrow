@@ -325,37 +325,12 @@ ob_start();
     ],
 ], $cspNonce) ?>
 
-<script
-    type="module"
-    src="assets/js/edit/page-actions.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/edit/page-actions.js'); ?>"
-    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
-></script>
-
-<script
-    type="module"
-    src="assets/js/comments.js?v=<?php echo @filemtime('assets/js/comments.js'); ?>"
-    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
-></script>
-<script
-    type="module"
-    src="assets/js/owners.js?v=<?php echo @filemtime('assets/js/owners.js'); ?>"
-    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
-></script>
-<script
-    type="module"
-    src="assets/js/edit/form-behaviours.js?v=<?php echo @filemtime('assets/js/edit/form-behaviours.js'); ?>"
-    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
-></script>
-<script
-    type="module"
-    src="assets/js/edit/subtable-tooltip.js?v=<?php echo @filemtime('assets/js/edit/subtable-tooltip.js'); ?>"
-    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
-></script>
-<script
-    type="module"
-    src="assets/js/edit/m2m-picker.js?v=<?php echo @filemtime('assets/js/edit/m2m-picker.js'); ?>"
-    nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>"
-></script>
+<?= os_module_script('assets/js/edit/page-actions.js', $cspNonce) ?>
+<?= os_module_script('assets/js/comments.js', $cspNonce) ?>
+<?= os_module_script('assets/js/owners.js', $cspNonce) ?>
+<?= os_module_script('assets/js/edit/form-behaviours.js', $cspNonce) ?>
+<?= os_module_script('assets/js/edit/subtable-tooltip.js', $cspNonce) ?>
+<?= os_module_script('assets/js/edit/m2m-picker.js', $cspNonce) ?>
 <?php
 $extraScripts = ob_get_clean();
 include __DIR__ . '/../templates/layout.php';

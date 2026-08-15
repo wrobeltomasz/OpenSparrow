@@ -264,11 +264,8 @@ function files_action_upload($conn): void
     $uuid        = generateUuid();
     $filename    = $uuid . '.' . $ext;
     $dir         = rtrim(__DIR__ . '/../../' . ($config['storage_path'] ?? 'storage/files'), '/');
-    if (!is_dir($dir)) {
-        mkdir($dir, 0750, true);
-
-        @file_put_contents($dir . '/.htaccess', "Require all denied\n");
-    }
+    os_ensure_directory($dir, 0750);
+    os_write_guard_file($dir . '/.htaccess', "Require all denied\n");
 
     $destination = $dir . '/' . $filename;
     if (!move_uploaded_file($file['tmp_name'], $destination)) {

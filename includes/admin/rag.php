@@ -64,7 +64,7 @@ if ($action === 'rag_upload') {
         }
 
         $rawTagsJson = (string) os_request()->post('tags', '[]');
-        $tags = @json_decode($rawTagsJson, true);
+        $tags = json_decode($rawTagsJson, true);
         if (!is_array($tags)) {
             $tags = [];
         }
@@ -532,7 +532,7 @@ if ($action === 'rag_ollama_check') {
             $vResp = curl_exec($vCh);
             curl_close($vCh);
             if ($vResp !== false) {
-                $vData = @json_decode($vResp, true);
+                $vData = json_decode($vResp, true);
                 $version = (string) ($vData['version'] ?? '');
             }
         }

@@ -14,7 +14,7 @@ $unameEsc  = htmlspecialchars($uname, ENT_QUOTES, 'UTF-8');
 $nonceAttr = isset($cspNonce)
     ? ' nonce="' . htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8') . '"'
     : '';
-$cacheBust = @filemtime(__DIR__ . '/../public/assets/js/user-menu.js');
+$cacheBust = asset_version(__DIR__ . '/../public/assets/js/user-menu.js');
 
 $tToggleSidebar  = htmlspecialchars(t('header.toggle_sidebar'), ENT_QUOTES, 'UTF-8');
 $tToggleSearch   = htmlspecialchars(t('header.toggle_search'), ENT_QUOTES, 'UTF-8');
@@ -29,9 +29,9 @@ $tMyComments     = htmlspecialchars(t('header.my_comments'), ENT_QUOTES, 'UTF-8'
 $tNotes          = htmlspecialchars(t('header.notes'), ENT_QUOTES, 'UTF-8');
 $tLogout         = htmlspecialchars(t('auth.logout'), ENT_QUOTES, 'UTF-8');
 
-$vSidebarJs = @filemtime(__DIR__ . '/../public/assets/js/sidebar.js');
-$vNotifJs   = @filemtime(__DIR__ . '/../public/assets/js/notifications.js');
-$vAgentJs   = @filemtime(__DIR__ . '/../public/assets/js/agent-panel.js');
+$vSidebarJs = asset_version(__DIR__ . '/../public/assets/js/sidebar.js');
+$vNotifJs   = asset_version(__DIR__ . '/../public/assets/js/notifications.js');
+$vAgentJs   = asset_version(__DIR__ . '/../public/assets/js/agent-panel.js');
 
 $logoEnabled    = (bool) settings_value('logo_enabled', false);
 $customLogoPath = settings_value('custom_logo_path', null);

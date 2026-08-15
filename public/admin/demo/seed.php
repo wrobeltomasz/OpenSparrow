@@ -376,10 +376,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             $storagePath = trim((config_get('files') ?? [])['storage_path'] ?? 'storage/files/', '/');
             $repoRoot    = realpath(__DIR__ . '/../../../');
             $filesDir    = $repoRoot . '/' . $storagePath;
-            if (!is_dir($filesDir)) {
-                mkdir($filesDir, 0750, true);
-                @file_put_contents($filesDir . '/.htaccess', "Require all denied\n");
-            }
+            os_ensure_directory($filesDir, 0750);
+            os_write_guard_file($filesDir . '/.htaccess', "Require all denied\n");
             $tFiles = sys_table('files');
             foreach ($demoData['demo_files'] as $f) {
                 $physicalName = bin2hex(random_bytes(16)) . '.csv';
@@ -416,10 +414,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             $storagePath = trim((config_get('files') ?? [])['storage_path'] ?? 'storage/files/', '/');
             $repoRoot    = realpath(__DIR__ . '/../../../');
             $filesDir    = $repoRoot . '/' . $storagePath;
-            if (!is_dir($filesDir)) {
-                mkdir($filesDir, 0750, true);
-                @file_put_contents($filesDir . '/.htaccess', "Require all denied\n");
-            }
+            os_ensure_directory($filesDir, 0750);
+            os_write_guard_file($filesDir . '/.htaccess', "Require all denied\n");
             $assetsDir = __DIR__ . '/assets/images';
             $tFiles    = sys_table('files');
             foreach ($demoData['demo_images'] as $img) {

@@ -98,7 +98,7 @@ ob_start();
 
 <script
     type="module"
-    src="assets/js/files-page.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/files-page.js'); ?>"
+    src="assets/js/files-page.js?v=<?php echo asset_version(__DIR__ . '/assets/js/files-page.js'); ?>"
     nonce="<?php echo $cspNonce; ?>"
 ></script>
 <?php

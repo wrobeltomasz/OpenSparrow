@@ -7,6 +7,43 @@
 
 declare(strict_types=1);
 
+function os_asset_fallback_version(): string
+{
+    if (defined('ASSET_VERSION')) {
+        return (string) ASSET_VERSION;
+    }
+    require_once __DIR__ . '/version.php';
+    return (string) OPENSPARROW_VERSION;
+}
+
+function os_asset_path(string $path): string
+{
+    if ($path === '') {
+        return $path;
+    }
+    if ($path[0] === '/' || $path[0] === '\\' || preg_match('#^[a-zA-Z]:[\\\\/]#', $path) === 1) {
+        return $path;
+    }
+    return __DIR__ . '/../public/' . $path;
+}
+
+function asset_version(string $path): string
+{
+    static $cache = [];
+    if (isset($cache[$path])) {
+        return $cache[$path];
+    }
+
+    $file  = os_asset_path($path);
+    $mtime = is_file($file) ? filemtime($file) : false;
+    if ($mtime === false) {
+        error_log('[assets] cache-busting fallback, asset not readable: ' . $file);
+        return $cache[$path] = os_asset_fallback_version();
+    }
+
+    return $cache[$path] = (string) $mtime;
+}
+
 function os_require_access(string $scope, string $name): void
 {
     require_once __DIR__ . '/api_helpers.php';
@@ -52,9 +89,13 @@ function os_inline_globals(array $vars, string $nonce): string
 
 function os_module_script(string $src, string $nonce, ?string $versionFile = null): string
 {
-    $v = (string) @filemtime($versionFile ?? $src);
-    return '<script type="module" src="' . $src . '?v=' . $v . '"'
-        . ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"></script>' . "\n";
+    $v = str_starts_with($src, 'assets/js/') || str_starts_with($src, './assets/js/')
+        ? (string) os_fe_module_graph()['version']
+        : asset_version($versionFile ?? $src);
+    $nonceAttr = $nonce !== ''
+        ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"'
+        : '';
+    return '<script type="module" src="' . $src . '?v=' . $v . '"' . $nonceAttr . '></script>' . "\n";
 }
 
 function os_module_graph(array $groups): array

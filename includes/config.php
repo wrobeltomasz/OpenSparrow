@@ -54,6 +54,64 @@ if (!function_exists('settings_value')) {
     }
 }
 
+if (!function_exists('os_last_error_reason')) {
+    function os_last_error_reason(): string
+    {
+        $last = error_get_last();
+        return isset($last['message']) ? ': ' . $last['message'] : '';
+    }
+}
+
+if (!function_exists('os_ensure_directory')) {
+    function os_ensure_directory(string $dir, int $mode): bool
+    {
+        if (is_dir($dir)) {
+            return true;
+        }
+        if (!@mkdir($dir, $mode, true) && !is_dir($dir)) {
+            error_log('[storage] directory could not be created: ' . $dir . os_last_error_reason());
+            return false;
+        }
+        return true;
+    }
+}
+
+if (!function_exists('os_write_guard_file')) {
+    function os_write_guard_file(string $path, string $contents): bool
+    {
+        if (is_file($path)) {
+            return true;
+        }
+        if (@file_put_contents($path, $contents, LOCK_EX) === false) {
+            error_log(
+                '[security] web access guard file could not be written: ' . $path . os_last_error_reason()
+            );
+            return false;
+        }
+        return true;
+    }
+}
+
+if (!function_exists('os_persist_secret')) {
+    function os_persist_secret(string $file, string $secret, string $label): bool
+    {
+        if (@file_put_contents($file, $secret, LOCK_EX) === false) {
+            error_log(
+                '[security] ' . $label . ' could not be persisted to ' . $file
+                . ' - a new value is generated on every request until this is fixed'
+                . os_last_error_reason()
+            );
+            return false;
+        }
+        if (!@chmod($file, 0600)) {
+            error_log(
+                '[security] ' . $label . ' file kept its default permissions: ' . $file . os_last_error_reason()
+            );
+        }
+        return true;
+    }
+}
+
 if (defined('OPENSPARROW_CONFIG_LOADED')) {
     return;
 }
@@ -75,16 +133,10 @@ if ($_envSessPath !== '') {
     ini_set('session.save_path', $_envSessPath);
 } elseif ($_projectRoot !== false) {
     $_absPath = $_projectRoot . '/storage/sessions';
-    if (!is_dir($_absPath)) {
-        @mkdir($_absPath, 0700, true);
-    }
+    os_ensure_directory($_absPath, 0700);
     if (is_dir($_absPath) && is_writable($_absPath)) {
         ini_set('session.save_path', $_absPath);
-        $_htaccess = $_absPath . '/.htaccess';
-        if (!is_file($_htaccess)) {
-            @file_put_contents($_htaccess, "Require all denied\n");
-        }
-        unset($_htaccess);
+        os_write_guard_file($_absPath . '/.htaccess', "Require all denied\n");
     }
     unset($_absPath);
 }
@@ -97,17 +149,11 @@ if ($_envTmpPath !== '') {
     putenv('TMPDIR=' . $_envTmpPath);
 } elseif ($_projectRoot !== false) {
     $_absTmp = $_projectRoot . '/storage/tmp';
-    if (!is_dir($_absTmp)) {
-        @mkdir($_absTmp, 0700, true);
-    }
+    os_ensure_directory($_absTmp, 0700);
     if (is_dir($_absTmp) && is_writable($_absTmp)) {
         ini_set('sys_temp_dir', $_absTmp);
         putenv('TMPDIR=' . $_absTmp);
-        $_htaccess = $_absTmp . '/.htaccess';
-        if (!is_file($_htaccess)) {
-            @file_put_contents($_htaccess, "Require all denied\n");
-        }
-        unset($_htaccess);
+        os_write_guard_file($_absTmp . '/.htaccess', "Require all denied\n");
     }
     unset($_absTmp);
 }
@@ -141,8 +187,7 @@ ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
     $stored = is_file($file) ? trim((string) @file_get_contents($file)) : '';
     if ($stored === '') {
         $stored = bin2hex(random_bytes(32));
-        @file_put_contents($file, $stored, LOCK_EX);
-        @chmod($file, 0600);
+        os_persist_secret($file, $stored, 'IP_HASH_SALT');
     }
     define('IP_HASH_SALT', $stored);
 })();
@@ -157,8 +202,7 @@ ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
     $stored = is_file($file) ? trim((string) @file_get_contents($file)) : '';
     if ($stored === '') {
         $stored = bin2hex(random_bytes(32));
-        @file_put_contents($file, $stored, LOCK_EX);
-        @chmod($file, 0600);
+        os_persist_secret($file, $stored, 'APP_ENCRYPTION_KEY');
     }
     define('APP_ENCRYPTION_KEY', $stored);
 })();

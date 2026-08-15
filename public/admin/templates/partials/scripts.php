@@ -17,4 +17,4 @@ $adminJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
     window.BREADCRUMB_LABELS = <?= json_encode($breadcrumbLabels, $adminJsonFlags) ?>;
     window.LOGOUT_URL        = <?= json_encode($adminLogoutUrl, $adminJsonFlags) ?>;
 </script>
-<script type="module" src="js/nav-chrome.js?v=<?= (int) @filemtime(__DIR__ . '/../../js/nav-chrome.js') ?>"></script>
+<script type="module" src="js/nav-chrome.js?v=<?= asset_version(__DIR__ . '/../../js/nav-chrome.js') ?>"></script>

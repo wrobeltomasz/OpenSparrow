@@ -275,7 +275,7 @@ header(
     </script>
     <script
         type="module"
-        src="assets/js/setup.js?v=<?php echo @filemtime(__DIR__ . '/assets/js/setup.js'); ?>"
+        src="assets/js/setup.js?v=<?php echo asset_version(__DIR__ . '/assets/js/setup.js'); ?>"
     ></script>
 </body>
 </html>

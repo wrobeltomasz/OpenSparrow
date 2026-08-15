@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/config.php';
+
 function rag_throttle_dir(): string
 {
     $dir = __DIR__ . '/../storage/ratelimit';
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0775, true);
-    }
-    $deny = $dir . '/.htaccess';
-    if (!is_file($deny)) {
-        @file_put_contents($deny, "# Deny all direct web access to throttle state.\nDeny from all\n");
-    }
+    os_ensure_directory($dir, 0775);
+    os_write_guard_file(
+        $dir . '/.htaccess',
+        "# Deny all direct web access to throttle state.\nDeny from all\n"
+    );
     return $dir;
 }
 
@@ -29,6 +29,7 @@ function rag_rate_limit_ok(int $userId, int $maxPerMinute): bool
     $file = rag_throttle_dir() . '/user_' . $userId . '.json';
     $fh   = @fopen($file, 'c+');
     if ($fh === false) {
+        error_log('[rag] rate limit not enforced, throttle state unwritable: ' . $file . os_last_error_reason());
         return true;
     }
     $allowed = true;

@@ -188,7 +188,7 @@ if ($action === 'get_language_setting') {
     $allLocales = [];
     foreach (glob($langDir . '*.json') ?: [] as $f) {
         $code = basename($f, '.json');
-        $data = @json_decode((string)@file_get_contents($f), true) ?? [];
+        $data = json_decode((string)@file_get_contents($f), true) ?? [];
         $allLocales[] = [
             'code' => $code,
             'name' => is_string($data['_meta']['name'] ?? null) ? $data['_meta']['name'] : $code,
@@ -321,14 +321,11 @@ if ($action === 'upload_logo') {
     }
 
     $uploadDir = __DIR__ . '/../../public/assets/img/uploads';
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
-
-        @file_put_contents(
-            $uploadDir . '/.htaccess',
-            "<FilesMatch \"\\.(php\\d?|phtml|pl|py|cgi|sh)$\">\n    Require all denied\n</FilesMatch>\n"
-        );
-    }
+    os_ensure_directory($uploadDir, 0755);
+    os_write_guard_file(
+        $uploadDir . '/.htaccess',
+        "<FilesMatch \"\\.(php\\d?|phtml|pl|py|cgi|sh)$\">\n    Require all denied\n</FilesMatch>\n"
+    );
 
     $ext         = $allowedMimes[$mimeType];
     $filename    = 'logo-' . bin2hex(random_bytes(8)) . '.' . $ext;
