@@ -140,6 +140,10 @@
   color: #fff;
   text-decoration: none;
 }
+.btn-action-disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
 
 .btn-add {
   display: inline-flex;

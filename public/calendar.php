@@ -29,20 +29,15 @@ $pageTitle      = 'OpenSparrow | Calendar';
 $headerControls = os_header_search('calendarSearch')
     . os_header_filters('calendarFilters', 'calendar-filters')
     . os_header_clear_filters();
-ob_start();
-?>
-<main id="calendarMain">
-    <div class="calendar-header">
-        <h2 id="calendarTitle">Month Year</h2>
-        <div class="calendar-nav">
-            <button id="btnPrev"><?= t('calendar.prev') ?></button>
-            <button id="btnNext"><?= t('calendar.next') ?></button>
-        </div>
-    </div>
 
-    <div id="calendarContainer" class="calendar-grid"></div>
-</main>
-<?php
+$calendarLabels = [
+    'title' => 'Month Year',
+    'prev'  => t('calendar.prev'),
+    'next'  => t('calendar.next'),
+];
+
+ob_start();
+include __DIR__ . '/../templates/calendar.php';
 $pageContent = ob_get_clean();
 
 $extraScripts = os_inline_globals([

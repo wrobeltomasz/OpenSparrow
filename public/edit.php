@@ -102,357 +102,196 @@ foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
 
 $ctx = new RenderContext($isReadOnly, $fkOptions);
 
+$jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+
+$formFields = [];
+foreach ($tableCfg->visibleColumns() as $col) {
+    if ($col->name === $tableCfg->primaryKey) {
+        continue;
+    }
+    $isColRo = $col->readonly || $isReadOnly;
+    $formFields[] = [
+        'label'    => $col->displayName,
+        'required' => $col->notNull && !$isColRo,
+        'html'     => $fieldRegistry->for($col, $tableCfg->hasForeignKey($col->name))
+            ->render($col, $row[$col->name] ?? '', $ctx),
+    ];
+}
+
+$m2mGroups = [];
+foreach ($m2mConfigs as $mi => $m2mCfg) {
+    $m2mGroups[] = os_m2m_group(
+        (int)$mi,
+        $m2mCfg,
+        m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema),
+        m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema),
+        $isReadOnly
+    );
+}
+
+$subtablePanels = [];
+foreach ($subtablesData as $si => $sd) {
+    $sTable  = $sd['config']['table'];
+    $sFk     = $sd['config']['foreign_key'];
+    $sCols   = $sd['config']['columns_to_show'] ?? ['id'];
+    $siLabel = $sd['config']['label'] ?? ($sd['schema']->displayName ?? $sTable);
+
+    $sColumnsMap = [];
+    foreach ($sd['schema']->columns as $sColName => $sColCfg) {
+        $sColumnsMap[$sColName] = [
+            'display_name' => $sColCfg->displayName,
+            'type'         => $sColCfg->type,
+            'enum_colors'  => $sColCfg->enumColors,
+        ];
+    }
+
+    $sHeaders = [];
+    foreach ($sCols as $c) {
+        $sHeaders[] = $sd['schema']->columns[$c]->displayName ?? $c;
+    }
+
+    $sRows = [];
+    foreach ($sd['rows'] as $r) {
+        $sCells = [];
+        foreach ($sCols as $c) {
+            $sCells[] = (string)($r[$c . '__display'] ?? $r[$c] ?? '');
+        }
+        $sRows[] = [
+            'json'    => (string) json_encode($r, $jsonFlags),
+            'cells'   => $sCells,
+            'editUrl' => 'edit.php?table=' . urlencode($sTable) . '&id=' . urlencode((string)$r['id']),
+        ];
+    }
+
+    $subtablePanels[] = [
+        'id'           => 'tab-sub-' . (int)$si,
+        'label'        => $siLabel,
+        'icon'         => $sd['schema']->icon ?? '',
+        'addUrl'       => 'create.php?table=' . urlencode($sTable) . '&' . urlencode($sFk) . '=' . urlencode((string)$id),
+        'addLabel'     => t('form.add_subtable', ['label' => $siLabel]),
+        'emptyText'    => t('form.no_records'),
+        'actionsLabel' => t('common.actions'),
+        'viewLabel'    => t('common.view'),
+        'editLabel'    => t('common.edit'),
+        'columnsJson'  => (string) json_encode($sColumnsMap, $jsonFlags),
+        'headers'      => $sHeaders,
+        'rows'         => $sRows,
+    ];
+}
+
+$imagesPanel = null;
+if ($imagesCfg) {
+    $galleryImages = images_for_record($GLOBALS['conn'], $table, (int)$id);
+    $imageItems    = [];
+    foreach ($galleryImages as $gi) {
+        $giUrl = 'file_download.php?uuid=' . urlencode($gi['uuid']);
+        $imageItems[] = [
+            'url'      => $giUrl,
+            'thumbUrl' => $giUrl . '&thumb=1',
+            'name'     => $gi['display_name'] ?: $gi['name'],
+            'uuid'     => $gi['uuid'],
+        ];
+    }
+    $imagesPanel = [
+        'label'       => $imagesCfg['label'] ?: t('images.label'),
+        'countText'   => t('images.count', ['n' => count($galleryImages), 'max' => $imagesCfg['max_per_record']]),
+        'items'       => $imageItems,
+        'canUpload'   => !$isReadOnly && count($galleryImages) < $imagesCfg['max_per_record'],
+        'deleteLabel' => t('images.delete'),
+        'uploadLabel' => t('images.upload'),
+        'emptyText'   => t('images.empty'),
+        'limitText'   => t('images.limit_reached'),
+    ];
+}
+
+$fileIcons = [
+    'image'       => 'assets/icons/image.png',
+    'pdf'         => 'assets/icons/picture_as_pdf.png',
+    'doc'         => 'assets/icons/docs.png',
+    'spreadsheet' => 'assets/icons/grid_on.png',
+    'archive'     => 'assets/icons/folder_zip.png',
+    'other'       => 'assets/icons/file_present.png',
+];
+
+$fileRows = [];
+foreach ($relatedFiles as $rf) {
+    $rawTags = $rf['tags'] ?? '';
+    $tagsArr = [];
+    if ($rawTags && $rawTags !== '{}') {
+        foreach (explode(',', str_replace('"', '', trim($rawTags, '{}'))) as $tagItem) {
+            $tagsArr[] = trim($tagItem);
+        }
+    }
+    $fileRows[] = [
+        'icon'        => $fileIcons[$rf['type']] ?? $fileIcons['other'],
+        'type'        => ucfirst($rf['type']),
+        'name'        => $rf['display_name'] ?: $rf['name'],
+        'tags'        => $tagsArr,
+        'size'        => ByteFormatter::humanize((int)$rf['size_bytes']),
+        'date'        => date('Y-m-d', strtotime($rf['created_at'])),
+        'downloadUrl' => 'file_download.php?uuid=' . urlencode($rf['uuid']),
+    ];
+}
+
+$filesPanel = [
+    'title'         => t('form.attached_files'),
+    'phDisplayName' => t('files.ph_display_name'),
+    'phTags'        => t('files.ph_tags'),
+    'uploadLabel'   => t('form.upload_file'),
+    'downloadLabel' => t('files.download'),
+    'emptyText'     => t('form.no_files'),
+    'actionsLabel'  => t('common.actions'),
+    'tagSuggestions' => ['Invoice', 'Contract', 'Image', 'Report'],
+    'columns'       => [
+        t('files.col_type'),
+        t('files.col_display'),
+        t('files.col_tags'),
+        t('files.col_size'),
+        t('owners.col_date'),
+    ],
+    'rows'          => $fileRows,
+];
+
+$historyPanel = [
+    'ownerTitle'       => t('owners.section_owner'),
+    'historyTitle'     => t('owners.section_history'),
+    'changeOwnerLabel' => t('owners.change_owner'),
+    'loadingText'      => t('common.loading'),
+];
+
+$tabs = [[
+    'id'    => 'tab-details',
+    'label' => $tableCfg->displayName,
+    'icon'  => $tableCfg->icon ?: '',
+]];
+foreach ($subtablePanels as $panel) {
+    $tabs[] = ['id' => $panel['id'], 'label' => $panel['label'], 'icon' => $panel['icon']];
+}
+if ($imagesPanel) {
+    $tabs[] = ['id' => 'tab-images', 'label' => $imagesPanel['label'], 'icon' => 'assets/icons/image.png'];
+}
+$tabs[] = ['id' => 'tab-files', 'label' => t('form.tab_files'), 'icon' => 'assets/icons/folder_open.png'];
+$tabs[] = ['id' => 'tab-comments', 'label' => t('form.tab_comments'), 'icon' => ''];
+$tabs[] = ['id' => 'tab-history', 'label' => t('form.tab_history'), 'icon' => ''];
+
+$formHeading   = t('form.edit_record', ['table' => $tableCfg->displayName]);
+$formSaved     = $request->query('saved') === '1';
+$formError     = $error;
+$formCsrfToken = $csrf->token();
+$formRecordId  = $row[$tableCfg->primaryKey] ?? null;
+$cancelUrl     = 'index.php?table=' . urlencode((string)$table);
+$formLabels    = [
+    'saved'    => t('form.saved_ok'),
+    'update'   => t('form.update_record'),
+    'save'     => t('form.save'),
+    'saveExit' => t('form.save_exit'),
+    'cancel'   => t('common.cancel'),
+    'delete'   => t('common.delete'),
+];
+
 $pageTitle = 'OpenSparrow | Edit Record - ' . $tableCfg->displayName;
 ob_start();
-?>
-
-<main class="form-page">
-    <h2><?= htmlspecialchars(t('form.edit_record', ['table' => $tableCfg->displayName])) ?></h2>
-
-    <?php if ($request->query('saved') === '1') : ?>
-        <div class="form-alert success">
-            <?= t('form.saved_ok') ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if ($error) : ?>
-        <div class="form-alert error">
-            Error: <?php echo htmlspecialchars($error); ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="tab-list" role="tablist">
-        <button class="tab-btn active" data-tab="tab-details" role="tab" aria-selected="true">
-            <?php if ($tableCfg->icon) : ?>
-                <img class="tab-icon" src="<?php echo htmlspecialchars($tableCfg->icon); ?>" alt="">
-            <?php endif; ?>
-            <?php echo htmlspecialchars($tableCfg->displayName); ?>
-        </button>
-        <?php foreach ($subtablesData as $si => $sd) : ?>
-            <?php
-            $siLabel = $sd['config']['label'] ?? ($sd['schema']->displayName ?? $sd['config']['table']);
-            $siIcon  = $sd['schema']->icon ?? '';
-            ?>
-            <button class="tab-btn" data-tab="tab-sub-<?php echo (int)$si; ?>" role="tab" aria-selected="false">
-                <?php if ($siIcon) : ?>
-                    <img class="tab-icon" src="<?php echo htmlspecialchars($siIcon); ?>" alt="">
-                <?php endif; ?>
-                <?php echo htmlspecialchars($siLabel); ?>
-            </button>
-        <?php endforeach; ?>
-        <?php if ($imagesCfg) : ?>
-            <button class="tab-btn" data-tab="tab-images" role="tab" aria-selected="false">
-                <img class="tab-icon" src="assets/icons/image.png" alt="">
-                <?php echo htmlspecialchars($imagesCfg['label'] ?: t('images.label'), ENT_QUOTES, 'UTF-8'); ?>
-            </button>
-        <?php endif; ?>
-        <button class="tab-btn" data-tab="tab-files" role="tab" aria-selected="false">
-            <img class="tab-icon" src="assets/icons/folder_open.png" alt="">
-            <?= t('form.tab_files') ?>
-        </button>
-        <button class="tab-btn" data-tab="tab-comments" role="tab" aria-selected="false"><?= t('form.tab_comments') ?></button>
-        <button class="tab-btn" data-tab="tab-history" role="tab" aria-selected="false"><?= t('form.tab_history') ?></button>
-    </div>
-
-    <div class="tab-panel active" id="tab-details" role="tabpanel">
-    <div class="form-wrapper">
-        <form method="POST" class="editor-form">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf->token(), ENT_QUOTES, 'UTF-8'); ?>">
-
-            <?php
-            $pkVal = $row[$tableCfg->primaryKey] ?? null;
-            if ($pkVal !== null) :
-                ?>
-            <div class="form-id-strip">
-                <span class="form-id-label">ID</span>
-                <span class="form-id-value"><?php echo htmlspecialchars((string)$pkVal); ?></span>
-            </div>
-            <?php endif; ?>
-
-            <div class="form-grid">
-            <?php foreach ($tableCfg->visibleColumns() as $col) : ?>
-                <?php
-                if ($col->name === $tableCfg->primaryKey) {
-                    continue;
-                }
-                $val     = $row[$col->name] ?? '';
-                $hasFk   = $tableCfg->hasForeignKey($col->name);
-                $isColRo = $col->readonly || $isReadOnly;
-                ?>
-                <div class="form-group">
-                    <label>
-                        <?php echo htmlspecialchars($col->displayName); ?>
-                        <?php if ($col->notNull && !$isColRo) : ?>
-                            <span class="required">*</span>
-                        <?php endif; ?>
-                    </label>
-                    <?php echo $fieldRegistry->for($col, $hasFk)->render($col, $val, $ctx); ?>
-                </div>
-            <?php endforeach; ?>
-            </div>
-
-            <?php if (!empty($m2mConfigs)) : ?>
-            <div class="m2m-block">
-                <?php foreach ($m2mConfigs as $mi => $m2mCfg) : ?>
-                    <?php
-                    $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema);
-                    $m2mSel  = m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema);
-                    echo os_m2m_group((int)$mi, $m2mCfg, $m2mOpts, $m2mSel, $isReadOnly);
-                    ?>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-
-            <input type="hidden" name="_save_action" id="saveAction" value="exit">
-            <div class="form-actions">
-                <?php if ($isReadOnly) : ?>
-                    <button type="button" class="btn-save" disabled><?= t('form.update_record') ?></button>
-                <?php else : ?>
-                    <button type="submit" class="btn-save" data-save-action="stay"><?= t('form.save') ?></button>
-                    <button type="submit" class="btn-cancel" data-save-action="exit"><?= t('form.save_exit') ?></button>
-                <?php endif; ?>
-                <button type="button" class="btn-cancel" data-nav="index.php?table=<?php echo htmlspecialchars(urlencode($table), ENT_QUOTES, 'UTF-8'); ?>"><?= t('common.cancel') ?></button>
-                <?php if (!$isReadOnly) : ?>
-                    <button type="button" class="btn-delete" id="btnDeleteRecord"><?= t('common.delete') ?></button>
-                <?php endif; ?>
-            </div>
-        </form>
-    </div>
-    </div>
-    <?php foreach ($subtablesData as $si => $sd) : ?>
-        <?php
-        $sTable      = $sd['config']['table'];
-        $sFk         = $sd['config']['foreign_key'];
-        $sCols       = $sd['config']['columns_to_show'] ?? ['id'];
-        $siLabel     = $sd['config']['label'] ?? ($sd['schema']->displayName ?? $sTable);
-        $sColumnsMap = [];
-        foreach ($sd['schema']->columns as $sColName => $sColCfg) {
-            $sColumnsMap[$sColName] = [
-                'display_name' => $sColCfg->displayName,
-                'type'         => $sColCfg->type,
-                'enum_colors'  => $sColCfg->enumColors,
-            ];
-        }
-        ?>
-    <div class="tab-panel" id="tab-sub-<?php echo (int)$si; ?>" role="tabpanel">
-        <div class="subtable-container form-wrapper">
-            <div class="ef-panel-head">
-                <h3><?php echo htmlspecialchars($siLabel); ?></h3>
-                <?php if (!$isReadOnly) : ?>
-                    <a href="create.php?table=<?php echo urlencode($sTable); ?>&<?php echo urlencode($sFk); ?>=<?php echo urlencode((string)$id); ?>" class="btn-add">
-                        <?= htmlspecialchars(t('form.add_subtable', ['label' => $siLabel])) ?>
-                    </a>
-                <?php endif; ?>
-            </div>
-
-            <?php if (empty($sd['rows'])) : ?>
-                <p class="ef-empty"><?php echo htmlspecialchars(t('form.no_records'), ENT_QUOTES, 'UTF-8'); ?></p>
-            <?php else : ?>
-                <div class="edit-subtable-wrapper">
-                    <?php $sColumnsJson = htmlspecialchars(json_encode($sColumnsMap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8'); ?>
-                    <table data-columns='<?php echo $sColumnsJson; ?>'>
-                        <thead>
-                            <tr>
-                                <?php foreach ($sCols as $c) : ?>
-                                    <th><?php echo htmlspecialchars($sd['schema']->columns[$c]->displayName ?? $c); ?></th>
-                                <?php endforeach; ?>
-                                <th class="subtable-actions"><?= t('common.actions') ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($sd['rows'] as $r) : ?>
-                                <?php $sRowJson = htmlspecialchars(json_encode($r, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8'); ?>
-                                <tr data-row='<?php echo $sRowJson; ?>' data-title="<?php echo htmlspecialchars($siLabel); ?>">
-                                    <?php foreach ($sCols as $c) : ?>
-                                        <?php $displayVal = $r[$c . '__display'] ?? $r[$c] ?? ''; ?>
-                                        <td><?php echo htmlspecialchars((string)$displayVal); ?></td>
-                                    <?php endforeach; ?>
-                                    <td class="subtable-actions">
-                                        <?php if ($isReadOnly) : ?>
-                                            <a href="edit.php?table=<?php echo urlencode($sTable); ?>&id=<?php echo urlencode($r['id']); ?>" class="btn-action" style="pointer-events: none; opacity: 0.5;"><?= t('common.view') ?></a>
-                                        <?php else : ?>
-                                            <a href="edit.php?table=<?php echo urlencode($sTable); ?>&id=<?php echo urlencode($r['id']); ?>" class="btn-action"><?= t('common.edit') ?></a>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>    
-    <?php endforeach; ?>
-
-    <?php if ($imagesCfg) : ?>
-        <?php $galleryImages = images_for_record($GLOBALS['conn'], $table, (int)$id); ?>
-    <div class="tab-panel" id="tab-images" role="tabpanel">
-    <div class="subtable-container form-wrapper">
-        <div class="ef-panel-head">
-            <?php $imgLabel = $imagesCfg['label'] ?: t('images.label'); ?>
-            <h3 class="ef-panel-title"><?php echo htmlspecialchars($imgLabel, ENT_QUOTES, 'UTF-8'); ?></h3>
-            <?php
-            $imgCountText = t('images.count', [
-                'n'   => count($galleryImages),
-                'max' => $imagesCfg['max_per_record'],
-            ]);
-            ?>
-            <span class="img-count" id="imgCount"><?php
-                echo htmlspecialchars($imgCountText, ENT_QUOTES, 'UTF-8');
-            ?></span>
-        </div>
-
-        <?php if (!empty($galleryImages)) : ?>
-            <div class="img-gallery">
-                <?php foreach ($galleryImages as $gi) : ?>
-                    <?php
-                    $giUrl  = 'file_download.php?uuid=' . urlencode($gi['uuid']);
-                    $giName = htmlspecialchars($gi['display_name'] ?: $gi['name'], ENT_QUOTES, 'UTF-8');
-                    ?>
-                    <div class="img-gallery-item">
-                        <a href="<?php echo $giUrl; ?>" target="_blank" rel="noopener">
-                            <img src="<?php echo $giUrl; ?>&amp;thumb=1" alt="<?php echo $giName; ?>" loading="lazy">
-                        </a>
-                        <div class="img-gallery-name"><?php echo $giName; ?></div>
-                        <?php if (!$isReadOnly) : ?>
-                            <button type="button" class="btn-action img-delete-btn"
-                                    data-uuid="<?php echo htmlspecialchars($gi['uuid'], ENT_QUOTES, 'UTF-8'); ?>">
-                                <?= t('images.delete') ?>
-                            </button>
-                        <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php else : ?>
-            <p class="ef-empty"><?= t('images.empty') ?></p>
-        <?php endif; ?>
-
-        <?php if (!$isReadOnly && count($galleryImages) < $imagesCfg['max_per_record']) : ?>
-            <div class="img-upload-row">
-                <input type="file" id="imageInput" accept="image/*" class="ef-upload-input">
-                <button type="button" id="btnImageUpload" class="btn-action ef-upload-btn"><?= t('images.upload') ?></button>
-                <span id="imageUploadStatus" class="ef-upload-status"></span>
-            </div>
-        <?php elseif (!$isReadOnly) : ?>
-            <p class="ef-empty"><?= t('images.limit_reached') ?></p>
-        <?php endif; ?>
-    </div>
-    </div>    
-    <?php endif; ?>
-
-    <div class="tab-panel" id="tab-files" role="tabpanel">
-    <div class="subtable-container form-wrapper">
-        <div class="ef-panel-head">
-            <h3 class="ef-panel-title"><?= t('form.attached_files') ?></h3>
-        </div>
-
-        <?php if (!$isReadOnly) : ?>
-            <div class="ef-upload-bar">
-                <input type="file" id="inlineFileInput" class="ef-upload-input" />
-                <input type="text" id="inlineFileName" placeholder="<?php echo htmlspecialchars(t('files.ph_display_name'), ENT_QUOTES, 'UTF-8'); ?>" class="ef-upload-text" />
-                <input type="text" id="inlineFileTags" placeholder="<?php echo htmlspecialchars(t('files.ph_tags'), ENT_QUOTES, 'UTF-8'); ?>" class="ef-upload-text" list="tagSuggestions" />
-
-                <datalist id="tagSuggestions">
-                    <option value="Invoice">
-                    <option value="Contract">
-                    <option value="Image">
-                    <option value="Report">
-                </datalist>
-
-                <button type="button" id="btnInlineUpload" class="btn-action ef-upload-btn"><?= t('form.upload_file') ?></button>
-                <span id="inlineUploadStatus" class="ef-upload-status"></span>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($relatedFiles)) : ?>
-            <div class="edit-subtable-wrapper">
-                <table class="ef-files-table">
-                    <thead>
-                        <tr>
-                            <th><?php echo htmlspecialchars(t('files.col_type'), ENT_QUOTES, 'UTF-8'); ?></th>
-                            <th><?php echo htmlspecialchars(t('files.col_display'), ENT_QUOTES, 'UTF-8'); ?></th>
-                            <th><?php echo htmlspecialchars(t('files.col_tags'), ENT_QUOTES, 'UTF-8'); ?></th>
-                            <th><?php echo htmlspecialchars(t('files.col_size'), ENT_QUOTES, 'UTF-8'); ?></th>
-                            <th><?php echo htmlspecialchars(t('owners.col_date'), ENT_QUOTES, 'UTF-8'); ?></th>
-                            <th class="ef-col-actions"><?php echo htmlspecialchars(t('common.actions'), ENT_QUOTES, 'UTF-8'); ?></th>
-                        </tr>
-                    </thead>
-                    <?php
-                    $fileIcons = [
-                        'image'       => 'assets/icons/image.png',
-                        'pdf'         => 'assets/icons/picture_as_pdf.png',
-                        'doc'         => 'assets/icons/docs.png',
-                        'spreadsheet' => 'assets/icons/grid_on.png',
-                        'archive'     => 'assets/icons/folder_zip.png',
-                        'other'       => 'assets/icons/file_present.png',
-                    ];
-                    ?>
-                    <tbody>
-                        <?php foreach ($relatedFiles as $rf) : ?>
-                            <?php
-                            $iconPath = $fileIcons[$rf['type']] ?? $fileIcons['other'];
-
-                            $rawTags = $rf['tags'] ?? '';
-                            $tagsArr = [];
-                            if ($rawTags && $rawTags !== '{}') {
-                                $rawTags = trim($rawTags, '{}');
-                                $tagsArr = explode(',', str_replace('"', '', $rawTags));
-                            }
-                            ?>
-                            <tr>
-                                <td class="ef-file-type">
-                                    <div class="ef-file-type-inner">
-                                        <img src="<?php echo htmlspecialchars($iconPath); ?>" alt="icon" class="ef-file-icon">
-                                        <?php echo htmlspecialchars(ucfirst($rf['type'])); ?>
-                                    </div>
-                                </td>
-                                <td><?php echo htmlspecialchars($rf['display_name'] ?: $rf['name']); ?></td>
-                                <td>
-                                    <?php if (!empty($tagsArr)) : ?>
-                                        <?php foreach ($tagsArr as $t) : ?>
-                                            <span class="tag-badge"><?php echo htmlspecialchars(trim($t)); ?></span>
-                                        <?php endforeach; ?>
-                                    <?php else : ?>
-                                        <span class="ef-file-dash">-</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="ef-file-meta"><?php echo ByteFormatter::humanize((int)$rf['size_bytes']); ?></td>
-                                <td class="ef-file-meta"><?php echo htmlspecialchars(date('Y-m-d', strtotime($rf['created_at']))); ?></td>
-                                <td>
-                                    <a href="file_download.php?uuid=<?php echo urlencode($rf['uuid']); ?>" target="_blank" class="btn-action ef-download-btn">Download</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php else : ?>
-            <p class="ef-empty"><?= t('form.no_files') ?></p>
-        <?php endif; ?>
-    </div>
-    </div>
-    <div class="tab-panel" id="tab-comments" role="tabpanel">
-        <div id="c-panel" class="form-wrapper"></div>
-    </div>
-    <div class="tab-panel" id="tab-history" role="tabpanel">
-        <div class="form-wrapper">
-            <div id="ow-panel" class="owner-panel ow-panel">
-                <h3 class="ow-section-title"><?= t('owners.section_owner') ?></h3>
-                <div id="ow-current" class="ow-current"><?php echo htmlspecialchars(t('common.loading'), ENT_QUOTES, 'UTF-8'); ?></div>
-                <div id="ow-change" class="ow-change" hidden>
-                    <select id="ow-select" class="ow-select"></select>
-                    <button id="ow-save" type="button" class="btn-action"><?php echo htmlspecialchars(t('owners.change_owner'), ENT_QUOTES, 'UTF-8'); ?></button>
-                    <span id="ow-status"></span>
-                </div>
-            </div>
-            <div id="ow-history" class="ow-history-wrap">
-                <h3 class="ow-section-title"><?= t('owners.section_history') ?></h3>
-                <div id="ow-history-body" class="ow-history-body">Loading…</div>
-            </div>
-        </div>
-    </div>
-</main>
-<?php
+include __DIR__ . '/../templates/edit.php';
 $pageContent = ob_get_clean();
 ob_start();
 ?>

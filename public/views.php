@@ -27,17 +27,11 @@ $headerControls = '<input id="globalSearch" type="text" placeholder="'
     . '<div id="filterBar"></div>'
     . '<select id="groupBy" hidden><option value=""></option></select>'
     . os_header_clear_filters();
+
+$viewsLabels = ['loading' => t('common.loading')];
+
 ob_start();
-?>
-<main>
-    <section id="viewSection">
-        <div id="viewBreadcrumb" class="vw-breadcrumb"></div>
-        <div id="viewContainer" class="vw-container">
-            <div class="vw-loading"><?= htmlspecialchars(t('common.loading'), ENT_QUOTES, 'UTF-8') ?></div>
-        </div>
-    </section>
-</main>
-<?php
+include __DIR__ . '/../templates/views.php';
 $pageContent = ob_get_clean();
 
 $extraScripts = os_inline_globals([

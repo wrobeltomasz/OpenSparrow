@@ -21,16 +21,11 @@ $pageTitle      = 'OpenSparrow — Print';
 $extraCss       = '<link href="assets/css/print.css" rel="stylesheet">';
 $headerControls = os_header_filters('printFilters', 'print-filters')
     . os_header_clear_filters();
+
+$printLabels = ['loading' => t('common.loading')];
+
 ob_start();
-?>
-<main>
-    <section id="printSection">
-        <div id="printContainer" class="pr-container">
-            <div class="pr-loading"><?= htmlspecialchars(t('common.loading'), ENT_QUOTES, 'UTF-8') ?></div>
-        </div>
-    </section>
-</main>
-<?php
+include __DIR__ . '/../templates/print.php';
 $pageContent = ob_get_clean();
 
 $extraScripts = os_inline_globals([

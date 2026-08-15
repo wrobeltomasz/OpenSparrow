@@ -84,66 +84,43 @@ foreach ($tableCfg->writableColumns() as $col) {
 
 $ctx = new RenderContext($isReadOnly, $fkOptions, $prefilled, $locked);
 
+$formFields = [];
+foreach ($tableCfg->visibleColumns() as $col) {
+    if ($col->name === $tableCfg->primaryKey || $col->readonly) {
+        continue;
+    }
+    $isColRo = $isReadOnly || ($locked[$col->name] ?? false);
+    $formFields[] = [
+        'label'    => $col->displayName,
+        'required' => $col->notNull && !$isColRo,
+        'html'     => $fieldRegistry->for($col, $tableCfg->hasForeignKey($col->name))
+            ->render($col, null, $ctx),
+    ];
+}
+
+$m2mGroups = [];
+foreach ($m2mConfigs as $mi => $m2mCfg) {
+    $m2mGroups[] = os_m2m_group(
+        (int)$mi,
+        $m2mCfg,
+        m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema),
+        [],
+        $isReadOnly
+    );
+}
+
+$formHeading   = t('form.add_new_record', ['table' => $tableCfg->displayName]);
+$formError     = $error;
+$formCsrfToken = $csrf->token();
+$cancelUrl     = 'index.php?table=' . urlencode((string)$table);
+$formLabels    = [
+    'add'    => t('form.add_record'),
+    'cancel' => t('common.cancel'),
+];
+
 $pageTitle = 'OpenSparrow | Add Record - ' . $tableCfg->displayName;
 ob_start();
-?>
-
-<main class="form-page">
-    <h2><?= htmlspecialchars(t('form.add_new_record', ['table' => $tableCfg->displayName])) ?></h2>
-
-    <?php if ($error) : ?>
-        <div class="form-alert error">
-            Error: <?php echo htmlspecialchars($error); ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="form-wrapper">
-        <form method="POST" class="editor-form">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf->token(), ENT_QUOTES, 'UTF-8'); ?>">
-            <div class="form-grid">
-            <?php foreach ($tableCfg->visibleColumns() as $col) : ?>
-                <?php
-                if ($col->name === $tableCfg->primaryKey || $col->readonly) {
-                    continue;
-                }
-                $hasFk   = $tableCfg->hasForeignKey($col->name);
-                $isColRo = $isReadOnly || ($locked[$col->name] ?? false);
-                ?>
-                <div class="form-group">
-                    <label>
-                        <?php echo htmlspecialchars($col->displayName); ?>
-                        <?php if ($col->notNull && !$isColRo) : ?>
-                            <span class="required">*</span>
-                        <?php endif; ?>
-                    </label>
-                    <?php echo $fieldRegistry->for($col, $hasFk)->render($col, null, $ctx); ?>
-                </div>
-            <?php endforeach; ?>
-            </div>
-
-            <?php if (!empty($m2mConfigs)) : ?>
-            <div class="m2m-block">
-                <?php foreach ($m2mConfigs as $mi => $m2mCfg) : ?>
-                    <?php
-                    $m2mOpts = m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema);
-                    echo os_m2m_group((int)$mi, $m2mCfg, $m2mOpts, [], $isReadOnly);
-                    ?>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-
-            <div class="form-actions">
-                <?php if ($isReadOnly) : ?>
-                    <button type="button" class="btn-save" disabled><?= t('form.add_record') ?></button>
-                <?php else : ?>
-                    <button type="submit" class="btn-save"><?= t('form.add_record') ?></button>
-                <?php endif; ?>
-                <button type="button" class="btn-cancel" data-nav="index.php?table=<?php echo htmlspecialchars(urlencode($table), ENT_QUOTES, 'UTF-8'); ?>"><?= t('common.cancel') ?></button>
-            </div>
-        </form>
-    </div>
-</main>
-<?php
+include __DIR__ . '/../templates/create.php';
 $pageContent = ob_get_clean();
 
 $extraScripts = os_module_script('assets/js/edit/form-behaviours.js', $cspNonce)

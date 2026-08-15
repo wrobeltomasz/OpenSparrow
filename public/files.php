@@ -25,80 +25,35 @@ $headerControls = os_header_search('fileSearch', t('files.search_placeholder'))
     . '<option value="archive">' . htmlspecialchars(t('files.filter_archives'), ENT_QUOTES, 'UTF-8') . '</option>'
     . '</select>'
     . os_header_clear_filters();
+
+$fileColumns = [
+    ['sort' => 'type', 'label' => t('files.col_type'), 'tip' => t('files.tip_type')],
+    ['sort' => 'name', 'label' => t('files.col_name'), 'tip' => t('files.tip_name')],
+    ['sort' => 'display', 'label' => t('files.col_display'), 'tip' => t('files.tip_display')],
+    ['sort' => 'tags', 'label' => t('files.col_tags'), 'tip' => t('files.tip_tags')],
+    ['sort' => 'size', 'label' => t('files.col_size'), 'tip' => t('files.tip_size')],
+    ['sort' => 'related', 'label' => t('files.col_related'), 'tip' => t('files.tip_related')],
+    ['sort' => 'created_at', 'label' => t('files.col_uploaded'), 'tip' => t('files.tip_uploaded')],
+];
+
+$filesColspan = $canEdit ? 9 : 8;
+
+$filesLabels = [
+    'selectAll'           => t('files.select_all_files'),
+    'selectAllToggle'     => t('files.select_all_toggle'),
+    'loading'             => t('files.loading'),
+    'refresh'             => t('files.refresh'),
+    'uploadNew'           => t('files.upload_new'),
+    'chooseFile'          => t('files.choose_file'),
+    'phDisplayName'       => t('files.ph_display_name'),
+    'phTags'              => t('files.ph_tags'),
+    'optTargetTable'      => t('files.opt_target_table'),
+    'optSelectTableFirst' => t('files.opt_select_table_first'),
+    'upload'              => t('form.upload_file'),
+];
+
 ob_start();
-?>
-
-<main>
-    <section id="filesSection">
-
-        <div id="filesGrid">
-            <table class="file-table">
-                <thead>
-                    <tr>
-                        <?php if ($canEdit) : ?>
-                        <th class="th-select">
-                            <input type="checkbox" class="select-all-cb"
-                                   aria-label="<?php echo htmlspecialchars(t('files.select_all_files'), ENT_QUOTES, 'UTF-8'); ?>"
-                                   title="<?php echo htmlspecialchars(t('files.select_all_toggle'), ENT_QUOTES, 'UTF-8'); ?>">
-                        </th>
-                        <?php endif; ?>
-                        <?php
-                        $thTips = [
-                            'type'    => t('files.tip_type'),
-                            'name'    => t('files.tip_name'),
-                            'display' => t('files.tip_display'),
-                            'tags'    => t('files.tip_tags'),
-                            'size'    => t('files.tip_size'),
-                            'related' => t('files.tip_related'),
-                            'created' => t('files.tip_uploaded'),
-                        ];
-                        $th = fn(string $sort, string $tipKey, string $label): string =>
-                            '<th data-sort="' . $sort . '" data-label="' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '"'
-                            . ' title="' . htmlspecialchars($thTips[$tipKey], ENT_QUOTES, 'UTF-8') . '">'
-                            . '<span class="th-label th-tip">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span></th>';
-                        echo $th('type', 'type', t('files.col_type'));
-                        echo $th('name', 'name', t('files.col_name'));
-                        echo $th('display', 'display', t('files.col_display'));
-                        echo $th('tags', 'tags', t('files.col_tags'));
-                        echo $th('size', 'size', t('files.col_size'));
-                        echo $th('related', 'related', t('files.col_related'));
-                        echo $th('created_at', 'created', t('files.col_uploaded'));
-                        ?>
-                        <th class="th-actions"></th>
-                    </tr>
-                </thead>
-                <tbody id="fileTableBody">
-                    <tr><td colspan="<?php echo $canEdit ? 9 : 8; ?>" class="f-td-empty"><?php echo htmlspecialchars(t('files.loading'), ENT_QUOTES, 'UTF-8'); ?></td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div id="filesActions" class="actions">
-            <div class="left">
-                <button id="btnRefreshFiles"><?php echo htmlspecialchars(t('files.refresh'), ENT_QUOTES, 'UTF-8'); ?></button>
-            </div>
-            <div id="filePagination" class="pagination"></div>
-        </div>
-
-        <div id="fileUploadBar" class="f-upload-bar">
-            <span class="f-upload-label"><?php echo htmlspecialchars(t('files.upload_new'), ENT_QUOTES, 'UTF-8'); ?></span>
-            <input type="file" id="fileInput" class="f-input f-input-file" aria-label="<?php echo htmlspecialchars(t('files.choose_file'), ENT_QUOTES, 'UTF-8'); ?>">
-            <input type="text" id="fileNameInput" class="f-input f-input-w160" placeholder="<?php echo htmlspecialchars(t('files.ph_display_name'), ENT_QUOTES, 'UTF-8'); ?>">
-            <input type="text" id="fileTagsInput" class="f-input f-input-w160" placeholder="<?php echo htmlspecialchars(t('files.ph_tags'), ENT_QUOTES, 'UTF-8'); ?>">
-            <select id="fileRelatedTable" class="f-input f-input-w160">
-                <option value=""><?php echo htmlspecialchars(t('files.opt_target_table'), ENT_QUOTES, 'UTF-8'); ?></option>
-            </select>
-            <select id="fileRelatedId" class="f-input f-input-w220" disabled>
-                <option value=""><?php echo htmlspecialchars(t('files.opt_select_table_first'), ENT_QUOTES, 'UTF-8'); ?></option>
-            </select>
-            <button id="btnUpload" class="success"><?php echo htmlspecialchars(t('form.upload_file'), ENT_QUOTES, 'UTF-8'); ?></button>
-            <span id="uploadStatus" class="f-upload-status"></span>
-        </div>
-
-    </section>
-</main>
-
-<?php
+include __DIR__ . '/../templates/files.php';
 $pageContent = ob_get_clean();
 ob_start();
 ?>

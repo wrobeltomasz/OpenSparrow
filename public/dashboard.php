@@ -30,13 +30,10 @@ foreach ($dashPeriods as $dashVal => $dashKey) {
 $headerControls .= '</select>'
     . os_header_filters('dashboardFilters', 'dashboard-filters')
     . os_header_clear_filters();
+$dashboardLabels = ['title' => t('dashboard.title')];
+
 ob_start();
-?>
-<main id="dashboardMain">
-    <h2 id="gridTitle"><?php echo htmlspecialchars(t('dashboard.title'), ENT_QUOTES, 'UTF-8'); ?></h2>
-    <section id="dashboardSection" class="dashboard-grid"></section>
-</main>
-<?php
+include __DIR__ . '/../templates/dashboard.php';
 $pageContent = ob_get_clean();
 
 $extraScripts = os_inline_globals(['USER_CAPS' => $userCaps], $cspNonce)

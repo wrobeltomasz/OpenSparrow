@@ -21,19 +21,14 @@ $pageTitle      = 'OpenSparrow | Board';
 $headerControls = os_header_search('boardSearch')
     . os_header_filters('boardFilters', 'board-filters')
     . os_header_clear_filters();
-ob_start();
-?>
-<main id="boardMain">
-    <div class="board-header">
-        <h2 id="boardTitle"><?= htmlspecialchars(t('board.title'), ENT_QUOTES, 'UTF-8') ?></h2>
-        <div class="board-meta" id="boardMeta"></div>
-    </div>
 
-    <div id="boardContainer" class="board-grid">
-        <div class="board-loading"><?= htmlspecialchars(t('common.loading'), ENT_QUOTES, 'UTF-8') ?></div>
-    </div>
-</main>
-<?php
+$boardLabels = [
+    'title'   => t('board.title'),
+    'loading' => t('common.loading'),
+];
+
+ob_start();
+include __DIR__ . '/../templates/board.php';
 $pageContent = ob_get_clean();
 
 $extraScripts = os_inline_globals(['USER_CAPS' => $userCaps, 'BOARD_INITIAL' => $boardId ?: null], $cspNonce)
