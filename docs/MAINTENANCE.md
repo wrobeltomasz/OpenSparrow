@@ -896,6 +896,81 @@ So the `phpstan` job must keep the same triggers as `phpcs` (`push: main`,
 rather than red on a release commit, re-run the workflow from the Actions UI — do
 not reach for `skip_checks=true`.
 
+## PHP variable naming: no abbreviations (2026-08-15)
+
+Commit `0d2d03f` renamed 193 single-letter and shortened variables across 33 PHP
+files. The convention it established is binding for new code.
+
+### The rule
+
+Write the whole word. `$row`, not `$r`. `$column`, not `$c`. `$subtableData` and
+`$subtableIndex`, not `$sd` and `$si`. `$galleryImage`, not `$gi`. `$m2mIndex`,
+not `$mi`. This holds inside arrow functions and closures too — `fn($column) =>
+pg_ident($column)` was the single most common offender, and the short form there
+is no more readable for being one line long.
+
+Established domain terms are **not** abbreviations and stay as they are: `$id`,
+`$fk`, `$m2m`, `$sql`, `$csrf`, `$conn`, `$cfg`. Expanding those would make the
+code read worse, not better.
+
+### Name the value, not the loop
+
+A mechanical `$r → $row` is wrong wherever `$r` did not hold a row, and seven
+files in the tree were exactly that. They were renamed by meaning instead:
+
+| Location | Held | Renamed to |
+| --- | --- | --- |
+| `includes/bootstrap.php` | a `UserRole` enum case | `$userRole` |
+| `includes/admin/anonymization.php` | a replacement string | `$replacement` |
+| `includes/admin/performance.php` | a `pg_query_params()` handle | `$countRes` |
+| `public/cypress_seed.php` | a `pg_query_params()` handle | `$userRes` |
+| `public/admin/demo/seed.php` | a comment row / an anonymization rule | `$comment` / `$rule` |
+| `public/api/data_cleanup.php` | one character of a character class | `$char` |
+| `includes/automations.php` | an automation rule | `$rule` |
+
+The `performance.php` case is the one that would have introduced a bug rather
+than merely a bad name: a blanket `$r → $row` there collides with the `$row`
+already live in that scope.
+
+Renaming also has to carry the derived names along. `$gi` became
+`$galleryImage`, so `$giUrl` became `$galleryImageUrl` in the same change; the
+same for `$siLabel` → `$subtableLabel`. A half-renamed prefix is worse than the
+original abbreviation because it implies a variable that no longer exists.
+
+### How the rename was done, and how the next one should be
+
+Not with `sed` or `preg_replace`. The rename ran through `token_get_all()`,
+substituting only `T_VARIABLE` tokens and re-emitting every other token
+verbatim — which is lossless for valid PHP, and leaves string literals, regular
+expressions and the SPDX headers untouched. A textual pass over
+`includes/etl_engine.php` alone would have corrupted three `preg_match()`
+patterns.
+
+The precondition that makes any file-scoped rename safe was verified first: the
+tree contains no `extract()`, no `compact()` and no `$$variable`. If that ever
+stops being true, a file-scoped rename stops being sound and this recipe no
+longer applies.
+
+Verification for the change was `php -l` on every touched file, the full PHPUnit
+suite (366 tests), and a per-file `phpcs` comparison against `HEAD` rather than a
+single repository-wide total — a whole-tree count silently hid one file that
+failed to extract from the comparison snapshot and made the result look five
+warnings worse than it was.
+
+### Longer names cost line length — wrap, do not re-abbreviate
+
+Six lines crossed the 120-character PSR-12 warning threshold once the names grew.
+All six were wrapped: arguments split one per line, or the repeated expression
+hoisted into a named variable (`$setCols` in `includes/etl_engine.php`). None was
+solved by shortening the name back. Net effect on the tree was zero new
+`Generic.Files.LineLength` warnings and one fewer in
+`includes/admin/performance.php`.
+
+PHP CS Fixer was deliberately **not** introduced for this. `phpcs --standard=phpcs.xml .`
+reports **0 errors** across the tree, so indentation and PSR-12 layout are already
+compliant; a second formatter would add a dev dependency and a large reformatting
+diff for no correctness gain. `phpcbf.phar` remains the auto-fixer of record.
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and

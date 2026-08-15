@@ -121,8 +121,31 @@ Source Integrity workflow verifies their checksums.
 ### PHP
 
 - **PSR-12**, enforced via `phpcs.xml` — check with `php phpcs.phar --standard=phpcs.xml`, auto-fix with `php phpcbf.phar`  
-- Use meaningful variable and function names  
+- Four spaces per indentation level, never tabs  
 - Keep functions small and focused  
+
+#### Variable names
+
+Write the whole word. A variable name is documentation, and an abbreviation only
+saves the author keystrokes while costing every later reader a lookup.
+
+- **No single-letter and no shortened names.** Not `$r`, `$c`, `$sd`, `$si`,
+  `$gi`, `$mi` — write `$row`, `$column`, `$subtableData`, `$subtableIndex`,
+  `$galleryImage`, `$m2mIndex`. This applies to arrow functions and closures too:
+  `fn($column) => pg_ident($column)`, never `fn($c) => pg_ident($c)`.
+- **Name what the value actually is, not what the loop is called.** A
+  `pg_query_params()` handle is `$countRes` or `$labelRes`, not `$row`; a
+  `UserRole` is `$userRole`; an anonymization rule is `$rule`. Two variables in
+  one scope must not be distinguishable only by length.
+- **Do not leave a prefix behind when you rename.** If `$gi` becomes
+  `$galleryImage`, then `$giUrl` becomes `$galleryImageUrl` in the same change.
+- Established domain terms stay as they are — `$id`, `$fk`, `$m2m`, `$sql`,
+  `$csrf`, `$conn`, `$cfg` are the project's vocabulary, not abbreviations to
+  expand.
+
+Longer names push lines over the 120-character limit that PSR-12 warns at. Wrap
+the call — extract the shared expression into a named variable or split the
+arguments one per line — rather than shortening the name back.
 
 ### JavaScript (Vanilla JS)
 
