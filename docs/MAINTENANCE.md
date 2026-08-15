@@ -1192,6 +1192,57 @@ JSON envelopes, the admin API's eight read modules and its `admin_err` write
 paths, the CSRF and method-not-allowed guards, and a frontend insert/patch/delete
 round trip. Suite: 391 tests, 959 assertions, 0 phpcs errors.
 
+### Testing the handler: why it runs in a subprocess
+
+`ExitFreeRequestPathTest` proves the request path *throws*;
+`tests/Http/ExceptionHandlerTest` proves the handler *answers* — that
+`ForbiddenException` is a 403, `BadRequestException` a 400, `NotFoundException` a
+404, `RedirectException` a `Location:` header, and anything else a logged,
+message-free 500.
+
+None of that is observable from inside a PHPUnit process, and the reasons are worth
+writing down before someone "simplifies" the test:
+
+- `os_response_mode('html')` resolves to `cli` under the CLI SAPI, so the HTML
+  branch never executes in a normal test.
+- `headers_list()` always returns an empty array under CLI, so no assertion about
+  a sent header is possible.
+- `http_response_code()` refuses to set once output has started, and PHPUnit has
+  already printed a progress dot by the time a test body runs.
+
+So the test runs `tests/Http/fixtures/throwing_request.php` as a **subprocess** and
+inspects the result from outside. Three details carry weight:
+
+- The fixture is configured through `OS_TEST_*` **environment variables, not
+  `$argv`** — CGI does not pass argv, and this keeps one fixture valid under both
+  SAPIs.
+- It **throws with no `try`/`catch`**, so what is exercised is the real
+  `set_exception_handler` path, not a direct call to `os_handle_exception()`.
+- The status code comes back via a `register_shutdown_function` that writes
+  `http_response_code()` to a file, because the shutdown function runs *after* the
+  exception handler.
+
+Real response headers (`Location:`, `Content-Type:`) still need a web SAPI, so
+those four cases shell out to `php-cgi` with `SCRIPT_FILENAME` set and parse the
+raw header block. When that binary is missing the four `markTestSkipped` and the
+other nine still run — verified by pointing `PHP_BINARY` at a directory with no
+`php-cgi` sibling and an empty `PATH` lookup: 9 pass, 4 skip, no errors.
+`shivammathur/setup-php` installs the CLI binary only, so `php-tests.yml` installs
+`php{version}-cgi` explicitly and pins `OS_TEST_PHP_CGI` to the matrix version —
+otherwise `update-alternatives` can point `/usr/bin/php-cgi` at the runner's
+preinstalled PHP and the 8.5 job would quietly test CGI 8.3. That install step is
+deliberately tolerant (`::warning::`, not a failure): the tests degrade to skips on
+their own, and this job is a release gate, so an upstream packaging gap must not
+turn a required check red.
+
+The suite was proven red before being committed green. Seven mutations of
+`exception_handler.php` were each caught: dropping the `RedirectException` branch
+(2 failures), dropping the `ResponseException` branch (1), removing the
+`error_log()` call (1), passing the original message into the 500 instead of the
+generic text (1), hard-coding `http_response_code(200)` (7), and ignoring the mode
+argument on re-registration (9). Suite after the addition: 405 tests, 1006
+assertions.
+
 ## The request object: `os_request()` instead of superglobals (2026-08-15)
 
 ### The rule

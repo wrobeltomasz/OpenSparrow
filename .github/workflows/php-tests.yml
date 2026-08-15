@@ -37,8 +37,27 @@ jobs:
           tools: composer
           coverage: none
 
+      # ExceptionHandlerTest captures real response headers (Location:, Content-Type:)
+      # by running its fixture under the CGI SAPI, which setup-php does not install --
+      # it provides the CLI binary only. Without this those four tests markTestSkipped
+      # instead of running (verified: 9 run, 4 skip). Deliberately tolerant: they skip
+      # cleanly when the binary is absent, and this job is a release gate
+      # (release-zip.yml requires 'phpunit (8.4)' / 'phpunit (8.5)'), so an upstream
+      # packaging gap must not turn a required check red. The warning keeps a silent
+      # loss of coverage visible in the run summary.
+      - name: Install php-cgi ${{ matrix.php-version }}
+        run: |
+          version="${{ matrix.php-version }}"
+          if sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends "php${version}-cgi"; then
+            php-cgi"${version}" --version
+          else
+            echo "::warning::php${version}-cgi unavailable; header assertions will be skipped"
+          fi
+
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
       - name: Run PHPUnit
         run: vendor/bin/phpunit
+        env:
+          OS_TEST_PHP_CGI: /usr/bin/php-cgi${{ matrix.php-version }}
