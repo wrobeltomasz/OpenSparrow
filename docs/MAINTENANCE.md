@@ -1133,17 +1133,51 @@ turns a finished 200 into a generic error. Every such block must rethrow first:
 73 catch blocks were patched this way, including the two central ones —
 `admin_try()` and `os_api_dispatch()`.
 
-**`cron/` keeps `exit($code)`.** A CLI script's exit status is its interface with
-cron, and `exit(1)` there is a return value, not an escape from control flow.
-What the cron scripts no longer do is use a bare `exit;` as an error path: the
-"this must run from the command line" guards throw `ForbiddenException`, and the
-process-status calls were normalised to an explicit integer.
+**`cron/` exits exactly once, at the end.** A CLI script's exit status is its
+interface with cron, so the status call itself stays — but it is no longer
+scattered through the script as an escape hatch. Each cron entry point now runs
+its work in a `main` function returning an `int`, and the file's last statement
+is the only `exit()`:
 
-`tests/Http/ExitFreeRequestPathTest` enforces all three rules — no `die`/`exit`
-tokens in `includes/`, `public/`, `templates/` or `src/`; only `exit(<int>)` in
-`cron/`; and no unguarded broad `catch`. It scans with `token_get_all`, and was
-proven red by reintroducing an `echo`+`exit` pair, a bare `exit;` in
-`cron_etl.php` and an unguarded `catch (Throwable)` before being committed green.
+```php
+function cron_etl_main(array $argv): int
+{
+    …
+    return $anyError ? 1 : 0;
+}
+
+exit(cron_etl_main($argv));
+```
+
+`$argv` is passed in rather than read as a global. Everything above the `main`
+function — the CLI guard, the output-buffering setup, the `require_once` lines
+and the script's own helper functions — stays at file scope, so nothing about
+symbol visibility changed. The 24 scattered `exit()` calls became `return`
+statements: 9 in `cron_etl.php`, 7 in `cron_anonymization.php`, 6 in
+`cron_etl_flow.php`, 2 in `cron_notifications.php`. The "this must run from the
+command line" guards throw `ForbiddenException` instead of exiting.
+
+Two exit codes were **deliberately left as they were**, because the restructure
+was not the place to change behaviour — but they are now plainly visible as a
+`return 0;` and worth a decision:
+
+- `cron_notifications.php` catches a critical error, prints it in red, and still
+  returns `0`. The admin panel's runner reports `status: success` for any zero
+  exit, so a failed run currently reads as successful there.
+- `cron_anonymization.php` returns `$errorMessage !== null ? 1 : 0` on the dry-run
+  path but plain `0` on the real path, so a real run that recorded an error also
+  reports success.
+
+`tests/Http/ExitFreeRequestPathTest` enforces the rules — no `die`/`exit` tokens
+in `includes/`, `public/`, `templates/` or `src/`; exactly one `exit()` per
+`cron/` script, taking a status code, as its final statement; and no unguarded
+broad `catch`. It scans with `token_get_all`, and was proven red by reintroducing
+an `echo`+`exit` pair, a bare `exit;` in `cron_etl.php` and an unguarded
+`catch (Throwable)` before being committed green.
+
+All four cron scripts were run before and after the restructure against the same
+database: byte-identical output and identical exit codes, including the `admin`
+trigger, the `dry` flag and `cron_etl.php`'s `_run` subprocess entry point.
 
 Verified end to end against a running instance: guest redirects, `401`/`403`/`400`
 JSON envelopes, the admin API's eight read modules and its `admin_err` write

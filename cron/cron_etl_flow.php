@@ -170,88 +170,93 @@ function etl_flow_run_single(
     return $allOk;
 }
 
-$triggeredBy = ($argv[1] ?? '') === 'admin' ? 'admin' : 'cron';
-$onlyFlowId  = ($triggeredBy === 'admin' && isset($argv[2]) && $argv[2] !== 'dry') ? (string)$argv[2] : null;
-$dryRun      = (($argv[2] ?? '') === 'dry' || ($argv[3] ?? '') === 'dry');
+function cron_etl_flow_main(array $argv): int
+{
+    $triggeredBy = ($argv[1] ?? '') === 'admin' ? 'admin' : 'cron';
+    $onlyFlowId  = ($triggeredBy === 'admin' && isset($argv[2]) && $argv[2] !== 'dry') ? (string)$argv[2] : null;
+    $dryRun      = (($argv[2] ?? '') === 'dry' || ($argv[3] ?? '') === 'dry');
 
-etl_cli_log('[etl_flow] Starting (' . $triggeredBy . ')' . ($dryRun ? ' — DRY RUN' : '') . '...');
+    etl_cli_log('[etl_flow] Starting (' . $triggeredBy . ')' . ($dryRun ? ' — DRY RUN' : '') . '...');
 
-$flowsRow = config_get_row('etl_flows');
-if (!is_array($flowsRow)) {
-    etl_cli_log('[etl_flow] Config not found. Configure it via Admin > ETL > Flows.');
-    exit(0);
-}
-$flowsConfig = $flowsRow['value'];
-
-$enabled   = (bool)($flowsConfig['enabled'] ?? false);
-$frequency = (string)($flowsConfig['frequency'] ?? 'daily');
-$flows     = (array)($flowsConfig['flows'] ?? []);
-
-if (!$enabled && $triggeredBy === 'cron') {
-    etl_cli_log('[etl_flow] Module is disabled. Exiting.');
-    exit(0);
-}
-if ($frequency === 'manual' && $triggeredBy === 'cron') {
-    etl_cli_log('[etl_flow] Frequency set to manual — only runs when triggered via admin panel.');
-    exit(0);
-}
-if (empty($flows)) {
-    etl_cli_log('[etl_flow] No flows configured. Exiting.');
-    exit(0);
-}
-
-$etlRow = config_get_row('etl');
-$etlConfig = is_array($etlRow['value'] ?? null) ? $etlRow['value'] : ['sources' => [], 'jobs' => []];
-
-try {
-    $conn = db_connect();
-} catch (\RuntimeException $e) {
-    etl_cli_log('[etl_flow] DB connection failed: ' . $e->getMessage());
-    exit(1);
-}
-
-$tRunLog  = sys_table('etl_flow_run_log');
-$logTable = etl_log_table_ready($conn, $tRunLog);
-if (!$logTable) {
-    etl_cli_log('[etl_flow] Note: log tables missing — run Initialize System Tables to enable run history.');
-}
-
-$interval = etl_interval_expr($frequency);
-
-$anyError = false;
-
-foreach ($flows as $flow) {
-    if (!is_array($flow)) {
-        continue;
+    $flowsRow = config_get_row('etl_flows');
+    if (!is_array($flowsRow)) {
+        etl_cli_log('[etl_flow] Config not found. Configure it via Admin > ETL > Flows.');
+        return 0;
     }
-    $flowId = (string)($flow['id'] ?? '');
-    if ($onlyFlowId !== null && $flowId !== $onlyFlowId) {
-        continue;
+    $flowsConfig = $flowsRow['value'];
+
+    $enabled   = (bool)($flowsConfig['enabled'] ?? false);
+    $frequency = (string)($flowsConfig['frequency'] ?? 'daily');
+    $flows     = (array)($flowsConfig['flows'] ?? []);
+
+    if (!$enabled && $triggeredBy === 'cron') {
+        etl_cli_log('[etl_flow] Module is disabled. Exiting.');
+        return 0;
+    }
+    if ($frequency === 'manual' && $triggeredBy === 'cron') {
+        etl_cli_log('[etl_flow] Frequency set to manual — only runs when triggered via admin panel.');
+        return 0;
+    }
+    if (empty($flows)) {
+        etl_cli_log('[etl_flow] No flows configured. Exiting.');
+        return 0;
     }
 
-    if ($onlyFlowId === null && empty($flow['enabled'])) {
-        continue;
+    $etlRow = config_get_row('etl');
+    $etlConfig = is_array($etlRow['value'] ?? null) ? $etlRow['value'] : ['sources' => [], 'jobs' => []];
+
+    try {
+        $conn = db_connect();
+    } catch (\RuntimeException $e) {
+        etl_cli_log('[etl_flow] DB connection failed: ' . $e->getMessage());
+        return 1;
     }
 
-    if ($triggeredBy === 'cron' && $logTable) {
-        $recent = @pg_query_params(
-            $conn,
-            "SELECT 1 FROM {$tRunLog} WHERE flow_id = $1 AND status = 'success' "
-                . "AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
-            [$flowId]
-        );
-        if ($recent && pg_num_rows($recent) > 0) {
-            etl_cli_log(
-                "[etl_flow] Skipping flow '{$flowId}': a successful run exists within the '{$frequency}' window."
-            );
+    $tRunLog  = sys_table('etl_flow_run_log');
+    $logTable = etl_log_table_ready($conn, $tRunLog);
+    if (!$logTable) {
+        etl_cli_log('[etl_flow] Note: log tables missing — run Initialize System Tables to enable run history.');
+    }
+
+    $interval = etl_interval_expr($frequency);
+
+    $anyError = false;
+
+    foreach ($flows as $flow) {
+        if (!is_array($flow)) {
             continue;
+        }
+        $flowId = (string)($flow['id'] ?? '');
+        if ($onlyFlowId !== null && $flowId !== $onlyFlowId) {
+            continue;
+        }
+
+        if ($onlyFlowId === null && empty($flow['enabled'])) {
+            continue;
+        }
+
+        if ($triggeredBy === 'cron' && $logTable) {
+            $recent = @pg_query_params(
+                $conn,
+                "SELECT 1 FROM {$tRunLog} WHERE flow_id = $1 AND status = 'success' "
+                    . "AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
+                [$flowId]
+            );
+            if ($recent && pg_num_rows($recent) > 0) {
+                etl_cli_log(
+                    "[etl_flow] Skipping flow '{$flowId}': a successful run exists within the '{$frequency}' window."
+                );
+                continue;
+            }
+        }
+
+        if (!etl_flow_run_single($conn, $etlConfig, $flow, $triggeredBy, $dryRun)) {
+            $anyError = true;
         }
     }
 
-    if (!etl_flow_run_single($conn, $etlConfig, $flow, $triggeredBy, $dryRun)) {
-        $anyError = true;
-    }
+    etl_cli_log('[etl_flow] Done.' . ($anyError ? ' Some flows failed — see above.' : ''));
+    return $anyError ? 1 : 0;
 }
 
-etl_cli_log('[etl_flow] Done.' . ($anyError ? ' Some flows failed — see above.' : ''));
-exit($anyError ? 1 : 0);
+exit(cron_etl_flow_main($argv));

@@ -82,159 +82,167 @@ function etl_run_single_job(
     return $result['status'] === 'success';
 }
 
-if (($argv[1] ?? '') === '_run') {
-    $jobId       = (string)($argv[2] ?? '');
-    $triggeredBy = in_array($argv[3] ?? '', ['cron', 'admin'], true) ? $argv[3] : 'cron';
+function cron_etl_main(array $argv): int
+{
+    if (($argv[1] ?? '') === '_run') {
+        $jobId       = (string)($argv[2] ?? '');
+        $triggeredBy = in_array($argv[3] ?? '', ['cron', 'admin'], true) ? $argv[3] : 'cron';
+
+        $configRow = config_get_row('etl');
+        if (!is_array($configRow)) {
+            etl_cli_log('[etl] Config not found.');
+            return 1;
+        }
+        try {
+            $conn = db_connect();
+        } catch (\RuntimeException $e) {
+            etl_cli_log('[etl] DB connection failed: ' . $e->getMessage());
+            return 1;
+        }
+        $ok = etl_run_single_job($conn, $configRow['value'], $jobId, $triggeredBy, false);
+        return $ok ? 0 : 1;
+    }
+
+    $triggeredBy = ($argv[1] ?? '') === 'admin' ? 'admin' : 'cron';
+    $onlyJobId   = ($triggeredBy === 'admin' && isset($argv[2]) && $argv[2] !== 'dry') ? (string)$argv[2] : null;
+    $dryRun      = (($argv[2] ?? '') === 'dry' || ($argv[3] ?? '') === 'dry');
+
+    etl_cli_log('[etl] Starting (' . $triggeredBy . ')' . ($dryRun ? ' — DRY RUN' : '') . '...');
 
     $configRow = config_get_row('etl');
     if (!is_array($configRow)) {
-        etl_cli_log('[etl] Config not found.');
-        exit(1);
+        etl_cli_log('[etl] Config not found. Configure it via Admin > ETL.');
+        return 1;
     }
+    $config = $configRow['value'];
+
+    $enabled   = (bool)($config['enabled'] ?? false);
+    $frequency = (string)($config['frequency'] ?? 'daily');
+    $jobs      = (array)($config['jobs'] ?? []);
+
+    if (!$enabled && $triggeredBy === 'cron') {
+        etl_cli_log('[etl] Module is disabled. Exiting.');
+        return 0;
+    }
+    if ($frequency === 'manual' && $triggeredBy === 'cron') {
+        etl_cli_log('[etl] Frequency set to manual — only runs when triggered via admin panel.');
+        return 0;
+    }
+    if (empty($jobs)) {
+        etl_cli_log('[etl] No jobs configured. Exiting.');
+        return 0;
+    }
+
     try {
         $conn = db_connect();
     } catch (\RuntimeException $e) {
         etl_cli_log('[etl] DB connection failed: ' . $e->getMessage());
-        exit(1);
-    }
-    $ok = etl_run_single_job($conn, $configRow['value'], $jobId, $triggeredBy, false);
-    exit($ok ? 0 : 1);
-}
-
-$triggeredBy = ($argv[1] ?? '') === 'admin' ? 'admin' : 'cron';
-$onlyJobId   = ($triggeredBy === 'admin' && isset($argv[2]) && $argv[2] !== 'dry') ? (string)$argv[2] : null;
-$dryRun      = (($argv[2] ?? '') === 'dry' || ($argv[3] ?? '') === 'dry');
-
-etl_cli_log('[etl] Starting (' . $triggeredBy . ')' . ($dryRun ? ' — DRY RUN' : '') . '...');
-
-$configRow = config_get_row('etl');
-if (!is_array($configRow)) {
-    etl_cli_log('[etl] Config not found. Configure it via Admin > ETL.');
-    exit(1);
-}
-$config = $configRow['value'];
-
-$enabled   = (bool)($config['enabled'] ?? false);
-$frequency = (string)($config['frequency'] ?? 'daily');
-$jobs      = (array)($config['jobs'] ?? []);
-
-if (!$enabled && $triggeredBy === 'cron') {
-    etl_cli_log('[etl] Module is disabled. Exiting.');
-    exit(0);
-}
-if ($frequency === 'manual' && $triggeredBy === 'cron') {
-    etl_cli_log('[etl] Frequency set to manual — only runs when triggered via admin panel.');
-    exit(0);
-}
-if (empty($jobs)) {
-    etl_cli_log('[etl] No jobs configured. Exiting.');
-    exit(0);
-}
-
-try {
-    $conn = db_connect();
-} catch (\RuntimeException $e) {
-    etl_cli_log('[etl] DB connection failed: ' . $e->getMessage());
-    exit(1);
-}
-
-$tLog     = sys_table('etl_log');
-$logTable = etl_log_table_ready($conn, $tLog);
-if (!$logTable) {
-    etl_cli_log('[etl] Note: log table missing — run Initialize System Tables to enable run history.');
-}
-$interval = etl_interval_expr($frequency);
-
-$ranInWindow = static function (string $jobId) use ($conn, $tLog, $interval): bool {
-    $recent = @pg_query_params(
-        $conn,
-        "SELECT 1 FROM {$tLog} WHERE job_id = \$1 AND triggered_by = 'cron' AND status = 'success' "
-        . "AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
-        [$jobId]
-    );
-    return $recent && pg_num_rows($recent) > 0;
-};
-
-$jobIds = [];
-foreach ($jobs as $job) {
-    if (!is_array($job)) {
-        continue;
-    }
-    $jobId = (string)($job['id'] ?? '');
-    if ($onlyJobId !== null && $jobId !== $onlyJobId) {
-        continue;
+        return 1;
     }
 
-    if ($onlyJobId === null && empty($job['enabled'])) {
-        continue;
+    $tLog     = sys_table('etl_log');
+    $logTable = etl_log_table_ready($conn, $tLog);
+    if (!$logTable) {
+        etl_cli_log('[etl] Note: log table missing — run Initialize System Tables to enable run history.');
     }
+    $interval = etl_interval_expr($frequency);
 
-    if ($triggeredBy === 'cron' && $logTable && $ranInWindow($jobId)) {
-        etl_cli_log(
-            "[etl] Skipping job '{$jobId}': a scheduled run already succeeded within the '{$frequency}' window."
+    $ranInWindow = static function (string $jobId) use ($conn, $tLog, $interval): bool {
+        $recent = @pg_query_params(
+            $conn,
+            "SELECT 1 FROM {$tLog} WHERE job_id = \$1 AND triggered_by = 'cron' AND status = 'success' "
+            . "AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
+            [$jobId]
         );
-        continue;
-    }
-    $jobIds[] = $jobId;
-}
+        return $recent && pg_num_rows($recent) > 0;
+    };
 
-$anyError = false;
-
-if ($dryRun || count($jobIds) <= 1) {
-    foreach ($jobIds as $jobId) {
-        if (!etl_run_single_job($conn, $config, $jobId, $triggeredBy, $dryRun)) {
-            $anyError = true;
+    $jobIds = [];
+    foreach ($jobs as $job) {
+        if (!is_array($job)) {
+            continue;
         }
-    }
-} else {
-    etl_cli_log('[etl] Running ' . count($jobIds) . ' jobs in parallel (max ' . ETL_MAX_PARALLEL_JOBS . ' at once)...');
-    $cronScript = __FILE__;
-    $queue      = $jobIds;
-    $running    = [];
+        $jobId = (string)($job['id'] ?? '');
+        if ($onlyJobId !== null && $jobId !== $onlyJobId) {
+            continue;
+        }
 
-    while ($queue !== [] || $running !== []) {
-        while ($queue !== [] && count($running) < ETL_MAX_PARALLEL_JOBS) {
-            $jobId = array_shift($queue);
-            $cmd   = [PHP_BINARY, $cronScript, '_run', $jobId, $triggeredBy];
-            $proc  = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-            if ($proc === false) {
-                etl_cli_log("[etl]   Failed to spawn worker for job '{$jobId}'.");
+        if ($onlyJobId === null && empty($job['enabled'])) {
+            continue;
+        }
+
+        if ($triggeredBy === 'cron' && $logTable && $ranInWindow($jobId)) {
+            etl_cli_log(
+                "[etl] Skipping job '{$jobId}': a scheduled run already succeeded within the '{$frequency}' window."
+            );
+            continue;
+        }
+        $jobIds[] = $jobId;
+    }
+
+    $anyError = false;
+
+    if ($dryRun || count($jobIds) <= 1) {
+        foreach ($jobIds as $jobId) {
+            if (!etl_run_single_job($conn, $config, $jobId, $triggeredBy, $dryRun)) {
                 $anyError = true;
-                continue;
             }
-            stream_set_blocking($pipes[1], false);
-            stream_set_blocking($pipes[2], false);
-            $running[$jobId] = ['proc' => $proc, 'pipes' => $pipes];
         }
+    } else {
+        etl_cli_log(
+            '[etl] Running ' . count($jobIds) . ' jobs in parallel (max '
+            . ETL_MAX_PARALLEL_JOBS . ' at once)...'
+        );
+        $cronScript = __FILE__;
+        $queue      = $jobIds;
+        $running    = [];
 
-        foreach ($running as $jobId => $entry) {
-            $out = stream_get_contents($entry['pipes'][1]);
-            if ($out !== false && $out !== '') {
-                echo $out;
-                flush();
-            }
-            $err = stream_get_contents($entry['pipes'][2]);
-            if ($err !== false && $err !== '') {
-                echo $err;
-                flush();
-            }
-            $status = proc_get_status($entry['proc']);
-            if (!$status['running']) {
-                fclose($entry['pipes'][1]);
-                fclose($entry['pipes'][2]);
-                $exitCode = proc_close($entry['proc']);
-                if ($exitCode !== 0) {
+        while ($queue !== [] || $running !== []) {
+            while ($queue !== [] && count($running) < ETL_MAX_PARALLEL_JOBS) {
+                $jobId = array_shift($queue);
+                $cmd   = [PHP_BINARY, $cronScript, '_run', $jobId, $triggeredBy];
+                $proc  = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+                if ($proc === false) {
+                    etl_cli_log("[etl]   Failed to spawn worker for job '{$jobId}'.");
                     $anyError = true;
+                    continue;
                 }
-                unset($running[$jobId]);
+                stream_set_blocking($pipes[1], false);
+                stream_set_blocking($pipes[2], false);
+                $running[$jobId] = ['proc' => $proc, 'pipes' => $pipes];
             }
-        }
 
-        if ($running !== []) {
-            usleep(150000);
+            foreach ($running as $jobId => $entry) {
+                $out = stream_get_contents($entry['pipes'][1]);
+                if ($out !== false && $out !== '') {
+                    echo $out;
+                    flush();
+                }
+                $err = stream_get_contents($entry['pipes'][2]);
+                if ($err !== false && $err !== '') {
+                    echo $err;
+                    flush();
+                }
+                $status = proc_get_status($entry['proc']);
+                if (!$status['running']) {
+                    fclose($entry['pipes'][1]);
+                    fclose($entry['pipes'][2]);
+                    $exitCode = proc_close($entry['proc']);
+                    if ($exitCode !== 0) {
+                        $anyError = true;
+                    }
+                    unset($running[$jobId]);
+                }
+            }
+
+            if ($running !== []) {
+                usleep(150000);
+            }
         }
     }
+
+    etl_cli_log('[etl] Done.' . ($anyError ? ' Some jobs failed — see above.' : ''));
+    return $anyError ? 1 : 0;
 }
 
-etl_cli_log('[etl] Done.' . ($anyError ? ' Some jobs failed — see above.' : ''));
-exit($anyError ? 1 : 0);
+exit(cron_etl_main($argv));

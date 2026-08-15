@@ -96,17 +96,23 @@ final class ExitFreeRequestPathTest extends TestCase
         );
     }
 
-    public function testCliEntryPointsOnlyExitWithAProcessStatusCode(): void
+    public function testCliEntryPointsExitExactlyOnceWithAProcessStatusCode(): void
     {
         $offenders = [];
 
         foreach (self::CLI_ENTRY_POINTS as $directory) {
             foreach ($this->phpFiles($directory) as $path) {
-                foreach ($this->exitTokens($path) as [$line, $argument]) {
-                    if ($argument === '(') {
-                        continue;
-                    }
-                    $offenders[] = str_replace($this->root() . '/', '', $path) . ':' . $line;
+                $relative = str_replace($this->root() . '/', '', $path);
+                $exits    = $this->exitTokens($path);
+
+                if (count($exits) !== 1) {
+                    $offenders[] = $relative . ' has ' . count($exits) . ' exit() calls, expected exactly 1';
+                    continue;
+                }
+
+                [$line, $argument] = $exits[0];
+                if ($argument !== '(') {
+                    $offenders[] = $relative . ':' . $line . ' exits without a process status code';
                 }
             }
         }
@@ -114,7 +120,30 @@ final class ExitFreeRequestPathTest extends TestCase
         $this->assertSame(
             [],
             $offenders,
-            'A cron script may only exit with an explicit process status code: ' . implode(', ', $offenders)
+            'A cron script runs its work in a main() returning int and exits exactly once, at the end: '
+                . implode(', ', $offenders)
+        );
+    }
+
+    public function testCliEntryPointsExitOnTheirLastStatement(): void
+    {
+        $offenders = [];
+
+        foreach (self::CLI_ENTRY_POINTS as $directory) {
+            foreach ($this->phpFiles($directory) as $path) {
+                $lines = explode("\n", rtrim(str_replace("\r\n", "\n", (string) file_get_contents($path))));
+                $last  = trim((string) end($lines));
+
+                if (preg_match('/^exit\(\w+\(\$argv\)\);$/', $last) !== 1) {
+                    $offenders[] = str_replace($this->root() . '/', '', $path) . ' ends with: ' . $last;
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $offenders,
+            'A cron script must end with a single exit(<main>($argv)); statement: ' . implode(', ', $offenders)
         );
     }
 
