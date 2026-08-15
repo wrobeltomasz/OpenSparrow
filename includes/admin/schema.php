@@ -260,7 +260,8 @@ if ($action === 'sync_schema') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
         $body = json_decode((string) file_get_contents('php://input'), true) ?: [];
-        $schemaName = $body['schema_name'] ?? $_POST['schema_name'] ?? $_GET['schema_name'] ?? 'public';
+        $schemaName = $body['schema_name']
+            ?? os_request()->post('schema_name', os_request()->query('schema_name', 'public'));
 
         $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = $1"
             . " AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'spw\\_%' ESCAPE '\\'";
@@ -288,8 +289,9 @@ if ($action === 'get_db_columns') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
         $body = json_decode((string) file_get_contents('php://input'), true) ?: [];
-        $tableName = $body['table'] ?? $_POST['table'] ?? $_GET['table'] ?? '';
-        $schemaName = $body['schema_name'] ?? $_POST['schema_name'] ?? $_GET['schema_name'] ?? 'public';
+        $tableName = $body['table'] ?? os_request()->post('table', os_request()->query('table'));
+        $schemaName = $body['schema_name']
+            ?? os_request()->post('schema_name', os_request()->query('schema_name', 'public'));
         $sql = "
             SELECT
                 c.column_name,

@@ -63,7 +63,7 @@ if ($action === 'rag_upload') {
             throw new AdminApiMessage('Only .txt files are accepted.');
         }
 
-        $rawTagsJson = $_POST['tags'] ?? '[]';
+        $rawTagsJson = (string) os_request()->post('tags', '[]');
         $tags = @json_decode($rawTagsJson, true);
         if (!is_array($tags)) {
             $tags = [];

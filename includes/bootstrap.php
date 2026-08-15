@@ -36,6 +36,16 @@ use App\Repository\PgRecordRepository;
 use App\Security\UserRole;
 use App\Service\ServiceContainer;
 
+function os_request(): PhpRequest
+{
+    static $request = null;
+    if ($request === null) {
+        require_once __DIR__ . '/autoload.php';
+        $request = new PhpRequest();
+    }
+    return $request;
+}
+
 function os_require_setup(): void
 {
     if (!file_exists(__DIR__ . '/../config/database.json')) {
@@ -67,7 +77,7 @@ function os_require_csrf(string $source = 'header', array $body = []): void
     $stored = $_SESSION['csrf_token'] ?? '';
     $given  = $source === 'header'
         ? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')
-        : ($_POST['csrf_token'] ?? $body['csrf_token'] ?? '');
+        : os_request()->post('csrf_token', $body['csrf_token'] ?? '');
     if ($stored === '' || !hash_equals($stored, (string) $given)) {
         throw new ForbiddenException('CSRF token mismatch');
     }
@@ -163,7 +173,7 @@ function os_api_action(): array
             $body   = json_decode(file_get_contents('php://input'), true) ?? [];
             $action = is_array($body) ? ($body['action'] ?? '') : '';
         } else {
-            $action = $_POST['action'] ?? '';
+            $action = os_request()->post('action');
         }
     }
 
@@ -206,7 +216,7 @@ function os_boot_app(): array
     require_once __DIR__ . '/images.php';
 
     $session = new PhpSession();
-    $request = new PhpRequest();
+    $request = os_request();
     $csrf    = new SessionCsrfTokenManager($session);
 
     $pgConn   = db_connect();

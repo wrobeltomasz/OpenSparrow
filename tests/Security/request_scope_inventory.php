@@ -35,7 +35,7 @@ return [
     ],
     'public/api/files.php' => [
         '_GET.table'          => ['gated', 'files_action_get_related_records() calls require_table_access() on the requested table before resolving its relation config.'],
-        '_POST.related_table' => ['gated', 'files_action_upload() gates it once for both upload paths (gallery and plain attachment), so a file cannot be attached to a record in a table the uploader has no access to.'],
+        'post().related_table' => ['gated', 'files_action_upload() gates it once for both upload paths (gallery and plain attachment), so a file cannot be attached to a record in a table the uploader has no access to.'],
     ],
     'public/api/fk.php' => [
         '_GET.table' => ['gated', 'The request-supplied SOURCE table is gated. The reference table it resolves to is schema-supplied and deliberately exempt, or FK dropdowns inside permitted tables would break; the projection is narrowed to the key and label columns to keep that exemption to labels.'],
@@ -102,9 +102,9 @@ return [
         'body.view'  => ['admin', 'Admin API module, included by public/admin/api.php only after the admin-role gate; admins are never restricted.'],
     ],
     'includes/admin/schema.php' => [
-        '_GET.table'  => ['admin', 'Admin API module, behind the admin-role gate. This one edits the schema itself.'],
-        '_POST.table' => ['admin', 'Admin API module, included by public/admin/api.php only after the admin-role gate; admins are never restricted.'],
-        'body.table'  => ['admin', 'Admin API module, included by public/admin/api.php only after the admin-role gate; admins are never restricted.'],
-        'input.table' => ['admin', 'Admin API module, included by public/admin/api.php only after the admin-role gate; admins are never restricted.'],
+        'query().table' => ['admin', 'Admin API module, behind the admin-role gate. This one edits the schema itself.'],
+        'post().table'  => ['admin', 'Admin API module, included by public/admin/api.php only after the admin-role gate; admins are never restricted.'],
+        'body.table'    => ['admin', 'Admin API module, included by public/admin/api.php only after the admin-role gate; admins are never restricted.'],
+        'input.table'   => ['admin', 'Admin API module, included by public/admin/api.php only after the admin-role gate; admins are never restricted.'],
     ],
 ];

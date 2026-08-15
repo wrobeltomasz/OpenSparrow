@@ -593,12 +593,13 @@ if ($action === 'csv_import_upload') {
         csv_fail($e->getMessage());
     }
 
+    $request   = os_request();
     $allowed   = [',', ';', "\t", '|'];
-    $delim     = $_POST['csv_delimiter'] ?? ',';
+    $delim     = $request->post('csv_delimiter', ',');
     $delimiter = in_array($delim, $allowed, true) ? $delim : ',';
 
     $allowedEnc = ['UTF-8', 'Windows-1250', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'Windows-1251'];
-    $enc        = $_POST['csv_encoding'] ?? 'UTF-8';
+    $enc        = $request->post('csv_encoding', 'UTF-8');
     $encoding   = in_array($enc, $allowedEnc, true) ? $enc : 'UTF-8';
 
     $headers  = [];

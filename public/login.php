@@ -65,16 +65,18 @@ $appName    = is_string($appNameRaw) && $appNameRaw !== '' ? $appNameRaw : 'Open
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $tokenPost = $_POST['csrf_token'] ?? '';
+$request = os_request();
+
+if ($request->isPost()) {
+    $tokenPost = (string) $request->post('csrf_token');
     $tokenSession = $_SESSION['csrf_token'] ?? '';
 
     if (!hash_equals($tokenSession, $tokenPost)) {
         throw new ForbiddenException('Invalid CSRF token.');
     }
 
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $username = trim((string) $request->post('username'));
+    $password = (string) $request->post('password');
 
     $ipHash = hash_hmac('sha256', client_ip(), IP_HASH_SALT);
 

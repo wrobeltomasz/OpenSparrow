@@ -57,8 +57,10 @@ function saveConfig(array $config): void
     }
 }
 
+$request = os_request();
+
 if (
-    $_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)
+    $request->isPost() && empty($request->postAll()) && empty($_FILES)
     && isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 0
     && str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'multipart/form-data')
 ) {
@@ -229,10 +231,12 @@ function files_action_upload($conn): void
         jsonError('File type category is not allowed.', 415);
     }
 
-    $imageMode   = ($_POST['related_field'] ?? '') === IMAGES_FIELD;
+    $request = os_request();
+
+    $imageMode   = $request->post('related_field') === IMAGES_FIELD;
     $imageTarget = null;
 
-    $reqRelatedTable = trim($_POST['related_table'] ?? '');
+    $reqRelatedTable = trim((string) $request->post('related_table'));
     if ($reqRelatedTable !== '') {
         require_table_access($reqRelatedTable);
     }
@@ -242,8 +246,8 @@ function files_action_upload($conn): void
         }
         $imageTarget = validateImageTarget(
             $conn,
-            trim($_POST['related_table'] ?? ''),
-            (int)($_POST['related_id'] ?? 0)
+            trim((string) $request->post('related_table')),
+            (int) $request->post('related_id', 0)
         );
     }
 
@@ -271,11 +275,12 @@ function files_action_upload($conn): void
         jsonError('Failed to save physical file to disk.', 500);
     }
 
-    $displayName = trim($_POST['display_name'] ?? '') ?: $originalName;
+    $displayName = trim((string) $request->post('display_name')) ?: $originalName;
     $dbPath      = trim($config['storage_path'] ?? 'storage/files', '/') . '/' . $filename;
 
-    $relatedTableReq = trim($_POST['related_table'] ?? '');
-    $relatedId       = isset($_POST['related_id']) && $_POST['related_id'] !== '' ? (int)$_POST['related_id'] : null;
+    $relatedTableReq = trim((string) $request->post('related_table'));
+    $relatedIdRaw    = $request->post('related_id');
+    $relatedId       = $relatedIdRaw !== '' ? (int) $relatedIdRaw : null;
     $relatedTable    = null;
     $relatedField    = null;
     if ($imageMode) {
@@ -296,7 +301,7 @@ function files_action_upload($conn): void
         }
     }
 
-    $tagsPgArray = tagsToPgArray($_POST['tags'] ?? '');
+    $tagsPgArray = tagsToPgArray((string) $request->post('tags'));
 
     $sql = "
         INSERT INTO " . sys_table('files') . "

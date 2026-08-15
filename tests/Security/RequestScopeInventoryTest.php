@@ -206,7 +206,12 @@ final class RequestScopeInventoryTest extends TestCase
         $scan = $this->scan();
         $this->assertContains('_GET.table', $scan['public/api/fk.php'] ?? [], 'Scanner missed a $_GET read.');
         $this->assertContains('body.table', $scan['public/api/mass_edit.php'] ?? [], 'Scanner missed a $body read.');
-        $this->assertContains('_POST.related_table', $scan['public/api/files.php'] ?? [], 'Scanner missed a $_POST read.');
+        $this->assertContains('_POST.table', $scan['public/cypress_seed.php'] ?? [], 'Scanner missed a $_POST read.');
+        $this->assertContains(
+            'post().related_table',
+            $scan['public/api/files.php'] ?? [],
+            'Scanner missed a $request->post() read.'
+        );
 
         $this->assertContains('query().table', $scan['public/edit.php'] ?? [], 'Scanner missed a $request->query() read.');
         $this->assertNotEmpty($scan, 'Scanner found nothing at all — the globs are wrong.');
