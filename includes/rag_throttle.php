@@ -29,11 +29,12 @@ function rag_rate_limit_ok(int $userId, int $maxPerMinute): bool
     $file = rag_throttle_dir() . '/user_' . $userId . '.json';
     $fh   = @fopen($file, 'c+');
     if ($fh === false) {
-        error_log('[rag] rate limit not enforced, throttle state unwritable: ' . $file . os_last_error_reason());
-        return true;
+        error_log('[rag] request refused, throttle state unwritable: ' . $file . os_last_error_reason());
+        return false;
     }
-    $allowed = true;
+    $allowed = false;
     if (flock($fh, LOCK_EX)) {
+        $allowed = true;
         $raw    = stream_get_contents($fh);
         $stamps = (is_string($raw) && $raw !== '') ? (json_decode($raw, true) ?: []) : [];
 
@@ -48,6 +49,8 @@ function rag_rate_limit_ok(int $userId, int $maxPerMinute): bool
         fwrite($fh, json_encode($stamps));
         fflush($fh);
         flock($fh, LOCK_UN);
+    } else {
+        error_log('[rag] request refused, throttle state could not be locked: ' . $file . os_last_error_reason());
     }
     fclose($fh);
     return $allowed;
