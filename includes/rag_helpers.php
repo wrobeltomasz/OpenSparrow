@@ -28,8 +28,8 @@ function rag_config(): array
         'aggregate_view_limit' => 100,
     ];
     require_once __DIR__ . '/config_store.php';
-    $raw = config_get('rag');
-    $cfg = is_array($raw) ? array_merge($defaults, $raw) : $defaults;
+    $rawConfig = config_get('rag');
+    $cfg = is_array($rawConfig) ? array_merge($defaults, $rawConfig) : $defaults;
     return $cfg;
 }
 
@@ -47,14 +47,14 @@ function pg_text_array_to_php(string $pgArray): array
     return str_getcsv($inner, ',', '"', '\\');
 }
 
-function php_array_to_pg_text(array $arr): string
+function php_array_to_pg_text(array $items): string
 {
-    if (empty($arr)) {
+    if (empty($items)) {
         return '{}';
     }
-    $escaped = array_map(function (string $s): string {
-        return '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $s) . '"';
-    }, $arr);
+    $escaped = array_map(function (string $text): string {
+        return '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $text) . '"';
+    }, $items);
     return '{' . implode(',', $escaped) . '}';
 }
 
@@ -95,14 +95,14 @@ function rag_chunk_text(string $text, int $chunkSize = 1000, int $overlap = 200)
             continue;
         }
 
-        $sep = $current !== '' ? "\n\n" : '';
-        if ($current !== '' && mb_strlen($current) + mb_strlen($sep . $para) > $chunkSize) {
+        $separator = $current !== '' ? "\n\n" : '';
+        if ($current !== '' && mb_strlen($current) + mb_strlen($separator . $para) > $chunkSize) {
             $chunks[]    = $current;
             $tailStart   = max(0, mb_strlen($current) - $overlap);
             $overlapText = mb_substr($current, $tailStart);
             $current     = $overlapText !== '' ? $overlapText . "\n\n" . $para : $para;
         } else {
-            $current .= $sep . $para;
+            $current .= $separator . $para;
         }
     }
 
@@ -115,7 +115,7 @@ function rag_chunk_text(string $text, int $chunkSize = 1000, int $overlap = 200)
 
 function rag_store_chunks(\PgSql\Connection $conn, int $fileId, string $content, array $cfg): int
 {
-    $tChunks   = sys_table('rag_chunks');
+    $ragChunksTable   = sys_table('rag_chunks');
     $chunkSize = (int) ($cfg['chunk_size'] ?? 1000);
     $overlap   = (int) ($cfg['chunk_overlap'] ?? 200);
 
@@ -124,16 +124,16 @@ function rag_store_chunks(\PgSql\Connection $conn, int $fileId, string $content,
         return 0;
     }
 
-    @pg_query_params($conn, "DELETE FROM {$tChunks} WHERE file_id = \$1", [$fileId]);
+    @pg_query_params($conn, "DELETE FROM {$ragChunksTable} WHERE file_id = \$1", [$fileId]);
 
     $stored = 0;
-    foreach ($chunks as $i => $chunk) {
-        $res = @pg_query_params(
+    foreach ($chunks as $chunkIndex => $chunk) {
+        $result = @pg_query_params(
             $conn,
-            "INSERT INTO {$tChunks} (file_id, chunk_index, content) VALUES (\$1, \$2, \$3)",
-            [$fileId, $i, $chunk]
+            "INSERT INTO {$ragChunksTable} (file_id, chunk_index, content) VALUES (\$1, \$2, \$3)",
+            [$fileId, $chunkIndex, $chunk]
         );
-        if ($res) {
+        if ($result) {
             $stored++;
         }
     }
@@ -151,8 +151,8 @@ function rag_retrieve(\PgSql\Connection $conn, string $query, array $tags, int $
 {
     $cfg     = rag_config();
     $limit   = max(1, min(10, $limit ?: (int) ($cfg['max_context_files'] ?? 3)));
-    $tRag    = sys_table('rag_files');
-    $tChunks = sys_table('rag_chunks');
+    $ragFilesTable    = sys_table('rag_files');
+    $ragChunksTable = sys_table('rag_chunks');
     $query   = trim($query);
 
     if ($query === '') {
@@ -160,14 +160,14 @@ function rag_retrieve(\PgSql\Connection $conn, string $query, array $tags, int $
     }
 
     $useChunks = (bool) ($cfg['use_chunks'] ?? true);
-    $tsq       = rag_tsquery_expr();
+    $tsQueryExpression       = rag_tsquery_expr();
 
     static $chunksExist = null;
     if ($chunksExist === null) {
-        $chunksExist = (bool) @pg_query($conn, "SELECT 1 FROM {$tChunks} LIMIT 0");
+        $chunksExist = (bool) @pg_query($conn, "SELECT 1 FROM {$ragChunksTable} LIMIT 0");
     }
 
-    $res = false;
+    $result = false;
 
     if ($useChunks && $chunksExist) {
         if (!empty($tags)) {
@@ -176,79 +176,79 @@ function rag_retrieve(\PgSql\Connection $conn, string $query, array $tags, int $
                 SELECT c.content, f.filename, f.tags,
                        f.id AS file_id, c.id AS chunk_id, c.chunk_index,
                        'chunk'::text AS source_type,
-                       ts_rank(to_tsvector('english', c.content), {$tsq}) AS rank
-                FROM {$tChunks} c JOIN {$tRag} f ON f.id = c.file_id
+                       ts_rank(to_tsvector('english', c.content), {$tsQueryExpression}) AS rank
+                FROM {$ragChunksTable} c JOIN {$ragFilesTable} f ON f.id = c.file_id
                 WHERE f.tags && \$2::text[]
-                  AND to_tsvector('english', c.content) @@ {$tsq}
+                  AND to_tsvector('english', c.content) @@ {$tsQueryExpression}
                 UNION ALL
                 SELECT f.content, f.filename, f.tags,
                        f.id AS file_id, NULL::int4 AS chunk_id, -1 AS chunk_index,
                        'file'::text AS source_type,
-                       ts_rank(to_tsvector('english', f.content), {$tsq}) AS rank
-                FROM {$tRag} f
-                WHERE NOT EXISTS (SELECT 1 FROM {$tChunks} cx WHERE cx.file_id = f.id)
+                       ts_rank(to_tsvector('english', f.content), {$tsQueryExpression}) AS rank
+                FROM {$ragFilesTable} f
+                WHERE NOT EXISTS (SELECT 1 FROM {$ragChunksTable} cx WHERE cx.file_id = f.id)
                   AND f.tags && \$2::text[]
-                  AND to_tsvector('english', f.content) @@ {$tsq}
+                  AND to_tsvector('english', f.content) @@ {$tsQueryExpression}
             ) combined ORDER BY rank DESC LIMIT \$3";
-            $res = @pg_query_params($conn, $sql, [$query, $tagLiteral, $limit]);
+            $result = @pg_query_params($conn, $sql, [$query, $tagLiteral, $limit]);
         } else {
             $sql = "SELECT content, filename, tags, file_id, chunk_id, chunk_index, source_type FROM (
                 SELECT c.content, f.filename, f.tags,
                        f.id AS file_id, c.id AS chunk_id, c.chunk_index,
                        'chunk'::text AS source_type,
-                       ts_rank(to_tsvector('english', c.content), {$tsq}) AS rank
-                FROM {$tChunks} c JOIN {$tRag} f ON f.id = c.file_id
-                WHERE to_tsvector('english', c.content) @@ {$tsq}
+                       ts_rank(to_tsvector('english', c.content), {$tsQueryExpression}) AS rank
+                FROM {$ragChunksTable} c JOIN {$ragFilesTable} f ON f.id = c.file_id
+                WHERE to_tsvector('english', c.content) @@ {$tsQueryExpression}
                 UNION ALL
                 SELECT f.content, f.filename, f.tags,
                        f.id AS file_id, NULL::int4 AS chunk_id, -1 AS chunk_index,
                        'file'::text AS source_type,
-                       ts_rank(to_tsvector('english', f.content), {$tsq}) AS rank
-                FROM {$tRag} f
-                WHERE NOT EXISTS (SELECT 1 FROM {$tChunks} cx WHERE cx.file_id = f.id)
-                  AND to_tsvector('english', f.content) @@ {$tsq}
+                       ts_rank(to_tsvector('english', f.content), {$tsQueryExpression}) AS rank
+                FROM {$ragFilesTable} f
+                WHERE NOT EXISTS (SELECT 1 FROM {$ragChunksTable} cx WHERE cx.file_id = f.id)
+                  AND to_tsvector('english', f.content) @@ {$tsQueryExpression}
             ) combined ORDER BY rank DESC LIMIT \$2";
-            $res = @pg_query_params($conn, $sql, [$query, $limit]);
+            $result = @pg_query_params($conn, $sql, [$query, $limit]);
         }
     } else {
         if (!empty($tags)) {
             $tagLiteral = php_array_to_pg_text(array_values($tags));
             $sql = "SELECT f.id AS file_id, NULL::int4 AS chunk_id, -1 AS chunk_index,
                            'file'::text AS source_type, f.filename, f.content, f.tags
-                    FROM {$tRag} f
+                    FROM {$ragFilesTable} f
                     WHERE f.tags && \$2::text[]
-                      AND to_tsvector('english', f.content) @@ {$tsq}
-                    ORDER BY ts_rank(to_tsvector('english', f.content), {$tsq}) DESC
+                      AND to_tsvector('english', f.content) @@ {$tsQueryExpression}
+                    ORDER BY ts_rank(to_tsvector('english', f.content), {$tsQueryExpression}) DESC
                     LIMIT \$3";
-            $res = @pg_query_params($conn, $sql, [$query, $tagLiteral, $limit]);
+            $result = @pg_query_params($conn, $sql, [$query, $tagLiteral, $limit]);
         } else {
             $sql = "SELECT f.id AS file_id, NULL::int4 AS chunk_id, -1 AS chunk_index,
                            'file'::text AS source_type, f.filename, f.content, f.tags
-                    FROM {$tRag} f
-                    WHERE to_tsvector('english', f.content) @@ {$tsq}
-                    ORDER BY ts_rank(to_tsvector('english', f.content), {$tsq}) DESC
+                    FROM {$ragFilesTable} f
+                    WHERE to_tsvector('english', f.content) @@ {$tsQueryExpression}
+                    ORDER BY ts_rank(to_tsvector('english', f.content), {$tsQueryExpression}) DESC
                     LIMIT \$2";
-            $res = @pg_query_params($conn, $sql, [$query, $limit]);
+            $result = @pg_query_params($conn, $sql, [$query, $limit]);
         }
     }
 
-    if (!$res) {
+    if (!$result) {
         return [];
     }
 
     $files = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $files[] = $row;
     }
     return $files;
 }
 
-function rag_parse_qualified_view(string $raw): ?array
+function rag_parse_qualified_view(string $rawView): ?array
 {
-    $raw = trim($raw);
+    $rawView = trim($rawView);
     $identPattern = '[a-zA-Z_][a-zA-Z0-9_]*';
-    if (preg_match('/^(' . $identPattern . ')\.(' . $identPattern . ')$/', $raw, $m)) {
-        return ['schema' => $m[1], 'view' => $m[2]];
+    if (preg_match('/^(' . $identPattern . ')\.(' . $identPattern . ')$/', $rawView, $matches)) {
+        return ['schema' => $matches[1], 'view' => $matches[2]];
     }
     return null;
 }
@@ -265,26 +265,26 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
     }
 
     $views = is_array($cfg['aggregate_views'] ?? null) ? $cfg['aggregate_views'] : [];
-    $ref   = rag_parse_qualified_view((string) ($views[$table] ?? ''));
-    if ($ref === null) {
+    $viewReference   = rag_parse_qualified_view((string) ($views[$table] ?? ''));
+    if ($viewReference === null) {
         return '';
     }
 
     $limit = (int) ($cfg['aggregate_view_limit'] ?? 100);
     $limit = max(1, min(1000, $limit));
 
-    $res = @pg_query($conn, sprintf(
+    $result = @pg_query($conn, sprintf(
         'SELECT * FROM %s.%s LIMIT %d',
-        pg_ident($ref['schema']),
-        pg_ident($ref['view']),
+        pg_ident($viewReference['schema']),
+        pg_ident($viewReference['view']),
         $limit
     ));
-    if (!$res) {
+    if (!$result) {
         return '';
     }
 
     $rows = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $rows[] = $row;
     }
     if (empty($rows)) {
@@ -292,10 +292,10 @@ function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $tabl
     }
 
     $columns = array_keys($rows[0]);
-    $text    = "Aggregate view \"{$ref['schema']}.{$ref['view']}\" for table {$table}:\n"
+    $text    = "Aggregate view \"{$viewReference['schema']}.{$viewReference['view']}\" for table {$table}:\n"
         . implode(' | ', $columns) . "\n";
     foreach ($rows as $row) {
-        $text .= implode(' | ', array_map(fn($v) => $v === null ? '' : (string) $v, $row)) . "\n";
+        $text .= implode(' | ', array_map(fn($value) => $value === null ? '' : (string) $value, $row)) . "\n";
     }
     if (count($rows) === $limit) {
         $text .= "NOTE: this list was cut off at the configured limit of {$limit} row(s);"
@@ -317,8 +317,8 @@ const RAG_COUNT_COL_RE    = '/(^|_)(count|cnt|num|qty|quantity)(_|$)/i';
 
 function rag_decimal_scale(string $value): int
 {
-    $dot = strrpos($value, '.');
-    return $dot === false ? 0 : min(6, strlen($value) - $dot - 1);
+    $dotPosition = strrpos($value, '.');
+    return $dotPosition === false ? 0 : min(6, strlen($value) - $dotPosition - 1);
 }
 
 function rag_aggregate_rollups(array $rows): string
@@ -333,27 +333,27 @@ function rag_aggregate_rollups(array $rows): string
 
     $measures = [];
     $scales   = [];
-    foreach ($columns as $col) {
-        if (preg_match(RAG_NON_ADDITIVE_RE, $col) === 1) {
+    foreach ($columns as $columnName) {
+        if (preg_match(RAG_NON_ADDITIVE_RE, $columnName) === 1) {
             continue;
         }
         $filled = 0;
         $scale  = 0;
         foreach ($rows as $row) {
-            $val = trim((string) ($row[$col] ?? ''));
-            if ($val === '') {
+            $cellValue = trim((string) ($row[$columnName] ?? ''));
+            if ($cellValue === '') {
                 continue;
             }
-            if (!is_numeric($val)) {
+            if (!is_numeric($cellValue)) {
                 $filled = -1;
                 break;
             }
             $filled++;
-            $scale = max($scale, rag_decimal_scale($val));
+            $scale = max($scale, rag_decimal_scale($cellValue));
         }
         if ($filled > 0) {
-            $measures[]   = $col;
-            $scales[$col] = $scale;
+            $measures[]   = $columnName;
+            $scales[$columnName] = $scale;
         }
     }
     if (empty($measures)) {
@@ -361,33 +361,37 @@ function rag_aggregate_rollups(array $rows): string
     }
 
     $candidates = [];
-    foreach ($columns as $pos => $col) {
-        if (in_array($col, $measures, true)) {
+    foreach ($columns as $position => $columnName) {
+        if (in_array($columnName, $measures, true)) {
             continue;
         }
         $distinct = [];
         $tooLong  = false;
         foreach ($rows as $row) {
-            $val = trim((string) ($row[$col] ?? ''));
-            if ($val === '') {
+            $cellValue = trim((string) ($row[$columnName] ?? ''));
+            if ($cellValue === '') {
                 continue;
             }
-            if (mb_strlen($val) > 80) {
+            if (mb_strlen($cellValue) > 80) {
                 $tooLong = true;
                 break;
             }
-            $distinct[$val] = true;
+            $distinct[$cellValue] = true;
         }
-        $n = count($distinct);
-        if (!$tooLong && $n >= 2 && $n <= 25 && $n <= $rowCount * 0.9) {
-            $candidates[] = ['col' => $col, 'distinct' => $n, 'pos' => $pos];
+        $distinctCount = count($distinct);
+        if (!$tooLong && $distinctCount >= 2 && $distinctCount <= 25 && $distinctCount <= $rowCount * 0.9) {
+            $candidates[] = ['col' => $columnName, 'distinct' => $distinctCount, 'pos' => $position];
         }
     }
     if (empty($candidates)) {
         return '';
     }
 
-    usort($candidates, fn($a, $b) => ($a['distinct'] <=> $b['distinct']) ?: ($a['pos'] <=> $b['pos']));
+    usort(
+        $candidates,
+        fn($first, $second) => ($first['distinct'] <=> $second['distinct'])
+            ?: ($first['pos'] <=> $second['pos'])
+    );
     $groupKeys = array_column(array_slice($candidates, 0, 3), 'col');
 
     $countCols = array_values(array_filter($measures, fn($column) => preg_match(RAG_COUNT_COL_RE, $column) === 1));
@@ -453,39 +457,39 @@ function rag_rollup_sum(array $rows, array $measures, array $scales, ?string $co
 {
     $parts    = [];
     $sumsByCol = [];
-    foreach ($measures as $col) {
-        $scale  = $scales[$col] ?? 0;
+    foreach ($measures as $columnName) {
+        $scale  = $scales[$columnName] ?? 0;
         $factor = 10 ** $scale;
         $total  = 0;
         $seen   = false;
-        $ok     = true;
+        $success     = true;
         foreach ($rows as $row) {
-            $val = trim((string) ($row[$col] ?? ''));
-            if ($val === '' || !is_numeric($val)) {
+            $cellValue = trim((string) ($row[$columnName] ?? ''));
+            if ($cellValue === '' || !is_numeric($cellValue)) {
                 continue;
             }
-            $scaled = (float) $val * $factor;
+            $scaled = (float) $cellValue * $factor;
             if (abs($scaled) > PHP_INT_MAX / 1000 || abs($total) > PHP_INT_MAX - abs($scaled)) {
-                $ok = false;
+                $success = false;
                 break;
             }
             $total += (int) round($scaled);
             $seen   = true;
         }
-        if (!$ok || !$seen) {
+        if (!$success || !$seen) {
             continue;
         }
         $value            = $scale === 0 ? (string) $total : number_format($total / $factor, $scale, '.', '');
-        $sumsByCol[$col]  = $total / $factor;
-        $parts[]          = "{$col}={$value}";
+        $sumsByCol[$columnName]  = $total / $factor;
+        $parts[]          = "{$columnName}={$value}";
     }
 
     if ($countCol !== null && isset($sumsByCol[$countCol]) && $sumsByCol[$countCol] > 0) {
-        foreach ($sumsByCol as $col => $sum) {
-            if ($col === $countCol) {
+        foreach ($sumsByCol as $columnName => $sum) {
+            if ($columnName === $countCol) {
                 continue;
             }
-            $parts[] = 'derived_avg_' . $col . '=' . number_format($sum / $sumsByCol[$countCol], 2, '.', '');
+            $parts[] = 'derived_avg_' . $columnName . '=' . number_format($sum / $sumsByCol[$countCol], 2, '.', '');
         }
     }
 
@@ -608,8 +612,8 @@ function rag_build_prompt(
     }
 
     $context = $ctxBlock . $aggBlock;
-    foreach ($files as $i => $file) {
-        $context .= '--- Document ' . ($i + 1) . ': ' . $file['filename'] . " ---\n"
+    foreach ($files as $documentIndex => $file) {
+        $context .= '--- Document ' . ($documentIndex + 1) . ': ' . $file['filename'] . " ---\n"
             . $file['content'] . "\n\n";
     }
 
@@ -655,12 +659,12 @@ function rag_extract_suggestions(string $response): array
 
     $suggestions = [];
 
-    if (preg_match('/\[.*\]/s', $block, $m)) {
-        $parsed = json_decode($m[0], true);
+    if (preg_match('/\[.*\]/s', $block, $matches)) {
+        $parsed = json_decode($matches[0], true);
         if (is_array($parsed)) {
             $suggestions = $parsed;
-        } elseif (preg_match_all('/"([^"]*)"/', $m[0], $qm)) {
-            $suggestions = $qm[1];
+        } elseif (preg_match_all('/"([^"]*)"/', $matches[0], $quotedMatches)) {
+            $suggestions = $quotedMatches[1];
         }
     } else {
         foreach (preg_split('/\r?\n/', $block) as $line) {
@@ -671,7 +675,7 @@ function rag_extract_suggestions(string $response): array
     $suggestions = array_slice(
         array_values(array_filter(
             array_map('trim', array_map('strval', $suggestions)),
-            fn($q) => $q !== '' && preg_match('/\p{L}/u', $q) === 1
+            fn($suggestion) => $suggestion !== '' && preg_match('/\p{L}/u', $suggestion) === 1
         )),
         0,
         3
@@ -700,11 +704,11 @@ function rag_call_ollama(
         $headers[] = 'Authorization: Bearer ' . $apiKey;
     }
 
-    $ch = curl_init($url);
-    if ($ch === false) {
+    $curlHandle = curl_init($url);
+    if ($curlHandle === false) {
         throw new RuntimeException('Failed to initialize cURL.');
     }
-    curl_setopt_array($ch, [
+    curl_setopt_array($curlHandle, [
         CURLOPT_RETURNTRANSFER  => true,
         CURLOPT_POST            => true,
         CURLOPT_POSTFIELDS      => $payload,
@@ -715,9 +719,9 @@ function rag_call_ollama(
         CURLOPT_SSL_VERIFYHOST  => $sslVerify ? 2 : 0,
     ]);
 
-    $response = curl_exec($ch);
-    $curlErr  = curl_error($ch);
-    curl_close($ch);
+    $response = curl_exec($curlHandle);
+    $curlErr  = curl_error($curlHandle);
+    curl_close($curlHandle);
 
     if ($response === false) {
         throw new RuntimeException('Ollama unreachable: ' . $curlErr);
@@ -744,18 +748,18 @@ function rag_call_ollama(
 
 function rag_log_query(\PgSql\Connection $conn, array $data): void
 {
-    $tRagQueries      = sys_table('rag_queries');
-    $tRagQuerySources = sys_table('rag_query_sources');
+    $ragQueriesTable      = sys_table('rag_queries');
+    $ragQuerySourcesTable = sys_table('rag_query_sources');
     $tags             = php_array_to_pg_text(array_values($data['tags'] ?? []));
 
     static $hasPromptCol = null;
     if ($hasPromptCol === null) {
-        $colRes      = @pg_query(
+        $columnsResult      = @pg_query(
             $conn,
             "SELECT 1 FROM information_schema.columns"
                 . " WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1"
         );
-        $hasPromptCol = ($colRes && pg_num_rows($colRes) > 0);
+        $hasPromptCol = ($columnsResult && pg_num_rows($columnsResult) > 0);
     }
 
     $baseParams = [
@@ -771,9 +775,9 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
 
     if ($hasPromptCol) {
         $baseParams[] = mb_substr((string) ($data['prompt_snapshot'] ?? ''), 0, 50000) ?: null;
-        $qRes = @pg_query_params(
+        $queryResult = @pg_query_params(
             $conn,
-            "INSERT INTO {$tRagQueries}
+            "INSERT INTO {$ragQueriesTable}
                 (query, tags, matched_files, prompt_tokens, completion_tokens, total_ms,
                  model, user_id, prompt_snapshot)
              VALUES (\$1, \$2::text[], \$3, \$4, \$5, \$6, \$7, \$8, \$9)
@@ -781,9 +785,9 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
             $baseParams
         );
     } else {
-        $qRes = @pg_query_params(
+        $queryResult = @pg_query_params(
             $conn,
-            "INSERT INTO {$tRagQueries}
+            "INSERT INTO {$ragQueriesTable}
                 (query, tags, matched_files, prompt_tokens, completion_tokens, total_ms, model, user_id)
              VALUES (\$1, \$2::text[], \$3, \$4, \$5, \$6, \$7, \$8)
              RETURNING id",
@@ -791,11 +795,11 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
         );
     }
 
-    if (!$qRes) {
+    if (!$queryResult) {
         return;
     }
-    $qRow    = pg_fetch_assoc($qRes);
-    $queryId = (int) ($qRow['id'] ?? 0);
+    $queryRow    = pg_fetch_assoc($queryResult);
+    $queryId = (int) ($queryRow['id'] ?? 0);
     if ($queryId <= 0) {
         return;
     }
@@ -807,29 +811,29 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
 
     static $hasSourcesTable = null;
     if ($hasSourcesTable === null) {
-        $hasSourcesTable = (bool) @pg_query($conn, "SELECT 1 FROM {$tRagQuerySources} LIMIT 0");
+        $hasSourcesTable = (bool) @pg_query($conn, "SELECT 1 FROM {$ragQuerySourcesTable} LIMIT 0");
     }
     if (!$hasSourcesTable) {
         return;
     }
 
-    foreach ($sources as $pos => $src) {
-        $fileId   = isset($src['file_id']) ? (int) $src['file_id'] : 0;
-        $chunkId  = (isset($src['chunk_id']) && $src['chunk_id'] !== null) ? (int) $src['chunk_id'] : null;
-        $chunkIdx = isset($src['chunk_index']) ? (int) $src['chunk_index'] : -1;
-        $filename = mb_substr((string) ($src['filename'] ?? ''), 0, 255);
-        $snippet  = mb_substr((string) ($src['content'] ?? ''), 0, 400);
-        $srcType  = in_array($src['source_type'] ?? '', ['chunk', 'file'], true)
-            ? $src['source_type'] : 'file';
+    foreach ($sources as $position => $source) {
+        $fileId   = isset($source['file_id']) ? (int) $source['file_id'] : 0;
+        $chunkId  = (isset($source['chunk_id']) && $source['chunk_id'] !== null) ? (int) $source['chunk_id'] : null;
+        $chunkIdx = isset($source['chunk_index']) ? (int) $source['chunk_index'] : -1;
+        $filename = mb_substr((string) ($source['filename'] ?? ''), 0, 255);
+        $snippet  = mb_substr((string) ($source['content'] ?? ''), 0, 400);
+        $srcType  = in_array($source['source_type'] ?? '', ['chunk', 'file'], true)
+            ? $source['source_type'] : 'file';
         if ($fileId <= 0) {
             continue;
         }
         @pg_query_params(
             $conn,
-            "INSERT INTO {$tRagQuerySources}
+            "INSERT INTO {$ragQuerySourcesTable}
                 (query_id, file_id, chunk_id, chunk_index, filename, snippet, source_type, rank_position)
              VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8)",
-            [$queryId, $fileId, $chunkId, $chunkIdx, $filename, $snippet, $srcType, (int) $pos]
+            [$queryId, $fileId, $chunkId, $chunkIdx, $filename, $snippet, $srcType, (int) $position]
         );
     }
 }

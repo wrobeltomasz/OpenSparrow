@@ -10,12 +10,12 @@ declare(strict_types=1);
 use App\Exception\ControlFlowException;
 use App\Exception\ResponseException;
 
-function frontapi_dashboard(FrontApiContext $ctx): never
+function frontapi_dashboard(FrontApiContext $context): never
 {
     require_once __DIR__ . '/../dashboard_query.php';
 
-    $conn   = $ctx->conn;
-    $schema = $ctx->schema;
+    $conn   = $context->conn;
+    $schema = $context->schema;
 
     $dashboard = config_get('dashboard');
     if ($dashboard === null) {
@@ -43,7 +43,7 @@ function frontapi_dashboard(FrontApiContext $ctx): never
             $tableCfg = safe_table($schema, $table);
         } catch (ControlFlowException $signal) {
             throw $signal;
-        } catch (Throwable $e) {
+        } catch (Throwable $exception) {
             continue;
         }
 
@@ -62,31 +62,33 @@ function frontapi_dashboard(FrontApiContext $ctx): never
         $dateSqlCur  = null;
         $dateSqlPrev = null;
         if ($dateFilter !== 'all' && ($dateTarget === 'all' || $dateTarget === $widgetTargetId)) {
-            $dateCol = array_find_key($tableCfg['columns'], static function (array $cCfg): bool {
-                $cType = strtolower($cCfg['type'] ?? '');
+            $dateCol = array_find_key($tableCfg['columns'], static function (array $calendarConfig): bool {
+                $cType = strtolower($calendarConfig['type'] ?? '');
                 return str_contains($cType, 'date') || str_contains($cType, 'time');
             });
 
             if ($dateCol) {
-                $dc = pg_ident($dateCol);
+                $dateColumn = pg_ident($dateCol);
                 [$dateSqlCur, $dateSqlPrev] = match ($dateFilter) {
                     'today' => [
-                        $dc . ' >= CURRENT_DATE',
-                        '(' . $dc . " >= CURRENT_DATE - INTERVAL '1 day' AND " . $dc . ' < CURRENT_DATE)',
+                        $dateColumn . ' >= CURRENT_DATE',
+                        '(' . $dateColumn . " >= CURRENT_DATE - INTERVAL '1 day' AND " . $dateColumn
+                            . ' < CURRENT_DATE)',
                     ],
                     '7d' => [
-                        $dc . " >= CURRENT_DATE - INTERVAL '7 days'",
-                        '(' . $dc . " >= CURRENT_DATE - INTERVAL '14 days' AND " . $dc
+                        $dateColumn . " >= CURRENT_DATE - INTERVAL '7 days'",
+                        '(' . $dateColumn . " >= CURRENT_DATE - INTERVAL '14 days' AND " . $dateColumn
                             . " < CURRENT_DATE - INTERVAL '7 days')",
                     ],
                     '30d' => [
-                        $dc . " >= CURRENT_DATE - INTERVAL '30 days'",
-                        '(' . $dc . " >= CURRENT_DATE - INTERVAL '60 days' AND " . $dc
+                        $dateColumn . " >= CURRENT_DATE - INTERVAL '30 days'",
+                        '(' . $dateColumn . " >= CURRENT_DATE - INTERVAL '60 days' AND " . $dateColumn
                             . " < CURRENT_DATE - INTERVAL '30 days')",
                     ],
                     'this_month' => [
-                        "DATE_TRUNC('month', " . $dc . ") = DATE_TRUNC('month', CURRENT_DATE)",
-                        "DATE_TRUNC('month', " . $dc . ") = DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'",
+                        "DATE_TRUNC('month', " . $dateColumn . ") = DATE_TRUNC('month', CURRENT_DATE)",
+                        "DATE_TRUNC('month', " . $dateColumn
+                            . ") = DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'",
                     ],
                     default => [null, null],
                 };

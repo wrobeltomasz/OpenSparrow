@@ -17,58 +17,61 @@ use App\Form\RenderContext;
 final class EnumField implements FieldTypeInterface
 {
     #[\Override]
-    public function supports(ColumnConfig $col, bool $hasForeignKey): bool
+    public function supports(ColumnConfig $column, bool $hasForeignKey): bool
     {
-        return $col->isEnum();
+        return $column->isEnum();
     }
 
     #[\Override]
     public function bind(string $colName, array $postData): BoundValue
     {
-        $val = $postData[$colName] ?? null;
-        if ($val === '' || $val === null) {
-            $val = null;
+        $value = $postData[$colName] ?? null;
+        if ($value === '' || $value === null) {
+            $value = null;
         }
-        return new BoundValue($val);
+        return new BoundValue($value);
     }
 
     #[\Override]
-    public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
+    public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string
     {
-        $val     = $ctx->isPrefilled($col->name) ? $ctx->prefilledValue($col->name) : (string)($currentValue ?? '');
-        $locked  = $ctx->isLocked($col->name);
-        $name    = htmlspecialchars($col->name, ENT_QUOTES, 'UTF-8');
-        $reqAttr = ($col->notNull && !$locked) ? 'required' : '';
+        $value     = $context->isPrefilled($column->name)
+            ? $context->prefilledValue($column->name)
+            : (string)($currentValue ?? '');
+        $locked  = $context->isLocked($column->name);
+        $name    = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
+        $reqAttr = ($column->notNull && !$locked) ? 'required' : '';
 
         if ($locked) {
-            $color     = $col->enumColors[$val] ?? null;
+            $color     = $column->enumColors[$value] ?? null;
             $bgStyle   = $color ? 'background:' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8') . ';' : 'background:#e2e8f0;';
             $textColor = '#333';
             if ($color) {
-                $hex = ltrim($color, '#');
-                if (strlen($hex) === 6) {
-                    $brightness = (hexdec(substr($hex, 0, 2)) * 299
-                                 + hexdec(substr($hex, 2, 2)) * 587
-                                 + hexdec(substr($hex, 4, 2)) * 114) / 1000;
+                $hexColor = ltrim($color, '#');
+                if (strlen($hexColor) === 6) {
+                    $brightness = (hexdec(substr($hexColor, 0, 2)) * 299
+                                 + hexdec(substr($hexColor, 2, 2)) * 587
+                                 + hexdec(substr($hexColor, 4, 2)) * 114) / 1000;
                     $textColor  = $brightness > 128 ? '#333' : '#fff';
                 }
             }
-            $display = $val !== '' ? htmlspecialchars($val, ENT_QUOTES, 'UTF-8') : '&mdash;';
+            $display = $value !== '' ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : '&mdash;';
             $html    = '<span class="enum-badge" style="' . $bgStyle . 'color:' . $textColor . ';">' . $display . '</span>';
-            $html   .= '<input type="hidden" name="' . $name . '" value="' . htmlspecialchars($val, ENT_QUOTES, 'UTF-8') . '" />';
+            $html   .= '<input type="hidden" name="' . $name . '" value="'
+                     . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" />';
             return $html;
         }
 
-        $colorsJson = htmlspecialchars((string)json_encode($col->enumColors), ENT_QUOTES, 'UTF-8');
-        $initBg     = $col->enumColors[$val] ?? '';
+        $colorsJson = htmlspecialchars((string)json_encode($column->enumColors), ENT_QUOTES, 'UTF-8');
+        $initBg     = $column->enumColors[$value] ?? '';
         $initStyle  = $initBg ? 'background:' . htmlspecialchars($initBg, ENT_QUOTES, 'UTF-8') . ';' : '';
 
         $html  = '<select name="' . $name . '" ' . $reqAttr . ' data-enum-colors="' . $colorsJson . '" style="' . $initStyle . '">';
         $html .= '<option value="">-- Select --</option>';
-        foreach ($col->options as $opt) {
-            $optStr   = (string)$opt;
-            $selected = $val === $optStr ? 'selected' : '';
-            $optBg    = $col->enumColors[$optStr] ?? '';
+        foreach ($column->options as $option) {
+            $optStr   = (string)$option;
+            $selected = $value === $optStr ? 'selected' : '';
+            $optBg    = $column->enumColors[$optStr] ?? '';
             $optStyle = $optBg
                 ? ' style="background:' . htmlspecialchars($optBg, ENT_QUOTES, 'UTF-8') . ';"'
                 : '';

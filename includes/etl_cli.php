@@ -28,9 +28,9 @@ function etl_cli_boot(): void
     ob_implicit_flush(true);
 }
 
-function etl_cli_log(string $msg): void
+function etl_cli_log(string $message): void
 {
-    echo $msg . "\n";
+    echo $message . "\n";
     echo str_pad('', 4096) . "\n";
     flush();
 }

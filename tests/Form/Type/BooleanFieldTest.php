@@ -42,16 +42,16 @@ final class BooleanFieldTest extends TestCase
 
     public function testBindCheckedReturnsTrue(): void
     {
-        $bv = $this->field->bind('active', ['active' => 'on']);
-        $this->assertSame('true', $bv->value);
-        $this->assertSame('boolean', $bv->cast);
+        $boundValue = $this->field->bind('active', ['active' => 'on']);
+        $this->assertSame('true', $boundValue->value);
+        $this->assertSame('boolean', $boundValue->cast);
     }
 
     public function testBindUncheckedReturnsFalse(): void
     {
-        $bv = $this->field->bind('active', []);
-        $this->assertSame('false', $bv->value);
-        $this->assertSame('boolean', $bv->cast);
+        $boundValue = $this->field->bind('active', []);
+        $this->assertSame('false', $boundValue->value);
+        $this->assertSame('boolean', $boundValue->cast);
     }
 
     public function testRenderCheckedState(): void

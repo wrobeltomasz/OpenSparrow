@@ -38,12 +38,12 @@ function auto_capture_old_record(
     }
 
     $sql = sprintf('SELECT * FROM %s.%s WHERE id = $1', pg_ident($tableSchema), pg_ident($table));
-    $res = @pg_query_params($conn, $sql, [$recordId]);
-    if (!$res) {
+    $queryResult = @pg_query_params($conn, $sql, [$recordId]);
+    if (!$queryResult) {
         return null;
     }
-    $row = pg_fetch_assoc($res);
-    pg_free_result($res);
+    $row = pg_fetch_assoc($queryResult);
+    pg_free_result($queryResult);
     return $row ?: null;
 }
 
@@ -74,12 +74,12 @@ function evaluate_automation_rules(
         $record = $oldRecord;
     } else {
         $sql    = sprintf('SELECT * FROM %s.%s WHERE id = $1', pg_ident($tableSchema), pg_ident($table));
-        $recRes = @pg_query_params($conn, $sql, [$recordId]);
-        if (!$recRes) {
+        $recordResult = @pg_query_params($conn, $sql, [$recordId]);
+        if (!$recordResult) {
             return;
         }
-        $record = pg_fetch_assoc($recRes);
-        pg_free_result($recRes);
+        $record = pg_fetch_assoc($recordResult);
+        pg_free_result($recordResult);
         if (!$record) {
             return;
         }
@@ -98,7 +98,7 @@ function evaluate_automation_rules(
 
         $errors = [];
         foreach ($actions as $action) {
-            $err = auto_execute_action(
+            $error = auto_execute_action(
                 $conn,
                 $tableSchema,
                 $table,
@@ -110,8 +110,8 @@ function evaluate_automation_rules(
                 $event,
                 $oldRecord
             );
-            if ($err !== null) {
-                $errors[] = $err;
+            if ($error !== null) {
+                $errors[] = $error;
             }
         }
 
@@ -162,10 +162,10 @@ function auto_compare_values(?string $recVal, string $value): ?int
     if (is_numeric($recVal) && is_numeric($value)) {
         return (float) $recVal <=> (float) $value;
     }
-    $a = strtotime($recVal);
-    $b = strtotime($value);
-    if ($a !== false && $b !== false) {
-        return $a <=> $b;
+    $recordTimestamp = strtotime($recVal);
+    $valueTimestamp = strtotime($value);
+    if ($recordTimestamp !== false && $valueTimestamp !== false) {
+        return $recordTimestamp <=> $valueTimestamp;
     }
     return strcmp($recVal, $value) <=> 0;
 }
@@ -177,7 +177,7 @@ function auto_eval_condition(array $rule, array $record, ?array $oldRecord = nul
         return true;
     }
 
-    $op     = (string) ($rule['operator'] ?? '=');
+    $operator     = (string) ($rule['operator'] ?? '=');
     $value  = (string) ($rule['value'] ?? '');
 
     $value  = preg_replace('/\{\{\s*today\s*\}\}/', date('Y-m-d'), $value) ?? $value;
@@ -187,7 +187,7 @@ function auto_eval_condition(array $rule, array $record, ?array $oldRecord = nul
         ? (string) ($oldRecord[$field] ?? '')
         : null;
 
-    return match ($op) {
+    return match ($operator) {
         '='            => $recVal !== null && $recVal === $value,
         '!='           => $recVal !== null && $recVal !== $value,
         'contains'     => $recVal !== null && str_contains($recVal, $value),
@@ -302,16 +302,16 @@ function auto_action_update(
     $set        = $action['set'] ?? [];
     $setClauses = [];
     $params     = [];
-    $i          = 1;
+    $placeholderIndex          = 1;
 
-    foreach ($set as $col => $val) {
-        if ((string) $col === '') {
+    foreach ($set as $column => $columnValue) {
+        if ((string) $column === '') {
             continue;
         }
-        $val          = auto_resolve_template((string) $val, $record, $userId, $oldRecord);
-        $setClauses[] = pg_ident((string) $col) . ' = $' . $i;
-        $params[]     = $val;
-        $i++;
+        $columnValue          = auto_resolve_template((string) $columnValue, $record, $userId, $oldRecord);
+        $setClauses[] = pg_ident((string) $column) . ' = $' . $placeholderIndex;
+        $params[]     = $columnValue;
+        $placeholderIndex++;
     }
 
     if (empty($setClauses)) {
@@ -324,11 +324,11 @@ function auto_action_update(
         pg_ident($tableSchema),
         pg_ident($table),
         implode(', ', $setClauses),
-        $i
+        $placeholderIndex
     );
 
-    $res = @pg_query_params($conn, $sql, $params);
-    return $res === false ? ('update failed: ' . pg_last_error($conn)) : null;
+    $queryResult = @pg_query_params($conn, $sql, $params);
+    return $queryResult === false ? ('update failed: ' . pg_last_error($conn)) : null;
 }
 
 function auto_action_notify(
@@ -358,14 +358,14 @@ function auto_action_notify(
         return 'notify: no recipients';
     }
 
-    $tNotif = sys_table('users_notifications');
+    $notificationsTable = sys_table('users_notifications');
 
-    $src = 'auto_' . $ruleId;
-    if (strlen($src) > 100) {
-        $src = substr($src, 0, 100);
+    $source = 'auto_' . $ruleId;
+    if (strlen($source) > 100) {
+        $source = substr($source, 0, 100);
     }
 
-    $sql = "INSERT INTO $tNotif (user_id, title, link, source_table, source_id, notify_date)
+    $sql = "INSERT INTO $notificationsTable (user_id, title, link, source_table, source_id, notify_date)
             VALUES (\$1, \$2, \$3, \$4, \$5, CURRENT_DATE)
             ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING";
 
@@ -377,14 +377,14 @@ function auto_action_notify(
             $errs[] = "notify: invalid user_id ({$rawId})";
             continue;
         }
-        $res = @pg_query_params($conn, $sql, [
+        $queryResult = @pg_query_params($conn, $sql, [
             $targetId,
             $title,
             $link !== '' ? $link : null,
-            $src,
+            $source,
             $recordId,
         ]);
-        if ($res === false) {
+        if ($queryResult === false) {
             $errs[] = 'notify failed: ' . pg_last_error($conn);
         }
     }
@@ -411,40 +411,43 @@ function auto_action_create_record(
     $targetSchema = (string) ($targetCfg['schema'] ?? 'public');
 
     $set    = $action['set'] ?? [];
-    $cols   = [];
+    $columns   = [];
     $params = [];
 
-    foreach ($set as $col => $val) {
-        if ((string) $col === '') {
+    foreach ($set as $column => $columnValue) {
+        if ((string) $column === '') {
             continue;
         }
-        $cols[]   = pg_ident((string) $col);
-        $params[] = auto_resolve_template((string) $val, $record, $userId, $oldRecord);
+        $columns[]   = pg_ident((string) $column);
+        $params[] = auto_resolve_template((string) $columnValue, $record, $userId, $oldRecord);
     }
 
-    if (empty($cols)) {
+    if (empty($columns)) {
         return 'create_record: no fields set';
     }
 
-    $placeholders = implode(', ', array_map(static fn(int $n): string => '$' . $n, range(1, count($params))));
+    $placeholders = implode(', ', array_map(
+        static fn(int $placeholderIndex): string => '$' . $placeholderIndex,
+        range(1, count($params))
+    ));
     $sql = sprintf(
         'INSERT INTO %s.%s (%s) VALUES (%s)',
         pg_ident($targetSchema),
         pg_ident($targetTable),
-        implode(', ', $cols),
+        implode(', ', $columns),
         $placeholders
     );
 
-    $res = @pg_query_params($conn, $sql, $params);
-    return $res === false ? ('create_record failed: ' . pg_last_error($conn)) : null;
+    $queryResult = @pg_query_params($conn, $sql, $params);
+    return $queryResult === false ? ('create_record failed: ' . pg_last_error($conn)) : null;
 }
 
 function auto_webhook_secret(array $action): string
 {
-    $enc = (string) ($action['secret_enc'] ?? '');
-    if ($enc !== '') {
+    $encoding = (string) ($action['secret_enc'] ?? '');
+    if ($encoding !== '') {
         require_once __DIR__ . '/crypto.php';
-        return (string) (secret_decrypt($enc) ?? '');
+        return (string) (secret_decrypt($encoding) ?? '');
     }
     return (string) ($action['secret'] ?? '');
 }
@@ -460,25 +463,25 @@ const AUTO_WEBHOOK_RESERVED_HEADERS = [
 function auto_webhook_header_map(array $action): array
 {
     require_once __DIR__ . '/crypto.php';
-    $out = [];
-    foreach ((array) ($action['headers_enc'] ?? []) as $name => $enc) {
-        $plain = secret_decrypt((string) $enc);
+    $output = [];
+    foreach ((array) ($action['headers_enc'] ?? []) as $name => $encoding) {
+        $plain = secret_decrypt((string) $encoding);
         if ($plain !== null) {
-            $out[(string) $name] = $plain;
+            $output[(string) $name] = $plain;
         }
     }
-    foreach ((array) ($action['headers'] ?? []) as $name => $val) {
-        if (!array_key_exists((string) $name, $out)) {
-            $out[(string) $name] = (string) $val;
+    foreach ((array) ($action['headers'] ?? []) as $name => $headerValue) {
+        if (!array_key_exists((string) $name, $output)) {
+            $output[(string) $name] = (string) $headerValue;
         }
     }
-    return $out;
+    return $output;
 }
 
 function auto_webhook_headers(array $action, array $record, int $userId, ?array $oldRecord): array
 {
-    $out = [];
-    foreach (auto_webhook_header_map($action) as $name => $tpl) {
+    $output = [];
+    foreach (auto_webhook_header_map($action) as $name => $template) {
         $name = trim((string) $name);
 
         if ($name === '' || preg_match('/^[A-Za-z0-9!#$%&\'*+.^_`|~-]+$/', $name) !== 1) {
@@ -487,14 +490,14 @@ function auto_webhook_headers(array $action, array $record, int $userId, ?array 
         if (in_array(strtolower($name), AUTO_WEBHOOK_RESERVED_HEADERS, true)) {
             continue;
         }
-        $val = auto_resolve_template((string) $tpl, $record, $userId, $oldRecord);
-        $val = trim((string) preg_replace('/[\r\n]+/', ' ', $val));
-        if ($val === '') {
+        $headerValue = auto_resolve_template((string) $template, $record, $userId, $oldRecord);
+        $headerValue = trim((string) preg_replace('/[\r\n]+/', ' ', $headerValue));
+        if ($headerValue === '') {
             continue;
         }
-        $out[] = $name . ': ' . $val;
+        $output[] = $name . ': ' . $headerValue;
     }
-    return $out;
+    return $output;
 }
 
 function auto_webhook_is_transient(string $curlErr, int $httpCode): bool
@@ -539,11 +542,11 @@ function auto_action_webhook(
     if ($mapping === []) {
         $data = $record;
     } else {
-        foreach ($mapping as $key => $tpl) {
+        foreach ($mapping as $key => $template) {
             if ((string) $key === '') {
                 continue;
             }
-            $data[(string) $key] = auto_resolve_template((string) $tpl, $record, $userId, $oldRecord);
+            $data[(string) $key] = auto_resolve_template((string) $template, $record, $userId, $oldRecord);
         }
     }
 
@@ -578,8 +581,8 @@ function auto_action_webhook(
     $httpCode = 0;
 
     while (true) {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
+        $curlHandle = curl_init($url);
+        curl_setopt_array($curlHandle, [
             CURLOPT_CUSTOMREQUEST  => $method,
             CURLOPT_POSTFIELDS     => $payload,
             CURLOPT_HTTPHEADER     => $headers,
@@ -590,10 +593,10 @@ function auto_action_webhook(
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
         ]);
-        curl_exec($ch);
-        $curlErr  = curl_error($ch);
-        $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
+        curl_exec($curlHandle);
+        $curlErr  = curl_error($curlHandle);
+        $httpCode = (int) curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE);
+        curl_close($curlHandle);
 
         if ($curlErr === '' && $httpCode > 0 && $httpCode < 300) {
             break;
@@ -648,8 +651,9 @@ function auto_action_email(
         return $guardErr;
     }
 
-    $tEmails = sys_table('automation_emails');
-    $sql     = "INSERT INTO $tEmails (rule_id, recipient, subject, body, source_table, record_id, created_by)
+    $automationEmailsTable = sys_table('automation_emails');
+    $sql     = "INSERT INTO $automationEmailsTable (rule_id, recipient, subject,"
+        . " body, source_table, record_id, created_by)
                 VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7)";
 
     $errs   = [];
@@ -660,7 +664,7 @@ function auto_action_email(
             $errs[] = "email: invalid recipient ({$rawRecipient})";
             continue;
         }
-        $res = @pg_query_params($conn, $sql, [
+        $queryResult = @pg_query_params($conn, $sql, [
             $ruleId,
             substr($recipient, 0, 255),
             substr($subject, 0, 255),
@@ -669,7 +673,7 @@ function auto_action_email(
             $recordId,
             $userId,
         ]);
-        if ($res === false) {
+        if ($queryResult === false) {
             $errs[] = 'email queue failed: ' . pg_last_error($conn);
         } else {
             $queued++;
@@ -693,10 +697,10 @@ function auto_log_run(
     string $status,
     ?string $errorMsg
 ): void {
-    $tRuns = sys_table('automation_runs');
+    $automationRunsTable = sys_table('automation_runs');
     @pg_query_params(
         $conn,
-        "INSERT INTO $tRuns (rule_id, rule_name, table_name, record_id, event, status, error_msg)
+        "INSERT INTO $automationRunsTable (rule_id, rule_name, table_name, record_id, event, status, error_msg)
          VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7)",
         [$ruleId, $ruleName, $tableName, $recordId, $event, $status, $errorMsg]
     );
@@ -708,16 +712,16 @@ function auto_resolve_template(string $value, array $record, int $userId, ?array
     $value = preg_replace('/\{\{\s*today\s*\}\}/', date('Y-m-d'), $value) ?? $value;
     $value = preg_replace_callback(
         '/\{\{\s*record\.(\w+)\s*\}\}/',
-        static function (array $m) use ($record): string {
-            return (string) ($record[$m[1]] ?? '');
+        static function (array $matches) use ($record): string {
+            return (string) ($record[$matches[1]] ?? '');
         },
         $value
     ) ?? $value;
 
     $value = preg_replace_callback(
         '/\{\{\s*old_record\.(\w+)\s*\}\}/',
-        static function (array $m) use ($oldRecord): string {
-            return (string) ($oldRecord[$m[1]] ?? '');
+        static function (array $matches) use ($oldRecord): string {
+            return (string) ($oldRecord[$matches[1]] ?? '');
         },
         $value
     ) ?? $value;

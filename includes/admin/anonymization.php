@@ -41,18 +41,18 @@ if ($action === 'anonymization_save') {
         if (!is_array($rule)) {
             continue;
         }
-        $t  = trim((string)($rule['table']       ?? ''));
+        $tableName  = trim((string)($rule['table']       ?? ''));
         $column  = trim((string)($rule['column']      ?? ''));
-        $dc = trim((string)($rule['date_column'] ?? ''));
-        $d  = (int)($rule['days'] ?? 0);
+        $dateColumn = trim((string)($rule['date_column'] ?? ''));
+        $days  = (int)($rule['days'] ?? 0);
         $replacement  = (string)($rule['replacement'] ?? '');
-        if ($t === '' || $column === '' || $dc === '' || $d < 1) {
+        if ($tableName === '' || $column === '' || $dateColumn === '' || $days < 1) {
             continue;
         }
         $config['rules'][] = [
-            'table'       => $t,
-            'date_column' => $dc,
-            'days'        => $d,
+            'table'       => $tableName,
+            'date_column' => $dateColumn,
+            'days'        => $days,
             'column'      => $column,
             'replacement' => $replacement,
         ];
@@ -81,30 +81,30 @@ if ($action === 'preview_anonymization') {
 if ($action === 'anonymization_log') {
     admin_try(static function (): void {
         $conn    = admin_conn();
-        $tLog    = sys_table('anonymization_log');
-        $tReport = sys_table('anonymization_report');
-        admin_require_log_table($conn, $tLog);
-        $cols = 'l.id, l.started_at, l.finished_at, l.status, l.triggered_by, l.rules_processed, '
+        $anonymizationLogTable    = sys_table('anonymization_log');
+        $anonymizationReportTable = sys_table('anonymization_report');
+        admin_require_log_table($conn, $anonymizationLogTable);
+        $columns = 'l.id, l.started_at, l.finished_at, l.status, l.triggered_by, l.rules_processed, '
               . 'l.rows_anonymized, l.error_message';
-        $dur  = 'EXTRACT(EPOCH FROM (COALESCE(l.finished_at, now()) - l.started_at)) AS duration_sec';
+        $durationExpression  = 'EXTRACT(EPOCH FROM (COALESCE(l.finished_at, now()) - l.started_at)) AS duration_sec';
 
-        $res  = @pg_query(
+        $result  = @pg_query(
             $conn,
-            "SELECT {$cols}, r.report, {$dur}
-             FROM {$tLog} l
-             LEFT JOIN {$tReport} r ON r.log_id = l.id
+            "SELECT {$columns}, r.report, {$durationExpression}
+             FROM {$anonymizationLogTable} l
+             LEFT JOIN {$anonymizationReportTable} r ON r.log_id = l.id
              ORDER BY l.started_at DESC LIMIT 50"
         );
-        if (!$res) {
-            $res = @pg_query(
+        if (!$result) {
+            $result = @pg_query(
                 $conn,
-                "SELECT {$cols}, {$dur} FROM {$tLog} l ORDER BY l.started_at DESC LIMIT 50"
+                "SELECT {$columns}, {$durationExpression} FROM {$anonymizationLogTable} l ORDER BY l.started_at DESC LIMIT 50"
             );
         }
-        if (!$res) {
+        if (!$result) {
             admin_db_fail($conn, 'anonymization_log');
         }
-        admin_ok(['rows' => admin_fetch_all($res)]);
+        admin_ok(['rows' => admin_fetch_all($result)]);
     });
 }
 

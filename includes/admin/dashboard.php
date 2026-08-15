@@ -34,7 +34,7 @@ if ($action === 'dashboard_calculate') {
             $tableCfg = safe_table($schemaCfg, $table);
         } catch (ControlFlowException $signal) {
             throw $signal;
-        } catch (Throwable $e) {
+        } catch (Throwable $exception) {
             throw new AdminApiMessage('Unknown table: ' . $table);
         }
         $schemaName = $tableCfg['schema'] ?? 'public';
@@ -56,8 +56,8 @@ if ($action === 'dashboard_calculate') {
         echo json_encode(['status' => 'success', 'data' => $result['data']]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

@@ -12,17 +12,17 @@ use App\Exception\ResponseException;
 os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none']);
 
 $table = $_GET['table'] ?? '';
-$col = $_GET['col'] ?? '';
+$column = $_GET['col'] ?? '';
 require_once __DIR__ . '/../../includes/config_store.php';
 $schemaData = config_get('schema');
 
-if (!is_array($schemaData) || !isset($schemaData['tables'][$table]['foreign_keys'][$col])) {
+if (!is_array($schemaData) || !isset($schemaData['tables'][$table]['foreign_keys'][$column])) {
     throw ResponseException::json(['rows' => []]);
 }
 
 require_table_access($table);
 
-$refTable = $schemaData['tables'][$table]['foreign_keys'][$col]['reference_table'] ?? '';
+$refTable = $schemaData['tables'][$table]['foreign_keys'][$column]['reference_table'] ?? '';
 if (empty($refTable)) {
     throw ResponseException::json(['rows' => []]);
 }
@@ -37,12 +37,12 @@ if ($filterCol !== '') {
 }
 
 if (!user_can_access_table($refTable)) {
-    $fkCfg   = $schemaData['tables'][$table]['foreign_keys'][$col];
-    $labelCols = [(string) ($fkCfg['reference_column'] ?? 'id')];
+    $foreignKeyConfig   = $schemaData['tables'][$table]['foreign_keys'][$column];
+    $labelCols = [(string) ($foreignKeyConfig['reference_column'] ?? 'id')];
 
     foreach (['display_column', 'display_columns'] as $key) {
-        $raw = $fkCfg[$key] ?? null;
-        foreach (is_array($raw) ? $raw : [$raw] as $name) {
+        $rawDisplay = $foreignKeyConfig[$key] ?? null;
+        foreach (is_array($rawDisplay) ? $rawDisplay : [$rawDisplay] as $name) {
             if (is_string($name) && $name !== '') {
                 $labelCols[] = $name;
             }

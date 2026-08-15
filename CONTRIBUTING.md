@@ -134,7 +134,7 @@ saves the author keystrokes while costing every later reader a lookup.
   `$galleryImage`, `$m2mIndex`. This applies to arrow functions and closures too:
   `fn($column) => pg_ident($column)`, never `fn($c) => pg_ident($c)`.
 - **Name what the value actually is, not what the loop is called.** A
-  `pg_query_params()` handle is `$countRes` or `$labelRes`, not `$row`; a
+  `pg_query_params()` handle is `$countResult` or `$labelResult`, not `$row`; a
   `UserRole` is `$userRole`; an anonymization rule is `$rule`. Two variables in
   one scope must not be distinguishable only by length.
 - **Do not leave a prefix behind when you rename.** If `$gi` becomes

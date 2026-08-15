@@ -141,13 +141,13 @@ if ($placeholders === []) {
 
 $conn   = db_connect();
 $target = sys_table('clickstats');
-$res    = @pg_query_params(
+$result    = @pg_query_params(
     $conn,
     "INSERT INTO {$target} (user_id, element, page, table_name, record_id) VALUES "
     . implode(', ', $placeholders),
     $params
 );
-if (!$res) {
+if (!$result) {
     error_log('[OpenSparrow] clickstats insert failed: ' . pg_last_error($conn));
     clickstats_done(500);
 }

@@ -20,19 +20,19 @@ if ($action === 'health') {
         if ($conn) {
             $db_connected = true;
             $db_error = '';
-            $vr = @pg_query($conn, 'SELECT version()');
-            if ($vr) {
-                $row = pg_fetch_row($vr);
+            $versionResult = @pg_query($conn, 'SELECT version()');
+            if ($versionResult) {
+                $row = pg_fetch_row($versionResult);
 
-                if (preg_match('/PostgreSQL\s+([\d.]+)/i', $row[0] ?? '', $m)) {
-                    $pg_version = $m[1];
+                if (preg_match('/PostgreSQL\s+([\d.]+)/i', $row[0] ?? '', $matches)) {
+                    $pg_version = $matches[1];
                 }
             }
         }
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        $db_error = $e->getMessage();
+    } catch (Throwable $exception) {
+        $db_error = $exception->getMessage();
     }
 
     $versionFile = __DIR__ . '/../../includes/VERSION';
@@ -74,16 +74,16 @@ if ($action === 'health') {
             && is_writable(__DIR__ . '/../../storage/files'),
 
         'database_json_ok' => (static function () {
-            $f = __DIR__ . '/../../config/database.json';
-            return file_exists($f) && is_array(json_decode((string) @file_get_contents($f), true));
+            $configPath = __DIR__ . '/../../config/database.json';
+            return file_exists($configPath) && is_array(json_decode((string) @file_get_contents($configPath), true));
         })(),
         'schema_json_ok' => (static function () {
             require_once __DIR__ . '/../config_store.php';
             return is_array(config_get('schema'));
         })(),
         'security_json_ok' => (static function () {
-            $f = __DIR__ . '/../../config/security.json';
-            return file_exists($f) && is_array(json_decode((string) @file_get_contents($f), true));
+            $configPath = __DIR__ . '/../../config/security.json';
+            return file_exists($configPath) && is_array(json_decode((string) @file_get_contents($configPath), true));
         })(),
     ];
     throw ResponseException::encoded($data);

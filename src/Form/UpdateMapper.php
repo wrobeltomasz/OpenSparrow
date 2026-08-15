@@ -21,28 +21,28 @@ final readonly class UpdateMapper
     public function fromPost(TableConfig $cfg, array $postData): RecordData
     {
         $bindings = [];
-        foreach ($cfg->writableColumns() as $col) {
-            $hasFk      = $cfg->hasForeignKey($col->name);
-            $bound      = $this->registry->for($col, $hasFk)->bind($col->name, $postData);
-            $this->assertMatchesRegexp($col, $bound->value);
-            $bindings[] = ['col' => $col->name, 'bound' => $bound];
+        foreach ($cfg->writableColumns() as $column) {
+            $hasFk      = $cfg->hasForeignKey($column->name);
+            $bound      = $this->registry->for($column, $hasFk)->bind($column->name, $postData);
+            $this->assertMatchesRegexp($column, $bound->value);
+            $bindings[] = ['col' => $column->name, 'bound' => $bound];
         }
         return new RecordData($bindings);
     }
 
-    private function assertMatchesRegexp(ColumnConfig $col, mixed $value): void
+    private function assertMatchesRegexp(ColumnConfig $column, mixed $value): void
     {
-        if ($col->validationRegexp === null || !is_string($value) || $value === '') {
+        if ($column->validationRegexp === null || !is_string($value) || $value === '') {
             return;
         }
 
-        $result = @preg_match('~' . str_replace('~', '\~', $col->validationRegexp) . '~u', $value);
+        $result = @preg_match('~' . str_replace('~', '\~', $column->validationRegexp) . '~u', $value);
         if ($result === false) {
-            error_log('[UpdateMapper] invalid validation_regexp in schema.json: ' . $col->validationRegexp);
+            error_log('[UpdateMapper] invalid validation_regexp in schema.json: ' . $column->validationRegexp);
             return;
         }
         if ($result !== 1) {
-            throw new ValidationException($col->validationMessage ?? 'Invalid format: ' . $col->name);
+            throw new ValidationException($column->validationMessage ?? 'Invalid format: ' . $column->name);
         }
     }
 }

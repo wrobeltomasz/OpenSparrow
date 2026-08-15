@@ -12,21 +12,21 @@ function dashboard_conditions_sql($conn, array $tableCfg, array $conditions): st
     $condParts = [];
     $allowedOps = ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'ILIKE', 'IS NULL', 'IS NOT NULL'];
     foreach ($conditions as $cond) {
-        $col = $cond['col'] ?? '';
-        $op  = $cond['op']  ?? '=';
-        $val = (string)($cond['val'] ?? '');
-        if (!isset($tableCfg['columns'][$col])) {
+        $columnName = $cond['col'] ?? '';
+        $operator  = $cond['op']  ?? '=';
+        $value = (string)($cond['val'] ?? '');
+        if (!isset($tableCfg['columns'][$columnName])) {
             continue;
         }
-        if (!in_array($op, $allowedOps, true)) {
+        if (!in_array($operator, $allowedOps, true)) {
             continue;
         }
-        $colSql = pg_ident($col);
+        $colSql = pg_ident($columnName);
         $logic = strtoupper($cond['logic'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
-        if ($op === 'IS NULL' || $op === 'IS NOT NULL') {
-            $condParts[] = [$colSql . ' ' . $op, $logic];
+        if ($operator === 'IS NULL' || $operator === 'IS NOT NULL') {
+            $condParts[] = [$colSql . ' ' . $operator, $logic];
         } else {
-            $condParts[] = [$colSql . ' ' . $op . " '" . pg_escape_string($conn, $val) . "'", $logic];
+            $condParts[] = [$colSql . ' ' . $operator . " '" . pg_escape_string($conn, $value) . "'", $logic];
         }
     }
     if (empty($condParts)) {
@@ -49,65 +49,65 @@ function dashboard_run_widget_query(
     string $sqlWhere
 ): array {
     $qType = $query['type'] ?? 'list';
-    $out = ['data' => null];
+    $output = ['data' => null];
 
     if ($qType === 'count') {
-        $col = $query['column'] ?? id_column();
-        if (isset($tableCfg['columns'][$col]) || $col === id_column()) {
+        $columnName = $query['column'] ?? id_column();
+        if (isset($tableCfg['columns'][$columnName]) || $columnName === id_column()) {
             $sql = sprintf(
                 'SELECT COUNT(%s) AS count FROM %s.%s%s',
-                pg_ident($col),
+                pg_ident($columnName),
                 pg_ident($schemaName),
                 pg_ident($table),
                 $sqlWhere
             );
-            $res = @pg_query($conn, $sql);
-            if ($res) {
-                $row = pg_fetch_assoc($res);
-                $out['data'] = (int)($row['count'] ?? 0);
-                pg_free_result($res);
+            $result = @pg_query($conn, $sql);
+            if ($result) {
+                $row = pg_fetch_assoc($result);
+                $output['data'] = (int)($row['count'] ?? 0);
+                pg_free_result($result);
             } else {
-                $out['sql_error'] = 'Query failed.';
+                $output['sql_error'] = 'Query failed.';
             }
         }
     } elseif ($qType === 'sum') {
-        $col = $query['column'] ?? '';
-        if (isset($tableCfg['columns'][$col])) {
+        $columnName = $query['column'] ?? '';
+        if (isset($tableCfg['columns'][$columnName])) {
             $sql = sprintf(
                 'SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s',
-                pg_ident($col),
+                pg_ident($columnName),
                 pg_ident($schemaName),
                 pg_ident($table),
                 $sqlWhere
             );
-            $res = @pg_query($conn, $sql);
-            if ($res) {
-                $row = pg_fetch_assoc($res);
-                $val = (float)($row['total'] ?? 0);
-                $out['data'] = ($val == (int)$val) ? (int)$val : round($val, 2);
-                pg_free_result($res);
+            $result = @pg_query($conn, $sql);
+            if ($result) {
+                $row = pg_fetch_assoc($result);
+                $value = (float)($row['total'] ?? 0);
+                $output['data'] = ($value == (int)$value) ? (int)$value : round($value, 2);
+                pg_free_result($result);
             } else {
-                $out['sql_error'] = 'Query failed.';
+                $output['sql_error'] = 'Query failed.';
             }
         }
     } elseif ($qType === 'avg') {
-        $col = $query['column'] ?? '';
-        if (isset($tableCfg['columns'][$col])) {
+        $columnName = $query['column'] ?? '';
+        if (isset($tableCfg['columns'][$columnName])) {
             $sql = sprintf(
                 'SELECT COALESCE(AVG(%s), 0) AS total FROM %s.%s%s',
-                pg_ident($col),
+                pg_ident($columnName),
                 pg_ident($schemaName),
                 pg_ident($table),
                 $sqlWhere
             );
-            $res = @pg_query($conn, $sql);
-            if ($res) {
-                $row = pg_fetch_assoc($res);
-                $val = (float)($row['total'] ?? 0);
-                $out['data'] = ($val == (int)$val) ? (int)$val : round($val, 2);
-                pg_free_result($res);
+            $result = @pg_query($conn, $sql);
+            if ($result) {
+                $row = pg_fetch_assoc($result);
+                $value = (float)($row['total'] ?? 0);
+                $output['data'] = ($value == (int)$value) ? (int)$value : round($value, 2);
+                pg_free_result($result);
             } else {
-                $out['sql_error'] = 'Query failed.';
+                $output['sql_error'] = 'Query failed.';
             }
         }
     } elseif ($qType === 'group_by') {
@@ -127,18 +127,18 @@ function dashboard_run_widget_query(
                 $sqlWhere,
                 pg_ident($grpCol)
             );
-            $res = @pg_query($conn, $sql);
-            if ($res) {
+            $result = @pg_query($conn, $sql);
+            if ($result) {
                 $data = [];
-                while ($row = pg_fetch_assoc($res)) {
+                while ($row = pg_fetch_assoc($result)) {
                     $row['value'] = is_numeric($row['value']) ? (float)$row['value'] : $row['value'];
                     $data[] = $row;
                 }
-                pg_free_result($res);
-                $out['data'] = $data;
-                $out['column_type'] = $tableCfg['columns'][$grpCol]['type'] ?? 'text';
+                pg_free_result($result);
+                $output['data'] = $data;
+                $output['column_type'] = $tableCfg['columns'][$grpCol]['type'] ?? 'text';
             } else {
-                $out['sql_error'] = 'Query failed.';
+                $output['sql_error'] = 'Query failed.';
             }
         }
     } elseif ($qType === 'time_series') {
@@ -161,18 +161,18 @@ function dashboard_run_widget_query(
                 pg_ident($table),
                 $sqlWhere
             );
-            $res = @pg_query($conn, $sql);
-            if ($res) {
+            $result = @pg_query($conn, $sql);
+            if ($result) {
                 $data = [];
-                while ($row = pg_fetch_assoc($res)) {
+                while ($row = pg_fetch_assoc($result)) {
                     $row['value'] = is_numeric($row['value']) ? (float)$row['value'] : $row['value'];
                     $data[] = $row;
                 }
-                pg_free_result($res);
-                $out['data'] = $data;
-                $out['column_type'] = $tableCfg['columns'][$xCol]['type'] ?? 'text';
+                pg_free_result($result);
+                $output['data'] = $data;
+                $output['column_type'] = $tableCfg['columns'][$xCol]['type'] ?? 'text';
             } else {
-                $out['sql_error'] = 'Query failed.';
+                $output['sql_error'] = 'Query failed.';
             }
         }
     } else {
@@ -200,24 +200,24 @@ function dashboard_run_widget_query(
                 $dir,
                 $limit
             );
-            $res = @pg_query($conn, $sql);
-            if ($res) {
+            $result = @pg_query($conn, $sql);
+            if ($result) {
                 $data = [];
-                while ($row = pg_fetch_assoc($res)) {
+                while ($row = pg_fetch_assoc($result)) {
                     $data[] = $row;
                 }
-                pg_free_result($res);
-                $out['data'] = $data;
+                pg_free_result($result);
+                $output['data'] = $data;
                 $colTypes = [];
-                foreach ($validCols as $col) {
-                    $colTypes[$col] = $tableCfg['columns'][$col]['type'] ?? 'text';
+                foreach ($validCols as $columnName) {
+                    $colTypes[$columnName] = $tableCfg['columns'][$columnName]['type'] ?? 'text';
                 }
-                $out['column_types'] = $colTypes;
+                $output['column_types'] = $colTypes;
             } else {
-                $out['sql_error'] = 'Query failed.';
+                $output['sql_error'] = 'Query failed.';
             }
         }
     }
 
-    return $out;
+    return $output;
 }

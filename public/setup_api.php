@@ -42,11 +42,11 @@ function is_private_ip(string $host): bool
 
 function read_json_body(int $maxBytes = 8192): ?array
 {
-    $raw = fread(fopen('php://input', 'r'), $maxBytes + 1);
-    if (strlen($raw) > $maxBytes) {
+    $rawBody = fread(fopen('php://input', 'r'), $maxBytes + 1);
+    if (strlen($rawBody) > $maxBytes) {
         return null;
     }
-    $data = json_decode($raw, true);
+    $data = json_decode($rawBody, true);
     return is_array($data) ? $data : null;
 }
 
@@ -101,13 +101,13 @@ if ($action === 'test_connection') {
     }
 
     $schemas = [];
-    $res = @pg_query(
+    $result = @pg_query(
         $conn,
         "SELECT schema_name FROM information_schema.schemata "
             . "WHERE schema_name NOT IN ('pg_catalog', 'information_schema') ORDER BY schema_name"
     );
-    if ($res) {
-        while ($row = pg_fetch_assoc($res)) {
+    if ($result) {
+        while ($row = pg_fetch_assoc($result)) {
             $schemas[] = $row['schema_name'];
         }
     }
@@ -185,8 +185,8 @@ if ($action === 'init_database') {
         }
 
         $schemaIdent = '"' . str_replace('"', '""', $schema) . '"';
-        $tUsers = table_ident($schema, 'spw_users');
-        $tMigrations = table_ident($schema, 'spw_migrations');
+        $usersTable = table_ident($schema, 'spw_users');
+        $migrationsTable = table_ident($schema, 'spw_migrations');
 
         if ($dropSchema) {
             $dropResult = @pg_query($conn, "DROP SCHEMA IF EXISTS $schemaIdent CASCADE");
@@ -199,29 +199,29 @@ if ($action === 'init_database') {
         $queries = array_merge(
             [
                 "CREATE SCHEMA IF NOT EXISTS $schemaIdent",
-                "CREATE TABLE IF NOT EXISTS $tMigrations ( id serial4 NOT NULL, name varchar(100) NOT NULL, "
+                "CREATE TABLE IF NOT EXISTS $migrationsTable ( id serial4 NOT NULL, name varchar(100) NOT NULL, "
                     . "applied_at timestamp DEFAULT now() NOT NULL, CONSTRAINT spw_migrations_pkey PRIMARY KEY (id), "
                     . "CONSTRAINT spw_migrations_name_key UNIQUE (name) )",
             ],
-            system_tables_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
-            system_tables_comments_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
-            system_tables_user_contact_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
-            system_tables_clickstats_ddl(static fn(string $n): string => table_ident($schema, 'spw_' . $n)),
+            system_tables_ddl(static fn(string $name): string => table_ident($schema, 'spw_' . $name)),
+            system_tables_comments_ddl(static fn(string $name): string => table_ident($schema, 'spw_' . $name)),
+            system_tables_user_contact_ddl(static fn(string $name): string => table_ident($schema, 'spw_' . $name)),
+            system_tables_clickstats_ddl(static fn(string $name): string => table_ident($schema, 'spw_' . $name)),
             [
 
                 "ALTER TABLE " . table_ident($schema, 'spw_notes') . " ALTER COLUMN reminder_date TYPE timestamp",
 
-                "INSERT INTO $tMigrations (name) VALUES ('3.0_baseline') ON CONFLICT (name) DO NOTHING",
-                "INSERT INTO $tMigrations (name) VALUES ('3.1_table_comments') ON CONFLICT (name) DO NOTHING",
-                "INSERT INTO $tMigrations (name) VALUES ('3.1_notes_reminder_time') ON CONFLICT (name) DO NOTHING",
-                "INSERT INTO $tMigrations (name) VALUES ('3.3_user_contact') ON CONFLICT (name) DO NOTHING",
-                "INSERT INTO $tMigrations (name) VALUES ('3.3_clickstats') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $migrationsTable (name) VALUES ('3.0_baseline') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $migrationsTable (name) VALUES ('3.1_table_comments') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $migrationsTable (name) VALUES ('3.1_notes_reminder_time') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $migrationsTable (name) VALUES ('3.3_user_contact') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $migrationsTable (name) VALUES ('3.3_clickstats') ON CONFLICT (name) DO NOTHING",
             ]
         );
 
-        foreach ($queries as $q) {
-            $res = @pg_query($conn, $q);
-            if (!$res) {
+        foreach ($queries as $query) {
+            $result = @pg_query($conn, $query);
+            if (!$result) {
                 error_log('setup init_db error: ' . pg_last_error($conn));
                 throw new Exception(
                     'Database initialization failed. Check that the user has CREATE privileges on the schema.'
@@ -240,9 +240,9 @@ if ($action === 'init_database') {
         );
         $resAdmin = @pg_query_params(
             $conn,
-            "INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role) "
+            "INSERT INTO $usersTable (username, password_hash, salt, password_algo, password_params, is_active, role) "
                 . "SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin' "
-                . "WHERE NOT EXISTS (SELECT 1 FROM $tUsers LIMIT 1) RETURNING id",
+                . "WHERE NOT EXISTS (SELECT 1 FROM $usersTable LIMIT 1) RETURNING id",
             [$firstAdminHash, $firstAdminSalt, 'argon2id', json_encode($argonOpts)]
         );
 
@@ -310,8 +310,8 @@ if ($action === 'init_database') {
                 }
             } catch (ControlFlowException $signal) {
                 throw $signal;
-            } catch (Throwable $e) {
-                error_log('setup demo install error: ' . $e->getMessage());
+            } catch (Throwable $exception) {
+                error_log('setup demo install error: ' . $exception->getMessage());
                 $demoError = 'Demo installation failed. Check server logs for details.';
             }
         }
@@ -330,10 +330,10 @@ if ($action === 'init_database') {
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Exception $e) {
+    } catch (Exception $exception) {
         throw ResponseException::encoded([
             'success' => false,
-            'message' => $e->getMessage()
+            'message' => $exception->getMessage()
         ]);
     }
 }

@@ -13,9 +13,9 @@ use App\Domain\Schema\ColumnConfig;
 
 interface FieldTypeInterface
 {
-    public function supports(ColumnConfig $col, bool $hasForeignKey): bool;
+    public function supports(ColumnConfig $column, bool $hasForeignKey): bool;
 
     public function bind(string $colName, array $postData): BoundValue;
 
-    public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string;
+    public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string;
 }

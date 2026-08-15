@@ -935,8 +935,8 @@ files in the tree were exactly that. They were renamed by meaning instead:
 | --- | --- | --- |
 | `includes/bootstrap.php` | a `UserRole` enum case | `$userRole` |
 | `includes/admin/anonymization.php` | a replacement string | `$replacement` |
-| `includes/admin/performance.php` | a `pg_query_params()` handle | `$countRes` |
-| `public/cypress_seed.php` | a `pg_query_params()` handle | `$userRes` |
+| `includes/admin/performance.php` | a `pg_query_params()` handle | `$countResult` |
+| `public/cypress_seed.php` | a `pg_query_params()` handle | `$userResult` |
 | `public/admin/demo/seed.php` | a comment row / an anonymization rule | `$comment` / `$rule` |
 | `public/api/data_cleanup.php` | one character of a character class | `$char` |
 | `includes/automations.php` | an automation rule | `$rule` |

@@ -21,8 +21,8 @@ final class AdminDispatchRegistryTest extends TestCase
     private static function dispatchMap(): array
     {
         $source = (string) file_get_contents(self::API_PHP);
-        preg_match('/\$adminModules\s*=\s*\[(.*?)\n\];/s', $source, $m);
-        preg_match_all("/'([a-z0-9_]+)'\s*=>\s*'([a-z0-9_]+)'/", $m[1] ?? '', $found, PREG_SET_ORDER);
+        preg_match('/\$adminModules\s*=\s*\[(.*?)\n\];/s', $source, $matches);
+        preg_match_all("/'([a-z0-9_]+)'\s*=>\s*'([a-z0-9_]+)'/", $matches[1] ?? '', $found, PREG_SET_ORDER);
 
         $map = [];
         foreach ($found as $pair) {
@@ -45,18 +45,18 @@ final class AdminDispatchRegistryTest extends TestCase
 
     private static function stripComments(string $source): string
     {
-        $out = '';
+        $output = '';
         foreach (token_get_all($source) as $token) {
             if (is_array($token)) {
                 if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
                     continue;
                 }
-                $out .= $token[1];
+                $output .= $token[1];
                 continue;
             }
-            $out .= $token;
+            $output .= $token;
         }
-        return $out;
+        return $output;
     }
 
     public function testDispatchMapParses(): void

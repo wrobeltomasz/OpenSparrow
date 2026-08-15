@@ -52,9 +52,9 @@ if ($action === 'etl_flow_save') {
     $existing = is_array($existing) ? $existing : [];
 
     $existingFlowsById = [];
-    foreach ((array)($existing['flows'] ?? []) as $ef) {
-        if (is_array($ef) && ($ef['id'] ?? '') !== '') {
-            $existingFlowsById[(string)$ef['id']] = $ef;
+    foreach ((array)($existing['flows'] ?? []) as $existingFlow) {
+        if (is_array($existingFlow) && ($existingFlow['id'] ?? '') !== '') {
+            $existingFlowsById[(string)$existingFlow['id']] = $existingFlow;
         }
     }
 
@@ -122,24 +122,24 @@ if ($action === 'run_etl_flow') {
 if ($action === 'etl_flow_log') {
     admin_try(static function (): void {
         $conn    = admin_conn();
-        $tRunLog = sys_table('etl_flow_run_log');
-        admin_require_log_table($conn, $tRunLog);
+        $etlFlowRunLogTable = sys_table('etl_flow_run_log');
+        admin_require_log_table($conn, $etlFlowRunLogTable);
         $flowId = trim((string)($_GET['flow_id'] ?? ''));
         $sql = "SELECT id, flow_id, flow_name, triggered_by, status, failed_step_index, error_message,
                        started_at, finished_at,
                        EXTRACT(EPOCH FROM (COALESCE(finished_at, now()) - started_at)) AS duration_sec
-                FROM {$tRunLog}";
+                FROM {$etlFlowRunLogTable}";
         $params = [];
         if ($flowId !== '') {
             $sql      .= ' WHERE flow_id = $1';
             $params[] = $flowId;
         }
         $sql .= ' ORDER BY started_at DESC LIMIT 50';
-        $res = @pg_query_params($conn, $sql, $params);
-        if (!$res) {
+        $result = @pg_query_params($conn, $sql, $params);
+        if (!$result) {
             admin_db_fail($conn, 'etl_flow_log');
         }
-        admin_ok(['rows' => admin_fetch_all($res)]);
+        admin_ok(['rows' => admin_fetch_all($result)]);
     });
 }
 
@@ -151,9 +151,13 @@ if ($action === 'etl_flow_purge_log') {
         'etl_flow_purge_log',
         'started_at',
         static function (\PgSql\Connection $conn): void {
-            $tRunLog  = sys_table('etl_flow_run_log');
-            $tStepLog = sys_table('etl_flow_step_log');
-            @pg_query($conn, "DELETE FROM {$tStepLog} WHERE flow_run_id NOT IN (SELECT id FROM {$tRunLog})");
+            $etlFlowRunLogTable  = sys_table('etl_flow_run_log');
+            $etlFlowStepLogTable = sys_table('etl_flow_step_log');
+            @pg_query(
+                $conn,
+                "DELETE FROM {$etlFlowStepLogTable}"
+                . " WHERE flow_run_id NOT IN (SELECT id FROM {$etlFlowRunLogTable})"
+            );
         }
     ));
 }

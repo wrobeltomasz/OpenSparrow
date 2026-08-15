@@ -23,7 +23,7 @@ function resolve_landing_page(): string
             $cfg = config_get($configKey);
         } catch (ControlFlowException $signal) {
             throw $signal;
-        } catch (Throwable $e) {
+        } catch (Throwable $exception) {
             return false;
         }
         return is_array($cfg) && !empty($cfg['hidden']);

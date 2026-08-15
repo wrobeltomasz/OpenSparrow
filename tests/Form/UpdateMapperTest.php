@@ -24,7 +24,7 @@ final class UpdateMapperTest extends TestCase
     private function passthroughType(): FieldTypeInterface
     {
         return new class implements FieldTypeInterface {
-            public function supports(ColumnConfig $col, bool $hasForeignKey): bool
+            public function supports(ColumnConfig $column, bool $hasForeignKey): bool
             {
                 return true;
             }
@@ -32,7 +32,7 @@ final class UpdateMapperTest extends TestCase
             {
                 return new BoundValue($postData[$colName] ?? null);
             }
-            public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
+            public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string
             {
                 return '';
             }
@@ -41,15 +41,15 @@ final class UpdateMapperTest extends TestCase
 
     public function testFromPostBuildsBindingsForWritableColumns(): void
     {
-        $col   = new ColumnConfig('name', 'text', 'Name');
-        $table = new TableConfig('users', 'app', 'Users', ['name' => $col], [], []);
+        $column   = new ColumnConfig('name', 'text', 'Name');
+        $table = new TableConfig('users', 'app', 'Users', ['name' => $column], [], []);
 
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
-        $rd     = $mapper->fromPost($table, ['name' => 'Alice']);
+        $recordData     = $mapper->fromPost($table, ['name' => 'Alice']);
 
-        $this->assertFalse($rd->isEmpty());
-        $this->assertSame('name', $rd->bindings[0]['col']);
-        $this->assertSame('Alice', $rd->bindings[0]['bound']->value);
+        $this->assertFalse($recordData->isEmpty());
+        $this->assertSame('name', $recordData->bindings[0]['col']);
+        $this->assertSame('Alice', $recordData->bindings[0]['bound']->value);
     }
 
     public function testFromPostSkipsPrimaryKey(): void
@@ -59,44 +59,44 @@ final class UpdateMapperTest extends TestCase
         $table = new TableConfig('users', 'app', 'Users', ['id' => $id, 'name' => $name], [], []);
 
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
-        $rd     = $mapper->fromPost($table, ['id' => '99', 'name' => 'Bob']);
+        $recordData     = $mapper->fromPost($table, ['id' => '99', 'name' => 'Bob']);
 
-        $cols = array_column($rd->bindings, 'col');
-        $this->assertNotContains('id', $cols);
-        $this->assertContains('name', $cols);
+        $columns = array_column($recordData->bindings, 'col');
+        $this->assertNotContains('id', $columns);
+        $this->assertContains('name', $columns);
     }
 
     public function testFromPostReturnsEmptyRecordWhenNoWritableColumns(): void
     {
         $table  = new TableConfig('users', 'app', 'Users', [], [], []);
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
-        $rd     = $mapper->fromPost($table, ['name' => 'Alice']);
-        $this->assertTrue($rd->isEmpty());
+        $recordData     = $mapper->fromPost($table, ['name' => 'Alice']);
+        $this->assertTrue($recordData->isEmpty());
     }
 
     public function testFromPostPassesFkFlagToRegistry(): void
     {
         $type = new class implements FieldTypeInterface {
             public array $seenFk = [];
-            public function supports(ColumnConfig $col, bool $hasFk): bool
+            public function supports(ColumnConfig $column, bool $hasFk): bool
             {
-                $this->seenFk[$col->name] = $hasFk;
+                $this->seenFk[$column->name] = $hasFk;
                 return true;
             }
             public function bind(string $colName, array $postData): BoundValue
             {
                 return new BoundValue(null);
             }
-            public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
+            public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string
             {
                 return '';
             }
         };
 
-        $col   = new ColumnConfig('user_id', 'integer', 'User');
+        $column   = new ColumnConfig('user_id', 'integer', 'User');
         $table = new TableConfig(
             'orders', 'app', 'Orders',
-            ['user_id' => $col],
+            ['user_id' => $column],
             ['user_id' => ['table' => 'users']],
             []
         );
@@ -106,22 +106,22 @@ final class UpdateMapperTest extends TestCase
         $this->assertTrue($type->seenFk['user_id']);
     }
 
-    private function regexpTable(ColumnConfig $col): TableConfig
+    private function regexpTable(ColumnConfig $column): TableConfig
     {
-        return new TableConfig('t', 'app', 'T', [$col->name => $col], [], []);
+        return new TableConfig('t', 'app', 'T', [$column->name => $column], [], []);
     }
 
     public function testValueMatchingValidationRegexpPasses(): void
     {
-        $col    = new ColumnConfig('code', 'text', 'Code', validationRegexp: '^[A-Z]{3}$');
+        $column    = new ColumnConfig('code', 'text', 'Code', validationRegexp: '^[A-Z]{3}$');
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
-        $rd     = $mapper->fromPost($this->regexpTable($col), ['code' => 'ABC']);
-        $this->assertSame('ABC', $rd->bindings[0]['bound']->value);
+        $recordData     = $mapper->fromPost($this->regexpTable($column), ['code' => 'ABC']);
+        $this->assertSame('ABC', $recordData->bindings[0]['bound']->value);
     }
 
     public function testValueViolatingValidationRegexpThrowsWithColumnMessage(): void
     {
-        $col = new ColumnConfig(
+        $column = new ColumnConfig(
             'code',
             'text',
             'Code',
@@ -131,30 +131,30 @@ final class UpdateMapperTest extends TestCase
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Three uppercase letters required');
-        $mapper->fromPost($this->regexpTable($col), ['code' => 'abc']);
+        $mapper->fromPost($this->regexpTable($column), ['code' => 'abc']);
     }
 
     public function testEmptyValueSkipsValidationRegexp(): void
     {
-        $col    = new ColumnConfig('code', 'text', 'Code', validationRegexp: '^[A-Z]{3}$');
+        $column    = new ColumnConfig('code', 'text', 'Code', validationRegexp: '^[A-Z]{3}$');
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
-        $rd     = $mapper->fromPost($this->regexpTable($col), ['code' => '']);
-        $this->assertSame('', $rd->bindings[0]['bound']->value);
+        $recordData     = $mapper->fromPost($this->regexpTable($column), ['code' => '']);
+        $this->assertSame('', $recordData->bindings[0]['bound']->value);
     }
 
     public function testUnanchoredPatternMatchesSubstringLikeClient(): void
     {
-        $col    = new ColumnConfig('note', 'text', 'Note', validationRegexp: '[0-9]{2}');
+        $column    = new ColumnConfig('note', 'text', 'Note', validationRegexp: '[0-9]{2}');
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
-        $rd     = $mapper->fromPost($this->regexpTable($col), ['note' => 'abc12def']);
-        $this->assertSame('abc12def', $rd->bindings[0]['bound']->value);
+        $recordData     = $mapper->fromPost($this->regexpTable($column), ['note' => 'abc12def']);
+        $this->assertSame('abc12def', $recordData->bindings[0]['bound']->value);
     }
 
     public function testInvalidPatternFailsOpenLikeClient(): void
     {
-        $col    = new ColumnConfig('code', 'text', 'Code', validationRegexp: '[unclosed');
+        $column    = new ColumnConfig('code', 'text', 'Code', validationRegexp: '[unclosed');
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
-        $rd     = $mapper->fromPost($this->regexpTable($col), ['code' => 'anything']);
-        $this->assertSame('anything', $rd->bindings[0]['bound']->value);
+        $recordData     = $mapper->fromPost($this->regexpTable($column), ['code' => 'anything']);
+        $this->assertSame('anything', $recordData->bindings[0]['bound']->value);
     }
 }

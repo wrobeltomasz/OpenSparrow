@@ -129,19 +129,19 @@ final class CreateController
             }
             $this->ownership->assign($tableCfg->name, (int) $newId, $userId, $userId);
             $this->automations->evaluate($tableCfg->schema, $tableCfg->name, (int) $newId, 'create', $userId);
-            foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
+            foreach ($m2mConfigs as $m2mIndex => $m2mConfig) {
                 $selected = array_values(array_filter(
                     (array) $request->post('m2m_' . $m2mIndex, []),
                     'ctype_digit'
                 ));
-                $this->m2m->sync($m2mCfg, (int) $newId, $selected, $rawSchema);
+                $this->m2m->sync($m2mConfig, (int) $newId, $selected, $rawSchema);
             }
             $fragment = ImageService::config($rawSchema, $table) ? '#tab-images' : '#tab-files';
             throw new RedirectException('edit.php?table=' . urlencode($table) . '&id=' . $newId . $fragment);
-        } catch (ValidationException $e) {
-            return $e->getMessage();
-        } catch (\RuntimeException $e) {
-            error_log('[create.php] ' . $e->getMessage());
+        } catch (ValidationException $exception) {
+            return $exception->getMessage();
+        } catch (\RuntimeException $exception) {
+            error_log('[create.php] ' . $exception->getMessage());
             return 'Database error. Please try again.';
         }
     }
@@ -169,8 +169,8 @@ final class CreateController
         bool $isReadOnly
     ): array {
         $fkOptions = [];
-        foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
-            $fkOptions[$colName] = $this->fkLoader->load($fkCfg, $rawSchema);
+        foreach ($tableCfg->foreignKeys as $colName => $foreignKeyConfig) {
+            $fkOptions[$colName] = $this->fkLoader->load($foreignKeyConfig, $rawSchema);
         }
 
         $renderContext = new RenderContext($isReadOnly, $fkOptions, $prefilled, $locked);
@@ -195,11 +195,11 @@ final class CreateController
     private function m2mGroups(array $m2mConfigs, array $rawSchema, bool $isReadOnly): array
     {
         $m2mGroups = [];
-        foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
+        foreach ($m2mConfigs as $m2mIndex => $m2mConfig) {
             $m2mGroups[] = os_m2m_group(
                 (int) $m2mIndex,
-                $m2mCfg,
-                $this->m2m->options($m2mCfg, $rawSchema),
+                $m2mConfig,
+                $this->m2m->options($m2mConfig, $rawSchema),
                 [],
                 $isReadOnly
             );

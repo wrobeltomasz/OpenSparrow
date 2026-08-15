@@ -11,16 +11,16 @@ use App\Exception\BadRequestException;
 use App\Exception\ResponseException;
 use App\Exception\ServerErrorException;
 
-function frontapi_list(FrontApiContext $ctx): never
+function frontapi_list(FrontApiContext $context): never
 {
-    $conn   = $ctx->conn;
-    $schema = $ctx->schema;
+    $conn   = $context->conn;
+    $schema = $context->schema;
 
     $table = $_GET['table'] ?? '';
 
     try {
         $tableCfg = safe_table($schema, $table);
-    } catch (\RuntimeException $e) {
+    } catch (\RuntimeException $exception) {
         throw new BadRequestException('Unknown table');
     }
 
@@ -29,8 +29,8 @@ function frontapi_list(FrontApiContext $ctx): never
     }
     $idCol = id_column();
     $schemaName = $tableCfg['schema'] ?? 'public';
-    $cols = column_list($tableCfg);
-    $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
+    $columns = column_list($tableCfg);
+    $selectCols = array_values(array_unique(array_merge([$idCol], $columns)));
 
     if (defined('OS_FK_LABEL_COLUMNS')) {
         $keep = array_merge([$idCol], (array) OS_FK_LABEL_COLUMNS);
@@ -87,7 +87,7 @@ function frontapi_list(FrontApiContext $ctx): never
             count($params) + 2
         );
         $params[] = $table;
-        $params[] = $ctx->userId;
+        $params[] = $context->userId;
         $whereSql .= ($whereSql === '' ? ' WHERE TRUE' : '') . $ownerSql;
     }
 
@@ -97,10 +97,10 @@ function frontapi_list(FrontApiContext $ctx): never
     $orderClauses = [];
     if (is_array($defaultSort)) {
         foreach ($defaultSort as $rule) {
-            $col = $rule['column'] ?? '';
+            $columnName = $rule['column'] ?? '';
             $dir = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
-            if ($col !== '' && (isset($tableCfg['columns'][$col]) || $col === $idCol)) {
-                $orderClauses[] = pg_ident($col) . ' ' . $dir;
+            if ($columnName !== '' && (isset($tableCfg['columns'][$columnName]) || $columnName === $idCol)) {
+                $orderClauses[] = pg_ident($columnName) . ' ' . $dir;
             }
         }
     }
@@ -121,22 +121,22 @@ function frontapi_list(FrontApiContext $ctx): never
         $rowCap,
         $offset
     );
-    $res = @pg_query_params($conn, $sql, $params);
-    if (!$res) {
+    $result = @pg_query_params($conn, $sql, $params);
+    if (!$result) {
         error_log('[api][list] ' . pg_last_error($conn));
         throw new ServerErrorException('Database error');
     }
 
     $rows = [];
     $dbTotal = 0;
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         if ($dbTotal === 0) {
             $dbTotal = (int)($row['__spw_total'] ?? 0);
         }
         unset($row['__spw_total']);
         $rows[] = $row;
     }
-    pg_free_result($res);
+    pg_free_result($result);
     $rows = map_fk_display($schema, $tableCfg, $rows, $conn);
     $rowCount = count($rows);
     echo json_encode([
@@ -152,15 +152,15 @@ function frontapi_list(FrontApiContext $ctx): never
     throw ResponseException::sent();
 }
 
-function frontapi_subtable_counts(FrontApiContext $ctx): never
+function frontapi_subtable_counts(FrontApiContext $context): never
 {
-    $conn   = $ctx->conn;
-    $schema = $ctx->schema;
+    $conn   = $context->conn;
+    $schema = $context->schema;
 
     $table = $_GET['table'] ?? '';
     try {
         $tableCfg = safe_table($schema, $table);
-    } catch (\RuntimeException $e) {
+    } catch (\RuntimeException $exception) {
         throw new BadRequestException('Unknown table');
     }
     require_table_access($table);
@@ -180,7 +180,7 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
         throw ResponseException::encoded(['success' => true, 'counts' => (object)[]]);
     }
 
-    $ids = filter_visible_ids($conn, $tableCfg, $table, $ids, $ctx->userId);
+    $ids = filter_visible_ids($conn, $tableCfg, $table, $ids, $context->userId);
     if (empty($ids)) {
         throw ResponseException::encoded(['success' => true, 'counts' => (object)[]]);
     }
@@ -188,9 +188,9 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
     $idCol  = id_column();
     $counts = array_fill_keys(array_map('strval', $ids), 0);
 
-    foreach ($subtables as $sub) {
-        $subTable = $sub['table'] ?? '';
-        $fkCol    = $sub['foreign_key'] ?? '';
+    foreach ($subtables as $subtable) {
+        $subTable = $subtable['table'] ?? '';
+        $fkCol    = $subtable['foreign_key'] ?? '';
         if ($subTable === '' || $fkCol === '') {
             continue;
         }
@@ -207,7 +207,10 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
             continue;
         }
         $subSchema    = $subCfg['schema'] ?? 'public';
-        $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), range(0, count($ids) - 1)));
+        $placeholders = implode(',', array_map(
+            fn($placeholderIndex) => '$' . ($placeholderIndex + 1),
+            range(0, count($ids) - 1)
+        ));
         $sql = sprintf(
             'SELECT %s AS fk_val, COUNT(*) AS cnt FROM %s.%s WHERE %s IN (%s) GROUP BY %s',
             pg_ident($fkCol),
@@ -217,19 +220,19 @@ function frontapi_subtable_counts(FrontApiContext $ctx): never
             $placeholders,
             pg_ident($fkCol)
         );
-        $res = @pg_query_params($conn, $sql, $ids);
-        if (!$res) {
+        $result = @pg_query_params($conn, $sql, $ids);
+        if (!$result) {
             continue;
         }
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $key = (string)$row['fk_val'];
             if (isset($counts[$key])) {
                 $counts[$key] += (int)$row['cnt'];
             }
         }
-        pg_free_result($res);
+        pg_free_result($result);
     }
 
-    $nonZero = array_filter($counts, fn($v) => $v > 0);
+    $nonZero = array_filter($counts, fn($count) => $count > 0);
     throw ResponseException::encoded(['success' => true, 'counts' => $nonZero ?: (object)[]]);
 }

@@ -21,26 +21,26 @@ if ($action === 'list_m2m') {
 
     $tables = [];
     $relationships = [];
-    foreach ($schema['tables'] as $tName => $tCfg) {
-        if (!empty($tCfg['hidden'])) {
+    foreach ($schema['tables'] as $tableName => $tableConfig) {
+        if (!empty($tableConfig['hidden'])) {
             continue;
         }
         $tables[] = [
-            'name'         => $tName,
-            'display_name' => $tCfg['display_name'] ?? $tName,
-            'columns'      => array_keys($tCfg['columns'] ?? []),
+            'name'         => $tableName,
+            'display_name' => $tableConfig['display_name'] ?? $tableName,
+            'columns'      => array_keys($tableConfig['columns'] ?? []),
         ];
-        foreach ($tCfg['many_to_many'] ?? [] as $i => $m2m) {
+        foreach ($tableConfig['many_to_many'] ?? [] as $m2mIndex => $m2m) {
             $otherTable = $m2m['other_table'] ?? '';
             $relationships[] = [
-                'table_a'         => $tName,
-                'table_a_display' => $tCfg['display_name'] ?? $tName,
+                'table_a'         => $tableName,
+                'table_a_display' => $tableConfig['display_name'] ?? $tableName,
                 'table_b'         => $otherTable,
                 'table_b_display' => $schema['tables'][$otherTable]['display_name'] ?? $otherTable,
                 'junction_table'  => $m2m['junction_table']  ?? '',
                 'label'           => $m2m['label']           ?? '',
                 'display_column'  => $m2m['display_column']  ?? '',
-                'm2m_index'       => $i,
+                'm2m_index'       => $m2mIndex,
             ];
         }
     }
@@ -53,17 +53,23 @@ if ($action === 'create_m2m') {
     $body       = json_decode(file_get_contents('php://input'), true) ?? [];
     $tableA     = $body['table_a']       ?? '';
     $tableB     = $body['table_b']       ?? '';
-    $jt         = $body['junction_table'] ?? '';
+    $junctionTableName         = $body['junction_table'] ?? '';
     $selfFk     = $body['self_fk']       ?? '';
     $otherFk    = $body['other_fk']      ?? '';
     $label      = $body['label']         ?? '';
     $displayCol = $body['display_column'] ?? 'name';
 
     $identRe = '/^[a-z][a-z0-9_]*$/';
-    $identifiers = ['tableA' => $tableA, 'tableB' => $tableB, 'jt' => $jt, 'selfFk' => $selfFk, 'otherFk' => $otherFk];
-    foreach ($identifiers as $field => $val) {
-        if (!preg_match($identRe, $val)) {
-            admin_err("Invalid identifier: $val");
+    $identifiers = [
+        'tableA'  => $tableA,
+        'tableB'  => $tableB,
+        'jt'      => $junctionTableName,
+        'selfFk'  => $selfFk,
+        'otherFk' => $otherFk,
+    ];
+    foreach ($identifiers as $field => $value) {
+        if (!preg_match($identRe, $value)) {
+            admin_err("Invalid identifier: $value");
         }
     }
     if ($tableA === $tableB) {
@@ -76,8 +82,8 @@ if ($action === 'create_m2m') {
     }
 
     foreach ($schema['tables'][$tableA]['many_to_many'] ?? [] as $existing) {
-        if (($existing['junction_table'] ?? '') === $jt) {
-            admin_err("M2M via $jt already exists on $tableA.");
+        if (($existing['junction_table'] ?? '') === $junctionTableName) {
+            admin_err("M2M via $junctionTableName already exists on $tableA.");
         }
     }
 
@@ -94,7 +100,7 @@ if ($action === 'create_m2m') {
                 UNIQUE(%s, %s)
             )',
             pg_ident($pgSchema),
-            pg_ident($jt),
+            pg_ident($junctionTableName),
             pg_ident($selfFk),
             pg_ident($pgSchema),
             pg_ident($tableA),
@@ -104,14 +110,14 @@ if ($action === 'create_m2m') {
             pg_ident($selfFk),
             pg_ident($otherFk)
         );
-        $res = @pg_query($conn, $sql);
-        if (!$res) {
+        $result = @pg_query($conn, $sql);
+        if (!$result) {
             admin_db_fail($conn, 'create_m2m');
         }
 
-        if (!isset($schema['tables'][$jt])) {
-            $schema['tables'][$jt] = [
-                'display_name' => str_replace('_', '–', $jt),
+        if (!isset($schema['tables'][$junctionTableName])) {
+            $schema['tables'][$junctionTableName] = [
+                'display_name' => str_replace('_', '–', $junctionTableName),
                 'schema'       => $pgSchema,
                 'hidden'       => true,
                 'columns'      => [
@@ -149,7 +155,7 @@ if ($action === 'create_m2m') {
         }
         $schema['tables'][$tableA]['many_to_many'][] = [
             'label'          => $label ?: ucfirst($tableB),
-            'junction_table' => $jt,
+            'junction_table' => $junctionTableName,
             'self_fk'        => $selfFk,
             'other_fk'       => $otherFk,
             'other_table'    => $tableB,
@@ -162,11 +168,11 @@ if ($action === 'create_m2m') {
             admin_err($m2mResult['error'] ?? 'Failed to save schema.');
         }
 
-        echo json_encode(['status' => 'success', 'junction_table' => $jt]);
+        echo json_encode(['status' => 'success', 'junction_table' => $junctionTableName]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (\Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (\Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -206,9 +212,9 @@ if ($action === 'delete_m2m') {
         $junctionIsHidden = $schema['tables'][$junctionTable]['hidden'] ?? null;
         if ($junctionTable && $junctionIsHidden === true) {
             $stillUsed = false;
-            foreach ($schema['tables'] as $tCfg) {
-                foreach ($tCfg['many_to_many'] ?? [] as $m) {
-                    if (($m['junction_table'] ?? '') === $junctionTable) {
+            foreach ($schema['tables'] as $tableConfig) {
+                foreach ($tableConfig['many_to_many'] ?? [] as $m2mDefinition) {
+                    if (($m2mDefinition['junction_table'] ?? '') === $junctionTable) {
                         $stillUsed = true;
                         break 2;
                     }
@@ -228,8 +234,8 @@ if ($action === 'delete_m2m') {
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

@@ -44,7 +44,7 @@ final class FrontApiWriteContext
     }
 
     public static function fromApi(
-        FrontApiContext $api,
+        FrontApiContext $apiContext,
         array $body,
         string $table,
         array $tableCfg,
@@ -52,10 +52,10 @@ final class FrontApiWriteContext
         string $idCol,
     ): self {
         return new self(
-            $api->conn,
-            $api->schema,
-            $api->role,
-            $api->userId,
+            $apiContext->conn,
+            $apiContext->schema,
+            $apiContext->role,
+            $apiContext->userId,
             $body,
             $table,
             $tableCfg,

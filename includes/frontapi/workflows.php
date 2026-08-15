@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 use App\Exception\ResponseException;
 
-function frontapi_workflows(FrontApiContext $ctx): never
+function frontapi_workflows(FrontApiContext $context): never
 {
     $workflows = config_get('workflows');
     if ($workflows === null) {

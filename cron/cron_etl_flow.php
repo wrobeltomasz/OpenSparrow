@@ -13,10 +13,10 @@ etl_cli_boot();
 function etl_flow_persist_last_run(string $flowId, string $status, string $whenIso): void
 {
     etl_config_optimistic_update('etl_flows', static function (array &$config) use ($flowId, $status, $whenIso) {
-        foreach ($config['flows'] ?? [] as $i => $f) {
-            if ((string)($f['id'] ?? '') === $flowId) {
-                $config['flows'][$i]['last_run_status'] = $status;
-                $config['flows'][$i]['last_run_at']     = $whenIso;
+        foreach ($config['flows'] ?? [] as $flowIndex => $flow) {
+            if ((string)($flow['id'] ?? '') === $flowId) {
+                $config['flows'][$flowIndex]['last_run_status'] = $status;
+                $config['flows'][$flowIndex]['last_run_at']     = $whenIso;
                 return true;
             }
         }
@@ -37,30 +37,30 @@ function etl_flow_run_single(
 
     etl_cli_log("[etl_flow] Flow '{$flowName}' — " . count($steps) . ' step(s)...');
 
-    $tRunLog  = sys_table('etl_flow_run_log');
-    $tStepLog = sys_table('etl_flow_step_log');
-    $logTable = etl_log_table_ready($conn, $tRunLog);
+    $etlFlowRunLogTable  = sys_table('etl_flow_run_log');
+    $etlFlowStepLogTable = sys_table('etl_flow_step_log');
+    $logTable = etl_log_table_ready($conn, $etlFlowRunLogTable);
 
-    $tJobLog     = sys_table('etl_log');
-    $jobLogTable = etl_log_table_ready($conn, $tJobLog);
+    $etlLogTable     = sys_table('etl_log');
+    $jobLogTable = etl_log_table_ready($conn, $etlLogTable);
 
     $runLogId = null;
     if ($logTable && !$dryRun) {
-        $ins = @pg_query_params(
+        $insertResult = @pg_query_params(
             $conn,
-            "INSERT INTO {$tRunLog} (flow_id, flow_name, triggered_by, status) "
+            "INSERT INTO {$etlFlowRunLogTable} (flow_id, flow_name, triggered_by, status) "
                 . "VALUES ($1, $2, $3, 'running') RETURNING id",
             [$flowId, $flowName, $triggeredBy]
         );
-        if ($ins && ($row = pg_fetch_assoc($ins))) {
+        if ($insertResult && ($row = pg_fetch_assoc($insertResult))) {
             $runLogId = (int)$row['id'];
         }
     }
 
     $jobsById = [];
-    foreach ((array)($etlConfig['jobs'] ?? []) as $j) {
-        if (is_array($j) && (string)($j['id'] ?? '') !== '') {
-            $jobsById[(string)$j['id']] = $j;
+    foreach ((array)($etlConfig['jobs'] ?? []) as $etlJob) {
+        if (is_array($etlJob) && (string)($etlJob['id'] ?? '') !== '') {
+            $jobsById[(string)$etlJob['id']] = $etlJob;
         }
     }
     $sources = (array)($etlConfig['sources'] ?? []);
@@ -92,26 +92,26 @@ function etl_flow_run_single(
 
         $stepLogId = null;
         if ($logTable && !$dryRun) {
-            $ins = @pg_query_params(
+            $insertResult = @pg_query_params(
                 $conn,
-                "INSERT INTO {$tStepLog} (flow_run_id, flow_id, step_index, job_id, job_name, status)
+                "INSERT INTO {$etlFlowStepLogTable} (flow_run_id, flow_id, step_index, job_id, job_name, status)
                  VALUES ($1, $2, $3, $4, $5, 'running') RETURNING id",
                 [$runLogId, $flowId, $stepIndex, $jobId, $jobName]
             );
-            if ($ins && ($row = pg_fetch_assoc($ins))) {
+            if ($insertResult && ($row = pg_fetch_assoc($insertResult))) {
                 $stepLogId = (int)$row['id'];
             }
         }
 
         $jobLogId = null;
         if ($jobLogTable && !$dryRun) {
-            $ins = @pg_query_params(
+            $insertResult = @pg_query_params(
                 $conn,
-                "INSERT INTO {$tJobLog} (job_id, job_name, triggered_by, status) "
+                "INSERT INTO {$etlLogTable} (job_id, job_name, triggered_by, status) "
                     . "VALUES ($1, $2, 'flow', 'running') RETURNING id",
                 [$jobId, $jobName]
             );
-            if ($ins && ($row = pg_fetch_assoc($ins))) {
+            if ($insertResult && ($row = pg_fetch_assoc($insertResult))) {
                 $jobLogId = (int)$row['id'];
             }
         }
@@ -123,7 +123,7 @@ function etl_flow_run_single(
         if ($stepLogId !== null) {
             @pg_query_params(
                 $conn,
-                "UPDATE {$tStepLog} SET finished_at = now(), status = $1, rows_read = $2, "
+                "UPDATE {$etlFlowStepLogTable} SET finished_at = now(), status = $1, rows_read = $2, "
                     . "rows_written = $3, error_message = $4 WHERE id = $5",
                 [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $stepLogId]
             );
@@ -131,7 +131,7 @@ function etl_flow_run_single(
         if ($jobLogId !== null) {
             @pg_query_params(
                 $conn,
-                "UPDATE {$tJobLog} SET finished_at = now(), status = $1, rows_read = $2, "
+                "UPDATE {$etlLogTable} SET finished_at = now(), status = $1, rows_read = $2, "
                     . "rows_written = $3, error_message = $4 WHERE id = $5",
                 [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $jobLogId]
             );
@@ -156,7 +156,7 @@ function etl_flow_run_single(
     if ($runLogId !== null) {
         @pg_query_params(
             $conn,
-            "UPDATE {$tRunLog} SET finished_at = now(), status = $1, "
+            "UPDATE {$etlFlowRunLogTable} SET finished_at = now(), status = $1, "
                 . "failed_step_index = $2, error_message = $3 WHERE id = $4",
             [$allOk ? 'success' : 'error', $failedStepIndex, $errorMessage, $runLogId]
         );
@@ -207,13 +207,13 @@ function cron_etl_flow_main(array $argv): int
 
     try {
         $conn = db_connect();
-    } catch (\RuntimeException $e) {
-        etl_cli_log('[etl_flow] DB connection failed: ' . $e->getMessage());
+    } catch (\RuntimeException $exception) {
+        etl_cli_log('[etl_flow] DB connection failed: ' . $exception->getMessage());
         return 1;
     }
 
-    $tRunLog  = sys_table('etl_flow_run_log');
-    $logTable = etl_log_table_ready($conn, $tRunLog);
+    $etlFlowRunLogTable  = sys_table('etl_flow_run_log');
+    $logTable = etl_log_table_ready($conn, $etlFlowRunLogTable);
     if (!$logTable) {
         etl_cli_log('[etl_flow] Note: log tables missing — run Initialize System Tables to enable run history.');
     }
@@ -238,7 +238,7 @@ function cron_etl_flow_main(array $argv): int
         if ($triggeredBy === 'cron' && $logTable) {
             $recent = @pg_query_params(
                 $conn,
-                "SELECT 1 FROM {$tRunLog} WHERE flow_id = $1 AND status = 'success' "
+                "SELECT 1 FROM {$etlFlowRunLogTable} WHERE flow_id = $1 AND status = 'success' "
                     . "AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
                 [$flowId]
             );

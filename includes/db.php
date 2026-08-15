@@ -79,6 +79,6 @@ function sys_table(string $name): string
 {
     $schema = sys_schema();
     $table = 'spw_' . $name;
-    $quote = static fn(string $s): string => '"' . str_replace('"', '""', $s) . '"';
+    $quote = static fn(string $identifier): string => '"' . str_replace('"', '""', $identifier) . '"';
     return $quote($schema) . '.' . $quote($table);
 }

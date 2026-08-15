@@ -24,8 +24,8 @@ final class TableAccessTest extends TestCase
         $_SESSION['role'] = 'editor';
 
         $this->seedSchema([]);
-        foreach (USER_ACCESS_SCOPES as $def) {
-            $this->seedConfig($def['config'], [$def['path'] => []]);
+        foreach (USER_ACCESS_SCOPES as $definition) {
+            $this->seedConfig($definition['config'], [$definition['path'] => []]);
         }
     }
 
@@ -258,14 +258,14 @@ final class TableAccessTest extends TestCase
 
     public function testEveryScopeCarriesTheKeysItsConsumersRead(): void
     {
-        foreach (USER_ACCESS_SCOPES as $scope => $def) {
+        foreach (USER_ACCESS_SCOPES as $scope => $definition) {
             foreach (['config', 'path', 'id', 'label', 'noun', 'plural', 'title', 'empty'] as $field) {
-                $this->assertArrayHasKey($field, $def, "Scope '{$scope}' is missing '{$field}'.");
+                $this->assertArrayHasKey($field, $definition, "Scope '{$scope}' is missing '{$field}'.");
             }
 
             $this->assertNotSame(
-                $def['noun'],
-                $def['plural'],
+                $definition['noun'],
+                $definition['plural'],
                 "Scope '{$scope}' must spell its singular and plural nouns separately."
             );
         }
@@ -452,19 +452,21 @@ final class TableAccessTest extends TestCase
 
     public function testBodyParsingIsNotKeyedOnTheDeclaredContentType(): void
     {
-        $src = '';
-        foreach (token_get_all((string) file_get_contents(__DIR__ . '/../../includes/api_helpers.php')) as $t) {
-            $src .= is_array($t) ? (in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true) ? '' : $t[1]) : $t;
+        $source = '';
+        foreach (token_get_all((string) file_get_contents(__DIR__ . '/../../includes/api_helpers.php')) as $token) {
+            $source .= is_array($token)
+                ? (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true) ? '' : $token[1])
+                : $token;
         }
 
         $this->assertStringNotContainsString(
             "\$_SERVER['CONTENT_TYPE'] ?? '', 'application/json'",
-            $src,
+            $source,
             'The gate must not decide whether to read the body from the declared content type.'
         );
         $this->assertStringContainsString(
             "'multipart/form-data'",
-            $src,
+            $source,
             'multipart is the one content type the gate must skip — PHP already consumed that stream.'
         );
     }

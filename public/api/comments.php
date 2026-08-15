@@ -47,14 +47,14 @@ function comments_action_list($conn): void
         WHERE c.related_table = \$1 AND c.related_id = \$2
         ORDER BY c.created_at {$orderDir}{$limitClause}
     ";
-    $res = pg_query_params($conn, $sql, [$relatedTable, $relatedId]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$relatedTable, $relatedId]);
+    if (!$result) {
         error_log('api_comments comments_action_list failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $comments = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $row['avatar_id'] = $row['avatar_id'] !== null ? (int)$row['avatar_id'] : null;
         $comments[] = $row;
     }
@@ -74,13 +74,13 @@ function comments_action_mine($conn): void
         ORDER BY created_at DESC, id DESC
         LIMIT ' . COMMENTS_MINE_LIMIT;
 
-    $res = pg_query_params($conn, $sql, [$userId]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$userId]);
+    if (!$result) {
         error_log('api_comments comments_action_mine failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
-    $rows   = pg_fetch_all($res) ?: [];
+    $rows   = pg_fetch_all($result) ?: [];
     $idsBy  = [];
     foreach ($rows as $row) {
         $idsBy[$row['related_table']][] = (int)$row['related_id'];
@@ -110,14 +110,14 @@ function comments_action_mine($conn): void
             pg_ident($tableName)
         );
 
-        $labelRes = pg_query_params($conn, $rowsSql, ['{' . implode(',', array_unique($ids)) . '}']);
-        if (!$labelRes) {
+        $labelResult = pg_query_params($conn, $rowsSql, ['{' . implode(',', array_unique($ids)) . '}']);
+        if (!$labelResult) {
             error_log('api_comments comments_action_mine label lookup failed: ' . pg_last_error($conn));
             continue;
         }
 
         $labels = [];
-        while ($row = pg_fetch_assoc($labelRes)) {
+        while ($row = pg_fetch_assoc($labelResult)) {
             $label = trim((string)($row['label'] ?? ''));
             $labels[(int)$row['id']] = $label !== '' ? $label : ('#' . $row['id']);
         }
@@ -174,13 +174,13 @@ function comments_action_add($conn, array $body): void
         VALUES (\$1, \$2, \$3, \$4)
         RETURNING id, created_at
     ";
-    $res = pg_query_params($conn, $sql, [$relatedTable, $relatedId, $userId, $rawBody]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$relatedTable, $relatedId, $userId, $rawBody]);
+    if (!$result) {
         error_log('api_comments comments_action_add failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
-    $inserted = pg_fetch_assoc($res);
+    $inserted = pg_fetch_assoc($result);
     log_user_action($conn, $userId, 'COMMENT_ADD', $relatedTable, $relatedId);
 
     $fetchSql = "
@@ -190,8 +190,8 @@ function comments_action_add($conn, array $body): void
         LEFT JOIN " . sys_table('users') . " u ON u.id = c.user_id
         WHERE c.id = \$1
     ";
-    $fetchRes = pg_query_params($conn, $fetchSql, [(int)$inserted['id']]);
-    $comment  = pg_fetch_assoc($fetchRes);
+    $fetchResult = pg_query_params($conn, $fetchSql, [(int)$inserted['id']]);
+    $comment  = pg_fetch_assoc($fetchResult);
     if ($comment) {
         $comment['avatar_id'] = $comment['avatar_id'] !== null ? (int)$comment['avatar_id'] : null;
     }
@@ -212,19 +212,19 @@ function comments_action_delete($conn, array $body): void
 
     $fetchSql = "SELECT user_id, related_table, related_id FROM " . sys_table('comments')
         . " WHERE id = \$1 AND deleted_at IS NULL";
-    $fetchRes = pg_query_params($conn, $fetchSql, [$id]);
-    if (!$fetchRes || pg_num_rows($fetchRes) === 0) {
+    $fetchResult = pg_query_params($conn, $fetchSql, [$id]);
+    if (!$fetchResult || pg_num_rows($fetchResult) === 0) {
         jsonError('Comment not found.', 404);
     }
 
-    $row = pg_fetch_assoc($fetchRes);
+    $row = pg_fetch_assoc($fetchResult);
     if ($role !== 'editor' && (int)$row['user_id'] !== $userId) {
         jsonError('Forbidden: you can only delete your own comments.', 403);
     }
 
     $sql = "UPDATE " . sys_table('comments') . " SET deleted_at = NOW() WHERE id = \$1 AND deleted_at IS NULL";
-    $res = pg_query_params($conn, $sql, [$id]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$id]);
+    if (!$result) {
         error_log('api_comments comments_action_delete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
@@ -247,7 +247,7 @@ function comments_action_counts($conn): void
         jsonSuccess(['counts' => []]);
     }
 
-    $placeholders = implode(', ', array_map(fn($i) => '$' . ($i + 2), array_keys($ids)));
+    $placeholders = implode(', ', array_map(fn($placeholderIndex) => '$' . ($placeholderIndex + 2), array_keys($ids)));
     $params       = array_merge([$relatedTable], $ids);
     $sql = "
         SELECT related_id, COUNT(*) AS cnt
@@ -255,14 +255,14 @@ function comments_action_counts($conn): void
         WHERE related_table = \$1 AND related_id IN ($placeholders) AND deleted_at IS NULL
         GROUP BY related_id
     ";
-    $res = pg_query_params($conn, $sql, $params);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, $params);
+    if (!$result) {
         error_log('api_comments comments_action_counts failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $counts = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $counts[(int)$row['related_id']] = (int)$row['cnt'];
     }
 

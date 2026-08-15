@@ -47,8 +47,8 @@ final class SessionCsrfTokenManagerTest extends TestCase
     public function testTokenGeneratedOnFirstCall(): void
     {
         $store = [];
-        $mgr   = new SessionCsrfTokenManager($this->makeSession($store));
-        $token = $mgr->token();
+        $tokenManager   = new SessionCsrfTokenManager($this->makeSession($store));
+        $token = $tokenManager->token();
         $this->assertNotEmpty($token);
         $this->assertSame($token, $store['csrf_token']);
     }
@@ -56,38 +56,38 @@ final class SessionCsrfTokenManagerTest extends TestCase
     public function testTokenReusedOnSubsequentCalls(): void
     {
         $store = [];
-        $mgr   = new SessionCsrfTokenManager($this->makeSession($store));
-        $this->assertSame($mgr->token(), $mgr->token());
+        $tokenManager   = new SessionCsrfTokenManager($this->makeSession($store));
+        $this->assertSame($tokenManager->token(), $tokenManager->token());
     }
 
     public function testIsValidReturnsTrueForCorrectToken(): void
     {
         $store = [];
-        $mgr   = new SessionCsrfTokenManager($this->makeSession($store));
-        $token = $mgr->token();
-        $this->assertTrue($mgr->isValid($token));
+        $tokenManager   = new SessionCsrfTokenManager($this->makeSession($store));
+        $token = $tokenManager->token();
+        $this->assertTrue($tokenManager->isValid($token));
     }
 
     public function testIsValidReturnsFalseForWrongToken(): void
     {
         $store = [];
-        $mgr   = new SessionCsrfTokenManager($this->makeSession($store));
-        $mgr->token();
-        $this->assertFalse($mgr->isValid('wrong_token'));
+        $tokenManager   = new SessionCsrfTokenManager($this->makeSession($store));
+        $tokenManager->token();
+        $this->assertFalse($tokenManager->isValid('wrong_token'));
     }
 
     public function testIsValidReturnsFalseWhenNoTokenSet(): void
     {
         $store = [];
-        $mgr   = new SessionCsrfTokenManager($this->makeSession($store));
-        $this->assertFalse($mgr->isValid('anything'));
+        $tokenManager   = new SessionCsrfTokenManager($this->makeSession($store));
+        $this->assertFalse($tokenManager->isValid('anything'));
     }
 
     public function testTokenIsHexString(): void
     {
         $store = [];
-        $mgr   = new SessionCsrfTokenManager($this->makeSession($store));
-        $token = $mgr->token();
+        $tokenManager   = new SessionCsrfTokenManager($this->makeSession($store));
+        $token = $tokenManager->token();
         $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $token);
     }
 }

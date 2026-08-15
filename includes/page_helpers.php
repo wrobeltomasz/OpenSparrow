@@ -95,23 +95,23 @@ function os_header_clear_filters(): string
 function os_inline_globals(array $vars, string $nonce): string
 {
     $flags = JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
-    $js    = '';
+    $javaScript    = '';
     foreach ($vars as $name => $value) {
-        $js .= '    window.' . $name . ' = ' . json_encode($value, $flags) . ";\n";
+        $javaScript .= '    window.' . $name . ' = ' . json_encode($value, $flags) . ";\n";
     }
     return '<script nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '">' . "\n"
-        . $js . '</script>' . "\n";
+        . $javaScript . '</script>' . "\n";
 }
 
-function os_module_script(string $src, string $nonce, ?string $versionFile = null): string
+function os_module_script(string $source, string $nonce, ?string $versionFile = null): string
 {
-    $v = str_starts_with($src, 'assets/js/') || str_starts_with($src, './assets/js/')
+    $assetVersion = str_starts_with($source, 'assets/js/') || str_starts_with($source, './assets/js/')
         ? (string) os_fe_module_graph()['version']
-        : asset_version($versionFile ?? $src);
+        : asset_version($versionFile ?? $source);
     $nonceAttr = $nonce !== ''
         ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"'
         : '';
-    return '<script type="module" src="' . $src . '?v=' . $v . '"' . $nonceAttr . '></script>' . "\n";
+    return '<script type="module" src="' . $source . '?v=' . $assetVersion . '"' . $nonceAttr . '></script>' . "\n";
 }
 
 function os_module_graph(array $groups): array
@@ -127,15 +127,15 @@ function os_module_graph(array $groups): array
         if (!is_dir($dir)) {
             continue;
         }
-        $it = new RecursiveIteratorIterator(
+        $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
         );
-        foreach ($it as $file) {
+        foreach ($iterator as $file) {
             if (!$file->isFile() || strtolower($file->getExtension()) !== 'js') {
                 continue;
             }
-            $rel = str_replace('\\', '/', substr($file->getPathname(), strlen($dir) + 1));
-            $files[$urlPrefix . $rel] = (int) $file->getMTime();
+            $relativePath = str_replace('\\', '/', substr($file->getPathname(), strlen($dir) + 1));
+            $files[$urlPrefix . $relativePath] = (int) $file->getMTime();
         }
     }
 
@@ -187,25 +187,25 @@ const OS_M2M_SUMMARY_CHIPS = 3;
 
 function os_m2m_group(int $index, array $cfg, array $options, array $selected, bool $readOnly): string
 {
-    $esc   = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-    $label = $esc((string)($cfg['label'] ?? 'Related'));
+    $escape   = static fn(string $text): string => htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    $label = $escape((string)($cfg['label'] ?? 'Related'));
 
     $html = '<div class="m2m-group">' . "\n"
         . '<div class="m2m-group-label">' . $label . '</div>' . "\n";
 
     if ($options === []) {
-        return $html . '<p class="m2m-empty">' . $esc(t('form.no_options')) . '</p>' . "\n</div>\n";
+        return $html . '<p class="m2m-empty">' . $escape(t('form.no_options')) . '</p>' . "\n</div>\n";
     }
 
     $selectedLabels = [];
-    foreach ($options as $opt) {
-        if (in_array((string)$opt['id'], $selected, true)) {
-            $selectedLabels[] = (string)$opt['label'];
+    foreach ($options as $option) {
+        if (in_array((string)$option['id'], $selected, true)) {
+            $selectedLabels[] = (string)$option['label'];
         }
     }
 
     $html .= '<details class="m2m-picker"'
-        . ' data-none-text="' . $esc(t('form.m2m_none_selected')) . '">' . "\n"
+        . ' data-none-text="' . $escape(t('form.m2m_none_selected')) . '">' . "\n"
         . '<summary class="m2m-toggle">'
         . '<span class="m2m-summary">' . os_m2m_summary($selectedLabels) . '</span>'
         . '<span class="m2m-chevron" aria-hidden="true">▾</span>'
@@ -214,29 +214,30 @@ function os_m2m_group(int $index, array $cfg, array $options, array $selected, b
 
     $head = '';
     if (count($options) > OS_M2M_SEARCH_THRESHOLD) {
-        $ph = $esc(t('form.m2m_search'));
+        $ph = $escape(t('form.m2m_search'));
         $head .= '<input type="text" class="m2m-search" placeholder="' . $ph . '" aria-label="' . $ph . '">';
     }
     if (!$readOnly) {
-        $head .= '<button type="button" class="m2m-link" data-m2m-all>' . $esc(t('form.m2m_select_all')) . '</button>'
-            . '<button type="button" class="m2m-link" data-m2m-none>' . $esc(t('form.m2m_clear')) . '</button>';
+        $head .= '<button type="button" class="m2m-link" data-m2m-all>'
+            . $escape(t('form.m2m_select_all')) . '</button>'
+            . '<button type="button" class="m2m-link" data-m2m-none>' . $escape(t('form.m2m_clear')) . '</button>';
     }
     if ($head !== '') {
         $html .= '<div class="m2m-panel-head">' . $head . '</div>' . "\n";
     }
 
     $html .= '<div class="m2m-options">' . "\n";
-    foreach ($options as $opt) {
+    foreach ($options as $option) {
         $html .= '<label class="m2m-option">'
             . '<input type="checkbox" name="m2m_' . $index . '[]"'
-            . ' value="' . $esc((string)$opt['id']) . '"'
-            . (in_array((string)$opt['id'], $selected, true) ? ' checked' : '')
+            . ' value="' . $escape((string)$option['id']) . '"'
+            . (in_array((string)$option['id'], $selected, true) ? ' checked' : '')
             . ($readOnly ? ' disabled' : '') . '>'
-            . '<span class="m2m-option-label">' . $esc((string)$opt['label']) . '</span>'
+            . '<span class="m2m-option-label">' . $escape((string)$option['label']) . '</span>'
             . '</label>' . "\n";
     }
     $html .= '</div>' . "\n"
-        . '<p class="m2m-no-matches" hidden>' . $esc(t('form.m2m_no_matches')) . '</p>' . "\n"
+        . '<p class="m2m-no-matches" hidden>' . $escape(t('form.m2m_no_matches')) . '</p>' . "\n"
         . '</div>' . "\n</details>\n</div>\n";
 
     return $html;
@@ -259,8 +260,8 @@ function os_m2m_summary(array $labels): string
     }
 
     $html = '';
-    foreach ($shown as $l) {
-        $html .= '<span class="m2m-chip">' . htmlspecialchars($l, ENT_QUOTES, 'UTF-8') . '</span>';
+    foreach ($shown as $chipLabel) {
+        $html .= '<span class="m2m-chip">' . htmlspecialchars($chipLabel, ENT_QUOTES, 'UTF-8') . '</span>';
     }
     if ($more > 0) {
         $html .= '<span class="m2m-chip m2m-chip-more">+' . $more . '</span>';

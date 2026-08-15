@@ -32,18 +32,18 @@ final class FrontApiGuardsTest extends TestCase
         $path = self::$root . '/' . $relPath;
         $this->assertFileExists($path);
 
-        $out = '';
+        $output = '';
         foreach (token_get_all((string) file_get_contents($path)) as $token) {
             if (is_array($token)) {
                 if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
                     continue;
                 }
-                $out .= $token[1];
+                $output .= $token[1];
             } else {
-                $out .= $token;
+                $output .= $token;
             }
         }
-        return (string) preg_replace('/\s+/', ' ', $out);
+        return (string) preg_replace('/\s+/', ' ', $output);
     }
 
     private function moduleFiles(): array
@@ -58,8 +58,8 @@ final class FrontApiGuardsTest extends TestCase
 
     public function testFrontControllerGatesTheWriteTargetExactlyOnce(): void
     {
-        $src   = $this->code(self::API_PHP);
-        $count = substr_count($src, 'require_table_access(');
+        $source   = $this->code(self::API_PHP);
+        $count = substr_count($source, 'require_table_access(');
 
         $this->assertSame(
             1,
@@ -72,11 +72,11 @@ final class FrontApiGuardsTest extends TestCase
 
     public function testWriteGateRunsAfterTheTableIsResolvedAndBeforeDispatch(): void
     {
-        $src = $this->code(self::API_PHP);
+        $source = $this->code(self::API_PHP);
 
-        $resolve  = strpos($src, 'safe_table($schema, $table)');
-        $gate     = strpos($src, 'require_table_access($table)');
-        $dispatch = strpos($src, '$osWriteRoutes');
+        $resolve  = strpos($source, 'safe_table($schema, $table)');
+        $gate     = strpos($source, 'require_table_access($table)');
+        $dispatch = strpos($source, '$osWriteRoutes');
 
         $this->assertIsInt($resolve, 'The write preamble no longer resolves $body[table] through safe_table().');
         $this->assertIsInt($gate, 'The write preamble no longer gates the resolved table.');
@@ -93,11 +93,12 @@ final class FrontApiGuardsTest extends TestCase
     public function testWriteModulesDoNotRepeatTheTableGate(): void
     {
         foreach (self::WRITE_MODULES as $module) {
-            $src = $this->code(self::MODULE_DIR . '/' . $module);
+            $source = $this->code(self::MODULE_DIR . '/' . $module);
             $this->assertFalse(
-                str_contains($src, 'require_table_access('),
+                str_contains($source, 'require_table_access('),
                 "includes/frontapi/{$module} must not call require_table_access(): the "
-                . 'shared write preamble in includes/Controller/FrontApiController.php already gated $ctx->table. A '
+                . 'shared write preamble in includes/Controller/FrontApiController.php already gated '
+                . '$context->table. A '
                 . 'per-route copy is a list to keep by hand, which is how this class of '
                 . 'gate has drifted before.'
             );
@@ -107,9 +108,9 @@ final class FrontApiGuardsTest extends TestCase
     public function testWriteHandlersTakeTheWriteContext(): void
     {
         foreach (self::WRITE_MODULES as $module) {
-            $src = $this->code(self::MODULE_DIR . '/' . $module);
+            $source = $this->code(self::MODULE_DIR . '/' . $module);
             $this->assertTrue(
-                str_contains($src, 'FrontApiWriteContext $ctx'),
+                str_contains($source, 'FrontApiWriteContext $context'),
                 "includes/frontapi/{$module} must receive a FrontApiWriteContext — "
                 . 'constructing one is what proves the gate ran.'
             );
@@ -119,9 +120,9 @@ final class FrontApiGuardsTest extends TestCase
     public function testReadModulesGateTheirOwnRequestSuppliedTable(): void
     {
         foreach (self::READ_GATING_MODULES as $module) {
-            $src = $this->code(self::MODULE_DIR . '/' . $module);
+            $source = $this->code(self::MODULE_DIR . '/' . $module);
             $this->assertTrue(
-                str_contains($src, 'require_table_access('),
+                str_contains($source, 'require_table_access('),
                 "includes/frontapi/{$module} reads a request-supplied ?table= and must "
                 . 'gate it. See tests/Security/request_scope_inventory.php.'
             );
@@ -130,11 +131,11 @@ final class FrontApiGuardsTest extends TestCase
 
     public function testProfileActionsAnswerBeforeTheRoleGates(): void
     {
-        $src = $this->code(self::API_PHP);
+        $source = $this->code(self::API_PHP);
 
-        $profile = strpos($src, "in_array(\$profileAction, ['update_avatar', 'change_password'], true)");
-        $admin   = strpos($src, '$role === UserRole::Admin');
-        $viewer  = strpos($src, '$role === UserRole::Viewer');
+        $profile = strpos($source, "in_array(\$profileAction, ['update_avatar', 'change_password'], true)");
+        $admin   = strpos($source, '$role === UserRole::Admin');
+        $viewer  = strpos($source, '$role === UserRole::Viewer');
 
         $controller = 'includes/Controller/FrontApiController.php';
 
@@ -148,11 +149,11 @@ final class FrontApiGuardsTest extends TestCase
 
     public function testRoleGatesRunBeforeTheSchemaIsLoaded(): void
     {
-        $src = $this->code(self::API_PHP);
+        $source = $this->code(self::API_PHP);
 
-        $admin  = strpos($src, '$role === UserRole::Admin');
-        $viewer = strpos($src, '$role === UserRole::Viewer');
-        $schema = strpos($src, "config_get('schema')");
+        $admin  = strpos($source, '$role === UserRole::Admin');
+        $viewer = strpos($source, '$role === UserRole::Viewer');
+        $schema = strpos($source, "config_get('schema')");
 
         $this->assertIsInt($schema, 'includes/Controller/FrontApiController.php no longer loads the schema.');
         $this->assertLessThan($schema, $admin, 'The admin block must run before the schema is read.');
@@ -161,32 +162,32 @@ final class FrontApiGuardsTest extends TestCase
 
     public function testOnlyTheFilteredSchemaIsHandedToTheContext(): void
     {
-        $src = $this->code(self::API_PHP);
+        $source = $this->code(self::API_PHP);
 
         $this->assertTrue(
-            str_contains($src, 'filter_tables_for_user('),
+            str_contains($source, 'filter_tables_for_user('),
             'includes/Controller/FrontApiController.php must build the access-filtered schema copy.'
         );
         $this->assertFalse(
-            str_contains($src, 'echo json_encode($schema);'),
+            str_contains($source, 'echo json_encode($schema);'),
             'The schema route must never echo the unfiltered internal $schema.'
         );
     }
 
     private function referencedModules(): array
     {
-        $src = $this->code(self::API_PHP);
-        preg_match_all("/'([a-z_0-9]+)',\s*'frontapi_[a-z_0-9]+'/", $src, $write, PREG_SET_ORDER);
-        preg_match_all("/=>\s*\['([a-z_0-9]+)',\s*'frontapi_[a-z_0-9]+'\]/", $src, $read, PREG_SET_ORDER);
+        $source = $this->code(self::API_PHP);
+        preg_match_all("/'([a-z_0-9]+)',\s*'frontapi_[a-z_0-9]+'/", $source, $write, PREG_SET_ORDER);
+        preg_match_all("/=>\s*\['([a-z_0-9]+)',\s*'frontapi_[a-z_0-9]+'\]/", $source, $read, PREG_SET_ORDER);
 
         $modules = [];
-        foreach (array_merge($read, $write) as $m) {
-            $modules[$m[1] . '.php'] = true;
+        foreach (array_merge($read, $write) as $matches) {
+            $modules[$matches[1] . '.php'] = true;
         }
 
-        preg_match_all("/osFrontApiHandler\('([a-z_0-9]+)'/", $src, $direct, PREG_SET_ORDER);
-        foreach ($direct as $m) {
-            $modules[$m[1] . '.php'] = true;
+        preg_match_all("/osFrontApiHandler\('([a-z_0-9]+)'/", $source, $direct, PREG_SET_ORDER);
+        foreach ($direct as $matches) {
+            $modules[$matches[1] . '.php'] = true;
         }
 
         $names = array_keys($modules);

@@ -25,9 +25,9 @@ function safe_table(array $schema, string $table): array
 
 function column_list(array $tableCfg): array
 {
-    $cols = $tableCfg['columns'] ?? [];
+    $columns = $tableCfg['columns'] ?? [];
 
-    return array_keys(array_filter($cols, fn($column) => ($column['type'] ?? '') !== 'virtual'));
+    return array_keys(array_filter($columns, fn($column) => ($column['type'] ?? '') !== 'virtual'));
 }
 
 function id_column(): string
@@ -51,7 +51,7 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
         return $rows;
     }
 
-    foreach ($tableCfg['foreign_keys'] as $fkCol => $fkCfg) {
+    foreach ($tableCfg['foreign_keys'] as $fkCol => $foreignKeyConfig) {
         $fkValues = [];
         foreach ($rows as $row) {
             if (isset($row[$fkCol]) && $row[$fkCol] !== '' && $row[$fkCol] !== null) {
@@ -63,10 +63,10 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
             continue;
         }
 
-        $refName = is_array($fkCfg) ? (string) ($fkCfg['reference_table'] ?? '') : '';
+        $refName = is_array($foreignKeyConfig) ? (string) ($foreignKeyConfig['reference_table'] ?? '') : '';
         try {
             $refTable = safe_table($schema, $refName);
-        } catch (\RuntimeException $e) {
+        } catch (\RuntimeException $exception) {
             error_log(sprintf(
                 '[map_fk_display] dangling foreign key %s -> %s: reference table not in schema config',
                 (string) $fkCol,
@@ -75,9 +75,9 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
             continue;
         }
         $refSchema = $refTable['schema'] ?? 'public';
-        $refColId  = $fkCfg['reference_column'] ?? 'id';
+        $refColId  = $foreignKeyConfig['reference_column'] ?? 'id';
 
-        $refDispRaw = $fkCfg['display_column'] ?? [$refColId];
+        $refDispRaw = $foreignKeyConfig['display_column'] ?? [$refColId];
         if (!is_array($refDispRaw)) {
             $refDispRaw = [$refDispRaw];
         }
@@ -92,7 +92,7 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
             $dispSql = $escapedDispCols[0];
         }
 
-        $escapedVals = array_map(fn($v) => pg_escape_literal($conn, (string)$v), $fkValues);
+        $escapedVals = array_map(fn($value) => pg_escape_literal($conn, (string)$value), $fkValues);
         $inClause = implode(', ', $escapedVals);
 
         $sql = sprintf(
@@ -106,12 +106,12 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
         );
 
         $map = [];
-        $res = pg_query($conn, $sql);
-        if ($res) {
-            while ($row = pg_fetch_assoc($res)) {
+        $queryResult = pg_query($conn, $sql);
+        if ($queryResult) {
+            while ($row = pg_fetch_assoc($queryResult)) {
                 $map[$row['id']] = $row['disp'];
             }
-            pg_free_result($res);
+            pg_free_result($queryResult);
         }
 
         foreach ($rows as &$row) {
@@ -125,22 +125,26 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
     return $rows;
 }
 
-function normalize_boolean(mixed $val): string
+function normalize_boolean(mixed $inputValue): string
 {
     $truthy = ['true', '1', 1, true, 't', 'T', 'TRUE'];
-    return in_array($val, $truthy, true) ? 'TRUE' : 'FALSE';
+    return in_array($inputValue, $truthy, true) ? 'TRUE' : 'FALSE';
 }
 
 function type_min_value(string $type): string|int
 {
-    $t = strtolower($type);
-    if (str_contains($t, 'bool')) {
+    $normalizedType = strtolower($type);
+    if (str_contains($normalizedType, 'bool')) {
         return 'FALSE';
     }
-    if (str_contains($t, 'int') || str_contains($t, 'numeric') || str_contains($t, 'float')) {
+    if (
+        str_contains($normalizedType, 'int')
+        || str_contains($normalizedType, 'numeric')
+        || str_contains($normalizedType, 'float')
+    ) {
         return 0;
     }
-    if (str_contains($t, 'date') || str_contains($t, 'time')) {
+    if (str_contains($normalizedType, 'date') || str_contains($normalizedType, 'time')) {
         return '1970-01-01';
     }
 
@@ -156,8 +160,8 @@ function log_user_action(
 ): ?int {
     $sql = 'INSERT INTO ' . sys_table('users_log')
          . ' (user_id, action, target_table, record_id) VALUES ($1, $2, $3, $4) RETURNING id';
-    $res = @pg_query_params($conn, $sql, [$userId, $action, $targetTable, $recordId]);
-    if ($res && ($row = pg_fetch_row($res))) {
+    $queryResult = @pg_query_params($conn, $sql, [$userId, $action, $targetTable, $recordId]);
+    if ($queryResult && ($row = pg_fetch_row($queryResult))) {
         return (int) $row[0];
     }
     return null;
@@ -224,12 +228,14 @@ function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $ta
 
 function record_label_columns(array $tableCfg, array $configured): array
 {
-    $cols = $tableCfg['columns'] ?? [];
+    $columns = $tableCfg['columns'] ?? [];
 
     if (!empty($configured)) {
         $valid = array_values(array_filter(
             $configured,
-            fn($column) => is_string($column) && isset($cols[$column]) && ($cols[$column]['type'] ?? '') !== 'virtual'
+            fn($column) => is_string($column)
+                && isset($columns[$column])
+                && ($columns[$column]['type'] ?? '') !== 'virtual'
         ));
         if (!empty($valid)) {
             return $valid;
@@ -237,7 +243,7 @@ function record_label_columns(array $tableCfg, array $configured): array
     }
 
     $firstGridCol = null;
-    foreach ($cols as $colName => $colCfg) {
+    foreach ($columns as $colName => $colCfg) {
         if (empty($colCfg['show_in_grid'])) {
             continue;
         }
@@ -253,16 +259,16 @@ function record_label_columns(array $tableCfg, array $configured): array
 
 function record_label_sql(array $tableCfg, array $configured): string
 {
-    $cols = array_map('pg_ident', record_label_columns($tableCfg, $configured));
+    $columns = array_map('pg_ident', record_label_columns($tableCfg, $configured));
 
-    return count($cols) > 1
-        ? "CONCAT_WS(' - ', " . implode(', ', $cols) . ')'
-        : $cols[0];
+    return count($columns) > 1
+        ? "CONCAT_WS(' - ', " . implode(', ', $columns) . ')'
+        : $columns[0];
 }
 
-function jsonError(string $msg, int $code = 400): never
+function jsonError(string $errorMessage, int $code = 400): never
 {
-    throw HttpException::fromStatus($code, $msg, ['success' => false, 'error' => $msg]);
+    throw HttpException::fromStatus($code, $errorMessage, ['success' => false, 'error' => $errorMessage]);
 }
 
 function jsonSuccess(array $data = [], int $code = 200): never
@@ -294,14 +300,14 @@ function require_not_demo(string $message = 'Action disabled in Demo Mode.', int
     throw HttpException::fromStatus($code, $message, ['status' => 'error', 'error' => $message]);
 }
 
-function validate_column_regexp(array $colCfg, mixed $val): ?string
+function validate_column_regexp(array $colCfg, mixed $inputValue): ?string
 {
     $pattern = $colCfg['validation_regexp'] ?? '';
-    if (!is_string($pattern) || $pattern === '' || $val === null || $val === '') {
+    if (!is_string($pattern) || $pattern === '' || $inputValue === null || $inputValue === '') {
         return null;
     }
 
-    $result = @preg_match('~' . str_replace('~', '\~', $pattern) . '~u', (string) $val);
+    $result = @preg_match('~' . str_replace('~', '\~', $pattern) . '~u', (string) $inputValue);
     if ($result === false) {
         error_log('[validate_column_regexp] invalid validation_regexp in schema.json: ' . $pattern);
         return null;
@@ -362,27 +368,27 @@ function access_scope(string $scope): array
 function access_scope_items(string $scope, bool $includeHidden = false): array
 {
     require_once __DIR__ . '/config_store.php';
-    $def   = access_scope($scope);
-    $items = (config_get($def['config']) ?? [])[$def['path']] ?? [];
+    $definition   = access_scope($scope);
+    $items = (config_get($definition['config']) ?? [])[$definition['path']] ?? [];
     if (!is_array($items)) {
         return [];
     }
 
-    $out = [];
+    $output = [];
     foreach ($items as $key => $cfg) {
         if (!is_array($cfg) || (!$includeHidden && !empty($cfg['hidden']))) {
             continue;
         }
 
-        $name = $def['id'] === null ? (string) $key : (string) ($cfg[$def['id']] ?? '');
+        $name = $definition['id'] === null ? (string) $key : (string) ($cfg[$definition['id']] ?? '');
         if ($name === '') {
             continue;
         }
 
-        $label      = $cfg[$def['label']] ?? null;
-        $out[$name] = is_string($label) && $label !== '' ? $label : $name;
+        $label      = $cfg[$definition['label']] ?? null;
+        $output[$name] = is_string($label) && $label !== '' ? $label : $name;
     }
-    return $out;
+    return $output;
 }
 
 function user_allowed_items(string $scope, ?int $userId = null): ?array
@@ -414,10 +420,10 @@ function user_allowed_items(string $scope, ?int $userId = null): ?array
         }
 
         $resolved = [];
-        foreach (array_keys(USER_ACCESS_SCOPES) as $s) {
-            $list = is_array($entry[$s] ?? null) ? $entry[$s] : [];
+        foreach (array_keys(USER_ACCESS_SCOPES) as $scopeKey) {
+            $list = is_array($entry[$scopeKey] ?? null) ? $entry[$scopeKey] : [];
             $list = array_values(array_unique(array_filter($list, 'is_string')));
-            $resolved[$s] = ($list === [] ? null : $list);
+            $resolved[$scopeKey] = ($list === [] ? null : $list);
         }
         if ($resolved['tables'] !== null) {
             $resolved['tables'] = with_hidden_subtables($resolved['tables']);
@@ -433,22 +439,22 @@ function with_hidden_subtables(array $tables): array
     require_once __DIR__ . '/config_store.php';
     $schema = (config_get('schema') ?? [])['tables'] ?? [];
 
-    $out   = array_fill_keys($tables, true);
+    $output   = array_fill_keys($tables, true);
     $queue = $tables;
 
     while ($queue !== []) {
         $parent = (string) array_shift($queue);
-        foreach ($schema[$parent]['subtables'] ?? [] as $sub) {
-            $child = is_array($sub) ? (string) ($sub['table'] ?? '') : '';
-            if ($child === '' || isset($out[$child]) || empty($schema[$child]['hidden'])) {
+        foreach ($schema[$parent]['subtables'] ?? [] as $subtable) {
+            $child = is_array($subtable) ? (string) ($subtable['table'] ?? '') : '';
+            if ($child === '' || isset($output[$child]) || empty($schema[$child]['hidden'])) {
                 continue;
             }
-            $out[$child] = true;
+            $output[$child] = true;
             $queue[]     = $child;
         }
     }
 
-    return array_map('strval', array_keys($out));
+    return array_map('strval', array_keys($output));
 }
 
 const OS_REQUEST_SCOPE_PARAMS = [
@@ -588,24 +594,24 @@ function filter_tables_for_user(array $tables, ?int $userId = null): array
 
 function merge_user_access_selection(array $submitted, array $stored): array
 {
-    $out = [];
+    $output = [];
     foreach (array_keys(USER_ACCESS_SCOPES) as $scope) {
         $list = is_array($submitted[$scope] ?? null)
             ? $submitted[$scope]
             : ($stored[$scope] ?? []);
-        $out[$scope] = is_array($list)
+        $output[$scope] = is_array($list)
             ? array_values(array_unique(array_filter($list, 'is_string')))
             : [];
     }
-    return $out;
+    return $output;
 }
 
-function workflow_tables_in_scope(mixed $wf, ?int $userId = null): bool
+function workflow_tables_in_scope(mixed $workflow, ?int $userId = null): bool
 {
-    if (!is_array($wf)) {
+    if (!is_array($workflow)) {
         return false;
     }
-    foreach ((array) ($wf['steps'] ?? []) as $step) {
+    foreach ((array) ($workflow['steps'] ?? []) as $step) {
         $stepTable = is_array($step) ? (string) ($step['table'] ?? '') : '';
         if ($stepTable !== '' && !user_can_access_table($stepTable, $userId)) {
             return false;

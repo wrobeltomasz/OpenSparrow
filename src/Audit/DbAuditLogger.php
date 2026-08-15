@@ -21,8 +21,8 @@ final readonly class DbAuditLogger
     {
         $sql = 'INSERT INTO ' . sys_table('users_log')
              . ' (user_id, action, target_table, record_id) VALUES ($1, $2, $3, $4) RETURNING id';
-        $res = @pg_query_params($this->conn->native(), $sql, [$userId, $action, $table, $recordId]);
-        if ($res && ($row = pg_fetch_row($res))) {
+        $result = @pg_query_params($this->conn->native(), $sql, [$userId, $action, $table, $recordId]);
+        if ($result && ($row = pg_fetch_row($result))) {
             return (int) $row[0];
         }
         return null;

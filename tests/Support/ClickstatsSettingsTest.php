@@ -59,10 +59,10 @@ final class ClickstatsSettingsTest extends TestCase
     }
 
     #[DataProvider('unusableWindows')]
-    public function testUnusableWindowFallsBackToTheDefaultNotToForever(mixed $raw): void
+    public function testUnusableWindowFallsBackToTheDefaultNotToForever(mixed $rawDays): void
     {
-        $this->assertSame(CLICKSTATS_DEFAULT_RETENTION_DAYS, clickstats_retention_days($raw));
-        $this->assertNotSame(CLICKSTATS_RETENTION_FOREVER, clickstats_retention_days($raw));
+        $this->assertSame(CLICKSTATS_DEFAULT_RETENTION_DAYS, clickstats_retention_days($rawDays));
+        $this->assertNotSame(CLICKSTATS_RETENTION_FOREVER, clickstats_retention_days($rawDays));
     }
 
     public function testConfigWithoutRetentionGetsTheDefault(): void

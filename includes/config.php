@@ -12,8 +12,8 @@ require_once __DIR__ . '/autoload.php';
 if (!function_exists('get_env')) {
     function get_env(string $key, string $default = ''): string
     {
-        $v = getenv($key);
-        return ($v === false || $v === '') ? $default : $v;
+        $value = getenv($key);
+        return ($value === false || $value === '') ? $default : $value;
     }
 }
 
@@ -47,7 +47,7 @@ if (!function_exists('settings_value')) {
                 }
             } catch (\App\Exception\ControlFlowException $signal) {
                 throw $signal;
-            } catch (Throwable $e) {
+            } catch (Throwable $exception) {
             }
         }
         return array_key_exists($key, $settings) ? $settings[$key] : $default;

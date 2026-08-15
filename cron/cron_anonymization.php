@@ -23,9 +23,9 @@ while (ob_get_level() > 0) {
 }
 ob_implicit_flush(true);
 
-function anon_log(string $msg): void
+function anon_log(string $message): void
 {
-    echo $msg . "\n";
+    echo $message . "\n";
     echo str_pad('', 4096) . "\n";
     flush();
 }
@@ -82,23 +82,24 @@ function cron_anonymization_main(array $argv): int
 
     try {
         $conn = db_connect();
-    } catch (\RuntimeException $e) {
-        anon_log('[anonymization] DB connection failed: ' . $e->getMessage());
+    } catch (\RuntimeException $exception) {
+        anon_log('[anonymization] DB connection failed: ' . $exception->getMessage());
         return 1;
     }
 
-    $tLog    = sys_table('anonymization_log');
-    $tReport = sys_table('anonymization_report');
+    $anonymizationLogTable    = sys_table('anonymization_log');
+    $anonymizationReportTable = sys_table('anonymization_report');
 
     if ($triggeredBy === 'cron' && $frequency !== 'manual') {
         $intervalMap = ['daily' => '1 day', 'weekly' => '7 days', 'monthly' => '30 days'];
         $interval    = $intervalMap[$frequency] ?? '1 day';
-        $recentRes   = @pg_query_params(
+        $recentResult   = @pg_query_params(
             $conn,
-            "SELECT 1 FROM {$tLog} WHERE status = 'success' AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
+            "SELECT 1 FROM {$anonymizationLogTable} WHERE status = 'success'"
+            . " AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
             []
         );
-        if ($recentRes && pg_num_rows($recentRes) > 0) {
+        if ($recentResult && pg_num_rows($recentResult) > 0) {
             anon_log("[anonymization] Skipping: a successful run exists within the '{$frequency}' window.");
             return 0;
         }
@@ -111,12 +112,12 @@ function cron_anonymization_main(array $argv): int
 
     $logId = null;
     if (!$dryRun) {
-        $logRes = @pg_query_params(
+        $logResult = @pg_query_params(
             $conn,
-            "INSERT INTO {$tLog} (triggered_by, status) VALUES (\$1, 'running') RETURNING id",
+            "INSERT INTO {$anonymizationLogTable} (triggered_by, status) VALUES (\$1, 'running') RETURNING id",
             [$triggeredBy]
         );
-        if ($logRes && ($logRow = pg_fetch_assoc($logRes))) {
+        if ($logResult && ($logRow = pg_fetch_assoc($logResult))) {
             $logId = (int)$logRow['id'];
         }
     }
@@ -164,8 +165,8 @@ function cron_anonymization_main(array $argv): int
             $sql = "SELECT COUNT(*) AS cnt FROM {$schemaIdent}.{$tableIdent}
                     WHERE {$columnIdent} IS NOT NULL AND {$columnIdent} != \$1
                       AND {$dateColIdent} < NOW() - (\$2::int * INTERVAL '1 day')";
-            $res = @pg_query_params($conn, $sql, [$replacement, $days]);
-            if (!$res) {
+            $result = @pg_query_params($conn, $sql, [$replacement, $days]);
+            if (!$result) {
                 $dbErr = pg_last_error($conn);
                 error_log('[cron_anonymization] Preview failed on ' . $table . '.' . $column . ': ' . $dbErr);
                 anon_log("[anonymization] ERROR previewing {$table}.{$column} — check server error log.");
@@ -174,7 +175,7 @@ function cron_anonymization_main(array $argv): int
                 }
                 continue;
             }
-            $cntRow          = pg_fetch_assoc($res);
+            $cntRow          = pg_fetch_assoc($result);
             $wouldAffect     = (int)($cntRow['cnt'] ?? 0);
             $rowsAnonymized += $wouldAffect;
             $rulesProcessed++;
@@ -192,8 +193,8 @@ function cron_anonymization_main(array $argv): int
                 WHERE {$columnIdent} IS NOT NULL AND {$columnIdent} != \$1
                   AND {$dateColIdent} < NOW() - (\$2::int * INTERVAL '1 day')";
 
-        $res = @pg_query_params($conn, $sql, [$replacement, $days]);
-        if (!$res) {
+        $result = @pg_query_params($conn, $sql, [$replacement, $days]);
+        if (!$result) {
             $dbErr = pg_last_error($conn);
             error_log('[cron_anonymization] Update failed on ' . $table . '.' . $column . ': ' . $dbErr);
             anon_log("[anonymization] ERROR on {$table}.{$column} — check server error log.");
@@ -203,7 +204,7 @@ function cron_anonymization_main(array $argv): int
             continue;
         }
 
-        $affected        = pg_affected_rows($res);
+        $affected        = pg_affected_rows($result);
         $rowsAnonymized += $affected;
         $rulesProcessed++;
 
@@ -230,16 +231,16 @@ function cron_anonymization_main(array $argv): int
     if ($logId !== null) {
         @pg_query_params(
             $conn,
-            "UPDATE {$tLog}
+            "UPDATE {$anonymizationLogTable}
              SET finished_at = now(), status = \$1, rules_processed = \$2, rows_anonymized = \$3, error_message = \$4
              WHERE id = \$5",
             [$finalStatus, $rulesProcessed, $rowsAnonymized, $errorMessage, $logId]
         );
 
         $affectedTables = [];
-        foreach ($reportDetails as $d) {
-            if ($d['rows_affected'] > 0) {
-                $affectedTables[$d['schema_name'] . '.' . $d['table_name']] = true;
+        foreach ($reportDetails as $detail) {
+            if ($detail['rows_affected'] > 0) {
+                $affectedTables[$detail['schema_name'] . '.' . $detail['table_name']] = true;
             }
         }
 
@@ -263,18 +264,19 @@ function cron_anonymization_main(array $argv): int
 
         $reportJson = json_encode($report, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($reportJson !== false) {
-            $repRes = @pg_query_params(
+            $reportResult = @pg_query_params(
                 $conn,
-                "INSERT INTO {$tReport} (log_id, report_id, triggered_by, status, rows_affected, report)
+                "INSERT INTO {$anonymizationReportTable} (log_id, report_id,"
+                . " triggered_by, status, rows_affected, report)
                  VALUES (\$1, \$2, \$3, \$4, \$5, \$6::jsonb)",
                 [$logId, $report['report_id'], $triggeredBy, $finalStatus, $rowsAnonymized, $reportJson]
             );
-            if (!$repRes) {
+            if (!$reportResult) {
                 error_log('[cron_anonymization] Could not persist report — '
                     . 'run Initialize System Tables to create the report table.');
                 anon_log('[anonymization] WARNING: report table missing — run Initialize System Tables.');
             } else {
-                anon_log('[anonymization] Report ' . $report['report_id'] . ' saved to ' . $tReport
+                anon_log('[anonymization] Report ' . $report['report_id'] . ' saved to ' . $anonymizationReportTable
                     . ' (run #' . $logId . ').');
                 anon_log(json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
             }

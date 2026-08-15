@@ -20,16 +20,16 @@ $action = $_GET['action'] ?? 'get_count';
 try {
     if ($action === 'get_count') {
         $sql = 'SELECT COUNT(*) FROM ' . sys_table('users_notifications') . ' WHERE user_id = $1 AND is_read = FALSE';
-        $res = pg_query_params($conn, $sql, [$userId]);
-        $count = pg_fetch_result($res, 0, 0);
+        $result = pg_query_params($conn, $sql, [$userId]);
+        $count = pg_fetch_result($result, 0, 0);
         throw ResponseException::encoded(['status' => 'success', 'count' => (int)$count]);
     }
 
     if ($action === 'get_list') {
         $sql = 'SELECT * FROM ' . sys_table('users_notifications')
             . ' WHERE user_id = $1 ORDER BY is_read ASC, created_at DESC LIMIT ' . NOTIFICATIONS_DROPDOWN_LIMIT;
-        $res = pg_query_params($conn, $sql, [$userId]);
-        $notifications = pg_fetch_all($res) ?: [];
+        $result = pg_query_params($conn, $sql, [$userId]);
+        $notifications = pg_fetch_all($result) ?: [];
         throw ResponseException::encoded(['status' => 'success', 'notifications' => $notifications]);
     }
 
@@ -51,7 +51,7 @@ try {
     echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
 } catch (ControlFlowException $signal) {
     throw $signal;
-} catch (Throwable $e) {
+} catch (Throwable $exception) {
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Internal server error']);
 }

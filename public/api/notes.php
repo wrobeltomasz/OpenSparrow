@@ -24,10 +24,10 @@ os_api_dispatch($action, [
     'delete'       => fn() => notes_action_delete($conn, $body),
 ], 'api_notes');
 
-function validatedRelation(array $src): array
+function validatedRelation(array $source): array
 {
-    $relatedTable = trim($src['related_table'] ?? '');
-    $relatedId    = isset($src['related_id']) && $src['related_id'] !== '' ? (int)$src['related_id'] : null;
+    $relatedTable = trim($source['related_table'] ?? '');
+    $relatedId    = isset($source['related_id']) && $source['related_id'] !== '' ? (int)$source['related_id'] : null;
 
     if ($relatedTable === '' && $relatedId === null) {
         return [null, null];
@@ -39,14 +39,14 @@ function validatedRelation(array $src): array
     return [validatedTable($relatedTable, 'related_table'), $relatedId];
 }
 
-function validatedReminderDate(array $src): ?string
+function validatedReminderDate(array $source): ?string
 {
-    $raw = trim($src['reminder_date'] ?? '');
-    if ($raw === '') {
+    $rawReminder = trim($source['reminder_date'] ?? '');
+    if ($rawReminder === '') {
         return null;
     }
 
-    $normalized = str_replace('T', ' ', $raw);
+    $normalized = str_replace('T', ' ', $rawReminder);
     $date = null;
     $hasTime = true;
     foreach (['Y-m-d H:i:s', 'Y-m-d H:i', 'Y-m-d'] as $format) {
@@ -73,9 +73,9 @@ function validatedReminderDate(array $src): ?string
     return $date->format('Y-m-d H:i:00');
 }
 
-function validatedBody(array $src): string
+function validatedBody(array $source): string
 {
-    $rawBody = trim($src['body'] ?? '');
+    $rawBody = trim($source['body'] ?? '');
     if ($rawBody === '') {
         jsonError('Note body cannot be empty.', 400);
     }
@@ -106,14 +106,14 @@ function notes_action_list_records($conn): void
         pg_ident($table),
         NOTE_RECORD_PICKER_LIMIT
     );
-    $res = pg_query($conn, $sql);
-    if (!$res) {
+    $result = pg_query($conn, $sql);
+    if (!$result) {
         error_log('api_notes notes_action_list_records failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $records = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $label = trim((string)($row['label'] ?? ''));
         $records[] = [
             'id'    => (int)$row['id'],
@@ -133,14 +133,14 @@ function notes_action_list($conn): void
         WHERE user_id = \$1 AND deleted_at IS NULL
         ORDER BY reminder_date NULLS LAST, created_at DESC
     ";
-    $res = pg_query_params($conn, $sql, [$userId]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$userId]);
+    if (!$result) {
         error_log('api_notes notes_action_list failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $notes = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $row['related_id'] = $row['related_id'] !== null ? (int)$row['related_id'] : null;
 
         if (!empty($row['reminder_date'])) {
@@ -165,13 +165,13 @@ function notes_action_add($conn, array $body): void
         VALUES (\$1, \$2, \$3, \$4, \$5)
         RETURNING id, created_at
     ";
-    $res = pg_query_params($conn, $sql, [$userId, $noteBody, $relatedTable, $relatedId, $reminderDate]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$userId, $noteBody, $relatedTable, $relatedId, $reminderDate]);
+    if (!$result) {
         error_log('api_notes notes_action_add failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
-    $inserted = pg_fetch_assoc($res);
+    $inserted = pg_fetch_assoc($result);
     log_user_action($conn, $userId, 'NOTE_ADD', 'notes', (int)$inserted['id']);
 
     jsonSuccess(['note' => [
@@ -203,12 +203,12 @@ function notes_action_update($conn, array $body): void
         WHERE id = \$5 AND user_id = \$6 AND deleted_at IS NULL
         RETURNING id
     ";
-    $res = pg_query_params($conn, $sql, [$noteBody, $relatedTable, $relatedId, $reminderDate, $id, $userId]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$noteBody, $relatedTable, $relatedId, $reminderDate, $id, $userId]);
+    if (!$result) {
         error_log('api_notes notes_action_update failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
-    if (pg_num_rows($res) === 0) {
+    if (pg_num_rows($result) === 0) {
         jsonError('Note not found.', 404);
     }
 
@@ -229,12 +229,12 @@ function notes_action_delete($conn, array $body): void
         SET deleted_at = NOW()
         WHERE id = \$1 AND user_id = \$2 AND deleted_at IS NULL
     ";
-    $res = pg_query_params($conn, $sql, [$id, $userId]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$id, $userId]);
+    if (!$result) {
         error_log('api_notes notes_action_delete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
-    if (pg_affected_rows($res) === 0) {
+    if (pg_affected_rows($result) === 0) {
         jsonError('Note not found.', 404);
     }
 

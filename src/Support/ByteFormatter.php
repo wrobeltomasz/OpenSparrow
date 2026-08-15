@@ -17,12 +17,12 @@ final class ByteFormatter
             return '0 B';
         }
         $units = ['B', 'KB', 'MB', 'GB'];
-        $i     = 0;
-        $v     = (float)$bytes;
-        while ($v >= 1024 && $i < count($units) - 1) {
-            $v /= 1024;
-            $i++;
+        $unitIndex     = 0;
+        $size     = (float)$bytes;
+        while ($size >= 1024 && $unitIndex < count($units) - 1) {
+            $size /= 1024;
+            $unitIndex++;
         }
-        return round($v, 1) . ' ' . $units[$i];
+        return round($size, 1) . ' ' . $units[$unitIndex];
     }
 }

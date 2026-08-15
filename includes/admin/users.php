@@ -59,10 +59,10 @@ function admin_user_contact_input(array $data): array
     ], null];
 }
 
-function admin_user_schema_guard(string $err): void
+function admin_user_schema_guard(string $error): void
 {
-    if (str_contains($err, 'is_active') || str_contains($err, 'does not exist')) {
-        error_log('[admin_api][users:schema_guard] ' . $err);
+    if (str_contains($error, 'is_active') || str_contains($error, 'does not exist')) {
+        error_log('[admin_api][users:schema_guard] ' . $error);
         throw new AdminApiMessage(
             'Database schema is outdated or missing. Please initialize tables '
             . '(Migrations → Initialize System Tables).'
@@ -87,16 +87,16 @@ if ($action === 'users_list') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
         $hasContact = admin_user_contact_columns($conn);
-        $cols = 'id, username, is_active, role'
+        $columns = 'id, username, is_active, role'
             . ($hasContact ? ', first_name, last_name, email, phone' : '');
-        $res = @pg_query($conn, "SELECT {$cols} FROM " . sys_table('users') . ' ORDER BY id ASC');
-        if (!$res) {
+        $queryResult = @pg_query($conn, "SELECT {$columns} FROM " . sys_table('users') . ' ORDER BY id ASC');
+        if (!$queryResult) {
             admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_list');
         }
 
         $users = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($queryResult)) {
             $row['is_active'] = ($row['is_active'] === 't' || $row['is_active'] === true);
             $users[] = $row;
         }
@@ -108,8 +108,8 @@ if ($action === 'users_list') {
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -144,7 +144,7 @@ if ($action === 'users_add') {
         $conn = db_connect();
 
         $hasContact = admin_user_contact_columns($conn);
-        if (!$hasContact && array_filter($contact, static fn($v) => $v !== null) !== []) {
+        if (!$hasContact && array_filter($contact, static fn($value) => $value !== null) !== []) {
             throw new AdminApiMessage(
                 'Contact details need the 3.3_user_contact migration '
                 . '(Migrations → Initialize System Tables). Leave them empty to create '
@@ -154,28 +154,28 @@ if ($action === 'users_add') {
 
         $newSalt = bin2hex(random_bytes(32));
         $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
-        $cols    = 'username, password_hash, salt, password_algo, password_params, is_active, role';
+        $columns    = 'username, password_hash, salt, password_algo, password_params, is_active, role';
         $vals    = '$1, $2, $3, $4, $5, true, $6';
         $params  = [$username, $hash, $newSalt, 'argon2id', json_encode(ARGON2_OPTIONS), $role];
         if ($hasContact) {
-            $cols  .= ', first_name, last_name, email, phone';
+            $columns  .= ', first_name, last_name, email, phone';
             $vals  .= ', $7, $8, $9, $10';
             $params = array_merge($params, $contact);
         }
-        $sql = 'INSERT INTO ' . sys_table('users') . " ({$cols}) VALUES ({$vals}) RETURNING id";
-        $res = @pg_query_params($conn, $sql, $params);
-        if (!$res) {
+        $sql = 'INSERT INTO ' . sys_table('users') . " ({$columns}) VALUES ({$vals}) RETURNING id";
+        $queryResult = @pg_query_params($conn, $sql, $params);
+        if (!$queryResult) {
             admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_add');
         }
-        $newRow = pg_fetch_assoc($res);
+        $newRow = pg_fetch_assoc($queryResult);
         $newUserId = (int)($newRow['id'] ?? 0);
         log_user_action($conn, $adminActorId, 'ADD_USER', 'users', $newUserId);
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -195,16 +195,16 @@ if ($action === 'users_toggle') {
         require_once __DIR__ . '/../../includes/api_helpers.php';
         $conn = db_connect();
         $sql = "UPDATE " . sys_table('users') . " SET is_active = $1 WHERE id = $2";
-        $res = @pg_query_params($conn, $sql, [$isActive ? 'true' : 'false', $userId]);
-        if (!$res) {
+        $queryResult = @pg_query_params($conn, $sql, [$isActive ? 'true' : 'false', $userId]);
+        if (!$queryResult) {
             admin_db_fail($conn, 'users_toggle');
         }
         log_user_action($conn, $adminActorId, 'TOGGLE_USER', 'users', $userId);
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -225,16 +225,16 @@ if ($action === 'users_update_role') {
         require_once __DIR__ . '/../../includes/api_helpers.php';
         $conn = db_connect();
         $sql = "UPDATE " . sys_table('users') . " SET role = $1 WHERE id = $2";
-        $res = @pg_query_params($conn, $sql, [$role, $userId]);
-        if (!$res) {
+        $queryResult = @pg_query_params($conn, $sql, [$role, $userId]);
+        if (!$queryResult) {
             admin_db_fail($conn, 'users_update_role');
         }
         log_user_action($conn, $adminActorId, 'UPDATE_ROLE', 'users', $userId);
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -266,13 +266,13 @@ if ($action === 'users_update_contact') {
         }
         $sql = 'UPDATE ' . sys_table('users')
             . ' SET first_name = $1, last_name = $2, email = $3, phone = $4 WHERE id = $5';
-        $res = @pg_query_params($conn, $sql, array_merge($contact, [$userId]));
-        if (!$res) {
+        $queryResult = @pg_query_params($conn, $sql, array_merge($contact, [$userId]));
+        if (!$queryResult) {
             admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_update_contact');
         }
 
-        if (pg_affected_rows($res) === 0) {
+        if (pg_affected_rows($queryResult) === 0) {
             admin_err('User not found.');
         }
         log_user_action($conn, $adminActorId, 'UPDATE_USER_CONTACT', 'users', $userId);
@@ -288,8 +288,8 @@ if ($action === 'users_update_contact') {
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -317,20 +317,20 @@ if ($action === 'users_change_password') {
         $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
         $sql     = 'UPDATE ' . sys_table('users')
             . ' SET password_hash = $1, salt = $2, password_algo = $3, password_params = $4 WHERE id = $5';
-        $res = @pg_query_params($conn, $sql, [
+        $queryResult = @pg_query_params($conn, $sql, [
             $hash, $newSalt, 'argon2id',
             json_encode(ARGON2_OPTIONS),
             $userId,
         ]);
-        if (!$res) {
+        if (!$queryResult) {
             admin_db_fail($conn, 'users_change_password');
         }
         log_user_action($conn, $adminActorId, 'CHANGE_PASSWORD', 'users', $userId);
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -339,18 +339,21 @@ if ($action === 'users_stats') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn    = db_connect();
-        $tUsers  = sys_table('users');
-        $tLog    = sys_table('users_log');
+        $usersTable  = sys_table('users');
+        $usersLogTable    = sys_table('users_log');
 
-        $cRes = @pg_query($conn, "SELECT role, is_active, COUNT(*) AS c FROM {$tUsers} GROUP BY role, is_active");
-        if (!$cRes) {
+        $countResult = @pg_query(
+            $conn,
+            "SELECT role, is_active, COUNT(*) AS c FROM {$usersTable} GROUP BY role, is_active"
+        );
+        if (!$countResult) {
             admin_db_fail($conn, 'users_stats');
         }
 
         $total = 0;
         $active = 0;
         $byRole = ['admin' => 0, 'editor' => 0, 'viewer' => 0];
-        while ($row = pg_fetch_assoc($cRes)) {
+        while ($row = pg_fetch_assoc($countResult)) {
             $count = (int) $row['c'];
             $total += $count;
             if ($row['is_active'] === 't' || $row['is_active'] === true) {
@@ -360,19 +363,19 @@ if ($action === 'users_stats') {
             $byRole[$role] += $count;
         }
 
-        $rRes = @pg_query($conn, "
+        $ragCountResult = @pg_query($conn, "
             SELECT ul.action, ul.target_table,
                    TO_CHAR(ul.created_at, 'YYYY-MM-DD HH24:MI') AS created_at,
                    u.username
-            FROM {$tLog} ul
-            LEFT JOIN {$tUsers} u ON u.id = ul.user_id
+            FROM {$usersLogTable} ul
+            LEFT JOIN {$usersTable} u ON u.id = ul.user_id
             WHERE ul.target_table = 'users'
             ORDER BY ul.created_at DESC
             LIMIT 10
         ");
         $recent = [];
-        if ($rRes) {
-            while ($row = pg_fetch_assoc($rRes)) {
+        if ($ragCountResult) {
+            while ($row = pg_fetch_assoc($ragCountResult)) {
                 $recent[] = $row;
             }
         }
@@ -387,8 +390,8 @@ if ($action === 'users_stats') {
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -439,21 +442,21 @@ function admin_user_access_entry(int $userId): array
     if (is_array($entry) && array_is_list($entry)) {
         $entry = ['tables' => $entry];
     }
-    $out = [];
+    $output = [];
     foreach (array_keys(USER_ACCESS_SCOPES) as $scope) {
         $list        = is_array($entry[$scope] ?? null) ? $entry[$scope] : [];
-        $out[$scope] = array_values(array_filter($list, 'is_string'));
+        $output[$scope] = array_values(array_filter($list, 'is_string'));
     }
-    return $out;
+    return $output;
 }
 
 function admin_assignable_items(): array
 {
-    $out = [];
+    $output = [];
     foreach (array_keys(USER_ACCESS_SCOPES) as $scope) {
-        $out[$scope] = access_scope_items($scope);
+        $output[$scope] = access_scope_items($scope);
     }
-    return $out;
+    return $output;
 }
 
 function admin_hidden_children_map(array $tables): array
@@ -481,13 +484,13 @@ if ($action === 'user_tables_get') {
 
     $scopes = [];
     $items  = [];
-    foreach (USER_ACCESS_SCOPES as $scope => $def) {
+    foreach (USER_ACCESS_SCOPES as $scope => $definition) {
         $scopes[] = [
             'key'   => $scope,
-            'title' => $def['title'],
+            'title' => $definition['title'],
 
-            'noun'  => $def['plural'],
-            'empty' => $def['empty'],
+            'noun'  => $definition['plural'],
+            'empty' => $definition['empty'],
         ];
 
         $items[$scope] = (object) $assignable[$scope];
@@ -517,7 +520,7 @@ if ($action === 'user_tables_save') {
 
     $assignable = admin_assignable_items();
     $clean      = [];
-    foreach (USER_ACCESS_SCOPES as $scope => $def) {
+    foreach (USER_ACCESS_SCOPES as $scope => $definition) {
         if (!is_array($data[$scope] ?? null)) {
             continue;
         }
@@ -526,7 +529,7 @@ if ($action === 'user_tables_save') {
             if (!is_string($name) || !isset($assignable[$scope][$name])) {
                 echo json_encode([
                     'status' => 'error',
-                    'error'  => 'Unknown ' . $def['noun'] . ' in selection.',
+                    'error'  => 'Unknown ' . $definition['noun'] . ' in selection.',
                 ]);
                 throw ResponseException::sent();
             }
@@ -542,15 +545,15 @@ if ($action === 'user_tables_save') {
         require_once __DIR__ . '/../../includes/api_helpers.php';
         $conn = db_connect();
 
-        $uRes = @pg_query_params(
+        $usersResult = @pg_query_params(
             $conn,
             'SELECT id, role FROM ' . sys_table('users') . ' WHERE id = $1',
             [$userId]
         );
-        if (!$uRes) {
+        if (!$usersResult) {
             admin_db_fail($conn, 'user_tables_save');
         }
-        $target = pg_fetch_assoc($uRes);
+        $target = pg_fetch_assoc($usersResult);
         if (!$target) {
             admin_err('User not found.');
         }
@@ -573,10 +576,10 @@ if ($action === 'user_tables_save') {
             $users[(string) $userId] = $entry;
         }
 
-        $idRes = @pg_query($conn, 'SELECT id FROM ' . sys_table('users'));
-        if ($idRes) {
+        $idsResult = @pg_query($conn, 'SELECT id FROM ' . sys_table('users'));
+        if ($idsResult) {
             $live = [];
-            while ($row = pg_fetch_assoc($idRes)) {
+            while ($row = pg_fetch_assoc($idsResult)) {
                 $live[(string) (int) $row['id']] = true;
             }
             $users = array_intersect_key($users, $live);
@@ -603,8 +606,8 @@ if ($action === 'user_tables_save') {
         echo json_encode(['status' => 'success'] + $clean);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

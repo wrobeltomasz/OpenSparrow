@@ -82,10 +82,10 @@ final class AdminHelpersTest extends TestCase
     }
 
     #[DataProvider('unusableDayCounts')]
-    public function testPurgeDaysRejectsAnUnusableWindow(mixed $raw): void
+    public function testPurgeDaysRejectsAnUnusableWindow(mixed $rawDays): void
     {
         $this->expectException(\AdminApiMessage::class);
-        admin_purge_days(['days' => $raw]);
+        admin_purge_days(['days' => $rawDays]);
     }
 
     public function testPurgeScopeReadsAWindowOrAnExplicitClearAll(): void
@@ -146,9 +146,9 @@ final class AdminHelpersTest extends TestCase
                 'admin_purge_older_than', 'admin_purge_days', 'admin_purge_scope',
                 'admin_read_settings', 'admin_write_settings', 'admin_save_settings',
                 'admin_run_cron_script',
-            ] as $fn
+            ] as $callback
         ) {
-            $this->assertTrue(function_exists($fn), "Helper {$fn}() is missing.");
+            $this->assertTrue(function_exists($callback), "Helper {$callback}() is missing.");
         }
     }
 
@@ -156,15 +156,15 @@ final class AdminHelpersTest extends TestCase
     {
         $this->assertTrue(function_exists('require_not_demo'));
 
-        $fn = new \ReflectionFunction('require_not_demo');
+        $callback = new \ReflectionFunction('require_not_demo');
         $this->assertSame(
             403,
-            $fn->getParameters()[1]->getDefaultValue(),
+            $callback->getParameters()[1]->getDefaultValue(),
             'A demo-mode rejection should carry HTTP 403, not a bare 200 body.'
         );
         $this->assertStringContainsString(
             'includes' . DIRECTORY_SEPARATOR . 'api_helpers.php',
-            (string) $fn->getFileName(),
+            (string) $callback->getFileName(),
             'require_not_demo() must be defined in includes/api_helpers.php.'
         );
     }

@@ -43,13 +43,13 @@ $sql = "
     FROM " . sys_table('files') . "
     WHERE uuid = $1
 ";
-$res = @pg_query_params($conn, $sql, [$uuid]);
-if (!$res || pg_num_rows($res) === 0) {
+$result = @pg_query_params($conn, $sql, [$uuid]);
+if (!$result || pg_num_rows($result) === 0) {
     throw new NotFoundException('File not found in database');
 }
 
-$row = pg_fetch_assoc($res);
-pg_free_result($res);
+$row = pg_fetch_assoc($result);
+pg_free_result($result);
 
 if ($row['deleted_at'] !== null) {
     throw new NotFoundException('File was deleted');
@@ -62,13 +62,13 @@ if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
     $schema   = config_get('schema');
     $tableCfg = $schema['tables'][$relatedTable] ?? null;
     if (is_array($tableCfg)) {
-        $uid  = (int) $_SESSION['user_id'];
+        $userId  = (int) $_SESSION['user_id'];
         $role = $_SESSION['role'] ?? '';
 
         if (!user_can_access_table((string) $relatedTable)) {
             throw new NotFoundException('File not found in database');
         }
-        if (!can_access_record($conn, $tableCfg, $relatedTable, (int) $relatedId, $uid, $role)) {
+        if (!can_access_record($conn, $tableCfg, $relatedTable, (int) $relatedId, $userId, $role)) {
             throw new NotFoundException('File not found in database');
         }
     }
@@ -119,7 +119,7 @@ function serveThumbnail(string $path, string $mime): void
         return;
     }
 
-    $src = match ($mime) {
+    $source = match ($mime) {
         'image/jpeg' => @imagecreatefromjpeg($path),
         'image/png'  => @imagecreatefrompng($path),
         'image/gif'  => @imagecreatefromgif($path),
@@ -127,7 +127,7 @@ function serveThumbnail(string $path, string $mime): void
         default      => null,
     };
 
-    if (!$src) {
+    if (!$source) {
         header('Content-Type: ' . $mime);
         header('Cache-Control: private, max-age=' . FILE_CACHE_MAX_AGE);
         readfile($path);
@@ -135,11 +135,11 @@ function serveThumbnail(string $path, string $mime): void
     }
 
     $maxW = THUMBNAIL_MAX_WIDTH;
-    $origW = imagesx($src);
-    $origH = imagesy($src);
+    $origW = imagesx($source);
+    $origH = imagesy($source);
 
     if ($origW <= $maxW) {
-        $thumb = $src;
+        $thumb = $source;
     } else {
         $ratio = $maxW / $origW;
         $newH  = (int) round($origH * $ratio);
@@ -150,7 +150,7 @@ function serveThumbnail(string $path, string $mime): void
             imagesavealpha($thumb, true);
         }
 
-        imagecopyresampled($thumb, $src, 0, 0, 0, 0, $maxW, $newH, $origW, $origH);
+        imagecopyresampled($thumb, $source, 0, 0, 0, 0, $maxW, $newH, $origW, $origH);
     }
 
     header('Content-Type: ' . $mime);
@@ -164,7 +164,7 @@ function serveThumbnail(string $path, string $mime): void
     };
 
     imagedestroy($thumb);
-    if ($thumb !== $src) {
-        imagedestroy($src);
+    if ($thumb !== $source) {
+        imagedestroy($source);
     }
 }

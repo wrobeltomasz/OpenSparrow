@@ -26,9 +26,9 @@ final class TextFieldTest extends TestCase
     private function col(
         string $type = 'text',
         ?string $regexp = null,
-        ?string $msg = null
+        ?string $message = null
     ): ColumnConfig {
-        return new ColumnConfig('name', $type, 'Name', false, false, true, [], [], $regexp, $msg);
+        return new ColumnConfig('name', $type, 'Name', false, false, true, [], [], $regexp, $message);
     }
 
     public function testSupportsAllTypes(): void
@@ -40,20 +40,20 @@ final class TextFieldTest extends TestCase
 
     public function testBindWithValue(): void
     {
-        $bv = $this->field->bind('name', ['name' => 'Alice']);
-        $this->assertSame('Alice', $bv->value);
+        $boundValue = $this->field->bind('name', ['name' => 'Alice']);
+        $this->assertSame('Alice', $boundValue->value);
     }
 
     public function testBindEmptyReturnsNull(): void
     {
-        $bv = $this->field->bind('name', ['name' => '']);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('name', ['name' => '']);
+        $this->assertNull($boundValue->value);
     }
 
     public function testBindMissingKeyReturnsNull(): void
     {
-        $bv = $this->field->bind('name', []);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('name', []);
+        $this->assertNull($boundValue->value);
     }
 
     public function testRenderOutputsTextInput(): void
@@ -65,8 +65,8 @@ final class TextFieldTest extends TestCase
 
     public function testRenderAddsValidationAttributes(): void
     {
-        $col  = $this->col('text', '^[A-Z]+$', 'Must be uppercase');
-        $html = $this->field->render($col, '', new RenderContext(false));
+        $column  = $this->col('text', '^[A-Z]+$', 'Must be uppercase');
+        $html = $this->field->render($column, '', new RenderContext(false));
         $this->assertStringContainsString('data-pattern="^[A-Z]+$"', $html);
         $this->assertStringContainsString('data-message="Must be uppercase"', $html);
     }

@@ -91,7 +91,7 @@ $dashCfg  = loadMenuConfig('dashboard', $includeDir);
 $calCfg   = loadMenuConfig('calendar', $includeDir);
 $boardCfg = loadMenuConfig('board', $includeDir);
 $filesCfg = loadMenuConfig('files', $includeDir);
-$wfCfg    = loadMenuConfig('workflows', $includeDir);
+$workflowsConfig    = loadMenuConfig('workflows', $includeDir);
 $viewsCfg = loadMenuConfig('views', $includeDir);
 
 $menuCatalog = [
@@ -130,17 +130,17 @@ foreach (filter_by_user_access('boards', $boardCfg['boards'] ?? []) as $bItem) {
     if (!user_can_access_table((string) $bItem['table'])) {
         continue;
     }
-    $bId             = (string) ($bItem['id'] ?? '');
-    if ($bId === '') {
+    $boardId             = (string) ($bItem['id'] ?? '');
+    if ($boardId === '') {
         continue;
     }
     $boardChildren[] = [
         'type'   => 'board',
-        'href'   => 'board.php?board=' . urlencode($bId),
+        'href'   => 'board.php?board=' . urlencode($boardId),
         'name'   => $bItem['menu_name'] ?? 'Board',
         'icon'   => $bItem['menu_icon'] ?? '',
         'hidden' => false,
-        'active' => $currentPage === 'board.php' && $currentBoard === $bId,
+        'active' => $currentPage === 'board.php' && $currentBoard === $boardId,
     ];
 }
 if (!empty($boardChildren)) {
@@ -156,7 +156,7 @@ if (!empty($boardChildren)) {
 }
 
 $workflowChildren = [];
-foreach (filter_by_user_access('workflows', $wfCfg['workflows'] ?? []) as $wfItem) {
+foreach (filter_by_user_access('workflows', $workflowsConfig['workflows'] ?? []) as $wfItem) {
     $wfId = (string) ($wfItem['id'] ?? '');
     if ($wfId === '' || !workflow_tables_in_scope($wfItem)) {
         continue;
@@ -176,9 +176,9 @@ if (!empty($workflowChildren)) {
     $menuCatalog['workflows'] = [
         'type'      => 'workflows',
         'href'      => 'index.php?workflows=1',
-        'name'      => $wfCfg['menu_name'] ?? 'Workflows',
-        'icon'      => $wfCfg['menu_icon'] ?? '',
-        'hidden'    => !empty($wfCfg['hidden']),
+        'name'      => $workflowsConfig['menu_name'] ?? 'Workflows',
+        'icon'      => $workflowsConfig['menu_icon'] ?? '',
+        'hidden'    => !empty($workflowsConfig['hidden']),
         'active'    => $isWorkflows && $currentPage === 'index.php' && $currentWorkflow === '',
         'data-page' => 'workflows',
         'children'  => $workflowChildren,
@@ -246,23 +246,23 @@ if (!empty($printChildren)) {
     ];
 }
 
-foreach ($tables as $tName => $tConfig) {
+foreach ($tables as $tableName => $tableConfig) {
     $isActive = false;
     if ($currentPage === 'index.php' && !$isWorkflows) {
-        if ($currentTable === $tName) {
+        if ($currentTable === $tableName) {
             $isActive = true;
-        } elseif (empty($currentTable) && $tName === array_key_first($tables)) {
+        } elseif (empty($currentTable) && $tableName === array_key_first($tables)) {
             $isActive = true;
         }
     }
-    $menuCatalog[$tName] = [
+    $menuCatalog[$tableName] = [
         'type'   => 'table',
-        'href'   => 'index.php?table=' . urlencode($tName),
-        'name'   => $tConfig['display_name'] ?? $tName,
-        'icon'   => $tConfig['icon'] ?? '',
-        'hidden' => !empty($tConfig['hidden']),
+        'href'   => 'index.php?table=' . urlencode($tableName),
+        'name'   => $tableConfig['display_name'] ?? $tableName,
+        'icon'   => $tableConfig['icon'] ?? '',
+        'hidden' => !empty($tableConfig['hidden']),
         'active' => $isActive,
-        'data-table' => $tName,
+        'data-table' => $tableName,
     ];
 }
 
@@ -279,13 +279,13 @@ if ($menuJson !== null && isset($menuJson['items']) && is_array($menuJson['items
         $item             = $menuCatalog[$key];
 
         $item['children'] = $item['children'] ?? [];
-        foreach ($entry['children'] ?? [] as $ce) {
-            $ck = $ce['key'] ?? '';
-            if ($ck === '' || !isset($menuCatalog[$ck])) {
+        foreach ($entry['children'] ?? [] as $configEntry) {
+            $configKey = $configEntry['key'] ?? '';
+            if ($configKey === '' || !isset($menuCatalog[$configKey])) {
                 continue;
             }
-            $item['children'][] = $menuCatalog[$ck];
-            $menuPlaced[$ck]    = true;
+            $item['children'][] = $menuCatalog[$configKey];
+            $menuPlaced[$configKey]    = true;
         }
         $menuItems[]       = $item;
         $menuPlaced[$key]  = true;

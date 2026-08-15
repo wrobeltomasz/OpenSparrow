@@ -27,16 +27,16 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
     #[\Override]
     public function find(TableConfig $cfg, string|int $id): ?array
     {
-        $cols       = array_unique(array_merge([$cfg->primaryKey], array_keys($cfg->dbColumns())));
-        $selectList = implode(', ', array_map([Identifier::class, 'quote'], $cols));
+        $columns       = array_unique(array_merge([$cfg->primaryKey], array_keys($cfg->dbColumns())));
+        $selectList = implode(', ', array_map([Identifier::class, 'quote'], $columns));
         $sql        = sprintf(
             'SELECT %s FROM %s WHERE %s = $1',
             $selectList,
             Identifier::quoteQualified($cfg->schema, $cfg->name),
             Identifier::quote($cfg->primaryKey)
         );
-        $res = $this->conn->execute($sql, [(string)$id]);
-        $row = pg_fetch_assoc($res);
+        $queryResult = $this->conn->execute($sql, [(string)$id]);
+        $row = pg_fetch_assoc($queryResult);
         return $row !== false ? $row : null;
     }
 
@@ -48,11 +48,11 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
         }
         $updates = [];
         $params  = [];
-        $i       = 1;
-        foreach ($data->bindings as $b) {
-            $updates[] = Identifier::quote($b['col']) . ' = ' . $b['bound']->placeholder($i);
-            $params[]  = $b['bound']->value;
-            $i++;
+        $placeholderIndex       = 1;
+        foreach ($data->bindings as $binding) {
+            $updates[] = Identifier::quote($binding['col']) . ' = ' . $binding['bound']->placeholder($placeholderIndex);
+            $params[]  = $binding['bound']->value;
+            $placeholderIndex++;
         }
         $params[] = (string)$id;
         $sql = sprintf(
@@ -60,7 +60,7 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
             Identifier::quoteQualified($cfg->schema, $cfg->name),
             implode(', ', $updates),
             Identifier::quote($cfg->primaryKey),
-            $i
+            $placeholderIndex
         );
         $this->conn->execute($sql, $params);
     }
@@ -74,28 +74,28 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
                 Identifier::quoteQualified($cfg->schema, $cfg->name),
                 Identifier::quote($cfg->primaryKey)
             );
-            $res = $this->conn->exec($sql);
+            $queryResult = $this->conn->exec($sql);
         } else {
-            $cols   = [];
-            $ph     = [];
+            $columns   = [];
+            $placeholders     = [];
             $params = [];
-            $i      = 1;
-            foreach ($data->bindings as $b) {
-                $cols[]   = Identifier::quote($b['col']);
-                $ph[]     = $b['bound']->placeholder($i);
-                $params[] = $b['bound']->value;
-                $i++;
+            $placeholderIndex      = 1;
+            foreach ($data->bindings as $binding) {
+                $columns[]   = Identifier::quote($binding['col']);
+                $placeholders[]     = $binding['bound']->placeholder($placeholderIndex);
+                $params[] = $binding['bound']->value;
+                $placeholderIndex++;
             }
             $sql = sprintf(
                 'INSERT INTO %s (%s) VALUES (%s) RETURNING %s',
                 Identifier::quoteQualified($cfg->schema, $cfg->name),
-                implode(', ', $cols),
-                implode(', ', $ph),
+                implode(', ', $columns),
+                implode(', ', $placeholders),
                 Identifier::quote($cfg->primaryKey)
             );
-            $res = $this->conn->execute($sql, $params);
+            $queryResult = $this->conn->execute($sql, $params);
         }
-        $row = pg_fetch_assoc($res);
+        $row = pg_fetch_assoc($queryResult);
         if ($row === false) {
             throw new \RuntimeException('INSERT returned no row.');
         }
@@ -108,13 +108,13 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
         $result    = [];
         $rawSchema = $this->schemas->raw();
 
-        foreach ($cfg->subtables as $sub) {
-            $sName = $sub['table'];
+        foreach ($cfg->subtables as $subtable) {
+            $sName = $subtable['table'];
             if (!$this->schemas->hasTable($sName)) {
                 continue;
             }
             $sTableCfg = $this->schemas->table($sName);
-            $sFk       = $sub['foreign_key'];
+            $foreignKey       = $subtable['foreign_key'];
 
             $selCols    = array_unique(array_merge(['id'], array_keys($sTableCfg->dbColumns())));
             $selColsSql = implode(', ', array_map([Identifier::class, 'quote'], $selCols));
@@ -123,20 +123,20 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
                 'SELECT %s FROM %s WHERE %s = $1 ORDER BY id DESC',
                 $selColsSql,
                 Identifier::quoteQualified($sTableCfg->schema, $sName),
-                Identifier::quote($sFk)
+                Identifier::quote($foreignKey)
             );
 
-            $sRes = $this->conn->execute($sql, [(string)$parentId]);
+            $subtableResult = $this->conn->execute($sql, [(string)$parentId]);
             $rows = [];
-            while ($sr = pg_fetch_assoc($sRes)) {
-                $rows[] = $sr;
+            while ($subtableRow = pg_fetch_assoc($subtableResult)) {
+                $rows[] = $subtableRow;
             }
-            pg_free_result($sRes);
+            pg_free_result($subtableResult);
 
             $rows = $this->fkLoader->expandDisplay($sTableCfg, $rows, $rawSchema);
 
             $result[] = [
-                'config' => $sub,
+                'config' => $subtable,
                 'rows'   => $rows,
                 'schema' => $sTableCfg,
             ];

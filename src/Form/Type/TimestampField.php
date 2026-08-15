@@ -17,47 +17,49 @@ use App\Form\RenderContext;
 final class TimestampField implements FieldTypeInterface
 {
     #[\Override]
-    public function supports(ColumnConfig $col, bool $hasForeignKey): bool
+    public function supports(ColumnConfig $column, bool $hasForeignKey): bool
     {
-        return $col->isTimestamp();
+        return $column->isTimestamp();
     }
 
     #[\Override]
     public function bind(string $colName, array $postData): BoundValue
     {
-        $val = $postData[$colName] ?? null;
-        if ($val === '' || $val === null) {
+        $value = $postData[$colName] ?? null;
+        if ($value === '' || $value === null) {
             return new BoundValue(null);
         }
 
-        return new BoundValue(str_replace('T', ' ', (string) $val));
+        return new BoundValue(str_replace('T', ' ', (string) $value));
     }
 
     #[\Override]
-    public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
+    public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string
     {
-        $raw    = $ctx->isPrefilled($col->name) ? $ctx->prefilledValue($col->name) : (string)($currentValue ?? '');
-        $val    = $this->toDatetimeLocal($raw);
-        $locked = $ctx->isLocked($col->name);
-        $name   = htmlspecialchars($col->name, ENT_QUOTES, 'UTF-8');
-        $reqAttr = ($col->notNull && !$locked) ? 'required' : '';
+        $rawValue    = $context->isPrefilled($column->name)
+            ? $context->prefilledValue($column->name)
+            : (string)($currentValue ?? '');
+        $value    = $this->toDatetimeLocal($rawValue);
+        $locked = $context->isLocked($column->name);
+        $name   = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
+        $reqAttr = ($column->notNull && !$locked) ? 'required' : '';
         $roAttr  = $locked ? 'readonly' : '';
 
         return '<input type="datetime-local" step="1" name="' . $name . '" value="'
-             . htmlspecialchars($val, ENT_QUOTES, 'UTF-8') . '" '
+             . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" '
              . $reqAttr . ' ' . $roAttr . ' />';
     }
 
-    private function toDatetimeLocal(string $val): string
+    private function toDatetimeLocal(string $value): string
     {
-        if ($val === '') {
+        if ($value === '') {
             return '';
         }
-        $v = str_replace(' ', 'T', $val);
+        $normalized = str_replace(' ', 'T', $value);
 
-        $v = (string) preg_replace('/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\.\d+/', '$1', $v);
+        $normalized = (string) preg_replace('/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\.\d+/', '$1', $normalized);
 
-        $v = (string) preg_replace('/([+-]\d{2}(:\d{2})?|Z)$/', '', $v);
-        return $v;
+        $normalized = (string) preg_replace('/([+-]\d{2}(:\d{2})?|Z)$/', '', $normalized);
+        return $normalized;
     }
 }

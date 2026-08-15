@@ -31,11 +31,11 @@ if (!function_exists('smtp_command')) {
     function smtp_command($sock, string $command, int $expectCode): array
     {
         fwrite($sock, $command . "\r\n");
-        $resp = smtp_read_response($sock);
-        if ($resp['code'] !== $expectCode) {
-            return ['ok' => false, 'error' => 'Unexpected response to "' . $command . '": ' . $resp['text']];
+        $response = smtp_read_response($sock);
+        if ($response['code'] !== $expectCode) {
+            return ['ok' => false, 'error' => 'Unexpected response to "' . $command . '": ' . $response['text']];
         }
-        return ['ok' => true, 'response' => $resp];
+        return ['ok' => true, 'response' => $response];
     }
 }
 
@@ -170,7 +170,7 @@ if (!function_exists('smtp_send')) {
         $bodyNormalized = str_replace("\n", "\r\n", $bodyNormalized);
         $bodyStuffed = preg_replace('/^\./m', '..', $bodyNormalized) ?? $bodyNormalized;
 
-        $headerSafe = static fn(string $s): string => str_replace(["\r", "\n"], ' ', $s);
+        $headerSafe = static fn(string $headerValue): string => str_replace(["\r", "\n"], ' ', $headerValue);
         $headers = 'From: ' . $headerSafe($from) . "\r\n"
             . 'To: ' . $headerSafe($to) . "\r\n"
             . 'Subject: =?UTF-8?B?' . base64_encode($headerSafe($subject)) . "?=\r\n"

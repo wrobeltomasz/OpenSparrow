@@ -21,14 +21,14 @@ $action = $_GET['action'] ?? '';
 require_once __DIR__ . '/../../includes/config_store.php';
 $schema = config_get('schema') ?? ['tables' => []];
 
-function pgRegexEscape(string $s): string
+function pgRegexEscape(string $text): string
 {
     $special = ['.', '*', '+', '?', '[', ']', '{', '}', '(', ')', '|', '^', '$', '\\'];
     $result  = '';
-    $len     = mb_strlen($s, 'UTF-8');
-    for ($i = 0; $i < $len; $i++) {
-        $ch      = mb_substr($s, $i, 1, 'UTF-8');
-        $result .= in_array($ch, $special, true) ? '\\' . $ch : $ch;
+    $length     = mb_strlen($text, 'UTF-8');
+    for ($i = 0; $i < $length; $i++) {
+        $character      = mb_substr($text, $i, 1, 'UTF-8');
+        $result .= in_array($character, $special, true) ? '\\' . $character : $character;
     }
     return $result;
 }
@@ -55,12 +55,12 @@ function buildAccentPattern(string $text): string
 
     $result = '';
     $lower  = mb_strtolower($text, 'UTF-8');
-    $len    = mb_strlen($lower, 'UTF-8');
+    $length    = mb_strlen($lower, 'UTF-8');
 
-    for ($i = 0; $i < $len; $i++) {
-        $ch = mb_substr($lower, $i, 1, 'UTF-8');
-        if (isset($map[$ch])) {
-            $lowerVariants = preg_split('//u', $map[$ch], -1, PREG_SPLIT_NO_EMPTY);
+    for ($i = 0; $i < $length; $i++) {
+        $character = mb_substr($lower, $i, 1, 'UTF-8');
+        if (isset($map[$character])) {
+            $lowerVariants = preg_split('//u', $map[$character], -1, PREG_SPLIT_NO_EMPTY);
             $upperVariants = array_map(fn($char) => mb_strtoupper($char, 'UTF-8'), $lowerVariants);
             $all = array_unique(array_merge($lowerVariants, $upperVariants));
 
@@ -69,7 +69,7 @@ function buildAccentPattern(string $text): string
             }, $all));
             $result .= '[' . $escaped . ']';
         } else {
-            $result .= pgRegexEscape($ch);
+            $result .= pgRegexEscape($character);
         }
     }
     return $result;
@@ -82,22 +82,22 @@ function validateInput(array $body, array $schema, $conn): array
 
     try {
         $tableCfg = safe_table($schema, $tableName);
-    } catch (\RuntimeException $e) {
+    } catch (\RuntimeException $exception) {
         throw new BadRequestException('Unknown table');
     }
 
     require_table_access($tableName);
 
-    $cols = $tableCfg['columns'] ?? [];
-    if (!isset($cols[$colName]) || ($cols[$colName]['type'] ?? '') === 'virtual') {
+    $columns = $tableCfg['columns'] ?? [];
+    if (!isset($columns[$colName]) || ($columns[$colName]['type'] ?? '') === 'virtual') {
         throw new BadRequestException('Invalid column');
     }
 
     $schemaName = $tableCfg['schema'] ?? 'public';
-    $tblSql     = pg_ident($schemaName) . '.' . pg_ident($tableName);
+    $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
     $colSql     = pg_ident($colName);
 
-    return [$tableCfg, $schemaName, $tableName, $colSql, $tblSql];
+    return [$tableCfg, $schemaName, $tableName, $colSql, $qualifiedTable];
 }
 
 function buildExpressions(
@@ -134,7 +134,7 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
         throw ResponseException::encoded(['count' => 0, 'rows' => []]);
     }
 
-    [$tableCfg, , $tableName, $colSql, $tblSql] = validateInput($body, $schema, $conn);
+    [$tableCfg, , $tableName, $colSql, $qualifiedTable] = validateInput($body, $schema, $conn);
 
     [$pattern, $flags, $whereOp, $safeReplace] = buildExpressions(
         $find,
@@ -148,60 +148,60 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
     $replaceExp = "regexp_replace({$colSql}, \$1, \$2, '{$flags}')";
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $uid      = (int)$_SESSION['user_id'];
+        $userId      = (int)$_SESSION['user_id'];
         $ownerCnt = owner_restriction_sql('_t.id', 2, 3);
         $ownerRow = owner_restriction_sql('_t.id', 3, 4);
 
-        $cntRes = @pg_query_params(
+        $countResult = @pg_query_params(
             $conn,
-            "SELECT COUNT(*) FROM {$tblSql} AS _t WHERE {$whereSql}{$ownerCnt}",
-            [$pattern, $tableName, $uid]
+            "SELECT COUNT(*) FROM {$qualifiedTable} AS _t WHERE {$whereSql}{$ownerCnt}",
+            [$pattern, $tableName, $userId]
         );
-        if (!$cntRes) {
+        if (!$countResult) {
             throw new ServerErrorException('Database query failed.');
         }
-        $count = (int)pg_fetch_result($cntRes, 0, 0);
-        pg_free_result($cntRes);
+        $count = (int)pg_fetch_result($countResult, 0, 0);
+        pg_free_result($countResult);
 
-        $rowRes = @pg_query_params(
+        $rowResult = @pg_query_params(
             $conn,
             "SELECT _t.id, {$colSql} AS before_val, {$replaceExp} AS after_val
-             FROM {$tblSql} AS _t
+             FROM {$qualifiedTable} AS _t
              WHERE {$whereSql}{$ownerRow}
              LIMIT 20",
-            [$pattern, $safeReplace, $tableName, $uid]
+            [$pattern, $safeReplace, $tableName, $userId]
         );
     } else {
-        $cntRes = @pg_query_params(
+        $countResult = @pg_query_params(
             $conn,
-            "SELECT COUNT(*) FROM {$tblSql} WHERE {$whereSql}",
+            "SELECT COUNT(*) FROM {$qualifiedTable} WHERE {$whereSql}",
             [$pattern]
         );
-        if (!$cntRes) {
+        if (!$countResult) {
             throw new ServerErrorException('Database query failed.');
         }
-        $count = (int)pg_fetch_result($cntRes, 0, 0);
-        pg_free_result($cntRes);
+        $count = (int)pg_fetch_result($countResult, 0, 0);
+        pg_free_result($countResult);
 
-        $rowRes = @pg_query_params(
+        $rowResult = @pg_query_params(
             $conn,
             "SELECT id, {$colSql} AS before_val, {$replaceExp} AS after_val
-             FROM {$tblSql}
+             FROM {$qualifiedTable}
              WHERE {$whereSql}
              LIMIT 20",
             [$pattern, $safeReplace]
         );
     }
 
-    if (!$rowRes) {
+    if (!$rowResult) {
         throw new ServerErrorException('Database query failed.');
     }
 
     $rows = [];
-    while ($row = pg_fetch_assoc($rowRes)) {
+    while ($row = pg_fetch_assoc($rowResult)) {
         $rows[] = ['id' => $row['id'], 'before' => $row['before_val'], 'after' => $row['after_val']];
     }
-    pg_free_result($rowRes);
+    pg_free_result($rowResult);
 
     throw ResponseException::encoded(['count' => $count, 'rows' => $rows]);
 }
@@ -219,7 +219,7 @@ if ($action === 'data_cleanup_apply' && $method === 'POST') {
         throw new BadRequestException('Find string required');
     }
 
-    [$tableCfg, , $tableName, $colSql, $tblSql] = validateInput($body, $schema, $conn);
+    [$tableCfg, , $tableName, $colSql, $qualifiedTable] = validateInput($body, $schema, $conn);
 
     [$pattern, $flags, $whereOp, $safeReplace] = buildExpressions(
         $find,
@@ -235,32 +235,32 @@ if ($action === 'data_cleanup_apply' && $method === 'POST') {
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $uid      = (int)$_SESSION['user_id'];
+        $userId      = (int)$_SESSION['user_id'];
         $ownerSql = owner_restriction_sql('_t.id', 3, 4);
-        $res = @pg_query_params(
+        $queryResult = @pg_query_params(
             $conn,
-            "UPDATE {$tblSql} AS _t SET {$colSql} = {$replaceExp} WHERE {$whereSql}{$ownerSql}",
-            [$pattern, $safeReplace, $tableName, $uid]
+            "UPDATE {$qualifiedTable} AS _t SET {$colSql} = {$replaceExp} WHERE {$whereSql}{$ownerSql}",
+            [$pattern, $safeReplace, $tableName, $userId]
         );
     } else {
-        $res = @pg_query_params(
+        $queryResult = @pg_query_params(
             $conn,
-            "UPDATE {$tblSql} SET {$colSql} = {$replaceExp} WHERE {$whereSql}",
+            "UPDATE {$qualifiedTable} SET {$colSql} = {$replaceExp} WHERE {$whereSql}",
             [$pattern, $safeReplace]
         );
     }
 
-    if (!$res) {
+    if (!$queryResult) {
         @pg_query($conn, 'ROLLBACK');
         throw new ServerErrorException('Database update failed.');
     }
 
-    $affected = pg_affected_rows($res);
-    pg_free_result($res);
+    $affected = pg_affected_rows($queryResult);
+    pg_free_result($queryResult);
     @pg_query($conn, 'COMMIT');
 
-    $uid = (int)$_SESSION['user_id'];
-    log_user_action($conn, $uid, 'DATA_CLEANUP', $tableName, null);
+    $userId = (int)$_SESSION['user_id'];
+    log_user_action($conn, $userId, 'DATA_CLEANUP', $tableName, null);
 
     throw ResponseException::encoded(['updated' => $affected]);
 }

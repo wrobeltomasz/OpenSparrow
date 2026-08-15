@@ -22,7 +22,7 @@ if (!empty($_SESSION['user_id']) && !(defined('DEMO_MODE') && DEMO_MODE)) {
         $clickstatsOn = clickstats_settings(60)['enabled'];
     } catch (\App\Exception\ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
+    } catch (Throwable $exception) {
         $clickstatsOn = false;
     }
 }

@@ -16,14 +16,14 @@ final class ColumnConfigTest extends TestCase
 {
     public function testIsVirtual(): void
     {
-        $col = new ColumnConfig('computed', 'virtual', 'Computed');
-        $this->assertTrue($col->isVirtual());
+        $column = new ColumnConfig('computed', 'virtual', 'Computed');
+        $this->assertTrue($column->isVirtual());
     }
 
     public function testIsNotVirtual(): void
     {
-        $col = new ColumnConfig('name', 'text', 'Name');
-        $this->assertFalse($col->isVirtual());
+        $column = new ColumnConfig('name', 'text', 'Name');
+        $this->assertFalse($column->isVirtual());
     }
 
     public function testIsBool(): void

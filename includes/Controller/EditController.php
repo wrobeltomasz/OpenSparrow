@@ -189,22 +189,22 @@ final class EditController
                 $this->session->userId(),
                 $oldRecord
             );
-            foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
+            foreach ($m2mConfigs as $m2mIndex => $m2mConfig) {
                 $selected = array_values(array_filter(
                     (array) $request->post('m2m_' . $m2mIndex, []),
                     'ctype_digit'
                 ));
-                $this->m2m->sync($m2mCfg, $id, $selected, $rawSchema);
+                $this->m2m->sync($m2mConfig, $id, $selected, $rawSchema);
             }
             throw new RedirectException(
                 ($request->post('_save_action') ?? 'exit') === 'stay'
                     ? 'edit.php?table=' . urlencode($table) . '&id=' . urlencode((string) $id) . '&saved=1'
                     : 'index.php?table=' . urlencode($table)
             );
-        } catch (ValidationException $e) {
-            return $e->getMessage();
-        } catch (\RuntimeException $e) {
-            error_log('[edit.php] ' . $e->getMessage());
+        } catch (ValidationException $exception) {
+            return $exception->getMessage();
+        } catch (\RuntimeException $exception) {
+            error_log('[edit.php] ' . $exception->getMessage());
             return 'Database error. Please try again.';
         }
     }
@@ -216,8 +216,8 @@ final class EditController
         bool $isReadOnly
     ): array {
         $fkOptions = [];
-        foreach ($tableCfg->foreignKeys as $colName => $fkCfg) {
-            $fkOptions[$colName] = $this->fkLoader->load($fkCfg, $rawSchema);
+        foreach ($tableCfg->foreignKeys as $colName => $foreignKeyConfig) {
+            $fkOptions[$colName] = $this->fkLoader->load($foreignKeyConfig, $rawSchema);
         }
 
         $renderContext = new RenderContext($isReadOnly, $fkOptions);
@@ -242,12 +242,12 @@ final class EditController
     private function m2mGroups(array $m2mConfigs, array $rawSchema, int $id, bool $isReadOnly): array
     {
         $m2mGroups = [];
-        foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
+        foreach ($m2mConfigs as $m2mIndex => $m2mConfig) {
             $m2mGroups[] = os_m2m_group(
                 (int) $m2mIndex,
-                $m2mCfg,
-                $this->m2m->options($m2mCfg, $rawSchema),
-                $this->m2m->selected($m2mCfg, $id, $rawSchema),
+                $m2mConfig,
+                $this->m2m->options($m2mConfig, $rawSchema),
+                $this->m2m->selected($m2mConfig, $id, $rawSchema),
                 $isReadOnly
             );
         }

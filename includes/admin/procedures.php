@@ -32,13 +32,13 @@ if ($action === 'list_procedures') {
                    AND r.routine_schema NOT LIKE 'pg_temp%'
                  ORDER BY r.routine_schema, r.routine_name, r.specific_name, p.ordinal_position";
 
-        $res = @pg_query($conn, $sql);
-        if (!$res) {
+        $result = @pg_query($conn, $sql);
+        if (!$result) {
             admin_db_fail($conn, 'list_procedures');
         }
 
         $bySpecific = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $key = (string)$row['specific_name'];
             if (!isset($bySpecific[$key])) {
                 $bySpecific[$key] = [
@@ -61,11 +61,11 @@ if ($action === 'list_procedures') {
         admin_ok(['procedures' => array_values($bySpecific)]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
+    } catch (Throwable $exception) {
         throw HttpException::fromStatus(
             500,
-            (string) admin_error_message($e),
-            ['status' => 'error', 'error' => admin_error_message($e)],
+            (string) admin_error_message($exception),
+            ['status' => 'error', 'error' => admin_error_message($exception)],
         );
     }
 }

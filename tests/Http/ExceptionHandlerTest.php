@@ -77,7 +77,7 @@ final class ExceptionHandlerTest extends TestCase
             $this->markTestSkipped('php-cgi is not available, so response headers cannot be captured.');
         }
 
-        $raw = $this->execute([$binary], [
+        $rawOutput = $this->execute([$binary], [
             'OS_TEST_EXCEPTION'   => $exception,
             'OS_TEST_MODE'        => $mode,
             'OS_TEST_ERROR_LOG'   => $this->errorLogFile,
@@ -87,7 +87,7 @@ final class ExceptionHandlerTest extends TestCase
             'REDIRECT_STATUS'     => '1',
         ]);
 
-        [$head, $body] = array_pad(preg_split('/\R\R/', $raw, 2) ?: [], 2, '');
+        [$head, $body] = array_pad(preg_split('/\R\R/', $rawOutput, 2) ?: [], 2, '');
 
         $headers = [];
         foreach (preg_split('/\R/', (string) $head) ?: [] as $line) {

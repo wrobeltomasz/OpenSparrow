@@ -23,8 +23,8 @@ if ($action === 'clickstats_load') {
         $exists = (bool) @pg_query($conn, "SELECT 1 FROM {$table} LIMIT 0");
         $total  = null;
         if ($exists) {
-            $res   = @pg_query($conn, "SELECT COUNT(*) FROM {$table}");
-            $total = $res ? (int) pg_fetch_result($res, 0, 0) : null;
+            $result   = @pg_query($conn, "SELECT COUNT(*) FROM {$table}");
+            $total = $result ? (int) pg_fetch_result($result, 0, 0) : null;
         }
 
         $row = config_get_row('clickstats');
@@ -78,19 +78,19 @@ if ($action === 'clickstats_log') {
         }
         $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
 
-        $countRes = @pg_query_params(
+        $countResult = @pg_query_params(
             $conn,
             "SELECT COUNT(*) FROM {$table} c LEFT JOIN {$users} u ON u.id = c.user_id{$whereSql}",
             $params
         );
-        if (!$countRes) {
+        if (!$countResult) {
             admin_db_fail($conn, 'clickstats_log:count');
         }
-        $total = (int) pg_fetch_result($countRes, 0, 0);
+        $total = (int) pg_fetch_result($countResult, 0, 0);
 
         $params[] = CLICKSTATS_LOG_LIMIT;
         $params[] = ($page - 1) * CLICKSTATS_LOG_LIMIT;
-        $rowsRes  = @pg_query_params(
+        $rowsResult  = @pg_query_params(
             $conn,
             "SELECT c.id, u.username, c.element, c.page, c.table_name, c.record_id, c.created_at
                FROM {$table} c
@@ -100,11 +100,11 @@ if ($action === 'clickstats_log') {
               LIMIT $" . (count($params) - 1) . " OFFSET $" . count($params),
             $params
         );
-        if (!$rowsRes) {
+        if (!$rowsResult) {
             admin_db_fail($conn, 'clickstats_log:rows');
         }
 
-        $topRes = @pg_query_params(
+        $topResult = @pg_query_params(
             $conn,
             "SELECT c.element, COUNT(*) AS clicks
                FROM {$table} c
@@ -117,8 +117,8 @@ if ($action === 'clickstats_log') {
         );
 
         admin_ok([
-            'rows'  => admin_fetch_all($rowsRes),
-            'top'   => $topRes ? admin_fetch_all($topRes) : [],
+            'rows'  => admin_fetch_all($rowsResult),
+            'top'   => $topResult ? admin_fetch_all($topResult) : [],
             'total' => $total,
             'page'  => $page,
             'limit' => CLICKSTATS_LOG_LIMIT,
@@ -139,10 +139,10 @@ if ($action === 'clickstats_purge_log') {
             admin_purge_older_than($table, $scope, 'clickstats_purge_log', 'created_at');
         }
 
-        $res = @pg_query($conn, "DELETE FROM {$table}");
-        if (!$res) {
+        $result = @pg_query($conn, "DELETE FROM {$table}");
+        if (!$result) {
             admin_db_fail($conn, 'clickstats_purge_log:all');
         }
-        admin_ok(['deleted' => pg_affected_rows($res)]);
+        admin_ok(['deleted' => pg_affected_rows($result)]);
     });
 }

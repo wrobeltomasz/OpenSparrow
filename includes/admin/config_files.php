@@ -55,12 +55,12 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     ];
 
     $schemaRaw = config_get('schema') ?? [];
-    foreach ($schemaRaw['tables'] ?? [] as $tName => $tConfig) {
-        $catalog[$tName] = [
-            'type' => 'table', 'key' => $tName,
-            'name'   => $tConfig['display_name'] ?? $tName,
-            'icon'   => $menuSanitizeIcon((string)($tConfig['icon'] ?? '')),
-            'hidden' => !empty($tConfig['hidden']),
+    foreach ($schemaRaw['tables'] ?? [] as $tableName => $tableConfig) {
+        $catalog[$tableName] = [
+            'type' => 'table', 'key' => $tableName,
+            'name'   => $tableConfig['display_name'] ?? $tableName,
+            'icon'   => $menuSanitizeIcon((string)($tableConfig['icon'] ?? '')),
+            'hidden' => !empty($tableConfig['hidden']),
             'children' => [],
         ];
     }
@@ -77,15 +77,15 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             $item = $catalog[$key];
             $item['children'] = [];
-            foreach ($entry['children'] ?? [] as $ce) {
-                $ck = $ce['key'] ?? '';
-                if ($ck === '' || !isset($catalog[$ck])) {
+            foreach ($entry['children'] ?? [] as $configEntry) {
+                $configKey = $configEntry['key'] ?? '';
+                if ($configKey === '' || !isset($catalog[$configKey])) {
                     continue;
                 }
-                $child = $catalog[$ck];
+                $child = $catalog[$configKey];
                 $child['children'] = [];
                 $item['children'][] = $child;
-                $placed[$ck] = true;
+                $placed[$configKey] = true;
             }
             $items[]      = $item;
             $placed[$key] = true;
@@ -126,13 +126,13 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $children = [];
         foreach ($entry['children'] ?? [] as $child) {
-            $ck = $child['key']  ?? '';
-            $ct = $child['type'] ?? '';
-            if (!in_array($ck, $validKeys, true) || !in_array($ct, $validTypes, true)) {
+            $configKey = $child['key']  ?? '';
+            $childType = $child['type'] ?? '';
+            if (!in_array($configKey, $validKeys, true) || !in_array($childType, $validTypes, true)) {
                 continue;
             }
 
-            $children[] = ['key' => $ck, 'children' => []];
+            $children[] = ['key' => $configKey, 'children' => []];
         }
         $sanitized[] = ['key' => $key, 'children' => $children];
     }

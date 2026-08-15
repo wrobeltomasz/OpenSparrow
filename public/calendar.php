@@ -15,12 +15,12 @@ $userCaps = $page['caps'];
 require_once __DIR__ . '/../includes/config_store.php';
 $calConfig = config_get('calendar') ?? [];
 $calendarSources = [];
-foreach (($calConfig['sources'] ?? []) as $src) {
-    if (!empty($src['table']) && !empty($src['date_column'])) {
+foreach (($calConfig['sources'] ?? []) as $source) {
+    if (!empty($source['table']) && !empty($source['date_column'])) {
         $calendarSources[] = [
-            'table'       => $src['table'],
-            'color'       => $src['color'] ?? '#3b82f6',
-            'date_column' => $src['date_column'],
+            'table'       => $source['table'],
+            'color'       => $source['color'] ?? '#3b82f6',
+            'date_column' => $source['date_column'],
         ];
     }
 }

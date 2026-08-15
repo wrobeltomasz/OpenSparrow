@@ -25,13 +25,13 @@ final readonly class PgFileRepository
                   AND related_field IS DISTINCT FROM $3
                 ORDER BY created_at DESC';
 
-        $res = @pg_query_params($this->conn->native(), $sql, [$table, (string)$id, IMAGES_FIELD]);
-        if (!$res) {
+        $result = @pg_query_params($this->conn->native(), $sql, [$table, (string)$id, IMAGES_FIELD]);
+        if (!$result) {
             return [];
         }
         $files = [];
-        while ($f = pg_fetch_assoc($res)) {
-            $files[] = $f;
+        while ($fileRow = pg_fetch_assoc($result)) {
+            $files[] = $fileRow;
         }
         return $files;
     }

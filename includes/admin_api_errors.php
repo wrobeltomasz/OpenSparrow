@@ -14,12 +14,12 @@ if (!class_exists('AdminApiMessage')) {
 }
 
 if (!function_exists('admin_error_message')) {
-    function admin_error_message(Throwable $e): string
+    function admin_error_message(Throwable $exception): string
     {
-        if ($e instanceof AdminApiMessage) {
-            return $e->getMessage();
+        if ($exception instanceof AdminApiMessage) {
+            return $exception->getMessage();
         }
-        error_log('[admin_api][unhandled] ' . get_class($e) . ': ' . $e->getMessage());
+        error_log('[admin_api][unhandled] ' . get_class($exception) . ': ' . $exception->getMessage());
         return 'Internal error. Check server logs for details.';
     }
 }
@@ -27,8 +27,8 @@ if (!function_exists('admin_error_message')) {
 if (!function_exists('admin_db_fail')) {
     function admin_db_fail($conn, string $context): void
     {
-        $raw = $conn !== null ? pg_last_error($conn) : 'no connection';
-        error_log('[admin_api][' . $context . '] ' . $raw);
+        $rawError = $conn !== null ? pg_last_error($conn) : 'no connection';
+        error_log('[admin_api][' . $context . '] ' . $rawError);
         throw new AdminApiMessage('Database operation failed. Check server logs for details.');
     }
 }

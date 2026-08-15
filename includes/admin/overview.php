@@ -17,12 +17,12 @@ if ($action === 'overview') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        $tUsers  = sys_table('users');
-        $uRes    = @pg_query(
+        $usersTable  = sys_table('users');
+        $usersResult    = @pg_query(
             $conn,
-            "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE is_active) AS active FROM {$tUsers}"
+            "SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE is_active) AS active FROM {$usersTable}"
         );
-        $uRow    = $uRes ? pg_fetch_assoc($uRes) : ['total' => 0, 'active' => 0];
+        $usersRow    = $usersResult ? pg_fetch_assoc($usersResult) : ['total' => 0, 'active' => 0];
 
         require_once __DIR__ . '/../config_store.php';
         $schemaObj   = config_get('schema');
@@ -33,8 +33,8 @@ if ($action === 'overview') {
         foreach ($schemaTables as $tableName => $tableDef) {
             $tableSchema = $tableDef['schema'] ?? 'public';
             $safeTable = sprintf('%s.%s', pg_ident($tableSchema), pg_ident((string) $tableName));
-            $cRes  = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$safeTable}");
-            $count = $cRes ? (int) pg_fetch_result($cRes, 0, 0) : 0;
+            $countResult  = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$safeTable}");
+            $count = $countResult ? (int) pg_fetch_result($countResult, 0, 0) : 0;
             $totalRec += $count;
             $tables[] = [
                 'name'  => $tableName,
@@ -42,18 +42,21 @@ if ($action === 'overview') {
                 'count' => $count,
             ];
         }
-        usort($tables, static fn($a, $b) => $b['count'] - $a['count']);
+        usort($tables, static fn($first, $second) => $second['count'] - $first['count']);
 
-        $tFiles = sys_table('files');
-        $fRes   = @pg_query(
+        $filesTable = sys_table('files');
+        $filesResult   = @pg_query(
             $conn,
-            "SELECT COUNT(*) AS n, COALESCE(SUM(size_bytes),0) AS total_bytes FROM {$tFiles} WHERE deleted_at IS NULL"
+            "SELECT COUNT(*) AS n, COALESCE(SUM(size_bytes),0) AS total_bytes"
+            . " FROM {$filesTable} WHERE deleted_at IS NULL"
         );
-        $fRow   = $fRes ? pg_fetch_assoc($fRes) : ['n' => 0, 'total_bytes' => 0];
+        $filesRow   = $filesResult ? pg_fetch_assoc($filesResult) : ['n' => 0, 'total_bytes' => 0];
 
-        $tRag   = sys_table('rag_files');
-        $rRes   = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$tRag}");
-        $ragCount = ($rRes && pg_num_rows($rRes) > 0) ? (int) pg_fetch_result($rRes, 0, 0) : 0;
+        $ragFilesTable   = sys_table('rag_files');
+        $ragCountResult   = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$ragFilesTable}");
+        $ragCount = ($ragCountResult && pg_num_rows($ragCountResult) > 0)
+            ? (int) pg_fetch_result($ragCountResult, 0, 0)
+            : 0;
 
         require_once __DIR__ . '/../config_store.php';
         $viewsObj  = config_get('views');
@@ -76,19 +79,19 @@ if ($action === 'overview') {
         $anonCount = (is_array($anonCfg) && is_array($anonCfg['rules'] ?? null)) ? count($anonCfg['rules']) : 0;
         $anonEnabled = is_array($anonCfg) && !empty($anonCfg['enabled']);
 
-        $tCronLog = sys_table('users_notifications_log');
-        $cLogRes  = @pg_query($conn, "
+        $cronLogTable = sys_table('users_notifications_log');
+        $configLogResult  = @pg_query($conn, "
             SELECT TO_CHAR(started_at, 'YYYY-MM-DD HH24:MI') AS started_at,
                    status, triggered_by,
                    COALESCE(notifications_created, 0) AS sent
-            FROM {$tCronLog}
+            FROM {$cronLogTable}
             ORDER BY started_at DESC
             LIMIT 5
         ");
         $cronRecent  = [];
         $lastCronRun = null;
-        if ($cLogRes) {
-            while ($row = pg_fetch_assoc($cLogRes)) {
+        if ($configLogResult) {
+            while ($row = pg_fetch_assoc($configLogResult)) {
                 if ($lastCronRun === null) {
                     $lastCronRun = $row['started_at'];
                 }
@@ -96,31 +99,31 @@ if ($action === 'overview') {
             }
         }
 
-        $tLog  = sys_table('users_log');
-        $aRes  = @pg_query($conn, "
+        $usersLogTable  = sys_table('users_log');
+        $auditLogResult  = @pg_query($conn, "
             SELECT ul.action, ul.target_table,
                    TO_CHAR(ul.created_at, 'YYYY-MM-DD HH24:MI') AS created_at,
                    u.username
-            FROM {$tLog} ul
-            LEFT JOIN {$tUsers} u ON u.id = ul.user_id
+            FROM {$usersLogTable} ul
+            LEFT JOIN {$usersTable} u ON u.id = ul.user_id
             ORDER BY ul.created_at DESC
             LIMIT 8
         ");
         $auditRecent = [];
-        if ($aRes) {
-            while ($row = pg_fetch_assoc($aRes)) {
+        if ($auditLogResult) {
+            while ($row = pg_fetch_assoc($auditLogResult)) {
                 $auditRecent[] = $row;
             }
         }
 
-        $dbSizeRes  = @pg_query($conn, 'SELECT pg_database_size(current_database()) AS sz');
-        $dbSizeBytes = ($dbSizeRes) ? (int) pg_fetch_result($dbSizeRes, 0, 0) : 0;
+        $databaseSizeResult  = @pg_query($conn, 'SELECT pg_database_size(current_database()) AS sz');
+        $dbSizeBytes = ($databaseSizeResult) ? (int) pg_fetch_result($databaseSizeResult, 0, 0) : 0;
 
-        $tMig   = sys_table('migrations');
-        $mRes   = @pg_query($conn, "SELECT name FROM {$tMig}");
+        $migrationsTable   = sys_table('migrations');
+        $migrationsResult   = @pg_query($conn, "SELECT name FROM {$migrationsTable}");
         $applied = [];
-        if ($mRes) {
-            while ($row = pg_fetch_row($mRes)) {
+        if ($migrationsResult) {
+            while ($row = pg_fetch_row($migrationsResult)) {
                 $applied[$row[0]] = true;
             }
         }
@@ -132,15 +135,15 @@ if ($action === 'overview') {
             '3.3_user_contact',
             '3.3_clickstats',
         ];
-        $pendingMig = count(array_filter($knownMig, static fn($n) => !isset($applied[$n])));
+        $pendingMig = count(array_filter($knownMig, static fn($migrationKey) => !isset($applied[$migrationKey])));
 
         $versionFile  = __DIR__ . '/../../includes/VERSION';
         $appVersion   = file_exists($versionFile) ? trim((string) file_get_contents($versionFile)) : 'unknown';
-        $pgVerRes     = @pg_query($conn, 'SELECT version()');
-        $pgVersionRaw = $pgVerRes ? (string) pg_fetch_result($pgVerRes, 0, 0) : '';
+        $postgresVersionResult     = @pg_query($conn, 'SELECT version()');
+        $pgVersionRaw = $postgresVersionResult ? (string) pg_fetch_result($postgresVersionResult, 0, 0) : '';
         $pgVersion    = '';
-        if (preg_match('/PostgreSQL\s+([\d.]+)/i', $pgVersionRaw, $m)) {
-            $pgVersion = $m[1];
+        if (preg_match('/PostgreSQL\s+([\d.]+)/i', $pgVersionRaw, $matches)) {
+            $pgVersion = $matches[1];
         }
         $displayErrors = ini_get('display_errors');
         $memoryLimit   = ini_get('memory_limit');
@@ -152,13 +155,13 @@ if ($action === 'overview') {
         echo json_encode([
             'status'            => 'success',
             'app_version'       => $appVersion,
-            'user_total'        => (int) $uRow['total'],
-            'user_active'       => (int) $uRow['active'],
+            'user_total'        => (int) $usersRow['total'],
+            'user_active'       => (int) $usersRow['active'],
             'table_count'       => count($tables),
             'tables'            => $tables,
             'total_records'     => $totalRec,
-            'file_count'        => (int) $fRow['n'],
-            'file_size_bytes'   => (int) $fRow['total_bytes'],
+            'file_count'        => (int) $filesRow['n'],
+            'file_size_bytes'   => (int) $filesRow['total_bytes'],
             'rag_count'         => $ragCount,
             'view_count'        => $viewCount,
             'automation_count'  => $autoCount,
@@ -185,8 +188,8 @@ if ($action === 'overview') {
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

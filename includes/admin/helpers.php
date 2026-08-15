@@ -49,16 +49,16 @@ function admin_try(callable $body): never
         $body();
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        throw ResponseException::json(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        throw ResponseException::json(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
 
-function admin_fetch_all(\PgSql\Result $res): array
+function admin_fetch_all(\PgSql\Result $queryResult): array
 {
     $rows = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($queryResult)) {
         $rows[] = $row;
     }
     return $rows;
@@ -105,10 +105,10 @@ function admin_purge_days(array $input): ?int
         return null;
     }
 
-    $raw  = $input['days'];
-    $days = is_int($raw) || is_string($raw)
+    $rawDays  = $input['days'];
+    $days = is_int($rawDays) || is_string($rawDays)
         ? filter_var(
-            $raw,
+            $rawDays,
             FILTER_VALIDATE_INT,
             ['options' => ['min_range' => 1, 'max_range' => ADMIN_PURGE_MAX_DAYS]]
         )
@@ -159,15 +159,15 @@ function admin_purge_older_than(
     }
 
     $conn = admin_conn();
-    $res  = @pg_query_params(
+    $queryResult  = @pg_query_params(
         $conn,
         "DELETE FROM {$table} WHERE " . pg_ident($timeColumn) . " < NOW() - ($1 || ' days')::interval",
         [$days]
     );
-    if (!$res) {
+    if (!$queryResult) {
         admin_db_fail($conn, $context);
     }
-    $deleted = pg_affected_rows($res);
+    $deleted = pg_affected_rows($queryResult);
     if ($afterDelete !== null) {
         $afterDelete($conn, $days);
     }

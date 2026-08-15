@@ -17,11 +17,14 @@ final readonly class FieldTypeRegistry
     {
     }
 
-    public function for(ColumnConfig $col, bool $hasForeignKey): FieldTypeInterface
+    public function for(ColumnConfig $column, bool $hasForeignKey): FieldTypeInterface
     {
-        return array_find($this->types, fn(FieldTypeInterface $t): bool => $t->supports($col, $hasForeignKey))
+        return array_find(
+            $this->types,
+            fn(FieldTypeInterface $fieldType): bool => $fieldType->supports($column, $hasForeignKey)
+        )
             ?? throw new \LogicException(
-                "No FieldType supports column '{$col->name}' (type: {$col->type}). "
+                "No FieldType supports column '{$column->name}' (type: {$column->type}). "
                 . 'Ensure TextField is registered as the last fallback.'
             );
     }

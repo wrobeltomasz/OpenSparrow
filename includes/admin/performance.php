@@ -33,9 +33,9 @@ if ($action === 'performance_check') {
                 $needed[$pgSchema][$tableName][$fkCol][] = 'Foreign key column';
             }
 
-            foreach (($tableCfg['subtables'] ?? []) as $sub) {
-                $child   = $sub['table']       ?? '';
-                $fkCol   = $sub['foreign_key'] ?? '';
+            foreach (($tableCfg['subtables'] ?? []) as $subtable) {
+                $child   = $subtable['table']       ?? '';
+                $fkCol   = $subtable['foreign_key'] ?? '';
                 if ($child === '' || $fkCol === '') {
                     continue;
                 }
@@ -44,9 +44,9 @@ if ($action === 'performance_check') {
             }
 
             foreach (($tableCfg['default_sort'] ?? []) as $rule) {
-                $col = $rule['column'] ?? '';
-                if ($col !== '' && $col !== 'id') {
-                    $needed[$pgSchema][$tableName][$col][] = 'Default sort column';
+                $column = $rule['column'] ?? '';
+                if ($column !== '' && $column !== 'id') {
+                    $needed[$pgSchema][$tableName][$column][] = 'Default sort column';
                 }
             }
         }
@@ -61,9 +61,9 @@ if ($action === 'performance_check') {
             $query   = $widget['query'] ?? [];
 
             foreach (($query['conditions'] ?? []) as $cond) {
-                $col = $cond['col'] ?? '';
-                if ($col !== '' && $col !== 'id') {
-                    $needed[$wSchema][$wTable][$col][] = "Widget filter: \"{$wTitle}\"";
+                $column = $cond['col'] ?? '';
+                if ($column !== '' && $column !== 'id') {
+                    $needed[$wSchema][$wTable][$column][] = "Widget filter: \"{$wTitle}\"";
                 }
             }
             $orderBy  = $query['order_by']      ?? '';
@@ -81,25 +81,29 @@ if ($action === 'performance_check') {
 
         foreach ($needed as $pgSchema => $schemaTables) {
             foreach ($schemaTables as $tableName => $columns) {
-                $res = @pg_query_params(
+                $result = @pg_query_params(
                     $conn,
                     "SELECT indexdef FROM pg_indexes WHERE schemaname = \$1 AND tablename = \$2",
                     [$pgSchema, $tableName]
                 );
                 $indexedCols = [];
-                if ($res) {
-                    while ($row = pg_fetch_row($res)) {
-                        if (preg_match('/\(([^)]+)\)/', $row[0], $m)) {
-                            foreach (explode(',', $m[1]) as $ic) {
-                                $ic = trim(preg_replace('/\s+(ASC|DESC|NULLS\s+(FIRST|LAST))\s*$/i', '', trim($ic)));
-                                $indexedCols[] = $ic;
+                if ($result) {
+                    while ($row = pg_fetch_row($result)) {
+                        if (preg_match('/\(([^)]+)\)/', $row[0], $matches)) {
+                            foreach (explode(',', $matches[1]) as $indexColumn) {
+                                $indexColumn = trim(preg_replace(
+                                    '/\s+(ASC|DESC|NULLS\s+(FIRST|LAST))\s*$/i',
+                                    '',
+                                    trim($indexColumn)
+                                ));
+                                $indexedCols[] = $indexColumn;
                             }
                         }
                     }
                 }
 
-                foreach ($columns as $col => $reasons) {
-                    if (in_array($col, $indexedCols, true)) {
+                foreach ($columns as $column => $reasons) {
+                    if (in_array($column, $indexedCols, true)) {
                         continue;
                     }
 
@@ -111,36 +115,36 @@ if ($action === 'performance_check') {
                         }
                     }
 
-                    $indexName    = 'idx_' . $tableName . '_' . $col;
+                    $indexName    = 'idx_' . $tableName . '_' . $column;
                     $suggestions[] = [
                         'schema'   => $pgSchema,
                         'table'    => $tableName,
-                        'column'   => $col,
+                        'column'   => $column,
                         'reasons'  => array_values(array_unique($reasons)),
                         'priority' => $priority,
                         'sql'      => "CREATE INDEX IF NOT EXISTS {$indexName}"
-                            . " ON \"{$pgSchema}\".\"{$tableName}\" ({$col});",
+                            . " ON \"{$pgSchema}\".\"{$tableName}\" ({$column});",
                     ];
                 }
             }
         }
 
-        usort($suggestions, static function ($a, $b) {
-            $pa = $a['priority'] === 'high' ? 0 : 1;
-            $pb = $b['priority'] === 'high' ? 0 : 1;
-            if ($pa !== $pb) {
-                return $pa - $pb;
+        usort($suggestions, static function ($first, $second) {
+            $firstPriority = $first['priority'] === 'high' ? 0 : 1;
+            $secondPriority = $second['priority'] === 'high' ? 0 : 1;
+            if ($firstPriority !== $secondPriority) {
+                return $firstPriority - $secondPriority;
             }
-            $ta = $a['table'] . '.' . $a['column'];
-            $tb = $b['table'] . '.' . $b['column'];
-            return strcmp($ta, $tb);
+            $firstTarget = $first['table'] . '.' . $first['column'];
+            $secondTarget = $second['table'] . '.' . $second['column'];
+            return strcmp($firstTarget, $secondTarget);
         });
 
         echo json_encode(['status' => 'success', 'suggestions' => $suggestions, 'total' => count($suggestions)]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -150,8 +154,8 @@ if ($action === 'performance_slow_queries') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        $extRes = @pg_query($conn, "SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'");
-        if (!$extRes || pg_num_rows($extRes) === 0) {
+        $extensionResult = @pg_query($conn, "SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements'");
+        if (!$extensionResult || pg_num_rows($extensionResult) === 0) {
             echo json_encode([
                 'status'  => 'unavailable',
                 'message' => 'pg_stat_statements extension is not installed. Run: CREATE EXTENSION pg_stat_statements;',
@@ -171,20 +175,20 @@ if ($action === 'performance_slow_queries') {
             ORDER BY mean_exec_time DESC
             LIMIT 15
         ";
-        $res = @pg_query($conn, $sql);
-        if (!$res) {
+        $result = @pg_query($conn, $sql);
+        if (!$result) {
             admin_db_fail($conn, 'slow_queries');
         }
 
         $rows = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -232,16 +236,16 @@ if ($action === 'performance_table_stats') {
             ORDER BY s.n_dead_tup DESC, s.seq_scan DESC
         ";
 
-        $arrEsc = static fn(string $v): string => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $v) . '"';
+        $arrEsc = static fn(string $value): string => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $value) . '"';
         $pairs = '{' . implode(',', array_map(
-            static fn($p) => '{' . $arrEsc((string) $p[0]) . ',' . $arrEsc((string) $p[1]) . '}',
+            static fn($pair) => '{' . $arrEsc((string) $pair[0]) . ',' . $arrEsc((string) $pair[1]) . '}',
             $tracked
         )) . '}';
-        $res = @pg_query_params($conn, $sql, [$pairs]);
-        if (!$res) {
+        $result = @pg_query_params($conn, $sql, [$pairs]);
+        if (!$result) {
             $rows = [];
             foreach ($tracked as [$pgSchema, $tableName]) {
-                $r2 = @pg_query_params($conn, "
+                $indexUsageResult = @pg_query_params($conn, "
                     SELECT s.schemaname, s.relname AS tablename,
                            s.n_live_tup, s.n_dead_tup,
                            CASE WHEN s.n_live_tup + s.n_dead_tup > 0
@@ -259,7 +263,7 @@ if ($action === 'performance_table_stats') {
                     JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = s.schemaname
                     WHERE s.schemaname = \$1 AND s.relname = \$2
                 ", [$pgSchema, $tableName]);
-                if ($r2 && $row = pg_fetch_assoc($r2)) {
+                if ($indexUsageResult && $row = pg_fetch_assoc($indexUsageResult)) {
                     $rows[] = $row;
                 }
             }
@@ -267,14 +271,14 @@ if ($action === 'performance_table_stats') {
         }
 
         $rows = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $rows[] = $row;
         }
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -284,7 +288,7 @@ if ($action === 'performance_db_health') {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
 
-        $dbRes = @pg_query($conn, "
+        $databaseResult = @pg_query($conn, "
             SELECT datname,
                    blks_hit, blks_read,
                    CASE WHEN blks_hit + blks_read > 0
@@ -296,31 +300,31 @@ if ($action === 'performance_db_health') {
             FROM pg_stat_database
             WHERE datname = current_database()
         ");
-        if (!$dbRes) {
+        if (!$databaseResult) {
             admin_db_fail($conn, 'db_health_stat');
         }
-        $db = pg_fetch_assoc($dbRes);
+        $databaseStats = pg_fetch_assoc($databaseResult);
 
-        $maxConnRes = @pg_query($conn, "SELECT setting FROM pg_settings WHERE name = 'max_connections'");
-        $maxConn = $maxConnRes ? (int)(pg_fetch_row($maxConnRes)[0] ?? 100) : 100;
+        $maxConnectionsResult = @pg_query($conn, "SELECT setting FROM pg_settings WHERE name = 'max_connections'");
+        $maxConn = $maxConnectionsResult ? (int)(pg_fetch_row($maxConnectionsResult)[0] ?? 100) : 100;
 
-        $verRes = @pg_query($conn, "SELECT version()");
-        $version = $verRes ? (pg_fetch_row($verRes)[0] ?? '') : '';
+        $versionResult = @pg_query($conn, "SELECT version()");
+        $version = $versionResult ? (pg_fetch_row($versionResult)[0] ?? '') : '';
 
-        $activeRes = @pg_query($conn, "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'");
-        $activeConn = $activeRes ? (int)(pg_fetch_row($activeRes)[0] ?? 0) : 0;
+        $activeConnectionsResult = @pg_query($conn, "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'");
+        $activeConn = $activeConnectionsResult ? (int)(pg_fetch_row($activeConnectionsResult)[0] ?? 0) : 0;
 
         echo json_encode([
             'status'       => 'success',
-            'db'           => $db,
+            'db'           => $databaseStats,
             'max_conn'     => $maxConn,
             'active_conn'  => $activeConn,
             'pg_version'   => $version,
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -345,13 +349,13 @@ if ($action === 'performance_unused_indexes') {
               AND s.indexrelname NOT LIKE '%_pkey'
             ORDER BY pg_relation_size(s.indexrelid) DESC
         ";
-        $res = @pg_query($conn, $sql);
-        if (!$res) {
+        $result = @pg_query($conn, $sql);
+        if (!$result) {
             admin_db_fail($conn, 'unused_indexes');
         }
 
         $rows = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $row['drop_sql'] = 'DROP INDEX IF EXISTS '
                 . pg_escape_identifier($conn, $row['schemaname'])
                 . '.'
@@ -362,8 +366,8 @@ if ($action === 'performance_unused_indexes') {
         echo json_encode(['status' => 'success', 'rows' => $rows]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -384,20 +388,20 @@ if ($action === 'performance_schema_warnings') {
         $rowCounts = [];
         foreach ($tables as $tableName => $cfg) {
             $pgSchema = $cfg['schema'] ?? 'app';
-            $countRes = @pg_query_params(
+            $countResult = @pg_query_params(
                 $conn,
                 "SELECT c.reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace"
                     . " WHERE n.nspname = \$1 AND c.relname = \$2",
                 [$pgSchema, $tableName]
             );
-            if ($countRes && $row = pg_fetch_row($countRes)) {
+            if ($countResult && $row = pg_fetch_row($countResult)) {
                 $rowCounts[$tableName] = (int)$row[0];
             }
         }
 
         foreach ($tables as $tableName => $cfg) {
-            $cols     = $cfg['columns'] ?? [];
-            $colCount = count($cols);
+            $tableColumns     = $cfg['columns'] ?? [];
+            $colCount = count($tableColumns);
             $estRows  = $rowCounts[$tableName] ?? 0;
             $display  = $cfg['display_name'] ?? $tableName;
 
@@ -436,14 +440,14 @@ if ($action === 'performance_schema_warnings') {
                 ];
             }
 
-            foreach (($cfg['subtables'] ?? []) as $sub) {
-                if (empty($sub['columns_to_show'])) {
+            foreach (($cfg['subtables'] ?? []) as $subtable) {
+                if (empty($subtable['columns_to_show'])) {
                     $warnings[] = [
                         'severity' => 'medium',
                         'category' => 'Subtable config',
                         'table'    => $tableName,
                         'display'  => $display,
-                        'message'  => "Subtable \"{$sub['table']}\" has no columns_to_show — all columns fetched"
+                        'message'  => "Subtable \"{$subtable['table']}\" has no columns_to_show — all columns fetched"
                             . " in drilldown. Specify columns_to_show in Schema.",
                     ];
                 }
@@ -471,13 +475,13 @@ if ($action === 'performance_schema_warnings') {
         }
 
         $order = ['high' => 0, 'medium' => 1, 'low' => 2];
-        usort($warnings, fn($a, $b) => ($order[$a['severity']] ?? 9) - ($order[$b['severity']] ?? 9));
+        usort($warnings, fn($first, $second) => ($order[$first['severity']] ?? 9) - ($order[$second['severity']] ?? 9));
 
         echo json_encode(['status' => 'success', 'warnings' => $warnings, 'total' => count($warnings)]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

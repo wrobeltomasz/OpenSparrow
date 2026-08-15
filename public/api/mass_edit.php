@@ -29,44 +29,44 @@ function validateTableColumn(array $body, array $schema): array
 
     try {
         $tableCfg = safe_table($schema, $tableName);
-    } catch (\RuntimeException $e) {
+    } catch (\RuntimeException $exception) {
         throw new BadRequestException('Unknown table');
     }
 
     require_table_access($tableName);
 
-    $cols = $tableCfg['columns'] ?? [];
+    $columns = $tableCfg['columns'] ?? [];
 
     if ($colName === 'id') {
         throw new BadRequestException('Cannot edit id column');
     }
 
-    if (!isset($cols[$colName])) {
+    if (!isset($columns[$colName])) {
         throw new BadRequestException('Invalid column');
     }
 
-    if (($cols[$colName]['type'] ?? '') === 'virtual') {
+    if (($columns[$colName]['type'] ?? '') === 'virtual') {
         throw new BadRequestException('Cannot edit virtual columns');
     }
 
     $schemaName = $tableCfg['schema'] ?? 'public';
-    $tblSql     = pg_ident($schemaName) . '.' . pg_ident($tableName);
+    $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
     $colSql     = pg_ident($colName);
 
-    return [$tableCfg, $tableName, $cols[$colName], $colSql, $tblSql];
+    return [$tableCfg, $tableName, $columns[$colName], $colSql, $qualifiedTable];
 }
 
-function sanitizeRowIds(mixed $raw): array
+function sanitizeRowIds(mixed $rawIds): array
 {
-    if (!is_array($raw)) {
+    if (!is_array($rawIds)) {
         return [];
     }
 
     $ids = [];
-    foreach ($raw as $id) {
-        $int = filter_var($id, FILTER_VALIDATE_INT);
-        if ($int !== false && $int > 0) {
-            $ids[] = $int;
+    foreach ($rawIds as $id) {
+        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
+        if ($validatedId !== false && $validatedId > 0) {
+            $ids[] = $validatedId;
         }
     }
 
@@ -86,50 +86,50 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
         throw new BadRequestException('No rows selected');
     }
 
-    [$tableCfg, $tableName, , $colSql, $tblSql] = validateTableColumn($body, $schema);
+    [$tableCfg, $tableName, , $colSql, $qualifiedTable] = validateTableColumn($body, $schema);
 
     $arrParam = pgIntArray($rowIds);
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $uid      = (int)$_SESSION['user_id'];
+        $userId      = (int)$_SESSION['user_id'];
         $ownerSql = owner_restriction_sql('_t.id', 2, 3);
 
-        $countRes = @pg_query_params(
+        $countResult = @pg_query_params(
             $conn,
-            "SELECT COUNT(*) FROM {$tblSql} AS _t WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
-            [$arrParam, $tableName, $uid]
+            "SELECT COUNT(*) FROM {$qualifiedTable} AS _t WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
+            [$arrParam, $tableName, $userId]
         );
-        if (!$countRes) {
+        if (!$countResult) {
             throw new ServerErrorException('Database query failed.');
         }
-        $count = (int)pg_fetch_result($countRes, 0, 0);
-        pg_free_result($countRes);
+        $count = (int)pg_fetch_result($countResult, 0, 0);
+        pg_free_result($countResult);
 
-        $rowRes = @pg_query_params(
+        $rowResult = @pg_query_params(
             $conn,
             "SELECT _t.id, {$colSql} AS current_val
-             FROM {$tblSql} AS _t
+             FROM {$qualifiedTable} AS _t
              WHERE _t.id = ANY(\$1::int[]){$ownerSql}
              ORDER BY _t.id
              LIMIT 10",
-            [$arrParam, $tableName, $uid]
+            [$arrParam, $tableName, $userId]
         );
     } else {
-        $countRes = @pg_query_params(
+        $countResult = @pg_query_params(
             $conn,
-            "SELECT COUNT(*) FROM {$tblSql} WHERE id = ANY(\$1::int[])",
+            "SELECT COUNT(*) FROM {$qualifiedTable} WHERE id = ANY(\$1::int[])",
             [$arrParam]
         );
-        if (!$countRes) {
+        if (!$countResult) {
             throw new ServerErrorException('Database query failed.');
         }
-        $count = (int)pg_fetch_result($countRes, 0, 0);
-        pg_free_result($countRes);
+        $count = (int)pg_fetch_result($countResult, 0, 0);
+        pg_free_result($countResult);
 
-        $rowRes = @pg_query_params(
+        $rowResult = @pg_query_params(
             $conn,
             "SELECT id, {$colSql} AS current_val
-             FROM {$tblSql}
+             FROM {$qualifiedTable}
              WHERE id = ANY(\$1::int[])
              ORDER BY id
              LIMIT 10",
@@ -137,15 +137,15 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
         );
     }
 
-    if (!$rowRes) {
+    if (!$rowResult) {
         throw new ServerErrorException('Database query failed.');
     }
 
     $rows = [];
-    while ($row = pg_fetch_assoc($rowRes)) {
+    while ($row = pg_fetch_assoc($rowResult)) {
         $rows[] = ['id' => (int)$row['id'], 'current' => $row['current_val']];
     }
-    pg_free_result($rowRes);
+    pg_free_result($rowResult);
 
     throw ResponseException::encoded(['count' => $count, 'rows' => $rows]);
 }
@@ -162,7 +162,7 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
         ? ($body['value'] === null ? null : (string)$body['value'])
         : null;
 
-    [$tableCfg, $tableName, $colCfg, $colSql, $tblSql] = validateTableColumn($body, $schema);
+    [$tableCfg, $tableName, $colCfg, $colSql, $qualifiedTable] = validateTableColumn($body, $schema);
 
     if (($regexpError = validate_column_regexp($colCfg, $value)) !== null) {
         throw HttpException::fromStatus(422, (string) $regexpError);
@@ -173,32 +173,32 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $uid      = (int)$_SESSION['user_id'];
+        $userId      = (int)$_SESSION['user_id'];
         $ownerSql = owner_restriction_sql('_t.id', 3, 4);
-        $res = @pg_query_params(
+        $result = @pg_query_params(
             $conn,
-            "UPDATE {$tblSql} AS _t SET {$colSql} = \$2 WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
-            [$arrParam, $value, $tableName, $uid]
+            "UPDATE {$qualifiedTable} AS _t SET {$colSql} = \$2 WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
+            [$arrParam, $value, $tableName, $userId]
         );
     } else {
-        $res = @pg_query_params(
+        $result = @pg_query_params(
             $conn,
-            "UPDATE {$tblSql} SET {$colSql} = \$2 WHERE id = ANY(\$1::int[])",
+            "UPDATE {$qualifiedTable} SET {$colSql} = \$2 WHERE id = ANY(\$1::int[])",
             [$arrParam, $value]
         );
     }
 
-    if (!$res) {
+    if (!$result) {
         @pg_query($conn, 'ROLLBACK');
         throw new ServerErrorException('Database update failed.');
     }
 
-    $affected = pg_affected_rows($res);
-    pg_free_result($res);
+    $affected = pg_affected_rows($result);
+    pg_free_result($result);
     @pg_query($conn, 'COMMIT');
 
-    $uid = (int)$_SESSION['user_id'];
-    log_user_action($conn, $uid, 'MASS_EDIT', $tableName, null);
+    $userId = (int)$_SESSION['user_id'];
+    log_user_action($conn, $userId, 'MASS_EDIT', $tableName, null);
 
     throw ResponseException::encoded(['updated' => $affected]);
 }
@@ -215,7 +215,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
 
     try {
         $tableCfg = safe_table($schema, $tableName);
-    } catch (\RuntimeException $e) {
+    } catch (\RuntimeException $exception) {
         throw new BadRequestException('Unknown table');
     }
 
@@ -237,36 +237,36 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     }
 
     $schemaName = $tableCfg['schema'] ?? 'public';
-    $tblSql     = pg_ident($schemaName) . '.' . pg_ident($tableName);
+    $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
     $colIdents  = implode(', ', array_map('pg_ident', $dupCols));
     $arrParam   = pgIntArray($rowIds);
 
-    $uid        = (int)$_SESSION['user_id'];
+    $userId        = (int)$_SESSION['user_id'];
 
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
         $ownerSql = owner_restriction_sql('_t.id', 2, 3);
-        $res = @pg_query_params(
+        $result = @pg_query_params(
             $conn,
-            "INSERT INTO {$tblSql} ({$colIdents})
-             SELECT {$colIdents} FROM {$tblSql} AS _t
+            "INSERT INTO {$qualifiedTable} ({$colIdents})
+             SELECT {$colIdents} FROM {$qualifiedTable} AS _t
              WHERE _t.id = ANY(\$1::int[]){$ownerSql}
              RETURNING id",
-            [$arrParam, $tableName, $uid]
+            [$arrParam, $tableName, $userId]
         );
     } else {
-        $res = @pg_query_params(
+        $result = @pg_query_params(
             $conn,
-            "INSERT INTO {$tblSql} ({$colIdents})
-             SELECT {$colIdents} FROM {$tblSql}
+            "INSERT INTO {$qualifiedTable} ({$colIdents})
+             SELECT {$colIdents} FROM {$qualifiedTable}
              WHERE id = ANY(\$1::int[])
              RETURNING id",
             [$arrParam]
         );
     }
 
-    if (!$res) {
+    if (!$result) {
         @pg_query($conn, 'ROLLBACK');
         $pgErr    = pg_last_error($conn);
         $isUnique = stripos($pgErr, 'unique') !== false || stripos($pgErr, 'unikaln') !== false;
@@ -281,21 +281,21 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     }
 
     $newIds = [];
-    while ($row = pg_fetch_row($res)) {
+    while ($row = pg_fetch_row($result)) {
         $newIds[] = (int)$row[0];
     }
     $duplicated = count($newIds);
-    pg_free_result($res);
+    pg_free_result($result);
 
     if (!empty($tableCfg['owner_restricted'])) {
         foreach ($newIds as $newId) {
-            set_record_owner($conn, $tableName, $newId, $uid, $uid);
+            set_record_owner($conn, $tableName, $newId, $userId, $userId);
         }
     }
 
     @pg_query($conn, 'COMMIT');
 
-    log_user_action($conn, $uid, 'MASS_DUPLICATE', $tableName, null);
+    log_user_action($conn, $userId, 'MASS_DUPLICATE', $tableName, null);
 
     throw ResponseException::encoded(['duplicated' => $duplicated]);
 }
@@ -312,45 +312,45 @@ if ($action === 'mass_delete' && $method === 'POST') {
 
     try {
         $tableCfg = safe_table($schema, $tableName);
-    } catch (\RuntimeException $e) {
+    } catch (\RuntimeException $exception) {
         throw new BadRequestException('Unknown table');
     }
 
     require_table_access($tableName);
 
     $schemaName = $tableCfg['schema'] ?? 'public';
-    $tblSql     = pg_ident($schemaName) . '.' . pg_ident($tableName);
+    $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
     $arrParam   = pgIntArray($rowIds);
 
     @pg_query($conn, 'BEGIN');
 
     if (!empty($tableCfg['owner_restricted'])) {
-        $uid      = (int)$_SESSION['user_id'];
+        $userId      = (int)$_SESSION['user_id'];
         $ownerSql = owner_restriction_sql('_t.id', 2, 3);
-        $res = @pg_query_params(
+        $result = @pg_query_params(
             $conn,
-            "DELETE FROM {$tblSql} AS _t WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
-            [$arrParam, $tableName, $uid]
+            "DELETE FROM {$qualifiedTable} AS _t WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
+            [$arrParam, $tableName, $userId]
         );
     } else {
-        $res = @pg_query_params(
+        $result = @pg_query_params(
             $conn,
-            "DELETE FROM {$tblSql} WHERE id = ANY(\$1::int[])",
+            "DELETE FROM {$qualifiedTable} WHERE id = ANY(\$1::int[])",
             [$arrParam]
         );
     }
 
-    if (!$res) {
+    if (!$result) {
         @pg_query($conn, 'ROLLBACK');
         throw new ServerErrorException('Database delete failed.');
     }
 
-    $affected = pg_affected_rows($res);
-    pg_free_result($res);
+    $affected = pg_affected_rows($result);
+    pg_free_result($result);
     @pg_query($conn, 'COMMIT');
 
-    $uid = (int)$_SESSION['user_id'];
-    log_user_action($conn, $uid, 'MASS_DELETE', $tableName, null);
+    $userId = (int)$_SESSION['user_id'];
+    log_user_action($conn, $userId, 'MASS_DELETE', $tableName, null);
 
     throw ResponseException::encoded(['deleted' => $affected]);
 }

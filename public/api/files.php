@@ -125,17 +125,17 @@ function files_action_list($conn): void
 
     $ownerRestricted = [];
     if (($_SESSION['role'] ?? '') !== 'admin') {
-        foreach ((config_get('schema') ?? [])['tables'] ?? [] as $tName => $tCfg) {
-            if (is_array($tCfg) && !empty($tCfg['owner_restricted'])) {
-                $ownerRestricted[] = $tName;
+        foreach ((config_get('schema') ?? [])['tables'] ?? [] as $tableName => $tableConfig) {
+            if (is_array($tableConfig) && !empty($tableConfig['owner_restricted'])) {
+                $ownerRestricted[] = $tableName;
             }
         }
     }
     if ($ownerRestricted !== []) {
-        $tOwners  = sys_table('record_owners');
+        $recordOwnersTable  = sys_table('record_owners');
         $ownerIdx = count($params) + 1;
         $tblIdx   = count($params) + 2;
-        $where[]  = "NOT EXISTS (SELECT 1 FROM {$tOwners} ro"
+        $where[]  = "NOT EXISTS (SELECT 1 FROM {$recordOwnersTable} ro"
             . ' WHERE ro.table_name = f.related_table AND ro.record_id = f.related_id'
             . ' AND ro.is_current = true'
             . " AND ro.owner_id IS NOT NULL AND ro.owner_id != \${$ownerIdx}"
@@ -286,8 +286,8 @@ function files_action_upload($conn): void
         $relatedField = IMAGES_FIELD;
     } elseif ($relatedTableReq && $relatedId) {
         $relations = $config['relations'] ?? [];
-        foreach ($relations as $rel) {
-            if ($rel['table'] === $relatedTableReq) {
+        foreach ($relations as $relativePath) {
+            if ($relativePath['table'] === $relatedTableReq) {
                 $relatedTable = $relatedTableReq;
                 break;
             }
@@ -323,14 +323,14 @@ function files_action_upload($conn): void
         $tagsPgArray,
         $relatedField
     ];
-    $res = pg_query_params($conn, $sql, $params);
-    if (!$res) {
+    $queryResult = pg_query_params($conn, $sql, $params);
+    if (!$queryResult) {
         error_log('api_files files_action_upload insert failed: ' . pg_last_error($conn));
         unlink($destination);
         jsonError('Database insert failed.', 500);
     }
 
-    $row = pg_fetch_assoc($res);
+    $row = pg_fetch_assoc($queryResult);
 
     jsonSuccess(['file' => $row], 201);
 }
@@ -338,7 +338,7 @@ function files_action_upload($conn): void
 function textListToPgArray(array $names): string
 {
     return '{' . implode(',', array_map(
-        static fn(string $n): string => '"' . str_replace(['\\', '"'], ['\\\\', '\"'], $n) . '"',
+        static fn(string $name): string => '"' . str_replace(['\\', '"'], ['\\\\', '\"'], $name) . '"',
         array_map('strval', $names)
     )) . '}';
 }
@@ -349,44 +349,45 @@ function uuidListToPgArray(mixed $uuids): string
         jsonError('uuids must be a non-empty array (max 500).', 400);
     }
     $clean = [];
-    foreach ($uuids as $u) {
-        if (!is_string($u) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $u)) {
+    foreach ($uuids as $candidateUuid) {
+        $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        if (!is_string($candidateUuid) || !preg_match($uuidPattern, $candidateUuid)) {
             jsonError('Invalid uuid in list.', 400);
         }
-        $clean[] = strtolower($u);
+        $clean[] = strtolower($candidateUuid);
     }
     return '{' . implode(',', array_unique($clean)) . '}';
 }
 
 function assertFileAccess($conn, string $pgUuids): void
 {
-    $res = pg_query_params(
+    $queryResult = pg_query_params(
         $conn,
         "SELECT DISTINCT related_table, related_id FROM " . sys_table('files')
         . " WHERE uuid = ANY($1) AND deleted_at IS NULL",
         [$pgUuids]
     );
-    if (!$res) {
+    if (!$queryResult) {
         error_log('api_files assertFileAccess failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $schema = config_get('schema');
     $userId = (int) $_SESSION['user_id'];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($queryResult)) {
         $rTable = trim((string) ($row['related_table'] ?? ''));
-        $rId    = (string) ($row['related_id'] ?? '');
-        if ($rTable === '' || $rId === '') {
+        $rowRelatedId    = (string) ($row['related_id'] ?? '');
+        if ($rTable === '' || $rowRelatedId === '') {
             continue;
         }
-        $tblCfg = $schema['tables'][$rTable] ?? null;
-        if (!is_array($tblCfg)) {
+        $relatedTableConfig = $schema['tables'][$rTable] ?? null;
+        if (!is_array($relatedTableConfig)) {
             error_log('api_files assertFileAccess: file attached to unconfigured table ' . $rTable);
             jsonError('File not found or already deleted.', 404);
         }
         if (
             !user_can_access_table($rTable)
-            || !can_access_record($conn, $tblCfg, $rTable, (int) $rId, $userId)
+            || !can_access_record($conn, $relatedTableConfig, $rTable, (int) $rowRelatedId, $userId)
         ) {
             jsonError('File not found or already deleted.', 404);
         }
@@ -400,7 +401,7 @@ function tagsToPgArray(string $tagsInput): ?string
         return null;
     }
     $tagsList = array_slice(
-        array_values(array_filter(array_map('trim', explode(',', $tagsInput)), fn($t) => $t !== '')),
+        array_values(array_filter(array_map('trim', explode(',', $tagsInput)), fn($tag) => $tag !== '')),
         0,
         20
     );
@@ -408,7 +409,7 @@ function tagsToPgArray(string $tagsInput): ?string
         return null;
     }
     return '{' . implode(',', array_map(
-        fn($t) => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $t) . '"',
+        fn($tag) => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $tag) . '"',
         $tagsList
     )) . '}';
 }
@@ -423,12 +424,12 @@ function files_action_mass_delete($conn, array $body): void
             SET deleted_at = NOW()
             WHERE uuid = ANY($1) AND deleted_at IS NULL
             RETURNING id";
-    $res = pg_query_params($conn, $sql, [$pgUuids]);
-    if (!$res) {
+    $queryResult = pg_query_params($conn, $sql, [$pgUuids]);
+    if (!$queryResult) {
         error_log('api_files files_action_mass_delete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
-    jsonSuccess(['deleted' => pg_num_rows($res)]);
+    jsonSuccess(['deleted' => pg_num_rows($queryResult)]);
 }
 
 function files_action_mass_tag($conn, array $body): void
@@ -446,12 +447,12 @@ function files_action_mass_tag($conn, array $body): void
                 updated_at = NOW()
             WHERE uuid = ANY($1) AND deleted_at IS NULL
             RETURNING id";
-    $res = pg_query_params($conn, $sql, [$pgUuids, $pgTags]);
-    if (!$res) {
+    $queryResult = pg_query_params($conn, $sql, [$pgUuids, $pgTags]);
+    if (!$queryResult) {
         error_log('api_files files_action_mass_tag failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
-    jsonSuccess(['tagged' => pg_num_rows($res)]);
+    jsonSuccess(['tagged' => pg_num_rows($queryResult)]);
 }
 
 function files_action_update_meta($conn, array $body): void
@@ -466,19 +467,19 @@ function files_action_update_meta($conn, array $body): void
 
     $sets   = [];
     $params = [];
-    $idx    = 1;
+    $index    = 1;
 
     if (array_key_exists('display_name', $body)) {
         $displayName = mb_substr(trim((string) $body['display_name']), 0, 255);
         if ($displayName === '') {
             jsonError('Display name cannot be empty.', 400);
         }
-        $sets[]   = 'display_name = $' . $idx++;
+        $sets[]   = 'display_name = $' . $index++;
         $params[] = $displayName;
     }
 
     if (array_key_exists('tags', $body)) {
-        $sets[]   = 'tags = $' . $idx++ . '::text[]';
+        $sets[]   = 'tags = $' . $index++ . '::text[]';
         $params[] = tagsToPgArray((string) $body['tags']);
     }
 
@@ -489,16 +490,16 @@ function files_action_update_meta($conn, array $body): void
     $sets[]   = 'updated_at = NOW()';
     $params[] = $uuid;
     $sql = "UPDATE " . sys_table('files') . " SET " . implode(', ', $sets)
-        . " WHERE uuid = $" . $idx . " AND deleted_at IS NULL RETURNING uuid, name, display_name, tags";
-    $res = pg_query_params($conn, $sql, $params);
-    if (!$res) {
+        . " WHERE uuid = $" . $index . " AND deleted_at IS NULL RETURNING uuid, name, display_name, tags";
+    $queryResult = pg_query_params($conn, $sql, $params);
+    if (!$queryResult) {
         error_log('api_files files_action_update_meta failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
-    if (pg_num_rows($res) === 0) {
+    if (pg_num_rows($queryResult) === 0) {
         jsonError('File not found or already deleted.', 404);
     }
-    jsonSuccess(['file' => pg_fetch_assoc($res)]);
+    jsonSuccess(['file' => pg_fetch_assoc($queryResult)]);
 }
 
 function files_action_delete($conn, array $body): void
@@ -513,13 +514,13 @@ function files_action_delete($conn, array $body): void
 
     $sql = "UPDATE " . sys_table('files')
         . " SET deleted_at = NOW() WHERE uuid = $1 AND deleted_at IS NULL RETURNING id";
-    $res = pg_query_params($conn, $sql, [$uuid]);
-    if (!$res) {
+    $queryResult = pg_query_params($conn, $sql, [$uuid]);
+    if (!$queryResult) {
         error_log('api_files files_action_delete failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
-    if (pg_num_rows($res) === 0) {
+    if (pg_num_rows($queryResult) === 0) {
         jsonError('File not found or already deleted.', 404);
     }
 
@@ -536,17 +537,17 @@ function files_action_save_config(array $body): void
     }
 
     if (isset($body['storage_path'])) {
-        $raw = preg_replace('/[^a-zA-Z0-9\-_\/]/', '', $body['storage_path']);
+        $rawPath = preg_replace('/[^a-zA-Z0-9\-_\/]/', '', $body['storage_path']);
 
-        $raw = preg_replace('/\.{2,}/', '', $raw);
+        $rawPath = preg_replace('/\.{2,}/', '', $rawPath);
 
-        $raw = preg_replace('/\/+/', '/', $raw);
-        $raw = trim($raw, '/');
+        $rawPath = preg_replace('/\/+/', '/', $rawPath);
+        $rawPath = trim($rawPath, '/');
 
-        if ($raw !== 'storage' && !str_starts_with($raw, 'storage/')) {
-            $raw = 'storage/files';
+        if ($rawPath !== 'storage' && !str_starts_with($rawPath, 'storage/')) {
+            $rawPath = 'storage/files';
         }
-        $current['storage_path'] = $raw . '/';
+        $current['storage_path'] = $rawPath . '/';
     }
 
     if (isset($body['allowed_types']) && is_array($body['allowed_types'])) {
@@ -556,12 +557,12 @@ function files_action_save_config(array $body): void
 
     if (isset($body['relations']) && is_array($body['relations'])) {
         $current['relations'] = [];
-        foreach ($body['relations'] as $rel) {
-            if (!empty($rel['table'])) {
+        foreach ($body['relations'] as $relativePath) {
+            if (!empty($relativePath['table'])) {
                 $current['relations'][] = [
-                    'table' => trim((string)$rel['table']),
-                    'col1'  => trim((string)($rel['col1'] ?? 'id')),
-                    'col2'  => trim((string)($rel['col2'] ?? ''))
+                    'table' => trim((string)$relativePath['table']),
+                    'col1'  => trim((string)($relativePath['col1'] ?? 'id')),
+                    'col2'  => trim((string)($relativePath['col2'] ?? ''))
                 ];
             }
         }
@@ -584,9 +585,9 @@ function files_action_get_related_records($conn): void
     $config    = loadConfig();
     $relConfig = null;
     $relations = $config['relations'] ?? [];
-    foreach ($relations as $rel) {
-        if ($rel['table'] === $reqTable) {
-            $relConfig = $rel;
+    foreach ($relations as $relativePath) {
+        if ($relativePath['table'] === $reqTable) {
+            $relConfig = $relativePath;
             break;
         }
     }
@@ -629,14 +630,14 @@ function files_action_get_related_records($conn): void
     $sel2        = $col2 ? ', "' . str_replace('"', '""', $col2) . '"' : '';
     $quotedSchema = '"' . str_replace('"', '""', $pgSchema) . '"';
     $sql = "SELECT id, {$quotedCol1} AS val1 {$sel2} FROM {$quotedSchema}.{$quotedTable} ORDER BY id DESC LIMIT 500";
-    $res = pg_query($conn, $sql);
-    if (!$res) {
+    $queryResult = pg_query($conn, $sql);
+    if (!$queryResult) {
         error_log('api_files files_action_get_related_records query failed: ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $records = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($queryResult)) {
         $label = $row['val1'];
         if ($col2 && isset($row[$col2])) {
             $label .= ' - ' . $row[$col2];

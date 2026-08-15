@@ -54,7 +54,7 @@ function cypress_first_text_column(array $tableCfg): ?string
 
 try {
     $conn  = db_connect();
-    $tUsers = sys_table('users');
+    $usersTable = sys_table('users');
     $action = $request->post('action', $request->query('action', 'seed'));
     $results = [];
 
@@ -72,8 +72,8 @@ try {
             $salt = bin2hex(random_bytes(32));
             $hash = password_hash($salt . $password, PASSWORD_ARGON2ID, $argonOpts);
 
-            $res = pg_query_params($conn, "
-                INSERT INTO $tUsers (username, password_hash, salt, password_algo, password_params, is_active, role)
+            $result = pg_query_params($conn, "
+                INSERT INTO $usersTable (username, password_hash, salt, password_algo, password_params, is_active, role)
                 VALUES (\$1, \$2, \$3, 'argon2id', \$4, true, \$5)
                 ON CONFLICT (username) DO UPDATE SET
                     password_hash = EXCLUDED.password_hash,
@@ -82,7 +82,7 @@ try {
                     role          = EXCLUDED.role
             ", [$username, $hash, $salt, $optsJson, $role]);
 
-            $results[$username] = $res ? 'ok' : pg_last_error($conn);
+            $results[$username] = $result ? 'ok' : pg_last_error($conn);
         }
     }
 
@@ -97,7 +97,7 @@ try {
             $appSchema = pg_ident(sys_schema());
             $cleaned = [];
 
-            $tOwners = sys_table('record_owners');
+            $recordOwnersTable = sys_table('record_owners');
 
             foreach ($schema['tables'] ?? [] as $tableName => $tableCfg) {
                 $textCol = cypress_first_text_column($tableCfg);
@@ -109,17 +109,17 @@ try {
                 $pgTable = $appSchema . '.' . pg_ident($tableName);
                 $pgCol   = pg_ident($textCol);
 
-                $res = @pg_query(
+                $result = @pg_query(
                     $conn,
                     "DELETE FROM $pgTable WHERE $pgCol ILIKE 'cypress%' OR $pgCol ILIKE 'cy-%' RETURNING id"
                 );
-                if ($res) {
-                    $deletedIds = array_map('intval', array_column(pg_fetch_all($res) ?: [], 'id'));
+                if ($result) {
+                    $deletedIds = array_map('intval', array_column(pg_fetch_all($result) ?: [], 'id'));
                     if ($deletedIds !== []) {
                         $cleaned[$tableName] = count($deletedIds);
                         @pg_query_params(
                             $conn,
-                            "DELETE FROM $tOwners WHERE table_name = \$1 AND record_id = ANY(\$2::int[])",
+                            "DELETE FROM $recordOwnersTable WHERE table_name = \$1 AND record_id = ANY(\$2::int[])",
                             [$tableName, '{' . implode(',', $deletedIds) . '}']
                         );
                     }
@@ -131,8 +131,8 @@ try {
     }
 
     if ($action === 'login_reset') {
-        $res = pg_query($conn, 'DELETE FROM ' . sys_table('login_attempts'));
-        $results['login_attempts_cleared'] = $res ? pg_affected_rows($res) : 0;
+        $result = pg_query($conn, 'DELETE FROM ' . sys_table('login_attempts'));
+        $results['login_attempts_cleared'] = $result ? pg_affected_rows($result) : 0;
     }
 
     if ($action === 'own') {
@@ -156,20 +156,20 @@ try {
         }
 
         $userIds = [];
-        foreach (['test', 'test2'] as $u) {
-            $userRes = pg_query_params($conn, "SELECT id FROM $tUsers WHERE username = \$1", [$u]);
-            if (!$userRes || pg_num_rows($userRes) === 0) {
-                throw new ServerErrorException("Missing user $u — run action=seed first", [
+        foreach (['test', 'test2'] as $username) {
+            $userResult = pg_query_params($conn, "SELECT id FROM $usersTable WHERE username = \$1", [$username]);
+            if (!$userResult || pg_num_rows($userResult) === 0) {
+                throw new ServerErrorException("Missing user $username — run action=seed first", [
                     'status' => 'error',
-                    'error'  => "Missing user $u — run action=seed first",
+                    'error'  => "Missing user $username — run action=seed first",
                 ]);
             }
-            $userIds[$u] = (int) pg_fetch_result($userRes, 0, 'id');
+            $userIds[$username] = (int) pg_fetch_result($userResult, 0, 'id');
         }
 
         $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
         $pgCol   = pg_ident($textCol);
-        $tOwners = sys_table('record_owners');
+        $recordOwnersTable = sys_table('record_owners');
 
         $old = @pg_query($conn, "DELETE FROM $pgTable WHERE $pgCol LIKE 'cypress-idor-%' RETURNING id");
         if ($old) {
@@ -177,7 +177,7 @@ try {
             if ($oldIds !== []) {
                 @pg_query_params(
                     $conn,
-                    "DELETE FROM $tOwners WHERE table_name = \$1 AND record_id = ANY(\$2::int[])",
+                    "DELETE FROM $recordOwnersTable WHERE table_name = \$1 AND record_id = ANY(\$2::int[])",
                     [$table, '{' . implode(',', $oldIds) . '}']
                 );
             }
@@ -185,21 +185,21 @@ try {
 
         $ids = [];
         foreach (['a' => 'test', 'b' => 'test2'] as $slot => $owner) {
-            $res = pg_query_params(
+            $result = pg_query_params(
                 $conn,
                 "INSERT INTO $pgTable ($pgCol) VALUES (\$1) RETURNING id",
                 ["cypress-idor-$slot"]
             );
-            if (!$res) {
+            if (!$result) {
                 throw new ServerErrorException('Insert failed: ' . pg_last_error($conn), [
                     'status' => 'error',
                     'error'  => 'Insert failed: ' . pg_last_error($conn),
                 ]);
             }
-            $recordId = (int) pg_fetch_result($res, 0, 'id');
+            $recordId = (int) pg_fetch_result($result, 0, 'id');
             pg_query_params(
                 $conn,
-                "INSERT INTO $tOwners (table_name, record_id, owner_id, changed_by, is_current) "
+                "INSERT INTO $recordOwnersTable (table_name, record_id, owner_id, changed_by, is_current) "
                     . "VALUES (\$1, \$2, \$3, \$3, true)",
                 [$table, $recordId, $userIds[$owner]]
             );
@@ -242,12 +242,12 @@ try {
         $textCol = cypress_first_text_column($tableCfg);
         if ($textCol !== null) {
             $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
-            $res = @pg_query(
+            $result = @pg_query(
                 $conn,
                 "DELETE FROM $pgTable WHERE " . pg_ident($textCol) . " LIKE 'cypress-idor-%' RETURNING id"
             );
-            if ($res) {
-                $ids = array_map('intval', array_column(pg_fetch_all($res) ?: [], 'id'));
+            if ($result) {
+                $ids = array_map('intval', array_column(pg_fetch_all($result) ?: [], 'id'));
                 if ($ids !== []) {
                     @pg_query_params(
                         $conn,
@@ -278,8 +278,8 @@ try {
         }
 
         $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
-        $res = pg_query($conn, "SELECT COUNT(*) AS c FROM $pgTable");
-        if (!$res) {
+        $result = pg_query($conn, "SELECT COUNT(*) AS c FROM $pgTable");
+        if (!$result) {
             throw new ServerErrorException(pg_last_error($conn), [
                 'status' => 'error',
                 'error'  => pg_last_error($conn),
@@ -287,12 +287,15 @@ try {
         }
 
         $results['table'] = $table;
-        $results['count'] = (int) pg_fetch_result($res, 0, 'c');
+        $results['count'] = (int) pg_fetch_result($result, 0, 'c');
     }
 
     throw ResponseException::encoded(['status' => 'ok', 'results' => $results]);
 } catch (ControlFlowException $signal) {
     throw $signal;
-} catch (Exception $e) {
-    throw new ServerErrorException($e->getMessage(), ['status' => 'error', 'error' => $e->getMessage()]);
+} catch (Exception $exception) {
+    throw new ServerErrorException(
+        $exception->getMessage(),
+        ['status' => 'error', 'error' => $exception->getMessage()]
+    );
 }

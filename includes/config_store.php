@@ -25,7 +25,7 @@ function config_store_conn(): ?\PgSql\Connection
             $conn = db_connect();
         } catch (ControlFlowException $signal) {
             throw $signal;
-        } catch (Throwable $e) {
+        } catch (Throwable $exception) {
             $failed = true;
         }
     }
@@ -39,7 +39,7 @@ function config_valid_key(string $key): bool
 
 const CONFIG_CACHE_ABSENT = ['spw_absent' => true];
 
-function config_cache(string $key, ?array $row = null, bool $write = false, int $ttl = 300): ?array
+function config_cache(string $key, ?array $row = null, bool $write = false, int $ttlSeconds = 300): ?array
 {
     static $cache = [];
     $apcuKey = 'spw_cfg:' . sys_schema() . ':' . $key;
@@ -50,7 +50,7 @@ function config_cache(string $key, ?array $row = null, bool $write = false, int 
                 apcu_delete($apcuKey);
             }
         } elseif (function_exists('apcu_store')) {
-            apcu_store($apcuKey, $row, $ttl);
+            apcu_store($apcuKey, $row, $ttlSeconds);
         }
         return $row;
     }
@@ -58,10 +58,10 @@ function config_cache(string $key, ?array $row = null, bool $write = false, int 
         return $cache[$key];
     }
     if (function_exists('apcu_fetch')) {
-        $hit = apcu_fetch($apcuKey, $ok);
-        if ($ok && is_array($hit)) {
-            $cache[$key] = $hit;
-            return $hit;
+        $cachedEntry = apcu_fetch($apcuKey, $success);
+        if ($success && is_array($cachedEntry)) {
+            $cache[$key] = $cachedEntry;
+            return $cachedEntry;
         }
     }
     return null;
@@ -79,15 +79,15 @@ function config_get_row(string $key, int $absentTtl = 0): ?array
 
     $conn = config_store_conn();
     if ($conn !== null) {
-        $tConfig = sys_table('config');
-        $res = @pg_query_params(
+        $configTable = sys_table('config');
+        $result = @pg_query_params(
             $conn,
-            "SELECT value, version FROM $tConfig WHERE config_key = \$1",
+            "SELECT value, version FROM $configTable WHERE config_key = \$1",
             [$key]
         );
-        if ($res !== false) {
-            $dbRow = pg_fetch_assoc($res);
-            pg_free_result($res);
+        if ($result !== false) {
+            $dbRow = pg_fetch_assoc($result);
+            pg_free_result($result);
             if ($dbRow !== false && $dbRow !== null) {
                 $decoded = json_decode((string) $dbRow['value'], true);
                 if (is_array($decoded)) {
@@ -126,23 +126,23 @@ function config_save(string $key, array $data, ?int $expectedVersion = null, ?in
     if ($conn === null) {
         return ['status' => 'error', 'error' => 'Database unavailable'];
     }
-    $tConfig = sys_table('config');
-    $tLog    = sys_table('config_log');
+    $configTable = sys_table('config');
+    $configLogTable    = sys_table('config_log');
 
     if (!@pg_query($conn, 'BEGIN')) {
         return ['status' => 'error', 'error' => 'Database error'];
     }
     try {
-        $res = @pg_query_params(
+        $result = @pg_query_params(
             $conn,
-            "SELECT value, version FROM $tConfig WHERE config_key = \$1 FOR UPDATE",
+            "SELECT value, version FROM $configTable WHERE config_key = \$1 FOR UPDATE",
             [$key]
         );
-        if ($res === false) {
+        if ($result === false) {
             throw new RuntimeException('config_save: select failed — ' . pg_last_error($conn));
         }
-        $current = pg_fetch_assoc($res);
-        pg_free_result($res);
+        $current = pg_fetch_assoc($result);
+        pg_free_result($result);
 
         $oldJson = null;
         if ($current !== false && $current !== null) {
@@ -152,9 +152,9 @@ function config_save(string $key, array $data, ?int $expectedVersion = null, ?in
             }
             $oldJson    = (string) $current['value'];
             $newVersion = (int) $current['version'] + 1;
-            $ok = @pg_query_params(
+            $success = @pg_query_params(
                 $conn,
-                "UPDATE $tConfig SET value = \$2::jsonb, version = \$3, updated_by = \$4, updated_at = now()
+                "UPDATE $configTable SET value = \$2::jsonb, version = \$3, updated_by = \$4, updated_at = now()
                  WHERE config_key = \$1",
                 [$key, $json, $newVersion, $userId]
             );
@@ -164,19 +164,19 @@ function config_save(string $key, array $data, ?int $expectedVersion = null, ?in
                 return ['status' => 'conflict'];
             }
             $newVersion = 1;
-            $ok = @pg_query_params(
+            $success = @pg_query_params(
                 $conn,
-                "INSERT INTO $tConfig (config_key, value, version, updated_by) VALUES (\$1, \$2::jsonb, 1, \$3)",
+                "INSERT INTO $configTable (config_key, value, version, updated_by) VALUES (\$1, \$2::jsonb, 1, \$3)",
                 [$key, $json, $userId]
             );
         }
-        if (!$ok) {
+        if (!$success) {
             throw new RuntimeException('config_save: write failed — ' . pg_last_error($conn));
         }
 
         $logOk = @pg_query_params(
             $conn,
-            "INSERT INTO $tLog (config_key, old_value, new_value, changed_by)
+            "INSERT INTO $configLogTable (config_key, old_value, new_value, changed_by)
              VALUES (\$1, \$2::jsonb, \$3::jsonb, \$4)",
             [$key, $oldJson, $json, $userId]
         );
@@ -188,9 +188,9 @@ function config_save(string $key, array $data, ?int $expectedVersion = null, ?in
         }
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
+    } catch (Throwable $exception) {
         @pg_query($conn, 'ROLLBACK');
-        error_log('[config_store] ' . $e->getMessage());
+        error_log('[config_store] ' . $exception->getMessage());
         return ['status' => 'error', 'error' => 'Database error'];
     }
 
@@ -207,26 +207,27 @@ function config_delete(string $key, ?int $userId = null): bool
     if ($conn === null) {
         return false;
     }
-    $tConfig = sys_table('config');
-    $tLog    = sys_table('config_log');
+    $configTable = sys_table('config');
+    $configLogTable    = sys_table('config_log');
 
-    $res = @pg_query_params(
+    $result = @pg_query_params(
         $conn,
-        "DELETE FROM $tConfig WHERE config_key = \$1 RETURNING value",
+        "DELETE FROM $configTable WHERE config_key = \$1 RETURNING value",
         [$key]
     );
-    if ($res === false) {
+    if ($result === false) {
         return false;
     }
-    $deleted = pg_fetch_assoc($res);
-    pg_free_result($res);
+    $deleted = pg_fetch_assoc($result);
+    pg_free_result($result);
     config_cache($key, null, true);
     if ($deleted === false || $deleted === null) {
         return false;
     }
     @pg_query_params(
         $conn,
-        "INSERT INTO $tLog (config_key, old_value, new_value, changed_by) VALUES (\$1, \$2::jsonb, NULL, \$3)",
+        "INSERT INTO $configLogTable (config_key, old_value, new_value, changed_by)"
+        . " VALUES (\$1, \$2::jsonb, NULL, \$3)",
         [$key, (string) $deleted['value'], $userId]
     );
     return true;

@@ -117,7 +117,7 @@ final class FrontApiController
                 $table = $body['table'] ?? '';
                 try {
                     $tableCfg = safe_table($schema, $table);
-                } catch (\RuntimeException $e) {
+                } catch (\RuntimeException $exception) {
                     throw new BadRequestException('Unknown table');
                 }
 
@@ -184,8 +184,8 @@ final class FrontApiController
             }
         } catch (ControlFlowException $signal) {
             throw $signal;
-        } catch (Throwable $e) {
-            error_log('[api][exception] ' . $e->getMessage());
+        } catch (Throwable $exception) {
+            error_log('[api][exception] ' . $exception->getMessage());
             throw new ServerErrorException('Internal server error');
         }
     }

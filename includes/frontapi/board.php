@@ -13,19 +13,19 @@ use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
 use App\Exception\ResponseException;
 
-function frontapi_board(FrontApiContext $ctx): never
+function frontapi_board(FrontApiContext $context): never
 {
-    $conn   = $ctx->conn;
-    $schema = $ctx->schema;
+    $conn   = $context->conn;
+    $schema = $context->schema;
 
     $boardsCfg = config_get('board') ?? [];
     $boardId   = substr($_GET['board'] ?? '', 0, 64);
 
     $boards   = filter_by_user_access('boards', $boardsCfg['boards'] ?? []);
     $boardCfg = null;
-    foreach ($boards as $b) {
-        if (($b['id'] ?? '') === $boardId) {
-            $boardCfg = $b;
+    foreach ($boards as $board) {
+        if (($board['id'] ?? '') === $boardId) {
+            $boardCfg = $board;
             break;
         }
     }
@@ -42,7 +42,7 @@ function frontapi_board(FrontApiContext $ctx): never
         'status_column' => $boardCfg['status_column'] ?? '',
         'columns'       => [],
         'cards'         => [],
-        'can_edit'      => !$ctx->isViewer(),
+        'can_edit'      => !$context->isViewer(),
     ];
 
     $table     = $boardCfg['table'] ?? '';
@@ -61,7 +61,7 @@ function frontapi_board(FrontApiContext $ctx): never
         $tableCfg = safe_table($schema, $table);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
+    } catch (Throwable $exception) {
         throw ResponseException::encoded($meta);
     }
 
@@ -89,12 +89,12 @@ function frontapi_board(FrontApiContext $ctx): never
     $enumColors = is_array($statusDef['enum_colors'] ?? null) ? $statusDef['enum_colors'] : [];
     $lanes      = [];
     if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
-        foreach ($statusDef['options'] as $opt) {
-            $val = (string)$opt;
+        foreach ($statusDef['options'] as $option) {
+            $laneValue = (string)$option;
             $lanes[] = [
-                'value' => $val,
-                'label' => $val,
-                'color' => $enumColors[$val] ?? $defaultColor,
+                'value' => $laneValue,
+                'label' => $laneValue,
+                'color' => $enumColors[$laneValue] ?? $defaultColor,
             ];
         }
     } else {
@@ -102,7 +102,7 @@ function frontapi_board(FrontApiContext $ctx): never
         $laneOwner  = '';
         if (!empty($tableCfg['owner_restricted'])) {
             $laneOwner  = owner_restriction_sql('_t.' . pg_ident($idCol), 1, 2);
-            $laneParams = [$table, $ctx->userId];
+            $laneParams = [$table, $context->userId];
         }
         $sqlDistinct = sprintf(
             'SELECT DISTINCT %s AS v FROM %s.%s AS _t WHERE %s IS NOT NULL%s ORDER BY 1',
@@ -112,18 +112,18 @@ function frontapi_board(FrontApiContext $ctx): never
             pg_ident($statusCol),
             $laneOwner
         );
-        $rd = @pg_query_params($conn, $sqlDistinct, $laneParams);
-        if ($rd) {
-            while ($row = pg_fetch_assoc($rd)) {
-                $val = (string)$row['v'];
-                $lanes[] = ['value' => $val, 'label' => $val, 'color' => $defaultColor];
+        $laneDistinctResult = @pg_query_params($conn, $sqlDistinct, $laneParams);
+        if ($laneDistinctResult) {
+            while ($row = pg_fetch_assoc($laneDistinctResult)) {
+                $laneValue = (string)$row['v'];
+                $lanes[] = ['value' => $laneValue, 'label' => $laneValue, 'color' => $defaultColor];
             }
-            pg_free_result($rd);
+            pg_free_result($laneDistinctResult);
         }
     }
 
-    $cols       = column_list($tableCfg);
-    $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $cols)));
+    $columns       = column_list($tableCfg);
+    $selectCols = array_values(array_unique(array_merge([$idCol, $statusCol, $titleCol], $columns)));
     $cards = [];
     $selectSql  = implode(', ', array_map(fn($column) => pg_ident($column), $selectCols));
 
@@ -131,7 +131,7 @@ function frontapi_board(FrontApiContext $ctx): never
     $cardWhere  = '';
     if (!empty($tableCfg['owner_restricted'])) {
         $cardWhere  = ' WHERE TRUE' . owner_restriction_sql('_t.' . pg_ident($idCol), 1, 2);
-        $cardParams = [$table, $ctx->userId];
+        $cardParams = [$table, $context->userId];
     }
     $sql = sprintf(
         'SELECT %s FROM %s.%s AS _t%s ORDER BY %s DESC',
@@ -141,13 +141,13 @@ function frontapi_board(FrontApiContext $ctx): never
         $cardWhere,
         pg_ident($idCol)
     );
-    $res  = @pg_query_params($conn, $sql, $cardParams);
+    $result  = @pg_query_params($conn, $sql, $cardParams);
     $rows = [];
-    if ($res) {
-        while ($row = pg_fetch_assoc($res)) {
+    if ($result) {
+        while ($row = pg_fetch_assoc($result)) {
             $rows[] = $row;
         }
-        pg_free_result($res);
+        pg_free_result($result);
     }
     $rows = map_fk_display($schema, $tableCfg, $rows, $conn);
     foreach ($rows as $row) {
@@ -179,16 +179,16 @@ function frontapi_board(FrontApiContext $ctx): never
     throw ResponseException::encoded($meta);
 }
 
-function frontapi_board_move_card(FrontApiWriteContext $ctx): never
+function frontapi_board_move_card(FrontApiWriteContext $context): never
 {
-    $conn       = $ctx->conn;
-    $body       = $ctx->body;
-    $table      = $ctx->table;
-    $tableCfg   = $ctx->tableCfg;
-    $schemaName = $ctx->schemaName;
-    $idCol      = $ctx->idCol;
+    $conn       = $context->conn;
+    $body       = $context->body;
+    $table      = $context->table;
+    $tableCfg   = $context->tableCfg;
+    $schemaName = $context->schemaName;
+    $idCol      = $context->idCol;
 
-    if ($ctx->isViewer()) {
+    if ($context->isViewer()) {
         throw new ForbiddenException('Forbidden');
     }
 
@@ -196,9 +196,9 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
     $boardId   = substr($body['board'] ?? '', 0, 64);
 
     $boardCfg  = null;
-    foreach (filter_by_user_access('boards', $boardsCfg['boards'] ?? []) as $b) {
-        if (($b['id'] ?? '') === $boardId) {
-            $boardCfg = $b;
+    foreach (filter_by_user_access('boards', $boardsCfg['boards'] ?? []) as $board) {
+        if (($board['id'] ?? '') === $boardId) {
+            $boardCfg = $board;
             break;
         }
     }
@@ -225,26 +225,26 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
     if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
         $allowed = array_map('strval', $statusDef['options']);
     } else {
-        $sqlD = sprintf(
+        $distinctSql = sprintf(
             'SELECT DISTINCT %s AS v FROM %s.%s WHERE %s IS NOT NULL',
             pg_ident($statusCol),
             pg_ident($schemaName),
             pg_ident($table),
             pg_ident($statusCol)
         );
-        $rD = @pg_query($conn, $sqlD);
-        if ($rD) {
-            while ($row = pg_fetch_assoc($rD)) {
+        $distinctResult = @pg_query($conn, $distinctSql);
+        if ($distinctResult) {
+            while ($row = pg_fetch_assoc($distinctResult)) {
                 $allowed[] = (string)$row['v'];
             }
-            pg_free_result($rD);
+            pg_free_result($distinctResult);
         }
     }
     if (!in_array($newStatus, $allowed, true)) {
         throw new BadRequestException('Invalid status value');
     }
 
-    check_record_ownership($conn, $tableCfg, $table, $id, $ctx->userId);
+    check_record_ownership($conn, $tableCfg, $table, $id, $context->userId);
 
     $sql = sprintf(
         'UPDATE %s.%s SET %s = $1 WHERE %s = $2',
@@ -253,17 +253,17 @@ function frontapi_board_move_card(FrontApiWriteContext $ctx): never
         pg_ident($statusCol),
         pg_ident($idCol)
     );
-    $res = @pg_query_params($conn, $sql, [$newStatus, $id]);
-    if (!$res) {
+    $result = @pg_query_params($conn, $sql, [$newStatus, $id]);
+    if (!$result) {
         http_response_code(500);
         echo json_encode(['error' => 'Database error']);
         error_log('Board move_card error: ' . pg_last_error($conn));
         throw ResponseException::sent();
     }
-    if (pg_affected_rows($res) === 0) {
+    if (pg_affected_rows($result) === 0) {
         throw new NotFoundException('Record not found');
     }
 
-    log_user_action($conn, $ctx->userId, 'BOARD_MOVE', $table, $id);
+    log_user_action($conn, $context->userId, 'BOARD_MOVE', $table, $id);
     throw ResponseException::encoded(['success' => true]);
 }

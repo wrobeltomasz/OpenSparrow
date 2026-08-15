@@ -157,8 +157,8 @@ final class LanguageFilesTest extends TestCase
     private function placeholders($value): array
     {
         $text = is_array($value) ? implode(' ', array_map('strval', $value)) : (string) $value;
-        preg_match_all('/\{(\w+)\}/', $text, $m);
-        $names = array_unique($m[1]);
+        preg_match_all('/\{(\w+)\}/', $text, $matches);
+        $names = array_unique($matches[1]);
         sort($names);
         return $names;
     }

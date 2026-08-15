@@ -61,21 +61,21 @@ final class RequestScopeInventoryTest extends TestCase
 
     private function code(string $relPath): string
     {
-        $out = '';
+        $output = '';
         foreach (token_get_all((string) file_get_contents(self::$root . '/' . $relPath)) as $token) {
             if (is_array($token)) {
                 if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
                     continue;
                 }
-                $out .= $token[1];
+                $output .= $token[1];
             } else {
-                $out .= $token;
+                $output .= $token;
             }
         }
-        return $out;
+        return $output;
     }
 
-    private function scanSource(string $src): array
+    private function scanSource(string $source): array
     {
         $found = [];
         foreach (self::PROTECTED_KEYS as $key) {
@@ -84,7 +84,7 @@ final class RequestScopeInventoryTest extends TestCase
             foreach (self::HOLDERS as $holder) {
                 $pattern = '/\$' . preg_quote($holder, '/')
                     . '\s*\[\s*[\'"]' . $quoted . '[\'"]\s*\]/';
-                if (preg_match($pattern, $src) === 1) {
+                if (preg_match($pattern, $source) === 1) {
                     $found[] = $holder . '.' . $key;
                 }
             }
@@ -92,7 +92,7 @@ final class RequestScopeInventoryTest extends TestCase
             foreach (self::ACCESSORS as $accessor) {
                 $pattern = '/->\s*' . preg_quote($accessor, '/')
                     . '\s*\(\s*[\'"]' . $quoted . '[\'"]/';
-                if (preg_match($pattern, $src) === 1) {
+                if (preg_match($pattern, $source) === 1) {
                     $found[] = $accessor . '().' . $key;
                 }
             }
@@ -193,10 +193,10 @@ final class RequestScopeInventoryTest extends TestCase
                 continue;
             }
 
-            $src   = $this->code($file);
+            $source   = $this->code($file);
             $found = false;
             foreach (array_merge(self::GATE_CALLS, ['filter_by_user_access(']) as $call) {
-                if (str_contains($src, $call)) {
+                if (str_contains($source, $call)) {
                     $found = true;
                     break;
                 }

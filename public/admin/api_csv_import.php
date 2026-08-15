@@ -24,36 +24,41 @@ final class CsvReader
 {
     public static function read(string $path, string $delimiter = ',', string $encoding = 'UTF-8'): \Generator
     {
-        $fh = fopen($path, 'r');
-        if ($fh === false) {
+        $fileHandle = fopen($path, 'r');
+        if ($fileHandle === false) {
             throw new \RuntimeException('Cannot open CSV file for reading.');
         }
         try {
-            $headers = fgetcsv($fh, 0, $delimiter, '"', '\\');
+            $headers = fgetcsv($fileHandle, 0, $delimiter, '"', '\\');
             if ($headers === false || $headers === null) {
                 return;
             }
             $headers[0] = ltrim((string) $headers[0], "\xEF\xBB\xBF");
             $headers    = array_map('trim', $headers);
             if ($encoding !== 'UTF-8') {
-                $headers = array_map(fn($h) => mb_convert_encoding($h, 'UTF-8', $encoding), $headers);
+                $headers = array_map(fn($header) => mb_convert_encoding($header, 'UTF-8', $encoding), $headers);
             }
             yield 0 => $headers;
 
             $rowNum = 1;
-            while (($row = fgetcsv($fh, 0, $delimiter, '"', '\\')) !== false) {
+            while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
                 if (count($row) === 1 && $row[0] === null) {
                     continue;
                 }
                 $count = count($headers);
                 $row   = array_pad(array_slice($row, 0, $count), $count, null);
                 if ($encoding !== 'UTF-8') {
-                    $row = array_map(fn($v) => $v !== null ? mb_convert_encoding($v, 'UTF-8', $encoding) : null, $row);
+                    $row = array_map(
+                        fn($value) => $value !== null
+                            ? mb_convert_encoding($value, 'UTF-8', $encoding)
+                            : null,
+                        $row
+                    );
                 }
                 yield $rowNum++ => array_combine($headers, $row);
             }
         } finally {
-            fclose($fh);
+            fclose($fileHandle);
         }
     }
 }
@@ -96,57 +101,57 @@ final class RowCaster
 {
     public static function cast(?string $value, string $colType): mixed
     {
-        $v = ($value === null) ? null : trim($value);
-        if ($v === '' || $v === null) {
+        $trimmed = ($value === null) ? null : trim($value);
+        if ($trimmed === '' || $trimmed === null) {
             return null;
         }
-        $t = strtolower($colType);
+        $normalizedType = strtolower($colType);
 
-        if (str_contains($t, 'bool')) {
-            return in_array(strtolower($v), ['1', 'true', 't', 'yes', 'y'], true) ? 'true' : 'false';
+        if (str_contains($normalizedType, 'bool')) {
+            return in_array(strtolower($trimmed), ['1', 'true', 't', 'yes', 'y'], true) ? 'true' : 'false';
         }
-        if (str_contains($t, 'int') || str_contains($t, 'serial')) {
-            return is_numeric($v) ? (string)(int) $v : null;
+        if (str_contains($normalizedType, 'int') || str_contains($normalizedType, 'serial')) {
+            return is_numeric($trimmed) ? (string)(int) $trimmed : null;
         }
         if (
-            str_contains($t, 'numeric') || str_contains($t, 'decimal') ||
-            str_contains($t, 'float')   || str_contains($t, 'real')    ||
-            str_contains($t, 'double')
+            str_contains($normalizedType, 'numeric') || str_contains($normalizedType, 'decimal') ||
+            str_contains($normalizedType, 'float')   || str_contains($normalizedType, 'real')    ||
+            str_contains($normalizedType, 'double')
         ) {
-            $n = str_replace(',', '.', $v);
-            return is_numeric($n) ? (string)(float) $n : null;
+            $normalizedNumber = str_replace(',', '.', $trimmed);
+            return is_numeric($normalizedNumber) ? (string)(float) $normalizedNumber : null;
         }
-        if ($t === 'date') {
-            return self::toDate($v);
+        if ($normalizedType === 'date') {
+            return self::toDate($trimmed);
         }
-        if (str_contains($t, 'timestamp') || str_contains($t, 'datetime')) {
-            return self::toTimestamp($v);
+        if (str_contains($normalizedType, 'timestamp') || str_contains($normalizedType, 'datetime')) {
+            return self::toTimestamp($trimmed);
         }
-        if (str_contains($t, 'time')) {
-            return self::toTime($v);
+        if (str_contains($normalizedType, 'time')) {
+            return self::toTime($trimmed);
         }
-        return $v;
+        return $trimmed;
     }
 
-    private static function toDate(string $v): ?string
+    private static function toDate(string $value): ?string
     {
-        if (preg_match('/^(\d{2})[.\\/](\d{2})[.\\/](\d{4})$/', $v, $m)) {
-            $v = "{$m[3]}-{$m[2]}-{$m[1]}";
+        if (preg_match('/^(\d{2})[.\\/](\d{2})[.\\/](\d{4})$/', $value, $matches)) {
+            $value = "{$matches[3]}-{$matches[2]}-{$matches[1]}";
         }
-        $ts = strtotime($v);
-        return $ts !== false ? date('Y-m-d', $ts) : null;
+        $timestamp = strtotime($value);
+        return $timestamp !== false ? date('Y-m-d', $timestamp) : null;
     }
 
-    private static function toTimestamp(string $v): ?string
+    private static function toTimestamp(string $value): ?string
     {
-        $ts = strtotime($v);
-        return $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
+        $timestamp = strtotime($value);
+        return $timestamp !== false ? date('Y-m-d H:i:s', $timestamp) : null;
     }
 
-    private static function toTime(string $v): ?string
+    private static function toTime(string $value): ?string
     {
-        $ts = strtotime($v);
-        return $ts !== false ? date('H:i:s', $ts) : null;
+        $timestamp = strtotime($value);
+        return $timestamp !== false ? date('H:i:s', $timestamp) : null;
     }
 }
 
@@ -166,16 +171,16 @@ final class ImportRepository
         $sql = 'INSERT INTO ' . sys_table('imports')
             . ' (user_id, filename, target_table, column_mapping, conflict_column, status)'
             . ' VALUES ($1,$2,$3,$4,$5,$6) RETURNING id';
-        $res = @pg_query_params($this->conn, $sql, [
+        $result = @pg_query_params($this->conn, $sql, [
             $userId, $filename, $tableName,
             json_encode($mapping), $conflictCol, 'running',
         ]);
-        if ($res === false) {
+        if ($result === false) {
             throw new \RuntimeException(
                 'Failed to create import record. Check that spw_imports table exists (run Initialize System Tables).'
             );
         }
-        return (int) pg_fetch_row($res)[0];
+        return (int) pg_fetch_row($result)[0];
     }
 
     public function finalize(
@@ -197,37 +202,40 @@ final class ImportRepository
         if (empty($rowErrors)) {
             return;
         }
-        $t    = sys_table('import_rows_log');
-        $ph   = [];
+        $logTable    = sys_table('import_rows_log');
+        $placeholders   = [];
         $args = [];
-        $i    = 1;
+        $placeholderIndex    = 1;
         foreach ($rowErrors as $entry) {
-            $ph[]   = "(\${$i},\$" . ($i + 1) . ",\$" . ($i + 2) . ",\$" . ($i + 3) . ')';
+            $placeholders[]   = "(\${$placeholderIndex},\$" . ($placeholderIndex + 1)
+                . ",\$" . ($placeholderIndex + 2)
+                . ",\$" . ($placeholderIndex + 3) . ')';
             $args[] = $importId;
             $args[] = $entry['row_number'];
             $args[] = json_encode($entry['raw_data']);
             $args[] = $entry['error'];
-            $i += 4;
+            $placeholderIndex += 4;
         }
-        $sql = "INSERT INTO {$t} (import_id,row_number,raw_data,error_message) VALUES " . implode(',', $ph);
+        $sql = "INSERT INTO {$logTable} (import_id,row_number,raw_data,error_message) VALUES "
+            . implode(',', $placeholders);
         @pg_query_params($this->conn, $sql, $args);
     }
 
     public function getHistory(): array
     {
-        $ti = sys_table('imports');
-        $tu = sys_table('users');
+        $importsTable = sys_table('imports');
+        $usersTable = sys_table('users');
         $sql = "SELECT i.id,i.filename,i.target_table,i.status,i.total_rows,i.imported_rows,
                        i.skipped_rows,i.started_at,i.finished_at,u.username
-                FROM {$ti} i
-                LEFT JOIN {$tu} u ON u.id=i.user_id
+                FROM {$importsTable} i
+                LEFT JOIN {$usersTable} u ON u.id=i.user_id
                 ORDER BY i.started_at DESC LIMIT 100";
-        $res = @pg_query($this->conn, $sql);
-        if ($res === false) {
+        $result = @pg_query($this->conn, $sql);
+        if ($result === false) {
             return [];
         }
         $rows = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $rows[] = $row;
         }
         return $rows;
@@ -235,17 +243,18 @@ final class ImportRepository
 
     public function getRowLog(int $importId): array
     {
-        $t   = sys_table('import_rows_log');
-        $res = @pg_query_params(
+        $logTable   = sys_table('import_rows_log');
+        $result = @pg_query_params(
             $this->conn,
-            "SELECT row_number,raw_data,error_message,logged_at FROM {$t} WHERE import_id=\$1 ORDER BY row_number ASC",
+            "SELECT row_number,raw_data,error_message,logged_at FROM {$logTable}"
+            . " WHERE import_id=\$1 ORDER BY row_number ASC",
             [$importId]
         );
-        if ($res === false) {
+        if ($result === false) {
             return [];
         }
         $rows = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $rows[] = $row;
         }
         return $rows;
@@ -314,8 +323,8 @@ final class CsvImportService
             $batch[] = ['rowNum' => $rowNum, 'data' => $castRow, 'raw' => $rowData];
 
             if (count($batch) >= $batchSize) {
-                [$imp, $skip, $errs] = $this->flushBatch($batch, $tableIdent, $dbCols, $conflictCol);
-                $imported += $imp;
+                [$importedCount, $skip, $errs] = $this->flushBatch($batch, $tableIdent, $dbCols, $conflictCol);
+                $imported += $importedCount;
                 $skipped  += $skip;
                 array_push($rowErrors, ...$errs);
                 $batch = [];
@@ -323,8 +332,8 @@ final class CsvImportService
         }
 
         if (!empty($batch)) {
-            [$imp, $skip, $errs] = $this->flushBatch($batch, $tableIdent, $dbCols, $conflictCol);
-            $imported += $imp;
+            [$importedCount, $skip, $errs] = $this->flushBatch($batch, $tableIdent, $dbCols, $conflictCol);
+            $imported += $importedCount;
             $skipped  += $skip;
             array_push($rowErrors, ...$errs);
         }
@@ -344,13 +353,17 @@ final class CsvImportService
 
         $sql    = $this->buildInsertSql($batch, $tableIdent, $dbCols, $conflictCol);
         $params = $this->buildParams($batch, $dbCols);
-        $res    = @pg_query_params($this->conn, $sql, $params);
+        $result    = @pg_query_params($this->conn, $sql, $params);
 
-        if ($res === false) {
+        if ($result === false) {
             @pg_query($this->conn, 'ROLLBACK');
-            $err    = substr(pg_last_error($this->conn), 0, 300);
+            $error    = substr(pg_last_error($this->conn), 0, 300);
             $errors = array_map(
-                fn($e) => ['row_number' => $e['rowNum'], 'raw_data' => $e['raw'], 'error' => "Batch DB error: {$err}"],
+                fn($batchEntry) => [
+                    'row_number' => $batchEntry['rowNum'],
+                    'raw_data'   => $batchEntry['raw'],
+                    'error'      => "Batch DB error: {$error}",
+                ],
                 $batch
             );
             return [0, count($batch), $errors];
@@ -369,24 +382,24 @@ final class CsvImportService
         $colList = implode(',', array_map('pg_ident', $dbCols));
         $numCols = count($dbCols);
         $rows    = [];
-        $idx     = 1;
+        $index     = 1;
         foreach ($batch as $_) {
-            $ph = [];
+            $placeholders = [];
             for ($column = 0; $column < $numCols; $column++) {
-                $ph[] = '$' . $idx++;
+                $placeholders[] = '$' . $index++;
             }
-            $rows[] = '(' . implode(',', $ph) . ')';
+            $rows[] = '(' . implode(',', $placeholders) . ')';
         }
         $sql = "INSERT INTO {$tableIdent} ({$colList}) VALUES " . implode(',', $rows);
 
         if ($conflictCol !== null && $conflictCol !== '') {
-            $ci         = pg_ident($conflictCol);
+            $conflictIdent         = pg_ident($conflictCol);
             $updateCols = array_filter($dbCols, fn($column) => $column !== $conflictCol);
             if (!empty($updateCols)) {
                 $sets = array_map(fn($column) => pg_ident($column) . '=EXCLUDED.' . pg_ident($column), $updateCols);
-                $sql .= " ON CONFLICT ({$ci}) DO UPDATE SET " . implode(',', $sets);
+                $sql .= " ON CONFLICT ({$conflictIdent}) DO UPDATE SET " . implode(',', $sets);
             } else {
-                $sql .= " ON CONFLICT ({$ci}) DO NOTHING";
+                $sql .= " ON CONFLICT ({$conflictIdent}) DO NOTHING";
             }
         }
 
@@ -397,8 +410,8 @@ final class CsvImportService
     {
         $params = [];
         foreach ($batch as $entry) {
-            foreach ($dbCols as $col) {
-                $params[] = $entry['data'][$col] ?? null;
+            foreach ($dbCols as $columnName) {
+                $params[] = $entry['data'][$columnName] ?? null;
             }
         }
         return $params;
@@ -416,22 +429,22 @@ final class CsvImportService
         $tableIdent = pg_ident($tableSchema) . '.' . pg_ident($tableName);
 
         $colMap = [];
-        foreach ($mapping as $csvHdr => $dbCol) {
+        foreach ($mapping as $csvHeaderName => $dbCol) {
             if ($dbCol !== null && $dbCol !== '' && !isset($colMap[$dbCol])) {
-                $colMap[$dbCol] = $csvHdr;
+                $colMap[$dbCol] = $csvHeaderName;
             }
         }
         if (empty($colMap)) {
             throw new \RuntimeException('No columns mapped.');
         }
 
-        $fh = fopen($csvPath, 'r');
-        if ($fh === false) {
+        $fileHandle = fopen($csvPath, 'r');
+        if ($fileHandle === false) {
             throw new \RuntimeException('Cannot open CSV file.');
         }
 
         try {
-            $csvHeaders = fgetcsv($fh, 0, $delimiter, '"', '\\');
+            $csvHeaders = fgetcsv($fileHandle, 0, $delimiter, '"', '\\');
             if ($csvHeaders === false || $csvHeaders === null) {
                 throw new \RuntimeException('Empty CSV file.');
             }
@@ -440,13 +453,13 @@ final class CsvImportService
 
             $mappedCount    = count(array_filter(
                 $csvHeaders,
-                fn($h) => isset($mapping[$h]) && $mapping[$h] !== null && $mapping[$h] !== ''
+                fn($header) => isset($mapping[$header]) && $mapping[$header] !== null && $mapping[$header] !== ''
             ));
             $isDirectStream = $mappedCount === count($csvHeaders);
 
             $headerIdx  = array_flip($csvHeaders);
             $colIndices = $isDirectStream ? null : array_map(
-                fn($csvHdr) => $headerIdx[$csvHdr] ?? null,
+                fn($csvHeaderName) => $headerIdx[$csvHeaderName] ?? null,
                 array_values($colMap)
             );
 
@@ -460,7 +473,7 @@ final class CsvImportService
             $total  = 0;
             $buffer = '';
 
-            while (($row = fgetcsv($fh, 0, $delimiter, '"', '\\')) !== false) {
+            while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
                 if (count($row) === 1 && $row[0] === null) {
                     continue;
                 }
@@ -469,21 +482,21 @@ final class CsvImportService
 
                 $row = array_pad(array_slice($row, 0, $headerCount), $headerCount, '');
                 if ($isDirectStream) {
-                    $fields = array_map(function ($v) use ($encoding) {
-                        $s = (string) $v;
+                    $fields = array_map(function ($value) use ($encoding) {
+                        $text = (string) $value;
                         if ($encoding !== 'UTF-8') {
-                            $s = mb_convert_encoding($s, 'UTF-8', $encoding);
+                            $text = mb_convert_encoding($text, 'UTF-8', $encoding);
                         }
-                        return self::quoteForCopy($s);
+                        return self::quoteForCopy($text);
                     }, $row);
                 } else {
                     $fields = [];
-                    foreach ($colIndices as $idx) {
-                        $val = ($idx !== null && isset($row[$idx])) ? (string) $row[$idx] : '';
+                    foreach ($colIndices as $index) {
+                        $cellValue = ($index !== null && isset($row[$index])) ? (string) $row[$index] : '';
                         if ($encoding !== 'UTF-8') {
-                            $val = mb_convert_encoding($val, 'UTF-8', $encoding);
+                            $cellValue = mb_convert_encoding($cellValue, 'UTF-8', $encoding);
                         }
-                        $fields[] = self::quoteForCopy($val);
+                        $fields[] = self::quoteForCopy($cellValue);
                     }
                 }
                 $buffer .= implode(',', $fields) . "\n";
@@ -502,14 +515,14 @@ final class CsvImportService
                 $pgErr = pg_last_error($this->conn);
                 $hint  = '';
                 if (
-                    preg_match('/invalid input syntax for type (\w+).*column (\w+)/i', $pgErr, $m)
+                    preg_match('/invalid input syntax for type (\w+).*column (\w+)/i', $pgErr, $matches)
                     || preg_match(
                         '/niepra.*?dla typu (\w+).*kolumn[ay] (\w+)/iu',
                         $pgErr,
-                        $m
+                        $matches
                     )
                 ) {
-                    $hint = " Column \"{$m[2]}\" is typed {$m[1]} but received a non-{$m[1]} value."
+                    $hint = " Column \"{$matches[2]}\" is typed {$matches[1]} but received a non-{$matches[1]} value."
                         . ' Cause: an earlier field in that row has an unquoted delimiter, '
                         . 'shifting all subsequent columns.'
                         . ' Fix: use Normal mode (per-row error reporting) or correct the source CSV quoting.';
@@ -522,28 +535,28 @@ final class CsvImportService
 
             return [$total, $total, 0];
         } finally {
-            fclose($fh);
+            fclose($fileHandle);
         }
     }
 
-    private static function quoteForCopy(string $val): string
+    private static function quoteForCopy(string $cellValue): string
     {
         if (
-            str_contains($val, ',') || str_contains($val, '"')
-            || str_contains($val, "\n") || str_contains($val, "\r")
+            str_contains($cellValue, ',') || str_contains($cellValue, '"')
+            || str_contains($cellValue, "\n") || str_contains($cellValue, "\r")
         ) {
-            return '"' . str_replace('"', '""', $val) . '"';
+            return '"' . str_replace('"', '""', $cellValue) . '"';
         }
-        return $val;
+        return $cellValue;
     }
 }
 
 $action = $_GET['action'] ?? '';
 
-function csv_fail(string $msg, int $code = 400): never
+function csv_fail(string $message, int $code = 400): never
 {
     http_response_code($code);
-    throw ResponseException::encoded(['status' => 'error', 'error' => $msg]);
+    throw ResponseException::encoded(['status' => 'error', 'error' => $message]);
 }
 
 if ($action === 'csv_import_history') {
@@ -553,8 +566,8 @@ if ($action === 'csv_import_history') {
         echo json_encode(['status' => 'success', 'imports' => $repo->getHistory()]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (\Exception $e) {
-        csv_fail(admin_error_message($e));
+    } catch (\Exception $exception) {
+        csv_fail(admin_error_message($exception));
     }
     throw ResponseException::sent();
 }
@@ -571,8 +584,8 @@ if ($action === 'csv_import_log') {
         echo json_encode(['status' => 'success', 'rows' => $rows, 'count' => count($rows)]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (\Exception $e) {
-        csv_fail(admin_error_message($e));
+    } catch (\Exception $exception) {
+        csv_fail(admin_error_message($exception));
     }
     throw ResponseException::sent();
 }
@@ -589,8 +602,8 @@ if ($action === 'csv_import_upload') {
 
     try {
         CsvFileValidator::validate($file);
-    } catch (\InvalidArgumentException $e) {
-        csv_fail($e->getMessage());
+    } catch (\InvalidArgumentException $exception) {
+        csv_fail($exception->getMessage());
     }
 
     $request   = os_request();
@@ -599,8 +612,8 @@ if ($action === 'csv_import_upload') {
     $delimiter = in_array($delim, $allowed, true) ? $delim : ',';
 
     $allowedEnc = ['UTF-8', 'Windows-1250', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'Windows-1251'];
-    $enc        = $request->post('csv_encoding', 'UTF-8');
-    $encoding   = in_array($enc, $allowedEnc, true) ? $enc : 'UTF-8';
+    $requestedEncoding        = $request->post('csv_encoding', 'UTF-8');
+    $encoding   = in_array($requestedEncoding, $allowedEnc, true) ? $requestedEncoding : 'UTF-8';
 
     $headers  = [];
     $preview  = [];
@@ -663,8 +676,8 @@ if ($action === 'csv_import_execute') {
     $delim        = (string) ($body['delimiter']       ?? ',');
     $delimiter    = in_array($delim, $allowed, true) ? $delim : ',';
     $allowedEnc   = ['UTF-8', 'Windows-1250', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'Windows-1251'];
-    $enc          = (string) ($body['encoding']        ?? 'UTF-8');
-    $encoding     = in_array($enc, $allowedEnc, true) ? $enc : 'UTF-8';
+    $requestedEncoding          = (string) ($body['encoding']        ?? 'UTF-8');
+    $encoding     = in_array($requestedEncoding, $allowedEnc, true) ? $requestedEncoding : 'UTF-8';
 
     if (!preg_match('/^[a-f0-9]{32}\.csv$/', $tmpName)) {
         csv_fail('Invalid tmp_name token.');
@@ -761,12 +774,12 @@ if ($action === 'csv_import_execute') {
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (\Exception $e) {
+    } catch (\Exception $exception) {
         if ($importId > 0 && isset($repo)) {
-            $repo->finalize($importId, 'failed', 0, 0, 0, $e->getMessage());
+            $repo->finalize($importId, 'failed', 0, 0, 0, $exception->getMessage());
         }
         @unlink($csvPath);
-        csv_fail($e->getMessage());
+        csv_fail($exception->getMessage());
     }
     throw ResponseException::sent();
 }
@@ -794,10 +807,10 @@ if ($action === 'csv_create_table') {
 
     $colDefs = [];
     $seen    = [];
-    foreach ($rawCols as $col) {
-        $cName = preg_replace('/[^a-z0-9_]/', '', strtolower((string) ($col['name'] ?? '')));
-        $cType = in_array((string) ($col['type'] ?? ''), $allowedTypes, true)
-            ? (string) $col['type']
+    foreach ($rawCols as $columnDefinition) {
+        $cName = preg_replace('/[^a-z0-9_]/', '', strtolower((string) ($columnDefinition['name'] ?? '')));
+        $cType = in_array((string) ($columnDefinition['type'] ?? ''), $allowedTypes, true)
+            ? (string) $columnDefinition['type']
             : 'varchar(255)';
         if ($cName === '' || $cName === 'id' || isset($seen[$cName])) {
             continue;
@@ -814,19 +827,22 @@ if ($action === 'csv_create_table') {
 
         @pg_query($conn, 'BEGIN');
 
-        $res = @pg_query($conn, "CREATE TABLE {$safeSchema}.{$safeTable} (id serial4 NOT NULL PRIMARY KEY)");
-        if ($res === false) {
+        $result = @pg_query($conn, "CREATE TABLE {$safeSchema}.{$safeTable} (id serial4 NOT NULL PRIMARY KEY)");
+        if ($result === false) {
             @pg_query($conn, 'ROLLBACK');
             csv_fail('Cannot create table: ' . substr(pg_last_error($conn), 0, 300));
         }
 
-        foreach ($colDefs as $col) {
-            $safeCol = pg_escape_identifier($conn, $col['name']);
-            $res = @pg_query($conn, "ALTER TABLE {$safeSchema}.{$safeTable} ADD COLUMN {$safeCol} {$col['type']}");
-            if ($res === false) {
-                $err = substr(pg_last_error($conn), 0, 300);
+        foreach ($colDefs as $columnDefinition) {
+            $safeCol = pg_escape_identifier($conn, $columnDefinition['name']);
+            $result = @pg_query(
+                $conn,
+                "ALTER TABLE {$safeSchema}.{$safeTable} ADD COLUMN {$safeCol} {$columnDefinition['type']}"
+            );
+            if ($result === false) {
+                $error = substr(pg_last_error($conn), 0, 300);
                 @pg_query($conn, 'ROLLBACK');
-                csv_fail('Cannot add column "' . $col['name'] . '": ' . $err);
+                csv_fail('Cannot add column "' . $columnDefinition['name'] . '": ' . $error);
             }
         }
 
@@ -857,10 +873,10 @@ if ($action === 'csv_create_table') {
                 'readonly'     => true,
             ],
         ];
-        foreach ($colDefs as $col) {
-            $schemaCols[$col['name']] = [
-                'display_name' => ucwords(str_replace('_', ' ', $col['name'])),
-                'type'         => $typeMap[$col['type']] ?? 'text',
+        foreach ($colDefs as $columnDefinition) {
+            $schemaCols[$columnDefinition['name']] = [
+                'display_name' => ucwords(str_replace('_', ' ', $columnDefinition['name'])),
+                'type'         => $typeMap[$columnDefinition['type']] ?? 'text',
                 'not_null'     => false,
                 'show_in_grid' => true,
                 'show_in_edit' => true,
@@ -892,8 +908,8 @@ if ($action === 'csv_create_table') {
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (\Exception $e) {
-        csv_fail($e->getMessage());
+    } catch (\Exception $exception) {
+        csv_fail($exception->getMessage());
     }
     throw ResponseException::sent();
 }
@@ -901,25 +917,25 @@ if ($action === 'csv_create_table') {
 if ($action === 'csv_schemas') {
     try {
         $conn = db_connect();
-        $res  = pg_query(
+        $result  = pg_query(
             $conn,
             "SELECT schema_name FROM information_schema.schemata
               WHERE schema_name NOT LIKE 'pg_%'
                 AND schema_name <> 'information_schema'
               ORDER BY schema_name"
         );
-        if ($res === false) {
+        if ($result === false) {
             csv_fail('Failed to query schemas.');
         }
         $schemas = [];
-        while ($row = pg_fetch_row($res)) {
+        while ($row = pg_fetch_row($result)) {
             $schemas[] = $row[0];
         }
         echo json_encode(['status' => 'success', 'schemas' => $schemas]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (\Exception $e) {
-        csv_fail(admin_error_message($e));
+    } catch (\Exception $exception) {
+        csv_fail(admin_error_message($exception));
     }
     throw ResponseException::sent();
 }

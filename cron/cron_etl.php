@@ -20,9 +20,9 @@ function etl_run_single_job(
     bool $dryRun
 ): bool {
     $job = null;
-    foreach ((array)($config['jobs'] ?? []) as $j) {
-        if (is_array($j) && (string)($j['id'] ?? '') === $jobId) {
-            $job = $j;
+    foreach ((array)($config['jobs'] ?? []) as $candidateJob) {
+        if (is_array($candidateJob) && (string)($candidateJob['id'] ?? '') === $jobId) {
+            $job = $candidateJob;
             break;
         }
     }
@@ -40,17 +40,18 @@ function etl_run_single_job(
 
     etl_cli_log("[etl] Job '{$jobName}' → {$job['target_table']} (" . ($job['load_mode'] ?? 'full_refresh') . ')...');
 
-    $tLog     = sys_table('etl_log');
-    $logTable = etl_log_table_ready($conn, $tLog);
+    $etlLogTable     = sys_table('etl_log');
+    $logTable = etl_log_table_ready($conn, $etlLogTable);
 
     $logId = null;
     if ($logTable && !$dryRun) {
-        $ins = @pg_query_params(
+        $insertResult = @pg_query_params(
             $conn,
-            "INSERT INTO {$tLog} (job_id, job_name, triggered_by, status) VALUES ($1, $2, $3, 'running') RETURNING id",
+            "INSERT INTO {$etlLogTable} (job_id, job_name, triggered_by, status)"
+            . " VALUES ($1, $2, $3, 'running') RETURNING id",
             [$jobId, $jobName, $triggeredBy]
         );
-        if ($ins && ($row = pg_fetch_assoc($ins))) {
+        if ($insertResult && ($row = pg_fetch_assoc($insertResult))) {
             $logId = (int)$row['id'];
         }
     }
@@ -73,7 +74,7 @@ function etl_run_single_job(
     if ($logId !== null) {
         @pg_query_params(
             $conn,
-            "UPDATE {$tLog} SET finished_at = now(), status = $1, rows_read = $2, "
+            "UPDATE {$etlLogTable} SET finished_at = now(), status = $1, rows_read = $2, "
                 . "rows_written = $3, error_message = $4 WHERE id = $5",
             [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $logId]
         );
@@ -95,12 +96,12 @@ function cron_etl_main(array $argv): int
         }
         try {
             $conn = db_connect();
-        } catch (\RuntimeException $e) {
-            etl_cli_log('[etl] DB connection failed: ' . $e->getMessage());
+        } catch (\RuntimeException $exception) {
+            etl_cli_log('[etl] DB connection failed: ' . $exception->getMessage());
             return 1;
         }
-        $ok = etl_run_single_job($conn, $configRow['value'], $jobId, $triggeredBy, false);
-        return $ok ? 0 : 1;
+        $success = etl_run_single_job($conn, $configRow['value'], $jobId, $triggeredBy, false);
+        return $success ? 0 : 1;
     }
 
     $triggeredBy = ($argv[1] ?? '') === 'admin' ? 'admin' : 'cron';
@@ -135,22 +136,22 @@ function cron_etl_main(array $argv): int
 
     try {
         $conn = db_connect();
-    } catch (\RuntimeException $e) {
-        etl_cli_log('[etl] DB connection failed: ' . $e->getMessage());
+    } catch (\RuntimeException $exception) {
+        etl_cli_log('[etl] DB connection failed: ' . $exception->getMessage());
         return 1;
     }
 
-    $tLog     = sys_table('etl_log');
-    $logTable = etl_log_table_ready($conn, $tLog);
+    $etlLogTable     = sys_table('etl_log');
+    $logTable = etl_log_table_ready($conn, $etlLogTable);
     if (!$logTable) {
         etl_cli_log('[etl] Note: log table missing — run Initialize System Tables to enable run history.');
     }
     $interval = etl_interval_expr($frequency);
 
-    $ranInWindow = static function (string $jobId) use ($conn, $tLog, $interval): bool {
+    $ranInWindow = static function (string $jobId) use ($conn, $etlLogTable, $interval): bool {
         $recent = @pg_query_params(
             $conn,
-            "SELECT 1 FROM {$tLog} WHERE job_id = \$1 AND triggered_by = 'cron' AND status = 'success' "
+            "SELECT 1 FROM {$etlLogTable} WHERE job_id = \$1 AND triggered_by = 'cron' AND status = 'success' "
             . "AND started_at >= NOW() - INTERVAL '{$interval}' LIMIT 1",
             [$jobId]
         );
@@ -200,8 +201,8 @@ function cron_etl_main(array $argv): int
         while ($queue !== [] || $running !== []) {
             while ($queue !== [] && count($running) < ETL_MAX_PARALLEL_JOBS) {
                 $jobId = array_shift($queue);
-                $cmd   = [PHP_BINARY, $cronScript, '_run', $jobId, $triggeredBy];
-                $proc  = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+                $command   = [PHP_BINARY, $cronScript, '_run', $jobId, $triggeredBy];
+                $proc  = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
                 if ($proc === false) {
                     etl_cli_log("[etl]   Failed to spawn worker for job '{$jobId}'.");
                     $anyError = true;
@@ -213,14 +214,14 @@ function cron_etl_main(array $argv): int
             }
 
             foreach ($running as $jobId => $entry) {
-                $out = stream_get_contents($entry['pipes'][1]);
-                if ($out !== false && $out !== '') {
-                    echo $out;
+                $output = stream_get_contents($entry['pipes'][1]);
+                if ($output !== false && $output !== '') {
+                    echo $output;
                     flush();
                 }
-                $err = stream_get_contents($entry['pipes'][2]);
-                if ($err !== false && $err !== '') {
-                    echo $err;
+                $error = stream_get_contents($entry['pipes'][2]);
+                if ($error !== false && $error !== '') {
+                    echo $error;
                     flush();
                 }
                 $status = proc_get_status($entry['proc']);

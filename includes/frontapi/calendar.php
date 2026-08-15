@@ -13,10 +13,10 @@ use App\Exception\ForbiddenException;
 use App\Exception\NotFoundException;
 use App\Exception\ResponseException;
 
-function frontapi_calendar(FrontApiContext $ctx): never
+function frontapi_calendar(FrontApiContext $context): never
 {
-    $conn   = $ctx->conn;
-    $schema = $ctx->schema;
+    $conn   = $context->conn;
+    $schema = $context->schema;
 
     $calendar = config_get('calendar');
     if ($calendar === null) {
@@ -43,8 +43,8 @@ function frontapi_calendar(FrontApiContext $ctx): never
     $dateTo   = date('Y-m-t', mktime(0, 0, 0, $reqMonth, 1, $reqYear));
 
     $events = [];
-    foreach ($calendar['sources'] ?? [] as $src) {
-        $table = $src['table'] ?? '';
+    foreach ($calendar['sources'] ?? [] as $sourceEntry) {
+        $table = $sourceEntry['table'] ?? '';
         if (!$table) {
             continue;
         }
@@ -57,23 +57,23 @@ function frontapi_calendar(FrontApiContext $ctx): never
             $tableCfg = safe_table($schema, $table);
         } catch (ControlFlowException $signal) {
             throw $signal;
-        } catch (Throwable $e) {
+        } catch (Throwable $exception) {
             continue;
         }
 
         $schemaName = $tableCfg['schema'] ?? 'public';
         $idCol = id_column();
-        $titleCol = $src['title_column'] ?? $idCol;
+        $titleCol = $sourceEntry['title_column'] ?? $idCol;
 
-        $subCol = $src['subtitle_column'] ?? '';
+        $subCol = $sourceEntry['subtitle_column'] ?? '';
         if ($subCol !== '' && !isset($tableCfg['columns'][$subCol])) {
             $subCol = '';
         }
-        $dateCol = $src['date_column'] ?? '';
-        $color = $src['color'] ?? '#3b82f6';
+        $dateCol = $sourceEntry['date_column'] ?? '';
+        $color = $sourceEntry['color'] ?? '#3b82f6';
         if (isset($tableCfg['columns'][$dateCol])) {
-            $cols = column_list($tableCfg);
-            $selectCols = array_values(array_unique(array_merge([$idCol], $cols)));
+            $columns = column_list($tableCfg);
+            $selectCols = array_values(array_unique(array_merge([$idCol], $columns)));
 
             $selectSql = implode(', ', array_map(fn($column) => pg_ident($column), $selectCols));
 
@@ -82,7 +82,7 @@ function frontapi_calendar(FrontApiContext $ctx): never
             if (!empty($tableCfg['owner_restricted'])) {
                 $ownerSql  = owner_restriction_sql('_t.' . pg_ident($idCol), 3, 4);
                 $qParams[] = $table;
-                $qParams[] = $ctx->userId;
+                $qParams[] = $context->userId;
             }
 
             $sql = sprintf(
@@ -94,13 +94,13 @@ function frontapi_calendar(FrontApiContext $ctx): never
                 pg_ident($dateCol),
                 $ownerSql
             );
-            $res = @pg_query_params($conn, $sql, $qParams);
-            if ($res) {
+            $result = @pg_query_params($conn, $sql, $qParams);
+            if ($result) {
                 $rows = [];
-                while ($row = pg_fetch_assoc($res)) {
+                while ($row = pg_fetch_assoc($result)) {
                     $rows[] = $row;
                 }
-                pg_free_result($res);
+                pg_free_result($result);
                 $rows = map_fk_display($schema, $tableCfg, $rows, $conn);
                 foreach ($rows as $row) {
                     $events[] = [
@@ -112,7 +112,7 @@ function frontapi_calendar(FrontApiContext $ctx): never
                             : '',
                         'date' => substr($row[$dateCol], 0, 10),
                         'color' => $color,
-                        'icon' => $src['icon'] ?? null,
+                        'icon' => $sourceEntry['icon'] ?? null,
                         'rowData' => $row
                     ];
                 }
@@ -129,16 +129,16 @@ function frontapi_calendar(FrontApiContext $ctx): never
     throw ResponseException::sent();
 }
 
-function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
+function frontapi_calendar_move_event(FrontApiWriteContext $context): never
 {
-    $conn       = $ctx->conn;
-    $body       = $ctx->body;
-    $table      = $ctx->table;
-    $tableCfg   = $ctx->tableCfg;
-    $schemaName = $ctx->schemaName;
-    $idCol      = $ctx->idCol;
+    $conn       = $context->conn;
+    $body       = $context->body;
+    $table      = $context->table;
+    $tableCfg   = $context->tableCfg;
+    $schemaName = $context->schemaName;
+    $idCol      = $context->idCol;
 
-    if ($ctx->isViewer()) {
+    if ($context->isViewer()) {
         throw new ForbiddenException('Forbidden');
     }
 
@@ -156,7 +156,7 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
         throw new BadRequestException('Invalid ID');
     }
 
-    check_record_ownership($conn, $tableCfg, $table, $id, $ctx->userId);
+    check_record_ownership($conn, $tableCfg, $table, $id, $context->userId);
 
     $dateIsValid = preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate) && checkdate(
         (int)substr($newDate, 5, 2),
@@ -190,19 +190,19 @@ function frontapi_calendar_move_event(FrontApiWriteContext $ctx): never
         pg_ident($dateColumn),
         pg_ident($idCol)
     );
-    $res = @pg_query_params($conn, $sql, [$newDate, $id]);
-    if (!$res) {
+    $result = @pg_query_params($conn, $sql, [$newDate, $id]);
+    if (!$result) {
         http_response_code(500);
         echo json_encode(['error' => 'Database error']);
         error_log('Calendar move_event error: ' . pg_last_error($conn));
         throw ResponseException::sent();
     }
 
-    if (pg_affected_rows($res) === 0) {
+    if (pg_affected_rows($result) === 0) {
         throw new NotFoundException('Record not found');
     }
 
-    log_user_action($conn, $ctx->userId, 'CALENDAR_MOVE', $table, $id);
+    log_user_action($conn, $context->userId, 'CALENDAR_MOVE', $table, $id);
 
     throw ResponseException::encoded(['success' => true]);
 }

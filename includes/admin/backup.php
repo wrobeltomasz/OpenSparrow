@@ -22,9 +22,9 @@ if ($action === 'backup_tables') {
         $conn = db_connect();
         $prefix = date('YmdHi');
         $results = [];
-        foreach ($tables as $t) {
-            $tableName  = $t['name']   ?? '';
-            $schemaName = $t['schema'] ?? '';
+        foreach ($tables as $tableEntry) {
+            $tableName  = $tableEntry['name']   ?? '';
+            $schemaName = $tableEntry['schema'] ?? '';
             if (empty($tableName) || empty($schemaName)) {
                 $results[] = ['table' => $tableName, 'status' => 'error', 'message' => 'Missing table or schema name.'];
                 continue;
@@ -34,9 +34,9 @@ if ($action === 'backup_tables') {
             $safeSource  = pg_escape_identifier($conn, $tableName);
             $safeBackup  = pg_escape_identifier($conn, $backupName);
             $sql = "CREATE TABLE $safeSchema.$safeBackup AS SELECT * FROM $safeSchema.$safeSource";
-            $res = @pg_query($conn, $sql);
-            if ($res) {
-                $rows = pg_affected_rows($res);
+            $result = @pg_query($conn, $sql);
+            if ($result) {
+                $rows = pg_affected_rows($result);
                 $results[] = ['table' => $tableName, 'backup' => $backupName, 'status' => 'success', 'rows' => $rows];
             } else {
                 error_log('[admin_api][backup_tables] ' . pg_last_error($conn));
@@ -50,8 +50,8 @@ if ($action === 'backup_tables') {
         echo json_encode(['status' => 'success', 'results' => $results]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

@@ -17,7 +17,7 @@ use App\Form\RenderContext;
 final class ForeignKeyField implements FieldTypeInterface
 {
     #[\Override]
-    public function supports(ColumnConfig $col, bool $hasForeignKey): bool
+    public function supports(ColumnConfig $column, bool $hasForeignKey): bool
     {
         return $hasForeignKey;
     }
@@ -25,32 +25,35 @@ final class ForeignKeyField implements FieldTypeInterface
     #[\Override]
     public function bind(string $colName, array $postData): BoundValue
     {
-        $val = $postData[$colName] ?? null;
-        if ($val === '' || $val === null) {
-            $val = null;
+        $value = $postData[$colName] ?? null;
+        if ($value === '' || $value === null) {
+            $value = null;
         }
-        return new BoundValue($val);
+        return new BoundValue($value);
     }
 
     #[\Override]
-    public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
+    public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string
     {
-        $val     = $ctx->isPrefilled($col->name) ? $ctx->prefilledValue($col->name) : (string)($currentValue ?? '');
-        $locked  = $ctx->isLocked($col->name);
-        $name    = htmlspecialchars($col->name, ENT_QUOTES, 'UTF-8');
-        $reqAttr = ($col->notNull && !$locked) ? 'required' : '';
+        $value     = $context->isPrefilled($column->name)
+            ? $context->prefilledValue($column->name)
+            : (string)($currentValue ?? '');
+        $locked  = $context->isLocked($column->name);
+        $name    = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
+        $reqAttr = ($column->notNull && !$locked) ? 'required' : '';
 
         $html  = '<select name="' . $name . '" ' . ($locked ? 'disabled' : '') . ' ' . $reqAttr . '>';
         $html .= '<option value="">-- Select --</option>';
-        foreach ($ctx->fkOptionsFor($col->name) as $optValue => $optLabel) {
-            $selected = (string)$val === (string)$optValue ? 'selected' : '';
+        foreach ($context->fkOptionsFor($column->name) as $optValue => $optLabel) {
+            $selected = (string)$value === (string)$optValue ? 'selected' : '';
             $html    .= '<option value="' . htmlspecialchars((string)$optValue, ENT_QUOTES, 'UTF-8') . '" ' . $selected . '>'
                       . htmlspecialchars((string)$optLabel, ENT_QUOTES, 'UTF-8')
                       . '</option>';
         }
         $html .= '</select>';
         if ($locked) {
-            $html .= '<input type="hidden" name="' . $name . '" value="' . htmlspecialchars($val, ENT_QUOTES, 'UTF-8') . '" />';
+            $html .= '<input type="hidden" name="' . $name . '" value="'
+                   . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" />';
         }
         return $html;
     }

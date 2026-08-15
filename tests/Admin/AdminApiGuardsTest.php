@@ -57,15 +57,15 @@ final class AdminApiGuardsTest extends TestCase
 
     private static function postActions(): array
     {
-        preg_match('/\$postActions\s*=\s*\[(.*?)\];/s', self::apiSource(), $m);
-        preg_match_all("/'([a-z0-9_]+)'/", $m[1] ?? '', $found);
+        preg_match('/\$postActions\s*=\s*\[(.*?)\];/s', self::apiSource(), $matches);
+        preg_match_all("/'([a-z0-9_]+)'/", $matches[1] ?? '', $found);
         return $found[1];
     }
 
     private static function dispatchMap(): array
     {
-        preg_match('/\$adminModules\s*=\s*\[(.*?)\];/s', self::apiSource(), $m);
-        preg_match_all("/'([a-z0-9_]+)'\s*=>\s*'([a-z0-9_]+)'/", $m[1] ?? '', $found, PREG_SET_ORDER);
+        preg_match('/\$adminModules\s*=\s*\[(.*?)\];/s', self::apiSource(), $matches);
+        preg_match_all("/'([a-z0-9_]+)'\s*=>\s*'([a-z0-9_]+)'/", $matches[1] ?? '', $found, PREG_SET_ORDER);
         $map = [];
         foreach ($found as $pair) {
             $map[$pair[1]] = $pair[2];
@@ -109,9 +109,9 @@ final class AdminApiGuardsTest extends TestCase
 
     public function testFrontControllerSendsSecurityHeaders(): void
     {
-        $src = self::apiSource();
-        $this->assertStringContainsString('send_security_headers()', $src);
-        $this->assertStringContainsString("ini_set('display_errors', '0')", $src);
+        $sourceCode = self::apiSource();
+        $this->assertStringContainsString('send_security_headers()', $sourceCode);
+        $this->assertStringContainsString("ini_set('display_errors', '0')", $sourceCode);
     }
 
     public function testEveryMutatingActionGuardsDemoMode(): void
@@ -154,9 +154,9 @@ final class AdminApiGuardsTest extends TestCase
 
     public function testCsvImportEndpointGuardsDemoMode(): void
     {
-        $src = self::stripComments((string) file_get_contents(self::CSV_ENDPOINT));
+        $sourceCode = self::stripComments((string) file_get_contents(self::CSV_ENDPOINT));
         foreach (['csv_import_upload', 'csv_import_execute', 'csv_create_table'] as $action) {
-            $block = self::actionBlock($src, $action);
+            $block = self::actionBlock($sourceCode, $action);
             $this->assertNotNull($block, "Action block for {$action} not found.");
             $this->assertStringContainsString(
                 'require_not_demo',
@@ -168,18 +168,18 @@ final class AdminApiGuardsTest extends TestCase
 
     private static function stripComments(string $source): string
     {
-        $out = '';
+        $output = '';
         foreach (token_get_all($source) as $token) {
             if (is_array($token)) {
                 if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
                     continue;
                 }
-                $out .= $token[1];
+                $output .= $token[1];
                 continue;
             }
-            $out .= $token;
+            $output .= $token;
         }
-        return $out;
+        return $output;
     }
 
     private static function actionBlock(string $source, string $action): ?string

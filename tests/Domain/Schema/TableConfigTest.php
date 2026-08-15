@@ -15,9 +15,9 @@ use PHPUnit\Framework\TestCase;
 
 final class TableConfigTest extends TestCase
 {
-    private function makeTable(array $columns, array $fks = []): TableConfig
+    private function makeTable(array $columns, array $foreignKeys = []): TableConfig
     {
-        return new TableConfig('users', 'app', 'Users', $columns, $fks, []);
+        return new TableConfig('users', 'app', 'Users', $columns, $foreignKeys, []);
     }
 
     private function col(
@@ -84,9 +84,9 @@ final class TableConfigTest extends TestCase
 
     public function testColumnReturnsKnown(): void
     {
-        $col   = $this->col('name');
-        $table = $this->makeTable(['name' => $col]);
-        $this->assertSame($col, $table->column('name'));
+        $column   = $this->col('name');
+        $table = $this->makeTable(['name' => $column]);
+        $this->assertSame($column, $table->column('name'));
     }
 
     public function testHasForeignKey(): void

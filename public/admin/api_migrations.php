@@ -47,24 +47,24 @@ function rm_load_manifest(string $path): array
     if ($raw === false) {
         return [];
     }
-    $d = json_decode($raw, true);
-    return is_array($d) ? $d : [];
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
 }
 
 function rm_db_and_applied(): array
 {
     require_once __DIR__ . '/../../includes/db.php';
     $conn    = db_connect();
-    $tRelMig = sys_table('release_migrations');
-    $sql     = "SELECT version, applied_at, applied_by, actions FROM $tRelMig ORDER BY applied_at ASC";
-    $res     = @pg_query($conn, $sql);
-    $out     = [];
-    if ($res) {
-        while ($row = pg_fetch_assoc($res)) {
-            $out[$row['version']] = $row;
+    $releaseMigrationsTable = sys_table('release_migrations');
+    $sql     = "SELECT version, applied_at, applied_by, actions FROM $releaseMigrationsTable ORDER BY applied_at ASC";
+    $queryResult     = @pg_query($conn, $sql);
+    $output     = [];
+    if ($queryResult) {
+        while ($row = pg_fetch_assoc($queryResult)) {
+            $output[$row['version']] = $row;
         }
     }
-    return [$conn, $out];
+    return [$conn, $output];
 }
 
 function rm_config_key(string $file): string
@@ -130,7 +130,7 @@ if ($action === 'scan') {
         [, $applied] = rm_db_and_applied();
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Exception $e) {
+    } catch (Exception $exception) {
         $applied = [];
     }
 
@@ -140,13 +140,13 @@ if ($action === 'scan') {
     $currentVersion = defined('OPENSPARROW_VERSION') ? OPENSPARROW_VERSION : '0.0.0';
 
     $result = [];
-    foreach ($versions as $ver) {
-        if (version_compare($ver, $currentVersion, '>')) {
+    foreach ($versions as $versionKey) {
+        if (version_compare($versionKey, $currentVersion, '>')) {
             continue;
         }
 
-        $entry     = $manifest[$ver];
-        $isApplied = isset($applied[$ver]);
+        $entry     = $manifest[$versionKey];
+        $isApplied = isset($applied[$versionKey]);
         $actions   = [];
 
         foreach ($entry['removed_files'] ?? [] as $relPath) {
@@ -191,7 +191,7 @@ if ($action === 'scan') {
 
         $appliedData = null;
         if ($isApplied) {
-            $row         = $applied[$ver];
+            $row         = $applied[$versionKey];
             $appliedData = [
                 'applied_at' => $row['applied_at'],
                 'applied_by' => $row['applied_by'],
@@ -200,7 +200,7 @@ if ($action === 'scan') {
         }
 
         $result[] = [
-            'version'      => $ver,
+            'version'      => $versionKey,
             'status'       => $isApplied ? 'applied' : 'pending',
             'notes'        => (string) ($entry['notes'] ?? ''),
             'actions'      => $actions,
@@ -244,7 +244,7 @@ if ($action === 'apply') {
         [$conn, $applied] = rm_db_and_applied();
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Exception $e) {
+    } catch (Exception $exception) {
         throw HttpException::fromStatus(
             500,
             'Database connection failed.',
@@ -280,16 +280,16 @@ if ($action === 'apply') {
     $selectedIdxs = $body['selected'] ?? null;
     $toRun        = [];
     if ($selectedIdxs === null) {
-        foreach ($allActions as $idx => $a) {
-            if ($a['type'] !== 'file_deprecated') {
-                $toRun[] = $idx;
+        foreach ($allActions as $index => $migrationAction) {
+            if ($migrationAction['type'] !== 'file_deprecated') {
+                $toRun[] = $index;
             }
         }
     } else {
         foreach ((array) $selectedIdxs as $raw) {
-            $idx = (int) $raw;
-            if (isset($allActions[$idx])) {
-                $toRun[] = $idx;
+            $index = (int) $raw;
+            if (isset($allActions[$index])) {
+                $toRun[] = $index;
             }
         }
     }
@@ -300,11 +300,11 @@ if ($action === 'apply') {
     $log         = [];
     $warnings    = [];
 
-    foreach ($toRun as $idx) {
-        $a = $allActions[$idx];
+    foreach ($toRun as $index) {
+        $migrationAction = $allActions[$index];
 
-        if ($a['type'] === 'file_remove') {
-            $relPath = $a['path'];
+        if ($migrationAction['type'] === 'file_remove') {
+            $relPath = $migrationAction['path'];
 
             $absPath = realpath($root . '/' . ltrim($relPath, '/'));
             if ($absPath === false || strncmp($absPath, $root . DIRECTORY_SEPARATOR, strlen($root) + 1) !== 0) {
@@ -333,9 +333,9 @@ if ($action === 'apply') {
                 'status' => 'done',
                 'backup' => 'storage/migrations_backup/' . $versionSlug . '/' . ltrim($relPath, '/'),
             ];
-        } elseif ($a['type'] === 'config_key_remove') {
-            $jpath  = $a['path'];
-            $cfgKey = rm_config_key($a['file']);
+        } elseif ($migrationAction['type'] === 'config_key_remove') {
+            $jpath  = $migrationAction['path'];
+            $cfgKey = rm_config_key($migrationAction['file']);
             if ($cfgKey === '' || $jpath === '') {
                 $warnings[] = 'Invalid config_key_remove entry.';
                 continue;
@@ -382,21 +382,21 @@ if ($action === 'apply') {
                 'removed_count' => $removed,
                 'backup'        => 'spw_config_log:' . $cfgKey . ' (version ' . $cfgRow['version'] . ')',
             ];
-        } elseif ($a['type'] === 'file_deprecated') {
-            $log[] = ['type' => 'file_deprecated', 'path' => $a['path'], 'status' => 'info'];
+        } elseif ($migrationAction['type'] === 'file_deprecated') {
+            $log[] = ['type' => 'file_deprecated', 'path' => $migrationAction['path'], 'status' => 'info'];
         }
     }
 
-    $tRelMig = sys_table('release_migrations');
+    $releaseMigrationsTable = sys_table('release_migrations');
     $actJson = (string) json_encode($log);
 
-    $res = @pg_query_params(
+    $queryResult = @pg_query_params(
         $conn,
-        "INSERT INTO $tRelMig (version, applied_by, actions) VALUES (\$1, \$2, \$3)",
+        "INSERT INTO $releaseMigrationsTable (version, applied_by, actions) VALUES (\$1, \$2, \$3)",
         [$version, $userId ?: null, $actJson]
     );
 
-    if (!$res) {
+    if (!$queryResult) {
         $raw = pg_last_error($conn);
         error_log('[api_migrations][apply] ' . $raw);
         throw HttpException::fromStatus(

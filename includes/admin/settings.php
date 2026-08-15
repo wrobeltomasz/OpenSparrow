@@ -39,20 +39,20 @@ if ($action === 'get_snapshot_setting') {
     if ($lockedByEnv) {
         $enabled = ($envVal === 'true');
     } else {
-        $s = admin_read_settings();
-        $enabled = (bool) ($s['record_snapshots_enabled'] ?? false);
+        $settings = admin_read_settings();
+        $enabled = (bool) ($settings['record_snapshots_enabled'] ?? false);
     }
 
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = @db_connect();
-        $tSnap = sys_table('record_snapshots');
-        $countRes = $conn ? @pg_query($conn, "SELECT COUNT(*) FROM $tSnap") : false;
-        $snapshotCount = ($countRes && ($cr = pg_fetch_row($countRes))) ? (int) $cr[0] : null;
-        $tableExists = ($countRes !== false);
+        $recordSnapshotsTable = sys_table('record_snapshots');
+        $countResult = $conn ? @pg_query($conn, "SELECT COUNT(*) FROM $recordSnapshotsTable") : false;
+        $snapshotCount = ($countResult && ($countRow = pg_fetch_row($countResult))) ? (int) $countRow[0] : null;
+        $tableExists = ($countResult !== false);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
+    } catch (Throwable $exception) {
         $snapshotCount = null;
         $tableExists = false;
     }
@@ -186,9 +186,9 @@ if ($action === 'get_language_setting') {
 
     $langDir    = __DIR__ . '/../../languages/';
     $allLocales = [];
-    foreach (glob($langDir . '*.json') ?: [] as $f) {
-        $code = basename($f, '.json');
-        $data = json_decode((string)@file_get_contents($f), true) ?? [];
+    foreach (glob($langDir . '*.json') ?: [] as $languageFile) {
+        $code = basename($languageFile, '.json');
+        $data = json_decode((string)@file_get_contents($languageFile), true) ?? [];
         $allLocales[] = [
             'code' => $code,
             'name' => is_string($data['_meta']['name'] ?? null) ? $data['_meta']['name'] : $code,
@@ -213,7 +213,7 @@ if ($action === 'set_language_setting') {
 
     $langDir      = __DIR__ . '/../../languages/';
     $installed    = array_map(
-        static fn(string $f): string => basename($f, '.json'),
+        static fn(string $languageFile): string => basename($languageFile, '.json'),
         glob($langDir . '*.json') ?: []
     );
     if (!in_array($defaultLang, $installed, true)) {

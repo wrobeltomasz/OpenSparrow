@@ -14,30 +14,30 @@ if ($action === 'rag_list') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn       = db_connect();
-        $tRag       = sys_table('rag_files');
-        $tRagChunks = sys_table('rag_chunks');
-        $cChk       = (bool) @pg_query($conn, "SELECT 1 FROM {$tRagChunks} LIMIT 0");
-        $chunkExpr  = $cChk
-            ? "(SELECT COUNT(*) FROM {$tRagChunks} c WHERE c.file_id = f.id) AS chunk_count"
+        $ragFilesTable       = sys_table('rag_files');
+        $ragChunksTable = sys_table('rag_chunks');
+        $chunksTableExists       = (bool) @pg_query($conn, "SELECT 1 FROM {$ragChunksTable} LIMIT 0");
+        $chunkExpr  = $chunksTableExists
+            ? "(SELECT COUNT(*) FROM {$ragChunksTable} c WHERE c.file_id = f.id) AS chunk_count"
             : '0 AS chunk_count';
-        $res        = @pg_query(
+        $queryResult        = @pg_query(
             $conn,
             "SELECT f.id, f.filename, f.tags, f.file_size, f.uploaded_by, f.created_at, {$chunkExpr}"
-                . " FROM {$tRag} f ORDER BY f.created_at DESC"
+                . " FROM {$ragFilesTable} f ORDER BY f.created_at DESC"
         );
-        if (!$res) {
+        if (!$queryResult) {
             admin_db_fail($conn, 'rag_list');
         }
         $files = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($queryResult)) {
             $row['chunk_count'] = (int) ($row['chunk_count'] ?? 0);
             $files[] = $row;
         }
         echo json_encode(['status' => 'success', 'files' => $files]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -47,7 +47,7 @@ if ($action === 'rag_upload') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
-        $tRag = sys_table('rag_files');
+        $ragFilesTable = sys_table('rag_files');
 
         if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
             $code = $_FILES['file']['error'] ?? -1;
@@ -68,7 +68,7 @@ if ($action === 'rag_upload') {
         if (!is_array($tags)) {
             $tags = [];
         }
-        $tags = array_values(array_filter(array_map('trim', $tags), fn($t) => $t !== ''));
+        $tags = array_values(array_filter(array_map('trim', $tags), fn($tag) => $tag !== ''));
 
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         $ragCfg     = rag_config();
@@ -97,16 +97,16 @@ if ($action === 'rag_upload') {
         $filename    = basename($uploadedName);
         $uploadedBy  = (int) ($_SESSION['user_id'] ?? 0);
 
-        $res = @pg_query_params(
+        $queryResult = @pg_query_params(
             $conn,
-            "INSERT INTO {$tRag} (filename, content, tags, file_size, uploaded_by)"
+            "INSERT INTO {$ragFilesTable} (filename, content, tags, file_size, uploaded_by)"
                 . " VALUES (\$1, \$2, \$3::text[], \$4, \$5) RETURNING id",
             [$filename, $content, $tagLiteral, $fileSize, $uploadedBy]
         );
-        if (!$res) {
+        if (!$queryResult) {
             admin_db_fail($conn, 'rag_upload');
         }
-        $row    = pg_fetch_assoc($res);
+        $row    = pg_fetch_assoc($queryResult);
         $fileId = (int) $row['id'];
         if ((bool) ($ragCfg['use_chunks'] ?? true)) {
             rag_store_chunks($conn, $fileId, $content, $ragCfg);
@@ -114,8 +114,8 @@ if ($action === 'rag_upload') {
         echo json_encode(['status' => 'success', 'id' => $fileId]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -125,21 +125,21 @@ if ($action === 'rag_delete') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
-        $tRag = sys_table('rag_files');
+        $ragFilesTable = sys_table('rag_files');
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $id   = (int) ($body['id'] ?? 0);
         if ($id <= 0) {
             throw new AdminApiMessage('Invalid document ID.');
         }
-        $res = @pg_query_params($conn, "DELETE FROM {$tRag} WHERE id = \$1", [$id]);
-        if (!$res) {
+        $queryResult = @pg_query_params($conn, "DELETE FROM {$ragFilesTable} WHERE id = \$1", [$id]);
+        if (!$queryResult) {
             admin_db_fail($conn, 'rag_delete');
         }
-        echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($res)]);
+        echo json_encode(['status' => 'success', 'deleted' => pg_affected_rows($queryResult)]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -150,17 +150,17 @@ if ($action === 'rag_rechunk') {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         $conn = db_connect();
-        $tRag = sys_table('rag_files');
+        $ragFilesTable = sys_table('rag_files');
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $id   = (int) ($body['id'] ?? 0);
         if ($id <= 0) {
             throw new AdminApiMessage('Invalid document ID.');
         }
-        $res = @pg_query_params($conn, "SELECT content FROM {$tRag} WHERE id = \$1", [$id]);
-        if (!$res) {
+        $queryResult = @pg_query_params($conn, "SELECT content FROM {$ragFilesTable} WHERE id = \$1", [$id]);
+        if (!$queryResult) {
             admin_db_fail($conn, 'rag_rechunk');
         }
-        $row = pg_fetch_assoc($res);
+        $row = pg_fetch_assoc($queryResult);
         if (!$row) {
             throw new AdminApiMessage('Document not found.');
         }
@@ -169,8 +169,8 @@ if ($action === 'rag_rechunk') {
         echo json_encode(['status' => 'success', 'chunks' => $stored]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -181,16 +181,16 @@ if ($action === 'rag_rechunk_all') {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         $conn = db_connect();
-        $tRag = sys_table('rag_files');
+        $ragFilesTable = sys_table('rag_files');
         $cfg  = rag_config();
 
-        $res = @pg_query($conn, "SELECT id, content FROM {$tRag} ORDER BY id ASC");
-        if (!$res) {
+        $queryResult = @pg_query($conn, "SELECT id, content FROM {$ragFilesTable} ORDER BY id ASC");
+        if (!$queryResult) {
             admin_db_fail($conn, 'rag_rechunk_all');
         }
 
         $processed = 0;
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($queryResult)) {
             rag_store_chunks($conn, (int) $row['id'], (string) $row['content'], $cfg);
             $processed++;
         }
@@ -198,8 +198,8 @@ if ($action === 'rag_rechunk_all') {
         echo json_encode(['status' => 'success', 'processed' => $processed]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -215,8 +215,8 @@ if ($action === 'rag_settings') {
         echo json_encode(['status' => 'success', 'settings' => $cfg]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -279,8 +279,8 @@ if ($action === 'rag_settings_save') {
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -303,7 +303,7 @@ if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET
         sort($tables);
 
         $availableViews = [];
-        $res = @pg_query(
+        $queryResult = @pg_query(
             $conn,
             'SELECT n.nspname AS table_schema, c.relname AS table_name, c.relkind '
             . 'FROM pg_catalog.pg_class c '
@@ -314,8 +314,8 @@ if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET
             . "AND pg_catalog.has_table_privilege(c.oid, 'SELECT') "
             . 'ORDER BY n.nspname, c.relname'
         );
-        if ($res) {
-            while ($row = pg_fetch_assoc($res)) {
+        if ($queryResult) {
+            while ($row = pg_fetch_assoc($queryResult)) {
                 $availableViews[] = [
                     'schema'       => $row['table_schema'],
                     'name'         => $row['table_name'],
@@ -332,8 +332,8 @@ if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -368,23 +368,25 @@ if ($action === 'rag_aggregate_view_save') {
         if ($view === '') {
             unset($views[$table]);
         } else {
-            $ref = rag_parse_qualified_view($view);
-            if ($ref === null) {
+            $viewReference = rag_parse_qualified_view($view);
+            if ($viewReference === null) {
                 throw new AdminApiMessage('Invalid view reference. Use the format "schema.view".');
             }
 
-            $chk = @pg_query_params(
+            $checkResult = @pg_query_params(
                 $conn,
                 'SELECT 1 FROM pg_catalog.pg_class c '
                 . 'JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace '
                 . "WHERE c.relkind IN ('v', 'm') AND n.nspname = $1 AND c.relname = $2 "
                 . "AND pg_catalog.has_table_privilege(c.oid, 'SELECT')",
-                [$ref['schema'], $ref['view']]
+                [$viewReference['schema'], $viewReference['view']]
             );
-            if (!$chk || pg_num_rows($chk) === 0) {
-                throw new AdminApiMessage("View \"{$ref['view']}\" was not found in schema \"{$ref['schema']}\".");
+            if (!$checkResult || pg_num_rows($checkResult) === 0) {
+                throw new AdminApiMessage(
+                    "View \"{$viewReference['view']}\" was not found in schema \"{$viewReference['schema']}\"."
+                );
             }
-            $views[$table] = $ref['schema'] . '.' . $ref['view'];
+            $views[$table] = $viewReference['schema'] . '.' . $viewReference['view'];
         }
 
         $cfg    = array_merge($existingCfg, ['aggregate_views' => $views]);
@@ -396,8 +398,8 @@ if ($action === 'rag_aggregate_view_save') {
         echo json_encode(['status' => 'success', 'mappings' => $views]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -408,7 +410,10 @@ if ($action === 'rag_test_query') {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         $body     = json_decode(file_get_contents('php://input'), true) ?? [];
         $query    = trim((string) ($body['query'] ?? ''));
-        $tags     = array_values(array_filter(array_map('trim', (array) ($body['tags'] ?? [])), fn($t) => $t !== ''));
+        $tags     = array_values(array_filter(
+            array_map('trim', (array) ($body['tags'] ?? [])),
+            fn($tag) => $tag !== ''
+        ));
         $language = mb_substr(trim((string) ($body['language'] ?? '')), 0, 10);
 
         if ($query === '') {
@@ -440,21 +445,21 @@ if ($action === 'rag_test_query') {
             );
         }
 
-        $sources = array_map(fn($f) => [
-            'filename' => $f['filename'],
-            'tags'     => pg_text_array_to_php($f['tags'] ?? '{}'),
+        $sources = array_map(fn($file) => [
+            'filename' => $file['filename'],
+            'tags'     => pg_text_array_to_php($file['tags'] ?? '{}'),
         ], $files);
 
         $parsed = rag_extract_suggestions($ollamaResult['response']);
-        $resp   = ['status' => 'success', 'answer' => $parsed['answer'], 'sources' => $sources];
+        $responsePayload   = ['status' => 'success', 'answer' => $parsed['answer'], 'sources' => $sources];
         if (!empty($body['return_prompt'])) {
-            $resp['prompt'] = $prompt;
+            $responsePayload['prompt'] = $prompt;
         }
-        echo json_encode($resp);
+        echo json_encode($responsePayload);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -480,11 +485,11 @@ if ($action === 'rag_ollama_check') {
         }
 
         $tagsUrl = rtrim($ollamaUrl, '/') . '/api/tags';
-        $ch      = curl_init($tagsUrl);
-        if ($ch === false) {
+        $curlHandle      = curl_init($tagsUrl);
+        if ($curlHandle === false) {
             throw new AdminApiMessage('Failed to initialize cURL.');
         }
-        curl_setopt_array($ch, [
+        curl_setopt_array($curlHandle, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 30,
             CURLOPT_CONNECTTIMEOUT => 10,
@@ -492,10 +497,10 @@ if ($action === 'rag_ollama_check') {
             CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
             CURLOPT_HTTPHEADER     => $authHeaders,
         ]);
-        $response = curl_exec($ch);
-        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlErr  = curl_error($ch);
-        curl_close($ch);
+        $response = curl_exec($curlHandle);
+        $httpCode = (int) curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_error($curlHandle);
+        curl_close($curlHandle);
 
         if ($response === false || $response === '') {
             throw new AdminApiMessage('Cannot reach Ollama: ' . ($curlErr ?: 'no response'));
@@ -510,18 +515,18 @@ if ($action === 'rag_ollama_check') {
         }
 
         $models = [];
-        foreach ($data['models'] ?? [] as $m) {
+        foreach ($data['models'] ?? [] as $model) {
             $models[] = [
-                'name'     => (string) ($m['name'] ?? ''),
-                'size'     => (int)    ($m['size'] ?? 0),
-                'modified' => (string) ($m['modified_at'] ?? $m['modified'] ?? ''),
+                'name'     => (string) ($model['name'] ?? ''),
+                'size'     => (int)    ($model['size'] ?? 0),
+                'modified' => (string) ($model['modified_at'] ?? $model['modified'] ?? ''),
             ];
         }
 
         $version = '';
-        $vCh = curl_init(rtrim($ollamaUrl, '/') . '/api/version');
-        if ($vCh !== false) {
-            curl_setopt_array($vCh, [
+        $versionCurlHandle = curl_init(rtrim($ollamaUrl, '/') . '/api/version');
+        if ($versionCurlHandle !== false) {
+            curl_setopt_array($versionCurlHandle, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT        => 10,
                 CURLOPT_CONNECTTIMEOUT => 5,
@@ -529,8 +534,8 @@ if ($action === 'rag_ollama_check') {
                 CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
                 CURLOPT_HTTPHEADER     => $authHeaders,
             ]);
-            $vResp = curl_exec($vCh);
-            curl_close($vCh);
+            $vResp = curl_exec($versionCurlHandle);
+            curl_close($versionCurlHandle);
             if ($vResp !== false) {
                 $vData = json_decode($vResp, true);
                 $version = (string) ($vData['version'] ?? '');
@@ -540,8 +545,8 @@ if ($action === 'rag_ollama_check') {
         echo json_encode(['status' => 'success', 'models' => $models, 'version' => $version]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -550,18 +555,18 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn             = db_connect();
-        $tRagQueries      = sys_table('rag_queries');
-        $tRagQuerySources = sys_table('rag_query_sources');
+        $ragQueriesTable      = sys_table('rag_queries');
+        $ragQuerySourcesTable = sys_table('rag_query_sources');
 
-        $summaryRes = @pg_query(
+        $summaryResult = @pg_query(
             $conn,
             "SELECT COUNT(*) AS total_queries,
                     COALESCE(ROUND(AVG(total_ms)), 0) AS avg_ms,
                     COALESCE(ROUND(AVG(prompt_tokens)), 0) AS avg_prompt_tokens,
                     COALESCE(ROUND(AVG(completion_tokens)), 0) AS avg_completion_tokens
-             FROM {$tRagQueries}"
+             FROM {$ragQueriesTable}"
         );
-        $summary = $summaryRes ? (pg_fetch_assoc($summaryRes) ?: []) : [];
+        $summary = $summaryResult ? (pg_fetch_assoc($summaryResult) ?: []) : [];
 
         $hasPromptCol = false;
         $colChk = @pg_query(
@@ -574,18 +579,18 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         $promptSelect = $hasPromptCol ? ', prompt_snapshot' : ', NULL AS prompt_snapshot';
 
-        $recentRes = @pg_query(
+        $recentResult = @pg_query(
             $conn,
             "SELECT id, query, tags, matched_files, model, prompt_tokens, completion_tokens, total_ms,
                     created_at{$promptSelect}
-             FROM {$tRagQueries}
+             FROM {$ragQueriesTable}
              ORDER BY created_at DESC
              LIMIT 50"
         );
         $recent = [];
         $ids    = [];
-        if ($recentRes) {
-            while ($row = pg_fetch_assoc($recentRes)) {
+        if ($recentResult) {
+            while ($row = pg_fetch_assoc($recentResult)) {
                 $recent[] = $row;
                 $ids[]    = (int) $row['id'];
             }
@@ -593,23 +598,23 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $sourcesByQuery = [];
         if (!empty($ids)) {
-            $srcChk = @pg_query($conn, "SELECT 1 FROM {$tRagQuerySources} LIMIT 0");
-            if ($srcChk !== false) {
+            $sourcesTableExists = @pg_query($conn, "SELECT 1 FROM {$ragQuerySourcesTable} LIMIT 0");
+            if ($sourcesTableExists !== false) {
                 $idsList = implode(',', $ids);
-                $srcRes  = @pg_query(
+                $sourcesResult  = @pg_query(
                     $conn,
                     "SELECT query_id, file_id, chunk_id, chunk_index, filename, snippet, source_type, rank_position
-                     FROM {$tRagQuerySources}
+                     FROM {$ragQuerySourcesTable}
                      WHERE query_id IN ({$idsList})
                      ORDER BY query_id, rank_position ASC"
                 );
-                if ($srcRes) {
-                    while ($s = pg_fetch_assoc($srcRes)) {
-                        $qid = (int) $s['query_id'];
-                        if (!isset($sourcesByQuery[$qid])) {
-                            $sourcesByQuery[$qid] = [];
+                if ($sourcesResult) {
+                    while ($sourceRow = pg_fetch_assoc($sourcesResult)) {
+                        $queryId = (int) $sourceRow['query_id'];
+                        if (!isset($sourcesByQuery[$queryId])) {
+                            $sourcesByQuery[$queryId] = [];
                         }
-                        $sourcesByQuery[$qid][] = $s;
+                        $sourcesByQuery[$queryId][] = $sourceRow;
                     }
                 }
             }
@@ -623,8 +628,8 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         echo json_encode(['status' => 'success', 'summary' => $summary, 'recent' => $recent]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

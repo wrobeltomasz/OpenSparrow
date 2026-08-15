@@ -40,7 +40,7 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
 
     $publicColumns = [];
     foreach ($tableConfig['columns'] as $colName => $colDef) {
-        $pub = [
+        $publicColumn = [
             'display_name'  => $colDef['display_name'] ?? $colName,
             'type'          => $colDef['type'] ?? 'text',
             'show_in_grid'  => $colDef['show_in_grid'] ?? true,
@@ -51,35 +51,35 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
 
         if ($userRole === 'editor') {
             if (!empty($colDef['validation_regexp'])) {
-                $pub['validation_regexp'] = $colDef['validation_regexp'];
+                $publicColumn['validation_regexp'] = $colDef['validation_regexp'];
             }
             if (!empty($colDef['validation_message'])) {
-                $pub['validation_message'] = $colDef['validation_message'];
+                $publicColumn['validation_message'] = $colDef['validation_message'];
             }
         }
 
         if (!empty($colDef['description'])) {
-            $pub['description'] = $colDef['description'];
+            $publicColumn['description'] = $colDef['description'];
         }
 
         if (!empty($colDef['formula'])) {
-            $pub['formula'] = $colDef['formula'];
+            $publicColumn['formula'] = $colDef['formula'];
         }
 
         if (!empty($colDef['options'])) {
-            $pub['options'] = $colDef['options'];
+            $publicColumn['options'] = $colDef['options'];
         }
         if (!empty($colDef['enum_colors'])) {
-            $pub['enum_colors'] = $colDef['enum_colors'];
+            $publicColumn['enum_colors'] = $colDef['enum_colors'];
         }
 
-        $publicColumns[$colName] = $pub;
+        $publicColumns[$colName] = $publicColumn;
     }
 
     $foreignKeys = [];
     if (!empty($tableConfig['foreign_keys'])) {
-        foreach ($tableConfig['foreign_keys'] as $col => $fk) {
-            $foreignKeys[$col] = [
+        foreach ($tableConfig['foreign_keys'] as $column => $fk) {
+            $foreignKeys[$column] = [
                 'display_column'   => $fk['display_column']   ?? 'id',
                 'reference_table'  => $fk['reference_table']  ?? '',
                 'reference_column' => $fk['reference_column'] ?? 'id',
@@ -131,9 +131,9 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
 
 $pageSize = null;
 if (isset($schemaData['default_page_size'])) {
-    $ps = (int) $schemaData['default_page_size'];
-    if (in_array($ps, [10, 25, 50, 100], true)) {
-        $pageSize = $ps;
+    $configuredPageSize = (int) $schemaData['default_page_size'];
+    if (in_array($configuredPageSize, [10, 25, 50, 100], true)) {
+        $pageSize = $configuredPageSize;
     }
 }
 

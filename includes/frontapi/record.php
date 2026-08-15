@@ -10,42 +10,42 @@ declare(strict_types=1);
 use App\Exception\BadRequestException;
 use App\Exception\ResponseException;
 
-function frontapi_record_patch(FrontApiWriteContext $ctx): never
+function frontapi_record_patch(FrontApiWriteContext $context): never
 {
-    $conn       = $ctx->conn;
-    $body       = $ctx->body;
-    $table      = $ctx->table;
-    $tableCfg   = $ctx->tableCfg;
-    $schemaName = $ctx->schemaName;
-    $idCol      = $ctx->idCol;
-    $userId     = $ctx->userId;
+    $conn       = $context->conn;
+    $body       = $context->body;
+    $table      = $context->table;
+    $tableCfg   = $context->tableCfg;
+    $schemaName = $context->schemaName;
+    $idCol      = $context->idCol;
+    $userId     = $context->userId;
 
     $recordId = (int)($body['id']);
     if ($recordId <= 0) {
         throw new BadRequestException('Invalid record ID');
     }
-    $col = $body['column'];
-    if (!isset($tableCfg['columns'][$col])) {
+    $column = $body['column'];
+    if (!isset($tableCfg['columns'][$column])) {
         throw new BadRequestException('Invalid column specified');
     }
 
-    if ($col === $idCol) {
+    if ($column === $idCol) {
         throw new BadRequestException('Cannot edit PK');
     }
 
     check_record_ownership($conn, $tableCfg, $table, $recordId, $userId, 'Forbidden: you do not own this record.');
 
-    $colType = strtolower($tableCfg['columns'][$col]['type'] ?? '');
+    $colType = strtolower($tableCfg['columns'][$column]['type'] ?? '');
     $cast = '';
-    $val = $body['value'];
+    $value = $body['value'];
     if (str_contains($colType, 'bool')) {
-        $val = normalize_boolean($val);
+        $value = normalize_boolean($value);
         $cast = '::boolean';
-    } elseif ($val === '') {
-        $val = null;
+    } elseif ($value === '') {
+        $value = null;
     }
 
-    $regexpError = validate_column_regexp($tableCfg['columns'][$col], $val);
+    $regexpError = validate_column_regexp($tableCfg['columns'][$column], $value);
     if (!str_contains($colType, 'bool') && $regexpError !== null) {
         http_response_code(422);
         throw ResponseException::encoded(['error' => $regexpError]);
@@ -57,12 +57,12 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
         'UPDATE %s.%s SET %s = $1%s WHERE %s = $2',
         pg_ident($schemaName),
         pg_ident($table),
-        pg_ident($col),
+        pg_ident($column),
         $cast,
         pg_ident($idCol)
     );
-    $res = @pg_query_params($conn, $sql, [$val, $recordId]);
-    if (!$res) {
+    $result = @pg_query_params($conn, $sql, [$value, $recordId]);
+    if (!$result) {
         error_log('[api][patch] ' . pg_last_error($conn));
         http_response_code(422);
         throw ResponseException::encoded(['error' => 'Database error']);
@@ -76,81 +76,83 @@ function frontapi_record_patch(FrontApiWriteContext $ctx): never
     throw ResponseException::encoded(['ok' => true]);
 }
 
-function frontapi_record_insert(FrontApiWriteContext $ctx): never
+function frontapi_record_insert(FrontApiWriteContext $context): never
 {
-    $conn       = $ctx->conn;
-    $body       = $ctx->body;
-    $table      = $ctx->table;
-    $tableCfg   = $ctx->tableCfg;
-    $schemaName = $ctx->schemaName;
-    $idCol      = $ctx->idCol;
+    $conn       = $context->conn;
+    $body       = $context->body;
+    $table      = $context->table;
+    $tableCfg   = $context->tableCfg;
+    $schemaName = $context->schemaName;
+    $idCol      = $context->idCol;
 
-    $cols = [];
+    $columns = [];
     $vals = [];
-    $ph   = [];
-    $i    = 1;
+    $placeholders   = [];
+    $placeholderIndex    = 1;
     foreach ($tableCfg['columns'] as $colName => $colCfg) {
         if ($colName === $idCol) {
             continue;
         }
 
         $type = strtolower($colCfg['type'] ?? '');
-        $val = $body['data'][$colName] ?? null;
+        $value = $body['data'][$colName] ?? null;
         if (str_contains($type, 'bool')) {
-            $val = normalize_boolean($val);
-        } elseif ($val === '') {
-            $val = null;
+            $value = normalize_boolean($value);
+        } elseif ($value === '') {
+            $value = null;
         }
 
         $isNotNull = !empty($colCfg['not_null']);
-        if ($val === null && $isNotNull) {
-            $val = type_min_value($type);
+        if ($value === null && $isNotNull) {
+            $value = type_min_value($type);
         }
 
-        if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($colCfg, $val)) !== null) {
+        if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($colCfg, $value)) !== null) {
             http_response_code(422);
             throw ResponseException::encoded(['error' => $regexpError, 'column' => $colName]);
         }
 
-        if ($val !== null) {
-            $cols[] = $colName;
-            $vals[] = $val;
-            $ph[]   = str_contains($type, 'bool') ? '$' . $i . '::boolean' : '$' . $i;
-            $i++;
+        if ($value !== null) {
+            $columns[] = $colName;
+            $vals[] = $value;
+            $placeholders[]   = str_contains($type, 'bool')
+                ? '$' . $placeholderIndex . '::boolean'
+                : '$' . $placeholderIndex;
+            $placeholderIndex++;
         }
     }
 
-    if (empty($cols)) {
+    if (empty($columns)) {
         $sql = sprintf(
             'INSERT INTO %s.%s DEFAULT VALUES RETURNING %s',
             pg_ident($schemaName),
             pg_ident($table),
             pg_ident($idCol)
         );
-        $res = @pg_query($conn, $sql);
+        $result = @pg_query($conn, $sql);
     } else {
         $sql = sprintf(
             'INSERT INTO %s.%s (%s) VALUES (%s) RETURNING %s',
             pg_ident($schemaName),
             pg_ident($table),
-            implode(', ', array_map('pg_ident', $cols)),
-            implode(', ', $ph),
+            implode(', ', array_map('pg_ident', $columns)),
+            implode(', ', $placeholders),
             pg_ident($idCol)
         );
-        $res = @pg_query_params($conn, $sql, $vals);
+        $result = @pg_query_params($conn, $sql, $vals);
     }
 
-    if (!$res) {
+    if (!$result) {
         error_log('[api][insert] ' . pg_last_error($conn));
         http_response_code(422);
         throw ResponseException::encoded(['error' => 'Database error']);
     }
 
-    $row = pg_fetch_assoc($res);
-    pg_free_result($res);
+    $row = pg_fetch_assoc($result);
+    pg_free_result($result);
     $newId = $row[$idCol] ?? null;
     if ($newId !== null) {
-        $userId = $ctx->userId;
+        $userId = $context->userId;
         $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
             snapshot_record($conn, $schemaName, $table, (int) $newId, $logId);
@@ -162,21 +164,28 @@ function frontapi_record_insert(FrontApiWriteContext $ctx): never
     throw ResponseException::encoded(['ok' => true, 'id' => $newId]);
 }
 
-function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
+function frontapi_record_duplicate(FrontApiWriteContext $context): never
 {
-    $conn       = $ctx->conn;
-    $body       = $ctx->body;
-    $table      = $ctx->table;
-    $tableCfg   = $ctx->tableCfg;
-    $schemaName = $ctx->schemaName;
-    $idCol      = $ctx->idCol;
+    $conn       = $context->conn;
+    $body       = $context->body;
+    $table      = $context->table;
+    $tableCfg   = $context->tableCfg;
+    $schemaName = $context->schemaName;
+    $idCol      = $context->idCol;
 
     $srcId = (int)$body['id'];
     if ($srcId <= 0) {
         throw new BadRequestException('Invalid ID');
     }
 
-    check_record_ownership($conn, $tableCfg, $table, $srcId, $ctx->userId, 'Forbidden: you do not own this record.');
+    check_record_ownership(
+        $conn,
+        $tableCfg,
+        $table,
+        $srcId,
+        $context->userId,
+        'Forbidden: you do not own this record.'
+    );
 
     $dupCols = [];
     foreach ($tableCfg['columns'] as $colName => $colCfg) {
@@ -206,31 +215,31 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
         pg_ident($idCol),
         pg_ident($idCol)
     );
-    $res = @pg_query_params($conn, $sql, [$srcId]);
-    if (!$res) {
+    $result = @pg_query_params($conn, $sql, [$srcId]);
+    if (!$result) {
         $pgErr = pg_last_error($conn);
         error_log('[api][duplicate] ' . $pgErr);
         http_response_code(422);
         if (stripos($pgErr, 'unique') !== false || stripos($pgErr, 'unikaln') !== false) {
-            $col = '';
-            if (preg_match('/[Kk]ey\s*\(([^)]+)\)|Klucz\s*\(([^)]+)\)/', $pgErr, $m)) {
-                    $col = $m[1] ?: $m[2];
+            $column = '';
+            if (preg_match('/[Kk]ey\s*\(([^)]+)\)|Klucz\s*\(([^)]+)\)/', $pgErr, $matches)) {
+                    $column = $matches[1] ?: $matches[2];
             }
-            $msg = $col
-                ? t('grid.duplicate_unique', ['col' => $col])
+            $message = $column
+                ? t('grid.duplicate_unique', ['col' => $column])
                 : t('grid.duplicate_conflict');
-            echo json_encode(['error' => $msg]);
+            echo json_encode(['error' => $message]);
         } else {
             echo json_encode(['error' => 'Database error']);
         }
         throw ResponseException::sent();
     }
 
-    $row = pg_fetch_assoc($res);
-    pg_free_result($res);
+    $row = pg_fetch_assoc($result);
+    pg_free_result($result);
     $newId = $row[$idCol] ?? null;
     if ($newId !== null) {
-        $userId = $ctx->userId;
+        $userId = $context->userId;
         $logId  = log_user_action($conn, $userId, 'INSERT', $table, (int)$newId);
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
             snapshot_record($conn, $schemaName, $table, (int)$newId, $logId);
@@ -242,15 +251,15 @@ function frontapi_record_duplicate(FrontApiWriteContext $ctx): never
     throw ResponseException::encoded(['ok' => true, 'id' => $newId]);
 }
 
-function frontapi_record_delete(FrontApiWriteContext $ctx): never
+function frontapi_record_delete(FrontApiWriteContext $context): never
 {
-    $conn       = $ctx->conn;
-    $body       = $ctx->body;
-    $table      = $ctx->table;
-    $tableCfg   = $ctx->tableCfg;
-    $schemaName = $ctx->schemaName;
-    $idCol      = $ctx->idCol;
-    $userId     = $ctx->userId;
+    $conn       = $context->conn;
+    $body       = $context->body;
+    $table      = $context->table;
+    $tableCfg   = $context->tableCfg;
+    $schemaName = $context->schemaName;
+    $idCol      = $context->idCol;
+    $userId     = $context->userId;
 
     $deleteId = (int)$body['id'];
     if ($deleteId <= 0) {
@@ -262,8 +271,8 @@ function frontapi_record_delete(FrontApiWriteContext $ctx): never
     $deletedRecord = auto_capture_old_record($conn, $schemaName, $table, $deleteId, 'delete');
 
     $sql = sprintf('DELETE FROM %s.%s WHERE %s=$1', pg_ident($schemaName), pg_ident($table), pg_ident($idCol));
-    $res = @pg_query_params($conn, $sql, [$deleteId]);
-    if (!$res) {
+    $result = @pg_query_params($conn, $sql, [$deleteId]);
+    if (!$result) {
         error_log('[api][delete] ' . pg_last_error($conn));
         http_response_code(422);
         throw ResponseException::encoded(['error' => 'Database error']);

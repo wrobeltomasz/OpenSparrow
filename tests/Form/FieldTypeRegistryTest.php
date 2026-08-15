@@ -21,18 +21,18 @@ final class FieldTypeRegistryTest extends TestCase
     private function makeType(bool $supports): FieldTypeInterface
     {
         return new class ($supports) implements FieldTypeInterface {
-            public function __construct(private readonly bool $s)
+            public function __construct(private readonly bool $supported)
             {
             }
-            public function supports(ColumnConfig $col, bool $hasForeignKey): bool
+            public function supports(ColumnConfig $column, bool $hasForeignKey): bool
             {
-                return $this->s;
+                return $this->supported;
             }
             public function bind(string $colName, array $postData): BoundValue
             {
                 return new BoundValue(null);
             }
-            public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
+            public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string
             {
                 return '';
             }
@@ -44,16 +44,16 @@ final class FieldTypeRegistryTest extends TestCase
         $first    = $this->makeType(false);
         $second   = $this->makeType(true);
         $registry = new FieldTypeRegistry([$first, $second]);
-        $col      = new ColumnConfig('x', 'text', 'X');
-        $this->assertSame($second, $registry->for($col, false));
+        $column      = new ColumnConfig('x', 'text', 'X');
+        $this->assertSame($second, $registry->for($column, false));
     }
 
     public function testThrowsLogicExceptionWhenNoMatch(): void
     {
         $registry = new FieldTypeRegistry([$this->makeType(false)]);
-        $col      = new ColumnConfig('x', 'text', 'X');
+        $column      = new ColumnConfig('x', 'text', 'X');
         $this->expectException(\LogicException::class);
-        $registry->for($col, false);
+        $registry->for($column, false);
     }
 
     public function testFirstMatchWinsOverLaterCandidates(): void
@@ -61,7 +61,7 @@ final class FieldTypeRegistryTest extends TestCase
         $first  = $this->makeType(true);
         $second = $this->makeType(true);
         $registry = new FieldTypeRegistry([$first, $second]);
-        $col = new ColumnConfig('x', 'text', 'X');
-        $this->assertSame($first, $registry->for($col, false));
+        $column = new ColumnConfig('x', 'text', 'X');
+        $this->assertSame($first, $registry->for($column, false));
     }
 }

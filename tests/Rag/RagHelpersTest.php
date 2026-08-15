@@ -97,8 +97,12 @@ final class RagHelpersTest extends TestCase
     public function testRollupPrefersTheCoarsestGroupingOverColumnOrder(): void
     {
         $rows = [];
-        foreach (range(1, 12) as $i) {
-            $rows[] = ['name' => "record {$i}", 'status' => $i % 2 === 0 ? 'open' : 'closed', 'amount' => (string) $i];
+        foreach (range(1, 12) as $number) {
+            $rows[] = [
+                'name'   => "record {$number}",
+                'status' => $number % 2 === 0 ? 'open' : 'closed',
+                'amount' => (string) $number,
+            ];
         }
 
         $lines = explode("\n", rag_aggregate_rollups($rows));

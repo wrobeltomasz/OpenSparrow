@@ -34,7 +34,7 @@ function print_available_views(): array
     if ($decoded === null) {
         return [];
     }
-    $out = [];
+    $output = [];
     foreach (($decoded['views'] ?? []) as $name => $cfg) {
         if (!is_array($cfg) || ($cfg['source'] ?? 'postgres') !== 'postgres') {
             continue;
@@ -42,19 +42,19 @@ function print_available_views(): array
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', (string) $name)) {
             continue;
         }
-        $out[(string) $name] = $cfg;
+        $output[(string) $name] = $cfg;
     }
-    return $out;
+    return $output;
 }
 
-function print_sanitize_template(array $tpl, array $availableViews): ?array
+function print_sanitize_template(array $template, array $availableViews): ?array
 {
-    $view = (string) ($tpl['view'] ?? '');
+    $view = (string) ($template['view'] ?? '');
     if ($view !== '' && !isset($availableViews[$view])) {
         return null;
     }
 
-    $icon = (string) ($tpl['icon'] ?? '');
+    $icon = (string) ($template['icon'] ?? '');
     if (
         $icon !== ''
         && (str_contains($icon, '..') || !preg_match('#^assets/[a-z0-9_\-/.]+\.(png|svg|gif|jpe?g|webp)$#i', $icon))
@@ -63,7 +63,7 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
     }
 
     $blocks = [];
-    foreach (array_slice((array) ($tpl['blocks'] ?? []), 0, 50) as $block) {
+    foreach (array_slice((array) ($template['blocks'] ?? []), 0, 50) as $block) {
         if (!is_array($block)) {
             return null;
         }
@@ -81,27 +81,27 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
                 'text' => mb_substr((string) ($block['text'] ?? ''), 0, 5000),
             ];
         } elseif ($type === 'table') {
-            $cols = [];
-            foreach (array_slice((array) ($block['columns'] ?? []), 0, 50) as $col) {
-                $name = is_string($col) ? $col : (string) ($col['name'] ?? '');
+            $columns = [];
+            foreach (array_slice((array) ($block['columns'] ?? []), 0, 50) as $columnDefinition) {
+                $name = is_string($columnDefinition) ? $columnDefinition : (string) ($columnDefinition['name'] ?? '');
                 if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $name)) {
                     continue;
                 }
                 $entry = ['name' => $name, 'align' => 'left'];
-                if (is_array($col)) {
-                    if (in_array($col['align'] ?? '', ['left', 'center', 'right'], true)) {
-                        $entry['align'] = $col['align'];
+                if (is_array($columnDefinition)) {
+                    if (in_array($columnDefinition['align'] ?? '', ['left', 'center', 'right'], true)) {
+                        $entry['align'] = $columnDefinition['align'];
                     }
-                    if (isset($col['width']) && is_numeric($col['width'])) {
-                        $width = (int) $col['width'];
+                    if (isset($columnDefinition['width']) && is_numeric($columnDefinition['width'])) {
+                        $width = (int) $columnDefinition['width'];
                         if ($width >= 1 && $width <= 100) {
                             $entry['width'] = $width;
                         }
                     }
                 }
-                $cols[] = $entry;
+                $columns[] = $entry;
             }
-            $blocks[] = ['type' => 'table', 'columns' => $cols];
+            $blocks[] = ['type' => 'table', 'columns' => $columns];
         } else {
             return null;
         }
@@ -109,15 +109,15 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
 
     $params    = [];
     $paramKeys = [];
-    foreach (array_slice((array) ($tpl['params'] ?? []), 0, 20) as $prm) {
-        if (!is_array($prm)) {
+    foreach (array_slice((array) ($template['params'] ?? []), 0, 20) as $parameter) {
+        if (!is_array($parameter)) {
             return null;
         }
-        $key = (string) ($prm['key'] ?? '');
+        $key = (string) ($parameter['key'] ?? '');
         if (!preg_match('/^[a-zA-Z0-9_]{1,64}$/', $key) || in_array($key, $paramKeys, true)) {
             return null;
         }
-        $column = (string) ($prm['column'] ?? '');
+        $column = (string) ($parameter['column'] ?? '');
         if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_ ]*$/', $column)) {
             return null;
         }
@@ -125,15 +125,15 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
         $paramKeys[] = $key;
         $entry       = [
             'key'      => $key,
-            'label'    => mb_substr((string) ($prm['label'] ?? ''), 0, 120),
+            'label'    => mb_substr((string) ($parameter['label'] ?? ''), 0, 120),
             'type'     => 'select',
             'column'   => $column,
-            'required' => !empty($prm['required']),
+            'required' => !empty($parameter['required']),
         ];
 
-        $sourceView = (string) ($prm['source_view'] ?? '');
-        $valueCol   = (string) ($prm['value_column'] ?? '');
-        $labelCol   = (string) ($prm['label_column'] ?? '');
+        $sourceView = (string) ($parameter['source_view'] ?? '');
+        $valueCol   = (string) ($parameter['value_column'] ?? '');
+        $labelCol   = (string) ($parameter['label_column'] ?? '');
         if (
             $sourceView !== ''
             && isset($availableViews[$sourceView])
@@ -149,11 +149,11 @@ function print_sanitize_template(array $tpl, array $availableViews): ?array
     }
 
     return [
-        'display_name' => mb_substr((string) ($tpl['display_name'] ?? ''), 0, 120),
-        'menu_name'    => mb_substr((string) ($tpl['menu_name'] ?? ''), 0, 120),
-        'description'  => mb_substr((string) ($tpl['description'] ?? ''), 0, 500),
+        'display_name' => mb_substr((string) ($template['display_name'] ?? ''), 0, 120),
+        'menu_name'    => mb_substr((string) ($template['menu_name'] ?? ''), 0, 120),
+        'description'  => mb_substr((string) ($template['description'] ?? ''), 0, 500),
         'icon'         => $icon,
-        'hidden'       => !empty($tpl['hidden']),
+        'hidden'       => !empty($template['hidden']),
         'view'         => $view,
         'blocks'       => $blocks,
         'params'       => $params,
@@ -204,19 +204,19 @@ try {
         $schemaName = $views[$viewName]['schema'] ?? sys_schema();
         $sql        = 'SELECT column_name, data_type FROM information_schema.columns '
             . 'WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position';
-        $res        = @pg_query_params($conn, $sql, [$schemaName, $viewName]);
-        if (!$res) {
+        $queryResult        = @pg_query_params($conn, $sql, [$schemaName, $viewName]);
+        if (!$queryResult) {
             error_log('[api_print][columns] ' . pg_last_error($conn));
             throw new ServerErrorException('Database error');
         }
 
-        $cols = [];
-        while ($col = pg_fetch_assoc($res)) {
-            $cols[] = ['name' => $col['column_name'], 'data_type' => $col['data_type']];
+        $columns = [];
+        while ($columnRow = pg_fetch_assoc($queryResult)) {
+            $columns[] = ['name' => $columnRow['column_name'], 'data_type' => $columnRow['data_type']];
         }
-        pg_free_result($res);
+        pg_free_result($queryResult);
 
-        throw ResponseException::encoded(['status' => 'ok', 'view' => $viewName, 'columns' => $cols]);
+        throw ResponseException::encoded(['status' => 'ok', 'view' => $viewName, 'columns' => $columns]);
     }
 
     if ($action === 'data' && $method === 'GET') {
@@ -240,15 +240,15 @@ try {
 
             $where       = [];
             $queryParams = [];
-            foreach ($paramDefs as $p) {
-                $key = (string) ($p['key'] ?? '');
-                $val = $_GET['p_' . $key] ?? '';
-                if ($val === '' || $val === null) {
+            foreach ($paramDefs as $parameterDefinition) {
+                $key = (string) ($parameterDefinition['key'] ?? '');
+                $value = $_GET['p_' . $key] ?? '';
+                if ($value === '' || $value === null) {
                     continue;
                 }
-                $queryParams[]        = $val;
-                $where[]              = pg_ident($p['column']) . ' = $' . count($queryParams);
-                $appliedParams[$key]  = $val;
+                $queryParams[]        = $value;
+                $where[]              = pg_ident($parameterDefinition['column']) . ' = $' . count($queryParams);
+                $appliedParams[$key]  = $value;
             }
 
             $sql = sprintf('SELECT * FROM %s.%s', pg_ident($schemaName), pg_ident($viewName));
@@ -257,13 +257,13 @@ try {
             }
             $sql .= ' LIMIT 1000';
 
-            $res = @pg_query_params($conn, $sql, $queryParams);
-            if (!$res) {
+            $queryResult = @pg_query_params($conn, $sql, $queryParams);
+            if (!$queryResult) {
                 error_log('[api_print][data] ' . pg_last_error($conn));
                 throw new ServerErrorException('Database error');
             }
-            $rows = pg_fetch_all($res) ?: [];
-            pg_free_result($res);
+            $rows = pg_fetch_all($queryResult) ?: [];
+            pg_free_result($queryResult);
             $viewCols = $views[$viewName]['columns'] ?? [];
         }
 
@@ -293,9 +293,9 @@ try {
         $cfg   = $prints[$printName];
         $views = print_available_views();
         $param = null;
-        foreach (($cfg['params'] ?? []) as $p) {
-            if (($p['key'] ?? '') === $paramKey) {
-                $param = $p;
+        foreach (($cfg['params'] ?? []) as $parameterDefinition) {
+            if (($parameterDefinition['key'] ?? '') === $paramKey) {
+                $param = $parameterDefinition;
                 break;
             }
         }
@@ -337,13 +337,13 @@ try {
             );
         }
 
-        $res = @pg_query_params($conn, $sql, []);
-        if (!$res) {
+        $queryResult = @pg_query_params($conn, $sql, []);
+        if (!$queryResult) {
             error_log('[api_print][param_options] ' . pg_last_error($conn));
             throw new ServerErrorException('Database error');
         }
-        $options = pg_fetch_all($res) ?: [];
-        pg_free_result($res);
+        $options = pg_fetch_all($queryResult) ?: [];
+        pg_free_result($queryResult);
 
         throw ResponseException::encoded(['status' => 'ok', 'options' => $options]);
     }
@@ -359,11 +359,11 @@ try {
 
         $views     = print_available_views();
         $sanitized = [];
-        foreach ($body['prints'] as $name => $tpl) {
-            if (!is_string($name) || !preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $name) || !is_array($tpl)) {
+        foreach ($body['prints'] as $name => $template) {
+            if (!is_string($name) || !preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $name) || !is_array($template)) {
                 throw new BadRequestException((string) 'Invalid template key: ' . mb_substr((string) $name, 0, 64));
             }
-            $clean = print_sanitize_template($tpl, $views);
+            $clean = print_sanitize_template($template, $views);
             if ($clean === null) {
                 throw new BadRequestException((string) 'Invalid template: ' . $name);
             }
@@ -388,8 +388,8 @@ try {
     echo json_encode(['error' => 'Invalid action or insufficient permissions']);
 } catch (ControlFlowException $signal) {
     throw $signal;
-} catch (Throwable $e) {
-    error_log('[api_print][exception] ' . $e->getMessage());
+} catch (Throwable $exception) {
+    error_log('[api_print][exception] ' . $exception->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Internal server error']);
 }

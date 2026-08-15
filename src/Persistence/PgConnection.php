@@ -17,20 +17,20 @@ final readonly class PgConnection
 
     public function execute(string $sql, array $params = []): \PgSql\Result
     {
-        $res = pg_query_params($this->connection, $sql, $params);
-        if ($res === false) {
+        $result = pg_query_params($this->connection, $sql, $params);
+        if ($result === false) {
             throw new \RuntimeException('Query failed: ' . pg_last_error($this->connection));
         }
-        return $res;
+        return $result;
     }
 
     public function exec(string $sql): \PgSql\Result
     {
-        $res = pg_query($this->connection, $sql);
-        if ($res === false) {
+        $result = pg_query($this->connection, $sql);
+        if ($result === false) {
             throw new \RuntimeException('Query failed: ' . pg_last_error($this->connection));
         }
-        return $res;
+        return $result;
     }
 
     public function escapeLiteral(string $value): string

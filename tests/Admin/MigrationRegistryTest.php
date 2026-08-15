@@ -20,8 +20,8 @@ final class MigrationRegistryTest extends TestCase
     private static function arrayKeys(string $file, string $variable, bool $keysOnly): array
     {
         $source = (string) file_get_contents($file);
-        preg_match('/\\' . $variable . '\s*=\s*\[(.*?)\n\s*\];/s', $source, $m);
-        $body = $m[1] ?? '';
+        preg_match('/\\' . $variable . '\s*=\s*\[(.*?)\n\s*\];/s', $source, $matches);
+        $body = $matches[1] ?? '';
 
         if ($keysOnly) {
             preg_match_all("/'([0-9]+\.[0-9]+_[a-z0-9_]+)'\s*=>/", $body, $found);
@@ -69,7 +69,7 @@ final class MigrationRegistryTest extends TestCase
         $source   = (string) file_get_contents(self::SETUP_API_PHP);
 
         preg_match_all(
-            "/INSERT INTO \\\$tMigrations \(name\) VALUES \('([0-9]+\.[0-9]+_[a-z0-9_]+)'\)/",
+            "/INSERT INTO \\\$migrationsTable \(name\) VALUES \('([0-9]+\.[0-9]+_[a-z0-9_]+)'\)/",
             $source,
             $found
         );

@@ -89,12 +89,12 @@ try {
                 if ($colName === $groupBy) {
                     continue;
                 }
-                $agg = strtolower($colCfg['aggregate'] ?? '');
-                if ($agg === 'count') {
+                $aggregate = strtolower($colCfg['aggregate'] ?? '');
+                if ($aggregate === 'count') {
                     $aggParts[] = 'COUNT(*) AS ' . pg_ident($colName);
-                } elseif ($agg === 'sum') {
+                } elseif ($aggregate === 'sum') {
                     $aggParts[] = 'SUM(' . pg_ident($colName) . ') AS ' . pg_ident($colName);
-                } elseif ($agg === 'avg') {
+                } elseif ($aggregate === 'avg') {
                     $aggParts[] = 'ROUND(AVG(' . pg_ident($colName) . ')::numeric, 2) AS ' . pg_ident($colName);
                 }
             }
@@ -118,14 +118,14 @@ try {
             );
         }
 
-        $res = @pg_query_params($conn, $sql, $params);
-        if (!$res) {
+        $queryResult = @pg_query_params($conn, $sql, $params);
+        if (!$queryResult) {
             error_log('[api_views][data] ' . pg_last_error($conn));
             throw new ServerErrorException('Database error');
         }
 
-        $rows = pg_fetch_all($res) ?: [];
-        pg_free_result($res);
+        $rows = pg_fetch_all($queryResult) ?: [];
+        pg_free_result($queryResult);
 
         echo json_encode([
             'status'       => 'ok',
@@ -150,16 +150,16 @@ try {
             . "WHERE schema_name NOT IN ('pg_catalog', 'information_schema') "
             . "AND schema_name NOT LIKE 'pg\\_toast%' AND schema_name NOT LIKE 'pg\\_temp%' "
             . 'ORDER BY schema_name';
-        $res = @pg_query($conn, $sql);
-        if (!$res) {
+        $queryResult = @pg_query($conn, $sql);
+        if (!$queryResult) {
             throw new ServerErrorException('Database error');
         }
 
         $schemas = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($queryResult)) {
             $schemas[] = $row['schema_name'];
         }
-        pg_free_result($res);
+        pg_free_result($queryResult);
 
         $selected = is_array($viewsConfig['schemas'] ?? null) ? $viewsConfig['schemas'] : [];
         if (empty($selected)) {
@@ -172,12 +172,15 @@ try {
     if ($action === 'sync' && $method === 'GET' && $role === 'admin') {
         $conn    = db_connect();
         $schemas = is_array($viewsConfig['schemas'] ?? null) ? $viewsConfig['schemas'] : [];
-        $schemas = array_values(array_filter(array_map('strval', $schemas), fn($s) => $s !== ''));
+        $schemas = array_values(array_filter(array_map('strval', $schemas), fn($schemaName) => $schemaName !== ''));
         if (empty($schemas)) {
             $schemas = [sys_schema()];
         }
 
-        $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($schemas)));
+        $placeholders = implode(',', array_map(
+            fn($placeholderIndex) => '$' . ($placeholderIndex + 1),
+            array_keys($schemas)
+        ));
 
         $sql = 'SELECT n.nspname AS table_schema, c.relname AS table_name, c.relkind '
             . 'FROM pg_catalog.pg_class c '
@@ -185,20 +188,20 @@ try {
             . "WHERE c.relkind IN ('v', 'm') AND n.nspname IN ($placeholders) "
             . "AND pg_catalog.has_table_privilege(c.oid, 'SELECT') "
             . 'ORDER BY n.nspname, c.relname';
-        $res = @pg_query_params($conn, $sql, $schemas);
-        if (!$res) {
+        $queryResult = @pg_query_params($conn, $sql, $schemas);
+        if (!$queryResult) {
             throw new ServerErrorException('Database error');
         }
 
         $dbViews     = [];
         $viewSchemas = [];
         $viewKinds   = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($queryResult)) {
             $dbViews[]                       = $row['table_name'];
             $viewSchemas[$row['table_name']] = $row['table_schema'];
             $viewKinds[$row['table_name']]   = $row['relkind'] === 'm' ? 'materialized' : 'view';
         }
-        pg_free_result($res);
+        pg_free_result($queryResult);
 
         $viewsColumns = [];
         foreach ($dbViews as $vName) {
@@ -210,15 +213,15 @@ try {
                 . 'WHERE n.nspname = $1 AND c.relname = $2 '
                 . 'AND a.attnum > 0 AND NOT a.attisdropped '
                 . 'ORDER BY a.attnum';
-            $colRes = @pg_query_params($conn, $colSql, [$viewSchemas[$vName], $vName]);
-            $cols   = [];
-            if ($colRes) {
-                while ($col = pg_fetch_assoc($colRes)) {
-                    $cols[$col['column_name']] = ['data_type' => $col['data_type']];
+            $columnsResult = @pg_query_params($conn, $colSql, [$viewSchemas[$vName], $vName]);
+            $columns   = [];
+            if ($columnsResult) {
+                while ($column = pg_fetch_assoc($columnsResult)) {
+                    $columns[$column['column_name']] = ['data_type' => $column['data_type']];
                 }
-                pg_free_result($colRes);
+                pg_free_result($columnsResult);
             }
-            $viewsColumns[$vName] = $cols;
+            $viewsColumns[$vName] = $columns;
         }
 
         echo json_encode([
@@ -258,8 +261,8 @@ try {
     echo json_encode(['error' => 'Invalid action or insufficient permissions']);
 } catch (ControlFlowException $signal) {
     throw $signal;
-} catch (Throwable $e) {
-    error_log('[api_views][exception] ' . $e->getMessage());
+} catch (Throwable $exception) {
+    error_log('[api_views][exception] ' . $exception->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Internal server error']);
 }

@@ -42,27 +42,27 @@ function etl_ftp_connect(array $conn, string $logTag = 'etl')
     $protocol = strtolower(trim((string)($conn['protocol'] ?? 'ftp')));
     $timeout  = 10;
 
-    $ftp = ($protocol === 'ftps' && function_exists('ftp_ssl_connect'))
+    $ftpConnection = ($protocol === 'ftps' && function_exists('ftp_ssl_connect'))
         ? @ftp_ssl_connect($host, $port, $timeout)
         : @ftp_connect($host, $port, $timeout);
-    if ($ftp === false) {
+    if ($ftpConnection === false) {
         error_log('[' . $logTag . '][etl][csv_ftp] Could not connect to ' . $host . ':' . $port);
         return null;
     }
-    if (!@ftp_login($ftp, $user, $pass)) {
+    if (!@ftp_login($ftpConnection, $user, $pass)) {
         error_log('[' . $logTag . '][etl][csv_ftp] Login failed for user ' . $user);
-        @ftp_close($ftp);
+        @ftp_close($ftpConnection);
         return null;
     }
-    @ftp_pasv($ftp, ($conn['passive_mode'] ?? true) !== false);
+    @ftp_pasv($ftpConnection, ($conn['passive_mode'] ?? true) !== false);
 
     $remoteDir = trim((string)($conn['remote_dir'] ?? ''));
-    if ($remoteDir !== '' && !@ftp_chdir($ftp, $remoteDir)) {
+    if ($remoteDir !== '' && !@ftp_chdir($ftpConnection, $remoteDir)) {
         error_log('[' . $logTag . '][etl][csv_ftp] Could not change to directory ' . $remoteDir);
-        @ftp_close($ftp);
+        @ftp_close($ftpConnection);
         return null;
     }
-    return $ftp;
+    return $ftpConnection;
 }
 
 function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = null): ?array
@@ -72,28 +72,28 @@ function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = n
         error_log('[' . $logTag . '][etl][csv_ftp] No file name configured.');
         return null;
     }
-    $ftp = etl_ftp_connect($conn, $logTag);
-    if ($ftp === null) {
+    $ftpConnection = etl_ftp_connect($conn, $logTag);
+    if ($ftpConnection === null) {
         return null;
     }
-    $tmp = tempnam(sys_get_temp_dir(), 'etl_csv_');
-    if ($tmp === false || !@ftp_get($ftp, $tmp, $fileName, FTP_BINARY)) {
+    $tempFile = tempnam(sys_get_temp_dir(), 'etl_csv_');
+    if ($tempFile === false || !@ftp_get($ftpConnection, $tempFile, $fileName, FTP_BINARY)) {
         error_log('[' . $logTag . '][etl][csv_ftp] Could not download file ' . $fileName);
-        @ftp_close($ftp);
-        if ($tmp !== false) {
-            @unlink($tmp);
+        @ftp_close($ftpConnection);
+        if ($tempFile !== false) {
+            @unlink($tempFile);
         }
         return null;
     }
-    @ftp_close($ftp);
+    @ftp_close($ftpConnection);
 
     $delimiter = (string)($conn['csv_delimiter'] ?? ',');
     $delimiter = ($delimiter !== '') ? $delimiter[0] : ',';
     $hasHeader = ($conn['csv_has_header'] ?? true) !== false;
 
-    $handle = @fopen($tmp, 'r');
+    $handle = @fopen($tempFile, 'r');
     if ($handle === false) {
-        @unlink($tmp);
+        @unlink($tempFile);
         return null;
     }
     $rows   = [];
@@ -101,14 +101,14 @@ function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = n
     while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
         if ($header === null) {
             if ($hasHeader) {
-                $header = array_map(static fn($h) => trim((string)$h), $data);
+                $header = array_map(static fn($headerCell) => trim((string)$headerCell), $data);
                 continue;
             }
             $header = array_map('strval', array_keys($data));
         }
         $row = [];
-        foreach ($header as $i => $col) {
-            $row[$col] = $data[$i] ?? null;
+        foreach ($header as $columnIndex => $columnName) {
+            $row[$columnName] = $data[$columnIndex] ?? null;
         }
         $rows[] = $row;
         if ($limit !== null && count($rows) >= $limit) {
@@ -116,38 +116,38 @@ function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = n
         }
     }
     fclose($handle);
-    @unlink($tmp);
+    @unlink($tempFile);
     return $rows;
 }
 
 const ETL_RETRY_DELAYS = [1, 5];
 
-function etl_is_transient_pdo_error(\PDOException $e): bool
+function etl_is_transient_pdo_error(\PDOException $exception): bool
 {
-    $sqlstate = (string)($e->errorInfo[0] ?? substr((string)$e->getCode(), 0, 2));
+    $sqlstate = (string)($exception->errorInfo[0] ?? substr((string)$exception->getCode(), 0, 2));
     if (str_starts_with($sqlstate, '08')) {
         return true;
     }
-    $driverCode = (int)($e->errorInfo[1] ?? 0);
+    $driverCode = (int)($exception->errorInfo[1] ?? 0);
 
     return in_array($driverCode, [2002, 2003, 2006, 2013, 1205, 1213], true)
         || in_array($sqlstate, ['57P03', '53300', '40001'], true);
 }
 
-function etl_with_retry(callable $fn, string $logTag)
+function etl_with_retry(callable $callback, string $logTag)
 {
     $attempts = count(ETL_RETRY_DELAYS) + 1;
-    for ($i = 0; $i < $attempts; $i++) {
+    for ($attempt = 0; $attempt < $attempts; $attempt++) {
         try {
-            return $fn();
-        } catch (\PDOException $e) {
-            $isLast = ($i === $attempts - 1);
-            if ($isLast || !etl_is_transient_pdo_error($e)) {
-                throw $e;
+            return $callback();
+        } catch (\PDOException $exception) {
+            $isLast = ($attempt === $attempts - 1);
+            if ($isLast || !etl_is_transient_pdo_error($exception)) {
+                throw $exception;
             }
-            $delay = ETL_RETRY_DELAYS[$i];
-            error_log('[' . $logTag . '][etl] transient error (attempt ' . ($i + 1) . '/' . $attempts . '): '
-                . $e->getMessage() . ' — retrying in ' . $delay . 's');
+            $delay = ETL_RETRY_DELAYS[$attempt];
+            error_log('[' . $logTag . '][etl] transient error (attempt ' . ($attempt + 1) . '/' . $attempts . '): '
+                . $exception->getMessage() . ' — retrying in ' . $delay . 's');
             sleep($delay);
         }
     }
@@ -158,50 +158,50 @@ function etl_with_retry(callable $fn, string $logTag)
 function etl_source_pdo(array $conn, string $logTag = 'etl'): ?\PDO
 {
     $driver = strtolower(trim((string)($conn['driver'] ?? 'mysql')));
-    $db     = trim((string)($conn['database'] ?? ''));
+    $databaseName     = trim((string)($conn['database'] ?? ''));
     if (!isset(etl_source_drivers()[$driver])) {
         error_log('[' . $logTag . '][etl] Unsupported source driver: ' . $driver);
         return null;
     }
 
     if (etl_source_is_file_driver($driver)) {
-        if ($db === '' || !is_readable($db)) {
+        if ($databaseName === '' || !is_readable($databaseName)) {
             return null;
         }
         try {
-            return new \PDO('sqlite:' . $db, null, null, [
+            return new \PDO('sqlite:' . $databaseName, null, null, [
                 \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
                 \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
             ]);
-        } catch (\PDOException $e) {
-            error_log('[' . $logTag . '][etl][sqlite] ' . $e->getMessage());
+        } catch (\PDOException $exception) {
+            error_log('[' . $logTag . '][etl][sqlite] ' . $exception->getMessage());
             return null;
         }
     }
 
     $host = trim((string)($conn['host'] ?? ''));
     $user = trim((string)($conn['user'] ?? ''));
-    if ($host === '' || $db === '' || $user === '') {
+    if ($host === '' || $databaseName === '' || $user === '') {
         return null;
     }
     $port    = (int)($conn['port'] ?? 0) ?: etl_source_drivers()[$driver];
     $pass    = (string)($conn['password'] ?? '');
     $timeout = 5;
     try {
-        return etl_with_retry(static function () use ($driver, $host, $port, $db, $user, $pass, $timeout) {
+        return etl_with_retry(static function () use ($driver, $host, $port, $databaseName, $user, $pass, $timeout) {
             $dsn = match ($driver) {
                 'mysql', 'mariadb' => sprintf(
                     'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4;connect_timeout=%d',
                     $host,
                     $port,
-                    $db,
+                    $databaseName,
                     $timeout
                 ),
                 'pgsql' => sprintf(
                     'pgsql:host=%s;port=%d;dbname=%s;connect_timeout=%d',
                     $host,
                     $port,
-                    $db,
+                    $databaseName,
                     $timeout
                 ),
             };
@@ -211,8 +211,9 @@ function etl_source_pdo(array $conn, string $logTag = 'etl'): ?\PDO
                 \PDO::ATTR_TIMEOUT            => $timeout,
             ]);
         }, $logTag . ':' . $driver);
-    } catch (\PDOException $e) {
-        error_log('[' . $logTag . '][etl][' . $driver . '] ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
+    } catch (\PDOException $exception) {
+        error_log('[' . $logTag . '][etl][' . $driver . '] ' . $exception->getMessage()
+            . ' | ' . $exception->getTraceAsString());
         return null;
     }
 }
@@ -223,13 +224,13 @@ function etl_reload_config_row(): ?array
     if ($conn === null) {
         return null;
     }
-    $tConfig = sys_table('config');
-    $res     = @pg_query_params($conn, "SELECT value, version FROM {$tConfig} WHERE config_key = \$1", ['etl']);
-    if ($res === false) {
+    $configTable = sys_table('config');
+    $result     = @pg_query_params($conn, "SELECT value, version FROM {$configTable} WHERE config_key = \$1", ['etl']);
+    if ($result === false) {
         return null;
     }
-    $row = pg_fetch_assoc($res);
-    pg_free_result($res);
+    $row = pg_fetch_assoc($result);
+    pg_free_result($result);
     if (!$row) {
         return null;
     }
@@ -269,12 +270,12 @@ function etl_config_optimistic_update(
 function etl_persist_watermark(string $jobId, string $newWatermark, string $logTag): void
 {
     etl_config_optimistic_update('etl', static function (array &$config) use ($jobId, $newWatermark) {
-        foreach ($config['jobs'] ?? [] as $i => $j) {
-            if ((string)($j['id'] ?? '') === $jobId) {
-                if ((string)($j['last_watermark'] ?? '') === $newWatermark) {
+        foreach ($config['jobs'] ?? [] as $jobIndex => $candidateJob) {
+            if ((string)($candidateJob['id'] ?? '') === $jobId) {
+                if ((string)($candidateJob['last_watermark'] ?? '') === $newWatermark) {
                     return false;
                 }
-                $config['jobs'][$i]['last_watermark'] = $newWatermark;
+                $config['jobs'][$jobIndex]['last_watermark'] = $newWatermark;
                 return true;
             }
         }
@@ -287,9 +288,9 @@ function etl_resolve_source(array $sources, string $sourceId): ?array
     if ($sourceId === '') {
         return null;
     }
-    foreach ($sources as $src) {
-        if (is_array($src) && (string)($src['id'] ?? '') === $sourceId) {
-            return $src;
+    foreach ($sources as $source) {
+        if (is_array($source) && (string)($source['id'] ?? '') === $sourceId) {
+            return $source;
         }
     }
     return null;
@@ -318,51 +319,51 @@ function etl_validate_source_query(string $sql): ?string
     return null;
 }
 
-function etl_watermark_gt(mixed $a, mixed $b): bool
+function etl_watermark_gt(mixed $first, mixed $second): bool
 {
-    if (is_numeric($a) && is_numeric($b)) {
-        return (float)$a > (float)$b;
+    if (is_numeric($first) && is_numeric($second)) {
+        return (float)$first > (float)$second;
     }
-    return (string)$a > (string)$b;
+    return (string)$first > (string)$second;
 }
 
 function etl_pg_text_columns(\PgSql\Connection $conn, string $schema, string $table): array
 {
-    $res = @pg_query_params(
+    $result = @pg_query_params(
         $conn,
         "SELECT column_name FROM information_schema.columns "
         . "WHERE table_schema = \$1 AND table_name = \$2 "
         . "AND data_type IN ('character varying', 'varchar', 'character', 'char', 'text', 'name', 'citext')",
         [$schema, $table]
     );
-    if (!$res) {
+    if (!$result) {
         return [];
     }
-    $cols = [];
-    while ($row = pg_fetch_assoc($res)) {
-        $cols[] = $row['column_name'];
+    $columns = [];
+    while ($row = pg_fetch_assoc($result)) {
+        $columns[] = $row['column_name'];
     }
-    pg_free_result($res);
-    return $cols;
+    pg_free_result($result);
+    return $columns;
 }
 
 function etl_pg_columns(\PgSql\Connection $conn, string $schema, string $table): array
 {
-    $res = @pg_query_params(
+    $result = @pg_query_params(
         $conn,
         'SELECT column_name FROM information_schema.columns '
         . 'WHERE table_schema = $1 AND table_name = $2 ORDER BY ordinal_position',
         [$schema, $table]
     );
-    if (!$res) {
+    if (!$result) {
         return [];
     }
-    $cols = [];
-    while ($row = pg_fetch_assoc($res)) {
-        $cols[] = $row['column_name'];
+    $columns = [];
+    while ($row = pg_fetch_assoc($result)) {
+        $columns[] = $row['column_name'];
     }
-    pg_free_result($res);
-    return $cols;
+    pg_free_result($result);
+    return $columns;
 }
 
 function etl_run_job(
@@ -378,61 +379,61 @@ function etl_run_job(
     $schema     = trim((string)($job['target_schema'] ?? '')) ?: sys_schema();
     $loadMode   = (string)($job['load_mode'] ?? 'full_refresh');
     $upsertKey  = array_values(array_filter(array_map(
-        static fn($k) => trim((string)$k),
+        static fn($upsertColumn) => trim((string)$upsertColumn),
         (array)($job['upsert_key'] ?? [])
-    ), static fn($k) => $k !== ''));
+    ), static fn($upsertColumn) => $upsertColumn !== ''));
     $incCol     = trim((string)($job['incremental_column'] ?? ''));
     $batchSize  = max(50, min(5000, (int)($job['batch_size'] ?? 500) ?: 500));
     $colMap     = [];
-    foreach ((array)($job['column_map'] ?? []) as $m) {
-        if (!is_array($m)) {
+    foreach ((array)($job['column_map'] ?? []) as $mapping) {
+        if (!is_array($mapping)) {
             continue;
         }
-        $src = trim((string)($m['source'] ?? ''));
-        $tgt = trim((string)($m['target'] ?? ''));
-        if ($src !== '' && $tgt !== '') {
-            $colMap[$src] = $tgt;
+        $source = trim((string)($mapping['source'] ?? ''));
+        $targetColumn = trim((string)($mapping['target'] ?? ''));
+        if ($source !== '' && $targetColumn !== '') {
+            $colMap[$source] = $targetColumn;
         }
     }
 
-    $out = ['status' => 'error', 'rows_read' => 0, 'rows_written' => 0, 'error' => null, 'new_watermark' => null];
+    $output = ['status' => 'error', 'rows_read' => 0, 'rows_written' => 0, 'error' => null, 'new_watermark' => null];
 
     $driver       = strtolower(trim((string)($connCfg['driver'] ?? 'mysql')));
     $isRemoteFile = etl_source_is_remote_file_driver($driver);
 
-    if (!$isRemoteFile && ($err = etl_validate_source_query($sourceSql)) !== null) {
-        $out['error'] = $err;
-        return $out;
+    if (!$isRemoteFile && ($error = etl_validate_source_query($sourceSql)) !== null) {
+        $output['error'] = $error;
+        return $output;
     }
     if ($target === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $target)) {
-        $out['error'] = 'Invalid or missing target table.';
-        return $out;
+        $output['error'] = 'Invalid or missing target table.';
+        return $output;
     }
     if ($schema === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $schema)) {
-        $out['error'] = 'Invalid or missing target schema.';
-        return $out;
+        $output['error'] = 'Invalid or missing target schema.';
+        return $output;
     }
     if (!in_array($loadMode, ['full_refresh', 'append', 'upsert'], true)) {
-        $out['error'] = 'Invalid load mode.';
-        return $out;
+        $output['error'] = 'Invalid load mode.';
+        return $output;
     }
 
     if ($isRemoteFile) {
         $rows = etl_fetch_csv_rows($connCfg, 'etl:' . $name);
         if ($rows === null) {
-            $out['error'] = 'Could not fetch/parse the source CSV file — check connection, path and file name.';
-            return $out;
+            $output['error'] = 'Could not fetch/parse the source CSV file — check connection, path and file name.';
+            return $output;
         }
     } else {
         $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
         if ($pdo === null) {
-            $out['error'] = 'Source connection is not configured or unavailable.';
-            return $out;
+            $output['error'] = 'Source connection is not configured or unavailable.';
+            return $output;
         }
 
         if ($incCol !== '' && str_contains($sourceSql, '{{watermark}}')) {
-            $wm = $watermark ?? (string)($job['incremental_initial_value'] ?? '0');
-            $sourceSql = str_replace('{{watermark}}', $pdo->quote($wm), $sourceSql);
+            $watermarkValue = $watermark ?? (string)($job['incremental_initial_value'] ?? '0');
+            $sourceSql = str_replace('{{watermark}}', $pdo->quote($watermarkValue), $sourceSql);
         }
 
         try {
@@ -445,75 +446,75 @@ function etl_run_job(
                 }
                 try {
                     return $pdo->query($sourceSql)->fetchAll();
-                } catch (\PDOException $e) {
+                } catch (\PDOException $exception) {
                     $pdo = null;
-                    throw $e;
+                    throw $exception;
                 }
             }, 'etl:' . $name);
         } catch (ControlFlowException $signal) {
             throw $signal;
-        } catch (\Throwable $e) {
-            error_log('[etl][' . $name . '] extract failed: ' . $e->getMessage());
-            $out['error'] = 'Source query failed.';
-            return $out;
+        } catch (\Throwable $exception) {
+            error_log('[etl][' . $name . '] extract failed: ' . $exception->getMessage());
+            $output['error'] = 'Source query failed.';
+            return $output;
         }
     }
-    $out['rows_read'] = count($rows);
+    $output['rows_read'] = count($rows);
 
     if ($incCol !== '' && !empty($rows)) {
         $max = null;
         foreach ($rows as $row) {
-            $v = $row[$incCol] ?? null;
-            if ($v !== null && ($max === null || etl_watermark_gt($v, $max))) {
-                $max = $v;
+            $incrementalValue = $row[$incCol] ?? null;
+            if ($incrementalValue !== null && ($max === null || etl_watermark_gt($incrementalValue, $max))) {
+                $max = $incrementalValue;
             }
         }
         if ($max !== null) {
-            $out['new_watermark'] = (string)$max;
+            $output['new_watermark'] = (string)$max;
         }
     }
 
     $targetCols = etl_pg_columns($pgConn, $schema, $target);
     if (empty($targetCols)) {
-        $out['error'] = "Target table '{$schema}.{$target}' not found or has no columns.";
-        return $out;
+        $output['error'] = "Target table '{$schema}.{$target}' not found or has no columns.";
+        return $output;
     }
 
     $sourceCols = empty($rows) ? [] : array_keys($rows[0]);
     if (!empty($colMap)) {
         $pairs = [];
-        foreach ($colMap as $src => $tgt) {
-            if (in_array($src, $sourceCols, true) && in_array($tgt, $targetCols, true)) {
-                $pairs[$src] = $tgt;
+        foreach ($colMap as $source => $targetColumn) {
+            if (in_array($source, $sourceCols, true) && in_array($targetColumn, $targetCols, true)) {
+                $pairs[$source] = $targetColumn;
             }
         }
     } else {
         $matched = array_values(array_intersect($sourceCols, $targetCols));
         $pairs   = array_combine($matched, $matched) ?: [];
     }
-    $cols = array_keys($pairs);
-    if (empty($cols) && !empty($rows)) {
-        $out['error'] = 'No source columns map to the target table columns.';
-        return $out;
+    $columns = array_keys($pairs);
+    if (empty($columns) && !empty($rows)) {
+        $output['error'] = 'No source columns map to the target table columns.';
+        return $output;
     }
 
     $targetNames = array_values($pairs);
     if ($loadMode === 'upsert') {
-        foreach ($upsertKey as $k) {
-            if (!in_array($k, $targetNames, true)) {
-                $out['error'] = "Upsert key column '{$k}' is not among the loaded columns.";
-                return $out;
+        foreach ($upsertKey as $upsertColumn) {
+            if (!in_array($upsertColumn, $targetNames, true)) {
+                $output['error'] = "Upsert key column '{$upsertColumn}' is not among the loaded columns.";
+                return $output;
             }
         }
         if (empty($upsertKey)) {
-            $out['error'] = 'Upsert mode requires at least one key column.';
-            return $out;
+            $output['error'] = 'Upsert mode requires at least one key column.';
+            return $output;
         }
     }
 
     if ($dryRun) {
-        $out['status'] = 'success';
-        return $out;
+        $output['status'] = 'success';
+        return $output;
     }
 
     $schemaIdent = pg_ident($schema);
@@ -524,13 +525,13 @@ function etl_run_job(
 
     if ($loadMode === 'full_refresh' && empty($rows)) {
         error_log('[etl][' . $name . '] full_refresh skipped TRUNCATE: source returned 0 rows.');
-        $out['status'] = 'success';
-        return $out;
+        $output['status'] = 'success';
+        return $output;
     }
 
     if (!@pg_query($pgConn, 'BEGIN')) {
-        $out['error'] = 'Could not start transaction.';
-        return $out;
+        $output['error'] = 'Could not start transaction.';
+        return $output;
     }
     try {
         if ($loadMode === 'full_refresh') {
@@ -555,25 +556,25 @@ function etl_run_job(
         foreach (array_chunk($rows, $chunkSize) as $chunk) {
             $params    = [];
             $valueSql  = [];
-            $ph        = 1;
+            $placeholderIndex        = 1;
             foreach ($chunk as $row) {
                 $slots = [];
-                foreach ($cols as $column) {
-                    $val = $row[$column] ?? null;
+                foreach ($columns as $column) {
+                    $value = $row[$column] ?? null;
 
-                    if ($val === '' && !in_array($pairs[$column], $textCols, true)) {
-                        $val = null;
+                    if ($value === '' && !in_array($pairs[$column], $textCols, true)) {
+                        $value = null;
                     }
-                    $params[] = $val;
-                    $slots[]  = '$' . $ph++;
+                    $params[] = $value;
+                    $slots[]  = '$' . $placeholderIndex++;
                 }
                 $valueSql[] = '(' . implode(', ', $slots) . ')';
             }
             $sql = 'INSERT INTO ' . $schemaIdent . '.' . $tableIdent
                 . ' (' . implode(', ', $colIdents) . ') VALUES '
                 . implode(', ', $valueSql) . $onConflict;
-            $res = @pg_query_params($pgConn, $sql, $params);
-            if (!$res) {
+            $result = @pg_query_params($pgConn, $sql, $params);
+            if (!$result) {
                 throw new \RuntimeException('INSERT failed: ' . pg_last_error($pgConn));
             }
             $written += count($chunk);
@@ -584,14 +585,14 @@ function etl_run_job(
         }
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (\Throwable $e) {
+    } catch (\Throwable $exception) {
         @pg_query($pgConn, 'ROLLBACK');
-        error_log('[etl][' . $name . '] load failed: ' . $e->getMessage());
-        $out['error'] = 'Load failed — no partial data was written.';
-        return $out;
+        error_log('[etl][' . $name . '] load failed: ' . $exception->getMessage());
+        $output['error'] = 'Load failed — no partial data was written.';
+        return $output;
     }
 
-    $out['status']       = 'success';
-    $out['rows_written'] = $written;
-    return $out;
+    $output['status']       = 'success';
+    $output['rows_written'] = $written;
+    return $output;
 }

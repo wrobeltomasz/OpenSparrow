@@ -45,21 +45,21 @@ final class DateFieldTest extends TestCase
 
     public function testBindWithValue(): void
     {
-        $bv = $this->field->bind('dob', ['dob' => '2026-01-15']);
-        $this->assertSame('2026-01-15', $bv->value);
-        $this->assertNull($bv->cast);
+        $boundValue = $this->field->bind('dob', ['dob' => '2026-01-15']);
+        $this->assertSame('2026-01-15', $boundValue->value);
+        $this->assertNull($boundValue->cast);
     }
 
     public function testBindEmptyStringReturnsNull(): void
     {
-        $bv = $this->field->bind('dob', ['dob' => '']);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('dob', ['dob' => '']);
+        $this->assertNull($boundValue->value);
     }
 
     public function testBindMissingKeyReturnsNull(): void
     {
-        $bv = $this->field->bind('dob', []);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('dob', []);
+        $this->assertNull($boundValue->value);
     }
 
     public function testRenderOutputsDateInput(): void

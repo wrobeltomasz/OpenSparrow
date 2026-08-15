@@ -40,13 +40,13 @@ function owners_action_get($conn): void
         WHERE o.table_name = \$1 AND o.record_id = \$2 AND o.is_current = true
     ";
 
-    $res = pg_query_params($conn, $sql, [$table, $recordId]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$table, $recordId]);
+    if (!$result) {
         error_log('[api_owners owners_action_get] ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
-    $row = pg_fetch_assoc($res);
+    $row = pg_fetch_assoc($result);
     if (!$row) {
         jsonSuccess(['owner' => null]);
     }
@@ -81,14 +81,14 @@ function owners_action_history($conn): void
         ORDER BY o.changed_at DESC
     ";
 
-    $res = pg_query_params($conn, $sql, [$table, $recordId]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$table, $recordId]);
+    if (!$result) {
         error_log('[api_owners owners_action_history] ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $rows = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $rows[] = [
             'owner_id'        => $row['owner_id'] !== null ? (int)$row['owner_id'] : null,
             'username'        => $row['username'],
@@ -111,14 +111,14 @@ function owners_action_editors($conn): void
         ORDER BY username
     ";
 
-    $res = pg_query($conn, $sql);
-    if (!$res) {
+    $result = pg_query($conn, $sql);
+    if (!$result) {
         error_log('[api_owners owners_action_editors] ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
 
     $users = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $users[] = ['id' => (int)$row['id'], 'username' => $row['username']];
     }
 
@@ -138,8 +138,8 @@ function owners_action_mine($conn): void
         ORDER BY table_name, changed_at DESC, record_id DESC
     ";
 
-    $res = pg_query_params($conn, $sql, [$userId]);
-    if (!$res) {
+    $result = pg_query_params($conn, $sql, [$userId]);
+    if (!$result) {
         error_log('[api_owners owners_action_mine] ' . pg_last_error($conn));
         jsonError('Database error.', 500);
     }
@@ -151,7 +151,7 @@ function owners_action_mine($conn): void
 
     $byTable    = [];
     $assignedAt = [];
-    while ($row = pg_fetch_assoc($res)) {
+    while ($row = pg_fetch_assoc($result)) {
         $tableName = $row['table_name'];
         if ($limit > 0 && count($byTable[$tableName] ?? []) >= $limit) {
             continue;
@@ -186,14 +186,14 @@ function owners_action_mine($conn): void
             pg_ident($tableName)
         );
 
-        $rowsRes = pg_query_params($conn, $rowsSql, [$arrParam]);
-        if (!$rowsRes) {
+        $rowsResult = pg_query_params($conn, $rowsSql, [$arrParam]);
+        if (!$rowsResult) {
             error_log('[api_owners owners_action_mine] ' . pg_last_error($conn));
             continue;
         }
 
         $tableDisplay = to_display_name($tableCfg);
-        while ($row = pg_fetch_assoc($rowsRes)) {
+        while ($row = pg_fetch_assoc($rowsResult)) {
             $recordId = (int)$row['id'];
             $label    = trim((string)($row['label'] ?? ''));
             $records[] = [
@@ -206,7 +206,7 @@ function owners_action_mine($conn): void
         }
     }
 
-    usort($records, fn($a, $b) => strcmp((string)$b['assigned_at'], (string)$a['assigned_at']));
+    usort($records, fn($first, $second) => strcmp((string)$second['assigned_at'], (string)$first['assigned_at']));
 
     jsonSuccess(['records' => $records]);
 }
@@ -223,13 +223,13 @@ function owners_action_mass_set($conn, array $body): void
         jsonError('owner_id must be a positive integer.', 400);
     }
 
-    $checkRes = pg_query_params(
+    $checkResult = pg_query_params(
         $conn,
         "SELECT id FROM " . sys_table('users') .
         " WHERE id = \$1 AND is_active = true AND role IN ('editor', 'admin')",
         [$ownerId]
     );
-    if (!$checkRes || pg_num_rows($checkRes) === 0) {
+    if (!$checkResult || pg_num_rows($checkResult) === 0) {
         jsonError('Invalid owner: user not found or does not have editor access.', 400);
     }
 
@@ -239,9 +239,9 @@ function owners_action_mass_set($conn, array $body): void
     }
     $rowIds = [];
     foreach ($rawIds as $id) {
-        $int = filter_var($id, FILTER_VALIDATE_INT);
-        if ($int !== false && $int > 0) {
-            $rowIds[] = $int;
+        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
+        if ($validatedId !== false && $validatedId > 0) {
+            $rowIds[] = $validatedId;
         }
     }
     $rowIds = array_values(array_unique($rowIds));
@@ -251,25 +251,25 @@ function owners_action_mass_set($conn, array $body): void
     }
 
     $changedBy = (int)$_SESSION['user_id'];
-    $t         = sys_table('record_owners');
+    $ownersTable         = sys_table('record_owners');
     $arrParam  = '{' . implode(',', array_map('intval', $rowIds)) . '}';
 
     @pg_query($conn, 'BEGIN');
 
-    $res = @pg_query_params(
+    $result = @pg_query_params(
         $conn,
-        "UPDATE $t SET is_current = false
+        "UPDATE $ownersTable SET is_current = false
          WHERE table_name = \$1 AND record_id = ANY(\$2::int[]) AND is_current = true",
         [$table, $arrParam]
     );
-    if (!$res) {
+    if (!$result) {
         @pg_query($conn, 'ROLLBACK');
         jsonError('Database error.', 500);
     }
 
     $res2 = @pg_query_params(
         $conn,
-        "INSERT INTO $t (table_name, record_id, owner_id, changed_by, is_current)
+        "INSERT INTO $ownersTable (table_name, record_id, owner_id, changed_by, is_current)
          SELECT \$1, unnest(\$2::int[]), \$3, \$4, true",
         [$table, $arrParam, $ownerId, $changedBy]
     );
@@ -302,12 +302,12 @@ function owners_action_set($conn, array $body): void
         jsonError('owner_id must be a positive integer.', 400);
     }
 
-    $checkRes = pg_query_params(
+    $checkResult = pg_query_params(
         $conn,
         "SELECT id FROM " . sys_table('users') . " WHERE id = \$1 AND is_active = true AND role IN ('editor', 'admin')",
         [$ownerId]
     );
-    if (!$checkRes || pg_num_rows($checkRes) === 0) {
+    if (!$checkResult || pg_num_rows($checkResult) === 0) {
         jsonError('Invalid owner: user not found or does not have editor access.', 400);
     }
 

@@ -35,27 +35,27 @@ final class EnumFieldTest extends TestCase
 
     public function testDoesNotSupportText(): void
     {
-        $col = new ColumnConfig('name', 'text', 'Name');
-        $this->assertFalse($this->field->supports($col, false));
+        $column = new ColumnConfig('name', 'text', 'Name');
+        $this->assertFalse($this->field->supports($column, false));
     }
 
     public function testBindWithValue(): void
     {
-        $bv = $this->field->bind('status', ['status' => 'active']);
-        $this->assertSame('active', $bv->value);
-        $this->assertNull($bv->cast);
+        $boundValue = $this->field->bind('status', ['status' => 'active']);
+        $this->assertSame('active', $boundValue->value);
+        $this->assertNull($boundValue->cast);
     }
 
     public function testBindEmptyReturnsNull(): void
     {
-        $bv = $this->field->bind('status', ['status' => '']);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('status', ['status' => '']);
+        $this->assertNull($boundValue->value);
     }
 
     public function testRenderUnlockedOutputsSelect(): void
     {
-        $col  = $this->col(['active', 'inactive']);
-        $html = $this->field->render($col, 'active', new RenderContext(false));
+        $column  = $this->col(['active', 'inactive']);
+        $html = $this->field->render($column, 'active', new RenderContext(false));
         $this->assertStringContainsString('<select', $html);
         $this->assertStringContainsString('active', $html);
         $this->assertStringContainsString('inactive', $html);
@@ -63,15 +63,15 @@ final class EnumFieldTest extends TestCase
 
     public function testRenderUnlockedMarksCurrentValueSelected(): void
     {
-        $col  = $this->col(['active', 'inactive']);
-        $html = $this->field->render($col, 'inactive', new RenderContext(false));
+        $column  = $this->col(['active', 'inactive']);
+        $html = $this->field->render($column, 'inactive', new RenderContext(false));
         $this->assertMatchesRegularExpression('/<option[^>]*value="inactive"[^>]*selected/', $html);
     }
 
     public function testRenderLockedOutputsBadge(): void
     {
-        $col  = $this->col(['active'], ['active' => '#00ff00']);
-        $html = $this->field->render($col, 'active', new RenderContext(true));
+        $column  = $this->col(['active'], ['active' => '#00ff00']);
+        $html = $this->field->render($column, 'active', new RenderContext(true));
         $this->assertStringContainsString('enum-badge', $html);
         $this->assertStringContainsString('type="hidden"', $html);
     }

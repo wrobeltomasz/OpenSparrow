@@ -23,20 +23,20 @@ $firstRun = false;
 require_once __DIR__ . '/../../includes/db.php';
 $_conn = @db_connect();
 if ($_conn) {
-    $tUsers = sys_table('users');
+    $usersTable = sys_table('users');
 
     $sqlState = null;
-    if (@pg_send_query($_conn, "SELECT 1 FROM $tUsers LIMIT 1")) {
-        $chk = @pg_get_result($_conn);
-        if ($chk !== false) {
-            $sqlState = pg_result_error_field($chk, PGSQL_DIAG_SQLSTATE);
+    if (@pg_send_query($_conn, "SELECT 1 FROM $usersTable LIMIT 1")) {
+        $checkResult = @pg_get_result($_conn);
+        if ($checkResult !== false) {
+            $sqlState = pg_result_error_field($checkResult, PGSQL_DIAG_SQLSTATE);
         }
         while (@pg_get_result($_conn)) {
         }
     }
     $firstRun = ($sqlState === '42P01');
 }
-unset($_conn, $chk, $sqlState, $tUsers);
+unset($_conn, $checkResult, $sqlState, $usersTable);
 
 if (!$firstRun && !isset($_SESSION['user_id'])) {
     throw new RedirectException('../login.php');

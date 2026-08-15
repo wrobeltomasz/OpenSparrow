@@ -11,9 +11,9 @@ use App\Exception\BadRequestException;
 use App\Exception\ResponseException;
 use App\Exception\ServerErrorException;
 
-function frontapi_workflow_procedure(FrontApiContext $ctx): never
+function frontapi_workflow_procedure(FrontApiContext $context): never
 {
-    $conn = $ctx->conn;
+    $conn = $context->conn;
 
     $body       = json_decode(file_get_contents('php://input') ?: '[]', true) ?: [];
     $workflowId = (string)($body['workflow_id'] ?? '');
@@ -24,15 +24,15 @@ function frontapi_workflow_procedure(FrontApiContext $ctx): never
 
     $wfConfig = config_get('workflows') ?? [];
     $procCfg  = null;
-    foreach ($wfConfig['workflows'] ?? [] as $wf) {
-        if (($wf['id'] ?? '') !== $workflowId) {
+    foreach ($wfConfig['workflows'] ?? [] as $workflow) {
+        if (($workflow['id'] ?? '') !== $workflowId) {
             continue;
         }
 
-        if (!workflow_tables_in_scope($wf)) {
+        if (!workflow_tables_in_scope($workflow)) {
             jsonError('Forbidden: no access to this workflow.', 403);
         }
-        $procCfg = $wf['steps'][$stepIndex]['procedure'] ?? null;
+        $procCfg = $workflow['steps'][$stepIndex]['procedure'] ?? null;
         break;
     }
 
@@ -64,8 +64,8 @@ function frontapi_workflow_procedure(FrontApiContext $ctx): never
     }
 
     $placeholders = [];
-    for ($p = 1; $p <= count($params); $p++) {
-        $placeholders[] = '$' . $p;
+    for ($parameterIndex = 1; $parameterIndex <= count($params); $parameterIndex++) {
+        $placeholders[] = '$' . $parameterIndex;
     }
     $callSql = 'CALL ' . pg_ident($procSchema) . '.' . pg_ident($procName)
         . '(' . implode(', ', $placeholders) . ')';
@@ -74,8 +74,8 @@ function frontapi_workflow_procedure(FrontApiContext $ctx): never
         throw new ServerErrorException('Could not execute the procedure.');
     }
 
-    $procRes = pg_get_result($conn);
-    $sqlErr  = $procRes ? pg_result_error_field($procRes, PGSQL_DIAG_MESSAGE_PRIMARY) : null;
+    $procedureResult = pg_get_result($conn);
+    $sqlErr  = $procedureResult ? pg_result_error_field($procedureResult, PGSQL_DIAG_MESSAGE_PRIMARY) : null;
 
     while (pg_get_result($conn)) {
         continue;
@@ -86,6 +86,6 @@ function frontapi_workflow_procedure(FrontApiContext $ctx): never
         throw new BadRequestException((string) $sqlErr);
     }
 
-    log_user_action($conn, $ctx->userId, 'CALL_PROCEDURE');
+    log_user_action($conn, $context->userId, 'CALL_PROCEDURE');
     throw ResponseException::encoded(['success' => true]);
 }

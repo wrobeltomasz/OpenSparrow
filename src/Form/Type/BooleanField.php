@@ -17,26 +17,28 @@ use App\Form\RenderContext;
 final class BooleanField implements FieldTypeInterface
 {
     #[\Override]
-    public function supports(ColumnConfig $col, bool $hasForeignKey): bool
+    public function supports(ColumnConfig $column, bool $hasForeignKey): bool
     {
-        return $col->isBool();
+        return $column->isBool();
     }
 
     #[\Override]
     public function bind(string $colName, array $postData): BoundValue
     {
-        $val = isset($postData[$colName]) ? 'true' : 'false';
-        return new BoundValue($val, 'boolean');
+        $value = isset($postData[$colName]) ? 'true' : 'false';
+        return new BoundValue($value, 'boolean');
     }
 
     #[\Override]
-    public function render(ColumnConfig $col, mixed $currentValue, RenderContext $ctx): string
+    public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string
     {
-        $val    = $ctx->isPrefilled($col->name) ? $ctx->prefilledValue($col->name) : (string)($currentValue ?? '');
+        $value    = $context->isPrefilled($column->name)
+            ? $context->prefilledValue($column->name)
+            : (string)($currentValue ?? '');
         $truthy = ['t', 'true', '1', 'on'];
-        $checked = (in_array(strtolower($val), $truthy, true) || $currentValue === true) ? 'checked' : '';
-        $locked  = $ctx->isLocked($col->name);
-        $name    = htmlspecialchars($col->name, ENT_QUOTES, 'UTF-8');
+        $checked = (in_array(strtolower($value), $truthy, true) || $currentValue === true) ? 'checked' : '';
+        $locked  = $context->isLocked($column->name);
+        $name    = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
 
         $html = '<input type="checkbox"'
               . ($locked ? '' : ' name="' . $name . '"')
@@ -44,7 +46,8 @@ final class BooleanField implements FieldTypeInterface
               . ' ' . $checked . ' />';
 
         if ($locked) {
-            $html .= '<input type="hidden" name="' . $name . '" value="' . htmlspecialchars($val, ENT_QUOTES, 'UTF-8') . '" />';
+            $html .= '<input type="hidden" name="' . $name . '" value="'
+                   . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" />';
         }
         return $html;
     }

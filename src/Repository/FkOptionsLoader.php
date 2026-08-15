@@ -19,15 +19,15 @@ final readonly class FkOptionsLoader
     {
     }
 
-    public function load(array $fkCfg, array $rawSchema): array
+    public function load(array $foreignKeyConfig, array $rawSchema): array
     {
-        $refTable  = $fkCfg['reference_table'];
-        $refPk     = $fkCfg['reference_column'] ?? 'id';
+        $refTable  = $foreignKeyConfig['reference_table'];
+        $refPk     = $foreignKeyConfig['reference_column'] ?? 'id';
         $refSchema = $rawSchema['tables'][$refTable]['schema'] ?? 'public';
 
-        $dispRaw = is_array($fkCfg['display_column'] ?? null)
-            ? $fkCfg['display_column']
-            : [$fkCfg['display_column'] ?? $refPk];
+        $dispRaw = is_array($foreignKeyConfig['display_column'] ?? null)
+            ? $foreignKeyConfig['display_column']
+            : [$foreignKeyConfig['display_column'] ?? $refPk];
         if (empty($dispRaw)) {
             $dispRaw = [$refPk];
         }
@@ -43,8 +43,8 @@ final readonly class FkOptionsLoader
         );
 
         try {
-            $res = $this->conn->exec($sql);
-        } catch (\RuntimeException $e) {
+            $result = $this->conn->exec($sql);
+        } catch (\RuntimeException $exception) {
             throw new \RuntimeException(sprintf(
                 'Foreign key configuration error: display column(s) [%s] not found on table "%s"."%s" '
                 . '(reference_column "%s"). Check the FK settings in the schema editor. Original error: %s',
@@ -52,15 +52,15 @@ final readonly class FkOptionsLoader
                 $refSchema,
                 $refTable,
                 $refPk,
-                $e->getMessage()
-            ), 0, $e);
+                $exception->getMessage()
+            ), 0, $exception);
         }
         $options = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $parts = [];
-            foreach ($dispRaw as $dc) {
-                if (isset($row[$dc]) && $row[$dc] !== '') {
-                    $parts[] = $row[$dc];
+            foreach ($dispRaw as $dateColumn) {
+                if (isset($row[$dateColumn]) && $row[$dateColumn] !== '') {
+                    $parts[] = $row[$dateColumn];
                 }
             }
             $options[$row[$refPk]] = implode(' - ', $parts) ?: $row[$refPk];
@@ -74,21 +74,21 @@ final readonly class FkOptionsLoader
             return $rows;
         }
 
-        foreach ($cfg->foreignKeys as $fkCol => $fkCfg) {
+        foreach ($cfg->foreignKeys as $fkCol => $foreignKeyConfig) {
             $fkValues = array_unique(
-                array_filter(array_column($rows, $fkCol), fn($v) => $v !== null && $v !== '')
+                array_filter(array_column($rows, $fkCol), fn($value) => $value !== null && $value !== '')
             );
             if (empty($fkValues)) {
                 continue;
             }
 
-            $refTable  = $fkCfg['reference_table'];
-            $refPk     = $fkCfg['reference_column'] ?? 'id';
+            $refTable  = $foreignKeyConfig['reference_table'];
+            $refPk     = $foreignKeyConfig['reference_column'] ?? 'id';
             $refSchema = $rawSchema['tables'][$refTable]['schema'] ?? 'public';
 
-            $dispRaw = is_array($fkCfg['display_column'] ?? null)
-                ? $fkCfg['display_column']
-                : [$fkCfg['display_column'] ?? $refPk];
+            $dispRaw = is_array($foreignKeyConfig['display_column'] ?? null)
+                ? $foreignKeyConfig['display_column']
+                : [$foreignKeyConfig['display_column'] ?? $refPk];
             if (empty($dispRaw)) {
                 $dispRaw = [$refPk];
             }
@@ -99,7 +99,7 @@ final readonly class FkOptionsLoader
                 : $escapedCols[0];
 
             $escapedVals = array_map(
-                fn($v) => pg_escape_literal($this->conn->native(), (string)$v),
+                fn($value) => pg_escape_literal($this->conn->native(), (string)$value),
                 $fkValues
             );
 
@@ -113,12 +113,12 @@ final readonly class FkOptionsLoader
             );
 
             $map = [];
-            $res = pg_query($this->conn->native(), $sql);
-            if ($res) {
-                while ($row = pg_fetch_assoc($res)) {
+            $result = pg_query($this->conn->native(), $sql);
+            if ($result) {
+                while ($row = pg_fetch_assoc($result)) {
                     $map[$row['id']] = $row['disp'];
                 }
-                pg_free_result($res);
+                pg_free_result($result);
             } else {
                 error_log(sprintf(
                     '[FkOptionsLoader] Foreign key configuration error: display column(s) [%s] not found on '

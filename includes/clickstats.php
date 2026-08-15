@@ -16,13 +16,13 @@ const CLICKSTATS_RETENTION_FOREVER = 0;
 
 const CLICKSTATS_MAX_RETENTION_DAYS = 3650;
 
-function clickstats_retention_days(mixed $raw): int
+function clickstats_retention_days(mixed $rawDays): int
 {
-    if (!is_int($raw) && !is_string($raw)) {
+    if (!is_int($rawDays) && !is_string($rawDays)) {
         return CLICKSTATS_DEFAULT_RETENTION_DAYS;
     }
     $days = filter_var(
-        $raw,
+        $rawDays,
         FILTER_VALIDATE_INT,
         ['options' => ['min_range' => 0, 'max_range' => CLICKSTATS_MAX_RETENTION_DAYS]]
     );
@@ -51,10 +51,10 @@ function clickstats_purge_expired(\PgSql\Connection $conn): ?int
         return null;
     }
 
-    $res = @pg_query_params(
+    $result = @pg_query_params(
         $conn,
         "DELETE FROM {$table} WHERE created_at < NOW() - (\$1 || ' days')::interval",
         [$days]
     );
-    return $res ? pg_affected_rows($res) : null;
+    return $result ? pg_affected_rows($result) : null;
 }

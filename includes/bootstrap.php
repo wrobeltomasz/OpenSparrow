@@ -201,8 +201,8 @@ function os_api_dispatch(
         $handlers[$action]();
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        error_log('[' . $logTag . '] ' . $e->getMessage());
+    } catch (Throwable $exception) {
+        error_log('[' . $logTag . '] ' . $exception->getMessage());
         jsonError('Internal server error.', 500);
     }
 }
@@ -220,12 +220,12 @@ function os_boot_app(): array
     $csrf    = new SessionCsrfTokenManager($session);
 
     $pgConn   = db_connect();
-    $db       = new PgConnection($pgConn);
+    $database       = new PgConnection($pgConn);
     $services = new ServiceContainer($pgConn);
 
     require_once __DIR__ . '/config_store.php';
     $schemas  = new JsonSchemaRepository(config_get('schema') ?? ['tables' => []]);
-    $fkLoader = new FkOptionsLoader($db);
+    $fkLoader = new FkOptionsLoader($database);
 
     $fieldRegistry = new FieldTypeRegistry([
         new ForeignKeyField(),
@@ -236,13 +236,13 @@ function os_boot_app(): array
         new TextField(),
     ]);
 
-    $records = new PgRecordRepository($db, $schemas, $fkLoader);
+    $records = new PgRecordRepository($database, $schemas, $fkLoader);
 
     return [
         'session'       => $session,
         'request'       => $request,
         'csrf'          => $csrf,
-        'db'            => $db,
+        'db'            => $database,
         'conn'          => $pgConn,
         'services'      => $services,
         'schemas'       => $schemas,
@@ -250,7 +250,7 @@ function os_boot_app(): array
         'fieldRegistry' => $fieldRegistry,
         'mapper'        => new UpdateMapper($fieldRegistry),
         'records'       => $records,
-        'files'         => new PgFileRepository($db),
-        'audit'         => new DbAuditLogger($db),
+        'files'         => new PgFileRepository($database),
+        'audit'         => new DbAuditLogger($database),
     ];
 }

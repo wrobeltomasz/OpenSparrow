@@ -114,9 +114,9 @@ final class I18n
         if ($vars !== []) {
             $value = (string)preg_replace_callback(
                 '/\{(\w+)\}/',
-                static fn(array $m): string => isset($vars[$m[1]])
-                    ? (string)$vars[$m[1]]
-                    : $m[0],
+                static fn(array $matches): string => isset($vars[$matches[1]])
+                    ? (string)$vars[$matches[1]]
+                    : $matches[0],
                 $value
             );
         }
@@ -184,7 +184,7 @@ final class I18n
 
         $files = glob(self::LANGUAGES_DIR . '*.json') ?: [];
         return $cache = array_map(
-            static fn(string $f): string => basename($f, '.json'),
+            static fn(string $languageFile): string => basename($languageFile, '.json'),
             $files
         );
     }
@@ -197,8 +197,8 @@ final class I18n
     private static function fromAcceptLanguage(): ?string
     {
         $header = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
-        if (preg_match('/^([a-z]{2})/i', $header, $m)) {
-            return strtolower($m[1]);
+        if (preg_match('/^([a-z]{2})/i', $header, $matches)) {
+            return strtolower($matches[1]);
         }
         return null;
     }
@@ -222,111 +222,111 @@ final class I18n
         if ($version !== null) {
             return $version;
         }
-        $ver = settings_value('locale_version');
-        if (is_string($ver)) {
-            return $version = $ver;
+        $storedVersion = settings_value('locale_version');
+        if (is_string($storedVersion)) {
+            return $version = $storedVersion;
         }
         return $version = '';
     }
 
-    private static function pluralForm(string $locale, int $n): string
+    private static function pluralForm(string $locale, int $count): string
     {
-        $abs = abs($n);
+        $absoluteCount = abs($count);
         return match (true) {
-            in_array($locale, ['pl'], true)           => self::pluralPl($abs),
-            in_array($locale, ['ru', 'uk'], true)     => self::pluralRu($abs),
-            in_array($locale, ['cs', 'sk'], true)     => self::pluralCs($abs),
-            in_array($locale, ['ro'], true)           => self::pluralRo($abs),
-            in_array($locale, ['hr'], true)           => self::pluralRu($abs),
-            in_array($locale, ['lt'], true)           => self::pluralLt($abs),
-            in_array($locale, ['sl'], true)           => self::pluralSl($abs),
-            in_array($locale, ['lv'], true)           => self::pluralLv($abs),
-            default                                   => $abs === 1 ? 'one' : 'other',
+            in_array($locale, ['pl'], true)           => self::pluralPl($absoluteCount),
+            in_array($locale, ['ru', 'uk'], true)     => self::pluralRu($absoluteCount),
+            in_array($locale, ['cs', 'sk'], true)     => self::pluralCs($absoluteCount),
+            in_array($locale, ['ro'], true)           => self::pluralRo($absoluteCount),
+            in_array($locale, ['hr'], true)           => self::pluralRu($absoluteCount),
+            in_array($locale, ['lt'], true)           => self::pluralLt($absoluteCount),
+            in_array($locale, ['sl'], true)           => self::pluralSl($absoluteCount),
+            in_array($locale, ['lv'], true)           => self::pluralLv($absoluteCount),
+            default                                   => $absoluteCount === 1 ? 'one' : 'other',
         };
     }
 
-    private static function pluralPl(int $n): string
+    private static function pluralPl(int $count): string
     {
-        if ($n === 1) {
+        if ($count === 1) {
             return 'one';
         }
-        $m10  = $n % 10;
-        $m100 = $n % 100;
-        if ($m10 >= 2 && $m10 <= 4 && ($m100 < 10 || $m100 >= 20)) {
+        $modulo10  = $count % 10;
+        $modulo100 = $count % 100;
+        if ($modulo10 >= 2 && $modulo10 <= 4 && ($modulo100 < 10 || $modulo100 >= 20)) {
             return 'few';
         }
         return 'many';
     }
 
-    private static function pluralRu(int $n): string
+    private static function pluralRu(int $count): string
     {
-        $m10  = $n % 10;
-        $m100 = $n % 100;
-        if ($m10 === 1 && $m100 !== 11) {
+        $modulo10  = $count % 10;
+        $modulo100 = $count % 100;
+        if ($modulo10 === 1 && $modulo100 !== 11) {
             return 'one';
         }
-        if ($m10 >= 2 && $m10 <= 4 && ($m100 < 10 || $m100 >= 20)) {
+        if ($modulo10 >= 2 && $modulo10 <= 4 && ($modulo100 < 10 || $modulo100 >= 20)) {
             return 'few';
         }
         return 'many';
     }
 
-    private static function pluralCs(int $n): string
+    private static function pluralCs(int $count): string
     {
-        if ($n === 1) {
+        if ($count === 1) {
             return 'one';
         }
-        if ($n >= 2 && $n <= 4) {
+        if ($count >= 2 && $count <= 4) {
             return 'few';
         }
         return 'other';
     }
 
-    private static function pluralRo(int $n): string
+    private static function pluralRo(int $count): string
     {
-        if ($n === 1) {
+        if ($count === 1) {
             return 'one';
         }
-        $m100 = $n % 100;
-        if ($n === 0 || ($m100 >= 2 && $m100 <= 19)) {
+        $modulo100 = $count % 100;
+        if ($count === 0 || ($modulo100 >= 2 && $modulo100 <= 19)) {
             return 'few';
         }
         return 'other';
     }
 
-    private static function pluralLt(int $n): string
+    private static function pluralLt(int $count): string
     {
-        $m10  = $n % 10;
-        $m100 = $n % 100;
-        if ($m10 === 1 && ($m100 < 11 || $m100 > 19)) {
+        $modulo10  = $count % 10;
+        $modulo100 = $count % 100;
+        if ($modulo10 === 1 && ($modulo100 < 11 || $modulo100 > 19)) {
             return 'one';
         }
-        if ($m10 >= 2 && $m10 <= 9 && ($m100 < 11 || $m100 > 19)) {
+        if ($modulo10 >= 2 && $modulo10 <= 9 && ($modulo100 < 11 || $modulo100 > 19)) {
             return 'few';
         }
         return 'other';
     }
 
-    private static function pluralSl(int $n): string
+    private static function pluralSl(int $count): string
     {
-        $m100 = $n % 100;
-        if ($m100 === 1) {
+        $modulo100 = $count % 100;
+        if ($modulo100 === 1) {
             return 'one';
         }
-        if ($m100 === 2) {
+        if ($modulo100 === 2) {
             return 'two';
         }
-        if ($m100 === 3 || $m100 === 4) {
+        if ($modulo100 === 3 || $modulo100 === 4) {
             return 'few';
         }
         return 'other';
     }
 
-    private static function pluralLv(int $n): string
+    private static function pluralLv(int $count): string
     {
-        $m10  = $n % 10;
-        $m100 = $n % 100;
-        if ($m10 === 1 && $m100 !== 11) {
+        $modulo10  = $count % 10;
+        $modulo100 = $count % 100;
+        if ($modulo10 === 1 && $modulo100 !== 11) {
             return 'one';
         }
         return 'other';

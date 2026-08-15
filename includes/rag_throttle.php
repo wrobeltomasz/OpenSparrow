@@ -27,32 +27,32 @@ function rag_rate_limit_ok(int $userId, int $maxPerMinute): bool
     }
     $now  = time();
     $file = rag_throttle_dir() . '/user_' . $userId . '.json';
-    $fh   = @fopen($file, 'c+');
-    if ($fh === false) {
+    $fileHandle   = @fopen($file, 'c+');
+    if ($fileHandle === false) {
         error_log('[rag] request refused, throttle state unwritable: ' . $file . os_last_error_reason());
         return false;
     }
     $allowed = false;
-    if (flock($fh, LOCK_EX)) {
+    if (flock($fileHandle, LOCK_EX)) {
         $allowed = true;
-        $raw    = stream_get_contents($fh);
-        $stamps = (is_string($raw) && $raw !== '') ? (json_decode($raw, true) ?: []) : [];
+        $rawStamps    = stream_get_contents($fileHandle);
+        $stamps = (is_string($rawStamps) && $rawStamps !== '') ? (json_decode($rawStamps, true) ?: []) : [];
 
-        $stamps = array_values(array_filter($stamps, static fn($t): bool => ($now - (int) $t) < 60));
+        $stamps = array_values(array_filter($stamps, static fn($stamp): bool => ($now - (int) $stamp) < 60));
         if (count($stamps) >= $maxPerMinute) {
             $allowed = false;
         } else {
             $stamps[] = $now;
         }
-        ftruncate($fh, 0);
-        rewind($fh);
-        fwrite($fh, json_encode($stamps));
-        fflush($fh);
-        flock($fh, LOCK_UN);
+        ftruncate($fileHandle, 0);
+        rewind($fileHandle);
+        fwrite($fileHandle, json_encode($stamps));
+        fflush($fileHandle);
+        flock($fileHandle, LOCK_UN);
     } else {
         error_log('[rag] request refused, throttle state could not be locked: ' . $file . os_last_error_reason());
     }
-    fclose($fh);
+    fclose($fileHandle);
     return $allowed;
 }
 
@@ -62,15 +62,15 @@ function rag_semaphore_acquire(int $maxConcurrent)
         return null;
     }
     $dir = rag_throttle_dir();
-    for ($i = 0; $i < $maxConcurrent; $i++) {
-        $fh = @fopen($dir . '/sem_' . $i . '.lock', 'c');
-        if ($fh === false) {
+    for ($slotIndex = 0; $slotIndex < $maxConcurrent; $slotIndex++) {
+        $fileHandle = @fopen($dir . '/sem_' . $slotIndex . '.lock', 'c');
+        if ($fileHandle === false) {
             continue;
         }
-        if (flock($fh, LOCK_EX | LOCK_NB)) {
-            return $fh;
+        if (flock($fileHandle, LOCK_EX | LOCK_NB)) {
+            return $fileHandle;
         }
-        fclose($fh);
+        fclose($fileHandle);
     }
     return null;
 }

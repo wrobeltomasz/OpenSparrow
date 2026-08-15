@@ -41,8 +41,8 @@ function frontapi_profile_update_avatar(\PgSql\Connection $conn, array $body, in
     }
 
     $sql = 'UPDATE ' . sys_table('users') . ' SET avatar_id = $1 WHERE id = $2';
-    $res = @pg_query_params($conn, $sql, [$avatarId, $userId]);
-    if (!$res) {
+    $result = @pg_query_params($conn, $sql, [$avatarId, $userId]);
+    if (!$result) {
         throw new ServerErrorException('Database error');
     }
 

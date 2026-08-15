@@ -41,20 +41,20 @@ final class TimestampFieldTest extends TestCase
 
     public function testBindConvertsTSeparator(): void
     {
-        $bv = $this->field->bind('created_at', ['created_at' => '2026-05-07T20:55:15']);
-        $this->assertSame('2026-05-07 20:55:15', $bv->value);
+        $boundValue = $this->field->bind('created_at', ['created_at' => '2026-05-07T20:55:15']);
+        $this->assertSame('2026-05-07 20:55:15', $boundValue->value);
     }
 
     public function testBindEmptyReturnsNull(): void
     {
-        $bv = $this->field->bind('created_at', ['created_at' => '']);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('created_at', ['created_at' => '']);
+        $this->assertNull($boundValue->value);
     }
 
     public function testBindMissingKeyReturnsNull(): void
     {
-        $bv = $this->field->bind('created_at', []);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('created_at', []);
+        $this->assertNull($boundValue->value);
     }
 
     public function testRenderStripsMilliseconds(): void

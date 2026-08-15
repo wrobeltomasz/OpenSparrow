@@ -28,11 +28,11 @@ require_once __DIR__ . '/../../includes/rag_throttle.php';
 if ($action === 'tags' && $method === 'GET') {
     try {
         $conn = db_connect();
-        $tRag = sys_table('rag_files');
-        $res  = @pg_query($conn, "SELECT DISTINCT unnest(tags) AS tag FROM {$tRag} ORDER BY tag");
+        $ragFilesTable = sys_table('rag_files');
+        $queryResult  = @pg_query($conn, "SELECT DISTINCT unnest(tags) AS tag FROM {$ragFilesTable} ORDER BY tag");
         $tags = [];
-        if ($res) {
-            while ($row = pg_fetch_row($res)) {
+        if ($queryResult) {
+            while ($row = pg_fetch_row($queryResult)) {
                 if ($row[0] !== null && $row[0] !== '') {
                     $tags[] = $row[0];
                 }
@@ -41,7 +41,7 @@ if ($action === 'tags' && $method === 'GET') {
         throw ResponseException::encoded(['tags' => $tags]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
+    } catch (Throwable $exception) {
         throw new ServerErrorException('Failed to load tags.');
     }
 }
@@ -49,14 +49,15 @@ if ($action === 'tags' && $method === 'GET') {
 if ($action === 'files' && $method === 'GET') {
     try {
         $conn  = db_connect();
-        $tRag  = sys_table('rag_files');
-        $res   = @pg_query(
+        $ragFilesTable  = sys_table('rag_files');
+        $queryResult   = @pg_query(
             $conn,
-            "SELECT id, filename, tags, file_size, length(content) AS char_count FROM {$tRag} ORDER BY filename"
+            "SELECT id, filename, tags, file_size, length(content) AS char_count"
+            . " FROM {$ragFilesTable} ORDER BY filename"
         );
         $files = [];
-        if ($res) {
-            while ($row = pg_fetch_assoc($res)) {
+        if ($queryResult) {
+            while ($row = pg_fetch_assoc($queryResult)) {
                 $files[] = [
                     'id'         => (int) $row['id'],
                     'filename'   => $row['filename'],
@@ -73,7 +74,7 @@ if ($action === 'files' && $method === 'GET') {
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
+    } catch (Throwable $exception) {
         throw new ServerErrorException('Failed to load files.');
     }
 }
@@ -85,7 +86,7 @@ if ($action === 'query' && $method === 'POST') {
         $tags        = array_values(
             array_filter(
                 array_map('trim', (array) ($body['tags'] ?? [])),
-                fn($t) => $t !== ''
+                fn($tag) => $tag !== ''
             )
         );
         $rawFileIds  = array_map('intval', (array) ($body['file_ids'] ?? []));
@@ -149,20 +150,20 @@ if ($action === 'query' && $method === 'POST') {
         $tagFallback = false;
 
         if (!empty($fileIds)) {
-            $tRag    = sys_table('rag_files');
+            $ragFilesTable    = sys_table('rag_files');
             $idArray = '{' . implode(',', $fileIds) . '}';
-            $res     = @pg_query_params(
+            $queryResult     = @pg_query_params(
                 $conn,
                 "SELECT id AS file_id, filename, content, tags,
                         NULL::int4 AS chunk_id, -1 AS chunk_index, 'file'::text AS source_type
-                 FROM {$tRag}
+                 FROM {$ragFilesTable}
                  WHERE id = ANY(\$1::int[])
                  ORDER BY filename",
                 [$idArray]
             );
             $files = [];
-            if ($res) {
-                while ($row = pg_fetch_assoc($res)) {
+            if ($queryResult) {
+                while ($row = pg_fetch_assoc($queryResult)) {
                     $files[] = $row;
                 }
             }
@@ -195,12 +196,12 @@ if ($action === 'query' && $method === 'POST') {
 
         $seen    = [];
         $sources = [];
-        foreach ($files as $f) {
-            if (!isset($seen[$f['filename']])) {
-                $seen[$f['filename']] = true;
+        foreach ($files as $file) {
+            if (!isset($seen[$file['filename']])) {
+                $seen[$file['filename']] = true;
                 $sources[] = [
-                    'filename' => $f['filename'],
-                    'tags'     => pg_text_array_to_php($f['tags'] ?? '{}'),
+                    'filename' => $file['filename'],
+                    'tags'     => pg_text_array_to_php($file['tags'] ?? '{}'),
                 ];
             }
         }
@@ -232,8 +233,8 @@ if ($action === 'query' && $method === 'POST') {
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        error_log('[api_rag][query] ' . $e->getMessage());
+    } catch (Throwable $exception) {
+        error_log('[api_rag][query] ' . $exception->getMessage());
         throw new ServerErrorException('The assistant failed to answer. Please try again.');
     }
 }

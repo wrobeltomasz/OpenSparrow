@@ -46,28 +46,28 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         $demoData = demo_get_definition($type, $conn);
 
         foreach ($demoData['ddl'] as $sql) {
-            $res = @pg_query($conn, $sql);
-            if ($res === false) {
+            $result = @pg_query($conn, $sql);
+            if ($result === false) {
                 admin_db_fail($conn, "demo_install:ddl:{$type}");
             }
         }
 
         foreach ($demoData['seed_data'] as $sql) {
-            $res = @pg_query($conn, $sql);
-            if ($res === false) {
+            $result = @pg_query($conn, $sql);
+            if ($result === false) {
                 admin_db_fail($conn, "demo_install:seed:{$type}");
             }
         }
 
         $demoUserPassword = 'test';
-        $tUsers = sys_table('users');
+        $usersTable = sys_table('users');
         $demoUserIds = [];
 
-        foreach (($withUsers ? $demoData['demo_users'] : []) as $i => $du) {
+        foreach (($withUsers ? $demoData['demo_users'] : []) as $userIndex => $demoUser) {
             $salt = bin2hex(random_bytes(32));
             $hash = password_hash($salt . $demoUserPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
-            $res = pg_query_params($conn, "
-                INSERT INTO $tUsers (
+            $result = pg_query_params($conn, "
+                INSERT INTO $usersTable (
                     username, password_hash, salt, password_algo, password_params, is_active, role, avatar_id
                 )
                 VALUES (\$1, \$2, \$3, 'argon2id', \$4, true, \$5, \$6)
@@ -76,62 +76,74 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                     password_params = EXCLUDED.password_params, is_active = true, role = EXCLUDED.role,
                     avatar_id = EXCLUDED.avatar_id
                 RETURNING id
-            ", [$du['username'], $hash, $salt, json_encode(ARGON2_OPTIONS), $du['role'], $du['avatar_id']]);
-            if ($res === false) {
+            ", [
+                $demoUser['username'],
+                $hash,
+                $salt,
+                json_encode(ARGON2_OPTIONS),
+                $demoUser['role'],
+                $demoUser['avatar_id'],
+            ]);
+            if ($result === false) {
                 admin_db_fail($conn, "demo_install:demo_users:{$type}");
             }
-            $demoUserIds[$i] = (int) pg_fetch_result($res, 0, 'id');
+            $demoUserIds[$userIndex] = (int) pg_fetch_result($result, 0, 'id');
         }
 
         $fallbackUserId = (int) ($_SESSION['user_id'] ?? 0);
-        $authorId = static fn(int $i): int => $demoUserIds[$i] ?? $fallbackUserId;
+        $authorId = static fn(int $userIndex): int => $demoUserIds[$userIndex] ?? $fallbackUserId;
 
-        $tComments = sys_table('comments');
+        $commentsTable = sys_table('comments');
         foreach (($withUsers ? $demoData['demo_comments'] : []) as $comment) {
-            $res = pg_query_params($conn, "
-                INSERT INTO $tComments (related_table, related_id, user_id, body) VALUES (\$1, \$2, \$3, \$4)
+            $result = pg_query_params($conn, "
+                INSERT INTO $commentsTable (related_table, related_id, user_id, body) VALUES (\$1, \$2, \$3, \$4)
             ", [$comment['related_table'], $comment['related_id'], $demoUserIds[$comment['author']], $comment['body']]);
-            if ($res === false) {
+            if ($result === false) {
                 admin_db_fail($conn, "demo_install:demo_comments:{$type}");
             }
         }
 
-        $tNotes = sys_table('notes');
-        foreach (($withUsers ? $demoData['demo_notes'] : []) as $n) {
-            $res = pg_query_params($conn, "
-                INSERT INTO $tNotes (user_id, related_table, related_id, body, reminder_date)
+        $notesTable = sys_table('notes');
+        foreach (($withUsers ? $demoData['demo_notes'] : []) as $demoNote) {
+            $result = pg_query_params($conn, "
+                INSERT INTO $notesTable (user_id, related_table, related_id, body, reminder_date)
                 VALUES (\$1, \$2, \$3, \$4, \$5)
             ", [
-                $demoUserIds[$n['author']],
-                $n['related_table'],
-                $n['related_id'],
-                $n['body'],
-                $n['reminder_date'] ?? null,
+                $demoUserIds[$demoNote['author']],
+                $demoNote['related_table'],
+                $demoNote['related_id'],
+                $demoNote['body'],
+                $demoNote['reminder_date'] ?? null,
             ]);
-            if ($res === false) {
+            if ($result === false) {
                 admin_db_fail($conn, "demo_install:demo_notes:{$type}");
             }
         }
 
-        $tOwners = sys_table('record_owners');
+        $recordOwnersTable = sys_table('record_owners');
         $ownerChangedBy = (int) ($_SESSION['user_id'] ?? 0);
-        foreach (($withUsers ? $demoData['demo_record_owners'] : []) as $o) {
-            $res = pg_query_params($conn, "
-                INSERT INTO $tOwners (table_name, record_id, owner_id, changed_by, is_current)
+        foreach (($withUsers ? $demoData['demo_record_owners'] : []) as $recordOwner) {
+            $result = pg_query_params($conn, "
+                INSERT INTO $recordOwnersTable (table_name, record_id, owner_id, changed_by, is_current)
                 VALUES (\$1, \$2, \$3, \$4, true)
-            ", [$o['related_table'], $o['related_id'], $demoUserIds[$o['author']], $ownerChangedBy]);
-            if ($res === false) {
+            ", [
+                $recordOwner['related_table'],
+                $recordOwner['related_id'],
+                $demoUserIds[$recordOwner['author']],
+                $ownerChangedBy,
+            ]);
+            if ($result === false) {
                 admin_db_fail($conn, "demo_install:demo_record_owners:{$type}");
             }
         }
 
-        $tNotifications = sys_table('users_notifications');
+        $notificationsTable = sys_table('users_notifications');
         $notifyDate = date('Y-m-d');
         foreach (($withUsers ? $demoData['demo_notifications'] : []) as $note) {
             $link = 'edit.php?table=' . rawurlencode((string) $note['related_table'])
                 . '&id=' . (int) $note['related_id'];
-            $res = pg_query_params($conn, "
-                INSERT INTO $tNotifications (user_id, title, link, source_table, source_id, is_read, notify_date)
+            $result = pg_query_params($conn, "
+                INSERT INTO $notificationsTable (user_id, title, link, source_table, source_id, is_read, notify_date)
                 VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7)
                 ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
             ", [
@@ -143,7 +155,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $note['is_read'] ? 't' : 'f',
                 $notifyDate,
             ]);
-            if ($res === false) {
+            if ($result === false) {
                 admin_db_fail($conn, "demo_install:demo_notifications:{$type}");
             }
         }
@@ -151,41 +163,41 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         $auditLogIds = [];
         if ($withAudit && $withUsers && !empty($demoData['demo_audit']) && is_array($demoData['demo_audit'])) {
             require_once __DIR__ . '/../../../includes/api_helpers.php';
-            $tUsersLog = sys_table('users_log');
-            $tSnapshots = sys_table('record_snapshots');
+            $usersLogTable = sys_table('users_log');
+            $recordSnapshotsTable = sys_table('record_snapshots');
             $demoSchema = (string) $demoData['pg_schema'];
             $baseJson   = [];
 
-            foreach ($demoData['demo_audit'] as $a) {
-                $table    = (string) $a['table'];
-                $recordId = (int) $a['record_id'];
+            foreach ($demoData['demo_audit'] as $auditEntry) {
+                $table    = (string) $auditEntry['table'];
+                $recordId = (int) $auditEntry['record_id'];
                 $cacheKey = $table . '#' . $recordId;
                 if (!array_key_exists($cacheKey, $baseJson)) {
-                    $raw = fetch_record_json($conn, $demoSchema, $table, $recordId);
-                    $baseJson[$cacheKey] = is_string($raw) ? json_decode($raw, true) : null;
+                    $rawJson = fetch_record_json($conn, $demoSchema, $table, $recordId);
+                    $baseJson[$cacheKey] = is_string($rawJson) ? json_decode($rawJson, true) : null;
                 }
 
                 if (!is_array($baseJson[$cacheKey])) {
                     continue;
                 }
 
-                $at  = date('Y-m-d H:i:s', strtotime('-' . (int) $a['days_ago'] . ' days'));
-                $res = pg_query_params($conn, "
-                    INSERT INTO $tUsersLog (user_id, action, target_table, record_id, created_at)
+                $createdAt  = date('Y-m-d H:i:s', strtotime('-' . (int) $auditEntry['days_ago'] . ' days'));
+                $result = pg_query_params($conn, "
+                    INSERT INTO $usersLogTable (user_id, action, target_table, record_id, created_at)
                     VALUES (\$1, \$2, \$3, \$4, \$5) RETURNING id
-                ", [$demoUserIds[$a['author']], $a['action'], $table, $recordId, $at]);
-                if ($res === false) {
+                ", [$demoUserIds[$auditEntry['author']], $auditEntry['action'], $table, $recordId, $createdAt]);
+                if ($result === false) {
                     admin_db_fail($conn, "demo_install:demo_audit:{$type}");
                 }
-                $logId = (int) pg_fetch_result($res, 0, 'id');
+                $logId = (int) pg_fetch_result($result, 0, 'id');
                 $auditLogIds[] = $logId;
 
-                $snapshot = array_merge($baseJson[$cacheKey], $a['changes'] ?? []);
-                $res = pg_query_params($conn, "
-                    INSERT INTO $tSnapshots (log_id, table_name, record_id, snapshot, created_at)
+                $snapshot = array_merge($baseJson[$cacheKey], $auditEntry['changes'] ?? []);
+                $result = pg_query_params($conn, "
+                    INSERT INTO $recordSnapshotsTable (log_id, table_name, record_id, snapshot, created_at)
                     VALUES (\$1, \$2, \$3, \$4, \$5)
-                ", [$logId, $table, $recordId, json_encode($snapshot), $at]);
-                if ($res === false) {
+                ", [$logId, $table, $recordId, json_encode($snapshot), $createdAt]);
+                if ($result === false) {
                     admin_db_fail($conn, "demo_install:demo_audit_snapshots:{$type}");
                 }
             }
@@ -199,8 +211,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         if (!isset($schemaCfg['tables']) || !is_array($schemaCfg['tables'])) {
             $schemaCfg['tables'] = [];
         }
-        foreach ($demoData['schema_tables'] as $key => $def) {
-            $schemaCfg['tables'][$key] = $def;
+        foreach ($demoData['schema_tables'] as $key => $definition) {
+            $schemaCfg['tables'][$key] = $definition;
         }
         config_save('schema', $schemaCfg, null, $seedUserId);
 
@@ -211,12 +223,12 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         if (!isset($dashCfg['layout'])) {
             $dashCfg['layout'] = ['gap' => '20px'];
         }
-        foreach ($demoData['dashboard_widgets'] as $w) {
-            $wid = $w['id'];
+        foreach ($demoData['dashboard_widgets'] as $widget) {
+            $widgetId = $widget['id'];
             $dashCfg['widgets'] = array_values(
-                array_filter($dashCfg['widgets'], fn($x) => ($x['id'] ?? '') !== $wid)
+                array_filter($dashCfg['widgets'], fn($existingWidget) => ($existingWidget['id'] ?? '') !== $widgetId)
             );
-            $dashCfg['widgets'][] = $w;
+            $dashCfg['widgets'][] = $widget;
         }
 
         $dashCfgOrdered = [
@@ -240,15 +252,18 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         }
         $demoTbls = array_keys($demoData['schema_tables']);
         $calCfg['sources'] = array_values(
-            array_filter($calCfg['sources'], fn($s) => !in_array($s['table'] ?? '', $demoTbls, true))
+            array_filter(
+                $calCfg['sources'],
+                fn($calendarSource) => !in_array($calendarSource['table'] ?? '', $demoTbls, true)
+            )
         );
 
         $installerUid = (int)($_SESSION['user_id'] ?? 0);
-        foreach ($demoData['calendar_sources'] as $s) {
-            if ($installerUid > 0 && empty($s['notified_users'])) {
-                $s['notified_users'] = [$installerUid];
+        foreach ($demoData['calendar_sources'] as $calendarSource) {
+            if ($installerUid > 0 && empty($calendarSource['notified_users'])) {
+                $calendarSource['notified_users'] = [$installerUid];
             }
-            $calCfg['sources'][] = $s;
+            $calCfg['sources'][] = $calendarSource;
         }
         config_save('calendar', $calCfg, null, $seedUserId);
 
@@ -259,10 +274,10 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $boardCfg['boards'] = [];
             }
             $boardCfg['boards'] = array_values(
-                array_filter($boardCfg['boards'], fn($b) => !in_array($b['table'] ?? '', $demoTbls, true))
+                array_filter($boardCfg['boards'], fn($board) => !in_array($board['table'] ?? '', $demoTbls, true))
             );
-            foreach ($demoData['board']['boards'] as $b) {
-                $boardCfg['boards'][] = $b;
+            foreach ($demoData['board']['boards'] as $board) {
+                $boardCfg['boards'][] = $board;
             }
             config_save('board', $boardCfg, null, $seedUserId);
         }
@@ -298,29 +313,32 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             config_save('anonymization', $anonCfgOrdered, null, $seedUserId);
         }
 
-        $wfCfg = config_get('workflows') ?? [];
-        if (!isset($wfCfg['workflows']) || !is_array($wfCfg['workflows'])) {
-            $wfCfg['workflows'] = [];
+        $workflowsConfig = config_get('workflows') ?? [];
+        if (!isset($workflowsConfig['workflows']) || !is_array($workflowsConfig['workflows'])) {
+            $workflowsConfig['workflows'] = [];
         }
-        foreach ($demoData['workflows'] as $wf) {
-            $wid = $wf['id'];
-            $wfCfg['workflows'] = array_values(
-                array_filter($wfCfg['workflows'], fn($w) => ($w['id'] ?? '') !== $wid)
+        foreach ($demoData['workflows'] as $workflow) {
+            $workflowId = $workflow['id'];
+            $workflowsConfig['workflows'] = array_values(
+                array_filter(
+                    $workflowsConfig['workflows'],
+                    fn($existingWorkflow) => ($existingWorkflow['id'] ?? '') !== $workflowId
+                )
             );
-            $wfCfg['workflows'][] = $wf;
+            $workflowsConfig['workflows'][] = $workflow;
         }
 
-        if (!isset($wfCfg['menu_name'])) {
-            $wfCfg['menu_name'] = 'Workflows';
+        if (!isset($workflowsConfig['menu_name'])) {
+            $workflowsConfig['menu_name'] = 'Workflows';
         }
-        if (!isset($wfCfg['menu_icon'])) {
-            $wfCfg['menu_icon'] = 'assets/icons/automation.png';
+        if (!isset($workflowsConfig['menu_icon'])) {
+            $workflowsConfig['menu_icon'] = 'assets/icons/automation.png';
         }
 
         $wfCfgOrdered = [
-            'workflows' => $wfCfg['workflows'],
-            'menu_name' => $wfCfg['menu_name'],
-            'menu_icon' => $wfCfg['menu_icon'],
+            'workflows' => $workflowsConfig['workflows'],
+            'menu_name' => $workflowsConfig['menu_name'],
+            'menu_icon' => $workflowsConfig['menu_icon'],
         ];
         config_save('workflows', $wfCfgOrdered, null, $seedUserId);
 
@@ -328,8 +346,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         if (!isset($viewsCfg['views']) || !is_array($viewsCfg['views'])) {
             $viewsCfg['views'] = [];
         }
-        foreach ($demoData['views'] as $key => $def) {
-            $viewsCfg['views'][$key] = $def;
+        foreach ($demoData['views'] as $key => $definition) {
+            $viewsCfg['views'][$key] = $definition;
         }
         config_save('views', $viewsCfg, null, $seedUserId);
 
@@ -362,9 +380,9 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $filesCfg['relations'] = [];
             }
             $existingTables = array_column($filesCfg['relations'], 'table');
-            foreach ($demoData['files_relations'] as $rel) {
-                if (!in_array($rel['table'] ?? '', $existingTables, true)) {
-                    $filesCfg['relations'][] = $rel;
+            foreach ($demoData['files_relations'] as $relativePath) {
+                if (!in_array($relativePath['table'] ?? '', $existingTables, true)) {
+                    $filesCfg['relations'][] = $relativePath;
                 }
             }
             config_save('files', $filesCfg, null, $seedUserId);
@@ -378,31 +396,31 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             $filesDir    = $repoRoot . '/' . $storagePath;
             os_ensure_directory($filesDir, 0750);
             os_write_guard_file($filesDir . '/.htaccess', "Require all denied\n");
-            $tFiles = sys_table('files');
-            foreach ($demoData['demo_files'] as $f) {
+            $filesTable = sys_table('files');
+            foreach ($demoData['demo_files'] as $demoFile) {
                 $physicalName = bin2hex(random_bytes(16)) . '.csv';
                 $dbPath       = $storagePath . '/' . $physicalName;
-                $res = pg_query_params($conn, "
-                    INSERT INTO $tFiles
+                $result = pg_query_params($conn, "
+                    INSERT INTO $filesTable
                         (name, display_name, type, mime_type, extension, size_bytes, storage_path,
                          uploaded_by, related_table, related_id, description)
                     VALUES
                         (\$1, \$1, 'spreadsheet', 'text/csv', 'csv', \$2, \$3, \$4, \$5, \$6, \$7)
                     RETURNING id
                 ", [
-                    $f['filename'],
-                    strlen($f['content']),
+                    $demoFile['filename'],
+                    strlen($demoFile['content']),
                     $dbPath,
-                    $authorId((int) $f['author']),
-                    $f['related_table'],
-                    $f['related_id'],
-                    $f['description'] ?? null,
+                    $authorId((int) $demoFile['author']),
+                    $demoFile['related_table'],
+                    $demoFile['related_id'],
+                    $demoFile['description'] ?? null,
                 ]);
-                if ($res === false) {
+                if ($result === false) {
                     admin_db_fail($conn, "demo_install:demo_files:{$type}");
                 }
-                file_put_contents($filesDir . '/' . $physicalName, $f['content']);
-                $demoFileIds[]   = (int) pg_fetch_result($res, 0, 'id');
+                file_put_contents($filesDir . '/' . $physicalName, $demoFile['content']);
+                $demoFileIds[]   = (int) pg_fetch_result($result, 0, 'id');
                 $demoFilePaths[] = $dbPath;
             }
         }
@@ -417,7 +435,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             os_ensure_directory($filesDir, 0750);
             os_write_guard_file($filesDir . '/.htaccess', "Require all denied\n");
             $assetsDir = __DIR__ . '/assets/images';
-            $tFiles    = sys_table('files');
+            $filesTable    = sys_table('files');
             foreach ($demoData['demo_images'] as $img) {
                 $srcPath = $assetsDir . '/' . basename($img['source_file']);
                 if (!is_file($srcPath)) {
@@ -426,8 +444,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $content      = file_get_contents($srcPath);
                 $physicalName = bin2hex(random_bytes(16)) . '.png';
                 $dbPath       = $storagePath . '/' . $physicalName;
-                $res = pg_query_params($conn, "
-                    INSERT INTO $tFiles
+                $result = pg_query_params($conn, "
+                    INSERT INTO $filesTable
                         (name, display_name, type, mime_type, extension, size_bytes, storage_path,
                          uploaded_by, related_table, related_id, related_field)
                     VALUES
@@ -443,11 +461,11 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                     $img['related_id'],
                     IMAGES_FIELD,
                 ]);
-                if ($res === false) {
+                if ($result === false) {
                     admin_db_fail($conn, "demo_install:demo_images:{$type}");
                 }
                 file_put_contents($filesDir . '/' . $physicalName, $content);
-                $demoImageIds[]   = (int) pg_fetch_result($res, 0, 'id');
+                $demoImageIds[]   = (int) pg_fetch_result($result, 0, 'id');
                 $demoImagePaths[] = $dbPath;
             }
         }
@@ -457,10 +475,10 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             require_once __DIR__ . '/../../../includes/rag_helpers.php';
             $samplesDir = realpath(__DIR__ . '/../../../docs/rag-samples');
             $ragCfg     = rag_config();
-            $tRagFiles  = sys_table('rag_files');
+            $ragFilesTable  = sys_table('rag_files');
             $ragUserId  = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-            foreach ($demoData['rag_docs'] as $doc) {
-                $name = (string) ($doc['file'] ?? '');
+            foreach ($demoData['rag_docs'] as $document) {
+                $name = (string) ($document['file'] ?? '');
 
                 if ($samplesDir === false || $name === '' || basename($name) !== $name) {
                     continue;
@@ -473,10 +491,10 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 if ($content === false || trim($content) === '') {
                     continue;
                 }
-                $tag = trim((string) ($doc['tag'] ?? ''));
-                $res = @pg_query_params(
+                $tag = trim((string) ($document['tag'] ?? ''));
+                $result = @pg_query_params(
                     $conn,
-                    "INSERT INTO {$tRagFiles} (filename, content, tags, file_size, uploaded_by)
+                    "INSERT INTO {$ragFilesTable} (filename, content, tags, file_size, uploaded_by)
                      VALUES (\$1, \$2, \$3::text[], \$4, \$5) RETURNING id",
                     [
                         $name,
@@ -487,11 +505,11 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                     ]
                 );
 
-                if ($res === false) {
+                if ($result === false) {
                     error_log('demo_install: RAG doc insert failed for ' . $name . ' — ' . pg_last_error($conn));
                     continue;
                 }
-                $fileId = (int) pg_fetch_result($res, 0, 'id');
+                $fileId = (int) pg_fetch_result($result, 0, 'id');
                 if ((bool) ($ragCfg['use_chunks'] ?? true)) {
                     rag_store_chunks($conn, $fileId, $content, $ragCfg);
                 }
@@ -520,13 +538,13 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $menuCfg['items'] = [];
             }
             foreach ($demoData['menu_items'] as $entry) {
-                $k = $entry['key'] ?? '';
-                if ($k === '') {
+                $menuKey = $entry['key'] ?? '';
+                if ($menuKey === '') {
                     continue;
                 }
-                $menuKeys[] = $k;
+                $menuKeys[] = $menuKey;
                 $menuCfg['items'] = array_values(
-                    array_filter($menuCfg['items'], fn($i) => ($i['key'] ?? '') !== $k)
+                    array_filter($menuCfg['items'], fn($menuItem) => ($menuItem['key'] ?? '') !== $menuKey)
                 );
                 $menuCfg['items'][] = $entry;
             }
@@ -538,12 +556,12 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             $rawAuto = config_get('automations') ?? [];
             $rules   = is_array($rawAuto['automations'] ?? null) ? $rawAuto['automations'] : [];
             foreach ($demoData['automations'] as $rule) {
-                $rid = $rule['id'] ?? '';
-                if ($rid === '') {
+                $ruleId = $rule['id'] ?? '';
+                if ($ruleId === '') {
                     continue;
                 }
-                $automationIds[] = $rid;
-                $rules = array_values(array_filter($rules, fn($rule) => ($rule['id'] ?? '') !== $rid));
+                $automationIds[] = $ruleId;
+                $rules = array_values(array_filter($rules, fn($rule) => ($rule['id'] ?? '') !== $ruleId));
                 $rules[] = $rule;
             }
             config_save('automations', ['automations' => $rules], null, $seedUserId);
@@ -556,9 +574,9 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             if (!isset($printCfg['prints']) || !is_array($printCfg['prints'])) {
                 $printCfg['prints'] = [];
             }
-            foreach ($demoData['prints'] as $key => $def) {
+            foreach ($demoData['prints'] as $key => $definition) {
                 $printKeys[] = $key;
-                $printCfg['prints'][$key] = $def;
+                $printCfg['prints'][$key] = $definition;
             }
             $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
             config_save('print', $printCfg, null, $seedUserId);
@@ -573,8 +591,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
             if (!isset($urCfg['limit'])) {
                 $urCfg['limit'] = 20;
             }
-            foreach ($demoData['user_records'] as $tableName => $cols) {
-                $urCfg['columns'][$tableName] = $cols;
+            foreach ($demoData['user_records'] as $tableName => $columns) {
+                $urCfg['columns'][$tableName] = $columns;
             }
             $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
             config_save('user_records', $urCfg, null, $seedUserId);
@@ -625,8 +643,8 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         return ['status' => 'success', 'meta' => $meta];
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Exception $e) {
-        return ['status' => 'error', 'error' => $e->getMessage()];
+    } catch (Exception $exception) {
+        return ['status' => 'error', 'error' => $exception->getMessage()];
     }
 }
 
@@ -682,8 +700,12 @@ if ($action === 'demo_uninstall') {
             @pg_query($conn, 'DROP SCHEMA IF EXISTS ' . pg_ident($pgSchema) . ' CASCADE');
         }
 
-        foreach ($meta['tables'] ?? [] as $t) {
-            @pg_query_params($conn, 'DELETE FROM ' . sys_table('record_owners') . ' WHERE table_name = $1', [$t]);
+        foreach ($meta['tables'] ?? [] as $tableName) {
+            @pg_query_params(
+                $conn,
+                'DELETE FROM ' . sys_table('record_owners') . ' WHERE table_name = $1',
+                [$tableName]
+            );
         }
 
         $demoFileIds = $meta['demo_file_ids'] ?? [];
@@ -692,8 +714,8 @@ if ($action === 'demo_uninstall') {
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('files') . ' WHERE id = ANY($1::int[])', [$fileIdList]);
         }
         $repoRoot = realpath(__DIR__ . '/../../../');
-        foreach ($meta['demo_file_paths'] ?? [] as $p) {
-            $full = $repoRoot . '/' . $p;
+        foreach ($meta['demo_file_paths'] ?? [] as $demoPath) {
+            $full = $repoRoot . '/' . $demoPath;
             if (is_file($full)) {
                 @unlink($full);
             }
@@ -704,8 +726,8 @@ if ($action === 'demo_uninstall') {
             $imgIdList = '{' . implode(',', array_map('intval', $demoImageIds)) . '}';
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('files') . ' WHERE id = ANY($1::int[])', [$imgIdList]);
         }
-        foreach ($meta['demo_image_paths'] ?? [] as $p) {
-            $full = $repoRoot . '/' . $p;
+        foreach ($meta['demo_image_paths'] ?? [] as $demoPath) {
+            $full = $repoRoot . '/' . $demoPath;
             if (is_file($full)) {
                 @unlink($full);
             }
@@ -714,15 +736,15 @@ if ($action === 'demo_uninstall') {
         $ragFileIds = $meta['rag_file_ids'] ?? [];
         if (!empty($ragFileIds)) {
             $ragIdList = '{' . implode(',', array_map('intval', $ragFileIds)) . '}';
-            $tRagFiles = sys_table('rag_files');
-            @pg_query_params($conn, "DELETE FROM {$tRagFiles} WHERE id = ANY(\$1::int[])", [$ragIdList]);
+            $ragFilesTable = sys_table('rag_files');
+            @pg_query_params($conn, "DELETE FROM {$ragFilesTable} WHERE id = ANY(\$1::int[])", [$ragIdList]);
         }
 
         $auditLogIds = $meta['audit_log_ids'] ?? [];
         if (!empty($auditLogIds)) {
             $logIdList = '{' . implode(',', array_map('intval', $auditLogIds)) . '}';
-            $tUsersLog = sys_table('users_log');
-            @pg_query_params($conn, "DELETE FROM {$tUsersLog} WHERE id = ANY(\$1::int[])", [$logIdList]);
+            $usersLogTable = sys_table('users_log');
+            @pg_query_params($conn, "DELETE FROM {$usersLogTable} WHERE id = ANY(\$1::int[])", [$logIdList]);
         }
 
         $demoUserIds = $meta['demo_user_ids'] ?? [];
@@ -766,29 +788,29 @@ if ($action === 'demo_uninstall') {
         $cfg = config_get('schema');
         if (is_array($cfg)) {
             $m2mJunctions = [];
-            foreach ($meta['tables'] ?? [] as $t) {
-                foreach ($cfg['tables'][$t]['many_to_many'] ?? [] as $m2m) {
-                    $jt = $m2m['junction_table'] ?? '';
-                    if ($jt && !empty($cfg['tables'][$jt]['hidden'])) {
-                        $m2mJunctions[] = $jt;
+            foreach ($meta['tables'] ?? [] as $tableName) {
+                foreach ($cfg['tables'][$tableName]['many_to_many'] ?? [] as $m2m) {
+                    $junctionTable = $m2m['junction_table'] ?? '';
+                    if ($junctionTable && !empty($cfg['tables'][$junctionTable]['hidden'])) {
+                        $m2mJunctions[] = $junctionTable;
                     }
                 }
-                unset($cfg['tables'][$t]);
+                unset($cfg['tables'][$tableName]);
             }
 
-            foreach ($m2mJunctions as $jt) {
-                if (isset($cfg['tables'][$jt])) {
+            foreach ($m2mJunctions as $junctionTable) {
+                if (isset($cfg['tables'][$junctionTable])) {
                     $stillUsed = false;
-                    foreach ($cfg['tables'] as $tCfg) {
-                        foreach ($tCfg['many_to_many'] ?? [] as $m) {
-                            if (($m['junction_table'] ?? '') === $jt) {
+                    foreach ($cfg['tables'] as $tableConfig) {
+                        foreach ($tableConfig['many_to_many'] ?? [] as $m2mDefinition) {
+                            if (($m2mDefinition['junction_table'] ?? '') === $junctionTable) {
                                 $stillUsed = true;
                                 break 2;
                             }
                         }
                     }
                     if (!$stillUsed) {
-                        unset($cfg['tables'][$jt]);
+                        unset($cfg['tables'][$junctionTable]);
                     }
                 }
             }
@@ -803,7 +825,7 @@ if ($action === 'demo_uninstall') {
         if (is_array($dashCfg)) {
             $ids = $meta['widget_ids'] ?? [];
             $dashCfg['widgets'] = array_values(
-                array_filter($dashCfg['widgets'] ?? [], fn($w) => !in_array($w['id'] ?? '', $ids, true))
+                array_filter($dashCfg['widgets'] ?? [], fn($widget) => !in_array($widget['id'] ?? '', $ids, true))
             );
             if (empty($dashCfg['widgets'])) {
                 config_delete('dashboard', $cleanUserId);
@@ -814,9 +836,12 @@ if ($action === 'demo_uninstall') {
 
         $calCfg = config_get('calendar');
         if (is_array($calCfg)) {
-            $tbls = $meta['tables'] ?? [];
+            $tables = $meta['tables'] ?? [];
             $calCfg['sources'] = array_values(
-                array_filter($calCfg['sources'] ?? [], fn($s) => !in_array($s['table'] ?? '', $tbls, true))
+                array_filter(
+                    $calCfg['sources'] ?? [],
+                    fn($calendarSource) => !in_array($calendarSource['table'] ?? '', $tables, true)
+                )
             );
             if (empty($calCfg['sources'])) {
                 config_delete('calendar', $cleanUserId);
@@ -827,12 +852,12 @@ if ($action === 'demo_uninstall') {
 
         $boardCfg = config_get('board');
         if (is_array($boardCfg) && !empty($boardCfg['boards'])) {
-            $tbls = $meta['tables'] ?? [];
+            $tables = $meta['tables'] ?? [];
             $ids  = $meta['board_ids'] ?? [];
             $boardCfg['boards'] = array_values(array_filter(
                 $boardCfg['boards'],
-                fn($b) => !in_array($b['id'] ?? '', $ids, true)
-                    && !in_array($b['table'] ?? '', $tbls, true)
+                fn($board) => !in_array($board['id'] ?? '', $ids, true)
+                    && !in_array($board['table'] ?? '', $tables, true)
             ));
             if (empty($boardCfg['boards'])) {
                 config_delete('board', $cleanUserId);
@@ -843,9 +868,9 @@ if ($action === 'demo_uninstall') {
 
         $anonCfg = config_get('anonymization');
         if (is_array($anonCfg)) {
-            $tbls = $meta['tables'] ?? [];
+            $tables = $meta['tables'] ?? [];
             $anonCfg['rules'] = array_values(
-                array_filter($anonCfg['rules'] ?? [], fn($rule) => !in_array($rule['table'] ?? '', $tbls, true))
+                array_filter($anonCfg['rules'] ?? [], fn($rule) => !in_array($rule['table'] ?? '', $tables, true))
             );
             if (empty($anonCfg['rules'])) {
                 config_delete('anonymization', $cleanUserId);
@@ -854,23 +879,26 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        $wfCfg = config_get('workflows');
-        if (is_array($wfCfg)) {
+        $workflowsConfig = config_get('workflows');
+        if (is_array($workflowsConfig)) {
             $ids = $meta['workflow_ids'] ?? [];
-            $wfCfg['workflows'] = array_values(
-                array_filter($wfCfg['workflows'] ?? [], fn($w) => !in_array($w['id'] ?? '', $ids, true))
+            $workflowsConfig['workflows'] = array_values(
+                array_filter(
+                    $workflowsConfig['workflows'] ?? [],
+                    fn($existingWorkflow) => !in_array($existingWorkflow['id'] ?? '', $ids, true)
+                )
             );
-            if (empty($wfCfg['workflows'])) {
+            if (empty($workflowsConfig['workflows'])) {
                 config_delete('workflows', $cleanUserId);
             } else {
-                config_save('workflows', $wfCfg, null, $cleanUserId);
+                config_save('workflows', $workflowsConfig, null, $cleanUserId);
             }
         }
 
         $viewsCfg = config_get('views');
         if (is_array($viewsCfg)) {
-            foreach ($meta['view_keys'] ?? [] as $k) {
-                unset($viewsCfg['views'][$k]);
+            foreach ($meta['view_keys'] ?? [] as $viewKey) {
+                unset($viewsCfg['views'][$viewKey]);
             }
             if (empty($viewsCfg['views'])) {
                 config_delete('views', $cleanUserId);
@@ -884,7 +912,7 @@ if ($action === 'demo_uninstall') {
             $keys = $meta['menu_keys'] ?? [];
             if (!empty($keys) && isset($menuCfg['items']) && is_array($menuCfg['items'])) {
                 $menuCfg['items'] = array_values(
-                    array_filter($menuCfg['items'], fn($i) => !in_array($i['key'] ?? '', $keys, true))
+                    array_filter($menuCfg['items'], fn($menuItem) => !in_array($menuItem['key'] ?? '', $keys, true))
                 );
             }
             if (empty($menuCfg['items'])) {
@@ -912,8 +940,8 @@ if ($action === 'demo_uninstall') {
         $printCfg = config_get('print');
         if (is_array($printCfg)) {
             $keys = $meta['print_keys'] ?? [];
-            foreach ($keys as $k) {
-                unset($printCfg['prints'][$k]);
+            foreach ($keys as $printKey) {
+                unset($printCfg['prints'][$printKey]);
             }
             $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
             if (empty($printCfg['prints'])) {
@@ -925,9 +953,9 @@ if ($action === 'demo_uninstall') {
 
         $ragViewCfg = config_get('rag');
         if (is_array($ragViewCfg) && !empty($ragViewCfg['aggregate_views'])) {
-            $tbls = $meta['tables'] ?? [];
-            foreach ($tbls as $t) {
-                unset($ragViewCfg['aggregate_views'][$t]);
+            $tables = $meta['tables'] ?? [];
+            foreach ($tables as $tableName) {
+                unset($ragViewCfg['aggregate_views'][$tableName]);
             }
             if (empty($ragViewCfg['aggregate_views'])) {
                 unset($ragViewCfg['aggregate_views']);
@@ -937,9 +965,9 @@ if ($action === 'demo_uninstall') {
 
         $urCfg = config_get('user_records');
         if (is_array($urCfg)) {
-            $tbls = $meta['tables'] ?? [];
-            foreach ($tbls as $t) {
-                unset($urCfg['columns'][$t]);
+            $tables = $meta['tables'] ?? [];
+            foreach ($tables as $tableName) {
+                unset($urCfg['columns'][$tableName]);
             }
             if (empty($urCfg['columns'])) {
                 config_delete('user_records', $cleanUserId);
@@ -953,8 +981,8 @@ if ($action === 'demo_uninstall') {
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'error' => $e->getMessage()]);
+    } catch (Exception $exception) {
+        echo json_encode(['status' => 'error', 'error' => $exception->getMessage()]);
     }
     throw ResponseException::sent();
 }

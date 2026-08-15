@@ -5,61 +5,61 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-$tSearchPlaceholder = htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
-$tAllColumns        = htmlspecialchars(t('grid.all_columns'), ENT_QUOTES, 'UTF-8');
-$tClearFilters      = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
-$tChooseAction      = htmlspecialchars(t('grid.choose_action'), ENT_QUOTES, 'UTF-8');
-$tAddRow            = htmlspecialchars(t('grid.add_row'), ENT_QUOTES, 'UTF-8');
-$tExportCsv         = htmlspecialchars(t('grid.export_csv'), ENT_QUOTES, 'UTF-8');
-$tRefreshTable      = htmlspecialchars(t('grid.refresh_table'), ENT_QUOTES, 'UTF-8');
-$tDataCleanup       = htmlspecialchars(t('data_cleanup.title'), ENT_QUOTES, 'UTF-8');
-$tShortcutsHelp     = htmlspecialchars(t('shortcuts.help_title'), ENT_QUOTES, 'UTF-8');
-$tAdd               = htmlspecialchars(t('common.add'), ENT_QUOTES, 'UTF-8');
+$searchPlaceholderLabel = htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
+$allColumnsLabel        = htmlspecialchars(t('grid.all_columns'), ENT_QUOTES, 'UTF-8');
+$clearFiltersLabel      = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 'UTF-8');
+$chooseActionLabel      = htmlspecialchars(t('grid.choose_action'), ENT_QUOTES, 'UTF-8');
+$addRowLabel            = htmlspecialchars(t('grid.add_row'), ENT_QUOTES, 'UTF-8');
+$exportCsvLabel         = htmlspecialchars(t('grid.export_csv'), ENT_QUOTES, 'UTF-8');
+$refreshTableLabel      = htmlspecialchars(t('grid.refresh_table'), ENT_QUOTES, 'UTF-8');
+$dataCleanupLabel       = htmlspecialchars(t('data_cleanup.title'), ENT_QUOTES, 'UTF-8');
+$shortcutsHelpLabel     = htmlspecialchars(t('shortcuts.help_title'), ENT_QUOTES, 'UTF-8');
+$addLabel               = htmlspecialchars(t('common.add'), ENT_QUOTES, 'UTF-8');
 
 $gridActions = [
     [
         'value' => 'add',
-        'optionLabel' => $tAddRow,
+        'optionLabel' => $addRowLabel,
         'role' => 'editor',
-        'button' => ['id' => 'addRow', 'cy' => 'add', 'class' => 'success', 'label' => $tAdd],
+        'button' => ['id' => 'addRow', 'cy' => 'add', 'class' => 'success', 'label' => $addLabel],
     ],
     [
         'value' => 'export',
-        'optionLabel' => $tExportCsv,
+        'optionLabel' => $exportCsvLabel,
         'role' => null,
-        'button' => ['id' => 'exportCsv', 'cy' => 'export', 'class' => null, 'label' => $tExportCsv],
+        'button' => ['id' => 'exportCsv', 'cy' => 'export', 'class' => null, 'label' => $exportCsvLabel],
     ],
     [
         'value' => 'refresh',
-        'optionLabel' => $tRefreshTable,
+        'optionLabel' => $refreshTableLabel,
         'role' => null,
         'button' => null,
     ],
     [
         'value' => 'data-cleanup',
-        'optionLabel' => $tDataCleanup,
+        'optionLabel' => $dataCleanupLabel,
         'role' => 'editor',
-        'button' => ['id' => 'dataCleanupBtn', 'cy' => 'data-cleanup', 'class' => null, 'label' => $tDataCleanup],
+        'button' => ['id' => 'dataCleanupBtn', 'cy' => 'data-cleanup', 'class' => null, 'label' => $dataCleanupLabel],
     ],
     [
         'value' => 'keyboard-help',
-        'optionLabel' => $tShortcutsHelp,
+        'optionLabel' => $shortcutsHelpLabel,
         'role' => null,
         'button' => [
             'id' => 'kgHelpBtn',
             'cy' => 'keyboard-help',
             'class' => 'kg-help-btn',
             'label' => '&#9000;',
-            'title' => $tShortcutsHelp,
+            'title' => $shortcutsHelpLabel,
         ],
     ],
 ];
-$gridActionAllowed = fn ($a) => !$a['role'] || ($userRole ?? '') === $a['role'];
+$gridActionAllowed = fn ($gridAction) => !$gridAction['role'] || ($userRole ?? '') === $gridAction['role'];
 $headerControls = <<<HTML
-    <input id="globalSearch" data-cy="search" type="text" placeholder="{$tSearchPlaceholder}" />
-    <select id="columnFilter" data-cy="column-filter"><option value="">{$tAllColumns}</option></select>
+    <input id="globalSearch" data-cy="search" type="text" placeholder="{$searchPlaceholderLabel}" />
+    <select id="columnFilter" data-cy="column-filter"><option value="">{$allColumnsLabel}</option></select>
     <div id="filterBar"></div>
-    <button id="clearFilters" title="{$tClearFilters}" style="display:none;">{$tClearFilters}</button>
+    <button id="clearFilters" title="{$clearFiltersLabel}" style="display:none;">{$clearFiltersLabel}</button>
 HTML;
 $pageTitle = 'OpenSparrow | Open source | PHP + vanilla JS + Postgres';
 ob_start();
@@ -73,25 +73,26 @@ ob_start();
         <div id="actions" class="actions">
             <div class="left">
                 <select id="mobileActions">
-                    <option value=""><?= $tChooseAction ?></option>
-                    <?php foreach ($gridActions as $a) : ?>
-                        <?php if (!$gridActionAllowed($a)) {
+                    <option value=""><?= $chooseActionLabel ?></option>
+                    <?php foreach ($gridActions as $gridAction) : ?>
+                        <?php if (!$gridActionAllowed($gridAction)) {
                             continue;
                         } ?>
-                    <option value="<?= $a['value'] ?>"><?= $a['optionLabel'] ?></option>
+                    <option value="<?= $gridAction['value'] ?>"><?= $gridAction['optionLabel'] ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <?php foreach ($gridActions as $a) : ?>
-                    <?php if (!$a['button'] || !$gridActionAllowed($a)) {
+                <?php foreach ($gridActions as $gridAction) : ?>
+                    <?php if (!$gridAction['button'] || !$gridActionAllowed($gridAction)) {
                         continue;
                     } ?>
                     <?php
-                    $b = $a['button'];
-                    $bAttrs = ($b['class'] ? ' class="' . $b['class'] . '"' : '')
-                        . (isset($b['title']) ? ' title="' . $b['title'] . '"' : '');
+                    $button = $gridAction['button'];
+                    $bAttrs = ($button['class'] ? ' class="' . $button['class'] . '"' : '')
+                        . (isset($button['title']) ? ' title="' . $button['title'] . '"' : '');
                     ?>
-                <button id="<?= $b['id'] ?>" data-cy="<?= $b['cy'] ?>"<?= $bAttrs ?>><?= $b['label'] ?></button>
+                <button id="<?= $button['id'] ?>" data-cy="<?= $button['cy'] ?>"<?= $bAttrs ?>>
+                    <?= $button['label'] ?></button>
                 <?php endforeach; ?>
             </div>
 

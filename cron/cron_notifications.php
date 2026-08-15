@@ -25,9 +25,9 @@ while (ob_get_level() > 0) {
 
 ob_implicit_flush(true);
 
-function print_log(string $msg): void
+function print_log(string $message): void
 {
-    echo $msg . "<br>\n";
+    echo $message . "<br>\n";
 
     echo str_pad('', 4096) . "\n";
     flush();
@@ -50,8 +50,8 @@ function cron_notifications_main(array $argv): int
         }
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        error_log('[cron_notifications] clickstats retention failed: ' . $e->getMessage());
+    } catch (Throwable $exception) {
+        error_log('[cron_notifications] clickstats retention failed: ' . $exception->getMessage());
     }
 
     $config = config_get('calendar');
@@ -70,7 +70,7 @@ function cron_notifications_main(array $argv): int
     $schemaCfg    = config_get('schema') ?? [];
     $schemaTables = is_array($schemaCfg['tables'] ?? null) ? $schemaCfg['tables'] : [];
 
-    $tCronLog = sys_table('users_notifications_log');
+    $cronLogTable = sys_table('users_notifications_log');
 
     try {
         print_log("Connecting to the database...");
@@ -82,12 +82,12 @@ function cron_notifications_main(array $argv): int
             "DELETE FROM " . sys_table('login_attempts') . " WHERE attempted_at < NOW() - INTERVAL '30 days'"
         );
 
-        $logRes = pg_query_params(
+        $logResult = pg_query_params(
             $conn,
-            "INSERT INTO $tCronLog (triggered_by) VALUES ($1) RETURNING id",
+            "INSERT INTO $cronLogTable (triggered_by) VALUES ($1) RETURNING id",
             [$triggeredBy]
         );
-        $logId = $logRes ? (int) pg_fetch_result($logRes, 0, 0) : null;
+        $logId = $logResult ? (int) pg_fetch_result($logResult, 0, 0) : null;
         $insertedCount = 0;
         $sourcesProcessed = 0;
         foreach ($config['sources'] as $source) {
@@ -133,12 +133,14 @@ function cron_notifications_main(array $argv): int
             $rows = pg_fetch_all($result) ?: [];
 
             $uidList = '{' . implode(',', array_map('intval', $notifiedUsers)) . '}';
-            $validRes = pg_query_params(
+            $validationResult = pg_query_params(
                 $conn,
                 "SELECT id FROM " . sys_table('users') . " WHERE id = ANY($1::int[]) AND is_active = TRUE",
                 [$uidList]
             );
-            $validUserIds = $validRes ? array_map('intval', array_column(pg_fetch_all($validRes) ?: [], 'id')) : [];
+            $validUserIds = $validationResult
+                ? array_map('intval', array_column(pg_fetch_all($validationResult) ?: [], 'id'))
+                : [];
             if (empty($validUserIds)) {
                 print_log(
                     "Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8')
@@ -164,12 +166,12 @@ function cron_notifications_main(array $argv): int
                         VALUES ($1, $2, $3, $4, $5, $6)
                         ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING
                     ";
-                    $res = pg_query_params(
+                    $updateResult = pg_query_params(
                         $conn,
                         $insertSql,
                         [$userId, $titleText, $link, $table, $recordId, $targetDate]
                     );
-                    if ($res && pg_affected_rows($res) > 0) {
+                    if ($updateResult && pg_affected_rows($updateResult) > 0) {
                         print_log("&nbsp;&nbsp; Added notification for user ID $userId (Record ID: $recordId)");
                         $insertedCount++;
                     } else {
@@ -184,13 +186,13 @@ function cron_notifications_main(array $argv): int
 
         print_log("<h3>Note reminders</h3>");
         $today = date('Y-m-d');
-        $noteRes = pg_query(
+        $noteResult = pg_query(
             $conn,
             "SELECT id, user_id, body, related_table, related_id, reminder_date::date AS reminder_day
              FROM " . sys_table('notes') . "
              WHERE reminder_date IS NOT NULL AND reminder_date <= NOW() AND deleted_at IS NULL"
         );
-        $noteRows = $noteRes ? (pg_fetch_all($noteRes) ?: []) : [];
+        $noteRows = $noteResult ? (pg_fetch_all($noteResult) ?: []) : [];
         print_log("Notes with a reminder due: <b>" . count($noteRows) . "</b>");
         foreach ($noteRows as $note) {
             $noteUserId = (int)$note['user_id'];
@@ -208,8 +210,8 @@ function cron_notifications_main(array $argv): int
 
             $noteDay = $note['reminder_day'] ?: $today;
             $noteParams = [$noteUserId, $noteTitle, $noteLink, (int)$note['id'], $noteDay];
-            $noteInsertRes = pg_query_params($conn, $noteInsertSql, $noteParams);
-            if ($noteInsertRes && pg_affected_rows($noteInsertRes) > 0) {
+            $noteInsertResult = pg_query_params($conn, $noteInsertSql, $noteParams);
+            if ($noteInsertResult && pg_affected_rows($noteInsertResult) > 0) {
                 print_log("&nbsp;&nbsp; Added reminder for user ID $noteUserId (Note ID: " . (int)$note['id'] . ")");
                 $insertedCount++;
             }
@@ -217,7 +219,7 @@ function cron_notifications_main(array $argv): int
         print_log("<hr>");
 
         print_log("<h3>Automation email queue</h3>");
-        $tAutoEmails = sys_table('automation_emails');
+        $automationEmailsTable = sys_table('automation_emails');
         $emailsSent  = 0;
         $emailsFailed = 0;
 
@@ -255,17 +257,17 @@ function cron_notifications_main(array $argv): int
                 ? 'SMTP (' . htmlspecialchars($smtpConfig['host'], ENT_QUOTES, 'UTF-8') . ')'
                 : 'PHP mail()';
             print_log('Delivery method: <b>' . $methodLabel . '</b>');
-            $pendRes = pg_query_params(
+            $pendingResult = pg_query_params(
                 $conn,
-                "SELECT id, recipient, subject, body FROM $tAutoEmails
+                "SELECT id, recipient, subject, body FROM $automationEmailsTable
                  WHERE status = 'pending' AND attempts < \$1
                  ORDER BY id ASC LIMIT \$2",
                 [AUTOMATION_EMAIL_MAX_ATTEMPTS, AUTOMATION_EMAIL_BATCH_LIMIT]
             );
-            $pending = $pendRes ? (pg_fetch_all($pendRes) ?: []) : [];
+            $pending = $pendingResult ? (pg_fetch_all($pendingResult) ?: []) : [];
             print_log("Pending emails picked up: <b>" . count($pending) . "</b>");
 
-            $hdrSafe = static fn(string $s): string => str_replace(["\r", "\n"], ' ', $s);
+            $hdrSafe = static fn(string $headerValue): string => str_replace(["\r", "\n"], ' ', $headerValue);
 
             foreach ($pending as $mailRow) {
                 $mailId    = (int) $mailRow['id'];
@@ -274,7 +276,7 @@ function cron_notifications_main(array $argv): int
 
                 if ($smtpEnabled) {
                     $result = smtp_send($smtpConfig, $recipient, $subject, (string) $mailRow['body']);
-                    $ok = $result['ok'];
+                    $success = $result['ok'];
                     $failReason = $result['error'] ?? 'SMTP delivery failed';
                 } else {
                     $headers = 'From: ' . $hdrSafe(AUTOMATION_EMAIL_FROM) . "\r\n"
@@ -282,7 +284,7 @@ function cron_notifications_main(array $argv): int
                              . "Content-Type: text/plain; charset=UTF-8\r\n"
                              . "Content-Transfer-Encoding: 8bit";
 
-                    $ok = @mail(
+                    $success = @mail(
                         $recipient,
                         '=?UTF-8?B?' . base64_encode($subject) . '?=',
                         (string) $mailRow['body'],
@@ -291,10 +293,10 @@ function cron_notifications_main(array $argv): int
                     $failReason = 'mail() returned false';
                 }
 
-                if ($ok) {
+                if ($success) {
                     pg_query_params(
                         $conn,
-                        "UPDATE $tAutoEmails SET status = 'sent', sent_at = NOW(), "
+                        "UPDATE $automationEmailsTable SET status = 'sent', sent_at = NOW(), "
                             . "attempts = attempts + 1, error_msg = NULL WHERE id = \$1",
                         [$mailId]
                     );
@@ -306,7 +308,7 @@ function cron_notifications_main(array $argv): int
                 } else {
                     pg_query_params(
                         $conn,
-                        "UPDATE $tAutoEmails
+                        "UPDATE $automationEmailsTable
                          SET attempts = attempts + 1,
                              error_msg = \$2,
                              status = CASE WHEN attempts + 1 >= \$3 THEN 'error' ELSE 'pending' END
@@ -329,20 +331,20 @@ function cron_notifications_main(array $argv): int
         if ($logId) {
             pg_query_params(
                 $conn,
-                "UPDATE $tCronLog SET status='success', finished_at=NOW(), "
+                "UPDATE $cronLogTable SET status='success', finished_at=NOW(), "
                     . "sources_processed=$1, notifications_created=$2 WHERE id=$3",
                 [$sourcesProcessed, $insertedCount, $logId]
             );
         }
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        print_log("<span style='color:red;'>Critical error: " . htmlspecialchars($e->getMessage()) . "</span>");
+    } catch (Throwable $exception) {
+        print_log("<span style='color:red;'>Critical error: " . htmlspecialchars($exception->getMessage()) . "</span>");
         if (!empty($logId) && !empty($conn)) {
             pg_query_params(
                 $conn,
-                "UPDATE $tCronLog SET status='error', finished_at=NOW(), error_message=$1 WHERE id=$2",
-                [substr($e->getMessage(), 0, 2000), $logId]
+                "UPDATE $cronLogTable SET status='error', finished_at=NOW(), error_message=$1 WHERE id=$2",
+                [substr($exception->getMessage(), 0, 2000), $logId]
             );
         }
     }

@@ -9,9 +9,9 @@ declare(strict_types=1);
 
 use App\Exception\ResponseException;
 
-function frontapi_m2m_rows(FrontApiContext $ctx): never
+function frontapi_m2m_rows(FrontApiContext $context): never
 {
-    $schema = $ctx->schema;
+    $schema = $context->schema;
     $table  = $_GET['table']     ?? '';
     $m2mIdx = (int)($_GET['m2m_index'] ?? 0);
     $idsRaw = $_GET['ids']       ?? '';
@@ -31,29 +31,29 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
     }
 
     $cfg        = $m2mList[$m2mIdx];
-    $jt         = $cfg['junction_table'] ?? '';
+    $junctionTable         = $cfg['junction_table'] ?? '';
     $selfFk     = $cfg['self_fk']        ?? '';
     $otherFk    = $cfg['other_fk']       ?? '';
     $otherTable = $cfg['other_table']    ?? '';
     $displayCol = $cfg['display_column'] ?? 'id';
 
     if (
-        !$jt || !$selfFk || !$otherFk || !$otherTable
-        || !isset($schema['tables'][$jt], $schema['tables'][$otherTable])
+        !$junctionTable || !$selfFk || !$otherFk || !$otherTable
+        || !isset($schema['tables'][$junctionTable], $schema['tables'][$otherTable])
     ) {
         throw ResponseException::encoded(['data' => (object)[]]);
     }
 
-    $jtSchema = $schema['tables'][$jt]['schema']         ?? 'public';
+    $jtSchema = $schema['tables'][$junctionTable]['schema']         ?? 'public';
     $otSchema = $schema['tables'][$otherTable]['schema'] ?? 'public';
-    $placeholders = implode(',', array_map(fn($i) => '$' . ($i + 1), array_keys($ids)));
+    $placeholders = implode(',', array_map(fn($placeholderIndex) => '$' . ($placeholderIndex + 1), array_keys($ids)));
 
     $qParams  = $ids;
     $ownerSql = '';
     if (!empty($schema['tables'][$table]['owner_restricted'])) {
         $ownerSql  = owner_restriction_sql('j.' . pg_ident($selfFk), count($ids) + 1, count($ids) + 2);
         $qParams[] = $table;
-        $qParams[] = $ctx->userId;
+        $qParams[] = $context->userId;
     }
 
     $sql = sprintf(
@@ -65,7 +65,7 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
         pg_ident($selfFk),
         pg_ident($displayCol),
         pg_ident($jtSchema),
-        pg_ident($jt),
+        pg_ident($junctionTable),
         pg_ident($otSchema),
         pg_ident($otherTable),
         pg_ident($otherFk),
@@ -75,24 +75,24 @@ function frontapi_m2m_rows(FrontApiContext $ctx): never
         pg_ident($selfFk),
         pg_ident($displayCol)
     );
-    $res = @pg_query_params($ctx->conn, $sql, $qParams);
-    if (!$res) {
+    $result = @pg_query_params($context->conn, $sql, $qParams);
+    if (!$result) {
         throw ResponseException::encoded(['data' => (object)[]]);
     }
 
     $data = [];
-    while ($row = pg_fetch_assoc($res)) {
-        $sid = (string)$row['sid'];
-        $data[$sid][] = (string)$row['label'];
+    while ($row = pg_fetch_assoc($result)) {
+        $sourceId = (string)$row['sid'];
+        $data[$sourceId][] = (string)$row['label'];
     }
 
     throw ResponseException::encoded(['data' => $data ?: (object)[]]);
 }
 
-function frontapi_image_rows(FrontApiContext $ctx): never
+function frontapi_image_rows(FrontApiContext $context): never
 {
     require_once __DIR__ . '/../images.php';
-    $schema = $ctx->schema;
+    $schema = $context->schema;
     $table  = $_GET['table'] ?? '';
     if (!isset($schema['tables'][$table]) || images_config($schema, $table) === null) {
         throw ResponseException::encoded(['data' => (object)[]]);
@@ -105,11 +105,11 @@ function frontapi_image_rows(FrontApiContext $ctx): never
         throw ResponseException::encoded(['data' => (object)[]]);
     }
 
-    $ids = filter_visible_ids($ctx->conn, $schema['tables'][$table], $table, $ids, $ctx->userId);
+    $ids = filter_visible_ids($context->conn, $schema['tables'][$table], $table, $ids, $context->userId);
     if (empty($ids)) {
         throw ResponseException::encoded(['data' => (object)[]]);
     }
 
-    $data = images_for_rows($ctx->conn, $table, $ids);
+    $data = images_for_rows($context->conn, $table, $ids);
     throw ResponseException::encoded(['data' => $data ?: (object)[]]);
 }

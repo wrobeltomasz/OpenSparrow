@@ -47,7 +47,7 @@ final readonly class ColumnConfig
 
     public function isEnum(): bool
     {
-        $t = strtolower($this->type);
-        return $t === 'enum' || str_starts_with($t, 'enum');
+        $normalizedType = strtolower($this->type);
+        return $normalizedType === 'enum' || str_starts_with($normalizedType, 'enum');
     }
 }

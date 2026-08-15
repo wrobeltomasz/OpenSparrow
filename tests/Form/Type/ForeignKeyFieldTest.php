@@ -40,26 +40,26 @@ final class ForeignKeyFieldTest extends TestCase
 
     public function testBindWithValue(): void
     {
-        $bv = $this->field->bind('user_id', ['user_id' => '5']);
-        $this->assertSame('5', $bv->value);
+        $boundValue = $this->field->bind('user_id', ['user_id' => '5']);
+        $this->assertSame('5', $boundValue->value);
     }
 
     public function testBindEmptyReturnsNull(): void
     {
-        $bv = $this->field->bind('user_id', ['user_id' => '']);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('user_id', ['user_id' => '']);
+        $this->assertNull($boundValue->value);
     }
 
     public function testBindMissingKeyReturnsNull(): void
     {
-        $bv = $this->field->bind('user_id', []);
-        $this->assertNull($bv->value);
+        $boundValue = $this->field->bind('user_id', []);
+        $this->assertNull($boundValue->value);
     }
 
     public function testRenderOutputsSelectWithFkOptions(): void
     {
-        $ctx  = new RenderContext(false, ['user_id' => [1 => 'Alice', 2 => 'Bob']]);
-        $html = $this->field->render($this->col(), 1, $ctx);
+        $context  = new RenderContext(false, ['user_id' => [1 => 'Alice', 2 => 'Bob']]);
+        $html = $this->field->render($this->col(), 1, $context);
         $this->assertStringContainsString('<select', $html);
         $this->assertStringContainsString('Alice', $html);
         $this->assertStringContainsString('Bob', $html);
@@ -67,8 +67,8 @@ final class ForeignKeyFieldTest extends TestCase
 
     public function testRenderLockedAddsDisabledAndHiddenInput(): void
     {
-        $ctx  = new RenderContext(true, ['user_id' => [1 => 'Alice']]);
-        $html = $this->field->render($this->col(), 1, $ctx);
+        $context  = new RenderContext(true, ['user_id' => [1 => 'Alice']]);
+        $html = $this->field->render($this->col(), 1, $context);
         $this->assertStringContainsString('disabled', $html);
         $this->assertStringContainsString('type="hidden"', $html);
     }

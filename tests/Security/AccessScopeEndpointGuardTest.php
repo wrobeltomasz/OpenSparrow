@@ -23,59 +23,59 @@ final class AccessScopeEndpointGuardTest extends TestCase
         $path = __DIR__ . '/../../' . $relPath;
         $this->assertFileExists($path);
 
-        $out = '';
+        $output = '';
         foreach (token_get_all((string) file_get_contents($path)) as $token) {
             if (is_array($token)) {
                 if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
                     continue;
                 }
-                $out .= $token[1];
+                $output .= $token[1];
             } else {
-                $out .= $token;
+                $output .= $token;
             }
         }
 
-        return (string) preg_replace('/\s+/', ' ', $out);
+        return (string) preg_replace('/\s+/', ' ', $output);
     }
 
-    private function assertCodeHas(string $needle, string $src, string $why): void
+    private function assertCodeHas(string $needle, string $source, string $reason): void
     {
-        $this->assertTrue(str_contains($src, $needle), $why . ' Expected to find: ' . $needle);
+        $this->assertTrue(str_contains($source, $needle), $reason . ' Expected to find: ' . $needle);
     }
 
     public function testFkDelegationDefinesTheLabelColumnAllowList(): void
     {
-        $src = $this->code('public/api/fk.php');
+        $source = $this->code('public/api/fk.php');
 
         $this->assertCodeHas(
             'if (!user_can_access_table($refTable))',
-            $src,
+            $source,
             'api/fk.php must detect an out-of-scope reference table before delegating.'
         );
         $this->assertCodeHas(
             "define('OS_FK_LABEL_COLUMNS'",
-            $src,
+            $source,
             'An out-of-scope reference table must be delegated with a narrowed projection.'
         );
     }
 
     public function testFkLabelAllowListNamesTheKeyAndTheDisplayColumns(): void
     {
-        $src = $this->code('public/api/fk.php');
-        $why = 'The narrowed projection must cover what a dropdown consumes: the value '
+        $source = $this->code('public/api/fk.php');
+        $reason = 'The narrowed projection must cover what a dropdown consumes: the value '
             . 'it submits and the text it shows.';
 
-        $this->assertCodeHas('reference_column', $src, $why);
-        $this->assertCodeHas('display_column', $src, $why);
-        $this->assertCodeHas('display_columns', $src, $why);
+        $this->assertCodeHas('reference_column', $source, $reason);
+        $this->assertCodeHas('display_column', $source, $reason);
+        $this->assertCodeHas('display_columns', $source, $reason);
     }
 
     public function testFkLabelAllowListIsDefinedBeforeTheGateIsWaived(): void
     {
-        $src = $this->code('public/api/fk.php');
+        $source = $this->code('public/api/fk.php');
 
-        $narrow = strpos($src, "define('OS_FK_LABEL_COLUMNS'");
-        $waive  = strpos($src, "define('OS_TABLE_ACCESS_DELEGATED'");
+        $narrow = strpos($source, "define('OS_FK_LABEL_COLUMNS'");
+        $waive  = strpos($source, "define('OS_TABLE_ACCESS_DELEGATED'");
         $this->assertIsInt($narrow, 'api/fk.php no longer narrows the FK projection.');
         $this->assertIsInt($waive, 'api/fk.php no longer marks the delegation.');
 
@@ -88,33 +88,33 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testListBranchHonoursTheFkLabelAllowList(): void
     {
-        $src = $this->code(self::LIST_MODULE);
+        $source = $this->code(self::LIST_MODULE);
 
         $this->assertCodeHas(
             "defined('OS_FK_LABEL_COLUMNS')",
-            $src,
+            $source,
             'The list route must narrow its projection when api/fk.php asks it to.'
         );
 
         $this->assertCodeHas(
             'array_intersect($selectCols, $keep)',
-            $src,
+            $source,
             'The narrowed projection must be an intersection with the schema-derived columns.'
         );
     }
 
     public function testFkLabelAllowListAlsoNarrowsTheFilterColumns(): void
     {
-        $src = $this->code(self::LIST_MODULE);
+        $source = $this->code(self::LIST_MODULE);
 
         $this->assertCodeHas(
             'array_intersect($allowedFilterCols, $selectCols)',
-            $src,
+            $source,
             'The FK label allow-list must narrow filter_col too, not the projection alone.'
         );
 
-        $narrow = strpos($src, 'array_intersect($allowedFilterCols, $selectCols)');
-        $test   = strpos($src, 'in_array($filterCol, $allowedFilterCols, true)');
+        $narrow = strpos($source, 'array_intersect($allowedFilterCols, $selectCols)');
+        $test   = strpos($source, 'in_array($filterCol, $allowedFilterCols, true)');
         $this->assertIsInt($narrow, 'The list route no longer narrows the FK filter columns.');
         $this->assertIsInt($test, 'The list route no longer validates filter_col against a list.');
         $this->assertLessThan(
@@ -126,53 +126,53 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testFileWriteGateCoversEveryAttachment(): void
     {
-        $src = $this->code('public/api/files.php');
+        $source = $this->code('public/api/files.php');
 
         $this->assertCodeHas(
             'function assertFileAccess(',
-            $src,
+            $source,
             'The shared file write gate must cover every attachment, not just galleries.'
         );
         $this->assertFalse(
-            str_contains($src, 'AND related_field = $2 AND deleted_at IS NULL'),
+            str_contains($source, 'AND related_field = $2 AND deleted_at IS NULL'),
             'The file write gate must not narrow itself back to gallery rows.'
         );
         $this->assertCodeHas(
             'user_can_access_table($rTable)',
-            $src,
+            $source,
             'The file write gate must consult the per-user table scope, not ownership alone.'
         );
     }
 
     public function testFileListingIsFilteredByRecordOwnership(): void
     {
-        $src = $this->code('public/api/files.php');
+        $source = $this->code('public/api/files.php');
 
         $this->assertCodeHas(
             'ro.table_name = f.related_table AND ro.record_id = f.related_id',
-            $src,
+            $source,
             'The file listing must drop attachments on records the caller does not own.'
         );
 
         $this->assertCodeHas(
-            "!empty(\$tCfg['owner_restricted'])",
-            $src,
+            "!empty(\$tableConfig['owner_restricted'])",
+            $source,
             'The listing predicate must be scoped to the owner-restricted tables.'
         );
     }
 
     public function testBoardBindingIsBlankedWhenOutOfScope(): void
     {
-        $src = $this->code(self::BOARD_MODULE);
+        $source = $this->code(self::BOARD_MODULE);
 
         $this->assertCodeHas(
             "\$meta['table'] = '';",
-            $src,
+            $source,
             'An out-of-scope board must not disclose the table it is bound to.'
         );
         $this->assertCodeHas(
             "\$meta['status_column'] = '';",
-            $src,
+            $source,
             'An out-of-scope board must not disclose its status column.'
         );
     }
@@ -216,17 +216,17 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testWorkflowProcedureIsGatedByWorkflowScope(): void
     {
-        $src = $this->code(self::WF_PROC_MODULE);
+        $source = $this->code(self::WF_PROC_MODULE);
 
         $this->assertCodeHas(
             "require_access('workflows', \$workflowId)",
-            $src,
+            $source,
             'workflow_procedure must gate the request-supplied workflow id.'
         );
 
         $this->assertCodeHas(
-            'workflow_tables_in_scope($wf)',
-            $src,
+            'workflow_tables_in_scope($workflow)',
+            $source,
             'workflow_procedure must also check the step tables, not just the id.'
         );
     }
@@ -242,15 +242,15 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testBoardSelectionStartsFromTheFilteredList(): void
     {
-        $src = $this->code(self::BOARD_MODULE);
+        $source = $this->code(self::BOARD_MODULE);
 
         $this->assertCodeHas(
             "\$boards = filter_by_user_access('boards', \$boardsCfg['boards'] ?? [])",
-            $src,
+            $source,
             'The board branch must resolve ?board= against the filtered list.'
         );
         $this->assertFalse(
-            str_contains($src, "\$boardCfg = \$boardsCfg['boards'][0] ?? [];"),
+            str_contains($source, "\$boardCfg = \$boardsCfg['boards'][0] ?? [];"),
             'The board fallback must not reach past the filter into the raw config.'
         );
     }
@@ -271,24 +271,24 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testAdminAccessTabKeepsNoScopeListOfItsOwn(): void
     {
-        $js = (string) file_get_contents(__DIR__ . '/../../public/admin/js/users.js');
+        $javaScript = (string) file_get_contents(__DIR__ . '/../../public/admin/js/users.js');
         $this->assertFalse(
-            str_contains($js, 'const ACCESS_SCOPES'),
+            str_contains($javaScript, 'const ACCESS_SCOPES'),
             'users.js must not re-declare the scope list; it renders data.scopes.'
         );
         $this->assertTrue(
-            str_contains($js, 'data.scopes'),
+            str_contains($javaScript, 'data.scopes'),
             'users.js must render the sections the server describes.'
         );
     }
 
     public function testAdminSaveKeepsAllDigitNamesAsStrings(): void
     {
-        $src = $this->code('includes/admin/users.php');
+        $source = $this->code('includes/admin/users.php');
 
         $this->assertCodeHas(
             "\$clean[\$scope] = array_map('strval', array_keys(\$seen));",
-            $src,
+            $source,
             'The Access tab save must cast the collapsed names back to strings, or an '
             . 'all-digit table name is dropped and its scope silently becomes unrestricted.'
         );
@@ -296,21 +296,21 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testSchemaEndpointIsFilteredByTableAccess(): void
     {
-        $src = $this->code('includes/Controller/FrontApiController.php');
+        $source = $this->code('includes/Controller/FrontApiController.php');
 
         $this->assertCodeHas(
             "\$schemaPublic['tables'] = (object) filter_tables_for_user(",
-            $src,
+            $source,
             'api.php?api=schema must not echo tables the user has no access to.'
         );
 
         $this->assertCodeHas(
             'throw ResponseException::raw((string) $schemaJson);',
-            $src,
+            $source,
             'The schema branch must return the filtered document, not $schema itself.'
         );
         $this->assertFalse(
-            str_contains($src, 'json_encode($schema)'),
+            str_contains($source, 'json_encode($schema)'),
             'The schema branch must not return the unfiltered internal $schema.'
         );
     }

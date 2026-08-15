@@ -17,24 +17,24 @@ final class RecordDataTest extends TestCase
 {
     public function testIsEmptyWhenNoBindings(): void
     {
-        $rd = new RecordData([]);
-        $this->assertTrue($rd->isEmpty());
+        $recordData = new RecordData([]);
+        $this->assertTrue($recordData->isEmpty());
     }
 
     public function testIsNotEmptyWithBindings(): void
     {
-        $rd = new RecordData([
+        $recordData = new RecordData([
             ['col' => 'name', 'bound' => new BoundValue('Alice')],
         ]);
-        $this->assertFalse($rd->isEmpty());
+        $this->assertFalse($recordData->isEmpty());
     }
 
     public function testBindingsArePreserved(): void
     {
-        $bv = new BoundValue('test');
-        $rd = new RecordData([['col' => 'name', 'bound' => $bv]]);
-        $this->assertCount(1, $rd->bindings);
-        $this->assertSame('name', $rd->bindings[0]['col']);
-        $this->assertSame($bv, $rd->bindings[0]['bound']);
+        $boundValue = new BoundValue('test');
+        $recordData = new RecordData([['col' => 'name', 'bound' => $boundValue]]);
+        $this->assertCount(1, $recordData->bindings);
+        $this->assertSame('name', $recordData->bindings[0]['col']);
+        $this->assertSame($boundValue, $recordData->bindings[0]['bound']);
     }
 }

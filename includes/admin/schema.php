@@ -29,17 +29,17 @@ if ($action === 'create_table') {
         $safeTable = pg_escape_identifier($conn, $tableName);
 
         $sql = "CREATE TABLE " . $safeSchema . "." . $safeTable . " (id serial4 NOT NULL PRIMARY KEY)";
-        $res = @pg_query($conn, $sql);
+        $result = @pg_query($conn, $sql);
 
-        if (!$res) {
+        if (!$result) {
             admin_db_fail($conn, 'create_table');
         }
 
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -96,8 +96,8 @@ if ($action === 'add_column') {
             $sql .= ' NOT NULL';
         }
 
-        $res = @pg_query($conn, $sql);
-        if (!$res) {
+        $result = @pg_query($conn, $sql);
+        if (!$result) {
             admin_db_fail($conn, 'add_column');
         }
 
@@ -112,11 +112,11 @@ if ($action === 'add_column') {
             $safeFkTable  = pg_escape_identifier($conn, $fkTable);
             $safeFkCol    = pg_escape_identifier($conn, $fkCol);
             $constraintName = pg_escape_identifier($conn, 'fk_' . $tableName . '_' . $colName);
-            $sqlFk = "ALTER TABLE " . $safeSchema . "." . $safeTable
+            $foreignKeySql = "ALTER TABLE " . $safeSchema . "." . $safeTable
                 . " ADD CONSTRAINT " . $constraintName
                 . " FOREIGN KEY (" . $safeCol . ")"
                 . " REFERENCES " . $safeSchema . "." . $safeFkTable . " (" . $safeFkCol . ")";
-            $resFk = @pg_query($conn, $sqlFk);
+            $resFk = @pg_query($conn, $foreignKeySql);
             if (!$resFk) {
                 admin_db_fail($conn, 'add_column_fk');
             }
@@ -138,8 +138,8 @@ if ($action === 'add_column') {
         echo json_encode(['status' => 'success']);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -178,30 +178,30 @@ if ($action === 'schema_add_table') {
         ],
     ];
 
-    foreach ($columns as $col) {
-        $cName = preg_replace('/[^a-z0-9_]/', '', strtolower($col['name'] ?? ''));
-        $cType = $col['type'] ?? 'varchar(255)';
+    foreach ($columns as $column) {
+        $cName = preg_replace('/[^a-z0-9_]/', '', strtolower($column['name'] ?? ''));
+        $cType = $column['type'] ?? 'varchar(255)';
         if ($cName === '' || !isset($typeMap[$cType])) {
             continue;
         }
-        $cDisplay = trim(strip_tags((string)($col['display_name'] ?? '')));
+        $cDisplay = trim(strip_tags((string)($column['display_name'] ?? '')));
         if ($cDisplay === '') {
             $cDisplay = ucwords(str_replace('_', ' ', $cName));
         }
         $entry = [
             'display_name' => $cDisplay,
             'type'         => $typeMap[$cType],
-            'not_null'     => !empty($col['not_null']),
+            'not_null'     => !empty($column['not_null']),
             'show_in_grid' => true,
             'show_in_edit' => true,
             'readonly'     => false,
         ];
-        if (!empty($col['description'])) {
-            $entry['description'] = trim(strip_tags((string)$col['description']));
+        if (!empty($column['description'])) {
+            $entry['description'] = trim(strip_tags((string)$column['description']));
         }
-        if (!empty($col['fk_table']) && !empty($col['fk_column'])) {
-            $entry['fk_table']  = preg_replace('/[^a-z0-9_]/', '', strtolower($col['fk_table']));
-            $entry['fk_column'] = preg_replace('/[^a-z0-9_]/', '', strtolower($col['fk_column']));
+        if (!empty($column['fk_table']) && !empty($column['fk_column'])) {
+            $entry['fk_table']  = preg_replace('/[^a-z0-9_]/', '', strtolower($column['fk_table']));
+            $entry['fk_column'] = preg_replace('/[^a-z0-9_]/', '', strtolower($column['fk_column']));
         }
         $colsObj[$cName] = $entry;
     }
@@ -238,19 +238,19 @@ if ($action === 'list_system_tables') {
         $sql = "SELECT table_name, table_schema FROM information_schema.tables
                 WHERE table_schema = \$1 AND table_name LIKE 'spw\\_%' ESCAPE '\\'
                 AND table_type = 'BASE TABLE' ORDER BY table_name";
-        $res = @pg_query_params($conn, $sql, [$sysSchema]);
-        if (!$res) {
+        $result = @pg_query_params($conn, $sql, [$sysSchema]);
+        if (!$result) {
             admin_db_fail($conn, 'list_system_tables');
         }
         $tables = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $tables[] = ['name' => $row['table_name'], 'schema' => $row['table_schema']];
         }
         echo json_encode(['status' => 'success', 'tables' => $tables]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -265,21 +265,21 @@ if ($action === 'sync_schema') {
 
         $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = $1"
             . " AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'spw\\_%' ESCAPE '\\'";
-        $res = @pg_query_params($conn, $sql, [$schemaName]);
-        if (!$res) {
+        $result = @pg_query_params($conn, $sql, [$schemaName]);
+        if (!$result) {
             admin_db_fail($conn, 'sync_schema');
         }
 
         $tables = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $tables[] = $row['table_name'];
         }
 
         echo json_encode(['status' => 'success', 'tables' => $tables]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -308,13 +308,13 @@ if ($action === 'get_db_columns') {
             WHERE c.table_schema = \$1 AND c.table_name = \$2
             ORDER BY c.ordinal_position
         ";
-        $res = @pg_query_params($conn, $sql, [$schemaName, $tableName]);
-        if (!$res) {
+        $result = @pg_query_params($conn, $sql, [$schemaName, $tableName]);
+        if (!$result) {
             admin_db_fail($conn, 'get_db_columns');
         }
 
         $columns = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $colName = $row['column_name'];
             $dataType = $row['data_type'];
             $udtName = $row['udt_name'];
@@ -324,11 +324,11 @@ if ($action === 'get_db_columns') {
                 $safeSchema = pg_escape_identifier($conn, $schemaName);
                 $safeUdt = pg_escape_identifier($conn, $udtName);
                 $enumSql = "SELECT unnest(enum_range(NULL::$safeSchema.$safeUdt))::varchar AS enum_value";
-                $enumRes = @pg_query($conn, $enumSql);
-                if ($enumRes) {
+                $enumResult = @pg_query($conn, $enumSql);
+                if ($enumResult) {
                     $enumValues = [];
-                    while ($e = pg_fetch_assoc($enumRes)) {
-                        $enumValues[] = $e['enum_value'];
+                    while ($enumRow = pg_fetch_assoc($enumResult)) {
+                        $enumValues[] = $enumRow['enum_value'];
                     }
                 }
             }
@@ -352,8 +352,8 @@ if ($action === 'get_db_columns') {
         echo json_encode(['status' => 'success', 'columns' => $columns]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

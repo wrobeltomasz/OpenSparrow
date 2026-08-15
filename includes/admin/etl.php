@@ -36,9 +36,9 @@ function etl_migrate_legacy_connection(array $config): array
         'passive_mode'   => true,
     ];
     $config['sources'] = [$source];
-    foreach ((array)($config['jobs'] ?? []) as $i => $job) {
+    foreach ((array)($config['jobs'] ?? []) as $jobIndex => $job) {
         if (is_array($job) && empty($job['source_id'])) {
-            $config['jobs'][$i]['source_id'] = 'legacy';
+            $config['jobs'][$jobIndex]['source_id'] = 'legacy';
         }
     }
     unset($config['connection']);
@@ -52,9 +52,9 @@ function etl_stored_source_password(string $sourceId): string
     }
     require_once __DIR__ . '/../config_store.php';
     $stored = etl_migrate_legacy_connection(config_get('etl') ?: []);
-    foreach ((array)($stored['sources'] ?? []) as $src) {
-        if (is_array($src) && (string)($src['id'] ?? '') === $sourceId) {
-            return (string)($src['password'] ?? '');
+    foreach ((array)($stored['sources'] ?? []) as $sourceEntry) {
+        if (is_array($sourceEntry) && (string)($sourceEntry['id'] ?? '') === $sourceId) {
+            return (string)($sourceEntry['password'] ?? '');
         }
     }
     return '';
@@ -73,28 +73,28 @@ if ($action === 'etl_load') {
     $config = etl_migrate_legacy_connection($config);
 
     require_once __DIR__ . '/../db.php';
-    foreach ($config['jobs'] as $i => $job) {
+    foreach ($config['jobs'] as $jobIndex => $job) {
         if (is_array($job) && trim((string)($job['target_schema'] ?? '')) === '') {
-            $config['jobs'][$i]['target_schema'] = sys_schema();
+            $config['jobs'][$jobIndex]['target_schema'] = sys_schema();
         }
     }
 
-    foreach ($config['sources'] as $i => $src) {
-        if (is_array($src) && trim((string)($src['id'] ?? '')) === '') {
-            $oldId = (string)($src['id'] ?? '');
+    foreach ($config['sources'] as $sourceIndex => $sourceEntry) {
+        if (is_array($sourceEntry) && trim((string)($sourceEntry['id'] ?? '')) === '') {
+            $oldId = (string)($sourceEntry['id'] ?? '');
             $newId = bin2hex(random_bytes(8));
-            $config['sources'][$i]['id'] = $newId;
-            foreach ($config['jobs'] as $j => $job) {
+            $config['sources'][$sourceIndex]['id'] = $newId;
+            foreach ($config['jobs'] as $jobIndex => $job) {
                 if (is_array($job) && (string)($job['source_id'] ?? '') === $oldId) {
-                    $config['jobs'][$j]['source_id'] = $newId;
+                    $config['jobs'][$jobIndex]['source_id'] = $newId;
                 }
             }
         }
     }
 
-    foreach ($config['sources'] as $i => $src) {
-        if (isset($src['password'])) {
-            $config['sources'][$i]['password'] = ($src['password'] !== '') ? '********' : '';
+    foreach ($config['sources'] as $sourceIndex => $sourceEntry) {
+        if (isset($sourceEntry['password'])) {
+            $config['sources'][$sourceIndex]['password'] = ($sourceEntry['password'] !== '') ? '********' : '';
         }
     }
     admin_ok(['config' => $config, 'version' => $row['version'] ?? 0]);
@@ -111,9 +111,9 @@ if ($action === 'etl_save') {
     $existing = etl_migrate_legacy_connection(config_get('etl') ?: []);
 
     $existingPassById = [];
-    foreach ((array)($existing['sources'] ?? []) as $es) {
-        if (is_array($es) && ($es['id'] ?? '') !== '') {
-            $existingPassById[(string)$es['id']] = (string)($es['password'] ?? '');
+    foreach ((array)($existing['sources'] ?? []) as $existingSource) {
+        if (is_array($existingSource) && ($existingSource['id'] ?? '') !== '') {
+            $existingPassById[(string)$existingSource['id']] = (string)($existingSource['password'] ?? '');
         }
     }
 
@@ -122,46 +122,46 @@ if ($action === 'etl_save') {
 
     $sources     = [];
     $validSourceIds = [];
-    foreach ((array)($data['sources'] ?? []) as $src) {
-        if (!is_array($src)) {
+    foreach ((array)($data['sources'] ?? []) as $sourceEntry) {
+        if (!is_array($sourceEntry)) {
             continue;
         }
-        $name = trim((string)($src['name'] ?? ''));
+        $name = trim((string)($sourceEntry['name'] ?? ''));
         if ($name === '') {
             continue;
         }
-        $id     = trim((string)($src['id'] ?? ''));
+        $id     = trim((string)($sourceEntry['id'] ?? ''));
         if ($id === '') {
             $id = bin2hex(random_bytes(8));
         }
-        $driver = strtolower(trim((string)($src['driver'] ?? 'mysql')));
+        $driver = strtolower(trim((string)($sourceEntry['driver'] ?? 'mysql')));
         if (!in_array($driver, $validDrivers, true)) {
             $driver = 'mysql';
         }
 
-        $newPass = (string)($src['password'] ?? '');
+        $newPass = (string)($sourceEntry['password'] ?? '');
         if ($newPass === '********') {
             $newPass = $existingPassById[$id] ?? '';
         }
-        $protocol = strtolower(trim((string)($src['protocol'] ?? 'ftp')));
-        $csvDelim = (string)($src['csv_delimiter'] ?? ',');
+        $protocol = strtolower(trim((string)($sourceEntry['protocol'] ?? 'ftp')));
+        $csvDelim = (string)($sourceEntry['csv_delimiter'] ?? ',');
         $csvDelim = ($csvDelim !== '') ? substr($csvDelim, 0, 1) : ',';
         $sources[] = [
             'id'             => $id,
             'name'           => $name,
             'driver'         => $driver,
-            'host'           => trim((string)($src['host'] ?? '')),
-            'port'           => (int)($src['port'] ?? 0) ?: etl_source_drivers()[$driver],
-            'database'       => trim((string)($src['database'] ?? '')),
-            'user'           => trim((string)($src['user'] ?? '')),
+            'host'           => trim((string)($sourceEntry['host'] ?? '')),
+            'port'           => (int)($sourceEntry['port'] ?? 0) ?: etl_source_drivers()[$driver],
+            'database'       => trim((string)($sourceEntry['database'] ?? '')),
+            'user'           => trim((string)($sourceEntry['user'] ?? '')),
             'password'       => $newPass,
 
             'protocol'       => in_array($protocol, ['ftp', 'ftps'], true) ? $protocol : 'ftp',
-            'remote_dir'     => trim((string)($src['remote_dir'] ?? '')),
-            'file_name'      => trim((string)($src['file_name'] ?? '')),
+            'remote_dir'     => trim((string)($sourceEntry['remote_dir'] ?? '')),
+            'file_name'      => trim((string)($sourceEntry['file_name'] ?? '')),
             'csv_delimiter'  => $csvDelim,
-            'csv_has_header' => (bool)($src['csv_has_header'] ?? true),
-            'passive_mode'   => (bool)($src['passive_mode'] ?? true),
+            'csv_has_header' => (bool)($sourceEntry['csv_has_header'] ?? true),
+            'passive_mode'   => (bool)($sourceEntry['passive_mode'] ?? true),
         ];
         $validSourceIds[] = $id;
     }
@@ -174,15 +174,15 @@ if ($action === 'etl_save') {
     ];
 
     $existingJobsById = [];
-    foreach ((array)($existing['jobs'] ?? []) as $ej) {
-        if (is_array($ej) && ($ej['id'] ?? '') !== '') {
-            $existingJobsById[(string)$ej['id']] = $ej;
+    foreach ((array)($existing['jobs'] ?? []) as $existingJob) {
+        if (is_array($existingJob) && ($existingJob['id'] ?? '') !== '') {
+            $existingJobsById[(string)$existingJob['id']] = $existingJob;
         }
     }
 
     $sourceDriverById = [];
-    foreach ($sources as $s) {
-        $sourceDriverById[$s['id']] = $s['driver'];
+    foreach ($sources as $sourceDefinition) {
+        $sourceDriverById[$sourceDefinition['id']] = $sourceDefinition['driver'];
     }
 
     $validModes = ['full_refresh', 'append', 'upsert'];
@@ -213,14 +213,14 @@ if ($action === 'etl_save') {
         }
 
         $columnMap = [];
-        foreach ((array)($job['column_map'] ?? []) as $m) {
-            if (!is_array($m)) {
+        foreach ((array)($job['column_map'] ?? []) as $mapping) {
+            if (!is_array($mapping)) {
                 continue;
             }
-            $src = trim((string)($m['source'] ?? ''));
-            $tgt = trim((string)($m['target'] ?? ''));
-            if ($src !== '' && $tgt !== '') {
-                $columnMap[] = ['source' => $src, 'target' => $tgt];
+            $sourceEntry = trim((string)($mapping['source'] ?? ''));
+            $targetColumn = trim((string)($mapping['target'] ?? ''));
+            if ($sourceEntry !== '' && $targetColumn !== '') {
+                $columnMap[] = ['source' => $sourceEntry, 'target' => $targetColumn];
             }
         }
 
@@ -235,9 +235,9 @@ if ($action === 'etl_save') {
                 ? $job['load_mode']
                 : 'full_refresh',
             'upsert_key'                => array_values(array_filter(array_map(
-                static fn($k) => trim((string)$k),
+                static fn($key) => trim((string)$key),
                 (array)($job['upsert_key'] ?? [])
-            ), static fn($k) => $k !== '')),
+            ), static fn($key) => $key !== '')),
             'enabled'                   => (bool)($job['enabled'] ?? true),
             'batch_size'                => max(50, min(5000, (int)($job['batch_size'] ?? 500) ?: 500)),
             'incremental_column'        => trim((string)($job['incremental_column'] ?? '')),
@@ -262,8 +262,8 @@ if ($action === 'etl_test_connection') {
     }
 
     if (etl_source_is_remote_file_driver(strtolower(trim((string)($conn['driver'] ?? ''))))) {
-        $ftp = etl_ftp_connect($conn, 'etl:test');
-        if ($ftp === null) {
+        $ftpConnection = etl_ftp_connect($conn, 'etl:test');
+        if ($ftpConnection === null) {
             echo json_encode([
                 'status' => 'error',
                 'error'  => 'Could not connect — check host, port, protocol, directory, user and password.',
@@ -272,17 +272,17 @@ if ($action === 'etl_test_connection') {
         }
         $fileName = trim((string)($conn['file_name'] ?? ''));
         $fileExists = ($fileName === '')
-            || @ftp_size($ftp, $fileName) !== -1
-            || in_array($fileName, (array)@ftp_nlist($ftp, '.'), true);
+            || @ftp_size($ftpConnection, $fileName) !== -1
+            || in_array($fileName, (array)@ftp_nlist($ftpConnection, '.'), true);
         if (!$fileExists) {
-            @ftp_close($ftp);
+            @ftp_close($ftpConnection);
             echo json_encode([
                 'status' => 'error',
                 'error'  => 'Connected, but the file "' . $fileName . '" was not found in the configured directory.',
             ]);
             throw ResponseException::sent();
         }
-        @ftp_close($ftp);
+        @ftp_close($ftpConnection);
         admin_ok(['message' => 'Connection OK.']);
     }
 
@@ -320,22 +320,22 @@ if ($action === 'etl_preview') {
         admin_ok(['columns' => $columns, 'rows' => $rows]);
     }
 
-    if (($err = etl_validate_source_query($query)) !== null) {
-        admin_err($err);
+    if (($error = etl_validate_source_query($query)) !== null) {
+        admin_err($error);
     }
     $pdo = etl_source_pdo($connIn, 'etl:preview');
     if ($pdo === null) {
         admin_err('Source connection is not configured or unavailable.');
     }
     try {
-        $stmt = $pdo->query($query);
+        $statement = $pdo->query($query);
         $rows = [];
-        while (count($rows) < 20 && ($row = $stmt->fetch()) !== false) {
+        while (count($rows) < 20 && ($row = $statement->fetch()) !== false) {
             $rows[] = $row;
         }
-        $stmt->closeCursor();
-    } catch (\PDOException $e) {
-        error_log('[etl][preview] ' . $e->getMessage());
+        $statement->closeCursor();
+    } catch (\PDOException $exception) {
+        error_log('[etl][preview] ' . $exception->getMessage());
         admin_err('Preview query failed.');
     }
     $columns = empty($rows) ? [] : array_keys($rows[0]);
@@ -350,19 +350,19 @@ if ($action === 'etl_target_schemas') {
             . "WHERE schema_name NOT IN ('pg_catalog', 'information_schema') "
             . "AND schema_name NOT LIKE 'pg\\_toast%' AND schema_name NOT LIKE 'pg\\_temp%' "
             . 'ORDER BY schema_name';
-        $res = @pg_query($conn, $sql);
-        if (!$res) {
+        $result = @pg_query($conn, $sql);
+        if (!$result) {
             admin_db_fail($conn, 'etl_target_schemas');
         }
         $schemas = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $schemas[] = $row['schema_name'];
         }
         echo json_encode(['status' => 'success', 'schemas' => $schemas]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -376,7 +376,7 @@ if ($action === 'etl_target_tables') {
             admin_err('Invalid schema.');
         }
 
-        $res = @pg_query_params(
+        $result = @pg_query_params(
             $conn,
             "SELECT table_name FROM information_schema.tables "
                 . "WHERE table_schema = $1 AND table_type = 'BASE TABLE' "
@@ -384,18 +384,18 @@ if ($action === 'etl_target_tables') {
                 . 'ORDER BY table_name',
             [$schema]
         );
-        if (!$res) {
+        if (!$result) {
             admin_db_fail($conn, 'etl_target_tables');
         }
         $tables = [];
-        while ($row = pg_fetch_assoc($res)) {
+        while ($row = pg_fetch_assoc($result)) {
             $tables[] = $row['table_name'];
         }
         echo json_encode(['status' => 'success', 'tables' => $tables]);
     } catch (ControlFlowException $signal) {
         throw $signal;
-    } catch (Throwable $e) {
-        echo json_encode(['status' => 'error', 'error' => admin_error_message($e)]);
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }
@@ -411,19 +411,19 @@ if ($action === 'run_etl') {
 if ($action === 'etl_log') {
     admin_try(static function (): void {
         $conn = admin_conn();
-        $tLog = sys_table('etl_log');
-        admin_require_log_table($conn, $tLog);
-        $res = @pg_query(
+        $etlLogTable = sys_table('etl_log');
+        admin_require_log_table($conn, $etlLogTable);
+        $result = @pg_query(
             $conn,
             "SELECT id, job_id, job_name, triggered_by, status, rows_read, rows_written, error_message,
                     started_at, finished_at,
                     EXTRACT(EPOCH FROM (COALESCE(finished_at, now()) - started_at)) AS duration_sec
-             FROM {$tLog} ORDER BY started_at DESC LIMIT 50"
+             FROM {$etlLogTable} ORDER BY started_at DESC LIMIT 50"
         );
-        if (!$res) {
+        if (!$result) {
             admin_db_fail($conn, 'etl_log');
         }
-        admin_ok(['rows' => admin_fetch_all($res)]);
+        admin_ok(['rows' => admin_fetch_all($result)]);
     });
 }
 
