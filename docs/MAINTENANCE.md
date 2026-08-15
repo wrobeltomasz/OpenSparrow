@@ -1184,6 +1184,96 @@ JSON envelopes, the admin API's eight read modules and its `admin_err` write
 paths, the CSRF and method-not-allowed guards, and a frontend insert/patch/delete
 round trip. Suite: 391 tests, 959 assertions, 0 phpcs errors.
 
+## The request object: `os_request()` instead of superglobals (2026-08-15)
+
+### The rule
+
+Request input is read through `App\Http\PhpRequest`, never through `$_POST` or
+`$_GET` directly. Pages booted by `os_boot_app()` already receive it under the
+`request` key; everything else calls `os_request()`.
+
+```php
+$selected = array_values(array_filter(
+    (array) $request->post('m2m_' . $m2mIndex, []),
+    'ctype_digit'
+));
+```
+
+`src/Http/PhpRequest.php` is the **only** file in the request path that may name
+`$_POST` or `$_GET`. Test fixtures may set them, because that is how the object is
+driven under test.
+
+### One shared instance, reachable without the full boot
+
+`os_request()` lives in `includes/bootstrap.php` and returns a lazily built static
+instance. It `require_once`s `includes/autoload.php` itself, so it works in the API
+endpoints and cron-adjacent code that never call `os_boot_app()` — and
+`os_boot_app()` returns that same instance rather than constructing a second one.
+
+`os_request_scope_violation()` in `includes/api_helpers.php` requires
+`bootstrap.php` **inside the function body**, not at the top of the file. Several
+entry points (`public/setup_api.php`, `cron/*`, the `includes/admin/*` modules, the
+security tests) include `api_helpers.php` without bootstrap, and a top-level require
+would close an include cycle through `page_helpers.php`.
+
+### `post()` returns `mixed`; `query()` deliberately does not
+
+`post()` has to hand back arrays — the many-to-many pickers submit `m2m_<n>[]` — so
+its signature is `post(string $key, mixed $default = ''): mixed` and it no longer
+casts. **Every scalar call site casts for itself:**
+
+```php
+if (!$csrf->isValid((string) $request->post('csrf_token'))) {
+```
+
+Without that cast, `csrf_token[]=x` reaches `isValid(string $given)` as an array and
+the request dies with a TypeError — a 500 where the guard used to answer 403.
+
+`query()` keeps its `string` parameter and return type for exactly the same reason
+read the other way round: widening it would let `?table[]=x` reach
+`hasTable()`/`safe_table()` as an array and turn today's 400 into a 500. When raw
+access is genuinely needed, use the array accessors `queryAll()` / `postAll()` —
+that is what the request-scope gate does, because it needs the
+absent-vs-null-vs-array distinction uniformly across GET, POST and body.
+
+### The trap: the scope inventory keys encode the read *shape*
+
+`tests/Security/RequestScopeInventoryTest` scans source text for request-supplied
+table/view/print/board/workflow names, and its inventory keys spell out how the read
+was written — `_POST.table` for a superglobal, `post().table` for the accessor.
+Moving a read onto `$request` therefore **renames its inventory key**, and
+`tests/Security/request_scope_inventory.php` has to be updated in the same change or
+three tests go red. Coverage is not lost: the scanner already recognises the
+`query`/`post`/`input`/`get` accessor shapes. Only the key changes, and the recorded
+decision and reason carry over verbatim.
+
+That refactor also emptied out the last literal `$_POST['<protected key>']` in the
+scanned globs, so the scanner's own shape check no longer had a live example to
+point at. `scanSource()` was extracted from `scan()` and the check now runs all five
+shapes against an inline source fixture; the real-file assertions were kept only for
+shapes the tree still contains. Pinning that check to whichever file happens to
+retain a superglobal today would make it silently rot on the next refactor.
+
+### Deliberately left alone
+
+Nothing. As of this change `$_POST` appears only in `PhpRequest` and in test
+fixtures. `public/cypress_seed.php` was converted too and gained an explicit
+`require_once bootstrap.php`; its POST-with-GET-fallback shape is preserved as
+`$request->post('table', $request->query('table'))`.
+
+### Verification
+
+392 tests / 965 assertions green; `phpcs` unchanged against the pre-refactor tree
+(0 errors, the same five pre-existing `Files.SideEffects` warnings). A `php -r`
+smoke test confirmed the array default, the empty-array default, scalar reads and
+the m2m filter reindexing to `["1","2"]`.
+
+PHPStan reports one `ignore.unmatched` error for `$firstRun` in
+`public/admin/templates/header.php`. It is **pre-existing** — reproduced on a
+reconstruction of the tree as it stood before this refactor — and unrelated to the
+request object. Under the ratchet rule it is a baseline entry to remove, not to
+regenerate around.
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and
