@@ -1,36 +1,32 @@
+<?php
+
+// This file is part of OpenSparrow - https://opensparrow.org
+// SPDX-License-Identifier: LGPL-3.0-or-later
+// Copyright (C) 2024-2026 OpenSparrow Contributors
+// Licensed under LGPL v3. See COPYING.LESSER file for details.
+
+$adminTitle        ??= 'Sparrow Admin';
+$adminUserId       ??= 0;
+$adminCsrfToken    ??= '';
+$adminStyleVersion ??= '';
+$firstRun          ??= false;
+?>
 <!DOCTYPE html>
-<!--
-  This file is part of OpenSparrow - https://opensparrow.org
-  SPDX-License-Identifier: LGPL-3.0-or-later
-  Copyright (C) 2024-2026 OpenSparrow Contributors
-  Licensed under LGPL v3. See COPYING.LESSER file for details.
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="current-user-id" content="<?php echo (int)($_SESSION['user_id'] ?? 0); ?>">
-    <title>Sparrow Admin</title>
+    <meta name="current-user-id" content="<?= (int) $adminUserId ?>">
+    <title><?= htmlspecialchars($adminTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>">
+    <meta name="csrf-token" content="<?= htmlspecialchars($adminCsrfToken, ENT_QUOTES, 'UTF-8') ?>">
 
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/buttons.css">
-    <link rel="stylesheet" href="style.css?v=<?php echo @filemtime('style.css'); ?>">
+    <link rel="stylesheet" href="style.css?v=<?= htmlspecialchars($adminStyleVersion, ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body>
 
-<div id="mig-pending-banner" style="display:none; background:#fef3c7; border-bottom:1px solid #fbbf24; padding:10px 24px; color:#78350f;">
-    <strong>Upgrade notice:</strong> <span class="mig-pending-banner-text"></span>
-</div>
-
-<?php if ($firstRun) : ?>
-<div class="first-run-banner">
-    <strong>First-run setup mode.</strong>
-    Go to <strong>System &rarr; Database</strong> and click <strong>Initialize System Tables</strong>.
-    This will create the default admin account (<code>admin</code> / <code>admin</code>).
-    Afterwards <a href="../login.php">log in</a> and change the password immediately.
-</div>
-<?php endif; ?>
+<?php include __DIR__ . '/partials/banners.php'; ?>
 
 <header class="admin-header">
     <div class="admin-header-left">
@@ -53,7 +49,7 @@
             <span>Docs</span>
         </button>
 
-        <button onclick="window.location.href='../logout.php'" class="btn-header-logout">Logout</button>
+        <button id="btnLogout" type="button" class="btn-header-logout">Logout</button>
     </div>
 </header>
 

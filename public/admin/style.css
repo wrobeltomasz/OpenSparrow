@@ -79,6 +79,18 @@ body {
     font-weight: bold;
 }
 
+.mig-pending-banner {
+    display: none;
+    background: var(--warn-light);
+    border-bottom: 1px solid var(--warn);
+    padding: 10px 24px;
+    color: var(--text);
+}
+
+.nav-section-items-flush {
+    padding-top: 4px;
+}
+
 .admin-header {
     background-color: var(--accent-dark);
     display: flex;

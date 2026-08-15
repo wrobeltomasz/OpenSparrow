@@ -39,36 +39,119 @@ if (!$firstRun && !isset($_SESSION['user_id'])) {
 }
 
 if (!$firstRun && ($_SESSION['role'] ?? '') !== 'admin') {
-    $currentRole = $_SESSION['role'] ?? 'none';
     http_response_code(403);
-    ?>
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>403 Forbidden</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="../assets/css/styles.css">
-        <link rel="stylesheet" href="../assets/css/buttons.css">
-    </head>
-    <body class="admin-403-page">
-        <div class="admin-403-card">
-            <h1>Access Denied</h1>
-            <p>Your account does not have permission to access the admin panel.</p>
-            <p>Logged in as: <strong><?php echo htmlspecialchars($_SESSION['username'] ?? 'unknown'); ?></strong></p>
-            <p>Your role: <strong><?php echo htmlspecialchars($currentRole); ?></strong></p>
-            <p>Required role: <strong>admin</strong></p>
-            <p><a href="../logout.php">Log out</a> | <a href="../">Return to application</a></p>
-        </div>
-    </body>
-    </html>
-    <?php
+    $forbiddenUser = $_SESSION['username'] ?? 'unknown';
+    $forbiddenRole = $_SESSION['role'] ?? 'none';
+    require __DIR__ . '/templates/forbidden.php';
     exit;
 }
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+
+require_once __DIR__ . '/../../includes/page_helpers.php';
+$adminGraph = os_module_graph([
+    './js/'                   => __DIR__ . '/js',
+    '../assets/js/util/'      => __DIR__ . '/../assets/js/util',
+    '../assets/js/dashboard/' => __DIR__ . '/../assets/js/dashboard',
+]);
+
+$adminTitle        = 'Sparrow Admin';
+$adminUserId       = (int)($_SESSION['user_id'] ?? 0);
+$adminCsrfToken    = $_SESSION['csrf_token'];
+$adminStyleVersion = (string) @filemtime(__DIR__ . '/style.css');
+$adminImportMap    = os_import_map($adminGraph['imports']);
+$adminAppVersion   = (string) $adminGraph['version'];
+$adminLogoutUrl    = '../logout.php';
+
+$navIcon = static fn(string $file): string => '../assets/icons/' . $file;
+
+$navSections = [
+    [
+        'label' => null,
+        'icon'  => null,
+        'open'  => true,
+        'items' => [
+            [
+                'file'   => 'overview',
+                'label'  => 'Overview',
+                'icon'   => $navIcon('health_and_safety.png'),
+                'active' => true,
+            ],
+        ],
+    ],
+    [
+        'label' => 'Data Management',
+        'icon'  => $navIcon('data_table.png'),
+        'items' => [
+            ['file' => 'board', 'label' => 'Board', 'icon' => $navIcon('account_tree.png')],
+            ['file' => 'calendar', 'label' => 'Calendar', 'icon' => $navIcon('manage_history.png')],
+            ['file' => 'csv_import', 'label' => 'CSV Import', 'icon' => $navIcon('upload.png')],
+            ['file' => 'dashboard', 'label' => 'Dashboard', 'icon' => $navIcon('ballot.png')],
+            ['file' => 'etl', 'label' => 'ETL', 'icon' => $navIcon('database.png')],
+            ['file' => 'files', 'label' => 'Files', 'icon' => $navIcon('upload.png')],
+            ['file' => 'print', 'label' => 'Printouts', 'icon' => $navIcon('picture_as_pdf.png')],
+            ['file' => 'schema', 'label' => 'Schema', 'icon' => $navIcon('data_table.png')],
+            ['file' => 'user_records', 'label' => 'User Records', 'icon' => $navIcon('id_card.png')],
+            ['file' => 'views', 'label' => 'Views', 'icon' => $navIcon('table_chart_view.png')],
+        ],
+    ],
+    [
+        'label' => 'Workflows',
+        'icon'  => $navIcon('build.png'),
+        'items' => [
+            ['file' => 'automations', 'label' => 'Automations', 'icon' => $navIcon('automation.png')],
+            ['file' => 'workflows', 'label' => 'Workflow Manager', 'icon' => $navIcon('build.png')],
+        ],
+    ],
+    [
+        'label' => 'Knowledge Base',
+        'icon'  => $navIcon('menu_book.png'),
+        'items' => [
+            ['file' => 'rag', 'label' => 'RAG Documents', 'icon' => $navIcon('docs.png')],
+        ],
+    ],
+    [
+        'label' => 'System',
+        'icon'  => $navIcon('database.png'),
+        'items' => [
+            ['file' => 'anonymization', 'label' => 'Anonymization', 'icon' => $navIcon('fact_check.png')],
+            ['file' => 'backup', 'label' => 'Backup Tables', 'icon' => $navIcon('inventory.png')],
+            ['file' => 'clickstats', 'label' => 'Click Statistics', 'icon' => $navIcon('bar_chart.png')],
+            ['file' => 'cron', 'label' => 'Cron Notifications', 'icon' => $navIcon('manage_history.png')],
+            ['file' => 'demo', 'label' => 'Demo Systems', 'icon' => $navIcon('playground.png')],
+            ['file' => 'health', 'label' => 'Health Check', 'icon' => $navIcon('health_and_safety.png')],
+            ['file' => 'migrations', 'label' => 'Migrations', 'icon' => $navIcon('database.png')],
+            ['file' => 'performance', 'label' => 'Performance', 'icon' => $navIcon('health_and_safety.png')],
+            ['file' => 'settings', 'label' => 'Settings', 'icon' => $navIcon('manage_history.png')],
+            ['file' => 'users', 'label' => 'Users', 'icon' => $navIcon('user_attributes.png')],
+        ],
+    ],
+];
+
+$breadcrumbRoot    = 'Admin';
+$breadcrumbCurrent = 'Schema';
+$breadcrumbLabels  = [
+    'schema'        => 'Schema',
+    'dashboard'     => 'Dashboard',
+    'calendar'      => 'Calendar',
+    'files'         => 'Files',
+    'workflows'     => 'Workflows',
+    'users'         => 'Users',
+    'health'        => 'Health Check',
+    'backup'        => 'Backup Tables',
+    'docs'          => 'Documentation',
+    'performance'   => 'Performance',
+    'cron'          => 'Cron Notifications',
+    'views'         => 'Views',
+    'csv_import'    => 'CSV Import',
+    'rag'           => 'RAG Documents',
+    'automations'   => 'Automations',
+    'etl'           => 'ETL',
+    'anonymization' => 'Data Anonymization',
+    'print'         => 'Printouts',
+];
 
 require __DIR__ . '/templates/header.php';
 require __DIR__ . '/templates/nav.php';
