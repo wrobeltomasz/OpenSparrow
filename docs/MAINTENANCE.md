@@ -737,6 +737,11 @@ It is now a **239-line front controller** plus one module per route group under
 `includes/frontapi/`, mirroring how `public/admin/api.php` dispatches into
 `includes/admin/`.
 
+> Since 2026-08-15 that front-controller body lives in
+> `includes/Controller/FrontApiController.php` and `public/api.php` is only its entry
+> point — see "Page and API controllers". Everything below still describes it,
+> unchanged; only the file it sits in moved, and the guard tests moved with it.
+
 ### What the front controller still owns
 
 Order matters here, and all of it is pinned by `tests/Security/FrontApiGuardsTest`:
@@ -1331,6 +1336,139 @@ PHPStan is green. The run surfaced one `ignore.unmatched` error for `$firstRun` 
 `public/admin/templates/header.php`, which was **pre-existing and unrelated** —
 reproduced on a reconstruction of the tree as it stood before this refactor — and
 was retired from the baseline as described under "The baseline is a ratchet".
+
+## Page and API controllers: `App\Controller\` (2026-08-15)
+
+`public/edit.php` was 336 lines of procedural page: permission checks, the POST
+handler, snapshots, automations, many-to-many synchronisation, six blocks of
+view-data preparation and two output buffers, all at file scope. `create.php` (136)
+and `api.php` (178) were the same shape at smaller sizes. Everything in them ran on
+include, so none of it could be reached from a test, and the only way to describe
+the flow was to read it top to bottom.
+
+Each is now a **controller class plus an entry point of roughly 25 lines**:
+
+```php
+$pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
+
+['session' => $session, 'request' => $request, /* … */ 'services' => $services]
+    = os_boot_app();
+
+$controller = new EditController($session, $request, /* … */ $services);
+$controller->handle($request, $pageMeta);
+```
+
+The entry point owns nothing else: no business logic, no superglobals, no template
+includes. Everything else moved into `handle()`.
+
+### The seam is `includes/Controller/`, not `src/`
+
+The namespace is `App\Controller`, but the files live under `includes/Controller/`,
+because `src/` is frozen — see "Feature modules added under `includes/`". The prefix
+is registered twice, the same way `App\Service\` is: in the prefix map at the top of
+`includes/autoload.php`, and in `composer.json` psr-4. The autoloader tries the
+prefixed directories first and only then falls back to `App\` ⇒ `src/`, so a
+controller resolves without touching the frozen tree.
+
+### Constructor takes collaborators, `handle()` takes the request
+
+Every dependency arrives through the constructor — session, request, CSRF manager,
+schema repository, field registry, mapper, record repository, file repository, audit
+logger, FK loader, and the `ServiceContainer`. The container is unpacked once in the
+constructor body into the five services the page actually uses:
+
+```php
+$this->ownership   = $services->ownership();
+$this->snapshots   = $services->snapshots();
+$this->m2m         = $services->m2m();
+$this->images      = $services->images();
+$this->automations = $services->automations();
+```
+
+`handle(PhpRequest $request, array $pageMeta)` receives the request and whatever
+`os_page_bootstrap()` returned — the CSP nonce is read from `$pageMeta`, never
+regenerated. The private helpers below it (`save()`, `formFields()`,
+`subtablePanels()`, `imagesPanel()`, `filesPanel()`, `tabs()`) are view-data
+builders; the request handling itself stays in `handle()` so the order of the gates
+is readable in one place.
+
+Thrown exceptions were left exactly as they were: the handler registered by
+`os_page_bootstrap()` already turns `RedirectException`, `ForbiddenException`,
+`NotFoundException` and `BadRequestException` into responses. Only the two local
+catches travelled with the code — `App\Form\ValidationException` and `RuntimeException`
+inside the POST handler, which return a message string for the form to render
+instead of aborting the page.
+
+### Templates are included from method scope, and that is safe here
+
+`include __DIR__ . '/../../templates/edit.php'` now runs inside a method, so the
+template sees the method's locals rather than globals. That works because of the
+view/template split: every template opens by defaulting its own inputs
+(`$formFields ??= []`), and `layout.php`, `header.php` and `footer.php` read only
+superglobals and their own locals. A template that reached for an ambient global
+would have broken here — if you add one, it must take its data through a declared
+variable, exactly as the existing ones do.
+
+### The trap: the security guards pin *file paths*
+
+Moving request handling out of `public/*.php` also moves it out of the globs the
+source-scanning tests use — and those tests then go **green while checking nothing**,
+which is the worst possible failure mode for an access-scope guard. Four places had
+to move in the same change:
+
+- `RequestScopeInventoryTest::scannedFiles()` — added the `includes/Controller/*.php`
+  glob.
+- `tests/Security/request_scope_inventory.php` — the `public/edit.php`,
+  `public/create.php` and `public/api.php` keys became the controller paths. The
+  decision and reason carried over verbatim; only the file changed.
+- `FrontApiGuardsTest::API_PHP` — its structural assertions (one write gate,
+  gate after `safe_table()` and before dispatch, profile actions before the role
+  gates, role gates before the schema load, route-table parsing) now read the
+  controller.
+- `AccessScopeEndpointGuardTest::testSchemaEndpointIsFilteredByTableAccess`.
+
+`phpstan-baseline.neon` moves with the code for the same reason: the two
+`RECORD_SNAPSHOTS_ENABLED` entries were re-pointed at the controllers. The count is
+unchanged — that is a relocation, not a new entry, and the ratchet still holds.
+
+### One behaviour did change
+
+In the old `edit.php`, the subtable loop reused `$row` as its inner loop variable and
+clobbered the record fetched 60 lines above it. The ID strip below therefore printed
+the id of the **last subtable row** whenever the table had a subtable — `deals/35`
+rendered `128`. Splitting the loop into `subtablePanels()` gives it its own scope and
+the strip now prints the record id. Everything else is byte-identical.
+
+### Deliberately left alone
+
+- `index.php`, `dashboard.php`, `board.php`, `calendar.php`, `views.php`, `print.php`
+  and `files.php` are already thin: 36–106 lines of labels, `$headerControls` and a
+  template include, with no request handling and no database access. A controller
+  class would add a file and explain nothing.
+- `login.php`, `setup.php`, `setup_api.php`, `cypress_seed.php` and
+  `file_download.php` run before or outside `os_boot_app()` — no container, and in
+  the setup case no configured database — so they do not fit this shape.
+- `FrontApiController` still calls `db_connect()` itself rather than taking a
+  connection. `public/api.php` boots with `['connect' => false]` on purpose: the
+  admin and viewer blocks must answer **before** a connection is opened. Injecting
+  one would connect first and quietly undo that ordering.
+
+### Verification
+
+405 tests / 1006 assertions green, PHPStan clean, phpcs clean. Behaviour was compared
+against `git show HEAD` copies of all three files served side by side on
+`php -S`, logged in as the seeded editor:
+
+- `edit.php` and `create.php`, with and without subtables, images, many-to-many and
+  a prefilled foreign key: identical apart from the ID strip above.
+- POST: `stay` ⇒ `…&saved=1`, `exit` ⇒ `index.php?table=…`, create ⇒
+  `edit.php?…#tab-files`, a bad CSRF token ⇒ 403, an invalid value ⇒ the same
+  re-rendered form and message. All identical to the baseline.
+- Ten `api.php` GET cases (every read route, the schema route, the i18n bundle and
+  the empty-body fall-through) plus five `api/fk.php` delegation cases — including
+  the re-entrant `require` described under "Two couplings to know about before
+  touching this" — byte-for-byte identical; the write routes were exercised against
+  real rows and the rows removed again.
 
 ## Where binding rules live
 
