@@ -393,8 +393,6 @@ header("Content-Security-Policy: default-src 'self'; style-src 'self'; script-sr
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    // No password means no admin row was seeded (the database already had
-                    // users) — show the server's explanation instead of a blank credential.
                     const hasAdmin = !!data.admin_password;
                     document.getElementById('admin-info').hidden = !hasAdmin;
                     document.getElementById('created-admin-password').textContent = data.admin_password || '';

@@ -309,7 +309,6 @@ ob_start();
 
 <script nonce="<?php echo htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8'); ?>">
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching
     const tabBtns   = document.querySelectorAll('.tab-btn');
     const tabPanels = document.querySelectorAll('.tab-panel');
 
@@ -331,9 +330,6 @@ document.addEventListener('DOMContentLoaded', function() {
         activateTab(hash);
     }
 
-    // Save-action toggle — moved off inline onclick so it works under the page CSP
-    // (nonces do not cover inline event-handler attributes). The [data-nav] cancel
-    // button is wired by assets/js/edit/form-behaviours.js, shared with create.php.
     document.querySelectorAll('[data-save-action]').forEach(btn => {
         btn.addEventListener('click', () => {
             const sa = document.getElementById('saveAction');
@@ -341,7 +337,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Delete record
     const btnDelete = document.getElementById('btnDeleteRecord');
     if (btnDelete) {
         btnDelete.addEventListener('click', async () => {
@@ -373,10 +368,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Enum select colours and data-pattern validation are wired by
-    // assets/js/edit/form-behaviours.js, shared with create.php.
-
-    // Record image gallery — upload + delete (same api/files.php endpoints, gallery mode)
     const btnImgUpload = document.getElementById('btnImageUpload');
     if (btnImgUpload) {
         btnImgUpload.addEventListener('click', async () => {
@@ -441,7 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Inline file upload
     const btnUpload = document.getElementById('btnInlineUpload');
     if (btnUpload) {
         btnUpload.addEventListener('click', async () => {

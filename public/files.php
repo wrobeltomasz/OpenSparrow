@@ -63,11 +63,9 @@ ob_start();
 ], $cspNonce); ?>
 
 <script type="module" nonce="<?php echo $cspNonce; ?>">
-// Module script: reuses the grid's BulkPanel drawer and toast for bulk operations
 import { BulkPanel } from './assets/js/bulk_panel.js';
 import { showToast } from './assets/js/toast.js';
 
-// Server-rendered i18n strings for this module (avoids a bundle round-trip).
 const T = <?php echo json_encode([
     'delete_error'   => t('files.delete_error'),
     'network_error'  => t('files.network_error'),
@@ -102,23 +100,19 @@ const T = <?php echo json_encode([
 
 document.addEventListener("DOMContentLoaded", () => {
     const API_URL = 'api/files.php';
-    // Grid-parity page size options; persisted like the grid's sparrow_page_size
     const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
     const LS_PAGE_SIZE = 'sparrow_files_page_size';
     const canEdit = !!(window.USER_CAPS && window.USER_CAPS.canEdit);
-    // Extra leading select column for write roles
     const COLSPAN = canEdit ? 9 : 8;
 
     let currentPage = 1;
     let currentSearch = '';
     let currentType = 'all';
-    // Same sort semantics as the grid: click = sort asc, click again = toggle
     let sortState = { column: 'created_at', asc: false };
     let pageSize = (() => {
         const saved = Number(localStorage.getItem(LS_PAGE_SIZE));
         return PAGE_SIZE_OPTIONS.includes(saved) ? saved : 25;
     })();
-    // Bulk selection over file uuids — survives page/sort/filter changes like the grid's selectedIds
     const selectedUuids = new Set();
     let bulkBar  = null;
     let tagPanel = null;
@@ -147,21 +141,17 @@ document.addEventListener("DOMContentLoaded", () => {
         other:       'assets/icons/file_present.png'
     };
 
-    // Cache for related record labels
     const relationCache = {};
 
-    // Initialize lists
     loadConfiguredTables();
     updateSortIndicators();
     loadFiles();
 
-    // Events
     btnUpload.addEventListener('click', uploadFile);
     btnRefresh.addEventListener('click', () => loadFiles());
     typeFilter.addEventListener('change', (e) => { currentType = e.target.value; currentPage = 1; loadFiles(); });
     tableSelect.addEventListener('change', loadRelatedRecords);
 
-    // Column sort — same behavior as the grid header (toggleSortState)
     sortHeaders.forEach(th => {
         th.addEventListener('click', () => {
             const col = th.dataset.sort;
@@ -176,7 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Append the grid's ↑ / ↓ arrow to the active sort column label
     function updateSortIndicators() {
         sortHeaders.forEach(th => {
             const label = th.querySelector('.th-label');
@@ -194,7 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
         searchTimeout = setTimeout(() => { currentSearch = e.target.value; currentPage = 1; loadFiles(); }, 400);
     });
 
-    // Header clear button: reset the search box and the type filter
     if (btnClearFilters) {
         btnClearFilters.addEventListener('click', () => {
             searchInput.value = '';
@@ -206,8 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Event delegation for delete buttons — avoids inline onclick handlers blocked by CSP
-    // and keeps the delete function out of the global window scope
     tbody.addEventListener('click', async (e) => {
         const btn = e.target.closest('[data-action="delete-file"]');
         if (!btn) return;
@@ -217,7 +203,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Include CSRF token in all mutating requests
                 body: JSON.stringify({ action: 'delete', uuid, csrf_token: window.CSRF_TOKEN })
             });
             const data = await res.json();
@@ -231,9 +216,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ─── Inline editing (grid-parity: editable display Name + click-to-edit Tags) ───
-
-    // Parse a PostgreSQL text[] literal ({tag1,"tag 2"}) into a plain array of tags.
     function tagsToArray(raw) {
         if (!raw || raw === '{}') return [];
         return raw.replace(/(^{|}$)/g, '').replace(/"/g, '').split(',').map(t => t.trim()).filter(Boolean);
@@ -249,7 +231,6 @@ document.addEventListener("DOMContentLoaded", () => {
         cell.innerHTML = tagsBadgesHtml(tagsToArray(raw));
     }
 
-    // Persist a single-file metadata patch (display_name and/or tags) via update_meta.
     async function saveMeta(uuid, patch) {
         try {
             const res = await fetch(API_URL, {
@@ -301,7 +282,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (canEdit) {
-        // Click a tags cell to switch it into an inline text input pre-filled with the tag list.
         tbody.addEventListener('click', (e) => {
             const cell = e.target.closest('td.f-td-tags');
             if (!cell || cell.querySelector('input')) return;
@@ -316,7 +296,6 @@ document.addEventListener("DOMContentLoaded", () => {
             input.focus();
         });
 
-        // Commit on blur for both the display-name cell and the tags input.
         tbody.addEventListener('focusout', (e) => {
             const tagInput = e.target.closest('input.f-tag-edit');
             if (tagInput) { commitTags(tagInput); return; }
@@ -324,7 +303,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (nameCell) commitDisplay(nameCell);
         });
 
-        // Enter commits (blur), Escape cancels and restores the original value.
         tbody.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 if (e.target.closest('input.f-tag-edit') || e.target.closest('td[data-edit="display"]')) {
@@ -344,8 +322,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ─── Bulk selection (grid-parity: row checkboxes + select-all + floating me-bar) ───
-
     if (selectAllCb) {
         selectAllCb.addEventListener('change', () => {
             tbody.querySelectorAll('.row-select-cb').forEach(cb => {
@@ -357,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Row checkbox changes via delegation — rows are re-rendered on every load
     tbody.addEventListener('change', (e) => {
         const cb = e.target.closest('.row-select-cb');
         if (!cb) return;
@@ -367,14 +342,12 @@ document.addEventListener("DOMContentLoaded", () => {
         updateBulkBar();
     });
 
-    // Select-all reflects the current page only (files are server-paginated)
     function syncSelectAll() {
         if (!selectAllCb) return;
         const cbs = tbody.querySelectorAll('.row-select-cb');
         selectAllCb.checked = cbs.length > 0 && Array.from(cbs).every(cb => cb.checked);
     }
 
-    // Restore checkbox state after a re-render and refresh the bar
     function syncSelectionUI() {
         tbody.querySelectorAll('.row-select-cb').forEach(cb => {
             cb.checked = selectedUuids.has(cb.dataset.uuid);
@@ -390,7 +363,6 @@ document.addEventListener("DOMContentLoaded", () => {
         updateBulkBar();
     }
 
-    // Floating selection bar — same classes as the grid's mass-edit bar (me-bar)
     function getBulkBar() {
         if (bulkBar) return bulkBar;
 
@@ -452,7 +424,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Include CSRF token in all mutating requests
                 body: JSON.stringify({ action: 'mass_delete', uuids: Array.from(selectedUuids), csrf_token: window.CSRF_TOKEN })
             });
             const data = await res.json();
@@ -468,7 +439,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Bulk tagging drawer — reuses the grid's BulkPanel (bp-) look and flow
     function openTagPanel() {
         if (selectedUuids.size === 0) return;
         if (!tagPanel) {
@@ -516,7 +486,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Include CSRF token in all mutating requests
                 body: JSON.stringify({ action: 'mass_tag', uuids: Array.from(selectedUuids), tags, csrf_token: window.CSRF_TOKEN })
             });
             const data = await res.json();
@@ -535,7 +504,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Fetch allowed relation tables from config
     async function loadConfiguredTables() {
         try {
             const res = await fetch(API_URL + '?action=get_relations_config');
@@ -557,7 +525,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Fetch records when a table is chosen
     async function loadRelatedRecords() {
         const tableName = tableSelect.value;
         recordSelect.innerHTML = '<option value="">-- Select record --</option>';
@@ -587,7 +554,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Fetch paginated files
     async function loadFiles() {
         if (btnClearFilters) btnClearFilters.hidden = !currentSearch && currentType === 'all';
         tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-empty"><?php echo htmlspecialchars(t('files.loading'), ENT_QUOTES, 'UTF-8'); ?></td></tr>`;
@@ -609,7 +575,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // Gather tables to fetch labels
             const tablesToFetch = new Set();
             data.files.forEach(f => {
                 if (f.related_table && !relationCache[f.related_table]) {
@@ -617,7 +582,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            // Fetch labels for related records
             const fetchPromises = Array.from(tablesToFetch).map(async (table) => {
                 try {
                     const lRes = await fetch(`${API_URL}?action=get_related_records&table=${encodeURIComponent(table)}`);
@@ -651,7 +615,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const size     = formatBytes(f.size_bytes);
             const date     = new Date(f.created_at).toLocaleDateString();
 
-            // Render related badge with link and proper label
             let relatedBadge = '-';
             if (f.related_table && f.related_id) {
                 const displayLabel = relationCache[f.related_table] && relationCache[f.related_table][f.related_id]
@@ -664,27 +627,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
             }
 
-            // File Name is immutable (physical file), the display Name is inline-editable.
             const displayVal  = f.display_name || '';
             const displayCell = canEdit
                 ? `<td class="f-td-display editable" data-edit="display" data-uuid="${escapeHtml(f.uuid)}" data-orig="${escapeHtml(displayVal)}" contenteditable="true">${escapeHtml(displayVal)}</td>`
                 : `<td class="f-td-display">${escapeHtml(displayVal || '-')}</td>`;
 
-            // Tags cell: read-view badges; click-to-edit (comma-separated input) for write roles.
             const tagsArr  = tagsToArray(f.tags);
             const tagsCell = canEdit
                 ? `<td class="f-td-tags editable-tags" data-uuid="${escapeHtml(f.uuid)}" data-tags="${escapeHtml(f.tags || '{}')}" title="${T.edit_tags}">${tagsBadgesHtml(tagsArr)}</td>`
                 : `<td class="f-td-tags">${tagsArr.length ? tagsBadgesHtml(tagsArr) : '-'}</td>`;
 
-            // Actions use the grid's icon buttons; delete relies on data-uuid + event
-            // delegation — no inline onclick, no global function
             const deleteBtn = window.USER_CAPS.canEdit
                 ? `<button class="btn-icon btn-icon-danger" data-action="delete-file" data-uuid="${escapeHtml(f.uuid)}" title="${T.delete}">
                         <img src="assets/icons/delete.png" alt="${T.delete}">
                     </button>`
                 : '';
 
-            // Leading select checkbox column for write roles (checked state restored by syncSelectionUI)
             const selectTd = canEdit
                 ? `<td class="td-select"><input type="checkbox" class="row-select-cb" aria-label="${T.select_file}" data-uuid="${escapeHtml(f.uuid)}"></td>`
                 : '';
@@ -715,7 +673,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }).join('');
     }
 
-    // Grid-style pagination: rows-per-page select, showing info, prev / page-of / next
     function renderPagination(totalPages, totalCount) {
         const pagEl = document.getElementById('filePagination');
         pagEl.innerHTML = '';
@@ -770,7 +727,6 @@ document.addEventListener("DOMContentLoaded", () => {
         pagEl.appendChild(nextBtn);
     }
 
-    // Upload with relations, tags, and CSRF token
     async function uploadFile() {
         if (!fileInput.files.length) {
             setUploadStatus('Please select a file.', 'error');
@@ -779,7 +735,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append('action', 'upload');
         formData.append('file', fileInput.files[0]);
-        // Include CSRF token in all mutating requests
         formData.append('csrf_token', window.CSRF_TOKEN);
         if (fileNameInput.value.trim()) formData.append('display_name', fileNameInput.value.trim());
         if (fileTagsInput.value.trim()) formData.append('tags', fileTagsInput.value.trim());
@@ -809,7 +764,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Helper: set upload status text and CSS state class without inline styles
     function setUploadStatus(message, state) {
         uploadStatus.textContent = message;
         uploadStatus.className = `f-upload-status f-status-${state}`;
