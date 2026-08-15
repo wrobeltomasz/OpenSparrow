@@ -26,6 +26,11 @@ final class PhpRequest
         return $_POST[$key] ?? $default;
     }
 
+    public function queryAll(): array
+    {
+        return $_GET;
+    }
+
     public function postAll(): array
     {
         return $_POST;

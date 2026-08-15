@@ -88,8 +88,8 @@ return [
         '_GET.workflow' => ['none', 'Active-entry highlight only, and the workflow list itself is already filtered — an out-of-scope id matches no entry.'],
     ],
     'public/cypress_seed.php' => [
-        '_GET.table'  => ['none', 'Test-only endpoint, dead outside development: a hard APP_ENV === production guard returns 404 before anything else runs, and a shared-token check follows it. It seeds fixtures for the E2E suite and must be able to reach every table.'],
-        '_POST.table' => ['none', 'Same endpoint and the same two guards as above; the seeder writes fixture rows, so it must reach every table.'],
+        'query().table' => ['none', 'Test-only endpoint, dead outside development: a hard APP_ENV === production guard returns 404 before anything else runs, and a shared-token check follows it. It seeds fixtures for the E2E suite and must be able to reach every table.'],
+        'post().table'  => ['none', 'Same endpoint and the same two guards as above; the seeder writes fixture rows, so it must reach every table.'],
     ],
     'public/admin/api_csv_import.php' => [
         'body.table' => ['admin', 'Admin CSV import endpoint: os_api_bootstrap([role => admin]) refuses every other role with a 403 before the body is read, and admins are never restricted, so a per-user scope check would be a no-op by definition. The name is validated against the schema configuration before any DDL or INSERT, and identifiers reach SQL only through pg_ident(). Found by widening the scanner to public/admin/*.php — it was invisible while that glob was missing.'],

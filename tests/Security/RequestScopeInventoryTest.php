@@ -75,29 +75,38 @@ final class RequestScopeInventoryTest extends TestCase
         return $out;
     }
 
+    private function scanSource(string $src): array
+    {
+        $found = [];
+        foreach (self::PROTECTED_KEYS as $key) {
+            $quoted = preg_quote($key, '/');
+
+            foreach (self::HOLDERS as $holder) {
+                $pattern = '/\$' . preg_quote($holder, '/')
+                    . '\s*\[\s*[\'"]' . $quoted . '[\'"]\s*\]/';
+                if (preg_match($pattern, $src) === 1) {
+                    $found[] = $holder . '.' . $key;
+                }
+            }
+
+            foreach (self::ACCESSORS as $accessor) {
+                $pattern = '/->\s*' . preg_quote($accessor, '/')
+                    . '\s*\(\s*[\'"]' . $quoted . '[\'"]/';
+                if (preg_match($pattern, $src) === 1) {
+                    $found[] = $accessor . '().' . $key;
+                }
+            }
+        }
+        return $found;
+    }
+
     private function scan(): array
     {
         $found = [];
         foreach ($this->scannedFiles() as $file) {
-            $src = $this->code($file);
-            foreach (self::PROTECTED_KEYS as $key) {
-                $quoted = preg_quote($key, '/');
-
-                foreach (self::HOLDERS as $holder) {
-                    $pattern = '/\$' . preg_quote($holder, '/')
-                        . '\s*\[\s*[\'"]' . $quoted . '[\'"]\s*\]/';
-                    if (preg_match($pattern, $src) === 1) {
-                        $found[$file][] = $holder . '.' . $key;
-                    }
-                }
-
-                foreach (self::ACCESSORS as $accessor) {
-                    $pattern = '/->\s*' . preg_quote($accessor, '/')
-                        . '\s*\(\s*[\'"]' . $quoted . '[\'"]/';
-                    if (preg_match($pattern, $src) === 1) {
-                        $found[$file][] = $accessor . '().' . $key;
-                    }
-                }
+            $reads = $this->scanSource($this->code($file));
+            if ($reads !== []) {
+                $found[$file] = $reads;
             }
         }
         return $found;
@@ -203,10 +212,19 @@ final class RequestScopeInventoryTest extends TestCase
 
     public function testScannerStillMatchesTheShapesItClaimsTo(): void
     {
+        $shapes = $this->scanSource(
+            '<?php $a = $_GET["table"]; $b = $_POST["related_table"]; $c = $body["view"];'
+            . ' $d = $request->query("table"); $e = os_request()->post("board");'
+        );
+        $this->assertContains('_GET.table', $shapes, 'Scanner missed a $_GET read.');
+        $this->assertContains('_POST.related_table', $shapes, 'Scanner missed a $_POST read.');
+        $this->assertContains('body.view', $shapes, 'Scanner missed a $body read.');
+        $this->assertContains('query().table', $shapes, 'Scanner missed a $request->query() read.');
+        $this->assertContains('post().board', $shapes, 'Scanner missed a $request->post() read.');
+
         $scan = $this->scan();
         $this->assertContains('_GET.table', $scan['public/api/fk.php'] ?? [], 'Scanner missed a $_GET read.');
         $this->assertContains('body.table', $scan['public/api/mass_edit.php'] ?? [], 'Scanner missed a $body read.');
-        $this->assertContains('_POST.table', $scan['public/cypress_seed.php'] ?? [], 'Scanner missed a $_POST read.');
         $this->assertContains(
             'post().related_table',
             $scan['public/api/files.php'] ?? [],

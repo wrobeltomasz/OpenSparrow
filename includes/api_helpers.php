@@ -463,6 +463,12 @@ const OS_REQUEST_SCOPE_PARAMS = [
 
 function os_request_scope_violation(array $body = [], array $overrides = []): ?array
 {
+    require_once __DIR__ . '/bootstrap.php';
+
+    $request = os_request();
+    $query   = $request->queryAll();
+    $post    = $request->postAll();
+
     foreach (OS_REQUEST_SCOPE_PARAMS as $param => $scope) {
         if (($overrides[$param] ?? true) === false) {
             continue;
@@ -472,7 +478,7 @@ function os_request_scope_violation(array $body = [], array $overrides = []): ?a
             continue;
         }
 
-        foreach ([$_GET[$param] ?? null, $_POST[$param] ?? null, $body[$param] ?? null] as $value) {
+        foreach ([$query[$param] ?? null, $post[$param] ?? null, $body[$param] ?? null] as $value) {
             foreach (is_array($value) ? $value : [$value] as $name) {
                 if (!is_string($name) || $name === '') {
                     continue;

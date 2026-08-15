@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/exception_handler.php';
+require_once __DIR__ . '/../includes/bootstrap.php';
 
 use App\Exception\BadRequestException;
 use App\Exception\ControlFlowException;
@@ -23,8 +24,10 @@ if (APP_ENV === 'production') {
     throw new NotFoundException('Seeding is disabled in production.');
 }
 
+$request = os_request();
+
 $expectedToken = getenv('CYPRESS_SEED_TOKEN') ?: 'cypress-dev-seed';
-$providedToken = $_POST['token'] ?? $_GET['token'] ?? '';
+$providedToken = (string) $request->post('token', $request->query('token'));
 if (!hash_equals($expectedToken, $providedToken)) {
     throw new ForbiddenException('Invalid seed token');
 }
@@ -52,7 +55,7 @@ function cypress_first_text_column(array $tableCfg): ?string
 try {
     $conn  = db_connect();
     $tUsers = sys_table('users');
-    $action = $_POST['action'] ?? $_GET['action'] ?? 'seed';
+    $action = $request->post('action', $request->query('action', 'seed'));
     $results = [];
 
     if ($action === 'seed' || $action === 'users') {
@@ -134,7 +137,7 @@ try {
 
     if ($action === 'own') {
         $schema = config_get('schema');
-        $table  = (string) ($_POST['table'] ?? $_GET['table'] ?? '');
+        $table  = (string) $request->post('table', $request->query('table'));
 
         if ($table === '') {
             foreach ($schema['tables'] ?? [] as $name => $cfg) {
@@ -229,7 +232,7 @@ try {
 
     if ($action === 'own_reset') {
         $schema   = config_get('schema');
-        $table    = (string) ($_POST['table'] ?? $_GET['table'] ?? '');
+        $table    = (string) $request->post('table', $request->query('table'));
         $tableCfg = $schema['tables'][$table] ?? null;
 
         if (!is_array($tableCfg)) {
@@ -256,7 +259,7 @@ try {
             }
         }
 
-        $wasRestricted = ($_POST['was_restricted'] ?? $_GET['was_restricted'] ?? '0') === '1';
+        $wasRestricted = $request->post('was_restricted', $request->query('was_restricted', '0')) === '1';
         if (!$wasRestricted && !empty($schema['tables'][$table]['owner_restricted'])) {
             unset($schema['tables'][$table]['owner_restricted']);
             config_save('schema', $schema);
@@ -266,7 +269,7 @@ try {
     }
 
     if ($action === 'count') {
-        $table  = (string) ($_POST['table'] ?? $_GET['table'] ?? '');
+        $table  = (string) $request->post('table', $request->query('table'));
         $schema = config_get('schema');
         $tableCfg = $schema['tables'][$table] ?? null;
 
