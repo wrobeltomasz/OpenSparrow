@@ -845,17 +845,25 @@ so that new code does not add to this debt.
 
 ### The baseline is a ratchet
 
-`phpstan-baseline.neon` records the 49 pre-existing findings. It may **shrink,
-never grow**. When a change would add an entry, fix the code instead of
-regenerating the file — a baseline that grows is just a lint suppression list.
+`phpstan-baseline.neon` started at 49 pre-existing findings and is down to **48**.
+It may **shrink, never grow**. When a change would add an entry, fix the code
+instead of regenerating the file — a baseline that grows is just a lint suppression
+list. The ratchet is enforced from the other side too: `reportUnmatchedIgnoredErrors`
+is on, so an entry that stops matching **fails the run** until it is deleted.
 
-Everything in it falls into four accepted categories, all stable:
+The `$firstRun` entry for `public/admin/templates/header.php` was the first one
+retired (2026-08-15). It stopped matching once that template grew a
+`$firstRun ??= false;` default of its own, which is the intended way out of an
+entry: fix the code, then delete the line. It was removed by hand — the file was
+*not* regenerated, because regenerating would have re-recorded every other finding
+as if it were new.
+
+Everything left falls into four accepted categories, all stable:
 
 - `$action` / `$file` / `$isDemoMode` in `includes/admin/*.php` — the documented
   front-controller scope contract.
-- `$userRole` in `templates/template.php` and `$firstRun` in
-  `public/admin/templates/header.php` — template scope inheritance; both are set by
-  the including page (`public/index.php:16` for the former).
+- `$userRole` in `templates/template.php` — template scope inheritance; it is set by
+  the including page (`public/index.php:16`).
 - 15 constants (`DB_HOST`, `RECORD_SNAPSHOTS_ENABLED`, `APP_ENCRYPTION_KEY`, …) —
   genuinely defined in `includes/config.php`, but via `define()` inside closures and
   conditionals, which PHPStan does not resolve across file boundaries.
@@ -1268,11 +1276,10 @@ fixtures. `public/cypress_seed.php` was converted too and gained an explicit
 smoke test confirmed the array default, the empty-array default, scalar reads and
 the m2m filter reindexing to `["1","2"]`.
 
-PHPStan reports one `ignore.unmatched` error for `$firstRun` in
-`public/admin/templates/header.php`. It is **pre-existing** — reproduced on a
-reconstruction of the tree as it stood before this refactor — and unrelated to the
-request object. Under the ratchet rule it is a baseline entry to remove, not to
-regenerate around.
+PHPStan is green. The run surfaced one `ignore.unmatched` error for `$firstRun` in
+`public/admin/templates/header.php`, which was **pre-existing and unrelated** —
+reproduced on a reconstruction of the tree as it stood before this refactor — and
+was retired from the baseline as described under "The baseline is a ratchet".
 
 ## Where binding rules live
 
