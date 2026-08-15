@@ -121,11 +121,9 @@ if ($logoEnabled) {
 <script src="assets/js/sidebar.js?v=<?= $vSidebarJs ?>"<?= $nonceAttr ?>></script>
 <script src="assets/js/notifications.js?v=<?= $vNotifJs ?>"<?= $nonceAttr ?>></script>
 <script type="module" src="assets/js/user-menu.js?v=<?= $cacheBust ?>"<?= $nonceAttr ?>></script>
-<script<?= $nonceAttr ?>>
-    window.CHAT_BUBBLE_ENABLED = <?php
-        echo (defined('CHAT_BUBBLE_ENABLED') && CHAT_BUBBLE_ENABLED) ? 'true' : 'false';
-    ?>;
-</script>
+<?= os_inline_globals([
+    'CHAT_BUBBLE_ENABLED' => defined('CHAT_BUBBLE_ENABLED') && CHAT_BUBBLE_ENABLED,
+], $cspNonce ?? '') ?>
 <script type="module" src="assets/js/agent-panel.js?v=<?= $vAgentJs ?>"<?= $nonceAttr ?>></script>
 <div class="app-container">
 <?php include __DIR__ . '/menu.php'; ?>

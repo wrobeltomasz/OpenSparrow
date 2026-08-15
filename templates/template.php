@@ -15,7 +15,6 @@ $tRefreshTable      = htmlspecialchars(t('grid.refresh_table'), ENT_QUOTES, 'UTF
 $tDataCleanup       = htmlspecialchars(t('data_cleanup.title'), ENT_QUOTES, 'UTF-8');
 $tShortcutsHelp     = htmlspecialchars(t('shortcuts.help_title'), ENT_QUOTES, 'UTF-8');
 $tAdd               = htmlspecialchars(t('common.add'), ENT_QUOTES, 'UTF-8');
-$jsonFlags          = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 
 $gridActions = [
     [
@@ -107,32 +106,18 @@ ob_start();
 $pageContent = ob_get_clean();
 ob_start();
 ?>
-<script nonce="<?php echo $cspNonce ?? ''; ?>">
-    window.USER_ROLE = <?php echo json_encode($userRole ?? 'viewer', $jsonFlags); ?>;
-    <?php
-        require_once __DIR__ . '/../includes/config_store.php';
-        $decodedSchemaTpl = config_get('schema');
-        $schemaTableNames = is_array($decodedSchemaTpl['tables'] ?? null)
-            ? array_keys($decodedSchemaTpl['tables'])
-            : [];
-    ?>
-    window.SCHEMA_TABLES = <?php echo json_encode($schemaTableNames, $jsonFlags); ?>;
-    document.addEventListener("DOMContentLoaded", () => {
-        const mobileActions = document.getElementById("mobileActions");
-        const clickById = id => { const b = document.getElementById(id); if (b) b.click(); };
-        if (mobileActions) {
-            mobileActions.addEventListener("change", e => {
-                const action = e.target.value;
-                if (action === "add") clickById("addRow");
-                if (action === "export") clickById("exportCsv");
-                if (action === "data-cleanup") clickById("dataCleanupBtn");
-                if (action === "keyboard-help") clickById("kgHelpBtn");
-                if (action === "refresh") location.reload();
-                mobileActions.value = "";
-            });
-        }
-    });
-</script>
+<?php
+    require_once __DIR__ . '/../includes/config_store.php';
+    $decodedSchemaTpl = config_get('schema');
+    $schemaTableNames = is_array($decodedSchemaTpl['tables'] ?? null)
+        ? array_keys($decodedSchemaTpl['tables'])
+        : [];
+    echo os_inline_globals([
+        'USER_ROLE'      => $userRole ?? 'viewer',
+        'SCHEMA_TABLES'  => $schemaTableNames,
+    ], $cspNonce ?? '');
+?>
+<script type="module" src="assets/js/grid/mobile-actions.js?v=<?php echo @filemtime(__DIR__ . '/../public/assets/js/grid/mobile-actions.js'); ?>" nonce="<?php echo $cspNonce ?? ''; ?>"></script>
 <script type="module" src="assets/js/app.js?v=<?php echo @filemtime('assets/js/app.js'); ?>"></script>
 <?php
 $extraScripts = ob_get_clean();
