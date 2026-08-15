@@ -52,11 +52,11 @@ if (isset($_SESSION['user_id'])) {
     throw new RedirectException(resolve_landing_page());
 }
 
-$loginLogoSrc = 'assets/img/logo-brown.png';
+$loginLogoPath = 'assets/img/logo-brown.png';
 if ((bool) settings_value('logo_enabled', false)) {
     $customLogoPath = settings_value('custom_logo_path', null);
     if (is_string($customLogoPath) && $customLogoPath !== '') {
-        $loginLogoSrc = $customLogoPath;
+        $loginLogoPath = $customLogoPath;
     }
 }
 
@@ -184,7 +184,7 @@ if ($request->isPost()) {
         <div class="login-box" data-cy="login-box">
             <center>
                 <img
-                    src="<?php echo htmlspecialchars($loginLogoSrc, ENT_QUOTES, 'UTF-8'); ?>"
+                    src="<?php echo htmlspecialchars($loginLogoPath, ENT_QUOTES, 'UTF-8'); ?>"
                     alt="<?php echo htmlspecialchars(t('common.logo_alt'), ENT_QUOTES, 'UTF-8'); ?>"
                     class="footer-logo"
                     height="48"

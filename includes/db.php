@@ -40,7 +40,7 @@ function db_connect(): \PgSql\Connection
     $user = !empty($config['user']) ? $config['user'] : $user;
     $password = $config['password'] ?? $password;
 
-    $connStr = sprintf(
+    $connectionString = sprintf(
         "host=%s port=%s dbname=%s user=%s password=%s connect_timeout=%d",
         $host,
         $port,
@@ -50,7 +50,7 @@ function db_connect(): \PgSql\Connection
         DB_CONNECT_TIMEOUT
     );
 
-    $conn = @pg_connect($connStr);
+    $conn = @pg_connect($connectionString);
 
     if (!$conn) {
         throw new RuntimeException('Cannot connect to Postgres. Check database credentials or server status.');

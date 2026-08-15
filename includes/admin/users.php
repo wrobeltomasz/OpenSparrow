@@ -133,9 +133,9 @@ if ($action === 'users_add') {
         ]);
         throw ResponseException::sent();
     }
-    [$contact, $contactErr] = admin_user_contact_input(is_array($data) ? $data : []);
-    if ($contactErr !== null) {
-        admin_err($contactErr);
+    [$contact, $contactError] = admin_user_contact_input(is_array($data) ? $data : []);
+    if ($contactError !== null) {
+        admin_err($contactError);
     }
 
     try {
@@ -248,9 +248,9 @@ if ($action === 'users_update_contact') {
     if ($userId <= 0) {
         admin_err('Invalid user ID.');
     }
-    [$contact, $contactErr] = admin_user_contact_input(is_array($data) ? $data : []);
-    if ($contactErr !== null) {
-        admin_err($contactErr);
+    [$contact, $contactError] = admin_user_contact_input(is_array($data) ? $data : []);
+    if ($contactError !== null) {
+        admin_err($contactError);
     }
 
     try {
@@ -304,9 +304,9 @@ if ($action === 'users_change_password') {
     if ($userId <= 0 || $password === '') {
         admin_err('User ID and password are required.');
     }
-    $minLen = admin_user_policy()['min_password_length'];
-    if (strlen($password) < $minLen) {
-        admin_err("Password must be at least {$minLen} characters.");
+    $minimumLength = admin_user_policy()['min_password_length'];
+    if (strlen($password) < $minimumLength) {
+        admin_err("Password must be at least {$minimumLength} characters.");
     }
 
     try {
@@ -404,10 +404,10 @@ if ($action === 'user_policy_save') {
     require_not_demo();
 
     $data = json_decode(file_get_contents('php://input'), true);
-    $minLen = (int) ($data['min_password_length'] ?? 0);
+    $minimumLength = (int) ($data['min_password_length'] ?? 0);
     $defaultRole = $data['default_role'] ?? '';
 
-    if ($minLen < 6) {
+    if ($minimumLength < 6) {
         admin_err('Minimum password length must be at least 6.');
     }
     if (!in_array($defaultRole, USER_ROLES, true)) {
@@ -415,7 +415,7 @@ if ($action === 'user_policy_save') {
     }
 
     $result = config_save('user_policy', [
-        'min_password_length' => $minLen,
+        'min_password_length' => $minimumLength,
         'default_role' => $defaultRole,
     ], null, $adminActorId ?: null);
     if ($result['status'] !== 'ok') {

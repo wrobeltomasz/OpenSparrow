@@ -35,9 +35,9 @@ function frontapi_profile_update_avatar(\PgSql\Connection $conn, array $body, in
         throw new BadRequestException('avatar_id required');
     }
 
-    $avatarMax = count(OS_AVATAR_COLORS);
-    if ($avatarId !== null && (!is_int($avatarId) || $avatarId < 1 || $avatarId > $avatarMax)) {
-        throw new BadRequestException("avatar_id must be 1-$avatarMax or null");
+    $avatarColorCount = count(OS_AVATAR_COLORS);
+    if ($avatarId !== null && (!is_int($avatarId) || $avatarId < 1 || $avatarId > $avatarColorCount)) {
+        throw new BadRequestException("avatar_id must be 1-$avatarColorCount or null");
     }
 
     $sql = 'UPDATE ' . sys_table('users') . ' SET avatar_id = $1 WHERE id = $2';

@@ -169,9 +169,9 @@ if ($action === 'scan') {
             ];
         }
 
-        foreach ($entry['removed_config_keys'] ?? [] as $keyDef) {
-            $file    = (string) ($keyDef['file'] ?? '');
-            $jpath   = (string) ($keyDef['path'] ?? '');
+        foreach ($entry['removed_config_keys'] ?? [] as $keyDefinition) {
+            $file    = (string) ($keyDefinition['file'] ?? '');
+            $jpath   = (string) ($keyDefinition['path'] ?? '');
             $cfgKey  = rm_config_key($file);
             $present = false;
             if ($cfgKey !== '' && $jpath !== '') {
@@ -269,11 +269,11 @@ if ($action === 'apply') {
     foreach ($entry['deprecated_files'] ?? [] as $relPath) {
         $allActions[] = ['type' => 'file_deprecated', 'path' => (string) $relPath];
     }
-    foreach ($entry['removed_config_keys'] ?? [] as $keyDef) {
+    foreach ($entry['removed_config_keys'] ?? [] as $keyDefinition) {
         $allActions[] = [
             'type' => 'config_key_remove',
-            'file' => (string) ($keyDef['file'] ?? ''),
-            'path' => (string) ($keyDef['path'] ?? ''),
+            'file' => (string) ($keyDefinition['file'] ?? ''),
+            'path' => (string) ($keyDefinition['path'] ?? ''),
         ];
     }
 

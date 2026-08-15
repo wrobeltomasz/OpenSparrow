@@ -48,10 +48,10 @@ function dashboard_run_widget_query(
     array $displayColumns,
     string $sqlWhere
 ): array {
-    $qType = $query['type'] ?? 'list';
+    $queryType = $query['type'] ?? 'list';
     $output = ['data' => null];
 
-    if ($qType === 'count') {
+    if ($queryType === 'count') {
         $columnName = $query['column'] ?? id_column();
         if (isset($tableCfg['columns'][$columnName]) || $columnName === id_column()) {
             $sql = sprintf(
@@ -70,7 +70,7 @@ function dashboard_run_widget_query(
                 $output['sql_error'] = 'Query failed.';
             }
         }
-    } elseif ($qType === 'sum') {
+    } elseif ($queryType === 'sum') {
         $columnName = $query['column'] ?? '';
         if (isset($tableCfg['columns'][$columnName])) {
             $sql = sprintf(
@@ -90,7 +90,7 @@ function dashboard_run_widget_query(
                 $output['sql_error'] = 'Query failed.';
             }
         }
-    } elseif ($qType === 'avg') {
+    } elseif ($queryType === 'avg') {
         $columnName = $query['column'] ?? '';
         if (isset($tableCfg['columns'][$columnName])) {
             $sql = sprintf(
@@ -110,7 +110,7 @@ function dashboard_run_widget_query(
                 $output['sql_error'] = 'Query failed.';
             }
         }
-    } elseif ($qType === 'group_by') {
+    } elseif ($queryType === 'group_by') {
         $groupColumn = $query['group_column'] ?? '';
         $aggregateColumn = $query['agg_column'] ?? id_column();
         $aggType = strtoupper($query['agg_type'] ?? 'COUNT');
@@ -141,8 +141,8 @@ function dashboard_run_widget_query(
                 $output['sql_error'] = 'Query failed.';
             }
         }
-    } elseif ($qType === 'time_series') {
-        $xColumn = $query['x_column'] ?? '';
+    } elseif ($queryType === 'time_series') {
+        $xAxisColumn = $query['x_column'] ?? '';
         $aggregateColumn = $query['agg_column'] ?? id_column();
         $aggType = strtoupper($query['agg_type'] ?? 'COUNT');
         $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
@@ -150,8 +150,8 @@ function dashboard_run_widget_query(
         $granularity = strtolower($query['granularity'] ?? 'month');
         $allowedGran = ['day', 'week', 'month', 'year'];
         $granularity = in_array($granularity, $allowedGran, true) ? $granularity : 'month';
-        if (isset($tableCfg['columns'][$xColumn])) {
-            $bucket = sprintf("DATE_TRUNC('%s', %s)", $granularity, pg_ident($xColumn));
+        if (isset($tableCfg['columns'][$xAxisColumn])) {
+            $bucket = sprintf("DATE_TRUNC('%s', %s)", $granularity, pg_ident($xAxisColumn));
             $sql = sprintf(
                 'SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY 1 ORDER BY 1 ASC',
                 $bucket,
@@ -170,7 +170,7 @@ function dashboard_run_widget_query(
                 }
                 pg_free_result($result);
                 $output['data'] = $data;
-                $output['column_type'] = $tableCfg['columns'][$xColumn]['type'] ?? 'text';
+                $output['column_type'] = $tableCfg['columns'][$xAxisColumn]['type'] ?? 'text';
             } else {
                 $output['sql_error'] = 'Query failed.';
             }

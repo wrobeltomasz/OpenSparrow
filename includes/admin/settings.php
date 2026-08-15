@@ -33,11 +33,11 @@ if ($action === 'list_icons') {
 }
 
 if ($action === 'get_snapshot_setting') {
-    $envVal = getenv('RECORD_SNAPSHOTS_ENABLED');
-    $lockedByEnv = ($envVal !== false && $envVal !== '');
+    $envValue = getenv('RECORD_SNAPSHOTS_ENABLED');
+    $lockedByEnv = ($envValue !== false && $envValue !== '');
     $enabled = false;
     if ($lockedByEnv) {
-        $enabled = ($envVal === 'true');
+        $enabled = ($envValue === 'true');
     } else {
         $settings = admin_read_settings();
         $enabled = (bool) ($settings['record_snapshots_enabled'] ?? false);
@@ -68,8 +68,8 @@ if ($action === 'get_snapshot_setting') {
 
 if ($action === 'set_snapshot_setting') {
     require_not_demo();
-    $envVal = getenv('RECORD_SNAPSHOTS_ENABLED');
-    if ($envVal !== false && $envVal !== '') {
+    $envValue = getenv('RECORD_SNAPSHOTS_ENABLED');
+    if ($envValue !== false && $envValue !== '') {
         echo json_encode([
             'status' => 'error',
             'error'  => 'Controlled by RECORD_SNAPSHOTS_ENABLED environment variable — cannot override'
@@ -86,10 +86,10 @@ if ($action === 'set_snapshot_setting') {
 }
 
 if ($action === 'get_automation_email_setting') {
-    $envVal = getenv('AUTOMATION_EMAIL_FROM');
-    $lockedByEnv = ($envVal !== false && $envVal !== '');
+    $envValue = getenv('AUTOMATION_EMAIL_FROM');
+    $lockedByEnv = ($envValue !== false && $envValue !== '');
     $settings = admin_read_settings();
-    $from = $lockedByEnv ? $envVal : (string) ($settings['automation_email_from'] ?? '');
+    $from = $lockedByEnv ? $envValue : (string) ($settings['automation_email_from'] ?? '');
 
     echo json_encode([
         'from'                    => $from,
@@ -106,8 +106,8 @@ if ($action === 'get_automation_email_setting') {
 
 if ($action === 'set_automation_email_setting') {
     require_not_demo();
-    $envVal = getenv('AUTOMATION_EMAIL_FROM');
-    $lockedByEnv = ($envVal !== false && $envVal !== '');
+    $envValue = getenv('AUTOMATION_EMAIL_FROM');
+    $lockedByEnv = ($envValue !== false && $envValue !== '');
 
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $from = trim((string) ($body['from'] ?? ''));

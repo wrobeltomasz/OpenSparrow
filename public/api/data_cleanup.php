@@ -149,12 +149,12 @@ if ($action === 'data_cleanup_preview' && $method === 'POST') {
 
     if (!empty($tableCfg['owner_restricted'])) {
         $userId      = (int)$_SESSION['user_id'];
-        $ownerCnt = owner_restriction_sql('_t.id', 2, 3);
+        $ownerCondition = owner_restriction_sql('_t.id', 2, 3);
         $ownerRow = owner_restriction_sql('_t.id', 3, 4);
 
         $countResult = @pg_query_params(
             $conn,
-            "SELECT COUNT(*) FROM {$qualifiedTable} AS _t WHERE {$whereSql}{$ownerCnt}",
+            "SELECT COUNT(*) FROM {$qualifiedTable} AS _t WHERE {$whereSql}{$ownerCondition}",
             [$pattern, $tableName, $userId]
         );
         if (!$countResult) {

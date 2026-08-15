@@ -108,10 +108,11 @@ function os_module_script(string $source, string $nonce, ?string $versionFile = 
     $assetVersion = str_starts_with($source, 'assets/js/') || str_starts_with($source, './assets/js/')
         ? (string) os_fe_module_graph()['version']
         : asset_version($versionFile ?? $source);
-    $nonceAttr = $nonce !== ''
+    $nonceAttribute = $nonce !== ''
         ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"'
         : '';
-    return '<script type="module" src="' . $source . '?v=' . $assetVersion . '"' . $nonceAttr . '></script>' . "\n";
+    return '<script type="module" src="' . $source . '?v=' . $assetVersion . '"'
+        . $nonceAttribute . '></script>' . "\n";
 }
 
 function os_module_graph(array $groups): array
@@ -160,10 +161,10 @@ function os_import_map(array $imports, string $nonce = ''): string
         ['imports' => $imports],
         JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG
     );
-    $nonceAttr = $nonce !== ''
+    $nonceAttribute = $nonce !== ''
         ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"'
         : '';
-    return '<script type="importmap"' . $nonceAttr . '>' . $json . '</script>' . "\n";
+    return '<script type="importmap"' . $nonceAttribute . '>' . $json . '</script>' . "\n";
 }
 
 const OS_AVATAR_COLORS = [

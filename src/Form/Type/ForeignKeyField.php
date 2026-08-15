@@ -40,9 +40,9 @@ final class ForeignKeyField implements FieldTypeInterface
             : (string)($currentValue ?? '');
         $locked  = $context->isLocked($column->name);
         $name    = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
-        $reqAttr = ($column->notNull && !$locked) ? 'required' : '';
+        $requiredAttribute = ($column->notNull && !$locked) ? 'required' : '';
 
-        $html  = '<select name="' . $name . '" ' . ($locked ? 'disabled' : '') . ' ' . $reqAttr . '>';
+        $html  = '<select name="' . $name . '" ' . ($locked ? 'disabled' : '') . ' ' . $requiredAttribute . '>';
         $html .= '<option value="">-- Select --</option>';
         foreach ($context->fkOptionsFor($column->name) as $optValue => $optLabel) {
             $selected = (string)$value === (string)$optValue ? 'selected' : '';

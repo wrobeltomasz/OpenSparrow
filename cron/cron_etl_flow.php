@@ -117,8 +117,8 @@ function etl_flow_run_single(
         }
 
         $prevWatermark = $job['last_watermark'] ?? ($job['incremental_initial_value'] ?? null);
-        $wmParam       = $prevWatermark !== null ? (string)$prevWatermark : null;
-        $result        = etl_run_job($conn, $job, $connCfg, $dryRun, $wmParam);
+        $watermarkParam       = $prevWatermark !== null ? (string)$prevWatermark : null;
+        $result        = etl_run_job($conn, $job, $connCfg, $dryRun, $watermarkParam);
 
         if ($stepLogId !== null) {
             @pg_query_params(

@@ -32,14 +32,14 @@ final readonly class FkOptionsLoader
             $dispRaw = [$refPk];
         }
 
-        $refColsSql  = implode(', ', array_map([Identifier::class, 'quote'], $dispRaw));
-        $orderColSql = Identifier::quote($dispRaw[0]);
+        $referenceColumnsSql  = implode(', ', array_map([Identifier::class, 'quote'], $dispRaw));
+        $orderColumnSql = Identifier::quote($dispRaw[0]);
         $sql = sprintf(
             'SELECT %s, %s FROM %s ORDER BY %s ASC',
             Identifier::quote($refPk),
-            $refColsSql,
+            $referenceColumnsSql,
             Identifier::quoteQualified($refSchema, $refTable),
-            $orderColSql
+            $orderColumnSql
         );
 
         try {
@@ -94,11 +94,11 @@ final readonly class FkOptionsLoader
             }
 
             $escapedColumns = array_map([Identifier::class, 'quote'], $dispRaw);
-            $dispSql     = count($escapedColumns) > 1
+            $displaySql     = count($escapedColumns) > 1
                 ? 'CONCAT_WS(\' - \', ' . implode(', ', $escapedColumns) . ')'
                 : $escapedColumns[0];
 
-            $escapedVals = array_map(
+            $escapedValues = array_map(
                 fn($value) => pg_escape_literal($this->conn->native(), (string)$value),
                 $fkValues
             );
@@ -106,10 +106,10 @@ final readonly class FkOptionsLoader
             $sql = sprintf(
                 'SELECT %s AS id, %s AS disp FROM %s WHERE %s IN (%s)',
                 Identifier::quote($refPk),
-                $dispSql,
+                $displaySql,
                 Identifier::quoteQualified($refSchema, $refTable),
                 Identifier::quote($refPk),
-                implode(', ', $escapedVals)
+                implode(', ', $escapedValues)
             );
 
             $map = [];

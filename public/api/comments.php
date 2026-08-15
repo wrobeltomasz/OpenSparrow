@@ -31,7 +31,7 @@ function comments_action_list($conn): void
         jsonError('related_id must be a positive integer.', 400);
     }
 
-    $orderDir    = $limit ? 'DESC' : 'ASC';
+    $orderDirection    = $limit ? 'DESC' : 'ASC';
     $limitClause = $limit ? " LIMIT {$limit}" : '';
     $sql = "
         SELECT
@@ -45,7 +45,7 @@ function comments_action_list($conn): void
         FROM " . sys_table('comments') . " c
         LEFT JOIN " . sys_table('users') . " u ON u.id = c.user_id
         WHERE c.related_table = \$1 AND c.related_id = \$2
-        ORDER BY c.created_at {$orderDir}{$limitClause}
+        ORDER BY c.created_at {$orderDirection}{$limitClause}
     ";
     $result = pg_query_params($conn, $sql, [$relatedTable, $relatedId]);
     if (!$result) {

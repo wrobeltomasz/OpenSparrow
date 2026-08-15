@@ -40,16 +40,17 @@ final class TextField implements FieldTypeInterface
             : (string)($currentValue ?? '');
         $locked  = $context->isLocked($column->name);
         $name    = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
-        $reqAttr = ($column->notNull && !$locked) ? 'required' : '';
-        $roAttr  = $locked ? 'readonly' : '';
-        $patAttr = $column->validationRegexp !== null
+        $requiredAttribute = ($column->notNull && !$locked) ? 'required' : '';
+        $readonlyAttribute  = $locked ? 'readonly' : '';
+        $patternAttribute = $column->validationRegexp !== null
             ? 'data-pattern="' . htmlspecialchars($column->validationRegexp, ENT_QUOTES, 'UTF-8') . '"'
             : '';
-        $msgAttr = $column->validationMessage !== null
+        $messageAttribute = $column->validationMessage !== null
             ? 'data-message="' . htmlspecialchars($column->validationMessage, ENT_QUOTES, 'UTF-8') . '"'
             : '';
 
         return '<input type="text" name="' . $name . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" '
-             . $reqAttr . ' ' . $roAttr . ' ' . $patAttr . ' ' . $msgAttr . ' />';
+             . $requiredAttribute . ' ' . $readonlyAttribute . ' '
+             . $patternAttribute . ' ' . $messageAttribute . ' />';
     }
 }

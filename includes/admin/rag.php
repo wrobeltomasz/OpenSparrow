@@ -227,7 +227,7 @@ if ($action === 'rag_settings_save') {
         $body             = json_decode(file_get_contents('php://input'), true) ?? [];
         $ollamaUrl        = trim((string) ($body['ollama_url'] ?? ''));
         $model            = trim((string) ($body['ollama_model'] ?? ''));
-        $maxCtx           = max(1, min(20, (int) ($body['max_context_files'] ?? 3)));
+        $maxContextFiles           = max(1, min(20, (int) ($body['max_context_files'] ?? 3)));
         $maxSizeMb        = max(1, min(100, (int) ($body['max_file_size_mb'] ?? 10)));
         $timeout          = max(10, min(600, (int) ($body['ollama_timeout'] ?? 120)));
         $sslVerify        = isset($body['ssl_verify']) ? (bool) $body['ssl_verify'] : true;
@@ -254,7 +254,7 @@ if ($action === 'rag_settings_save') {
         $cfg = array_merge($existingCfg, [
             'ollama_url'           => $ollamaUrl,
             'ollama_model'         => $model,
-            'max_context_files'    => $maxCtx,
+            'max_context_files'    => $maxContextFiles,
             'max_file_size_mb'     => $maxSizeMb,
             'ollama_timeout'       => $timeout,
             'ollama_ssl_verify'    => $sslVerify,
@@ -499,11 +499,11 @@ if ($action === 'rag_ollama_check') {
         ]);
         $response = curl_exec($curlHandle);
         $httpCode = (int) curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
-        $curlErr  = curl_error($curlHandle);
+        $curlError  = curl_error($curlHandle);
         curl_close($curlHandle);
 
         if ($response === false || $response === '') {
-            throw new AdminApiMessage('Cannot reach Ollama: ' . ($curlErr ?: 'no response'));
+            throw new AdminApiMessage('Cannot reach Ollama: ' . ($curlError ?: 'no response'));
         }
         if ($httpCode !== 200) {
             throw new AdminApiMessage('Ollama returned HTTP ' . $httpCode . '.');
@@ -534,11 +534,11 @@ if ($action === 'rag_ollama_check') {
                 CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
                 CURLOPT_HTTPHEADER     => $authHeaders,
             ]);
-            $vResp = curl_exec($versionCurlHandle);
+            $versionResponse = curl_exec($versionCurlHandle);
             curl_close($versionCurlHandle);
-            if ($vResp !== false) {
-                $vData = json_decode($vResp, true);
-                $version = (string) ($vData['version'] ?? '');
+            if ($versionResponse !== false) {
+                $versionData = json_decode($versionResponse, true);
+                $version = (string) ($versionData['version'] ?? '');
             }
         }
 
@@ -569,12 +569,12 @@ if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
         $summary = $summaryResult ? (pg_fetch_assoc($summaryResult) ?: []) : [];
 
         $hasPromptColumn = false;
-        $colChk = @pg_query(
+        $columnCheckResult = @pg_query(
             $conn,
             "SELECT 1 FROM information_schema.columns"
                 . " WHERE table_name = 'spw_rag_queries' AND column_name = 'prompt_snapshot' LIMIT 1"
         );
-        if ($colChk && pg_num_rows($colChk) > 0) {
+        if ($columnCheckResult && pg_num_rows($columnCheckResult) > 0) {
             $hasPromptColumn = true;
         }
         $promptSelect = $hasPromptColumn ? ', prompt_snapshot' : ', NULL AS prompt_snapshot';

@@ -57,8 +57,8 @@ function etl_run_single_job(
     }
 
     $prevWatermark = $job['last_watermark'] ?? ($job['incremental_initial_value'] ?? null);
-    $wmParam       = $prevWatermark !== null ? (string)$prevWatermark : null;
-    $result        = etl_run_job($conn, $job, $connCfg, $dryRun, $wmParam);
+    $watermarkParam       = $prevWatermark !== null ? (string)$prevWatermark : null;
+    $result        = etl_run_job($conn, $job, $connCfg, $dryRun, $watermarkParam);
 
     if ($result['status'] === 'success') {
         etl_cli_log("[etl]   read {$result['rows_read']}, written {$result['rows_written']}.");

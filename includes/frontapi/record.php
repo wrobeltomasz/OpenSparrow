@@ -217,12 +217,12 @@ function frontapi_record_duplicate(FrontApiWriteContext $context): never
     );
     $result = @pg_query_params($conn, $sql, [$srcId]);
     if (!$result) {
-        $pgErr = pg_last_error($conn);
-        error_log('[api][duplicate] ' . $pgErr);
+        $pgError = pg_last_error($conn);
+        error_log('[api][duplicate] ' . $pgError);
         http_response_code(422);
-        if (stripos($pgErr, 'unique') !== false || stripos($pgErr, 'unikaln') !== false) {
+        if (stripos($pgError, 'unique') !== false || stripos($pgError, 'unikaln') !== false) {
             $column = '';
-            if (preg_match('/[Kk]ey\s*\(([^)]+)\)|Klucz\s*\(([^)]+)\)/', $pgErr, $matches)) {
+            if (preg_match('/[Kk]ey\s*\(([^)]+)\)|Klucz\s*\(([^)]+)\)/', $pgError, $matches)) {
                     $column = $matches[1] ?: $matches[2];
             }
             $message = $column

@@ -83,14 +83,14 @@ if ($action === 'test_connection') {
         ]);
     }
 
-    $connStr = "host=" . pg_connstr_escape($host) .
+    $connectionString = "host=" . pg_connstr_escape($host) .
                " port=" . (int)$port .
                " dbname=" . pg_connstr_escape($dbname) .
                " user=" . pg_connstr_escape($user) .
                " password=" . pg_connstr_escape($password) .
                " connect_timeout=5";
 
-    $conn = @pg_connect($connStr);
+    $conn = @pg_connect($connectionString);
 
     if (!$conn) {
         $safeError = 'Connection failed. Check host, port, database name, username, or password.';
@@ -166,14 +166,14 @@ if ($action === 'init_database') {
     }
 
     try {
-        $connStr = "host=" . pg_connstr_escape($host) .
+        $connectionString = "host=" . pg_connstr_escape($host) .
                    " port=" . (int)$port .
                    " dbname=" . pg_connstr_escape($dbname) .
                    " user=" . pg_connstr_escape($user) .
                    " password=" . pg_connstr_escape($password) .
                    " connect_timeout=5";
 
-        $conn = @pg_connect($connStr);
+        $conn = @pg_connect($connectionString);
 
         if (!$conn) {
             throw new Exception('Could not connect to database. Verify credentials and try again.');
@@ -232,8 +232,8 @@ if ($action === 'init_database') {
         $tmpPassword    = bin2hex(random_bytes(12));
         $firstAdminSalt = bin2hex(random_bytes(32));
 
-        $argonOpts      = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
-        $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, $argonOpts);
+        $argonOptions      = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
+        $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, $argonOptions);
         error_log(
             '[OpenSparrow] First-run admin account created. '
                 . 'Change the password shown in the setup wizard immediately after login.'
@@ -243,7 +243,7 @@ if ($action === 'init_database') {
             "INSERT INTO $usersTable (username, password_hash, salt, password_algo, password_params, is_active, role) "
                 . "SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin' "
                 . "WHERE NOT EXISTS (SELECT 1 FROM $usersTable LIMIT 1) RETURNING id",
-            [$firstAdminHash, $firstAdminSalt, 'argon2id', json_encode($argonOpts)]
+            [$firstAdminHash, $firstAdminSalt, 'argon2id', json_encode($argonOptions)]
         );
 
         if (!$resAdmin) {

@@ -38,8 +38,12 @@ if ($action === 'demo_status') {
     throw ResponseException::sent();
 }
 
-function demo_install_run(string $type, bool $withRagDocs = true, bool $withUsers = true, bool $withAudit = true): array
-{
+function demo_install_run(
+    string $type,
+    bool $withRagDocuments = true,
+    bool $withUsers = true,
+    bool $withAudit = true
+): array {
     try {
         require_once __DIR__ . '/../../../includes/db.php';
         $conn     = db_connect();
@@ -250,18 +254,18 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         if (!isset($calCfg['sources']) || !is_array($calCfg['sources'])) {
             $calCfg['sources'] = [];
         }
-        $demoTbls = array_keys($demoData['schema_tables']);
+        $demoTables = array_keys($demoData['schema_tables']);
         $calCfg['sources'] = array_values(
             array_filter(
                 $calCfg['sources'],
-                fn($calendarSource) => !in_array($calendarSource['table'] ?? '', $demoTbls, true)
+                fn($calendarSource) => !in_array($calendarSource['table'] ?? '', $demoTables, true)
             )
         );
 
-        $installerUid = (int)($_SESSION['user_id'] ?? 0);
+        $installerUserId = (int)($_SESSION['user_id'] ?? 0);
         foreach ($demoData['calendar_sources'] as $calendarSource) {
-            if ($installerUid > 0 && empty($calendarSource['notified_users'])) {
-                $calendarSource['notified_users'] = [$installerUid];
+            if ($installerUserId > 0 && empty($calendarSource['notified_users'])) {
+                $calendarSource['notified_users'] = [$installerUserId];
             }
             $calCfg['sources'][] = $calendarSource;
         }
@@ -274,7 +278,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
                 $boardCfg['boards'] = [];
             }
             $boardCfg['boards'] = array_values(
-                array_filter($boardCfg['boards'], fn($board) => !in_array($board['table'] ?? '', $demoTbls, true))
+                array_filter($boardCfg['boards'], fn($board) => !in_array($board['table'] ?? '', $demoTables, true))
             );
             foreach ($demoData['board']['boards'] as $board) {
                 $boardCfg['boards'][] = $board;
@@ -471,7 +475,7 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
         }
 
         $ragFileIds = [];
-        if ($withRagDocs && !empty($demoData['rag_docs']) && is_array($demoData['rag_docs'])) {
+        if ($withRagDocuments && !empty($demoData['rag_docs']) && is_array($demoData['rag_docs'])) {
             require_once __DIR__ . '/../../../includes/rag_helpers.php';
             $samplesDir = realpath(__DIR__ . '/../../../docs/rag-samples');
             $ragCfg     = rag_config();
@@ -584,29 +588,29 @@ function demo_install_run(string $type, bool $withRagDocs = true, bool $withUser
 
         if (!empty($demoData['user_records']) && is_array($demoData['user_records'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
-            $urCfg = config_get('user_records') ?? [];
-            if (!isset($urCfg['columns']) || !is_array($urCfg['columns'])) {
-                $urCfg['columns'] = [];
+            $userRecordsCfg = config_get('user_records') ?? [];
+            if (!isset($userRecordsCfg['columns']) || !is_array($userRecordsCfg['columns'])) {
+                $userRecordsCfg['columns'] = [];
             }
-            if (!isset($urCfg['limit'])) {
-                $urCfg['limit'] = 20;
+            if (!isset($userRecordsCfg['limit'])) {
+                $userRecordsCfg['limit'] = 20;
             }
             foreach ($demoData['user_records'] as $tableName => $columns) {
-                $urCfg['columns'][$tableName] = $columns;
+                $userRecordsCfg['columns'][$tableName] = $columns;
             }
             $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-            config_save('user_records', $urCfg, null, $seedUserId);
+            config_save('user_records', $userRecordsCfg, null, $seedUserId);
         }
 
         $snapshotsEnabledByDemo = false;
         $snapEnv = getenv('RECORD_SNAPSHOTS_ENABLED');
         if ($withAudit && $withUsers && ($snapEnv === false || $snapEnv === '')) {
             require_once __DIR__ . '/../../../includes/config_store.php';
-            $setCfg = config_get('settings') ?? [];
-            if (empty($setCfg['record_snapshots_enabled'])) {
-                $setCfg['record_snapshots_enabled'] = true;
+            $settingsCfg = config_get('settings') ?? [];
+            if (empty($settingsCfg['record_snapshots_enabled'])) {
+                $settingsCfg['record_snapshots_enabled'] = true;
                 $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-                config_save('settings', $setCfg, null, $seedUserId);
+                config_save('settings', $settingsCfg, null, $seedUserId);
                 $snapshotsEnabledByDemo = true;
             }
         }
@@ -766,11 +770,11 @@ if ($action === 'demo_uninstall') {
 
         $demoSchema = $meta['schema'] ?? '';
         if ($demoSchema !== '') {
-            foreach ($meta['view_names'] ?? [] as $vName) {
-                if (!preg_match('/^v_demo_[a-z_]+$/', $vName)) {
+            foreach ($meta['view_names'] ?? [] as $viewName) {
+                if (!preg_match('/^v_demo_[a-z_]+$/', $viewName)) {
                     continue;
                 }
-                @pg_query($conn, 'DROP VIEW IF EXISTS ' . pg_ident($demoSchema) . '.' . pg_ident($vName));
+                @pg_query($conn, 'DROP VIEW IF EXISTS ' . pg_ident($demoSchema) . '.' . pg_ident($viewName));
             }
         }
 
@@ -778,10 +782,10 @@ if ($action === 'demo_uninstall') {
         $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
 
         if (!empty($meta['snapshots_enabled_by_demo'])) {
-            $setCfg = config_get('settings') ?? [];
-            if (!empty($setCfg['record_snapshots_enabled'])) {
-                $setCfg['record_snapshots_enabled'] = false;
-                config_save('settings', $setCfg, null, $cleanUserId);
+            $settingsCfg = config_get('settings') ?? [];
+            if (!empty($settingsCfg['record_snapshots_enabled'])) {
+                $settingsCfg['record_snapshots_enabled'] = false;
+                config_save('settings', $settingsCfg, null, $cleanUserId);
             }
         }
 
@@ -963,16 +967,16 @@ if ($action === 'demo_uninstall') {
             config_save('rag', $ragViewCfg, null, $cleanUserId);
         }
 
-        $urCfg = config_get('user_records');
-        if (is_array($urCfg)) {
+        $userRecordsCfg = config_get('user_records');
+        if (is_array($userRecordsCfg)) {
             $tables = $meta['tables'] ?? [];
             foreach ($tables as $tableName) {
-                unset($urCfg['columns'][$tableName]);
+                unset($userRecordsCfg['columns'][$tableName]);
             }
-            if (empty($urCfg['columns'])) {
+            if (empty($userRecordsCfg['columns'])) {
                 config_delete('user_records', $cleanUserId);
             } else {
-                config_save('user_records', $urCfg, null, $cleanUserId);
+                config_save('user_records', $userRecordsCfg, null, $cleanUserId);
             }
         }
 

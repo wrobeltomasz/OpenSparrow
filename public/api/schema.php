@@ -39,38 +39,38 @@ foreach ($schemaData['tables'] as $tableName => $tableConfig) {
     }
 
     $publicColumns = [];
-    foreach ($tableConfig['columns'] as $colName => $colDef) {
+    foreach ($tableConfig['columns'] as $colName => $columnDefinition) {
         $publicColumn = [
-            'display_name'  => $colDef['display_name'] ?? $colName,
-            'type'          => $colDef['type'] ?? 'text',
-            'show_in_grid'  => $colDef['show_in_grid'] ?? true,
-            'show_in_edit'  => $colDef['show_in_edit'] ?? true,
-            'readonly'      => $colDef['readonly'] ?? false,
-            'not_null'      => $colDef['not_null'] ?? false,
+            'display_name'  => $columnDefinition['display_name'] ?? $colName,
+            'type'          => $columnDefinition['type'] ?? 'text',
+            'show_in_grid'  => $columnDefinition['show_in_grid'] ?? true,
+            'show_in_edit'  => $columnDefinition['show_in_edit'] ?? true,
+            'readonly'      => $columnDefinition['readonly'] ?? false,
+            'not_null'      => $columnDefinition['not_null'] ?? false,
         ];
 
         if ($userRole === 'editor') {
-            if (!empty($colDef['validation_regexp'])) {
-                $publicColumn['validation_regexp'] = $colDef['validation_regexp'];
+            if (!empty($columnDefinition['validation_regexp'])) {
+                $publicColumn['validation_regexp'] = $columnDefinition['validation_regexp'];
             }
-            if (!empty($colDef['validation_message'])) {
-                $publicColumn['validation_message'] = $colDef['validation_message'];
+            if (!empty($columnDefinition['validation_message'])) {
+                $publicColumn['validation_message'] = $columnDefinition['validation_message'];
             }
         }
 
-        if (!empty($colDef['description'])) {
-            $publicColumn['description'] = $colDef['description'];
+        if (!empty($columnDefinition['description'])) {
+            $publicColumn['description'] = $columnDefinition['description'];
         }
 
-        if (!empty($colDef['formula'])) {
-            $publicColumn['formula'] = $colDef['formula'];
+        if (!empty($columnDefinition['formula'])) {
+            $publicColumn['formula'] = $columnDefinition['formula'];
         }
 
-        if (!empty($colDef['options'])) {
-            $publicColumn['options'] = $colDef['options'];
+        if (!empty($columnDefinition['options'])) {
+            $publicColumn['options'] = $columnDefinition['options'];
         }
-        if (!empty($colDef['enum_colors'])) {
-            $publicColumn['enum_colors'] = $colDef['enum_colors'];
+        if (!empty($columnDefinition['enum_colors'])) {
+            $publicColumn['enum_colors'] = $columnDefinition['enum_colors'];
         }
 
         $publicColumns[$colName] = $publicColumn;

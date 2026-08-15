@@ -721,11 +721,11 @@ function rag_call_ollama(
     ]);
 
     $response = curl_exec($curlHandle);
-    $curlErr  = curl_error($curlHandle);
+    $curlError  = curl_error($curlHandle);
     curl_close($curlHandle);
 
     if ($response === false) {
-        throw new RuntimeException('Ollama unreachable: ' . $curlErr);
+        throw new RuntimeException('Ollama unreachable: ' . $curlError);
     }
 
     $data = json_decode($response, true);

@@ -101,7 +101,7 @@ function files_action_list($conn): void
         'created_at' => 'f.created_at',
     ];
     $orderExpr = $sortMap[$_GET['sort'] ?? 'created_at'] ?? 'f.created_at';
-    $orderDir  = strtolower($_GET['dir'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
+    $orderDirection  = strtolower($_GET['dir'] ?? 'desc') === 'asc' ? 'ASC' : 'DESC';
     $where  = ['f.deleted_at IS NULL'];
     $params = [];
     if ($type !== 'all') {
@@ -161,7 +161,7 @@ function files_action_list($conn): void
         FROM " . sys_table('files') . " f
         LEFT JOIN " . sys_table('users') . " u ON u.id = f.uploaded_by
         WHERE {$whereSQL}
-        ORDER BY {$orderExpr} {$orderDir}, f.id DESC
+        ORDER BY {$orderExpr} {$orderDirection}, f.id DESC
         LIMIT $" . (count($paramsList) + 1) . "
         OFFSET $" . (count($paramsList) + 2);
     $paramsList[] = $limit;
@@ -275,7 +275,7 @@ function files_action_upload($conn): void
     $displayName = trim((string) $request->post('display_name')) ?: $originalName;
     $dbPath      = trim($config['storage_path'] ?? 'storage/files', '/') . '/' . $filename;
 
-    $relatedTableReq = trim((string) $request->post('related_table'));
+    $requestedRelatedTable = trim((string) $request->post('related_table'));
     $relatedIdRaw    = $request->post('related_id');
     $relatedId       = $relatedIdRaw !== '' ? (int) $relatedIdRaw : null;
     $relatedTable    = null;
@@ -284,11 +284,11 @@ function files_action_upload($conn): void
         $relatedTable = $imageTarget['table'];
         $relatedId    = $imageTarget['id'];
         $relatedField = IMAGES_FIELD;
-    } elseif ($relatedTableReq && $relatedId) {
+    } elseif ($requestedRelatedTable && $relatedId) {
         $relations = $config['relations'] ?? [];
         foreach ($relations as $relativePath) {
-            if ($relativePath['table'] === $relatedTableReq) {
-                $relatedTable = $relatedTableReq;
+            if ($relativePath['table'] === $requestedRelatedTable) {
+                $relatedTable = $requestedRelatedTable;
                 break;
             }
         }
@@ -375,19 +375,19 @@ function assertFileAccess($conn, string $pgUuids): void
     $schema = config_get('schema');
     $userId = (int) $_SESSION['user_id'];
     while ($row = pg_fetch_assoc($queryResult)) {
-        $rTable = trim((string) ($row['related_table'] ?? ''));
+        $relatedTable = trim((string) ($row['related_table'] ?? ''));
         $rowRelatedId    = (string) ($row['related_id'] ?? '');
-        if ($rTable === '' || $rowRelatedId === '') {
+        if ($relatedTable === '' || $rowRelatedId === '') {
             continue;
         }
-        $relatedTableConfig = $schema['tables'][$rTable] ?? null;
+        $relatedTableConfig = $schema['tables'][$relatedTable] ?? null;
         if (!is_array($relatedTableConfig)) {
-            error_log('api_files assertFileAccess: file attached to unconfigured table ' . $rTable);
+            error_log('api_files assertFileAccess: file attached to unconfigured table ' . $relatedTable);
             jsonError('File not found or already deleted.', 404);
         }
         if (
-            !user_can_access_table($rTable)
-            || !can_access_record($conn, $relatedTableConfig, $rTable, (int) $rowRelatedId, $userId)
+            !user_can_access_table($relatedTable)
+            || !can_access_record($conn, $relatedTableConfig, $relatedTable, (int) $rowRelatedId, $userId)
         ) {
             jsonError('File not found or already deleted.', 404);
         }

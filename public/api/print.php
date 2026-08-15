@@ -229,7 +229,7 @@ try {
         $cfg           = $prints[$printName];
         $views         = print_available_views();
         $viewName      = (string) ($cfg['view'] ?? '');
-        $paramDefs     = $cfg['params'] ?? [];
+        $parameterDefinitions     = $cfg['params'] ?? [];
         $rows          = [];
         $viewColumns      = [];
         $appliedParams = [];
@@ -240,7 +240,7 @@ try {
 
             $where       = [];
             $queryParams = [];
-            foreach ($paramDefs as $parameterDefinition) {
+            foreach ($parameterDefinitions as $parameterDefinition) {
                 $key = (string) ($parameterDefinition['key'] ?? '');
                 $value = $_GET['p_' . $key] ?? '';
                 if ($value === '' || $value === null) {
@@ -276,7 +276,7 @@ try {
             'blocks'         => $cfg['blocks'] ?? [],
             'rows'           => $rows,
             'columns'        => $viewColumns,
-            'params'         => $paramDefs,
+            'params'         => $parameterDefinitions,
             'applied_params' => (object) $appliedParams,
         ]);
         throw ResponseException::sent();

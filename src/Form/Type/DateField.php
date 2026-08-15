@@ -40,10 +40,10 @@ final class DateField implements FieldTypeInterface
             : (string)($currentValue ?? '');
         $locked  = $context->isLocked($column->name);
         $name    = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
-        $reqAttr = ($column->notNull && !$locked) ? 'required' : '';
-        $roAttr  = $locked ? 'readonly' : '';
+        $requiredAttribute = ($column->notNull && !$locked) ? 'required' : '';
+        $readonlyAttribute  = $locked ? 'readonly' : '';
 
         return '<input type="date" name="' . $name . '" value="' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" '
-             . $reqAttr . ' ' . $roAttr . ' />';
+             . $requiredAttribute . ' ' . $readonlyAttribute . ' />';
     }
 }

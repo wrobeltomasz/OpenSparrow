@@ -48,12 +48,12 @@ function frontapi_m2m_rows(FrontApiContext $context): never
     $otSchema = $schema['tables'][$otherTable]['schema'] ?? 'public';
     $placeholders = implode(',', array_map(fn($placeholderIndex) => '$' . ($placeholderIndex + 1), array_keys($ids)));
 
-    $qParams  = $ids;
+    $queryParams  = $ids;
     $ownerSql = '';
     if (!empty($schema['tables'][$table]['owner_restricted'])) {
         $ownerSql  = owner_restriction_sql('j.' . pg_ident($selfFk), count($ids) + 1, count($ids) + 2);
-        $qParams[] = $table;
-        $qParams[] = $context->userId;
+        $queryParams[] = $table;
+        $queryParams[] = $context->userId;
     }
 
     $sql = sprintf(
@@ -75,7 +75,7 @@ function frontapi_m2m_rows(FrontApiContext $context): never
         pg_ident($selfFk),
         pg_ident($displayColumn)
     );
-    $result = @pg_query_params($context->conn, $sql, $qParams);
+    $result = @pg_query_params($context->conn, $sql, $queryParams);
     if (!$result) {
         throw ResponseException::encoded(['data' => (object)[]]);
     }

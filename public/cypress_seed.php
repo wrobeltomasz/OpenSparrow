@@ -59,8 +59,8 @@ try {
     $results = [];
 
     if ($action === 'seed' || $action === 'users') {
-        $argonOpts = ['memory_cost' => 1 << 16, 'time_cost' => 2, 'threads' => 1];
-        $optsJson  = json_encode($argonOpts);
+        $argonOptions = ['memory_cost' => 1 << 16, 'time_cost' => 2, 'threads' => 1];
+        $optsJson  = json_encode($argonOptions);
 
         foreach (
             [
@@ -70,7 +70,7 @@ try {
             ] as [$username, $password, $role]
         ) {
             $salt = bin2hex(random_bytes(32));
-            $hash = password_hash($salt . $password, PASSWORD_ARGON2ID, $argonOpts);
+            $hash = password_hash($salt . $password, PASSWORD_ARGON2ID, $argonOptions);
 
             $result = pg_query_params($conn, "
                 INSERT INTO $usersTable (username, password_hash, salt, password_algo, password_params, is_active, role)

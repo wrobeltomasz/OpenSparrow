@@ -88,10 +88,10 @@ ob_start();
                     } ?>
                     <?php
                     $button = $gridAction['button'];
-                    $bAttrs = ($button['class'] ? ' class="' . $button['class'] . '"' : '')
+                    $buttonAttributes = ($button['class'] ? ' class="' . $button['class'] . '"' : '')
                         . (isset($button['title']) ? ' title="' . $button['title'] . '"' : '');
                     ?>
-                <button id="<?= $button['id'] ?>" data-cy="<?= $button['cy'] ?>"<?= $bAttrs ?>>
+                <button id="<?= $button['id'] ?>" data-cy="<?= $button['cy'] ?>"<?= $buttonAttributes ?>>
                     <?= $button['label'] ?></button>
                 <?php endforeach; ?>
             </div>
@@ -109,9 +109,9 @@ ob_start();
 ?>
 <?php
     require_once __DIR__ . '/../includes/config_store.php';
-    $decodedSchemaTpl = config_get('schema');
-    $schemaTableNames = is_array($decodedSchemaTpl['tables'] ?? null)
-        ? array_keys($decodedSchemaTpl['tables'])
+    $decodedSchemaTemplate = config_get('schema');
+    $schemaTableNames = is_array($decodedSchemaTemplate['tables'] ?? null)
+        ? array_keys($decodedSchemaTemplate['tables'])
         : [];
     echo os_inline_globals([
         'USER_ROLE'      => $userRole ?? 'viewer',

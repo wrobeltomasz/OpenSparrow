@@ -176,7 +176,7 @@ function owners_action_mine($conn): void
         }
 
         $pgSchema = $tableCfg['schema'] ?? 'public';
-        $arrParam = '{' . implode(',', $ids) . '}';
+        $rowIdsArray = '{' . implode(',', $ids) . '}';
         $labelSql = record_label_sql($tableCfg, $configuredColumns[$tableName] ?? []);
 
         $rowsSql = sprintf(
@@ -186,7 +186,7 @@ function owners_action_mine($conn): void
             pg_ident($tableName)
         );
 
-        $rowsResult = pg_query_params($conn, $rowsSql, [$arrParam]);
+        $rowsResult = pg_query_params($conn, $rowsSql, [$rowIdsArray]);
         if (!$rowsResult) {
             error_log('[api_owners owners_action_mine] ' . pg_last_error($conn));
             continue;
@@ -252,7 +252,7 @@ function owners_action_mass_set($conn, array $body): void
 
     $changedBy = (int)$_SESSION['user_id'];
     $ownersTable         = sys_table('record_owners');
-    $arrParam  = '{' . implode(',', array_map('intval', $rowIds)) . '}';
+    $rowIdsArray  = '{' . implode(',', array_map('intval', $rowIds)) . '}';
 
     @pg_query($conn, 'BEGIN');
 
@@ -260,7 +260,7 @@ function owners_action_mass_set($conn, array $body): void
         $conn,
         "UPDATE $ownersTable SET is_current = false
          WHERE table_name = \$1 AND record_id = ANY(\$2::int[]) AND is_current = true",
-        [$table, $arrParam]
+        [$table, $rowIdsArray]
     );
     if (!$result) {
         @pg_query($conn, 'ROLLBACK');
@@ -271,7 +271,7 @@ function owners_action_mass_set($conn, array $body): void
         $conn,
         "INSERT INTO $ownersTable (table_name, record_id, owner_id, changed_by, is_current)
          SELECT \$1, unnest(\$2::int[]), \$3, \$4, true",
-        [$table, $arrParam, $ownerId, $changedBy]
+        [$table, $rowIdsArray, $ownerId, $changedBy]
     );
     if (!$res2) {
         @pg_query($conn, 'ROLLBACK');

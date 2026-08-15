@@ -35,7 +35,7 @@ final class MigrationRegistryTest extends TestCase
     {
         $registry = self::arrayKeys(self::MIGRATIONS_PHP, '$migrations', true);
         $known    = self::arrayKeys(self::MIGRATIONS_PHP, '$known', false);
-        $overview = self::arrayKeys(self::OVERVIEW_PHP, '$knownMig', false);
+        $overview = self::arrayKeys(self::OVERVIEW_PHP, '$knownMigrations', false);
 
         $this->assertNotEmpty($registry, 'Could not parse the $migrations registry.');
 

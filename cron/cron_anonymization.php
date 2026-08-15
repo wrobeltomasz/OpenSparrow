@@ -167,8 +167,8 @@ function cron_anonymization_main(array $argv): int
                       AND {$dateColumnIdentifier} < NOW() - (\$2::int * INTERVAL '1 day')";
             $result = @pg_query_params($conn, $sql, [$replacement, $days]);
             if (!$result) {
-                $dbErr = pg_last_error($conn);
-                error_log('[cron_anonymization] Preview failed on ' . $table . '.' . $column . ': ' . $dbErr);
+                $databaseError = pg_last_error($conn);
+                error_log('[cron_anonymization] Preview failed on ' . $table . '.' . $column . ': ' . $databaseError);
                 anon_log("[anonymization] ERROR previewing {$table}.{$column} — check server error log.");
                 if ($errorMessage === null) {
                     $errorMessage = 'Error previewing ' . $table . '.' . $column;
@@ -195,8 +195,8 @@ function cron_anonymization_main(array $argv): int
 
         $result = @pg_query_params($conn, $sql, [$replacement, $days]);
         if (!$result) {
-            $dbErr = pg_last_error($conn);
-            error_log('[cron_anonymization] Update failed on ' . $table . '.' . $column . ': ' . $dbErr);
+            $databaseError = pg_last_error($conn);
+            error_log('[cron_anonymization] Update failed on ' . $table . '.' . $column . ': ' . $databaseError);
             anon_log("[anonymization] ERROR on {$table}.{$column} — check server error log.");
             if ($errorMessage === null) {
                 $errorMessage = 'Error processing ' . $table . '.' . $column;

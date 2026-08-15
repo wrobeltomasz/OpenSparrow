@@ -124,9 +124,9 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         foreach ((array) $actions as $index => $ruleAction) {
-            $aType = is_array($ruleAction) ? (string) ($ruleAction['type'] ?? '') : '';
+            $actionType = is_array($ruleAction) ? (string) ($ruleAction['type'] ?? '') : '';
             $label = 'Action ' . ($index + 1);
-            if ($aType === 'webhook') {
+            if ($actionType === 'webhook') {
                 $url    = trim((string) ($ruleAction['url'] ?? ''));
                 $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
                 if ($url === '' || !in_array($scheme, ['http', 'https'], true)) {
@@ -145,19 +145,19 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw ResponseException::sent();
                 }
 
-                foreach (array_keys((array) ($ruleAction['headers'] ?? [])) as $hName) {
-                    $hName = trim((string) $hName);
-                    if ($hName === '' || preg_match('/^[A-Za-z0-9!#$%&\'*+.^_`|~-]+$/', $hName) !== 1) {
+                foreach (array_keys((array) ($ruleAction['headers'] ?? [])) as $headerName) {
+                    $headerName = trim((string) $headerName);
+                    if ($headerName === '' || preg_match('/^[A-Za-z0-9!#$%&\'*+.^_`|~-]+$/', $headerName) !== 1) {
                         echo json_encode([
                             'ok'    => false,
-                            'error' => $label . ' (webhook): invalid header name "' . $hName . '".',
+                            'error' => $label . ' (webhook): invalid header name "' . $headerName . '".',
                         ]);
                         throw ResponseException::sent();
                     }
-                    if (in_array(strtolower($hName), AUTO_WEBHOOK_RESERVED_HEADERS, true)) {
+                    if (in_array(strtolower($headerName), AUTO_WEBHOOK_RESERVED_HEADERS, true)) {
                         echo json_encode([
                             'ok'    => false,
-                            'error' => $label . ' (webhook): header "' . $hName . '" is reserved.',
+                            'error' => $label . ' (webhook): header "' . $headerName . '" is reserved.',
                         ]);
                         throw ResponseException::sent();
                     }
@@ -171,7 +171,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw ResponseException::sent();
                 }
             }
-            if ($aType === 'email') {
+            if ($actionType === 'email') {
                 $recips = $ruleAction['recipients'] ?? [];
                 if (is_string($recips)) {
                     $recips = array_map('trim', explode(',', $recips));
@@ -223,26 +223,28 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $prev        = is_array($prevActions[$index] ?? null) ? $prevActions[$index] : [];
-            $prevEnc     = ($prev['type'] ?? '') === 'webhook' ? (array) ($prev['headers_enc'] ?? []) : [];
+            $previousEncryptedHeaders = ($prev['type'] ?? '') === 'webhook'
+                ? (array) ($prev['headers_enc'] ?? [])
+                : [];
             $prevPlain   = ($prev['type'] ?? '') === 'webhook' ? (array) ($prev['headers'] ?? []) : [];
-            $headersEnc  = [];
-            foreach ((array) ($ruleAction['headers'] ?? []) as $hName => $hVal) {
-                $hName = trim((string) $hName);
-                if ($hName === '') {
+            $encryptedHeaders  = [];
+            foreach ((array) ($ruleAction['headers'] ?? []) as $headerName => $headerValue) {
+                $headerName = trim((string) $headerName);
+                if ($headerName === '') {
                     continue;
                 }
-                $hVal = (string) $hVal;
-                if ($hVal !== '') {
-                    $headersEnc[$hName] = secret_encrypt($hVal);
-                } elseif (($prevEnc[$hName] ?? '') !== '') {
-                    $headersEnc[$hName] = (string) $prevEnc[$hName];
-                } elseif (($prevPlain[$hName] ?? '') !== '') {
-                    $headersEnc[$hName] = secret_encrypt((string) $prevPlain[$hName]);
+                $headerValue = (string) $headerValue;
+                if ($headerValue !== '') {
+                    $encryptedHeaders[$headerName] = secret_encrypt($headerValue);
+                } elseif (($previousEncryptedHeaders[$headerName] ?? '') !== '') {
+                    $encryptedHeaders[$headerName] = (string) $previousEncryptedHeaders[$headerName];
+                } elseif (($prevPlain[$headerName] ?? '') !== '') {
+                    $encryptedHeaders[$headerName] = secret_encrypt((string) $prevPlain[$headerName]);
                 } else {
-                    $headersEnc[$hName] = '';
+                    $encryptedHeaders[$headerName] = '';
                 }
             }
-            $ruleAction['headers_enc'] = $headersEnc;
+            $ruleAction['headers_enc'] = $encryptedHeaders;
             unset($ruleAction['headers'], $ruleAction['headers_configured'], $ruleAction['secret_clear']);
             $actions[$index] = $ruleAction;
         }

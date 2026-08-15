@@ -28,7 +28,7 @@ if (empty($refTable)) {
 }
 
 $filterColumn = $_GET['filter_col'] ?? '';
-$filterVal = $_GET['filter_val'] ?? '';
+$filterValue = $_GET['filter_val'] ?? '';
 if ($filterColumn !== '') {
     $refColumns = array_keys($schemaData['tables'][$refTable]['columns'] ?? []);
     if (!in_array($filterColumn, $refColumns, true)) {

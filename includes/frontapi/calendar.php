@@ -77,12 +77,12 @@ function frontapi_calendar(FrontApiContext $context): never
 
             $selectSql = implode(', ', array_map(fn($column) => pg_ident($column), $selectColumns));
 
-            $qParams  = [$dateFrom, $dateTo];
+            $queryParams  = [$dateFrom, $dateTo];
             $ownerSql = '';
             if (!empty($tableCfg['owner_restricted'])) {
                 $ownerSql  = owner_restriction_sql('_t.' . pg_ident($idColumn), 3, 4);
-                $qParams[] = $table;
-                $qParams[] = $context->userId;
+                $queryParams[] = $table;
+                $queryParams[] = $context->userId;
             }
 
             $sql = sprintf(
@@ -94,7 +94,7 @@ function frontapi_calendar(FrontApiContext $context): never
                 pg_ident($dateColumn),
                 $ownerSql
             );
-            $result = @pg_query_params($conn, $sql, $qParams);
+            $result = @pg_query_params($conn, $sql, $queryParams);
             if ($result) {
                 $rows = [];
                 while ($row = pg_fetch_assoc($result)) {

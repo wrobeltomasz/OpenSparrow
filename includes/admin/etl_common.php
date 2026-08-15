@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-function etl_admin_run_cron_script(string $absScriptPath, string $itemId, string $notFoundMsg): never
+function etl_admin_run_cron_script(string $absScriptPath, string $itemId, string $notFoundMessage): never
 {
-    admin_run_cron_script($absScriptPath, $notFoundMsg, $itemId);
+    admin_run_cron_script($absScriptPath, $notFoundMessage, $itemId);
 }

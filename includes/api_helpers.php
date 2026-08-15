@@ -87,18 +87,18 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
 
         $escapedDisplayColumns = array_map(pg_ident(...), $refDispRaw);
         if (count($escapedDisplayColumns) > 1) {
-            $dispSql = "CONCAT_WS(' - ', " . implode(', ', $escapedDisplayColumns) . ")";
+            $displaySql = "CONCAT_WS(' - ', " . implode(', ', $escapedDisplayColumns) . ")";
         } else {
-            $dispSql = $escapedDisplayColumns[0];
+            $displaySql = $escapedDisplayColumns[0];
         }
 
-        $escapedVals = array_map(fn($value) => pg_escape_literal($conn, (string)$value), $fkValues);
-        $inClause = implode(', ', $escapedVals);
+        $escapedValues = array_map(fn($value) => pg_escape_literal($conn, (string)$value), $fkValues);
+        $inClause = implode(', ', $escapedValues);
 
         $sql = sprintf(
             'SELECT %s AS id, %s AS disp FROM %s.%s WHERE %s IN (%s)',
             pg_ident($refColId),
-            $dispSql,
+            $displaySql,
             pg_ident($refSchema),
             pg_ident($refName),
             pg_ident($refColId),

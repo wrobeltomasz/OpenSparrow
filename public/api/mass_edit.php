@@ -88,7 +88,7 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
 
     [$tableCfg, $tableName, , $colSql, $qualifiedTable] = validateTableColumn($body, $schema);
 
-    $arrParam = pgIntArray($rowIds);
+    $rowIdsArray = pgIntArray($rowIds);
 
     if (!empty($tableCfg['owner_restricted'])) {
         $userId      = (int)$_SESSION['user_id'];
@@ -97,7 +97,7 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
         $countResult = @pg_query_params(
             $conn,
             "SELECT COUNT(*) FROM {$qualifiedTable} AS _t WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
-            [$arrParam, $tableName, $userId]
+            [$rowIdsArray, $tableName, $userId]
         );
         if (!$countResult) {
             throw new ServerErrorException('Database query failed.');
@@ -112,13 +112,13 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
              WHERE _t.id = ANY(\$1::int[]){$ownerSql}
              ORDER BY _t.id
              LIMIT 10",
-            [$arrParam, $tableName, $userId]
+            [$rowIdsArray, $tableName, $userId]
         );
     } else {
         $countResult = @pg_query_params(
             $conn,
             "SELECT COUNT(*) FROM {$qualifiedTable} WHERE id = ANY(\$1::int[])",
-            [$arrParam]
+            [$rowIdsArray]
         );
         if (!$countResult) {
             throw new ServerErrorException('Database query failed.');
@@ -133,7 +133,7 @@ if ($action === 'mass_edit_preview' && $method === 'POST') {
              WHERE id = ANY(\$1::int[])
              ORDER BY id
              LIMIT 10",
-            [$arrParam]
+            [$rowIdsArray]
         );
     }
 
@@ -168,7 +168,7 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
         throw HttpException::fromStatus(422, (string) $regexpError);
     }
 
-    $arrParam = pgIntArray($rowIds);
+    $rowIdsArray = pgIntArray($rowIds);
 
     @pg_query($conn, 'BEGIN');
 
@@ -178,13 +178,13 @@ if ($action === 'mass_edit_apply' && $method === 'POST') {
         $result = @pg_query_params(
             $conn,
             "UPDATE {$qualifiedTable} AS _t SET {$colSql} = \$2 WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
-            [$arrParam, $value, $tableName, $userId]
+            [$rowIdsArray, $value, $tableName, $userId]
         );
     } else {
         $result = @pg_query_params(
             $conn,
             "UPDATE {$qualifiedTable} SET {$colSql} = \$2 WHERE id = ANY(\$1::int[])",
-            [$arrParam, $value]
+            [$rowIdsArray, $value]
         );
     }
 
@@ -239,7 +239,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
     $schemaName = $tableCfg['schema'] ?? 'public';
     $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
     $colIdents  = implode(', ', array_map('pg_ident', $duplicateColumns));
-    $arrParam   = pgIntArray($rowIds);
+    $rowIdsArray   = pgIntArray($rowIds);
 
     $userId        = (int)$_SESSION['user_id'];
 
@@ -253,7 +253,7 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
              SELECT {$colIdents} FROM {$qualifiedTable} AS _t
              WHERE _t.id = ANY(\$1::int[]){$ownerSql}
              RETURNING id",
-            [$arrParam, $tableName, $userId]
+            [$rowIdsArray, $tableName, $userId]
         );
     } else {
         $result = @pg_query_params(
@@ -262,14 +262,14 @@ if ($action === 'mass_duplicate' && $method === 'POST') {
              SELECT {$colIdents} FROM {$qualifiedTable}
              WHERE id = ANY(\$1::int[])
              RETURNING id",
-            [$arrParam]
+            [$rowIdsArray]
         );
     }
 
     if (!$result) {
         @pg_query($conn, 'ROLLBACK');
-        $pgErr    = pg_last_error($conn);
-        $isUnique = stripos($pgErr, 'unique') !== false || stripos($pgErr, 'unikaln') !== false;
+        $pgError    = pg_last_error($conn);
+        $isUnique = stripos($pgError, 'unique') !== false || stripos($pgError, 'unikaln') !== false;
         throw HttpException::fromStatus(
             422,
             $isUnique ? 'unique_violation' : 'Database duplicate failed.',
@@ -320,7 +320,7 @@ if ($action === 'mass_delete' && $method === 'POST') {
 
     $schemaName = $tableCfg['schema'] ?? 'public';
     $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
-    $arrParam   = pgIntArray($rowIds);
+    $rowIdsArray   = pgIntArray($rowIds);
 
     @pg_query($conn, 'BEGIN');
 
@@ -330,13 +330,13 @@ if ($action === 'mass_delete' && $method === 'POST') {
         $result = @pg_query_params(
             $conn,
             "DELETE FROM {$qualifiedTable} AS _t WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
-            [$arrParam, $tableName, $userId]
+            [$rowIdsArray, $tableName, $userId]
         );
     } else {
         $result = @pg_query_params(
             $conn,
             "DELETE FROM {$qualifiedTable} WHERE id = ANY(\$1::int[])",
-            [$arrParam]
+            [$rowIdsArray]
         );
     }
 

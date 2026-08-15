@@ -10,8 +10,8 @@ $uname     = $_SESSION['username']  ?? '';
 
 $initial     = htmlspecialchars(mb_strtoupper(mb_substr($uname, 0, 1)), ENT_QUOTES, 'UTF-8');
 $avatarColor = os_avatar_color($avatarId !== null ? (int)$avatarId : null);
-$unameEsc  = htmlspecialchars($uname, ENT_QUOTES, 'UTF-8');
-$nonceAttr = isset($cspNonce)
+$escapedUsername  = htmlspecialchars($uname, ENT_QUOTES, 'UTF-8');
+$nonceAttribute = isset($cspNonce)
     ? ' nonce="' . htmlspecialchars($cspNonce, ENT_QUOTES, 'UTF-8') . '"'
     : '';
 $cacheBust = asset_version(__DIR__ . '/../public/assets/js/user-menu.js');
@@ -29,23 +29,23 @@ $myCommentsLabel     = htmlspecialchars(t('header.my_comments'), ENT_QUOTES, 'UT
 $notesTable          = htmlspecialchars(t('header.notes'), ENT_QUOTES, 'UTF-8');
 $logoutLabel         = htmlspecialchars(t('auth.logout'), ENT_QUOTES, 'UTF-8');
 
-$vSidebarJs = asset_version(__DIR__ . '/../public/assets/js/sidebar.js');
-$vNotifJs   = asset_version(__DIR__ . '/../public/assets/js/notifications.js');
-$vAgentJs   = asset_version(__DIR__ . '/../public/assets/js/agent-panel.js');
+$sidebarJsVersion = asset_version(__DIR__ . '/../public/assets/js/sidebar.js');
+$notificationsJsVersion   = asset_version(__DIR__ . '/../public/assets/js/notifications.js');
+$agentJsVersion   = asset_version(__DIR__ . '/../public/assets/js/agent-panel.js');
 
 $logoEnabled    = (bool) settings_value('logo_enabled', false);
 $customLogoPath = settings_value('custom_logo_path', null);
-$logoSrc        = null;
+$logoPath        = null;
 if ($logoEnabled) {
-    $logoSrc = is_string($customLogoPath) && $customLogoPath !== ''
+    $logoPath = is_string($customLogoPath) && $customLogoPath !== ''
         ? htmlspecialchars($customLogoPath, ENT_QUOTES, 'UTF-8')
         : 'assets/img/logo-blue.png';
 }
 ?>
 <header>
-    <?php if ($logoSrc !== null) : ?>
+    <?php if ($logoPath !== null) : ?>
     <a href="/" class="brand-logo">
-        <img src="<?= $logoSrc ?>" alt="OpenSparrow Logo">
+        <img src="<?= $logoPath ?>" alt="OpenSparrow Logo">
     </a>
     <?php endif; ?>
     <button id="sidebarToggle" data-cy="sidebar-toggle" aria-label="<?= $toggleSidebarLabel ?>">&#9776;</button>
@@ -90,7 +90,7 @@ if ($logoEnabled) {
                     <text x="16" y="21" text-anchor="middle" fill="#fff"
                           font-size="14" font-family="system-ui,sans-serif" font-weight="600"><?= $initial ?></text>
                 </svg>
-                <span class="user-avatar-tooltip"><?= $unameEsc ?></span>
+                <span class="user-avatar-tooltip"><?= $escapedUsername ?></span>
             </button>
             <div class="user-avatar-menu" id="userAvatarMenu" role="menu">
                 <button class="user-avatar-menu-item" id="changeAvatarBtn" role="menuitem">
@@ -118,12 +118,12 @@ if ($logoEnabled) {
         <?php endif; ?>
     </div>
 </header>
-<script src="assets/js/sidebar.js?v=<?= $vSidebarJs ?>"<?= $nonceAttr ?>></script>
-<script src="assets/js/notifications.js?v=<?= $vNotifJs ?>"<?= $nonceAttr ?>></script>
-<script type="module" src="assets/js/user-menu.js?v=<?= $cacheBust ?>"<?= $nonceAttr ?>></script>
+<script src="assets/js/sidebar.js?v=<?= $sidebarJsVersion ?>"<?= $nonceAttribute ?>></script>
+<script src="assets/js/notifications.js?v=<?= $notificationsJsVersion ?>"<?= $nonceAttribute ?>></script>
+<script type="module" src="assets/js/user-menu.js?v=<?= $cacheBust ?>"<?= $nonceAttribute ?>></script>
 <?= os_inline_globals([
     'CHAT_BUBBLE_ENABLED' => defined('CHAT_BUBBLE_ENABLED') && CHAT_BUBBLE_ENABLED,
 ], $cspNonce ?? '') ?>
-<script type="module" src="assets/js/agent-panel.js?v=<?= $vAgentJs ?>"<?= $nonceAttr ?>></script>
+<script type="module" src="assets/js/agent-panel.js?v=<?= $agentJsVersion ?>"<?= $nonceAttribute ?>></script>
 <div class="app-container">
 <?php include __DIR__ . '/menu.php'; ?>

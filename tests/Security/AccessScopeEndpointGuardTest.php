@@ -138,7 +138,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
             'The file write gate must not narrow itself back to gallery rows.'
         );
         $this->assertCodeHas(
-            'user_can_access_table($rTable)',
+            'user_can_access_table($relatedTable)',
             $source,
             'The file write gate must consult the per-user table scope, not ownership alone.'
         );

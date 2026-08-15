@@ -123,22 +123,22 @@ $menuCatalog = [
 
 $boardChildren = [];
 
-foreach (filter_by_user_access('boards', $boardCfg['boards'] ?? []) as $bItem) {
-    if (empty($bItem['table']) || empty($bItem['status_column']) || !empty($bItem['hidden'])) {
+foreach (filter_by_user_access('boards', $boardCfg['boards'] ?? []) as $boardItem) {
+    if (empty($boardItem['table']) || empty($boardItem['status_column']) || !empty($boardItem['hidden'])) {
         continue;
     }
-    if (!user_can_access_table((string) $bItem['table'])) {
+    if (!user_can_access_table((string) $boardItem['table'])) {
         continue;
     }
-    $boardId             = (string) ($bItem['id'] ?? '');
+    $boardId             = (string) ($boardItem['id'] ?? '');
     if ($boardId === '') {
         continue;
     }
     $boardChildren[] = [
         'type'   => 'board',
         'href'   => 'board.php?board=' . urlencode($boardId),
-        'name'   => $bItem['menu_name'] ?? 'Board',
-        'icon'   => $bItem['menu_icon'] ?? '',
+        'name'   => $boardItem['menu_name'] ?? 'Board',
+        'icon'   => $boardItem['menu_icon'] ?? '',
         'hidden' => false,
         'active' => $currentPage === 'board.php' && $currentBoard === $boardId,
     ];
@@ -186,21 +186,21 @@ if (!empty($workflowChildren)) {
 }
 
 $viewChildren = [];
-foreach ($viewsCfg['views'] ?? [] as $vName => $vConfig) {
-    if (!empty($vConfig['hidden'])) {
+foreach ($viewsCfg['views'] ?? [] as $viewName => $viewConfig) {
+    if (!empty($viewConfig['hidden'])) {
         continue;
     }
-    if (!user_can_access_view((string) $vName)) {
+    if (!user_can_access_view((string) $viewName)) {
         continue;
     }
-    $vName          = (string) $vName;
+    $viewName          = (string) $viewName;
     $viewChildren[] = [
         'type'   => 'view',
-        'href'   => 'views.php?view=' . urlencode($vName),
-        'name'   => $vConfig['menu_name'] ?? ($vConfig['display_name'] ?? $vName),
-        'icon'   => $vConfig['icon'] ?? '',
+        'href'   => 'views.php?view=' . urlencode($viewName),
+        'name'   => $viewConfig['menu_name'] ?? ($viewConfig['display_name'] ?? $viewName),
+        'icon'   => $viewConfig['icon'] ?? '',
         'hidden' => false,
-        'active' => $currentPage === 'views.php' && $currentView === $vName,
+        'active' => $currentPage === 'views.php' && $currentView === $viewName,
     ];
 }
 if (!empty($viewChildren)) {
@@ -217,21 +217,21 @@ if (!empty($viewChildren)) {
 
 $printCfg      = loadMenuConfig('print', $includeDir);
 $printChildren = [];
-foreach ($printCfg['prints'] ?? [] as $pName => $pConfig) {
-    if (!empty($pConfig['hidden'])) {
+foreach ($printCfg['prints'] ?? [] as $printName => $printConfig) {
+    if (!empty($printConfig['hidden'])) {
         continue;
     }
-    if (!user_can_access_print((string) $pName)) {
+    if (!user_can_access_print((string) $printName)) {
         continue;
     }
-    $pName           = (string) $pName;
+    $printName           = (string) $printName;
     $printChildren[] = [
         'type'   => 'print',
-        'href'   => 'print.php?print=' . urlencode($pName),
-        'name'   => $pConfig['menu_name'] ?? ($pConfig['display_name'] ?? $pName),
-        'icon'   => $pConfig['icon'] ?? '',
+        'href'   => 'print.php?print=' . urlencode($printName),
+        'name'   => $printConfig['menu_name'] ?? ($printConfig['display_name'] ?? $printName),
+        'icon'   => $printConfig['icon'] ?? '',
         'hidden' => false,
-        'active' => $currentPage === 'print.php' && $currentPrint === $pName,
+        'active' => $currentPage === 'print.php' && $currentPrint === $printName,
     ];
 }
 if (!empty($printChildren)) {

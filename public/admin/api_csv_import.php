@@ -40,7 +40,7 @@ final class CsvReader
             }
             yield 0 => $headers;
 
-            $rowNum = 1;
+            $rowNumber = 1;
             while (($row = fgetcsv($fileHandle, 0, $delimiter, '"', '\\')) !== false) {
                 if (count($row) === 1 && $row[0] === null) {
                     continue;
@@ -55,7 +55,7 @@ final class CsvReader
                         $row
                     );
                 }
-                yield $rowNum++ => array_combine($headers, $row);
+                yield $rowNumber++ => array_combine($headers, $row);
             }
         } finally {
             fclose($fileHandle);
@@ -189,12 +189,12 @@ final class ImportRepository
         int $total,
         int $imported,
         int $skipped,
-        ?string $errorMsg = null
+        ?string $errorMessage = null
     ): void {
         $sql = 'UPDATE ' . sys_table('imports')
             . ' SET status=$1,total_rows=$2,imported_rows=$3,skipped_rows=$4,error_message=$5,finished_at=now()'
             . ' WHERE id=$6';
-        @pg_query_params($this->conn, $sql, [$status, $total, $imported, $skipped, $errorMsg, $importId]);
+        @pg_query_params($this->conn, $sql, [$status, $total, $imported, $skipped, $errorMessage, $importId]);
     }
 
     public function logRows(int $importId, array $rowErrors): void
@@ -291,8 +291,8 @@ final class CsvImportService
         $rowErrors = [];
         $batch     = [];
 
-        foreach (CsvReader::read($csvPath, $delimiter, $encoding) as $rowNum => $rowData) {
-            if ($rowNum === 0) {
+        foreach (CsvReader::read($csvPath, $delimiter, $encoding) as $rowNumber => $rowData) {
+            if ($rowNumber === 0) {
                 continue;
             }
             $total++;
@@ -304,23 +304,23 @@ final class CsvImportService
                 if ($dbColumn === null || $dbColumn === '') {
                     continue;
                 }
-                $rawVal  = isset($rowData[$csvHeader]) ? (string) $rowData[$csvHeader] : null;
+                $rawValue  = isset($rowData[$csvHeader]) ? (string) $rowData[$csvHeader] : null;
                 $colType = $colTypes[$dbColumn] ?? 'text';
-                $casted  = RowCaster::cast($rawVal, $colType);
+                $casted  = RowCaster::cast($rawValue, $colType);
                 $castRow[$dbColumn] = $casted;
             }
 
             if (empty($castRow)) {
                 $skipped++;
                 $rowErrors[] = [
-                    'row_number' => $rowNum,
+                    'row_number' => $rowNumber,
                     'raw_data'   => $rowData,
                     'error'      => 'All mapped columns empty after cast.',
                 ];
                 continue;
             }
 
-            $batch[] = ['rowNum' => $rowNum, 'data' => $castRow, 'raw' => $rowData];
+            $batch[] = ['rowNum' => $rowNumber, 'data' => $castRow, 'raw' => $rowData];
 
             if (count($batch) >= $batchSize) {
                 [$importedCount, $skip, $errs] = $this->flushBatch(
@@ -517,13 +517,13 @@ final class CsvImportService
             @pg_put_line($this->conn, "\\.\n");
 
             if (@pg_end_copy($this->conn) === false) {
-                $pgErr = pg_last_error($this->conn);
+                $pgError = pg_last_error($this->conn);
                 $hint  = '';
                 if (
-                    preg_match('/invalid input syntax for type (\w+).*column (\w+)/i', $pgErr, $matches)
+                    preg_match('/invalid input syntax for type (\w+).*column (\w+)/i', $pgError, $matches)
                     || preg_match(
                         '/niepra.*?dla typu (\w+).*kolumn[ay] (\w+)/iu',
-                        $pgErr,
+                        $pgError,
                         $matches
                     )
                 ) {
@@ -531,11 +531,11 @@ final class CsvImportService
                         . ' Cause: an earlier field in that row has an unquoted delimiter, '
                         . 'shifting all subsequent columns.'
                         . ' Fix: use Normal mode (per-row error reporting) or correct the source CSV quoting.';
-                } elseif (str_contains($pgErr, 'unexpected data') || str_contains($pgErr, 'nieoczekiwane dane')) {
+                } elseif (str_contains($pgError, 'unexpected data') || str_contains($pgError, 'nieoczekiwane dane')) {
                     $hint = ' A row has more fields than the header.'
                         . ' Check the Delimiter setting or fix quoting in the source CSV.';
                 }
-                throw new \RuntimeException('COPY failed: ' . substr($pgErr, 0, 400) . $hint);
+                throw new \RuntimeException('COPY failed: ' . substr($pgError, 0, 400) . $hint);
             }
 
             return [$total, $total, 0];
@@ -616,16 +616,16 @@ if ($action === 'csv_import_upload') {
     $delim     = $request->post('csv_delimiter', ',');
     $delimiter = in_array($delim, $allowed, true) ? $delim : ',';
 
-    $allowedEnc = ['UTF-8', 'Windows-1250', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'Windows-1251'];
+    $allowedEncodings = ['UTF-8', 'Windows-1250', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'Windows-1251'];
     $requestedEncoding        = $request->post('csv_encoding', 'UTF-8');
-    $encoding   = in_array($requestedEncoding, $allowedEnc, true) ? $requestedEncoding : 'UTF-8';
+    $encoding   = in_array($requestedEncoding, $allowedEncodings, true) ? $requestedEncoding : 'UTF-8';
 
     $headers  = [];
     $preview  = [];
     $rowCount = 0;
 
-    foreach (CsvReader::read($file['tmp_name'], $delimiter, $encoding) as $rowNum => $rowData) {
-        if ($rowNum === 0) {
+    foreach (CsvReader::read($file['tmp_name'], $delimiter, $encoding) as $rowNumber => $rowData) {
+        if ($rowNumber === 0) {
             $headers = $rowData;
             continue;
         }
@@ -680,9 +680,9 @@ if ($action === 'csv_import_execute') {
     $allowed      = [',', ';', "\t", '|'];
     $delim        = (string) ($body['delimiter']       ?? ',');
     $delimiter    = in_array($delim, $allowed, true) ? $delim : ',';
-    $allowedEnc   = ['UTF-8', 'Windows-1250', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'Windows-1251'];
+    $allowedEncodings   = ['UTF-8', 'Windows-1250', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'Windows-1251'];
     $requestedEncoding          = (string) ($body['encoding']        ?? 'UTF-8');
-    $encoding     = in_array($requestedEncoding, $allowedEnc, true) ? $requestedEncoding : 'UTF-8';
+    $encoding     = in_array($requestedEncoding, $allowedEncodings, true) ? $requestedEncoding : 'UTF-8';
 
     if (!preg_match('/^[a-f0-9]{32}\.csv$/', $tmpName)) {
         csv_fail('Invalid tmp_name token.');
@@ -816,18 +816,18 @@ if ($action === 'csv_create_table') {
 
     $allowedTypes = ['varchar(255)', 'text', 'int4', 'int8', 'boolean', 'date', 'timestamp', 'timestamptz'];
 
-    $colDefs = [];
+    $columnDefinitions = [];
     $seen    = [];
     foreach ($rawColumns as $columnDefinition) {
-        $cName = preg_replace('/[^a-z0-9_]/', '', strtolower((string) ($columnDefinition['name'] ?? '')));
-        $cType = in_array((string) ($columnDefinition['type'] ?? ''), $allowedTypes, true)
+        $columnName = preg_replace('/[^a-z0-9_]/', '', strtolower((string) ($columnDefinition['name'] ?? '')));
+        $columnType = in_array((string) ($columnDefinition['type'] ?? ''), $allowedTypes, true)
             ? (string) $columnDefinition['type']
             : 'varchar(255)';
-        if ($cName === '' || $cName === 'id' || isset($seen[$cName])) {
+        if ($columnName === '' || $columnName === 'id' || isset($seen[$columnName])) {
             continue;
         }
-        $seen[$cName] = true;
-        $colDefs[]    = ['name' => $cName, 'type' => $cType];
+        $seen[$columnName] = true;
+        $columnDefinitions[]    = ['name' => $columnName, 'type' => $columnType];
     }
 
     try {
@@ -844,7 +844,7 @@ if ($action === 'csv_create_table') {
             csv_fail('Cannot create table: ' . substr(pg_last_error($conn), 0, 300));
         }
 
-        foreach ($colDefs as $columnDefinition) {
+        foreach ($columnDefinitions as $columnDefinition) {
             $safeColumn = pg_escape_identifier($conn, $columnDefinition['name']);
             $result = @pg_query(
                 $conn,
@@ -884,7 +884,7 @@ if ($action === 'csv_create_table') {
                 'readonly'     => true,
             ],
         ];
-        foreach ($colDefs as $columnDefinition) {
+        foreach ($columnDefinitions as $columnDefinition) {
             $schemaColumns[$columnDefinition['name']] = [
                 'display_name' => ucwords(str_replace('_', ' ', $columnDefinition['name'])),
                 'type'         => $typeMap[$columnDefinition['type']] ?? 'text',

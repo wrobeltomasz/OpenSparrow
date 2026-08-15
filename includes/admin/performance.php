@@ -26,7 +26,7 @@ if ($action === 'performance_check') {
         foreach ($tables as $tableName => $tableCfg) {
             $pgSchema = $tableCfg['schema'] ?? 'app';
 
-            foreach (($tableCfg['foreign_keys'] ?? []) as $fkColumn => $fkDef) {
+            foreach (($tableCfg['foreign_keys'] ?? []) as $fkColumn => $foreignKeyDefinition) {
                 if (!is_string($fkColumn)) {
                     continue;
                 }
@@ -52,28 +52,28 @@ if ($action === 'performance_check') {
         }
 
         foreach ($widgets as $widget) {
-            $wTable = $widget['table'] ?? '';
-            if ($wTable === '' || !isset($tables[$wTable])) {
+            $widgetTable = $widget['table'] ?? '';
+            if ($widgetTable === '' || !isset($tables[$widgetTable])) {
                 continue;
             }
-            $wSchema = $tables[$wTable]['schema'] ?? 'app';
-            $wTitle  = $widget['title'] ?? ($widget['id'] ?? 'widget');
+            $widgetSchema = $tables[$widgetTable]['schema'] ?? 'app';
+            $widgetTitle  = $widget['title'] ?? ($widget['id'] ?? 'widget');
             $query   = $widget['query'] ?? [];
 
             foreach (($query['conditions'] ?? []) as $cond) {
                 $column = $cond['col'] ?? '';
                 if ($column !== '' && $column !== 'id') {
-                    $needed[$wSchema][$wTable][$column][] = "Widget filter: \"{$wTitle}\"";
+                    $needed[$widgetSchema][$widgetTable][$column][] = "Widget filter: \"{$widgetTitle}\"";
                 }
             }
             $orderBy  = $query['order_by']      ?? '';
             $groupColumn = $query['group_column']   ?? '';
             $aggregateColumn   = $query['agg_column']     ?? '';
             if ($orderBy  !== '' && $orderBy  !== 'id') {
-                $needed[$wSchema][$wTable][$orderBy][]  = "Widget ORDER BY: \"{$wTitle}\"";
+                $needed[$widgetSchema][$widgetTable][$orderBy][]  = "Widget ORDER BY: \"{$widgetTitle}\"";
             }
             if ($groupColumn !== '' && $groupColumn !== 'id') {
-                $needed[$wSchema][$wTable][$groupColumn][] = "Widget GROUP BY: \"{$wTitle}\"";
+                $needed[$widgetSchema][$widgetTable][$groupColumn][] = "Widget GROUP BY: \"{$widgetTitle}\"";
             }
         }
 
@@ -236,9 +236,11 @@ if ($action === 'performance_table_stats') {
             ORDER BY s.n_dead_tup DESC, s.seq_scan DESC
         ";
 
-        $arrEsc = static fn(string $value): string => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $value) . '"';
+        $escapeArrayValue = static fn(string $value): string
+            => '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], $value) . '"';
         $pairs = '{' . implode(',', array_map(
-            static fn($pair) => '{' . $arrEsc((string) $pair[0]) . ',' . $arrEsc((string) $pair[1]) . '}',
+            static fn($pair) => '{' . $escapeArrayValue((string) $pair[0])
+                . ',' . $escapeArrayValue((string) $pair[1]) . '}',
             $tracked
         )) . '}';
         $result = @pg_query_params($conn, $sql, [$pairs]);
@@ -306,19 +308,19 @@ if ($action === 'performance_db_health') {
         $databaseStats = pg_fetch_assoc($databaseResult);
 
         $maxConnectionsResult = @pg_query($conn, "SELECT setting FROM pg_settings WHERE name = 'max_connections'");
-        $maxConn = $maxConnectionsResult ? (int)(pg_fetch_row($maxConnectionsResult)[0] ?? 100) : 100;
+        $maxConnections = $maxConnectionsResult ? (int)(pg_fetch_row($maxConnectionsResult)[0] ?? 100) : 100;
 
         $versionResult = @pg_query($conn, "SELECT version()");
         $version = $versionResult ? (pg_fetch_row($versionResult)[0] ?? '') : '';
 
         $activeConnectionsResult = @pg_query($conn, "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'");
-        $activeConn = $activeConnectionsResult ? (int)(pg_fetch_row($activeConnectionsResult)[0] ?? 0) : 0;
+        $activeConnections = $activeConnectionsResult ? (int)(pg_fetch_row($activeConnectionsResult)[0] ?? 0) : 0;
 
         echo json_encode([
             'status'       => 'success',
             'db'           => $databaseStats,
-            'max_conn'     => $maxConn,
-            'active_conn'  => $activeConn,
+            'max_conn'     => $maxConnections,
+            'active_conn'  => $activeConnections,
             'pg_version'   => $version,
         ]);
     } catch (ControlFlowException $signal) {
@@ -455,20 +457,20 @@ if ($action === 'performance_schema_warnings') {
         }
 
         foreach ($widgets as $widget) {
-            $wTable = $widget['table'] ?? '';
-            $wTitle = $widget['title'] ?? ($widget['id'] ?? 'widget');
-            if ($wTable === '' || !isset($tables[$wTable])) {
+            $widgetTable = $widget['table'] ?? '';
+            $widgetTitle = $widget['title'] ?? ($widget['id'] ?? 'widget');
+            if ($widgetTable === '' || !isset($tables[$widgetTable])) {
                 continue;
             }
-            $estRows = $rowCounts[$wTable] ?? 0;
+            $estRows = $rowCounts[$widgetTable] ?? 0;
 
             if ($widget['type'] === 'list' && empty($widget['query']['limit']) && $estRows > 1000) {
                 $warnings[] = [
                     'severity' => 'medium',
                     'category' => 'Widget config',
-                    'table'    => $wTable,
-                    'display'  => $tables[$wTable]['display_name'] ?? $wTable,
-                    'message'  => "List widget \"{$wTitle}\" has no row limit on a table with ~"
+                    'table'    => $widgetTable,
+                    'display'  => $tables[$widgetTable]['display_name'] ?? $widgetTable,
+                    'message'  => "List widget \"{$widgetTitle}\" has no row limit on a table with ~"
                         . number_format($estRows) . " rows — set query.limit in Dashboard editor.",
                 ];
             }

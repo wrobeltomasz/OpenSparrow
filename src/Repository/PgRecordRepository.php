@@ -109,20 +109,20 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
         $rawSchema = $this->schemas->raw();
 
         foreach ($cfg->subtables as $subtable) {
-            $sName = $subtable['table'];
-            if (!$this->schemas->hasTable($sName)) {
+            $subtableName = $subtable['table'];
+            if (!$this->schemas->hasTable($subtableName)) {
                 continue;
             }
-            $sTableCfg = $this->schemas->table($sName);
+            $subtableCfg = $this->schemas->table($subtableName);
             $foreignKey       = $subtable['foreign_key'];
 
-            $selectColumns    = array_unique(array_merge(['id'], array_keys($sTableCfg->dbColumns())));
-            $selColsSql = implode(', ', array_map([Identifier::class, 'quote'], $selectColumns));
+            $selectColumns    = array_unique(array_merge(['id'], array_keys($subtableCfg->dbColumns())));
+            $selectColumnsSql = implode(', ', array_map([Identifier::class, 'quote'], $selectColumns));
 
             $sql = sprintf(
                 'SELECT %s FROM %s WHERE %s = $1 ORDER BY id DESC',
-                $selColsSql,
-                Identifier::quoteQualified($sTableCfg->schema, $sName),
+                $selectColumnsSql,
+                Identifier::quoteQualified($subtableCfg->schema, $subtableName),
                 Identifier::quote($foreignKey)
             );
 
@@ -133,12 +133,12 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
             }
             pg_free_result($subtableResult);
 
-            $rows = $this->fkLoader->expandDisplay($sTableCfg, $rows, $rawSchema);
+            $rows = $this->fkLoader->expandDisplay($subtableCfg, $rows, $rawSchema);
 
             $result[] = [
                 'config' => $subtable,
                 'rows'   => $rows,
-                'schema' => $sTableCfg,
+                'schema' => $subtableCfg,
             ];
         }
         return $result;

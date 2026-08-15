@@ -63,7 +63,7 @@ try {
         $schemaName = $cfg['schema'] ?? sys_schema();
         $level      = max(0, (int)($_GET['level'] ?? 0));
         $filterColumn  = $_GET['filter_col'] ?? '';
-        $filterVal  = isset($_GET['filter_val']) ? $_GET['filter_val'] : null;
+        $filterValue  = isset($_GET['filter_val']) ? $_GET['filter_val'] : null;
 
         $drillLevels = $cfg['drill_down']['levels'] ?? [];
         $groupBy     = null;
@@ -74,18 +74,18 @@ try {
         $params      = [];
         $whereClause = '';
 
-        if ($filterColumn !== '' && $filterVal !== null) {
+        if ($filterColumn !== '' && $filterValue !== null) {
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $filterColumn)) {
                 throw new BadRequestException('Invalid filter column');
             }
-            $params[]    = $filterVal;
+            $params[]    = $filterValue;
             $whereClause = 'WHERE ' . pg_ident($filterColumn) . ' = $1';
         }
 
         if ($groupBy !== null) {
-            $colsCfg  = $cfg['columns'] ?? [];
+            $columnsCfg  = $cfg['columns'] ?? [];
             $aggParts = [];
-            foreach ($colsCfg as $colName => $colCfg) {
+            foreach ($columnsCfg as $colName => $colCfg) {
                 if ($colName === $groupBy) {
                     continue;
                 }
@@ -204,7 +204,7 @@ try {
         pg_free_result($queryResult);
 
         $viewsColumns = [];
-        foreach ($dbViews as $vName) {
+        foreach ($dbViews as $viewName) {
             $colSql = 'SELECT a.attname AS column_name, '
                 . 'pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type '
                 . 'FROM pg_catalog.pg_attribute a '
@@ -213,7 +213,7 @@ try {
                 . 'WHERE n.nspname = $1 AND c.relname = $2 '
                 . 'AND a.attnum > 0 AND NOT a.attisdropped '
                 . 'ORDER BY a.attnum';
-            $columnsResult = @pg_query_params($conn, $colSql, [$viewSchemas[$vName], $vName]);
+            $columnsResult = @pg_query_params($conn, $colSql, [$viewSchemas[$viewName], $viewName]);
             $columns   = [];
             if ($columnsResult) {
                 while ($column = pg_fetch_assoc($columnsResult)) {
@@ -221,7 +221,7 @@ try {
                 }
                 pg_free_result($columnsResult);
             }
-            $viewsColumns[$vName] = $columns;
+            $viewsColumns[$viewName] = $columns;
         }
 
         echo json_encode([

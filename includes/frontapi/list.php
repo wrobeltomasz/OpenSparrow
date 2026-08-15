@@ -38,12 +38,12 @@ function frontapi_list(FrontApiContext $context): never
     }
     $selectSql = implode(', ', array_map(fn($column) => pg_ident($column), $selectColumns));
     $filterColumn  = $_GET['filter_col'] ?? '';
-    $filterVal  = $_GET['filter_val'] ?? '';
+    $filterValue  = $_GET['filter_val'] ?? '';
     $filterFrom = $_GET['filter_from'] ?? '';
     $filterTo   = $_GET['filter_to'] ?? '';
     $whereSql = '';
     $params = [];
-    if ($filterColumn !== '' && ($filterVal !== '' || $filterFrom !== '' || $filterTo !== '')) {
+    if ($filterColumn !== '' && ($filterValue !== '' || $filterFrom !== '' || $filterTo !== '')) {
         $allowedFilterColumns = array_merge([$idColumn], array_keys($tableCfg['columns'] ?? []));
 
         if (defined('OS_FK_LABEL_COLUMNS')) {
@@ -63,21 +63,21 @@ function frontapi_list(FrontApiContext $context): never
                 $whereSql = ' WHERE ' . implode(' AND ', $rangeClauses);
             } else {
                 $whereSql = sprintf(' WHERE %s = $1', pg_ident($filterColumn));
-                $params[] = $filterVal;
+                $params[] = $filterValue;
             }
         }
     }
 
     $search = trim($_GET['search'] ?? '');
     if ($search !== '') {
-        $likeVal  = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
-        $paramNum = count($params) + 1;
+        $likeValue  = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
+        $parameterNumber = count($params) + 1;
         $searchClauses = array_map(
-            fn($column) => sprintf('%s::text ILIKE $%d', pg_ident($column), $paramNum),
+            fn($column) => sprintf('%s::text ILIKE $%d', pg_ident($column), $parameterNumber),
             $selectColumns
         );
         $whereSql .= ($whereSql !== '' ? ' AND ' : ' WHERE ') . '(' . implode(' OR ', $searchClauses) . ')';
-        $params[]  = $likeVal;
+        $params[]  = $likeValue;
     }
 
     if (!empty($tableCfg['owner_restricted'])) {

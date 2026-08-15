@@ -75,15 +75,15 @@ function frontapi_workflow_procedure(FrontApiContext $context): never
     }
 
     $procedureResult = pg_get_result($conn);
-    $sqlErr  = $procedureResult ? pg_result_error_field($procedureResult, PGSQL_DIAG_MESSAGE_PRIMARY) : null;
+    $sqlError  = $procedureResult ? pg_result_error_field($procedureResult, PGSQL_DIAG_MESSAGE_PRIMARY) : null;
 
     while (pg_get_result($conn)) {
         continue;
     }
 
-    if ($sqlErr !== null && $sqlErr !== '') {
-        error_log('[workflow_procedure] ' . $procSchema . '.' . $procName . ': ' . $sqlErr);
-        throw new BadRequestException((string) $sqlErr);
+    if ($sqlError !== null && $sqlError !== '') {
+        error_log('[workflow_procedure] ' . $procSchema . '.' . $procName . ': ' . $sqlError);
+        throw new BadRequestException((string) $sqlError);
     }
 
     log_user_action($conn, $context->userId, 'CALL_PROCEDURE');

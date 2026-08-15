@@ -154,20 +154,20 @@ function auto_check_conditions(array $group, array $record, ?array $oldRecord = 
     return $type === 'AND';
 }
 
-function auto_compare_values(?string $recVal, string $value): ?int
+function auto_compare_values(?string $recordValue, string $value): ?int
 {
-    if ($recVal === null || $recVal === '' || $value === '') {
+    if ($recordValue === null || $recordValue === '' || $value === '') {
         return null;
     }
-    if (is_numeric($recVal) && is_numeric($value)) {
-        return (float) $recVal <=> (float) $value;
+    if (is_numeric($recordValue) && is_numeric($value)) {
+        return (float) $recordValue <=> (float) $value;
     }
-    $recordTimestamp = strtotime($recVal);
+    $recordTimestamp = strtotime($recordValue);
     $valueTimestamp = strtotime($value);
     if ($recordTimestamp !== false && $valueTimestamp !== false) {
         return $recordTimestamp <=> $valueTimestamp;
     }
-    return strcmp($recVal, $value) <=> 0;
+    return strcmp($recordValue, $value) <=> 0;
 }
 
 function auto_eval_condition(array $rule, array $record, ?array $oldRecord = null): bool
@@ -181,27 +181,27 @@ function auto_eval_condition(array $rule, array $record, ?array $oldRecord = nul
     $value  = (string) ($rule['value'] ?? '');
 
     $value  = preg_replace('/\{\{\s*today\s*\}\}/', date('Y-m-d'), $value) ?? $value;
-    $recVal = array_key_exists($field, $record) ? (string) ($record[$field] ?? '') : null;
+    $recordValue = array_key_exists($field, $record) ? (string) ($record[$field] ?? '') : null;
 
-    $oldVal = ($oldRecord !== null && array_key_exists($field, $oldRecord))
+    $oldValue = ($oldRecord !== null && array_key_exists($field, $oldRecord))
         ? (string) ($oldRecord[$field] ?? '')
         : null;
 
     return match ($operator) {
-        '='            => $recVal !== null && $recVal === $value,
-        '!='           => $recVal !== null && $recVal !== $value,
-        'contains'     => $recVal !== null && str_contains($recVal, $value),
-        'not_contains' => $recVal !== null && !str_contains($recVal, $value),
-        'is_empty'     => $recVal === null || $recVal === '',
-        'is_not_empty' => $recVal !== null && $recVal !== '',
-        '>'            => auto_compare_values($recVal, $value) === 1,
-        '<'            => auto_compare_values($recVal, $value) === -1,
-        '>='           => in_array(auto_compare_values($recVal, $value), [0, 1], true),
-        '<='           => in_array(auto_compare_values($recVal, $value), [0, -1], true),
-        'changed'      => $recVal !== $oldVal,
-        'not_changed'  => $recVal === $oldVal,
-        'changed_from' => $oldVal !== null && $oldVal === $value && $recVal !== $oldVal,
-        'changed_to'   => $recVal !== null && $recVal === $value && $recVal !== $oldVal,
+        '='            => $recordValue !== null && $recordValue === $value,
+        '!='           => $recordValue !== null && $recordValue !== $value,
+        'contains'     => $recordValue !== null && str_contains($recordValue, $value),
+        'not_contains' => $recordValue !== null && !str_contains($recordValue, $value),
+        'is_empty'     => $recordValue === null || $recordValue === '',
+        'is_not_empty' => $recordValue !== null && $recordValue !== '',
+        '>'            => auto_compare_values($recordValue, $value) === 1,
+        '<'            => auto_compare_values($recordValue, $value) === -1,
+        '>='           => in_array(auto_compare_values($recordValue, $value), [0, 1], true),
+        '<='           => in_array(auto_compare_values($recordValue, $value), [0, -1], true),
+        'changed'      => $recordValue !== $oldValue,
+        'not_changed'  => $recordValue === $oldValue,
+        'changed_from' => $oldValue !== null && $oldValue === $value && $recordValue !== $oldValue,
+        'changed_to'   => $recordValue !== null && $recordValue === $value && $recordValue !== $oldValue,
         default        => false,
     };
 }
@@ -500,9 +500,9 @@ function auto_webhook_headers(array $action, array $record, int $userId, ?array 
     return $output;
 }
 
-function auto_webhook_is_transient(string $curlErr, int $httpCode): bool
+function auto_webhook_is_transient(string $curlError, int $httpCode): bool
 {
-    return $curlErr !== '' || $httpCode === 0 || $httpCode === 408 || $httpCode === 429 || $httpCode >= 500;
+    return $curlError !== '' || $httpCode === 0 || $httpCode === 408 || $httpCode === 429 || $httpCode >= 500;
 }
 
 function auto_action_webhook(
@@ -528,8 +528,8 @@ function auto_action_webhook(
         return 'webhook: PHP curl extension is not available';
     }
 
-    if (($guardErr = auto_owner_guard($conn, $table, $recordId, $userId, 'webhook', $event)) !== null) {
-        return $guardErr;
+    if (($guardError = auto_owner_guard($conn, $table, $recordId, $userId, 'webhook', $event)) !== null) {
+        return $guardError;
     }
 
     $method  = strtoupper(trim((string) ($action['method'] ?? 'POST')));
@@ -577,7 +577,7 @@ function auto_action_webhook(
 
     $retries  = max(0, min(2, (int) ($action['retries'] ?? 0)));
     $attempt  = 0;
-    $curlErr  = '';
+    $curlError  = '';
     $httpCode = 0;
 
     while (true) {
@@ -594,14 +594,14 @@ function auto_action_webhook(
             CURLOPT_SSL_VERIFYHOST => 2,
         ]);
         curl_exec($curlHandle);
-        $curlErr  = curl_error($curlHandle);
+        $curlError  = curl_error($curlHandle);
         $httpCode = (int) curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE);
         curl_close($curlHandle);
 
-        if ($curlErr === '' && $httpCode > 0 && $httpCode < 300) {
+        if ($curlError === '' && $httpCode > 0 && $httpCode < 300) {
             break;
         }
-        if ($attempt >= $retries || !auto_webhook_is_transient($curlErr, $httpCode)) {
+        if ($attempt >= $retries || !auto_webhook_is_transient($curlError, $httpCode)) {
             break;
         }
 
@@ -612,8 +612,8 @@ function auto_action_webhook(
     log_user_action($conn, $userId, 'AUTO_WEBHOOK', $table, $recordId);
 
     $suffix = $attempt > 0 ? ' (after ' . ($attempt + 1) . ' attempts)' : '';
-    if ($curlErr !== '') {
-        return 'webhook failed: ' . $curlErr . $suffix;
+    if ($curlError !== '') {
+        return 'webhook failed: ' . $curlError . $suffix;
     }
     if ($httpCode >= 300 || $httpCode === 0) {
         return 'webhook failed: endpoint returned HTTP ' . $httpCode . $suffix;
@@ -647,8 +647,8 @@ function auto_action_email(
         return 'email: subject is required';
     }
 
-    if (($guardErr = auto_owner_guard($conn, $table, $recordId, $userId, 'email', $event)) !== null) {
-        return $guardErr;
+    if (($guardError = auto_owner_guard($conn, $table, $recordId, $userId, 'email', $event)) !== null) {
+        return $guardError;
     }
 
     $automationEmailsTable = sys_table('automation_emails');
@@ -695,14 +695,14 @@ function auto_log_run(
     int $recordId,
     string $event,
     string $status,
-    ?string $errorMsg
+    ?string $errorMessage
 ): void {
     $automationRunsTable = sys_table('automation_runs');
     @pg_query_params(
         $conn,
         "INSERT INTO $automationRunsTable (rule_id, rule_name, table_name, record_id, event, status, error_msg)
          VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7)",
-        [$ruleId, $ruleName, $tableName, $recordId, $event, $status, $errorMsg]
+        [$ruleId, $ruleName, $tableName, $recordId, $event, $status, $errorMessage]
     );
 }
 

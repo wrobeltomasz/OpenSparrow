@@ -40,7 +40,7 @@ final class EnumField implements FieldTypeInterface
             : (string)($currentValue ?? '');
         $locked  = $context->isLocked($column->name);
         $name    = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
-        $reqAttr = ($column->notNull && !$locked) ? 'required' : '';
+        $requiredAttribute = ($column->notNull && !$locked) ? 'required' : '';
 
         if ($locked) {
             $color     = $column->enumColors[$value] ?? null;
@@ -66,18 +66,19 @@ final class EnumField implements FieldTypeInterface
         $initBg     = $column->enumColors[$value] ?? '';
         $initStyle  = $initBg ? 'background:' . htmlspecialchars($initBg, ENT_QUOTES, 'UTF-8') . ';' : '';
 
-        $html  = '<select name="' . $name . '" ' . $reqAttr . ' data-enum-colors="' . $colorsJson . '" style="' . $initStyle . '">';
+        $html  = '<select name="' . $name . '" ' . $requiredAttribute
+            . ' data-enum-colors="' . $colorsJson . '" style="' . $initStyle . '">';
         $html .= '<option value="">-- Select --</option>';
         foreach ($column->options as $option) {
-            $optStr   = (string)$option;
-            $selected = $value === $optStr ? 'selected' : '';
-            $optBg    = $column->enumColors[$optStr] ?? '';
+            $optionValue   = (string)$option;
+            $selected = $value === $optionValue ? 'selected' : '';
+            $optBg    = $column->enumColors[$optionValue] ?? '';
             $optStyle = $optBg
                 ? ' style="background:' . htmlspecialchars($optBg, ENT_QUOTES, 'UTF-8') . ';"'
                 : '';
-            $html    .= '<option value="' . htmlspecialchars($optStr, ENT_QUOTES, 'UTF-8') . '"'
+            $html    .= '<option value="' . htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8') . '"'
                       . $optStyle . ' ' . $selected . '>'
-                      . htmlspecialchars($optStr, ENT_QUOTES, 'UTF-8')
+                      . htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8')
                       . '</option>';
         }
         $html .= '</select>';

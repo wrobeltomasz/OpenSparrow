@@ -23,8 +23,8 @@ $dashPeriods = [
 $headerControls = '<label for="dashDateFilter" class="dash-filter-label">'
     . htmlspecialchars(t('dashboard.filter_label'), ENT_QUOTES, 'UTF-8') . '</label>'
     . '<select id="dashDateFilter">';
-foreach ($dashPeriods as $dashVal => $dashKey) {
-    $headerControls .= '<option value="' . $dashVal . '">'
+foreach ($dashPeriods as $periodValue => $dashKey) {
+    $headerControls .= '<option value="' . $periodValue . '">'
         . htmlspecialchars(t($dashKey), ENT_QUOTES, 'UTF-8') . '</option>';
 }
 $headerControls .= '</select>'

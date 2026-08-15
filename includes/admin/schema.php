@@ -116,18 +116,18 @@ if ($action === 'add_column') {
                 . " ADD CONSTRAINT " . $constraintName
                 . " FOREIGN KEY (" . $safeColumn . ")"
                 . " REFERENCES " . $safeSchema . "." . $safeFkTable . " (" . $safeFkColumn . ")";
-            $resFk = @pg_query($conn, $foreignKeySql);
-            if (!$resFk) {
+            $foreignKeyResult = @pg_query($conn, $foreignKeySql);
+            if (!$foreignKeyResult) {
                 admin_db_fail($conn, 'add_column_fk');
             }
         }
 
         $allowedIndexTypes = ['btree', 'hash', 'unique'];
         if (in_array($indexType, $allowedIndexTypes, true)) {
-            $idxName = pg_escape_identifier($conn, 'idx_' . $tableName . '_' . $colName);
+            $indexName = pg_escape_identifier($conn, 'idx_' . $tableName . '_' . $colName);
             $unique  = $indexType === 'unique' ? 'UNIQUE ' : '';
             $using   = $indexType === 'hash' ? 'HASH' : 'BTREE';
-            $indexSql  = "CREATE {$unique}INDEX {$idxName} ON " . $safeSchema . "." . $safeTable
+            $indexSql  = "CREATE {$unique}INDEX {$indexName} ON " . $safeSchema . "." . $safeTable
                 . " USING {$using} (" . $safeColumn . ")";
             $indexResult  = @pg_query($conn, $indexSql);
             if (!$indexResult) {
@@ -179,18 +179,18 @@ if ($action === 'schema_add_table') {
     ];
 
     foreach ($columns as $column) {
-        $cName = preg_replace('/[^a-z0-9_]/', '', strtolower($column['name'] ?? ''));
-        $cType = $column['type'] ?? 'varchar(255)';
-        if ($cName === '' || !isset($typeMap[$cType])) {
+        $columnName = preg_replace('/[^a-z0-9_]/', '', strtolower($column['name'] ?? ''));
+        $columnType = $column['type'] ?? 'varchar(255)';
+        if ($columnName === '' || !isset($typeMap[$columnType])) {
             continue;
         }
-        $cDisplay = trim(strip_tags((string)($column['display_name'] ?? '')));
-        if ($cDisplay === '') {
-            $cDisplay = ucwords(str_replace('_', ' ', $cName));
+        $columnDisplayName = trim(strip_tags((string)($column['display_name'] ?? '')));
+        if ($columnDisplayName === '') {
+            $columnDisplayName = ucwords(str_replace('_', ' ', $columnName));
         }
         $entry = [
-            'display_name' => $cDisplay,
-            'type'         => $typeMap[$cType],
+            'display_name' => $columnDisplayName,
+            'type'         => $typeMap[$columnType],
             'not_null'     => !empty($column['not_null']),
             'show_in_grid' => true,
             'show_in_edit' => true,
@@ -203,7 +203,7 @@ if ($action === 'schema_add_table') {
             $entry['fk_table']  = preg_replace('/[^a-z0-9_]/', '', strtolower($column['fk_table']));
             $entry['fk_column'] = preg_replace('/[^a-z0-9_]/', '', strtolower($column['fk_column']));
         }
-        $colsObj[$cName] = $entry;
+        $colsObj[$columnName] = $entry;
     }
 
     require_once __DIR__ . '/../config_store.php';

@@ -86,7 +86,7 @@ final class FrontApiController
         $conn = db_connect();
         require_once __DIR__ . '/../automations.php';
 
-        $osCtx = new FrontApiContext(
+        $apiContext = new FrontApiContext(
             $conn,
             $schema,
             (string) $schemaJson,
@@ -95,21 +95,21 @@ final class FrontApiController
         );
 
         try {
-            $apiParam = $request->query('api');
+            $apiAction = $request->query('api');
 
-            if ($method === 'GET' && $apiParam === 'schema') {
+            if ($method === 'GET' && $apiAction === 'schema') {
                 throw ResponseException::raw((string) $schemaJson);
             }
 
-            if ($method === 'GET' && isset(self::READ_ROUTES[$apiParam])) {
-                [$module, $function] = self::READ_ROUTES[$apiParam];
+            if ($method === 'GET' && isset(self::READ_ROUTES[$apiAction])) {
+                [$module, $function] = self::READ_ROUTES[$apiAction];
                 $handler = $osFrontApiHandler($module, $function);
-                $handler($osCtx);
+                $handler($apiContext);
             }
 
-            if ($method === 'POST' && $apiParam === 'workflow_procedure') {
+            if ($method === 'POST' && $apiAction === 'workflow_procedure') {
                 $handler = $osFrontApiHandler('workflow_procedure', 'frontapi_workflow_procedure');
-                $handler($osCtx);
+                $handler($apiContext);
             }
 
             if (in_array($method, ['POST', 'PATCH', 'DELETE'], true)) {
@@ -125,8 +125,8 @@ final class FrontApiController
                 $schemaName = $tableCfg['schema'] ?? 'public';
                 $idColumn = id_column();
 
-                $osWriteCtx = FrontApiWriteContext::fromApi(
-                    $osCtx,
+                $apiWriteContext = FrontApiWriteContext::fromApi(
+                    $apiContext,
                     is_array($body) ? $body : [],
                     (string) $table,
                     $tableCfg,
@@ -176,7 +176,7 @@ final class FrontApiController
                 foreach ($osWriteRoutes as [$matches, $module, $function]) {
                     if ($matches()) {
                         $handler = $osFrontApiHandler($module, $function);
-                        $handler($osWriteCtx);
+                        $handler($apiWriteContext);
                     }
                 }
 

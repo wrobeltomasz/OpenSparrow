@@ -30,15 +30,15 @@ if ($action === 'overview') {
 
         $tables   = [];
         $totalRec = 0;
-        foreach ($schemaTables as $tableName => $tableDef) {
-            $tableSchema = $tableDef['schema'] ?? 'public';
+        foreach ($schemaTables as $tableName => $tableDefinition) {
+            $tableSchema = $tableDefinition['schema'] ?? 'public';
             $safeTable = sprintf('%s.%s', pg_ident($tableSchema), pg_ident((string) $tableName));
             $countResult  = @pg_query($conn, "SELECT COUNT(*) AS n FROM {$safeTable}");
             $count = $countResult ? (int) pg_fetch_result($countResult, 0, 0) : 0;
             $totalRec += $count;
             $tables[] = [
                 'name'  => $tableName,
-                'label' => $tableDef['display_name'] ?? $tableName,
+                'label' => $tableDefinition['display_name'] ?? $tableName,
                 'count' => $count,
             ];
         }
@@ -128,14 +128,17 @@ if ($action === 'overview') {
             }
         }
 
-        $knownMig = [
+        $knownMigrations = [
             '3.0_baseline',
             '3.1_table_comments',
             '3.1_notes_reminder_time',
             '3.3_user_contact',
             '3.3_clickstats',
         ];
-        $pendingMig = count(array_filter($knownMig, static fn($migrationKey) => !isset($applied[$migrationKey])));
+        $pendingMigrations = count(array_filter(
+            $knownMigrations,
+            static fn($migrationKey) => !isset($applied[$migrationKey])
+        ));
 
         $versionFile  = __DIR__ . '/../../includes/VERSION';
         $appVersion   = file_exists($versionFile) ? trim((string) file_get_contents($versionFile)) : 'unknown';
@@ -147,7 +150,7 @@ if ($action === 'overview') {
         }
         $displayErrors = ini_get('display_errors');
         $memoryLimit   = ini_get('memory_limit');
-        $uploadMax     = ini_get('upload_max_filesize');
+        $uploadMaxFilesize     = ini_get('upload_max_filesize');
         $secureCookiesOk = defined('SECURE_COOKIES') ? (bool) SECURE_COOKIES : false;
         $ipHashSaltOk    = defined('IP_HASH_SALT') && IP_HASH_SALT !== '';
         $sessionLifetime = defined('SESSION_MAX_LIFETIME') ? (int) SESSION_MAX_LIFETIME : 0;
@@ -179,9 +182,9 @@ if ($action === 'overview') {
             'php_ok'            => version_compare(PHP_VERSION, '8.1.0', '>='),
             'display_errors_ok' => ($displayErrors === '' || $displayErrors == '0'
                 || strtolower((string) $displayErrors) === 'off'),
-            'pending_migrations' => $pendingMig,
+            'pending_migrations' => $pendingMigrations,
             'memory_limit'       => $memoryLimit,
-            'upload_max_filesize' => $uploadMax,
+            'upload_max_filesize' => $uploadMaxFilesize,
             'secure_cookies_ok'  => $secureCookiesOk,
             'ip_hash_salt_ok'    => $ipHashSaltOk,
             'session_lifetime'   => $sessionLifetime,

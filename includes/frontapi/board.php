@@ -84,12 +84,12 @@ function frontapi_board(FrontApiContext $context): never
         }
     }
 
-    $statusDef  = $tableCfg['columns'][$statusColumn];
-    $statusType = strtolower($statusDef['type'] ?? '');
-    $enumColors = is_array($statusDef['enum_colors'] ?? null) ? $statusDef['enum_colors'] : [];
+    $statusDefinition  = $tableCfg['columns'][$statusColumn];
+    $statusType = strtolower($statusDefinition['type'] ?? '');
+    $enumColors = is_array($statusDefinition['enum_colors'] ?? null) ? $statusDefinition['enum_colors'] : [];
     $lanes      = [];
-    if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
-        foreach ($statusDef['options'] as $option) {
+    if ($statusType === 'enum' && is_array($statusDefinition['options'] ?? null)) {
+        foreach ($statusDefinition['options'] as $option) {
             $laneValue = (string)$option;
             $lanes[] = [
                 'value' => $laneValue,
@@ -172,7 +172,7 @@ function frontapi_board(FrontApiContext $context): never
     $meta['configured']    = true;
     $meta['title_column']  = $titleColumn;
     $meta['default_color'] = $defaultColor;
-    $meta['status_label']  = $statusDef['display_name'] ?? $statusColumn;
+    $meta['status_label']  = $statusDefinition['display_name'] ?? $statusColumn;
     $meta['table_label']   = $tableCfg['display_name'] ?? $table;
     $meta['columns']       = $lanes;
     $meta['cards']         = $cards;
@@ -219,11 +219,11 @@ function frontapi_board_move_card(FrontApiWriteContext $context): never
         throw new BadRequestException('Invalid ID');
     }
 
-    $statusDef  = $tableCfg['columns'][$statusColumn];
-    $statusType = strtolower($statusDef['type'] ?? '');
+    $statusDefinition  = $tableCfg['columns'][$statusColumn];
+    $statusType = strtolower($statusDefinition['type'] ?? '');
     $allowed    = [];
-    if ($statusType === 'enum' && is_array($statusDef['options'] ?? null)) {
-        $allowed = array_map('strval', $statusDef['options']);
+    if ($statusType === 'enum' && is_array($statusDefinition['options'] ?? null)) {
+        $allowed = array_map('strval', $statusDefinition['options']);
     } else {
         $distinctSql = sprintf(
             'SELECT DISTINCT %s AS v FROM %s.%s WHERE %s IS NOT NULL',
