@@ -29,6 +29,7 @@ use App\Repository\FkOptionsLoader;
 use App\Repository\PgFileRepository;
 use App\Repository\PgRecordRepository;
 use App\Security\UserRole;
+use App\Service\ServiceContainer;
 
 function os_require_setup(): void
 {
@@ -205,9 +206,9 @@ function os_boot_app(): array
     $request = new PhpRequest();
     $csrf    = new SessionCsrfTokenManager($session);
 
-    $pgConn          = db_connect();
-    $db              = new PgConnection($pgConn);
-    $GLOBALS['conn'] = $pgConn;
+    $pgConn   = db_connect();
+    $db       = new PgConnection($pgConn);
+    $services = new ServiceContainer($pgConn);
 
     require_once __DIR__ . '/config_store.php';
     $schemas  = new JsonSchemaRepository(config_get('schema') ?? ['tables' => []]);
@@ -230,6 +231,7 @@ function os_boot_app(): array
         'csrf'          => $csrf,
         'db'            => $db,
         'conn'          => $pgConn,
+        'services'      => $services,
         'schemas'       => $schemas,
         'fkLoader'      => $fkLoader,
         'fieldRegistry' => $fieldRegistry,

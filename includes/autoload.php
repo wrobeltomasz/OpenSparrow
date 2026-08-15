@@ -8,11 +8,19 @@
 declare(strict_types=1);
 
 spl_autoload_register(static function (string $class): void {
+    if (str_starts_with($class, 'App\\Service\\')) {
+        $relative = substr($class, 12);
+        $path = __DIR__ . '/Service/' . str_replace('\\', DIRECTORY_SEPARATOR, $relative) . '.php';
+        if (is_file($path)) {
+            require $path;
+        }
+        return;
+    }
     if (!str_starts_with($class, 'App\\')) {
         return;
     }
-    $rel  = substr($class, 4);
-    $path = __DIR__ . '/../src/' . str_replace('\\', DIRECTORY_SEPARATOR, $rel) . '.php';
+    $relative = substr($class, 4);
+    $path = __DIR__ . '/../src/' . str_replace('\\', DIRECTORY_SEPARATOR, $relative) . '.php';
     if (is_file($path)) {
         require $path;
     }

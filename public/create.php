@@ -8,16 +8,21 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../includes/bootstrap.php';
-require __DIR__ . '/../includes/m2m.php';
 
 use App\Form\RenderContext;
+use App\Service\ImageService;
 
 $pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
 $cspNonce = $pageMeta['nonce'];
 
 ['session' => $session, 'request' => $request, 'csrf' => $csrf, 'schemas' => $schemas,
  'fieldRegistry' => $fieldRegistry, 'mapper' => $mapper, 'records' => $records,
- 'audit' => $audit, 'fkLoader' => $fkLoader] = os_boot_app();
+ 'audit' => $audit, 'fkLoader' => $fkLoader, 'services' => $services] = os_boot_app();
+
+$ownership  = $services->ownership();
+$snapshots  = $services->snapshots();
+$m2m        = $services->m2m();
+$automation = $services->automations();
 
 $isReadOnly = $session->role() !== 'editor';
 
@@ -49,15 +54,15 @@ if ($request->isPost()) {
         $userId = $session->userId();
         $logId  = $audit->log($userId, 'INSERT', $tableCfg->name, (int)$newId);
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-            snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, $logId);
+            $snapshots->capture($tableCfg->schema, $tableCfg->name, (int)$newId, $logId);
         }
-        set_record_owner($GLOBALS['conn'], $tableCfg->name, (int)$newId, $userId, $userId);
-        evaluate_automation_rules($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$newId, 'create', $userId);
+        $ownership->assign($tableCfg->name, (int)$newId, $userId, $userId);
+        $automation->evaluate($tableCfg->schema, $tableCfg->name, (int)$newId, 'create', $userId);
         foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
             $selected = array_values(array_filter((array)($_POST['m2m_' . $m2mIndex] ?? []), 'ctype_digit'));
-            m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$newId, $selected, $rawSchema);
+            $m2m->sync($m2mCfg, (int)$newId, $selected, $rawSchema);
         }
-        $fragment = images_config($rawSchema, $table) ? '#tab-images' : '#tab-files';
+        $fragment = ImageService::config($rawSchema, $table) ? '#tab-images' : '#tab-files';
         header('Location: edit.php?table=' . urlencode($table) . '&id=' . $newId . $fragment);
         exit;
     } catch (\App\Form\ValidationException $e) {
@@ -103,7 +108,7 @@ foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
     $m2mGroups[] = os_m2m_group(
         (int)$m2mIndex,
         $m2mCfg,
-        m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema),
+        $m2m->options($m2mCfg, $rawSchema),
         [],
         $isReadOnly
     );

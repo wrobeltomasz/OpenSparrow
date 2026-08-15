@@ -6,9 +6,11 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/autoload.php';
 require_once __DIR__ . '/../src/Security/UserRole.php';
 
-use App\Security\UserRole;
+use App\Service\RecordOwnershipService;
+use App\Service\RecordSnapshotService;
 
 function safe_table(array $schema, string $table): array
 {
@@ -40,16 +42,12 @@ function to_display_name(array $tableCfg): string
     return $tableCfg['display_name'] ?? ($tableCfg['name'] ?? 'Unknown');
 }
 
-function map_fk_display(array $schema, array $tableCfg, array $rows, ?\PgSql\Connection $conn = null): array
+function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Connection $conn): array
 {
     if (empty($rows) || !isset($tableCfg['foreign_keys'])) {
         return $rows;
     }
 
-    $conn = $conn ?? $GLOBALS['conn'] ?? null;
-    if ($conn === null) {
-        return $rows;
-    }
     foreach ($tableCfg['foreign_keys'] as $fkCol => $fkCfg) {
         $fkValues = [];
         foreach ($rows as $row) {
@@ -164,32 +162,12 @@ function log_user_action(
 
 function fetch_record_json(\PgSql\Connection $conn, string $schemaName, string $table, int $recordId): ?string
 {
-    $safeRef = pg_ident($schemaName) . '.' . pg_ident($table);
-    $res = pg_query_params(
-        $conn,
-        "SELECT row_to_json(t) FROM (SELECT * FROM {$safeRef} WHERE id = \$1) t",
-        [$recordId]
-    );
-    if (!$res) {
-        return null;
-    }
-    $row = pg_fetch_row($res);
-    return ($row && $row[0] !== null) ? $row[0] : null;
+    return (new RecordSnapshotService($conn))->recordJson($schemaName, $table, $recordId);
 }
 
 function get_record_owner_id(\PgSql\Connection $conn, string $table, int $recordId): ?int
 {
-    $t   = sys_table('record_owners');
-    $res = @pg_query_params(
-        $conn,
-        "SELECT owner_id FROM $t WHERE table_name = \$1 AND record_id = \$2 AND is_current = true",
-        [$table, $recordId]
-    );
-    if (!$res || pg_num_rows($res) === 0) {
-        return null;
-    }
-    $row = pg_fetch_assoc($res);
-    return $row['owner_id'] !== null ? (int)$row['owner_id'] : null;
+    return (new RecordOwnershipService($conn))->ownerId($table, $recordId);
 }
 
 function can_access_record(
@@ -200,14 +178,7 @@ function can_access_record(
     int $userId,
     string $role = ''
 ): bool {
-    if (empty($tableCfg['owner_restricted'])) {
-        return true;
-    }
-    if ($role === UserRole::Admin->value) {
-        return true;
-    }
-    $ownerId = get_record_owner_id($conn, $table, $recordId);
-    return $ownerId === null || $ownerId === $userId;
+    return (new RecordOwnershipService($conn))->canAccess($tableCfg, $table, $recordId, $userId, $role);
 }
 
 function check_record_ownership(
@@ -227,15 +198,7 @@ function check_record_ownership(
 
 function owner_restriction_sql(string $idExpr, int $tableParam, int $ownerParam): string
 {
-    if (!str_contains($idExpr, '.')) {
-        throw new InvalidArgumentException(
-            'owner_restriction_sql(): $idExpr must be table-qualified (e.g. "_t.id"), got "' . $idExpr . '".'
-        );
-    }
-    $tOwners = sys_table('record_owners');
-    return " AND NOT EXISTS (SELECT 1 FROM {$tOwners} ro"
-        . " WHERE ro.table_name = \${$tableParam} AND ro.record_id = {$idExpr}"
-        . " AND ro.is_current = true AND ro.owner_id != \${$ownerParam})";
+    return RecordOwnershipService::restrictionSql($idExpr, $tableParam, $ownerParam);
 }
 
 function filter_visible_ids(
@@ -245,63 +208,17 @@ function filter_visible_ids(
     array $ids,
     int $userId
 ): array {
-    $ids = array_values(array_unique(array_map('intval', $ids)));
-    if (empty($tableCfg['owner_restricted']) || $ids === []) {
-        return $ids;
-    }
-
-    $tOwners = sys_table('record_owners');
-    $sql = "SELECT ro.record_id FROM {$tOwners} ro"
-         . ' WHERE ro.table_name = $1 AND ro.is_current = true'
-         . ' AND ro.owner_id IS NOT NULL AND ro.owner_id != $2'
-         . ' AND ro.record_id = ANY($3::int[])';
-
-    $res = @pg_query_params($conn, $sql, [
-        $table,
-        $userId,
-        '{' . implode(',', $ids) . '}',
-    ]);
-    if (!$res) {
-        error_log('filter_visible_ids failed: ' . pg_last_error($conn));
-        return [];
-    }
-
-    $blocked = [];
-    while ($row = pg_fetch_assoc($res)) {
-        $blocked[] = (int)$row['record_id'];
-    }
-    pg_free_result($res);
-
-    return $blocked === [] ? $ids : array_values(array_diff($ids, $blocked));
+    return (new RecordOwnershipService($conn))->filterVisibleIds($tableCfg, $table, $ids, $userId);
 }
 
 function set_record_owner(\PgSql\Connection $conn, string $table, int $recordId, int $ownerId, int $changedBy): void
 {
-    $t = sys_table('record_owners');
-    @pg_query_params(
-        $conn,
-        "UPDATE $t SET is_current = false WHERE table_name = \$1 AND record_id = \$2 AND is_current = true",
-        [$table, $recordId]
-    );
-    @pg_query_params(
-        $conn,
-        "INSERT INTO $t (table_name, record_id, owner_id, changed_by, is_current) VALUES (\$1, \$2, \$3, \$4, true)",
-        [$table, $recordId, $ownerId, $changedBy]
-    );
+    (new RecordOwnershipService($conn))->assign($table, $recordId, $ownerId, $changedBy);
 }
 
 function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $table, int $recordId, int $logId): void
 {
-    $json = fetch_record_json($conn, $schemaName, $table, $recordId);
-    if ($json === null) {
-        return;
-    }
-    @pg_query_params(
-        $conn,
-        'INSERT INTO ' . sys_table('record_snapshots')
-            . ' (log_id, table_name, record_id, snapshot) VALUES ($1, $2, $3, $4)',
-        [$logId, $table, $recordId, $json]
-    );
+    (new RecordSnapshotService($conn))->capture($schemaName, $table, $recordId, $logId);
 }
 
 function record_label_columns(array $tableCfg, array $configured): array

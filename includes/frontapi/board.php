@@ -145,7 +145,7 @@ function frontapi_board(FrontApiContext $ctx): never
         }
         pg_free_result($res);
     }
-    $rows = map_fk_display($schema, $tableCfg, $rows);
+    $rows = map_fk_display($schema, $tableCfg, $rows, $conn);
     foreach ($rows as $row) {
         $fields = [];
         foreach ($cardCols as $column) {

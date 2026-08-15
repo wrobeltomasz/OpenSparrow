@@ -8,9 +8,9 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../includes/bootstrap.php';
-require __DIR__ . '/../includes/m2m.php';
 
 use App\Form\RenderContext;
+use App\Service\ImageService;
 use App\Support\ByteFormatter;
 
 $pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
@@ -18,7 +18,14 @@ $cspNonce = $pageMeta['nonce'];
 
 ['session' => $session, 'request' => $request, 'csrf' => $csrf, 'schemas' => $schemas,
  'fieldRegistry' => $fieldRegistry, 'mapper' => $mapper, 'records' => $records,
- 'files' => $files, 'audit' => $audit, 'fkLoader' => $fkLoader] = os_boot_app();
+ 'files' => $files, 'audit' => $audit, 'fkLoader' => $fkLoader,
+ 'services' => $services] = os_boot_app();
+
+$ownership  = $services->ownership();
+$snapshots  = $services->snapshots();
+$m2m        = $services->m2m();
+$images     = $services->images();
+$automation = $services->automations();
 
 $isReadOnly = $session->role() !== 'editor';
 
@@ -39,11 +46,11 @@ os_require_table_access((string) $table);
 $tableCfg   = $schemas->table($table);
 $rawSchema  = $schemas->raw();
 $m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
-$imagesCfg  = images_config($rawSchema, $table);
+$imagesCfg  = ImageService::config($rawSchema, $table);
 $error      = '';
 
 $rawTableCfg = $rawSchema['tables'][$table] ?? [];
-if (!can_access_record($GLOBALS['conn'], $rawTableCfg, $table, (int)$id, $session->userId(), $session->role())) {
+if (!$ownership->canAccess($rawTableCfg, $table, (int)$id, $session->userId(), $session->role())) {
     http_response_code(404);
     die('Record not found.');
 }
@@ -56,14 +63,13 @@ if ($request->isPost()) {
     try {
         $data  = $mapper->fromPost($tableCfg, $request->postAll());
 
-        $oldRecord = auto_capture_old_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id);
+        $oldRecord = $automation->captureOldRecord($tableCfg->schema, $tableCfg->name, (int)$id);
         $records->update($tableCfg, $id, $data);
         $logId = $audit->log($session->userId(), 'UPDATE', $tableCfg->name, (int)$id);
         if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-            snapshot_record($GLOBALS['conn'], $tableCfg->schema, $tableCfg->name, (int)$id, $logId);
+            $snapshots->capture($tableCfg->schema, $tableCfg->name, (int)$id, $logId);
         }
-        evaluate_automation_rules(
-            $GLOBALS['conn'],
+        $automation->evaluate(
             $tableCfg->schema,
             $tableCfg->name,
             (int)$id,
@@ -73,7 +79,7 @@ if ($request->isPost()) {
         );
         foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
             $selected = array_values(array_filter((array)($_POST['m2m_' . $m2mIndex] ?? []), 'ctype_digit'));
-            m2m_sync($GLOBALS['conn'], $m2mCfg, (int)$id, $selected, $rawSchema);
+            $m2m->sync($m2mCfg, (int)$id, $selected, $rawSchema);
         }
         if (($request->post('_save_action') ?? 'exit') === 'stay') {
             header('Location: edit.php?table=' . urlencode($table) . '&id=' . urlencode((string)$id) . '&saved=1');
@@ -131,8 +137,8 @@ foreach ($m2mConfigs as $m2mIndex => $m2mCfg) {
     $m2mGroups[] = os_m2m_group(
         (int)$m2mIndex,
         $m2mCfg,
-        m2m_options($GLOBALS['conn'], $m2mCfg, $rawSchema),
-        m2m_selected($GLOBALS['conn'], $m2mCfg, (int)$id, $rawSchema),
+        $m2m->options($m2mCfg, $rawSchema),
+        $m2m->selected($m2mCfg, (int)$id, $rawSchema),
         $isReadOnly
     );
 }
@@ -190,7 +196,7 @@ foreach ($subtablesData as $subtableIndex => $subtableData) {
 
 $imagesPanel = null;
 if ($imagesCfg) {
-    $galleryImages = images_for_record($GLOBALS['conn'], $table, (int)$id);
+    $galleryImages = $images->forRecord($table, (int)$id);
     $imageItems    = [];
     foreach ($galleryImages as $galleryImage) {
         $galleryImageUrl = 'file_download.php?uuid=' . urlencode($galleryImage['uuid']);

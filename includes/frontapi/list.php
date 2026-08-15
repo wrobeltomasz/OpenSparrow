@@ -136,7 +136,7 @@ function frontapi_list(FrontApiContext $ctx): never
         $rows[] = $row;
     }
     pg_free_result($res);
-    $rows = map_fk_display($schema, $tableCfg, $rows);
+    $rows = map_fk_display($schema, $tableCfg, $rows, $conn);
     $rowCount = count($rows);
     echo json_encode([
         'columns'   => $selectCols,
