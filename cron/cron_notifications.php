@@ -352,4 +352,4 @@ function cron_notifications_main(array $argv): int
     return 0;
 }
 
-exit(cron_notifications_main($argv));
+exit(cron_notifications_main((array) ($_SERVER['argv'] ?? [])));
