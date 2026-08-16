@@ -55,8 +55,10 @@ CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: applicat
 
 echo "==> Admin login with the generated password"
 JAR=$(mktemp)
-CSRF=$(curl -fs -c "$JAR" "${BASE_URL}/login.php" \
-  | grep -o 'name="csrf_token" value="[^"]*"' | head -n1 | sed 's/.*value="//; s/"$//')
+LOGIN_HTML=$(curl -fs -c "$JAR" "${BASE_URL}/login.php") \
+  || fail "Could not fetch the login page"
+CSRF=$(printf '%s' "$LOGIN_HTML" | tr '\n' ' ' \
+  | sed -n 's/.*name="csrf_token"[^>]*value="\([^"]*\)".*/\1/p')
 [ -n "$CSRF" ] || fail "Could not extract the CSRF token from the login page"
 
 LOC=$(curl -s -b "$JAR" -c "$JAR" -o /dev/null -w '%{redirect_url}' -X POST \
