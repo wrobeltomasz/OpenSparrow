@@ -21,11 +21,10 @@ if ($viewName !== '') {
 $pageTitle      = 'OpenSparrow — Views';
 $extraCss       = '<link href="assets/css/views.css" rel="stylesheet">';
 
-$headerControls = '<input id="globalSearch" type="text" placeholder="'
-    . htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8') . '" />'
-    . '<select id="columnFilter" hidden><option value=""></option></select>'
-    . '<div id="filterBar"></div>'
-    . '<select id="groupBy" hidden><option value=""></option></select>'
+$headerControls = os_header_input('globalSearch')
+    . os_header_select('columnFilter', ['' => ''], true)
+    . os_header_filters('filterBar', '')
+    . os_header_select('groupBy', ['' => ''], true)
     . os_header_clear_filters();
 
 $viewsLabels = ['loading' => t('common.loading')];

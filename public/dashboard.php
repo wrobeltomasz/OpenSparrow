@@ -14,20 +14,14 @@ $userCaps = $page['caps'];
 
 $pageTitle = 'OpenSparrow | Dashboard';
 $dashPeriods = [
-    'all'        => 'dashboard.filter_all',
-    'today'      => 'dashboard.filter_today',
-    '7d'         => 'dashboard.filter_7d',
-    '30d'        => 'dashboard.filter_30d',
-    'this_month' => 'dashboard.filter_month',
+    'all'        => t('dashboard.filter_all'),
+    'today'      => t('dashboard.filter_today'),
+    '7d'         => t('dashboard.filter_7d'),
+    '30d'        => t('dashboard.filter_30d'),
+    'this_month' => t('dashboard.filter_month'),
 ];
-$headerControls = '<label for="dashDateFilter" class="dash-filter-label">'
-    . htmlspecialchars(t('dashboard.filter_label'), ENT_QUOTES, 'UTF-8') . '</label>'
-    . '<select id="dashDateFilter">';
-foreach ($dashPeriods as $periodValue => $dashKey) {
-    $headerControls .= '<option value="' . $periodValue . '">'
-        . htmlspecialchars(t($dashKey), ENT_QUOTES, 'UTF-8') . '</option>';
-}
-$headerControls .= '</select>'
+$headerControls = os_header_label('dashDateFilter', t('dashboard.filter_label'), 'dash-filter-label')
+    . os_header_select('dashDateFilter', $dashPeriods)
     . os_header_filters('dashboardFilters', 'dashboard-filters')
     . os_header_clear_filters();
 $dashboardLabels = ['title' => t('dashboard.title')];

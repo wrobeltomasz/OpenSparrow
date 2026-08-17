@@ -139,9 +139,12 @@ saves the author keystrokes while costing every later reader a lookup.
   one scope must not be distinguishable only by length.
 - **Do not leave a prefix behind when you rename.** If `$gi` becomes
   `$galleryImage`, then `$giUrl` becomes `$galleryImageUrl` in the same change.
-- Established domain terms stay as they are — `$id`, `$fk`, `$m2m`, `$sql`,
-  `$csrf`, `$conn`, `$cfg` are the project's vocabulary, not abbreviations to
-  expand.
+- Acronyms stay as they are — `$id`, `$fk`, `$m2m`, `$sql`, `$csrf`, `$url`,
+  `$uuid`, `$mime`, `$dsn` are the project's vocabulary, not abbreviations to
+  expand. Shortened **words** are not covered by that: `$cfg` and every `*Cfg`
+  name were expanded to `$config` / `*Config`. `$conn` is the single legacy
+  holdout still in the tree — keep it in existing code, do not introduce it in
+  new code.
 
 Longer names push lines over the 120-character limit that PSR-12 warns at. Wrap
 the call — extract the shared expression into a named variable or split the

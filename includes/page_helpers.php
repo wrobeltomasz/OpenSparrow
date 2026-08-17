@@ -81,9 +81,34 @@ function os_header_search(string $id, ?string $placeholder = null): string
         . ' aria-label="' . $escapedPlaceholder . '">';
 }
 
+function os_header_input(string $id, ?string $placeholder = null): string
+{
+    $escapedPlaceholder = htmlspecialchars($placeholder ?? t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
+    return '<input type="text" id="' . $id . '" placeholder="' . $escapedPlaceholder . '"'
+        . ' aria-label="' . $escapedPlaceholder . '">';
+}
+
+function os_header_label(string $forId, string $text, string $class = ''): string
+{
+    $classAttribute = $class !== '' ? ' class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '"' : '';
+    return '<label for="' . $forId . '"' . $classAttribute . '>'
+        . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') . '</label>';
+}
+
+function os_header_select(string $id, array $options, bool $hidden = false): string
+{
+    $markup = '<select id="' . $id . '"' . ($hidden ? ' hidden' : '') . '>';
+    foreach ($options as $value => $label) {
+        $markup .= '<option value="' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '">'
+            . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8') . '</option>';
+    }
+    return $markup . '</select>';
+}
+
 function os_header_filters(string $id, string $class): string
 {
-    return '<div id="' . $id . '" class="' . $class . '"></div>';
+    $classAttribute = $class !== '' ? ' class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '"' : '';
+    return '<div id="' . $id . '"' . $classAttribute . '></div>';
 }
 
 function os_header_clear_filters(): string

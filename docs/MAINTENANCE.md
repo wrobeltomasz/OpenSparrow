@@ -923,9 +923,17 @@ not `$mi`. This holds inside arrow functions and closures too — `fn($column) =
 pg_ident($column)` was the single most common offender, and the short form there
 is no more readable for being one line long.
 
-Established domain terms are **not** abbreviations and stay as they are: `$id`,
-`$fk`, `$m2m`, `$sql`, `$csrf`, `$conn`, `$cfg`. Expanding those would make the
+Acronyms are **not** abbreviations and stay as they are: `$id`, `$fk`, `$m2m`,
+`$sql`, `$csrf`, `$url`, `$uuid`, `$mime`, `$dsn`. Expanding those would make the
 code read worse, not better.
+
+A shortened **word** is a different case and does get expanded, even when it had
+been treated as vocabulary before. `$cfg` and the whole `*Cfg` family
+(`$tableCfg`, `$calCfg`, `$wfCfg`, …) were expanded to `$config` / `*Config` —
+`Config`, not `Configuration`, because the tree already had 139 `$config`. Zero
+`$cfg`/`*Cfg` remain; do not reintroduce them. `$conn` is the one holdout: 698
+occurrences against a single `$connection`, not yet renamed. Existing code keeps
+it, new code should not add more.
 
 ### Name the value, not the loop
 
