@@ -12,9 +12,9 @@ async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, is
     const input = document.createElement('input');
     input.type = 'search';
 
-    const dlId = `fk_${state.currentTable}_${columnName}_${row['id']}`;
+    const dlId = `fk_${state.currentTable}_${column}_${row['id']}`;
     input.setAttribute('list', dlId);
-    input.dataset.column = columnName;
+    input.dataset.column = column;
     input.dataset.id = row['id'];
 
     if (columnConfig.readonly || isReadOnly) input.disabled = true;
@@ -22,11 +22,11 @@ async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, is
     const datalist = document.createElement('datalist');
     datalist.id = dlId;
 
-    const fkConfig = schema.tables[state.currentTable].foreign_keys[columnName];
+    const fkConfig = schema.tables[state.currentTable].foreign_keys[column];
     const dispColumns = Array.isArray(fkConfig.display_column)
         ? fkConfig.display_column
         : [fkConfig.display_column || 'id'];
-    const cacheKey = `${state.currentTable}_${columnName}`;
+    const cacheKey = `${state.currentTable}_${column}`;
     let currentDisplay = '';
 
     if (state.fkCache.has(cacheKey)) {
@@ -36,7 +36,7 @@ async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, is
             const displayValue = dispColumns.map(displayColumn => referenceRow[displayColumn + '__display'] ?? referenceRow[displayColumn] ?? '').join(' - ') || referenceRow['id'];
             option.value = displayValue;
             option.dataset.realId = referenceRow['id'];
-            if (String(referenceRow['id']) === String(row[columnName])) currentDisplay = displayValue;
+            if (String(referenceRow['id']) === String(row[column])) currentDisplay = displayValue;
             datalist.appendChild(option);
         });
     }

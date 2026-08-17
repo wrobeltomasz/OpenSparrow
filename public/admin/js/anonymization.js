@@ -32,7 +32,7 @@ async function saveConfig(partial, statusElement) {
     try {
         const result  = await apiFetch('api.php?action=anonymization_save', {
             method:  'POST',
-            body:    JSON.stringify({ ...anonConfig, version: anonymizationVersion }),
+            body:    JSON.stringify({ ...anonymizationConfig, version: anonymizationVersion }),
         });
         const data = await result.json();
         if (data.status === 'success') {

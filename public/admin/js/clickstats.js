@@ -238,7 +238,7 @@ function renderLog(panel, state) {
 
     async function load() {
         rowsHost.innerHTML = '<p>Loading...</p>';
-        const parameters = new URLSearchParameters({
+        const parameters = new URLSearchParams({
             action: 'clickstats_log',
             page: String(state.page),
         });

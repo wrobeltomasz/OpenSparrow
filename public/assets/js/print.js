@@ -15,7 +15,7 @@ function substitute(text, row) {
 
 function readParametersFromLocation() {
     const values = {};
-    new URLSearchParameters(window.location.search).forEach((value, key) => {
+    new URLSearchParams(window.location.search).forEach((value, key) => {
         if (key.startsWith('p_') && value !== '') values[key.slice(2)] = value;
     });
     return values;

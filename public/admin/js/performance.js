@@ -458,7 +458,7 @@ export function renderPerformancePage(context) {
         card.id = `perf-section-${i}`;
         button.addEventListener('click', () => runSection(suggestion.action, suggestion.render, button, body));
         panels[i].appendChild(card);
-        return { btn: button, body, ...s };
+        return { btn: button, body, ...suggestion };
     });
 
     buttonAll.addEventListener('click', async () => {

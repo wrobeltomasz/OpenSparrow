@@ -106,10 +106,10 @@ function makeSelect(options, current, onChange, className = '') {
     if (className) selectElement.className = className;
     options.forEach(option => {
         const optionElement   = document.createElement('option');
-        o.value   = option.value;
-        o.text    = option.label;
-        if (option.value === current) o.selected = true;
-        selectElement.appendChild(o);
+        optionElement.value   = option.value;
+        optionElement.text    = option.label;
+        if (option.value === current) optionElement.selected = true;
+        selectElement.appendChild(optionElement);
     });
     selectElement.addEventListener('change', () => onChange(selectElement.value));
     return selectElement;
@@ -446,8 +446,8 @@ function renderNotifyBody(bodyElement, action, users) {
     const allOptions = [
         { id: '{{ current_user.id }}', label: 'Current user ({{ current_user.id }})' },
         ...users.map(user => ({
-            id:    String(u.id),
-            label: u.username + (u.is_active === false || u.is_active === 'f' ? ' [inactive]' : ''),
+            id:    String(user.id),
+            label: user.username + (user.is_active === false || user.is_active === 'f' ? ' [inactive]' : ''),
         })),
     ];
 

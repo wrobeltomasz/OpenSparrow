@@ -331,7 +331,7 @@ async function loadList() {
     _state.loading = true;
     setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--muted)">Loading...</td></tr>');
 
-    const parameters = new URLSearchParameters({
+    const parameters = new URLSearchParams({
         action: 'list',
         page:   _state.page,
         limit:  PER_PAGE,

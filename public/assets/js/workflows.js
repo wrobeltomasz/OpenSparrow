@@ -93,7 +93,7 @@ export async function initWorkflows(menuListElement, containerElement, titleElem
         });
     });
 
-    const urlParameters = new URLSearchParameters(window.location.search);
+    const urlParameters = new URLSearchParams(window.location.search);
     if (urlParameters.has('workflows')) {
         const workflowId = urlParameters.get('workflow') || '';
         const workflowEntry = workflowId ? config.workflows.find(candidateWorkflow => candidateWorkflow.id === workflowId) : null;

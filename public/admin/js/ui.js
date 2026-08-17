@@ -433,7 +433,7 @@ export function createFullMenuPreview(config) {
             return items.filter(item => item.key !== dragKey);
         }
         return items.map(parent => parent.key === dragParent
-            ? { ...p, children: parent.children.filter(child => child.key !== dragKey) }
+            ? { ...parent, children: parent.children.filter(child => child.key !== dragKey) }
             : parent);
     }
 
@@ -455,7 +455,7 @@ export function createFullMenuPreview(config) {
 
         if (zone === 'nest') {
             items = items.map(parent => parent.key === targetKey
-                ? { ...p, children: [...(parent.children || []), { ...dragged, children: [] }] }
+                ? { ...parent, children: [...(parent.children || []), { ...dragged, children: [] }] }
                 : parent);
         } else {
             const topIndex = items.findIndex(item => item.key === targetKey);
@@ -466,9 +466,9 @@ export function createFullMenuPreview(config) {
                 items = items.map(parent => {
                     const childIndex = parent.children.findIndex(child => child.key === targetKey);
                     if (childIndex === -1) return parent;
-                    const newChildren = [...p.children];
+                    const newChildren = [...parent.children];
                     newChildren.splice(zone === 'before' ? childIndex : childIndex + 1, 0, { ...dragged, children: [] });
-                    return { ...p, children: newChildren };
+                    return { ...parent, children: newChildren };
                 });
             }
         }
@@ -621,7 +621,7 @@ export function createFullMenuPreview(config) {
             wrap.appendChild(paragraph);
             return;
         }
-        state = { items: (menuConfig.items || []).map(item => ({ ...i, children: item.children || [] })) };
+        state = { items: (menuConfig.items || []).map(item => ({ ...item, children: item.children || [] })) };
         rebuildDOM();
     }
 

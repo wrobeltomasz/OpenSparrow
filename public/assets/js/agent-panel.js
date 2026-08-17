@@ -145,7 +145,7 @@ function pageTableName() {
         const live = window.CURRENT_GRID_TABLE();
         if (live) return live;
     }
-    const fromUrl = new URLSearchParameters(window.location.search).get('table');
+    const fromUrl = new URLSearchParams(window.location.search).get('table');
     if (fromUrl) return fromUrl;
 
     return window.CURRENT_VIEW?.name ?? '';
@@ -418,7 +418,7 @@ function replaceWithAnswer(wrap, answer, sources, tagFallback, suggestions) {
     scrollDown();
 }
 
-function replaceWithError(wrap, messageElement) {
+function replaceWithError(wrap, message) {
     wrap.innerHTML = '';
     const element       = document.createElement('div');
     element.className   = 'ag-msg-error';

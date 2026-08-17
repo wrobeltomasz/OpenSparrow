@@ -143,7 +143,7 @@ async function fetchBoard() {
         });
         if (result.ok) {
             board = await result.json();
-            cards = Array.isArray(board.cards) ? board.cards.map(cardEntry => ({ ...c })) : [];
+            cards = Array.isArray(board.cards) ? board.cards.map(cardEntry => ({ ...cardEntry })) : [];
         }
     } catch (error) {
         console.error('Failed to load board', error);

@@ -469,7 +469,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (buttonClearFilters) buttonClearFilters.hidden = !currentSearch && currentType === 'all';
         tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-empty">${escHtml(TEXT.loading)}</td></tr>`;
         try {
-            const parameters = new URLSearchParameters({
+            const parameters = new URLSearchParams({
                 action: 'list',
                 page: currentPage,
                 limit: pageSize,

@@ -48,11 +48,11 @@ function formatVirtualValue(value) {
 
 function renderVirtualCell({ row, col: column, colCfg: columnConfig }) {
     const td = document.createElement('td');
-    td.dataset.column = columnName;
+    td.dataset.column = column;
     td.dataset.id = row['id'];
 
-    const value = row[columnName] !== undefined
-        ? row[columnName]
+    const value = row[column] !== undefined
+        ? row[column]
         : computeVirtual(columnConfig.formula, row);
 
     td.textContent = formatVirtualValue(value);

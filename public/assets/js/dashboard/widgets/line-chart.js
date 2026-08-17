@@ -85,7 +85,7 @@ function renderLineChart(widget) {
             ? PAD_L + innerW / 2
             : PAD_L + (pointIndex / (data.length - 1)) * innerW;
         const pointY = maxValue > 0 ? baseY - (point.value / maxValue) * innerH : baseY;
-        return { x: pointX, y: pointY, ...d };
+        return { x: pointX, y: pointY, ...point };
     });
 
     const svg = svgElement('svg', {

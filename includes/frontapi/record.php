@@ -15,7 +15,7 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableConfig   = $context->tableCfg;
+    $tableConfig   = $context->tableConfig;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
     $userId     = $context->userId;
@@ -81,7 +81,7 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableConfig   = $context->tableCfg;
+    $tableConfig   = $context->tableConfig;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
 
@@ -169,7 +169,7 @@ function frontapi_record_duplicate(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableConfig   = $context->tableCfg;
+    $tableConfig   = $context->tableConfig;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
 
@@ -256,7 +256,7 @@ function frontapi_record_delete(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableConfig   = $context->tableCfg;
+    $tableConfig   = $context->tableConfig;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
     $userId     = $context->userId;

@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.AppState.schema = schemaData;
 
         if (Object.keys(window.schema.tables).length > 0) {
-            const urlParameters = new URLSearchParameters(window.location.search);
+            const urlParameters = new URLSearchParams(window.location.search);
             const urlTable  = urlParameters.get('table');
             let initialTableName = Object.keys(window.schema.tables)[0];
             if (urlTable && window.schema.tables[urlTable]) {

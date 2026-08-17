@@ -134,7 +134,7 @@ function frontapi_calendar_move_event(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableConfig   = $context->tableCfg;
+    $tableConfig   = $context->tableConfig;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
 

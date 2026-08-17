@@ -11,13 +11,13 @@ import { makeInlineLink } from '../dom.js';
 
 function renderTextCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
     const td = document.createElement('td');
-    const value = row[columnName + '__display'] ?? row[columnName] ?? '';
+    const value = row[column + '__display'] ?? row[column] ?? '';
 
     if (!columnConfig.readonly && !isReadOnly) {
         td.contentEditable = 'true';
         td.classList.add('editable');
     }
-    td.dataset.column = columnName;
+    td.dataset.column = column;
     td.dataset.id = row['id'];
 
     if (columnConfig.validation_regexp) {
