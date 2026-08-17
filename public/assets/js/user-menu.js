@@ -269,7 +269,7 @@ async function openMyRecordsPanel() {
     myRecordsPanel.open();
     myRecordsPanel.clearStatus();
     myRecordsPanel.setStatus(I18n.t('common.loading'));
-    myRecordsPanel.bodyEl.textContent = '';
+    myRecordsPanel.bodyElement.textContent = '';
 
     try {
         const result = await fetch('api/owners.php?action=mine', {
@@ -279,7 +279,7 @@ async function openMyRecordsPanel() {
         if (!result.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
 
         myRecordsPanel.clearStatus();
-        renderMyRecords(myRecordsPanel.bodyEl, data.records ?? []);
+        renderMyRecords(myRecordsPanel.bodyElement, data.records ?? []);
     } catch (error) {
         myRecordsPanel.setStatus(error.message, true);
     }
@@ -346,7 +346,7 @@ async function openMyCommentsPanel() {
     myCommentsPanel.open();
     myCommentsPanel.clearStatus();
     myCommentsPanel.setStatus(I18n.t('common.loading'));
-    myCommentsPanel.bodyEl.textContent = '';
+    myCommentsPanel.bodyElement.textContent = '';
 
     try {
         const result = await fetch('api/comments.php?action=mine', {
@@ -356,7 +356,7 @@ async function openMyCommentsPanel() {
         if (!result.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
 
         myCommentsPanel.clearStatus();
-        renderMyComments(myCommentsPanel.bodyEl, data.comments ?? []);
+        renderMyComments(myCommentsPanel.bodyElement, data.comments ?? []);
     } catch (error) {
         myCommentsPanel.setStatus(error.message, true);
     }

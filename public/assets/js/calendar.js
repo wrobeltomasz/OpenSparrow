@@ -379,8 +379,8 @@ function renderCalendar() {
                 delButton.textContent = '✕';
                 delButton.title = t('calendar.delete_event');
                 delButton.setAttribute('aria-label', t('calendar.delete_event'));
-                delButton.addEventListener('click', (event) => {
-                    event.stopPropagation();
+                delButton.addEventListener('click', (clickEvent) => {
+                    clickEvent.stopPropagation();
                     deleteEvent(event);
                 });
                 evElement.appendChild(delButton);
@@ -406,7 +406,7 @@ async function deleteEvent(event) {
     hideRecordTooltip();
     if (!window.confirm(t('calendar.delete_confirm'))) return;
 
-    const eventIndex = eventsData.findIndex(event => event.id === event.id && event.table === event.table);
+    const eventIndex = eventsData.findIndex(item => item.id === event.id && item.table === event.table);
     if (eventIndex === -1) return;
     const removed = eventsData[eventIndex];
 

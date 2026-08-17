@@ -358,11 +358,11 @@ describe('OpenSparrow – Create Record: Actual Save', () => {
       cy.get('button[type="submit"].btn-save').click();
 
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).then(url => {
-        if (url.includes('index.php')) {
-          cy.url().should('include', `table=${TEST_TABLE}`);
-        } else {
-          cy.url().should('include', 'create.php');
+        if (url.includes('create.php')) {
           Cypress.log({ message: 'Form has more required fields — stayed on create page' });
+          cy.url().should('include', 'create.php');
+        } else {
+          cy.url().should('include', 'edit.php').and('include', `table=${TEST_TABLE}`);
         }
       });
     });
