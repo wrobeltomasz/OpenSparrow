@@ -330,9 +330,9 @@ function renderCalendar() {
 
             evElement.draggable = true;
 
-            evElement.addEventListener('dragstart', (event) => {
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('application/json', JSON.stringify({
+            evElement.addEventListener('dragstart', (dragEvent) => {
+                dragEvent.dataTransfer.effectAllowed = 'move';
+                dragEvent.dataTransfer.setData('application/json', JSON.stringify({
                     id: event.id,
                     table: event.table,
                     date: event.date
