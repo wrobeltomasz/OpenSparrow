@@ -41,9 +41,9 @@ describe('Security – CSRF on the frontend APIs', () => {
         method,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: { name: 'cypress-csrf-probe' },
-      }).then(res => {
-        cy.expectDenied(res, [403], `${method} ${url}`);
-        expect(JSON.stringify(res.body), 'CSRF error message').to.match(/CSRF/i);
+      }).then(result => {
+        cy.expectDenied(result, [403], `${method} ${url}`);
+        expect(JSON.stringify(result.body), 'CSRF error message').to.match(/CSRF/i);
       });
     });
   });
@@ -57,9 +57,9 @@ describe('Security – CSRF on the frontend APIs', () => {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': forged },
         body: { name: 'cypress-csrf-probe' },
-      }).then(res => {
-        cy.expectDenied(res, [403], 'forged token');
-        expect(JSON.stringify(res.body)).to.match(/CSRF/i);
+      }).then(result => {
+        cy.expectDenied(result, [403], 'forged token');
+        expect(JSON.stringify(result.body)).to.match(/CSRF/i);
       });
     });
   });
@@ -90,7 +90,7 @@ describe('Security – CSRF on the frontend APIs', () => {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: { action, ...body },
-      }).then(res => cy.expectDenied(res, [403], `${endpoint} ${action}`));
+      }).then(result => cy.expectDenied(result, [403], `${endpoint} ${action}`));
     });
   });
 
@@ -103,8 +103,8 @@ describe('Security – CSRF on the frontend APIs', () => {
             method: 'PUT',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: { table: TABLE, id: 1, action: 'update', name: 'cypress-csrf-probe' },
-          }).then(res => {
-            const body = typeof res.body === 'string' ? res.body : JSON.stringify(res.body || '');
+          }).then(result => {
+            const body = typeof result.body === 'string' ? result.body : JSON.stringify(result.body || '');
             expect(body, `PUT ${url} must not report success`)
               .to.not.match(/"(ok|success)"\s*:\s*true/);
           });
@@ -127,8 +127,8 @@ describe('Security – CSRF on the admin API', () => {
   it('every $postActions entry rejects GET with 405', () => {
     cy.readFile(ADMIN_API_SRC).then(source => {
       phpArrayStrings(source, 'postActions').forEach(action => {
-        cy.probe({ url: `/admin/api.php?action=${action}` }).then(res => {
-          expect(res.status, `GET action=${action}`).to.eq(405);
+        cy.probe({ url: `/admin/api.php?action=${action}` }).then(result => {
+          expect(result.status, `GET action=${action}`).to.eq(405);
         });
       });
     });
@@ -141,8 +141,8 @@ describe('Security – CSRF on the admin API', () => {
           url: `/admin/api.php?action=${action}`,
           method: 'POST',
           body: {},
-        }).then(res => {
-          expect(res.status, `POST action=${action} without token`).to.eq(403);
+        }).then(result => {
+          expect(result.status, `POST action=${action} without token`).to.eq(403);
         });
       });
     });

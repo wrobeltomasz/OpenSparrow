@@ -62,12 +62,12 @@ function frontapi_profile_change_password(\PgSql\Connection $conn, array $body, 
     }
 
     $sqlFetch = 'SELECT password_hash, salt FROM ' . sys_table('users') . ' WHERE id = $1';
-    $resFetch = @pg_query_params($conn, $sqlFetch, [$userId]);
-    if (!$resFetch) {
+    $fetchResult = @pg_query_params($conn, $sqlFetch, [$userId]);
+    if (!$fetchResult) {
         throw new ServerErrorException('Database error');
     }
 
-    $row = pg_fetch_assoc($resFetch);
+    $row = pg_fetch_assoc($fetchResult);
     if (!is_array($row) || ($row['password_hash'] ?? null) === null) {
         throw new UnauthorizedException('Account no longer exists.');
     }
@@ -80,17 +80,17 @@ function frontapi_profile_change_password(\PgSql\Connection $conn, array $body, 
 
     $newSalt    = bin2hex(random_bytes(32));
     $newHash    = password_hash($newSalt . $new, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
-    $sqlUpd = 'UPDATE ' . sys_table('users')
+    $sqlUpdate = 'UPDATE ' . sys_table('users')
         . ' SET password_hash = $1, salt = $2, password_algo = $3, password_params = $4 WHERE id = $5';
-    $params = [
+    $parameters = [
         $newHash,
         $newSalt,
         'argon2id',
         json_encode(ARGON2_OPTIONS),
         $userId,
     ];
-    $resUpd = @pg_query_params($conn, $sqlUpd, $params);
-    if (!$resUpd) {
+    $updateResult = @pg_query_params($conn, $sqlUpdate, $parameters);
+    if (!$updateResult) {
         throw new ServerErrorException('Database error');
     }
 

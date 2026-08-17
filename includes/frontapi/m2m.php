@@ -30,12 +30,12 @@ function frontapi_m2m_rows(FrontApiContext $context): never
         throw ResponseException::encoded(['data' => (object)[]]);
     }
 
-    $cfg        = $m2mList[$m2mIndex];
-    $junctionTable         = $cfg['junction_table'] ?? '';
-    $selfFk     = $cfg['self_fk']        ?? '';
-    $otherFk    = $cfg['other_fk']       ?? '';
-    $otherTable = $cfg['other_table']    ?? '';
-    $displayColumn = $cfg['display_column'] ?? 'id';
+    $config        = $m2mList[$m2mIndex];
+    $junctionTable         = $config['junction_table'] ?? '';
+    $selfFk     = $config['self_fk']        ?? '';
+    $otherFk    = $config['other_fk']       ?? '';
+    $otherTable = $config['other_table']    ?? '';
+    $displayColumn = $config['display_column'] ?? 'id';
 
     if (
         !$junctionTable || !$selfFk || !$otherFk || !$otherTable
@@ -48,12 +48,12 @@ function frontapi_m2m_rows(FrontApiContext $context): never
     $otSchema = $schema['tables'][$otherTable]['schema'] ?? 'public';
     $placeholders = implode(',', array_map(fn($placeholderIndex) => '$' . ($placeholderIndex + 1), array_keys($ids)));
 
-    $queryParams  = $ids;
+    $sqlParameters  = $ids;
     $ownerSql = '';
     if (!empty($schema['tables'][$table]['owner_restricted'])) {
         $ownerSql  = owner_restriction_sql('j.' . pg_ident($selfFk), count($ids) + 1, count($ids) + 2);
-        $queryParams[] = $table;
-        $queryParams[] = $context->userId;
+        $sqlParameters[] = $table;
+        $sqlParameters[] = $context->userId;
     }
 
     $sql = sprintf(
@@ -75,7 +75,7 @@ function frontapi_m2m_rows(FrontApiContext $context): never
         pg_ident($selfFk),
         pg_ident($displayColumn)
     );
-    $result = @pg_query_params($context->conn, $sql, $queryParams);
+    $result = @pg_query_params($context->conn, $sql, $sqlParameters);
     if (!$result) {
         throw ResponseException::encoded(['data' => (object)[]]);
     }

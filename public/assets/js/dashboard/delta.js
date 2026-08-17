@@ -6,23 +6,23 @@
 import { I18n } from '../i18n.js';
 
 function buildDelta(widget) {
-    const prev = widget.prev_data;
-    const cur = widget.data;
-    if (typeof prev !== 'number' || typeof cur !== 'number') return null;
+    const previous = widget.prev_data;
+    const current = widget.data;
+    if (typeof previous !== 'number' || typeof current !== 'number') return null;
 
-    const diff = cur - prev;
-    const el = document.createElement('div');
-    el.className = 'dash-delta ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat');
+    const difference = current - previous;
+    const element = document.createElement('div');
+    element.className = 'dash-delta ' + (difference > 0 ? 'up' : difference < 0 ? 'down' : 'flat');
 
-    if (prev === 0) {
-        el.textContent = diff === 0 ? '0%' : (diff > 0 ? '+' : '') + String(diff);
+    if (previous === 0) {
+        element.textContent = difference === 0 ? '0%' : (difference > 0 ? '+' : '') + String(difference);
     } else {
-        const pct = (diff / prev) * 100;
+        const pct = (difference / previous) * 100;
         const rounded = Math.abs(pct) >= 10 ? Math.round(pct) : Math.round(pct * 10) / 10;
-        el.textContent = (diff > 0 ? '+' : '') + rounded + '%';
+        element.textContent = (difference > 0 ? '+' : '') + rounded + '%';
     }
-    el.title = I18n.t('dashboard.vs_prev', { prev });
-    return el;
+    element.title = I18n.t('dashboard.vs_prev', { prev: previous });
+    return element;
 }
 
 export { buildDelta };

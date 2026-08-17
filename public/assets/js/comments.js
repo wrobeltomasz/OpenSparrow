@@ -28,7 +28,7 @@ function formatBody(raw) {
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 }
 
-function buildMsg(c) {
+function buildMessage(c) {
     const isMine   = parseInt(c.user_id, 10) === myId;
     const isAdmin  = myRole === 'editor';
     const deleted  = !!c.deleted_at;
@@ -75,11 +75,11 @@ function buildMsg(c) {
     bubble.appendChild(body);
 
     if (!deleted && (isMine || isAdmin)) {
-        const delBtn = document.createElement('button');
-        delBtn.className = 'c-msg-del-btn';
-        delBtn.textContent = I18n.t('comments.delete');
-        delBtn.addEventListener('click', () => deleteComment(parseInt(c.id, 10), wrap));
-        bubble.appendChild(delBtn);
+        const delButton = document.createElement('button');
+        delButton.className = 'c-msg-del-btn';
+        delButton.textContent = I18n.t('comments.delete');
+        delButton.addEventListener('click', () => deleteComment(parseInt(c.id, 10), wrap));
+        bubble.appendChild(delButton);
     }
 
     wrap.appendChild(avatar);
@@ -95,17 +95,17 @@ function buildEmptyState() {
 }
 
 async function fetchComments() {
-    const res = await fetch(
+    const result = await fetch(
         `api/comments.php?action=list&related_table=${encodeURIComponent(table)}&related_id=${encodeURIComponent(recordId)}`,
         { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
     );
-    const data = await res.json();
+    const data = await result.json();
     if (!data.success) throw new Error(data.error ?? 'Failed to load comments.');
     return data.comments ?? [];
 }
 
 async function postComment(body) {
-    const res = await apiFetch('api/comments.php', {
+    const result = await apiFetch('api/comments.php', {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: {
@@ -116,14 +116,14 @@ async function postComment(body) {
             csrf_token: csrfToken(),
         },
     });
-    const data = await res.json();
+    const data = await result.json();
     if (!data.success) throw new Error(data.error ?? 'Failed to post comment.');
     return data.comment;
 }
 
-async function deleteComment(id, msgEl) {
+async function deleteComment(id, messageElement) {
     if (!confirm(I18n.t('comments.delete_confirm'))) return;
-    const res = await apiFetch('api/comments.php', {
+    const result = await apiFetch('api/comments.php', {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: {
@@ -132,22 +132,22 @@ async function deleteComment(id, msgEl) {
             csrf_token: csrfToken(),
         },
     });
-    const data = await res.json();
+    const data = await result.json();
     if (!data.success) {
         alert(data.error ?? 'Failed to delete comment.');
         return;
     }
 
-    msgEl.classList.add('c-msg-deleted');
-    const bodyEl = msgEl.querySelector('.c-msg-body');
-    if (bodyEl) {
-        bodyEl.textContent = '';
+    messageElement.classList.add('c-msg-deleted');
+    const bodyElement = messageElement.querySelector('.c-msg-body');
+    if (bodyElement) {
+        bodyElement.textContent = '';
         const delEm = document.createElement('em');
         delEm.textContent = I18n.t('comments.deleted_text');
-        bodyEl.appendChild(delEm);
+        bodyElement.appendChild(delEm);
     }
-    const delBtn = msgEl.querySelector('.c-msg-del-btn');
-    if (delBtn) delBtn.remove();
+    const delButton = messageElement.querySelector('.c-msg-del-btn');
+    if (delButton) delButton.remove();
 }
 
 let knownIds = new Set();
@@ -166,7 +166,7 @@ function renderComments(thread, comments) {
         const cid = String(c.id);
         if (!knownIds.has(cid)) {
             knownIds.add(cid);
-            thread.appendChild(buildMsg(c));
+            thread.appendChild(buildMessage(c));
             appended = true;
         }
     }
@@ -190,21 +190,21 @@ async function init() {
         const toolbarWrap = document.createElement('div');
         toolbarWrap.className = 'c-toolbar';
 
-        const boldBtn = document.createElement('button');
-        boldBtn.className = 'c-toolbar-btn';
-        boldBtn.type = 'button';
-        boldBtn.textContent = 'B';
-        boldBtn.title = I18n.t('comments.bold_title');
+        const boldButton = document.createElement('button');
+        boldButton.className = 'c-toolbar-btn';
+        boldButton.type = 'button';
+        boldButton.textContent = 'B';
+        boldButton.title = I18n.t('comments.bold_title');
 
-        const italicBtn = document.createElement('button');
-        italicBtn.className = 'c-toolbar-btn';
-        italicBtn.type = 'button';
-        italicBtn.style.fontStyle = 'italic';
-        italicBtn.textContent = 'I';
-        italicBtn.title = I18n.t('comments.italic_title');
+        const italicButton = document.createElement('button');
+        italicButton.className = 'c-toolbar-btn';
+        italicButton.type = 'button';
+        italicButton.style.fontStyle = 'italic';
+        italicButton.textContent = 'I';
+        italicButton.title = I18n.t('comments.italic_title');
 
-        toolbarWrap.appendChild(boldBtn);
-        toolbarWrap.appendChild(italicBtn);
+        toolbarWrap.appendChild(boldButton);
+        toolbarWrap.appendChild(italicButton);
         panel.appendChild(toolbarWrap);
 
         const inputArea = document.createElement('div');
@@ -216,13 +216,13 @@ async function init() {
         textarea.rows = 2;
         textarea.maxLength = 4000;
 
-        const sendBtn = document.createElement('button');
-        sendBtn.className = 'btn btn-primary c-send-btn';
-        sendBtn.type = 'button';
-        sendBtn.textContent = I18n.t('comments.send');
+        const sendButton = document.createElement('button');
+        sendButton.className = 'btn btn-primary c-send-btn';
+        sendButton.type = 'button';
+        sendButton.textContent = I18n.t('comments.send');
 
         inputArea.appendChild(textarea);
-        inputArea.appendChild(sendBtn);
+        inputArea.appendChild(sendButton);
         panel.appendChild(inputArea);
 
         function wrapSelection(before, after) {
@@ -236,21 +236,21 @@ async function init() {
             textarea.focus();
         }
 
-        boldBtn.addEventListener('click', () => wrapSelection('**', '**'));
-        italicBtn.addEventListener('click', () => wrapSelection('*', '*'));
+        boldButton.addEventListener('click', () => wrapSelection('**', '**'));
+        italicButton.addEventListener('click', () => wrapSelection('*', '*'));
 
         textarea.addEventListener('keydown', e => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
-                sendBtn.click();
+                sendButton.click();
             }
         });
 
-        sendBtn.addEventListener('click', async () => {
+        sendButton.addEventListener('click', async () => {
             const body = textarea.value.trim();
             if (!body) return;
 
-            sendBtn.disabled = true;
+            sendButton.disabled = true;
             try {
                 const comment = await postComment(body);
                 textarea.value = '';
@@ -258,12 +258,12 @@ async function init() {
                 const empty = thread.querySelector('.c-empty');
                 if (empty) empty.remove();
                 knownIds.add(String(comment.id));
-                thread.appendChild(buildMsg(comment));
+                thread.appendChild(buildMessage(comment));
                 thread.scrollTop = thread.scrollHeight;
-            } catch (err) {
-                alert(err.message);
+            } catch (error) {
+                alert(error.message);
             } finally {
-                sendBtn.disabled = false;
+                sendButton.disabled = false;
                 textarea.focus();
             }
         });
@@ -271,7 +271,7 @@ async function init() {
 
     fetchComments()
         .then(comments => renderComments(thread, comments))
-        .catch(err => console.error('Comments load failed:', err));
+        .catch(error => console.error('Comments load failed:', error));
 
     let pollTimer = null;
 
@@ -291,11 +291,11 @@ async function init() {
         }
     }
 
-    const commentsTabBtn = document.querySelector('[data-tab="tab-comments"]');
+    const commentsTabButton = document.querySelector('[data-tab="tab-comments"]');
     const commentsPanel  = document.getElementById('tab-comments');
 
-    if (commentsTabBtn) {
-        commentsTabBtn.addEventListener('click', () => startPolling());
+    if (commentsTabButton) {
+        commentsTabButton.addEventListener('click', () => startPolling());
     }
 
     if (typeof IntersectionObserver !== 'undefined' && commentsPanel) {

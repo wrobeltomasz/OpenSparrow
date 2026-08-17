@@ -25,8 +25,10 @@ if ($action === 'overview') {
         $usersRow    = $usersResult ? pg_fetch_assoc($usersResult) : ['total' => 0, 'active' => 0];
 
         require_once __DIR__ . '/../config_store.php';
-        $schemaObj   = config_get('schema');
-        $schemaTables = (is_array($schemaObj) && is_array($schemaObj['tables'] ?? null)) ? $schemaObj['tables'] : [];
+        $schemaObject   = config_get('schema');
+        $schemaTables = (is_array($schemaObject) && is_array($schemaObject['tables'] ?? null))
+            ? $schemaObject['tables']
+            : [];
 
         $tables   = [];
         $totalRec = 0;
@@ -59,25 +61,33 @@ if ($action === 'overview') {
             : 0;
 
         require_once __DIR__ . '/../config_store.php';
-        $viewsObj  = config_get('views');
-        $viewCount = (is_array($viewsObj) && is_array($viewsObj['views'] ?? null)) ? count($viewsObj['views']) : 0;
+        $viewsObject  = config_get('views');
+        $viewCount = (is_array($viewsObject) && is_array($viewsObject['views'] ?? null))
+            ? count($viewsObject['views'])
+            : 0;
 
         $autoCount = count(auto_cfg_read());
 
-        $wfObj    = config_get('workflows');
-        $wfCount  = (is_array($wfObj) && is_array($wfObj['workflows'] ?? null)) ? count($wfObj['workflows']) : 0;
+        $workflowObject    = config_get('workflows');
+        $workflowCount  = (is_array($workflowObject) && is_array($workflowObject['workflows'] ?? null))
+            ? count($workflowObject['workflows'])
+            : 0;
 
-        $etlObj    = config_get('etl');
-        $etlCount  = (is_array($etlObj) && is_array($etlObj['jobs'] ?? null)) ? count($etlObj['jobs']) : 0;
+        $etlObject    = config_get('etl');
+        $etlCount  = (is_array($etlObject) && is_array($etlObject['jobs'] ?? null)) ? count($etlObject['jobs']) : 0;
 
         $printRow  = config_get_row('print');
-        $printCfg  = $printRow['value'] ?? [];
-        $printCount = (is_array($printCfg) && is_array($printCfg['prints'] ?? null)) ? count($printCfg['prints']) : 0;
+        $printConfig  = $printRow['value'] ?? [];
+        $printCount = (is_array($printConfig) && is_array($printConfig['prints'] ?? null))
+            ? count($printConfig['prints'])
+            : 0;
 
-        $anonRow   = config_get_row('anonymization');
-        $anonCfg   = $anonRow['value'] ?? [];
-        $anonCount = (is_array($anonCfg) && is_array($anonCfg['rules'] ?? null)) ? count($anonCfg['rules']) : 0;
-        $anonEnabled = is_array($anonCfg) && !empty($anonCfg['enabled']);
+        $anonymizationRow   = config_get_row('anonymization');
+        $anonymizationConfig   = $anonymizationRow['value'] ?? [];
+        $anonymizationCount = (is_array($anonymizationConfig) && is_array($anonymizationConfig['rules'] ?? null))
+            ? count($anonymizationConfig['rules'])
+            : 0;
+        $anonymizationEnabled = is_array($anonymizationConfig) && !empty($anonymizationConfig['enabled']);
 
         $cronLogTable = sys_table('users_notifications_log');
         $configLogResult  = @pg_query($conn, "
@@ -168,11 +178,11 @@ if ($action === 'overview') {
             'rag_count'         => $ragCount,
             'view_count'        => $viewCount,
             'automation_count'  => $autoCount,
-            'workflow_count'    => $wfCount,
+            'workflow_count'    => $workflowCount,
             'etl_job_count'     => $etlCount,
             'print_count'       => $printCount,
-            'anonymization_rule_count' => $anonCount,
-            'anonymization_enabled'    => $anonEnabled,
+            'anonymization_rule_count' => $anonymizationCount,
+            'anonymization_enabled'    => $anonymizationEnabled,
             'last_cron_run'     => $lastCronRun,
             'cron_recent'       => $cronRecent,
             'audit_recent'      => $auditRecent,

@@ -7,35 +7,35 @@ import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
 import { createPageHeader } from './ui.js';
 
-export async function renderAuditEditor(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '<h3>Loading audit settings...</h3>';
+export async function renderAuditEditor(context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = '<h3>Loading audit settings...</h3>';
 
-    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
-    const myId = workspaceEl._renderId;
+    workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
+    const myId = workspaceElement._renderId;
 
     let data;
     try {
-        const res = await apiFetch('api.php?action=get_snapshot_setting');
-        data = await res.json();
+        const result = await apiFetch('api.php?action=get_snapshot_setting');
+        data = await result.json();
     } catch (e) {
-        if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<h3 style="color:var(--error);">Error loading audit settings. Check server logs.</h3>';
+        if (workspaceElement._renderId !== myId) return;
+        workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading audit settings. Check server logs.</h3>';
         return;
     }
 
-    if (workspaceEl._renderId !== myId) return;
+    if (workspaceElement._renderId !== myId) return;
 
-    const lockedByEnv = data.locked_by_env ?? false;
+    const lockedByEnvironment = data.locked_by_env ?? false;
     let enabled = data.enabled ?? false;
     const tableExists = data.table_exists ?? false;
     const snapshotCount = data.snapshot_count;
 
-    workspaceEl.innerHTML = '';
+    workspaceElement.innerHTML = '';
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     wrap.appendChild(createPageHeader(
         'Audit & Record Snapshots',
@@ -45,7 +45,7 @@ export async function renderAuditEditor(ctx) {
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid; gap:10px; margin-bottom:24px;';
 
-    const buildCard = (borderColor, titleColor, prefix, title, msg) => {
+    const buildCard = (borderColor, titleColor, prefix, title, message) => {
         const div = document.createElement('div');
         div.style.cssText = `padding:12px 16px; border-left:4px solid ${borderColor}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
 
@@ -55,21 +55,21 @@ export async function renderAuditEditor(ctx) {
 
         const span = document.createElement('span');
         span.style.color = 'var(--muted)';
-        span.textContent = msg;
+        span.textContent = message;
 
         div.append(strong, span);
         return div;
     };
 
-    const statusCard = (title, isOk, msg) => buildCard(
+    const statusCard = (title, isOk, message) => buildCard(
         isOk ? 'var(--ok)' : 'var(--error)',
         isOk ? 'var(--ok)' : 'var(--error)',
         isOk ? '[OK]' : '[FAIL]',
         title,
-        msg
+        message
     );
 
-    const infoCard = (title, msg) => buildCard('var(--accent)', 'var(--text)', '[INFO]', title, msg);
+    const informationCard = (title, message) => buildCard('var(--accent)', 'var(--text)', '[INFO]', title, message);
 
     grid.appendChild(statusCard(
         'spw_record_snapshots table',
@@ -79,8 +79,8 @@ export async function renderAuditEditor(ctx) {
             : 'Table not found. Run <strong>Initialize System Tables</strong> in System Health first.'
     ));
 
-    if (lockedByEnv) {
-        grid.appendChild(infoCard(
+    if (lockedByEnvironment) {
+        grid.appendChild(informationCard(
             'Controlled by environment variable',
             'The <code>RECORD_SNAPSHOTS_ENABLED</code> env var is set — the toggle below is read-only. Remove the env var to control this setting from the admin panel.'
         ));
@@ -102,11 +102,11 @@ export async function renderAuditEditor(ctx) {
     const labelTitle = document.createElement('strong');
     labelTitle.style.cssText = 'display:block;  margin-bottom:4px;';
     labelTitle.textContent = 'Record Snapshots';
-    const labelDesc = document.createElement('span');
-    labelDesc.style.cssText = 'color:var(--muted); ';
-    labelDesc.textContent = 'Capture full record state on every write operation and store it in spw_record_snapshots.';
+    const labelDescription = document.createElement('span');
+    labelDescription.style.cssText = 'color:var(--muted); ';
+    labelDescription.textContent = 'Capture full record state on every write operation and store it in spw_record_snapshots.';
     labelGroup.appendChild(labelTitle);
-    labelGroup.appendChild(labelDesc);
+    labelGroup.appendChild(labelDescription);
 
     const switchLabel = document.createElement('label');
     switchLabel.style.cssText = 'position:relative; display:inline-block; width:48px; height:26px; flex-shrink:0;';
@@ -114,12 +114,12 @@ export async function renderAuditEditor(ctx) {
     const switchInput = document.createElement('input');
     switchInput.type = 'checkbox';
     switchInput.checked = enabled;
-    switchInput.disabled = lockedByEnv || !tableExists;
+    switchInput.disabled = lockedByEnvironment || !tableExists;
     switchInput.style.cssText = 'opacity:0; width:0; height:0; position:absolute;';
 
     const switchSlider = document.createElement('span');
     switchSlider.style.cssText = `
-        position:absolute; cursor:${lockedByEnv || !tableExists ? 'not-allowed' : 'pointer'};
+        position:absolute; cursor:${lockedByEnvironment || !tableExists ? 'not-allowed' : 'pointer'};
         top:0; left:0; right:0; bottom:0;
         background:${enabled ? 'var(--accent)' : 'var(--border)'};
         border-radius:26px; transition:background .2s;
@@ -138,28 +138,28 @@ export async function renderAuditEditor(ctx) {
     const pillAnchor = document.createElement('span');
 
     switchInput.addEventListener('change', async () => {
-        const newVal = switchInput.checked;
+        const newValue = switchInput.checked;
         switchInput.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_snapshot_setting', {
+            const result = await apiFetch('api.php?action=set_snapshot_setting', {
                 method: 'POST',
-                body: JSON.stringify({ enabled: newVal }),
+                body: JSON.stringify({ enabled: newValue }),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
-                enabled = newVal;
-                switchSlider.style.background = newVal ? 'var(--accent)' : 'var(--border)';
-                switchKnob.style.left = newVal ? '24px' : '3px';
-                showStatusPill(pillAnchor, newVal ? 'Snapshots enabled' : 'Snapshots disabled', 'success');
+                enabled = newValue;
+                switchSlider.style.background = newValue ? 'var(--accent)' : 'var(--border)';
+                switchKnob.style.left = newValue ? '24px' : '3px';
+                showStatusPill(pillAnchor, newValue ? 'Snapshots enabled' : 'Snapshots disabled', 'success');
             } else {
-                switchInput.checked = !newVal;
+                switchInput.checked = !newValue;
                 showStatusPill(pillAnchor, result.error || 'Error saving setting', 'error');
             }
         } catch (e) {
-            switchInput.checked = !newVal;
+            switchInput.checked = !newValue;
             showStatusPill(pillAnchor, 'Request failed', 'error');
         }
-        switchInput.disabled = lockedByEnv || !tableExists;
+        switchInput.disabled = lockedByEnvironment || !tableExists;
     });
 
     toggleRow.appendChild(labelGroup);

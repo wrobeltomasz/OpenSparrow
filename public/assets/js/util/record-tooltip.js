@@ -10,14 +10,14 @@ const TOOLTIP_STYLE = 'position:absolute;display:none;background:#fff;border:1px
     + 'overflow-y:auto;color:var(--text);';
 
 export function getRecordTooltip() {
-    let el = document.getElementById(TOOLTIP_ID);
-    if (!el) {
-        el = document.createElement('div');
-        el.id = TOOLTIP_ID;
-        el.style.cssText = TOOLTIP_STYLE;
-        document.body.appendChild(el);
+    let element = document.getElementById(TOOLTIP_ID);
+    if (!element) {
+        el: element = document.createElement('div');
+        element.id = TOOLTIP_ID;
+        element.style.cssText = TOOLTIP_STYLE;
+        document.body.appendChild(element);
     }
-    return el;
+    return element;
 }
 
 export function rowsFromRecord(rowData = {}, columns = {}) {
@@ -33,14 +33,14 @@ export function rowsFromRecord(rowData = {}, columns = {}) {
     for (const key of keys) {
         if (key === 'id') continue;
         if (key.endsWith('__display')) continue;
-        const val = rowData[key + '__display'] ?? rowData[key];
-        if (val === null || val === undefined || val === '') continue;
-        const colCfg = columns[key] || {};
-        const label = colCfg.display_name || key;
-        const color = (colCfg.type || '').toLowerCase() === 'enum'
-            ? (colCfg.enum_colors?.[String(val)] ?? null)
+        const value = rowData[key + '__display'] ?? rowData[key];
+        if (value === null || value === undefined || value === '') continue;
+        const columnConfig = columns[key] || {};
+        const label = columnConfig.display_name || key;
+        const color = (columnConfig.type || '').toLowerCase() === 'enum'
+            ? (columnConfig.enum_colors?.[String(value)] ?? null)
             : null;
-        rows.push({ label, value: String(val), color });
+        rows.push({ label, value: String(value), color });
     }
     return rows;
 }
@@ -48,15 +48,15 @@ export function rowsFromRecord(rowData = {}, columns = {}) {
 let showTimer = null;
 
 function renderTooltipNow(anchor, { title, rows } = {}) {
-    const el = getRecordTooltip();
-    el.innerHTML = '';
+    const element = getRecordTooltip();
+    element.innerHTML = '';
 
     if (title !== undefined && title !== null && title !== '') {
         const header = document.createElement('div');
         header.style.cssText = 'font-weight:bold;font-size:14px;margin-bottom:8px;'
             + 'border-bottom:1px solid var(--border-light);padding-bottom:5px;';
         header.textContent = String(title);
-        el.appendChild(header);
+        element.appendChild(header);
     }
 
     (rows || []).forEach(row => {
@@ -75,23 +75,23 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
             rowDiv.appendChild(swatch);
         }
 
-        const spanVal = document.createElement('span');
-        spanVal.style.color = 'var(--text)';
-        spanVal.textContent = String(row.value);
-        rowDiv.appendChild(spanVal);
+        const spanValue = document.createElement('span');
+        spanValue.style.color = 'var(--text)';
+        spanValue.textContent = String(row.value);
+        rowDiv.appendChild(spanValue);
 
-        el.appendChild(rowDiv);
+        element.appendChild(rowDiv);
     });
 
-    el.style.display = 'block';
+    element.style.display = 'block';
 
     const rect = anchor.getBoundingClientRect();
-    let topPos = rect.bottom + window.scrollY + 5;
-    if (topPos + el.offsetHeight > window.innerHeight + window.scrollY) {
-        topPos = rect.top + window.scrollY - el.offsetHeight - 5;
+    let topPosition = rect.bottom + window.scrollY + 5;
+    if (topPosition + element.offsetHeight > window.innerHeight + window.scrollY) {
+        topPos: topPosition = rect.top + window.scrollY - element.offsetHeight - 5;
     }
-    el.style.left = (rect.left + window.scrollX) + 'px';
-    el.style.top = topPos + 'px';
+    element.style.left = (rect.left + window.scrollX) + 'px';
+    element.style.top = topPosition + 'px';
 }
 
 export function showRecordTooltip(anchor, model = {}, delay = 1000) {
@@ -102,6 +102,6 @@ export function showRecordTooltip(anchor, model = {}, delay = 1000) {
 export function hideRecordTooltip() {
     clearTimeout(showTimer);
     showTimer = null;
-    const el = document.getElementById(TOOLTIP_ID);
-    if (el) el.style.display = 'none';
+    const element = document.getElementById(TOOLTIP_ID);
+    if (element) element.style.display = 'none';
 }

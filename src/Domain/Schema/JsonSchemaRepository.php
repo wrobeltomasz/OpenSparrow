@@ -59,32 +59,32 @@ final class JsonSchemaRepository
         return $this->rawData;
     }
 
-    private function build(string $name, array $cfg): TableConfig
+    private function build(string $name, array $config): TableConfig
     {
         $columns = [];
-        foreach ($cfg['columns'] ?? [] as $colName => $colCfg) {
-            $columns[$colName] = new ColumnConfig(
-                name: $colName,
-                type: $colCfg['type'] ?? 'text',
-                displayName: $colCfg['display_name'] ?? $colName,
-                readonly: !empty($colCfg['readonly']),
-                notNull: !empty($colCfg['not_null']),
-                showInEdit: ($colCfg['show_in_edit'] ?? true) !== false,
-                options: $colCfg['options'] ?? [],
-                enumColors: $colCfg['enum_colors'] ?? [],
-                validationRegexp: $colCfg['validation_regexp'] ?? null,
-                validationMessage: $colCfg['validation_message'] ?? null,
+        foreach ($config['columns'] ?? [] as $columnName => $columnConfig) {
+            $columns[$columnName] = new ColumnConfig(
+                name: $columnName,
+                type: $columnConfig['type'] ?? 'text',
+                displayName: $columnConfig['display_name'] ?? $columnName,
+                readonly: !empty($columnConfig['readonly']),
+                notNull: !empty($columnConfig['not_null']),
+                showInEdit: ($columnConfig['show_in_edit'] ?? true) !== false,
+                options: $columnConfig['options'] ?? [],
+                enumColors: $columnConfig['enum_colors'] ?? [],
+                validationRegexp: $columnConfig['validation_regexp'] ?? null,
+                validationMessage: $columnConfig['validation_message'] ?? null,
             );
         }
         return new TableConfig(
             name: $name,
-            schema: $cfg['schema'] ?? 'public',
-            displayName: $cfg['display_name'] ?? $name,
+            schema: $config['schema'] ?? 'public',
+            displayName: $config['display_name'] ?? $name,
             columns: $columns,
-            foreignKeys: $cfg['foreign_keys'] ?? [],
-            subtables: $cfg['subtables'] ?? [],
+            foreignKeys: $config['foreign_keys'] ?? [],
+            subtables: $config['subtables'] ?? [],
             primaryKey: 'id',
-            icon: $cfg['icon'] ?? '',
+            icon: $config['icon'] ?? '',
         );
     }
 }

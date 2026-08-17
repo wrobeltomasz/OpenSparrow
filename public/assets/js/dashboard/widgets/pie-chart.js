@@ -19,7 +19,7 @@ function renderPieChart(widget) {
     const total = data.reduce((sum, d) => sum + parseFloat(d.value), 0);
     if (total === 0) { wrapper.textContent = window.I18n.t('dashboard.sum_zero'); return wrapper; }
 
-    const groupCol = widget.query?.group_column;
+    const groupColumn = widget.query?.group_column;
     const columnType = widget.column_type;
     const legend = document.createElement('div');
     legend.className = 'dash-pie-legend';
@@ -27,11 +27,11 @@ function renderPieChart(widget) {
     let conicStops = [];
     let currentAngle = 0;
 
-    data.forEach((row, idx) => {
-        const val = parseFloat(row.value);
-        const percent = (val / total) * 100;
-        const deg = (val / total) * 360;
-        const color = COLORS[idx % COLORS.length];
+    data.forEach((row, index) => {
+        const value = parseFloat(row.value);
+        const percent = (value / total) * 100;
+        const deg = (value / total) * 360;
+        const color = COLORS[index % COLORS.length];
         conicStops.push(`${color} ${currentAngle}deg ${currentAngle + deg}deg`);
         currentAngle += deg;
 
@@ -43,11 +43,11 @@ function renderPieChart(widget) {
         box.style.backgroundColor = color;
 
         const displayLabel = formatCellValue(row.label || 'None', columnType);
-        const lbl = document.createElement('span');
-        lbl.textContent = `${displayLabel} - ${val} (${percent.toFixed(1)}%)`;
+        const label = document.createElement('span');
+        label.textContent = `${displayLabel} - ${value} (${percent.toFixed(1)}%)`;
 
-        item.append(box, lbl);
-        applyDrillDown(item, widget.table, groupCol, row.label);
+        item.append(box, label);
+        applyDrillDown(item, widget.table, groupColumn, row.label);
         legend.appendChild(item);
     });
 

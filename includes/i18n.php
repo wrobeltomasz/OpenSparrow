@@ -89,21 +89,21 @@ final class I18n
         return self::FALLBACK;
     }
 
-    public static function t(string $key, array $vars = [], ?int $count = null): string
+    public static function t(string $key, array $variables = [], ?int $count = null): string
     {
-        $inst  = self::instance();
-        $value = $inst->resolve($key, $inst->strings)
-              ?? $inst->resolve($key, $inst->fallback);
+        $instance  = self::instance();
+        $value = $instance->resolve($key, $instance->strings)
+              ?? $instance->resolve($key, $instance->fallback);
 
         if ($value === null) {
             if (defined('APP_ENV') && APP_ENV === 'development') {
-                error_log("i18n missing key: {$key} [{$inst->locale}]");
+                error_log("i18n missing key: {$key} [{$instance->locale}]");
             }
             return $key;
         }
 
         if (is_array($value) && $count !== null) {
-            $form  = self::pluralForm($inst->locale, $count);
+            $form  = self::pluralForm($instance->locale, $count);
             $value = $value[$form] ?? $value['other'] ?? reset($value);
         }
 
@@ -111,11 +111,11 @@ final class I18n
             return $key;
         }
 
-        if ($vars !== []) {
+        if ($variables !== []) {
             $value = (string)preg_replace_callback(
                 '/\{(\w+)\}/',
-                static fn(array $matches): string => isset($vars[$matches[1]])
-                    ? (string)$vars[$matches[1]]
+                static fn(array $matches): string => isset($variables[$matches[1]])
+                    ? (string)$variables[$matches[1]]
                     : $matches[0],
                 $value
             );
@@ -126,8 +126,8 @@ final class I18n
 
     public static function flatBundle(): array
     {
-        $inst   = self::instance();
-        $merged = array_replace_recursive($inst->fallback, $inst->strings);
+        $instance   = self::instance();
+        $merged = array_replace_recursive($instance->fallback, $instance->strings);
         unset($merged['_meta']);
         return self::flatten($merged);
     }
@@ -350,7 +350,7 @@ final class I18n
     }
 }
 
-function t(string $key, array $vars = [], ?int $count = null): string
+function t(string $key, array $variables = [], ?int $count = null): string
 {
-    return I18n::t($key, $vars, $count);
+    return I18n::t($key, $variables, $count);
 }

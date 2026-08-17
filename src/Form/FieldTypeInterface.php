@@ -15,7 +15,7 @@ interface FieldTypeInterface
 {
     public function supports(ColumnConfig $column, bool $hasForeignKey): bool;
 
-    public function bind(string $colName, array $postData): BoundValue;
+    public function bind(string $columnName, array $postData): BoundValue;
 
     public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string;
 }

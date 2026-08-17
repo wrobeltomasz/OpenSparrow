@@ -35,9 +35,9 @@ describe('Security – anonymous access', () => {
 
   GUARDED_PAGES.forEach(path => {
     it(`${path} redirects an anonymous visitor to login.php`, () => {
-      cy.probe({ url: path }).then(res => {
-        expect(res.status, `${path} status`).to.be.oneOf([302, 303]);
-        expect(res.headers.location, `${path} redirect target`).to.match(/login\.php/);
+      cy.probe({ url: path }).then(result => {
+        expect(result.status, `${path} status`).to.be.oneOf([302, 303]);
+        expect(result.headers.location, `${path} redirect target`).to.match(/login\.php/);
       });
     });
   });
@@ -45,7 +45,7 @@ describe('Security – anonymous access', () => {
   GUARDED_APIS.forEach(path => {
     it(`${path} rejects an anonymous caller with 401`, () => {
       cy.probe({ url: path, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(res => cy.expectDenied(res, [401], path));
+        .then(result => cy.expectDenied(result, [401], path));
     });
   });
 
@@ -56,25 +56,25 @@ describe('Security – anonymous access', () => {
         url: '/api/files.php',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: { action, uuids: ['00000000-0000-4000-8000-000000000000'], tags: 'cypress' },
-      }).then(res => cy.expectDenied(res, [401], `files.php ${action}`));
+      }).then(result => cy.expectDenied(result, [401], `files.php ${action}`));
     });
   });
 
   it('admin/index.php redirects an anonymous visitor to login.php', () => {
-    cy.probe({ url: '/admin/index.php' }).then(res => {
-      expect(res.status).to.be.oneOf([302, 303]);
-      expect(res.headers.location).to.match(/login\.php/);
+    cy.probe({ url: '/admin/index.php' }).then(result => {
+      expect(result.status).to.be.oneOf([302, 303]);
+      expect(result.headers.location).to.match(/login\.php/);
     });
   });
 
   it('admin/api.php rejects an anonymous caller with 401', () => {
     cy.probe({ url: '/admin/api.php?action=cron_stats' })
-      .then(res => cy.expectDenied(res, [401], 'admin/api.php'));
+      .then(result => cy.expectDenied(result, [401], 'admin/api.php'));
   });
 
   it('setup_api.php is dead on a configured instance', () => {
     cy.probe({ url: '/setup_api.php', method: 'POST', form: true, body: { action: 'init_database' } })
-      .then(res => cy.expectDenied(res, [403, 404], 'setup_api.php'));
+      .then(result => cy.expectDenied(result, [403, 404], 'setup_api.php'));
   });
 
   it('cypress_seed.php rejects a wrong token with 403', () => {
@@ -83,7 +83,7 @@ describe('Security – anonymous access', () => {
       method: 'POST',
       form: true,
       body: { token: 'not-the-token', action: 'seed' },
-    }).then(res => cy.expectDenied(res, [403, 404], 'cypress_seed.php'));
+    }).then(result => cy.expectDenied(result, [403, 404], 'cypress_seed.php'));
   });
 });
 
@@ -97,24 +97,24 @@ describe('Security – editor may not act as admin', () => {
   });
 
   it('admin panel answers 403 Access Denied to an editor', () => {
-    cy.probe({ url: '/admin/index.php' }).then(res => {
-      expect(res.status, 'admin/index.php as editor').to.eq(403);
-      expect(res.body, 'access denied page').to.match(/Access Denied/i);
+    cy.probe({ url: '/admin/index.php' }).then(result => {
+      expect(result.status, 'admin/index.php as editor').to.eq(403);
+      expect(result.body, 'access denied page').to.match(/Access Denied/i);
     });
   });
 
   it('admin/api.php answers 403 to an editor', () => {
-    cy.probe({ url: '/admin/api.php?action=cron_stats' }).then(res => {
-      cy.expectDenied(res, [403], 'admin/api.php as editor');
-      expect(JSON.stringify(res.body)).to.match(/admin/i);
+    cy.probe({ url: '/admin/api.php?action=cron_stats' }).then(result => {
+      cy.expectDenied(result, [403], 'admin/api.php as editor');
+      expect(JSON.stringify(result.body)).to.match(/admin/i);
     });
   });
 
   it('admin/api_migrations.php and api_csv_import.php answer 403 to an editor', () => {
     cy.probe({ url: '/admin/api_migrations.php?action=scan' })
-      .then(res => cy.expectDenied(res, [403], 'api_migrations.php'));
+      .then(result => cy.expectDenied(result, [403], 'api_migrations.php'));
     cy.probe({ url: '/admin/api_csv_import.php?action=csv_schemas' })
-      .then(res => cy.expectDenied(res, [403], 'api_csv_import.php'));
+      .then(result => cy.expectDenied(result, [403], 'api_csv_import.php'));
   });
 
   const ADMIN_ONLY = [
@@ -127,9 +127,9 @@ describe('Security – editor may not act as admin', () => {
 
   ADMIN_ONLY.forEach(path => {
     it(`${path} leaks no configuration to an editor`, () => {
-      cy.probe({ url: path, headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(res => {
-        const body = typeof res.body === 'string' ? res.body : JSON.stringify(res.body || '');
-        expect(res.status, `${path} must not succeed with data`).to.not.eq(200);
+      cy.probe({ url: path, headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(result => {
+        const body = typeof result.body === 'string' ? result.body : JSON.stringify(result.body || '');
+        expect(result.status, `${path} must not succeed with data`).to.not.eq(200);
         expect(body, `${path} must not return config`).to.not.match(/"(views|printouts|templates|schemas|columns)"\s*:/);
       });
     });
@@ -137,7 +137,7 @@ describe('Security – editor may not act as admin', () => {
 
   it('require_ajax endpoints refuse a plain browser request', () => {
     ['/api/schema.php', '/api/fk.php'].forEach(path => {
-      cy.probe({ url: path }).then(res => cy.expectDenied(res, [403], path));
+      cy.probe({ url: path }).then(result => cy.expectDenied(result, [403], path));
     });
   });
 });
@@ -159,7 +159,7 @@ describe('Security – admin is kept out of the frontend data API', () => {
   ].forEach(path => {
     it(`${path} refuses an admin session`, () => {
       cy.probe({ url: path, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(res => cy.expectDenied(res, [400, 403, 405], path));
+        .then(result => cy.expectDenied(result, [400, 403, 405], path));
     });
   });
 });

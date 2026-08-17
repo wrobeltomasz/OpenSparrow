@@ -27,36 +27,36 @@ const CONDITION_OPS = [
     { value: 'IS NOT NULL', label: 'IS NOT NULL (not empty)' },
 ];
 
-function renderConditionsBuilder(q, colOptions) {
+function renderConditionsBuilder(q, columnOptions) {
     if (!Array.isArray(q.conditions)) q.conditions = [];
 
     const wrap = document.createElement('div');
     wrap.className = 'form-group';
 
-    const lbl = document.createElement('label');
-    lbl.textContent = 'Filter Conditions (WHERE)';
-    wrap.appendChild(lbl);
+    const label = document.createElement('label');
+    label.textContent = 'Filter Conditions (WHERE)';
+    wrap.appendChild(label);
 
     const list = document.createElement('div');
     list.className = 'dash-cond-list';
 
     function rebuildList() {
         list.innerHTML = '';
-        q.conditions.forEach((cond, idx) => {
+        q.conditions.forEach((condition, index) => {
             const row = document.createElement('div');
             row.className = 'dash-cond-row';
 
-            if (idx > 0) {
-                const logicSel = document.createElement('select');
-                logicSel.className = 'adm-input w-70';
+            if (index > 0) {
+                const logicSelect = document.createElement('select');
+                logicSelect.className = 'adm-input w-70';
                 ['AND', 'OR'].forEach(l => {
                     const o = document.createElement('option');
                     o.value = l; o.textContent = l;
-                    if ((cond.logic || 'AND') === l) o.selected = true;
-                    logicSel.appendChild(o);
+                    if ((condition.logic || 'AND') === l) o.selected = true;
+                    logicSelect.appendChild(o);
                 });
-                logicSel.addEventListener('change', e => { cond.logic = e.target.value; });
-                row.appendChild(logicSel);
+                logicSelect.addEventListener('change', e => { condition.logic = e.target.value; });
+                row.appendChild(logicSelect);
             } else {
                 const spacer = document.createElement('span');
                 spacer.className = 'dash-cond-where';
@@ -64,48 +64,48 @@ function renderConditionsBuilder(q, colOptions) {
                 row.appendChild(spacer);
             }
 
-            const colSel = document.createElement('select');
-            colSel.className = 'adm-input flex-1';
-            colOptions.forEach(opt => {
+            const columnSelect = document.createElement('select');
+            columnSelect.className = 'adm-input flex-1';
+            columnOptions.forEach(option => {
                 const o = document.createElement('option');
-                o.value = opt.value; o.textContent = opt.label;
-                if (opt.value === cond.col) o.selected = true;
-                colSel.appendChild(o);
+                o.value = option.value; o.textContent = option.label;
+                if (option.value === condition.col) o.selected = true;
+                columnSelect.appendChild(o);
             });
-            colSel.addEventListener('change', e => { cond.col = e.target.value; rebuildList(); });
-            row.appendChild(colSel);
+            columnSelect.addEventListener('change', e => { condition.col = e.target.value; rebuildList(); });
+            row.appendChild(columnSelect);
 
-            const opSel = document.createElement('select');
-            opSel.className = 'adm-input flex-1';
-            CONDITION_OPS.forEach(opt => {
+            const opSelect = document.createElement('select');
+            opSelect.className = 'adm-input flex-1';
+            CONDITION_OPS.forEach(option => {
                 const o = document.createElement('option');
-                o.value = opt.value; o.textContent = opt.label;
-                if (opt.value === (cond.op || '=')) o.selected = true;
-                opSel.appendChild(o);
+                o.value = option.value; o.textContent = option.label;
+                if (option.value === (condition.op || '=')) o.selected = true;
+                opSelect.appendChild(o);
             });
-            opSel.addEventListener('change', e => { cond.op = e.target.value; rebuildList(); });
-            row.appendChild(opSel);
+            opSelect.addEventListener('change', e => { condition.op = e.target.value; rebuildList(); });
+            row.appendChild(opSelect);
 
-            const noVal = ['IS NULL', 'IS NOT NULL'].includes(cond.op || '=');
-            if (!noVal) {
-                const valIn = document.createElement('input');
-                valIn.type = 'text';
-                valIn.placeholder = 'value';
-                valIn.value = cond.val || '';
-                valIn.className = 'adm-input flex-1';
-                valIn.addEventListener('input', e => { cond.val = e.target.value; });
-                row.appendChild(valIn);
+            const noValue = ['IS NULL', 'IS NOT NULL'].includes(condition.op || '=');
+            if (!noValue) {
+                const valueInput = document.createElement('input');
+                valueInput.type = 'text';
+                valueInput.placeholder = 'value';
+                valueInput.value = condition.val || '';
+                valueInput.className = 'adm-input flex-1';
+                valueInput.addEventListener('input', e => { condition.val = e.target.value; });
+                row.appendChild(valueInput);
             }
 
-            const rmBtn = document.createElement('button');
-            rmBtn.type = 'button';
-            rmBtn.textContent = '✕';
-            rmBtn.className = 'btn btn-danger btn-xs';
-            rmBtn.addEventListener('click', () => {
-                q.conditions.splice(idx, 1);
+            const rmButton = document.createElement('button');
+            rmButton.type = 'button';
+            rmButton.textContent = '✕';
+            rmButton.className = 'btn btn-danger btn-xs';
+            rmButton.addEventListener('click', () => {
+                q.conditions.splice(index, 1);
                 rebuildList();
             });
-            row.appendChild(rmBtn);
+            row.appendChild(rmButton);
 
             list.appendChild(row);
         });
@@ -114,16 +114,16 @@ function renderConditionsBuilder(q, colOptions) {
     rebuildList();
     wrap.appendChild(list);
 
-    const addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.textContent = '+ Add condition';
-    addBtn.className = 'btn btn-secondary btn-sm';
-    addBtn.addEventListener('click', () => {
-        const firstCol = colOptions[0]?.value || '';
-        q.conditions.push({ col: firstCol, op: '=', val: '' });
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.textContent = '+ Add condition';
+    addButton.className = 'btn btn-secondary btn-sm';
+    addButton.addEventListener('click', () => {
+        const firstColumn = columnOptions[0]?.value || '';
+        q.conditions.push({ col: firstColumn, op: '=', val: '' });
         rebuildList();
     });
-    wrap.appendChild(addBtn);
+    wrap.appendChild(addButton);
 
     return wrap;
 }
@@ -133,16 +133,16 @@ function renderCalculateButton(itemData) {
     wrap.className = 'form-group';
     wrap.style.marginTop = '10px';
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.textContent = 'Calculate (real data)';
-    btn.className = 'btn btn-secondary btn-sm';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Calculate (real data)';
+    button.className = 'btn btn-secondary btn-sm';
 
     const out = document.createElement('pre');
     out.className = 'dash-calc-out';
     out.hidden = true;
 
-    btn.addEventListener('click', async () => {
+    button.addEventListener('click', async () => {
         if (!itemData.table) {
             out.hidden = false;
             out.classList.add('c-error');
@@ -150,14 +150,14 @@ function renderCalculateButton(itemData) {
             return;
         }
 
-        btn.disabled = true;
-        btn.textContent = 'Calculating…';
+        button.disabled = true;
+        button.textContent = 'Calculating…';
         out.hidden = false;
         out.classList.remove('c-error');
         out.textContent = 'Please wait…';
 
         try {
-            const res = await apiFetch('api.php?action=dashboard_calculate', {
+            const result = await apiFetch('api.php?action=dashboard_calculate', {
                 method: 'POST',
                 body: {
                     table: itemData.table,
@@ -165,7 +165,7 @@ function renderCalculateButton(itemData) {
                     display_columns: itemData.display_columns || [],
                 },
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 out.classList.remove('c-error');
                 out.textContent = JSON.stringify(result.data, null, 2);
@@ -178,11 +178,11 @@ function renderCalculateButton(itemData) {
             out.textContent = 'Request failed: ' + e.message;
         }
 
-        btn.disabled = false;
-        btn.textContent = 'Calculate (real data)';
+        button.disabled = false;
+        button.textContent = 'Calculate (real data)';
     });
 
-    wrap.append(btn, out);
+    wrap.append(button, out);
     return wrap;
 }
 
@@ -207,10 +207,10 @@ function getMockData(type, displayColumns) {
         ];
     }
     if (type === 'list') {
-        const cols = Array.isArray(displayColumns) && displayColumns.length
+        const columns = Array.isArray(displayColumns) && displayColumns.length
             ? displayColumns
             : ['name', 'status', 'created_at'];
-        const row = Object.fromEntries(cols.map(c => [c, 'Example']));
+        const row = Object.fromEntries(columns.map(c => [c, 'Example']));
         return [{ ...row }, { ...row }, { ...row }];
     }
     return null;
@@ -225,9 +225,9 @@ function renderPreviewInto(container, widget) {
     container.appendChild(hdr);
 
     if (!widget.type) {
-        const ph = document.createElement('p');
-        ph.textContent = 'Select a widget type to preview.';
-        container.appendChild(ph);
+        const placeholder = document.createElement('p');
+        placeholder.textContent = 'Select a widget type to preview.';
+        container.appendChild(placeholder);
         return;
     }
 
@@ -236,21 +236,21 @@ function renderPreviewInto(container, widget) {
         data: getMockData(widget.type, widget.display_columns),
     };
 
-    const widgetEl = document.createElement('div');
-    widgetEl.className = 'dash-widget';
-    widgetEl.dataset.w = widget.width || 1;
-    widgetEl.dataset.h = widget.height || 1;
-    widgetEl.style.pointerEvents = 'none';
+    const widgetElement = document.createElement('div');
+    widgetElement.className = 'dash-widget';
+    widgetElement.dataset.w = widget.width || 1;
+    widgetElement.dataset.h = widget.height || 1;
+    widgetElement.style.pointerEvents = 'none';
 
     if (widget.type !== 'stat_card') {
         const title = document.createElement('h3');
         title.className = 'dash-title';
         title.textContent = widget.title || 'Widget Title';
-        widgetEl.appendChild(title);
+        widgetElement.appendChild(title);
     }
 
-    widgetEl.appendChild(WidgetRegistry.render(mockWidget));
-    container.appendChild(widgetEl);
+    widgetElement.appendChild(WidgetRegistry.render(mockWidget));
+    container.appendChild(widgetElement);
 }
 
 export const WIDGET_TYPES = [
@@ -262,52 +262,52 @@ export const WIDGET_TYPES = [
     { value: 'list',              label: 'Data List' },
 ];
 
-export function renderDashboardLayout(ctx) {
-    renderGlobalSettings(ctx, {
+export function renderDashboardLayout(context) {
+    renderGlobalSettings(context, {
         title: 'Dashboard Global Settings',
         defaultMenuName: 'Dashboard',
         includeHidden: true,
-        onAfter: ({ workspaceEl, currentConfig }) => {
+        onAfter: ({ workspaceEl: workspaceElement, currentConfig }) => {
             const layoutTitle = document.createElement('h4');
             layoutTitle.textContent = 'Grid Layout';
             layoutTitle.style.marginTop = '20px';
-            workspaceEl.appendChild(layoutTitle);
+            workspaceElement.appendChild(layoutTitle);
 
-            workspaceEl.appendChild(createTextInput('layout_gap', 'Grid Gap (CSS)', currentConfig.layout.gap || '20px', v => currentConfig.layout.gap = v));
+            workspaceElement.appendChild(createTextInput('layout_gap', 'Grid Gap (CSS)', currentConfig.layout.gap || '20px', v => currentConfig.layout.gap = v));
         },
     });
 }
 
-export function renderDashboardEditor(key, itemData, isArray, ctx) {
-    const { workspaceEl: containerEl, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar } = ctx;
+export function renderDashboardEditor(key, itemData, isArray, context) {
+    const { workspaceEl: containerElement, getTableOptions, getColumnOptionsForTable, renderEditor, renderSidebar } = context;
 
     const split = document.createElement('div');
     split.className = 'dash-editor-split';
-    containerEl.appendChild(split);
+    containerElement.appendChild(split);
 
-    const workspaceEl = document.createElement('div');
-    workspaceEl.className = 'dash-editor-form';
+    const workspaceElement = document.createElement('div');
+    workspaceElement.className = 'dash-editor-form';
 
     const previewWrap = document.createElement('div');
     previewWrap.className = 'dash-editor-preview';
 
-    split.append(workspaceEl, previewWrap);
+    split.append(workspaceElement, previewWrap);
 
     function refreshPreview() {
         renderPreviewInto(previewWrap, itemData);
     }
 
-    workspaceEl.addEventListener('input',  refreshPreview);
-    workspaceEl.addEventListener('change', refreshPreview);
+    workspaceElement.addEventListener('input',  refreshPreview);
+    workspaceElement.addEventListener('change', refreshPreview);
 
-    workspaceEl.appendChild(createTextInput('id', 'Widget ID (Unique)', itemData.id, v => itemData.id = v));
+    workspaceElement.appendChild(createTextInput('id', 'Widget ID (Unique)', itemData.id, v => itemData.id = v));
 
-    workspaceEl.appendChild(createSelectInput('type', 'Widget Type', WIDGET_TYPES, itemData.type || '', v => {
+    workspaceElement.appendChild(createSelectInput('type', 'Widget Type', WIDGET_TYPES, itemData.type || '', v => {
         itemData.type = v; itemData.query = {}; renderEditor(key, itemData, isArray);
     }));
 
-    workspaceEl.appendChild(createTextInput('title', 'Widget Title', itemData.title, v => { itemData.title = v; renderSidebar(); }));
-    workspaceEl.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), itemData.table, v => {
+    workspaceElement.appendChild(createTextInput('title', 'Widget Title', itemData.title, v => { itemData.title = v; renderSidebar(); }));
+    workspaceElement.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), itemData.table, v => {
         itemData.table = v; renderEditor(key, itemData, isArray);
     }));
 
@@ -317,38 +317,38 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
 
     if (typeof itemData.query !== 'object' || itemData.query === null) itemData.query = {};
     const q = itemData.query;
-    const colOptions = getColumnOptionsForTable(itemData.table);
+    const columnOptions = getColumnOptionsForTable(itemData.table);
 
     if (itemData.type === 'stat_card') {
         q.type = q.type || 'count'; q.column = q.column || 'id';
         queryBlock.appendChild(createSelectInput('q_type', 'Aggregation Function', [{ value: 'count', label: 'Count' }, { value: 'sum', label: 'Sum' }, { value: 'avg', label: 'Average' }], q.type, v => q.type = v));
-        queryBlock.appendChild(createSelectInput('q_col', 'Target Column', colOptions, q.column, v => q.column = v));
+        queryBlock.appendChild(createSelectInput('q_col', 'Target Column', columnOptions, q.column, v => q.column = v));
     } else if (['bar_chart', 'vertical_bar_chart', 'pie_chart'].includes(itemData.type)) {
         q.type = 'group_by';
-        queryBlock.appendChild(createSelectInput('q_group', 'Group By Column', colOptions, q.group_column || '', v => q.group_column = v));
-        queryBlock.appendChild(createSelectInput('q_agg_col', 'Aggregation Column', colOptions, q.agg_column || 'id', v => q.agg_column = v));
+        queryBlock.appendChild(createSelectInput('q_group', 'Group By Column', columnOptions, q.group_column || '', v => q.group_column = v));
+        queryBlock.appendChild(createSelectInput('q_agg_col', 'Aggregation Column', columnOptions, q.agg_column || 'id', v => q.agg_column = v));
         queryBlock.appendChild(createSelectInput('q_agg_type', 'Aggregation Function', [{ value: 'count', label: 'Count' }, { value: 'sum', label: 'Sum' }], q.agg_type || 'count', v => q.agg_type = v));
     } else if (itemData.type === 'line_chart') {
         q.type = 'time_series';
-        queryBlock.appendChild(createSelectInput('q_x_col', 'Time Axis Column (X)', colOptions, q.x_column || '', v => q.x_column = v));
+        queryBlock.appendChild(createSelectInput('q_x_col', 'Time Axis Column (X)', columnOptions, q.x_column || '', v => q.x_column = v));
         queryBlock.appendChild(createSelectInput('q_granularity', 'Time Granularity', [
             { value: 'day',   label: 'Day' },
             { value: 'week',  label: 'Week' },
             { value: 'month', label: 'Month' },
             { value: 'year',  label: 'Year' },
         ], q.granularity || 'month', v => q.granularity = v));
-        queryBlock.appendChild(createSelectInput('q_agg_col', 'Aggregation Column (Y)', colOptions, q.agg_column || 'id', v => q.agg_column = v));
+        queryBlock.appendChild(createSelectInput('q_agg_col', 'Aggregation Column (Y)', columnOptions, q.agg_column || 'id', v => q.agg_column = v));
         queryBlock.appendChild(createSelectInput('q_agg_type', 'Aggregation Function', [{ value: 'count', label: 'Count' }, { value: 'sum', label: 'Sum' }, { value: 'avg', label: 'Average' }], q.agg_type || 'count', v => q.agg_type = v));
         queryBlock.appendChild(createCheckbox('q_area', 'Fill area under line', q.area, v => q.area = v, false));
     } else if (itemData.type === 'list') {
         queryBlock.appendChild(createTextInput('q_limit', 'Limit Rows', q.limit || 5, v => q.limit = parseInt(v) || 5));
-        queryBlock.appendChild(createSelectInput('q_order', 'Order By Column', colOptions, q.order_by || 'id', v => q.order_by = v));
+        queryBlock.appendChild(createSelectInput('q_order', 'Order By Column', columnOptions, q.order_by || 'id', v => q.order_by = v));
         queryBlock.appendChild(createSelectInput('q_dir', 'Order Direction', [{ value: 'DESC', label: 'Descending' }, { value: 'ASC', label: 'Ascending' }], q.dir || 'DESC', v => q.dir = v));
     }
 
-    queryBlock.appendChild(renderConditionsBuilder(q, colOptions));
+    queryBlock.appendChild(renderConditionsBuilder(q, columnOptions));
     queryBlock.appendChild(renderCalculateButton(itemData));
-    workspaceEl.appendChild(queryBlock);
+    workspaceElement.appendChild(queryBlock);
 
     const sizeBlock = document.createElement('div');
     sizeBlock.className = 'dash-size-block';
@@ -362,13 +362,13 @@ export function renderDashboardEditor(key, itemData, isArray, ctx) {
         { value: 2, label: 'Medium' },
         { value: 3, label: 'Large' },
     ], itemData.height || 1, v => { itemData.height = parseInt(v); }));
-    workspaceEl.appendChild(sizeBlock);
+    workspaceElement.appendChild(sizeBlock);
 
-    workspaceEl.appendChild(createColorInput('color', 'Accent Color', itemData.color, v => { itemData.color = v; refreshPreview(); }));
+    workspaceElement.appendChild(createColorInput('color', 'Accent Color', itemData.color, v => { itemData.color = v; refreshPreview(); }));
 
     if (itemData.type === 'list') {
-        const colsStr = Array.isArray(itemData.display_columns) ? itemData.display_columns.join(', ') : '';
-        workspaceEl.appendChild(createTextInput('display_columns', 'Columns to Display (Comma separated)', colsStr, v => {
+        const columnsString = Array.isArray(itemData.display_columns) ? itemData.display_columns.join(', ') : '';
+        workspaceElement.appendChild(createTextInput('display_columns', 'Columns to Display (Comma separated)', columnsString, v => {
             itemData.display_columns = v.split(',').map(s => s.trim()).filter(s => s);
         }));
     }

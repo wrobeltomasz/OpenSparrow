@@ -11,8 +11,8 @@ function renderList(widget) {
     wrapper.className = 'dash-list';
     if (widget.color) wrapper.style.borderTop = `3px solid ${widget.color}`;
 
-    const cols = Array.isArray(widget.display_columns) ? widget.display_columns : [];
-    if (cols.length === 0) {
+    const columns = Array.isArray(widget.display_columns) ? widget.display_columns : [];
+    if (columns.length === 0) {
         wrapper.textContent = window.I18n.t('dashboard.list_misconfigured');
         return wrapper;
     }
@@ -20,14 +20,14 @@ function renderList(widget) {
     const data = widget.data || [];
     if (data.length === 0) { wrapper.textContent = window.I18n.t('dashboard.no_data'); return wrapper; }
 
-    const colTypes = widget.column_types || {};
+    const columnTypes = widget.column_types || {};
     const ul = document.createElement('ul');
     data.forEach(row => {
         const li = document.createElement('li');
-        const displayParts = cols.map(col => {
-            const raw = row[col] || '';
-            const colType = colTypes[col];
-            return formatCellValue(raw, colType);
+        const displayParts = columns.map(column => {
+            const raw = row[column] || '';
+            const columnType = columnTypes[column];
+            return formatCellValue(raw, columnType);
         });
         li.textContent = displayParts.join(' - ');
         if (row.id) {

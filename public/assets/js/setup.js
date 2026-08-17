@@ -53,16 +53,16 @@ function previousStep(step) {
 }
 
 function updateDisplay() {
-    document.querySelectorAll('.setup-step').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.setup-step').forEach(element => element.classList.remove('active'));
     document.getElementById('step-' + currentStep).classList.add('active');
     document.getElementById('step-counter').textContent = currentStep <= 4 ? T.step_of.replace('{current}', currentStep) : T.complete_short;
 }
 
 function testConnection() {
-    const btn = document.getElementById('test-btn');
+    const button = document.getElementById('test-btn');
     const status = document.getElementById('connection-status');
     const message = document.getElementById('connection-message');
-    const nextBtn = document.getElementById('next-btn-2');
+    const nextButton = document.getElementById('next-btn-2');
 
     dbData.host = document.getElementById('db-host').value;
     dbData.port = document.getElementById('db-port').value;
@@ -75,10 +75,10 @@ function testConnection() {
         return;
     }
 
-    btn.disabled = true;
+    button.disabled = true;
     message.innerHTML = '<span class="spinner"></span>' + T.checking;
     status.classList.add('show');
-    nextBtn.disabled = true;
+    nextButton.disabled = true;
     connectionValid = false;
 
     fetch('setup_api.php?action=test_connection', {
@@ -100,27 +100,27 @@ function testConnection() {
             message.innerHTML = '<span class="status-icon success"></span>' + T.conn_success;
             connectionValid = true;
             dbData.connSchemas = data.schemas || [];
-            nextBtn.disabled = false;
+            nextButton.disabled = false;
             showMessage('status-message-2', '', '');
         } else {
             status.classList.remove('success');
             status.classList.add('error');
             message.innerHTML = '<span class="status-icon error"></span>' + (data.message || T.conn_failed);
             connectionValid = false;
-            nextBtn.disabled = true;
+            nextButton.disabled = true;
             showMessage('status-message-2', data.message || T.conn_failed, 'error');
         }
     })
-    .catch(err => {
+    .catch(error => {
         status.classList.remove('success');
         status.classList.add('error');
         message.innerHTML = '<span class="status-icon error"></span>' + T.network_error;
         connectionValid = false;
-        nextBtn.disabled = true;
-        showMessage('status-message-2', T.network_error_msg.replace('{msg}', err.message), 'error');
+        nextButton.disabled = true;
+        showMessage('status-message-2', T.network_error_msg.replace('{msg}', error.message), 'error');
     })
     .finally(() => {
-        btn.disabled = false;
+        button.disabled = false;
     });
 }
 
@@ -135,12 +135,12 @@ function updateSummary() {
 }
 
 function initializeDatabase() {
-    const btn = document.getElementById('init-btn');
-    const backBtn = document.getElementById('back-btn-4');
+    const button = document.getElementById('init-btn');
+    const backButton = document.getElementById('back-btn-4');
 
-    btn.disabled = true;
-    backBtn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>' + T.initializing;
+    button.disabled = true;
+    backButton.disabled = true;
+    button.innerHTML = '<span class="spinner"></span>' + T.initializing;
 
     fetch('setup_api.php?action=init_database', {
         method: 'POST',
@@ -169,39 +169,39 @@ function initializeDatabase() {
                 adminNote.textContent = data.message || '';
                 adminNote.className = 'status-message show error';
             }
-            const demoMsg = document.getElementById('demo-install-msg');
+            const demoMessage = document.getElementById('demo-install-msg');
             if (document.getElementById('install-demo').checked) {
-                demoMsg.hidden = false;
-                demoMsg.textContent = data.demo_installed
+                demoMessage.hidden = false;
+                demoMessage.textContent = data.demo_installed
                     ? T.demo_installed
                     : (T.demo_failed_prefix + (data.demo_error || ''));
-                demoMsg.className = 'status-message show ' + (data.demo_installed ? 'success' : 'error');
+                demoMessage.className = 'status-message show ' + (data.demo_installed ? 'success' : 'error');
             }
             currentStep = 5;
             updateDisplay();
         } else {
             showMessage('status-message-4', data.message || T.init_failed, 'error');
-            btn.disabled = false;
-            backBtn.disabled = false;
-            btn.innerHTML = T.init_btn;
+            button.disabled = false;
+            backButton.disabled = false;
+            button.innerHTML = T.init_btn;
         }
     })
-    .catch(err => {
-        showMessage('status-message-4', T.network_error_msg.replace('{msg}', err.message), 'error');
-        btn.disabled = false;
-        backBtn.disabled = false;
-        btn.innerHTML = T.init_btn;
+    .catch(error => {
+        showMessage('status-message-4', T.network_error_msg.replace('{msg}', error.message), 'error');
+        button.disabled = false;
+        backButton.disabled = false;
+        button.innerHTML = T.init_btn;
     });
 }
 
 function showMessage(elementId, message, type) {
-    const el = document.getElementById(elementId);
+    const element = document.getElementById(elementId);
     if (!message) {
-        el.classList.remove('show');
+        element.classList.remove('show');
         return;
     }
-    el.textContent = message;
-    el.className = 'status-message show ' + type;
+    element.textContent = message;
+    element.className = 'status-message show ' + type;
 }
 
 window.nextStep = nextStep;

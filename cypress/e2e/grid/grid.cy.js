@@ -23,14 +23,14 @@ describe('OpenSparrow – Grid Display', () => {
   });
 
   it('displays grid or empty state', () => {
-    waitForGridOrEmpty().then(res => {
-      expect(res.type).to.be.oneOf(['grid', 'empty']);
+    waitForGridOrEmpty().then(result => {
+      expect(result.type).to.be.oneOf(['grid', 'empty']);
     });
   });
 
   it('shows grid header with column names', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('[data-cy=grid] thead, #grid thead')
           .should('be.visible')
           .find('th')
@@ -40,8 +40,8 @@ describe('OpenSparrow – Grid Display', () => {
   });
 
   it('renders grid rows', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('[data-cy=grid] tbody, #grid tbody')
           .should('exist')
           .find('tr')
@@ -53,9 +53,9 @@ describe('OpenSparrow – Grid Display', () => {
   it('shows empty state when no records', () => {
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
 
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'empty') {
-        cy.wrap(res.element).should('be.visible');
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'empty') {
+        cy.wrap(result.element).should('be.visible');
       }
     });
   });
@@ -80,8 +80,8 @@ describe('OpenSparrow – Grid Search & Filter', () => {
   });
 
   it('search input filters results', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .its('length')
           .then(initialCount => {
@@ -149,9 +149,9 @@ describe('OpenSparrow – Grid Row Actions', () => {
 
   it('displays Add button for editor role', () => {
     cy.get('body').then($body => {
-      const hasAddBtn = $body.find('#addRow, [data-cy=add]').length > 0;
+      const hasAddButton = $body.find('#addRow, [data-cy=add]').length > 0;
 
-      if (hasAddBtn) {
+      if (hasAddButton) {
         cy.get('#addRow, [data-cy=add]')
           .should('be.visible')
           .and('not.be.disabled');
@@ -163,9 +163,9 @@ describe('OpenSparrow – Grid Row Actions', () => {
 
   it('Add button navigates to create.php', () => {
     cy.get('body').then($body => {
-      const hasAddBtn = $body.find('#addRow, [data-cy=add]').length > 0;
+      const hasAddButton = $body.find('#addRow, [data-cy=add]').length > 0;
 
-      if (!hasAddBtn) {
+      if (!hasAddButton) {
         Cypress.log({ message: 'Add button not present — skipping' });
         return;
       }
@@ -182,8 +182,8 @@ describe('OpenSparrow – Grid Row Actions', () => {
   });
 
   it('displays Edit button in row actions', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('#grid tbody tr')
           .first()
           .find('[data-cy=row-edit]')
@@ -193,8 +193,8 @@ describe('OpenSparrow – Grid Row Actions', () => {
   });
 
   it('Edit button navigates to edit.php', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('#grid tbody tr')
           .first()
           .find('[data-cy=row-edit]')
@@ -206,8 +206,8 @@ describe('OpenSparrow – Grid Row Actions', () => {
   });
 
   it('displays Duplicate button in row actions', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('#grid tbody tr')
           .first()
           .find('[data-cy=row-duplicate]')
@@ -217,8 +217,8 @@ describe('OpenSparrow – Grid Row Actions', () => {
   });
 
   it('displays Delete button in row actions', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('#grid tbody tr')
           .first()
           .find('[data-cy=row-delete]')
@@ -265,8 +265,8 @@ describe('OpenSparrow – Grid Mobile', () => {
   });
 
   it('loads grid on mobile viewport', () => {
-    waitForGridOrEmpty().then(res => {
-      expect(res.type).to.be.oneOf(['grid', 'empty']);
+    waitForGridOrEmpty().then(result => {
+      expect(result.type).to.be.oneOf(['grid', 'empty']);
     });
   });
 
@@ -381,12 +381,12 @@ describe('OpenSparrow – Grid Column Filters', () => {
 
   it('selecting a column may render filter input in #filterBar', () => {
     cy.get('#columnFilter').then($sel => {
-      const opts = $sel.find('option').toArray().filter(o => o.value !== '');
-      if (opts.length === 0) {
+      const options = $sel.find('option').toArray().filter(o => o.value !== '');
+      if (options.length === 0) {
         Cypress.log({ message: 'No column options — skipping' });
         return;
       }
-      cy.wrap($sel).select(opts[0].value);
+      cy.wrap($sel).select(options[0].value);
 
       cy.get('#filterBar').should('exist');
     });
@@ -394,13 +394,13 @@ describe('OpenSparrow – Grid Column Filters', () => {
 
   it('if enum/FK column selected: #dictFilter appears', () => {
     cy.get('#columnFilter').then($sel => {
-      const opts = $sel.find('option').toArray().filter(o => o.value !== '');
-      if (opts.length === 0) return;
+      const options = $sel.find('option').toArray().filter(o => o.value !== '');
+      if (options.length === 0) return;
 
       let found = false;
       const tryNext = (i) => {
-        if (i >= opts.length || found) return;
-        cy.wrap($sel).select(opts[i].value);
+        if (i >= options.length || found) return;
+        cy.wrap($sel).select(options[i].value);
         cy.get('#filterBar').then($bar => {
           if ($bar.find('#dictFilter').length > 0) {
             found = true;
@@ -416,13 +416,13 @@ describe('OpenSparrow – Grid Column Filters', () => {
 
   it('if bool column selected: #boolFilter appears', () => {
     cy.get('#columnFilter').then($sel => {
-      const opts = $sel.find('option').toArray().filter(o => o.value !== '');
-      if (opts.length === 0) return;
+      const options = $sel.find('option').toArray().filter(o => o.value !== '');
+      if (options.length === 0) return;
 
       let found = false;
       const tryNext = (i) => {
-        if (i >= opts.length || found) return;
-        cy.wrap($sel).select(opts[i].value);
+        if (i >= options.length || found) return;
+        cy.wrap($sel).select(options[i].value);
         cy.get('#filterBar').then($bar => {
           if ($bar.find('#boolFilter').length > 0) {
             found = true;
@@ -438,13 +438,13 @@ describe('OpenSparrow – Grid Column Filters', () => {
 
   it('applying dict filter creates pill in #filterPills', () => {
     cy.get('#columnFilter').then($sel => {
-      const opts = $sel.find('option').toArray().filter(o => o.value !== '');
-      if (opts.length === 0) return;
+      const options = $sel.find('option').toArray().filter(o => o.value !== '');
+      if (options.length === 0) return;
 
       let pilledUp = false;
       const tryPill = (i) => {
-        if (i >= opts.length || pilledUp) return;
-        cy.wrap($sel).select(opts[i].value);
+        if (i >= options.length || pilledUp) return;
+        cy.wrap($sel).select(options[i].value);
         cy.get('#filterBar').then($bar => {
           const $dict = $bar.find('#dictFilter');
           if ($dict.length === 0) {
@@ -452,13 +452,13 @@ describe('OpenSparrow – Grid Column Filters', () => {
             return;
           }
 
-          const dictOpts = $dict.find('option').toArray().filter(o => o.value !== '');
-          if (dictOpts.length === 0) {
+          const dictOptions = $dict.find('option').toArray().filter(o => o.value !== '');
+          if (dictOptions.length === 0) {
             tryPill(i + 1);
             return;
           }
           pilledUp = true;
-          cy.get('#dictFilter').select(dictOpts[0].value);
+          cy.get('#dictFilter').select(dictOptions[0].value);
           cy.get('#filterPills', { timeout: CypressHelpers.TIMEOUTS.medium })
             .should('be.visible')
             .find('[title="Remove filter"]')
@@ -492,8 +492,8 @@ describe('OpenSparrow – Grid Rows Per Page', () => {
   });
 
   it('pagination area renders if table has records', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') {
         Cypress.log({ message: 'No grid — pagination test skipped' });
         return;
       }
@@ -509,9 +509,9 @@ describe('OpenSparrow – Grid Rows Per Page', () => {
         Cypress.log({ message: 'No page-size select — single-page table; skipping' });
         return;
       }
-      const vals = $sel.find('option').toArray().map(o => parseInt(o.value, 10));
+      const values = $sel.find('option').toArray().map(o => parseInt(o.value, 10));
 
-      expect(vals.some(v => [10, 25, 50, 100].includes(v))).to.be.true;
+      expect(values.some(v => [10, 25, 50, 100].includes(v))).to.be.true;
     });
   });
 
@@ -520,11 +520,11 @@ describe('OpenSparrow – Grid Rows Per Page', () => {
       const $sel = $pag.find('select');
       if ($sel.length === 0) return;
 
-      const opts = $sel.find('option').toArray();
-      if (opts.length < 2) return;
+      const options = $sel.find('option').toArray();
+      if (options.length < 2) return;
 
       const current = $sel.val();
-      const target = opts.find(o => o.value !== current);
+      const target = options.find(o => o.value !== current);
       if (!target) return;
 
       cy.wrap($sel).select(target.value);
@@ -536,17 +536,17 @@ describe('OpenSparrow – Grid Rows Per Page', () => {
   });
 
   it('page size change re-renders grid rows', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#pagination').then($pag => {
         const $sel = $pag.find('select');
         if ($sel.length === 0) return;
 
-        const opts = $sel.find('option').toArray();
-        if (opts.length < 2) return;
+        const options = $sel.find('option').toArray();
+        if (options.length < 2) return;
 
         const current = $sel.val();
-        const target = opts.find(o => o.value !== current);
+        const target = options.find(o => o.value !== current);
         if (!target) return;
 
         cy.wrap($sel).select(target.value);
@@ -561,10 +561,10 @@ describe('OpenSparrow – Grid Rows Per Page', () => {
       const $sel = $pag.find('select');
       if ($sel.length === 0) return;
 
-      const opts = $sel.find('option').toArray();
-      if (opts.length < 2) return;
+      const options = $sel.find('option').toArray();
+      if (options.length < 2) return;
 
-      const target = opts[opts.length - 1];
+      const target = options[options.length - 1];
       cy.wrap($sel).select(target.value);
 
       cy.reload();
@@ -585,15 +585,15 @@ describe('OpenSparrow – Grid Column Sorting', () => {
   });
 
   it('column headers are clickable', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid thead th').first().should('exist').click({ force: true });
     });
   });
 
   it('clicking header adds sort indicator', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid thead th').first().click({ force: true });
 
@@ -611,8 +611,8 @@ describe('OpenSparrow – Grid Column Sorting', () => {
   });
 
   it('clicking sorted header twice reverses sort', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid thead th').first().click({ force: true });
       cy.get('#grid thead th').first().click({ force: true });
@@ -622,8 +622,8 @@ describe('OpenSparrow – Grid Column Sorting', () => {
   });
 
   it('grid rerenders after sort click', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid thead th').first().click({ force: true });
 

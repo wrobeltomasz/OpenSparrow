@@ -15,7 +15,7 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableCfg   = $context->tableCfg;
+    $tableConfig   = $context->tableCfg;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
     $userId     = $context->userId;
@@ -25,7 +25,7 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
         throw new BadRequestException('Invalid record ID');
     }
     $column = $body['column'];
-    if (!isset($tableCfg['columns'][$column])) {
+    if (!isset($tableConfig['columns'][$column])) {
         throw new BadRequestException('Invalid column specified');
     }
 
@@ -33,20 +33,20 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
         throw new BadRequestException('Cannot edit PK');
     }
 
-    check_record_ownership($conn, $tableCfg, $table, $recordId, $userId, 'Forbidden: you do not own this record.');
+    check_record_ownership($conn, $tableConfig, $table, $recordId, $userId, 'Forbidden: you do not own this record.');
 
-    $colType = strtolower($tableCfg['columns'][$column]['type'] ?? '');
+    $columnType = strtolower($tableConfig['columns'][$column]['type'] ?? '');
     $cast = '';
     $value = $body['value'];
-    if (str_contains($colType, 'bool')) {
+    if (str_contains($columnType, 'bool')) {
         $value = normalize_boolean($value);
         $cast = '::boolean';
     } elseif ($value === '') {
         $value = null;
     }
 
-    $regexpError = validate_column_regexp($tableCfg['columns'][$column], $value);
-    if (!str_contains($colType, 'bool') && $regexpError !== null) {
+    $regexpError = validate_column_regexp($tableConfig['columns'][$column], $value);
+    if (!str_contains($columnType, 'bool') && $regexpError !== null) {
         http_response_code(422);
         throw ResponseException::encoded(['error' => $regexpError]);
     }
@@ -81,40 +81,40 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableCfg   = $context->tableCfg;
+    $tableConfig   = $context->tableCfg;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
 
     $columns = [];
-    $vals = [];
+    $values = [];
     $placeholders   = [];
     $placeholderIndex    = 1;
-    foreach ($tableCfg['columns'] as $colName => $colCfg) {
-        if ($colName === $idColumn) {
+    foreach ($tableConfig['columns'] as $columnName => $columnConfig) {
+        if ($columnName === $idColumn) {
             continue;
         }
 
-        $type = strtolower($colCfg['type'] ?? '');
-        $value = $body['data'][$colName] ?? null;
+        $type = strtolower($columnConfig['type'] ?? '');
+        $value = $body['data'][$columnName] ?? null;
         if (str_contains($type, 'bool')) {
             $value = normalize_boolean($value);
         } elseif ($value === '') {
             $value = null;
         }
 
-        $isNotNull = !empty($colCfg['not_null']);
+        $isNotNull = !empty($columnConfig['not_null']);
         if ($value === null && $isNotNull) {
             $value = type_min_value($type);
         }
 
-        if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($colCfg, $value)) !== null) {
+        if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($columnConfig, $value)) !== null) {
             http_response_code(422);
-            throw ResponseException::encoded(['error' => $regexpError, 'column' => $colName]);
+            throw ResponseException::encoded(['error' => $regexpError, 'column' => $columnName]);
         }
 
         if ($value !== null) {
-            $columns[] = $colName;
-            $vals[] = $value;
+            $columns[] = $columnName;
+            $values[] = $value;
             $placeholders[]   = str_contains($type, 'bool')
                 ? '$' . $placeholderIndex . '::boolean'
                 : '$' . $placeholderIndex;
@@ -139,7 +139,7 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
             implode(', ', $placeholders),
             pg_ident($idColumn)
         );
-        $result = @pg_query_params($conn, $sql, $vals);
+        $result = @pg_query_params($conn, $sql, $values);
     }
 
     if (!$result) {
@@ -169,33 +169,33 @@ function frontapi_record_duplicate(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableCfg   = $context->tableCfg;
+    $tableConfig   = $context->tableCfg;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
 
-    $srcId = (int)$body['id'];
-    if ($srcId <= 0) {
+    $sourceId = (int)$body['id'];
+    if ($sourceId <= 0) {
         throw new BadRequestException('Invalid ID');
     }
 
     check_record_ownership(
         $conn,
-        $tableCfg,
+        $tableConfig,
         $table,
-        $srcId,
+        $sourceId,
         $context->userId,
         'Forbidden: you do not own this record.'
     );
 
     $duplicateColumns = [];
-    foreach ($tableCfg['columns'] as $colName => $colCfg) {
-        if ($colName === $idColumn) {
+    foreach ($tableConfig['columns'] as $columnName => $columnConfig) {
+        if ($columnName === $idColumn) {
             continue;
         }
-        if (strtolower($colCfg['type'] ?? '') === 'virtual') {
+        if (strtolower($columnConfig['type'] ?? '') === 'virtual') {
             continue;
         }
-        $duplicateColumns[] = $colName;
+        $duplicateColumns[] = $columnName;
     }
 
     if (empty($duplicateColumns)) {
@@ -203,19 +203,19 @@ function frontapi_record_duplicate(FrontApiWriteContext $context): never
         throw ResponseException::encoded(['error' => 'No columns to duplicate']);
     }
 
-    $colIdents = implode(', ', array_map('pg_ident', $duplicateColumns));
+    $columnIdentifiers = implode(', ', array_map('pg_ident', $duplicateColumns));
     $sql = sprintf(
         'INSERT INTO %s.%s (%s) SELECT %s FROM %s.%s WHERE %s = $1 RETURNING %s',
         pg_ident($schemaName),
         pg_ident($table),
-        $colIdents,
-        $colIdents,
+        $columnIdentifiers,
+        $columnIdentifiers,
         pg_ident($schemaName),
         pg_ident($table),
         pg_ident($idColumn),
         pg_ident($idColumn)
     );
-    $result = @pg_query_params($conn, $sql, [$srcId]);
+    $result = @pg_query_params($conn, $sql, [$sourceId]);
     if (!$result) {
         $pgError = pg_last_error($conn);
         error_log('[api][duplicate] ' . $pgError);
@@ -256,7 +256,7 @@ function frontapi_record_delete(FrontApiWriteContext $context): never
     $conn       = $context->conn;
     $body       = $context->body;
     $table      = $context->table;
-    $tableCfg   = $context->tableCfg;
+    $tableConfig   = $context->tableCfg;
     $schemaName = $context->schemaName;
     $idColumn   = $context->idColumn;
     $userId     = $context->userId;
@@ -266,7 +266,7 @@ function frontapi_record_delete(FrontApiWriteContext $context): never
         throw new BadRequestException('Invalid record ID');
     }
 
-    check_record_ownership($conn, $tableCfg, $table, $deleteId, $userId, 'Forbidden: you do not own this record.');
+    check_record_ownership($conn, $tableConfig, $table, $deleteId, $userId, 'Forbidden: you do not own this record.');
 
     $deletedRecord = auto_capture_old_record($conn, $schemaName, $table, $deleteId, 'delete');
 

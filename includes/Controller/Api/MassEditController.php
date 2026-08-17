@@ -64,35 +64,35 @@ final class MassEditController
     private function validateTableColumn(array $body): array
     {
         $tableName = $body['table']  ?? '';
-        $colName   = $body['column'] ?? '';
+        $columnName   = $body['column'] ?? '';
 
         try {
-            $tableCfg = safe_table($this->schema, $tableName);
+            $tableConfig = safe_table($this->schema, $tableName);
         } catch (RuntimeException $exception) {
             throw new BadRequestException('Unknown table');
         }
 
         require_table_access($tableName);
 
-        $columns = $tableCfg['columns'] ?? [];
+        $columns = $tableConfig['columns'] ?? [];
 
-        if ($colName === 'id') {
+        if ($columnName === 'id') {
             throw new BadRequestException('Cannot edit id column');
         }
 
-        if (!isset($columns[$colName])) {
+        if (!isset($columns[$columnName])) {
             throw new BadRequestException('Invalid column');
         }
 
-        if (($columns[$colName]['type'] ?? '') === 'virtual') {
+        if (($columns[$columnName]['type'] ?? '') === 'virtual') {
             throw new BadRequestException('Cannot edit virtual columns');
         }
 
-        $schemaName = $tableCfg['schema'] ?? 'public';
+        $schemaName = $tableConfig['schema'] ?? 'public';
         $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
-        $colSql     = pg_ident($colName);
+        $columnSql     = pg_ident($columnName);
 
-        return [$tableCfg, $tableName, $columns[$colName], $colSql, $qualifiedTable];
+        return [$tableConfig, $tableName, $columns[$columnName], $columnSql, $qualifiedTable];
     }
 
     private function validatedTable(array $body): array
@@ -100,14 +100,14 @@ final class MassEditController
         $tableName = $body['table'] ?? '';
 
         try {
-            $tableCfg = safe_table($this->schema, $tableName);
+            $tableConfig = safe_table($this->schema, $tableName);
         } catch (RuntimeException $exception) {
             throw new BadRequestException('Unknown table');
         }
 
         require_table_access($tableName);
 
-        return [$tableCfg, $tableName];
+        return [$tableConfig, $tableName];
     }
 
     private function sanitizeRowIds(mixed $rawIds): array
@@ -148,11 +148,11 @@ final class MassEditController
     {
         [$body, $rowIds] = $this->selectedRows();
 
-        [$tableCfg, $tableName, , $colSql, $qualifiedTable] = $this->validateTableColumn($body);
+        [$tableConfig, $tableName, , $columnSql, $qualifiedTable] = $this->validateTableColumn($body);
 
         $rowIdsArray = $this->pgIntArray($rowIds);
 
-        if (!empty($tableCfg['owner_restricted'])) {
+        if (!empty($tableConfig['owner_restricted'])) {
             $userId      = $this->session->userId();
             $ownerSql = owner_restriction_sql('_t.id', 2, 3);
 
@@ -169,7 +169,7 @@ final class MassEditController
 
             $rowResult = @pg_query_params(
                 $this->conn,
-                "SELECT _t.id, {$colSql} AS current_val
+                "SELECT _t.id, {$columnSql} AS current_val
              FROM {$qualifiedTable} AS _t
              WHERE _t.id = ANY(\$1::int[]){$ownerSql}
              ORDER BY _t.id
@@ -190,7 +190,7 @@ final class MassEditController
 
             $rowResult = @pg_query_params(
                 $this->conn,
-                "SELECT id, {$colSql} AS current_val
+                "SELECT id, {$columnSql} AS current_val
              FROM {$qualifiedTable}
              WHERE id = ANY(\$1::int[])
              ORDER BY id
@@ -220,9 +220,9 @@ final class MassEditController
             ? ($body['value'] === null ? null : (string)$body['value'])
             : null;
 
-        [$tableCfg, $tableName, $colCfg, $colSql, $qualifiedTable] = $this->validateTableColumn($body);
+        [$tableConfig, $tableName, $columnConfig, $columnSql, $qualifiedTable] = $this->validateTableColumn($body);
 
-        if (($regexpError = validate_column_regexp($colCfg, $value)) !== null) {
+        if (($regexpError = validate_column_regexp($columnConfig, $value)) !== null) {
             throw HttpException::fromStatus(422, (string) $regexpError);
         }
 
@@ -230,18 +230,18 @@ final class MassEditController
 
         @pg_query($this->conn, 'BEGIN');
 
-        if (!empty($tableCfg['owner_restricted'])) {
+        if (!empty($tableConfig['owner_restricted'])) {
             $userId      = $this->session->userId();
             $ownerSql = owner_restriction_sql('_t.id', 3, 4);
             $result = @pg_query_params(
                 $this->conn,
-                "UPDATE {$qualifiedTable} AS _t SET {$colSql} = \$2 WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
+                "UPDATE {$qualifiedTable} AS _t SET {$columnSql} = \$2 WHERE _t.id = ANY(\$1::int[]){$ownerSql}",
                 [$rowIdsArray, $value, $tableName, $userId]
             );
         } else {
             $result = @pg_query_params(
                 $this->conn,
-                "UPDATE {$qualifiedTable} SET {$colSql} = \$2 WHERE id = ANY(\$1::int[])",
+                "UPDATE {$qualifiedTable} SET {$columnSql} = \$2 WHERE id = ANY(\$1::int[])",
                 [$rowIdsArray, $value]
             );
         }
@@ -265,38 +265,38 @@ final class MassEditController
     {
         [$body, $rowIds] = $this->selectedRows();
 
-        [$tableCfg, $tableName] = $this->validatedTable($body);
+        [$tableConfig, $tableName] = $this->validatedTable($body);
 
         $duplicateColumns = [];
-        foreach ($tableCfg['columns'] as $colName => $colCfg) {
-            if ($colName === 'id') {
+        foreach ($tableConfig['columns'] as $columnName => $columnConfig) {
+            if ($columnName === 'id') {
                 continue;
             }
-            if (strtolower($colCfg['type'] ?? '') === 'virtual') {
+            if (strtolower($columnConfig['type'] ?? '') === 'virtual') {
                 continue;
             }
-            $duplicateColumns[] = $colName;
+            $duplicateColumns[] = $columnName;
         }
 
         if (empty($duplicateColumns)) {
             throw HttpException::fromStatus(422, 'No columns to duplicate');
         }
 
-        $schemaName = $tableCfg['schema'] ?? 'public';
+        $schemaName = $tableConfig['schema'] ?? 'public';
         $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
-        $colIdents  = implode(', ', array_map('pg_ident', $duplicateColumns));
+        $columnIdentifiers  = implode(', ', array_map('pg_ident', $duplicateColumns));
         $rowIdsArray   = $this->pgIntArray($rowIds);
 
         $userId        = $this->session->userId();
 
         @pg_query($this->conn, 'BEGIN');
 
-        if (!empty($tableCfg['owner_restricted'])) {
+        if (!empty($tableConfig['owner_restricted'])) {
             $ownerSql = owner_restriction_sql('_t.id', 2, 3);
             $result = @pg_query_params(
                 $this->conn,
-                "INSERT INTO {$qualifiedTable} ({$colIdents})
-             SELECT {$colIdents} FROM {$qualifiedTable} AS _t
+                "INSERT INTO {$qualifiedTable} ({$columnIdentifiers})
+             SELECT {$columnIdentifiers} FROM {$qualifiedTable} AS _t
              WHERE _t.id = ANY(\$1::int[]){$ownerSql}
              RETURNING id",
                 [$rowIdsArray, $tableName, $userId]
@@ -304,8 +304,8 @@ final class MassEditController
         } else {
             $result = @pg_query_params(
                 $this->conn,
-                "INSERT INTO {$qualifiedTable} ({$colIdents})
-             SELECT {$colIdents} FROM {$qualifiedTable}
+                "INSERT INTO {$qualifiedTable} ({$columnIdentifiers})
+             SELECT {$columnIdentifiers} FROM {$qualifiedTable}
              WHERE id = ANY(\$1::int[])
              RETURNING id",
                 [$rowIdsArray]
@@ -333,7 +333,7 @@ final class MassEditController
         $duplicated = count($newIds);
         pg_free_result($result);
 
-        if (!empty($tableCfg['owner_restricted'])) {
+        if (!empty($tableConfig['owner_restricted'])) {
             foreach ($newIds as $newId) {
                 set_record_owner($this->conn, $tableName, $newId, $userId, $userId);
             }
@@ -350,15 +350,15 @@ final class MassEditController
     {
         [$body, $rowIds] = $this->selectedRows();
 
-        [$tableCfg, $tableName] = $this->validatedTable($body);
+        [$tableConfig, $tableName] = $this->validatedTable($body);
 
-        $schemaName = $tableCfg['schema'] ?? 'public';
+        $schemaName = $tableConfig['schema'] ?? 'public';
         $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
         $rowIdsArray   = $this->pgIntArray($rowIds);
 
         @pg_query($this->conn, 'BEGIN');
 
-        if (!empty($tableCfg['owner_restricted'])) {
+        if (!empty($tableConfig['owner_restricted'])) {
             $userId      = $this->session->userId();
             $ownerSql = owner_restriction_sql('_t.id', 2, 3);
             $result = @pg_query_params(

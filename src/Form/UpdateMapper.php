@@ -18,11 +18,11 @@ final readonly class UpdateMapper
     {
     }
 
-    public function fromPost(TableConfig $cfg, array $postData): RecordData
+    public function fromPost(TableConfig $config, array $postData): RecordData
     {
         $bindings = [];
-        foreach ($cfg->writableColumns() as $column) {
-            $hasFk      = $cfg->hasForeignKey($column->name);
+        foreach ($config->writableColumns() as $column) {
+            $hasFk      = $config->hasForeignKey($column->name);
             $bound      = $this->registry->for($column, $hasFk)->bind($column->name, $postData);
             $this->assertMatchesRegexp($column, $bound->value);
             $bindings[] = ['col' => $column->name, 'bound' => $bound];

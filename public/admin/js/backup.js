@@ -20,14 +20,14 @@ function buildGroupPanel(panel, tables) {
         return;
     }
 
-    const selRow = document.createElement('div');
-    selRow.style.cssText = 'margin-bottom:14px;display:flex;gap:10px;';
-    const btnAll  = document.createElement('button');
-    const btnNone = document.createElement('button');
-    btnAll.type  = 'button'; btnAll.textContent  = 'Select all';   btnAll.className  = 'btn btn-xs';
-    btnNone.type = 'button'; btnNone.textContent = 'Deselect all'; btnNone.className = 'btn btn-xs';
-    selRow.append(btnAll, btnNone);
-    panel.appendChild(selRow);
+    const selectRow = document.createElement('div');
+    selectRow.style.cssText = 'margin-bottom:14px;display:flex;gap:10px;';
+    const buttonAll  = document.createElement('button');
+    const buttonNone = document.createElement('button');
+    buttonAll.type  = 'button'; buttonAll.textContent  = 'Select all';   buttonAll.className  = 'btn btn-xs';
+    buttonNone.type = 'button'; buttonNone.textContent = 'Deselect all'; buttonNone.className = 'btn btn-xs';
+    selectRow.append(buttonAll, buttonNone);
+    panel.appendChild(selectRow);
 
     const checkboxes = [];
 
@@ -35,12 +35,12 @@ function buildGroupPanel(panel, tables) {
         const label = document.createElement('label');
         label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:4px;margin-bottom:4px;cursor:pointer;background:#fff;user-select:none;';
 
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.dataset.name   = t.name;
-        cb.dataset.schema = t.schema;
-        cb.style.cssText  = 'width:15px;height:15px;flex-shrink:0;cursor:pointer;';
-        checkboxes.push(cb);
+        const callback = document.createElement('input');
+        callback.type = 'checkbox';
+        callback.dataset.name   = t.name;
+        callback.dataset.schema = t.schema;
+        callback.style.cssText  = 'width:15px;height:15px;flex-shrink:0;cursor:pointer;';
+        checkboxes.push(callback);
 
         const nameSpan = document.createElement('span');
         nameSpan.style.flex = '1';
@@ -50,46 +50,46 @@ function buildGroupPanel(panel, tables) {
         schemaTag.style.cssText = 'font-family:var(--font-mono);';
         schemaTag.textContent = t.schema;
 
-        label.append(cb, nameSpan, schemaTag);
+        label.append(callback, nameSpan, schemaTag);
         panel.appendChild(label);
     });
 
-    btnAll.addEventListener('click',  () => checkboxes.forEach(cb => cb.checked = true));
-    btnNone.addEventListener('click', () => checkboxes.forEach(cb => cb.checked = false));
+    buttonAll.addEventListener('click',  () => checkboxes.forEach(callback => callback.checked = true));
+    buttonNone.addEventListener('click', () => checkboxes.forEach(callback => callback.checked = false));
 
     const actionRow = document.createElement('div');
     actionRow.style.cssText = 'margin-top:22px;display:flex;align-items:center;gap:14px;';
-    const btnBackup = document.createElement('button');
-    btnBackup.type = 'button';
-    btnBackup.textContent = 'Backup selected tables';
-    btnBackup.className = 'btn btn-primary';
-    actionRow.appendChild(btnBackup);
+    const buttonBackup = document.createElement('button');
+    buttonBackup.type = 'button';
+    buttonBackup.textContent = 'Backup selected tables';
+    buttonBackup.className = 'btn btn-primary';
+    actionRow.appendChild(buttonBackup);
     panel.appendChild(actionRow);
 
     const resultArea = document.createElement('div');
     resultArea.style.marginTop = '16px';
     panel.appendChild(resultArea);
 
-    btnBackup.addEventListener('click', async () => {
+    buttonBackup.addEventListener('click', async () => {
         const selected = checkboxes
-            .filter(cb => cb.checked)
-            .map(cb => ({ name: cb.dataset.name, schema: cb.dataset.schema }));
+            .filter(callback => callback.checked)
+            .map(callback => ({ name: callback.dataset.name, schema: callback.dataset.schema }));
 
         if (selected.length === 0) {
             resultArea.innerHTML = '<p style="color:var(--warn);margin:0;">No tables selected.</p>';
             return;
         }
 
-        btnBackup.disabled = true;
-        btnBackup.textContent = 'Running…';
+        buttonBackup.disabled = true;
+        buttonBackup.textContent = 'Running…';
         resultArea.innerHTML = '';
 
         try {
-            const res = await apiFetch('api.php?action=backup_tables', {
+            const result = await apiFetch('api.php?action=backup_tables', {
                 method: 'POST',
                 body: JSON.stringify({ tables: selected })
             });
-            const data = await res.json();
+            const data = await result.json();
 
             if (data.status === 'success') {
                 const ul = document.createElement('ul');
@@ -117,36 +117,36 @@ function buildGroupPanel(panel, tables) {
             resultArea.innerHTML = `<p style="color:var(--error);margin:0;">Request failed: ${escHtml(e.message)}</p>`;
         }
 
-        btnBackup.disabled = false;
-        btnBackup.textContent = 'Backup selected tables';
+        buttonBackup.disabled = false;
+        buttonBackup.textContent = 'Backup selected tables';
     });
 }
 
-export async function renderBackupPage(ctx) {
-    const { workspaceEl } = ctx;
+export async function renderBackupPage(context) {
+    const { workspaceEl: workspaceElement } = context;
 
-    workspaceEl.innerHTML = '<p style="padding:20px;">Loading tables…</p>';
+    workspaceElement.innerHTML = '<p style="padding:20px;">Loading tables…</p>';
 
-    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
-    const myId = workspaceEl._renderId;
+    workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
+    const myId = workspaceElement._renderId;
 
     let userTables = [];
     let systemTables = [];
     let globalSettingsTables = [];
 
     try {
-        const [schemaData, sysRes] = await Promise.all([
+        const [schemaData, sysResult] = await Promise.all([
             getGlobalSchema(),
             apiFetch('api.php?action=list_system_tables')
         ]);
-        const sysData = await sysRes.json();
+        const sysData = await sysResult.json();
 
         if (schemaData?.tables) {
-            for (const [name, cfg] of Object.entries(schemaData.tables)) {
+            for (const [name, config] of Object.entries(schemaData.tables)) {
                 userTables.push({
                     name,
-                    schema:  cfg.schema || 'public',
-                    display: cfg.display_name || name,
+                    schema:  config.schema || 'public',
+                    display: config.display_name || name,
                 });
             }
         }
@@ -161,12 +161,12 @@ export async function renderBackupPage(ctx) {
             });
         }
     } catch (e) {
-        if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<p style="color:var(--error);padding:20px;">Failed to load tables.</p>';
+        if (workspaceElement._renderId !== myId) return;
+        workspaceElement.innerHTML = '<p style="color:var(--error);padding:20px;">Failed to load tables.</p>';
         return;
     }
 
-    if (workspaceEl._renderId !== myId) return;
+    if (workspaceElement._renderId !== myId) return;
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
@@ -186,6 +186,6 @@ export async function renderBackupPage(ctx) {
     buildGroupPanel(sysPanel, systemTables);
     buildGroupPanel(globalPanel, globalSettingsTables);
 
-    workspaceEl.innerHTML = '';
-    workspaceEl.appendChild(wrap);
+    workspaceElement.innerHTML = '';
+    workspaceElement.appendChild(wrap);
 }

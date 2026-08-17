@@ -13,18 +13,18 @@ const csrf     = window.CSRF_TOKEN;
 
 const panel     = document.getElementById('ow-panel');
 const current   = document.getElementById('ow-current');
-const changeEl  = document.getElementById('ow-change');
+const changeElement  = document.getElementById('ow-change');
 const select    = document.getElementById('ow-select');
-const saveBtn   = document.getElementById('ow-save');
+const saveButton   = document.getElementById('ow-save');
 const status    = document.getElementById('ow-status');
-const historyEl = document.getElementById('ow-history-body');
+const historyElement = document.getElementById('ow-history-body');
 
 let hasOwner = false;
 
 async function loadOwner() {
     try {
-        const res  = await fetch(`api/owners.php?action=get&table=${encodeURIComponent(table)}&id=${encodeURIComponent(recordId)}`);
-        const data = await res.json();
+        const result  = await fetch(`api/owners.php?action=get&table=${encodeURIComponent(table)}&id=${encodeURIComponent(recordId)}`);
+        const data = await result.json();
         if (!data.success) { current.textContent = I18n.t('owners.error_load'); return; }
 
         if (!data.owner || data.owner.id === null) {
@@ -40,8 +40,8 @@ async function loadOwner() {
             current.textContent = label;
         }
 
-        if (saveBtn) {
-            saveBtn.textContent = hasOwner ? I18n.t('owners.change_owner') : I18n.t('owners.assign_owner');
+        if (saveButton) {
+            saveButton.textContent = hasOwner ? I18n.t('owners.change_owner') : I18n.t('owners.assign_owner');
         }
     } catch {
         current.textContent = I18n.t('owners.error_load');
@@ -49,14 +49,14 @@ async function loadOwner() {
 }
 
 async function loadHistory() {
-    if (!historyEl) return;
+    if (!historyElement) return;
     try {
-        const res  = await fetch(`api/owners.php?action=history&table=${encodeURIComponent(table)}&id=${encodeURIComponent(recordId)}`);
-        const data = await res.json();
-        if (!data.success) { historyEl.textContent = I18n.t('owners.error_history'); return; }
+        const result  = await fetch(`api/owners.php?action=history&table=${encodeURIComponent(table)}&id=${encodeURIComponent(recordId)}`);
+        const data = await result.json();
+        if (!data.success) { historyElement.textContent = I18n.t('owners.error_history'); return; }
 
         if (!data.history.length) {
-            historyEl.textContent = I18n.t('owners.no_history');
+            historyElement.textContent = I18n.t('owners.no_history');
             return;
         }
 
@@ -80,23 +80,23 @@ async function loadHistory() {
                 row.username       || '—',
                 row.changed_by_name || '—',
                 row.changed_at ? new Date(row.changed_at).toLocaleString() : '—',
-            ].forEach(val => {
+            ].forEach(value => {
                 const td = tr.insertCell();
-                td.textContent = val;
+                td.textContent = value;
                 td.style.padding = '8px 10px';
             });
         });
 
-        historyEl.textContent = '';
-        historyEl.appendChild(table_);
+        historyElement.textContent = '';
+        historyElement.appendChild(table_);
     } catch {
-        historyEl.textContent = I18n.t('owners.error_history');
+        historyElement.textContent = I18n.t('owners.error_history');
     }
 }
 
 async function loadEditors() {
-    const res  = await fetch('api/owners.php?action=editors');
-    const data = await res.json();
+    const result  = await fetch('api/owners.php?action=editors');
+    const data = await result.json();
     if (!data.success) return;
 
     select.innerHTML = '';
@@ -109,10 +109,10 @@ async function loadEditors() {
     select.appendChild(placeholder);
 
     data.users.forEach(u => {
-        const opt       = document.createElement('option');
-        opt.value       = u.id;
-        opt.textContent = u.username;
-        select.appendChild(opt);
+        const option       = document.createElement('option');
+        option.value       = u.id;
+        option.textContent = u.username;
+        select.appendChild(option);
     });
 }
 
@@ -124,15 +124,15 @@ async function saveOwner() {
         return;
     }
 
-    saveBtn.disabled   = true;
+    saveButton.disabled   = true;
     status.textContent = '';
 
     try {
-        const res  = await apiFetch('api/owners.php', {
+        const result  = await apiFetch('api/owners.php', {
             method: 'POST',
             body: { action: 'set', table, record_id: recordId, owner_id: ownerId, csrf_token: csrf },
         });
-        const data = await res.json();
+        const data = await result.json();
         if (data.success) {
             status.textContent = I18n.t('owners.saved');
             status.style.color = 'var(--ok)';
@@ -146,7 +146,7 @@ async function saveOwner() {
         status.textContent = I18n.t('owners.network_error');
         status.style.color = 'var(--error)';
     } finally {
-        saveBtn.disabled = false;
+        saveButton.disabled = false;
     }
 }
 
@@ -159,9 +159,9 @@ async function init() {
 
     if (userRole === 'editor' || userRole === 'admin') {
         await loadEditors();
-        changeEl.hidden = false;
-        changeEl.style.display = 'flex';
-        saveBtn.addEventListener('click', saveOwner);
+        changeElement.hidden = false;
+        changeElement.style.display = 'flex';
+        saveButton.addEventListener('click', saveOwner);
     }
 }
 

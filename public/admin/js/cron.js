@@ -23,25 +23,25 @@ function cronMakeSection(id, title, description) {
 function buildManualRunSection() {
     const { card, body } = cronMakeSection('cron-section-0', 'Manual Run', 'Trigger the notification cron immediately outside the scheduler.');
 
-    const runBtn = document.createElement('button');
-    runBtn.className = 'btn btn-primary';
-    runBtn.textContent = 'Run Cron Now';
+    const runButton = document.createElement('button');
+    runButton.className = 'btn btn-primary';
+    runButton.textContent = 'Run Cron Now';
 
     const output = document.createElement('pre');
     output.style.cssText = 'margin-top:14px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;  line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
-    runBtn.addEventListener('click', async () => {
-        runBtn.disabled = true;
-        runBtn.textContent = 'Running…';
+    runButton.addEventListener('click', async () => {
+        runButton.disabled = true;
+        runButton.textContent = 'Running…';
         output.style.display = '';
         output.textContent = 'Please wait…';
         output.style.color = '';
 
         try {
-            const res = await apiFetch('api.php?action=run_cron_notifications', {
+            const result = await apiFetch('api.php?action=run_cron_notifications', {
                 method: 'POST',
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
                 output.innerHTML = data.output || '(no output)';
             } else {
@@ -53,32 +53,32 @@ function buildManualRunSection() {
             output.style.color = 'var(--error)';
         }
 
-        runBtn.disabled = false;
-        runBtn.textContent = 'Run Cron Now';
+        runButton.disabled = false;
+        runButton.textContent = 'Run Cron Now';
     });
 
-    body.append(runBtn, output);
+    body.append(runButton, output);
     return card;
 }
 
 function buildRunHistorySection() {
     const { card, body } = cronMakeSection('cron-section-1', 'Run History', 'Last 50 cron executions from spw_users_notifications_log.');
 
-    const loadBtn = document.createElement('button');
-    loadBtn.className = 'btn btn-primary';
-    loadBtn.textContent = 'Load History';
+    const loadButton = document.createElement('button');
+    loadButton.className = 'btn btn-primary';
+    loadButton.textContent = 'Load History';
 
     const container = document.createElement('div');
     container.style.marginTop = '14px';
 
-    loadBtn.addEventListener('click', async () => {
-        loadBtn.disabled = true;
-        loadBtn.textContent = 'Loading…';
+    loadButton.addEventListener('click', async () => {
+        loadButton.disabled = true;
+        loadButton.textContent = 'Loading…';
         container.textContent = '';
 
         try {
-            const res = await apiFetch('api.php?action=cron_log');
-            const data = await res.json();
+            const result = await apiFetch('api.php?action=cron_log');
+            const data = await result.json();
 
             if (data.status !== 'success') {
                 container.textContent = 'Error: ' + (data.error || 'unknown');
@@ -113,32 +113,32 @@ function buildRunHistorySection() {
             container.textContent = 'Request failed: ' + e.message;
         }
 
-        loadBtn.disabled = false;
-        loadBtn.textContent = 'Refresh';
+        loadButton.disabled = false;
+        loadButton.textContent = 'Refresh';
     });
 
-    body.append(loadBtn, container);
+    body.append(loadButton, container);
     return card;
 }
 
-function buildStatsSection() {
+function buildStatisticsSection() {
     const { card, body } = cronMakeSection('cron-section-2', 'Notification Stats', 'Current totals from spw_users_notifications, top unread per user.');
 
-    const loadBtn = document.createElement('button');
-    loadBtn.className = 'btn btn-primary';
-    loadBtn.textContent = 'Load Stats';
+    const loadButton = document.createElement('button');
+    loadButton.className = 'btn btn-primary';
+    loadButton.textContent = 'Load Stats';
 
     const container = document.createElement('div');
     container.style.marginTop = '14px';
 
-    loadBtn.addEventListener('click', async () => {
-        loadBtn.disabled = true;
-        loadBtn.textContent = 'Loading…';
+    loadButton.addEventListener('click', async () => {
+        loadButton.disabled = true;
+        loadButton.textContent = 'Loading…';
         container.textContent = '';
 
         try {
-            const res = await apiFetch('api.php?action=cron_stats');
-            const data = await res.json();
+            const result = await apiFetch('api.php?action=cron_stats');
+            const data = await result.json();
 
             if (data.status !== 'success') {
                 container.textContent = 'Error: ' + (data.error || 'unknown');
@@ -157,28 +157,28 @@ function buildStatsSection() {
                 ['Due Today (unread)',  t.due_today ?? '—', 'var(--warn)'],
                 ['Upcoming Unread',     t.upcoming_unread ?? '—', 'var(--muted)'],
             ];
-            kpis.forEach(([label, val, color]) => {
+            kpis.forEach(([label, value, color]) => {
                 const kpi = document.createElement('div');
                 kpi.style.cssText = `padding:14px 16px; border-left:4px solid ${color}; background:#fff; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.07);`;
-                const num = document.createElement('div');
-                num.textContent = val;
-                num.style.cssText = ` font-weight:700; color:${color};`;
-                const lbl = document.createElement('div');
-                lbl.textContent = label;
-                lbl.style.cssText = '  margin-top:2px;';
-                kpi.append(num, lbl);
+                const number = document.createElement('div');
+                number.textContent = value;
+                number.style.cssText = ` font-weight:700; color:${color};`;
+                const label = document.createElement('div');
+                label.textContent = label;
+                label.style.cssText = '  margin-top:2px;';
+                kpi.append(number, label);
                 kpiGrid.appendChild(kpi);
             });
             container.appendChild(kpiGrid);
 
             if (lastRun) {
-                const lastRunEl = document.createElement('p');
-                lastRunEl.style.cssText = '  margin-bottom:14px;';
+                const lastRunElement = document.createElement('p');
+                lastRunElement.style.cssText = '  margin-bottom:14px;';
                 const badge = statusBadge(lastRun.status);
                 badge.style.marginLeft = '6px';
-                lastRunEl.textContent = 'Last run: ' + (lastRun.started_at || '').substring(0, 19).replace('T', ' ') + ' ';
-                lastRunEl.appendChild(badge);
-                container.appendChild(lastRunEl);
+                lastRunElement.textContent = 'Last run: ' + (lastRun.started_at || '').substring(0, 19).replace('T', ' ') + ' ';
+                lastRunElement.appendChild(badge);
+                container.appendChild(lastRunElement);
             }
 
             if (data.per_user && data.per_user.length > 0) {
@@ -187,16 +187,16 @@ function buildStatsSection() {
                 h4.style.cssText = 'margin:0 0 10px;    ';
                 container.appendChild(h4);
 
-                const tbl = mkTable();
-                mkThead(tbl, ['Username', 'Email', 'Unread Count']);
-                const tbody = tbl.createTBody();
+                const table = mkTable();
+                mkThead(table, ['Username', 'Email', 'Unread Count']);
+                const tbody = table.createTBody();
                 data.per_user.forEach(r => {
                     const tr = tbody.insertRow();
                     tr.appendChild(td(r.username));
                     tr.appendChild(td(r.email));
                     tr.appendChild(td(r.unread_count));
                 });
-                container.appendChild(tbl);
+                container.appendChild(table);
             } else {
                 const p = document.createElement('p');
                 p.textContent = 'No unread notifications found.';
@@ -206,11 +206,11 @@ function buildStatsSection() {
             container.textContent = 'Request failed: ' + e.message;
         }
 
-        loadBtn.disabled = false;
-        loadBtn.textContent = 'Refresh';
+        loadButton.disabled = false;
+        loadButton.textContent = 'Refresh';
     });
 
-    body.append(loadBtn, container);
+    body.append(loadButton, container);
     return card;
 }
 
@@ -299,14 +299,14 @@ function buildCleanupSection() {
     unit.textContent = 'days';
     unit.style.cssText = ' ';
 
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-danger';
-    btn.textContent = 'Purge Old Logs';
+    const button = document.createElement('button');
+    button.className = 'btn btn-danger';
+    button.textContent = 'Purge Old Logs';
 
     const result = document.createElement('p');
     result.style.cssText = 'margin-top:12px;  display:none;';
 
-    btn.addEventListener('click', async () => {
+    button.addEventListener('click', async () => {
         const days = parseInt(input.value, 10);
         if (!days || days < 1) {
             result.textContent = 'Enter a valid number of days.';
@@ -317,16 +317,16 @@ function buildCleanupSection() {
 
         if (!confirm(`Delete all cron log entries older than ${days} day(s)? This cannot be undone.`)) return;
 
-        btn.disabled = true;
-        btn.textContent = 'Purging…';
+        button.disabled = true;
+        button.textContent = 'Purging…';
         result.style.display = 'none';
 
         try {
-            const res = await apiFetch('api.php?action=cron_purge_log', {
+            const result = await apiFetch('api.php?action=cron_purge_log', {
                 method: 'POST',
                 body: JSON.stringify({ days })
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
                 result.textContent = `Deleted ${data.deleted} log row(s).`;
                 result.style.color = 'var(--ok)';
@@ -340,23 +340,23 @@ function buildCleanupSection() {
         }
 
         result.style.display = '';
-        btn.disabled = false;
-        btn.textContent = 'Purge Old Logs';
+        button.disabled = false;
+        button.textContent = 'Purge Old Logs';
     });
 
-    row.append(label, input, unit, btn);
+    row.append(label, input, unit, button);
     body.append(row, result);
     return card;
 }
 
-function cronField(labelText, inputEl) {
+function cronField(labelText, inputElement) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-bottom:14px;';
-    const lbl = document.createElement('label');
-    lbl.textContent = labelText;
-    lbl.className = 'adm-field-label';
-    if (inputEl.id) lbl.htmlFor = inputEl.id;
-    wrap.append(lbl, inputEl);
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    label.className = 'adm-field-label';
+    if (inputElement.id) label.htmlFor = inputElement.id;
+    wrap.append(label, inputElement);
     return wrap;
 }
 
@@ -378,15 +378,15 @@ function buildEmailSection() {
 
     const smtpRow = document.createElement('div');
     smtpRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:16px;';
-    const smtpChk = document.createElement('input');
-    smtpChk.type = 'checkbox';
-    smtpChk.id = 'cron-smtp-enabled';
-    smtpChk.className = 'adm-check';
-    const smtpLbl = document.createElement('label');
-    smtpLbl.htmlFor = 'cron-smtp-enabled';
-    smtpLbl.textContent = 'Send via SMTP (instead of PHP mail())';
-    smtpLbl.style.cssText = 'cursor:pointer;';
-    smtpRow.append(smtpChk, smtpLbl);
+    const smtpCheckbox = document.createElement('input');
+    smtpCheckbox.type = 'checkbox';
+    smtpCheckbox.id = 'cron-smtp-enabled';
+    smtpCheckbox.className = 'adm-check';
+    const smtpLabel = document.createElement('label');
+    smtpLabel.htmlFor = 'cron-smtp-enabled';
+    smtpLabel.textContent = 'Send via SMTP (instead of PHP mail())';
+    smtpLabel.style.cssText = 'cursor:pointer;';
+    smtpRow.append(smtpCheckbox, smtpLabel);
     body.appendChild(smtpRow);
 
     const smtpFields = document.createElement('div');
@@ -409,11 +409,11 @@ function buildEmailSection() {
     const encSelect = document.createElement('select');
     encSelect.id = 'cron-smtp-encryption';
     encSelect.className = 'adm-input w-full';
-    [['tls', 'STARTTLS (587)'], ['ssl', 'SSL/TLS (465)'], ['none', 'None']].forEach(([val, text]) => {
-        const opt = document.createElement('option');
-        opt.value = val;
-        opt.textContent = text;
-        encSelect.appendChild(opt);
+    [['tls', 'STARTTLS (587)'], ['ssl', 'SSL/TLS (465)'], ['none', 'None']].forEach(([value, text]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = text;
+        encSelect.appendChild(option);
     });
 
     const userInput = document.createElement('input');
@@ -438,12 +438,12 @@ function buildEmailSection() {
     passInput.placeholder = 'Leave blank to keep the current password';
     passInput.autocomplete = 'new-password';
     passInput.className = 'adm-input flex-1';
-    const passClearBtn = document.createElement('button');
-    passClearBtn.type = 'button';
-    passClearBtn.className = 'btn btn-secondary btn-sm';
-    passClearBtn.textContent = 'Clear password';
-    passClearBtn.style.flexShrink = '0';
-    passRow.append(passInput, passClearBtn);
+    const passClearButton = document.createElement('button');
+    passClearButton.type = 'button';
+    passClearButton.className = 'btn btn-secondary btn-sm';
+    passClearButton.textContent = 'Clear password';
+    passClearButton.style.flexShrink = '0';
+    passRow.append(passInput, passClearButton);
 
     const passStatus = document.createElement('div');
     passStatus.className = 'c-muted';
@@ -453,7 +453,7 @@ function buildEmailSection() {
     function renderPassStatus(configured) {
         passStatus.textContent = configured ? 'Password configured.' : 'No password set.';
     }
-    passClearBtn.addEventListener('click', () => {
+    passClearButton.addEventListener('click', () => {
         passClearRequested = true;
         passInput.value = '';
         renderPassStatus(false);
@@ -467,16 +467,16 @@ function buildEmailSection() {
     const actionRow = document.createElement('div');
     actionRow.style.cssText = 'display:flex; gap:10px; align-items:center; margin-top:6px;';
 
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'btn btn-primary';
-    saveBtn.textContent = 'Save';
+    const saveButton = document.createElement('button');
+    saveButton.className = 'btn btn-primary';
+    saveButton.textContent = 'Save';
 
-    const testBtn = document.createElement('button');
-    testBtn.type = 'button';
-    testBtn.className = 'btn btn-secondary';
-    testBtn.textContent = 'Test SMTP Connection';
+    const testButton = document.createElement('button');
+    testButton.type = 'button';
+    testButton.className = 'btn btn-secondary';
+    testButton.textContent = 'Test SMTP Connection';
 
-    actionRow.append(saveBtn, testBtn);
+    actionRow.append(saveButton, testButton);
 
     const result = document.createElement('p');
     result.style.cssText = 'margin-top:12px; display:none;';
@@ -485,14 +485,14 @@ function buildEmailSection() {
 
     async function load() {
         try {
-            const res = await apiFetch('api.php?action=get_automation_email_setting');
-            const data = await res.json();
+            const result = await apiFetch('api.php?action=get_automation_email_setting');
+            const data = await result.json();
             fromInput.value = data.from || '';
             if (data.locked_by_env) {
                 fromInput.disabled = true;
                 lockNote.style.display = '';
             }
-            smtpChk.checked = !!data.smtp_enabled;
+            smtpCheckbox.checked = !!data.smtp_enabled;
             hostInput.value = data.smtp_host || '';
             portInput.value = data.smtp_port || 587;
             encSelect.value = data.smtp_encryption || 'tls';
@@ -508,7 +508,7 @@ function buildEmailSection() {
     function buildPayload() {
         const payload = {
             from: fromInput.value.trim(),
-            smtp_enabled: smtpChk.checked,
+            smtp_enabled: smtpCheckbox.checked,
             smtp_host: hostInput.value.trim(),
             smtp_port: parseInt(portInput.value, 10) || 587,
             smtp_encryption: encSelect.value,
@@ -522,17 +522,17 @@ function buildEmailSection() {
         return payload;
     }
 
-    saveBtn.addEventListener('click', async () => {
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Saving…';
+    saveButton.addEventListener('click', async () => {
+        saveButton.disabled = true;
+        saveButton.textContent = 'Saving…';
         result.style.display = 'none';
 
         try {
-            const res = await apiFetch('api.php?action=set_automation_email_setting', {
+            const result = await apiFetch('api.php?action=set_automation_email_setting', {
                 method: 'POST',
                 body: JSON.stringify(buildPayload())
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
                 result.textContent = 'Saved.';
                 result.style.color = 'var(--ok)';
@@ -549,17 +549,17 @@ function buildEmailSection() {
         }
 
         result.style.display = '';
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save';
+        saveButton.disabled = false;
+        saveButton.textContent = 'Save';
     });
 
-    testBtn.addEventListener('click', async () => {
-        testBtn.disabled = true;
-        testBtn.textContent = 'Testing…';
+    testButton.addEventListener('click', async () => {
+        testButton.disabled = true;
+        testButton.textContent = 'Testing…';
         result.style.display = 'none';
 
         try {
-            const res = await apiFetch('api.php?action=test_smtp_connection', {
+            const result = await apiFetch('api.php?action=test_smtp_connection', {
                 method: 'POST',
                 body: JSON.stringify({
                     smtp_host: hostInput.value.trim(),
@@ -569,7 +569,7 @@ function buildEmailSection() {
                     smtp_password: passInput.value,
                 })
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
                 result.textContent = 'Connection successful.';
                 result.style.color = 'var(--ok)';
@@ -583,22 +583,22 @@ function buildEmailSection() {
         }
 
         result.style.display = '';
-        testBtn.disabled = false;
-        testBtn.textContent = 'Test SMTP Connection';
+        testButton.disabled = false;
+        testButton.textContent = 'Test SMTP Connection';
     });
 
     load();
     return card;
 }
 
-export function renderCronPage(ctx) {
-    const { workspaceEl } = ctx;
+export function renderCronPage(context) {
+    const { workspaceEl: workspaceElement } = context;
 
-    workspaceEl.innerHTML = '';
+    workspaceElement.innerHTML = '';
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     wrap.appendChild(createPageHeader(
         'Cron & Notifications',
@@ -616,7 +616,7 @@ export function renderCronPage(ctx) {
 
     p0.appendChild(buildManualRunSection());
     p1.appendChild(buildRunHistorySection());
-    p2.appendChild(buildStatsSection());
+    p2.appendChild(buildStatisticsSection());
     p3.appendChild(buildSetupSection());
     p4.appendChild(buildCleanupSection());
     p5.appendChild(buildEmailSection());

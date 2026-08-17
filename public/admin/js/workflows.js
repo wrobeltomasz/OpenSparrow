@@ -11,11 +11,11 @@ let procedureCache = null;
 async function loadProcedures() {
     if (procedureCache !== null) return procedureCache;
     try {
-        const res = await apiFetch('api.php?action=list_procedures');
-        const data = await res.json();
+        const result = await apiFetch('api.php?action=list_procedures');
+        const data = await result.json();
         procedureCache = Array.isArray(data.procedures) ? data.procedures : [];
-    } catch (err) {
-        console.warn('Could not load stored procedures', err);
+    } catch (error) {
+        console.warn('Could not load stored procedures', error);
         procedureCache = [];
     }
     return procedureCache;
@@ -26,24 +26,24 @@ function procedureKey(proc) {
 }
 
 function procedureLabel(proc) {
-    const args = (proc.params || []).map(p => `${p.name} ${p.type}`).join(', ');
-    return `${procedureKey(proc)}(${args})`;
+    const arguments = (proc.params || []).map(p => `${p.name} ${p.type}`).join(', ');
+    return `${procedureKey(proc)}(${arguments})`;
 }
 
-export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
-    const { workspaceEl, getTableOptions, getColumnOptionsForTable, renderEditor } = ctx;
+export function renderWorkflowsEditor(key, itemData, isArray, context) {
+    const { workspaceEl: workspaceElement, getTableOptions, getColumnOptionsForTable, renderEditor } = context;
 
     if (!itemData.steps) itemData.steps = [];
 
-    workspaceEl.appendChild(createTextInput('title', 'Workflow Title', itemData.title, v => itemData.title = v));
-    workspaceEl.appendChild(createTextInput('description', 'Short Description', itemData.description || '', v => itemData.description = v));
-    workspaceEl.appendChild(createIconPicker('icon', 'Workflow Icon', itemData.icon || '', v => {
+    workspaceElement.appendChild(createTextInput('title', 'Workflow Title', itemData.title, v => itemData.title = v));
+    workspaceElement.appendChild(createTextInput('description', 'Short Description', itemData.description || '', v => itemData.description = v));
+    workspaceElement.appendChild(createIconPicker('icon', 'Workflow Icon', itemData.icon || '', v => {
         if (v && v.trim() !== '') itemData.icon = v; else delete itemData.icon;
     }));
 
     const stepsContainer = document.createElement('div');
     stepsContainer.style.marginTop = '30px';
-    workspaceEl.appendChild(stepsContainer);
+    workspaceElement.appendChild(stepsContainer);
 
     function renderSteps() {
         stepsContainer.innerHTML = '<h3>Workflow Steps</h3>';
@@ -69,19 +69,19 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
             h4.textContent = incomplete ? `Step ${index + 1} — incomplete` : `Step ${index + 1}`;
             if (incomplete) h4.style.color = 'var(--error)';
 
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.title = 'Delete Step';
-            delBtn.textContent = '✕';
-            delBtn.className = 'icon-btn icon-btn-danger';
-            delBtn.onclick = () => {
+            const delButton = document.createElement('button');
+            delButton.type = 'button';
+            delButton.title = 'Delete Step';
+            delButton.textContent = '✕';
+            delButton.className = 'icon-btn icon-btn-danger';
+            delButton.onclick = () => {
                 itemData.steps.splice(index, 1);
                 renderSteps();
             };
 
             header.appendChild(chevron);
             header.appendChild(h4);
-            header.appendChild(delBtn);
+            header.appendChild(delButton);
             block.appendChild(header);
 
             block.appendChild(createTextInput('step_title', 'Step Name', step.title, v => step.title = v));
@@ -104,26 +104,26 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
             }));
 
             if (index > 0 && step.table) {
-                const colOptions = getColumnOptionsForTable(step.table);
-                block.appendChild(createSelectInput('step_fk', 'Foreign Key (link to previous step)', colOptions, step.foreign_key || '', v => step.foreign_key = v));
+                const columnOptions = getColumnOptionsForTable(step.table);
+                block.appendChild(createSelectInput('step_fk', 'Foreign Key (link to previous step)', columnOptions, step.foreign_key || '', v => step.foreign_key = v));
 
-                const prevSteps = [{value: '', label: '-- Select Previous Step --'}];
+                const previousSteps = [{value: '', label: '-- Select Previous Step --'}];
                 for (let i = 0; i < index; i++) {
-                    prevSteps.push({value: i.toString(), label: `Step ${i + 1}: ${itemData.steps[i].title || 'Unnamed'}`});
+                    previousSteps.push({value: i.toString(), label: `Step ${i + 1}: ${itemData.steps[i].title || 'Unnamed'}`});
                 }
 
-                block.appendChild(createSelectInput('link_to_step', 'Link to ID from Step', prevSteps, (step.link_to_step !== undefined ? step.link_to_step.toString() : ''), v => step.link_to_step = parseInt(v)));
+                block.appendChild(createSelectInput('link_to_step', 'Link to ID from Step', previousSteps, (step.link_to_step !== undefined ? step.link_to_step.toString() : ''), v => step.link_to_step = parseInt(v)));
             }
 
             const proc = step.procedure || {};
-            const procEnabledOptions = [
+            const procedureEnabledOptions = [
                 { value: 'false', label: 'No' },
                 { value: 'true', label: 'Yes' }
             ];
             block.appendChild(createSelectInput(
                 'proc_enabled',
                 'Call a PostgreSQL procedure on Next step?',
-                procEnabledOptions,
+                procedureEnabledOptions,
                 proc.enabled ? 'true' : 'false',
                 v => {
                     if (v === 'true') {
@@ -136,13 +136,13 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
             ));
 
             if (proc.enabled) {
-                const procOptions = [{ value: '', label: '-- Select Procedure --' }];
+                const procedureOptions = [{ value: '', label: '-- Select Procedure --' }];
                 (procedureCache || []).forEach(p => {
-                    procOptions.push({ value: procedureKey(p), label: procedureLabel(p) });
+                    procedureOptions.push({ value: procedureKey(p), label: procedureLabel(p) });
                 });
 
                 const selectedKey = (proc.schema && proc.name) ? `${proc.schema}.${proc.name}` : '';
-                block.appendChild(createSelectInput('proc_name', 'Procedure', procOptions, selectedKey, v => {
+                block.appendChild(createSelectInput('proc_name', 'Procedure', procedureOptions, selectedKey, v => {
                     const picked = (procedureCache || []).find(p => procedureKey(p) === v);
                     if (picked) {
                         step.procedure.schema = picked.schema;
@@ -157,23 +157,23 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
                     renderSteps();
                 }));
 
-                const selectedProc = (procedureCache || []).find(p => procedureKey(p) === selectedKey);
-                if (selectedProc) {
-                    (selectedProc.params || []).forEach((declared, pi) => {
+                const selectedProcedure = (procedureCache || []).find(p => procedureKey(p) === selectedKey);
+                if (selectedProcedure) {
+                    (selectedProcedure.params || []).forEach((declared, pi) => {
                         if (!step.procedure.params[pi]) {
                             step.procedure.params[pi] = { source: 'field', step: index, field: '' };
                         }
-                        const paramCfg = step.procedure.params[pi];
-                        const paramLabel = `${declared.name || 'arg' + (pi + 1)} (${declared.type})`;
+                        const parameterConfig = step.procedure.params[pi];
+                        const parameterLabel = `${declared.name || 'arg' + (pi + 1)} (${declared.type})`;
 
                         block.appendChild(createSelectInput(
                             `param_src_${pi}`,
-                            `Parameter ${pi + 1}: ${paramLabel}`,
+                            `Parameter ${pi + 1}: ${parameterLabel}`,
                             [
                                 { value: 'field', label: 'From a workflow field' },
                                 { value: 'literal', label: 'Fixed value' }
                             ],
-                            paramCfg.source || 'field',
+                            parameterConfig.source || 'field',
                             v => {
                                 step.procedure.params[pi] = v === 'literal'
                                     ? { source: 'literal', value: '' }
@@ -182,12 +182,12 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
                             }
                         ));
 
-                        if (paramCfg.source === 'literal') {
+                        if (parameterConfig.source === 'literal') {
                             block.appendChild(createTextInput(
                                 `param_val_${pi}`,
-                                `— value for ${paramLabel}`,
-                                paramCfg.value || '',
-                                v => paramCfg.value = v
+                                `— value for ${parameterLabel}`,
+                                parameterConfig.value || '',
+                                v => parameterConfig.value = v
                             ));
                         } else {
                             const stepOptions = [];
@@ -197,30 +197,30 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
                                     label: `Step ${i + 1}: ${itemData.steps[i].title || 'Unnamed'}`
                                 });
                             }
-                            const srcStep = (paramCfg.step !== undefined && paramCfg.step !== '')
-                                ? paramCfg.step.toString() : index.toString();
+                            const sourceStep = (parameterConfig.step !== undefined && parameterConfig.step !== '')
+                                ? parameterConfig.step.toString() : index.toString();
 
                             block.appendChild(createSelectInput(
                                 `param_step_${pi}`,
-                                `— source step for ${paramLabel}`,
+                                `— source step for ${parameterLabel}`,
                                 stepOptions,
-                                srcStep,
+                                sourceStep,
                                 v => {
-                                    paramCfg.step = parseInt(v, 10);
-                                    paramCfg.field = '';
+                                    parameterConfig.step = parseInt(v, 10);
+                                    parameterConfig.field = '';
                                     renderSteps();
                                 }
                             ));
 
-                            const srcTable = itemData.steps[parseInt(srcStep, 10)]?.table || '';
+                            const sourceTable = itemData.steps[parseInt(sourceStep, 10)]?.table || '';
                             const fieldOptions = [{ value: '', label: '-- Select Field --' }]
-                                .concat(srcTable ? getColumnOptionsForTable(srcTable) : []);
+                                .concat(sourceTable ? getColumnOptionsForTable(sourceTable) : []);
                             block.appendChild(createSelectInput(
                                 `param_field_${pi}`,
-                                `— source field for ${paramLabel}`,
+                                `— source field for ${parameterLabel}`,
                                 fieldOptions,
-                                paramCfg.field || '',
-                                v => paramCfg.field = v
+                                parameterConfig.field || '',
+                                v => parameterConfig.field = v
                             ));
                         }
                     });
@@ -235,14 +235,14 @@ export function renderWorkflowsEditor(key, itemData, isArray, ctx) {
             stepsContainer.appendChild(block);
         });
 
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn btn-sm';
-        addBtn.textContent = '+ Add Step';
-        addBtn.onclick = () => {
+        const addButton = document.createElement('button');
+        addButton.className = 'btn btn-sm';
+        addButton.textContent = '+ Add Step';
+        addButton.onclick = () => {
             itemData.steps.push({ title: '', description: '', table: '', foreign_key: '', link_to_step: itemData.steps.length > 0 ? itemData.steps.length - 1 : 0, allow_multiple: false });
             renderSteps();
         };
-        stepsContainer.appendChild(addBtn);
+        stepsContainer.appendChild(addButton);
     }
 
     renderSteps();

@@ -20,13 +20,13 @@ function resolve_landing_page(): string
     require_once __DIR__ . '/../includes/config_store.php';
     $isHidden = static function (string $configKey): bool {
         try {
-            $cfg = config_get($configKey);
+            $config = config_get($configKey);
         } catch (ControlFlowException $signal) {
             throw $signal;
         } catch (Throwable $exception) {
             return false;
         }
-        return is_array($cfg) && !empty($cfg['hidden']);
+        return is_array($config) && !empty($config['hidden']);
     };
 
     if (!$isHidden('dashboard')) {
@@ -102,12 +102,12 @@ if ($request->isPost()) {
             WHERE attempted_at > now() - (\$3 * interval '1 minute')
               AND (ip_hash = \$1 OR username = \$2)
         ";
-        $resCheck = pg_query_params($conn, $sqlCheck, [$ipHash, $username, $lockoutMinutes]);
+        $checkResult = pg_query_params($conn, $sqlCheck, [$ipHash, $username, $lockoutMinutes]);
 
-        if (!$resCheck) {
+        if (!$checkResult) {
             $error = 'Technical error. Contact administrator.';
         } else {
-            $row = pg_fetch_assoc($resCheck);
+            $row = pg_fetch_assoc($checkResult);
 
             if ((int)$row['cnt_ip'] >= $maxAttemptsPerIp) {
                 $error = 'Too many failed attempts. Please try again later.';
@@ -119,12 +119,12 @@ if ($request->isPost()) {
         if (empty($error)) {
             $sqlUser = 'SELECT id, username, password_hash, salt, role, avatar_id FROM '
                 . sys_table('users') . ' WHERE username = $1';
-            $resUser = pg_query_params($conn, $sqlUser, [$username]);
+            $userResult = pg_query_params($conn, $sqlUser, [$username]);
 
-            if (!$resUser) {
+            if (!$userResult) {
                 $error = 'Technical error. Contact administrator.';
             } else {
-                $user = pg_fetch_assoc($resUser);
+                $user = pg_fetch_assoc($userResult);
 
                 if (!$user) {
                     password_hash($password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);

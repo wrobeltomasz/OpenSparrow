@@ -13,9 +13,9 @@ export const WidgetRegistry = {
     render(widget) {
         const fn = renderers.get(widget.type);
         if (!fn) {
-            const err = document.createElement('p');
-            err.textContent = window.I18n.t('dashboard.unknown_widget_type', { type: widget.type });
-            return err;
+            const error = document.createElement('p');
+            error.textContent = window.I18n.t('dashboard.unknown_widget_type', { type: widget.type });
+            return error;
         }
         return fn(widget);
     },

@@ -6,9 +6,9 @@
 import { markDirty, getGlobalSchema } from './app.js';
 import { createPageHeader, buildInnerTabs } from './ui.js';
 
-export function renderUserRecordsEditor(ctx) {
-    const { workspaceEl, currentConfig } = ctx;
-    workspaceEl.innerHTML = '';
+export function renderUserRecordsEditor(context) {
+    const { workspaceEl: workspaceElement, currentConfig } = context;
+    workspaceElement.innerHTML = '';
 
     if (!currentConfig.columns || typeof currentConfig.columns !== 'object' || Array.isArray(currentConfig.columns)) {
         currentConfig.columns = {};
@@ -19,7 +19,7 @@ export function renderUserRecordsEditor(ctx) {
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     wrap.appendChild(createPageHeader(
         'User Records Configuration',
@@ -34,7 +34,7 @@ export function renderUserRecordsEditor(ctx) {
     ]);
 
     renderColumnsPanel(columnsPanel, currentConfig);
-    renderSettingsPanel(settingsPanel, ctx);
+    renderSettingsPanel(settingsPanel, context);
 }
 
 function renderColumnsPanel(panel, currentConfig) {
@@ -70,7 +70,7 @@ function renderColumnsPanel(panel, currentConfig) {
         });
 }
 
-function buildTableBlock(tableName, tableCfg, currentConfig) {
+function buildTableBlock(tableName, tableConfig, currentConfig) {
     const block = document.createElement('div');
     block.className = 'column-block collapsed';
 
@@ -83,7 +83,7 @@ function buildTableBlock(tableName, tableCfg, currentConfig) {
     chevron.textContent = '▶';
 
     const h4 = document.createElement('h4');
-    h4.textContent = tableCfg.display_name || tableName;
+    h4.textContent = tableConfig.display_name || tableName;
 
     headerDiv.appendChild(chevron);
     headerDiv.appendChild(h4);
@@ -92,8 +92,8 @@ function buildTableBlock(tableName, tableCfg, currentConfig) {
     const bodyDiv = document.createElement('div');
     bodyDiv.className = 'block-body';
 
-    const cols = Object.keys(tableCfg.columns || {})
-        .filter((c) => (tableCfg.columns[c].type || '') !== 'virtual');
+    const columns = Object.keys(tableConfig.columns || {})
+        .filter((c) => (tableConfig.columns[c].type || '') !== 'virtual');
 
     const grp = document.createElement('div');
     grp.className = 'form-group';
@@ -101,10 +101,10 @@ function buildTableBlock(tableName, tableCfg, currentConfig) {
     label.textContent = 'Label columns';
     grp.appendChild(label);
     grp.appendChild(createColumnMultiSelect(
-        cols.map((c) => ({ value: c, label: tableCfg.columns[c].display_name || c })),
+        columns.map((c) => ({ value: c, label: tableConfig.columns[c].display_name || c })),
         currentConfig.columns[tableName] || [],
-        (val) => {
-            if (val.length) currentConfig.columns[tableName] = val;
+        (value) => {
+            if (value.length) currentConfig.columns[tableName] = value;
             else delete currentConfig.columns[tableName];
             markDirty();
         }
@@ -127,32 +127,32 @@ function createColumnMultiSelect(options, selectedValues, onChange) {
         return container;
     }
 
-    options.forEach((opt) => {
-        const lbl = document.createElement('label');
-        lbl.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
+    options.forEach((option) => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
 
         const chk = document.createElement('input');
         chk.type = 'checkbox';
-        chk.value = opt.value;
-        chk.checked = selected.includes(opt.value);
+        chk.value = option.value;
+        chk.checked = selected.includes(option.value);
         chk.style.marginRight = '8px';
         chk.addEventListener('change', () => {
-            const idx = selected.indexOf(opt.value);
-            if (chk.checked && idx === -1) selected.push(opt.value);
-            else if (!chk.checked && idx !== -1) selected.splice(idx, 1);
+            const index = selected.indexOf(option.value);
+            if (chk.checked && index === -1) selected.push(option.value);
+            else if (!chk.checked && index !== -1) selected.splice(index, 1);
             onChange([...selected]);
         });
 
-        lbl.appendChild(chk);
-        lbl.appendChild(document.createTextNode(opt.label));
-        container.appendChild(lbl);
+        label.appendChild(chk);
+        label.appendChild(document.createTextNode(option.label));
+        container.appendChild(label);
     });
 
     return container;
 }
 
-function renderSettingsPanel(panel, ctx) {
-    const { currentConfig } = ctx;
+function renderSettingsPanel(panel, context) {
+    const { currentConfig } = context;
     panel.style.cssText = 'padding-top:16px; max-width:420px;';
 
     const grp = document.createElement('div');
@@ -181,28 +181,28 @@ function renderSettingsPanel(panel, ctx) {
 
     panel.appendChild(grp);
 
-    const dangerGrp = document.createElement('div');
-    dangerGrp.className = 'form-group';
-    dangerGrp.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';
+    const dangerGroup = document.createElement('div');
+    dangerGroup.className = 'form-group';
+    dangerGroup.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';
 
-    const clearBtn = document.createElement('button');
-    clearBtn.type = 'button';
-    clearBtn.className = 'btn btn-danger';
-    clearBtn.textContent = 'Clear Entire Config';
-    clearBtn.addEventListener('click', () => {
+    const clearButton = document.createElement('button');
+    clearButton.type = 'button';
+    clearButton.className = 'btn btn-danger';
+    clearButton.textContent = 'Clear Entire Config';
+    clearButton.addEventListener('click', () => {
         if (!confirm('Are you sure you want to completely clear the User Records configuration?')) return;
         currentConfig.columns = {};
         currentConfig.limit = 20;
         markDirty();
-        renderUserRecordsEditor(ctx);
+        renderUserRecordsEditor(context);
     });
-    dangerGrp.appendChild(clearBtn);
+    dangerGroup.appendChild(clearButton);
 
     const clearHelp = document.createElement('span');
     clearHelp.className = 'help-text';
     clearHelp.textContent = 'Removes all column mappings and resets the limit to 20. '
         + 'Press "Save config" in the top bar to apply.';
-    dangerGrp.appendChild(clearHelp);
+    dangerGroup.appendChild(clearHelp);
 
-    panel.appendChild(dangerGrp);
+    panel.appendChild(dangerGroup);
 }

@@ -69,10 +69,10 @@ final class RequestScopeInventoryTest extends TestCase
         return $files;
     }
 
-    private function code(string $relPath): string
+    private function code(string $relativePath): string
     {
         $output = '';
-        foreach (token_get_all((string) file_get_contents(self::$root . '/' . $relPath)) as $token) {
+        foreach (token_get_all((string) file_get_contents(self::$root . '/' . $relativePath)) as $token) {
             if (is_array($token)) {
                 if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
                     continue;

@@ -76,9 +76,9 @@ function os_validated_record_id(string $id): int
 
 function os_header_search(string $id, ?string $placeholder = null): string
 {
-    $ph = htmlspecialchars($placeholder ?? t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
-    return '<input type="search" id="' . $id . '" placeholder="' . $ph . '"'
-        . ' aria-label="' . $ph . '">';
+    $escapedPlaceholder = htmlspecialchars($placeholder ?? t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
+    return '<input type="search" id="' . $id . '" placeholder="' . $escapedPlaceholder . '"'
+        . ' aria-label="' . $escapedPlaceholder . '">';
 }
 
 function os_header_filters(string $id, string $class): string
@@ -92,11 +92,11 @@ function os_header_clear_filters(): string
     return '<button id="clearFilters" hidden title="' . $label . '">' . $label . '</button>';
 }
 
-function os_inline_globals(array $vars, string $nonce): string
+function os_inline_globals(array $variables, string $nonce): string
 {
     $flags = JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
     $javaScript    = '';
-    foreach ($vars as $name => $value) {
+    foreach ($variables as $name => $value) {
         $javaScript .= '    window.' . $name . ' = ' . json_encode($value, $flags) . ";\n";
     }
     return '<script nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '">' . "\n"
@@ -124,26 +124,26 @@ function os_module_graph(array $groups): array
     }
 
     $files = [];
-    foreach ($groups as $urlPrefix => $dir) {
-        if (!is_dir($dir)) {
+    foreach ($groups as $urlPrefix => $directory) {
+        if (!is_dir($directory)) {
             continue;
         }
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
         );
         foreach ($iterator as $file) {
             if (!$file->isFile() || strtolower($file->getExtension()) !== 'js') {
                 continue;
             }
-            $relativePath = str_replace('\\', '/', substr($file->getPathname(), strlen($dir) + 1));
+            $relativePath = str_replace('\\', '/', substr($file->getPathname(), strlen($directory) + 1));
             $files[$urlPrefix . $relativePath] = (int) $file->getMTime();
         }
     }
 
     $version = $files === [] ? 0 : max($files);
     $imports = [];
-    foreach (array_keys($files) as $spec) {
-        $imports[$spec] = $spec . '?v=' . $version;
+    foreach (array_keys($files) as $specification) {
+        $imports[$specification] = $specification . '?v=' . $version;
     }
     ksort($imports);
 
@@ -186,10 +186,10 @@ const OS_M2M_SEARCH_THRESHOLD = 10;
 
 const OS_M2M_SUMMARY_CHIPS = 3;
 
-function os_m2m_group(int $index, array $cfg, array $options, array $selected, bool $readOnly): string
+function os_m2m_group(int $index, array $config, array $options, array $selected, bool $readOnly): string
 {
     $escape   = static fn(string $text): string => htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
-    $label = $escape((string)($cfg['label'] ?? 'Related'));
+    $label = $escape((string)($config['label'] ?? 'Related'));
 
     $html = '<div class="m2m-group">' . "\n"
         . '<div class="m2m-group-label">' . $label . '</div>' . "\n";
@@ -215,8 +215,9 @@ function os_m2m_group(int $index, array $cfg, array $options, array $selected, b
 
     $head = '';
     if (count($options) > OS_M2M_SEARCH_THRESHOLD) {
-        $ph = $escape(t('form.m2m_search'));
-        $head .= '<input type="text" class="m2m-search" placeholder="' . $ph . '" aria-label="' . $ph . '">';
+        $escapedPlaceholder = $escape(t('form.m2m_search'));
+        $head .= '<input type="text" class="m2m-search" placeholder="' . $escapedPlaceholder
+            . '" aria-label="' . $escapedPlaceholder . '">';
     }
     if (!$readOnly) {
         $head .= '<button type="button" class="m2m-link" data-m2m-all>'

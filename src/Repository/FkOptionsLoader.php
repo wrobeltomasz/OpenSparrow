@@ -21,24 +21,24 @@ final readonly class FkOptionsLoader
 
     public function load(array $foreignKeyConfig, array $rawSchema): array
     {
-        $refTable  = $foreignKeyConfig['reference_table'];
-        $refPk     = $foreignKeyConfig['reference_column'] ?? 'id';
-        $refSchema = $rawSchema['tables'][$refTable]['schema'] ?? 'public';
+        $referencedTable  = $foreignKeyConfig['reference_table'];
+        $referencedPrimaryKey     = $foreignKeyConfig['reference_column'] ?? 'id';
+        $referencedSchema = $rawSchema['tables'][$referencedTable]['schema'] ?? 'public';
 
         $dispRaw = is_array($foreignKeyConfig['display_column'] ?? null)
             ? $foreignKeyConfig['display_column']
-            : [$foreignKeyConfig['display_column'] ?? $refPk];
+            : [$foreignKeyConfig['display_column'] ?? $referencedPrimaryKey];
         if (empty($dispRaw)) {
-            $dispRaw = [$refPk];
+            $dispRaw = [$referencedPrimaryKey];
         }
 
         $referenceColumnsSql  = implode(', ', array_map([Identifier::class, 'quote'], $dispRaw));
         $orderColumnSql = Identifier::quote($dispRaw[0]);
         $sql = sprintf(
             'SELECT %s, %s FROM %s ORDER BY %s ASC',
-            Identifier::quote($refPk),
+            Identifier::quote($referencedPrimaryKey),
             $referenceColumnsSql,
-            Identifier::quoteQualified($refSchema, $refTable),
+            Identifier::quoteQualified($referencedSchema, $referencedTable),
             $orderColumnSql
         );
 
@@ -49,9 +49,9 @@ final readonly class FkOptionsLoader
                 'Foreign key configuration error: display column(s) [%s] not found on table "%s"."%s" '
                 . '(reference_column "%s"). Check the FK settings in the schema editor. Original error: %s',
                 implode(', ', $dispRaw),
-                $refSchema,
-                $refTable,
-                $refPk,
+                $referencedSchema,
+                $referencedTable,
+                $referencedPrimaryKey,
                 $exception->getMessage()
             ), 0, $exception);
         }
@@ -63,18 +63,18 @@ final readonly class FkOptionsLoader
                     $parts[] = $row[$dateColumn];
                 }
             }
-            $options[$row[$refPk]] = implode(' - ', $parts) ?: $row[$refPk];
+            $options[$row[$referencedPrimaryKey]] = implode(' - ', $parts) ?: $row[$referencedPrimaryKey];
         }
         return $options;
     }
 
-    public function expandDisplay(TableConfig $cfg, array $rows, array $rawSchema): array
+    public function expandDisplay(TableConfig $config, array $rows, array $rawSchema): array
     {
-        if (empty($rows) || empty($cfg->foreignKeys)) {
+        if (empty($rows) || empty($config->foreignKeys)) {
             return $rows;
         }
 
-        foreach ($cfg->foreignKeys as $fkColumn => $foreignKeyConfig) {
+        foreach ($config->foreignKeys as $fkColumn => $foreignKeyConfig) {
             $fkValues = array_unique(
                 array_filter(array_column($rows, $fkColumn), fn($value) => $value !== null && $value !== '')
             );
@@ -82,15 +82,15 @@ final readonly class FkOptionsLoader
                 continue;
             }
 
-            $refTable  = $foreignKeyConfig['reference_table'];
-            $refPk     = $foreignKeyConfig['reference_column'] ?? 'id';
-            $refSchema = $rawSchema['tables'][$refTable]['schema'] ?? 'public';
+            $referencedTable  = $foreignKeyConfig['reference_table'];
+            $referencedPrimaryKey     = $foreignKeyConfig['reference_column'] ?? 'id';
+            $referencedSchema = $rawSchema['tables'][$referencedTable]['schema'] ?? 'public';
 
             $dispRaw = is_array($foreignKeyConfig['display_column'] ?? null)
                 ? $foreignKeyConfig['display_column']
-                : [$foreignKeyConfig['display_column'] ?? $refPk];
+                : [$foreignKeyConfig['display_column'] ?? $referencedPrimaryKey];
             if (empty($dispRaw)) {
-                $dispRaw = [$refPk];
+                $dispRaw = [$referencedPrimaryKey];
             }
 
             $escapedColumns = array_map([Identifier::class, 'quote'], $dispRaw);
@@ -105,10 +105,10 @@ final readonly class FkOptionsLoader
 
             $sql = sprintf(
                 'SELECT %s AS id, %s AS disp FROM %s WHERE %s IN (%s)',
-                Identifier::quote($refPk),
+                Identifier::quote($referencedPrimaryKey),
                 $displaySql,
-                Identifier::quoteQualified($refSchema, $refTable),
-                Identifier::quote($refPk),
+                Identifier::quoteQualified($referencedSchema, $referencedTable),
+                Identifier::quote($referencedPrimaryKey),
                 implode(', ', $escapedValues)
             );
 
@@ -125,9 +125,9 @@ final readonly class FkOptionsLoader
                     . 'table "%s"."%s" (reference_column "%s"). Check the FK settings in the schema editor. '
                     . 'Original error: %s',
                     implode(', ', $dispRaw),
-                    $refSchema,
-                    $refTable,
-                    $refPk,
+                    $referencedSchema,
+                    $referencedTable,
+                    $referencedPrimaryKey,
                     trim(pg_last_error($this->conn->native()))
                 ));
             }

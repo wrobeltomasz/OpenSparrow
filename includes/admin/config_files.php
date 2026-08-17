@@ -36,12 +36,12 @@ if ($action === 'menu_config' && os_request()->method() === 'GET') {
         'children' => [],
     ];
 
-    $calRaw = config_get('calendar') ?? [];
+    $calendarRaw = config_get('calendar') ?? [];
     $catalog['calendar'] = [
         'type' => 'calendar', 'key' => 'calendar',
-        'name'   => $calRaw['menu_name'] ?? 'Calendar',
-        'icon'   => $menuSanitizeIcon((string)($calRaw['menu_icon'] ?? 'assets/icons/calendar.png')),
-        'hidden' => !empty($calRaw['hidden']),
+        'name'   => $calendarRaw['menu_name'] ?? 'Calendar',
+        'icon'   => $menuSanitizeIcon((string)($calendarRaw['menu_icon'] ?? 'assets/icons/calendar.png')),
+        'hidden' => !empty($calendarRaw['hidden']),
         'children' => [],
     ];
 
@@ -159,8 +159,8 @@ $dbBackedFiles = [
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
     if (in_array($file, $dbBackedFiles, true)) {
         require_once __DIR__ . '/../config_store.php';
-        $cfg = config_get($file);
-        echo $cfg !== null ? json_encode($cfg) : json_encode(new stdClass());
+        $config = config_get($file);
+        echo $config !== null ? json_encode($config) : json_encode(new stdClass());
         throw ResponseException::sent();
     }
     $filePath = __DIR__ . '/../../config/' . $file . '.json';

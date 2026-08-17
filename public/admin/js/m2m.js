@@ -8,26 +8,26 @@ import { showStatusPill } from './app.js';
 
 let _renderGen = 0;
 
-export async function renderM2mPage(ctx) {
+export async function renderM2mPage(context) {
     const myGen = ++_renderGen;
-    const { workspaceEl } = ctx;
-    workspaceEl.textContent = '';
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.textContent = '';
 
     let tables = [];
     let relationships = [];
     try {
-        const res = await apiFetch('api.php?action=list_m2m', {
+        const result = await apiFetch('api.php?action=list_m2m', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        const data = await res.json();
+        const data = await result.json();
         if (myGen !== _renderGen) return;
         tables        = data.tables        || [];
         relationships = data.relationships || [];
     } catch {
-        const err = document.createElement('p');
-        err.style.color = 'red';
-        err.textContent = 'Failed to load schema data.';
-        workspaceEl.appendChild(err);
+        const error = document.createElement('p');
+        error.style.color = 'red';
+        error.textContent = 'Failed to load schema data.';
+        workspaceElement.appendChild(error);
         return;
     }
 
@@ -39,7 +39,7 @@ export async function renderM2mPage(ctx) {
     sub.style.cssText = '  margin:0 0 32px;';
     sub.textContent = 'Select two tables — the wizard creates the junction table in PostgreSQL and updates the schema configuration automatically.';
 
-    workspaceEl.append(h2, sub);
+    workspaceElement.append(h2, sub);
 
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); padding:28px; max-width:680px; margin-bottom:44px;';
@@ -61,9 +61,9 @@ export async function renderM2mPage(ctx) {
     function makeTableSelect(labelText) {
         const wrap = document.createElement('div');
         wrap.className = 'flex-1';
-        const lbl = document.createElement('label');
-        lbl.className = 'adm-field-label';
-        lbl.textContent = labelText;
+        const label = document.createElement('label');
+        label.className = 'adm-field-label';
+        label.textContent = labelText;
         const sel = document.createElement('select');
         sel.className = 'adm-input w-full';
         const blank = document.createElement('option');
@@ -71,148 +71,148 @@ export async function renderM2mPage(ctx) {
         blank.textContent = '— select table —';
         sel.appendChild(blank);
         tables.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t.name;
-            opt.textContent = t.display_name ? `${t.display_name} (${t.name})` : t.name;
-            sel.appendChild(opt);
+            const option = document.createElement('option');
+            option.value = t.name;
+            option.textContent = t.display_name ? `${t.display_name} (${t.name})` : t.name;
+            sel.appendChild(option);
         });
-        wrap.append(lbl, sel);
+        wrap.append(label, sel);
         return { wrap, sel };
     }
 
-    const { wrap: wrapA, sel: selA } = makeTableSelect('Table A — parent (has many)');
-    const arrowEl = document.createElement('div');
-    arrowEl.style.cssText = '  padding-bottom:9px; flex-shrink:0;';
-    arrowEl.textContent = '↔';
-    const { wrap: wrapB, sel: selB } = makeTableSelect('Table B — related entity');
-    selectRow.append(wrapA, arrowEl, wrapB);
+    const { wrap: wrapA, sel: selectA } = makeTableSelect('Table A — parent (has many)');
+    const arrowElement = document.createElement('div');
+    arrowElement.style.cssText = '  padding-bottom:9px; flex-shrink:0;';
+    arrowElement.textContent = '↔';
+    const { wrap: wrapB, sel: selectB } = makeTableSelect('Table B — related entity');
+    selectRow.append(wrapA, arrowElement, wrapB);
     card.appendChild(selectRow);
 
-    const optGrid = document.createElement('div');
-    optGrid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:10px;';
+    const optionGrid = document.createElement('div');
+    optionGrid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:10px;';
 
     function makeField(labelText, placeholder, hint) {
         const wrap = document.createElement('div');
-        const lbl = document.createElement('label');
-        lbl.className = 'adm-field-label';
-        lbl.textContent = labelText;
-        const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.placeholder = placeholder;
-        inp.className = 'adm-input w-full';
+        const label = document.createElement('label');
+        label.className = 'adm-field-label';
+        label.textContent = labelText;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = placeholder;
+        input.className = 'adm-input w-full';
         if (hint) {
             const h = document.createElement('div');
             h.style.cssText = '  margin-top:4px;';
             h.textContent = hint;
-            wrap.append(lbl, inp, h);
+            wrap.append(label, input, h);
         } else {
-            wrap.append(lbl, inp);
+            wrap.append(label, input);
         }
-        return { wrap, inp };
+        return { wrap, inp: input };
     }
 
-    const { wrap: wJunction, inp: inpJunction } = makeField('Junction Table Name', 'e.g. employee_company', 'Created in PostgreSQL');
-    const { wrap: wLabel,    inp: inpLabel    } = makeField('Label in Form',        'e.g. Companies',      'Shown above checkboxes');
-    const { wrap: wSelfFk,  inp: inpSelfFk   } = makeField('Self FK Column',        'e.g. employee_id',    'Column pointing to Table A');
-    const { wrap: wOtherFk, inp: inpOtherFk  } = makeField('Other FK Column',       'e.g. company_id',     'Column pointing to Table B');
-    const { wrap: wDisp,    inp: inpDisp     } = makeField('Display Column',         'e.g. name',           'Column from Table B shown as label');
+    const { wrap: wJunction, inp: inputJunction } = makeField('Junction Table Name', 'e.g. employee_company', 'Created in PostgreSQL');
+    const { wrap: wLabel,    inp: inputLabel    } = makeField('Label in Form',        'e.g. Companies',      'Shown above checkboxes');
+    const { wrap: wSelfFk,  inp: inputSelfFk   } = makeField('Self FK Column',        'e.g. employee_id',    'Column pointing to Table A');
+    const { wrap: wOtherFk, inp: inputOtherFk  } = makeField('Other FK Column',       'e.g. company_id',     'Column pointing to Table B');
+    const { wrap: wDisp,    inp: inputDisp     } = makeField('Display Column',         'e.g. name',           'Column from Table B shown as label');
 
-    optGrid.append(wJunction, wLabel, wSelfFk, wOtherFk, wDisp);
-    card.appendChild(optGrid);
+    optionGrid.append(wJunction, wLabel, wSelfFk, wOtherFk, wDisp);
+    card.appendChild(optionGrid);
 
     const GUESSES = ['name', 'title', 'label', 'code', 'description'];
 
     function autoFill() {
-        const a = selA.value;
-        const b = selB.value;
+        const a = selectA.value;
+        const b = selectB.value;
         if (!a || !b) return;
         const tB = tables.find(t => t.name === b);
-        const bCols = Array.isArray(tB?.columns) ? tB.columns : [];
-        const dispGuess = GUESSES.find(g => bCols.includes(g)) || bCols.find(c => c !== 'id') || 'name';
+        const bColumns = Array.isArray(tB?.columns) ? tB.columns : [];
+        const dispGuess = GUESSES.find(g => bColumns.includes(g)) || bColumns.find(c => c !== 'id') || 'name';
 
-        if (inpJunction.dataset.auto !== '0') { inpJunction.value = `${a}_${b}`; inpJunction.dataset.auto = '1'; }
-        if (inpSelfFk.dataset.auto  !== '0') { inpSelfFk.value   = `${a}_id`;   inpSelfFk.dataset.auto   = '1'; }
-        if (inpOtherFk.dataset.auto !== '0') { inpOtherFk.value  = `${b}_id`;   inpOtherFk.dataset.auto  = '1'; }
-        if (inpLabel.dataset.auto   !== '0') { inpLabel.value    = tB?.display_name || b; inpLabel.dataset.auto = '1'; }
-        if (inpDisp.dataset.auto    !== '0') { inpDisp.value     = dispGuess;   inpDisp.dataset.auto     = '1'; }
+        if (inputJunction.dataset.auto !== '0') { inputJunction.value = `${a}_${b}`; inputJunction.dataset.auto = '1'; }
+        if (inputSelfFk.dataset.auto  !== '0') { inputSelfFk.value   = `${a}_id`;   inputSelfFk.dataset.auto   = '1'; }
+        if (inputOtherFk.dataset.auto !== '0') { inputOtherFk.value  = `${b}_id`;   inputOtherFk.dataset.auto  = '1'; }
+        if (inputLabel.dataset.auto   !== '0') { inputLabel.value    = tB?.display_name || b; inputLabel.dataset.auto = '1'; }
+        if (inputDisp.dataset.auto    !== '0') { inputDisp.value     = dispGuess;   inputDisp.dataset.auto     = '1'; }
     }
 
-    [inpJunction, inpLabel, inpSelfFk, inpOtherFk, inpDisp].forEach(inp => {
-        inp.addEventListener('input', () => { inp.dataset.auto = '0'; });
+    [inputJunction, inputLabel, inputSelfFk, inputOtherFk, inputDisp].forEach(input => {
+        input.addEventListener('input', () => { input.dataset.auto = '0'; });
     });
-    selA.addEventListener('change', autoFill);
-    selB.addEventListener('change', autoFill);
+    selectA.addEventListener('change', autoFill);
+    selectB.addEventListener('change', autoFill);
 
     const preview = document.createElement('div');
     preview.style.cssText = '  margin:6px 0 20px; min-height:18px;';
 
     function updatePreview() {
-        const a = selA.value; const b = selB.value;
+        const a = selectA.value; const b = selectB.value;
         if (!a || !b) { preview.textContent = ''; return; }
-        preview.textContent = `Will execute: CREATE TABLE app.${inpJunction.value || a + '_' + b} (id SERIAL PK, ${inpSelfFk.value || a + '_id'} → ${a}, ${inpOtherFk.value || b + '_id'} → ${b}, UNIQUE)`;
+        preview.textContent = `Will execute: CREATE TABLE app.${inputJunction.value || a + '_' + b} (id SERIAL PK, ${inputSelfFk.value || a + '_id'} → ${a}, ${inputOtherFk.value || b + '_id'} → ${b}, UNIQUE)`;
     }
 
-    [selA, selB, inpJunction, inpSelfFk, inpOtherFk].forEach(el => el.addEventListener('input', updatePreview));
-    [selA, selB].forEach(el => el.addEventListener('change', updatePreview));
+    [selectA, selectB, inputJunction, inputSelfFk, inputOtherFk].forEach(element => element.addEventListener('input', updatePreview));
+    [selectA, selectB].forEach(element => element.addEventListener('change', updatePreview));
     card.appendChild(preview);
 
-    const btnCreate = document.createElement('button');
-    btnCreate.type = 'button';
-    btnCreate.className = 'btn btn-primary';
-    btnCreate.innerHTML = '<span style="font-weight:300;line-height:1;">+</span> Create Relationship';
-    card.appendChild(btnCreate);
+    const buttonCreate = document.createElement('button');
+    buttonCreate.type = 'button';
+    buttonCreate.className = 'btn btn-primary';
+    buttonCreate.innerHTML = '<span style="font-weight:300;line-height:1;">+</span> Create Relationship';
+    card.appendChild(buttonCreate);
 
-    btnCreate.addEventListener('click', async () => {
-        const tableA        = selA.value.trim();
-        const tableB        = selB.value.trim();
-        const junctionTable = inpJunction.value.trim();
-        const selfFk        = inpSelfFk.value.trim();
-        const otherFk       = inpOtherFk.value.trim();
-        const label         = inpLabel.value.trim();
-        const displayCol    = inpDisp.value.trim();
+    buttonCreate.addEventListener('click', async () => {
+        const tableA        = selectA.value.trim();
+        const tableB        = selectB.value.trim();
+        const junctionTable = inputJunction.value.trim();
+        const selfFk        = inputSelfFk.value.trim();
+        const otherFk       = inputOtherFk.value.trim();
+        const label         = inputLabel.value.trim();
+        const displayColumn    = inputDisp.value.trim();
 
-        if (!tableA || !tableB)  { showStatusPill(btnCreate, 'Select both tables.', 'error'); return; }
-        if (tableA === tableB)   { showStatusPill(btnCreate, 'Tables must be different.', 'error'); return; }
-        if (!junctionTable)      { showStatusPill(btnCreate, 'Junction table name required.', 'error'); return; }
-        if (!selfFk || !otherFk) { showStatusPill(btnCreate, 'Both FK column names required.', 'error'); return; }
+        if (!tableA || !tableB)  { showStatusPill(buttonCreate, 'Select both tables.', 'error'); return; }
+        if (tableA === tableB)   { showStatusPill(buttonCreate, 'Tables must be different.', 'error'); return; }
+        if (!junctionTable)      { showStatusPill(buttonCreate, 'Junction table name required.', 'error'); return; }
+        if (!selfFk || !otherFk) { showStatusPill(buttonCreate, 'Both FK column names required.', 'error'); return; }
 
-        btnCreate.disabled = true;
-        btnCreate.textContent = 'Creating…';
+        buttonCreate.disabled = true;
+        buttonCreate.textContent = 'Creating…';
 
         try {
-            const res = await apiFetch('api.php?action=create_m2m', {
+            const result = await apiFetch('api.php?action=create_m2m', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: JSON.stringify({ table_a: tableA, table_b: tableB, junction_table: junctionTable, self_fk: selfFk, other_fk: otherFk, label, display_column: displayCol })
+                body: JSON.stringify({ table_a: tableA, table_b: tableB, junction_table: junctionTable, self_fk: selfFk, other_fk: otherFk, label, display_column: displayColumn })
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
-                showStatusPill(btnCreate, 'Relationship created!', 'success');
-                setTimeout(() => renderM2mPage(ctx), 900);
+                showStatusPill(buttonCreate, 'Relationship created!', 'success');
+                setTimeout(() => renderM2mPage(context), 900);
             } else {
-                showStatusPill(btnCreate, result.error || 'Failed.', 'error');
-                btnCreate.disabled = false;
-                btnCreate.innerHTML = '<span style="font-weight:300;line-height:1;">+</span> Create Relationship';
+                showStatusPill(buttonCreate, result.error || 'Failed.', 'error');
+                buttonCreate.disabled = false;
+                buttonCreate.innerHTML = '<span style="font-weight:300;line-height:1;">+</span> Create Relationship';
             }
         } catch {
-            showStatusPill(btnCreate, 'Network error.', 'error');
-            btnCreate.disabled = false;
-            btnCreate.textContent = 'Create Relationship';
+            showStatusPill(buttonCreate, 'Network error.', 'error');
+            buttonCreate.disabled = false;
+            buttonCreate.textContent = 'Create Relationship';
         }
     });
 
-    workspaceEl.appendChild(card);
+    workspaceElement.appendChild(card);
 
     const listH3 = document.createElement('h3');
     listH3.style.cssText = 'margin:0 0 14px;';
     listH3.textContent = 'Existing Many-to-Many Relationships';
-    workspaceEl.appendChild(listH3);
+    workspaceElement.appendChild(listH3);
 
     if (relationships.length === 0) {
         const empty = document.createElement('p');
         empty.style.cssText = ' ';
         empty.textContent = 'No many-to-many relationships configured yet.';
-        workspaceEl.appendChild(empty);
+        workspaceElement.appendChild(empty);
         return;
     }
 
@@ -238,41 +238,41 @@ export async function renderM2mPage(ctx) {
         title.className = 'block-title';
         title.textContent = `${rel.table_a_display} ↔ ${rel.table_b_display}`;
 
-        const btnDel = document.createElement('button');
-        btnDel.type = 'button';
-        btnDel.title = 'Remove';
-        btnDel.textContent = '✕';
-        btnDel.className = 'icon-btn icon-btn-danger';
+        const buttonDel = document.createElement('button');
+        buttonDel.type = 'button';
+        buttonDel.title = 'Remove';
+        buttonDel.textContent = '✕';
+        buttonDel.className = 'icon-btn icon-btn-danger';
 
-        btnDel.addEventListener('click', async (e) => {
+        buttonDel.addEventListener('click', async (e) => {
             e.stopPropagation();
             if (!confirm(`Remove relationship "${rel.table_a_display} ↔ ${rel.table_b_display}"?\n\nThis removes the configuration entry. The junction table "${rel.junction_table}" stays in the database unless you choose to drop it next.`)) return;
 
             const alsoDropTable = confirm(`Also DROP TABLE "${rel.junction_table}" from PostgreSQL?\n\nWARNING: This permanently deletes all relationship data.`);
 
-            btnDel.disabled = true;
+            buttonDel.disabled = true;
 
             try {
-                const res = await apiFetch('api.php?action=delete_m2m', {
+                const result = await apiFetch('api.php?action=delete_m2m', {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: JSON.stringify({ table_a: rel.table_a, m2m_index: rel.m2m_index, junction_table: rel.junction_table, drop_table: alsoDropTable })
                 });
-                const result = await res.json();
+                const result = await result.json();
                 if (result.status === 'success') {
                     card.style.opacity = '0.4';
                     setTimeout(() => card.remove(), 300);
                 } else {
-                    showStatusPill(btnDel, result.error || 'Failed.', 'error');
-                    btnDel.disabled = false;
+                    showStatusPill(buttonDel, result.error || 'Failed.', 'error');
+                    buttonDel.disabled = false;
                 }
             } catch {
-                showStatusPill(btnDel, 'Network error.', 'error');
-                btnDel.disabled = false;
+                showStatusPill(buttonDel, 'Network error.', 'error');
+                buttonDel.disabled = false;
             }
         });
 
-        header.append(chevron, title, btnDel);
+        header.append(chevron, title, buttonDel);
         card.appendChild(header);
 
         const body = document.createElement('div');
@@ -286,13 +286,13 @@ export async function renderM2mPage(ctx) {
         ].forEach(([k, v]) => {
             const detail = document.createElement('div');
             detail.style.cssText = ' margin-bottom:6px;';
-            const kEl = document.createElement('span');
-            kEl.style.cssText = ' display:inline-block; min-width:130px;';
-            kEl.textContent = k;
-            const vEl = document.createElement('span');
-            vEl.style.color = 'var(--text)';
-            vEl.textContent = (v === undefined || v === null || v === '') ? '—' : v;
-            detail.append(kEl, vEl);
+            const kElement = document.createElement('span');
+            kElement.style.cssText = ' display:inline-block; min-width:130px;';
+            kElement.textContent = k;
+            const vElement = document.createElement('span');
+            vElement.style.color = 'var(--text)';
+            vElement.textContent = (v === undefined || v === null || v === '') ? '—' : v;
+            detail.append(kElement, vElement);
             body.appendChild(detail);
         });
         card.appendChild(body);
@@ -300,5 +300,5 @@ export async function renderM2mPage(ctx) {
         list.appendChild(card);
     });
 
-    workspaceEl.appendChild(list);
+    workspaceElement.appendChild(list);
 }

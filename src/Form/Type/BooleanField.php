@@ -23,9 +23,9 @@ final class BooleanField implements FieldTypeInterface
     }
 
     #[\Override]
-    public function bind(string $colName, array $postData): BoundValue
+    public function bind(string $columnName, array $postData): BoundValue
     {
-        $value = isset($postData[$colName]) ? 'true' : 'false';
+        $value = isset($postData[$columnName]) ? 'true' : 'false';
         return new BoundValue($value, 'boolean');
     }
 

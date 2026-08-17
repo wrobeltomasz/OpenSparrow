@@ -10,10 +10,10 @@ export const CellRenderer = {
         renderers.set(type, fn);
     },
 
-    render(type, ctx) {
+    render(type, context) {
         const fn = renderers.get(type);
         if (!fn) throw new Error(`No cell renderer for type: "${type}"`);
-        return fn(ctx);
+        return fn(context);
     },
 
     has(type) {

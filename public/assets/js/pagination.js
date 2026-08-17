@@ -26,18 +26,18 @@ export function initPageSize(schema) {
 }
 
 export function setupPagination(schema) {
-    let paginationEl = document.getElementById('pagination');
+    let paginationElement = document.getElementById('pagination');
 
-    if (!paginationEl) {
-        paginationEl = document.createElement('div');
-        paginationEl.id = 'pagination';
-        paginationEl.className = 'pagination';
+    if (!paginationElement) {
+        paginationEl: paginationElement = document.createElement('div');
+        paginationElement.id = 'pagination';
+        paginationElement.className = 'pagination';
 
         const gridSection = document.getElementById('gridSection');
         if (gridSection) {
-            gridSection.appendChild(paginationEl);
+            gridSection.appendChild(paginationElement);
         } else {
-            document.body.appendChild(paginationEl);
+            document.body.appendChild(paginationElement);
         }
     }
 
@@ -53,11 +53,11 @@ export function renderPagination(schema) {
         currentPage = totalPages;
     }
 
-    const paginationEl = document.getElementById('pagination');
-    if (!paginationEl) return;
+    const paginationElement = document.getElementById('pagination');
+    if (!paginationElement) return;
 
-    paginationEl.innerHTML = '';
-    paginationEl.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
+    paginationElement.innerHTML = '';
+    paginationElement.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
 
     const sizeLabel = document.createElement('label');
     sizeLabel.className = 'pag-size';
@@ -65,11 +65,11 @@ export function renderPagination(schema) {
 
     const sizeSelect = document.createElement('select');
     PAGE_SIZE_OPTIONS.forEach(n => {
-        const opt = document.createElement('option');
-        opt.value = n;
-        opt.textContent = n;
-        if (n === pageSize) opt.selected = true;
-        sizeSelect.appendChild(opt);
+        const option = document.createElement('option');
+        option.value = n;
+        option.textContent = n;
+        if (n === pageSize) option.selected = true;
+        sizeSelect.appendChild(option);
     });
     sizeSelect.addEventListener('change', async () => {
         pageSize = Number(sizeSelect.value);
@@ -78,53 +78,53 @@ export function renderPagination(schema) {
         await renderGrid(schema);
     });
     sizeLabel.appendChild(sizeSelect);
-    paginationEl.appendChild(sizeLabel);
+    paginationElement.appendChild(sizeLabel);
 
     const spacer = document.createElement('span');
     spacer.style.flex = '1';
-    paginationEl.appendChild(spacer);
+    paginationElement.appendChild(spacer);
 
-    renderPaginationInfo(filteredData);
+    renderPaginationInformation(filteredData);
 
-    const prevBtn = document.createElement('button');
-    prevBtn.textContent = I18n.t('pagination.prev');
-    prevBtn.disabled = currentPage <= 1;
-    prevBtn.addEventListener('click', async () => {
+    const previousButton = document.createElement('button');
+    previousButton.textContent = I18n.t('pagination.prev');
+    previousButton.disabled = currentPage <= 1;
+    previousButton.addEventListener('click', async () => {
         if (currentPage > 1) {
             currentPage--;
             await renderGrid(schema);
         }
     });
-    paginationEl.appendChild(prevBtn);
+    paginationElement.appendChild(previousButton);
 
-    const info = document.createElement('span');
-    info.style.cssText = 'font-size:13px; white-space:nowrap;';
-    info.textContent = I18n.t('pagination.page_of', { page: currentPage, total: totalPages });
-    paginationEl.appendChild(info);
+    const information = document.createElement('span');
+    information.style.cssText = 'font-size:13px; white-space:nowrap;';
+    information.textContent = I18n.t('pagination.page_of', { page: currentPage, total: totalPages });
+    paginationElement.appendChild(information);
 
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = I18n.t('pagination.next');
-    nextBtn.disabled = currentPage >= totalPages;
-    nextBtn.addEventListener('click', async () => {
+    const nextButton = document.createElement('button');
+    nextButton.textContent = I18n.t('pagination.next');
+    nextButton.disabled = currentPage >= totalPages;
+    nextButton.addEventListener('click', async () => {
         if (currentPage < totalPages) {
             currentPage++;
             await renderGrid(schema);
         }
     });
-    paginationEl.appendChild(nextBtn);
+    paginationElement.appendChild(nextButton);
 
     const { wasTruncated, loadedOffset, totalRows } = getState();
     if (wasTruncated) {
         const remaining = totalRows > loadedOffset ? totalRows - loadedOffset : 0;
-        const loadMoreBtn = document.createElement('button');
-        loadMoreBtn.textContent = remaining > 0
+        const loadMoreButton = document.createElement('button');
+        loadMoreButton.textContent = remaining > 0
             ? `${I18n.t('grid.load_more')} (${remaining.toLocaleString()})`
             : I18n.t('grid.load_more');
-        loadMoreBtn.style.cssText = 'margin-left:12px;';
-        loadMoreBtn.addEventListener('click', () => {
+        loadMoreButton.style.cssText = 'margin-left:12px;';
+        loadMoreButton.addEventListener('click', () => {
             document.dispatchEvent(new CustomEvent('grid:loadMore'));
         });
-        paginationEl.appendChild(loadMoreBtn);
+        paginationElement.appendChild(loadMoreButton);
     }
 
     debugLog("Pagination rendered", { currentPage, totalPages, pageSize });
@@ -157,28 +157,28 @@ export function getPageRows() {
     return filteredData.slice(start, end);
 }
 
-function renderPaginationInfo(filteredData) {
+function renderPaginationInformation(filteredData) {
     const totalRecords = filteredData.length;
 
     const start = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
     const end = Math.min(currentPage * pageSize, totalRecords);
 
-    let infoEl = document.getElementById('pagination-info');
+    let informationElement = document.getElementById('pagination-info');
 
-    if (!infoEl) {
-        infoEl = document.createElement('span');
-        infoEl.id = 'pagination-info';
-        infoEl.style.cssText = 'font-size:13px; color:var(--muted); white-space:nowrap; margin-right:8px;';
-        const paginationEl = document.getElementById('pagination');
-        if (paginationEl) paginationEl.appendChild(infoEl);
+    if (!informationElement) {
+        infoEl: informationElement = document.createElement('span');
+        informationElement.id = 'pagination-info';
+        informationElement.style.cssText = 'font-size:13px; color:var(--muted); white-space:nowrap; margin-right:8px;';
+        const paginationElement = document.getElementById('pagination');
+        if (paginationElement) paginationElement.appendChild(informationElement);
     }
 
     const { wasTruncated, totalRows, loadedOffset } = getState();
     if (wasTruncated && totalRows > loadedOffset) {
         const dbTotal = totalRows.toLocaleString();
-        infoEl.textContent = I18n.t('grid.showing', { from: start, to: end, total: totalRecords })
+        informationElement.textContent = I18n.t('grid.showing', { from: start, to: end, total: totalRecords })
             + ` / ${dbTotal} ${I18n.t('grid.total_in_db')}`;
     } else {
-        infoEl.textContent = I18n.t('grid.showing', { from: start, to: end, total: totalRecords });
+        informationElement.textContent = I18n.t('grid.showing', { from: start, to: end, total: totalRecords });
     }
 }

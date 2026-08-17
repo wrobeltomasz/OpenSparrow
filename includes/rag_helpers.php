@@ -9,9 +9,9 @@ declare(strict_types=1);
 
 function rag_config(): array
 {
-    static $cfg = null;
-    if ($cfg !== null) {
-        return $cfg;
+    static $config = null;
+    if ($config !== null) {
+        return $config;
     }
     $defaults = [
         'ollama_url'           => get_env('OLLAMA_URL', 'http://localhost:11434'),
@@ -29,8 +29,8 @@ function rag_config(): array
     ];
     require_once __DIR__ . '/config_store.php';
     $rawConfig = config_get('rag');
-    $cfg = is_array($rawConfig) ? array_merge($defaults, $rawConfig) : $defaults;
-    return $cfg;
+    $config = is_array($rawConfig) ? array_merge($defaults, $rawConfig) : $defaults;
+    return $config;
 }
 
 function pg_text_array_to_php(string $pgArray): array
@@ -71,14 +71,14 @@ function rag_chunk_text(string $text, int $chunkSize = 1000, int $overlap = 200)
     $chunks  = [];
     $current = '';
 
-    foreach ($paragraphs as $para) {
-        if (mb_strlen($para) > $chunkSize) {
+    foreach ($paragraphs as $paragraph) {
+        if (mb_strlen($paragraph) > $chunkSize) {
             if ($current !== '') {
                 $chunks[]  = $current;
                 $tailStart = max(0, mb_strlen($current) - $overlap);
                 $current   = mb_substr($current, $tailStart);
             }
-            $sentences = preg_split('/(?<=[.!?…])\s+/', $para, -1, PREG_SPLIT_NO_EMPTY);
+            $sentences = preg_split('/(?<=[.!?…])\s+/', $paragraph, -1, PREG_SPLIT_NO_EMPTY);
             foreach ($sentences as $sentence) {
                 $sentence = trim($sentence);
                 if ($sentence === '') {
@@ -96,13 +96,13 @@ function rag_chunk_text(string $text, int $chunkSize = 1000, int $overlap = 200)
         }
 
         $separator = $current !== '' ? "\n\n" : '';
-        if ($current !== '' && mb_strlen($current) + mb_strlen($separator . $para) > $chunkSize) {
+        if ($current !== '' && mb_strlen($current) + mb_strlen($separator . $paragraph) > $chunkSize) {
             $chunks[]    = $current;
             $tailStart   = max(0, mb_strlen($current) - $overlap);
             $overlapText = mb_substr($current, $tailStart);
-            $current     = $overlapText !== '' ? $overlapText . "\n\n" . $para : $para;
+            $current     = $overlapText !== '' ? $overlapText . "\n\n" . $paragraph : $paragraph;
         } else {
-            $current .= $separator . $para;
+            $current .= $separator . $paragraph;
         }
     }
 
@@ -113,11 +113,11 @@ function rag_chunk_text(string $text, int $chunkSize = 1000, int $overlap = 200)
     return array_values(array_filter(array_map('trim', $chunks)));
 }
 
-function rag_store_chunks(\PgSql\Connection $conn, int $fileId, string $content, array $cfg): int
+function rag_store_chunks(\PgSql\Connection $conn, int $fileId, string $content, array $config): int
 {
     $ragChunksTable   = sys_table('rag_chunks');
-    $chunkSize = (int) ($cfg['chunk_size'] ?? 1000);
-    $overlap   = (int) ($cfg['chunk_overlap'] ?? 200);
+    $chunkSize = (int) ($config['chunk_size'] ?? 1000);
+    $overlap   = (int) ($config['chunk_overlap'] ?? 200);
 
     $chunks = rag_chunk_text($content, $chunkSize, $overlap);
     if (empty($chunks)) {
@@ -149,8 +149,8 @@ function rag_tsquery_expr(): string
 
 function rag_retrieve(\PgSql\Connection $conn, string $query, array $tags, int $limit = 3): array
 {
-    $cfg     = rag_config();
-    $limit   = max(1, min(10, $limit ?: (int) ($cfg['max_context_files'] ?? 3)));
+    $config     = rag_config();
+    $limit   = max(1, min(10, $limit ?: (int) ($config['max_context_files'] ?? 3)));
     $ragFilesTable    = sys_table('rag_files');
     $ragChunksTable = sys_table('rag_chunks');
     $query   = trim($query);
@@ -159,7 +159,7 @@ function rag_retrieve(\PgSql\Connection $conn, string $query, array $tags, int $
         return [];
     }
 
-    $useChunks = (bool) ($cfg['use_chunks'] ?? true);
+    $useChunks = (bool) ($config['use_chunks'] ?? true);
     $tsQueryExpression       = rag_tsquery_expr();
 
     static $chunksExist = null;
@@ -253,24 +253,24 @@ function rag_parse_qualified_view(string $rawView): ?array
     return null;
 }
 
-function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $table, array $cfg): string
+function rag_view_aggregate(\PgSql\Connection $conn, array $schema, string $table, array $config): string
 {
     if ($table === '') {
         return '';
     }
 
-    $tableCfg = $schema['tables'][$table] ?? null;
-    if ($tableCfg === null || !empty($tableCfg['owner_restricted'])) {
+    $tableConfig = $schema['tables'][$table] ?? null;
+    if ($tableConfig === null || !empty($tableConfig['owner_restricted'])) {
         return '';
     }
 
-    $views = is_array($cfg['aggregate_views'] ?? null) ? $cfg['aggregate_views'] : [];
+    $views = is_array($config['aggregate_views'] ?? null) ? $config['aggregate_views'] : [];
     $viewReference   = rag_parse_qualified_view((string) ($views[$table] ?? ''));
     if ($viewReference === null) {
         return '';
     }
 
-    $limit = (int) ($cfg['aggregate_view_limit'] ?? 100);
+    $limit = (int) ($config['aggregate_view_limit'] ?? 100);
     $limit = max(1, min(1000, $limit));
 
     $result = @pg_query($conn, sprintf(
@@ -763,7 +763,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
         $hasPromptColumn = ($columnsResult && pg_num_rows($columnsResult) > 0);
     }
 
-    $baseParams = [
+    $baseParameters = [
         mb_substr((string) ($data['query'] ?? ''), 0, 2000),
         $tags,
         (int) ($data['matched_files'] ?? 0),
@@ -775,7 +775,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
     ];
 
     if ($hasPromptColumn) {
-        $baseParams[] = mb_substr((string) ($data['prompt_snapshot'] ?? ''), 0, 50000) ?: null;
+        $baseParameters[] = mb_substr((string) ($data['prompt_snapshot'] ?? ''), 0, 50000) ?: null;
         $queryResult = @pg_query_params(
             $conn,
             "INSERT INTO {$ragQueriesTable}
@@ -783,7 +783,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
                  model, user_id, prompt_snapshot)
              VALUES (\$1, \$2::text[], \$3, \$4, \$5, \$6, \$7, \$8, \$9)
              RETURNING id",
-            $baseParams
+            $baseParameters
         );
     } else {
         $queryResult = @pg_query_params(
@@ -792,7 +792,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
                 (query, tags, matched_files, prompt_tokens, completion_tokens, total_ms, model, user_id)
              VALUES (\$1, \$2::text[], \$3, \$4, \$5, \$6, \$7, \$8)
              RETURNING id",
-            $baseParams
+            $baseParameters
         );
     }
 
@@ -824,7 +824,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
         $chunkIndex = isset($source['chunk_index']) ? (int) $source['chunk_index'] : -1;
         $filename = mb_substr((string) ($source['filename'] ?? ''), 0, 255);
         $snippet  = mb_substr((string) ($source['content'] ?? ''), 0, 400);
-        $srcType  = in_array($source['source_type'] ?? '', ['chunk', 'file'], true)
+        $sourceType  = in_array($source['source_type'] ?? '', ['chunk', 'file'], true)
             ? $source['source_type'] : 'file';
         if ($fileId <= 0) {
             continue;
@@ -834,7 +834,7 @@ function rag_log_query(\PgSql\Connection $conn, array $data): void
             "INSERT INTO {$ragQuerySourcesTable}
                 (query_id, file_id, chunk_id, chunk_index, filename, snippet, source_type, rank_position)
              VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8)",
-            [$queryId, $fileId, $chunkId, $chunkIndex, $filename, $snippet, $srcType, (int) $position]
+            [$queryId, $fileId, $chunkId, $chunkIndex, $filename, $snippet, $sourceType, (int) $position]
         );
     }
 }

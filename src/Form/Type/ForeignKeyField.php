@@ -23,9 +23,9 @@ final class ForeignKeyField implements FieldTypeInterface
     }
 
     #[\Override]
-    public function bind(string $colName, array $postData): BoundValue
+    public function bind(string $columnName, array $postData): BoundValue
     {
-        $value = $postData[$colName] ?? null;
+        $value = $postData[$columnName] ?? null;
         if ($value === '' || $value === null) {
             $value = null;
         }
@@ -44,10 +44,10 @@ final class ForeignKeyField implements FieldTypeInterface
 
         $html  = '<select name="' . $name . '" ' . ($locked ? 'disabled' : '') . ' ' . $requiredAttribute . '>';
         $html .= '<option value="">-- Select --</option>';
-        foreach ($context->fkOptionsFor($column->name) as $optValue => $optLabel) {
-            $selected = (string)$value === (string)$optValue ? 'selected' : '';
-            $html    .= '<option value="' . htmlspecialchars((string)$optValue, ENT_QUOTES, 'UTF-8') . '" ' . $selected . '>'
-                      . htmlspecialchars((string)$optLabel, ENT_QUOTES, 'UTF-8')
+        foreach ($context->fkOptionsFor($column->name) as $optionValue => $optionLabel) {
+            $selected = (string)$value === (string)$optionValue ? 'selected' : '';
+            $html    .= '<option value="' . htmlspecialchars((string)$optionValue, ENT_QUOTES, 'UTF-8') . '" ' . $selected . '>'
+                      . htmlspecialchars((string)$optionLabel, ENT_QUOTES, 'UTF-8')
                       . '</option>';
         }
         $html .= '</select>';

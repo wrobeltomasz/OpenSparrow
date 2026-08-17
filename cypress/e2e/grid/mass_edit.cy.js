@@ -194,9 +194,9 @@ describe('OpenSparrow – Mass Edit: Edit Fields Panel', () => {
       cy.get('#me-column option', { timeout: CypressHelpers.TIMEOUTS.medium })
         .should('have.length.greaterThan', 1);
       cy.get('#me-column').then($sel => {
-        const opts = $sel.find('option');
-        if (opts.length < 2) return;
-        cy.wrap($sel).select(opts.eq(1).val());
+        const options = $sel.find('option');
+        if (options.length < 2) return;
+        cy.wrap($sel).select(options.eq(1).val());
         cy.get('#me-panel .bp-apply-btn').should('be.disabled');
       });
     });

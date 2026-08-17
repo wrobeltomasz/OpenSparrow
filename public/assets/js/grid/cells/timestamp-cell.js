@@ -21,14 +21,14 @@ function toDatetimeLocalValue(value) {
     return normalizeTimestampDisplay(value).replace(' ', 'T');
 }
 
-function renderTimestampCell({ row, col, colCfg, isReadOnly }) {
+function renderTimestampCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
     return createInputCell({
-        row, col, colCfg, isReadOnly,
+        row, col: column, colCfg: columnConfig, isReadOnly,
         makeControl: () => {
             const input = document.createElement('input');
             input.type = 'datetime-local';
             input.step = '1';
-            input.value = toDatetimeLocalValue(row[col + '__display'] ?? row[col] ?? '');
+            input.value = toDatetimeLocalValue(row[column + '__display'] ?? row[column] ?? '');
             return input;
         },
     });

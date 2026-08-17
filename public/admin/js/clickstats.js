@@ -9,29 +9,29 @@ import { buildInnerTabs, buildSectionCard, createPageHeader, el, mkTable, mkThea
 
 const MAX_RETENTION_DAYS = 3650;
 
-export async function renderClickstatsPage(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '<h3>Loading click statistics...</h3>';
+export async function renderClickstatsPage(context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = '<h3>Loading click statistics...</h3>';
 
-    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
-    const myId = workspaceEl._renderId;
+    workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
+    const myId = workspaceElement._renderId;
 
     let data;
     try {
-        const res = await apiFetch('api.php?action=clickstats_load');
-        data = await res.json();
+        const result = await apiFetch('api.php?action=clickstats_load');
+        data = await result.json();
     } catch (e) {
-        if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<h3 style="color:var(--error);">Error loading click statistics. Check server logs.</h3>';
+        if (workspaceElement._renderId !== myId) return;
+        workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading click statistics. Check server logs.</h3>';
         return;
     }
-    if (workspaceEl._renderId !== myId) return;
+    if (workspaceElement._renderId !== myId) return;
 
     if (data.status !== 'success') {
-        workspaceEl.innerHTML = '';
+        workspaceElement.innerHTML = '';
         const wrap = el('div', 'admin-page');
         wrap.appendChild(createPageHeader('Click Statistics', data.error || 'Could not load the module.'));
-        workspaceEl.appendChild(wrap);
+        workspaceElement.appendChild(wrap);
         return;
     }
 
@@ -44,9 +44,9 @@ export async function renderClickstatsPage(ctx) {
         page: 1,
     };
 
-    workspaceEl.innerHTML = '';
+    workspaceElement.innerHTML = '';
     const wrap = el('div', 'admin-page');
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     wrap.appendChild(createPageHeader(
         'Click Statistics',
@@ -123,21 +123,21 @@ function renderSettings(panel, state) {
 
     const actions = el('div');
     actions.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:16px;';
-    const btn = el('button', 'btn btn-primary', 'Save');
+    const button = el('button', 'btn btn-primary', 'Save');
     const pillAnchor = el('span');
-    actions.appendChild(btn);
+    actions.appendChild(button);
     actions.appendChild(pillAnchor);
     body.appendChild(actions);
 
-    btn.addEventListener('click', async () => {
+    button.addEventListener('click', async () => {
         const retention = parseInt(retentionInput.value, 10);
         if (!Number.isFinite(retention) || retention < 0 || retention > MAX_RETENTION_DAYS) {
             showStatusPill(pillAnchor, `Retention must be 0-${MAX_RETENTION_DAYS} days.`, 'error');
             return;
         }
-        btn.disabled = true;
+        button.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=clickstats_save', {
+            const result = await apiFetch('api.php?action=clickstats_save', {
                 method: 'POST',
                 body: JSON.stringify({
                     enabled: enabled.input.checked,
@@ -146,7 +146,7 @@ function renderSettings(panel, state) {
                     version: state.version,
                 }),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 state.config.enabled = enabled.input.checked;
                 state.config.track_records = records.input.checked;
@@ -160,7 +160,7 @@ function renderSettings(panel, state) {
         } catch (e) {
             showStatusPill(pillAnchor, 'Request failed', 'error');
         }
-        btn.disabled = false;
+        button.disabled = false;
     });
 }
 
@@ -175,9 +175,9 @@ function checkboxRow(title, description, checked) {
 
     const label = el('div');
     label.appendChild(el('strong', '', title)).style.display = 'block';
-    const desc = el('span', '', description);
-    desc.style.color = 'var(--muted)';
-    label.appendChild(desc);
+    const description = el('span', '', description);
+    description.style.color = 'var(--muted)';
+    label.appendChild(description);
 
     row.appendChild(input);
     row.appendChild(label);
@@ -200,12 +200,12 @@ function renderLog(panel, state) {
     userFilter.className = 'adm-input w-160';
     userFilter.placeholder = 'Filter by user';
 
-    const applyBtn = el('button', 'btn btn-secondary', 'Apply');
-    const clearBtn = el('button', 'btn btn-secondary', 'Clear Filters');
-    const purgeBtn = el('button', 'btn btn-danger', 'Clear Log');
+    const applyButton = el('button', 'btn btn-secondary', 'Apply');
+    const clearButton = el('button', 'btn btn-secondary', 'Clear Filters');
+    const purgeButton = el('button', 'btn btn-danger', 'Clear Log');
     const pillAnchor = el('span');
 
-    filterBar.append(elementFilter, userFilter, applyBtn, clearBtn, purgeBtn, pillAnchor);
+    filterBar.append(elementFilter, userFilter, applyButton, clearButton, purgeButton, pillAnchor);
     panel.appendChild(filterBar);
 
     const retentionBar = el('div');
@@ -218,10 +218,10 @@ function renderLog(panel, state) {
     daysInput.value = '30';
     daysInput.className = 'adm-input w-80';
 
-    const trimBtn = el('button', 'btn btn-secondary', 'Delete Older Than');
+    const trimButton = el('button', 'btn btn-secondary', 'Delete Older Than');
     const trimPill = el('span');
 
-    retentionBar.append(trimBtn, daysInput, el('span', '', 'days'), trimPill);
+    retentionBar.append(trimButton, daysInput, el('span', '', 'days'), trimPill);
     panel.appendChild(retentionBar);
 
     const summary = el('p', 'admin-page-desc', '');
@@ -238,17 +238,17 @@ function renderLog(panel, state) {
 
     async function load() {
         rowsHost.innerHTML = '<p>Loading...</p>';
-        const params = new URLSearchParams({
+        const parameters = new URLSearchParameters({
             action: 'clickstats_log',
             page: String(state.page),
         });
-        if (state.filters.element) params.set('element', state.filters.element);
-        if (state.filters.user) params.set('user', state.filters.user);
+        if (state.filters.element) parameters.set('element', state.filters.element);
+        if (state.filters.user) parameters.set('user', state.filters.user);
 
         let data;
         try {
-            const res = await apiFetch('api.php?' + params.toString());
-            data = await res.json();
+            const result = await apiFetch('api.php?' + parameters.toString());
+            data = await result.json();
         } catch (e) {
             rowsHost.innerHTML = '<p style="color:var(--error);">Request failed.</p>';
             return;
@@ -278,13 +278,13 @@ function renderLog(panel, state) {
         renderPager(pager, state, total, limit, load);
     }
 
-    applyBtn.addEventListener('click', () => {
+    applyButton.addEventListener('click', () => {
         state.filters.element = elementFilter.value.trim();
         state.filters.user = userFilter.value.trim();
         state.page = 1;
         load();
     });
-    clearBtn.addEventListener('click', () => {
+    clearButton.addEventListener('click', () => {
         elementFilter.value = '';
         userFilter.value = '';
         state.filters = { element: '', user: '' };
@@ -292,14 +292,14 @@ function renderLog(panel, state) {
         load();
     });
 
-    async function purge(btn, pill, payload) {
-        btn.disabled = true;
+    async function purge(button, pill, payload) {
+        button.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=clickstats_purge_log', {
+            const result = await apiFetch('api.php?action=clickstats_purge_log', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 showStatusPill(pill, result.note || `Deleted ${result.deleted ?? 0} row(s)`, 'success');
                 state.page = 1;
@@ -310,15 +310,15 @@ function renderLog(panel, state) {
         } catch (e) {
             showStatusPill(pill, 'Request failed', 'error');
         }
-        btn.disabled = false;
+        button.disabled = false;
     }
 
-    purgeBtn.addEventListener('click', () => {
+    purgeButton.addEventListener('click', () => {
         if (!confirm('Delete every recorded click? This cannot be undone.')) return;
-        purge(purgeBtn, pillAnchor, { all: true });
+        purge(purgeButton, pillAnchor, { all: true });
     });
 
-    trimBtn.addEventListener('click', () => {
+    trimButton.addEventListener('click', () => {
         const days = parseInt(daysInput.value, 10);
 
         if (!Number.isFinite(days) || days < 1 || days > MAX_RETENTION_DAYS) {
@@ -326,7 +326,7 @@ function renderLog(panel, state) {
             return;
         }
         if (!confirm(`Delete recorded clicks older than ${days} day(s)? This cannot be undone.`)) return;
-        purge(trimBtn, trimPill, { days });
+        purge(trimButton, trimPill, { days });
     });
 
     load();
@@ -377,12 +377,12 @@ function renderPager(host, state, total, limit, reload) {
     const pages = Math.max(1, Math.ceil(total / limit));
     if (pages <= 1) return;
 
-    const prev = el('button', 'btn btn-secondary', 'Previous');
+    const previous = el('button', 'btn btn-secondary', 'Previous');
     const next = el('button', 'btn btn-secondary', 'Next');
-    prev.disabled = state.page <= 1;
+    previous.disabled = state.page <= 1;
     next.disabled = state.page >= pages;
-    prev.addEventListener('click', () => { state.page--; reload(); });
+    previous.addEventListener('click', () => { state.page--; reload(); });
     next.addEventListener('click', () => { state.page++; reload(); });
 
-    host.append(prev, el('span', '', `Page ${state.page} of ${pages}`), next);
+    host.append(previous, el('span', '', `Page ${state.page} of ${pages}`), next);
 }

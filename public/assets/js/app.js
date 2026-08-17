@@ -24,12 +24,12 @@ window.CURRENT_GRID_CONTEXT = buildGridContext;
 
 window.CURRENT_GRID_TABLE = () => getState().currentTable;
 
-const menuEl = document.getElementById('menu');
-const gridTitleEl = document.getElementById('gridTitle');
-const addRowBtn = document.getElementById('addRow');
-const searchEl = document.getElementById('globalSearch');
-const columnFilterEl = document.getElementById('columnFilter');
-const clearFiltersBtn = document.getElementById('clearFilters');
+const menuElement = document.getElementById('menu');
+const gridTitleElement = document.getElementById('gridTitle');
+const addRowButton = document.getElementById('addRow');
+const searchElement = document.getElementById('globalSearch');
+const columnFilterElement = document.getElementById('columnFilter');
+const clearFiltersButton = document.getElementById('clearFilters');
 let searchTimeout;
 
 let activeFilters = {
@@ -41,13 +41,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         await I18n.load();
 
-        const schemaRes = await fetch('api/schema.php', {
+        const schemaResult = await fetch('api/schema.php', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
 
-        if (!schemaRes.ok) throw new Error('Failed to load secure schema');
+        if (!schemaResult.ok) throw new Error('Failed to load secure schema');
 
-        const schemaData = await schemaRes.json();
+        const schemaData = await schemaResult.json();
 
         window.schema = schemaData;
         initPageSize(schemaData);
@@ -55,22 +55,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.AppState.schema = schemaData;
 
         if (Object.keys(window.schema.tables).length > 0) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlTable  = urlParams.get('table');
+            const urlParameters = new URLSearchParameters(window.location.search);
+            const urlTable  = urlParameters.get('table');
             let initialTableName = Object.keys(window.schema.tables)[0];
             if (urlTable && window.schema.tables[urlTable]) {
                 initialTableName = urlTable;
             }
 
-            const navList = menuEl?.querySelector('ul') || menuEl;
-            if (menuEl) {
-                menuEl.querySelectorAll('a[data-table]').forEach(a => {
+            const navList = menuElement?.querySelector('ul') || menuElement;
+            if (menuElement) {
+                menuElement.querySelectorAll('a[data-table]').forEach(a => {
                     a.addEventListener('click', e => {
                         e.preventDefault();
-                        menuEl.querySelectorAll('a').forEach(l => l.classList.remove('active'));
+                        menuElement.querySelectorAll('a').forEach(l => l.classList.remove('active'));
                         a.classList.add('active');
                         window.history.pushState({}, document.title, window.location.pathname);
-                        loadTable(window.schema, a.dataset.table, gridTitleEl, addRowBtn);
+                        loadTable(window.schema, a.dataset.table, gridTitleElement, addRowButton);
                     });
                 });
             }
@@ -79,17 +79,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (gridSection) {
                 const pillsContainer = document.createElement('div');
                 pillsContainer.id = 'filterPills';
-                gridTitleEl.after(pillsContainer);
+                gridTitleElement.after(pillsContainer);
             }
 
-            const gridContainerEl = document.getElementById('grid');
+            const gridContainerElement = document.getElementById('grid');
             let workflowsHandled = false;
-            if (gridContainerEl) {
-                workflowsHandled = await initWorkflows(navList, gridContainerEl, gridTitleEl);
+            if (gridContainerElement) {
+                workflowsHandled = await initWorkflows(navList, gridContainerElement, gridTitleElement);
             }
             setupPagination(window.schema);
             if (!workflowsHandled) {
-                loadTable(window.schema, initialTableName, gridTitleEl, addRowBtn);
+                loadTable(window.schema, initialTableName, gridTitleElement, addRowButton);
             }
         }
     } catch (error) {
@@ -100,37 +100,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 function populateColumnFilter() {
     const { displayedColumns, currentTable } = getState();
 
-    columnFilterEl.innerHTML = '';
-    const defaultOpt = document.createElement("option");
-    defaultOpt.value = "";
-    defaultOpt.textContent = I18n.t('grid.select_column');
-    columnFilterEl.appendChild(defaultOpt);
+    columnFilterElement.innerHTML = '';
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = I18n.t('grid.select_column');
+    columnFilterElement.appendChild(defaultOption);
 
-    displayedColumns.forEach(col => {
-        const opt = document.createElement("option");
-        opt.value = col;
+    displayedColumns.forEach(column => {
+        const option = document.createElement("option");
+        option.value = column;
 
-        let displayName = col;
-        if (currentTable && window.schema.tables[currentTable]?.columns[col]?.display_name) {
-            displayName = window.schema.tables[currentTable].columns[col].display_name;
+        let displayName = column;
+        if (currentTable && window.schema.tables[currentTable]?.columns[column]?.display_name) {
+            displayName = window.schema.tables[currentTable].columns[column].display_name;
         } else {
             for (const tKey in window.schema.tables) {
-                if (window.schema.tables[tKey].columns[col]?.display_name) {
-                    displayName = window.schema.tables[tKey].columns[col].display_name;
+                if (window.schema.tables[tKey].columns[column]?.display_name) {
+                    displayName = window.schema.tables[tKey].columns[column].display_name;
                     break;
                 }
             }
         }
-        opt.textContent = displayName;
-        columnFilterEl.appendChild(opt);
+        option.textContent = displayName;
+        columnFilterElement.appendChild(option);
     });
 }
 
-function updateColumnFilterState(col, type, data) {
+function updateColumnFilterState(column, type, data) {
     if (!data || data.empty) {
-        delete activeFilters.columns[col];
+        delete activeFilters.columns[column];
     } else {
-        activeFilters.columns[col] = { type, ...data };
+        activeFilters.columns[column] = { type, ...data };
     }
 }
 
@@ -164,43 +164,43 @@ function buildRangeFilter({ fromLabel, toLabel, inputType, inputClass, placehold
 
 function handleColumnFilterChange() {
     const { currentTable, fullData } = getState();
-    const col = columnFilterEl.value;
+    const column = columnFilterElement.value;
     const filterBar = document.getElementById('filterBar');
 
     filterBar.innerHTML = '';
-    if (!col || !currentTable || !window.schema.tables[currentTable]) return;
+    if (!column || !currentTable || !window.schema.tables[currentTable]) return;
 
-    const colCfg = window.schema.tables[currentTable].columns[col] || {};
-    const type = (colCfg.type || '').toLowerCase();
-    const isFK = window.schema.tables[currentTable].foreign_keys && window.schema.tables[currentTable].foreign_keys[col];
+    const columnConfig = window.schema.tables[currentTable].columns[column] || {};
+    const type = (columnConfig.type || '').toLowerCase();
+    const isFK = window.schema.tables[currentTable].foreign_keys && window.schema.tables[currentTable].foreign_keys[column];
 
-    const existingFilter = activeFilters.columns[col] || {};
+    const existingFilter = activeFilters.columns[column] || {};
 
     if (isFK || type === 'enum') {
         const select = document.createElement('select');
         select.id = 'dictFilter';
-        const displayName = colCfg.display_name || col;
+        const displayName = columnConfig.display_name || column;
 
-        const optAll = document.createElement('option');
-        optAll.value = '';
-        optAll.textContent = `${displayName}: All`;
-        select.appendChild(optAll);
+        const optionAll = document.createElement('option');
+        optionAll.value = '';
+        optionAll.textContent = `${displayName}: All`;
+        select.appendChild(optionAll);
 
         let options = [];
-        if (type === 'enum' && Array.isArray(colCfg.options)) {
-            options = colCfg.options.map(opt => ({ val: opt, label: opt }));
+        if (type === 'enum' && Array.isArray(columnConfig.options)) {
+            options = columnConfig.options.map(option => ({ val: option, label: option }));
         } else {
-            const uniqueVals = new Map();
+            const uniqueValues = new Map();
             fullData.forEach(row => {
-                const val = row[col];
-                if (val !== null && val !== undefined && val !== '') {
-                    const label = row[col + '__display'] ?? val;
-                    if (!uniqueVals.has(val)) {
-                        uniqueVals.set(val, label);
+                const value = row[column];
+                if (value !== null && value !== undefined && value !== '') {
+                    const label = row[column + '__display'] ?? value;
+                    if (!uniqueValues.has(value)) {
+                        uniqueValues.set(value, label);
                     }
                 }
             });
-            options = Array.from(uniqueVals.entries()).map(([v, l]) => ({ val: v, label: l }));
+            options = Array.from(uniqueValues.entries()).map(([v, l]) => ({ val: v, label: l }));
         }
 
         options.forEach(oData => {
@@ -213,7 +213,7 @@ function handleColumnFilterChange() {
 
         select.addEventListener('change', () => {
             const selectedText = select.options[select.selectedIndex].text;
-            updateColumnFilterState(col, 'dict', { val: select.value, label: selectedText, empty: select.value === '' });
+            updateColumnFilterState(column, 'dict', { val: select.value, label: selectedText, empty: select.value === '' });
             applySearch();
         });
 
@@ -227,8 +227,8 @@ function handleColumnFilterChange() {
             existingFrom: existingFilter.from,
             existingTo: existingFilter.to,
             changeEvent: 'change',
-            onUpdate: (fromVal, toVal) => {
-                updateColumnFilterState(col, 'date', { from: fromVal, to: toVal, empty: !fromVal && !toVal });
+            onUpdate: (fromValue, toValue) => {
+                updateColumnFilterState(column, 'date', { from: fromValue, to: toValue, empty: !fromValue && !toValue });
                 applySearch();
             },
         }));
@@ -243,8 +243,8 @@ function handleColumnFilterChange() {
             existingFrom: existingFilter.min,
             existingTo: existingFilter.max,
             changeEvent: 'input',
-            onUpdate: (minVal, maxVal) => {
-                updateColumnFilterState(col, 'number', { min: minVal, max: maxVal, empty: minVal === '' && maxVal === '' });
+            onUpdate: (minValue, maxValue) => {
+                updateColumnFilterState(column, 'number', { min: minValue, max: maxValue, empty: minValue === '' && maxValue === '' });
                 applySearch();
             },
         }));
@@ -252,25 +252,25 @@ function handleColumnFilterChange() {
         const select = document.createElement('select');
         select.id = 'boolFilter';
 
-        const optAll = document.createElement('option');
-        optAll.value = '';
-        optAll.textContent = I18n.t('filter.all');
-        const optTrue = document.createElement('option');
-        optTrue.value = 'true';
-        optTrue.textContent = I18n.t('filter.yes_true');
-        const optFalse = document.createElement('option');
-        optFalse.value = 'false';
-        optFalse.textContent = I18n.t('filter.no_false');
+        const optionAll = document.createElement('option');
+        optionAll.value = '';
+        optionAll.textContent = I18n.t('filter.all');
+        const optionTrue = document.createElement('option');
+        optionTrue.value = 'true';
+        optionTrue.textContent = I18n.t('filter.yes_true');
+        const optionFalse = document.createElement('option');
+        optionFalse.value = 'false';
+        optionFalse.textContent = I18n.t('filter.no_false');
 
-        select.appendChild(optAll);
-        select.appendChild(optTrue);
-        select.appendChild(optFalse);
+        select.appendChild(optionAll);
+        select.appendChild(optionTrue);
+        select.appendChild(optionFalse);
 
         if (existingFilter.val !== undefined) select.value = existingFilter.val;
 
         select.addEventListener('change', () => {
             const selectedText = select.options[select.selectedIndex].text;
-            updateColumnFilterState(col, 'bool', { val: select.value, label: selectedText, empty: select.value === '' });
+            updateColumnFilterState(column, 'bool', { val: select.value, label: selectedText, empty: select.value === '' });
             applySearch();
         });
         filterBar.appendChild(select);
@@ -293,54 +293,54 @@ function renderFilterPills() {
         const textSpan = document.createElement('span');
         textSpan.textContent = label;
 
-        const closeBtn = document.createElement('span');
-        closeBtn.textContent = '×';
-        closeBtn.className = 'filter-pill-remove';
-        closeBtn.title = I18n.t('common.remove_filter');
-        closeBtn.onclick = () => {
+        const closeButton = document.createElement('span');
+        closeButton.textContent = '×';
+        closeButton.className = 'filter-pill-remove';
+        closeButton.title = I18n.t('common.remove_filter');
+        closeButton.onclick = () => {
             onRemove();
             handleColumnFilterChange();
             applySearch();
         };
 
         pill.appendChild(textSpan);
-        pill.appendChild(closeBtn);
+        pill.appendChild(closeButton);
         pillsContainer.appendChild(pill);
     };
 
     if (activeFilters.search) {
         createPill(`Search: "${activeFilters.search}"`, () => {
             activeFilters.search = '';
-            searchEl.value = '';
+            searchElement.value = '';
         });
     }
 
-    for (const [col, filter] of Object.entries(activeFilters.columns)) {
-        let colName = col;
-        if (currentTable && window.schema.tables[currentTable]?.columns[col]?.display_name) {
-            colName = window.schema.tables[currentTable].columns[col].display_name;
+    for (const [column, filter] of Object.entries(activeFilters.columns)) {
+        let columnName = column;
+        if (currentTable && window.schema.tables[currentTable]?.columns[column]?.display_name) {
+            colName: columnName = window.schema.tables[currentTable].columns[column].display_name;
         }
 
         let label = '';
         if (filter.type === 'dict' || filter.type === 'bool') {
-            label = `${colName}: ${filter.label}`;
+            label = `${columnName}: ${filter.label}`;
         } else if (filter.type === 'date') {
-            if (filter.from && filter.to) label = `${colName}: ${filter.from} to ${filter.to}`;
-            else if (filter.from) label = `${colName} from ${filter.from}`;
-            else if (filter.to) label = `${colName} to ${filter.to}`;
+            if (filter.from && filter.to) label = `${columnName}: ${filter.from} to ${filter.to}`;
+            else if (filter.from) label = `${columnName} from ${filter.from}`;
+            else if (filter.to) label = `${columnName} to ${filter.to}`;
         } else if (filter.type === 'number') {
-            if (filter.min && filter.max) label = `${colName}: ${filter.min} - ${filter.max}`;
-            else if (filter.min) label = `${colName} >= ${filter.min}`;
-            else if (filter.max) label = `${colName} <= ${filter.max}`;
+            if (filter.min && filter.max) label = `${columnName}: ${filter.min} - ${filter.max}`;
+            else if (filter.min) label = `${columnName} >= ${filter.min}`;
+            else if (filter.max) label = `${columnName} <= ${filter.max}`;
         }
 
         if (label) {
             createPill(label, () => {
-                delete activeFilters.columns[col];
-                if (columnFilterEl.value === col) {
+                delete activeFilters.columns[column];
+                if (columnFilterElement.value === column) {
                     const filterBar = document.getElementById('filterBar');
                     if(filterBar) filterBar.innerHTML = '';
-                    columnFilterEl.value = '';
+                    columnFilterElement.value = '';
                 }
             });
         }
@@ -350,23 +350,23 @@ function renderFilterPills() {
 }
 
 function rowMatchesColumnFilters(row, filters) {
-    for (const [col, filter] of Object.entries(filters)) {
+    for (const [column, filter] of Object.entries(filters)) {
         if (filter.type === 'dict') {
-            if (String(row[col]) !== String(filter.val)) return false;
+            if (String(row[column]) !== String(filter.val)) return false;
         } else if (filter.type === 'bool') {
-            const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
+            const rowBool = (row[column] === true || row[column] === 't' || row[column] === 'true' || row[column] === 1);
             if (rowBool !== (filter.val === 'true')) return false;
         } else if (filter.type === 'date') {
-            const rowDateStr = String(row[col] || '').substring(0, 10);
-            if (!rowDateStr) return false;
-            const rowTime = new Date(rowDateStr).getTime();
+            const rowDateString = String(row[column] || '').substring(0, 10);
+            if (!rowDateString) return false;
+            const rowTime = new Date(rowDateString).getTime();
             if (filter.from && rowTime < new Date(filter.from).getTime()) return false;
             if (filter.to && rowTime > new Date(filter.to).getTime()) return false;
         } else if (filter.type === 'number') {
-            const rowNum = Number(row[col]);
-            if (isNaN(rowNum)) return false;
-            if (filter.min !== '' && rowNum < Number(filter.min)) return false;
-            if (filter.max !== '' && rowNum > Number(filter.max)) return false;
+            const rowNumber = Number(row[column]);
+            if (isNaN(rowNumber)) return false;
+            if (filter.min !== '' && rowNumber < Number(filter.min)) return false;
+            if (filter.max !== '' && rowNumber > Number(filter.max)) return false;
         }
     }
     return true;
@@ -397,9 +397,9 @@ async function applySearch() {
         if (!rowMatchesColumnFilters(row, activeFilters.columns)) return false;
 
         if (q) {
-            const matchesText = displayedColumns.some(colName => {
-                const raw = String(row[colName] ?? '').toLowerCase();
-                const display = (row[colName + '__display'] ?? '').toString().toLowerCase();
+            const matchesText = displayedColumns.some(columnName => {
+                const raw = String(row[columnName] ?? '').toLowerCase();
+                const display = (row[columnName + '__display'] ?? '').toString().toLowerCase();
                 return raw.includes(q) || display.includes(q);
             });
             if (!matchesText) return false;
@@ -418,13 +418,13 @@ async function applySearch() {
 function updateClearFiltersVisibility() {
     const hasSearch = activeFilters.search !== '';
     const hasColumns = Object.keys(activeFilters.columns).length > 0;
-    clearFiltersBtn.style.display = (hasSearch || hasColumns) ? 'inline-block' : 'none';
+    clearFiltersButton.style.display = (hasSearch || hasColumns) ? 'inline-block' : 'none';
 }
 
-clearFiltersBtn.addEventListener('click', async () => {
+clearFiltersButton.addEventListener('click', async () => {
     activeFilters = { search: '', columns: {} };
-    searchEl.value = '';
-    columnFilterEl.value = '';
+    searchElement.value = '';
+    columnFilterElement.value = '';
 
     renderFilterPills();
     updateClearFiltersVisibility();
@@ -438,16 +438,16 @@ clearFiltersBtn.addEventListener('click', async () => {
     }
 });
 
-searchEl.addEventListener('input', () => {
+searchElement.addEventListener('input', () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        activeFilters.search = searchEl.value;
-        gridState.searchTerm = searchEl.value.trim();
+        activeFilters.search = searchElement.value;
+        gridState.searchTerm = searchElement.value.trim();
         applySearch();
     }, 300);
 });
 
-columnFilterEl.addEventListener('change', handleColumnFilterChange);
+columnFilterElement.addEventListener('change', handleColumnFilterChange);
 
 document.addEventListener('grid:loadMore', async () => {
     await appendMoreRows(window.schema, activeFilters.search);
@@ -460,13 +460,13 @@ document.addEventListener('grid:loadMore', async () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    const exportBtn = document.getElementById('exportCsv');
-    if (exportBtn) exportBtn.addEventListener('click', exportCSV);
+    const exportButton = document.getElementById('exportCsv');
+    if (exportButton) exportButton.addEventListener('click', exportCSV);
 });
 
 document.addEventListener("tableLoaded", () => {
     activeFilters = { search: '', columns: {} };
-    searchEl.value = '';
+    searchElement.value = '';
     const filterBar = document.getElementById('filterBar');
     if(filterBar) filterBar.innerHTML = '';
 

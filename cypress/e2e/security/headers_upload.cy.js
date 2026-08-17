@@ -17,7 +17,7 @@ function uploadProbe({ filename, content, mime, token }) {
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
       credentials: 'same-origin',
       body: form,
-    }).then(res => res.text().then(body => ({ status: res.status, body })));
+    }).then(result => result.text().then(body => ({ status: result.status, body })));
   });
 }
 
@@ -28,16 +28,16 @@ function deleteUpload(uuid, token) {
       headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       credentials: 'same-origin',
       body: JSON.stringify({ action: 'delete', uuid, csrf_token: token }),
-    }).then(res => {
-      expect(res.status, 'probe upload must be cleaned up').to.eq(200);
+    }).then(result => {
+      expect(result.status, 'probe upload must be cleaned up').to.eq(200);
     })
   );
 }
 
-function expectUploadRefused(res, code, pattern, label) {
-  cy.expectDenied(res, [code], label);
+function expectUploadRefused(result, code, pattern, label) {
+  cy.expectDenied(result, [code], label);
   cy.then(() => {
-    expect(res.body, `${label}: message must name the failing check`).to.match(pattern);
+    expect(result.body, `${label}: message must name the failing check`).to.match(pattern);
   });
 }
 
@@ -51,11 +51,11 @@ describe('Security – response headers', () => {
   });
 
   it('sends the baseline hardening headers on an application page', () => {
-    cy.probe({ url: '/dashboard.php' }).then(res => {
-      expect(res.status).to.eq(200);
-      expect(res.headers['x-frame-options'], 'clickjacking').to.match(/^DENY$/i);
-      expect(res.headers['x-content-type-options'], 'MIME sniffing').to.eq('nosniff');
-      expect(res.headers['referrer-policy']).to.eq('strict-origin-when-cross-origin');
+    cy.probe({ url: '/dashboard.php' }).then(result => {
+      expect(result.status).to.eq(200);
+      expect(result.headers['x-frame-options'], 'clickjacking').to.match(/^DENY$/i);
+      expect(result.headers['x-content-type-options'], 'MIME sniffing').to.eq('nosniff');
+      expect(result.headers['referrer-policy']).to.eq('strict-origin-when-cross-origin');
     });
   });
 
@@ -75,15 +75,15 @@ describe('Security – response headers', () => {
   });
 
   it('does not advertise the server stack', () => {
-    cy.probe({ url: '/dashboard.php' }).then(res => {
-      expect(res.headers['x-powered-by'], 'X-Powered-By').to.be.undefined;
-      expect(JSON.stringify(res.headers), 'no PHP version in headers').to.not.match(/PHP\/\d/);
+    cy.probe({ url: '/dashboard.php' }).then(result => {
+      expect(result.headers['x-powered-by'], 'X-Powered-By').to.be.undefined;
+      expect(JSON.stringify(result.headers), 'no PHP version in headers').to.not.match(/PHP\/\d/);
     });
   });
 
   it('the file proxy denies every resource type via CSP', () => {
-    cy.probe({ url: '/file_download.php?uuid=11111111-1111-4111-8111-111111111111' }).then(res => {
-      expect(res.headers['content-security-policy']).to.match(/default-src 'none'/);
+    cy.probe({ url: '/file_download.php?uuid=11111111-1111-4111-8111-111111111111' }).then(result => {
+      expect(result.headers['content-security-policy']).to.match(/default-src 'none'/);
     });
   });
 });
@@ -102,7 +102,7 @@ describe('Security – file upload validation', () => {
     cy.csrfToken().then(token => {
       cy.fixture('evil.php', 'utf8').then(content => {
         uploadProbe({ filename: 'evil.php', content, mime: 'application/x-php', token })
-          .then(res => expectUploadRefused(res, 415, /not allowed/i, 'evil.php'));
+          .then(result => expectUploadRefused(result, 415, /not allowed/i, 'evil.php'));
       });
     });
   });
@@ -111,7 +111,7 @@ describe('Security – file upload validation', () => {
     cy.csrfToken().then(token => {
       cy.fixture('evil.svg', 'utf8').then(content => {
         uploadProbe({ filename: 'evil.svg', content, mime: 'image/svg+xml', token })
-          .then(res => expectUploadRefused(res, 415, /not allowed/i, 'evil.svg'));
+          .then(result => expectUploadRefused(result, 415, /not allowed/i, 'evil.svg'));
       });
     });
   });
@@ -120,7 +120,7 @@ describe('Security – file upload validation', () => {
     cy.csrfToken().then(token => {
       cy.fixture('fake_png.png', 'utf8').then(content => {
         uploadProbe({ filename: 'fake_png.png', content, mime: 'image/png', token })
-          .then(res => expectUploadRefused(res, 415, /does not match its extension/i, 'fake_png.png'));
+          .then(result => expectUploadRefused(result, 415, /does not match its extension/i, 'fake_png.png'));
       });
     });
   });
@@ -129,8 +129,8 @@ describe('Security – file upload validation', () => {
     cy.csrfToken().then(token => {
       const oversized = 'A'.repeat(24 * 1024 * 1024);
       uploadProbe({ filename: 'cypress-big.txt', content: oversized, mime: 'text/plain', token })
-        .then(res => {
-          cy.expectDenied(res, [413], 'oversized upload');
+        .then(result => {
+          cy.expectDenied(result, [413], 'oversized upload');
         });
     });
   });
@@ -142,25 +142,25 @@ describe('Security – file upload validation', () => {
         content: 'name,email\ncypress-probe,probe@example.test\n',
         mime: 'text/csv',
         token,
-      }).then(res => {
-        expect(res.status, 'control upload must be accepted').to.eq(201);
-        expect(res.body, 'a uuid filename was assigned')
+      }).then(result => {
+        expect(result.status, 'control upload must be accepted').to.eq(201);
+        expect(result.body, 'a uuid filename was assigned')
           .to.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
-        expect(res.body, 'the client filename must not become the stored name')
+        expect(result.body, 'the client filename must not become the stored name')
           .to.not.match(/cypress-upload-probe\.csv/);
 
-        deleteUpload(JSON.parse(res.body).file.uuid, token);
+        deleteUpload(JSON.parse(result.body).file.uuid, token);
       });
     });
   });
 
   it('the storage directory is not reachable over HTTP', () => {
     ['/storage/files/', '/storage/files/imports/', '/storage/'].forEach(path => {
-      cy.probe({ url: path }).then(res => {
-        if ([301, 302, 403, 404].includes(res.status)) return;
+      cy.probe({ url: path }).then(result => {
+        if ([301, 302, 403, 404].includes(result.status)) return;
 
-        expect(res.status, `${path} unexpected status`).to.eq(200);
-        const body = typeof res.body === 'string' ? res.body : JSON.stringify(res.body);
+        expect(result.status, `${path} unexpected status`).to.eq(200);
+        const body = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
         expect(body, `${path} served the app shell, not storage`)
           .to.match(/<title>OpenSparrow/);
         expect(body, `${path} must not be a directory listing`)
@@ -197,8 +197,8 @@ describe('Security – admin logo upload', () => {
           method: 'POST',
           headers: { 'X-CSRF-Token': token },
           body: form,
-        }).then(res => {
-          const body = typeof res.body === 'string' ? res.body : JSON.stringify(res.body);
+        }).then(result => {
+          const body = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
           expect(body, 'SVG logo must be refused').to.not.match(/"status"\s*:\s*"(ok|success)"/);
         });
       });

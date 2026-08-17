@@ -6,8 +6,8 @@
 import { I18n } from '../i18n.js';
 
 export function formatBoolean(value) {
-    const boolVal = value === true || value === 't' || value === 'true';
-    return boolVal
+    const boolValue = value === true || value === 't' || value === 'true';
+    return boolValue
         ? I18n.t('common.boolean.true', {}, null) || 'Yes'
         : I18n.t('common.boolean.false', {}, null) || 'No';
 }

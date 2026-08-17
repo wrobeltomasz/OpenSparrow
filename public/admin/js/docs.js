@@ -16,43 +16,43 @@ const _ul = (items) => `<ul style="padding-left:20px;">${items.map(i => `<li>${i
 const _ol = (items) => `<ol style="padding-left:20px;">${items.map(i => `<li>${i}</li>`).join('')}</ol>`;
 const _warn = (s, t) => `<p style="background:var(--warn-light);padding:10px 14px;border-left:3px solid var(--warn);border-radius:4px;"><strong>${s}</strong> ${t}</p>`;
 
-export function renderDocumentation(ctx) {
-    if (!ctx || !ctx.workspaceEl) return;
+export function renderDocumentation(context) {
+    if (!context || !context.workspaceEl) return;
 
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '';
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = '';
 
     let lang = localStorage.getItem(STORAGE_KEY) || 'en';
     if (!ALL_LANGS.includes(lang)) lang = 'en';
     const s = STRINGS[lang] || STRINGS.en;
 
     const wrapper = document.createElement('div');
-    wrapper.appendChild(createLanguageBar(lang, ctx));
+    wrapper.appendChild(createLanguageBar(lang, context));
 
     const contentArea = createContentArea(s);
     wrapper.appendChild(contentArea);
 
-    workspaceEl.appendChild(wrapper);
+    workspaceElement.appendChild(wrapper);
 }
 
-function createLanguageBar(currentLang, ctx) {
+function createLanguageBar(currentLang, context) {
     const langBar = document.createElement('div');
     langBar.style.cssText = 'max-width:900px; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; margin-bottom:8px;';
 
     ALL_LANGS.forEach(l => {
-        const btn = document.createElement('button');
+        const button = document.createElement('button');
         const isActive = currentLang === l;
 
-        btn.textContent = l.toUpperCase();
-        btn.dataset.lang = l;
-        btn.className = 'btn btn-xs ' + (isActive ? 'btn-primary' : 'btn-secondary');
+        button.textContent = l.toUpperCase();
+        button.dataset.lang = l;
+        button.className = 'btn btn-xs ' + (isActive ? 'btn-primary' : 'btn-secondary');
 
-        btn.addEventListener('click', () => {
+        button.addEventListener('click', () => {
             localStorage.setItem(STORAGE_KEY, l);
-            renderDocumentation(ctx);
+            renderDocumentation(context);
         });
 
-        langBar.appendChild(btn);
+        langBar.appendChild(button);
     });
 
     return langBar;

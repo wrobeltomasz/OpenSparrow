@@ -27,9 +27,9 @@ final class FrontApiGuardsTest extends TestCase
         self::$root = dirname(__DIR__, 2);
     }
 
-    private function code(string $relPath): string
+    private function code(string $relativePath): string
     {
-        $path = self::$root . '/' . $relPath;
+        $path = self::$root . '/' . $relativePath;
         $this->assertFileExists($path);
 
         $output = '';

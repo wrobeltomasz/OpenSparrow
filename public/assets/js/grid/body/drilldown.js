@@ -8,22 +8,22 @@ import { I18n } from '../../i18n.js';
 
 export function buildExpandButton(row, schema, tr) {
     const tdExpand = document.createElement('td');
-    const btn = document.createElement('button');
-    btn.textContent = '>';
-    btn.className = 'c-expand-btn';
+    const button = document.createElement('button');
+    button.textContent = '>';
+    button.className = 'c-expand-btn';
 
     const subtables = schema.tables[state.currentTable]?.subtables || [];
     const isReadOnly = window.USER_ROLE !== 'editor' && window.USER_ROLE !== 'admin';
 
-    btn.addEventListener('click', async () => {
+    button.addEventListener('click', async () => {
         const next = tr.nextElementSibling;
         if (next?.classList.contains('drilldown-row')) {
             next.remove();
-            btn.textContent = '>';
+            button.textContent = '>';
             return;
         }
 
-        btn.textContent = 'v';
+        button.textContent = 'v';
         const ddTr = document.createElement('tr');
         ddTr.className = 'drilldown-row';
         const ddTd = document.createElement('td');
@@ -43,7 +43,7 @@ export function buildExpandButton(row, schema, tr) {
     });
 
     tdExpand.dataset.expandRowId = String(row.id);
-    tdExpand.appendChild(btn);
+    tdExpand.appendChild(button);
     return tdExpand;
 }
 
@@ -62,32 +62,32 @@ async function buildSubtableBlock(sub, row) {
 
     const canWrite = window.USER_ROLE === 'editor' || window.USER_ROLE === 'admin';
     if (canWrite && sub.foreign_key) {
-        const addBtn = document.createElement('a');
-        addBtn.href = `create.php?table=${encodeURIComponent(sub.table)}&${encodeURIComponent(sub.foreign_key)}=${encodeURIComponent(row.id)}`;
-        addBtn.className = 'btn-action';
-        addBtn.textContent = '+';
-        addBtn.style.cssText = 'padding:1px 8px; font-size:16px; font-weight:bold; line-height:1.4; text-decoration:none;';
-        addBtn.title = I18n.t('grid.drilldown_add', { label: sub.label || sub.table });
-        header.appendChild(addBtn);
+        const addButton = document.createElement('a');
+        addButton.href = `create.php?table=${encodeURIComponent(sub.table)}&${encodeURIComponent(sub.foreign_key)}=${encodeURIComponent(row.id)}`;
+        addButton.className = 'btn-action';
+        addButton.textContent = '+';
+        addButton.style.cssText = 'padding:1px 8px; font-size:16px; font-weight:bold; line-height:1.4; text-decoration:none;';
+        addButton.title = I18n.t('grid.drilldown_add', { label: sub.label || sub.table });
+        header.appendChild(addButton);
     }
 
     wrapper.appendChild(header);
 
     try {
-        const res = await fetch(
+        const result = await fetch(
             `api.php?api=list&table=${encodeURIComponent(sub.table)}&filter_col=${encodeURIComponent(sub.foreign_key)}&filter_val=${encodeURIComponent(row.id)}`,
             { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
         );
-        const data = await res.json();
+        const data = await result.json();
         const ul = document.createElement('ul');
         ul.className = 'drilldown-list';
 
         if (data.rows?.length > 0) {
-            const cols = sub.columns_to_show?.length ? sub.columns_to_show : ['id'];
+            const columns = sub.columns_to_show?.length ? sub.columns_to_show : ['id'];
             data.rows.forEach(r => {
                 const li = document.createElement('li');
                 const textSpan = document.createElement('span');
-                textSpan.textContent = cols.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || I18n.t('grid.drilldown_no_title');
+                textSpan.textContent = columns.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || I18n.t('grid.drilldown_no_title');
                 const badge = document.createElement('span');
                 badge.className = 'badge';
                 badge.textContent = I18n.t('grid.id_badge', { id: r.id });
@@ -106,10 +106,10 @@ async function buildSubtableBlock(sub, row) {
         }
         wrapper.appendChild(ul);
     } catch {
-        const err = document.createElement('p');
-        err.style.cssText = 'color:var(--error); font-size:13px;';
-        err.textContent = I18n.t('grid.drilldown_error');
-        wrapper.appendChild(err);
+        const error = document.createElement('p');
+        error.style.cssText = 'color:var(--error); font-size:13px;';
+        error.textContent = I18n.t('grid.drilldown_error');
+        wrapper.appendChild(error);
     }
 
     return wrapper;

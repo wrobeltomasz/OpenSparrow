@@ -68,16 +68,16 @@ function renderFilterBar(container) {
 }
 
 function updateClearButton() {
-    const btn = document.getElementById('clearFilters');
-    if (!btn) return;
+    const button = document.getElementById('clearFilters');
+    if (!button) return;
     const dateSelect = document.getElementById('dashDateFilter');
-    btn.hidden = hiddenWidgets.size === 0 && (!dateSelect || dateSelect.value === 'all');
+    button.hidden = hiddenWidgets.size === 0 && (!dateSelect || dateSelect.value === 'all');
 }
 
 function initClearFilters(container) {
-    const btn = document.getElementById('clearFilters');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
+    const button = document.getElementById('clearFilters');
+    if (!button) return;
+    button.addEventListener('click', () => {
         hiddenWidgets.clear();
         saveFilterState();
         renderFilterBar(container);
@@ -110,10 +110,10 @@ async function initDashboard() {
     } catch (e) {
         console.error('Error fetching initial dashboard config', e);
         container.replaceChildren();
-        const msg = document.createElement('p');
-        msg.className = 'dash-error';
-        msg.textContent = I18n.t('dashboard.error_config');
-        container.appendChild(msg);
+        const message = document.createElement('p');
+        message.className = 'dash-error';
+        message.textContent = I18n.t('dashboard.error_config');
+        container.appendChild(message);
         return;
     }
 
@@ -147,10 +147,10 @@ async function loadDashboardData(container, dateFilter, targetWidget) {
     } catch (error) {
         console.error('Error loading dashboard:', error);
         container.replaceChildren();
-        const err = document.createElement('p');
-        err.className = 'dash-error';
-        err.textContent = I18n.t('dashboard.error_load');
-        container.appendChild(err);
+        const error = document.createElement('p');
+        error.className = 'dash-error';
+        error.textContent = I18n.t('dashboard.error_load');
+        container.appendChild(error);
     }
 }
 
@@ -171,22 +171,22 @@ function renderWidgets(container, config) {
 
     config.widgets.forEach(widget => {
         if (hiddenWidgets.has(widgetKey(widget))) return;
-        const widgetEl = document.createElement('div');
-        widgetEl.className = 'dash-widget';
-        widgetEl.dataset.w = widget.width  || 1;
-        widgetEl.dataset.h = widget.height || 1;
+        const widgetElement = document.createElement('div');
+        widgetElement.className = 'dash-widget';
+        widgetElement.dataset.w = widget.width  || 1;
+        widgetElement.dataset.h = widget.height || 1;
 
         if (widget.type !== 'stat_card') {
             const title = document.createElement('h3');
             title.className = 'dash-title';
             title.textContent = widget.title;
-            widgetEl.appendChild(title);
+            widgetElement.appendChild(title);
         }
 
-        widgetEl.appendChild(WidgetRegistry.render(widget));
-        const exportBtn = buildExportButton(widget);
-        if (exportBtn) widgetEl.appendChild(exportBtn);
-        container.appendChild(widgetEl);
+        widgetElement.appendChild(WidgetRegistry.render(widget));
+        const exportButton = buildExportButton(widget);
+        if (exportButton) widgetElement.appendChild(exportButton);
+        container.appendChild(widgetElement);
     });
 }
 

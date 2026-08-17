@@ -127,11 +127,11 @@ function cron_anonymization_main(array $argv): int
     $errorMessage   = null;
     $reportDetails  = [];
 
-    $schemaCfg = [];
+    $schemaConfig = [];
     {
         $decoded = config_get('schema');
     if (is_array($decoded) && isset($decoded['tables'])) {
-        $schemaCfg = $decoded['tables'];
+        $schemaConfig = $decoded['tables'];
     }
     }
 
@@ -152,8 +152,8 @@ function cron_anonymization_main(array $argv): int
         }
 
         $tableSchema = sys_schema();
-        if (isset($schemaCfg[$table]['schema']) && $schemaCfg[$table]['schema'] !== '') {
-            $tableSchema = (string)$schemaCfg[$table]['schema'];
+        if (isset($schemaConfig[$table]['schema']) && $schemaConfig[$table]['schema'] !== '') {
+            $tableSchema = (string)$schemaConfig[$table]['schema'];
         }
 
         $schemaIdentifier  = pg_ident($tableSchema);
@@ -175,8 +175,8 @@ function cron_anonymization_main(array $argv): int
                 }
                 continue;
             }
-            $cntRow          = pg_fetch_assoc($result);
-            $wouldAffect     = (int)($cntRow['cnt'] ?? 0);
+            $countRow          = pg_fetch_assoc($result);
+            $wouldAffect     = (int)($countRow['cnt'] ?? 0);
             $rowsAnonymized += $wouldAffect;
             $rulesProcessed++;
             anon_log("[anonymization] {$tableSchema}.{$table}.{$column}"

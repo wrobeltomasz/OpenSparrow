@@ -9,7 +9,7 @@ export function isDebugEnabled() {
 
 const MAX_LOG_LENGTH = 10000;
 
-export function debugLog(msg, obj) {
+export function debugLog(message, obj) {
   let dbg = document.getElementById('debug');
 
   if (!isDebugEnabled()) {
@@ -42,7 +42,7 @@ export function debugLog(msg, obj) {
 
   dbg.style.display = 'block';
 
-  let text = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  let text = `[${new Date().toLocaleTimeString()}] ${message}`;
   if (obj !== undefined) {
     try {
       text += "\n" + (typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2));
@@ -61,9 +61,9 @@ export function debugLog(msg, obj) {
   dbg.scrollTop = dbg.scrollHeight;
 
   if (obj !== undefined) {
-    console.log(msg, obj);
+    console.log(message, obj);
   } else {
-    console.log(msg);
+    console.log(message);
   }
 }
 

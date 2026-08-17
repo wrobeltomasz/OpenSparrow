@@ -56,11 +56,11 @@ function buildAvatarModal(currentId, username) {
     let selected = currentId ?? null;
 
     for (let i = 1; i <= AVATAR_COUNT; i++) {
-        const opt = document.createElement('option');
-        opt.value = String(i);
-        opt.textContent = I18n.t('header.avatar_option', { n: i });
-        opt.style.color = AVATAR_COLORS[i - 1];
-        select.appendChild(opt);
+        const option = document.createElement('option');
+        option.value = String(i);
+        option.textContent = I18n.t('header.avatar_option', { n: i });
+        option.style.color = AVATAR_COLORS[i - 1];
+        select.appendChild(option);
     }
 
     const paintPreview = id => {
@@ -97,36 +97,36 @@ function buildAvatarModal(currentId, username) {
 }
 
 async function saveAvatar(overlay, avatarId) {
-    const saveBtn = overlay.querySelector('#umAvatarSave');
-    if (saveBtn) saveBtn.disabled = true;
+    const saveButton = overlay.querySelector('#umAvatarSave');
+    if (saveButton) saveButton.disabled = true;
 
     try {
-        const res = await apiFetch('update_avatar', { avatar_id: avatarId });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error ?? I18n.t('header.error_saving_avatar'));
+        const result = await apiFetch('update_avatar', { avatar_id: avatarId });
+        const data = await result.json();
+        if (!result.ok || !data.ok) throw new Error(data.error ?? I18n.t('header.error_saving_avatar'));
         showToast(I18n.t('header.avatar_updated'), 'success');
         closeModal(overlay);
         updateHeaderAvatar(avatarId);
-    } catch (err) {
-        showToast(err.message, 'error');
-        if (saveBtn) saveBtn.disabled = false;
+    } catch (error) {
+        showToast(error.message, 'error');
+        if (saveButton) saveButton.disabled = false;
     }
 }
 
 function updateHeaderAvatar(avatarId) {
-    const btn = document.getElementById('userAvatarBtn');
-    if (!btn) return;
+    const button = document.getElementById('userAvatarBtn');
+    if (!button) return;
 
-    const tooltip = btn.querySelector('.user-avatar-tooltip');
-    const existing = btn.querySelector('.avatar');
+    const tooltip = button.querySelector('.user-avatar-tooltip');
+    const existing = button.querySelector('.avatar');
     if (!existing) return;
 
     existing.replaceWith(renderAvatar(avatarId, tooltip?.textContent?.trim() ?? '?'));
 
     if (avatarId) {
-        btn.dataset.avatarId = String(avatarId);
+        button.dataset.avatarId = String(avatarId);
     } else {
-        delete btn.dataset.avatarId;
+        delete button.dataset.avatarId;
     }
 }
 
@@ -156,7 +156,7 @@ function buildPasswordModal() {
             </div>
         </form>`;
 
-    const errEl  = box.querySelector('#umPwdError');
+    const errorElement  = box.querySelector('#umPwdError');
     const form   = box.querySelector('#umPwdForm');
     const submit = form.querySelector('[type="submit"]');
 
@@ -167,33 +167,33 @@ function buildPasswordModal() {
 
     form.addEventListener('submit', async e => {
         e.preventDefault();
-        errEl.classList.remove('visible');
+        errorElement.classList.remove('visible');
 
         const current = form.querySelector('#umPwdCurrent').value;
-        const newPwd  = form.querySelector('#umPwdNew').value;
+        const newPassword  = form.querySelector('#umPwdNew').value;
         const confirm = form.querySelector('#umPwdConfirm').value;
 
-        if (newPwd !== confirm) {
-            errEl.textContent = I18n.t('auth.passwords_no_match');
-            errEl.classList.add('visible');
+        if (newPassword !== confirm) {
+            errorElement.textContent = I18n.t('auth.passwords_no_match');
+            errorElement.classList.add('visible');
             return;
         }
-        if (newPwd.length < 8) {
-            errEl.textContent = I18n.t('auth.password_too_short');
-            errEl.classList.add('visible');
+        if (newPassword.length < 8) {
+            errorElement.textContent = I18n.t('auth.password_too_short');
+            errorElement.classList.add('visible');
             return;
         }
 
         submit.disabled = true;
         try {
-            const res  = await apiFetch('change_password', { current_password: current, new_password: newPwd });
-            const data = await res.json();
-            if (!res.ok || !data.ok) throw new Error(data.error ?? I18n.t('auth.error_changing_password'));
+            const result  = await apiFetch('change_password', { current_password: current, new_password: newPassword });
+            const data = await result.json();
+            if (!result.ok || !data.ok) throw new Error(data.error ?? I18n.t('auth.error_changing_password'));
             showToast(I18n.t('auth.password_changed'), 'success');
             closeModal(overlay);
-        } catch (err) {
-            errEl.textContent = err.message;
-            errEl.classList.add('visible');
+        } catch (error) {
+            errorElement.textContent = error.message;
+            errorElement.classList.add('visible');
             submit.disabled = false;
         }
     });
@@ -219,14 +219,14 @@ function closeModal(overlay) {
 
 let myRecordsPanel = null;
 
-function renderMyRecords(bodyEl, records) {
-    bodyEl.textContent = '';
+function renderMyRecords(bodyElement, records) {
+    bodyElement.textContent = '';
 
     if (!records.length) {
         const empty = document.createElement('p');
         empty.className = 'dc-empty';
         empty.textContent = I18n.t('header.my_records_empty');
-        bodyEl.appendChild(empty);
+        bodyElement.appendChild(empty);
         return;
     }
 
@@ -254,7 +254,7 @@ function renderMyRecords(bodyEl, records) {
         list.appendChild(item);
     }
 
-    bodyEl.appendChild(list);
+    bodyElement.appendChild(list);
 }
 
 async function openMyRecordsPanel() {
@@ -272,16 +272,16 @@ async function openMyRecordsPanel() {
     myRecordsPanel.bodyEl.textContent = '';
 
     try {
-        const res = await fetch('api/owners.php?action=mine', {
+        const result = await fetch('api/owners.php?action=mine', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         });
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
+        const data = await result.json();
+        if (!result.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
 
         myRecordsPanel.clearStatus();
         renderMyRecords(myRecordsPanel.bodyEl, data.records ?? []);
-    } catch (err) {
-        myRecordsPanel.setStatus(err.message, true);
+    } catch (error) {
+        myRecordsPanel.setStatus(error.message, true);
     }
 }
 
@@ -289,14 +289,14 @@ const MY_COMMENT_SNIPPET_MAX = 140;
 
 let myCommentsPanel = null;
 
-function renderMyComments(bodyEl, comments) {
-    bodyEl.textContent = '';
+function renderMyComments(bodyElement, comments) {
+    bodyElement.textContent = '';
 
     if (!comments.length) {
         const empty = document.createElement('p');
         empty.className = 'dc-empty';
         empty.textContent = I18n.t('header.my_comments_empty');
-        bodyEl.appendChild(empty);
+        bodyElement.appendChild(empty);
         return;
     }
 
@@ -331,7 +331,7 @@ function renderMyComments(bodyEl, comments) {
         list.appendChild(item);
     }
 
-    bodyEl.appendChild(list);
+    bodyElement.appendChild(list);
 }
 
 async function openMyCommentsPanel() {
@@ -349,39 +349,39 @@ async function openMyCommentsPanel() {
     myCommentsPanel.bodyEl.textContent = '';
 
     try {
-        const res = await fetch('api/comments.php?action=mine', {
+        const result = await fetch('api/comments.php?action=mine', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         });
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
+        const data = await result.json();
+        if (!result.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
 
         myCommentsPanel.clearStatus();
         renderMyComments(myCommentsPanel.bodyEl, data.comments ?? []);
-    } catch (err) {
-        myCommentsPanel.setStatus(err.message, true);
+    } catch (error) {
+        myCommentsPanel.setStatus(error.message, true);
     }
 }
 
 function initUserMenu() {
-    const btn  = document.getElementById('userAvatarBtn');
+    const button  = document.getElementById('userAvatarBtn');
     const menu = document.getElementById('userAvatarMenu');
-    if (!btn || !menu) return;
+    if (!button || !menu) return;
 
     const toggle = open => {
         menu.classList.toggle('open', open);
-        btn.setAttribute('aria-expanded', String(open));
+        button.setAttribute('aria-expanded', String(open));
         if (!open && menu.contains(document.activeElement)) {
-            btn.focus();
+            button.focus();
         }
     };
 
-    btn.addEventListener('click', e => {
+    button.addEventListener('click', e => {
         e.stopPropagation();
         toggle(!menu.classList.contains('open'));
     });
 
     document.addEventListener('click', e => {
-        if (!btn.contains(e.target) && !menu.contains(e.target)) {
+        if (!button.contains(e.target) && !menu.contains(e.target)) {
             toggle(false);
         }
     });
@@ -392,7 +392,7 @@ function initUserMenu() {
 
     document.getElementById('changeAvatarBtn')?.addEventListener('click', () => {
         toggle(false);
-        const currentId = parseInt(btn.dataset.avatarId ?? '', 10);
+        const currentId = parseInt(button.dataset.avatarId ?? '', 10);
         openModal(buildAvatarModal(Number.isInteger(currentId) ? currentId : null, headerUsername()));
     });
 

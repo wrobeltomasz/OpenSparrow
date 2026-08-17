@@ -84,8 +84,8 @@ final class CsvFileValidator
         if ((int) ($file['size'] ?? 0) > CSV_MAX_BYTES) {
             throw new \InvalidArgumentException('File exceeds ' . (CSV_MAX_BYTES / 1048576) . ' MB limit.');
         }
-        $ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
-        if ($ext !== 'csv') {
+        $extension = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+        if ($extension !== 'csv') {
             throw new \InvalidArgumentException('Only .csv files are accepted.');
         }
         $finfo  = new \finfo(FILEINFO_MIME_TYPE);
@@ -99,13 +99,13 @@ final class CsvFileValidator
 
 final class RowCaster
 {
-    public static function cast(?string $value, string $colType): mixed
+    public static function cast(?string $value, string $columnType): mixed
     {
         $trimmed = ($value === null) ? null : trim($value);
         if ($trimmed === '' || $trimmed === null) {
             return null;
         }
-        $normalizedType = strtolower($colType);
+        $normalizedType = strtolower($columnType);
 
         if (str_contains($normalizedType, 'bool')) {
             return in_array(strtolower($trimmed), ['1', 'true', 't', 'yes', 'y'], true) ? 'true' : 'false';
@@ -204,21 +204,21 @@ final class ImportRepository
         }
         $logTable    = sys_table('import_rows_log');
         $placeholders   = [];
-        $args = [];
+        $arguments = [];
         $placeholderIndex    = 1;
         foreach ($rowErrors as $entry) {
             $placeholders[]   = "(\${$placeholderIndex},\$" . ($placeholderIndex + 1)
                 . ",\$" . ($placeholderIndex + 2)
                 . ",\$" . ($placeholderIndex + 3) . ')';
-            $args[] = $importId;
-            $args[] = $entry['row_number'];
-            $args[] = json_encode($entry['raw_data']);
-            $args[] = $entry['error'];
+            $arguments[] = $importId;
+            $arguments[] = $entry['row_number'];
+            $arguments[] = json_encode($entry['raw_data']);
+            $arguments[] = $entry['error'];
             $placeholderIndex += 4;
         }
         $sql = "INSERT INTO {$logTable} (import_id,row_number,raw_data,error_message) VALUES "
             . implode(',', $placeholders);
-        @pg_query_params($this->conn, $sql, $args);
+        @pg_query_params($this->conn, $sql, $arguments);
     }
 
     public function getHistory(): array
@@ -265,7 +265,7 @@ final class CsvImportService
 {
     public function __construct(
         private readonly \PgSql\Connection $conn,
-        private readonly ImportRepository $repo,
+        private readonly ImportRepository $repository,
     ) {
     }
 
@@ -274,7 +274,7 @@ final class CsvImportService
         string $tableName,
         string $tableSchema,
         array $mapping,
-        array $colTypes,
+        array $columnTypes,
         ?string $conflictColumn,
         int $importId,
         string $delimiter = ',',
@@ -305,8 +305,8 @@ final class CsvImportService
                     continue;
                 }
                 $rawValue  = isset($rowData[$csvHeader]) ? (string) $rowData[$csvHeader] : null;
-                $colType = $colTypes[$dbColumn] ?? 'text';
-                $casted  = RowCaster::cast($rawValue, $colType);
+                $columnType = $columnTypes[$dbColumn] ?? 'text';
+                $casted  = RowCaster::cast($rawValue, $columnType);
                 $castRow[$dbColumn] = $casted;
             }
 
@@ -323,7 +323,7 @@ final class CsvImportService
             $batch[] = ['rowNum' => $rowNumber, 'data' => $castRow, 'raw' => $rowData];
 
             if (count($batch) >= $batchSize) {
-                [$importedCount, $skip, $errs] = $this->flushBatch(
+                [$importedCount, $skip, $errors] = $this->flushBatch(
                     $batch,
                     $tableIdentifier,
                     $dbColumns,
@@ -331,19 +331,19 @@ final class CsvImportService
                 );
                 $imported += $importedCount;
                 $skipped  += $skip;
-                array_push($rowErrors, ...$errs);
+                array_push($rowErrors, ...$errors);
                 $batch = [];
             }
         }
 
         if (!empty($batch)) {
-            [$importedCount, $skip, $errs] = $this->flushBatch($batch, $tableIdentifier, $dbColumns, $conflictColumn);
+            [$importedCount, $skip, $errors] = $this->flushBatch($batch, $tableIdentifier, $dbColumns, $conflictColumn);
             $imported += $importedCount;
             $skipped  += $skip;
-            array_push($rowErrors, ...$errs);
+            array_push($rowErrors, ...$errors);
         }
 
-        $this->repo->logRows($importId, $rowErrors);
+        $this->repository->logRows($importId, $rowErrors);
 
         return [$total, $imported, $skipped];
     }
@@ -357,8 +357,8 @@ final class CsvImportService
         @pg_query($this->conn, 'BEGIN');
 
         $sql    = $this->buildInsertSql($batch, $tableIdentifier, $dbColumns, $conflictColumn);
-        $params = $this->buildParams($batch, $dbColumns);
-        $result    = @pg_query_params($this->conn, $sql, $params);
+        $parameters = $this->buildParams($batch, $dbColumns);
+        $result    = @pg_query_params($this->conn, $sql, $parameters);
 
         if ($result === false) {
             @pg_query($this->conn, 'ROLLBACK');
@@ -384,7 +384,7 @@ final class CsvImportService
         array $dbColumns,
         ?string $conflictColumn
     ): string {
-        $colList = implode(',', array_map('pg_ident', $dbColumns));
+        $columnList = implode(',', array_map('pg_ident', $dbColumns));
         $columnCount = count($dbColumns);
         $rows    = [];
         $index     = 1;
@@ -395,7 +395,7 @@ final class CsvImportService
             }
             $rows[] = '(' . implode(',', $placeholders) . ')';
         }
-        $sql = "INSERT INTO {$tableIdentifier} ({$colList}) VALUES " . implode(',', $rows);
+        $sql = "INSERT INTO {$tableIdentifier} ({$columnList}) VALUES " . implode(',', $rows);
 
         if ($conflictColumn !== null && $conflictColumn !== '') {
             $conflictIdentifier         = pg_ident($conflictColumn);
@@ -413,13 +413,13 @@ final class CsvImportService
 
     private function buildParams(array $batch, array $dbColumns): array
     {
-        $params = [];
+        $parameters = [];
         foreach ($batch as $entry) {
             foreach ($dbColumns as $columnName) {
-                $params[] = $entry['data'][$columnName] ?? null;
+                $parameters[] = $entry['data'][$columnName] ?? null;
             }
         }
-        return $params;
+        return $parameters;
     }
 
     public function executeCopy(
@@ -433,13 +433,13 @@ final class CsvImportService
     ): array {
         $tableIdentifier = pg_ident($tableSchema) . '.' . pg_ident($tableName);
 
-        $colMap = [];
+        $columnMap = [];
         foreach ($mapping as $csvHeaderName => $dbColumn) {
-            if ($dbColumn !== null && $dbColumn !== '' && !isset($colMap[$dbColumn])) {
-                $colMap[$dbColumn] = $csvHeaderName;
+            if ($dbColumn !== null && $dbColumn !== '' && !isset($columnMap[$dbColumn])) {
+                $columnMap[$dbColumn] = $csvHeaderName;
             }
         }
-        if (empty($colMap)) {
+        if (empty($columnMap)) {
             throw new \RuntimeException('No columns mapped.');
         }
 
@@ -463,13 +463,13 @@ final class CsvImportService
             $isDirectStream = $mappedCount === count($csvHeaders);
 
             $headerIndexes  = array_flip($csvHeaders);
-            $colIndices = $isDirectStream ? null : array_map(
+            $columnIndices = $isDirectStream ? null : array_map(
                 fn($csvHeaderName) => $headerIndexes[$csvHeaderName] ?? null,
-                array_values($colMap)
+                array_values($columnMap)
             );
 
-            $colList = implode(',', array_map(pg_ident(...), array_keys($colMap)));
-            $sql     = "COPY {$tableIdentifier} ({$colList}) FROM STDIN WITH (FORMAT CSV, NULL '')";
+            $columnList = implode(',', array_map(pg_ident(...), array_keys($columnMap)));
+            $sql     = "COPY {$tableIdentifier} ({$columnList}) FROM STDIN WITH (FORMAT CSV, NULL '')";
 
             if (@pg_query($this->conn, $sql) === false) {
                 throw new \RuntimeException('COPY init failed: ' . substr(pg_last_error($this->conn), 0, 300));
@@ -496,7 +496,7 @@ final class CsvImportService
                     }, $row);
                 } else {
                     $fields = [];
-                    foreach ($colIndices as $index) {
+                    foreach ($columnIndices as $index) {
                         $cellValue = ($index !== null && isset($row[$index])) ? (string) $row[$index] : '';
                         if ($encoding !== 'UTF-8') {
                             $cellValue = mb_convert_encoding($cellValue, 'UTF-8', $encoding);
@@ -567,8 +567,8 @@ function csv_fail(string $message, int $code = 400): never
 if ($action === 'csv_import_history') {
     try {
         $conn = db_connect();
-        $repo = new ImportRepository($conn);
-        echo json_encode(['status' => 'success', 'imports' => $repo->getHistory()]);
+        $repository = new ImportRepository($conn);
+        echo json_encode(['status' => 'success', 'imports' => $repository->getHistory()]);
     } catch (ControlFlowException $signal) {
         throw $signal;
     } catch (\Exception $exception) {
@@ -584,8 +584,8 @@ if ($action === 'csv_import_log') {
     }
     try {
         $conn = db_connect();
-        $repo = new ImportRepository($conn);
-        $rows = $repo->getRowLog($importId);
+        $repository = new ImportRepository($conn);
+        $rows = $repository->getRowLog($importId);
         echo json_encode(['status' => 'success', 'rows' => $rows, 'count' => count($rows)]);
     } catch (ControlFlowException $signal) {
         throw $signal;
@@ -635,17 +635,18 @@ if ($action === 'csv_import_upload') {
         $rowCount++;
     }
 
-    $importDir = realpath(__DIR__ . '/../../storage/files') . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR;
-    if (!is_dir($importDir)) {
-        mkdir($importDir, 0750, true);
+    $importDirectory = realpath(__DIR__ . '/../../storage/files')
+        . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR;
+    if (!is_dir($importDirectory)) {
+        mkdir($importDirectory, 0750, true);
 
-        file_put_contents($importDir . '.htaccess', "Require all denied\nOptions -Indexes\n");
+        file_put_contents($importDirectory . '.htaccess', "Require all denied\nOptions -Indexes\n");
     }
 
-    $tmpName  = bin2hex(random_bytes(16)) . '.csv';
-    $destPath = $importDir . $tmpName;
+    $temporaryName  = bin2hex(random_bytes(16)) . '.csv';
+    $destinationPath = $importDirectory . $temporaryName;
 
-    if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+    if (!move_uploaded_file($file['tmp_name'], $destinationPath)) {
         csv_fail('Failed to store the uploaded file on the server.');
     }
 
@@ -655,7 +656,7 @@ if ($action === 'csv_import_upload') {
         'preview'       => $preview,
         'row_count'     => $rowCount,
         'original_name' => basename((string) $file['name']),
-        'tmp_name'      => $tmpName,
+        'tmp_name'      => $temporaryName,
     ]);
     throw ResponseException::sent();
 }
@@ -671,7 +672,7 @@ if ($action === 'csv_import_execute') {
         csv_fail('Invalid JSON body.');
     }
 
-    $tmpName      = (string) ($body['tmp_name']        ?? '');
+    $temporaryName      = (string) ($body['tmp_name']        ?? '');
     $tableName    = (string) ($body['table']           ?? '');
     $mapping      = $body['mapping']                   ?? [];
     $conflictColumn  = ($body['conflict_column'] ?? '') ?: null;
@@ -684,7 +685,7 @@ if ($action === 'csv_import_execute') {
     $requestedEncoding          = (string) ($body['encoding']        ?? 'UTF-8');
     $encoding     = in_array($requestedEncoding, $allowedEncodings, true) ? $requestedEncoding : 'UTF-8';
 
-    if (!preg_match('/^[a-f0-9]{32}\.csv$/', $tmpName)) {
+    if (!preg_match('/^[a-f0-9]{32}\.csv$/', $temporaryName)) {
         csv_fail('Invalid tmp_name token.');
     }
     if ($tableName === '') {
@@ -695,7 +696,7 @@ if ($action === 'csv_import_execute') {
     }
 
     $csvPath = realpath(__DIR__ . '/../../storage/files')
-        . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR . $tmpName;
+        . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR . $temporaryName;
 
     if (!file_exists($csvPath)) {
         csv_fail('Uploaded file not found. Please re-upload the CSV.');
@@ -725,16 +726,16 @@ if ($action === 'csv_import_execute') {
         csv_fail("Conflict column '{$conflictColumn}' must be included in the column mapping.");
     }
 
-    $colTypes = array_map(fn($column) => (string) ($column['type'] ?? 'text'), $schemaColumns);
+    $columnTypes = array_map(fn($column) => (string) ($column['type'] ?? 'text'), $schemaColumns);
     $userId   = (int) ($_SESSION['user_id'] ?? 0);
 
     $importId = 0;
     try {
         $conn    = db_connect();
-        $repo    = new ImportRepository($conn);
-        $service = new CsvImportService($conn, $repo);
+        $repository    = new ImportRepository($conn);
+        $service = new CsvImportService($conn, $repository);
 
-        $importId  = $repo->createRecord(
+        $importId  = $repository->createRecord(
             $userId,
             $originalName,
             $tableName,
@@ -759,7 +760,7 @@ if ($action === 'csv_import_execute') {
                 $tableName,
                 $tableSchema,
                 $mapping,
-                $colTypes,
+                $columnTypes,
                 $conflictColumn,
                 $importId,
                 $delimiter,
@@ -768,7 +769,7 @@ if ($action === 'csv_import_execute') {
         }
 
         $status = ($total > 0 && $skipped === $total) ? 'failed' : 'done';
-        $repo->finalize($importId, $status, $total, $imported, $skipped);
+        $repository->finalize($importId, $status, $total, $imported, $skipped);
 
         log_user_action($conn, $userId, 'CSV_IMPORT', $tableName, $importId);
 
@@ -786,8 +787,8 @@ if ($action === 'csv_import_execute') {
     } catch (ControlFlowException $signal) {
         throw $signal;
     } catch (\Exception $exception) {
-        if ($importId > 0 && isset($repo)) {
-            $repo->finalize($importId, 'failed', 0, 0, 0, $exception->getMessage());
+        if ($importId > 0 && isset($repository)) {
+            $repository->finalize($importId, 'failed', 0, 0, 0, $exception->getMessage());
         }
         @unlink($csvPath);
         csv_fail($exception->getMessage());

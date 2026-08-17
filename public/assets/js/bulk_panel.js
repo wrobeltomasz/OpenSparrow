@@ -18,7 +18,7 @@ export class BulkPanel {
         this._closeHandler = null;
     }
 
-    get bodyEl() {
+    get bodyElement() {
         if (!this._panelEl) this._createDOM();
         return this._bodyEl;
     }
@@ -42,9 +42,9 @@ export class BulkPanel {
         if (this._applyBtn) this._applyBtn.disabled = disabled;
     }
 
-    setStatus(msg, isError = false) {
+    setStatus(message, isError = false) {
         if (!this._statusEl) return;
-        this._statusEl.textContent = msg;
+        this._statusEl.textContent = message;
         this._statusEl.className = 'bp-status' + (isError ? ' error' : '');
     }
 
@@ -76,19 +76,19 @@ export class BulkPanel {
         const header = document.createElement('div');
         header.className = 'bp-header';
 
-        const titleEl = document.createElement('h3');
-        titleEl.className = 'bp-title';
-        titleEl.textContent = this._title;
+        const titleElement = document.createElement('h3');
+        titleElement.className = 'bp-title';
+        titleElement.textContent = this._title;
 
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'bp-close';
-        closeBtn.setAttribute('aria-label', 'Close');
-        closeBtn.title = 'Close';
-        closeBtn.innerHTML = '&#x2715;';
-        closeBtn.addEventListener('click', () => this._handleClose());
+        const closeButton = document.createElement('button');
+        closeButton.className = 'bp-close';
+        closeButton.setAttribute('aria-label', 'Close');
+        closeButton.title = 'Close';
+        closeButton.innerHTML = '&#x2715;';
+        closeButton.addEventListener('click', () => this._handleClose());
 
-        header.appendChild(titleEl);
-        header.appendChild(closeBtn);
+        header.appendChild(titleElement);
+        header.appendChild(closeButton);
 
         this._bodyEl = document.createElement('div');
         this._bodyEl.className = 'bp-body';

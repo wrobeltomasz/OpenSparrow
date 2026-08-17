@@ -7,36 +7,36 @@ import { attachCellEvents } from '../../grid_actions.js';
 import { state } from '../state.js';
 import { CellRenderer } from './registry.js';
 
-async function renderFkCell({ row, col, colCfg, schema, isReadOnly }) {
+async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, isReadOnly }) {
     const td = document.createElement('td');
     const input = document.createElement('input');
     input.type = 'search';
 
-    const dlId = `fk_${state.currentTable}_${col}_${row['id']}`;
+    const dlId = `fk_${state.currentTable}_${column}_${row['id']}`;
     input.setAttribute('list', dlId);
-    input.dataset.column = col;
+    input.dataset.column = column;
     input.dataset.id = row['id'];
 
-    if (colCfg.readonly || isReadOnly) input.disabled = true;
+    if (columnConfig.readonly || isReadOnly) input.disabled = true;
 
     const datalist = document.createElement('datalist');
     datalist.id = dlId;
 
-    const fkCfg = schema.tables[state.currentTable].foreign_keys[col];
-    const dispCols = Array.isArray(fkCfg.display_column)
-        ? fkCfg.display_column
-        : [fkCfg.display_column || 'id'];
-    const cacheKey = `${state.currentTable}_${col}`;
+    const fkConfig = schema.tables[state.currentTable].foreign_keys[column];
+    const dispColumns = Array.isArray(fkConfig.display_column)
+        ? fkConfig.display_column
+        : [fkConfig.display_column || 'id'];
+    const cacheKey = `${state.currentTable}_${column}`;
     let currentDisplay = '';
 
     if (state.fkCache.has(cacheKey)) {
-        const refData = await state.fkCache.get(cacheKey);
-        refData.forEach(r => {
+        const referenceData = await state.fkCache.get(cacheKey);
+        referenceData.forEach(r => {
             const option = document.createElement('option');
-            const displayValue = dispCols.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || r['id'];
+            const displayValue = dispColumns.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || r['id'];
             option.value = displayValue;
             option.dataset.realId = r['id'];
-            if (String(r['id']) === String(row[col])) currentDisplay = displayValue;
+            if (String(r['id']) === String(row[column])) currentDisplay = displayValue;
             datalist.appendChild(option);
         });
     }

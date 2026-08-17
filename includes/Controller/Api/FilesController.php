@@ -67,17 +67,17 @@ final class FilesController
         }
 
         $schema = config_get('schema');
-        $cfg    = is_array($schema) ? images_config($schema, $table) : null;
-        if ($cfg === null) {
+        $config    = is_array($schema) ? images_config($schema, $table) : null;
+        if ($config === null) {
             jsonError('This table does not accept images.', 403);
         }
 
-        $tableCfg = $schema['tables'][$table];
-        if (!can_access_record($this->conn, $tableCfg, $table, $recordId, $this->session->userId())) {
+        $tableConfig = $schema['tables'][$table];
+        if (!can_access_record($this->conn, $tableConfig, $table, $recordId, $this->session->userId())) {
             jsonError('Forbidden', 403);
         }
 
-        if (images_count($this->conn, $table, $recordId) >= $cfg['max_per_record']) {
+        if (images_count($this->conn, $table, $recordId) >= $config['max_per_record']) {
             jsonError('Image limit reached for this record.', 409);
         }
 
@@ -123,24 +123,24 @@ final class FilesController
         $orderExpr = $sortMap[$this->request->query('sort', 'created_at')] ?? 'f.created_at';
         $orderDirection  = strtolower($this->request->query('dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
         $where  = ['f.deleted_at IS NULL'];
-        $params = [];
+        $parameters = [];
         if ($type !== 'all') {
-            $where[]  = 'f.type = $' . (count($params) + 1);
-            $params[] = $type;
+            $where[]  = 'f.type = $' . (count($parameters) + 1);
+            $parameters[] = $type;
         }
 
         if ($search !== '') {
-            $parameterIndex = count($params) + 1;
+            $parameterIndex = count($parameters) + 1;
             $where[]  = '(f.name ILIKE $' . $parameterIndex . ' OR f.display_name ILIKE $' . $parameterIndex
                 . ' OR array_to_string(f.tags, \' \') ILIKE $' . $parameterIndex . ')';
-            $params[] = '%' . $search . '%';
+            $parameters[] = '%' . $search . '%';
         }
 
         $allowedTables = user_allowed_tables();
         if ($allowedTables !== null) {
             $where[]  = "(f.related_table IS NULL OR f.related_table = '' OR f.related_table = ANY($"
-                . (count($params) + 1) . '::text[]))';
-            $params[] = $this->textListToPgArray($allowedTables);
+                . (count($parameters) + 1) . '::text[]))';
+            $parameters[] = $this->textListToPgArray($allowedTables);
         }
 
         $ownerRestricted = [];
@@ -153,26 +153,26 @@ final class FilesController
         }
         if ($ownerRestricted !== []) {
             $recordOwnersTable  = sys_table('record_owners');
-            $ownerParameterIndex = count($params) + 1;
-            $tableParameterIndex   = count($params) + 2;
+            $ownerParameterIndex = count($parameters) + 1;
+            $tableParameterIndex   = count($parameters) + 2;
             $where[]  = "NOT EXISTS (SELECT 1 FROM {$recordOwnersTable} ro"
                 . ' WHERE ro.table_name = f.related_table AND ro.record_id = f.related_id'
                 . ' AND ro.is_current = true'
                 . " AND ro.owner_id IS NOT NULL AND ro.owner_id != \${$ownerParameterIndex}"
                 . " AND f.related_table = ANY(\${$tableParameterIndex}::text[]))";
-            $params[] = $this->session->userId();
-            $params[] = $this->textListToPgArray($ownerRestricted);
+            $parameters[] = $this->session->userId();
+            $parameters[] = $this->textListToPgArray($ownerRestricted);
         }
 
         $whereSQL = implode(' AND ', $where);
         $countSQL = "SELECT COUNT(*) AS cnt FROM " . sys_table('files') . " f WHERE {$whereSQL}";
-        $resCount = pg_query_params($this->conn, $countSQL, $params);
-        if (!$resCount) {
+        $countResult = pg_query_params($this->conn, $countSQL, $parameters);
+        if (!$countResult) {
             error_log('api_files files_action_list count failed: ' . pg_last_error($this->conn));
             jsonError('Database error.', 500);
         }
-        $total = (int) pg_fetch_result($resCount, 0, 'cnt');
-        $paramsList = $params;
+        $total = (int) pg_fetch_result($countResult, 0, 'cnt');
+        $parametersList = $parameters;
         $listSQL    = "
         SELECT
             f.uuid, f.name, f.display_name, f.type, f.mime_type,
@@ -182,18 +182,18 @@ final class FilesController
         LEFT JOIN " . sys_table('users') . " u ON u.id = f.uploaded_by
         WHERE {$whereSQL}
         ORDER BY {$orderExpr} {$orderDirection}, f.id DESC
-        LIMIT $" . (count($paramsList) + 1) . "
-        OFFSET $" . (count($paramsList) + 2);
-        $paramsList[] = $limit;
-        $paramsList[] = $offset;
-        $resList = pg_query_params($this->conn, $listSQL, $paramsList);
-        if (!$resList) {
+        LIMIT $" . (count($parametersList) + 1) . "
+        OFFSET $" . (count($parametersList) + 2);
+        $parametersList[] = $limit;
+        $parametersList[] = $offset;
+        $listResult = pg_query_params($this->conn, $listSQL, $parametersList);
+        if (!$listResult) {
             error_log('api_files files_action_list list failed: ' . pg_last_error($this->conn));
             jsonError('Database error.', 500);
         }
 
         $files = [];
-        while ($row = pg_fetch_assoc($resList)) {
+        while ($row = pg_fetch_assoc($listResult)) {
             $files[] = $row;
         }
 
@@ -239,17 +239,17 @@ final class FilesController
         }
 
         $originalName = $file['name'];
-        $ext          = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $extension          = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-        $allowedExts = array_intersect(
+        $allowedExtensions = array_intersect(
             $config['allowed_extensions'] ?? [],
             array_keys($this->verifiableExtensionMap())
         );
-        if (!in_array($ext, $allowedExts, true)) {
+        if (!in_array($extension, $allowedExtensions, true)) {
             jsonError('Extension is not allowed.', 415);
         }
 
-        $type = $this->detectType($ext);
+        $type = $this->detectType($extension);
         if (!in_array($type, $config['allowed_types'] ?? [], true)) {
             jsonError('File type category is not allowed.', 415);
         }
@@ -259,9 +259,9 @@ final class FilesController
         $imageMode   = $request->post('related_field') === IMAGES_FIELD;
         $imageTarget = null;
 
-        $reqRelatedTable = trim((string) $request->post('related_table'));
-        if ($reqRelatedTable !== '') {
-            require_table_access($reqRelatedTable);
+        $requestedRelatedTable = trim((string) $request->post('related_table'));
+        if ($requestedRelatedTable !== '') {
+            require_table_access($requestedRelatedTable);
         }
         if ($imageMode) {
             if ($type !== 'image') {
@@ -277,19 +277,19 @@ final class FilesController
         if (class_exists('finfo')) {
             $finfo    = new finfo(FILEINFO_MIME_TYPE);
             $mimeType = $finfo->file($file['tmp_name']) ?: 'application/octet-stream';
-            if (!$this->mimeMatchesExtension($ext, $mimeType)) {
+            if (!$this->mimeMatchesExtension($extension, $mimeType)) {
                 unlink($file['tmp_name']);
                 jsonError('File content does not match its extension.', 415);
             }
         }
 
         $uuid        = $this->generateUuid();
-        $filename    = $uuid . '.' . $ext;
-        $dir         = rtrim(__DIR__ . '/../../../' . ($config['storage_path'] ?? 'storage/files'), '/');
-        os_ensure_directory($dir, 0750);
-        os_write_guard_file($dir . '/.htaccess', "Require all denied\n");
+        $filename    = $uuid . '.' . $extension;
+        $directory         = rtrim(__DIR__ . '/../../../' . ($config['storage_path'] ?? 'storage/files'), '/');
+        os_ensure_directory($directory, 0750);
+        os_write_guard_file($directory . '/.htaccess', "Require all denied\n");
 
-        $destination = $dir . '/' . $filename;
+        $destination = $directory . '/' . $filename;
         if (!move_uploaded_file($file['tmp_name'], $destination)) {
             jsonError('Failed to save physical file to disk.', 500);
         }
@@ -330,13 +330,13 @@ final class FilesController
             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING id, uuid
     ";
-        $params = [
+        $parameters = [
             $uuid,
             $originalName,
             $displayName,
             $type,
             $mimeType,
-            $ext,
+            $extension,
             $file['size'],
             $dbPath,
             $this->session->get('user_id'),
@@ -345,7 +345,7 @@ final class FilesController
             $tagsPgArray,
             $relatedField
         ];
-        $queryResult = pg_query_params($this->conn, $sql, $params);
+        $queryResult = pg_query_params($this->conn, $sql, $parameters);
         if (!$queryResult) {
             error_log('api_files files_action_upload insert failed: ' . pg_last_error($this->conn));
             unlink($destination);
@@ -500,7 +500,7 @@ final class FilesController
         $this->assertFileAccess('{' . strtolower($uuid) . '}');
 
         $sets   = [];
-        $params = [];
+        $parameters = [];
         $index    = 1;
 
         if (array_key_exists('display_name', $body)) {
@@ -509,12 +509,12 @@ final class FilesController
                 jsonError('Display name cannot be empty.', 400);
             }
             $sets[]   = 'display_name = $' . $index++;
-            $params[] = $displayName;
+            $parameters[] = $displayName;
         }
 
         if (array_key_exists('tags', $body)) {
             $sets[]   = 'tags = $' . $index++ . '::text[]';
-            $params[] = $this->tagsToPgArray((string) $body['tags']);
+            $parameters[] = $this->tagsToPgArray((string) $body['tags']);
         }
 
         if (count($sets) === 0) {
@@ -522,10 +522,10 @@ final class FilesController
         }
 
         $sets[]   = 'updated_at = NOW()';
-        $params[] = $uuid;
+        $parameters[] = $uuid;
         $sql = "UPDATE " . sys_table('files') . " SET " . implode(', ', $sets)
             . " WHERE uuid = $" . $index . " AND deleted_at IS NULL RETURNING uuid, name, display_name, tags";
-        $queryResult = pg_query_params($this->conn, $sql, $params);
+        $queryResult = pg_query_params($this->conn, $sql, $parameters);
         if (!$queryResult) {
             error_log('api_files files_action_update_meta failed: ' . pg_last_error($this->conn));
             jsonError('Database error.', 500);
@@ -614,35 +614,37 @@ final class FilesController
     private function getRelatedRecords(): void
     {
         requireLogin();
-        $reqTable = trim($this->request->query('table'));
-        if (!$reqTable) {
+        $requestedTable = trim($this->request->query('table'));
+        if (!$requestedTable) {
             jsonSuccess(['records' => []]);
         }
-        require_table_access($reqTable);
+        require_table_access($requestedTable);
 
         $config    = $this->loadConfig();
-        $relConfig = null;
+        $relatedConfig = null;
         $relations = $config['relations'] ?? [];
         foreach ($relations as $relativePath) {
-            if ($relativePath['table'] === $reqTable) {
-                $relConfig = $relativePath;
+            if ($relativePath['table'] === $requestedTable) {
+                $relatedConfig = $relativePath;
                 break;
             }
         }
 
-        if (!$relConfig || !preg_match('/^[a-zA-Z0-9_]+$/', $reqTable)) {
+        if (!$relatedConfig || !preg_match('/^[a-zA-Z0-9_]+$/', $requestedTable)) {
             jsonSuccess(['records' => []]);
         }
 
-        $col1 = $relConfig['col1'] ?: 'id';
-        $col2 = $relConfig['col2'] ?: '';
+        $col1 = $relatedConfig['col1'] ?: 'id';
+        $col2 = $relatedConfig['col2'] ?: '';
 
-        $schemaCfg  = config_get('schema');
-        $pgSchema   = (is_array($schemaCfg) ? ($schemaCfg['tables'][$reqTable]['schema'] ?? null) : null) ?? 'public';
+        $schemaConfig  = config_get('schema');
+        $pgSchema   = (is_array($schemaConfig)
+            ? ($schemaConfig['tables'][$requestedTable]['schema'] ?? null)
+            : null) ?? 'public';
 
         $columnsSql = "SELECT column_name FROM information_schema.columns "
             . "WHERE table_schema = $1 AND table_name = $2";
-        $columnsResult = pg_query_params($this->conn, $columnsSql, [$pgSchema, $reqTable]);
+        $columnsResult = pg_query_params($this->conn, $columnsSql, [$pgSchema, $requestedTable]);
         if (!$columnsResult) {
             error_log(
                 'api_files files_action_get_related_records schema check failed: '
@@ -667,7 +669,7 @@ final class FilesController
             $col2 = '';
         }
 
-        $quotedTable = '"' . str_replace('"', '""', $reqTable) . '"';
+        $quotedTable = '"' . str_replace('"', '""', $requestedTable) . '"';
         $quotedCol1  = '"' . str_replace('"', '""', $col1) . '"';
         $sel2        = $col2 ? ', "' . str_replace('"', '""', $col2) . '"' : '';
         $quotedSchema = '"' . str_replace('"', '""', $pgSchema) . '"';
@@ -727,14 +729,14 @@ final class FilesController
         ];
     }
 
-    private function mimeMatchesExtension(string $ext, string $mime): bool
+    private function mimeMatchesExtension(string $extension, string $mime): bool
     {
         $mime = strtolower(trim($mime));
         $map  = $this->verifiableExtensionMap();
-        if (!isset($map[$ext])) {
+        if (!isset($map[$extension])) {
             return false;
         }
-        return in_array($mime, $map[$ext], true);
+        return in_array($mime, $map[$extension], true);
     }
 
     private function uploadErrorMessage(int $code): string
@@ -753,7 +755,7 @@ final class FilesController
         };
     }
 
-    private function detectType(string $ext): string
+    private function detectType(string $extension): string
     {
         $map = [
 
@@ -763,8 +765,8 @@ final class FilesController
             'spreadsheet' => ['xls', 'xlsx', 'ods', 'csv'],
             'archive'     => ['zip', 'tar', 'gz'],
         ];
-        foreach ($map as $type => $exts) {
-            if (in_array($ext, $exts, true)) {
+        foreach ($map as $type => $extensions) {
+            if (in_array($extension, $extensions, true)) {
                 return $type;
             }
         }

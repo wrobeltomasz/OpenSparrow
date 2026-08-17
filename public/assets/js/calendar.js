@@ -9,10 +9,10 @@ import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/rec
 let _i18nBundle = {};
 async function fetchI18n() {
     try {
-        const res = await fetch('/api.php?action=i18n_bundle', {
+        const result = await fetch('/api.php?action=i18n_bundle', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (res.ok) _i18nBundle = await res.json();
+        if (result.ok) _i18nBundle = await result.json();
     } catch (_) {}
 }
 function t(key, vars = {}) {
@@ -58,9 +58,9 @@ let searchTerm = '';
 function eventMatchesSearch(ev) {
     if (!searchTerm) return true;
     const parts = [ev.title, String(ev.id)];
-    for (const [key, val] of Object.entries(ev.rowData || {})) {
-        if (key.endsWith('__display') || val === null || val === undefined) continue;
-        parts.push(String(ev.rowData[key + '__display'] ?? val));
+    for (const [key, value] of Object.entries(ev.rowData || {})) {
+        if (key.endsWith('__display') || value === null || value === undefined) continue;
+        parts.push(String(ev.rowData[key + '__display'] ?? value));
     }
     return parts.join(' ').toLowerCase().includes(searchTerm);
 }
@@ -75,14 +75,14 @@ function initSearch() {
 }
 
 function updateClearButton() {
-    const btn = document.getElementById('clearFilters');
-    if (btn) btn.hidden = !searchTerm && hiddenTables.size === 0;
+    const button = document.getElementById('clearFilters');
+    if (button) button.hidden = !searchTerm && hiddenTables.size === 0;
 }
 
 function initClearFilters() {
-    const btn = document.getElementById('clearFilters');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
+    const button = document.getElementById('clearFilters');
+    if (!button) return;
+    button.addEventListener('click', () => {
         searchTerm = '';
         const input = document.getElementById('calendarSearch');
         if (input) input.value = '';
@@ -97,22 +97,22 @@ function visibleEvents() {
     return eventsData.filter(ev => !hiddenTables.has(ev.table) && eventMatchesSearch(ev));
 }
 
-function buildSourceChip(src) {
+function buildSourceChip(source) {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'filter-chip' + (hiddenTables.has(src.table) ? ' off' : '');
+    chip.className = 'filter-chip' + (hiddenTables.has(source.table) ? ' off' : '');
 
     const dot = document.createElement('span');
     dot.className = 'filter-dot';
-    dot.style.backgroundColor = src.color;
+    dot.style.backgroundColor = source.color;
     chip.appendChild(dot);
-    chip.appendChild(document.createTextNode(tableLabel(src.table)));
+    chip.appendChild(document.createTextNode(tableLabel(source.table)));
 
     chip.addEventListener('click', () => {
-        if (hiddenTables.has(src.table)) {
-            hiddenTables.delete(src.table);
+        if (hiddenTables.has(source.table)) {
+            hiddenTables.delete(source.table);
         } else {
-            hiddenTables.add(src.table);
+            hiddenTables.add(source.table);
         }
         saveFilterState();
         renderFilterBar();
@@ -125,7 +125,7 @@ function renderFilterBar() {
     const bar = document.getElementById('calendarFilters');
     if (!bar) return;
     bar.innerHTML = '';
-    calendarSources().forEach(src => bar.appendChild(buildSourceChip(src)));
+    calendarSources().forEach(source => bar.appendChild(buildSourceChip(source)));
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -162,31 +162,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function fetchSchema() {
     try {
-        const res = await fetch('api/schema.php', {
+        const result = await fetch('api/schema.php', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (res.ok) {
-            appSchema = await res.json();
+        if (result.ok) {
+            appSchema = await result.json();
             window.schema = appSchema;
         } else {
             console.error('Failed to load secure schema');
         }
-    } catch (err) {
-        console.error('Failed to fetch schema in calendar', err);
+    } catch (error) {
+        console.error('Failed to fetch schema in calendar', error);
     }
 }
 
 async function fetchEvents(year, month) {
     try {
-        const res = await fetch(`api.php?api=calendar&year=${year}&month=${month}`, {
+        const result = await fetch(`api.php?api=calendar&year=${year}&month=${month}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (res.ok) {
-            const data = await res.json();
+        if (result.ok) {
+            const data = await result.json();
             eventsData = data.events || [];
         }
-    } catch (err) {
-        console.error('Failed to load calendar events', err);
+    } catch (error) {
+        console.error('Failed to load calendar events', error);
     }
 }
 
@@ -233,25 +233,25 @@ function renderCalendar() {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
 
-        const dateNum = document.createElement('div');
-        dateNum.className = 'calendar-date-num';
-        dateNum.textContent = i;
-        cell.appendChild(dateNum);
+        const dateNumber = document.createElement('div');
+        dateNumber.className = 'calendar-date-num';
+        dateNumber.textContent = i;
+        cell.appendChild(dateNumber);
 
         const dateString = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
 
         if (canEdit) {
-            const addBtn = document.createElement('button');
-            addBtn.type = 'button';
-            addBtn.className = 'calendar-add-btn';
-            addBtn.textContent = '+';
-            addBtn.title = t('calendar.add_event');
-            addBtn.setAttribute('aria-label', t('calendar.add_event'));
-            addBtn.addEventListener('click', (e) => {
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'calendar-add-btn';
+            addButton.textContent = '+';
+            addButton.title = t('calendar.add_event');
+            addButton.setAttribute('aria-label', t('calendar.add_event'));
+            addButton.addEventListener('click', (e) => {
                 e.stopPropagation();
                 openAddEventModal(dateString);
             });
-            cell.appendChild(addBtn);
+            cell.appendChild(addButton);
         }
 
         const todayDate = new Date();
@@ -293,7 +293,7 @@ function renderCalendar() {
             }
 
             try {
-                const res = await apiFetch('api.php', {
+                const result = await apiFetch('api.php', {
                     method: 'POST',
                     body: {
                         api: 'calendar',
@@ -304,98 +304,98 @@ function renderCalendar() {
                     }
                 });
 
-                const data = await res.json();
+                const data = await result.json();
 
-                if (!res.ok || data.error) {
+                if (!result.ok || data.error) {
                     if (eventIndex !== -1) {
                         eventsData[eventIndex].date = originalDate;
                         renderCalendar();
                     }
-                    console.error('Failed to move event:', data.error ?? res.status);
+                    console.error('Failed to move event:', data.error ?? result.status);
                 }
-            } catch (err) {
+            } catch (error) {
                 if (eventIndex !== -1) {
                     eventsData[eventIndex].date = originalDate;
                     renderCalendar();
                 }
-                console.error('Network error during event move:', err);
+                console.error('Network error during event move:', error);
             }
         });
 
         const dayEvents = monthEvents.filter(e => e.date === dateString);
         dayEvents.forEach(ev => {
-            const evEl = document.createElement('div');
-            evEl.className = 'calendar-event';
-            evEl.style.backgroundColor = ev.color;
+            const evElement = document.createElement('div');
+            evElement.className = 'calendar-event';
+            evElement.style.backgroundColor = ev.color;
 
-            evEl.draggable = true;
+            evElement.draggable = true;
 
-            evEl.addEventListener('dragstart', (e) => {
+            evElement.addEventListener('dragstart', (e) => {
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('application/json', JSON.stringify({
                     id: ev.id,
                     table: ev.table,
                     date: ev.date
                 }));
-                evEl.style.opacity = '0.4';
+                evElement.style.opacity = '0.4';
             });
 
-            evEl.addEventListener('dragend', () => {
-                evEl.style.opacity = '';
+            evElement.addEventListener('dragend', () => {
+                evElement.style.opacity = '';
             });
 
             if (ev.icon) {
                 if (ev.icon.includes('/') || ev.icon.includes('.')) {
-                    const img = document.createElement('img');
-                    img.src = ev.icon;
-                    img.style.cssText = 'width:14px; height:14px; vertical-align:middle; margin-right:4px;';
-                    evEl.appendChild(img);
+                    const image = document.createElement('img');
+                    image.src = ev.icon;
+                    image.style.cssText = 'width:14px; height:14px; vertical-align:middle; margin-right:4px;';
+                    evElement.appendChild(image);
                 } else {
                     const iconSpan = document.createElement('span');
                     iconSpan.style.marginRight = '4px';
                     iconSpan.textContent = ev.icon;
-                    evEl.appendChild(iconSpan);
+                    evElement.appendChild(iconSpan);
                 }
             }
 
             const titleText = document.createTextNode(ev.title);
-            evEl.appendChild(titleText);
+            evElement.appendChild(titleText);
 
             if (ev.subtitle) {
                 const subSpan = document.createElement('span');
                 subSpan.className = 'calendar-event-sub';
                 subSpan.textContent = ' · ' + ev.subtitle;
-                evEl.appendChild(subSpan);
+                evElement.appendChild(subSpan);
             }
 
-            evEl.addEventListener('click', () => {
+            evElement.addEventListener('click', () => {
                 window.location.href = `edit.php?table=${encodeURIComponent(ev.table)}&id=${encodeURIComponent(ev.id)}`;
             });
 
             if (canEdit) {
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'calendar-event-del';
-                delBtn.textContent = '✕';
-                delBtn.title = t('calendar.delete_event');
-                delBtn.setAttribute('aria-label', t('calendar.delete_event'));
-                delBtn.addEventListener('click', (e) => {
+                const delButton = document.createElement('button');
+                delButton.type = 'button';
+                delButton.className = 'calendar-event-del';
+                delButton.textContent = '✕';
+                delButton.title = t('calendar.delete_event');
+                delButton.setAttribute('aria-label', t('calendar.delete_event'));
+                delButton.addEventListener('click', (e) => {
                     e.stopPropagation();
                     deleteEvent(ev);
                 });
-                evEl.appendChild(delBtn);
+                evElement.appendChild(delButton);
             }
 
-            evEl.addEventListener('mouseenter', () => {
+            evElement.addEventListener('mouseenter', () => {
                 const columns = appSchema?.tables?.[ev.table]?.columns || {};
-                showRecordTooltip(evEl, {
+                showRecordTooltip(evElement, {
                     title: ev.title,
                     rows: rowsFromRecord(ev.rowData || {}, columns)
                 });
             });
-            evEl.addEventListener('mouseleave', hideRecordTooltip);
+            evElement.addEventListener('mouseleave', hideRecordTooltip);
 
-            cell.appendChild(evEl);
+            cell.appendChild(evElement);
         });
 
         container.appendChild(cell);
@@ -414,21 +414,21 @@ async function deleteEvent(ev) {
     renderCalendar();
 
     try {
-        const res = await apiFetch('api.php', {
+        const result = await apiFetch('api.php', {
             method: 'DELETE',
             body: { table: ev.table, id: ev.id }
         });
-        const data = await res.json().catch(() => ({}));
+        const data = await result.json().catch(() => ({}));
 
-        if (!res.ok || data.error) {
+        if (!result.ok || data.error) {
             eventsData.splice(eventIndex, 0, removed);
             renderCalendar();
-            console.error('Failed to delete event:', data.error ?? res.status);
+            console.error('Failed to delete event:', data.error ?? result.status);
         }
-    } catch (err) {
+    } catch (error) {
         eventsData.splice(eventIndex, 0, removed);
         renderCalendar();
-        console.error('Network error during event delete:', err);
+        console.error('Network error during event delete:', error);
     }
 }
 
@@ -443,12 +443,12 @@ function openAddEventModal(dateString) {
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
 
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.className = 'cal-modal-close';
-    closeBtn.textContent = '✕';
-    closeBtn.setAttribute('aria-label', t('common.cancel'));
-    modal.appendChild(closeBtn);
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'cal-modal-close';
+    closeButton.textContent = '✕';
+    closeButton.setAttribute('aria-label', t('common.cancel'));
+    modal.appendChild(closeButton);
 
     const title = document.createElement('h3');
     title.className = 'cal-modal-title';
@@ -458,7 +458,7 @@ function openAddEventModal(dateString) {
     modal.appendChild(title);
 
     let select = null;
-    let confirmBtn = null;
+    let confirmButton = null;
 
     if (sources.length === 0) {
         const empty = document.createElement('p');
@@ -475,11 +475,11 @@ function openAddEventModal(dateString) {
         select = document.createElement('select');
         select.id = 'calModalSelect';
         select.className = 'cal-modal-select';
-        sources.forEach(src => {
-            const opt = document.createElement('option');
-            opt.value = src.table;
-            opt.textContent = tableLabel(src.table);
-            select.appendChild(opt);
+        sources.forEach(source => {
+            const option = document.createElement('option');
+            option.value = source.table;
+            option.textContent = tableLabel(source.table);
+            select.appendChild(option);
         });
         modal.appendChild(select);
     }
@@ -487,18 +487,18 @@ function openAddEventModal(dateString) {
     const actions = document.createElement('div');
     actions.className = 'cal-modal-actions';
 
-    const cancelBtn = document.createElement('button');
-    cancelBtn.type = 'button';
-    cancelBtn.className = 'btn-cancel';
-    cancelBtn.textContent = t('common.cancel');
-    actions.appendChild(cancelBtn);
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'btn-cancel';
+    cancelButton.textContent = t('common.cancel');
+    actions.appendChild(cancelButton);
 
     if (sources.length > 0) {
-        confirmBtn = document.createElement('button');
-        confirmBtn.type = 'button';
-        confirmBtn.className = 'btn-save';
-        confirmBtn.textContent = t('common.add');
-        actions.appendChild(confirmBtn);
+        confirmBtn: confirmButton = document.createElement('button');
+        confirmButton.type = 'button';
+        confirmButton.className = 'btn-save';
+        confirmButton.textContent = t('common.add');
+        actions.appendChild(confirmButton);
     }
 
     modal.appendChild(actions);
@@ -517,23 +517,23 @@ function openAddEventModal(dateString) {
     backdrop.addEventListener('click', (e) => {
         if (e.target === backdrop) close();
     });
-    closeBtn.addEventListener('click', close);
-    cancelBtn.addEventListener('click', close);
+    closeButton.addEventListener('click', close);
+    cancelButton.addEventListener('click', close);
     document.addEventListener('keydown', onKeydown);
 
-    if (confirmBtn && select) {
-        confirmBtn.addEventListener('click', () => {
+    if (confirmButton && select) {
+        confirmButton.addEventListener('click', () => {
             const table = select.value;
-            const src = sources.find(s => s.table === table);
-            if (!src) return;
+            const source = sources.find(s => s.table === table);
+            if (!source) return;
 
-            const colType = (appSchema?.tables?.[table]?.columns?.[src.date_column]?.type || '').toLowerCase();
-            const value = colType === 'timestamp' ? `${dateString}T00:00:00` : dateString;
+            const columnType = (appSchema?.tables?.[table]?.columns?.[source.date_column]?.type || '').toLowerCase();
+            const value = columnType === 'timestamp' ? `${dateString}T00:00:00` : dateString;
 
-            window.location.href = `create.php?table=${encodeURIComponent(table)}&${encodeURIComponent(src.date_column)}=${encodeURIComponent(value)}`;
+            window.location.href = `create.php?table=${encodeURIComponent(table)}&${encodeURIComponent(source.date_column)}=${encodeURIComponent(value)}`;
         });
         select.focus();
     } else {
-        closeBtn.focus();
+        closeButton.focus();
     }
 }

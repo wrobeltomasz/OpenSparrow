@@ -9,10 +9,10 @@ import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/rec
 let _i18nBundle = {};
 async function fetchI18n() {
     try {
-        const res = await fetch('/api.php?action=i18n_bundle', {
+        const result = await fetch('/api.php?action=i18n_bundle', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (res.ok) _i18nBundle = await res.json();
+        if (result.ok) _i18nBundle = await result.json();
     } catch (_) {  }
 }
 function t(key, vars = {}) {
@@ -50,14 +50,14 @@ function initSearch() {
 }
 
 function updateClearButton() {
-    const btn = document.getElementById('clearFilters');
-    if (btn) btn.hidden = !searchTerm && hiddenLanes.size === 0;
+    const button = document.getElementById('clearFilters');
+    if (button) button.hidden = !searchTerm && hiddenLanes.size === 0;
 }
 
 function initClearFilters() {
-    const btn = document.getElementById('clearFilters');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
+    const button = document.getElementById('clearFilters');
+    if (!button) return;
+    button.addEventListener('click', () => {
         searchTerm = '';
         const input = document.getElementById('boardSearch');
         if (input) input.value = '';
@@ -126,39 +126,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function fetchSchema() {
     try {
-        const res = await fetch('api/schema.php', {
+        const result = await fetch('api/schema.php', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (res.ok) appSchema = await res.json();
-    } catch (err) {
-        console.error('Failed to load schema for board', err);
+        if (result.ok) appSchema = await result.json();
+    } catch (error) {
+        console.error('Failed to load schema for board', error);
     }
 }
 
 async function fetchBoard() {
     try {
         const boardId = window.BOARD_INITIAL || '';
-        const res = await fetch('api.php?api=board&board=' + encodeURIComponent(boardId), {
+        const result = await fetch('api.php?api=board&board=' + encodeURIComponent(boardId), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        if (res.ok) {
-            board = await res.json();
+        if (result.ok) {
+            board = await result.json();
             cards = Array.isArray(board.cards) ? board.cards.map(c => ({ ...c })) : [];
         }
-    } catch (err) {
-        console.error('Failed to load board', err);
+    } catch (error) {
+        console.error('Failed to load board', error);
     }
 }
 
 function render() {
     const container = document.getElementById('boardContainer');
-    const titleEl = document.getElementById('boardTitle');
-    const metaEl = document.getElementById('boardMeta');
-    const filtersEl = document.getElementById('boardFilters');
+    const titleElement = document.getElementById('boardTitle');
+    const metaElement = document.getElementById('boardMeta');
+    const filtersElement = document.getElementById('boardFilters');
     if (!container) return;
     container.innerHTML = '';
-    metaEl.textContent = '';
-    if (filtersEl) filtersEl.innerHTML = '';
+    metaElement.textContent = '';
+    if (filtersElement) filtersElement.innerHTML = '';
     updateClearButton();
 
     if (!board) {
@@ -166,7 +166,7 @@ function render() {
         return;
     }
 
-    titleEl.textContent = board.menu_name || t('board.title');
+    titleElement.textContent = board.menu_name || t('board.title');
 
     if (!board.configured) {
         renderNotice(container, t('board.not_configured'));
@@ -176,12 +176,12 @@ function render() {
     if (board.table_label) {
         const lane = document.createElement('span');
         lane.textContent = board.table_label;
-        metaEl.appendChild(lane);
+        metaElement.appendChild(lane);
         if (board.status_label) {
             const by = document.createElement('span');
             by.className = 'board-meta-by';
             by.textContent = t('board.grouped_by', { column: board.status_label });
-            metaEl.appendChild(by);
+            metaElement.appendChild(by);
         }
     }
 
@@ -286,25 +286,25 @@ function buildLane(value, label, color, laneCards, droppable) {
 }
 
 function buildCard(card, laneColor) {
-    const el = document.createElement('article');
-    el.className = 'board-card';
-    el.style.borderLeftColor = laneColor;
-    el.dataset.id = card.id;
+    const element = document.createElement('article');
+    element.className = 'board-card';
+    element.style.borderLeftColor = laneColor;
+    element.dataset.id = card.id;
 
     if (canEdit) {
-        el.draggable = true;
-        el.addEventListener('dragstart', (e) => {
+        element.draggable = true;
+        element.addEventListener('dragstart', (e) => {
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('application/json', JSON.stringify({ id: card.id, status: card.status }));
-            el.classList.add('dragging');
+            element.classList.add('dragging');
         });
-        el.addEventListener('dragend', () => el.classList.remove('dragging'));
+        element.addEventListener('dragend', () => element.classList.remove('dragging'));
     }
 
     const title = document.createElement('div');
     title.className = 'board-card-title';
     title.textContent = card.title;
-    el.appendChild(title);
+    element.appendChild(title);
 
     if (Array.isArray(card.fields) && card.fields.length > 0) {
         const fields = document.createElement('dl');
@@ -317,28 +317,28 @@ function buildCard(card, laneColor) {
             fields.appendChild(dt);
             fields.appendChild(dd);
         });
-        el.appendChild(fields);
+        element.appendChild(fields);
     }
 
     const idTag = document.createElement('span');
     idTag.className = 'board-card-id';
     idTag.textContent = '#' + card.id;
-    el.appendChild(idTag);
+    element.appendChild(idTag);
 
-    el.addEventListener('click', () => {
+    element.addEventListener('click', () => {
         window.location.href = `edit.php?table=${encodeURIComponent(board.table)}&id=${encodeURIComponent(card.id)}`;
     });
 
-    el.addEventListener('mouseenter', () => {
+    element.addEventListener('mouseenter', () => {
         const columns = appSchema?.tables?.[board.table]?.columns || {};
         const rows = card.rowData
             ? rowsFromRecord(card.rowData, columns)
             : (Array.isArray(card.fields) ? card.fields.map(f => ({ label: f.label, value: f.value, color: null })) : []);
-        showRecordTooltip(el, { title: card.title, rows });
+        showRecordTooltip(element, { title: card.title, rows });
     });
-    el.addEventListener('mouseleave', hideRecordTooltip);
+    element.addEventListener('mouseleave', hideRecordTooltip);
 
-    return el;
+    return element;
 }
 
 async function moveCard(id, newStatus, oldStatus) {
@@ -349,7 +349,7 @@ async function moveCard(id, newStatus, oldStatus) {
     render();
 
     try {
-        const res = await apiFetch('api.php', {
+        const result = await apiFetch('api.php', {
             method: 'POST',
             body: {
                 api: 'board',
@@ -360,15 +360,15 @@ async function moveCard(id, newStatus, oldStatus) {
                 newStatus
             }
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.error) {
+        const data = await result.json().catch(() => ({}));
+        if (!result.ok || data.error) {
             card.status = oldStatus;
             render();
-            console.error('Failed to move card:', data.error ?? res.status);
+            console.error('Failed to move card:', data.error ?? result.status);
         }
-    } catch (err) {
+    } catch (error) {
         card.status = oldStatus;
         render();
-        console.error('Network error during card move:', err);
+        console.error('Network error during card move:', error);
     }
 }

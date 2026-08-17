@@ -40,36 +40,36 @@ function frontapi_dashboard(FrontApiContext $context): never
         }
 
         try {
-            $tableCfg = safe_table($schema, $table);
+            $tableConfig = safe_table($schema, $table);
         } catch (ControlFlowException $signal) {
             throw $signal;
         } catch (Throwable $exception) {
             continue;
         }
 
-        $schemaName = $tableCfg['schema'] ?? 'public';
+        $schemaName = $tableConfig['schema'] ?? 'public';
         $queryType = $widget['query']['type'] ?? 'list';
         $data = null;
         $sqlWhere = '';
 
         $conditions = is_array($widget['query']['conditions'] ?? null) ? $widget['query']['conditions'] : [];
 
-        $conditionsSql = dashboard_conditions_sql($conn, $tableCfg, $conditions);
+        $conditionsSql = dashboard_conditions_sql($conn, $tableConfig, $conditions);
 
         $dateFilter = $_GET['date_filter'] ?? 'all';
         $dateTarget = $_GET['date_target'] ?? 'all';
         $widgetTargetId = $widget['id'] ?? $widget['table'] ?? '';
-        $dateSqlCur  = null;
+        $dateSqlCurrent  = null;
         $previousDateSql = null;
         if ($dateFilter !== 'all' && ($dateTarget === 'all' || $dateTarget === $widgetTargetId)) {
-            $dateColumn = array_find_key($tableCfg['columns'], static function (array $calendarConfig): bool {
+            $dateColumn = array_find_key($tableConfig['columns'], static function (array $calendarConfig): bool {
                 $columnType = strtolower($calendarConfig['type'] ?? '');
                 return str_contains($columnType, 'date') || str_contains($columnType, 'time');
             });
 
             if ($dateColumn) {
                 $dateColumnIdentifier = pg_ident($dateColumn);
-                [$dateSqlCur, $previousDateSql] = match ($dateFilter) {
+                [$dateSqlCurrent, $previousDateSql] = match ($dateFilter) {
                     'today' => [
                         $dateColumnIdentifier . ' >= CURRENT_DATE',
                         '(' . $dateColumnIdentifier . " >= CURRENT_DATE - INTERVAL '1 day' AND " . $dateColumnIdentifier
@@ -95,17 +95,17 @@ function frontapi_dashboard(FrontApiContext $context): never
             }
         }
 
-        $whereParts = array_values(array_filter([$conditionsSql, $dateSqlCur ?? '']));
+        $whereParts = array_values(array_filter([$conditionsSql, $dateSqlCurrent ?? '']));
         $sqlWhere = empty($whereParts) ? '' : ' WHERE ' . implode(' AND ', $whereParts);
         $previousWhereSql = null;
         if ($previousDateSql !== null) {
-            $prevParts = array_values(array_filter([$conditionsSql, $previousDateSql]));
-            $previousWhereSql = ' WHERE ' . implode(' AND ', $prevParts);
+            $previousParts = array_values(array_filter([$conditionsSql, $previousDateSql]));
+            $previousWhereSql = ' WHERE ' . implode(' AND ', $previousParts);
         }
 
         $result = dashboard_run_widget_query(
             $conn,
-            $tableCfg,
+            $tableConfig,
             $schemaName,
             $table,
             $widget['query'] ?? [],
@@ -128,17 +128,17 @@ function frontapi_dashboard(FrontApiContext $context): never
             && in_array($queryType, ['count', 'sum', 'avg'], true)
             && !isset($result['sql_error'])
         ) {
-            $prevResult = dashboard_run_widget_query(
+            $previousResult = dashboard_run_widget_query(
                 $conn,
-                $tableCfg,
+                $tableConfig,
                 $schemaName,
                 $table,
                 $widget['query'] ?? [],
                 $widget['display_columns'] ?? [id_column()],
                 $previousWhereSql
             );
-            if (!isset($prevResult['sql_error'])) {
-                $widget['prev_data'] = $prevResult['data'];
+            if (!isset($previousResult['sql_error'])) {
+                $widget['prev_data'] = $previousResult['data'];
             }
         }
 

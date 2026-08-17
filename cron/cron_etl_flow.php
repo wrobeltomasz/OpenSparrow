@@ -81,8 +81,8 @@ function etl_flow_run_single(
         $jobName = (string)($job['name'] ?? $jobId);
         etl_cli_log("[etl_flow]   Step " . ($stepIndex + 1) . ": '{$jobName}'...");
 
-        $connCfg = etl_resolve_source($sources, (string)($job['source_id'] ?? ''));
-        if ($connCfg === null) {
+        $connConfig = etl_resolve_source($sources, (string)($job['source_id'] ?? ''));
+        if ($connConfig === null) {
             $errorMessage    = "Step " . ($stepIndex + 1) . " ('{$jobName}'): no valid source configured.";
             $failedStepIndex = $stepIndex;
             etl_cli_log('[etl_flow]   ERROR: ' . $errorMessage);
@@ -116,9 +116,9 @@ function etl_flow_run_single(
             }
         }
 
-        $prevWatermark = $job['last_watermark'] ?? ($job['incremental_initial_value'] ?? null);
-        $watermarkParam       = $prevWatermark !== null ? (string)$prevWatermark : null;
-        $result        = etl_run_job($conn, $job, $connCfg, $dryRun, $watermarkParam);
+        $previousWatermark = $job['last_watermark'] ?? ($job['incremental_initial_value'] ?? null);
+        $watermarkParameter       = $previousWatermark !== null ? (string)$previousWatermark : null;
+        $result        = etl_run_job($conn, $job, $connConfig, $dryRun, $watermarkParameter);
 
         if ($stepLogId !== null) {
             @pg_query_params(
@@ -146,8 +146,8 @@ function etl_flow_run_single(
         }
 
         etl_cli_log("[etl_flow]     read {$result['rows_read']}, written {$result['rows_written']}.");
-        $prevWm           = $job['last_watermark'] ?? null;
-        $watermarkChanged = $result['new_watermark'] !== null && $result['new_watermark'] !== $prevWm;
+        $previousWatermark           = $job['last_watermark'] ?? null;
+        $watermarkChanged = $result['new_watermark'] !== null && $result['new_watermark'] !== $previousWatermark;
         if (!$dryRun && $watermarkChanged) {
             etl_persist_watermark($jobId, $result['new_watermark'], 'etl_flow:' . $flowName);
         }

@@ -36,21 +36,22 @@ $isReadOnly     ??= true;
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($panel['rows'] as $subRow) : ?>
-                                <tr data-row='<?= htmlspecialchars($subRow['json'], ENT_QUOTES, 'UTF-8') ?>'
+                            <?php foreach ($panel['rows'] as $subtableRow) : ?>
+                                <?php $editUrl = htmlspecialchars($subtableRow['editUrl'], ENT_QUOTES, 'UTF-8'); ?>
+                                <tr data-row='<?= htmlspecialchars($subtableRow['json'], ENT_QUOTES, 'UTF-8') ?>'
                                     data-title="<?= htmlspecialchars($panel['label'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <?php foreach ($subRow['cells'] as $cell) : ?>
+                                    <?php foreach ($subtableRow['cells'] as $cell) : ?>
                                         <td><?= htmlspecialchars($cell, ENT_QUOTES, 'UTF-8') ?></td>
                                     <?php endforeach; ?>
                                     <td class="subtable-actions">
                                         <?php if ($isReadOnly) : ?>
                                             <a
-                                                href="<?= htmlspecialchars($subRow['editUrl'], ENT_QUOTES, 'UTF-8') ?>"
+                                                href="<?= $editUrl ?>"
                                                 class="btn-action btn-action-disabled"
                                             ><?= htmlspecialchars($panel['viewLabel'], ENT_QUOTES, 'UTF-8') ?></a>
                                         <?php else : ?>
                                             <a
-                                                href="<?= htmlspecialchars($subRow['editUrl'], ENT_QUOTES, 'UTF-8') ?>"
+                                                href="<?= $editUrl ?>"
                                                 class="btn-action"
                                             ><?= htmlspecialchars($panel['editLabel'], ENT_QUOTES, 'UTF-8') ?></a>
                                         <?php endif; ?>

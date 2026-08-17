@@ -6,10 +6,10 @@
 import { CellRenderer } from './registry.js';
 import { createInputCell } from './shared.js';
 
-function renderBooleanCell({ row, col, colCfg, isReadOnly }) {
-    const value = row[col + '__display'] ?? row[col] ?? '';
+function renderBooleanCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
+    const value = row[column + '__display'] ?? row[column] ?? '';
     return createInputCell({
-        row, col, colCfg, isReadOnly,
+        row, col: column, colCfg: columnConfig, isReadOnly,
         makeControl: () => {
             const input = document.createElement('input');
             input.type = 'checkbox';

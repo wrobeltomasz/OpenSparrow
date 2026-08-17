@@ -4,16 +4,16 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 export function makeIconButton({ cy, title, icon, className = 'btn-icon', onClick }) {
-    const btn = document.createElement('button');
-    btn.className = className;
-    btn.dataset.cy = cy;
-    btn.title = title;
-    const img = document.createElement('img');
-    img.src = icon;
-    img.alt = title;
-    btn.appendChild(img);
-    btn.addEventListener('click', onClick);
-    return btn;
+    const button = document.createElement('button');
+    button.className = className;
+    button.dataset.cy = cy;
+    button.title = title;
+    const image = document.createElement('img');
+    image.src = icon;
+    image.alt = title;
+    button.appendChild(image);
+    button.addEventListener('click', onClick);
+    return button;
 }
 
 export function makeInlineLink(href, text, { newTab = false, onClick } = {}) {

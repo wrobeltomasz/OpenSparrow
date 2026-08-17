@@ -15,9 +15,9 @@ final readonly class PgConnection
     {
     }
 
-    public function execute(string $sql, array $params = []): \PgSql\Result
+    public function execute(string $sql, array $parameters = []): \PgSql\Result
     {
-        $result = pg_query_params($this->connection, $sql, $params);
+        $result = pg_query_params($this->connection, $sql, $parameters);
         if ($result === false) {
             throw new \RuntimeException('Query failed: ' . pg_last_error($this->connection));
         }

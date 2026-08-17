@@ -44,8 +44,8 @@ final class ClickstatsController
         os_require_csrf('body', $payload);
         require_not_demo();
 
-        $cfg = clickstats_settings();
-        if (!$cfg['enabled']) {
+        $config = clickstats_settings();
+        if (!$config['enabled']) {
             $this->done();
         }
 
@@ -55,9 +55,9 @@ final class ClickstatsController
         }
 
         $userId       = $this->context->session()->userId();
-        $trackRecords = !empty($cfg['track_records']);
+        $trackRecords = !empty($config['track_records']);
 
-        $params       = [];
+        $parameters       = [];
         $placeholders = [];
 
         $budget = $this->budget(min(count($events), self::MAX_EVENTS));
@@ -95,11 +95,11 @@ final class ClickstatsController
 
             $page = $this->text($input['page'] ?? null);
 
-            $base = count($params);
+            $base = count($parameters);
             $placeholders[] = '($' . ($base + 1) . ', $' . ($base + 2) . ', $' . ($base + 3)
                 . ', $' . ($base + 4) . ', $' . ($base + 5) . ')';
             array_push(
-                $params,
+                $parameters,
                 $userId,
                 mb_substr($element, 0, self::MAX_ELEMENT),
                 $page === '' ? null : mb_substr($page, 0, self::MAX_PAGE),
@@ -118,7 +118,7 @@ final class ClickstatsController
             $conn,
             "INSERT INTO {$target} (user_id, element, page, table_name, record_id) VALUES "
             . implode(', ', $placeholders),
-            $params
+            $parameters
         );
         if (!$result) {
             error_log('[OpenSparrow] clickstats insert failed: ' . pg_last_error($conn));

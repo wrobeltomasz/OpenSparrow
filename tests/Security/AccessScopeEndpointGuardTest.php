@@ -20,9 +20,9 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     private const FILES_CONTROLLER = 'includes/Controller/Api/FilesController.php';
 
-    private function code(string $relPath): string
+    private function code(string $relativePath): string
     {
-        $path = __DIR__ . '/../../' . $relPath;
+        $path = __DIR__ . '/../../' . $relativePath;
         $this->assertFileExists($path);
 
         $output = '';
@@ -50,7 +50,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
         $source = $this->code('public/api/fk.php');
 
         $this->assertCodeHas(
-            'if (!user_can_access_table($refTable))',
+            'if (!user_can_access_table($referencedTable))',
             $source,
             'api/fk.php must detect an out-of-scope reference table before delegating.'
         );
@@ -187,7 +187,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
             'Workflows whose steps land outside the user\'s tables must not be listed.'
         );
         $this->assertCodeHas(
-            'workflow_tables_in_scope($wfItem)',
+            'workflow_tables_in_scope($workflowItem)',
             $this->code('templates/menu.php'),
             'The workflow submenu must apply the same step-table rule as the endpoint.'
         );
@@ -236,7 +236,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
     public function testWorkflowPageAppliesTheStepTableRule(): void
     {
         $this->assertCodeHas(
-            'workflow_tables_in_scope($wfItem)',
+            'workflow_tables_in_scope($workflowItem)',
             $this->code('public/index.php'),
             'index.php must apply the step-table rule, not the workflow id alone.'
         );
@@ -247,12 +247,12 @@ final class AccessScopeEndpointGuardTest extends TestCase
         $source = $this->code(self::BOARD_MODULE);
 
         $this->assertCodeHas(
-            "\$boards = filter_by_user_access('boards', \$boardsCfg['boards'] ?? [])",
+            "\$boards = filter_by_user_access('boards', \$boardsConfig['boards'] ?? [])",
             $source,
             'The board branch must resolve ?board= against the filtered list.'
         );
         $this->assertFalse(
-            str_contains($source, "\$boardCfg = \$boardsCfg['boards'][0] ?? [];"),
+            str_contains($source, "\$boardConfig = \$boardsConfig['boards'][0] ?? [];"),
             'The board fallback must not reach past the filter into the raw config.'
         );
     }

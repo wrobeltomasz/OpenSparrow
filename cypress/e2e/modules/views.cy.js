@@ -199,8 +199,8 @@ describe('OpenSparrow – Views: Column Filters', () => {
         if (!$state.hasClass('vw-table-wrap')) return;
         cy.get('#columnFilter option').its('length').then(len => {
           if (len < 2) return;
-          cy.get('#columnFilter option').eq(1).invoke('val').then(val => {
-            cy.get('#columnFilter').select(val);
+          cy.get('#columnFilter option').eq(1).invoke('val').then(value => {
+            cy.get('#columnFilter').select(value);
             cy.get('#filterBar').children().should('have.length.gte', 1);
             cy.get('#clearFilters').should('not.have.attr', 'hidden');
           });
@@ -217,9 +217,9 @@ describe('OpenSparrow – Views: Column Filters', () => {
         if (!$state.hasClass('vw-table-wrap')) return;
         cy.get('#columnFilter option').its('length').then(len => {
           if (len < 2) return;
-          cy.get('#columnFilter option').eq(1).invoke('val').then(val => {
+          cy.get('#columnFilter option').eq(1).invoke('val').then(value => {
             assertClearFiltersContract({
-              activate: () => cy.get('#columnFilter').select(val),
+              activate: () => cy.get('#columnFilter').select(value),
               reset: () => {
                 cy.get('#columnFilter').should('have.value', '');
                 cy.get('#filterBar').children().should('have.length', 0);
@@ -259,8 +259,8 @@ describe('OpenSparrow – Views: Grouping', () => {
         if (!$state.hasClass('vw-table-wrap')) return;
         cy.get('#groupBy option').its('length').then(len => {
           if (len < 2) return;
-          cy.get('#groupBy option').eq(1).invoke('val').then(val => {
-            cy.get('#groupBy').select(val);
+          cy.get('#groupBy option').eq(1).invoke('val').then(value => {
+            cy.get('#groupBy').select(value);
             cy.get('.vw-group-header').should('have.length.gte', 1);
           });
         });
@@ -276,8 +276,8 @@ describe('OpenSparrow – Views: Grouping', () => {
         if (!$state.hasClass('vw-table-wrap')) return;
         cy.get('#groupBy option').its('length').then(len => {
           if (len < 2) return;
-          cy.get('#groupBy option').eq(1).invoke('val').then(val => {
-            cy.get('#groupBy').select(val);
+          cy.get('#groupBy option').eq(1).invoke('val').then(value => {
+            cy.get('#groupBy').select(value);
             cy.get('.vw-group-header').first().find('.vw-group-arrow').invoke('text').then(before => {
               cy.get('.vw-group-header').first().click();
               cy.get('.vw-group-header').first().find('.vw-group-arrow')

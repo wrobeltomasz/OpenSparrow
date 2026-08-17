@@ -33,15 +33,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const fileTagsInput   = document.getElementById('fileTagsInput');
     const tableSelect     = document.getElementById('fileRelatedTable');
     const recordSelect    = document.getElementById('fileRelatedId');
-    const btnUpload       = document.getElementById('btnUpload');
+    const buttonUpload       = document.getElementById('btnUpload');
     const uploadStatus    = document.getElementById('uploadStatus');
     const tbody           = document.getElementById('fileTableBody');
     const searchInput     = document.getElementById('fileSearch');
     const typeFilter      = document.getElementById('fileTypeFilter');
-    const btnClearFilters = document.getElementById('clearFilters');
-    const btnRefresh      = document.getElementById('btnRefreshFiles');
+    const buttonClearFilters = document.getElementById('clearFilters');
+    const buttonRefresh      = document.getElementById('btnRefreshFiles');
     const sortHeaders     = document.querySelectorAll('#filesGrid th[data-sort]');
-    const selectAllCb     = document.querySelector('#filesGrid .select-all-cb');
+    const selectAllCallback     = document.querySelector('#filesGrid .select-all-cb');
 
     const icons = {
         image:       'assets/icons/image.png',
@@ -58,18 +58,18 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSortIndicators();
     loadFiles();
 
-    btnUpload.addEventListener('click', uploadFile);
-    btnRefresh.addEventListener('click', () => loadFiles());
+    buttonUpload.addEventListener('click', uploadFile);
+    buttonRefresh.addEventListener('click', () => loadFiles());
     typeFilter.addEventListener('change', (e) => { currentType = e.target.value; currentPage = 1; loadFiles(); });
     tableSelect.addEventListener('change', loadRelatedRecords);
 
     sortHeaders.forEach(th => {
         th.addEventListener('click', () => {
-            const col = th.dataset.sort;
-            if (sortState.column === col) {
+            const column = th.dataset.sort;
+            if (sortState.column === column) {
                 sortState.asc = !sortState.asc;
             } else {
-                sortState = { column: col, asc: true };
+                sortState = { column: column, asc: true };
             }
             currentPage = 1;
             updateSortIndicators();
@@ -94,8 +94,8 @@ document.addEventListener("DOMContentLoaded", () => {
         searchTimeout = setTimeout(() => { currentSearch = e.target.value; currentPage = 1; loadFiles(); }, 400);
     });
 
-    if (btnClearFilters) {
-        btnClearFilters.addEventListener('click', () => {
+    if (buttonClearFilters) {
+        buttonClearFilters.addEventListener('click', () => {
             searchInput.value = '';
             currentSearch = '';
             typeFilter.value = 'all';
@@ -106,23 +106,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     tbody.addEventListener('click', async (e) => {
-        const btn = e.target.closest('[data-action="delete-file"]');
-        if (!btn) return;
-        const uuid = btn.dataset.uuid;
+        const button = e.target.closest('[data-action="delete-file"]');
+        if (!button) return;
+        const uuid = button.dataset.uuid;
         if (!uuid || !confirm('Are you sure you want to delete this file?')) return;
         try {
-            const res = await fetch(API_URL, {
+            const result = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'delete', uuid, csrf_token: window.CSRF_TOKEN })
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.success) {
                 loadFiles();
             } else {
                 alert(T.delete_error.replace('{error}', data.error || T.unknown));
             }
-        } catch (err) {
+        } catch (error) {
             alert(T.network_error);
         }
     });
@@ -132,8 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return raw.replace(/(^{|}$)/g, '').replace(/"/g, '').split(',').map(t => t.trim()).filter(Boolean);
     }
 
-    function tagsBadgesHtml(arr) {
-        if (arr.length) return arr.map(t => `<span class="tag-badge">${escHtml(t)}</span>`).join(' ');
+    function tagsBadgesHtml(array) {
+        if (array.length) return array.map(t => `<span class="tag-badge">${escHtml(t)}</span>`).join(' ');
         return canEdit ? '<span class="f-tag-add">+ Add tags</span>' : '-';
     }
 
@@ -144,18 +144,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function saveMeta(uuid, patch) {
         try {
-            const res = await fetch(API_URL, {
+            const result = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'update_meta', uuid, ...patch, csrf_token: window.CSRF_TOKEN })
             });
-            const data = await res.json();
+            const data = await result.json();
             if (!data.success) {
                 showToast(T.save_error.replace('{error}', data.error || T.failed), 'error');
                 return null;
             }
             return data.file;
-        } catch (err) {
+        } catch (error) {
             showToast(T.network_error, 'error');
             return null;
         }
@@ -163,19 +163,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function commitDisplay(cell) {
         if (cell.dataset.saving) return;
-        const newVal = cell.textContent.trim();
-        const orig   = cell.dataset.orig || '';
-        if (newVal === orig) { cell.textContent = orig; return; }
-        if (newVal === '') { cell.textContent = orig; showToast(T.name_empty, 'error'); return; }
+        const newValue = cell.textContent.trim();
+        const original   = cell.dataset.orig || '';
+        if (newValue === original) { cell.textContent = original; return; }
+        if (newValue === '') { cell.textContent = original; showToast(T.name_empty, 'error'); return; }
         cell.dataset.saving = '1';
-        const file = await saveMeta(cell.dataset.uuid, { display_name: newVal });
+        const file = await saveMeta(cell.dataset.uuid, { display_name: newValue });
         delete cell.dataset.saving;
         if (file) {
             cell.dataset.orig = file.display_name;
             cell.textContent  = file.display_name;
             showToast(T.name_updated, 'success');
         } else {
-            cell.textContent = orig;
+            cell.textContent = original;
         }
     }
 
@@ -183,8 +183,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const cell = input.closest('td.f-td-tags');
         if (!cell || cell.dataset.saving) return;
         const value = input.value.trim();
-        const orig  = tagsToArray(cell.dataset.tags || '').join(', ');
-        if (value === orig) { renderTagsCell(cell, cell.dataset.tags || ''); return; }
+        const original  = tagsToArray(cell.dataset.tags || '').join(', ');
+        if (value === original) { renderTagsCell(cell, cell.dataset.tags || ''); return; }
         cell.dataset.saving = '1';
         const file = await saveMeta(cell.dataset.uuid, { tags: value });
         delete cell.dataset.saving;
@@ -196,11 +196,11 @@ document.addEventListener("DOMContentLoaded", () => {
         tbody.addEventListener('click', (e) => {
             const cell = e.target.closest('td.f-td-tags');
             if (!cell || cell.querySelector('input')) return;
-            const arr   = tagsToArray(cell.dataset.tags || '');
+            const array   = tagsToArray(cell.dataset.tags || '');
             const input = document.createElement('input');
             input.type        = 'text';
             input.className   = 'f-input f-tag-edit';
-            input.value       = arr.join(', ');
+            input.value       = array.join(', ');
             input.placeholder = 'Tags (comma separated)';
             cell.innerHTML = '';
             cell.appendChild(input);
@@ -233,35 +233,35 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (selectAllCb) {
-        selectAllCb.addEventListener('change', () => {
-            tbody.querySelectorAll('.row-select-cb').forEach(cb => {
-                cb.checked = selectAllCb.checked;
-                if (selectAllCb.checked) selectedUuids.add(cb.dataset.uuid);
-                else selectedUuids.delete(cb.dataset.uuid);
+    if (selectAllCallback) {
+        selectAllCallback.addEventListener('change', () => {
+            tbody.querySelectorAll('.row-select-cb').forEach(callback => {
+                callback.checked = selectAllCallback.checked;
+                if (selectAllCallback.checked) selectedUuids.add(callback.dataset.uuid);
+                else selectedUuids.delete(callback.dataset.uuid);
             });
             updateBulkBar();
         });
     }
 
     tbody.addEventListener('change', (e) => {
-        const cb = e.target.closest('.row-select-cb');
-        if (!cb) return;
-        if (cb.checked) selectedUuids.add(cb.dataset.uuid);
-        else selectedUuids.delete(cb.dataset.uuid);
+        const callback = e.target.closest('.row-select-cb');
+        if (!callback) return;
+        if (callback.checked) selectedUuids.add(callback.dataset.uuid);
+        else selectedUuids.delete(callback.dataset.uuid);
         syncSelectAll();
         updateBulkBar();
     });
 
     function syncSelectAll() {
-        if (!selectAllCb) return;
-        const cbs = tbody.querySelectorAll('.row-select-cb');
-        selectAllCb.checked = cbs.length > 0 && Array.from(cbs).every(cb => cb.checked);
+        if (!selectAllCallback) return;
+        const callbacks = tbody.querySelectorAll('.row-select-cb');
+        selectAllCallback.checked = callbacks.length > 0 && Array.from(callbacks).every(callback => callback.checked);
     }
 
     function syncSelectionUI() {
-        tbody.querySelectorAll('.row-select-cb').forEach(cb => {
-            cb.checked = selectedUuids.has(cb.dataset.uuid);
+        tbody.querySelectorAll('.row-select-cb').forEach(callback => {
+            callback.checked = selectedUuids.has(callback.dataset.uuid);
         });
         syncSelectAll();
         updateBulkBar();
@@ -269,8 +269,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function deselectAll() {
         selectedUuids.clear();
-        tbody.querySelectorAll('.row-select-cb').forEach(cb => { cb.checked = false; });
-        if (selectAllCb) selectAllCb.checked = false;
+        tbody.querySelectorAll('.row-select-cb').forEach(callback => { callback.checked = false; });
+        if (selectAllCallback) selectAllCallback.checked = false;
         updateBulkBar();
     }
 
@@ -281,34 +281,34 @@ document.addEventListener("DOMContentLoaded", () => {
         bulkBar.className = 'me-bar';
         bulkBar.id = 'fileBulkBar';
 
-        const countEl = document.createElement('span');
-        countEl.className = 'me-bar-count';
-        countEl.id = 'fileBulkCount';
+        const countElement = document.createElement('span');
+        countElement.className = 'me-bar-count';
+        countElement.id = 'fileBulkCount';
 
         const actions = document.createElement('div');
         actions.className = 'me-bar-actions';
 
-        const tagBtn = document.createElement('button');
-        tagBtn.className = 'me-bar-edit-btn';
-        tagBtn.id = 'fileBulkTagBtn';
-        tagBtn.textContent = T.bulk_add_tags;
-        tagBtn.addEventListener('click', openTagPanel);
+        const tagButton = document.createElement('button');
+        tagButton.className = 'me-bar-edit-btn';
+        tagButton.id = 'fileBulkTagBtn';
+        tagButton.textContent = T.bulk_add_tags;
+        tagButton.addEventListener('click', openTagPanel);
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'me-bar-delete-btn';
-        delBtn.id = 'fileBulkDeleteBtn';
-        delBtn.textContent = T.delete;
-        delBtn.addEventListener('click', massDeleteSelected);
+        const delButton = document.createElement('button');
+        delButton.className = 'me-bar-delete-btn';
+        delButton.id = 'fileBulkDeleteBtn';
+        delButton.textContent = T.delete;
+        delButton.addEventListener('click', massDeleteSelected);
 
-        const clearBtn = document.createElement('button');
-        clearBtn.className = 'me-bar-clear-btn';
-        clearBtn.textContent = T.bulk_deselect;
-        clearBtn.addEventListener('click', deselectAll);
+        const clearButton = document.createElement('button');
+        clearButton.className = 'me-bar-clear-btn';
+        clearButton.textContent = T.bulk_deselect;
+        clearButton.addEventListener('click', deselectAll);
 
-        actions.appendChild(tagBtn);
-        actions.appendChild(delBtn);
-        actions.appendChild(clearBtn);
-        bulkBar.appendChild(countEl);
+        actions.appendChild(tagButton);
+        actions.appendChild(delButton);
+        actions.appendChild(clearButton);
+        bulkBar.appendChild(countElement);
         bulkBar.appendChild(actions);
 
         document.body.appendChild(bulkBar);
@@ -332,12 +332,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const n = selectedUuids.size;
         if (n === 0 || !confirm(`Delete ${n} selected file(s)?`)) return;
         try {
-            const res = await fetch(API_URL, {
+            const result = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'mass_delete', uuids: Array.from(selectedUuids), csrf_token: window.CSRF_TOKEN })
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.success) {
                 showToast(T.deleted_n.replace('{n}', data.deleted), 'success');
                 deselectAll();
@@ -345,7 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 showToast(T.delete_error.replace('{error}', data.error || T.unknown), 'error');
             }
-        } catch (err) {
+        } catch (error) {
             showToast(T.network_error, 'error');
         }
     }
@@ -394,12 +394,12 @@ document.addEventListener("DOMContentLoaded", () => {
         panelInstance.setApplyDisabled(true);
         panelInstance.setStatus(T.applying, false);
         try {
-            const res = await fetch(API_URL, {
+            const result = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'mass_tag', uuids: Array.from(selectedUuids), tags, csrf_token: window.CSRF_TOKEN })
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.success) {
                 showToast(T.tagged_n.replace('{n}', data.tagged), 'success');
                 panelInstance.close();
@@ -409,7 +409,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 panelInstance.setStatus(T.error_generic.replace('{error}', data.error || T.failed), true);
                 panelInstance.setApplyDisabled(false);
             }
-        } catch (err) {
+        } catch (error) {
             panelInstance.setStatus(T.network_error, true);
             panelInstance.setApplyDisabled(false);
         }
@@ -417,21 +417,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadConfiguredTables() {
         try {
-            const res = await fetch(API_URL + '?action=get_relations_config');
-            const data = await res.json();
+            const result = await fetch(API_URL + '?action=get_relations_config');
+            const data = await result.json();
             if (data.success && data.relations && data.relations.length > 0) {
                 data.relations.forEach(r => {
-                    const opt = document.createElement('option');
-                    opt.value = r.table;
-                    opt.textContent = r.table;
-                    tableSelect.appendChild(opt);
+                    const option = document.createElement('option');
+                    option.value = r.table;
+                    option.textContent = r.table;
+                    tableSelect.appendChild(option);
                 });
             } else {
                 tableSelect.disabled = true;
                 recordSelect.disabled = true;
                 tableSelect.innerHTML = '<option value="">-- No relations active --</option>';
             }
-        } catch (err) {
+        } catch (error) {
             tableSelect.innerHTML = '<option value="">-- Network error --</option>';
         }
     }
@@ -446,30 +446,30 @@ document.addEventListener("DOMContentLoaded", () => {
         recordSelect.disabled = true;
         recordSelect.innerHTML = '<option value="">-- Loading... --</option>';
         try {
-            const res = await fetch(`${API_URL}?action=get_related_records&table=${encodeURIComponent(tableName)}`);
-            const data = await res.json();
+            const result = await fetch(`${API_URL}?action=get_related_records&table=${encodeURIComponent(tableName)}`);
+            const data = await result.json();
             if (data.success && data.records) {
                 recordSelect.innerHTML = '<option value="">-- Select record --</option>';
                 data.records.forEach(r => {
-                    const opt = document.createElement('option');
-                    opt.value = r.id;
-                    opt.textContent = r.label;
-                    recordSelect.appendChild(opt);
+                    const option = document.createElement('option');
+                    option.value = r.id;
+                    option.textContent = r.label;
+                    recordSelect.appendChild(option);
                 });
                 recordSelect.disabled = false;
             } else {
                 recordSelect.innerHTML = '<option value="">-- Load error --</option>';
             }
-        } catch (err) {
+        } catch (error) {
             recordSelect.innerHTML = '<option value="">-- Network error --</option>';
         }
     }
 
     async function loadFiles() {
-        if (btnClearFilters) btnClearFilters.hidden = !currentSearch && currentType === 'all';
+        if (buttonClearFilters) buttonClearFilters.hidden = !currentSearch && currentType === 'all';
         tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-empty">${escHtml(T.loading)}</td></tr>`;
         try {
-            const params = new URLSearchParams({
+            const parameters = new URLSearchParameters({
                 action: 'list',
                 page: currentPage,
                 limit: pageSize,
@@ -478,8 +478,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 sort: sortState.column,
                 dir: sortState.asc ? 'asc' : 'desc'
             });
-            const res = await fetch(`${API_URL}?${params}`);
-            const data = await res.json();
+            const result = await fetch(`${API_URL}?${parameters}`);
+            const data = await result.json();
 
             if (!data.success) {
                 tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-error">Error: ${escHtml(data.error || 'Unknown')}</td></tr>`;
@@ -495,8 +495,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const fetchPromises = Array.from(tablesToFetch).map(async (table) => {
                 try {
-                    const lRes = await fetch(`${API_URL}?action=get_related_records&table=${encodeURIComponent(table)}`);
-                    const lData = await lRes.json();
+                    const lResult = await fetch(`${API_URL}?action=get_related_records&table=${encodeURIComponent(table)}`);
+                    const lData = await lResult.json();
                     relationCache[table] = {};
                     if (lData.success && lData.records) {
                         lData.records.forEach(r => { relationCache[table][r.id] = r.label; });
@@ -510,7 +510,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderTable(data.files);
             renderPagination(data.total_pages, data.total_count);
             syncSelectionUI();
-        } catch (err) {
+        } catch (error) {
             tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-error">${escHtml(T.network_error)}</td></tr>`;
         }
     }
@@ -538,17 +538,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
             }
 
-            const displayVal  = f.display_name || '';
+            const displayValue  = f.display_name || '';
             const displayCell = canEdit
-                ? `<td class="f-td-display editable" data-edit="display" data-uuid="${escHtml(f.uuid)}" data-orig="${escHtml(displayVal)}" contenteditable="true">${escHtml(displayVal)}</td>`
-                : `<td class="f-td-display">${escHtml(displayVal || '-')}</td>`;
+                ? `<td class="f-td-display editable" data-edit="display" data-uuid="${escHtml(f.uuid)}" data-orig="${escHtml(displayValue)}" contenteditable="true">${escHtml(displayValue)}</td>`
+                : `<td class="f-td-display">${escHtml(displayValue || '-')}</td>`;
 
             const tagsArr  = tagsToArray(f.tags);
             const tagsCell = canEdit
                 ? `<td class="f-td-tags editable-tags" data-uuid="${escHtml(f.uuid)}" data-tags="${escHtml(f.tags || '{}')}" title="${T.edit_tags}">${tagsBadgesHtml(tagsArr)}</td>`
                 : `<td class="f-td-tags">${tagsArr.length ? tagsBadgesHtml(tagsArr) : '-'}</td>`;
 
-            const deleteBtn = window.USER_CAPS.canEdit
+            const deleteButton = window.USER_CAPS.canEdit
                 ? `<button class="btn-icon btn-icon-danger" data-action="delete-file" data-uuid="${escHtml(f.uuid)}" title="${T.delete}">
                         <img src="assets/icons/delete.png" alt="${T.delete}">
                     </button>`
@@ -577,7 +577,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <a href="file_download.php?uuid=${encodeURIComponent(f.uuid)}" target="_blank" rel="noopener noreferrer" class="btn-icon" data-action="download-file" title="${T.download}">
                             <img src="assets/icons/download.png" alt="${T.download}">
                         </a>
-                        ${deleteBtn}
+                        ${deleteButton}
                     </td>
                 </tr>
             `;
@@ -585,8 +585,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderPagination(totalPages, totalCount) {
-        const pagEl = document.getElementById('filePagination');
-        pagEl.innerHTML = '';
+        const pagElement = document.getElementById('filePagination');
+        pagElement.innerHTML = '';
         totalPages = Math.max(1, totalPages || 1);
         totalCount = totalCount || 0;
 
@@ -595,11 +595,11 @@ document.addEventListener("DOMContentLoaded", () => {
         sizeLabel.textContent = T.rows_per_page + ':';
         const sizeSelect = document.createElement('select');
         PAGE_SIZE_OPTIONS.forEach(n => {
-            const opt = document.createElement('option');
-            opt.value = n;
-            opt.textContent = n;
-            if (n === pageSize) opt.selected = true;
-            sizeSelect.appendChild(opt);
+            const option = document.createElement('option');
+            option.value = n;
+            option.textContent = n;
+            if (n === pageSize) option.selected = true;
+            sizeSelect.appendChild(option);
         });
         sizeSelect.addEventListener('change', () => {
             pageSize = Number(sizeSelect.value);
@@ -608,34 +608,34 @@ document.addEventListener("DOMContentLoaded", () => {
             loadFiles();
         });
         sizeLabel.appendChild(sizeSelect);
-        pagEl.appendChild(sizeLabel);
+        pagElement.appendChild(sizeLabel);
 
         const from = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
         const to   = Math.min(currentPage * pageSize, totalCount);
-        const info = document.createElement('span');
-        info.className = 'pag-info';
-        info.textContent = T.showing.replace('{from}', from).replace('{to}', to).replace('{total}', totalCount);
-        pagEl.appendChild(info);
+        const information = document.createElement('span');
+        information.className = 'pag-info';
+        information.textContent = T.showing.replace('{from}', from).replace('{to}', to).replace('{total}', totalCount);
+        pagElement.appendChild(information);
 
-        const prevBtn = document.createElement('button');
-        prevBtn.textContent = T.pg_prev;
-        prevBtn.disabled = currentPage <= 1;
-        prevBtn.addEventListener('click', () => {
+        const previousButton = document.createElement('button');
+        previousButton.textContent = T.pg_prev;
+        previousButton.disabled = currentPage <= 1;
+        previousButton.addEventListener('click', () => {
             if (currentPage > 1) { currentPage--; loadFiles(); }
         });
-        pagEl.appendChild(prevBtn);
+        pagElement.appendChild(previousButton);
 
-        const pageInfo = document.createElement('span');
-        pageInfo.textContent = T.page_of.replace('{page}', currentPage).replace('{total}', totalPages);
-        pagEl.appendChild(pageInfo);
+        const pageInformation = document.createElement('span');
+        pageInformation.textContent = T.page_of.replace('{page}', currentPage).replace('{total}', totalPages);
+        pagElement.appendChild(pageInformation);
 
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = T.pg_next;
-        nextBtn.disabled = currentPage >= totalPages;
-        nextBtn.addEventListener('click', () => {
+        const nextButton = document.createElement('button');
+        nextButton.textContent = T.pg_next;
+        nextButton.disabled = currentPage >= totalPages;
+        nextButton.addEventListener('click', () => {
             if (currentPage < totalPages) { currentPage++; loadFiles(); }
         });
-        pagEl.appendChild(nextBtn);
+        pagElement.appendChild(nextButton);
     }
 
     async function uploadFile() {
@@ -655,8 +655,8 @@ document.addEventListener("DOMContentLoaded", () => {
         setUploadStatus('Uploading...', 'neutral');
 
         try {
-            const res = await fetch(API_URL, { method: 'POST', body: formData });
-            const data = await res.json();
+            const result = await fetch(API_URL, { method: 'POST', body: formData });
+            const data = await result.json();
             if (data.success) {
                 setUploadStatus('File uploaded successfully!', 'success');
                 fileInput.value = '';
@@ -670,7 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 setUploadStatus('Error: ' + (data.error || 'Failed'), 'error');
             }
-        } catch (err) {
+        } catch (error) {
             setUploadStatus('Network error during upload.', 'error');
         }
     }

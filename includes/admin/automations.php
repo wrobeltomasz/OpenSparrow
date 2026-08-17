@@ -193,11 +193,11 @@ if ($action === 'automations_save' && os_request()->method() === 'POST') {
         $list  = auto_cfg_read();
         $found = false;
 
-        $prevActions = [];
+        $previousActions = [];
         if ($id !== null) {
             foreach ($list as $item) {
                 if (($item['id'] ?? '') === $id) {
-                    $prevActions = (array) ($item['actions'] ?? []);
+                    $previousActions = (array) ($item['actions'] ?? []);
                     break;
                 }
             }
@@ -212,21 +212,21 @@ if ($action === 'automations_save' && os_request()->method() === 'POST') {
             if ($submitted !== '') {
                 $ruleAction['secret_enc'] = secret_encrypt($submitted);
             } elseif (empty($ruleAction['secret_clear'])) {
-                $prev = is_array($prevActions[$index] ?? null) ? $prevActions[$index] : [];
-                if (($prev['type'] ?? '') === 'webhook') {
-                    if (($prev['secret_enc'] ?? '') !== '') {
-                        $ruleAction['secret_enc'] = $prev['secret_enc'];
-                    } elseif (($prev['secret'] ?? '') !== '') {
-                        $ruleAction['secret_enc'] = secret_encrypt((string) $prev['secret']);
+                $previous = is_array($previousActions[$index] ?? null) ? $previousActions[$index] : [];
+                if (($previous['type'] ?? '') === 'webhook') {
+                    if (($previous['secret_enc'] ?? '') !== '') {
+                        $ruleAction['secret_enc'] = $previous['secret_enc'];
+                    } elseif (($previous['secret'] ?? '') !== '') {
+                        $ruleAction['secret_enc'] = secret_encrypt((string) $previous['secret']);
                     }
                 }
             }
 
-            $prev        = is_array($prevActions[$index] ?? null) ? $prevActions[$index] : [];
-            $previousEncryptedHeaders = ($prev['type'] ?? '') === 'webhook'
-                ? (array) ($prev['headers_enc'] ?? [])
+            $previous        = is_array($previousActions[$index] ?? null) ? $previousActions[$index] : [];
+            $previousEncryptedHeaders = ($previous['type'] ?? '') === 'webhook'
+                ? (array) ($previous['headers_enc'] ?? [])
                 : [];
-            $prevPlain   = ($prev['type'] ?? '') === 'webhook' ? (array) ($prev['headers'] ?? []) : [];
+            $previousPlain   = ($previous['type'] ?? '') === 'webhook' ? (array) ($previous['headers'] ?? []) : [];
             $encryptedHeaders  = [];
             foreach ((array) ($ruleAction['headers'] ?? []) as $headerName => $headerValue) {
                 $headerName = trim((string) $headerName);
@@ -238,8 +238,8 @@ if ($action === 'automations_save' && os_request()->method() === 'POST') {
                     $encryptedHeaders[$headerName] = secret_encrypt($headerValue);
                 } elseif (($previousEncryptedHeaders[$headerName] ?? '') !== '') {
                     $encryptedHeaders[$headerName] = (string) $previousEncryptedHeaders[$headerName];
-                } elseif (($prevPlain[$headerName] ?? '') !== '') {
-                    $encryptedHeaders[$headerName] = secret_encrypt((string) $prevPlain[$headerName]);
+                } elseif (($previousPlain[$headerName] ?? '') !== '') {
+                    $encryptedHeaders[$headerName] = secret_encrypt((string) $previousPlain[$headerName]);
                 } else {
                     $encryptedHeaders[$headerName] = '';
                 }

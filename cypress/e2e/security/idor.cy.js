@@ -50,8 +50,8 @@ describe('Security – IDOR / row-level ownership', () => {
           url: '/api/files.php',
           headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: { action: 'delete', uuid, csrf_token: token },
-        }).then(res => {
-          expect(res.status, `probe attachment ${uuid} must be cleaned up`).to.eq(200);
+        }).then(result => {
+          expect(result.status, `probe attachment ${uuid} must be cleaned up`).to.eq(200);
         });
       });
     });
@@ -68,9 +68,9 @@ describe('Security – IDOR / row-level ownership', () => {
     cy.probe({
       url: `/api.php?api=list&table=${fx.table}&search=cypress-idor`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      expect(res.status).to.eq(200);
-      const payload = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }).then(result => {
+      expect(result.status).to.eq(200);
+      const payload = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
       const rows = payload.rows || payload.data || payload.records || [];
       const ids = rows.map(r => Number(r.id));
       expect(ids, 'own record is visible').to.include(fx.id_a);
@@ -79,8 +79,8 @@ describe('Security – IDOR / row-level ownership', () => {
   });
 
   it('edit.php refuses to open another user\'s record', () => {
-    cy.probe({ url: `/edit.php?table=${fx.table}&id=${fx.id_b}` }).then(res => {
-      expect(res.status, 'edit.php on a foreign record').to.not.eq(200);
+    cy.probe({ url: `/edit.php?table=${fx.table}&id=${fx.id_b}` }).then(result => {
+      expect(result.status, 'edit.php on a foreign record').to.not.eq(200);
     });
   });
 
@@ -92,9 +92,9 @@ describe('Security – IDOR / row-level ownership', () => {
         method: 'PATCH',
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': token },
         body: { table: fx.table, id: fx.id_b, column: fx.column, value: 'cypress-idor-hacked' },
-      }).then(res => {
-        cy.expectDenied(res, [403], 'PATCH foreign record');
-        expect(JSON.stringify(res.body)).to.match(/do not own this record/i);
+      }).then(result => {
+        cy.expectDenied(result, [403], 'PATCH foreign record');
+        expect(JSON.stringify(result.body)).to.match(/do not own this record/i);
       });
     });
 
@@ -102,8 +102,8 @@ describe('Security – IDOR / row-level ownership', () => {
     cy.probe({
       url: `/api.php?api=list&table=${fx.table}&search=cypress-idor-b`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      const payload = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }).then(result => {
+      const payload = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
       const rows = payload.rows || payload.data || payload.records || [];
       const mine = rows.find(r => Number(r.id) === fx.id_b);
       expect(mine, 'owner still sees the record').to.not.be.undefined;
@@ -120,7 +120,7 @@ describe('Security – IDOR / row-level ownership', () => {
           method: 'DELETE',
           headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': token },
           body: { table: fx.table, id: fx.id_b },
-        }).then(res => cy.expectDenied(res, [403], 'DELETE foreign record'));
+        }).then(result => cy.expectDenied(result, [403], 'DELETE foreign record'));
       });
       cy.dbCount(fx.table).should('eq', before);
     });
@@ -130,9 +130,9 @@ describe('Security – IDOR / row-level ownership', () => {
     cy.probe({
       url: `/api.php?api=subtable_counts&table=${fx.table}&ids=${fx.id_a},${fx.id_b}`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      if (res.status !== 200) return;
-      const payload = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }).then(result => {
+      if (result.status !== 200) return;
+      const payload = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
       expect(JSON.stringify(payload), 'foreign id must not appear in the counts')
         .to.not.match(new RegExp(`"${fx.id_b}"\\s*:`));
     });
@@ -153,8 +153,8 @@ describe('Security – IDOR / row-level ownership', () => {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin',
         body: form,
-      }).then(res => res.text().then(body => {
-        expect(res.status, `${label} upload must be accepted: ${body}`).to.eq(201);
+      }).then(result => result.text().then(body => {
+        expect(result.status, `${label} upload must be accepted: ${body}`).to.eq(201);
         const m = body.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
         expect(m, `${label} upload must return a uuid`).to.not.eq(null);
         return m[0];
@@ -179,9 +179,9 @@ describe('Security – IDOR / row-level ownership', () => {
       cy.probe({
         url: '/api/files.php?action=list&limit=200',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      }).then(res => {
-        expect(res.status, 'file listing').to.eq(200);
-        const uuids = (res.body.files || []).map(f => f.uuid);
+      }).then(result => {
+        expect(result.status, 'file listing').to.eq(200);
+        const uuids = (result.body.files || []).map(f => f.uuid);
         expect(uuids, 'own attachment stays listed').to.include(mineUuid);
         expect(uuids, 'attachment on another owner\'s record must not be listed')
           .to.not.include(foreignFileUuid);
@@ -198,16 +198,16 @@ describe('Security – IDOR / row-level ownership', () => {
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
 
         body: { action: 'set', table: fx.table, record_id: fx.id_b, owner_id: fx.owner_a, csrf_token: token },
-      }).then(res => {
-        expect(res.status, 'ownership transfer is permitted').to.eq(200);
+      }).then(result => {
+        expect(result.status, 'ownership transfer is permitted').to.eq(200);
       });
     });
 
     cy.probe({
       url: `/api.php?api=list&table=${fx.table}&search=cypress-idor-b`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      const payload = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }).then(result => {
+      const payload = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
       const rows = payload.rows || payload.data || payload.records || [];
       expect(rows.map(r => Number(r.id)), 'the new owner now sees the record')
         .to.include(fx.id_b);
@@ -216,7 +216,7 @@ describe('Security – IDOR / row-level ownership', () => {
 
   it('file_download.php answers 404 — not 403 — for a foreign uuid', () => {
     cy.probe({ url: '/file_download.php?uuid=11111111-1111-4111-8111-111111111111' })
-      .then(res => cy.expectDenied(res, [404], 'foreign file'));
+      .then(result => cy.expectDenied(result, [404], 'foreign file'));
   });
 
   it('a bulk delete skips rows owned by someone else', () => {
@@ -237,8 +237,8 @@ describe('Security – IDOR / row-level ownership', () => {
           headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': token },
 
           body: { table: fx.table, row_ids: [fx.id_a, fx.id_b] },
-        }).then(res => {
-          expect(res.status, 'bulk delete is accepted, then filtered').to.be.oneOf([200, 403]);
+        }).then(result => {
+          expect(result.status, 'bulk delete is accepted, then filtered').to.be.oneOf([200, 403]);
         });
       });
 
@@ -250,8 +250,8 @@ describe('Security – IDOR / row-level ownership', () => {
       cy.probe({
         url: `/api.php?api=list&table=${fx.table}&search=cypress-idor-b`,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      }).then(res => {
-        const payload = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+      }).then(result => {
+        const payload = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
         const rows = payload.rows || payload.data || payload.records || [];
         expect(rows.map(r => Number(r.id)), 'the other owner\'s row survived')
           .to.include(fx.id_b);

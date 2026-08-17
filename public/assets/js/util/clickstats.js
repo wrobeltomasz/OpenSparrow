@@ -21,15 +21,15 @@ function findTarget(node) {
     return node.closest('[data-stat], button, a, .btn');
 }
 
-function labelFor(el) {
-    const explicit = el.getAttribute('data-stat');
+function labelFor(element) {
+    const explicit = element.getAttribute('data-stat');
     if (explicit) return explicit.trim().slice(0, MAX_LABEL);
 
-    if (el.id) return ('#' + el.id).slice(0, MAX_LABEL);
+    if (element.id) return ('#' + element.id).slice(0, MAX_LABEL);
 
-    const cls = (el.classList[0] || el.tagName).toLowerCase();
-    const text = (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40);
-    return (text ? `${cls}: ${text}` : cls).slice(0, MAX_LABEL);
+    const classOrTagName = (element.classList[0] || element.tagName).toLowerCase();
+    const text = (element.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    return (text ? `${classOrTagName}: ${text}` : classOrTagName).slice(0, MAX_LABEL);
 }
 
 function recordContext() {
@@ -79,16 +79,16 @@ function schedule() {
 }
 
 document.addEventListener('click', (e) => {
-    const el = findTarget(e.target);
-    if (!el) return;
+    const element = findTarget(e.target);
+    if (!element) return;
     if (buffer.length >= MAX_BUFFER) return;
 
-    const ctx = recordContext();
+    const context = recordContext();
     buffer.push({
-        element: labelFor(el),
+        element: labelFor(element),
         page: pageName(),
-        table: ctx.table,
-        record_id: ctx.id,
+        table: context.table,
+        record_id: context.id,
     });
     schedule();
 }, { passive: true, capture: true });

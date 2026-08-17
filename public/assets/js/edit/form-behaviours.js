@@ -4,8 +4,8 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 function initNavButtons() {
-    document.querySelectorAll('[data-nav]').forEach(btn => {
-        btn.addEventListener('click', () => { window.location.href = btn.dataset.nav; });
+    document.querySelectorAll('[data-nav]').forEach(button => {
+        button.addEventListener('click', () => { window.location.href = button.dataset.nav; });
     });
 }
 

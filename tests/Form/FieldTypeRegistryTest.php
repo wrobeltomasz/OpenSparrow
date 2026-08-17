@@ -28,7 +28,7 @@ final class FieldTypeRegistryTest extends TestCase
             {
                 return $this->supported;
             }
-            public function bind(string $colName, array $postData): BoundValue
+            public function bind(string $columnName, array $postData): BoundValue
             {
                 return new BoundValue(null);
             }

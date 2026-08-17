@@ -5,13 +5,13 @@
 
 import { attachCellEvents } from '../../grid_actions.js';
 
-export function createInputCell({ row, col, colCfg, isReadOnly, makeControl }) {
+export function createInputCell({ row, col: column, colCfg: columnConfig, isReadOnly, makeControl }) {
     const td = document.createElement('td');
     const control = makeControl();
-    control.dataset.column = col;
+    control.dataset.column = column;
     control.dataset.id = row['id'];
 
-    if (colCfg.readonly || isReadOnly) control.disabled = true;
+    if (columnConfig.readonly || isReadOnly) control.disabled = true;
     if (!isReadOnly) attachCellEvents(control);
 
     td.appendChild(control);

@@ -6,43 +6,43 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdStatus, buildSectionCard } from './ui.js';
 
-let anonConfig  = null;
-let anonVersion = 0;
+let anonymizationConfig  = null;
+let anonymizationVersion = 0;
 let schemaCache = null;
 
 import { escHtml } from '../../assets/js/util/esc.js';
 import { getGlobalSchema } from './app.js';
 
-const mkSection = (title, desc) => buildSectionCard(title, desc);
+const mkSection = (title, description) => buildSectionCard(title, description);
 
-function mkStatusEl() {
-    const el = document.createElement('p');
-    el.style.cssText = 'margin-top:10px;  display:none;';
-    return el;
+function mkStatusElement() {
+    const element = document.createElement('p');
+    element.style.cssText = 'margin-top:10px;  display:none;';
+    return element;
 }
 
-function showStatus(el, msg, ok) {
-    el.textContent = msg;
-    el.style.color = ok ? 'var(--ok)' : 'var(--error)';
-    el.style.display = '';
+function showStatus(element, message, ok) {
+    element.textContent = message;
+    element.style.color = ok ? 'var(--ok)' : 'var(--error)';
+    element.style.display = '';
 }
 
-async function saveConfig(partial, statusEl) {
-    Object.assign(anonConfig, partial);
+async function saveConfig(partial, statusElement) {
+    Object.assign(anonymizationConfig, partial);
     try {
-        const res  = await apiFetch('api.php?action=anonymization_save', {
+        const result  = await apiFetch('api.php?action=anonymization_save', {
             method:  'POST',
-            body:    JSON.stringify({ ...anonConfig, version: anonVersion }),
+            body:    JSON.stringify({ ...anonConfig, version: anonymizationVersion }),
         });
-        const data = await res.json();
+        const data = await result.json();
         if (data.status === 'success') {
-            anonVersion = data.version ?? anonVersion + 1;
-            if (statusEl) showStatus(statusEl, 'Configuration saved.', true);
+            anonVersion: anonymizationVersion = data.version ?? anonymizationVersion + 1;
+            if (statusElement) showStatus(statusElement, 'Configuration saved.', true);
         } else {
-            if (statusEl) showStatus(statusEl, 'Error: ' + (data.error || 'unknown'), false);
+            if (statusElement) showStatus(statusElement, 'Error: ' + (data.error || 'unknown'), false);
         }
     } catch (e) {
-        if (statusEl) showStatus(statusEl, 'Request failed: ' + e.message, false);
+        if (statusElement) showStatus(statusElement, 'Request failed: ' + e.message, false);
     }
 }
 
@@ -56,25 +56,25 @@ async function getSchema() {
     return schemaCache ?? {};
 }
 
-function buildRulesTab(ctx) {
+function buildRulesTab(context) {
     const { card, body } = mkSection(
         'Anonymization Rules',
         'Each rule anonymizes a PII column for records older than the configured number of days.'
     );
 
-    const tableOptions = ctx.getTableOptions ? ctx.getTableOptions() : [];
+    const tableOptions = context.getTableOptions ? context.getTableOptions() : [];
 
     function renderRulesTable() {
         body.innerHTML = '';
 
-        const rules = anonConfig.rules || [];
+        const rules = anonymizationConfig.rules || [];
 
         if (rules.length > 0) {
-            const tbl = document.createElement('table');
-            tbl.className = 'adm-tbl';
-            tbl.style.marginBottom = '20px';
+            const table = document.createElement('table');
+            table.className = 'adm-tbl';
+            table.style.marginBottom = '20px';
 
-            const thead = tbl.createTHead();
+            const thead = table.createTHead();
             const hr    = thead.insertRow();
             ['Table', 'Date Column', 'Older Than', 'PII Column', 'Replacement', ''].forEach(h => {
                 const th = document.createElement('th');
@@ -83,8 +83,8 @@ function buildRulesTab(ctx) {
                 hr.appendChild(th);
             });
 
-            const tbody = tbl.createTBody();
-            rules.forEach((rule, idx) => {
+            const tbody = table.createTBody();
+            rules.forEach((rule, index) => {
                 const tr = tbody.insertRow();
 
                 const tdTable = document.createElement('td');
@@ -92,22 +92,22 @@ function buildRulesTab(ctx) {
                 tdTable.textContent = rule.table;
                 tr.appendChild(tdTable);
 
-                const tdDateCol = document.createElement('td');
-                tdDateCol.className        = 'adm-td';
-                tdDateCol.style.fontFamily = 'monospace';
-                tdDateCol.textContent      = rule.date_column || '—';
-                tr.appendChild(tdDateCol);
+                const tdDateColumn = document.createElement('td');
+                tdDateColumn.className        = 'adm-td';
+                tdDateColumn.style.fontFamily = 'monospace';
+                tdDateColumn.textContent      = rule.date_column || '—';
+                tr.appendChild(tdDateColumn);
 
                 const tdDays = document.createElement('td');
                 tdDays.className   = 'adm-td';
                 tdDays.textContent = rule.days ? rule.days + ' days' : '—';
                 tr.appendChild(tdDays);
 
-                const tdCol = document.createElement('td');
-                tdCol.className        = 'adm-td';
-                tdCol.style.fontFamily = 'monospace';
-                tdCol.textContent      = rule.column;
-                tr.appendChild(tdCol);
+                const tdColumn = document.createElement('td');
+                tdColumn.className        = 'adm-td';
+                tdColumn.style.fontFamily = 'monospace';
+                tdColumn.textContent      = rule.column;
+                tr.appendChild(tdColumn);
 
                 const tdRepl = document.createElement('td');
                 tdRepl.className        = 'adm-td';
@@ -117,21 +117,21 @@ function buildRulesTab(ctx) {
 
                 const tdAct = document.createElement('td');
                 tdAct.className = 'adm-td';
-                const delBtn = document.createElement('button');
-                delBtn.className = 'btn btn-danger btn-xs';
-                delBtn.textContent = '✕ Remove';
-                delBtn.addEventListener('click', async () => {
+                const delButton = document.createElement('button');
+                delButton.className = 'btn btn-danger btn-xs';
+                delButton.textContent = '✕ Remove';
+                delButton.addEventListener('click', async () => {
                     if (!confirm('Remove rule for ' + rule.table + '.' + rule.column + '?')) return;
-                    anonConfig.rules.splice(idx, 1);
-                    const st = mkStatusEl();
+                    anonymizationConfig.rules.splice(index, 1);
+                    const st = mkStatusElement();
                     await saveConfig({}, st);
                     renderRulesTable();
                 });
-                tdAct.appendChild(delBtn);
+                tdAct.appendChild(delButton);
                 tr.appendChild(tdAct);
             });
 
-            body.appendChild(tbl);
+            body.appendChild(table);
             buildPreviewBlock(body);
         } else {
             const empty = document.createElement('p');
@@ -151,9 +151,9 @@ function buildPreviewBlock(container) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-bottom:20px;';
 
-    const btn = document.createElement('button');
-    btn.className   = 'btn btn-primary';
-    btn.textContent = 'Preview (dry run)';
+    const button = document.createElement('button');
+    button.className   = 'btn btn-primary';
+    button.textContent = 'Preview (dry run)';
 
     const hint = document.createElement('span');
     hint.textContent = 'Counts how many rows each rule would anonymize — no data is modified.';
@@ -162,17 +162,17 @@ function buildPreviewBlock(container) {
     const out = document.createElement('pre');
     out.style.cssText = 'margin-top:12px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;  line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
-    btn.addEventListener('click', async () => {
-        btn.disabled    = true;
-        btn.textContent = 'Previewing…';
+    button.addEventListener('click', async () => {
+        button.disabled    = true;
+        button.textContent = 'Previewing…';
         out.style.display = '';
         out.textContent   = 'Please wait…';
         out.style.color   = '';
         try {
-            const res  = await apiFetch('api.php?action=preview_anonymization', {
+            const result  = await apiFetch('api.php?action=preview_anonymization', {
                 method:  'POST',
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
                 out.textContent = data.output || '(no output)';
             } else {
@@ -183,11 +183,11 @@ function buildPreviewBlock(container) {
             out.textContent = 'Request failed: ' + e.message;
             out.style.color = 'var(--error)';
         }
-        btn.disabled    = false;
-        btn.textContent = 'Preview (dry run)';
+        button.disabled    = false;
+        button.textContent = 'Preview (dry run)';
     });
 
-    wrap.append(btn, hint, out);
+    wrap.append(button, hint, out);
     container.appendChild(wrap);
 }
 
@@ -203,22 +203,22 @@ function buildAddForm(container, tableOptions, onAdded) {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;';
 
-    function mkField(labelText, el, width) {
+    function mkField(labelText, element, width) {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'display:flex; flex-direction:column; gap:4px;';
-        const lbl = document.createElement('label');
-        lbl.textContent = labelText;
-        lbl.style.cssText = ' ';
-        el.className = 'adm-input';
-        if (width) el.style.width = width;
-        wrap.append(lbl, el);
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        label.style.cssText = ' ';
+        element.className = 'adm-input';
+        if (width) element.style.width = width;
+        wrap.append(label, element);
         return wrap;
     }
 
     const tableSelect  = document.createElement('select');
-    const dateColSelect = document.createElement('select');
+    const dateColumnSelect = document.createElement('select');
     const daysInput    = document.createElement('input');
-    const colSelect    = document.createElement('select');
+    const columnSelect    = document.createElement('select');
     const replInput    = document.createElement('input');
 
     daysInput.type        = 'number';
@@ -229,19 +229,19 @@ function buildAddForm(container, tableOptions, onAdded) {
     replInput.type        = 'text';
     replInput.placeholder = 'e.g. ***ANONYMIZED***';
 
-    tableOptions.forEach(opt => {
+    tableOptions.forEach(option => {
         const o = document.createElement('option');
-        o.value = opt.value; o.textContent = opt.label;
+        o.value = option.value; o.textContent = option.label;
         tableSelect.appendChild(o);
     });
 
     async function refreshColumns() {
-        colSelect.innerHTML     = '';
-        dateColSelect.innerHTML = '';
+        columnSelect.innerHTML     = '';
+        dateColumnSelect.innerHTML = '';
 
-        const tbl = tableSelect.value;
-        if (!tbl) {
-            [colSelect, dateColSelect].forEach(sel => {
+        const table = tableSelect.value;
+        if (!table) {
+            [columnSelect, dateColumnSelect].forEach(sel => {
                 const o = document.createElement('option');
                 o.value = ''; o.textContent = '-- Select --';
                 sel.appendChild(o);
@@ -249,59 +249,59 @@ function buildAddForm(container, tableOptions, onAdded) {
             return;
         }
 
-        const allOpts = window._anonColOptions ? window._anonColOptions(tbl) : [];
-        if (allOpts.length === 0) {
+        const allOptions = window._anonColOptions ? window._anonColOptions(table) : [];
+        if (allOptions.length === 0) {
             const o = document.createElement('option');
             o.value = ''; o.textContent = '-- No columns --';
-            colSelect.appendChild(o);
+            columnSelect.appendChild(o);
         } else {
-            allOpts.forEach(opt => {
+            allOptions.forEach(option => {
                 const o = document.createElement('option');
-                o.value = opt.value; o.textContent = opt.label;
-                colSelect.appendChild(o);
+                o.value = option.value; o.textContent = option.label;
+                columnSelect.appendChild(o);
             });
         }
 
         try {
             const schema   = await getSchema();
-            const tDef     = (schema.tables || {})[tbl] || {};
-            const dateOpts = Object.entries(tDef.columns || {})
+            const tDef     = (schema.tables || {})[table] || {};
+            const dateOptions = Object.entries(tDef.columns || {})
                 .filter(([, def]) => isDateType(def.type))
                 .map(([name, def]) => ({ value: name, label: def.display_name || name }));
 
-            if (dateOpts.length === 0) {
+            if (dateOptions.length === 0) {
                 const o = document.createElement('option');
                 o.value = ''; o.textContent = '-- No date/timestamp columns --';
-                dateColSelect.appendChild(o);
+                dateColumnSelect.appendChild(o);
             } else {
-                dateOpts.forEach(({ value, label }) => {
+                dateOptions.forEach(({ value, label }) => {
                     const o = document.createElement('option');
                     o.value = value; o.textContent = label;
-                    dateColSelect.appendChild(o);
+                    dateColumnSelect.appendChild(o);
                 });
             }
         } catch (e) {
             const o = document.createElement('option');
             o.value = ''; o.textContent = '-- Error loading --';
-            dateColSelect.appendChild(o);
+            dateColumnSelect.appendChild(o);
         }
     }
 
     tableSelect.addEventListener('change', () => refreshColumns());
     refreshColumns();
 
-    const addBtn = document.createElement('button');
-    addBtn.className   = 'btn btn-primary';
-    addBtn.textContent = '+ Add Rule';
-    addBtn.style.alignSelf = 'flex-end';
+    const addButton = document.createElement('button');
+    addButton.className   = 'btn btn-primary';
+    addButton.textContent = '+ Add Rule';
+    addButton.style.alignSelf = 'flex-end';
 
-    const st = mkStatusEl();
+    const st = mkStatusElement();
 
-    addBtn.addEventListener('click', async () => {
+    addButton.addEventListener('click', async () => {
         const t    = tableSelect.value.trim();
-        const dc   = dateColSelect.value.trim();
+        const dc   = dateColumnSelect.value.trim();
         const days = parseInt(daysInput.value, 10);
-        const c    = colSelect.value.trim();
+        const c    = columnSelect.value.trim();
         const r    = replInput.value;
 
         if (!t || !dc) {
@@ -316,16 +316,16 @@ function buildAddForm(container, tableOptions, onAdded) {
             showStatus(st, 'Enter a valid number of days (minimum 1).', false);
             return;
         }
-        const duplicate = (anonConfig.rules || []).some(x => x.table === t && x.column === c && x.date_column === dc);
+        const duplicate = (anonymizationConfig.rules || []).some(x => x.table === t && x.column === c && x.date_column === dc);
         if (duplicate) {
             showStatus(st, 'A rule for ' + t + '.' + c + ' with that date column already exists.', false);
             return;
         }
-        anonConfig.rules = anonConfig.rules || [];
-        anonConfig.rules.push({ table: t, date_column: dc, days, column: c, replacement: r });
-        addBtn.disabled = true;
+        anonymizationConfig.rules = anonymizationConfig.rules || [];
+        anonymizationConfig.rules.push({ table: t, date_column: dc, days, column: c, replacement: r });
+        addButton.disabled = true;
         await saveConfig({}, st);
-        addBtn.disabled = false;
+        addButton.disabled = false;
         if (st.style.color === 'rgb(43, 147, 72)') {
             replInput.value   = '';
             daysInput.value   = '365';
@@ -336,13 +336,13 @@ function buildAddForm(container, tableOptions, onAdded) {
     });
 
     const tableWrap   = mkField('Table', tableSelect, '180px');
-    const dateColWrap = mkField('Date Column', dateColSelect, '190px');
+    const dateColumnWrap = mkField('Date Column', dateColumnSelect, '190px');
     const daysWrap    = mkField('Older Than (days)', daysInput, '110px');
-    const colWrap     = mkField('PII Column', colSelect, '180px');
+    const columnWrap     = mkField('PII Column', columnSelect, '180px');
     const replWrap    = mkField('Replacement Value', replInput, '');
     replWrap.style.cssText += 'flex:1; min-width:140px;';
 
-    row.append(tableWrap, dateColWrap, daysWrap, colWrap, replWrap, addBtn);
+    row.append(tableWrap, dateColumnWrap, daysWrap, columnWrap, replWrap, addButton);
     formCard.append(row, st);
     container.appendChild(formCard);
 }
@@ -355,16 +355,16 @@ function buildScheduleTab() {
 
     const enabledRow = document.createElement('div');
     enabledRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-bottom:20px;';
-    const enabledChk = document.createElement('input');
-    enabledChk.type    = 'checkbox';
-    enabledChk.id      = 'anon-enabled';
-    enabledChk.checked = anonConfig.enabled;
-    enabledChk.className = 'adm-check';
-    const enabledLbl = document.createElement('label');
-    enabledLbl.htmlFor     = 'anon-enabled';
-    enabledLbl.textContent = 'Anonymization enabled';
-    enabledLbl.style.cssText = ' cursor:pointer;';
-    enabledRow.append(enabledChk, enabledLbl);
+    const enabledCheckbox = document.createElement('input');
+    enabledCheckbox.type    = 'checkbox';
+    enabledCheckbox.id      = 'anon-enabled';
+    enabledCheckbox.checked = anonymizationConfig.enabled;
+    enabledCheckbox.className = 'adm-check';
+    const enabledLabel = document.createElement('label');
+    enabledLabel.htmlFor     = 'anon-enabled';
+    enabledLabel.textContent = 'Anonymization enabled';
+    enabledLabel.style.cssText = ' cursor:pointer;';
+    enabledRow.append(enabledCheckbox, enabledLabel);
     body.appendChild(enabledRow);
 
     const freqRow = document.createElement('div');
@@ -385,48 +385,48 @@ function buildScheduleTab() {
         const o = document.createElement('option');
         o.value       = value;
         o.textContent = label;
-        if (value === anonConfig.frequency) o.selected = true;
+        if (value === anonymizationConfig.frequency) o.selected = true;
         freqSelect.appendChild(o);
     });
     freqRow.append(freqLabel, freqSelect);
     body.appendChild(freqRow);
 
-    const saveSt = mkStatusEl();
+    const saveSt = mkStatusElement();
 
-    const saveBtn = document.createElement('button');
-    saveBtn.className   = 'btn btn-primary';
-    saveBtn.textContent = 'Save Schedule Settings';
-    saveBtn.style.marginBottom = '24px';
-    saveBtn.addEventListener('click', async () => {
-        saveBtn.disabled = true;
-        await saveConfig({ enabled: enabledChk.checked, frequency: freqSelect.value }, saveSt);
-        saveBtn.disabled = false;
+    const saveButton = document.createElement('button');
+    saveButton.className   = 'btn btn-primary';
+    saveButton.textContent = 'Save Schedule Settings';
+    saveButton.style.marginBottom = '24px';
+    saveButton.addEventListener('click', async () => {
+        saveButton.disabled = true;
+        await saveConfig({ enabled: enabledCheckbox.checked, frequency: freqSelect.value }, saveSt);
+        saveButton.disabled = false;
     });
-    body.append(saveBtn, saveSt);
+    body.append(saveButton, saveSt);
 
     const { card: runCard, body: runBody } = mkSection(
         'Run Anonymization Now',
         'Trigger the anonymization cron immediately, bypassing the frequency check.'
     );
 
-    const runBtn = document.createElement('button');
-    runBtn.className   = 'btn btn-primary';
-    runBtn.textContent = 'Run Now';
+    const runButton = document.createElement('button');
+    runButton.className   = 'btn btn-primary';
+    runButton.textContent = 'Run Now';
 
     const output = document.createElement('pre');
     output.style.cssText = 'margin-top:14px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;  line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
-    runBtn.addEventListener('click', async () => {
-        runBtn.disabled    = true;
-        runBtn.textContent = 'Running…';
+    runButton.addEventListener('click', async () => {
+        runButton.disabled    = true;
+        runButton.textContent = 'Running…';
         output.style.display = '';
         output.textContent   = 'Please wait…';
         output.style.color   = '';
         try {
-            const res  = await apiFetch('api.php?action=run_anonymization', {
+            const result  = await apiFetch('api.php?action=run_anonymization', {
                 method:  'POST',
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
                 output.textContent = data.output || '(no output)';
             } else {
@@ -437,11 +437,11 @@ function buildScheduleTab() {
             output.textContent = 'Request failed: ' + e.message;
             output.style.color = 'var(--error)';
         }
-        runBtn.disabled    = false;
-        runBtn.textContent = 'Run Now';
+        runButton.disabled    = false;
+        runButton.textContent = 'Run Now';
     });
 
-    runBody.append(runBtn, output);
+    runBody.append(runButton, output);
     body.appendChild(runCard);
 
     const { card: setupCard, body: setupBody } = mkSection(
@@ -497,48 +497,48 @@ function buildSuggestionsTab() {
         'Scans your schema for column names matching the dictionary keywords. Uses the dictionary from the Dictionary tab.'
     );
 
-    const scanBtn = document.createElement('button');
-    scanBtn.className   = 'btn btn-primary';
-    scanBtn.textContent = 'Scan Schema';
+    const scanButton = document.createElement('button');
+    scanButton.className   = 'btn btn-primary';
+    scanButton.textContent = 'Scan Schema';
 
     const container = document.createElement('div');
     container.style.marginTop = '16px';
 
-    scanBtn.addEventListener('click', async () => {
-        scanBtn.disabled    = true;
-        scanBtn.textContent = 'Scanning…';
+    scanButton.addEventListener('click', async () => {
+        scanButton.disabled    = true;
+        scanButton.textContent = 'Scanning…';
         container.innerHTML = '';
 
         try {
             const schema  = await getGlobalSchema();
             const tables  = schema?.tables || {};
-            const keywords = (anonConfig.dictionary || []).map(w => w.toLowerCase().trim()).filter(Boolean);
+            const keywords = (anonymizationConfig.dictionary || []).map(w => w.toLowerCase().trim()).filter(Boolean);
 
             if (keywords.length === 0) {
-                const msg = document.createElement('p');
-                msg.textContent = 'Dictionary is empty. Add keywords in the Dictionary tab first.';
-                container.appendChild(msg);
+                const message = document.createElement('p');
+                message.textContent = 'Dictionary is empty. Add keywords in the Dictionary tab first.';
+                container.appendChild(message);
                 return;
             }
 
             const matches = [];
             for (const tableName in tables) {
                 const tDef   = tables[tableName];
-                const cols   = tDef.columns || {};
-                for (const colName in cols) {
-                    const haystack = colName.toLowerCase();
-                    const dispName = (cols[colName].display_name || '').toLowerCase();
+                const columns   = tDef.columns || {};
+                for (const columnName in columns) {
+                    const haystack = columnName.toLowerCase();
+                    const dispName = (columns[columnName].display_name || '').toLowerCase();
                     const matched  = keywords.filter(kw => haystack.includes(kw) || dispName.includes(kw));
                     if (matched.length > 0) {
-                        matches.push({ table: tableName, column: colName, keywords: matched });
+                        matches.push({ table: tableName, column: columnName, keywords: matched });
                     }
                 }
             }
 
             if (matches.length === 0) {
-                const msg = document.createElement('p');
-                msg.textContent = 'No columns matched the current dictionary keywords.';
-                container.appendChild(msg);
+                const message = document.createElement('p');
+                message.textContent = 'No columns matched the current dictionary keywords.';
+                container.appendChild(message);
                 return;
             }
 
@@ -547,9 +547,9 @@ function buildSuggestionsTab() {
             count.style.cssText = '  margin-bottom:12px;';
             container.appendChild(count);
 
-            const tbl   = document.createElement('table');
-            tbl.className = 'adm-tbl';
-            const thead = tbl.createTHead();
+            const table   = document.createElement('table');
+            table.className = 'adm-tbl';
+            const thead = table.createTHead();
             const hr    = thead.insertRow();
             ['Table', 'Column', 'Matched Keywords', ''].forEach(h => {
                 const th = document.createElement('th');
@@ -557,7 +557,7 @@ function buildSuggestionsTab() {
                 th.textContent = h;
                 hr.appendChild(th);
             });
-            const tbody = tbl.createTBody();
+            const tbody = table.createTBody();
 
             matches.forEach(({ table, column, keywords: kws }) => {
                 const tr = tbody.insertRow();
@@ -581,89 +581,89 @@ function buildSuggestionsTab() {
                 const tdA = document.createElement('td');
                 tdA.className = 'adm-td';
 
-                const alreadyHas = (anonConfig.rules || []).some(r => r.table === table && r.column === column);
+                const alreadyHas = (anonymizationConfig.rules || []).some(r => r.table === table && r.column === column);
                 if (alreadyHas) {
                     const badge = document.createElement('span');
                     badge.textContent = '✓ Rule exists';
                     badge.style.cssText = ' color:var(--ok);';
                     tdA.appendChild(badge);
                 } else {
-                    const addBtn = document.createElement('button');
-                    addBtn.textContent = '+ Add Rule';
-                    addBtn.className = 'btn btn-secondary btn-xs';
-                    addBtn.addEventListener('click', async () => {
-                        addBtn.style.display = 'none';
+                    const addButton = document.createElement('button');
+                    addButton.textContent = '+ Add Rule';
+                    addButton.className = 'btn btn-secondary btn-xs';
+                    addButton.addEventListener('click', async () => {
+                        addButton.style.display = 'none';
 
                         const form = document.createElement('div');
                         form.style.cssText = 'display:flex; flex-direction:column; gap:5px; padding:4px 0;';
 
-                        function fLbl(text) {
+                        function fLabel(text) {
                             const l = document.createElement('label');
                             l.textContent = text;
                             l.style.cssText = ' ';
                             return l;
                         }
 
-                        const dateColSel = document.createElement('select');
-                        dateColSel.className  = 'adm-input';
+                        const dateColumnSelect = document.createElement('select');
+                        dateColumnSelect.className  = 'adm-input';
 
                         try {
                             const schema   = await getSchema();
                             const tDef     = (schema.tables || {})[table] || {};
-                            const dateOpts = Object.entries(tDef.columns || {})
+                            const dateOptions = Object.entries(tDef.columns || {})
                                 .filter(([, def]) => isDateType(def.type))
                                 .map(([name, def]) => ({ value: name, label: def.display_name || name }));
-                            if (dateOpts.length === 0) {
+                            if (dateOptions.length === 0) {
                                 const o = document.createElement('option');
                                 o.value = ''; o.textContent = '-- no date columns --';
-                                dateColSel.appendChild(o);
+                                dateColumnSelect.appendChild(o);
                             } else {
-                                dateOpts.forEach(({ value, label }) => {
+                                dateOptions.forEach(({ value, label }) => {
                                     const o = document.createElement('option');
                                     o.value = value; o.textContent = label;
-                                    dateColSel.appendChild(o);
+                                    dateColumnSelect.appendChild(o);
                                 });
                             }
                         } catch (e) {
                             const o = document.createElement('option');
                             o.value = ''; o.textContent = '-- error --';
-                            dateColSel.appendChild(o);
+                            dateColumnSelect.appendChild(o);
                         }
 
-                        const daysInp = document.createElement('input');
-                        daysInp.type      = 'number';
-                        daysInp.min       = '1';
-                        daysInp.value     = '365';
-                        daysInp.className = 'adm-input w-90';
+                        const daysInput = document.createElement('input');
+                        daysInput.type      = 'number';
+                        daysInput.min       = '1';
+                        daysInput.value     = '365';
+                        daysInput.className = 'adm-input w-90';
 
-                        const replInp = document.createElement('input');
-                        replInp.type      = 'text';
-                        replInp.value     = '***ANONYMIZED***';
-                        replInp.className = 'adm-input';
+                        const replInput = document.createElement('input');
+                        replInput.type      = 'text';
+                        replInput.value     = '***ANONYMIZED***';
+                        replInput.className = 'adm-input';
 
                         const formSt = document.createElement('p');
                         formSt.style.cssText = 'margin:2px 0;  display:none;';
 
-                        const btnRow = document.createElement('div');
-                        btnRow.style.cssText = 'display:flex; gap:6px; margin-top:2px;';
+                        const buttonRow = document.createElement('div');
+                        buttonRow.style.cssText = 'display:flex; gap:6px; margin-top:2px;';
 
-                        const saveBtn = document.createElement('button');
-                        saveBtn.textContent  = 'Save';
-                        saveBtn.className = 'btn btn-primary btn-xs';
+                        const saveButton = document.createElement('button');
+                        saveButton.textContent  = 'Save';
+                        saveButton.className = 'btn btn-primary btn-xs';
 
-                        const cancelBtn = document.createElement('button');
-                        cancelBtn.textContent  = 'Cancel';
-                        cancelBtn.className = 'btn btn-secondary btn-xs';
+                        const cancelButton = document.createElement('button');
+                        cancelButton.textContent  = 'Cancel';
+                        cancelButton.className = 'btn btn-secondary btn-xs';
 
-                        cancelBtn.addEventListener('click', () => {
+                        cancelButton.addEventListener('click', () => {
                             form.remove();
-                            addBtn.style.display = '';
+                            addButton.style.display = '';
                         });
 
-                        saveBtn.addEventListener('click', async () => {
-                            const dc   = dateColSel.value.trim();
-                            const days = parseInt(daysInp.value, 10);
-                            const repl = replInp.value;
+                        saveButton.addEventListener('click', async () => {
+                            const dc   = dateColumnSelect.value.trim();
+                            const days = parseInt(daysInput.value, 10);
+                            const repl = replInput.value;
                             if (!dc) {
                                 formSt.textContent = 'Select a date column.';
                                 formSt.style.color = 'var(--error)';
@@ -676,44 +676,44 @@ function buildSuggestionsTab() {
                                 formSt.style.display = '';
                                 return;
                             }
-                            anonConfig.rules = anonConfig.rules || [];
-                            anonConfig.rules.push({ table, date_column: dc, days, column, replacement: repl });
-                            const st = mkStatusEl();
+                            anonymizationConfig.rules = anonymizationConfig.rules || [];
+                            anonymizationConfig.rules.push({ table, date_column: dc, days, column, replacement: repl });
+                            const st = mkStatusElement();
                             await saveConfig({}, st);
                             form.remove();
-                            addBtn.disabled = true;
-                            addBtn.style.display = '';
-                            addBtn.textContent = '✓ Added';
-                            addBtn.className = 'btn btn-success btn-xs';
+                            addButton.disabled = true;
+                            addButton.style.display = '';
+                            addButton.textContent = '✓ Added';
+                            addButton.className = 'btn btn-success btn-xs';
                         });
 
-                        btnRow.append(saveBtn, cancelBtn);
+                        buttonRow.append(saveButton, cancelButton);
                         form.append(
-                            fLbl('Date column:'), dateColSel,
-                            fLbl('Older than (days):'), daysInp,
-                            fLbl('Replacement:'), replInp,
-                            formSt, btnRow
+                            fLabel('Date column:'), dateColumnSelect,
+                            fLabel('Older than (days):'), daysInput,
+                            fLabel('Replacement:'), replInput,
+                            formSt, buttonRow
                         );
                         tdA.appendChild(form);
                     });
-                    tdA.appendChild(addBtn);
+                    tdA.appendChild(addButton);
                 }
                 tr.appendChild(tdA);
             });
 
-            container.appendChild(tbl);
+            container.appendChild(table);
         } catch (e) {
-            const msg = document.createElement('p');
-            msg.textContent = 'Failed to load schema: ' + e.message;
-            msg.style.color = 'var(--error)';
-            container.appendChild(msg);
+            const message = document.createElement('p');
+            message.textContent = 'Failed to load schema: ' + e.message;
+            message.style.color = 'var(--error)';
+            container.appendChild(message);
         } finally {
-            scanBtn.disabled    = false;
-            scanBtn.textContent = 'Scan Schema';
+            scanButton.disabled    = false;
+            scanButton.textContent = 'Scan Schema';
         }
     });
 
-    body.append(scanBtn, container);
+    body.append(scanButton, container);
     return card;
 }
 
@@ -729,30 +729,30 @@ function buildDictionaryTab() {
     textarea.style.maxWidth = '600px';
     textarea.style.marginBottom = '12px';
     textarea.style.resize = 'vertical';
-    textarea.value = (anonConfig.dictionary || []).join(', ');
+    textarea.value = (anonymizationConfig.dictionary || []).join(', ');
 
     const hint = document.createElement('p');
     hint.textContent = 'Example: PESEL, NIP, email, phone, address, imię, nazwisko, ID number';
     hint.style.cssText = '  margin-bottom:16px;';
 
-    const saveBtn = document.createElement('button');
-    saveBtn.className   = 'btn btn-primary';
-    saveBtn.textContent = 'Save Dictionary';
+    const saveButton = document.createElement('button');
+    saveButton.className   = 'btn btn-primary';
+    saveButton.textContent = 'Save Dictionary';
 
-    const st = mkStatusEl();
+    const st = mkStatusElement();
 
-    saveBtn.addEventListener('click', async () => {
+    saveButton.addEventListener('click', async () => {
         const words = textarea.value
             .split(',')
             .map(w => w.trim())
             .filter(Boolean);
-        saveBtn.disabled = true;
+        saveButton.disabled = true;
         await saveConfig({ dictionary: words }, st);
-        saveBtn.disabled = false;
-        anonConfig.dictionary = words;
+        saveButton.disabled = false;
+        anonymizationConfig.dictionary = words;
     });
 
-    body.append(textarea, hint, saveBtn, st);
+    body.append(textarea, hint, saveButton, st);
 
     const { card: logCard, body: logBody } = mkSection(
         'Log Cleanup',
@@ -777,28 +777,28 @@ function buildDictionaryTab() {
     logUnit.textContent = 'days';
     logUnit.style.cssText = ' ';
 
-    const purgeBtn = document.createElement('button');
-    purgeBtn.className   = 'btn btn-danger';
-    purgeBtn.textContent = 'Purge Old Logs';
+    const purgeButton = document.createElement('button');
+    purgeButton.className   = 'btn btn-danger';
+    purgeButton.textContent = 'Purge Old Logs';
 
-    const purgeSt = mkStatusEl();
+    const purgeSt = mkStatusElement();
 
-    purgeBtn.addEventListener('click', async () => {
+    purgeButton.addEventListener('click', async () => {
         const days = parseInt(logInput.value, 10);
         if (!days || days < 1) {
             showStatus(purgeSt, 'Enter a valid number of days.', false);
             return;
         }
         if (!confirm('Delete anonymization log entries older than ' + days + ' day(s)?')) return;
-        purgeBtn.disabled    = true;
-        purgeBtn.textContent = 'Purging…';
+        purgeButton.disabled    = true;
+        purgeButton.textContent = 'Purging…';
         purgeSt.style.display = 'none';
         try {
-            const res  = await apiFetch('api.php?action=anonymization_purge_log', {
+            const result  = await apiFetch('api.php?action=anonymization_purge_log', {
                 method:  'POST',
                 body:    JSON.stringify({ days }),
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
                 showStatus(purgeSt, 'Deleted ' + data.deleted + ' log row(s).', true);
             } else {
@@ -807,11 +807,11 @@ function buildDictionaryTab() {
         } catch (e) {
             showStatus(purgeSt, 'Request failed: ' + e.message, false);
         }
-        purgeBtn.disabled    = false;
-        purgeBtn.textContent = 'Purge Old Logs';
+        purgeButton.disabled    = false;
+        purgeButton.textContent = 'Purge Old Logs';
     });
 
-    logRow.append(logLabel, logInput, logUnit, purgeBtn);
+    logRow.append(logLabel, logInput, logUnit, purgeButton);
     logBody.append(logRow, purgeSt);
     body.appendChild(logCard);
 
@@ -836,23 +836,23 @@ function buildReportCell(r, tbody, colspan) {
         return cell;
     }
 
-    const viewBtn = document.createElement('button');
-    viewBtn.textContent  = 'View';
-    viewBtn.className = 'btn btn-secondary btn-xs';
+    const viewButton = document.createElement('button');
+    viewButton.textContent  = 'View';
+    viewButton.className = 'btn btn-secondary btn-xs';
 
     let detailRow = null;
 
-    viewBtn.addEventListener('click', () => {
+    viewButton.addEventListener('click', () => {
         if (detailRow) {
             detailRow.remove();
             detailRow = null;
-            viewBtn.textContent = 'View';
+            viewButton.textContent = 'View';
             return;
         }
 
         const parentTr = cell.closest('tr');
         detailRow = tbody.insertRow(parentTr.sectionRowIndex + 1);
-        viewBtn.textContent = 'Hide';
+        viewButton.textContent = 'Hide';
 
         const dtd = detailRow.insertCell();
         dtd.className   = 'adm-td';
@@ -862,14 +862,14 @@ function buildReportCell(r, tbody, colspan) {
         const bar = document.createElement('div');
         bar.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap;';
 
-        const idLbl = document.createElement('strong');
-        idLbl.textContent = report.report_id || 'Report';
-        idLbl.style.cssText = ' font-family:var(--font-mono);';
+        const idLabel = document.createElement('strong');
+        idLabel.textContent = report.report_id || 'Report';
+        idLabel.style.cssText = ' font-family:var(--font-mono);';
 
-        const dlBtn = document.createElement('button');
-        dlBtn.textContent  = 'Download JSON';
-        dlBtn.className = 'btn btn-primary btn-xs';
-        dlBtn.addEventListener('click', () => {
+        const dlButton = document.createElement('button');
+        dlButton.textContent  = 'Download JSON';
+        dlButton.className = 'btn btn-primary btn-xs';
+        dlButton.addEventListener('click', () => {
             const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
             const url  = URL.createObjectURL(blob);
             const a    = document.createElement('a');
@@ -881,7 +881,7 @@ function buildReportCell(r, tbody, colspan) {
             URL.revokeObjectURL(url);
         });
 
-        bar.append(idLbl, dlBtn);
+        bar.append(idLabel, dlButton);
 
         const pre = document.createElement('pre');
         pre.style.cssText = 'margin:0; padding:12px; background:#fff; border:1px solid var(--border); border-radius:4px;  line-height:1.5; max-height:360px; overflow:auto; white-space:pre-wrap;';
@@ -890,7 +890,7 @@ function buildReportCell(r, tbody, colspan) {
         dtd.append(bar, pre);
     });
 
-    cell.appendChild(viewBtn);
+    cell.appendChild(viewButton);
     return cell;
 }
 
@@ -900,20 +900,20 @@ function buildHistorySection() {
         'Last 50 executions from spw_anonymization_log.'
     );
 
-    const loadBtn = document.createElement('button');
-    loadBtn.className   = 'btn btn-primary';
-    loadBtn.textContent = 'Load History';
+    const loadButton = document.createElement('button');
+    loadButton.className   = 'btn btn-primary';
+    loadButton.textContent = 'Load History';
 
     const container = document.createElement('div');
     container.style.marginTop = '14px';
 
-    loadBtn.addEventListener('click', async () => {
-        loadBtn.disabled    = true;
-        loadBtn.textContent = 'Loading…';
+    loadButton.addEventListener('click', async () => {
+        loadButton.disabled    = true;
+        loadButton.textContent = 'Loading…';
         container.innerHTML = '';
         try {
-            const res  = await apiFetch('api.php?action=anonymization_log');
-            const data = await res.json();
+            const result  = await apiFetch('api.php?action=anonymization_log');
+            const data = await result.json();
             if (data.status !== 'success') {
                 container.textContent = 'Error: ' + (data.error || 'unknown');
                 return;
@@ -927,9 +927,9 @@ function buildHistorySection() {
                 return;
             }
             const headers = ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Rules', 'Rows Anonymized', 'Report', 'Error'];
-            const tbl = mkTable();
-            mkThead(tbl, headers);
-            const tbody = tbl.createTBody();
+            const table = mkTable();
+            mkThead(table, headers);
+            const tbody = table.createTBody();
             data.rows.forEach(r => {
                 const tr = tbody.insertRow();
                 const tdSt = tdStatus(r.status);
@@ -946,45 +946,45 @@ function buildHistorySection() {
                     td(r.error_message, 'color:var(--error); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
                 );
             });
-            container.appendChild(tbl);
+            container.appendChild(table);
         } catch (e) {
             container.textContent = 'Request failed: ' + e.message;
         }
-        loadBtn.disabled    = false;
-        loadBtn.textContent = 'Refresh';
+        loadButton.disabled    = false;
+        loadButton.textContent = 'Refresh';
     });
 
-    body.append(loadBtn, container);
+    body.append(loadButton, container);
     return card;
 }
 
-export async function renderAnonymizationPage(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '<p style="padding:20px;">Loading configuration…</p>';
+export async function renderAnonymizationPage(context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = '<p style="padding:20px;">Loading configuration…</p>';
 
-    if (ctx.getColumnOptionsForTable) {
-        window._anonColOptions = ctx.getColumnOptionsForTable;
+    if (context.getColumnOptionsForTable) {
+        window._anonColOptions = context.getColumnOptionsForTable;
     }
 
     try {
-        const res  = await apiFetch('api.php?action=anonymization_load');
-        const data = await res.json();
+        const result  = await apiFetch('api.php?action=anonymization_load');
+        const data = await result.json();
         if (data.status !== 'success') {
-            workspaceEl.innerHTML = '<p style="color:var(--error);padding:20px;">Failed to load config: ' + escHtml(data.error || 'unknown') + '</p>';
+            workspaceElement.innerHTML = '<p style="color:var(--error);padding:20px;">Failed to load config: ' + escHtml(data.error || 'unknown') + '</p>';
             return;
         }
-        anonConfig  = data.config;
-        anonVersion = data.version ?? 0;
+        anonymizationConfig  = data.config;
+        anonymizationVersion = data.version ?? 0;
     } catch (e) {
-        workspaceEl.innerHTML = '<p style="color:var(--error);padding:20px;">Request failed: ' + escHtml(e.message) + '</p>';
+        workspaceElement.innerHTML = '<p style="color:var(--error);padding:20px;">Request failed: ' + escHtml(e.message) + '</p>';
         return;
     }
 
-    workspaceEl.innerHTML = '';
+    workspaceElement.innerHTML = '';
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     wrap.appendChild(createPageHeader(
         'Data Anonymization',
@@ -999,7 +999,7 @@ export async function renderAnonymizationPage(ctx) {
         { label: 'History', icon: 'manage_history.png' },
     ]);
 
-    p0.appendChild(buildRulesTab(ctx));
+    p0.appendChild(buildRulesTab(context));
 
     p1.appendChild(buildScheduleTab());
 

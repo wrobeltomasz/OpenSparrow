@@ -36,15 +36,15 @@ const PAGE_MODULES = {
 let currentConfig = null;
 let currentFile = 'overview';
 let currentItemKey = null;
-let globalSchemaObj = null;
+let globalSchemaObject = null;
 let isDirty = false;
 
 let activeSaveHandler = null;
 function setSaveHandler(fn) { activeSaveHandler = fn; }
 
-const itemPanelEl = document.getElementById('itemPanel');
-const workspaceEl = document.getElementById('editorForm');
-const btnSave = document.getElementById('btnSave');
+const itemPanelElement = document.getElementById('itemPanel');
+const workspaceElement = document.getElementById('editorForm');
+const buttonSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization', 'clickstats']);
@@ -109,14 +109,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             e.currentTarget.classList.add('active');
             currentFile = e.currentTarget.dataset.file;
 
-            workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
+            workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
             markClean();
             loadConfigFile(currentFile);
         });
     });
 
-    workspaceEl.addEventListener('input', markDirty);
-    workspaceEl.addEventListener('change', markDirty);
+    workspaceElement.addEventListener('input', markDirty);
+    workspaceElement.addEventListener('change', markDirty);
 
     window.addEventListener('beforeunload', (e) => {
         if (isDirty) {
@@ -130,20 +130,20 @@ let globalSchemaPromise = null;
 
 async function fetchGlobalSchema() {
     try {
-        const res = await apiFetch('api.php?action=get&file=schema');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        globalSchemaObj = await res.json();
+        const result = await apiFetch('api.php?action=get&file=schema');
+        if (!result.ok) throw new Error(`HTTP ${result.status}`);
+        globalSchemaObject = await result.json();
     } catch (e) {
-        globalSchemaObj = null;
+        globalSchemaObj: globalSchemaObject = null;
         console.warn('Could not load global schema', e);
         showStatusPill(document.getElementById('workspace'), 'Could not load the schema — table and column lists will be empty.', 'error');
     }
-    return globalSchemaObj;
+    return globalSchemaObject;
 }
 
 export function getGlobalSchema({ force = false } = {}) {
     if (force) invalidateGlobalSchema();
-    if (globalSchemaObj) return Promise.resolve(globalSchemaObj);
+    if (globalSchemaObject) return Promise.resolve(globalSchemaObject);
     if (!globalSchemaPromise) {
         globalSchemaPromise = fetchGlobalSchema().finally(() => { globalSchemaPromise = null; });
     }
@@ -151,50 +151,50 @@ export function getGlobalSchema({ force = false } = {}) {
 }
 
 export function invalidateGlobalSchema() {
-    globalSchemaObj    = null;
+    globalSchemaObj: globalSchemaObject    = null;
     globalSchemaPromise = null;
 }
 
 export async function getSchemaTables() {
     const schema = await getGlobalSchema();
     return Object.entries(schema?.tables ?? {})
-        .filter(([, cfg]) => !cfg?.hidden)
-        .map(([name, cfg]) => ({ name, label: cfg.display_name || name, columns: cfg.columns ?? {} }))
+        .filter(([, config]) => !config?.hidden)
+        .map(([name, config]) => ({ name, label: config.display_name || name, columns: config.columns ?? {} }))
         .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 function getTableOptions() {
     const options = [{ value: '', label: '-- Select Table --' }];
-    if (globalSchemaObj && globalSchemaObj.tables) {
-        for (const t in globalSchemaObj.tables) options.push({ value: t, label: globalSchemaObj.tables[t].display_name || t });
+    if (globalSchemaObject && globalSchemaObject.tables) {
+        for (const t in globalSchemaObject.tables) options.push({ value: t, label: globalSchemaObject.tables[t].display_name || t });
     }
     return options;
 }
 
 function getColumnOptionsForTable(tableName) {
     const options = [{ value: '', label: '-- Select Column --' }];
-    if (tableName && globalSchemaObj && globalSchemaObj.tables[tableName] && globalSchemaObj.tables[tableName].columns) {
-        const cols = globalSchemaObj.tables[tableName].columns;
-        for (const c in cols) options.push({ value: c, label: cols[c].display_name || c });
+    if (tableName && globalSchemaObject && globalSchemaObject.tables[tableName] && globalSchemaObject.tables[tableName].columns) {
+        const columns = globalSchemaObject.tables[tableName].columns;
+        for (const c in columns) options.push({ value: c, label: columns[c].display_name || c });
     }
     return options;
 }
 
 function getEnumColumnsForTable(tableName) {
     const options = [];
-    const cols = globalSchemaObj?.tables?.[tableName]?.columns;
-    if (cols) {
-        for (const c in cols) {
-            if ((cols[c].type || '').toLowerCase() === 'enum') {
-                options.push({ value: c, label: cols[c].display_name || c });
+    const columns = globalSchemaObject?.tables?.[tableName]?.columns;
+    if (columns) {
+        for (const c in columns) {
+            if ((columns[c].type || '').toLowerCase() === 'enum') {
+                options.push({ value: c, label: columns[c].display_name || c });
             }
         }
     }
     return options;
 }
 
-function getColumnMeta(tableName, colName) {
-    return globalSchemaObj?.tables?.[tableName]?.columns?.[colName] || null;
+function getColumnMeta(tableName, columnName) {
+    return globalSchemaObject?.tables?.[tableName]?.columns?.[columnName] || null;
 }
 
 async function loadConfigFile(fileName) {
@@ -282,12 +282,12 @@ async function loadConfigFile(fileName) {
             renderEditor('SETTINGS', currentConfig, false);
         } else {
             renderSidebar();
-            workspaceEl.innerHTML = `<h2>Select an item from the left menu to edit</h2>`;
+            workspaceElement.innerHTML = `<h2>Select an item from the left menu to edit</h2>`;
         }
 
         markClean();
-    } catch (err) {
-        showStatusPill(btnSave, `Failed to load ${fileName}.json`, 'error');
+    } catch (error) {
+        showStatusPill(buttonSave, `Failed to load ${fileName}.json`, 'error');
     }
 }
 
@@ -326,37 +326,37 @@ function clearConfig() {
 
         markDirty();
         renderSidebar();
-        workspaceEl.innerHTML = `<h2>Configuration cleared. Click "Save config" to apply!</h2>`;
+        workspaceElement.innerHTML = `<h2>Configuration cleared. Click "Save config" to apply!</h2>`;
     }
 }
 
-function appendClearConfigButton(ctx) {
-    const { workspaceEl } = ctx;
-    const dangerGrp = document.createElement('div');
-    dangerGrp.className = 'form-group';
-    dangerGrp.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';
+function appendClearConfigButton(context) {
+    const { workspaceEl: workspaceElement } = context;
+    const dangerGroup = document.createElement('div');
+    dangerGroup.className = 'form-group';
+    dangerGroup.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';
 
-    const clearBtn = document.createElement('button');
-    clearBtn.type = 'button';
-    clearBtn.className = 'btn btn-danger';
-    clearBtn.textContent = 'Clear Entire Config';
-    clearBtn.onclick = clearConfig;
-    dangerGrp.appendChild(clearBtn);
+    const clearButton = document.createElement('button');
+    clearButton.type = 'button';
+    clearButton.className = 'btn btn-danger';
+    clearButton.textContent = 'Clear Entire Config';
+    clearButton.onclick = clearConfig;
+    dangerGroup.appendChild(clearButton);
 
     const clearHelp = document.createElement('span');
     clearHelp.className = 'help-text';
     clearHelp.textContent = 'Removes the entire configuration for this section. Press "Save config" in the top bar to apply.';
-    dangerGrp.appendChild(clearHelp);
+    dangerGroup.appendChild(clearHelp);
 
-    workspaceEl.appendChild(dangerGrp);
+    workspaceElement.appendChild(dangerGroup);
 }
 
 function tabIcon(name) {
-    const img = document.createElement('img');
-    img.src = '../assets/icons/' + name;
-    img.alt = '';
-    img.style.cssText = 'width:15px;height:15px;opacity:.6;';
-    return img;
+    const image = document.createElement('img');
+    image.src = '../assets/icons/' + name;
+    image.alt = '';
+    image.style.cssText = 'width:15px;height:15px;opacity:.6;';
+    return image;
 }
 
 function itemTabIcon() {
@@ -379,7 +379,7 @@ const CARD_MODULE_HEADER = {
 };
 
 function renderSidebar() {
-    itemPanelEl.innerHTML = '';
+    itemPanelElement.innerHTML = '';
 
     const fullPageTabs = new Set([
         'overview', 'security', 'health', 'docs', 'users', 'backup',
@@ -396,81 +396,81 @@ function renderSidebar() {
 
     const itemsRow = document.createElement('div');
     itemsRow.className = 'item-panel-items';
-    itemPanelEl.appendChild(itemsRow);
+    itemPanelElement.appendChild(itemsRow);
 
     if (CARD_MODULE_HEADER[currentFile]) {
-        const [title, desc] = CARD_MODULE_HEADER[currentFile];
+        const [title, description] = CARD_MODULE_HEADER[currentFile];
         const h2 = document.createElement('h2');
         h2.className = 'admin-page-title';
         h2.textContent = title;
         const p = document.createElement('p');
         p.className = 'admin-page-desc';
-        p.textContent = desc;
-        itemPanelEl.appendChild(h2);
-        itemPanelEl.appendChild(p);
+        p.textContent = description;
+        itemPanelElement.appendChild(h2);
+        itemPanelElement.appendChild(p);
     }
 
     if (currentFile === 'schema') {
-        const menuBtn = document.createElement('button');
-        menuBtn.type = 'button';
-        menuBtn.className = 'item-btn' + (currentItemKey === 'MENU_PREVIEW' ? ' active' : '');
-        menuBtn.append(tabIcon('table_edit.png'), document.createTextNode('Menu Preview'));
-        menuBtn.onclick = () => { currentItemKey = 'MENU_PREVIEW'; renderSidebar(); renderEditor('MENU_PREVIEW', null, false); };
-        itemsRow.appendChild(menuBtn);
+        const menuButton = document.createElement('button');
+        menuButton.type = 'button';
+        menuButton.className = 'item-btn' + (currentItemKey === 'MENU_PREVIEW' ? ' active' : '');
+        menuButton.append(tabIcon('table_edit.png'), document.createTextNode('Menu Preview'));
+        menuButton.onclick = () => { currentItemKey = 'MENU_PREVIEW'; renderSidebar(); renderEditor('MENU_PREVIEW', null, false); };
+        itemsRow.appendChild(menuButton);
 
-        const addTableBtn = document.createElement('button');
-        addTableBtn.type = 'button';
-        addTableBtn.className = 'item-btn' + (currentItemKey === 'ADD_TABLE' ? ' active' : '');
-        addTableBtn.append(tabIcon('build.png'), document.createTextNode('Add New Table'));
-        addTableBtn.onclick = () => { currentItemKey = 'ADD_TABLE'; renderSidebar(); renderEditor('ADD_TABLE', null, false); };
-        itemsRow.appendChild(addTableBtn);
+        const addTableButton = document.createElement('button');
+        addTableButton.type = 'button';
+        addTableButton.className = 'item-btn' + (currentItemKey === 'ADD_TABLE' ? ' active' : '');
+        addTableButton.append(tabIcon('build.png'), document.createTextNode('Add New Table'));
+        addTableButton.onclick = () => { currentItemKey = 'ADD_TABLE'; renderSidebar(); renderEditor('ADD_TABLE', null, false); };
+        itemsRow.appendChild(addTableButton);
 
-        const m2mBtn = document.createElement('button');
-        m2mBtn.type = 'button';
-        m2mBtn.className = 'item-btn' + (currentItemKey === 'M2M_BUILDER' ? ' active' : '');
-        m2mBtn.append(tabIcon('account_tree.png'), document.createTextNode('M2M Builder'));
-        m2mBtn.onclick = () => { currentItemKey = 'M2M_BUILDER'; renderSidebar(); renderEditor('M2M_BUILDER', null, false); };
-        itemsRow.appendChild(m2mBtn);
+        const m2mButton = document.createElement('button');
+        m2mButton.type = 'button';
+        m2mButton.className = 'item-btn' + (currentItemKey === 'M2M_BUILDER' ? ' active' : '');
+        m2mButton.append(tabIcon('account_tree.png'), document.createTextNode('M2M Builder'));
+        m2mButton.onclick = () => { currentItemKey = 'M2M_BUILDER'; renderSidebar(); renderEditor('M2M_BUILDER', null, false); };
+        itemsRow.appendChild(m2mButton);
 
-        const mapBtn = document.createElement('button');
-        mapBtn.type = 'button';
-        mapBtn.className = 'item-btn' + (currentItemKey === 'SCHEMA_MAP' ? ' active' : '');
-        mapBtn.append(tabIcon('account_tree.png'), document.createTextNode('Schema Map'));
-        mapBtn.onclick = () => { currentItemKey = 'SCHEMA_MAP'; renderSidebar(); renderEditor('SCHEMA_MAP', null, false); };
-        itemsRow.appendChild(mapBtn);
+        const mapButton = document.createElement('button');
+        mapButton.type = 'button';
+        mapButton.className = 'item-btn' + (currentItemKey === 'SCHEMA_MAP' ? ' active' : '');
+        mapButton.append(tabIcon('account_tree.png'), document.createTextNode('Schema Map'));
+        mapButton.onclick = () => { currentItemKey = 'SCHEMA_MAP'; renderSidebar(); renderEditor('SCHEMA_MAP', null, false); };
+        itemsRow.appendChild(mapButton);
 
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'item-btn' + (currentItemKey === 'GLOBAL_SCHEMA' ? ' active' : '');
-        btn.append(tabIcon('car_gear.png'), document.createTextNode('Global Grid Settings'));
-        btn.onclick = () => { currentItemKey = 'GLOBAL_SCHEMA'; renderSidebar(); renderEditor('GLOBAL_SCHEMA', null, false); };
-        itemsRow.appendChild(btn);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'item-btn' + (currentItemKey === 'GLOBAL_SCHEMA' ? ' active' : '');
+        button.append(tabIcon('car_gear.png'), document.createTextNode('Global Grid Settings'));
+        button.onclick = () => { currentItemKey = 'GLOBAL_SCHEMA'; renderSidebar(); renderEditor('GLOBAL_SCHEMA', null, false); };
+        itemsRow.appendChild(button);
     }
 
     if (currentFile === 'files') {
-        const explorerBtn = document.createElement('button');
-        explorerBtn.type = 'button';
-        explorerBtn.className = 'item-btn' + (currentItemKey === 'MANAGER' ? ' active' : '');
-        explorerBtn.append(tabIcon('folder_open.png'), document.createTextNode('File Explorer'));
-        explorerBtn.onclick = () => { currentItemKey = 'MANAGER'; renderSidebar(); renderEditor('MANAGER', null, false); };
-        itemsRow.appendChild(explorerBtn);
+        const explorerButton = document.createElement('button');
+        explorerButton.type = 'button';
+        explorerButton.className = 'item-btn' + (currentItemKey === 'MANAGER' ? ' active' : '');
+        explorerButton.append(tabIcon('folder_open.png'), document.createTextNode('File Explorer'));
+        explorerButton.onclick = () => { currentItemKey = 'MANAGER'; renderSidebar(); renderEditor('MANAGER', null, false); };
+        itemsRow.appendChild(explorerButton);
 
-        const settingsBtn = document.createElement('button');
-        settingsBtn.type = 'button';
-        settingsBtn.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
-        settingsBtn.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
-        settingsBtn.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
-        itemsRow.appendChild(settingsBtn);
+        const settingsButton = document.createElement('button');
+        settingsButton.type = 'button';
+        settingsButton.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
+        settingsButton.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
+        settingsButton.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
+        itemsRow.appendChild(settingsButton);
         return;
     }
 
     if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board' || currentFile === 'automations') {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
-        btn.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
-        btn.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
-        itemsRow.appendChild(btn);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
+        button.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
+        button.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
+        itemsRow.appendChild(button);
     }
 
     if (currentFile === 'automations') {
@@ -482,24 +482,24 @@ function renderSidebar() {
             { key: 'N8N', label: 'n8n Automations',    icon: 'arrow_split.png' },
             { key: 'ALL', label: 'Record Automations', icon: 'automation.png' },
         ].forEach(mode => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'item-btn' + (activeMode === mode.key ? ' active' : '');
-            btn.append(tabIcon(mode.icon), document.createTextNode(mode.label));
-            btn.onclick = () => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'item-btn' + (activeMode === mode.key ? ' active' : '');
+            button.append(tabIcon(mode.icon), document.createTextNode(mode.label));
+            button.onclick = () => {
                 currentItemKey = mode.key;
                 renderSidebar();
                 renderEditor(mode.key, null, false);
             };
-            itemsRow.insertBefore(btn, itemsRow.firstChild);
+            itemsRow.insertBefore(button, itemsRow.firstChild);
         });
         return;
     }
 
     if (isCardTab) {
-        const btnAll = document.createElement('button');
-        btnAll.type = 'button';
-        btnAll.className = 'item-btn' + (currentItemKey === null ? ' active' : '');
+        const buttonAll = document.createElement('button');
+        buttonAll.type = 'button';
+        buttonAll.className = 'item-btn' + (currentItemKey === null ? ' active' : '');
         const allIcon = currentFile === 'schema'       ? 'data_table.png'
                        : currentFile === 'dashboard'    ? 'dashboard.png'
                        : currentFile === 'workflows'    ? 'build.png'
@@ -509,13 +509,13 @@ function renderSidebar() {
                            : currentFile === 'dashboard'    ? 'All Widgets'
                            : currentFile === 'workflows'    ? 'All Workflows'
                            : 'All Sources';
-        btnAll.append(tabIcon(allIcon), document.createTextNode(allLabel));
-        btnAll.onclick = () => {
+        buttonAll.append(tabIcon(allIcon), document.createTextNode(allLabel));
+        buttonAll.onclick = () => {
             currentItemKey = null;
             renderSidebar();
             renderItemCards();
         };
-        itemsRow.insertBefore(btnAll, itemsRow.firstChild);
+        itemsRow.insertBefore(buttonAll, itemsRow.firstChild);
         return;
     }
 
@@ -532,22 +532,22 @@ function renderSidebar() {
         const wrapper = document.createElement('div');
         wrapper.className = 'item-btn-wrapper';
 
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'item-btn' + (String(currentItemKey) === String(key) ? ' active' : '');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'item-btn' + (String(currentItemKey) === String(key) ? ' active' : '');
         const itemLabel = currentFile === 'workflows' ? (item.title || `Workflow ${key}`)
                          : currentFile === 'board'     ? (item.menu_name || `Board ${key}`)
                          : (item.table || `Source ${key}`);
-        btn.append(itemTabIcon(), document.createTextNode(itemLabel));
-        btn.onclick = () => { currentItemKey = key; renderSidebar(); renderEditor(key, item, isArray); };
-        wrapper.appendChild(btn);
+        button.append(itemTabIcon(), document.createTextNode(itemLabel));
+        button.onclick = () => { currentItemKey = key; renderSidebar(); renderEditor(key, item, isArray); };
+        wrapper.appendChild(button);
 
-        const btnUp = document.createElement('button');
-        btnUp.type = 'button';
-        btnUp.className = 'item-order-btn';
-        btnUp.textContent = '^';
-        btnUp.disabled = index === 0;
-        btnUp.onclick = (e) => {
+        const buttonUp = document.createElement('button');
+        buttonUp.type = 'button';
+        buttonUp.className = 'item-order-btn';
+        buttonUp.textContent = '^';
+        buttonUp.disabled = index === 0;
+        buttonUp.onclick = (e) => {
             e.stopPropagation();
             moveArrayItem(itemsToIterate, key, -1);
             if (currentItemKey === key) currentItemKey = key - 1; else if (currentItemKey === key - 1) currentItemKey = key;
@@ -555,12 +555,12 @@ function renderSidebar() {
             renderSidebar();
         };
 
-        const btnDown = document.createElement('button');
-        btnDown.type = 'button';
-        btnDown.className = 'item-order-btn';
-        btnDown.textContent = 'v';
-        btnDown.disabled = index === keys.length - 1;
-        btnDown.onclick = (e) => {
+        const buttonDown = document.createElement('button');
+        buttonDown.type = 'button';
+        buttonDown.className = 'item-order-btn';
+        buttonDown.textContent = 'v';
+        buttonDown.disabled = index === keys.length - 1;
+        buttonDown.onclick = (e) => {
             e.stopPropagation();
             moveArrayItem(itemsToIterate, key, 1);
             if (currentItemKey === key) currentItemKey = key + 1; else if (currentItemKey === key + 1) currentItemKey = key;
@@ -568,15 +568,15 @@ function renderSidebar() {
             renderSidebar();
         };
 
-        wrapper.appendChild(btnUp);
-        wrapper.appendChild(btnDown);
+        wrapper.appendChild(buttonUp);
+        wrapper.appendChild(buttonDown);
         itemsRow.appendChild(wrapper);
     });
 }
 
 function renderItemCards() {
-    workspaceEl.innerHTML = '';
-    btnSave.style.display = 'inline-block';
+    workspaceElement.innerHTML = '';
+    buttonSave.style.display = 'inline-block';
 
     if (!currentConfig) return;
 
@@ -600,37 +600,37 @@ function renderItemCards() {
     bar.style.marginBottom = '12px';
 
     if (isSchema) {
-        const btnSync = document.createElement('button');
-        btnSync.type = 'button';
-        btnSync.className = 'btn btn-success';
-        btnSync.textContent = 'Sync DB Tables';
-        btnSync.onclick = () => {
+        const buttonSync = document.createElement('button');
+        buttonSync.type = 'button';
+        buttonSync.className = 'btn btn-success';
+        buttonSync.textContent = 'Sync DB Tables';
+        buttonSync.onclick = () => {
             const schemaName = prompt('Enter database schema name to sync:', 'public');
             if (schemaName) syncSchemaTables(currentConfig, schemaName,
                 (added) => {
                     if (added > 0) markDirty();
-                    showStatusPill(btnSync, `Added ${added} new table${added === 1 ? '' : 's'}. Click "Save config" to persist.`, added > 0 ? 'success' : 'info');
+                    showStatusPill(buttonSync, `Added ${added} new table${added === 1 ? '' : 's'}. Click "Save config" to persist.`, added > 0 ? 'success' : 'info');
                     fetchGlobalSchema();
                     currentItemKey = null;
                     renderItemCards();
                     setTimeout(() => renderSidebar(), 900);
                 },
-                (err) => showStatusPill(btnSync, err, 'error'));
+                (error) => showStatusPill(buttonSync, error, 'error'));
         };
-        bar.appendChild(btnSync);
+        bar.appendChild(buttonSync);
     } else {
-        const btnAdd = document.createElement('button');
-        btnAdd.type = 'button';
-        btnAdd.className = 'btn btn-success';
-        btnAdd.textContent = isDashboard ? '+ Add New Widget' : isWorkflows ? '+ Add New Workflow' : isBoard ? '+ Add New Board' : '+ Add New Source';
-        btnAdd.onclick = addNewItem;
-        bar.appendChild(btnAdd);
+        const buttonAdd = document.createElement('button');
+        buttonAdd.type = 'button';
+        buttonAdd.className = 'btn btn-success';
+        buttonAdd.textContent = isDashboard ? '+ Add New Widget' : isWorkflows ? '+ Add New Workflow' : isBoard ? '+ Add New Board' : '+ Add New Source';
+        buttonAdd.onclick = addNewItem;
+        bar.appendChild(buttonAdd);
     }
-    workspaceEl.appendChild(bar);
+    workspaceElement.appendChild(bar);
 
     const list = document.createElement('div');
     list.style.cssText = 'max-width:900px;';
-    workspaceEl.appendChild(list);
+    workspaceElement.appendChild(list);
 
     function redraw() {
         const fresh    = isSchema    ? (currentConfig.tables    || {})
@@ -651,15 +651,15 @@ function renderItemCards() {
             list.appendChild(empty);
             return;
         }
-        freshKeys.forEach((k, idx) =>
-            list.appendChild(buildItemCard(k, fresh[k], idx, freshKeys.length, isArray, fresh, redraw))
+        freshKeys.forEach((k, index) =>
+            list.appendChild(buildItemCard(k, fresh[k], index, freshKeys.length, isArray, fresh, redraw))
         );
     }
 
     redraw();
 }
 
-function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
+function buildItemCard(key, item, index, total, isArray, itemsReference, redraw) {
     const isSchema    = currentFile === 'schema';
     const isDashboard = currentFile === 'dashboard';
     const isWorkflows = currentFile === 'workflows';
@@ -693,40 +693,40 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     hdr.appendChild(chevron);
     hdr.appendChild(nameSpan);
 
-    const btnUp = document.createElement('button');
-    btnUp.type = 'button';
-    btnUp.title = 'Move up';
-    btnUp.textContent = '▲';
-    btnUp.className = 'icon-btn';
-    if (index === 0) { btnUp.disabled = true; btnUp.style.opacity = '0.3'; }
-    btnUp.onclick = e => {
+    const buttonUp = document.createElement('button');
+    buttonUp.type = 'button';
+    buttonUp.title = 'Move up';
+    buttonUp.textContent = '▲';
+    buttonUp.className = 'icon-btn';
+    if (index === 0) { buttonUp.disabled = true; buttonUp.style.opacity = '0.3'; }
+    buttonUp.onclick = e => {
         e.stopPropagation();
-        if (isArray) moveArrayItem(itemsRef, key, -1);
-        else currentConfig.tables = moveObjectKey(itemsRef, key, -1);
+        if (isArray) moveArrayItem(itemsReference, key, -1);
+        else currentConfig.tables = moveObjectKey(itemsReference, key, -1);
         markDirty();
         redraw();
     };
 
-    const btnDown = document.createElement('button');
-    btnDown.type = 'button';
-    btnDown.title = 'Move down';
-    btnDown.textContent = '▼';
-    btnDown.className = 'icon-btn';
-    if (index === total - 1) { btnDown.disabled = true; btnDown.style.opacity = '0.3'; }
-    btnDown.onclick = e => {
+    const buttonDown = document.createElement('button');
+    buttonDown.type = 'button';
+    buttonDown.title = 'Move down';
+    buttonDown.textContent = '▼';
+    buttonDown.className = 'icon-btn';
+    if (index === total - 1) { buttonDown.disabled = true; buttonDown.style.opacity = '0.3'; }
+    buttonDown.onclick = e => {
         e.stopPropagation();
-        if (isArray) moveArrayItem(itemsRef, key, 1);
-        else currentConfig.tables = moveObjectKey(itemsRef, key, 1);
+        if (isArray) moveArrayItem(itemsReference, key, 1);
+        else currentConfig.tables = moveObjectKey(itemsReference, key, 1);
         markDirty();
         redraw();
     };
 
-    const btnDel = document.createElement('button');
-    btnDel.type = 'button';
-    btnDel.title = 'Delete';
-    btnDel.textContent = '✕';
-    btnDel.className = 'icon-btn icon-btn-danger';
-    btnDel.onclick = e => {
+    const buttonDel = document.createElement('button');
+    buttonDel.type = 'button';
+    buttonDel.title = 'Delete';
+    buttonDel.textContent = '✕';
+    buttonDel.className = 'icon-btn icon-btn-danger';
+    buttonDel.onclick = e => {
         e.stopPropagation();
         const label = isSchema    ? (item.display_name || key)
                     : isDashboard ? (item.title || `Widget ${key}`)
@@ -742,9 +742,9 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
         markDirty();
         redraw();
     };
-    hdr.appendChild(btnUp);
-    hdr.appendChild(btnDown);
-    hdr.appendChild(btnDel);
+    hdr.appendChild(buttonUp);
+    hdr.appendChild(buttonDown);
+    hdr.appendChild(buttonDel);
 
     card.appendChild(hdr);
 
@@ -774,22 +774,22 @@ function buildItemCard(key, item, index, total, isArray, itemsRef, redraw) {
     return card;
 }
 
-function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
+function renderEditorIntoCard(key, item, isArray, bodyElement, nameSpan, redraw) {
     const isSchema    = currentFile === 'schema';
     const isDashboard = currentFile === 'dashboard';
     const isWorkflows = currentFile === 'workflows';
     const isBoard     = currentFile === 'board';
 
     const cardCtx = {
-        workspaceEl: bodyEl,
+        workspaceEl: bodyElement,
         currentConfig,
         getTableOptions,
         getColumnOptionsForTable,
         getEnumColumnsForTable,
         getColumnMeta,
-        renderEditor: (k, d, arr) => {
-            bodyEl.innerHTML = '';
-            renderEditorIntoCard(k, d, arr !== undefined ? arr : isArray, bodyEl, nameSpan, redraw);
+        renderEditor: (k, d, array) => {
+            bodyElement.innerHTML = '';
+            renderEditorIntoCard(k, d, array !== undefined ? array : isArray, bodyElement, nameSpan, redraw);
         },
         renderSidebar: isSchema
             ? redraw
@@ -808,132 +808,132 @@ function renderEditorIntoCard(key, item, isArray, bodyEl, nameSpan, redraw) {
     else                  renderCalendarEditor(key, item, isArray, cardCtx);
 }
 
-function renderMenuPreview(ctx) {
-    const { workspaceEl } = ctx;
+function renderMenuPreview(context) {
+    const { workspaceEl: workspaceElement } = context;
     (async () => {
-        workspaceEl.innerHTML = '';
+        workspaceElement.innerHTML = '';
         const h3 = document.createElement('h3');
         h3.style.marginTop = '0';
         h3.textContent = 'Menu Preview';
-        workspaceEl.appendChild(h3);
-        const desc = document.createElement('p');
-        desc.style.cssText = '  margin-bottom:20px;';
-        desc.textContent = 'Drag to reorder. Drop onto an item to nest it (1 level). Changes save automatically.';
-        workspaceEl.appendChild(desc);
+        workspaceElement.appendChild(h3);
+        const description = document.createElement('p');
+        description.style.cssText = '  margin-bottom:20px;';
+        description.textContent = 'Drag to reorder. Drop onto an item to nest it (1 level). Changes save automatically.';
+        workspaceElement.appendChild(description);
         const preview = createFullMenuPreview(null);
-        workspaceEl.appendChild(preview.el);
+        workspaceElement.appendChild(preview.el);
         try {
-            const res = await apiFetch('api.php?action=menu_config');
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const data = await res.json();
+            const result = await apiFetch('api.php?action=menu_config');
+            if (!result.ok) throw new Error('HTTP ' + result.status);
+            const data = await result.json();
             preview.update(data);
-        } catch (err) {
+        } catch (error) {
             preview.el.remove();
-            const msg = document.createElement('p');
-            msg.style.color = 'var(--error)';
-            msg.textContent = 'Failed to load menu config: ' + escHtml(err.message);
-            workspaceEl.appendChild(msg);
+            const message = document.createElement('p');
+            message.style.color = 'var(--error)';
+            message.textContent = 'Failed to load menu config: ' + escHtml(error.message);
+            workspaceElement.appendChild(message);
         }
     })();
 }
 
-function loadAndRender(loader, ctx, invoke = null) {
-    const myId = workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
+function loadAndRender(loader, context, invoke = null) {
+    const myId = workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
     return loader().then(
         (fn) => {
-            if (workspaceEl._renderId !== myId) return undefined;
-            return invoke ? invoke(fn) : fn(ctx);
+            if (workspaceElement._renderId !== myId) return undefined;
+            return invoke ? invoke(fn) : fn(context);
         },
-        (err) => {
-            if (workspaceEl._renderId !== myId) return undefined;
-            console.error('Could not load tab module', err);
-            workspaceEl.innerHTML = '';
-            const msg = document.createElement('p');
-            msg.className = 'admin-error';
-            msg.textContent = 'Could not load this section. Check your connection and reload the page.';
-            workspaceEl.appendChild(msg);
+        (error) => {
+            if (workspaceElement._renderId !== myId) return undefined;
+            console.error('Could not load tab module', error);
+            workspaceElement.innerHTML = '';
+            const message = document.createElement('p');
+            message.className = 'admin-error';
+            message.textContent = 'Could not load this section. Check your connection and reload the page.';
+            workspaceElement.appendChild(message);
             return undefined;
         }
     );
 }
 
 function renderEditor(key, itemData, isArray) {
-    workspaceEl.innerHTML = '';
-    const ctx = { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
+    workspaceElement.innerHTML = '';
+    const context = { workspaceEl: workspaceElement, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
 
     if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization', 'clickstats'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER' || key === 'SCHEMA_MAP'))) {
-        btnSave.style.display = 'none';
+        buttonSave.style.display = 'none';
     } else {
-        btnSave.style.display = 'inline-block';
+        buttonSave.style.display = 'inline-block';
     }
 
     const pageLoader = PAGE_MODULES[currentFile];
-    if (pageLoader) return loadAndRender(pageLoader, ctx);
+    if (pageLoader) return loadAndRender(pageLoader, context);
 
     if (currentFile === 'security') {
         return loadAndRender(
             () => import('./security.js').then(m => m.renderSecurityEditor),
-            ctx,
-            (fn) => fn(key, itemData, isArray, ctx)
+            context,
+            (fn) => fn(key, itemData, isArray, context)
         );
     }
     if (currentFile === 'automations') {
         if (key === 'LAYOUT') {
-            const msg = document.createElement('p');
-            msg.style.cssText = ' padding:20px;';
-            msg.textContent = 'Automations have no global configuration settings.';
-            workspaceEl.appendChild(msg);
+            const message = document.createElement('p');
+            message.style.cssText = ' padding:20px;';
+            message.textContent = 'Automations have no global configuration settings.';
+            workspaceElement.appendChild(message);
             return;
         }
 
         return loadAndRender(
             () => import('./automations.js').then(m => m.renderAutomationsPage),
-            ctx,
-            (fn) => fn(ctx, key === 'N8N' ? 'n8n' : 'record')
+            context,
+            (fn) => fn(context, key === 'N8N' ? 'n8n' : 'record')
         );
     }
     if (currentFile === 'files' && key === 'MANAGER') {
-        return loadAndRender(() => import('./files_render.js').then(m => m.renderFilesEditor), ctx);
+        return loadAndRender(() => import('./files_render.js').then(m => m.renderFilesEditor), context);
     }
 
     if (currentFile === 'schema' && key === 'MENU_PREVIEW') {
-        renderMenuPreview(ctx);
+        renderMenuPreview(context);
         return;
     }
     if (currentFile === 'schema' && key === 'ADD_TABLE') {
-        return loadAndRender(() => import('./add_table.js').then(m => m.renderAddTableEditor), ctx);
+        return loadAndRender(() => import('./add_table.js').then(m => m.renderAddTableEditor), context);
     }
     if (currentFile === 'schema' && key === 'M2M_BUILDER') {
-        return loadAndRender(() => import('./m2m.js').then(m => m.renderM2mPage), ctx);
+        return loadAndRender(() => import('./m2m.js').then(m => m.renderM2mPage), context);
     }
     if (currentFile === 'schema' && key === 'SCHEMA_MAP') {
-        return loadAndRender(() => import('./erd.js').then(m => m.renderErdPage), ctx);
+        return loadAndRender(() => import('./erd.js').then(m => m.renderErdPage), context);
     }
 
     if (key === 'LAYOUT') {
-        if (currentFile === 'dashboard') { renderDashboardLayout(ctx); appendClearConfigButton(ctx); return; }
+        if (currentFile === 'dashboard') { renderDashboardLayout(context); appendClearConfigButton(context); return; }
         if (currentFile === 'calendar') {
-            renderGlobalSettings(ctx, { title: 'Calendar Global Settings', defaultMenuName: 'Calendar' });
-            appendClearConfigButton(ctx);
+            renderGlobalSettings(context, { title: 'Calendar Global Settings', defaultMenuName: 'Calendar' });
+            appendClearConfigButton(context);
             return;
         }
         if (currentFile === 'workflows') {
-            renderGlobalSettings(ctx, { title: 'Workflows Global Settings', defaultMenuName: 'Workflows' });
-            appendClearConfigButton(ctx);
+            renderGlobalSettings(context, { title: 'Workflows Global Settings', defaultMenuName: 'Workflows' });
+            appendClearConfigButton(context);
             return;
         }
         if (currentFile === 'files') {
-            return renderGlobalSettings(ctx, { title: 'Files Global Settings', defaultMenuName: 'Files' });
+            return renderGlobalSettings(context, { title: 'Files Global Settings', defaultMenuName: 'Files' });
         }
         if (currentFile === 'board') {
-            renderGlobalSettings(ctx, { title: 'Board Global Settings', defaultMenuName: 'Board' });
-            appendClearConfigButton(ctx);
+            renderGlobalSettings(context, { title: 'Board Global Settings', defaultMenuName: 'Board' });
+            appendClearConfigButton(context);
             return;
         }
     }
 
-    if (currentFile === 'schema' && key === 'GLOBAL_SCHEMA') { renderSchemaGlobalSettings(currentConfig, ctx); appendClearConfigButton(ctx); return; }
-    if (currentFile === 'schema') return renderSchemaEditor(key, itemData, ctx);
+    if (currentFile === 'schema' && key === 'GLOBAL_SCHEMA') { renderSchemaGlobalSettings(currentConfig, context); appendClearConfigButton(context); return; }
+    if (currentFile === 'schema') return renderSchemaEditor(key, itemData, context);
 
     const headerDiv = document.createElement('div');
     headerDiv.style.display = 'flex'; headerDiv.style.justifyContent = 'space-between'; headerDiv.style.alignItems = 'center';
@@ -941,9 +941,9 @@ function renderEditor(key, itemData, isArray) {
     title.textContent = `Edit: ${isArray ? 'Item ' + key : key}`;
     headerDiv.appendChild(title);
 
-    const btnDelete = document.createElement('button');
-    btnDelete.className = 'btn btn-danger'; btnDelete.textContent = 'Delete this item';
-    btnDelete.onclick = () => {
+    const buttonDelete = document.createElement('button');
+    buttonDelete.className = 'btn btn-danger'; buttonDelete.textContent = 'Delete this item';
+    buttonDelete.onclick = () => {
         if (confirm('Are you sure?')) {
             if (currentFile === 'dashboard') currentConfig.widgets.splice(key, 1);
             else if (currentFile === 'workflows') currentConfig.workflows.splice(key, 1);
@@ -951,23 +951,23 @@ function renderEditor(key, itemData, isArray) {
             else currentConfig.sources.splice(key, 1);
             currentItemKey = null;
             markDirty();
-            workspaceEl.innerHTML = '<h2>Item deleted. Click "Save config" to apply.</h2>';
+            workspaceElement.innerHTML = '<h2>Item deleted. Click "Save config" to apply.</h2>';
             renderSidebar();
         }
     };
-    headerDiv.appendChild(btnDelete);
-    workspaceEl.appendChild(headerDiv);
+    headerDiv.appendChild(buttonDelete);
+    workspaceElement.appendChild(headerDiv);
 
-    if (currentFile === 'dashboard') renderDashboardEditor(key, itemData, isArray, ctx);
-    else if (currentFile === 'calendar') renderCalendarEditor(key, itemData, isArray, ctx);
-    else if (currentFile === 'workflows') renderWorkflowsEditor(key, itemData, isArray, ctx);
-    else if (currentFile === 'board') renderBoardEditor(key, itemData, isArray, ctx);
+    if (currentFile === 'dashboard') renderDashboardEditor(key, itemData, isArray, context);
+    else if (currentFile === 'calendar') renderCalendarEditor(key, itemData, isArray, context);
+    else if (currentFile === 'workflows') renderWorkflowsEditor(key, itemData, isArray, context);
+    else if (currentFile === 'board') renderBoardEditor(key, itemData, isArray, context);
 }
 
 (async () => {
     try {
-        const res  = await apiFetch('api_migrations.php?action=scan');
-        const data = await res.json();
+        const result  = await apiFetch('api_migrations.php?action=scan');
+        const data = await result.json();
         if (data.status !== 'success') return;
         const pending = (data.versions || []).filter(v => v.status === 'pending');
         if (pending.length === 0) return;
@@ -985,9 +985,9 @@ function renderEditor(key, itemData, isArray) {
 function validateWorkflowsConfig(config) {
     const workflows = config.workflows || [];
     for (let w = 0; w < workflows.length; w++) {
-        const wf = workflows[w];
-        const label = (wf.title && wf.title.trim()) || `Workflow ${w + 1}`;
-        const steps = wf.steps || [];
+        const workflow = workflows[w];
+        const label = (workflow.title && workflow.title.trim()) || `Workflow ${w + 1}`;
+        const steps = workflow.steps || [];
         if (steps.length === 0) {
             return `"${label}" has no steps — add at least one step or remove the workflow.`;
         }
@@ -1006,11 +1006,11 @@ function validateWorkflowsConfig(config) {
                 if (!proc.schema || !proc.name) {
                     return `${stepLabel} has "call procedure" enabled but no procedure selected.`;
                 }
-                const params = proc.params || [];
-                for (let p = 0; p < params.length; p++) {
-                    const param = params[p] || {};
-                    if (param.source === 'literal') continue;
-                    if (!param.field || param.field.trim() === '') {
+                const parameters = proc.params || [];
+                for (let p = 0; p < parameters.length; p++) {
+                    const parameter = parameters[p] || {};
+                    if (parameter.source === 'literal') continue;
+                    if (!parameter.field || parameter.field.trim() === '') {
                         return `${stepLabel} — procedure parameter ${p + 1} has no source field selected.`;
                     }
                 }
@@ -1020,9 +1020,9 @@ function validateWorkflowsConfig(config) {
     return null;
 }
 
-btnSave.addEventListener('click', async () => {
-    if (btnSave.disabled) return;
-    btnSave.disabled = true;
+buttonSave.addEventListener('click', async () => {
+    if (buttonSave.disabled) return;
+    buttonSave.disabled = true;
 
     try {
         if (activeSaveHandler) {
@@ -1030,12 +1030,12 @@ btnSave.addEventListener('click', async () => {
                 const result = await activeSaveHandler();
                 if (result.status === 'success') {
                     markClean();
-                    showStatusPill(btnSave, result.message || `${currentFile}.json saved`, 'success');
+                    showStatusPill(buttonSave, result.message || `${currentFile}.json saved`, 'success');
                 } else {
-                    showStatusPill(btnSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
+                    showStatusPill(buttonSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
                 }
             } catch {
-                showStatusPill(btnSave, 'Failed to save changes.', 'error');
+                showStatusPill(buttonSave, 'Failed to save changes.', 'error');
             }
             return;
         }
@@ -1043,9 +1043,9 @@ btnSave.addEventListener('click', async () => {
         if (!currentConfig) return;
 
         if (currentFile === 'workflows') {
-            const err = validateWorkflowsConfig(currentConfig);
-            if (err) {
-                showStatusPill(btnSave, err, 'error');
+            const error = validateWorkflowsConfig(currentConfig);
+            if (error) {
+                showStatusPill(buttonSave, error, 'error');
                 return;
             }
         }
@@ -1059,16 +1059,16 @@ btnSave.addEventListener('click', async () => {
 
             if (result.status === 'success') {
                 markClean();
-                showStatusPill(btnSave, `${currentFile}.json saved`, 'success');
+                showStatusPill(buttonSave, `${currentFile}.json saved`, 'success');
 
                 if (currentFile === 'schema') getGlobalSchema({ force: true });
             } else {
-                showStatusPill(btnSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
+                showStatusPill(buttonSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
             }
-        } catch (err) {
-            showStatusPill(btnSave, 'Failed to save changes.', 'error');
+        } catch (error) {
+            showStatusPill(buttonSave, 'Failed to save changes.', 'error');
         }
     } finally {
-        btnSave.disabled = false;
+        buttonSave.disabled = false;
     }
 });

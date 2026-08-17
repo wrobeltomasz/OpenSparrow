@@ -18,21 +18,21 @@ if (!defined('DEMO_MODE')) {
 if ($action === 'demo_status') {
     $metaPath = realpath(__DIR__ . '/../../../config') . '/demo_meta.json';
 
-    $snapEnv = getenv('RECORD_SNAPSHOTS_ENABLED');
-    $snapshotsLockedByEnv = ($snapEnv !== false && $snapEnv !== '');
+    $snapshotEnvironment = getenv('RECORD_SNAPSHOTS_ENABLED');
+    $snapshotsLockedByEnvironment = ($snapshotEnvironment !== false && $snapshotEnvironment !== '');
     if (file_exists($metaPath)) {
         $meta = json_decode(file_get_contents($metaPath), true);
         echo json_encode([
             'status'    => 'success',
             'installed' => true,
             'meta'      => $meta,
-            'snapshots_locked_by_env' => $snapshotsLockedByEnv,
+            'snapshots_locked_by_env' => $snapshotsLockedByEnvironment,
         ]);
     } else {
         echo json_encode([
             'status'    => 'success',
             'installed' => false,
-            'snapshots_locked_by_env' => $snapshotsLockedByEnv,
+            'snapshots_locked_by_env' => $snapshotsLockedByEnvironment,
         ]);
     }
     throw ResponseException::sent();
@@ -207,57 +207,57 @@ function demo_install_run(
             }
         }
 
-        $configDir = realpath(__DIR__ . '/../../../config');
+        $configDirectory = realpath(__DIR__ . '/../../../config');
 
         require_once __DIR__ . '/../../../includes/config_store.php';
         $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-        $schemaCfg = config_get('schema') ?? [];
-        if (!isset($schemaCfg['tables']) || !is_array($schemaCfg['tables'])) {
-            $schemaCfg['tables'] = [];
+        $schemaConfig = config_get('schema') ?? [];
+        if (!isset($schemaConfig['tables']) || !is_array($schemaConfig['tables'])) {
+            $schemaConfig['tables'] = [];
         }
         foreach ($demoData['schema_tables'] as $key => $definition) {
-            $schemaCfg['tables'][$key] = $definition;
+            $schemaConfig['tables'][$key] = $definition;
         }
-        config_save('schema', $schemaCfg, null, $seedUserId);
+        config_save('schema', $schemaConfig, null, $seedUserId);
 
-        $dashCfg = config_get('dashboard') ?? [];
-        if (!isset($dashCfg['widgets']) || !is_array($dashCfg['widgets'])) {
-            $dashCfg['widgets'] = [];
+        $dashConfig = config_get('dashboard') ?? [];
+        if (!isset($dashConfig['widgets']) || !is_array($dashConfig['widgets'])) {
+            $dashConfig['widgets'] = [];
         }
-        if (!isset($dashCfg['layout'])) {
-            $dashCfg['layout'] = ['gap' => '20px'];
+        if (!isset($dashConfig['layout'])) {
+            $dashConfig['layout'] = ['gap' => '20px'];
         }
         foreach ($demoData['dashboard_widgets'] as $widget) {
             $widgetId = $widget['id'];
-            $dashCfg['widgets'] = array_values(
-                array_filter($dashCfg['widgets'], fn($existingWidget) => ($existingWidget['id'] ?? '') !== $widgetId)
+            $dashConfig['widgets'] = array_values(
+                array_filter($dashConfig['widgets'], fn($existingWidget) => ($existingWidget['id'] ?? '') !== $widgetId)
             );
-            $dashCfg['widgets'][] = $widget;
+            $dashConfig['widgets'][] = $widget;
         }
 
-        $dashCfgOrdered = [
-            'layout' => $dashCfg['layout'],
-            'widgets' => $dashCfg['widgets'],
+        $dashConfigOrdered = [
+            'layout' => $dashConfig['layout'],
+            'widgets' => $dashConfig['widgets'],
         ];
-        if (isset($dashCfg['menu_name'])) {
-            $dashCfgOrdered['menu_name'] = $dashCfg['menu_name'];
+        if (isset($dashConfig['menu_name'])) {
+            $dashConfigOrdered['menu_name'] = $dashConfig['menu_name'];
         }
-        if (isset($dashCfg['menu_icon'])) {
-            $dashCfgOrdered['menu_icon'] = $dashCfg['menu_icon'];
+        if (isset($dashConfig['menu_icon'])) {
+            $dashConfigOrdered['menu_icon'] = $dashConfig['menu_icon'];
         }
-        if (isset($dashCfg['hidden'])) {
-            $dashCfgOrdered['hidden'] = $dashCfg['hidden'];
+        if (isset($dashConfig['hidden'])) {
+            $dashConfigOrdered['hidden'] = $dashConfig['hidden'];
         }
-        config_save('dashboard', $dashCfgOrdered, null, $seedUserId);
+        config_save('dashboard', $dashConfigOrdered, null, $seedUserId);
 
-        $calCfg = config_get('calendar') ?? [];
-        if (!isset($calCfg['sources']) || !is_array($calCfg['sources'])) {
-            $calCfg['sources'] = [];
+        $calendarConfig = config_get('calendar') ?? [];
+        if (!isset($calendarConfig['sources']) || !is_array($calendarConfig['sources'])) {
+            $calendarConfig['sources'] = [];
         }
         $demoTables = array_keys($demoData['schema_tables']);
-        $calCfg['sources'] = array_values(
+        $calendarConfig['sources'] = array_values(
             array_filter(
-                $calCfg['sources'],
+                $calendarConfig['sources'],
                 fn($calendarSource) => !in_array($calendarSource['table'] ?? '', $demoTables, true)
             )
         );
@@ -267,54 +267,57 @@ function demo_install_run(
             if ($installerUserId > 0 && empty($calendarSource['notified_users'])) {
                 $calendarSource['notified_users'] = [$installerUserId];
             }
-            $calCfg['sources'][] = $calendarSource;
+            $calendarConfig['sources'][] = $calendarSource;
         }
-        config_save('calendar', $calCfg, null, $seedUserId);
+        config_save('calendar', $calendarConfig, null, $seedUserId);
 
         if (!empty($demoData['board']['boards']) && is_array($demoData['board']['boards'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
-            $boardCfg = config_get('board') ?? [];
-            if (!isset($boardCfg['boards']) || !is_array($boardCfg['boards'])) {
-                $boardCfg['boards'] = [];
+            $boardConfig = config_get('board') ?? [];
+            if (!isset($boardConfig['boards']) || !is_array($boardConfig['boards'])) {
+                $boardConfig['boards'] = [];
             }
-            $boardCfg['boards'] = array_values(
-                array_filter($boardCfg['boards'], fn($board) => !in_array($board['table'] ?? '', $demoTables, true))
+            $boardConfig['boards'] = array_values(
+                array_filter($boardConfig['boards'], fn($board) => !in_array($board['table'] ?? '', $demoTables, true))
             );
             foreach ($demoData['board']['boards'] as $board) {
-                $boardCfg['boards'][] = $board;
+                $boardConfig['boards'][] = $board;
             }
-            config_save('board', $boardCfg, null, $seedUserId);
+            config_save('board', $boardConfig, null, $seedUserId);
         }
 
         if (!empty($demoData['anonymization']) && is_array($demoData['anonymization'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
-            $anonCfg  = config_get('anonymization') ?? [];
-            $demoAnon = $demoData['anonymization'];
-            $anonCfg['enabled']    = $anonCfg['enabled']    ?? ($demoAnon['enabled']    ?? false);
-            $anonCfg['frequency']  = $anonCfg['frequency']  ?? ($demoAnon['frequency']  ?? 'manual');
-            $anonCfg['dictionary'] = (isset($anonCfg['dictionary']) && is_array($anonCfg['dictionary']))
-                ? $anonCfg['dictionary']
-                : ($demoAnon['dictionary'] ?? []);
-            $demoTblsAnon = array_keys($demoData['schema_tables']);
-            $rules = is_array($anonCfg['rules'] ?? null) ? $anonCfg['rules'] : [];
+            $anonymizationConfig  = config_get('anonymization') ?? [];
+            $demoAnonymization = $demoData['anonymization'];
+            $anonymizationConfig['enabled']   = $anonymizationConfig['enabled']
+                ?? ($demoAnonymization['enabled'] ?? false);
+            $anonymizationConfig['frequency'] = $anonymizationConfig['frequency']
+                ?? ($demoAnonymization['frequency'] ?? 'manual');
+            $anonymizationConfig['dictionary'] = (isset($anonymizationConfig['dictionary'])
+                && is_array($anonymizationConfig['dictionary']))
+                ? $anonymizationConfig['dictionary']
+                : ($demoAnonymization['dictionary'] ?? []);
+            $demoAnonymizationTables = array_keys($demoData['schema_tables']);
+            $rules = is_array($anonymizationConfig['rules'] ?? null) ? $anonymizationConfig['rules'] : [];
             $rules = array_values(
-                array_filter($rules, fn($rule) => !in_array($rule['table'] ?? '', $demoTblsAnon, true))
+                array_filter($rules, fn($rule) => !in_array($rule['table'] ?? '', $demoAnonymizationTables, true))
             );
-            foreach ($demoAnon['rules'] ?? [] as $rule) {
+            foreach ($demoAnonymization['rules'] ?? [] as $rule) {
                 $rules[] = $rule;
             }
-            $anonCfg['rules'] = $rules;
-            $anonCfgOrdered = [
-                'enabled'   => $anonCfg['enabled'],
-                'frequency' => $anonCfg['frequency'],
+            $anonymizationConfig['rules'] = $rules;
+            $anonymizationConfigOrdered = [
+                'enabled'   => $anonymizationConfig['enabled'],
+                'frequency' => $anonymizationConfig['frequency'],
             ];
 
-            if ($anonCfg['dictionary']) {
-                $anonCfgOrdered['dictionary'] = $anonCfg['dictionary'];
+            if ($anonymizationConfig['dictionary']) {
+                $anonymizationConfigOrdered['dictionary'] = $anonymizationConfig['dictionary'];
             }
-            $anonCfgOrdered['rules'] = $anonCfg['rules'];
+            $anonymizationConfigOrdered['rules'] = $anonymizationConfig['rules'];
             $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-            config_save('anonymization', $anonCfgOrdered, null, $seedUserId);
+            config_save('anonymization', $anonymizationConfigOrdered, null, $seedUserId);
         }
 
         $workflowsConfig = config_get('workflows') ?? [];
@@ -339,67 +342,67 @@ function demo_install_run(
             $workflowsConfig['menu_icon'] = 'assets/icons/automation.png';
         }
 
-        $wfCfgOrdered = [
+        $workflowConfigOrdered = [
             'workflows' => $workflowsConfig['workflows'],
             'menu_name' => $workflowsConfig['menu_name'],
             'menu_icon' => $workflowsConfig['menu_icon'],
         ];
-        config_save('workflows', $wfCfgOrdered, null, $seedUserId);
+        config_save('workflows', $workflowConfigOrdered, null, $seedUserId);
 
-        $viewsCfg = config_get('views') ?? [];
-        if (!isset($viewsCfg['views']) || !is_array($viewsCfg['views'])) {
-            $viewsCfg['views'] = [];
+        $viewsConfig = config_get('views') ?? [];
+        if (!isset($viewsConfig['views']) || !is_array($viewsConfig['views'])) {
+            $viewsConfig['views'] = [];
         }
         foreach ($demoData['views'] as $key => $definition) {
-            $viewsCfg['views'][$key] = $definition;
+            $viewsConfig['views'][$key] = $definition;
         }
-        config_save('views', $viewsCfg, null, $seedUserId);
+        config_save('views', $viewsConfig, null, $seedUserId);
 
         if (!empty($demoData['files_relations']) && is_array($demoData['files_relations'])) {
-            $filesCfg = config_get('files') ?? [];
-            if (!isset($filesCfg['menu_name'])) {
-                $filesCfg['menu_name'] = 'Files';
+            $filesConfig = config_get('files') ?? [];
+            if (!isset($filesConfig['menu_name'])) {
+                $filesConfig['menu_name'] = 'Files';
             }
-            if (!isset($filesCfg['menu_icon'])) {
-                $filesCfg['menu_icon'] = 'assets/icons/upload.png';
+            if (!isset($filesConfig['menu_icon'])) {
+                $filesConfig['menu_icon'] = 'assets/icons/upload.png';
             }
-            if (!isset($filesCfg['max_file_size_mb'])) {
-                $filesCfg['max_file_size_mb'] = 20;
+            if (!isset($filesConfig['max_file_size_mb'])) {
+                $filesConfig['max_file_size_mb'] = 20;
             }
-            if (!isset($filesCfg['storage_path'])) {
-                $filesCfg['storage_path'] = 'storage/files/';
+            if (!isset($filesConfig['storage_path'])) {
+                $filesConfig['storage_path'] = 'storage/files/';
             }
-            if (!isset($filesCfg['allowed_types']) || !is_array($filesCfg['allowed_types'])) {
-                $filesCfg['allowed_types'] = ['image', 'spreadsheet', 'archive', 'other'];
+            if (!isset($filesConfig['allowed_types']) || !is_array($filesConfig['allowed_types'])) {
+                $filesConfig['allowed_types'] = ['image', 'spreadsheet', 'archive', 'other'];
             }
-            if (!isset($filesCfg['allowed_extensions']) || !is_array($filesCfg['allowed_extensions'])) {
-                $filesCfg['allowed_extensions'] = [
+            if (!isset($filesConfig['allowed_extensions']) || !is_array($filesConfig['allowed_extensions'])) {
+                $filesConfig['allowed_extensions'] = [
                     'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf',
                     'doc', 'docx', 'odt', 'rtf',
                     'xls', 'xlsx', 'ods', 'csv',
                     'zip', 'tar', 'gz',
                 ];
             }
-            if (!isset($filesCfg['relations']) || !is_array($filesCfg['relations'])) {
-                $filesCfg['relations'] = [];
+            if (!isset($filesConfig['relations']) || !is_array($filesConfig['relations'])) {
+                $filesConfig['relations'] = [];
             }
-            $existingTables = array_column($filesCfg['relations'], 'table');
+            $existingTables = array_column($filesConfig['relations'], 'table');
             foreach ($demoData['files_relations'] as $relativePath) {
                 if (!in_array($relativePath['table'] ?? '', $existingTables, true)) {
-                    $filesCfg['relations'][] = $relativePath;
+                    $filesConfig['relations'][] = $relativePath;
                 }
             }
-            config_save('files', $filesCfg, null, $seedUserId);
+            config_save('files', $filesConfig, null, $seedUserId);
         }
 
         $demoFileIds   = [];
         $demoFilePaths = [];
         if (!empty($demoData['demo_files']) && is_array($demoData['demo_files'])) {
             $storagePath = trim((config_get('files') ?? [])['storage_path'] ?? 'storage/files/', '/');
-            $repoRoot    = realpath(__DIR__ . '/../../../');
-            $filesDir    = $repoRoot . '/' . $storagePath;
-            os_ensure_directory($filesDir, 0750);
-            os_write_guard_file($filesDir . '/.htaccess', "Require all denied\n");
+            $repositoryRoot    = realpath(__DIR__ . '/../../../');
+            $filesDirectory    = $repositoryRoot . '/' . $storagePath;
+            os_ensure_directory($filesDirectory, 0750);
+            os_write_guard_file($filesDirectory . '/.htaccess', "Require all denied\n");
             $filesTable = sys_table('files');
             foreach ($demoData['demo_files'] as $demoFile) {
                 $physicalName = bin2hex(random_bytes(16)) . '.csv';
@@ -423,7 +426,7 @@ function demo_install_run(
                 if ($result === false) {
                     admin_db_fail($conn, "demo_install:demo_files:{$type}");
                 }
-                file_put_contents($filesDir . '/' . $physicalName, $demoFile['content']);
+                file_put_contents($filesDirectory . '/' . $physicalName, $demoFile['content']);
                 $demoFileIds[]   = (int) pg_fetch_result($result, 0, 'id');
                 $demoFilePaths[] = $dbPath;
             }
@@ -434,18 +437,18 @@ function demo_install_run(
         if (!empty($demoData['demo_images']) && is_array($demoData['demo_images'])) {
             require_once __DIR__ . '/../../../includes/images.php';
             $storagePath = trim((config_get('files') ?? [])['storage_path'] ?? 'storage/files/', '/');
-            $repoRoot    = realpath(__DIR__ . '/../../../');
-            $filesDir    = $repoRoot . '/' . $storagePath;
-            os_ensure_directory($filesDir, 0750);
-            os_write_guard_file($filesDir . '/.htaccess', "Require all denied\n");
-            $assetsDir = __DIR__ . '/assets/images';
+            $repositoryRoot    = realpath(__DIR__ . '/../../../');
+            $filesDirectory    = $repositoryRoot . '/' . $storagePath;
+            os_ensure_directory($filesDirectory, 0750);
+            os_write_guard_file($filesDirectory . '/.htaccess', "Require all denied\n");
+            $assetsDirectory = __DIR__ . '/assets/images';
             $filesTable    = sys_table('files');
-            foreach ($demoData['demo_images'] as $img) {
-                $srcPath = $assetsDir . '/' . basename($img['source_file']);
-                if (!is_file($srcPath)) {
+            foreach ($demoData['demo_images'] as $image) {
+                $sourcePath = $assetsDirectory . '/' . basename($image['source_file']);
+                if (!is_file($sourcePath)) {
                     continue;
                 }
-                $content      = file_get_contents($srcPath);
+                $content      = file_get_contents($sourcePath);
                 $physicalName = bin2hex(random_bytes(16)) . '.png';
                 $dbPath       = $storagePath . '/' . $physicalName;
                 $result = pg_query_params($conn, "
@@ -456,19 +459,19 @@ function demo_install_run(
                         (\$1, \$2, 'image', 'image/png', 'png', \$3, \$4, \$5, \$6, \$7, \$8)
                     RETURNING id
                 ", [
-                    basename($img['source_file']),
-                    $img['display_name'] ?? basename($img['source_file']),
+                    basename($image['source_file']),
+                    $image['display_name'] ?? basename($image['source_file']),
                     strlen($content),
                     $dbPath,
-                    $authorId((int) $img['author']),
-                    $img['related_table'],
-                    $img['related_id'],
+                    $authorId((int) $image['author']),
+                    $image['related_table'],
+                    $image['related_id'],
                     IMAGES_FIELD,
                 ]);
                 if ($result === false) {
                     admin_db_fail($conn, "demo_install:demo_images:{$type}");
                 }
-                file_put_contents($filesDir . '/' . $physicalName, $content);
+                file_put_contents($filesDirectory . '/' . $physicalName, $content);
                 $demoImageIds[]   = (int) pg_fetch_result($result, 0, 'id');
                 $demoImagePaths[] = $dbPath;
             }
@@ -477,21 +480,21 @@ function demo_install_run(
         $ragFileIds = [];
         if ($withRagDocuments && !empty($demoData['rag_docs']) && is_array($demoData['rag_docs'])) {
             require_once __DIR__ . '/../../../includes/rag_helpers.php';
-            $samplesDir = realpath(__DIR__ . '/../../../docs/rag-samples');
-            $ragCfg     = rag_config();
+            $samplesDirectory = realpath(__DIR__ . '/../../../docs/rag-samples');
+            $ragConfig     = rag_config();
             $ragFilesTable  = sys_table('rag_files');
             $ragUserId  = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
             foreach ($demoData['rag_docs'] as $document) {
                 $name = (string) ($document['file'] ?? '');
 
-                if ($samplesDir === false || $name === '' || basename($name) !== $name) {
+                if ($samplesDirectory === false || $name === '' || basename($name) !== $name) {
                     continue;
                 }
-                $srcPath = $samplesDir . '/' . $name;
-                if (!is_file($srcPath)) {
+                $sourcePath = $samplesDirectory . '/' . $name;
+                if (!is_file($sourcePath)) {
                     continue;
                 }
-                $content = file_get_contents($srcPath);
+                $content = file_get_contents($sourcePath);
                 if ($content === false || trim($content) === '') {
                     continue;
                 }
@@ -514,8 +517,8 @@ function demo_install_run(
                     continue;
                 }
                 $fileId = (int) pg_fetch_result($result, 0, 'id');
-                if ((bool) ($ragCfg['use_chunks'] ?? true)) {
-                    rag_store_chunks($conn, $fileId, $content, $ragCfg);
+                if ((bool) ($ragConfig['use_chunks'] ?? true)) {
+                    rag_store_chunks($conn, $fileId, $content, $ragConfig);
                 }
                 $ragFileIds[] = $fileId;
             }
@@ -523,23 +526,23 @@ function demo_install_run(
 
         if (!empty($demoData['rag_aggregate_views']) && is_array($demoData['rag_aggregate_views'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
-            $ragViewCfg = config_get('rag') ?? [];
-            $aggViews   = is_array($ragViewCfg['aggregate_views'] ?? null) ? $ragViewCfg['aggregate_views'] : [];
+            $ragViewConfig = config_get('rag') ?? [];
+            $aggViews   = is_array($ragViewConfig['aggregate_views'] ?? null) ? $ragViewConfig['aggregate_views'] : [];
             foreach ($demoData['rag_aggregate_views'] as $aggTable => $aggView) {
                 if (!empty($demoData['schema_tables'][$aggTable]['owner_restricted'])) {
                     continue;
                 }
                 $aggViews[$aggTable] = $aggView;
             }
-            $ragViewCfg['aggregate_views'] = $aggViews;
-            config_save('rag', $ragViewCfg, null, $seedUserId);
+            $ragViewConfig['aggregate_views'] = $aggViews;
+            config_save('rag', $ragViewConfig, null, $seedUserId);
         }
 
         $menuKeys = [];
         if (!empty($demoData['menu_items']) && is_array($demoData['menu_items'])) {
-            $menuCfg = config_get('menu') ?? [];
-            if (!isset($menuCfg['items']) || !is_array($menuCfg['items'])) {
-                $menuCfg['items'] = [];
+            $menuConfig = config_get('menu') ?? [];
+            if (!isset($menuConfig['items']) || !is_array($menuConfig['items'])) {
+                $menuConfig['items'] = [];
             }
             foreach ($demoData['menu_items'] as $entry) {
                 $menuKey = $entry['key'] ?? '';
@@ -547,12 +550,12 @@ function demo_install_run(
                     continue;
                 }
                 $menuKeys[] = $menuKey;
-                $menuCfg['items'] = array_values(
-                    array_filter($menuCfg['items'], fn($menuItem) => ($menuItem['key'] ?? '') !== $menuKey)
+                $menuConfig['items'] = array_values(
+                    array_filter($menuConfig['items'], fn($menuItem) => ($menuItem['key'] ?? '') !== $menuKey)
                 );
-                $menuCfg['items'][] = $entry;
+                $menuConfig['items'][] = $entry;
             }
-            config_save('menu', $menuCfg, null, $seedUserId);
+            config_save('menu', $menuConfig, null, $seedUserId);
         }
 
         $automationIds = [];
@@ -574,43 +577,43 @@ function demo_install_run(
         $printKeys = [];
         if (!empty($demoData['prints']) && is_array($demoData['prints'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
-            $printCfg = config_get('print') ?? [];
-            if (!isset($printCfg['prints']) || !is_array($printCfg['prints'])) {
-                $printCfg['prints'] = [];
+            $printConfig = config_get('print') ?? [];
+            if (!isset($printConfig['prints']) || !is_array($printConfig['prints'])) {
+                $printConfig['prints'] = [];
             }
             foreach ($demoData['prints'] as $key => $definition) {
                 $printKeys[] = $key;
-                $printCfg['prints'][$key] = $definition;
+                $printConfig['prints'][$key] = $definition;
             }
             $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-            config_save('print', $printCfg, null, $seedUserId);
+            config_save('print', $printConfig, null, $seedUserId);
         }
 
         if (!empty($demoData['user_records']) && is_array($demoData['user_records'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
-            $userRecordsCfg = config_get('user_records') ?? [];
-            if (!isset($userRecordsCfg['columns']) || !is_array($userRecordsCfg['columns'])) {
-                $userRecordsCfg['columns'] = [];
+            $userRecordsConfig = config_get('user_records') ?? [];
+            if (!isset($userRecordsConfig['columns']) || !is_array($userRecordsConfig['columns'])) {
+                $userRecordsConfig['columns'] = [];
             }
-            if (!isset($userRecordsCfg['limit'])) {
-                $userRecordsCfg['limit'] = 20;
+            if (!isset($userRecordsConfig['limit'])) {
+                $userRecordsConfig['limit'] = 20;
             }
             foreach ($demoData['user_records'] as $tableName => $columns) {
-                $userRecordsCfg['columns'][$tableName] = $columns;
+                $userRecordsConfig['columns'][$tableName] = $columns;
             }
             $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-            config_save('user_records', $userRecordsCfg, null, $seedUserId);
+            config_save('user_records', $userRecordsConfig, null, $seedUserId);
         }
 
         $snapshotsEnabledByDemo = false;
-        $snapEnv = getenv('RECORD_SNAPSHOTS_ENABLED');
-        if ($withAudit && $withUsers && ($snapEnv === false || $snapEnv === '')) {
+        $snapshotEnvironment = getenv('RECORD_SNAPSHOTS_ENABLED');
+        if ($withAudit && $withUsers && ($snapshotEnvironment === false || $snapshotEnvironment === '')) {
             require_once __DIR__ . '/../../../includes/config_store.php';
-            $settingsCfg = config_get('settings') ?? [];
-            if (empty($settingsCfg['record_snapshots_enabled'])) {
-                $settingsCfg['record_snapshots_enabled'] = true;
+            $settingsConfig = config_get('settings') ?? [];
+            if (empty($settingsConfig['record_snapshots_enabled'])) {
+                $settingsConfig['record_snapshots_enabled'] = true;
                 $seedUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-                config_save('settings', $settingsCfg, null, $seedUserId);
+                config_save('settings', $settingsConfig, null, $seedUserId);
                 $snapshotsEnabledByDemo = true;
             }
         }
@@ -639,7 +642,7 @@ function demo_install_run(
             'rag_file_ids'   => $ragFileIds,
         ];
         file_put_contents(
-            $configDir . '/demo_meta.json',
+            $configDirectory . '/demo_meta.json',
             json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
         );
 
@@ -687,8 +690,8 @@ if ($action === 'demo_uninstall') {
         throw ResponseException::encoded(['status' => 'error', 'error' => 'Confirmation required.']);
     }
 
-    $configDir = realpath(__DIR__ . '/../../../config');
-    $metaPath = $configDir . '/demo_meta.json';
+    $configDirectory = realpath(__DIR__ . '/../../../config');
+    $metaPath = $configDirectory . '/demo_meta.json';
     if (!file_exists($metaPath)) {
         throw ResponseException::encoded(['status' => 'error', 'error' => 'No demo installed.']);
     }
@@ -717,9 +720,9 @@ if ($action === 'demo_uninstall') {
             $fileIdList = '{' . implode(',', array_map('intval', $demoFileIds)) . '}';
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('files') . ' WHERE id = ANY($1::int[])', [$fileIdList]);
         }
-        $repoRoot = realpath(__DIR__ . '/../../../');
+        $repositoryRoot = realpath(__DIR__ . '/../../../');
         foreach ($meta['demo_file_paths'] ?? [] as $demoPath) {
-            $full = $repoRoot . '/' . $demoPath;
+            $full = $repositoryRoot . '/' . $demoPath;
             if (is_file($full)) {
                 @unlink($full);
             }
@@ -727,11 +730,11 @@ if ($action === 'demo_uninstall') {
 
         $demoImageIds = $meta['demo_image_ids'] ?? [];
         if (!empty($demoImageIds)) {
-            $imgIdList = '{' . implode(',', array_map('intval', $demoImageIds)) . '}';
-            @pg_query_params($conn, 'DELETE FROM ' . sys_table('files') . ' WHERE id = ANY($1::int[])', [$imgIdList]);
+            $imageIdList = '{' . implode(',', array_map('intval', $demoImageIds)) . '}';
+            @pg_query_params($conn, 'DELETE FROM ' . sys_table('files') . ' WHERE id = ANY($1::int[])', [$imageIdList]);
         }
         foreach ($meta['demo_image_paths'] ?? [] as $demoPath) {
-            $full = $repoRoot . '/' . $demoPath;
+            $full = $repositoryRoot . '/' . $demoPath;
             if (is_file($full)) {
                 @unlink($full);
             }
@@ -782,30 +785,30 @@ if ($action === 'demo_uninstall') {
         $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
 
         if (!empty($meta['snapshots_enabled_by_demo'])) {
-            $settingsCfg = config_get('settings') ?? [];
-            if (!empty($settingsCfg['record_snapshots_enabled'])) {
-                $settingsCfg['record_snapshots_enabled'] = false;
-                config_save('settings', $settingsCfg, null, $cleanUserId);
+            $settingsConfig = config_get('settings') ?? [];
+            if (!empty($settingsConfig['record_snapshots_enabled'])) {
+                $settingsConfig['record_snapshots_enabled'] = false;
+                config_save('settings', $settingsConfig, null, $cleanUserId);
             }
         }
 
-        $cfg = config_get('schema');
-        if (is_array($cfg)) {
+        $config = config_get('schema');
+        if (is_array($config)) {
             $m2mJunctions = [];
             foreach ($meta['tables'] ?? [] as $tableName) {
-                foreach ($cfg['tables'][$tableName]['many_to_many'] ?? [] as $m2m) {
+                foreach ($config['tables'][$tableName]['many_to_many'] ?? [] as $m2m) {
                     $junctionTable = $m2m['junction_table'] ?? '';
-                    if ($junctionTable && !empty($cfg['tables'][$junctionTable]['hidden'])) {
+                    if ($junctionTable && !empty($config['tables'][$junctionTable]['hidden'])) {
                         $m2mJunctions[] = $junctionTable;
                     }
                 }
-                unset($cfg['tables'][$tableName]);
+                unset($config['tables'][$tableName]);
             }
 
             foreach ($m2mJunctions as $junctionTable) {
-                if (isset($cfg['tables'][$junctionTable])) {
+                if (isset($config['tables'][$junctionTable])) {
                     $stillUsed = false;
-                    foreach ($cfg['tables'] as $tableConfig) {
+                    foreach ($config['tables'] as $tableConfig) {
                         foreach ($tableConfig['many_to_many'] ?? [] as $m2mDefinition) {
                             if (($m2mDefinition['junction_table'] ?? '') === $junctionTable) {
                                 $stillUsed = true;
@@ -814,72 +817,75 @@ if ($action === 'demo_uninstall') {
                         }
                     }
                     if (!$stillUsed) {
-                        unset($cfg['tables'][$junctionTable]);
+                        unset($config['tables'][$junctionTable]);
                     }
                 }
             }
-            if (empty($cfg['tables'])) {
+            if (empty($config['tables'])) {
                 config_delete('schema', $cleanUserId);
             } else {
-                config_save('schema', $cfg, null, $cleanUserId);
+                config_save('schema', $config, null, $cleanUserId);
             }
         }
 
-        $dashCfg = config_get('dashboard');
-        if (is_array($dashCfg)) {
+        $dashConfig = config_get('dashboard');
+        if (is_array($dashConfig)) {
             $ids = $meta['widget_ids'] ?? [];
-            $dashCfg['widgets'] = array_values(
-                array_filter($dashCfg['widgets'] ?? [], fn($widget) => !in_array($widget['id'] ?? '', $ids, true))
+            $dashConfig['widgets'] = array_values(
+                array_filter($dashConfig['widgets'] ?? [], fn($widget) => !in_array($widget['id'] ?? '', $ids, true))
             );
-            if (empty($dashCfg['widgets'])) {
+            if (empty($dashConfig['widgets'])) {
                 config_delete('dashboard', $cleanUserId);
             } else {
-                config_save('dashboard', $dashCfg, null, $cleanUserId);
+                config_save('dashboard', $dashConfig, null, $cleanUserId);
             }
         }
 
-        $calCfg = config_get('calendar');
-        if (is_array($calCfg)) {
+        $calendarConfig = config_get('calendar');
+        if (is_array($calendarConfig)) {
             $tables = $meta['tables'] ?? [];
-            $calCfg['sources'] = array_values(
+            $calendarConfig['sources'] = array_values(
                 array_filter(
-                    $calCfg['sources'] ?? [],
+                    $calendarConfig['sources'] ?? [],
                     fn($calendarSource) => !in_array($calendarSource['table'] ?? '', $tables, true)
                 )
             );
-            if (empty($calCfg['sources'])) {
+            if (empty($calendarConfig['sources'])) {
                 config_delete('calendar', $cleanUserId);
             } else {
-                config_save('calendar', $calCfg, null, $cleanUserId);
+                config_save('calendar', $calendarConfig, null, $cleanUserId);
             }
         }
 
-        $boardCfg = config_get('board');
-        if (is_array($boardCfg) && !empty($boardCfg['boards'])) {
+        $boardConfig = config_get('board');
+        if (is_array($boardConfig) && !empty($boardConfig['boards'])) {
             $tables = $meta['tables'] ?? [];
             $ids  = $meta['board_ids'] ?? [];
-            $boardCfg['boards'] = array_values(array_filter(
-                $boardCfg['boards'],
+            $boardConfig['boards'] = array_values(array_filter(
+                $boardConfig['boards'],
                 fn($board) => !in_array($board['id'] ?? '', $ids, true)
                     && !in_array($board['table'] ?? '', $tables, true)
             ));
-            if (empty($boardCfg['boards'])) {
+            if (empty($boardConfig['boards'])) {
                 config_delete('board', $cleanUserId);
             } else {
-                config_save('board', $boardCfg, null, $cleanUserId);
+                config_save('board', $boardConfig, null, $cleanUserId);
             }
         }
 
-        $anonCfg = config_get('anonymization');
-        if (is_array($anonCfg)) {
+        $anonymizationConfig = config_get('anonymization');
+        if (is_array($anonymizationConfig)) {
             $tables = $meta['tables'] ?? [];
-            $anonCfg['rules'] = array_values(
-                array_filter($anonCfg['rules'] ?? [], fn($rule) => !in_array($rule['table'] ?? '', $tables, true))
+            $anonymizationConfig['rules'] = array_values(
+                array_filter(
+                    $anonymizationConfig['rules'] ?? [],
+                    fn($rule) => !in_array($rule['table'] ?? '', $tables, true)
+                )
             );
-            if (empty($anonCfg['rules'])) {
+            if (empty($anonymizationConfig['rules'])) {
                 config_delete('anonymization', $cleanUserId);
             } else {
-                config_save('anonymization', $anonCfg, null, $cleanUserId);
+                config_save('anonymization', $anonymizationConfig, null, $cleanUserId);
             }
         }
 
@@ -899,30 +905,30 @@ if ($action === 'demo_uninstall') {
             }
         }
 
-        $viewsCfg = config_get('views');
-        if (is_array($viewsCfg)) {
+        $viewsConfig = config_get('views');
+        if (is_array($viewsConfig)) {
             foreach ($meta['view_keys'] ?? [] as $viewKey) {
-                unset($viewsCfg['views'][$viewKey]);
+                unset($viewsConfig['views'][$viewKey]);
             }
-            if (empty($viewsCfg['views'])) {
+            if (empty($viewsConfig['views'])) {
                 config_delete('views', $cleanUserId);
             } else {
-                config_save('views', $viewsCfg, null, $cleanUserId);
+                config_save('views', $viewsConfig, null, $cleanUserId);
             }
         }
 
-        $menuCfg = config_get('menu');
-        if (is_array($menuCfg)) {
+        $menuConfig = config_get('menu');
+        if (is_array($menuConfig)) {
             $keys = $meta['menu_keys'] ?? [];
-            if (!empty($keys) && isset($menuCfg['items']) && is_array($menuCfg['items'])) {
-                $menuCfg['items'] = array_values(
-                    array_filter($menuCfg['items'], fn($menuItem) => !in_array($menuItem['key'] ?? '', $keys, true))
+            if (!empty($keys) && isset($menuConfig['items']) && is_array($menuConfig['items'])) {
+                $menuConfig['items'] = array_values(
+                    array_filter($menuConfig['items'], fn($menuItem) => !in_array($menuItem['key'] ?? '', $keys, true))
                 );
             }
-            if (empty($menuCfg['items'])) {
+            if (empty($menuConfig['items'])) {
                 config_delete('menu', $cleanUserId);
             } else {
-                config_save('menu', $menuCfg, null, $cleanUserId);
+                config_save('menu', $menuConfig, null, $cleanUserId);
             }
         }
 
@@ -941,42 +947,42 @@ if ($action === 'demo_uninstall') {
         }
 
         require_once __DIR__ . '/../../../includes/config_store.php';
-        $printCfg = config_get('print');
-        if (is_array($printCfg)) {
+        $printConfig = config_get('print');
+        if (is_array($printConfig)) {
             $keys = $meta['print_keys'] ?? [];
             foreach ($keys as $printKey) {
-                unset($printCfg['prints'][$printKey]);
+                unset($printConfig['prints'][$printKey]);
             }
             $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
-            if (empty($printCfg['prints'])) {
+            if (empty($printConfig['prints'])) {
                 config_delete('print', $cleanUserId);
             } else {
-                config_save('print', $printCfg, null, $cleanUserId);
+                config_save('print', $printConfig, null, $cleanUserId);
             }
         }
 
-        $ragViewCfg = config_get('rag');
-        if (is_array($ragViewCfg) && !empty($ragViewCfg['aggregate_views'])) {
+        $ragViewConfig = config_get('rag');
+        if (is_array($ragViewConfig) && !empty($ragViewConfig['aggregate_views'])) {
             $tables = $meta['tables'] ?? [];
             foreach ($tables as $tableName) {
-                unset($ragViewCfg['aggregate_views'][$tableName]);
+                unset($ragViewConfig['aggregate_views'][$tableName]);
             }
-            if (empty($ragViewCfg['aggregate_views'])) {
-                unset($ragViewCfg['aggregate_views']);
+            if (empty($ragViewConfig['aggregate_views'])) {
+                unset($ragViewConfig['aggregate_views']);
             }
-            config_save('rag', $ragViewCfg, null, $cleanUserId);
+            config_save('rag', $ragViewConfig, null, $cleanUserId);
         }
 
-        $userRecordsCfg = config_get('user_records');
-        if (is_array($userRecordsCfg)) {
+        $userRecordsConfig = config_get('user_records');
+        if (is_array($userRecordsConfig)) {
             $tables = $meta['tables'] ?? [];
             foreach ($tables as $tableName) {
-                unset($userRecordsCfg['columns'][$tableName]);
+                unset($userRecordsConfig['columns'][$tableName]);
             }
-            if (empty($userRecordsCfg['columns'])) {
+            if (empty($userRecordsConfig['columns'])) {
                 config_delete('user_records', $cleanUserId);
             } else {
-                config_save('user_records', $userRecordsCfg, null, $cleanUserId);
+                config_save('user_records', $userRecordsConfig, null, $cleanUserId);
             }
         }
 

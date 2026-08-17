@@ -26,11 +26,11 @@ export { clearSelection } from './state.js';
 const userRole = window.USER_ROLE || 'viewer';
 const isReadOnly = userRole !== 'editor';
 
-export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
+export async function loadTable(schema, table, gridTitleElement, addRowButton) {
     debugLog('Loading table', table);
     try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const data = await fetchTableData(table, urlParams);
+        const urlParameters = new URLSearchParameters(window.location.search);
+        const data = await fetchTableData(table, urlParameters);
 
         state.currentTable = table;
         state.fkCache = new Map();
@@ -58,20 +58,20 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
             );
         }
 
-        const tableCols = schema.tables[table]?.columns || {};
-        for (const [colName, colCfg] of Object.entries(tableCols)) {
-            if (colCfg.type !== 'virtual') continue;
+        const tableColumns = schema.tables[table]?.columns || {};
+        for (const [columnName, columnConfig] of Object.entries(tableColumns)) {
+            if (columnConfig.type !== 'virtual') continue;
             state.fullData.forEach(row => {
-                row[colName] = computeVirtual(colCfg.formula, row);
+                row[columnName] = computeVirtual(columnConfig.formula, row);
             });
         }
 
-        const fetchedColSet = new Set(data.columns || []);
-        state.displayedColumns = Object.keys(tableCols).filter(c => {
+        const fetchedColumnSet = new Set(data.columns || []);
+        state.displayedColumns = Object.keys(tableColumns).filter(c => {
             if (c === 'id') return false;
-            const cfg = tableCols[c];
-            if (cfg.show_in_grid === false) return false;
-            return fetchedColSet.has(c) || cfg.type === 'virtual';
+            const config = tableColumns[c];
+            if (config.show_in_grid === false) return false;
+            return fetchedColumnSet.has(c) || config.type === 'virtual';
         });
         state.filteredData = state.fullData.slice();
         state.unsortedFilteredData = state.filteredData.slice();
@@ -79,34 +79,34 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
         state.sortState = firstSort?.column
             ? { column: firstSort.column, asc: (firstSort.dir ?? 'asc').toLowerCase() !== 'desc' }
             : { column: null, asc: true };
-        state.gridTitleEl = gridTitleEl;
-        state.addRowBtn = addRowBtn;
+        state.gridTitleEl = gridTitleElement;
+        state.addRowBtn = addRowButton;
         state.containerEl = document.getElementById('grid');
 
         window.AppState = window.AppState || {};
         window.AppState.currentTable = table;
 
-        const filterCol = urlParams.get('filter_col');
-        const filterVal = urlParams.get('filter_val');
-        const filterFrom = urlParams.get('filter_from');
-        const filterTo = urlParams.get('filter_to');
+        const filterColumn = urlParameters.get('filter_col');
+        const filterValue = urlParameters.get('filter_val');
+        const filterFrom = urlParameters.get('filter_from');
+        const filterTo = urlParameters.get('filter_to');
         let displayTitle = data.table?.display_name || table;
-        if (urlParams.get('table') === table && filterCol) {
-            if (filterVal !== null) {
-                displayTitle += ` (Filtered by ${filterCol}: ${filterVal})`;
+        if (urlParameters.get('table') === table && filterColumn) {
+            if (filterValue !== null) {
+                displayTitle += ` (Filtered by ${filterColumn}: ${filterValue})`;
             } else if (filterFrom !== null || filterTo !== null) {
-                displayTitle += ` (Filtered by ${filterCol}: ${filterFrom ?? ''}…${filterTo ?? ''})`;
+                displayTitle += ` (Filtered by ${filterColumn}: ${filterFrom ?? ''}…${filterTo ?? ''})`;
             }
         }
-        gridTitleEl.textContent = displayTitle;
+        gridTitleElement.textContent = displayTitle;
 
-        if (addRowBtn) {
+        if (addRowButton) {
             if (isReadOnly) {
-                addRowBtn.style.display = 'none';
+                addRowButton.style.display = 'none';
             } else {
-                addRowBtn.style.display = '';
-                addRowBtn.disabled = false;
-                addRowBtn.onclick = () => {
+                addRowButton.style.display = '';
+                addRowButton.disabled = false;
+                addRowButton.onclick = () => {
                     window.location.href = `create.php?table=${table}`;
                 };
             }
@@ -114,10 +114,10 @@ export async function loadTable(schema, table, gridTitleEl, addRowBtn) {
 
         await renderGrid(schema);
         document.dispatchEvent(new Event('tableLoaded'));
-    } catch (err) {
-        console.error('Failed to load table data:', err);
-        showToast(I18n.t('grid.cannot_load_table', { table, msg: err.message }), 'error');
-        if (gridTitleEl) gridTitleEl.textContent = I18n.t('grid.error_loading_table', { table });
+    } catch (error) {
+        console.error('Failed to load table data:', error);
+        showToast(I18n.t('grid.cannot_load_table', { table, msg: error.message }), 'error');
+        if (gridTitleElement) gridTitleElement.textContent = I18n.t('grid.error_loading_table', { table });
     }
 }
 
@@ -163,42 +163,42 @@ export async function resetFilters(schema) {
     await renderGrid(schema);
 }
 
-function applyVirtualCols(schema, rows) {
-    const tableCols = schema.tables[state.currentTable]?.columns || {};
-    for (const [colName, colCfg] of Object.entries(tableCols)) {
-        if (colCfg.type !== 'virtual') continue;
-        rows.forEach(row => { row[colName] = computeVirtual(colCfg.formula, row); });
+function applyVirtualColumns(schema, rows) {
+    const tableColumns = schema.tables[state.currentTable]?.columns || {};
+    for (const [columnName, columnConfig] of Object.entries(tableColumns)) {
+        if (columnConfig.type !== 'virtual') continue;
+        rows.forEach(row => { row[columnName] = computeVirtual(columnConfig.formula, row); });
     }
 }
 
 export async function appendMoreRows(schema, search = '') {
     try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const data = await fetchTableData(state.currentTable, urlParams, {
+        const urlParameters = new URLSearchParameters(window.location.search);
+        const data = await fetchTableData(state.currentTable, urlParameters, {
             offset: state.loadedOffset,
             search,
         });
         const newRows = data.rows || [];
-        applyVirtualCols(schema, newRows);
+        applyVirtualColumns(schema, newRows);
         state.fullData = [...state.fullData, ...newRows];
         state.loadedOffset = state.fullData.length;
         state.wasTruncated = !!data.truncated;
         state.totalRows = data.total ?? state.fullData.length;
         setFilteredData(state.fullData.slice());
         await renderGrid(schema);
-    } catch (err) {
-        console.error('Failed to load more rows:', err);
-        showToast(I18n.t('grid.cannot_load_more', { msg: err.message }), 'error');
+    } catch (error) {
+        console.error('Failed to load more rows:', error);
+        showToast(I18n.t('grid.cannot_load_more', { msg: error.message }), 'error');
     }
 }
 
 export async function serverSearchRows(schema, search) {
     try {
         state.loadedOffset = 0;
-        const urlParams = new URLSearchParams(window.location.search);
-        const data = await fetchTableData(state.currentTable, urlParams, { search });
+        const urlParameters = new URLSearchParameters(window.location.search);
+        const data = await fetchTableData(state.currentTable, urlParameters, { search });
         const rows = data.rows || [];
-        applyVirtualCols(schema, rows);
+        applyVirtualColumns(schema, rows);
         state.fullData = rows;
         state.loadedOffset = rows.length;
         state.wasTruncated = !!data.truncated;
@@ -206,9 +206,9 @@ export async function serverSearchRows(schema, search) {
         state.serverSearchActive = true;
         setFilteredData(rows);
         await renderGrid(schema);
-    } catch (err) {
-        console.error('Server search failed:', err);
-        showToast(I18n.t('grid.search_failed', { msg: err.message }), 'error');
+    } catch (error) {
+        console.error('Server search failed:', error);
+        showToast(I18n.t('grid.search_failed', { msg: error.message }), 'error');
     }
 }
 

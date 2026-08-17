@@ -22,8 +22,8 @@ const SKIP_TYPES = new Set([
     'uuid', 'json', 'jsonb', 'virtual', 'm2m', 'file',
 ]);
 
-function isTextCol(cfg) {
-    const t = (cfg.type ?? '').toLowerCase().split('(')[0].trim();
+function isTextColumn(config) {
+    const t = (config.type ?? '').toLowerCase().split('(')[0].trim();
     return !SKIP_TYPES.has(t) && !t.startsWith('int') && !t.startsWith('float')
         && !t.startsWith('double') && !t.startsWith('numeric') && !t.startsWith('decimal')
         && !t.startsWith('timestamp') && !t.startsWith('time') && !t.startsWith('date');
@@ -84,15 +84,15 @@ function getPayload() {
 
 function payloadHash(p) { return JSON.stringify(p); }
 
-function updateApplyBtn() {
-    const btn = panel.querySelector('#dc-apply');
-    btn.disabled = !previewHash || payloadHash(getPayload()) !== previewHash;
+function updateApplyButton() {
+    const button = panel.querySelector('#dc-apply');
+    button.disabled = !previewHash || payloadHash(getPayload()) !== previewHash;
 }
 
-function setStatus(msg, isError) {
-    const el = panel.querySelector('#dc-status');
-    el.textContent = msg;
-    el.className = 'dc-status' + (isError ? ' error' : '');
+function setStatus(message, isError) {
+    const element = panel.querySelector('#dc-status');
+    element.textContent = message;
+    element.className = 'dc-status' + (isError ? ' error' : '');
 }
 
 function clearPreview() {
@@ -100,7 +100,7 @@ function clearPreview() {
     panel.querySelector('#dc-status').textContent = '';
     previewHash = null;
     lastCount   = 0;
-    updateApplyBtn();
+    updateApplyButton();
 }
 
 async function runPreview() {
@@ -110,16 +110,16 @@ async function runPreview() {
     setStatus(I18n.t('common.loading'), false);
     panel.querySelector('#dc-preview-area').innerHTML = '';
     previewHash = null;
-    updateApplyBtn();
+    updateApplyButton();
 
     let data;
     try {
-        const res = await apiFetch('api/data_cleanup.php?action=data_cleanup_preview', {
+        const result = await apiFetch('api/data_cleanup.php?action=data_cleanup_preview', {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: payload,
         });
-        data = await res.json();
+        data = await result.json();
     } catch {
         setStatus(I18n.t('common.error_generic'), true);
         return;
@@ -139,8 +139,8 @@ async function runPreview() {
 
     const rows = data.rows ?? [];
     if (rows.length > 0) {
-        const tbl = document.createElement('table');
-        tbl.className = 'dc-preview-table';
+        const table = document.createElement('table');
+        table.className = 'dc-preview-table';
 
         const thead = document.createElement('thead');
         const hr    = document.createElement('tr');
@@ -150,7 +150,7 @@ async function runPreview() {
             hr.appendChild(th);
         });
         thead.appendChild(hr);
-        tbl.appendChild(thead);
+        table.appendChild(thead);
 
         const tbody = document.createElement('tbody');
         for (const row of rows) {
@@ -167,17 +167,17 @@ async function runPreview() {
             tr.appendChild(tdA);
             tbody.appendChild(tr);
         }
-        tbl.appendChild(tbody);
-        panel.querySelector('#dc-preview-area').appendChild(tbl);
+        table.appendChild(tbody);
+        panel.querySelector('#dc-preview-area').appendChild(table);
     }
 
-    updateApplyBtn();
+    updateApplyButton();
 }
 
 function schedulePreview() {
     clearTimeout(debounceTimer);
     previewHash = null;
-    updateApplyBtn();
+    updateApplyButton();
     debounceTimer = setTimeout(runPreview, 400);
 }
 
@@ -185,17 +185,17 @@ async function applyChanges() {
     if (!currentPayload || !previewHash) return;
     if (payloadHash(getPayload()) !== previewHash) return;
 
-    const confirmMsg = I18n.t('data_cleanup.confirm').replace('{n}', lastCount);
-    if (!confirm(confirmMsg)) return;
+    const confirmMessage = I18n.t('data_cleanup.confirm').replace('{n}', lastCount);
+    if (!confirm(confirmMessage)) return;
 
     let data;
     try {
-        const res = await apiFetch('api/data_cleanup.php?action=data_cleanup_apply', {
+        const result = await apiFetch('api/data_cleanup.php?action=data_cleanup_apply', {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: currentPayload,
         });
-        data = await res.json();
+        data = await result.json();
     } catch {
         setStatus(I18n.t('common.error_generic'), true);
         return;
@@ -206,8 +206,8 @@ async function applyChanges() {
         return;
     }
 
-    const doneMsg = I18n.t('data_cleanup.applied').replace('{n}', data.updated ?? 0);
-    setStatus(doneMsg, false);
+    const doneMessage = I18n.t('data_cleanup.applied').replace('{n}', data.updated ?? 0);
+    setStatus(doneMessage, false);
     clearPreview();
 
     if (gridState.currentTable && window.schema && document.getElementById('gridTitle') && document.getElementById('addRow')) {
@@ -221,24 +221,24 @@ function populateColumns() {
     sel.innerHTML = '';
     if (!table || !window.schema?.tables?.[table]) return;
 
-    const cols = window.schema.tables[table].columns ?? {};
+    const columns = window.schema.tables[table].columns ?? {};
     let first = true;
-    for (const [name, cfg] of Object.entries(cols)) {
-        if (!isTextCol(cfg)) continue;
-        const opt = document.createElement('option');
-        opt.value       = name;
-        opt.textContent = cfg.display_name ?? name;
-        if (first) { opt.selected = true; first = false; }
-        sel.appendChild(opt);
+    for (const [name, config] of Object.entries(columns)) {
+        if (!isTextColumn(config)) continue;
+        const option = document.createElement('option');
+        option.value       = name;
+        option.textContent = config.display_name ?? name;
+        if (first) { option.selected = true; first = false; }
+        sel.appendChild(option);
     }
 }
 
 function buildPanel() {
     const t  = k => esc(I18n.t(k));
-    const el = document.createElement('div');
-    el.className = 'dc-panel';
-    el.id        = 'dc-panel';
-    el.innerHTML = `
+    const element = document.createElement('div');
+    element.className = 'dc-panel';
+    element.id        = 'dc-panel';
+    element.innerHTML = `
 <div class="dc-header">
     <h3 class="dc-title">${t('data_cleanup.title')}</h3>
     <button class="dc-close" id="dc-close" title="${t('header.close')}" aria-label="${t('header.close')}">&#x2715;</button>
@@ -277,7 +277,7 @@ function buildPanel() {
         <button id="dc-apply" class="dc-apply-btn" disabled>${t('data_cleanup.apply')}</button>
     </div>
 </div>`;
-    return el;
+    return element;
 }
 
 function openPanel() {
@@ -319,8 +319,8 @@ function closePanel() {
 
 export function initDataCleanup() {
     document.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('dataCleanupBtn');
-        if (btn) btn.addEventListener('click', openPanel);
+        const button = document.getElementById('dataCleanupBtn');
+        if (button) button.addEventListener('click', openPanel);
     });
 
     document.addEventListener('tableLoaded', () => {

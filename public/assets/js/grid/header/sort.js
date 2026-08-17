@@ -5,15 +5,15 @@
 
 import { state, sortRows } from '../state.js';
 
-export function toggleSortState(col) {
-    if (state.sortState.column === col) {
+export function toggleSortState(column) {
+    if (state.sortState.column === column) {
         if (state.sortState.asc) {
-            state.sortState = { column: col, asc: false };
+            state.sortState = { column: column, asc: false };
         } else {
             state.sortState = { column: null, asc: true };
         }
     } else {
-        state.sortState = { column: col, asc: true };
+        state.sortState = { column: column, asc: true };
     }
 
     state.filteredData = state.sortState.column

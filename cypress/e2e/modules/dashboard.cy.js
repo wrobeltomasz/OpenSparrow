@@ -98,8 +98,8 @@ describe('OpenSparrow – Dashboard: Period Filter', () => {
   it('shows the period select with the expected options', () => {
     cy.get('#dashDateFilter').should('exist');
     cy.get('#dashDateFilter option').should('have.length', 5);
-    ['all', 'today', '7d', '30d', 'this_month'].forEach(val => {
-      cy.get(`#dashDateFilter option[value="${val}"]`).should('exist');
+    ['all', 'today', '7d', '30d', 'this_month'].forEach(value => {
+      cy.get(`#dashDateFilter option[value="${value}"]`).should('exist');
     });
   });
 

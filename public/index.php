@@ -29,9 +29,9 @@ if ($requestedWorkflow !== '') {
     os_require_access('workflows', $requestedWorkflow);
 
     require_once __DIR__ . '/../includes/config_store.php';
-    foreach ((config_get('workflows') ?? [])['workflows'] ?? [] as $wfItem) {
-        if (is_array($wfItem) && ($wfItem['id'] ?? '') === $requestedWorkflow) {
-            if (!workflow_tables_in_scope($wfItem)) {
+    foreach ((config_get('workflows') ?? [])['workflows'] ?? [] as $workflowItem) {
+        if (is_array($workflowItem) && ($workflowItem['id'] ?? '') === $requestedWorkflow) {
+            if (!workflow_tables_in_scope($workflowItem)) {
                 throw new RedirectException('index.php');
             }
             break;

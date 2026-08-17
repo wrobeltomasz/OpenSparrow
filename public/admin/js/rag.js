@@ -7,7 +7,7 @@ import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 import { showStatusPill } from './app.js';
 
-function ragCard(title, desc) {
+function ragCard(title, description) {
     const card = document.createElement('div');
     card.className = 'adm-sec-card';
 
@@ -20,9 +20,9 @@ function ragCard(title, desc) {
     h3.style.cssText = 'margin:0 0 4px;';
     hdr.appendChild(h3);
 
-    if (desc) {
+    if (description) {
         const p = document.createElement('p');
-        p.textContent = desc;
+        p.textContent = description;
         p.style.cssText = 'margin:0;';
         hdr.appendChild(p);
     }
@@ -35,9 +35,9 @@ function ragCard(title, desc) {
     return { card, body };
 }
 
-function ragStatusPill(anchor, msg, type = 'success') {
-    const prev = anchor.parentNode?.querySelector('.rag-status-pill');
-    if (prev) prev.remove();
+function ragStatusPill(anchor, message, type = 'success') {
+    const previous = anchor.parentNode?.querySelector('.rag-status-pill');
+    if (previous) previous.remove();
     const colors = {
         success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--ok)' },
         error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
@@ -45,7 +45,7 @@ function ragStatusPill(anchor, msg, type = 'success') {
     }[type] ?? { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' };
     const pill = document.createElement('span');
     pill.className = 'rag-status-pill';
-    pill.textContent = msg;
+    pill.textContent = message;
     pill.style.cssText = `display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:4px 10px;`
         + `background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`
         + `border-radius:999px;font-weight:600;transition:opacity .3s;`;
@@ -56,16 +56,16 @@ function ragStatusPill(anchor, msg, type = 'success') {
     }, type === 'error' ? 6000 : 3000);
 }
 
-function ragFmtSize(bytes) {
+function ragFormatSize(bytes) {
     bytes = parseInt(bytes, 10) || 0;
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(1) + ' MB';
 }
 
-function ragFmtDate(ts) {
-    if (!ts) return '—';
-    return new Date(ts).toLocaleString();
+function ragFormatDate(timestamp) {
+    if (!timestamp) return '—';
+    return new Date(timestamp).toLocaleString();
 }
 
 function ragParseTags(pgArray) {
@@ -73,15 +73,15 @@ function ragParseTags(pgArray) {
     const inner = pgArray.replace(/^\{|\}$/g, '');
     if (!inner) return [];
     const result = [];
-    let cur = '';
+    let current = '';
     let inQuote = false;
     for (let i = 0; i < inner.length; i++) {
         const c = inner[i];
         if (c === '"') { inQuote = !inQuote; }
-        else if (c === ',' && !inQuote) { result.push(cur); cur = ''; }
-        else { cur += c; }
+        else if (c === ',' && !inQuote) { result.push(current); current = ''; }
+        else { current += c; }
     }
-    if (cur !== '') result.push(cur);
+    if (current !== '') result.push(current);
     return result;
 }
 
@@ -93,18 +93,18 @@ function ragBuildTabs(wrap, tabs) {
     const btns   = {};
 
     tabs.forEach(({ id, label, icon }) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'item-btn';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'item-btn';
         if (icon) {
-            const img = document.createElement('img');
-            img.src   = '../assets/icons/' + icon;
-            img.style.cssText = 'width:15px;height:15px;opacity:.6;';
-            btn.appendChild(img);
+            const image = document.createElement('img');
+            image.src   = '../assets/icons/' + icon;
+            image.style.cssText = 'width:15px;height:15px;opacity:.6;';
+            button.appendChild(image);
         }
-        btn.appendChild(document.createTextNode(label));
-        bar.appendChild(btn);
-        btns[id] = btn;
+        button.appendChild(document.createTextNode(label));
+        bar.appendChild(button);
+        btns[id] = button;
 
         const panel = document.createElement('div');
         panel.style.display = 'none';
@@ -144,74 +144,74 @@ function ragBuildDocumentsTab(panel) {
 
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
-        const lbl = document.createElement('label');
-        lbl.htmlFor = id;
-        lbl.textContent = label;
-        lbl.className = 'adm-field-label';
-        const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.id = id;
-        inp.placeholder = placeholder;
-        inp.className = 'adm-input w-full';
-        group.appendChild(lbl);
-        group.appendChild(inp);
-        return { group, inp };
+        const label = document.createElement('label');
+        label.htmlFor = id;
+        label.textContent = label;
+        label.className = 'adm-field-label';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = id;
+        input.placeholder = placeholder;
+        input.className = 'adm-input w-full';
+        group.appendChild(label);
+        group.appendChild(input);
+        return { group, inp: input };
     }
 
     const fileWrap = document.createElement('div');
-    const fileLbl = document.createElement('label');
-    fileLbl.htmlFor = 'rag-file-input';
-    fileLbl.textContent = 'Text file (.txt)';
-    fileLbl.className = 'adm-field-label';
-    const fileInp = document.createElement('input');
-    fileInp.type = 'file';
-    fileInp.id = 'rag-file-input';
-    fileInp.accept = '.txt,text/plain';
-    fileInp.className = 'adm-input';
-    fileWrap.appendChild(fileLbl);
-    fileWrap.appendChild(fileInp);
+    const fileLabel = document.createElement('label');
+    fileLabel.htmlFor = 'rag-file-input';
+    fileLabel.textContent = 'Text file (.txt)';
+    fileLabel.className = 'adm-field-label';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'rag-file-input';
+    fileInput.accept = '.txt,text/plain';
+    fileInput.className = 'adm-input';
+    fileWrap.appendChild(fileLabel);
+    fileWrap.appendChild(fileInput);
 
-    const { group: tagsGroup, inp: tagsInp } = ragField('Tags (comma-separated)', 'rag-tags-input', 'e.g. legal, faq, policy');
+    const { group: tagsGroup, inp: tagsInput } = ragField('Tags (comma-separated)', 'rag-tags-input', 'e.g. legal, faq, policy');
     tagsGroup.style.flex = '1';
 
     const langGroup = document.createElement('div');
-    const langUpLbl = document.createElement('label');
-    langUpLbl.htmlFor    = 'rag-lang-select';
-    langUpLbl.textContent = 'Language';
-    langUpLbl.className = 'adm-field-label';
+    const langUpLabel = document.createElement('label');
+    langUpLabel.htmlFor    = 'rag-lang-select';
+    langUpLabel.textContent = 'Language';
+    langUpLabel.className = 'adm-field-label';
     const langUpSelect = document.createElement('select');
     langUpSelect.id = 'rag-lang-select';
     langUpSelect.className = 'adm-input';
-    const noneOpt = document.createElement('option');
-    noneOpt.value = '';
-    noneOpt.textContent = '— any —';
-    langUpSelect.appendChild(noneOpt);
-    langGroup.appendChild(langUpLbl);
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = '— any —';
+    langUpSelect.appendChild(noneOption);
+    langGroup.appendChild(langUpLabel);
     langGroup.appendChild(langUpSelect);
 
     (async () => {
         try {
-            const res  = await apiFetch('api.php?action=get_language_setting');
-            const data = await res.json();
+            const result  = await apiFetch('api.php?action=get_language_setting');
+            const data = await result.json();
             (data.available_languages ?? []).forEach(code => {
-                const opt = document.createElement('option');
-                opt.value       = code;
-                opt.textContent = code.toUpperCase();
-                langUpSelect.appendChild(opt);
+                const option = document.createElement('option');
+                option.value       = code;
+                option.textContent = code.toUpperCase();
+                langUpSelect.appendChild(option);
             });
         } catch (e) { console.warn('[rag] language list unavailable', e); }
     })();
 
-    const uploadBtn = document.createElement('button');
-    uploadBtn.type = 'button';
-    uploadBtn.textContent = 'Upload';
-    uploadBtn.className = 'btn btn-primary';
-    uploadBtn.style.alignSelf = 'flex-end';
+    const uploadButton = document.createElement('button');
+    uploadButton.type = 'button';
+    uploadButton.textContent = 'Upload';
+    uploadButton.className = 'btn btn-primary';
+    uploadButton.style.alignSelf = 'flex-end';
 
     uploadForm.appendChild(fileWrap);
     uploadForm.appendChild(tagsGroup);
     uploadForm.appendChild(langGroup);
-    uploadForm.appendChild(uploadBtn);
+    uploadForm.appendChild(uploadButton);
     uploadBody.appendChild(uploadForm);
 
     const guideWrap = document.createElement('div');
@@ -219,13 +219,13 @@ function ragBuildDocumentsTab(panel) {
 
     const guideHdr = document.createElement('div');
     guideHdr.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;';
-    const guideLbl = document.createElement('span');
-    guideLbl.style.cssText = 'font-weight:700;';
-    guideLbl.textContent = 'Document preparation guidelines';
+    const guideLabel = document.createElement('span');
+    guideLabel.style.cssText = 'font-weight:700;';
+    guideLabel.textContent = 'Document preparation guidelines';
     const guideArrow = document.createElement('span');
     guideArrow.textContent = '▾';
     guideArrow.style.cssText = 'display:inline-block;transition:transform .15s;';
-    guideHdr.appendChild(guideLbl);
+    guideHdr.appendChild(guideLabel);
     guideHdr.appendChild(guideArrow);
 
     const guideBody = document.createElement('div');
@@ -304,9 +304,9 @@ function ragBuildDocumentsTab(panel) {
     table.className = 'adm-tbl';
     const thead = table.createTHead();
     const hdr   = thead.insertRow();
-    ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', ''].forEach(col => {
+    ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', ''].forEach(column => {
         const th = document.createElement('th');
-        th.textContent = col;
+        th.textContent = column;
         th.className = 'adm-th';
         hdr.appendChild(th);
     });
@@ -314,43 +314,43 @@ function ragBuildDocumentsTab(panel) {
     table.appendChild(tbody);
     tableWrap.appendChild(table);
 
-        const rechunkAllBtn = document.createElement('button');
-    rechunkAllBtn.type = 'button';
-    rechunkAllBtn.textContent = 'Re-chunk All';
-    rechunkAllBtn.className = 'btn btn-secondary btn-sm';
-    rechunkAllBtn.style.marginBottom = '12px';
-    listBody.insertBefore(rechunkAllBtn, tableWrap);
+        const rechunkAllButton = document.createElement('button');
+    rechunkAllButton.type = 'button';
+    rechunkAllButton.textContent = 'Re-chunk All';
+    rechunkAllButton.className = 'btn btn-secondary btn-sm';
+    rechunkAllButton.style.marginBottom = '12px';
+    listBody.insertBefore(rechunkAllButton, tableWrap);
 
-    rechunkAllBtn.addEventListener('click', async () => {
+    rechunkAllButton.addEventListener('click', async () => {
         if (!confirm('Re-chunk all documents from scratch? Existing chunks will be replaced.')) return;
-        rechunkAllBtn.disabled = true;
+        rechunkAllButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=rag_rechunk_all', {
+            const result = await apiFetch('api.php?action=rag_rechunk_all', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
-                ragStatusPill(rechunkAllBtn, `Re-chunked ${data.processed} doc${data.processed !== 1 ? 's' : ''}.`, 'success');
+                ragStatusPill(rechunkAllButton, `Re-chunked ${data.processed} doc${data.processed !== 1 ? 's' : ''}.`, 'success');
                 await loadFiles();
             } else {
-                ragStatusPill(rechunkAllBtn, data.error ?? 'Error.', 'error');
+                ragStatusPill(rechunkAllButton, data.error ?? 'Error.', 'error');
             }
         } catch (e) {
-            ragStatusPill(rechunkAllBtn, 'Request failed: ' + e.message, 'error');
+            ragStatusPill(rechunkAllButton, 'Request failed: ' + e.message, 'error');
         } finally {
-            rechunkAllBtn.disabled = false;
+            rechunkAllButton.disabled = false;
         }
     });
 
-    const statsBar = document.createElement('div');
-    statsBar.style.cssText = 'margin-bottom:12px;';
-    listBody.insertBefore(statsBar, tableWrap);
+    const statisticsBar = document.createElement('div');
+    statisticsBar.style.cssText = 'margin-bottom:12px;';
+    listBody.insertBefore(statisticsBar, tableWrap);
 
     async function loadFiles() {
         try {
-            const res  = await apiFetch('api.php?action=rag_list');
-            const data = await res.json();
+            const result  = await apiFetch('api.php?action=rag_list');
+            const data = await result.json();
             if (data.status === 'error') {
                 tbody.innerHTML = '';
                 const row = tbody.insertRow();
@@ -374,7 +374,7 @@ function ragBuildDocumentsTab(panel) {
     function renderFiles(files) {
         tbody.innerHTML = '';
         if (files.length === 0) {
-            statsBar.textContent = '';
+            statisticsBar.textContent = '';
             const row = tbody.insertRow();
             const td  = row.insertCell();
             td.colSpan = 6;
@@ -384,7 +384,7 @@ function ragBuildDocumentsTab(panel) {
         }
 
         const totalSize = files.reduce((s, f) => s + (parseInt(f.file_size, 10) || 0), 0);
-        statsBar.textContent = files.length + ' document' + (files.length !== 1 ? 's' : '') + ' · ' + ragFmtSize(totalSize) + ' total';
+        statisticsBar.textContent = files.length + ' document' + (files.length !== 1 ? 's' : '') + ' · ' + ragFormatSize(totalSize) + ' total';
 
         files.forEach(file => {
             const row = tbody.insertRow();
@@ -416,7 +416,7 @@ function ragBuildDocumentsTab(panel) {
 
             const td3 = row.insertCell();
             td3.style.cssText = tdStyle + '';
-            td3.textContent   = ragFmtSize(file.file_size);
+            td3.textContent   = ragFormatSize(file.file_size);
 
             const tdChunks = row.insertCell();
             tdChunks.style.cssText = tdStyle + 'text-align:center;';
@@ -424,19 +424,19 @@ function ragBuildDocumentsTab(panel) {
 
             const td5 = row.insertCell();
             td5.style.cssText = tdStyle + '';
-            td5.textContent   = ragFmtDate(file.created_at);
+            td5.textContent   = ragFormatDate(file.created_at);
 
             const td6 = row.insertCell();
             td6.style.cssText = tdStyle;
-            const btnGroup = document.createElement('div');
-            btnGroup.style.cssText = 'display:flex;gap:6px;';
+            const buttonGroup = document.createElement('div');
+            buttonGroup.style.cssText = 'display:flex;gap:6px;';
 
-            const rechunkBtn = document.createElement('button');
-            rechunkBtn.type = 'button';
-            rechunkBtn.textContent = 'Re-chunk';
-            rechunkBtn.className = 'btn btn-secondary btn-xs';
-            rechunkBtn.addEventListener('click', async () => {
-                rechunkBtn.disabled = true;
+            const rechunkButton = document.createElement('button');
+            rechunkButton.type = 'button';
+            rechunkButton.textContent = 'Re-chunk';
+            rechunkButton.className = 'btn btn-secondary btn-xs';
+            rechunkButton.addEventListener('click', async () => {
+                rechunkButton.disabled = true;
                 try {
                     const r = await apiFetch('api.php?action=rag_rechunk', {
                         method: 'POST',
@@ -446,23 +446,23 @@ function ragBuildDocumentsTab(panel) {
                     if (d.status === 'success') {
                         await loadFiles();
                     } else {
-                        showStatusPill(rechunkBtn, 'Re-chunk failed: ' + (d.error ?? 'Unknown error'), 'error');
-                        rechunkBtn.disabled = false;
+                        showStatusPill(rechunkButton, 'Re-chunk failed: ' + (d.error ?? 'Unknown error'), 'error');
+                        rechunkButton.disabled = false;
                     }
                 } catch (e) {
-                    showStatusPill(rechunkBtn, 'Request failed: ' + e.message, 'error');
-                    rechunkBtn.disabled = false;
+                    showStatusPill(rechunkButton, 'Request failed: ' + e.message, 'error');
+                    rechunkButton.disabled = false;
                 }
             });
-            btnGroup.appendChild(rechunkBtn);
+            buttonGroup.appendChild(rechunkButton);
 
-            const delBtn = document.createElement('button');
-            delBtn.type      = 'button';
-            delBtn.textContent = 'Delete';
-            delBtn.className = 'btn btn-danger btn-xs';
-            delBtn.addEventListener('click', async () => {
+            const delButton = document.createElement('button');
+            delButton.type      = 'button';
+            delButton.textContent = 'Delete';
+            delButton.className = 'btn btn-danger btn-xs';
+            delButton.addEventListener('click', async () => {
                 if (!confirm('Delete "' + escHtml(file.filename) + '"?')) return;
-                delBtn.disabled = true;
+                delButton.disabled = true;
                 try {
                     const r = await apiFetch('api.php?action=rag_delete', {
                         method: 'POST',
@@ -472,56 +472,56 @@ function ragBuildDocumentsTab(panel) {
                     if (d.status === 'success') {
                         await loadFiles();
                     } else {
-                        showStatusPill(delBtn, 'Delete failed: ' + (d.error ?? 'Unknown error'), 'error');
-                        delBtn.disabled = false;
+                        showStatusPill(delButton, 'Delete failed: ' + (d.error ?? 'Unknown error'), 'error');
+                        delButton.disabled = false;
                     }
                 } catch (e) {
-                    showStatusPill(delBtn, 'Request failed: ' + e.message, 'error');
-                    delBtn.disabled = false;
+                    showStatusPill(delButton, 'Request failed: ' + e.message, 'error');
+                    delButton.disabled = false;
                 }
             });
-            btnGroup.appendChild(delBtn);
-            td6.appendChild(btnGroup);
+            buttonGroup.appendChild(delButton);
+            td6.appendChild(buttonGroup);
         });
     }
 
-    uploadBtn.addEventListener('click', async () => {
-        const file = fileInp.files?.[0];
-        if (!file) { ragStatusPill(uploadBtn, 'Select a .txt file first.', 'error'); return; }
-        if (!file.name.toLowerCase().endsWith('.txt')) { ragStatusPill(uploadBtn, 'Only .txt files allowed.', 'error'); return; }
+    uploadButton.addEventListener('click', async () => {
+        const file = fileInput.files?.[0];
+        if (!file) { ragStatusPill(uploadButton, 'Select a .txt file first.', 'error'); return; }
+        if (!file.name.toLowerCase().endsWith('.txt')) { ragStatusPill(uploadButton, 'Only .txt files allowed.', 'error'); return; }
 
-        uploadBtn.disabled = true;
-        const tags = tagsInp.value.split(',').map(t => t.trim()).filter(t => t !== '');
+        uploadButton.disabled = true;
+        const tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t !== '');
         if (langUpSelect.value) tags.push('lang:' + langUpSelect.value);
-        const fd   = new FormData();
-        fd.append('file', file);
-        fd.append('tags', JSON.stringify(tags));
+        const formData   = new FormData();
+        formData.append('file', file);
+        formData.append('tags', JSON.stringify(tags));
 
         try {
-            const res  = await apiFetch('api.php?action=rag_upload', {
+            const result  = await apiFetch('api.php?action=rag_upload', {
                 method: 'POST',
-                body: fd,
+                body: formData,
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
-                ragStatusPill(uploadBtn, 'Uploaded.', 'success');
-                fileInp.value = '';
-                tagsInp.value = '';
+                ragStatusPill(uploadButton, 'Uploaded.', 'success');
+                fileInput.value = '';
+                tagsInput.value = '';
                 await loadFiles();
             } else {
-                ragStatusPill(uploadBtn, data.error ?? 'Upload failed.', 'error');
+                ragStatusPill(uploadButton, data.error ?? 'Upload failed.', 'error');
             }
         } catch (e) {
-            ragStatusPill(uploadBtn, 'Request failed: ' + e.message, 'error');
+            ragStatusPill(uploadButton, 'Request failed: ' + e.message, 'error');
         } finally {
-            uploadBtn.disabled = false;
+            uploadButton.disabled = false;
         }
     });
 
     loadFiles();
 }
 
-function ragFmtModelSize(bytes) {
+function ragFormatModelSize(bytes) {
     bytes = parseInt(bytes, 10) || 0;
     if (bytes === 0) return '';
     const gb = bytes / 1073741824;
@@ -538,11 +538,11 @@ function ragBuildSettingsTab(panel) {
     const chatRow = document.createElement('div');
     chatRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);';
 
-    const chatChk = document.createElement('input');
-    chatChk.type    = 'checkbox';
-    chatChk.id      = 'rag-chat-enabled';
-    chatChk.checked = true;
-    chatChk.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
+    const chatCheckbox = document.createElement('input');
+    chatCheckbox.type    = 'checkbox';
+    chatCheckbox.id      = 'rag-chat-enabled';
+    chatCheckbox.checked = true;
+    chatCheckbox.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
 
     const chatTextWrap = document.createElement('label');
     chatTextWrap.htmlFor = 'rag-chat-enabled';
@@ -552,13 +552,13 @@ function ragBuildSettingsTab(panel) {
     chatTitle.style.cssText = 'font-weight:600;';
     chatTitle.textContent = 'Enable AI chat on the front end';
 
-    const chatDesc = document.createElement('div');
-    chatDesc.style.cssText = 'margin-top:2px;';
-    chatDesc.textContent = 'When unchecked, the chat input and send button are hidden for all users. The document list remains visible. Useful when Ollama is not yet set up or during maintenance.';
+    const chatDescription = document.createElement('div');
+    chatDescription.style.cssText = 'margin-top:2px;';
+    chatDescription.textContent = 'When unchecked, the chat input and send button are hidden for all users. The document list remains visible. Useful when Ollama is not yet set up or during maintenance.';
 
     chatTextWrap.appendChild(chatTitle);
-    chatTextWrap.appendChild(chatDesc);
-    chatRow.appendChild(chatChk);
+    chatTextWrap.appendChild(chatDescription);
+    chatRow.appendChild(chatCheckbox);
     chatRow.appendChild(chatTextWrap);
     chatBody.appendChild(chatRow);
 
@@ -568,39 +568,39 @@ function ragBuildSettingsTab(panel) {
     );
     panel.appendChild(connCard);
 
-    const urlLbl = document.createElement('label');
-    urlLbl.htmlFor = 'rag-ollama-url';
-    urlLbl.textContent = 'Ollama URL';
-    urlLbl.className = 'adm-field-label';
+    const urlLabel = document.createElement('label');
+    urlLabel.htmlFor = 'rag-ollama-url';
+    urlLabel.textContent = 'Ollama URL';
+    urlLabel.className = 'adm-field-label';
 
     const urlRow = document.createElement('div');
     urlRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:16px;';
 
-    const urlInp = document.createElement('input');
-    urlInp.type        = 'text';
-    urlInp.id          = 'rag-ollama-url';
-    urlInp.placeholder = 'http://localhost:11434';
-    urlInp.className = 'adm-input flex-1';
+    const urlInput = document.createElement('input');
+    urlInput.type        = 'text';
+    urlInput.id          = 'rag-ollama-url';
+    urlInput.placeholder = 'http://localhost:11434';
+    urlInput.className = 'adm-input flex-1';
 
-    const checkBtn = document.createElement('button');
-    checkBtn.type      = 'button';
-    checkBtn.textContent = 'Test & load models';
-    checkBtn.className = 'btn btn-secondary';
-    checkBtn.style.flexShrink = '0';
+    const checkButton = document.createElement('button');
+    checkButton.type      = 'button';
+    checkButton.textContent = 'Test & load models';
+    checkButton.className = 'btn btn-secondary';
+    checkButton.style.flexShrink = '0';
 
-    urlRow.appendChild(urlInp);
-    urlRow.appendChild(checkBtn);
-    connBody.appendChild(urlLbl);
+    urlRow.appendChild(urlInput);
+    urlRow.appendChild(checkButton);
+    connBody.appendChild(urlLabel);
     connBody.appendChild(urlRow);
 
     const statusLine = document.createElement('div');
     statusLine.style.cssText = 'display:none;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;';
     connBody.appendChild(statusLine);
 
-    const modelLbl = document.createElement('label');
-    modelLbl.htmlFor = 'rag-model-select';
-    modelLbl.textContent = 'Model';
-    modelLbl.className = 'adm-field-label';
+    const modelLabel = document.createElement('label');
+    modelLabel.htmlFor = 'rag-model-select';
+    modelLabel.textContent = 'Model';
+    modelLabel.className = 'adm-field-label';
 
     const modelRow = document.createElement('div');
     modelRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:16px;';
@@ -608,36 +608,36 @@ function ragBuildSettingsTab(panel) {
     const modelSelect = document.createElement('select');
     modelSelect.id = 'rag-model-select';
     modelSelect.className = 'adm-input flex-1';
-    const placeholderOpt = document.createElement('option');
-    placeholderOpt.value       = '';
-    placeholderOpt.textContent = '— click "Test & load models" to populate —';
-    modelSelect.appendChild(placeholderOpt);
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value       = '';
+    placeholderOption.textContent = '— click "Test & load models" to populate —';
+    modelSelect.appendChild(placeholderOption);
 
-    const modelManualInp = document.createElement('input');
-    modelManualInp.type        = 'text';
-    modelManualInp.id          = 'rag-model-manual';
-    modelManualInp.placeholder = 'or type model name manually';
-    modelManualInp.className = 'adm-input flex-1';
-    modelManualInp.style.display = 'none';
+    const modelManualInput = document.createElement('input');
+    modelManualInput.type        = 'text';
+    modelManualInput.id          = 'rag-model-manual';
+    modelManualInput.placeholder = 'or type model name manually';
+    modelManualInput.className = 'adm-input flex-1';
+    modelManualInput.style.display = 'none';
 
-    const toggleManualBtn = document.createElement('button');
-    toggleManualBtn.type = 'button';
-    toggleManualBtn.textContent = 'Type manually';
-    toggleManualBtn.className = 'btn btn-secondary btn-sm';
-    toggleManualBtn.style.flexShrink = '0';
+    const toggleManualButton = document.createElement('button');
+    toggleManualButton.type = 'button';
+    toggleManualButton.textContent = 'Type manually';
+    toggleManualButton.className = 'btn btn-secondary btn-sm';
+    toggleManualButton.style.flexShrink = '0';
 
     let manualMode = false;
-    toggleManualBtn.addEventListener('click', () => {
+    toggleManualButton.addEventListener('click', () => {
         manualMode = !manualMode;
         modelSelect.style.display      = manualMode ? 'none' : '';
-        modelManualInp.style.display   = manualMode ? '' : 'none';
-        toggleManualBtn.textContent    = manualMode ? 'Use dropdown' : 'Type manually';
+        modelManualInput.style.display   = manualMode ? '' : 'none';
+        toggleManualButton.textContent    = manualMode ? 'Use dropdown' : 'Type manually';
     });
 
     modelRow.appendChild(modelSelect);
-    modelRow.appendChild(modelManualInp);
-    modelRow.appendChild(toggleManualBtn);
-    connBody.appendChild(modelLbl);
+    modelRow.appendChild(modelManualInput);
+    modelRow.appendChild(toggleManualButton);
+    connBody.appendChild(modelLabel);
     connBody.appendChild(modelRow);
 
     const modelsTable = document.createElement('div');
@@ -648,11 +648,11 @@ function ragBuildSettingsTab(panel) {
     const sslRow = document.createElement('div');
     sslRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:10px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);';
 
-    const sslChk = document.createElement('input');
-    sslChk.type    = 'checkbox';
-    sslChk.id      = 'rag-ssl-verify';
-    sslChk.checked = true;
-    sslChk.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
+    const sslCheckbox = document.createElement('input');
+    sslCheckbox.type    = 'checkbox';
+    sslCheckbox.id      = 'rag-ssl-verify';
+    sslCheckbox.checked = true;
+    sslCheckbox.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
 
     const sslTextWrap = document.createElement('label');
     sslTextWrap.htmlFor = 'rag-ssl-verify';
@@ -662,40 +662,40 @@ function ragBuildSettingsTab(panel) {
     sslTitle.style.cssText = 'font-weight:600;';
     sslTitle.textContent = 'Verify SSL certificate';
 
-    const sslDesc = document.createElement('div');
-    sslDesc.style.cssText = 'margin-top:2px;';
-    sslDesc.textContent = 'Disable only when using a tunnel (e.g. Serveo, ngrok) that presents a certificate your server cannot verify. Never disable in production.';
+    const sslDescription = document.createElement('div');
+    sslDescription.style.cssText = 'margin-top:2px;';
+    sslDescription.textContent = 'Disable only when using a tunnel (e.g. Serveo, ngrok) that presents a certificate your server cannot verify. Never disable in production.';
 
     sslTextWrap.appendChild(sslTitle);
-    sslTextWrap.appendChild(sslDesc);
-    sslRow.appendChild(sslChk);
+    sslTextWrap.appendChild(sslDescription);
+    sslRow.appendChild(sslCheckbox);
     sslRow.appendChild(sslTextWrap);
     connBody.appendChild(sslRow);
 
-    const apiKeyLbl = document.createElement('label');
-    apiKeyLbl.htmlFor = 'rag-ollama-api-key';
-    apiKeyLbl.textContent = 'Ollama Cloud API key';
-    apiKeyLbl.className = 'adm-field-label';
+    const apiKeyLabel = document.createElement('label');
+    apiKeyLabel.htmlFor = 'rag-ollama-api-key';
+    apiKeyLabel.textContent = 'Ollama Cloud API key';
+    apiKeyLabel.className = 'adm-field-label';
 
     const apiKeyRow = document.createElement('div');
     apiKeyRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
 
-    const apiKeyInp = document.createElement('input');
-    apiKeyInp.type        = 'password';
-    apiKeyInp.id          = 'rag-ollama-api-key';
-    apiKeyInp.placeholder = 'Leave blank to keep the current key';
-    apiKeyInp.autocomplete = 'new-password';
-    apiKeyInp.className = 'adm-input flex-1';
+    const apiKeyInput = document.createElement('input');
+    apiKeyInput.type        = 'password';
+    apiKeyInput.id          = 'rag-ollama-api-key';
+    apiKeyInput.placeholder = 'Leave blank to keep the current key';
+    apiKeyInput.autocomplete = 'new-password';
+    apiKeyInput.className = 'adm-input flex-1';
 
-    const apiKeyClearBtn = document.createElement('button');
-    apiKeyClearBtn.type = 'button';
-    apiKeyClearBtn.textContent = 'Clear key';
-    apiKeyClearBtn.className = 'btn btn-secondary btn-sm';
-    apiKeyClearBtn.style.flexShrink = '0';
+    const apiKeyClearButton = document.createElement('button');
+    apiKeyClearButton.type = 'button';
+    apiKeyClearButton.textContent = 'Clear key';
+    apiKeyClearButton.className = 'btn btn-secondary btn-sm';
+    apiKeyClearButton.style.flexShrink = '0';
 
-    apiKeyRow.appendChild(apiKeyInp);
-    apiKeyRow.appendChild(apiKeyClearBtn);
-    connBody.appendChild(apiKeyLbl);
+    apiKeyRow.appendChild(apiKeyInput);
+    apiKeyRow.appendChild(apiKeyClearButton);
+    connBody.appendChild(apiKeyLabel);
     connBody.appendChild(apiKeyRow);
 
     const apiKeyStatus = document.createElement('div');
@@ -706,42 +706,42 @@ function ragBuildSettingsTab(panel) {
     function renderApiKeyStatus(configured) {
         apiKeyStatus.textContent = configured ? 'API key configured.' : 'No API key set.';
     }
-    apiKeyClearBtn.addEventListener('click', () => {
+    apiKeyClearButton.addEventListener('click', () => {
         apiKeyClearRequested = true;
-        apiKeyInp.value = '';
+        apiKeyInput.value = '';
         renderApiKeyStatus(false);
     });
-    apiKeyInp.addEventListener('input', () => {
-        if (apiKeyInp.value !== '') {
+    apiKeyInput.addEventListener('input', () => {
+        if (apiKeyInput.value !== '') {
             apiKeyClearRequested = false;
         }
     });
 
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
-        const lbl = document.createElement('label');
-        lbl.htmlFor = id;
-        lbl.textContent = label;
-        lbl.className = 'adm-field-label';
-        const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.id = id;
-        inp.placeholder = placeholder;
-        inp.className = 'adm-input w-full';
-        group.appendChild(lbl);
-        group.appendChild(inp);
-        return { group, inp };
+        const label = document.createElement('label');
+        label.htmlFor = id;
+        label.textContent = label;
+        label.className = 'adm-field-label';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = id;
+        input.placeholder = placeholder;
+        input.className = 'adm-input w-full';
+        group.appendChild(label);
+        group.appendChild(input);
+        return { group, inp: input };
     }
 
     const otherGrid = document.createElement('div');
     otherGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:16px;';
-    const { group: ctxGroup,     inp: ctxInp }     = ragField('Max context files', 'rag-max-ctx', '3');
-    const { group: sizeGroup,    inp: sizeInp }    = ragField('Max file size (MB)', 'rag-max-size', '10');
-    const { group: timeoutGroup, inp: timeoutInp } = ragField('Ollama timeout (s)', 'rag-timeout', '120');
-    const { group: memGroup,     inp: memInp }     = ragField('Conversation memory (turns)', 'rag-conv-turns', '0');
-    memInp.title = '0 = disabled; max 10. Each turn = one user question + one assistant reply.';
-    const { group: aggGroup, inp: aggInp } = ragField('Aggregate view rows', 'rag-agg-limit', '100');
-    aggInp.title = 'Max rows read from an aggregate view and put in the prompt (1-1000). '
+    const { group: ctxGroup,     inp: ctxInput }     = ragField('Max context files', 'rag-max-ctx', '3');
+    const { group: sizeGroup,    inp: sizeInput }    = ragField('Max file size (MB)', 'rag-max-size', '10');
+    const { group: timeoutGroup, inp: timeoutInput } = ragField('Ollama timeout (s)', 'rag-timeout', '120');
+    const { group: memGroup,     inp: memInput }     = ragField('Conversation memory (turns)', 'rag-conv-turns', '0');
+    memInput.title = '0 = disabled; max 10. Each turn = one user question + one assistant reply.';
+    const { group: aggGroup, inp: aggInput } = ragField('Aggregate view rows', 'rag-agg-limit', '100');
+    aggInput.title = 'Max rows read from an aggregate view and put in the prompt (1-1000). '
         + 'Too low a value truncates the data and the assistant will answer "not in the context" '
         + 'for rows that never reached it.';
     otherGrid.appendChild(ctxGroup);
@@ -754,11 +754,11 @@ function ragBuildSettingsTab(panel) {
     const chunksRow = document.createElement('div');
     chunksRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;padding:10px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);';
 
-    const chunksChk = document.createElement('input');
-    chunksChk.type    = 'checkbox';
-    chunksChk.id      = 'rag-use-chunks';
-    chunksChk.checked = true;
-    chunksChk.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
+    const chunksCheckbox = document.createElement('input');
+    chunksCheckbox.type    = 'checkbox';
+    chunksCheckbox.id      = 'rag-use-chunks';
+    chunksCheckbox.checked = true;
+    chunksCheckbox.style.cssText = 'margin-top:3px;flex-shrink:0;cursor:pointer;';
 
     const chunksTextWrap = document.createElement('label');
     chunksTextWrap.htmlFor = 'rag-use-chunks';
@@ -768,21 +768,21 @@ function ragBuildSettingsTab(panel) {
     chunksTitle.style.cssText = 'font-weight:600;';
     chunksTitle.textContent = 'Use document chunking';
 
-    const chunksDesc = document.createElement('div');
-    chunksDesc.style.cssText = 'margin-top:2px;';
-    chunksDesc.textContent = 'When enabled, uploaded documents are split into overlapping chunks for fine-grained retrieval. Disable to send full file content directly — better for small documents.';
+    const chunksDescription = document.createElement('div');
+    chunksDescription.style.cssText = 'margin-top:2px;';
+    chunksDescription.textContent = 'When enabled, uploaded documents are split into overlapping chunks for fine-grained retrieval. Disable to send full file content directly — better for small documents.';
 
     chunksTextWrap.appendChild(chunksTitle);
-    chunksTextWrap.appendChild(chunksDesc);
-    chunksRow.appendChild(chunksChk);
+    chunksTextWrap.appendChild(chunksDescription);
+    chunksRow.appendChild(chunksCheckbox);
     chunksRow.appendChild(chunksTextWrap);
     connBody.appendChild(chunksRow);
 
-    const saveBtn = document.createElement('button');
-    saveBtn.type = 'button';
-    saveBtn.textContent = 'Save Settings';
-    saveBtn.className = 'btn btn-primary';
-    connBody.appendChild(saveBtn);
+    const saveButton = document.createElement('button');
+    saveButton.type = 'button';
+    saveButton.textContent = 'Save Settings';
+    saveButton.className = 'btn btn-primary';
+    connBody.appendChild(saveButton);
 
     const pullHint = document.createElement('p');
     pullHint.style.cssText = 'margin:14px 0 0;';
@@ -794,23 +794,23 @@ function ragBuildSettingsTab(panel) {
         while (modelSelect.options.length > 1) modelSelect.remove(1);
 
         models.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value       = m.name;
-            opt.textContent = m.name + (m.size ? '  (' + ragFmtModelSize(m.size) + ')' : '');
-            modelSelect.appendChild(opt);
+            const option = document.createElement('option');
+            option.value       = m.name;
+            option.textContent = m.name + (m.size ? '  (' + ragFormatModelSize(m.size) + ')' : '');
+            modelSelect.appendChild(option);
         });
 
         if (currentModel) {
-            for (const opt of modelSelect.options) {
-                if (opt.value === currentModel) { opt.selected = true; break; }
+            for (const option of modelSelect.options) {
+                if (option.value === currentModel) { option.selected = true; break; }
             }
 
             if (!modelSelect.value) {
-                const opt = document.createElement('option');
-                opt.value = currentModel;
-                opt.textContent = currentModel + '  (not pulled locally)';
-                modelSelect.insertBefore(opt, modelSelect.options[1]);
-                opt.selected = true;
+                const option = document.createElement('option');
+                option.value = currentModel;
+                option.textContent = currentModel + '  (not pulled locally)';
+                modelSelect.insertBefore(option, modelSelect.options[1]);
+                option.selected = true;
             }
         }
     }
@@ -832,19 +832,19 @@ function ragBuildSettingsTab(panel) {
             return;
         }
 
-        const tbl = document.createElement('table');
-        tbl.className = 'adm-tbl';
+        const table = document.createElement('table');
+        table.className = 'adm-tbl';
 
-        const thead = tbl.createTHead();
+        const thead = table.createTHead();
         const hr    = thead.insertRow();
-        ['Model name', 'Size', 'Modified'].forEach(col => {
+        ['Model name', 'Size', 'Modified'].forEach(column => {
             const th = document.createElement('th');
-            th.textContent = col;
+            th.textContent = column;
             th.className = 'adm-th adm-th-sm';
             hr.appendChild(th);
         });
 
-        const tbody = tbl.createTBody();
+        const tbody = table.createTBody();
         models.forEach(m => {
             const row = tbody.insertRow();
             const tdStyle = 'padding:8px 10px;border-bottom:1px solid var(--border);';
@@ -855,7 +855,7 @@ function ragBuildSettingsTab(panel) {
 
             const td2 = row.insertCell();
             td2.style.cssText = tdStyle + '';
-            td2.textContent   = ragFmtModelSize(m.size) || '—';
+            td2.textContent   = ragFormatModelSize(m.size) || '—';
 
             const td3 = row.insertCell();
             td3.style.cssText = tdStyle + '';
@@ -866,35 +866,35 @@ function ragBuildSettingsTab(panel) {
             row.addEventListener('mouseover', () => { row.style.background = 'var(--accent-light)'; });
             row.addEventListener('mouseout',  () => { row.style.background = ''; });
             row.addEventListener('click', () => {
-                for (const opt of modelSelect.options) {
-                    if (opt.value === m.name) { opt.selected = true; break; }
+                for (const option of modelSelect.options) {
+                    if (option.value === m.name) { option.selected = true; break; }
                 }
                 if (manualMode) {
-                    modelManualInp.value = m.name;
+                    modelManualInput.value = m.name;
                 }
             });
         });
 
-        tbl.appendChild(tbody);
-        modelsTable.appendChild(tbl);
+        table.appendChild(tbody);
+        modelsTable.appendChild(table);
     }
 
     async function doCheck() {
-        const url = urlInp.value.trim();
-        if (!url) { urlInp.focus(); return; }
+        const url = urlInput.value.trim();
+        if (!url) { urlInput.focus(); return; }
 
-        checkBtn.disabled    = true;
-        checkBtn.textContent = 'Connecting…';
+        checkButton.disabled    = true;
+        checkButton.textContent = 'Connecting…';
         statusLine.style.display = 'block';
         statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:var(--warn-light);color:var(--muted);border:1px solid var(--warn);';
         statusLine.textContent   = 'Connecting to ' + url + '…';
 
         try {
-            const res  = await apiFetch('api.php?action=rag_ollama_check', {
+            const result  = await apiFetch('api.php?action=rag_ollama_check', {
                 method: 'POST',
-                body: JSON.stringify({ ollama_url: url, ssl_verify: sslChk.checked }),
+                body: JSON.stringify({ ollama_url: url, ssl_verify: sslCheckbox.checked }),
             });
-            const data = await res.json();
+            const data = await result.json();
 
             if (data.status === 'success') {
                 const n = (data.models ?? []).length;
@@ -902,7 +902,7 @@ function ragBuildSettingsTab(panel) {
                 statusLine.textContent   = '✓ Connected · ' + n + ' model' + (n !== 1 ? 's' : '') + ' available'
                     + (data.version ? ' · Ollama ' + data.version : '');
 
-                const currentModel = manualMode ? modelManualInp.value.trim() : (modelSelect.value || '');
+                const currentModel = manualMode ? modelManualInput.value.trim() : (modelSelect.value || '');
                 populateModelSelect(data.models ?? [], currentModel);
                 renderModelsTable(data.models ?? [], data.version ?? '');
             } else {
@@ -915,77 +915,77 @@ function ragBuildSettingsTab(panel) {
             statusLine.textContent   = '✗ Request failed: ' + e.message;
             modelsTable.style.display = 'none';
         } finally {
-            checkBtn.disabled    = false;
-            checkBtn.textContent = 'Test & load models';
+            checkButton.disabled    = false;
+            checkButton.textContent = 'Test & load models';
         }
     }
 
-    checkBtn.addEventListener('click', doCheck);
+    checkButton.addEventListener('click', doCheck);
 
     (async () => {
         try {
-            const res  = await apiFetch('api.php?action=rag_settings');
-            const data = await res.json();
+            const result  = await apiFetch('api.php?action=rag_settings');
+            const data = await result.json();
             if (data.status === 'success' && data.settings) {
                 const s = data.settings;
-                if (s.ollama_url)        urlInp.value         = s.ollama_url;
-                if (s.ollama_model)      modelManualInp.value = s.ollama_model;
-                if (s.max_context_files) ctxInp.value         = s.max_context_files;
-                if (s.max_file_size_mb)  sizeInp.value        = s.max_file_size_mb;
-                if (s.ollama_timeout)    timeoutInp.value     = s.ollama_timeout;
-                if (s.ollama_ssl_verify !== undefined) sslChk.checked = !!s.ollama_ssl_verify;
-                if (s.use_chunks !== undefined) chunksChk.checked = !!s.use_chunks;
-                if (s.conversation_turns !== undefined) memInp.value = s.conversation_turns;
-                if (s.aggregate_view_limit !== undefined) aggInp.value = s.aggregate_view_limit;
-                if (s.chat_enabled !== undefined) chatChk.checked = !!s.chat_enabled;
+                if (s.ollama_url)        urlInput.value         = s.ollama_url;
+                if (s.ollama_model)      modelManualInput.value = s.ollama_model;
+                if (s.max_context_files) ctxInput.value         = s.max_context_files;
+                if (s.max_file_size_mb)  sizeInput.value        = s.max_file_size_mb;
+                if (s.ollama_timeout)    timeoutInput.value     = s.ollama_timeout;
+                if (s.ollama_ssl_verify !== undefined) sslCheckbox.checked = !!s.ollama_ssl_verify;
+                if (s.use_chunks !== undefined) chunksCheckbox.checked = !!s.use_chunks;
+                if (s.conversation_turns !== undefined) memInput.value = s.conversation_turns;
+                if (s.aggregate_view_limit !== undefined) aggInput.value = s.aggregate_view_limit;
+                if (s.chat_enabled !== undefined) chatCheckbox.checked = !!s.chat_enabled;
                 renderApiKeyStatus(!!s.ollama_api_key_configured);
 
                 if (s.ollama_model) {
-                    const opt = document.createElement('option');
-                    opt.value = s.ollama_model;
-                    opt.textContent = s.ollama_model + '  (saved)';
-                    opt.selected = true;
-                    modelSelect.insertBefore(opt, modelSelect.options[1] ?? null);
+                    const option = document.createElement('option');
+                    option.value = s.ollama_model;
+                    option.textContent = s.ollama_model + '  (saved)';
+                    option.selected = true;
+                    modelSelect.insertBefore(option, modelSelect.options[1] ?? null);
                 }
             }
         } catch (e) { console.warn('[rag] settings unavailable, using defaults', e); }
     })();
 
-    saveBtn.addEventListener('click', async () => {
+    saveButton.addEventListener('click', async () => {
         const modelValue = manualMode
-            ? modelManualInp.value.trim()
+            ? modelManualInput.value.trim()
             : (modelSelect.value.trim());
 
         const payload = {
-            ollama_url:          urlInp.value.trim(),
+            ollama_url:          urlInput.value.trim(),
             ollama_model:        modelValue,
-            max_context_files:   parseInt(ctxInp.value, 10) || 3,
-            max_file_size_mb:    parseInt(sizeInp.value, 10) || 10,
-            ollama_timeout:      parseInt(timeoutInp.value, 10) || 120,
-            ssl_verify:          sslChk.checked,
-            use_chunks:          chunksChk.checked,
-            conversation_turns:  Math.max(0, Math.min(10, parseInt(memInp.value, 10) || 0)),
-            chat_enabled:        chatChk.checked,
-            aggregate_view_limit: Math.max(1, Math.min(1000, parseInt(aggInp.value, 10) || 100)),
+            max_context_files:   parseInt(ctxInput.value, 10) || 3,
+            max_file_size_mb:    parseInt(sizeInput.value, 10) || 10,
+            ollama_timeout:      parseInt(timeoutInput.value, 10) || 120,
+            ssl_verify:          sslCheckbox.checked,
+            use_chunks:          chunksCheckbox.checked,
+            conversation_turns:  Math.max(0, Math.min(10, parseInt(memInput.value, 10) || 0)),
+            chat_enabled:        chatCheckbox.checked,
+            aggregate_view_limit: Math.max(1, Math.min(1000, parseInt(aggInput.value, 10) || 100)),
         };
-        if (apiKeyInp.value !== '') {
-            payload.ollama_api_key = apiKeyInp.value;
+        if (apiKeyInput.value !== '') {
+            payload.ollama_api_key = apiKeyInput.value;
         } else if (apiKeyClearRequested) {
             payload.ollama_api_key_clear = true;
         }
         if (payload.chat_enabled && (!payload.ollama_url || !payload.ollama_model)) {
-            ragStatusPill(saveBtn, 'URL and model are required when chat is enabled.', 'error');
+            ragStatusPill(saveButton, 'URL and model are required when chat is enabled.', 'error');
             return;
         }
         try {
-            const res  = await apiFetch('api.php?action=rag_settings_save', {
+            const result  = await apiFetch('api.php?action=rag_settings_save', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            const data = await res.json();
-            ragStatusPill(saveBtn, data.status === 'success' ? 'Saved.' : (data.error ?? 'Error.'), data.status === 'success' ? 'success' : 'error');
+            const data = await result.json();
+            ragStatusPill(saveButton, data.status === 'success' ? 'Saved.' : (data.error ?? 'Error.'), data.status === 'success' ? 'success' : 'error');
             if (data.status === 'success') {
-                apiKeyInp.value = '';
+                apiKeyInput.value = '';
                 if (apiKeyClearRequested) {
                     renderApiKeyStatus(false);
                 } else if (payload.ollama_api_key) {
@@ -994,7 +994,7 @@ function ragBuildSettingsTab(panel) {
                 apiKeyClearRequested = false;
             }
         } catch (e) {
-            ragStatusPill(saveBtn, 'Request failed: ' + e.message, 'error');
+            ragStatusPill(saveButton, 'Request failed: ' + e.message, 'error');
         }
     });
 
@@ -1018,9 +1018,9 @@ function ragBuildAggregateViewsCard(panel) {
     table.className = 'adm-tbl';
     const thead = table.createTHead();
     const hdrRow = thead.insertRow();
-    ['Table', 'View', ''].forEach(col => {
+    ['Table', 'View', ''].forEach(column => {
         const th = document.createElement('th');
-        th.textContent = col;
+        th.textContent = column;
         th.className = 'adm-th';
         hdrRow.appendChild(th);
     });
@@ -1032,84 +1032,84 @@ function ragBuildAggregateViewsCard(panel) {
     addRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;';
 
     const tableGroup = document.createElement('div');
-    const tableLbl = document.createElement('label');
-    tableLbl.textContent = 'Table';
-    tableLbl.className = 'adm-field-label';
+    const tableLabel = document.createElement('label');
+    tableLabel.textContent = 'Table';
+    tableLabel.className = 'adm-field-label';
     const tableSelect = document.createElement('select');
     tableSelect.className = 'adm-input w-full';
-    tableGroup.appendChild(tableLbl);
+    tableGroup.appendChild(tableLabel);
     tableGroup.appendChild(tableSelect);
 
     const viewGroup = document.createElement('div');
     viewGroup.style.flex = '1';
-    const viewLbl = document.createElement('label');
-    viewLbl.textContent = 'View (schema.view)';
-    viewLbl.className = 'adm-field-label';
-    const viewInp = document.createElement('input');
-    viewInp.type = 'text';
-    viewInp.placeholder = 'public.v_companies_aggr';
-    viewInp.setAttribute('list', 'rag-agg-view-options');
-    viewInp.className = 'adm-input w-full';
+    const viewLabel = document.createElement('label');
+    viewLabel.textContent = 'View (schema.view)';
+    viewLabel.className = 'adm-field-label';
+    const viewInput = document.createElement('input');
+    viewInput.type = 'text';
+    viewInput.placeholder = 'public.v_companies_aggr';
+    viewInput.setAttribute('list', 'rag-agg-view-options');
+    viewInput.className = 'adm-input w-full';
     const viewList = document.createElement('datalist');
     viewList.id = 'rag-agg-view-options';
-    viewGroup.appendChild(viewLbl);
-    viewGroup.appendChild(viewInp);
+    viewGroup.appendChild(viewLabel);
+    viewGroup.appendChild(viewInput);
     viewGroup.appendChild(viewList);
 
-    const addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.textContent = 'Attach';
-    addBtn.className = 'btn btn-primary';
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.textContent = 'Attach';
+    addButton.className = 'btn btn-primary';
 
     addRow.appendChild(tableGroup);
     addRow.appendChild(viewGroup);
-    addRow.appendChild(addBtn);
+    addRow.appendChild(addButton);
     body.appendChild(addRow);
 
     async function loadAndRender() {
         try {
-            const res  = await apiFetch('api.php?action=rag_aggregate_view_list');
-            const data = await res.json();
+            const result  = await apiFetch('api.php?action=rag_aggregate_view_list');
+            const data = await result.json();
             if (data.status !== 'success') {
-                ragStatusPill(addBtn, data.error ?? 'Failed to load aggregate views.', 'error');
+                ragStatusPill(addButton, data.error ?? 'Failed to load aggregate views.', 'error');
                 return;
             }
             renderMappings(data.mappings ?? {});
             renderTableOptions(data.tables ?? []);
             renderViewOptions(data.available_views ?? []);
         } catch (e) {
-            ragStatusPill(addBtn, 'Request failed: ' + e.message, 'error');
+            ragStatusPill(addButton, 'Request failed: ' + e.message, 'error');
         }
     }
 
     function renderTableOptions(tables) {
         tableSelect.innerHTML = '';
         if (tables.length === 0) {
-            const opt = document.createElement('option');
-            opt.value = '';
-            opt.textContent = '— no eligible tables —';
-            tableSelect.appendChild(opt);
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '— no eligible tables —';
+            tableSelect.appendChild(option);
             tableSelect.disabled = true;
             return;
         }
         tableSelect.disabled = false;
         tables.forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            tableSelect.appendChild(opt);
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            tableSelect.appendChild(option);
         });
     }
 
     function renderViewOptions(views) {
         viewList.innerHTML = '';
         views.forEach(v => {
-            const opt = document.createElement('option');
+            const option = document.createElement('option');
 
-            opt.value = v.schema + '.' + v.name;
+            option.value = v.schema + '.' + v.name;
 
-            if (v.materialized) opt.label = 'materialized';
-            viewList.appendChild(opt);
+            if (v.materialized) option.label = 'materialized';
+            viewList.appendChild(option);
         });
     }
 
@@ -1138,43 +1138,43 @@ function ragBuildAggregateViewsCard(panel) {
 
             const td3 = row.insertCell();
             td3.style.cssText = tdStyle;
-            const removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.textContent = 'Remove';
-            removeBtn.className = 'btn btn-danger btn-xs';
-            removeBtn.addEventListener('click', () => saveMapping(tableName, '', removeBtn));
-            td3.appendChild(removeBtn);
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.textContent = 'Remove';
+            removeButton.className = 'btn btn-danger btn-xs';
+            removeButton.addEventListener('click', () => saveMapping(tableName, '', removeButton));
+            td3.appendChild(removeButton);
         });
     }
 
-    async function saveMapping(tableName, viewName, anchorBtn) {
-        anchorBtn.disabled = true;
+    async function saveMapping(tableName, viewName, anchorButton) {
+        anchorButton.disabled = true;
         try {
-            const res  = await apiFetch('api.php?action=rag_aggregate_view_save', {
+            const result  = await apiFetch('api.php?action=rag_aggregate_view_save', {
                 method: 'POST',
                 body: JSON.stringify({ table: tableName, view: viewName }),
             });
-            const data = await res.json();
+            const data = await result.json();
             if (data.status === 'success') {
-                ragStatusPill(anchorBtn, viewName ? 'Attached.' : 'Removed.', 'success');
-                viewInp.value = '';
+                ragStatusPill(anchorButton, viewName ? 'Attached.' : 'Removed.', 'success');
+                viewInput.value = '';
                 await loadAndRender();
             } else {
-                ragStatusPill(anchorBtn, data.error ?? 'Error.', 'error');
+                ragStatusPill(anchorButton, data.error ?? 'Error.', 'error');
             }
         } catch (e) {
-            ragStatusPill(anchorBtn, 'Request failed: ' + e.message, 'error');
+            ragStatusPill(anchorButton, 'Request failed: ' + e.message, 'error');
         } finally {
-            anchorBtn.disabled = false;
+            anchorButton.disabled = false;
         }
     }
 
-    addBtn.addEventListener('click', () => {
+    addButton.addEventListener('click', () => {
         const tableName = tableSelect.value;
-        const viewName  = viewInp.value.trim();
-        if (!tableName) { ragStatusPill(addBtn, 'Select a table first.', 'error'); return; }
-        if (!viewName) { ragStatusPill(addBtn, 'Enter a view name.', 'error'); return; }
-        saveMapping(tableName, viewName, addBtn);
+        const viewName  = viewInput.value.trim();
+        if (!tableName) { ragStatusPill(addButton, 'Select a table first.', 'error'); return; }
+        if (!viewName) { ragStatusPill(addButton, 'Enter a view name.', 'error'); return; }
+        saveMapping(tableName, viewName, addButton);
     });
 
     loadAndRender();
@@ -1189,10 +1189,10 @@ function ragBuildTestTab(panel) {
 
     const tagRow = document.createElement('div');
     tagRow.style.cssText = 'margin-bottom:14px;';
-    const tagLbl = document.createElement('div');
-    tagLbl.textContent = 'Filter by tag (optional):';
-    tagLbl.style.cssText = 'font-weight:700;margin-bottom:8px;';
-    tagRow.appendChild(tagLbl);
+    const tagLabel = document.createElement('div');
+    tagLabel.textContent = 'Filter by tag (optional):';
+    tagLabel.style.cssText = 'font-weight:700;margin-bottom:8px;';
+    tagRow.appendChild(tagLabel);
     const tagChips = document.createElement('div');
     tagChips.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;min-height:28px;';
     tagChips.innerHTML = '<span style="font-style:italic;">Loading tags…</span>';
@@ -1201,23 +1201,23 @@ function ragBuildTestTab(panel) {
 
     (async () => {
         try {
-            const res  = await apiFetch('../api/rag.php?action=tags');
-            const data = await res.json();
+            const result  = await apiFetch('../api/rag.php?action=tags');
+            const data = await result.json();
             tagChips.innerHTML = '';
             const tags = data.tags ?? [];
             if (tags.length === 0) {
                 tagChips.innerHTML = '<span style="font-style:italic;">No tags yet.</span>';
             } else {
                 tags.forEach(tag => {
-                    const lbl = document.createElement('label');
-                    lbl.style.cssText = 'display:flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;background:#fff;';
-                    const cb = document.createElement('input');
-                    cb.type  = 'checkbox';
-                    cb.value = tag;
-                    cb.style.accentColor = 'var(--accent)';
-                    lbl.appendChild(cb);
-                    lbl.appendChild(document.createTextNode(tag));
-                    tagChips.appendChild(lbl);
+                    const label = document.createElement('label');
+                    label.style.cssText = 'display:flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;background:#fff;';
+                    const callback = document.createElement('input');
+                    callback.type  = 'checkbox';
+                    callback.value = tag;
+                    callback.style.accentColor = 'var(--accent)';
+                    label.appendChild(callback);
+                    label.appendChild(document.createTextNode(tag));
+                    tagChips.appendChild(label);
                 });
             }
         } catch (_) {
@@ -1227,54 +1227,54 @@ function ragBuildTestTab(panel) {
 
     const langRow = document.createElement('div');
     langRow.style.cssText = 'margin-bottom:14px;';
-    const langLbl = document.createElement('div');
-    langLbl.textContent = 'Response language (optional):';
-    langLbl.style.cssText = 'font-weight:700;margin-bottom:8px;';
-    langRow.appendChild(langLbl);
+    const langLabel = document.createElement('div');
+    langLabel.textContent = 'Response language (optional):';
+    langLabel.style.cssText = 'font-weight:700;margin-bottom:8px;';
+    langRow.appendChild(langLabel);
     const langSelect = document.createElement('select');
     langSelect.className = 'adm-input w-180';
-    const langNoneOpt = document.createElement('option');
-    langNoneOpt.value = '';
-    langNoneOpt.textContent = '— auto-detect —';
-    langSelect.appendChild(langNoneOpt);
+    const langNoneOption = document.createElement('option');
+    langNoneOption.value = '';
+    langNoneOption.textContent = '— auto-detect —';
+    langSelect.appendChild(langNoneOption);
     langRow.appendChild(langSelect);
     testBody.appendChild(langRow);
 
     (async () => {
         try {
-            const res  = await apiFetch('api.php?action=get_language_setting');
-            const data = await res.json();
+            const result  = await apiFetch('api.php?action=get_language_setting');
+            const data = await result.json();
             const available = data.available_languages ?? [];
             const current   = document.documentElement.lang || '';
             available.forEach(code => {
-                const opt = document.createElement('option');
-                opt.value       = code;
-                opt.textContent = code.toUpperCase();
-                if (code === current) opt.selected = true;
-                langSelect.appendChild(opt);
+                const option = document.createElement('option');
+                option.value       = code;
+                option.textContent = code.toUpperCase();
+                if (code === current) option.selected = true;
+                langSelect.appendChild(option);
             });
         } catch (e) { console.warn('[rag] language hint unavailable', e); }
     })();
 
     const queryRow = document.createElement('div');
     queryRow.style.cssText = 'display:flex;gap:10px;margin-bottom:16px;';
-    const queryInp = document.createElement('input');
-    queryInp.type = 'text';
-    queryInp.placeholder = 'Enter test question…';
-    queryInp.className = 'adm-input flex-1';
-    const runBtn = document.createElement('button');
-    runBtn.type = 'button';
-    runBtn.textContent = 'Run';
-    runBtn.className = 'btn btn-primary';
-    const testStopBtn = document.createElement('button');
-    testStopBtn.type = 'button';
-    testStopBtn.textContent = 'Stop';
-    testStopBtn.disabled = true;
-    testStopBtn.className = 'btn btn-danger';
-    testStopBtn.style.opacity = '0.35';
-    queryRow.appendChild(queryInp);
-    queryRow.appendChild(runBtn);
-    queryRow.appendChild(testStopBtn);
+    const queryInput = document.createElement('input');
+    queryInput.type = 'text';
+    queryInput.placeholder = 'Enter test question…';
+    queryInput.className = 'adm-input flex-1';
+    const runButton = document.createElement('button');
+    runButton.type = 'button';
+    runButton.textContent = 'Run';
+    runButton.className = 'btn btn-primary';
+    const testStopButton = document.createElement('button');
+    testStopButton.type = 'button';
+    testStopButton.textContent = 'Stop';
+    testStopButton.disabled = true;
+    testStopButton.className = 'btn btn-danger';
+    testStopButton.style.opacity = '0.35';
+    queryRow.appendChild(queryInput);
+    queryRow.appendChild(runButton);
+    queryRow.appendChild(testStopButton);
     testBody.appendChild(queryRow);
 
     let testAbortCtrl = null;
@@ -1313,34 +1313,34 @@ function ragBuildTestTab(panel) {
     promptBox.textContent = 'Run a query above to see the prompt.';
     promptBody.appendChild(promptBox);
 
-    testStopBtn.addEventListener('click', () => {
+    testStopButton.addEventListener('click', () => {
         testAbortCtrl?.abort();
     });
 
     async function runQuery() {
-        const q = queryInp.value.trim();
+        const q = queryInput.value.trim();
         if (!q) return;
 
         const tags     = Array.from(tagChips.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
         const language = langSelect.value;
 
         testAbortCtrl = new AbortController();
-        runBtn.disabled = true;
-        testStopBtn.disabled = false;
-        testStopBtn.style.opacity = '1';
+        runButton.disabled = true;
+        testStopButton.disabled = false;
+        testStopButton.style.opacity = '1';
         resultWrap.style.display = '';
         answerBox.textContent    = 'Querying…';
         sourcesRow.innerHTML     = '';
 
         try {
-            const res  = await apiFetch('api.php?action=rag_test_query', {
+            const result  = await apiFetch('api.php?action=rag_test_query', {
                 method: 'POST',
                 body: JSON.stringify({ query: q, tags, language, return_prompt: true }),
                 signal: testAbortCtrl.signal,
             });
             let data;
             try {
-                data = await res.json();
+                data = await result.json();
             } catch {
                 answerBox.textContent = 'The server timed out or returned an unexpected response. Please try again.';
                 answerBox.style.color = 'var(--error)';
@@ -1381,17 +1381,17 @@ function ragBuildTestTab(panel) {
             answerBox.style.color = 'var(--error)';
         } finally {
             testAbortCtrl = null;
-            runBtn.disabled = false;
-            testStopBtn.disabled = true;
-            testStopBtn.style.opacity = '0.35';
+            runButton.disabled = false;
+            testStopButton.disabled = true;
+            testStopButton.style.opacity = '0.35';
         }
     }
 
-    runBtn.addEventListener('click', runQuery);
-    queryInp.addEventListener('keydown', e => { if (e.key === 'Enter') runQuery(); });
+    runButton.addEventListener('click', runQuery);
+    queryInput.addEventListener('keydown', e => { if (e.key === 'Enter') runQuery(); });
 }
 
-function ragBuildStatsTab(panel) {
+function ragBuildStatisticsTab(panel) {
     const { card: summaryCard, body: summaryBody } = ragCard(
         'Query Statistics',
         'Aggregated metrics from all RAG queries processed by Ollama.'
@@ -1432,32 +1432,32 @@ function ragBuildStatsTab(panel) {
     tableWrap.style.cssText = 'overflow-x:auto;';
     recentBody.appendChild(tableWrap);
 
-    const tbl   = document.createElement('table');
-    tbl.className = 'adm-tbl';
-    const thead = tbl.createTHead();
+    const table   = document.createElement('table');
+    table.className = 'adm-tbl';
+    const thead = table.createTHead();
     const hr    = thead.insertRow();
-    ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)', 'Sources'].forEach(col => {
+    ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)', 'Sources'].forEach(column => {
         const th = document.createElement('th');
-        th.textContent = col;
+        th.textContent = column;
         th.className = 'adm-th adm-th-sm';
         hr.appendChild(th);
     });
-    const tbody = tbl.createTBody();
-    tbl.appendChild(tbody);
-    tableWrap.appendChild(tbl);
+    const tbody = table.createTBody();
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
 
-    const refreshBtn = document.createElement('button');
-    refreshBtn.type = 'button';
-    refreshBtn.textContent = 'Refresh';
-    refreshBtn.className = 'btn btn-secondary btn-sm';
-    refreshBtn.style.marginTop = '14px';
-    recentBody.appendChild(refreshBtn);
+    const refreshButton = document.createElement('button');
+    refreshButton.type = 'button';
+    refreshButton.textContent = 'Refresh';
+    refreshButton.className = 'btn btn-secondary btn-sm';
+    refreshButton.style.marginTop = '14px';
+    recentBody.appendChild(refreshButton);
 
     async function load() {
-        refreshBtn.disabled = true;
+        refreshButton.disabled = true;
         try {
-            const res  = await apiFetch('api.php?action=rag_stats');
-            const data = await res.json();
+            const result  = await apiFetch('api.php?action=rag_stats');
+            const data = await result.json();
             if (data.status !== 'success') {
                 throw new Error(data.error ?? 'Load failed.');
             }
@@ -1487,7 +1487,7 @@ function ragBuildStatsTab(panel) {
 
                 const td1 = row.insertCell();
                 td1.style.cssText = tdStyle + 'white-space:nowrap;';
-                td1.textContent   = ragFmtDate(r.created_at);
+                td1.textContent   = ragFormatDate(r.created_at);
 
                 const td2 = row.insertCell();
                 td2.style.cssText = tdStyle + 'max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
@@ -1560,13 +1560,13 @@ function ragBuildStatsTab(panel) {
                     dtd.style.cssText = 'padding:14px 20px;background:var(--accent-light);border-bottom:2px solid var(--border);';
 
                     if (srcs.length > 0) {
-                        const srcHdr = document.createElement('div');
-                        srcHdr.textContent = 'Sources used (' + srcs.length + ')';
-                        srcHdr.style.cssText = 'font-weight:700;margin-bottom:8px;';
-                        dtd.appendChild(srcHdr);
+                        const sourceHdr = document.createElement('div');
+                        sourceHdr.textContent = 'Sources used (' + srcs.length + ')';
+                        sourceHdr.style.cssText = 'font-weight:700;margin-bottom:8px;';
+                        dtd.appendChild(sourceHdr);
 
-                        const srcGrid = document.createElement('div');
-                        srcGrid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
+                        const sourceGrid = document.createElement('div');
+                        sourceGrid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
                         srcs.forEach(s => {
                             const card = document.createElement('div');
                             card.style.cssText = 'padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:#fff;';
@@ -1582,21 +1582,21 @@ function ragBuildStatsTab(panel) {
                             snippet.textContent = snipText.length > 350 ? snipText.slice(0, 350) + '…' : snipText;
                             card.appendChild(title);
                             card.appendChild(snippet);
-                            srcGrid.appendChild(card);
+                            sourceGrid.appendChild(card);
                         });
-                        dtd.appendChild(srcGrid);
+                        dtd.appendChild(sourceGrid);
                     }
 
                     if (r.prompt_snapshot) {
                         const promptToggle = document.createElement('div');
                         promptToggle.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px;user-select:none;';
-                        const promptLbl = document.createElement('span');
-                        promptLbl.style.cssText = 'font-weight:700;';
-                        promptLbl.textContent = 'Full prompt sent to Ollama';
+                        const promptLabel = document.createElement('span');
+                        promptLabel.style.cssText = 'font-weight:700;';
+                        promptLabel.textContent = 'Full prompt sent to Ollama';
                         const promptArrow = document.createElement('span');
                         promptArrow.textContent = '▾';
                         promptArrow.style.cssText = 'transition:transform .15s;display:inline-block;';
-                        promptToggle.appendChild(promptLbl);
+                        promptToggle.appendChild(promptLabel);
                         promptToggle.appendChild(promptArrow);
 
                         const promptBox = document.createElement('pre');
@@ -1628,17 +1628,17 @@ function ragBuildStatsTab(panel) {
             td.textContent = 'Failed to load: ' + e.message;
             td.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
         } finally {
-            refreshBtn.disabled = false;
+            refreshButton.disabled = false;
         }
     }
 
-    refreshBtn.addEventListener('click', load);
+    refreshButton.addEventListener('click', load);
     load();
 }
 
-export async function renderRagPage(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '';
+export async function renderRagPage(context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = '';
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
@@ -1654,7 +1654,7 @@ export async function renderRagPage(ctx) {
 
     wrap.appendChild(heading);
     wrap.appendChild(intro);
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     const tabDefs = [
         { id: 'documents',  label: 'Documents',   icon: 'docs.png' },
@@ -1668,5 +1668,5 @@ export async function renderRagPage(ctx) {
     ragBuildDocumentsTab(panels.documents);
     ragBuildSettingsTab(panels.settings);
     ragBuildTestTab(panels.test);
-    ragBuildStatsTab(panels.statistics);
+    ragBuildStatisticsTab(panels.statistics);
 }

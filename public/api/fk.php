@@ -22,21 +22,21 @@ if (!is_array($schemaData) || !isset($schemaData['tables'][$table]['foreign_keys
 
 require_table_access($table);
 
-$refTable = $schemaData['tables'][$table]['foreign_keys'][$column]['reference_table'] ?? '';
-if (empty($refTable)) {
+$referencedTable = $schemaData['tables'][$table]['foreign_keys'][$column]['reference_table'] ?? '';
+if (empty($referencedTable)) {
     throw ResponseException::json(['rows' => []]);
 }
 
 $filterColumn = $_GET['filter_col'] ?? '';
 $filterValue = $_GET['filter_val'] ?? '';
 if ($filterColumn !== '') {
-    $refColumns = array_keys($schemaData['tables'][$refTable]['columns'] ?? []);
-    if (!in_array($filterColumn, $refColumns, true)) {
+    $referencedColumns = array_keys($schemaData['tables'][$referencedTable]['columns'] ?? []);
+    if (!in_array($filterColumn, $referencedColumns, true)) {
         unset($_GET['filter_col'], $_GET['filter_val']);
     }
 }
 
-if (!user_can_access_table($refTable)) {
+if (!user_can_access_table($referencedTable)) {
     $foreignKeyConfig   = $schemaData['tables'][$table]['foreign_keys'][$column];
     $labelColumns = [(string) ($foreignKeyConfig['reference_column'] ?? 'id')];
 
@@ -53,7 +53,7 @@ if (!user_can_access_table($refTable)) {
 
 define('OS_TABLE_ACCESS_DELEGATED', true);
 $_GET['api'] = 'list';
-$_GET['table'] = $refTable;
+$_GET['table'] = $referencedTable;
 
 require __DIR__ . '/../api.php';
 throw ResponseException::sent();

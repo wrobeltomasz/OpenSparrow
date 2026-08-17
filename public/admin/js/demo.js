@@ -56,34 +56,34 @@ function apiPost(action, body) {
     }).then(r => r.json());
 }
 
-function statusMsg(container, type, text) {
-    let el = container.querySelector('.demo-status-msg');
-    if (!el) {
-        el = document.createElement('p');
-        el.className = 'demo-status-msg';
-        container.appendChild(el);
+function statusMessage(container, type, text) {
+    let element = container.querySelector('.demo-status-msg');
+    if (!element) {
+        el: element = document.createElement('p');
+        element.className = 'demo-status-msg';
+        container.appendChild(element);
     }
-    el.className = `demo-status-msg admin-${type === 'error' ? 'error' : 'notice'}`;
-    el.textContent = text;
+    element.className = `demo-status-msg admin-${type === 'error' ? 'error' : 'notice'}`;
+    element.textContent = text;
 }
 
-export function renderDemoPage({ workspaceEl }) {
-    workspaceEl.innerHTML = '<p style="margin-top:0">Loading…</p>';
+export function renderDemoPage({ workspaceEl: workspaceElement }) {
+    workspaceElement.innerHTML = '<p style="margin-top:0">Loading…</p>';
     (async () => {
         try {
-            const res = await apiFetch('api.php?action=demo_status');
-            const d   = await res.json();
+            const result = await apiFetch('api.php?action=demo_status');
+            const d   = await result.json();
             if (d.installed) {
-                renderInstalled(workspaceEl, d.meta);
+                renderInstalled(workspaceElement, d.meta);
             } else {
-                renderInstallForm(workspaceEl, { snapshotsLockedByEnv: !!d.snapshots_locked_by_env });
+                renderInstallForm(workspaceElement, { snapshotsLockedByEnv: !!d.snapshots_locked_by_env });
             }
         } catch (e) {
-            workspaceEl.innerHTML = '';
-            const err = document.createElement('p');
-            err.className = 'admin-error';
-            err.textContent = 'Error: ' + e.message;
-            workspaceEl.appendChild(err);
+            workspaceElement.innerHTML = '';
+            const error = document.createElement('p');
+            error.className = 'admin-error';
+            error.textContent = 'Error: ' + e.message;
+            workspaceElement.appendChild(error);
         }
     })();
 }
@@ -101,33 +101,33 @@ function buildInstallOption({ id, label, help, checked = true }) {
     chk.className = 'adm-check';
     chk.checked   = checked;
 
-    const lbl = document.createElement('label');
-    lbl.htmlFor     = id;
-    lbl.textContent = label;
-    lbl.className   = 'adm-field-label';
-    lbl.style.cursor = 'pointer';
+    const label = document.createElement('label');
+    label.htmlFor     = id;
+    label.textContent = label;
+    label.className   = 'adm-field-label';
+    label.style.cursor = 'pointer';
 
-    row.append(chk, lbl);
+    row.append(chk, label);
 
-    const helpEl = document.createElement('div');
-    helpEl.className   = 'help-text';
-    helpEl.textContent = help;
+    const helpElement = document.createElement('div');
+    helpElement.className   = 'help-text';
+    helpElement.textContent = help;
 
-    wrap.append(row, helpEl);
-    return { wrap, chk, help: helpEl };
+    wrap.append(row, helpElement);
+    return { wrap, chk, help: helpElement };
 }
 
-function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
-    workspaceEl.innerHTML = '';
+function renderInstallForm(workspaceElement, { snapshotsLockedByEnv: snapshotsLockedByEnvironment = false } = {}) {
+    workspaceElement.innerHTML = '';
 
-    workspaceEl.appendChild(createPageHeader('Install Demo System',
+    workspaceElement.appendChild(createPageHeader('Install Demo System',
         'Installs a dedicated PostgreSQL schema with tables, views, procedures and sample data, and merges the demo '
         + 'schema, menu, dashboard, calendar, board, workflows, views, printouts, automations, anonymization rules, '
         + 'file relations and RAG knowledge base into the app configuration.'));
 
     const grid = document.createElement('div');
     grid.className = 'demo-cards';
-    workspaceEl.appendChild(grid);
+    workspaceElement.appendChild(grid);
 
     let selectedType = null;
 
@@ -150,10 +150,10 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
     const options = document.createElement('div');
     options.className = 'demo-install-options';
 
-    const optTitle = document.createElement('strong');
-    optTitle.className = 'demo-install-options-title';
-    optTitle.textContent = 'What to install';
-    options.appendChild(optTitle);
+    const optionTitle = document.createElement('strong');
+    optionTitle.className = 'demo-install-options-title';
+    optionTitle.textContent = 'What to install';
+    options.appendChild(optionTitle);
 
     const rag = buildInstallOption({
         id:    'demo-rag-docs-chk',
@@ -184,11 +184,11 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
     });
 
     const syncAuditAvailability = () => {
-        const envLocked = snapshotsLockedByEnv;
-        const blocked   = envLocked || !users.chk.checked;
+        const environmentLocked = snapshotsLockedByEnvironment;
+        const blocked   = environmentLocked || !users.chk.checked;
         audit.chk.disabled = blocked;
         if (blocked) audit.chk.checked = false;
-        if (envLocked) {
+        if (environmentLocked) {
             audit.help.textContent = 'Unavailable: the RECORD_SNAPSHOTS_ENABLED environment variable '
                 + 'controls the record snapshot setting, so the demo cannot change it.';
         } else if (!users.chk.checked) {
@@ -204,20 +204,20 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
     options.append(rag.wrap, users.wrap, audit.wrap);
     syncAuditAvailability();
 
-    const installBtn = document.createElement('button');
-    installBtn.textContent = 'Install Demo';
-    installBtn.className   = 'btn btn-primary';
-    installBtn.style.marginTop = '12px';
-    installBtn.disabled = true;
+    const installButton = document.createElement('button');
+    installButton.textContent = 'Install Demo';
+    installButton.className   = 'btn btn-primary';
+    installButton.style.marginTop = '12px';
+    installButton.disabled = true;
 
     confirmInput.addEventListener('input', () => {
-        installBtn.disabled = confirmInput.value !== 'CONFIRM';
+        installButton.disabled = confirmInput.value !== 'CONFIRM';
     });
 
-    installBtn.addEventListener('click', async () => {
+    installButton.addEventListener('click', async () => {
         if (!selectedType || confirmInput.value !== 'CONFIRM') return;
-        installBtn.disabled  = true;
-        installBtn.textContent = 'Installing…';
+        installButton.disabled  = true;
+        installButton.textContent = 'Installing…';
         try {
             const d = await apiPost('demo_install', {
                 type:          selectedType,
@@ -227,16 +227,16 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
                 audit_history: audit.chk.checked,
             });
             if (d.status === 'success') {
-                renderDemoPage({ workspaceEl });
+                renderDemoPage({ workspaceEl: workspaceElement });
             } else {
-                statusMsg(confirmSection, 'error', d.error ?? 'Installation failed.');
-                installBtn.disabled  = false;
-                installBtn.textContent = 'Install Demo';
+                statusMessage(confirmSection, 'error', d.error ?? 'Installation failed.');
+                installButton.disabled  = false;
+                installButton.textContent = 'Install Demo';
             }
         } catch (e) {
-            statusMsg(confirmSection, 'error', e.message);
-            installBtn.disabled  = false;
-            installBtn.textContent = 'Install Demo';
+            statusMessage(confirmSection, 'error', e.message);
+            installButton.disabled  = false;
+            installButton.textContent = 'Install Demo';
         }
     });
 
@@ -244,8 +244,8 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
     confirmSection.appendChild(options);
     confirmSection.appendChild(confirmLabel);
     confirmSection.appendChild(confirmInput);
-    confirmSection.appendChild(installBtn);
-    workspaceEl.appendChild(confirmSection);
+    confirmSection.appendChild(installButton);
+    workspaceElement.appendChild(confirmSection);
 
     Object.entries(DEMOS).forEach(([key, def]) => {
         const card = document.createElement('div');
@@ -271,7 +271,7 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
             card.classList.add('selected');
             selectedType = key;
             confirmInput.value   = '';
-            installBtn.disabled  = true;
+            installButton.disabled  = true;
             confirmSection.style.display = '';
             warningBox.textContent = `"${def.label}" will create schema ${def.schema} and merge demo entries into the schema, menu, dashboard, calendar, board, workflows, views, printouts, automations, anonymization, files and RAG configuration. Existing entries with the same keys/IDs will be overwritten.`;
         });
@@ -280,11 +280,11 @@ function renderInstallForm(workspaceEl, { snapshotsLockedByEnv = false } = {}) {
     });
 }
 
-function renderInstalled(workspaceEl, meta) {
-    workspaceEl.innerHTML = '';
+function renderInstalled(workspaceElement, meta) {
+    workspaceElement.innerHTML = '';
     const def = DEMOS[meta.type] ?? { label: meta.type, color: 'var(--muted)', icon: 'assets/icons/box.png' };
 
-    workspaceEl.appendChild(createPageHeader('Demo Installed'));
+    workspaceElement.appendChild(createPageHeader('Demo Installed'));
 
     const badge = document.createElement('div');
     badge.className = 'demo-installed-badge';
@@ -300,11 +300,11 @@ function renderInstalled(workspaceEl, meta) {
             <div class="demo-installed-tables">Tables: ${(meta.tables ?? []).join(', ')}</div>
         </div>
     `;
-    workspaceEl.appendChild(badge);
+    workspaceElement.appendChild(badge);
 
     const sep = document.createElement('hr');
     sep.style.margin = '24px 0';
-    workspaceEl.appendChild(sep);
+    workspaceElement.appendChild(sep);
 
     const uninstallWrap = document.createElement('div');
     uninstallWrap.className = 'demo-confirm-section';
@@ -313,48 +313,48 @@ function renderInstalled(workspaceEl, meta) {
     warn.className   = 'demo-warning demo-warning-danger';
     warn.textContent = `Uninstalling will DROP SCHEMA ${meta.schema} CASCADE (all data lost) and remove demo entries from the app configuration — menu, dashboard, calendar, board, workflows, views, printouts, automations, anonymization, files and RAG documents — along with the demo users and their comments, notes, notifications and seeded audit history. Audit entries and record snapshots you created yourself are kept. This cannot be undone.`;
 
-    const lbl = document.createElement('label');
-    lbl.textContent = 'Type CONFIRM to uninstall:';
-    lbl.style.cssText = 'display:block;font-weight:600;margin-top:16px;';
+    const label = document.createElement('label');
+    label.textContent = 'Type CONFIRM to uninstall:';
+    label.style.cssText = 'display:block;font-weight:600;margin-top:16px;';
 
     const confirmInput = document.createElement('input');
     confirmInput.type        = 'text';
     confirmInput.placeholder = 'CONFIRM';
     confirmInput.className   = 'demo-confirm-input';
 
-    const uninstallBtn = document.createElement('button');
-    uninstallBtn.textContent = 'Uninstall Demo';
-    uninstallBtn.className   = 'btn btn-danger';
-    uninstallBtn.style.marginTop = '12px';
-    uninstallBtn.disabled = true;
+    const uninstallButton = document.createElement('button');
+    uninstallButton.textContent = 'Uninstall Demo';
+    uninstallButton.className   = 'btn btn-danger';
+    uninstallButton.style.marginTop = '12px';
+    uninstallButton.disabled = true;
 
     confirmInput.addEventListener('input', () => {
-        uninstallBtn.disabled = confirmInput.value !== 'CONFIRM';
+        uninstallButton.disabled = confirmInput.value !== 'CONFIRM';
     });
 
-    uninstallBtn.addEventListener('click', async () => {
+    uninstallButton.addEventListener('click', async () => {
         if (confirmInput.value !== 'CONFIRM') return;
-        uninstallBtn.disabled   = true;
-        uninstallBtn.textContent = 'Uninstalling…';
+        uninstallButton.disabled   = true;
+        uninstallButton.textContent = 'Uninstalling…';
         try {
             const d = await apiPost('demo_uninstall', { confirm: 'CONFIRM' });
             if (d.status === 'success') {
-                renderDemoPage({ workspaceEl });
+                renderDemoPage({ workspaceEl: workspaceElement });
             } else {
-                statusMsg(uninstallWrap, 'error', d.error ?? 'Uninstall failed.');
-                uninstallBtn.disabled   = false;
-                uninstallBtn.textContent = 'Uninstall Demo';
+                statusMessage(uninstallWrap, 'error', d.error ?? 'Uninstall failed.');
+                uninstallButton.disabled   = false;
+                uninstallButton.textContent = 'Uninstall Demo';
             }
         } catch (e) {
-            statusMsg(uninstallWrap, 'error', e.message);
-            uninstallBtn.disabled   = false;
-            uninstallBtn.textContent = 'Uninstall Demo';
+            statusMessage(uninstallWrap, 'error', e.message);
+            uninstallButton.disabled   = false;
+            uninstallButton.textContent = 'Uninstall Demo';
         }
     });
 
     uninstallWrap.appendChild(warn);
-    uninstallWrap.appendChild(lbl);
+    uninstallWrap.appendChild(label);
     uninstallWrap.appendChild(confirmInput);
-    uninstallWrap.appendChild(uninstallBtn);
-    workspaceEl.appendChild(uninstallWrap);
+    uninstallWrap.appendChild(uninstallButton);
+    workspaceElement.appendChild(uninstallWrap);
 }

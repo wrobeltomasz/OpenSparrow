@@ -14,9 +14,9 @@ use App\Form\RecordData;
 
 interface RecordRepositoryInterface
 {
-    public function find(TableConfig $cfg, string|int $id): ?array;
-    public function update(TableConfig $cfg, string|int $id, RecordData $data): void;
-    public function insert(TableConfig $cfg, RecordData $data): string|int;
+    public function find(TableConfig $config, string|int $id): ?array;
+    public function update(TableConfig $config, string|int $id, RecordData $data): void;
+    public function insert(TableConfig $config, RecordData $data): string|int;
 
-    public function subtables(TableConfig $cfg, string|int $parentId): array;
+    public function subtables(TableConfig $config, string|int $parentId): array;
 }

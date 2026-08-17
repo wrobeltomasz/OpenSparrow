@@ -125,8 +125,8 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
   });
 
   it('grid cells have tabindex attribute set', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody td[data-column]', { timeout: CypressHelpers.TIMEOUTS.medium })
         .first()
         .should('have.attr', 'tabindex');
@@ -134,8 +134,8 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
   });
 
   it('grid cells have role=gridcell', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody td[data-column]', { timeout: CypressHelpers.TIMEOUTS.medium })
         .first()
         .should('have.attr', 'role', 'gridcell');
@@ -143,16 +143,16 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
   });
 
   it('grid table has role=grid', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid table', { timeout: CypressHelpers.TIMEOUTS.medium })
         .should('have.attr', 'role', 'grid');
     });
   });
 
   it('cell gets kg-focused class on focus', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody td[data-column]')
         .first()
         .focus()
@@ -161,8 +161,8 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
   });
 
   it('arrow key moves kg-focused to next row', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid tbody td[data-column]').then($cells => {
         if ($cells.length < 2) return;
@@ -180,8 +180,8 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
   });
 
   it('Ctrl+A selects all cells with kg-selected class', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid tbody td[data-column]').first().focus();
 
@@ -194,8 +194,8 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
   });
 
   it('Ctrl+F focuses search input', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid tbody td[data-column]').first().focus();
 
@@ -208,8 +208,8 @@ describe('OpenSparrow – Grid Keyboard Navigation', () => {
   });
 
   it('search highlights cells with kg-search-match when term matches', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#globalSearch').then($input => {
         if (!$input.length) return;
@@ -238,8 +238,8 @@ describe('OpenSparrow – Grid Nav-Mode', () => {
   });
 
   it('keyboard navigation does not leave cell in editing state', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid tbody td[data-column]').first().focus();
 

@@ -6,29 +6,29 @@
 import { CellRenderer } from './registry.js';
 import { createInputCell } from './shared.js';
 
-function renderEnumCell({ row, col, colCfg, isReadOnly }) {
-    const value = row[col + '__display'] ?? row[col] ?? '';
+function renderEnumCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
+    const value = row[column + '__display'] ?? row[column] ?? '';
     return createInputCell({
-        row, col, colCfg, isReadOnly,
+        row, col: column, colCfg: columnConfig, isReadOnly,
         makeControl: () => {
             const select = document.createElement('select');
-            const applyColor = val => {
-                select.style.backgroundColor = colCfg.enum_colors?.[val] ?? '';
+            const applyColor = value => {
+                select.style.backgroundColor = columnConfig.enum_colors?.[value] ?? '';
             };
 
-            const emptyOpt = document.createElement('option');
-            emptyOpt.value = '';
-            emptyOpt.textContent = '-- Select --';
-            select.appendChild(emptyOpt);
+            const emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.textContent = '-- Select --';
+            select.appendChild(emptyOption);
 
-            if (Array.isArray(colCfg.options)) {
-                colCfg.options.forEach(optVal => {
-                    const opt = document.createElement('option');
-                    opt.value = optVal;
-                    opt.textContent = optVal;
-                    if (optVal === value) opt.selected = true;
-                    if (colCfg.enum_colors?.[optVal]) opt.style.backgroundColor = colCfg.enum_colors[optVal];
-                    select.appendChild(opt);
+            if (Array.isArray(columnConfig.options)) {
+                columnConfig.options.forEach(optionValue => {
+                    const option = document.createElement('option');
+                    option.value = optionValue;
+                    option.textContent = optionValue;
+                    if (optionValue === value) option.selected = true;
+                    if (columnConfig.enum_colors?.[optionValue]) option.style.backgroundColor = columnConfig.enum_colors[optionValue];
+                    select.appendChild(option);
                 });
             }
 

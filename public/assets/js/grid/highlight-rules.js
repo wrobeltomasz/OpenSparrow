@@ -12,13 +12,13 @@ function matchesRule(rawValue, op, ruleValue) {
         return op === '==' ? isEqual : !isEqual;
     }
 
-    const num = parseFloat(rawValue);
-    const ruleNum = parseFloat(ruleValue);
-    if (isNaN(num) || isNaN(ruleNum)) return false;
-    if (op === '>') return num > ruleNum;
-    if (op === '>=') return num >= ruleNum;
-    if (op === '<') return num < ruleNum;
-    if (op === '<=') return num <= ruleNum;
+    const number = parseFloat(rawValue);
+    const ruleNumber = parseFloat(ruleValue);
+    if (isNaN(number) || isNaN(ruleNumber)) return false;
+    if (op === '>') return number > ruleNumber;
+    if (op === '>=') return number >= ruleNumber;
+    if (op === '<') return number < ruleNumber;
+    if (op === '<=') return number <= ruleNumber;
     return false;
 }
 

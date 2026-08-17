@@ -22,9 +22,9 @@ function frontapi_workflow_procedure(FrontApiContext $context): never
 
     require_access('workflows', $workflowId);
 
-    $wfConfig = config_get('workflows') ?? [];
-    $procCfg  = null;
-    foreach ($wfConfig['workflows'] ?? [] as $workflow) {
+    $workflowConfig = config_get('workflows') ?? [];
+    $procedureConfig  = null;
+    foreach ($workflowConfig['workflows'] ?? [] as $workflow) {
         if (($workflow['id'] ?? '') !== $workflowId) {
             continue;
         }
@@ -32,45 +32,45 @@ function frontapi_workflow_procedure(FrontApiContext $context): never
         if (!workflow_tables_in_scope($workflow)) {
             jsonError('Forbidden: no access to this workflow.', 403);
         }
-        $procCfg = $workflow['steps'][$stepIndex]['procedure'] ?? null;
+        $procedureConfig = $workflow['steps'][$stepIndex]['procedure'] ?? null;
         break;
     }
 
-    if (!is_array($procCfg) || empty($procCfg['enabled'])) {
+    if (!is_array($procedureConfig) || empty($procedureConfig['enabled'])) {
         throw new BadRequestException('No procedure configured for this step.');
     }
 
-    $procSchema = trim((string)($procCfg['schema'] ?? ''));
-    $procName   = trim((string)($procCfg['name'] ?? ''));
-    if ($procSchema === '' || $procName === '') {
+    $procedureSchema = trim((string)($procedureConfig['schema'] ?? ''));
+    $procedureName   = trim((string)($procedureConfig['name'] ?? ''));
+    if ($procedureSchema === '' || $procedureName === '') {
         throw new BadRequestException('Procedure configuration is incomplete.');
     }
 
-    $params = [];
-    foreach ($procCfg['params'] ?? [] as $param) {
-        if (($param['source'] ?? '') === 'literal') {
-            $value = (string)($param['value'] ?? '');
+    $parameters = [];
+    foreach ($procedureConfig['params'] ?? [] as $parameter) {
+        if (($parameter['source'] ?? '') === 'literal') {
+            $value = (string)($parameter['value'] ?? '');
         } else {
-            $srcStep  = (string)($param['step'] ?? '');
-            $srcField = (string)($param['field'] ?? '');
-            $value    = $stepValues[$srcStep][$srcField] ?? null;
+            $sourceStep  = (string)($parameter['step'] ?? '');
+            $sourceField = (string)($parameter['field'] ?? '');
+            $value    = $stepValues[$sourceStep][$sourceField] ?? null;
             if (is_bool($value)) {
                 $value = $value ? 't' : 'f';
             } elseif ($value !== null) {
                 $value = (string)$value;
             }
         }
-        $params[] = ($value === '' || $value === null) ? null : $value;
+        $parameters[] = ($value === '' || $value === null) ? null : $value;
     }
 
     $placeholders = [];
-    for ($parameterIndex = 1; $parameterIndex <= count($params); $parameterIndex++) {
+    for ($parameterIndex = 1; $parameterIndex <= count($parameters); $parameterIndex++) {
         $placeholders[] = '$' . $parameterIndex;
     }
-    $callSql = 'CALL ' . pg_ident($procSchema) . '.' . pg_ident($procName)
+    $callSql = 'CALL ' . pg_ident($procedureSchema) . '.' . pg_ident($procedureName)
         . '(' . implode(', ', $placeholders) . ')';
 
-    if (!@pg_send_query_params($conn, $callSql, $params)) {
+    if (!@pg_send_query_params($conn, $callSql, $parameters)) {
         throw new ServerErrorException('Could not execute the procedure.');
     }
 
@@ -82,7 +82,7 @@ function frontapi_workflow_procedure(FrontApiContext $context): never
     }
 
     if ($sqlError !== null && $sqlError !== '') {
-        error_log('[workflow_procedure] ' . $procSchema . '.' . $procName . ': ' . $sqlError);
+        error_log('[workflow_procedure] ' . $procedureSchema . '.' . $procedureName . ': ' . $sqlError);
         throw new BadRequestException((string) $sqlError);
     }
 

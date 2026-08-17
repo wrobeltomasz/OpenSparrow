@@ -22,8 +22,8 @@ function widgetRows(widget) {
         return [header, row];
     }
     if (Array.isArray(data) && data.length > 0) {
-        const cols = Object.keys(data[0]);
-        return [cols, ...data.map(r => cols.map(c => r[c]))];
+        const columns = Object.keys(data[0]);
+        return [columns, ...data.map(r => columns.map(c => r[c]))];
     }
     return null;
 }
@@ -45,17 +45,17 @@ function buildExportButton(widget) {
     if (!window.USER_CAPS?.canExport) return null;
     if (widgetRows(widget) === null) return null;
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'dash-export-btn';
-    btn.textContent = 'CSV';
-    btn.title = I18n.t('grid.export_csv');
-    btn.addEventListener('click', (e) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'dash-export-btn';
+    button.textContent = 'CSV';
+    button.title = I18n.t('grid.export_csv');
+    button.addEventListener('click', (e) => {
         e.stopPropagation();
         const rows = widgetRows(widget);
         if (rows) downloadCSV(rows, widget.title);
     });
-    return btn;
+    return button;
 }
 
 export { buildExportButton };

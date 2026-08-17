@@ -38,15 +38,15 @@ require_once __DIR__ . '/../includes/config_store.php';
 
 header('Content-Type: application/json');
 
-function cypress_first_text_column(array $tableCfg): ?string
+function cypress_first_text_column(array $tableConfig): ?string
 {
-    foreach ($tableCfg['columns'] ?? [] as $colName => $colCfg) {
-        if ($colName === 'id') {
+    foreach ($tableConfig['columns'] ?? [] as $columnName => $columnConfig) {
+        if ($columnName === 'id') {
             continue;
         }
-        $type = strtolower($colCfg['type'] ?? '');
+        $type = strtolower($columnConfig['type'] ?? '');
         if (in_array($type, ['text', 'varchar', 'character varying', 'string', ''], true)) {
-            return $colName;
+            return $columnName;
         }
     }
     return null;
@@ -60,7 +60,7 @@ try {
 
     if ($action === 'seed' || $action === 'users') {
         $argonOptions = ['memory_cost' => 1 << 16, 'time_cost' => 2, 'threads' => 1];
-        $optsJson  = json_encode($argonOptions);
+        $optionsJson  = json_encode($argonOptions);
 
         foreach (
             [
@@ -80,7 +80,7 @@ try {
                     salt          = EXCLUDED.salt,
                     is_active     = true,
                     role          = EXCLUDED.role
-            ", [$username, $hash, $salt, $optsJson, $role]);
+            ", [$username, $hash, $salt, $optionsJson, $role]);
 
             $results[$username] = $result ? 'ok' : pg_last_error($conn);
         }
@@ -99,8 +99,8 @@ try {
 
             $recordOwnersTable = sys_table('record_owners');
 
-            foreach ($schema['tables'] ?? [] as $tableName => $tableCfg) {
-                $textColumn = cypress_first_text_column($tableCfg);
+            foreach ($schema['tables'] ?? [] as $tableName => $tableConfig) {
+                $textColumn = cypress_first_text_column($tableConfig);
 
                 if ($textColumn === null) {
                     continue;
@@ -140,16 +140,16 @@ try {
         $table  = (string) $request->post('table', $request->query('table'));
 
         if ($table === '') {
-            foreach ($schema['tables'] ?? [] as $name => $cfg) {
-                if (cypress_first_text_column($cfg) !== null) {
+            foreach ($schema['tables'] ?? [] as $name => $config) {
+                if (cypress_first_text_column($config) !== null) {
                     $table = (string) $name;
                     break;
                 }
             }
         }
 
-        $tableCfg = $schema['tables'][$table] ?? null;
-        $textColumn  = is_array($tableCfg) ? cypress_first_text_column($tableCfg) : null;
+        $tableConfig = $schema['tables'][$table] ?? null;
+        $textColumn  = is_array($tableConfig) ? cypress_first_text_column($tableConfig) : null;
 
         if ($textColumn === null) {
             throw ResponseException::encoded(['status' => 'ok', 'results' => ['skipped' => true]]);
@@ -167,7 +167,7 @@ try {
             $userIds[$username] = (int) pg_fetch_result($userResult, 0, 'id');
         }
 
-        $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
+        $pgTable = pg_ident($tableConfig['schema'] ?? 'public') . '.' . pg_ident($table);
         $pgColumn   = pg_ident($textColumn);
         $recordOwnersTable = sys_table('record_owners');
 
@@ -206,7 +206,7 @@ try {
             $ids[$slot] = $recordId;
         }
 
-        $wasRestricted = !empty($tableCfg['owner_restricted']);
+        $wasRestricted = !empty($tableConfig['owner_restricted']);
         if (!$wasRestricted) {
             $schema['tables'][$table]['owner_restricted'] = true;
             $saved = config_save('schema', $schema);
@@ -233,15 +233,15 @@ try {
     if ($action === 'own_reset') {
         $schema   = config_get('schema');
         $table    = (string) $request->post('table', $request->query('table'));
-        $tableCfg = $schema['tables'][$table] ?? null;
+        $tableConfig = $schema['tables'][$table] ?? null;
 
-        if (!is_array($tableCfg)) {
+        if (!is_array($tableConfig)) {
             throw new BadRequestException('Unknown table', ['status' => 'error', 'error' => 'Unknown table']);
         }
 
-        $textColumn = cypress_first_text_column($tableCfg);
+        $textColumn = cypress_first_text_column($tableConfig);
         if ($textColumn !== null) {
-            $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
+            $pgTable = pg_ident($tableConfig['schema'] ?? 'public') . '.' . pg_ident($table);
             $result = @pg_query(
                 $conn,
                 "DELETE FROM $pgTable WHERE " . pg_ident($textColumn) . " LIKE 'cypress-idor-%' RETURNING id"
@@ -271,13 +271,13 @@ try {
     if ($action === 'count') {
         $table  = (string) $request->post('table', $request->query('table'));
         $schema = config_get('schema');
-        $tableCfg = $schema['tables'][$table] ?? null;
+        $tableConfig = $schema['tables'][$table] ?? null;
 
-        if (!is_array($tableCfg)) {
+        if (!is_array($tableConfig)) {
             throw new BadRequestException('Unknown table', ['status' => 'error', 'error' => 'Unknown table']);
         }
 
-        $pgTable = pg_ident($tableCfg['schema'] ?? 'public') . '.' . pg_ident($table);
+        $pgTable = pg_ident($tableConfig['schema'] ?? 'public') . '.' . pg_ident($table);
         $result = pg_query($conn, "SELECT COUNT(*) AS c FROM $pgTable");
         if (!$result) {
             throw new ServerErrorException(pg_last_error($conn), [

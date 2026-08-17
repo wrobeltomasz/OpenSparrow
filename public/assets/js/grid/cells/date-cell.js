@@ -19,13 +19,13 @@ function normalizeDateValue(value) {
     return '';
 }
 
-function renderDateCell({ row, col, colCfg, isReadOnly }) {
+function renderDateCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
     return createInputCell({
-        row, col, colCfg, isReadOnly,
+        row, col: column, colCfg: columnConfig, isReadOnly,
         makeControl: () => {
             const input = document.createElement('input');
             input.type = 'date';
-            input.value = normalizeDateValue(row[col + '__display'] ?? row[col] ?? '');
+            input.value = normalizeDateValue(row[column + '__display'] ?? row[column] ?? '');
             return input;
         },
     });

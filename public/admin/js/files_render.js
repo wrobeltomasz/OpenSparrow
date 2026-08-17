@@ -33,8 +33,8 @@ function resetState() {
     };
 }
 
-export async function renderFilesEditor(ctx) {
-    const { workspaceEl, currentConfig, getTableOptions, getColumnOptionsForTable } = ctx;
+export async function renderFilesEditor(context) {
+    const { workspaceEl: workspaceElement, currentConfig, getTableOptions, getColumnOptionsForTable } = context;
     resetState();
     _state.getTableOptions = getTableOptions;
     _state.getColumnOptionsForTable = getColumnOptionsForTable;
@@ -48,11 +48,11 @@ export async function renderFilesEditor(ctx) {
     if (!_state.config.allowed_extensions) _state.config.allowed_extensions = ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "odt", "rtf", "xls", "xlsx", "ods", "csv", "zip", "tar", "gz"];
     if (!_state.config.relations) _state.config.relations = [];
 
-    workspaceEl.innerHTML = '';
-    workspaceEl.appendChild(buildSkeleton());
+    workspaceElement.innerHTML = '';
+    workspaceElement.appendChild(buildSkeleton());
 
     fillConfigForm(_state.config);
-    bindEvents(workspaceEl);
+    bindEvents(workspaceElement);
 
     await loadList();
 }
@@ -178,13 +178,13 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
 
     const tables = _state.getTableOptions ? _state.getTableOptions() : [];
 
-    let tableOpts = '<option value="">-- Target Table --</option>';
-    tables.forEach(t => tableOpts += `<option value="${escHtml(t.value)}" ${data.table === t.value ? 'selected' : ''}>${escHtml(t.label)}</option>`);
+    let tableOptions = '<option value="">-- Target Table --</option>';
+    tables.forEach(t => tableOptions += `<option value="${escHtml(t.value)}" ${data.table === t.value ? 'selected' : ''}>${escHtml(t.label)}</option>`);
 
     row.innerHTML = `
         <div style="flex:1">
             <label style=" display:block; margin-bottom:4px;">Table</label>
-            <select class="rel-table adm-input w-full">${tableOpts}</select>
+            <select class="rel-table adm-input w-full">${tableOptions}</select>
         </div>
         <div style="flex:1">
             <label style=" display:block; margin-bottom:4px;">Col 1</label>
@@ -197,61 +197,61 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
         <button type="button" class="btn btn-danger btn-xs btn-del-rel">✕</button>
     `;
 
-    const tableSel = row.querySelector('.rel-table');
-    const col1Sel = row.querySelector('.rel-col1');
-    const col2Sel = row.querySelector('.rel-col2');
+    const tableSelect = row.querySelector('.rel-table');
+    const col1Select = row.querySelector('.rel-col1');
+    const col2Select = row.querySelector('.rel-col2');
 
-    const updateCols = () => {
-        col1Sel.innerHTML = '<option value="">-- None --</option>';
-        col2Sel.innerHTML = '<option value="">-- None --</option>';
-        const tbl = tableSel.value;
-        if (tbl && _state.getColumnOptionsForTable) {
-            const cols = _state.getColumnOptionsForTable(tbl);
-            cols.forEach(col => {
-                col1Sel.innerHTML += `<option value="${escHtml(col.value)}" ${data.col1 === col.value ? 'selected' : ''}>${escHtml(col.label)}</option>`;
-                col2Sel.innerHTML += `<option value="${escHtml(col.value)}" ${data.col2 === col.value ? 'selected' : ''}>${escHtml(col.label)}</option>`;
+    const updateColumns = () => {
+        col1Select.innerHTML = '<option value="">-- None --</option>';
+        col2Select.innerHTML = '<option value="">-- None --</option>';
+        const table = tableSelect.value;
+        if (table && _state.getColumnOptionsForTable) {
+            const columns = _state.getColumnOptionsForTable(table);
+            columns.forEach(column => {
+                col1Select.innerHTML += `<option value="${escHtml(column.value)}" ${data.col1 === column.value ? 'selected' : ''}>${escHtml(column.label)}</option>`;
+                col2Select.innerHTML += `<option value="${escHtml(column.value)}" ${data.col2 === column.value ? 'selected' : ''}>${escHtml(column.label)}</option>`;
             });
         }
     };
 
-    tableSel.addEventListener('change', updateCols);
+    tableSelect.addEventListener('change', updateColumns);
     row.querySelector('.btn-del-rel').addEventListener('click', () => row.remove());
 
-    updateCols();
+    updateColumns();
     list.appendChild(row);
 }
 
-function fillConfigForm(cfg) {
-    const maxEl  = document.getElementById('f-max-size');
-    const pathEl = document.getElementById('f-storage-path');
-    const extsEl = document.getElementById('f-allowed-exts');
-    const typesEl = document.getElementById('f-allowed-types');
+function fillConfigForm(config) {
+    const maxElement  = document.getElementById('f-max-size');
+    const pathElement = document.getElementById('f-storage-path');
+    const extensionsElement = document.getElementById('f-allowed-exts');
+    const typesElement = document.getElementById('f-allowed-types');
 
-    if (!maxEl) return;
+    if (!maxElement) return;
 
-    maxEl.value  = cfg.max_file_size_mb;
-    pathEl.value = cfg.storage_path;
-    extsEl.value = (cfg.allowed_extensions || []).join(', ');
+    maxElement.value  = config.max_file_size_mb;
+    pathElement.value = config.storage_path;
+    extensionsElement.value = (config.allowed_extensions || []).join(', ');
 
-    typesEl.innerHTML = ALL_TYPES.map(t => `
+    typesElement.innerHTML = ALL_TYPES.map(t => `
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:normal">
-            <input type="checkbox" value="${t}" ${(cfg.allowed_types || []).includes(t) ? 'checked' : ''}>
+            <input type="checkbox" value="${t}" ${(config.allowed_types || []).includes(t) ? 'checked' : ''}>
             <span style="font-weight:bold;color:var(--muted)">${TYPE_ICONS[t]}</span> ${cap(t)}
         </label>
     `).join('');
 
     const list = document.getElementById('f-relations-list');
     list.innerHTML = '';
-    const relations = cfg.relations || [];
+    const relations = config.relations || [];
     relations.forEach(r => addRelationRow(r));
 }
 
 async function saveConfig() {
-    const maxEl   = document.getElementById('f-max-size');
-    const pathEl  = document.getElementById('f-storage-path');
-    const extsEl  = document.getElementById('f-allowed-exts');
+    const maxElement   = document.getElementById('f-max-size');
+    const pathElement  = document.getElementById('f-storage-path');
+    const extensionsElement  = document.getElementById('f-allowed-exts');
     const checks  = document.querySelectorAll('#f-allowed-types input[type=checkbox]:checked');
-    const msgEl   = document.getElementById('f-cfg-msg');
+    const messageElement   = document.getElementById('f-cfg-msg');
 
     const relations = Array.from(document.querySelectorAll('.f-relation-row')).map(row => {
         return {
@@ -261,33 +261,33 @@ async function saveConfig() {
         };
     }).filter(r => r.table !== '');
 
-    const extsArray = extsEl.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    const extensionsArray = extensionsElement.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
 
-    _state.config.storage_path       = pathEl?.value || 'storage/files/';
-    _state.config.max_file_size_mb   = parseInt(maxEl?.value || '20', 10);
+    _state.config.storage_path       = pathElement?.value || 'storage/files/';
+    _state.config.max_file_size_mb   = parseInt(maxElement?.value || '20', 10);
     _state.config.allowed_types      = [...checks].map(c => c.value);
-    _state.config.allowed_extensions = extsArray;
+    _state.config.allowed_extensions = extensionsArray;
     _state.config.relations          = relations;
 
     try {
-        const res  = await apiFetch('api.php?action=save&file=files', {
+        const result  = await apiFetch('api.php?action=save&file=files', {
             method: 'POST',
             body: JSON.stringify(_state.config),
         });
-        const data = await res.json();
-        showMsg(msgEl, data.status === 'success' ? 'Saved successfully' : (data.error || 'Save failed'), data.status === 'success');
+        const data = await result.json();
+        showMessage(messageElement, data.status === 'success' ? 'Saved successfully' : (data.error || 'Save failed'), data.status === 'success');
     } catch {
-        showMsg(msgEl, 'Network error during save', false);
+        showMessage(messageElement, 'Network error during save', false);
     }
 }
 
 async function uploadFile() {
     const fileInput = document.getElementById('f-upload-file');
     const nameInput = document.getElementById('f-upload-name');
-    const statusEl  = document.getElementById('f-upload-status');
+    const statusElement  = document.getElementById('f-upload-status');
 
     if (!fileInput.files.length) {
-        showMsg(statusEl, 'Please select a file first', false);
+        showMessage(statusElement, 'Please select a file first', false);
         return;
     }
 
@@ -303,26 +303,26 @@ async function uploadFile() {
         formData.append('display_name', nameInput.value.trim());
     }
 
-    statusEl.textContent = 'Uploading...';
-    statusEl.style.color = 'var(--muted)';
+    statusElement.textContent = 'Uploading...';
+    statusElement.style.color = 'var(--muted)';
 
     try {
-        const res = await apiFetch(FILES_API, {
+        const result = await apiFetch(FILES_API, {
             method: 'POST',
             body: formData
         });
-        const data = await res.json();
+        const data = await result.json();
 
         if (data.success) {
-            showMsg(statusEl, 'File uploaded successfully', true);
+            showMessage(statusElement, 'File uploaded successfully', true);
             fileInput.value = '';
             nameInput.value = '';
             loadList();
         } else {
-            showMsg(statusEl, data.error || 'Upload failed', false);
+            showMessage(statusElement, data.error || 'Upload failed', false);
         }
     } catch (e) {
-        showMsg(statusEl, 'Network error during upload', false);
+        showMessage(statusElement, 'Network error during upload', false);
     }
 }
 
@@ -331,7 +331,7 @@ async function loadList() {
     _state.loading = true;
     setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--muted)">Loading...</td></tr>');
 
-    const params = new URLSearchParams({
+    const parameters = new URLSearchParameters({
         action: 'list',
         page:   _state.page,
         limit:  PER_PAGE,
@@ -340,8 +340,8 @@ async function loadList() {
     });
 
     try {
-        const res  = await apiFetch(`${FILES_API}?${params}`);
-        const data = await res.json();
+        const result  = await apiFetch(`${FILES_API}?${parameters}`);
+        const data = await result.json();
 
         if (!data.success) {
             setTbody(`<tr><td colspan="8" class="adm-td" style="color:var(--error)">${escHtml(data.error || 'Failed to load')}</td></tr>`);
@@ -354,8 +354,8 @@ async function loadList() {
 
         renderTable(_state.files);
         renderPager();
-        const statusEl = document.getElementById('f-status');
-        if (statusEl) statusEl.textContent = `${_state.total} file${_state.total !== 1 ? 's' : ''} found`;
+        const statusElement = document.getElementById('f-status');
+        if (statusElement) statusElement.textContent = `${_state.total} file${_state.total !== 1 ? 's' : ''} found`;
     } catch (e) {
         setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--error)">Network error</td></tr>');
     } finally {
@@ -395,8 +395,8 @@ function renderTable(files) {
 
     setTbody(rows);
 
-    document.querySelectorAll('[data-del]').forEach(btn => {
-        btn.addEventListener('click', () => deleteFile(btn.dataset.del, btn.dataset.name));
+    document.querySelectorAll('[data-del]').forEach(button => {
+        button.addEventListener('click', () => deleteFile(button.dataset.del, button.dataset.name));
     });
 }
 
@@ -404,11 +404,11 @@ async function deleteFile(uuid, name) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
         const csrfToken = getCsrfToken();
-        const res  = await apiFetch(FILES_API, {
+        const result  = await apiFetch(FILES_API, {
             method: 'POST',
             body: JSON.stringify({ action: 'delete', uuid, csrf_token: csrfToken }),
         });
-        const data = await res.json();
+        const data = await result.json();
         if (data.success) {
             loadList();
         } else {
@@ -435,24 +435,24 @@ function renderPager() {
     }
 
     bar.innerHTML = html;
-    bar.querySelectorAll('[data-p]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            _state.page = parseInt(btn.dataset.p, 10);
+    bar.querySelectorAll('[data-p]').forEach(button => {
+        button.addEventListener('click', () => {
+            _state.page = parseInt(button.dataset.p, 10);
             loadList();
         });
     });
 }
 
 function setTbody(html) {
-    const el = document.getElementById('f-tbody');
-    if (el) el.innerHTML = html;
+    const element = document.getElementById('f-tbody');
+    if (element) element.innerHTML = html;
 }
 
-function showMsg(el, text, ok) {
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = ok ? 'var(--ok)' : 'var(--error)';
-    setTimeout(() => { el.textContent = ''; }, 4000);
+function showMessage(element, text, ok) {
+    if (!element) return;
+    element.textContent = text;
+    element.style.color = ok ? 'var(--ok)' : 'var(--error)';
+    setTimeout(() => { element.textContent = ''; }, 4000);
 }
 
 function formatBytes(b) {

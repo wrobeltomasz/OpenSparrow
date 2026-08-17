@@ -56,9 +56,9 @@ function etl_ftp_connect(array $conn, string $logTag = 'etl')
     }
     @ftp_pasv($ftpConnection, ($conn['passive_mode'] ?? true) !== false);
 
-    $remoteDir = trim((string)($conn['remote_dir'] ?? ''));
-    if ($remoteDir !== '' && !@ftp_chdir($ftpConnection, $remoteDir)) {
-        error_log('[' . $logTag . '][etl][csv_ftp] Could not change to directory ' . $remoteDir);
+    $remoteDirectory = trim((string)($conn['remote_dir'] ?? ''));
+    if ($remoteDirectory !== '' && !@ftp_chdir($ftpConnection, $remoteDirectory)) {
+        error_log('[' . $logTag . '][etl][csv_ftp] Could not change to directory ' . $remoteDirectory);
         @ftp_close($ftpConnection);
         return null;
     }
@@ -76,12 +76,12 @@ function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = n
     if ($ftpConnection === null) {
         return null;
     }
-    $tempFile = tempnam(sys_get_temp_dir(), 'etl_csv_');
-    if ($tempFile === false || !@ftp_get($ftpConnection, $tempFile, $fileName, FTP_BINARY)) {
+    $temporaryFile = tempnam(sys_get_temp_dir(), 'etl_csv_');
+    if ($temporaryFile === false || !@ftp_get($ftpConnection, $temporaryFile, $fileName, FTP_BINARY)) {
         error_log('[' . $logTag . '][etl][csv_ftp] Could not download file ' . $fileName);
         @ftp_close($ftpConnection);
-        if ($tempFile !== false) {
-            @unlink($tempFile);
+        if ($temporaryFile !== false) {
+            @unlink($temporaryFile);
         }
         return null;
     }
@@ -91,9 +91,9 @@ function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = n
     $delimiter = ($delimiter !== '') ? $delimiter[0] : ',';
     $hasHeader = ($conn['csv_has_header'] ?? true) !== false;
 
-    $handle = @fopen($tempFile, 'r');
+    $handle = @fopen($temporaryFile, 'r');
     if ($handle === false) {
-        @unlink($tempFile);
+        @unlink($temporaryFile);
         return null;
     }
     $rows   = [];
@@ -116,7 +116,7 @@ function etl_fetch_csv_rows(array $conn, string $logTag = 'etl', ?int $limit = n
         }
     }
     fclose($handle);
-    @unlink($tempFile);
+    @unlink($temporaryFile);
     return $rows;
 }
 
@@ -369,7 +369,7 @@ function etl_pg_columns(\PgSql\Connection $conn, string $schema, string $table):
 function etl_run_job(
     \PgSql\Connection $pgConn,
     array $job,
-    array $connCfg,
+    array $connConfig,
     bool $dryRun = false,
     ?string $watermark = null
 ): array {
@@ -384,7 +384,7 @@ function etl_run_job(
     ), static fn($upsertColumn) => $upsertColumn !== ''));
     $incrementalColumn     = trim((string)($job['incremental_column'] ?? ''));
     $batchSize  = max(50, min(5000, (int)($job['batch_size'] ?? 500) ?: 500));
-    $colMap     = [];
+    $columnMap     = [];
     foreach ((array)($job['column_map'] ?? []) as $mapping) {
         if (!is_array($mapping)) {
             continue;
@@ -392,13 +392,13 @@ function etl_run_job(
         $source = trim((string)($mapping['source'] ?? ''));
         $targetColumn = trim((string)($mapping['target'] ?? ''));
         if ($source !== '' && $targetColumn !== '') {
-            $colMap[$source] = $targetColumn;
+            $columnMap[$source] = $targetColumn;
         }
     }
 
     $output = ['status' => 'error', 'rows_read' => 0, 'rows_written' => 0, 'error' => null, 'new_watermark' => null];
 
-    $driver       = strtolower(trim((string)($connCfg['driver'] ?? 'mysql')));
+    $driver       = strtolower(trim((string)($connConfig['driver'] ?? 'mysql')));
     $isRemoteFile = etl_source_is_remote_file_driver($driver);
 
     if (!$isRemoteFile && ($error = etl_validate_source_query($sourceSql)) !== null) {
@@ -419,13 +419,13 @@ function etl_run_job(
     }
 
     if ($isRemoteFile) {
-        $rows = etl_fetch_csv_rows($connCfg, 'etl:' . $name);
+        $rows = etl_fetch_csv_rows($connConfig, 'etl:' . $name);
         if ($rows === null) {
             $output['error'] = 'Could not fetch/parse the source CSV file — check connection, path and file name.';
             return $output;
         }
     } else {
-        $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
+        $pdo = etl_source_pdo($connConfig, 'etl:' . $name);
         if ($pdo === null) {
             $output['error'] = 'Source connection is not configured or unavailable.';
             return $output;
@@ -437,9 +437,9 @@ function etl_run_job(
         }
 
         try {
-            $rows = etl_with_retry(static function () use (&$pdo, $connCfg, $name, $sourceSql) {
+            $rows = etl_with_retry(static function () use (&$pdo, $connConfig, $name, $sourceSql) {
                 if ($pdo === null) {
-                    $pdo = etl_source_pdo($connCfg, 'etl:' . $name);
+                    $pdo = etl_source_pdo($connConfig, 'etl:' . $name);
                 }
                 if ($pdo === null) {
                     throw new \RuntimeException('Source connection is not configured or unavailable.');
@@ -481,9 +481,9 @@ function etl_run_job(
     }
 
     $sourceColumns = empty($rows) ? [] : array_keys($rows[0]);
-    if (!empty($colMap)) {
+    if (!empty($columnMap)) {
         $pairs = [];
-        foreach ($colMap as $source => $targetColumn) {
+        foreach ($columnMap as $source => $targetColumn) {
             if (in_array($source, $sourceColumns, true) && in_array($targetColumn, $targetColumns, true)) {
                 $pairs[$source] = $targetColumn;
             }
@@ -519,7 +519,7 @@ function etl_run_job(
 
     $schemaIdentifier = pg_ident($schema);
     $tableIdentifier  = pg_ident($target);
-    $colIdents   = array_map('pg_ident', $targetNames);
+    $columnIdentifiers   = array_map('pg_ident', $targetNames);
     $textColumns    = etl_pg_text_columns($pgConn, $schema, $target);
     $written     = 0;
 
@@ -554,7 +554,7 @@ function etl_run_job(
         }
 
         foreach (array_chunk($rows, $chunkSize) as $chunk) {
-            $params    = [];
+            $parameters    = [];
             $valueSql  = [];
             $placeholderIndex        = 1;
             foreach ($chunk as $row) {
@@ -565,15 +565,15 @@ function etl_run_job(
                     if ($value === '' && !in_array($pairs[$column], $textColumns, true)) {
                         $value = null;
                     }
-                    $params[] = $value;
+                    $parameters[] = $value;
                     $slots[]  = '$' . $placeholderIndex++;
                 }
                 $valueSql[] = '(' . implode(', ', $slots) . ')';
             }
             $sql = 'INSERT INTO ' . $schemaIdentifier . '.' . $tableIdentifier
-                . ' (' . implode(', ', $colIdents) . ') VALUES '
+                . ' (' . implode(', ', $columnIdentifiers) . ') VALUES '
                 . implode(', ', $valueSql) . $onConflict;
-            $result = @pg_query_params($pgConn, $sql, $params);
+            $result = @pg_query_params($pgConn, $sql, $parameters);
             if (!$result) {
                 throw new \RuntimeException('INSERT failed: ' . pg_last_error($pgConn));
             }

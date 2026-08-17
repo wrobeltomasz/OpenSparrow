@@ -7,14 +7,14 @@ import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader } from './ui.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 
-export async function renderMigrationsPage(ctx) {
-    const { workspaceEl } = ctx;
+export async function renderMigrationsPage(context) {
+    const { workspaceEl: workspaceElement } = context;
 
-    workspaceEl.innerHTML = '';
+    workspaceElement.innerHTML = '';
 
     const outer = document.createElement('div');
     outer.className = 'admin-page';
-    workspaceEl.appendChild(outer);
+    workspaceElement.appendChild(outer);
 
     outer.appendChild(createPageHeader(
         'Migrations',
@@ -30,21 +30,21 @@ export async function renderMigrationsPage(ctx) {
     sub.style.cssText = 'margin:0 0 20px;  ';
     sub.textContent = 'Each migration runs once and is recorded in spw_migrations. Running "Apply Migrations" is safe to repeat.';
 
-    const runBtn = document.createElement('button');
-    runBtn.id = 'mig-run-btn';
-    runBtn.className = 'btn btn-primary';
-    runBtn.style.marginBottom = '24px';
-    runBtn.textContent = 'Apply Pending Migrations';
+    const runButton = document.createElement('button');
+    runButton.id = 'mig-run-btn';
+    runButton.className = 'btn btn-primary';
+    runButton.style.marginBottom = '24px';
+    runButton.textContent = 'Apply Pending Migrations';
 
-    const statusEl = document.createElement('p');
-    statusEl.id = 'mig-status';
-    statusEl.style.cssText = ' margin:0 0 20px; min-height:18px;';
+    const statusElement = document.createElement('p');
+    statusElement.id = 'mig-status';
+    statusElement.style.cssText = ' margin:0 0 20px; min-height:18px;';
 
     const tableWrap = document.createElement('div');
     tableWrap.id = 'mig-table';
     tableWrap.innerHTML = '<p style=" ">Loading…</p>';
 
-    panel0.append(sub, runBtn, statusEl, tableWrap);
+    panel0.append(sub, runButton, statusElement, tableWrap);
 
     const relSub = document.createElement('p');
     relSub.style.cssText = 'margin:0 0 20px;  ';
@@ -56,33 +56,33 @@ export async function renderMigrationsPage(ctx) {
 
     panel1.append(relSub, relContainer);
 
-    runBtn.addEventListener('click', async () => {
+    runButton.addEventListener('click', async () => {
         if (!confirm('Apply all pending migrations now?')) return;
 
-        runBtn.disabled    = true;
-        runBtn.textContent = 'Applying…';
-        statusEl.textContent = '';
+        runButton.disabled    = true;
+        runButton.textContent = 'Applying…';
+        statusElement.textContent = '';
 
         try {
-            const res  = await apiFetch('api.php?action=init_db', {
+            const result  = await apiFetch('api.php?action=init_db', {
                 method: 'POST',
             });
-            const data = await res.json();
+            const data = await result.json();
 
             if (data.status === 'success') {
-                statusEl.style.color = 'var(--ok)';
-                statusEl.textContent = '✓ ' + data.message;
+                statusElement.style.color = 'var(--ok)';
+                statusElement.textContent = '✓ ' + data.message;
                 await loadMigrations(tableWrap);
             } else {
-                statusEl.style.color = 'var(--error)';
-                statusEl.textContent = '✗ ' + (data.error || 'Unknown error.');
+                statusElement.style.color = 'var(--error)';
+                statusElement.textContent = '✗ ' + (data.error || 'Unknown error.');
             }
         } catch {
-            statusEl.style.color = 'var(--error)';
-            statusEl.textContent = '✗ Network error.';
+            statusElement.style.color = 'var(--error)';
+            statusElement.textContent = '✗ Network error.';
         } finally {
-            runBtn.disabled    = false;
-            runBtn.textContent = 'Apply Pending Migrations';
+            runButton.disabled    = false;
+            runButton.textContent = 'Apply Pending Migrations';
         }
     });
 
@@ -95,8 +95,8 @@ async function loadMigrations(container) {
 
     let data;
     try {
-        const res = await apiFetch('api.php?action=migrations_list');
-        data = await res.json();
+        const result = await apiFetch('api.php?action=migrations_list');
+        data = await result.json();
     } catch {
         container.innerHTML = '<p style="color:var(--error); ">Failed to load migrations.</p>';
         return;
@@ -156,8 +156,8 @@ async function loadReleaseMigrations(container) {
 
     let data;
     try {
-        const res = await apiFetch('api_migrations.php?action=scan');
-        data = await res.json();
+        const result = await apiFetch('api_migrations.php?action=scan');
+        data = await result.json();
     } catch {
         container.innerHTML = '<p style="color:var(--error); ">Failed to load release migrations.</p>';
         return;
@@ -215,22 +215,22 @@ function renderVersionCard(v, container) {
         actionsLabel.textContent = 'Actions';
         card.appendChild(actionsLabel);
 
-        v.actions.forEach((a, idx) => {
+        v.actions.forEach((a, index) => {
             const row = document.createElement('label');
             row.style.cssText = 'display:flex; align-items:center; gap:8px;   margin-bottom:6px; cursor:pointer;';
 
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
+            const callback = document.createElement('input');
+            callback.type = 'checkbox';
             if (a.type !== 'file_deprecated') {
-                cb.checked = true;
-                cb.dataset.idx = idx;
-                checkboxes.push(cb);
+                callback.checked = true;
+                callback.dataset.idx = index;
+                checkboxes.push(callback);
             } else {
-                cb.disabled = true;
-                cb.title = 'Informational only — no action taken';
+                callback.disabled = true;
+                callback.title = 'Informational only — no action taken';
             }
 
-            const lbl = document.createElement('span');
+            const label = document.createElement('span');
             const typeTag = a.type === 'file_deprecated'
                 ? '<span style=" ">[info]</span> '
                 : '';
@@ -239,9 +239,9 @@ function renderVersionCard(v, container) {
                 : (a.type === 'config_key_remove' && !a.present)
                     ? ' <span style=" ">(key not found — will skip)</span>'
                     : '';
-            lbl.innerHTML = typeTag + escHtml(a.label) + existTag;
+            label.innerHTML = typeTag + escHtml(a.label) + existTag;
 
-            row.append(cb, lbl);
+            row.append(callback, label);
             card.appendChild(row);
         });
     } else if (isPending && v.actions.length === 0) {
@@ -276,55 +276,55 @@ function renderVersionCard(v, container) {
     }
 
     if (isPending) {
-        const btnRow = document.createElement('div');
-        btnRow.style.cssText = 'margin-top:14px;';
+        const buttonRow = document.createElement('div');
+        buttonRow.style.cssText = 'margin-top:14px;';
 
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn btn-primary btn-sm';
-        applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
+        const applyButton = document.createElement('button');
+        applyButton.className = 'btn btn-primary btn-sm';
+        applyButton.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
 
-        const statusMsg = document.createElement('span');
-        statusMsg.style.cssText = 'margin-left:12px; ';
+        const statusMessage = document.createElement('span');
+        statusMessage.style.cssText = 'margin-left:12px; ';
 
-        applyBtn.addEventListener('click', async () => {
-            const selected = checkboxes.filter(cb => cb.checked).map(cb => parseInt(cb.dataset.idx, 10));
+        applyButton.addEventListener('click', async () => {
+            const selected = checkboxes.filter(callback => callback.checked).map(callback => parseInt(callback.dataset.idx, 10));
 
             if (!confirm('Apply release migration v' + v.version + '? This will run the selected actions and cannot be undone.')) return;
 
-            applyBtn.disabled    = true;
-            applyBtn.textContent = 'Applying…';
-            statusMsg.textContent = '';
+            applyButton.disabled    = true;
+            applyButton.textContent = 'Applying…';
+            statusMessage.textContent = '';
 
             try {
-                const res  = await apiFetch('api_migrations.php?action=apply', {
+                const result  = await apiFetch('api_migrations.php?action=apply', {
                     method: 'POST',
                     body: JSON.stringify({ version: v.version, selected }),
                 });
-                const data = await res.json();
+                const data = await result.json();
 
                 if (data.status === 'success') {
-                    statusMsg.style.color = 'var(--ok)';
-                    statusMsg.textContent = '✓ Applied.';
+                    statusMessage.style.color = 'var(--ok)';
+                    statusMessage.textContent = '✓ Applied.';
                     const relContainer = document.getElementById('mig-release-container');
                     if (relContainer) loadReleaseMigrations(relContainer);
                     const banner = document.getElementById('mig-pending-banner');
                     if (banner) banner.style.display = 'none';
                 } else {
-                    statusMsg.style.color = 'var(--error)';
-                    statusMsg.textContent = '✗ ' + (data.error || 'Unknown error.');
-                    applyBtn.disabled    = false;
-                    applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
+                    statusMessage.style.color = 'var(--error)';
+                    statusMessage.textContent = '✗ ' + (data.error || 'Unknown error.');
+                    applyButton.disabled    = false;
+                    applyButton.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
                 }
             } catch {
-                statusMsg.style.color = 'var(--error)';
-                statusMsg.textContent = '✗ Network error.';
-                applyBtn.disabled    = false;
-                applyBtn.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
+                statusMessage.style.color = 'var(--error)';
+                statusMessage.textContent = '✗ Network error.';
+                applyButton.disabled    = false;
+                applyButton.textContent = hasActions ? 'Apply selected' : 'Mark as applied';
             }
         });
 
-        btnRow.append(applyBtn, statusMsg);
-        card.appendChild(btnRow);
+        buttonRow.append(applyButton, statusMessage);
+        card.appendChild(buttonRow);
     }
 
     container.appendChild(card);

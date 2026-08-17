@@ -18,12 +18,12 @@ const PAD_B = 30;
 const DEFAULT_COLOR = '#003366';
 const MAX_X_LABELS = 8;
 
-function svgEl(tag, attrs) {
-    const el = document.createElementNS(SVG_NS, tag);
+function svgElement(tag, attrs) {
+    const element = document.createElementNS(SVG_NS, tag);
     for (const [k, v] of Object.entries(attrs)) {
-        el.setAttribute(k, String(v));
+        element.setAttribute(k, String(v));
     }
-    return el;
+    return element;
 }
 
 function bucketRange(raw, granularity) {
@@ -71,11 +71,11 @@ function renderLineChart(widget) {
     }
 
     const granularity = widget.query?.granularity;
-    const xCol = widget.query?.x_column;
+    const xColumn = widget.query?.x_column;
     const color = widget.color || DEFAULT_COLOR;
     const area = widget.query?.area === true || widget.query?.area === 'true';
 
-    const maxVal = Math.max(...data.map(d => d.value), 0);
+    const maxValue = Math.max(...data.map(d => d.value), 0);
     const innerW = VB_W - PAD_L - PAD_R;
     const innerH = VB_H - PAD_T - PAD_B;
     const baseY = PAD_T + innerH;
@@ -84,18 +84,18 @@ function renderLineChart(widget) {
         const x = data.length === 1
             ? PAD_L + innerW / 2
             : PAD_L + (i / (data.length - 1)) * innerW;
-        const y = maxVal > 0 ? baseY - (d.value / maxVal) * innerH : baseY;
+        const y = maxValue > 0 ? baseY - (d.value / maxValue) * innerH : baseY;
         return { x, y, ...d };
     });
 
-    const svg = svgEl('svg', {
+    const svg = svgElement('svg', {
         class: 'dash-line-svg',
         viewBox: `0 0 ${VB_W} ${VB_H}`,
         preserveAspectRatio: 'none',
         role: 'img',
     });
 
-    svg.appendChild(svgEl('line', {
+    svg.appendChild(svgElement('line', {
         class: 'dash-line-baseline',
         x1: PAD_L, y1: baseY, x2: PAD_L + innerW, y2: baseY,
         'vector-effect': 'non-scaling-stroke',
@@ -105,13 +105,13 @@ function renderLineChart(widget) {
         const dPath = `M ${pts[0].x} ${baseY} `
             + pts.map(p => `L ${p.x} ${p.y}`).join(' ')
             + ` L ${pts[pts.length - 1].x} ${baseY} Z`;
-        const areaEl = svgEl('path', { class: 'dash-line-area', d: dPath });
-        areaEl.style.fill = color;
-        svg.appendChild(areaEl);
+        const areaElement = svgElement('path', { class: 'dash-line-area', d: dPath });
+        areaElement.style.fill = color;
+        svg.appendChild(areaElement);
     }
 
     if (pts.length > 1) {
-        const line = svgEl('polyline', {
+        const line = svgElement('polyline', {
             class: 'dash-line-path',
             points: pts.map(p => `${p.x},${p.y}`).join(' '),
             'vector-effect': 'non-scaling-stroke',
@@ -121,15 +121,15 @@ function renderLineChart(widget) {
     }
 
     pts.forEach((p) => {
-        const dot = svgEl('circle', {
+        const dot = svgElement('circle', {
             class: 'dash-line-point',
             cx: p.x, cy: p.y, r: 4,
         });
         dot.style.fill = color;
-        const title = svgEl('title', {});
+        const title = svgElement('title', {});
         title.textContent = `${formatBucketLabel(p.label, granularity)}: ${p.value}`;
         dot.appendChild(title);
-        if (xCol) applyDrillDown(dot, widget.table, xCol, p.label, bucketRange(p.label, granularity));
+        if (xColumn) applyDrillDown(dot, widget.table, xColumn, p.label, bucketRange(p.label, granularity));
         svg.appendChild(dot);
     });
 

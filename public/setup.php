@@ -18,7 +18,8 @@ if (file_exists(__DIR__ . '/../config/database.json')) {
 require_once __DIR__ . '/../includes/i18n.php';
 $lang = htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8');
 
-$escape = static fn(string $key, array $vars = []): string => htmlspecialchars(t($key, $vars), ENT_QUOTES, 'UTF-8');
+$escape = static fn(string $key, array $variables = []): string
+    => htmlspecialchars(t($key, $variables), ENT_QUOTES, 'UTF-8');
 
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');

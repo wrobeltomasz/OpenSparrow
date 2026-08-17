@@ -9,31 +9,31 @@ import { state } from '../state.js';
 import { CellRenderer } from './registry.js';
 import { makeInlineLink } from '../dom.js';
 
-function renderTextCell({ row, col, colCfg, isReadOnly }) {
+function renderTextCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
     const td = document.createElement('td');
-    const value = row[col + '__display'] ?? row[col] ?? '';
+    const value = row[column + '__display'] ?? row[column] ?? '';
 
-    if (!colCfg.readonly && !isReadOnly) {
+    if (!columnConfig.readonly && !isReadOnly) {
         td.contentEditable = 'true';
         td.classList.add('editable');
     }
-    td.dataset.column = col;
+    td.dataset.column = column;
     td.dataset.id = row['id'];
 
-    if (colCfg.validation_regexp) {
-        td.dataset.pattern = colCfg.validation_regexp;
-        td.dataset.message = colCfg.validation_message || 'Invalid format';
+    if (columnConfig.validation_regexp) {
+        td.dataset.pattern = columnConfig.validation_regexp;
+        td.dataset.message = columnConfig.validation_message || 'Invalid format';
     }
 
-    const strVal = String(value).trim();
+    const stringValue = String(value).trim();
 
-    if (/^https?:\/\//i.test(strVal)) {
-        td.appendChild(makeInlineLink(strVal, strVal, {
+    if (/^https?:\/\//i.test(stringValue)) {
+        td.appendChild(makeInlineLink(stringValue, stringValue, {
             newTab: true,
-            onClick: e => { e.preventDefault(); window.open(strVal, '_blank'); },
+            onClick: e => { e.preventDefault(); window.open(stringValue, '_blank'); },
         }));
-    } else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strVal)) {
-        td.appendChild(makeInlineLink(`mailto:${strVal}`, strVal, {
+    } else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(stringValue)) {
+        td.appendChild(makeInlineLink(`mailto:${stringValue}`, stringValue, {
             onClick: e => e.stopPropagation(),
         }));
     } else {

@@ -5,21 +5,21 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 
-export async function renderHealthDashboard(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = `<h3>Checking system status...</h3>`;
+export async function renderHealthDashboard(context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = `<h3>Checking system status...</h3>`;
 
-    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
-    const myId = workspaceEl._renderId;
+    workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
+    const myId = workspaceElement._renderId;
 
     try {
-        const res  = await apiFetch('api.php?action=health');
-        const data = await res.json();
+        const result  = await apiFetch('api.php?action=health');
+        const data = await result.json();
 
-        const card = (title, isOk, msg) => `
+        const card = (title, isOk, message) => `
             <div style="padding:12px 16px; border-left:4px solid ${isOk ? 'var(--ok)' : 'var(--error)'}; background:var(--panel); box-shadow:var(--shadow-sm); border-radius:4px;">
                 <strong style=" display:block; margin-bottom:4px; color:${isOk ? 'var(--ok)' : 'var(--error)'};">${isOk ? '[OK]' : '[FAIL]'} ${title}</strong>
-                <span style=" ">${msg}</span>
+                <span style=" ">${message}</span>
             </div>`;
 
         let _sectionIdx = 0;
@@ -107,18 +107,18 @@ export async function renderHealthDashboard(ctx) {
 
         html += `</div>`;
 
-        if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = html;
+        if (workspaceElement._renderId !== myId) return;
+        workspaceElement.innerHTML = html;
 
-        const gotoBtn = document.getElementById('goto-migrations-btn');
-        if (gotoBtn) {
-            gotoBtn.addEventListener('click', () => {
+        const gotoButton = document.getElementById('goto-migrations-btn');
+        if (gotoButton) {
+            gotoButton.addEventListener('click', () => {
                 const tab = document.querySelector('.admin-tab[data-file="migrations"]');
                 if (tab) tab.click();
             });
         }
     } catch (e) {
-        if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;
+        if (workspaceElement._renderId !== myId) return;
+        workspaceElement.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;
     }
 }

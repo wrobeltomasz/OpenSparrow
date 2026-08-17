@@ -12,7 +12,7 @@ function renderSummary(picker) {
     }
 
     const labels = [...picker.querySelectorAll('.m2m-option input:checked')]
-        .map(cb => cb.closest('.m2m-option').querySelector('.m2m-option-label').textContent);
+        .map(callback => callback.closest('.m2m-option').querySelector('.m2m-option-label').textContent);
 
     summary.textContent = '';
 
@@ -46,10 +46,10 @@ function applyFilter(picker, needle) {
     const term = needle.trim().toLowerCase();
     let visible = 0;
 
-    picker.querySelectorAll('.m2m-option').forEach(opt => {
-        const label = opt.querySelector('.m2m-option-label').textContent.toLowerCase();
+    picker.querySelectorAll('.m2m-option').forEach(option => {
+        const label = option.querySelector('.m2m-option-label').textContent.toLowerCase();
         const match = term === '' || label.includes(term);
-        opt.hidden  = !match;
+        option.hidden  = !match;
         if (match) {
             visible++;
         }
@@ -62,8 +62,8 @@ function applyFilter(picker, needle) {
 }
 
 function setVisible(picker, checked) {
-    picker.querySelectorAll('.m2m-option:not([hidden]) input:not([disabled])').forEach(cb => {
-        cb.checked = checked;
+    picker.querySelectorAll('.m2m-option:not([hidden]) input:not([disabled])').forEach(callback => {
+        callback.checked = checked;
     });
     renderSummary(picker);
 }

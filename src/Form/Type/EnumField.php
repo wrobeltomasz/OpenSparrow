@@ -23,9 +23,9 @@ final class EnumField implements FieldTypeInterface
     }
 
     #[\Override]
-    public function bind(string $colName, array $postData): BoundValue
+    public function bind(string $columnName, array $postData): BoundValue
     {
-        $value = $postData[$colName] ?? null;
+        $value = $postData[$columnName] ?? null;
         if ($value === '' || $value === null) {
             $value = null;
         }
@@ -44,7 +44,9 @@ final class EnumField implements FieldTypeInterface
 
         if ($locked) {
             $color     = $column->enumColors[$value] ?? null;
-            $bgStyle   = $color ? 'background:' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8') . ';' : 'background:#e2e8f0;';
+            $backgroundStyle   = $color
+                ? 'background:' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8') . ';'
+                : 'background:#e2e8f0;';
             $textColor = '#333';
             if ($color) {
                 $hexColor = ltrim($color, '#');
@@ -56,28 +58,31 @@ final class EnumField implements FieldTypeInterface
                 }
             }
             $display = $value !== '' ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : '&mdash;';
-            $html    = '<span class="enum-badge" style="' . $bgStyle . 'color:' . $textColor . ';">' . $display . '</span>';
+            $html    = '<span class="enum-badge" style="' . $backgroundStyle . 'color:' . $textColor . ';">'
+                . $display . '</span>';
             $html   .= '<input type="hidden" name="' . $name . '" value="'
                      . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" />';
             return $html;
         }
 
         $colorsJson = htmlspecialchars((string)json_encode($column->enumColors), ENT_QUOTES, 'UTF-8');
-        $initBg     = $column->enumColors[$value] ?? '';
-        $initStyle  = $initBg ? 'background:' . htmlspecialchars($initBg, ENT_QUOTES, 'UTF-8') . ';' : '';
+        $initialBackground     = $column->enumColors[$value] ?? '';
+        $initialStyle  = $initialBackground
+            ? 'background:' . htmlspecialchars($initialBackground, ENT_QUOTES, 'UTF-8') . ';'
+            : '';
 
         $html  = '<select name="' . $name . '" ' . $requiredAttribute
-            . ' data-enum-colors="' . $colorsJson . '" style="' . $initStyle . '">';
+            . ' data-enum-colors="' . $colorsJson . '" style="' . $initialStyle . '">';
         $html .= '<option value="">-- Select --</option>';
         foreach ($column->options as $option) {
             $optionValue   = (string)$option;
             $selected = $value === $optionValue ? 'selected' : '';
-            $optBg    = $column->enumColors[$optionValue] ?? '';
-            $optStyle = $optBg
-                ? ' style="background:' . htmlspecialchars($optBg, ENT_QUOTES, 'UTF-8') . ';"'
+            $optionBackground    = $column->enumColors[$optionValue] ?? '';
+            $optionStyle = $optionBackground
+                ? ' style="background:' . htmlspecialchars($optionBackground, ENT_QUOTES, 'UTF-8') . ';"'
                 : '';
             $html    .= '<option value="' . htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8') . '"'
-                      . $optStyle . ' ' . $selected . '>'
+                      . $optionStyle . ' ' . $selected . '>'
                       . htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8')
                       . '</option>';
         }

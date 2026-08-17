@@ -53,7 +53,7 @@ function renderBlocks(s, restoreInline) {
 
         if (ln.trim() === '') { i++; continue; }
 
-        const para = [];
+        const paragraph = [];
         while (
             i < lines.length &&
             lines[i].trim() !== '' &&
@@ -62,23 +62,23 @@ function renderBlocks(s, restoreInline) {
             !/^\x00B/.test(lines[i]) &&
             !/^#{1,3} /.test(lines[i])
         ) {
-            para.push(restoreInline(inlineFormat(escHtml(lines[i]))));
+            paragraph.push(restoreInline(inlineFormat(escHtml(lines[i]))));
             i++;
         }
-        if (para.length) out.push('<p class="rag-md-p">' + para.join('<br>') + '</p>');
+        if (paragraph.length) out.push('<p class="rag-md-p">' + paragraph.join('<br>') + '</p>');
     }
 
     return out.join('');
 }
 
-export function renderAnswer(raw, opts = {}) {
-    const allowed   = Array.isArray(opts.allowedTables) ? opts.allowedTables : [];
-    const linkClass = opts.linkClass || '';
-    const markdown  = opts.markdown !== false;
+export function renderAnswer(raw, options = {}) {
+    const allowed   = Array.isArray(options.allowedTables) ? options.allowedTables : [];
+    const linkClass = options.linkClass || '';
+    const markdown  = options.markdown !== false;
 
     const blocks = [];
     const inline = [];
-    const restoreInline = str => str.replace(/\x00I(\d+)\x00/g, (_, i) => inline[+i]);
+    const restoreInline = string => string.replace(/\x00I(\d+)\x00/g, (_, i) => inline[+i]);
 
     let s = String(raw ?? '');
 

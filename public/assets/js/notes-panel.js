@@ -13,8 +13,8 @@ let tableOptions = null;
 async function loadTableOptions() {
     if (tableOptions) return tableOptions;
     try {
-        const res = await fetch('api/schema.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const data = await res.json();
+        const result = await fetch('api/schema.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await result.json();
         tableOptions = data.tables ?? {};
     } catch (_) {
         tableOptions = {};
@@ -43,50 +43,50 @@ function noteLink(note) {
 }
 
 async function fetchRecordOptions(table) {
-    const res = await fetch(
+    const result = await fetch(
         'api/notes.php?action=list_records&table=' + encodeURIComponent(table),
         { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
     );
-    const data = await res.json();
+    const data = await result.json();
     if (!data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
     return data.records ?? [];
 }
 
 async function fetchNotes() {
-    const res = await fetch('api/notes.php?action=list', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-    const data = await res.json();
+    const result = await fetch('api/notes.php?action=list', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    const data = await result.json();
     if (!data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
     return data.notes ?? [];
 }
 
 async function createNote(values) {
-    const res = await apiFetch('api/notes.php', {
+    const result = await apiFetch('api/notes.php', {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: { action: 'add', ...values },
     });
-    const data = await res.json();
+    const data = await result.json();
     if (!data.success) throw new Error(data.error ?? I18n.t('notes.error_saving'));
     return data.note;
 }
 
 async function updateNote(id, values) {
-    const res = await apiFetch('api/notes.php', {
+    const result = await apiFetch('api/notes.php', {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: { action: 'update', id, ...values },
     });
-    const data = await res.json();
+    const data = await result.json();
     if (!data.success) throw new Error(data.error ?? I18n.t('notes.error_saving'));
 }
 
 async function deleteNote(id) {
-    const res = await apiFetch('api/notes.php', {
+    const result = await apiFetch('api/notes.php', {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body: { action: 'delete', id },
     });
-    const data = await res.json();
+    const data = await result.json();
     if (!data.success) throw new Error(data.error ?? I18n.t('notes.error_saving'));
 }
 
@@ -106,15 +106,15 @@ function buildForm(tables, onSubmit, initial = null) {
 
     const tableSelect = document.createElement('select');
     tableSelect.className = 'note-table-select';
-    const noneOpt = document.createElement('option');
-    noneOpt.value = '';
-    noneOpt.textContent = I18n.t('notes.no_link');
-    tableSelect.appendChild(noneOpt);
-    for (const [name, cfg] of Object.entries(tables)) {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = cfg.display_name ?? name;
-        tableSelect.appendChild(opt);
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = I18n.t('notes.no_link');
+    tableSelect.appendChild(noneOption);
+    for (const [name, config] of Object.entries(tables)) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = config.display_name ?? name;
+        tableSelect.appendChild(option);
     }
     tableSelect.value = initial?.related_table ?? '';
 
@@ -124,10 +124,10 @@ function buildForm(tables, onSubmit, initial = null) {
 
     function setRecordPlaceholder(text) {
         recordSelect.textContent = '';
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = text;
-        recordSelect.appendChild(opt);
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = text;
+        recordSelect.appendChild(option);
     }
     setRecordPlaceholder(I18n.t('notes.select_table_first'));
 
@@ -144,16 +144,16 @@ function buildForm(tables, onSubmit, initial = null) {
             const records = await fetchRecordOptions(table);
             setRecordPlaceholder(I18n.t('notes.select_record'));
             for (const r of records) {
-                const opt = document.createElement('option');
-                opt.value = r.id;
-                opt.textContent = r.label;
-                recordSelect.appendChild(opt);
+                const option = document.createElement('option');
+                option.value = r.id;
+                option.textContent = r.label;
+                recordSelect.appendChild(option);
             }
             if (preselectId !== null) {
                 recordSelect.value = String(preselectId);
             }
             recordSelect.disabled = false;
-        } catch (err) {
+        } catch (error) {
             setRecordPlaceholder(I18n.t('notes.load_error'));
         }
     }
@@ -185,25 +185,25 @@ function buildForm(tables, onSubmit, initial = null) {
     const actionsRow = document.createElement('div');
     actionsRow.className = 'note-form-row';
 
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'btn btn-primary';
-    saveBtn.type = 'button';
-    saveBtn.textContent = initial ? I18n.t('notes.save') : I18n.t('notes.add');
-    actionsRow.appendChild(saveBtn);
+    const saveButton = document.createElement('button');
+    saveButton.className = 'btn btn-primary';
+    saveButton.type = 'button';
+    saveButton.textContent = initial ? I18n.t('notes.save') : I18n.t('notes.add');
+    actionsRow.appendChild(saveButton);
 
     if (initial) {
-        const cancelBtn = document.createElement('button');
-        cancelBtn.className = 'btn btn-secondary';
-        cancelBtn.type = 'button';
-        cancelBtn.textContent = I18n.t('common.cancel');
-        cancelBtn.addEventListener('click', () => form.dispatchEvent(new CustomEvent('cancel')));
-        actionsRow.appendChild(cancelBtn);
+        const cancelButton = document.createElement('button');
+        cancelButton.className = 'btn btn-secondary';
+        cancelButton.type = 'button';
+        cancelButton.textContent = I18n.t('common.cancel');
+        cancelButton.addEventListener('click', () => form.dispatchEvent(new CustomEvent('cancel')));
+        actionsRow.appendChild(cancelButton);
     }
 
-    saveBtn.addEventListener('click', async () => {
+    saveButton.addEventListener('click', async () => {
         const body = textarea.value.trim();
         if (!body) return;
-        saveBtn.disabled = true;
+        saveButton.disabled = true;
         try {
             await onSubmit({
                 body,
@@ -211,10 +211,10 @@ function buildForm(tables, onSubmit, initial = null) {
                 related_id: tableSelect.value ? recordSelect.value : '',
                 reminder_date: dateInput.value,
             });
-        } catch (err) {
-            alert(err.message);
+        } catch (error) {
+            alert(error.message);
         } finally {
-            saveBtn.disabled = false;
+            saveButton.disabled = false;
         }
     });
 
@@ -231,10 +231,10 @@ function buildNoteRow(note, tables, { onSave, onDelete }) {
     function renderView() {
         row.textContent = '';
 
-        const bodyEl = document.createElement('p');
-        bodyEl.className = 'note-item-body';
-        bodyEl.textContent = note.body;
-        row.appendChild(bodyEl);
+        const bodyElement = document.createElement('p');
+        bodyElement.className = 'note-item-body';
+        bodyElement.textContent = note.body;
+        row.appendChild(bodyElement);
 
         const meta = document.createElement('div');
         meta.className = 'note-item-meta';
@@ -259,28 +259,28 @@ function buildNoteRow(note, tables, { onSave, onDelete }) {
         const actions = document.createElement('div');
         actions.className = 'note-item-actions';
 
-        const editBtn = document.createElement('button');
-        editBtn.className = 'btn btn-secondary';
-        editBtn.type = 'button';
-        editBtn.textContent = I18n.t('notes.edit');
-        editBtn.addEventListener('click', renderEdit);
+        const editButton = document.createElement('button');
+        editButton.className = 'btn btn-secondary';
+        editButton.type = 'button';
+        editButton.textContent = I18n.t('notes.edit');
+        editButton.addEventListener('click', renderEdit);
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'btn btn-danger';
-        delBtn.type = 'button';
-        delBtn.textContent = I18n.t('notes.delete');
-        delBtn.addEventListener('click', async () => {
+        const delButton = document.createElement('button');
+        delButton.className = 'btn btn-danger';
+        delButton.type = 'button';
+        delButton.textContent = I18n.t('notes.delete');
+        delButton.addEventListener('click', async () => {
             if (!confirm(I18n.t('notes.delete_confirm'))) return;
             try {
                 await onDelete(note.id);
                 row.remove();
-            } catch (err) {
-                alert(err.message);
+            } catch (error) {
+                alert(error.message);
             }
         });
 
-        actions.appendChild(editBtn);
-        actions.appendChild(delBtn);
+        actions.appendChild(editButton);
+        actions.appendChild(delButton);
         row.appendChild(actions);
     }
 
@@ -311,21 +311,21 @@ export async function openNotesPanel() {
 
     const tables = await loadTableOptions();
 
-    const listEl = document.createElement('div');
-    listEl.className = 'note-list';
+    const listElement = document.createElement('div');
+    listElement.className = 'note-list';
 
     async function reloadList() {
-        listEl.textContent = '';
+        listElement.textContent = '';
         const notes = await fetchNotes();
         if (!notes.length) {
             const empty = document.createElement('p');
             empty.className = 'dc-empty';
             empty.textContent = I18n.t('notes.empty');
-            listEl.appendChild(empty);
+            listElement.appendChild(empty);
             return;
         }
         for (const note of notes) {
-            listEl.appendChild(buildNoteRow(note, tables, {
+            listElement.appendChild(buildNoteRow(note, tables, {
                 onSave: (id, values) => updateNote(id, values),
                 onDelete: id => deleteNote(id),
             }));
@@ -339,12 +339,12 @@ export async function openNotesPanel() {
     });
 
     panel.bodyEl.appendChild(addForm);
-    panel.bodyEl.appendChild(listEl);
+    panel.bodyEl.appendChild(listElement);
 
     try {
         await reloadList();
         panel.clearStatus();
-    } catch (err) {
-        panel.setStatus(err.message, true);
+    } catch (error) {
+        panel.setStatus(error.message, true);
     }
 }

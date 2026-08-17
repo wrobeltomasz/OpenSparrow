@@ -82,9 +82,9 @@ function rm_jsonpath_remove(array &$data, string $path): int
         return 0;
     }
     $rest   = substr($path, 2);
-    $dotPos = strpos($rest, '.');
-    $head   = $dotPos !== false ? substr($rest, 0, $dotPos) : $rest;
-    $tail   = $dotPos !== false ? '$.' . substr($rest, $dotPos + 1) : null;
+    $dotPosition = strpos($rest, '.');
+    $head   = $dotPosition !== false ? substr($rest, 0, $dotPosition) : $rest;
+    $tail   = $dotPosition !== false ? '$.' . substr($rest, $dotPosition + 1) : null;
 
     $isWild = str_ends_with($head, '[*]');
     if ($isWild) {
@@ -149,35 +149,35 @@ if ($action === 'scan') {
         $isApplied = isset($applied[$versionKey]);
         $actions   = [];
 
-        foreach ($entry['removed_files'] ?? [] as $relPath) {
-            $absPath   = $root . '/' . ltrim((string) $relPath, '/');
+        foreach ($entry['removed_files'] ?? [] as $relativePath) {
+            $absPath   = $root . '/' . ltrim((string) $relativePath, '/');
             $actions[] = [
                 'type'   => 'file_remove',
-                'path'   => $relPath,
+                'path'   => $relativePath,
                 'exists' => file_exists($absPath),
-                'label'  => 'Remove file: ' . $relPath,
+                'label'  => 'Remove file: ' . $relativePath,
             ];
         }
 
-        foreach ($entry['deprecated_files'] ?? [] as $relPath) {
-            $absPath   = $root . '/' . ltrim((string) $relPath, '/');
+        foreach ($entry['deprecated_files'] ?? [] as $relativePath) {
+            $absPath   = $root . '/' . ltrim((string) $relativePath, '/');
             $actions[] = [
                 'type'   => 'file_deprecated',
-                'path'   => $relPath,
+                'path'   => $relativePath,
                 'exists' => file_exists($absPath),
-                'label'  => 'Deprecated (info only): ' . $relPath,
+                'label'  => 'Deprecated (info only): ' . $relativePath,
             ];
         }
 
         foreach ($entry['removed_config_keys'] ?? [] as $keyDefinition) {
             $file    = (string) ($keyDefinition['file'] ?? '');
             $jpath   = (string) ($keyDefinition['path'] ?? '');
-            $cfgKey  = rm_config_key($file);
+            $configKey  = rm_config_key($file);
             $present = false;
-            if ($cfgKey !== '' && $jpath !== '') {
-                $cfg = config_get($cfgKey);
-                if (is_array($cfg)) {
-                    $present = rm_jsonpath_remove($cfg, $jpath) > 0;
+            if ($configKey !== '' && $jpath !== '') {
+                $config = config_get($configKey);
+                if (is_array($config)) {
+                    $present = rm_jsonpath_remove($config, $jpath) > 0;
                 }
             }
             $actions[] = [
@@ -263,11 +263,11 @@ if ($action === 'apply') {
     $entry = $manifest[$version];
 
     $allActions = [];
-    foreach ($entry['removed_files'] ?? [] as $relPath) {
-        $allActions[] = ['type' => 'file_remove', 'path' => (string) $relPath];
+    foreach ($entry['removed_files'] ?? [] as $relativePath) {
+        $allActions[] = ['type' => 'file_remove', 'path' => (string) $relativePath];
     }
-    foreach ($entry['deprecated_files'] ?? [] as $relPath) {
-        $allActions[] = ['type' => 'file_deprecated', 'path' => (string) $relPath];
+    foreach ($entry['deprecated_files'] ?? [] as $relativePath) {
+        $allActions[] = ['type' => 'file_deprecated', 'path' => (string) $relativePath];
     }
     foreach ($entry['removed_config_keys'] ?? [] as $keyDefinition) {
         $allActions[] = [
@@ -295,7 +295,7 @@ if ($action === 'apply') {
     }
 
     $versionSlug = preg_replace('/[^a-zA-Z0-9._-]/', '_', $version);
-    $backupDir   = $root . '/storage/migrations_backup/' . $versionSlug;
+    $backupDirectory   = $root . '/storage/migrations_backup/' . $versionSlug;
     $userId      = (int) ($_SESSION['user_id'] ?? 0);
     $log         = [];
     $warnings    = [];
@@ -304,60 +304,65 @@ if ($action === 'apply') {
         $migrationAction = $allActions[$index];
 
         if ($migrationAction['type'] === 'file_remove') {
-            $relPath = $migrationAction['path'];
+            $relativePath = $migrationAction['path'];
 
-            $absPath = realpath($root . '/' . ltrim($relPath, '/'));
+            $absPath = realpath($root . '/' . ltrim($relativePath, '/'));
             if ($absPath === false || strncmp($absPath, $root . DIRECTORY_SEPARATOR, strlen($root) + 1) !== 0) {
-                $warnings[] = 'Unsafe path rejected: ' . $relPath;
+                $warnings[] = 'Unsafe path rejected: ' . $relativePath;
                 continue;
             }
             if (!file_exists($absPath)) {
-                $log[] = ['type' => 'file_remove', 'path' => $relPath, 'status' => 'skipped', 'reason' => 'not_found'];
+                $log[] = [
+                    'type'   => 'file_remove',
+                    'path'   => $relativePath,
+                    'status' => 'skipped',
+                    'reason' => 'not_found',
+                ];
                 continue;
             }
-            $backupTarget = $backupDir . '/' . ltrim($relPath, '/');
+            $backupTarget = $backupDirectory . '/' . ltrim($relativePath, '/');
             if (!is_dir(dirname($backupTarget))) {
                 @mkdir(dirname($backupTarget), 0755, true);
             }
             if (!@copy($absPath, $backupTarget)) {
-                $warnings[] = 'Backup failed for: ' . $relPath;
+                $warnings[] = 'Backup failed for: ' . $relativePath;
                 continue;
             }
             if (!@unlink($absPath)) {
-                $warnings[] = 'Delete failed for: ' . $relPath;
+                $warnings[] = 'Delete failed for: ' . $relativePath;
                 continue;
             }
             $log[] = [
                 'type'   => 'file_remove',
-                'path'   => $relPath,
+                'path'   => $relativePath,
                 'status' => 'done',
-                'backup' => 'storage/migrations_backup/' . $versionSlug . '/' . ltrim($relPath, '/'),
+                'backup' => 'storage/migrations_backup/' . $versionSlug . '/' . ltrim($relativePath, '/'),
             ];
         } elseif ($migrationAction['type'] === 'config_key_remove') {
             $jpath  = $migrationAction['path'];
-            $cfgKey = rm_config_key($migrationAction['file']);
-            if ($cfgKey === '' || $jpath === '') {
+            $configKey = rm_config_key($migrationAction['file']);
+            if ($configKey === '' || $jpath === '') {
                 $warnings[] = 'Invalid config_key_remove entry.';
                 continue;
             }
 
-            $cfgRow = config_get_row($cfgKey);
-            if ($cfgRow === null) {
+            $configRow = config_get_row($configKey);
+            if ($configRow === null) {
                 $log[] = [
                     'type'   => 'config_key_remove',
-                    'file'   => $cfgKey,
+                    'file'   => $configKey,
                     'path'   => $jpath,
                     'status' => 'skipped',
                     'reason' => 'config_key_not_found',
                 ];
                 continue;
             }
-            $cfg     = $cfgRow['value'];
-            $removed = rm_jsonpath_remove($cfg, $jpath);
+            $config     = $configRow['value'];
+            $removed = rm_jsonpath_remove($config, $jpath);
             if ($removed === 0) {
                 $log[] = [
                     'type'   => 'config_key_remove',
-                    'file'   => $cfgKey,
+                    'file'   => $configKey,
                     'path'   => $jpath,
                     'status' => 'skipped',
                     'reason' => 'key_not_found',
@@ -365,22 +370,22 @@ if ($action === 'apply') {
                 continue;
             }
 
-            $saved = config_save($cfgKey, $cfg, (int) $cfgRow['version'], $userId ?: null);
+            $saved = config_save($configKey, $config, (int) $configRow['version'], $userId ?: null);
             if ($saved['status'] === 'conflict') {
-                $warnings[] = 'Config changed concurrently, skipped: ' . $cfgKey;
+                $warnings[] = 'Config changed concurrently, skipped: ' . $configKey;
                 continue;
             }
             if ($saved['status'] !== 'ok') {
-                $warnings[] = 'Write failed for config key: ' . $cfgKey;
+                $warnings[] = 'Write failed for config key: ' . $configKey;
                 continue;
             }
             $log[] = [
                 'type'          => 'config_key_remove',
-                'file'          => $cfgKey,
+                'file'          => $configKey,
                 'path'          => $jpath,
                 'status'        => 'done',
                 'removed_count' => $removed,
-                'backup'        => 'spw_config_log:' . $cfgKey . ' (version ' . $cfgRow['version'] . ')',
+                'backup'        => 'spw_config_log:' . $configKey . ' (version ' . $configRow['version'] . ')',
             ];
         } elseif ($migrationAction['type'] === 'file_deprecated') {
             $log[] = ['type' => 'file_deprecated', 'path' => $migrationAction['path'], 'status' => 'info'];

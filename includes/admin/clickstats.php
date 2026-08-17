@@ -67,29 +67,29 @@ if ($action === 'clickstats_log') {
         $page    = min(CLICKSTATS_MAX_PAGE, max(1, (int) (os_request()->queryAll()['page'] ?? 1)));
 
         $where  = [];
-        $params = [];
+        $parameters = [];
         if ($element !== '') {
-            $params[] = '%' . $element . '%';
-            $where[]  = 'c.element ILIKE $' . count($params);
+            $parameters[] = '%' . $element . '%';
+            $where[]  = 'c.element ILIKE $' . count($parameters);
         }
         if ($user !== '') {
-            $params[] = '%' . $user . '%';
-            $where[]  = 'u.username ILIKE $' . count($params);
+            $parameters[] = '%' . $user . '%';
+            $where[]  = 'u.username ILIKE $' . count($parameters);
         }
         $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
 
         $countResult = @pg_query_params(
             $conn,
             "SELECT COUNT(*) FROM {$table} c LEFT JOIN {$users} u ON u.id = c.user_id{$whereSql}",
-            $params
+            $parameters
         );
         if (!$countResult) {
             admin_db_fail($conn, 'clickstats_log:count');
         }
         $total = (int) pg_fetch_result($countResult, 0, 0);
 
-        $params[] = CLICKSTATS_LOG_LIMIT;
-        $params[] = ($page - 1) * CLICKSTATS_LOG_LIMIT;
+        $parameters[] = CLICKSTATS_LOG_LIMIT;
+        $parameters[] = ($page - 1) * CLICKSTATS_LOG_LIMIT;
         $rowsResult  = @pg_query_params(
             $conn,
             "SELECT c.id, u.username, c.element, c.page, c.table_name, c.record_id, c.created_at
@@ -97,8 +97,8 @@ if ($action === 'clickstats_log') {
                LEFT JOIN {$users} u ON u.id = c.user_id
                {$whereSql}
               ORDER BY c.created_at DESC, c.id DESC
-              LIMIT $" . (count($params) - 1) . " OFFSET $" . count($params),
-            $params
+              LIMIT $" . (count($parameters) - 1) . " OFFSET $" . count($parameters),
+            $parameters
         );
         if (!$rowsResult) {
             admin_db_fail($conn, 'clickstats_log:rows');
@@ -113,7 +113,7 @@ if ($action === 'clickstats_log') {
               GROUP BY c.element
               ORDER BY clicks DESC, c.element ASC
               LIMIT " . CLICKSTATS_TOP_LIMIT,
-            array_slice($params, 0, count($params) - 2)
+            array_slice($parameters, 0, count($parameters) - 2)
         );
 
         admin_ok([

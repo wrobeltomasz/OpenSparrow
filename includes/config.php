@@ -63,13 +63,13 @@ if (!function_exists('os_last_error_reason')) {
 }
 
 if (!function_exists('os_ensure_directory')) {
-    function os_ensure_directory(string $dir, int $mode): bool
+    function os_ensure_directory(string $directory, int $mode): bool
     {
-        if (is_dir($dir)) {
+        if (is_dir($directory)) {
             return true;
         }
-        if (!@mkdir($dir, $mode, true) && !is_dir($dir)) {
-            error_log('[storage] directory could not be created: ' . $dir . os_last_error_reason());
+        if (!@mkdir($directory, $mode, true) && !is_dir($directory)) {
+            error_log('[storage] directory could not be created: ' . $directory . os_last_error_reason());
             return false;
         }
         return true;
@@ -128,9 +128,9 @@ if (
 }
 
 $_projectRoot = realpath(__DIR__ . '/..');
-$_envSessPath = get_env('SESSION_SAVE_PATH', '');
-if ($_envSessPath !== '') {
-    ini_set('session.save_path', $_envSessPath);
+$environmentSessPath = get_env('SESSION_SAVE_PATH', '');
+if ($environmentSessPath !== '') {
+    ini_set('session.save_path', $environmentSessPath);
 } elseif ($_projectRoot !== false) {
     $_absPath = $_projectRoot . '/storage/sessions';
     os_ensure_directory($_absPath, 0700);
@@ -140,24 +140,24 @@ if ($_envSessPath !== '') {
     }
     unset($_absPath);
 }
-unset($_projectRoot, $_envSessPath);
+unset($_projectRoot, $environmentSessPath);
 
 $_projectRoot = realpath(__DIR__ . '/..');
-$_envTmpPath  = get_env('SYS_TEMP_DIR', '');
-if ($_envTmpPath !== '') {
-    ini_set('sys_temp_dir', $_envTmpPath);
-    putenv('TMPDIR=' . $_envTmpPath);
+$environmentTemporaryPath  = get_env('SYS_TEMP_DIR', '');
+if ($environmentTemporaryPath !== '') {
+    ini_set('sys_temp_dir', $environmentTemporaryPath);
+    putenv('TMPDIR=' . $environmentTemporaryPath);
 } elseif ($_projectRoot !== false) {
-    $_absTmp = $_projectRoot . '/storage/tmp';
-    os_ensure_directory($_absTmp, 0700);
-    if (is_dir($_absTmp) && is_writable($_absTmp)) {
-        ini_set('sys_temp_dir', $_absTmp);
-        putenv('TMPDIR=' . $_absTmp);
-        os_write_guard_file($_absTmp . '/.htaccess', "Require all denied\n");
+    $absTemporary = $_projectRoot . '/storage/tmp';
+    os_ensure_directory($absTemporary, 0700);
+    if (is_dir($absTemporary) && is_writable($absTemporary)) {
+        ini_set('sys_temp_dir', $absTemporary);
+        putenv('TMPDIR=' . $absTemporary);
+        os_write_guard_file($absTemporary . '/.htaccess', "Require all denied\n");
     }
-    unset($_absTmp);
+    unset($absTemporary);
 }
-unset($_projectRoot, $_envTmpPath);
+unset($_projectRoot, $environmentTemporaryPath);
 
 define('APP_ENV', get_env('APP_ENV', 'production'));
 
@@ -178,9 +178,9 @@ define('SESSION_MAX_LIFETIME', (int) get_env('SESSION_MAX_LIFETIME', '28800'));
 ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
 
 (static function (): void {
-    $env = get_env('IP_HASH_SALT', '');
-    if ($env !== '') {
-        define('IP_HASH_SALT', $env);
+    $environment = get_env('IP_HASH_SALT', '');
+    if ($environment !== '') {
+        define('IP_HASH_SALT', $environment);
         return;
     }
     $file = __DIR__ . '/.secret_salt';
@@ -193,9 +193,9 @@ ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
 })();
 
 (static function (): void {
-    $env = get_env('APP_ENCRYPTION_KEY', '');
-    if ($env !== '') {
-        define('APP_ENCRYPTION_KEY', $env);
+    $environment = get_env('APP_ENCRYPTION_KEY', '');
+    if ($environment !== '') {
+        define('APP_ENCRYPTION_KEY', $environment);
         return;
     }
     $file = __DIR__ . '/.secret_key';
@@ -239,8 +239,8 @@ define('COMMENTS_MINE_LIMIT', (int) get_env('COMMENTS_MINE_LIMIT', '50'));
 define('NOTIFICATIONS_DROPDOWN_LIMIT', (int) get_env('NOTIFICATIONS_DROPDOWN_LIMIT', '10'));
 
 define('AUTOMATION_EMAIL_FROM', (function (): string {
-    $env = get_env('AUTOMATION_EMAIL_FROM', '');
-    return $env !== '' ? $env : (string) settings_value('automation_email_from', '');
+    $environment = get_env('AUTOMATION_EMAIL_FROM', '');
+    return $environment !== '' ? $environment : (string) settings_value('automation_email_from', '');
 })());
 
 define('AUTOMATION_EMAIL_BATCH_LIMIT', (int) get_env('AUTOMATION_EMAIL_BATCH_LIMIT', '50'));
@@ -254,17 +254,17 @@ define('MAX_LIST_ROWS', (int) get_env('MAX_LIST_ROWS', '10000'));
 define('HSTS_MAX_AGE', (int) get_env('HSTS_MAX_AGE', '31536000'));
 
 define('RECORD_SNAPSHOTS_ENABLED', (function (): bool {
-    $env = get_env('RECORD_SNAPSHOTS_ENABLED', '');
-    if ($env !== '') {
-        return $env === 'true';
+    $environment = get_env('RECORD_SNAPSHOTS_ENABLED', '');
+    if ($environment !== '') {
+        return $environment === 'true';
     }
     return (bool) settings_value('record_snapshots_enabled', false);
 })());
 
 define('CHAT_BUBBLE_ENABLED', (function (): bool {
-    $env = get_env('CHAT_BUBBLE_ENABLED', '');
-    if ($env !== '') {
-        return $env === 'true';
+    $environment = get_env('CHAT_BUBBLE_ENABLED', '');
+    if ($environment !== '') {
+        return $environment === 'true';
     }
     return (bool) settings_value('chat_bubble_enabled', false);
 })());

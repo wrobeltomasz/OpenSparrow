@@ -29,25 +29,33 @@ if ($action === 'dashboard_calculate') {
             throw new AdminApiMessage('No source table selected.');
         }
 
-        $schemaCfg = config_get('schema') ?? [];
+        $schemaConfig = config_get('schema') ?? [];
         try {
-            $tableCfg = safe_table($schemaCfg, $table);
+            $tableConfig = safe_table($schemaConfig, $table);
         } catch (ControlFlowException $signal) {
             throw $signal;
         } catch (Throwable $exception) {
             throw new AdminApiMessage('Unknown table: ' . $table);
         }
-        $schemaName = $tableCfg['schema'] ?? 'public';
+        $schemaName = $tableConfig['schema'] ?? 'public';
 
         $conn = db_connect();
         $conditionsSql = dashboard_conditions_sql(
             $conn,
-            $tableCfg,
+            $tableConfig,
             is_array($query['conditions'] ?? null) ? $query['conditions'] : []
         );
         $sqlWhere = $conditionsSql === '' ? '' : ' WHERE ' . $conditionsSql;
 
-        $result = dashboard_run_widget_query($conn, $tableCfg, $schemaName, $table, $query, $displayColumns, $sqlWhere);
+        $result = dashboard_run_widget_query(
+            $conn,
+            $tableConfig,
+            $schemaName,
+            $table,
+            $query,
+            $displayColumns,
+            $sqlWhere
+        );
 
         if (isset($result['sql_error'])) {
             admin_err($result['sql_error']);

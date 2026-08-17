@@ -97,11 +97,13 @@ if ($action === 'init_db') {
         }
         $pruned_count = pg_affected_rows($pruneResult);
 
-        $tmpPassword    = bin2hex(random_bytes(12));
+        $temporaryPassword    = bin2hex(random_bytes(12));
         $firstAdminSalt = bin2hex(random_bytes(32));
-        $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
-        error_log('[OpenSparrow] First-run admin password: ' . $tmpPassword . ' — change immediately after login!');
-        $resAdmin = @pg_query_params(
+        $firstAdminHash = password_hash($firstAdminSalt . $temporaryPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
+        error_log(
+            '[OpenSparrow] First-run admin password: ' . $temporaryPassword . ' — change immediately after login!'
+        );
+        $adminResult = @pg_query_params(
             $conn,
             "INSERT INTO $usersTable (username, password_hash, salt, password_algo, password_params, is_active, role)
              SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin'
@@ -113,7 +115,7 @@ if ($action === 'init_db') {
                 json_encode(ARGON2_OPTIONS),
             ]
         );
-        if (!$resAdmin) {
+        if (!$adminResult) {
             admin_db_fail($conn, 'init_db:first_admin');
         }
 

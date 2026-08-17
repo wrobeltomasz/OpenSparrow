@@ -301,7 +301,7 @@ function auto_action_update(
 ): ?string {
     $set        = $action['set'] ?? [];
     $setClauses = [];
-    $params     = [];
+    $parameters     = [];
     $placeholderIndex          = 1;
 
     foreach ($set as $column => $columnValue) {
@@ -310,7 +310,7 @@ function auto_action_update(
         }
         $columnValue          = auto_resolve_template((string) $columnValue, $record, $userId, $oldRecord);
         $setClauses[] = pg_ident((string) $column) . ' = $' . $placeholderIndex;
-        $params[]     = $columnValue;
+        $parameters[]     = $columnValue;
         $placeholderIndex++;
     }
 
@@ -318,7 +318,7 @@ function auto_action_update(
         return null;
     }
 
-    $params[] = $recordId;
+    $parameters[] = $recordId;
     $sql      = sprintf(
         'UPDATE %s.%s SET %s WHERE id = $%d',
         pg_ident($tableSchema),
@@ -327,7 +327,7 @@ function auto_action_update(
         $placeholderIndex
     );
 
-    $queryResult = @pg_query_params($conn, $sql, $params);
+    $queryResult = @pg_query_params($conn, $sql, $parameters);
     return $queryResult === false ? ('update failed: ' . pg_last_error($conn)) : null;
 }
 
@@ -369,12 +369,12 @@ function auto_action_notify(
             VALUES (\$1, \$2, \$3, \$4, \$5, CURRENT_DATE)
             ON CONFLICT (user_id, source_table, source_id, notify_date) DO NOTHING";
 
-    $errs = [];
+    $errors = [];
     foreach ($rawIds as $rawId) {
         $resolved = auto_resolve_template((string) $rawId, $record, $userId, $oldRecord);
         $targetId = (int) $resolved;
         if ($targetId <= 0) {
-            $errs[] = "notify: invalid user_id ({$rawId})";
+            $errors[] = "notify: invalid user_id ({$rawId})";
             continue;
         }
         $queryResult = @pg_query_params($conn, $sql, [
@@ -385,11 +385,11 @@ function auto_action_notify(
             $recordId,
         ]);
         if ($queryResult === false) {
-            $errs[] = 'notify failed: ' . pg_last_error($conn);
+            $errors[] = 'notify failed: ' . pg_last_error($conn);
         }
     }
 
-    return $errs !== [] ? implode('; ', $errs) : null;
+    return $errors !== [] ? implode('; ', $errors) : null;
 }
 
 function auto_action_create_record(
@@ -404,22 +404,22 @@ function auto_action_create_record(
         return 'create_record: target_table is required';
     }
 
-    $targetCfg = auto_table_cfg($targetTable);
-    if ($targetCfg === []) {
+    $targetConfig = auto_table_cfg($targetTable);
+    if ($targetConfig === []) {
         return 'create_record: unknown target_table ' . $targetTable;
     }
-    $targetSchema = (string) ($targetCfg['schema'] ?? 'public');
+    $targetSchema = (string) ($targetConfig['schema'] ?? 'public');
 
     $set    = $action['set'] ?? [];
     $columns   = [];
-    $params = [];
+    $parameters = [];
 
     foreach ($set as $column => $columnValue) {
         if ((string) $column === '') {
             continue;
         }
         $columns[]   = pg_ident((string) $column);
-        $params[] = auto_resolve_template((string) $columnValue, $record, $userId, $oldRecord);
+        $parameters[] = auto_resolve_template((string) $columnValue, $record, $userId, $oldRecord);
     }
 
     if (empty($columns)) {
@@ -428,7 +428,7 @@ function auto_action_create_record(
 
     $placeholders = implode(', ', array_map(
         static fn(int $placeholderIndex): string => '$' . $placeholderIndex,
-        range(1, count($params))
+        range(1, count($parameters))
     ));
     $sql = sprintf(
         'INSERT INTO %s.%s (%s) VALUES (%s)',
@@ -438,7 +438,7 @@ function auto_action_create_record(
         $placeholders
     );
 
-    $queryResult = @pg_query_params($conn, $sql, $params);
+    $queryResult = @pg_query_params($conn, $sql, $parameters);
     return $queryResult === false ? ('create_record failed: ' . pg_last_error($conn)) : null;
 }
 
@@ -656,12 +656,12 @@ function auto_action_email(
         . " body, source_table, record_id, created_by)
                 VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7)";
 
-    $errs   = [];
+    $errors   = [];
     $queued = 0;
     foreach ($rawRecipients as $rawRecipient) {
         $recipient = trim(auto_resolve_template((string) $rawRecipient, $record, $userId, $oldRecord));
         if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
-            $errs[] = "email: invalid recipient ({$rawRecipient})";
+            $errors[] = "email: invalid recipient ({$rawRecipient})";
             continue;
         }
         $queryResult = @pg_query_params($conn, $sql, [
@@ -674,7 +674,7 @@ function auto_action_email(
             $userId,
         ]);
         if ($queryResult === false) {
-            $errs[] = 'email queue failed: ' . pg_last_error($conn);
+            $errors[] = 'email queue failed: ' . pg_last_error($conn);
         } else {
             $queued++;
         }
@@ -684,7 +684,7 @@ function auto_action_email(
         log_user_action($conn, $userId, 'AUTO_EMAIL', $table, $recordId);
     }
 
-    return $errs !== [] ? implode('; ', $errs) : null;
+    return $errors !== [] ? implode('; ', $errors) : null;
 }
 
 function auto_log_run(

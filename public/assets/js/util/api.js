@@ -17,8 +17,8 @@ export function apiFetch(url, options = {}) {
 }
 
 export async function apiJson(url, options = {}) {
-    const res  = await apiFetch(url, options);
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
+    const result  = await apiFetch(url, options);
+    const data = await result.json();
+    if (!result.ok || data.error) throw new Error(data.error ?? `HTTP ${result.status}`);
     return data;
 }

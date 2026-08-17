@@ -20,9 +20,9 @@ function toggleNav() {
 }
 navEdgeToggle.addEventListener('click', toggleNav);
 
-const btnLogout = document.getElementById('btnLogout');
-if (btnLogout) {
-    btnLogout.addEventListener('click', function() {
+const buttonLogout = document.getElementById('btnLogout');
+if (buttonLogout) {
+    buttonLogout.addEventListener('click', function() {
         window.location.href = window.LOGOUT_URL;
     });
 }

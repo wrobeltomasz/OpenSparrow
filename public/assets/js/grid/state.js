@@ -59,25 +59,25 @@ export function resetFiltersState() {
 
 export function sortRows(rows, sortState) {
     if (!sortState.column) return rows;
-    const col = sortState.column;
+    const column = sortState.column;
     return [...rows].sort((a, b) => {
-        const valA = a[col + '__display'] ?? a[col] ?? '';
-        const valB = b[col + '__display'] ?? b[col] ?? '';
-        const isNumA = !isNaN(valA) && valA !== '';
-        const isNumB = !isNaN(valB) && valB !== '';
-        if (isNumA && isNumB) {
-            return sortState.asc ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
+        const valueA = a[column + '__display'] ?? a[column] ?? '';
+        const valueB = b[column + '__display'] ?? b[column] ?? '';
+        const isNumberA = !isNaN(valueA) && valueA !== '';
+        const isNumberB = !isNaN(valueB) && valueB !== '';
+        if (isNumberA && isNumberB) {
+            return sortState.asc ? Number(valueA) - Number(valueB) : Number(valueB) - Number(valueA);
         }
-        const strA = valA.toString().toLowerCase();
-        const strB = valB.toString().toLowerCase();
-        if (strA < strB) return sortState.asc ? -1 : 1;
-        if (strA > strB) return sortState.asc ? 1 : -1;
+        const stringA = valueA.toString().toLowerCase();
+        const stringB = valueB.toString().toLowerCase();
+        if (stringA < stringB) return sortState.asc ? -1 : 1;
+        if (stringA > stringB) return sortState.asc ? 1 : -1;
         return 0;
     });
 }
 
-export function reorderColumns(arr, fromIndex, toIndex) {
-    const next = arr.slice();
+export function reorderColumns(array, fromIndex, toIndex) {
+    const next = array.slice();
     const [item] = next.splice(fromIndex, 1);
     next.splice(toIndex, 0, item);
     return next;

@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const searchToggle  = document.getElementById('searchToggle');
     const sidebar       = document.getElementById('menu');
-    const headerEl      = document.querySelector('header');
+    const headerElement      = document.querySelector('header');
     if (!sidebarToggle || !sidebar) return;
 
     const isMobile = () => window.innerWidth <= 768;
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebarToggle.addEventListener('click', () => {
         if (isMobile()) {
             sidebar.classList.contains('mob-open') ? closeSidebar() : openSidebar();
-            if (headerEl) headerEl.classList.remove('mob-search-open');
+            if (headerElement) headerElement.classList.remove('mob-search-open');
         } else {
             toggleDesktopCollapse();
         }
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (searchToggle) {
         searchToggle.addEventListener('click', () => {
-            if (headerEl) headerEl.classList.toggle('mob-search-open');
+            if (headerElement) headerElement.classList.toggle('mob-search-open');
             closeSidebar();
         });
     }

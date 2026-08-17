@@ -6,7 +6,7 @@
 import { escHtml } from '../../assets/js/util/esc.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
-function ovFmtBytes(bytes) {
+function ovFormatBytes(bytes) {
     const b = Number(bytes);
     if (b >= 1073741824) return (b / 1073741824).toFixed(1) + ' GB';
     if (b >= 1048576)    return (b / 1048576).toFixed(1) + ' MB';
@@ -14,7 +14,7 @@ function ovFmtBytes(bytes) {
     return b + ' B';
 }
 
-function ovFmtNum(n) {
+function ovFormatNumber(n) {
     return Number(n).toLocaleString();
 }
 
@@ -36,30 +36,30 @@ function ovStatCard(icon, label, value, sub, dataFile) {
         card.addEventListener('click', () => navigateToTab(dataFile));
     }
 
-    const iconEl = document.createElement('img');
-    iconEl.src = '../../assets/icons/' + icon;
-    iconEl.alt = '';
-    iconEl.className = 'ov-stat-icon';
-    card.appendChild(iconEl);
+    const iconElement = document.createElement('img');
+    iconElement.src = '../../assets/icons/' + icon;
+    iconElement.alt = '';
+    iconElement.className = 'ov-stat-icon';
+    card.appendChild(iconElement);
 
     const body = document.createElement('div');
     body.className = 'ov-stat-body';
 
-    const valEl = document.createElement('div');
-    valEl.className = 'ov-stat-value';
-    valEl.textContent = value;
-    body.appendChild(valEl);
+    const valueElement = document.createElement('div');
+    valueElement.className = 'ov-stat-value';
+    valueElement.textContent = value;
+    body.appendChild(valueElement);
 
-    const labelEl = document.createElement('div');
-    labelEl.className = 'ov-stat-label';
-    labelEl.textContent = label;
-    body.appendChild(labelEl);
+    const labelElement = document.createElement('div');
+    labelElement.className = 'ov-stat-label';
+    labelElement.textContent = label;
+    body.appendChild(labelElement);
 
     if (sub) {
-        const subEl = document.createElement('div');
-        subEl.className = 'ov-stat-sub';
-        subEl.textContent = sub;
-        body.appendChild(subEl);
+        const subElement = document.createElement('div');
+        subElement.className = 'ov-stat-sub';
+        subElement.textContent = sub;
+        body.appendChild(subElement);
     }
 
     card.appendChild(body);
@@ -67,10 +67,10 @@ function ovStatCard(icon, label, value, sub, dataFile) {
 }
 
 function ovSection(title) {
-    const el = document.createElement('div');
-    el.className = 'ov-section-title';
-    el.textContent = title;
-    return el;
+    const element = document.createElement('div');
+    element.className = 'ov-section-title';
+    element.textContent = title;
+    return element;
 }
 
 function ovStatusRow(label, isOk, detail) {
@@ -82,10 +82,10 @@ function ovStatusRow(label, isOk, detail) {
     badge.textContent = isOk ? 'OK' : 'WARN';
     row.appendChild(badge);
 
-    const lbl = document.createElement('span');
-    lbl.className = 'ov-status-label';
-    lbl.textContent = label;
-    row.appendChild(lbl);
+    const label = document.createElement('span');
+    label.className = 'ov-status-label';
+    label.textContent = label;
+    row.appendChild(label);
 
     if (detail) {
         const det = document.createElement('span');
@@ -117,10 +117,10 @@ function ovAuditRow(entry) {
     row.appendChild(action);
 
     if (entry.target_table) {
-        const tbl = document.createElement('span');
-        tbl.className = 'ov-feed-table';
-        tbl.textContent = entry.target_table;
-        row.appendChild(tbl);
+        const table = document.createElement('span');
+        table.className = 'ov-feed-table';
+        table.textContent = entry.target_table;
+        row.appendChild(table);
     }
 
     return row;
@@ -154,37 +154,37 @@ function ovCronRow(entry) {
     return row;
 }
 
-export async function renderOverviewPage(ctx) {
-    const { workspaceEl } = ctx;
+export async function renderOverviewPage(context) {
+    const { workspaceEl: workspaceElement } = context;
 
-    workspaceEl._renderId = (workspaceEl._renderId || 0) + 1;
-    const myId = workspaceEl._renderId;
+    workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
+    const myId = workspaceElement._renderId;
 
-    workspaceEl.innerHTML = '';
+    workspaceElement.innerHTML = '';
 
     const loading = document.createElement('p');
     loading.className = 'ov-loading';
     loading.textContent = 'Loading dashboard…';
-    workspaceEl.appendChild(loading);
+    workspaceElement.appendChild(loading);
 
     let data;
     try {
-        const res = await apiFetch('api.php?action=overview');
-        data = await res.json();
+        const result = await apiFetch('api.php?action=overview');
+        data = await result.json();
     } catch (e) {
-        if (workspaceEl._renderId !== myId) return;
-        workspaceEl.innerHTML = '<p style="color:var(--error);">Failed to load dashboard data. Check server logs.</p>';
+        if (workspaceElement._renderId !== myId) return;
+        workspaceElement.innerHTML = '<p style="color:var(--error);">Failed to load dashboard data. Check server logs.</p>';
         return;
     }
 
-    if (workspaceEl._renderId !== myId) return;
-    workspaceEl.innerHTML = '';
+    if (workspaceElement._renderId !== myId) return;
+    workspaceElement.innerHTML = '';
 
     if (data.status === 'error') {
-        const err = document.createElement('p');
-        err.style.color = 'var(--error)';
-        err.textContent = 'Error: ' + escHtml(data.error ?? 'Unknown error');
-        workspaceEl.appendChild(err);
+        const error = document.createElement('p');
+        error.style.color = 'var(--error)';
+        error.textContent = 'Error: ' + escHtml(data.error ?? 'Unknown error');
+        workspaceElement.appendChild(error);
         return;
     }
 
@@ -205,88 +205,88 @@ export async function renderOverviewPage(ctx) {
     welcomeLeft.appendChild(versionBadge);
 
     welcomeBar.appendChild(welcomeLeft);
-    workspaceEl.appendChild(welcomeBar);
+    workspaceElement.appendChild(welcomeBar);
 
-    const statsRow = document.createElement('div');
-    statsRow.className = 'ov-stats-row';
+    const statisticsRow = document.createElement('div');
+    statisticsRow.className = 'ov-stats-row';
 
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'fact_check.png', 'Anonymization',
-        ovFmtNum(data.anonymization_rule_count),
+        ovFormatNumber(data.anonymization_rule_count),
         data.anonymization_enabled ? 'enabled' : 'disabled',
         'anonymization'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'automation.png', 'Automations',
-        ovFmtNum(data.automation_count),
+        ovFormatNumber(data.automation_count),
         'rules',
         'automations'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'database.png', 'ETL Jobs',
-        ovFmtNum(data.etl_job_count),
+        ovFormatNumber(data.etl_job_count),
         'configured',
         'etl'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'upload.png', 'Files',
-        ovFmtNum(data.file_count),
-        ovFmtBytes(data.file_size_bytes),
+        ovFormatNumber(data.file_count),
+        ovFormatBytes(data.file_size_bytes),
         'files'
     ));
     const lastCronRaw  = data.last_cron_run ?? null;
     const lastCronTime = lastCronRaw ? lastCronRaw.slice(11) : 'Never';
     const lastCronDate = lastCronRaw ? lastCronRaw.slice(0, 10) : '';
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'manage_history.png', 'Last Cron',
         lastCronTime,
         lastCronDate,
         'cron'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'picture_as_pdf.png', 'Printouts',
-        ovFmtNum(data.print_count),
+        ovFormatNumber(data.print_count),
         'templates',
         'print'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'docs.png', 'RAG Docs',
-        ovFmtNum(data.rag_count),
+        ovFormatNumber(data.rag_count),
         'documents',
         'rag'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'database.png', 'Records',
-        ovFmtNum(data.total_records),
+        ovFormatNumber(data.total_records),
         data.table_count + ' tables',
         'schema'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'data_table.png', 'Tables',
-        ovFmtNum(data.table_count),
+        ovFormatNumber(data.table_count),
         'in schema',
         'schema'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'user_attributes.png', 'Users',
-        ovFmtNum(data.user_total),
+        ovFormatNumber(data.user_total),
         data.user_active + ' active',
         'users'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'table_chart_view.png', 'Views',
-        ovFmtNum(data.view_count),
+        ovFormatNumber(data.view_count),
         'configured',
         'views'
     ));
-    statsRow.appendChild(ovStatCard(
+    statisticsRow.appendChild(ovStatCard(
         'build.png', 'Workflows',
-        ovFmtNum(data.workflow_count),
+        ovFormatNumber(data.workflow_count),
         'configured',
         'workflows'
     ));
 
-    workspaceEl.appendChild(statsRow);
+    workspaceElement.appendChild(statisticsRow);
 
     const midRow = document.createElement('div');
     midRow.className = 'ov-mid-row';
@@ -354,11 +354,11 @@ export async function renderOverviewPage(ctx) {
     const dbLabel = document.createElement('span');
     dbLabel.className = 'ov-status-label';
     dbLabel.textContent = 'Database size';
-    const dbVal = document.createElement('span');
-    dbVal.className = 'ov-status-detail';
-    dbVal.textContent = ovFmtBytes(data.db_size_bytes);
+    const dbValue = document.createElement('span');
+    dbValue.className = 'ov-status-detail';
+    dbValue.textContent = ovFormatBytes(data.db_size_bytes);
     dbSizeRow.appendChild(dbLabel);
-    dbSizeRow.appendChild(dbVal);
+    dbSizeRow.appendChild(dbValue);
     statusPanel.appendChild(dbSizeRow);
 
     statusPanel.appendChild(ovStatusRow(
@@ -377,12 +377,12 @@ export async function renderOverviewPage(ctx) {
     const sessionLabel = document.createElement('span');
     sessionLabel.className = 'ov-status-label';
     sessionLabel.textContent = 'Session lifetime';
-    const sessionVal = document.createElement('span');
-    sessionVal.className = 'ov-status-detail';
+    const sessionValue = document.createElement('span');
+    sessionValue.className = 'ov-status-detail';
     const sessionHours = data.session_lifetime ? (Number(data.session_lifetime) / 3600).toFixed(1) + ' h' : '—';
-    sessionVal.textContent = sessionHours;
+    sessionValue.textContent = sessionHours;
     sessionRow.appendChild(sessionLabel);
-    sessionRow.appendChild(sessionVal);
+    sessionRow.appendChild(sessionValue);
     statusPanel.appendChild(sessionRow);
 
     const memoryRow = document.createElement('div');
@@ -390,11 +390,11 @@ export async function renderOverviewPage(ctx) {
     const memoryLabel = document.createElement('span');
     memoryLabel.className = 'ov-status-label';
     memoryLabel.textContent = 'PHP memory limit';
-    const memoryVal = document.createElement('span');
-    memoryVal.className = 'ov-status-detail';
-    memoryVal.textContent = escHtml(data.memory_limit ?? '—');
+    const memoryValue = document.createElement('span');
+    memoryValue.className = 'ov-status-detail';
+    memoryValue.textContent = escHtml(data.memory_limit ?? '—');
     memoryRow.appendChild(memoryLabel);
-    memoryRow.appendChild(memoryVal);
+    memoryRow.appendChild(memoryValue);
     statusPanel.appendChild(memoryRow);
 
     const uploadRow = document.createElement('div');
@@ -402,15 +402,15 @@ export async function renderOverviewPage(ctx) {
     const uploadLabel = document.createElement('span');
     uploadLabel.className = 'ov-status-label';
     uploadLabel.textContent = 'Upload max filesize';
-    const uploadVal = document.createElement('span');
-    uploadVal.className = 'ov-status-detail';
-    uploadVal.textContent = escHtml(data.upload_max_filesize ?? '—');
+    const uploadValue = document.createElement('span');
+    uploadValue.className = 'ov-status-detail';
+    uploadValue.textContent = escHtml(data.upload_max_filesize ?? '—');
     uploadRow.appendChild(uploadLabel);
-    uploadRow.appendChild(uploadVal);
+    uploadRow.appendChild(uploadValue);
     statusPanel.appendChild(uploadRow);
 
     midRow.appendChild(statusPanel);
-    workspaceEl.appendChild(midRow);
+    workspaceElement.appendChild(midRow);
 
     if ((data.tables ?? []).length > 0) {
         const tablesSection = document.createElement('div');
@@ -427,10 +427,10 @@ export async function renderOverviewPage(ctx) {
             const item = document.createElement('div');
             item.className = 'ov-table-item';
 
-            const nameEl = document.createElement('div');
-            nameEl.className = 'ov-table-name';
-            nameEl.textContent = t.label ?? t.name;
-            item.appendChild(nameEl);
+            const nameElement = document.createElement('div');
+            nameElement.className = 'ov-table-name';
+            nameElement.textContent = t.label ?? t.name;
+            item.appendChild(nameElement);
 
             const barWrap = document.createElement('div');
             barWrap.className = 'ov-bar-wrap';
@@ -441,15 +441,15 @@ export async function renderOverviewPage(ctx) {
             barWrap.appendChild(bar);
             item.appendChild(barWrap);
 
-            const countEl = document.createElement('div');
-            countEl.className = 'ov-table-count';
-            countEl.textContent = ovFmtNum(t.count);
-            item.appendChild(countEl);
+            const countElement = document.createElement('div');
+            countElement.className = 'ov-table-count';
+            countElement.textContent = ovFormatNumber(t.count);
+            item.appendChild(countElement);
 
             grid.appendChild(item);
         });
 
         tablesSection.appendChild(grid);
-        workspaceEl.appendChild(tablesSection);
+        workspaceElement.appendChild(tablesSection);
     }
 }

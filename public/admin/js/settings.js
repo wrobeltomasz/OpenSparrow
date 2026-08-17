@@ -9,31 +9,31 @@ import { createPageHeader, buildInnerTabs } from './ui.js';
 import { renderDatabaseSection } from './database.js';
 import { renderAuditEditor } from './audit.js';
 
-export async function renderSettingsPage(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '<h3>Loading settings…</h3>';
+export async function renderSettingsPage(context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = '<h3>Loading settings…</h3>';
 
     let data, bubbleData, logoData;
     try {
-        const [langRes, bubbleRes, logoRes] = await Promise.all([
+        const [langResult, bubbleResult, logoResult] = await Promise.all([
             apiFetch('api.php?action=get_language_setting'),
             apiFetch('api.php?action=get_chat_bubble_setting'),
             apiFetch('api.php?action=get_logo_setting'),
         ]);
-        if (!langRes.ok) throw new Error('HTTP ' + langRes.status);
-        data       = await langRes.json();
-        bubbleData = bubbleRes.ok ? await bubbleRes.json() : { chat_bubble_enabled: false };
-        logoData   = logoRes.ok ? await logoRes.json() : { logo_path: null };
+        if (!langResult.ok) throw new Error('HTTP ' + langResult.status);
+        data       = await langResult.json();
+        bubbleData = bubbleResult.ok ? await bubbleResult.json() : { chat_bubble_enabled: false };
+        logoData   = logoResult.ok ? await logoResult.json() : { logo_path: null };
     } catch (e) {
-        workspaceEl.innerHTML = '<h3 style="color:var(--error);">Error loading settings. Check server logs.</h3>';
+        workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading settings. Check server logs.</h3>';
         return;
     }
 
-    workspaceEl.innerHTML = '';
+    workspaceElement.innerHTML = '';
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     wrap.appendChild(createPageHeader('Application Settings'));
 
@@ -56,10 +56,10 @@ export async function renderSettingsPage(ctx) {
     cardTitle.textContent = 'Language Settings';
     card.appendChild(cardTitle);
 
-    const cardDesc = document.createElement('p');
-    cardDesc.style.cssText = '  margin:0 0 20px;';
-    cardDesc.textContent = 'Set the site-wide default language. Language files live in languages/*.json.';
-    card.appendChild(cardDesc);
+    const cardDescription = document.createElement('p');
+    cardDescription.style.cssText = '  margin:0 0 20px;';
+    cardDescription.textContent = 'Set the site-wide default language. Language files live in languages/*.json.';
+    card.appendChild(cardDescription);
 
     const defRow = document.createElement('div');
     defRow.style.cssText = 'margin-bottom:20px;';
@@ -74,11 +74,11 @@ export async function renderSettingsPage(ctx) {
     defSelect.id = 'setting-default-lang';
     defSelect.className = 'adm-input w-220';
     data.all_locales.forEach(loc => {
-        const opt = document.createElement('option');
-        opt.value = loc.code;
-        opt.textContent = `${loc.name} (${loc.code})`;
-        if (loc.code === data.default_language) opt.selected = true;
-        defSelect.appendChild(opt);
+        const option = document.createElement('option');
+        option.value = loc.code;
+        option.textContent = `${loc.name} (${loc.code})`;
+        if (loc.code === data.default_language) option.selected = true;
+        defSelect.appendChild(option);
     });
     defRow.appendChild(defSelect);
     card.appendChild(defRow);
@@ -86,22 +86,22 @@ export async function renderSettingsPage(ctx) {
     const saveRow = document.createElement('div');
     saveRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
 
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Save language settings';
-    saveBtn.className = 'btn btn-primary';
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Save language settings';
+    saveButton.className = 'btn btn-primary';
 
     const pillAnchor = document.createElement('span');
 
-    saveBtn.addEventListener('click', async () => {
-        saveBtn.disabled = true;
+    saveButton.addEventListener('click', async () => {
+        saveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_language_setting', {
+            const result = await apiFetch('api.php?action=set_language_setting', {
                 method: 'POST',
                 body: JSON.stringify({
                     default_language: defSelect.value,
                 }),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 showStatusPill(pillAnchor, 'Language settings saved.', 'success');
             } else {
@@ -110,10 +110,10 @@ export async function renderSettingsPage(ctx) {
         } catch (e) {
             showStatusPill(pillAnchor, 'Request failed.', 'error');
         }
-        saveBtn.disabled = false;
+        saveButton.disabled = false;
     });
 
-    saveRow.appendChild(saveBtn);
+    saveRow.appendChild(saveButton);
     saveRow.appendChild(pillAnchor);
     card.appendChild(saveRow);
 
@@ -127,41 +127,41 @@ export async function renderSettingsPage(ctx) {
     bubbleTitle.textContent = 'AI Chat Bubble';
     bubbleCard.appendChild(bubbleTitle);
 
-    const bubbleDesc = document.createElement('p');
-    bubbleDesc.style.cssText = '  margin:0 0 20px;';
-    bubbleDesc.textContent = 'Show a floating chat button in the bottom-right corner of every app page. Users can click it to open the AI assistant without going through the user menu.';
-    bubbleCard.appendChild(bubbleDesc);
+    const bubbleDescription = document.createElement('p');
+    bubbleDescription.style.cssText = '  margin:0 0 20px;';
+    bubbleDescription.textContent = 'Show a floating chat button in the bottom-right corner of every app page. Users can click it to open the AI assistant without going through the user menu.';
+    bubbleCard.appendChild(bubbleDescription);
 
     const toggleRow = document.createElement('label');
     toggleRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer;   margin-bottom:20px;';
 
-    const toggleCb = document.createElement('input');
-    toggleCb.type    = 'checkbox';
-    toggleCb.id      = 'setting-chat-bubble';
-    toggleCb.checked = !!(bubbleData.chat_bubble_enabled);
-    toggleCb.style.cssText = 'width:16px; height:16px; cursor:pointer;';
+    const toggleCallback = document.createElement('input');
+    toggleCallback.type    = 'checkbox';
+    toggleCallback.id      = 'setting-chat-bubble';
+    toggleCallback.checked = !!(bubbleData.chat_bubble_enabled);
+    toggleCallback.style.cssText = 'width:16px; height:16px; cursor:pointer;';
 
-    toggleRow.appendChild(toggleCb);
+    toggleRow.appendChild(toggleCallback);
     toggleRow.appendChild(document.createTextNode('Enable floating chat button'));
     bubbleCard.appendChild(toggleRow);
 
     const bubbleSaveRow = document.createElement('div');
     bubbleSaveRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
 
-    const bubbleSaveBtn = document.createElement('button');
-    bubbleSaveBtn.textContent = 'Save';
-    bubbleSaveBtn.className = 'btn btn-primary';
+    const bubbleSaveButton = document.createElement('button');
+    bubbleSaveButton.textContent = 'Save';
+    bubbleSaveButton.className = 'btn btn-primary';
 
     const bubblePillAnchor = document.createElement('span');
 
-    bubbleSaveBtn.addEventListener('click', async () => {
-        bubbleSaveBtn.disabled = true;
+    bubbleSaveButton.addEventListener('click', async () => {
+        bubbleSaveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_chat_bubble_setting', {
+            const result = await apiFetch('api.php?action=set_chat_bubble_setting', {
                 method: 'POST',
-                body: JSON.stringify({ chat_bubble_enabled: toggleCb.checked }),
+                body: JSON.stringify({ chat_bubble_enabled: toggleCallback.checked }),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 showStatusPill(bubblePillAnchor, 'Saved. Reload the app to see the change.', 'success');
             } else {
@@ -170,10 +170,10 @@ export async function renderSettingsPage(ctx) {
         } catch (e) {
             showStatusPill(bubblePillAnchor, 'Request failed.', 'error');
         }
-        bubbleSaveBtn.disabled = false;
+        bubbleSaveButton.disabled = false;
     });
 
-    bubbleSaveRow.appendChild(bubbleSaveBtn);
+    bubbleSaveRow.appendChild(bubbleSaveButton);
     bubbleSaveRow.appendChild(bubblePillAnchor);
     bubbleCard.appendChild(bubbleSaveRow);
 
@@ -187,10 +187,10 @@ export async function renderSettingsPage(ctx) {
     logoTitle.textContent = 'Custom Logo';
     logoCard.appendChild(logoTitle);
 
-    const logoDesc = document.createElement('p');
-    logoDesc.style.cssText = '  margin:0 0 16px;';
-    logoDesc.textContent = 'Replace the default OpenSparrow logo shown in the frontend header with your own image. PNG, JPEG or WEBP, up to 2 MB.';
-    logoCard.appendChild(logoDesc);
+    const logoDescription = document.createElement('p');
+    logoDescription.style.cssText = '  margin:0 0 16px;';
+    logoDescription.textContent = 'Replace the default OpenSparrow logo shown in the frontend header with your own image. PNG, JPEG or WEBP, up to 2 MB.';
+    logoCard.appendChild(logoDescription);
 
     const appNameRow = document.createElement('div');
     appNameRow.style.cssText = 'margin-bottom:20px;';
@@ -212,27 +212,27 @@ export async function renderSettingsPage(ctx) {
     appNameInput.className = 'adm-input w-260';
     appNameInputRow.appendChild(appNameInput);
 
-    const appNameSaveBtn = document.createElement('button');
-    appNameSaveBtn.textContent = 'Save';
-    appNameSaveBtn.className = 'btn btn-primary';
-    appNameInputRow.appendChild(appNameSaveBtn);
+    const appNameSaveButton = document.createElement('button');
+    appNameSaveButton.textContent = 'Save';
+    appNameSaveButton.className = 'btn btn-primary';
+    appNameInputRow.appendChild(appNameSaveButton);
 
     const appNamePillAnchor = document.createElement('span');
     appNameInputRow.appendChild(appNamePillAnchor);
 
-    appNameSaveBtn.addEventListener('click', async () => {
+    appNameSaveButton.addEventListener('click', async () => {
         const chosenName = appNameInput.value.trim();
         if (!chosenName) {
             showStatusPill(appNamePillAnchor, 'App name cannot be empty.', 'error');
             return;
         }
-        appNameSaveBtn.disabled = true;
+        appNameSaveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_app_name', {
+            const result = await apiFetch('api.php?action=set_app_name', {
                 method: 'POST',
                 body: JSON.stringify({ app_name: chosenName }),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 showStatusPill(appNamePillAnchor, 'Saved.', 'success');
             } else {
@@ -241,7 +241,7 @@ export async function renderSettingsPage(ctx) {
         } catch (e) {
             showStatusPill(appNamePillAnchor, 'Request failed.', 'error');
         }
-        appNameSaveBtn.disabled = false;
+        appNameSaveButton.disabled = false;
     });
 
     appNameRow.appendChild(appNameInputRow);
@@ -250,33 +250,33 @@ export async function renderSettingsPage(ctx) {
     const logoEnabledRow = document.createElement('label');
     logoEnabledRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer;   margin-bottom:16px;';
 
-    const logoEnabledCb = document.createElement('input');
-    logoEnabledCb.type = 'checkbox';
-    logoEnabledCb.id = 'setting-logo-enabled';
-    logoEnabledCb.checked = !!(logoData.logo_enabled);
-    logoEnabledCb.style.cssText = 'width:16px; height:16px; cursor:pointer;';
+    const logoEnabledCallback = document.createElement('input');
+    logoEnabledCallback.type = 'checkbox';
+    logoEnabledCallback.id = 'setting-logo-enabled';
+    logoEnabledCallback.checked = !!(logoData.logo_enabled);
+    logoEnabledCallback.style.cssText = 'width:16px; height:16px; cursor:pointer;';
 
-    logoEnabledRow.appendChild(logoEnabledCb);
+    logoEnabledRow.appendChild(logoEnabledCallback);
     logoEnabledRow.appendChild(document.createTextNode('Show logo in header (unchecked = no logo, as before this feature)'));
     logoCard.appendChild(logoEnabledRow);
 
     const logoEnabledSaveRow = document.createElement('div');
     logoEnabledSaveRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:20px;';
 
-    const logoEnabledSaveBtn = document.createElement('button');
-    logoEnabledSaveBtn.textContent = 'Save';
-    logoEnabledSaveBtn.className = 'btn btn-primary';
+    const logoEnabledSaveButton = document.createElement('button');
+    logoEnabledSaveButton.textContent = 'Save';
+    logoEnabledSaveButton.className = 'btn btn-primary';
 
     const logoEnabledPillAnchor = document.createElement('span');
 
-    logoEnabledSaveBtn.addEventListener('click', async () => {
-        logoEnabledSaveBtn.disabled = true;
+    logoEnabledSaveButton.addEventListener('click', async () => {
+        logoEnabledSaveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_logo_enabled', {
+            const result = await apiFetch('api.php?action=set_logo_enabled', {
                 method: 'POST',
-                body: JSON.stringify({ logo_enabled: logoEnabledCb.checked }),
+                body: JSON.stringify({ logo_enabled: logoEnabledCallback.checked }),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 showStatusPill(logoEnabledPillAnchor, 'Saved. Reload the app to see the change.', 'success');
             } else {
@@ -285,10 +285,10 @@ export async function renderSettingsPage(ctx) {
         } catch (e) {
             showStatusPill(logoEnabledPillAnchor, 'Request failed.', 'error');
         }
-        logoEnabledSaveBtn.disabled = false;
+        logoEnabledSaveButton.disabled = false;
     });
 
-    logoEnabledSaveRow.appendChild(logoEnabledSaveBtn);
+    logoEnabledSaveRow.appendChild(logoEnabledSaveButton);
     logoEnabledSaveRow.appendChild(logoEnabledPillAnchor);
     logoCard.appendChild(logoEnabledSaveRow);
 
@@ -303,21 +303,21 @@ export async function renderSettingsPage(ctx) {
     logoFileInput.style.cssText = 'margin-bottom:16px; display:block;';
     logoCard.appendChild(logoFileInput);
 
-    const logoBtnRow = document.createElement('div');
-    logoBtnRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
+    const logoButtonRow = document.createElement('div');
+    logoButtonRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
 
-    const logoUploadBtn = document.createElement('button');
-    logoUploadBtn.textContent = 'Upload logo';
-    logoUploadBtn.className = 'btn btn-primary';
+    const logoUploadButton = document.createElement('button');
+    logoUploadButton.textContent = 'Upload logo';
+    logoUploadButton.className = 'btn btn-primary';
 
-    const logoRemoveBtn = document.createElement('button');
-    logoRemoveBtn.textContent = 'Remove logo';
-    logoRemoveBtn.className = 'btn';
-    logoRemoveBtn.style.display = logoData.logo_path ? 'inline-block' : 'none';
+    const logoRemoveButton = document.createElement('button');
+    logoRemoveButton.textContent = 'Remove logo';
+    logoRemoveButton.className = 'btn';
+    logoRemoveButton.style.display = logoData.logo_path ? 'inline-block' : 'none';
 
     const logoPillAnchor = document.createElement('span');
 
-    logoUploadBtn.addEventListener('click', async () => {
+    logoUploadButton.addEventListener('click', async () => {
         const chosenFile = logoFileInput.files[0];
         if (!chosenFile) {
             showStatusPill(logoPillAnchor, 'Choose a file first.', 'error');
@@ -326,19 +326,19 @@ export async function renderSettingsPage(ctx) {
         const formData = new FormData();
         formData.append('file', chosenFile);
 
-        logoUploadBtn.disabled = true;
+        logoUploadButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=upload_logo', {
+            const result = await apiFetch('api.php?action=upload_logo', {
                 method: 'POST',
                 body: formData,
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 logoPreview.src = result.logo_path + '?t=' + Date.now();
                 logoPreview.style.display = 'block';
-                logoRemoveBtn.style.display = 'inline-block';
+                logoRemoveButton.style.display = 'inline-block';
                 logoFileInput.value = '';
-                logoEnabledCb.checked = true;
+                logoEnabledCallback.checked = true;
                 showStatusPill(logoPillAnchor, 'Logo uploaded and enabled. Reload the app to see the change.', 'success');
             } else {
                 showStatusPill(logoPillAnchor, result.error || 'Error uploading logo.', 'error');
@@ -346,21 +346,21 @@ export async function renderSettingsPage(ctx) {
         } catch (e) {
             showStatusPill(logoPillAnchor, 'Request failed.', 'error');
         }
-        logoUploadBtn.disabled = false;
+        logoUploadButton.disabled = false;
     });
 
-    logoRemoveBtn.addEventListener('click', async () => {
-        logoRemoveBtn.disabled = true;
+    logoRemoveButton.addEventListener('click', async () => {
+        logoRemoveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=remove_logo', {
+            const result = await apiFetch('api.php?action=remove_logo', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 logoPreview.style.display = 'none';
-                logoRemoveBtn.style.display = 'none';
-                logoEnabledCb.checked = false;
+                logoRemoveButton.style.display = 'none';
+                logoEnabledCallback.checked = false;
                 showStatusPill(logoPillAnchor, 'Logo removed. Reload the app to see the change.', 'success');
             } else {
                 showStatusPill(logoPillAnchor, result.error || 'Error removing logo.', 'error');
@@ -368,19 +368,19 @@ export async function renderSettingsPage(ctx) {
         } catch (e) {
             showStatusPill(logoPillAnchor, 'Request failed.', 'error');
         }
-        logoRemoveBtn.disabled = false;
+        logoRemoveButton.disabled = false;
     });
 
-    logoBtnRow.appendChild(logoUploadBtn);
-    logoBtnRow.appendChild(logoRemoveBtn);
-    logoBtnRow.appendChild(logoPillAnchor);
-    logoCard.appendChild(logoBtnRow);
+    logoButtonRow.appendChild(logoUploadButton);
+    logoButtonRow.appendChild(logoRemoveButton);
+    logoButtonRow.appendChild(logoPillAnchor);
+    logoCard.appendChild(logoButtonRow);
 
     brandingPanel.appendChild(logoCard);
 
-    const infoCard = document.createElement('div');
-    infoCard.style.cssText = 'padding:14px 18px; background:var(--bg); border:1px solid var(--border); border-radius:8px;   max-width:540px;';
-    infoCard.innerHTML = '<strong style="display:block; margin-bottom:6px; ">How language detection works</strong>'
+    const informationCard = document.createElement('div');
+    informationCard.style.cssText = 'padding:14px 18px; background:var(--bg); border:1px solid var(--border); border-radius:8px;   max-width:540px;';
+    informationCard.innerHTML = '<strong style="display:block; margin-bottom:6px; ">How language detection works</strong>'
         + '<ol style="margin:0; padding-left:18px; line-height:1.8;">'
         + '<li>User selects language via URL <code>?lang=xx</code> → stored in session</li>'
         + '<li>User\'s personal preference from <code>spw_users.locale</code> (if set)</li>'
@@ -389,5 +389,5 @@ export async function renderSettingsPage(ctx) {
         + '<li>Fallback: <code>en</code></li>'
         + '</ol>'
         + '<p style="margin:10px 0 0; ">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
-    languagePanel.appendChild(infoCard);
+    languagePanel.appendChild(informationCard);
 }

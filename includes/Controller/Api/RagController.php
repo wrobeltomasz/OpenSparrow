@@ -91,10 +91,10 @@ final class RagController
                     ];
                 }
             }
-            $cfg = rag_config();
+            $config = rag_config();
             throw ResponseException::encoded([
                 'files'             => $files,
-                'conversation_turns' => (int) ($cfg['conversation_turns'] ?? 0),
+                'conversation_turns' => (int) ($config['conversation_turns'] ?? 0),
             ]);
         } catch (ControlFlowException $signal) {
             throw $signal;
@@ -136,9 +136,9 @@ final class RagController
                 throw new BadRequestException('Query too long (max 2000 characters).');
             }
 
-            $cfg = rag_config();
+            $config = rag_config();
 
-            $maxTurns = max(0, min(10, (int) ($cfg['conversation_turns'] ?? 0)));
+            $maxTurns = max(0, min(10, (int) ($config['conversation_turns'] ?? 0)));
             $history  = [];
             if ($maxTurns > 0 && !empty($rawHistory)) {
                 foreach ($rawHistory as $item) {
@@ -181,7 +181,7 @@ final class RagController
             register_shutdown_function('rag_semaphore_release', $semaphore);
 
             $conn        = $this->context->connection();
-            $limit       = (int) ($cfg['max_context_files'] ?? 3);
+            $limit       = (int) ($config['max_context_files'] ?? 3);
             $tagFallback = false;
 
             if (!empty($fileIds)) {
@@ -216,17 +216,17 @@ final class RagController
             if ($table !== '') {
                 require_once __DIR__ . '/../../config_store.php';
                 $schema        = config_get('schema') ?? [];
-                $aggregateView = rag_view_aggregate($conn, $schema, $table, $cfg);
+                $aggregateView = rag_view_aggregate($conn, $schema, $table, $config);
             }
 
             $prompt = rag_build_prompt($query, $files, $pageContext, $language, $history, $aggregateView);
             $result = rag_call_ollama(
-                (string) $cfg['ollama_url'],
-                (string) $cfg['ollama_model'],
+                (string) $config['ollama_url'],
+                (string) $config['ollama_model'],
                 $prompt,
-                (int) ($cfg['ollama_timeout'] ?? 120),
-                (bool) ($cfg['ollama_ssl_verify'] ?? true),
-                secret_decrypt((string) ($cfg['ollama_api_key_enc'] ?? ''))
+                (int) ($config['ollama_timeout'] ?? 120),
+                (bool) ($config['ollama_ssl_verify'] ?? true),
+                secret_decrypt((string) ($config['ollama_api_key_enc'] ?? ''))
             );
 
             $seen    = [];
@@ -252,7 +252,7 @@ final class RagController
                 'prompt_tokens'     => $result['prompt_tokens'],
                 'completion_tokens' => $result['completion_tokens'],
                 'total_ms'          => $result['total_ms'],
-                'model'             => (string) $cfg['ollama_model'],
+                'model'             => (string) $config['ollama_model'],
                 'user_id'           => $this->context->session()->get('user_id'),
                 'prompt_snapshot'   => $prompt,
                 'sources'           => $files,

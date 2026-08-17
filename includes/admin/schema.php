@@ -50,8 +50,8 @@ if ($action === 'add_column') {
 
     $schemaName = preg_replace('/[^a-z0-9_]/', '', strtolower($input['schema'] ?? ''));
     $tableName  = preg_replace('/[^a-z0-9_]/', '', strtolower($input['table']  ?? ''));
-    $colName    = preg_replace('/[^a-z0-9_]/', '', strtolower($input['column'] ?? ''));
-    $colType    = $input['type'] ?? 'varchar(255)';
+    $columnName    = preg_replace('/[^a-z0-9_]/', '', strtolower($input['column'] ?? ''));
+    $columnType    = $input['type'] ?? 'varchar(255)';
     $comment    = isset($input['comment']) ? trim((string)$input['comment']) : '';
     $fkTable    = preg_replace('/[^a-z0-9_]/', '', strtolower($input['fk_table']  ?? ''));
     $fkColumn      = preg_replace('/[^a-z0-9_]/', '', strtolower($input['fk_column'] ?? ''));
@@ -59,7 +59,7 @@ if ($action === 'add_column') {
     $notNull    = !empty($input['not_null']);
     $default    = trim((string)($input['default'] ?? ''));
 
-    if (empty($tableName) || empty($colName)) {
+    if (empty($tableName) || empty($columnName)) {
         admin_err('Invalid table or column name.');
     }
 
@@ -72,14 +72,14 @@ if ($action === 'add_column') {
         }
         $safeSchema = pg_escape_identifier($conn, $schemaName);
         $safeTable  = pg_escape_identifier($conn, $tableName);
-        $safeColumn    = pg_escape_identifier($conn, $colName);
+        $safeColumn    = pg_escape_identifier($conn, $columnName);
 
         $allowedTypes = ['varchar(255)', 'int4', 'int8', 'boolean', 'text', 'date', 'timestamp', 'timestamptz'];
-        if (!in_array($colType, $allowedTypes, true)) {
+        if (!in_array($columnType, $allowedTypes, true)) {
             throw new AdminApiMessage('Invalid data type provided.');
         }
 
-        $sql = "ALTER TABLE " . $safeSchema . "." . $safeTable . " ADD COLUMN " . $safeColumn . " " . $colType;
+        $sql = "ALTER TABLE " . $safeSchema . "." . $safeTable . " ADD COLUMN " . $safeColumn . " " . $columnType;
 
         if ($default !== '') {
             $safeExpressions = ['now()', 'current_timestamp', 'current_date', 'current_time', 'true', 'false', 'null'];
@@ -111,7 +111,7 @@ if ($action === 'add_column') {
         if ($fkTable !== '' && $fkColumn !== '') {
             $safeFkTable  = pg_escape_identifier($conn, $fkTable);
             $safeFkColumn    = pg_escape_identifier($conn, $fkColumn);
-            $constraintName = pg_escape_identifier($conn, 'fk_' . $tableName . '_' . $colName);
+            $constraintName = pg_escape_identifier($conn, 'fk_' . $tableName . '_' . $columnName);
             $foreignKeySql = "ALTER TABLE " . $safeSchema . "." . $safeTable
                 . " ADD CONSTRAINT " . $constraintName
                 . " FOREIGN KEY (" . $safeColumn . ")"
@@ -124,7 +124,7 @@ if ($action === 'add_column') {
 
         $allowedIndexTypes = ['btree', 'hash', 'unique'];
         if (in_array($indexType, $allowedIndexTypes, true)) {
-            $indexName = pg_escape_identifier($conn, 'idx_' . $tableName . '_' . $colName);
+            $indexName = pg_escape_identifier($conn, 'idx_' . $tableName . '_' . $columnName);
             $unique  = $indexType === 'unique' ? 'UNIQUE ' : '';
             $using   = $indexType === 'hash' ? 'HASH' : 'BTREE';
             $indexSql  = "CREATE {$unique}INDEX {$indexName} ON " . $safeSchema . "." . $safeTable
@@ -171,7 +171,7 @@ if ($action === 'schema_add_table') {
         'timestamp'    => 'datetime',
     ];
 
-    $colsObj = [
+    $columnsObject = [
         'id' => [
             'display_name' => 'ID', 'type' => 'number', 'not_null' => true,
             'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true,
@@ -203,7 +203,7 @@ if ($action === 'schema_add_table') {
             $entry['fk_table']  = preg_replace('/[^a-z0-9_]/', '', strtolower($column['fk_table']));
             $entry['fk_column'] = preg_replace('/[^a-z0-9_]/', '', strtolower($column['fk_column']));
         }
-        $colsObj[$columnName] = $entry;
+        $columnsObject[$columnName] = $entry;
     }
 
     require_once __DIR__ . '/../config_store.php';
@@ -215,7 +215,7 @@ if ($action === 'schema_add_table') {
     $schemaData['tables'][$tableName] = [
         'display_name' => $displayName,
         'schema'       => $schemaName,
-        'columns'      => $colsObj,
+        'columns'      => $columnsObject,
         'foreign_keys' => [],
         'subtables'    => [],
         'hidden'       => false,
@@ -315,7 +315,7 @@ if ($action === 'get_db_columns') {
 
         $columns = [];
         while ($row = pg_fetch_assoc($result)) {
-            $colName = $row['column_name'];
+            $columnName = $row['column_name'];
             $dataType = $row['data_type'];
             $udtName = $row['udt_name'];
             $enumValues = null;
@@ -333,20 +333,20 @@ if ($action === 'get_db_columns') {
                 }
             }
 
-            $colData = [
-                'column_name' => $colName,
+            $columnData = [
+                'column_name' => $columnName,
                 'type' => $dataType,
                 'not_null' => ($row['is_nullable'] === 'NO'),
-                'display_name' => ucfirst(str_replace('_', ' ', $colName))
+                'display_name' => ucfirst(str_replace('_', ' ', $columnName))
             ];
             if (!empty($row['description'])) {
-                $colData['description'] = $row['description'];
+                $columnData['description'] = $row['description'];
             }
             if ($enumValues !== null) {
-                $colData['enum_values'] = $enumValues;
+                $columnData['enum_values'] = $enumValues;
             }
 
-            $columns[] = $colData;
+            $columns[] = $columnData;
         }
 
         echo json_encode(['status' => 'success', 'columns' => $columns]);

@@ -20,10 +20,10 @@ import '../cells/timestamp-cell.js';
 import '../cells/text-cell.js';
 import '../cells/virtual-cell.js';
 
-function resolveCellType(colCfg, hasFk) {
-    if (colCfg.type === 'virtual') return 'virtual';
+function resolveCellType(columnConfig, hasFk) {
+    if (columnConfig.type === 'virtual') return 'virtual';
     if (hasFk) return 'fk';
-    const t = (colCfg.type || '').toLowerCase();
+    const t = (columnConfig.type || '').toLowerCase();
     if (t === 'enum') return 'enum';
     if (t.includes('boolean')) return 'boolean';
     if (t.includes('timestamp')) return 'timestamp';
@@ -31,13 +31,13 @@ function resolveCellType(colCfg, hasFk) {
     return 'text';
 }
 
-function attachRowTooltip(td, row, schema, col, type) {
+function attachRowTooltip(td, row, schema, column, type) {
     if (type === 'fk') return;
     const columns = schema.tables[state.currentTable]?.columns || {};
     td.style.cursor = 'default';
 
     td.addEventListener('mouseenter', () => {
-        const title = col ? (row[col + '__display'] ?? row[col] ?? '') : '';
+        const title = column ? (row[column + '__display'] ?? row[column] ?? '') : '';
         showRecordTooltip(td, { title, rows: rowsFromRecord(row, columns) });
     });
 
@@ -59,19 +59,19 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
         if (!isReadOnly) {
             const tdSelect = document.createElement('td');
             tdSelect.className = 'td-select';
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.className = 'row-select-cb';
-            cb.setAttribute('aria-label', 'Select row');
-            cb.dataset.id = String(row.id);
-            cb.checked = state.selectedIds.has(row.id);
-            cb.addEventListener('change', e => {
+            const callback = document.createElement('input');
+            callback.type = 'checkbox';
+            callback.className = 'row-select-cb';
+            callback.setAttribute('aria-label', 'Select row');
+            callback.dataset.id = String(row.id);
+            callback.checked = state.selectedIds.has(row.id);
+            callback.addEventListener('change', e => {
                 e.stopPropagation();
                 if (e.target.checked) state.selectedIds.add(row.id);
                 else state.selectedIds.delete(row.id);
                 document.dispatchEvent(new CustomEvent('selectionChanged'));
             });
-            tdSelect.appendChild(cb);
+            tdSelect.appendChild(callback);
             tr.appendChild(tdSelect);
         }
 
@@ -79,12 +79,12 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             tr.appendChild(buildExpandButton(row, schema, tr));
         }
 
-        for (const col of state.displayedColumns) {
-            const colCfg = schema.tables[state.currentTable].columns[col] || {};
-            const hasFk = Boolean(schema.tables[state.currentTable].foreign_keys?.[col]);
-            const type = resolveCellType(colCfg, hasFk);
-            const td = await CellRenderer.render(type, { row, col, colCfg, schema, isReadOnly });
-            attachRowTooltip(td, row, schema, col, type);
+        for (const column of state.displayedColumns) {
+            const columnConfig = schema.tables[state.currentTable].columns[column] || {};
+            const hasFk = Boolean(schema.tables[state.currentTable].foreign_keys?.[column]);
+            const type = resolveCellType(columnConfig, hasFk);
+            const td = await CellRenderer.render(type, { row, col: column, colCfg: columnConfig, schema, isReadOnly });
+            attachRowTooltip(td, row, schema, column, type);
             tr.appendChild(td);
         }
 
@@ -98,13 +98,13 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             tr.appendChild(tdM2m);
         }
 
-        const imagesCfg = schema.tables[state.currentTable]?.images;
-        if (imagesCfg?.enabled && imagesCfg.show_in_grid) {
-            const tdImg = document.createElement('td');
-            tdImg.className = 'td-images';
-            tdImg.dataset.imgRowId = String(row['id']);
-            tdImg.dataset.imgLabel = imagesCfg.label || I18n.t('images.label');
-            tr.appendChild(tdImg);
+        const imagesConfig = schema.tables[state.currentTable]?.images;
+        if (imagesConfig?.enabled && imagesConfig.show_in_grid) {
+            const tdImage = document.createElement('td');
+            tdImage.className = 'td-images';
+            tdImage.dataset.imgRowId = String(row['id']);
+            tdImage.dataset.imgLabel = imagesConfig.label || I18n.t('images.label');
+            tr.appendChild(tdImage);
         }
 
         if (!isReadOnly) {
@@ -182,8 +182,8 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
 }
 
 function closeAllActionMenus(except) {
-    document.querySelectorAll('.td-actions-menu.open').forEach(el => {
-        if (el !== except) el.classList.remove('open');
+    document.querySelectorAll('.td-actions-menu.open').forEach(element => {
+        if (element !== except) element.classList.remove('open');
     });
 }
 

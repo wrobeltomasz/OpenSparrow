@@ -116,20 +116,20 @@ final class FrontApiController
                 $body  = json_decode(file_get_contents('php://input') ?: '[]', true);
                 $table = $body['table'] ?? '';
                 try {
-                    $tableCfg = safe_table($schema, $table);
+                    $tableConfig = safe_table($schema, $table);
                 } catch (\RuntimeException $exception) {
                     throw new BadRequestException('Unknown table');
                 }
 
                 require_table_access($table);
-                $schemaName = $tableCfg['schema'] ?? 'public';
+                $schemaName = $tableConfig['schema'] ?? 'public';
                 $idColumn = id_column();
 
                 $apiWriteContext = FrontApiWriteContext::fromApi(
                     $apiContext,
                     is_array($body) ? $body : [],
                     (string) $table,
-                    $tableCfg,
+                    $tableConfig,
                     (string) $schemaName,
                     $idColumn,
                 );

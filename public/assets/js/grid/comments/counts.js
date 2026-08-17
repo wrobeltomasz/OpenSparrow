@@ -21,14 +21,14 @@ export async function loadCommentCounts(pageRows) {
             const td = document.querySelector(`[data-actions-row-id="${CSS.escape(rowId)}"]`);
             if (!td) continue;
 
-            const cnt = counts[rowId] ?? 0;
+            const count = counts[rowId] ?? 0;
             const panel = td.querySelector('.td-actions-panel');
             if (!panel) continue;
 
-            if (cnt > 0) {
+            if (count > 0) {
                 const badge = document.createElement('span');
                 badge.className = 'c-count-badge';
-                badge.textContent = String(cnt);
+                badge.textContent = String(count);
                 badge.dataset.rowId = rowId;
                 badge.title = I18n.t('grid.go_to_comments');
                 badge.addEventListener('click', e => {
@@ -37,7 +37,7 @@ export async function loadCommentCounts(pageRows) {
                 });
                 panel.appendChild(badge);
             } else {
-                const addBtn = makeIconButton({
+                const addButton = makeIconButton({
                     cy: 'row-comment-add',
                     title: I18n.t('grid.add_comment'),
                     icon: 'assets/icons/add_comment.png',
@@ -47,10 +47,10 @@ export async function loadCommentCounts(pageRows) {
                         window.location.href = `edit.php?table=${encodeURIComponent(state.currentTable)}&id=${encodeURIComponent(rowId)}#tab-comments`;
                     },
                 });
-                panel.appendChild(addBtn);
+                panel.appendChild(addButton);
             }
         }
-    } catch (err) {
-        debugLog('comment counts failed', err);
+    } catch (error) {
+        debugLog('comment counts failed', error);
     }
 }

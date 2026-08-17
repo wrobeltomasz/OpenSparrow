@@ -13,9 +13,9 @@ $userRole = $page['role'];
 $userCaps = $page['caps'];
 
 require_once __DIR__ . '/../includes/config_store.php';
-$calConfig = config_get('calendar') ?? [];
+$calendarConfig = config_get('calendar') ?? [];
 $calendarSources = [];
-foreach (($calConfig['sources'] ?? []) as $source) {
+foreach (($calendarConfig['sources'] ?? []) as $source) {
     if (!empty($source['table']) && !empty($source['date_column'])) {
         $calendarSources[] = [
             'table'       => $source['table'],

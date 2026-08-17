@@ -34,9 +34,9 @@ function buildAllColumns(state) {
     return all;
 }
 
-export function renderAddTableEditor(ctx) {
-    const { workspaceEl, getTableOptions, getColumnOptionsForTable } = ctx;
-    workspaceEl.innerHTML = '';
+export function renderAddTableEditor(context) {
+    const { workspaceEl: workspaceElement, getTableOptions, getColumnOptionsForTable } = context;
+    workspaceElement.innerHTML = '';
 
     const state = {
         tableName:        '',
@@ -50,16 +50,16 @@ export function renderAddTableEditor(ctx) {
     const h2 = document.createElement('h2');
     h2.style.marginTop = '0';
     h2.textContent = 'Add New Table';
-    workspaceEl.appendChild(h2);
+    workspaceElement.appendChild(h2);
 
     const intro = document.createElement('p');
     intro.style.cssText = 'margin-bottom:28px;';
     intro.textContent = 'Creates the table in the database. An id serial primary key column is always added automatically.';
-    workspaceEl.appendChild(intro);
+    workspaceElement.appendChild(intro);
 
     const form = document.createElement('div');
     form.style.maxWidth = '640px';
-    workspaceEl.appendChild(form);
+    workspaceElement.appendChild(form);
 
     const nameGroup = document.createElement('div');
     nameGroup.className = 'form-group';
@@ -137,19 +137,19 @@ export function renderAddTableEditor(ctx) {
     function makePresetRow(labelText, description, onChange) {
         const row = document.createElement('label');
         row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:8px;';
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.style.marginTop = '3px';
-        cb.addEventListener('change', () => onChange(cb.checked));
+        const callback = document.createElement('input');
+        callback.type = 'checkbox';
+        callback.style.marginTop = '3px';
+        callback.addEventListener('change', () => onChange(callback.checked));
         const textWrap = document.createElement('span');
         const strong = document.createElement('strong');
         strong.textContent = labelText;
-        const desc = document.createElement('span');
-        desc.style.cssText = 'display:block;margin-top:2px;';
-        desc.textContent = description;
+        const description = document.createElement('span');
+        description.style.cssText = 'display:block;margin-top:2px;';
+        description.textContent = description;
         textWrap.appendChild(strong);
-        textWrap.appendChild(desc);
-        row.appendChild(cb);
+        textWrap.appendChild(description);
+        row.appendChild(callback);
         row.appendChild(textWrap);
         return row;
     }
@@ -169,10 +169,10 @@ export function renderAddTableEditor(ctx) {
     function renderColumns() {
         columnsWrap.innerHTML = '';
 
-        const colTitle = document.createElement('h3');
-        colTitle.style.marginBottom = '12px';
-        colTitle.textContent = 'Additional Columns';
-        columnsWrap.appendChild(colTitle);
+        const columnTitle = document.createElement('h3');
+        columnTitle.style.marginBottom = '12px';
+        columnTitle.textContent = 'Additional Columns';
+        columnsWrap.appendChild(columnTitle);
 
         const idRow = document.createElement('div');
         idRow.className = 'column-block';
@@ -180,74 +180,74 @@ export function renderAddTableEditor(ctx) {
         idRow.innerHTML = '<strong style="min-width:80px;">id</strong><span style="">serial PRIMARY KEY — added automatically</span>';
         columnsWrap.appendChild(idRow);
 
-        state.columns.forEach((col, index) => {
+        state.columns.forEach((column, index) => {
             const block = document.createElement('div');
             block.className = 'column-block';
             block.style.borderLeft = '4px solid var(--accent)';
 
             const blockHead = document.createElement('div');
             blockHead.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;';
-            const colNum = document.createElement('h4');
-            colNum.style.margin = '0';
-            colNum.textContent = col.name ? `Column: ${col.name}` : `Column ${index + 1}`;
-            const removeBtn = document.createElement('button');
-            removeBtn.textContent = 'Remove';
-            removeBtn.className = 'btn btn-secondary btn-sm';
-            removeBtn.addEventListener('click', () => { state.columns.splice(index, 1); renderColumns(); });
-            blockHead.appendChild(colNum);
-            blockHead.appendChild(removeBtn);
+            const columnNumber = document.createElement('h4');
+            columnNumber.style.margin = '0';
+            columnNumber.textContent = column.name ? `Column: ${column.name}` : `Column ${index + 1}`;
+            const removeButton = document.createElement('button');
+            removeButton.textContent = 'Remove';
+            removeButton.className = 'btn btn-secondary btn-sm';
+            removeButton.addEventListener('click', () => { state.columns.splice(index, 1); renderColumns(); });
+            blockHead.appendChild(columnNumber);
+            blockHead.appendChild(removeButton);
             block.appendChild(blockHead);
 
             appendField(block, 'Column Name', () => {
-                const inp = document.createElement('input');
-                inp.type = 'text';
-                inp.value = col.name;
-                inp.placeholder = 'e.g. email';
-                inp.style.maxWidth = '280px';
-                inp.addEventListener('input', () => {
-                    col.name = inp.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                    inp.value = col.name;
-                    colNum.textContent = col.name ? `Column: ${col.name}` : `Column ${index + 1}`;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = column.name;
+                input.placeholder = 'e.g. email';
+                input.style.maxWidth = '280px';
+                input.addEventListener('input', () => {
+                    column.name = input.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    input.value = column.name;
+                    columnNumber.textContent = column.name ? `Column: ${column.name}` : `Column ${index + 1}`;
                 });
-                return inp;
+                return input;
             });
 
             appendField(block, 'Type', () => {
                 const sel = document.createElement('select');
                 sel.style.maxWidth = '300px';
                 COLUMN_TYPES.forEach(({ value, label }) => {
-                    const opt = document.createElement('option');
-                    opt.value = value; opt.textContent = label;
-                    if (value === col.type) opt.selected = true;
-                    sel.appendChild(opt);
+                    const option = document.createElement('option');
+                    option.value = value; option.textContent = label;
+                    if (value === column.type) option.selected = true;
+                    sel.appendChild(option);
                 });
-                sel.addEventListener('change', () => { col.type = sel.value; });
+                sel.addEventListener('change', () => { column.type = sel.value; });
                 return sel;
             });
 
             appendField(block, 'Not Null', () => {
                 const wrap = document.createElement('div');
                 wrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
-                const cb = document.createElement('input');
-                cb.type = 'checkbox';
-                cb.checked = !!col.not_null;
-                cb.addEventListener('change', () => { col.not_null = cb.checked; });
-                const lbl = document.createElement('span');
-                lbl.style.cssText = '';
-                lbl.textContent = 'Requires a Default value if the table already has rows.';
-                wrap.appendChild(cb);
-                wrap.appendChild(lbl);
+                const callback = document.createElement('input');
+                callback.type = 'checkbox';
+                callback.checked = !!column.not_null;
+                callback.addEventListener('change', () => { column.not_null = callback.checked; });
+                const label = document.createElement('span');
+                label.style.cssText = '';
+                label.textContent = 'Requires a Default value if the table already has rows.';
+                wrap.appendChild(callback);
+                wrap.appendChild(label);
                 return wrap;
             });
 
             appendField(block, 'Default', () => {
-                const inp = document.createElement('input');
-                inp.type = 'text';
-                inp.value = col.default || '';
-                inp.placeholder = 'e.g. 0, now(), true, \'active\'';
-                inp.style.maxWidth = '280px';
-                inp.addEventListener('input', () => { col.default = inp.value; });
-                return inp;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = column.default || '';
+                input.placeholder = 'e.g. 0, now(), true, \'active\'';
+                input.style.maxWidth = '280px';
+                input.addEventListener('input', () => { column.default = input.value; });
+                return input;
             }, 'Expressions: now(), current_timestamp, true, false, null. Numbers and quoted strings also accepted.');
 
             appendField(block, 'Index', () => {
@@ -259,79 +259,79 @@ export function renderAddTableEditor(ctx) {
                     { value: 'hash',   label: 'hash — equality only' },
                     { value: 'unique', label: 'unique — enforces uniqueness' },
                 ].forEach(({ value, label }) => {
-                    const opt = document.createElement('option');
-                    opt.value = value; opt.textContent = label;
-                    if (value === (col.index || '')) opt.selected = true;
-                    sel.appendChild(opt);
+                    const option = document.createElement('option');
+                    option.value = value; option.textContent = label;
+                    if (value === (column.index || '')) option.selected = true;
+                    sel.appendChild(option);
                 });
-                sel.addEventListener('change', () => { col.index = sel.value; });
+                sel.addEventListener('change', () => { column.index = sel.value; });
                 return sel;
             });
 
             appendField(block, 'Comment', () => {
-                const inp = document.createElement('input');
-                inp.type = 'text';
-                inp.value = col.comment || '';
-                inp.placeholder = 'Optional — stored as COMMENT ON COLUMN';
-                inp.addEventListener('input', () => { col.comment = inp.value; });
-                return inp;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = column.comment || '';
+                input.placeholder = 'Optional — stored as COMMENT ON COLUMN';
+                input.addEventListener('input', () => { column.comment = input.value; });
+                return input;
             });
 
             appendField(block, 'Foreign Key', () => {
                 const row = document.createElement('div');
                 row.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
 
-                const fkTableSel = document.createElement('select');
-                fkTableSel.style.maxWidth = '200px';
+                const fkTableSelect = document.createElement('select');
+                fkTableSelect.style.maxWidth = '200px';
                 const tableOptions = getTableOptions ? getTableOptions() : [{ value: '', label: '— no schema loaded —' }];
                 tableOptions.forEach(({ value, label }) => {
-                    const opt = document.createElement('option');
-                    opt.value = value; opt.textContent = label;
-                    if (value === (col.fk_table || '')) opt.selected = true;
-                    fkTableSel.appendChild(opt);
+                    const option = document.createElement('option');
+                    option.value = value; option.textContent = label;
+                    if (value === (column.fk_table || '')) option.selected = true;
+                    fkTableSelect.appendChild(option);
                 });
 
-                const fkColSel = document.createElement('select');
-                fkColSel.style.maxWidth = '180px';
+                const fkColumnSelect = document.createElement('select');
+                fkColumnSelect.style.maxWidth = '180px';
 
-                function populateFkCols(tableName) {
-                    fkColSel.innerHTML = '';
-                    const opts = getColumnOptionsForTable ? getColumnOptionsForTable(tableName) : [{ value: '', label: '— select table first —' }];
-                    opts.forEach(({ value, label }) => {
-                        const opt = document.createElement('option');
-                        opt.value = value; opt.textContent = label;
-                        if (value === (col.fk_column || '')) opt.selected = true;
-                        fkColSel.appendChild(opt);
+                function populateFkColumns(tableName) {
+                    fkColumnSelect.innerHTML = '';
+                    const options = getColumnOptionsForTable ? getColumnOptionsForTable(tableName) : [{ value: '', label: '— select table first —' }];
+                    options.forEach(({ value, label }) => {
+                        const option = document.createElement('option');
+                        option.value = value; option.textContent = label;
+                        if (value === (column.fk_column || '')) option.selected = true;
+                        fkColumnSelect.appendChild(option);
                     });
                 }
-                populateFkCols(col.fk_table || '');
+                populateFkColumns(column.fk_table || '');
 
-                fkTableSel.addEventListener('change', () => {
-                    col.fk_table = fkTableSel.value;
-                    col.fk_column = '';
-                    populateFkCols(col.fk_table);
+                fkTableSelect.addEventListener('change', () => {
+                    column.fk_table = fkTableSelect.value;
+                    column.fk_column = '';
+                    populateFkColumns(column.fk_table);
                 });
-                fkColSel.addEventListener('change', () => { col.fk_column = fkColSel.value; });
+                fkColumnSelect.addEventListener('change', () => { column.fk_column = fkColumnSelect.value; });
 
-                row.appendChild(fkTableSel);
-                row.appendChild(fkColSel);
+                row.appendChild(fkTableSelect);
+                row.appendChild(fkColumnSelect);
                 return row;
             }, 'Optional — adds FOREIGN KEY constraint referencing the selected table/column.');
 
             columnsWrap.appendChild(block);
         });
 
-        const addColBtn = document.createElement('button');
-        addColBtn.className = 'btn btn-success';
-        addColBtn.textContent = '+ Add Column';
-        addColBtn.style.marginTop = '8px';
-        addColBtn.addEventListener('click', () => {
+        const addColumnButton = document.createElement('button');
+        addColumnButton.className = 'btn btn-success';
+        addColumnButton.textContent = '+ Add Column';
+        addColumnButton.style.marginTop = '8px';
+        addColumnButton.addEventListener('click', () => {
             state.columns.push({ name: '', type: 'varchar(255)', not_null: false, default: '', index: '', comment: '', fk_table: '', fk_column: '' });
             renderColumns();
             const inputs = columnsWrap.querySelectorAll('input[type="text"]');
             if (inputs.length) inputs[inputs.length - 1].focus();
         });
-        columnsWrap.appendChild(addColBtn);
+        columnsWrap.appendChild(addColumnButton);
     }
 
     renderColumns();
@@ -341,35 +341,35 @@ export function renderAddTableEditor(ctx) {
 
     const registerLabel = document.createElement('label');
     registerLabel.style.cssText = 'display:flex;align-items:flex-start;gap:10px;cursor:pointer;';
-    const registerCb = document.createElement('input');
-    registerCb.type = 'checkbox';
-    registerCb.checked = true;
-    registerCb.style.marginTop = '3px';
-    registerCb.addEventListener('change', () => { state.registerInSchema = registerCb.checked; });
+    const registerCallback = document.createElement('input');
+    registerCallback.type = 'checkbox';
+    registerCallback.checked = true;
+    registerCallback.style.marginTop = '3px';
+    registerCallback.addEventListener('change', () => { state.registerInSchema = registerCallback.checked; });
     const registerTextWrap = document.createElement('span');
     const registerStrong = document.createElement('strong');
     registerStrong.textContent = 'Register in app schema';
-    const registerDesc = document.createElement('span');
-    registerDesc.style.cssText = 'display:block;margin-top:2px;';
-    registerDesc.textContent = 'Adds the table to the app schema configuration so it appears in the admin panel immediately.';
+    const registerDescription = document.createElement('span');
+    registerDescription.style.cssText = 'display:block;margin-top:2px;';
+    registerDescription.textContent = 'Adds the table to the app schema configuration so it appears in the admin panel immediately.';
     registerTextWrap.appendChild(registerStrong);
-    registerTextWrap.appendChild(registerDesc);
-    registerLabel.appendChild(registerCb);
+    registerTextWrap.appendChild(registerDescription);
+    registerLabel.appendChild(registerCallback);
     registerLabel.appendChild(registerTextWrap);
     registerWrap.appendChild(registerLabel);
     form.appendChild(registerWrap);
 
     const submitWrap = document.createElement('div');
     submitWrap.style.marginTop = '32px';
-    const submitBtn = document.createElement('button');
-    submitBtn.className = 'btn btn-primary';
-    submitBtn.textContent = 'Create Table';
+    const submitButton = document.createElement('button');
+    submitButton.className = 'btn btn-primary';
+    submitButton.textContent = 'Create Table';
     const statusAnchor = document.createElement('span');
-    submitWrap.appendChild(submitBtn);
+    submitWrap.appendChild(submitButton);
     submitWrap.appendChild(statusAnchor);
     form.appendChild(submitWrap);
 
-    submitBtn.addEventListener('click', async () => {
+    submitButton.addEventListener('click', async () => {
         if (!state.tableName) {
             showStatusPill(statusAnchor, 'Table name is required.', 'error');
             nameInput.focus();
@@ -382,8 +382,8 @@ export function renderAddTableEditor(ctx) {
             }
         }
 
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Creating…';
+        submitButton.disabled = true;
+        submitButton.textContent = 'Creating…';
 
         try {
             const createData = await post('create_table', { schema: state.schema, table: state.tableName });
@@ -392,17 +392,17 @@ export function renderAddTableEditor(ctx) {
                 return;
             }
 
-            for (const col of buildAllColumns(state)) {
-                const payload = { schema: state.schema, table: state.tableName, column: col.name, type: col.type };
-                if (col.not_null)                    payload.not_null  = true;
-                if (col.default)                     payload.default   = col.default;
-                if (col.index)                       payload.index     = col.index;
-                if (col.comment)                     payload.comment   = col.comment;
-                if (col.fk_table && col.fk_column) { payload.fk_table = col.fk_table; payload.fk_column = col.fk_column; }
+            for (const column of buildAllColumns(state)) {
+                const payload = { schema: state.schema, table: state.tableName, column: column.name, type: column.type };
+                if (column.not_null)                    payload.not_null  = true;
+                if (column.default)                     payload.default   = column.default;
+                if (column.index)                       payload.index     = column.index;
+                if (column.comment)                     payload.comment   = column.comment;
+                if (column.fk_table && column.fk_column) { payload.fk_table = column.fk_table; payload.fk_column = column.fk_column; }
 
-                const colData = await post('add_column', payload);
-                if (colData.status !== 'success') {
-                    showStatusPill(statusAnchor, `Table created but column "${col.name}" failed: ${colData.error}`, 'error');
+                const columnData = await post('add_column', payload);
+                if (columnData.status !== 'success') {
+                    showStatusPill(statusAnchor, `Table created but column "${column.name}" failed: ${columnData.error}`, 'error');
                     return;
                 }
             }
@@ -412,14 +412,14 @@ export function renderAddTableEditor(ctx) {
                     table:        state.tableName,
                     schema:       state.schema,
                     display_name: state.displayName || state.tableName,
-                    columns:      buildAllColumns(state).map(col => ({
-                        name:        col.name,
-                        type:        col.type,
-                        not_null:    col.not_null || false,
-                        display_name: col.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-                        description: col.comment || '',
-                        fk_table:    col.fk_table  || '',
-                        fk_column:   col.fk_column || '',
+                    columns:      buildAllColumns(state).map(column => ({
+                        name:        column.name,
+                        type:        column.type,
+                        not_null:    column.not_null || false,
+                        display_name: column.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                        description: column.comment || '',
+                        fk_table:    column.fk_table  || '',
+                        fk_column:   column.fk_column || '',
                     })),
                 });
                 if (regData.status !== 'success') {
@@ -439,11 +439,11 @@ export function renderAddTableEditor(ctx) {
             displayNameInput.value = '';
             schemaInput.value = state.schema;
             renderColumns();
-        } catch (err) {
-            showStatusPill(statusAnchor, 'Network error: ' + err.message, 'error');
+        } catch (error) {
+            showStatusPill(statusAnchor, 'Network error: ' + error.message, 'error');
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Create Table';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Create Table';
         }
     });
 }
@@ -451,9 +451,9 @@ export function renderAddTableEditor(ctx) {
 function appendField(parent, labelText, buildControl, hintText) {
     const grp = document.createElement('div');
     grp.className = 'form-group';
-    const lbl = document.createElement('label');
-    lbl.textContent = labelText;
-    grp.appendChild(lbl);
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    grp.appendChild(label);
     grp.appendChild(buildControl());
     if (hintText) {
         const hint = document.createElement('span');

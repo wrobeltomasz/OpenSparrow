@@ -8,8 +8,8 @@ import { state } from '../state.js';
 
 const store = new Map();
 
-export function getM2mItems(rowId, m2mIdx) {
-    return store.get(`${state.currentTable}:${rowId}:${m2mIdx}`) ?? [];
+export function getM2mItems(rowId, m2mIndex) {
+    return store.get(`${state.currentTable}:${rowId}:${m2mIndex}`) ?? [];
 }
 
 export function clearM2mStore() {
@@ -25,8 +25,8 @@ export async function loadM2mColumns(pageRows, schema) {
 
     for (let mi = 0; mi < m2mList.length; mi++) {
         try {
-            const res  = await fetch(`api.php?api=m2m_rows&table=${encodeURIComponent(state.currentTable)}&m2m_index=${mi}&ids=${ids}`);
-            const json = await res.json();
+            const result  = await fetch(`api.php?api=m2m_rows&table=${encodeURIComponent(state.currentTable)}&m2m_index=${mi}&ids=${ids}`);
+            const json = await result.json();
             const data = json.data || {};
 
             for (const [rowId, labels] of Object.entries(data)) {
@@ -39,8 +39,8 @@ export async function loadM2mColumns(pageRows, schema) {
                 if (!td) continue;
                 renderChips(td, store.get(`${state.currentTable}:${rid}:${mi}`) ?? []);
             }
-        } catch (err) {
-            debugLog('m2m load failed', err);
+        } catch (error) {
+            debugLog('m2m load failed', error);
         }
     }
 }

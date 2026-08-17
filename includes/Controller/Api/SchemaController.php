@@ -63,9 +63,9 @@ final class SchemaController
                 'highlight_rules' => $this->highlightRules($tableConfig),
             ];
 
-            $imagesCfg = images_config($schemaData, $tableName);
-            if ($imagesCfg !== null) {
-                $publicSchema[$tableName]['images'] = $imagesCfg;
+            $imagesConfig = images_config($schemaData, $tableName);
+            if ($imagesConfig !== null) {
+                $publicSchema[$tableName]['images'] = $imagesConfig;
             }
         }
 
@@ -80,9 +80,9 @@ final class SchemaController
     private function publicColumns(array $tableConfig, string $userRole): array
     {
         $publicColumns = [];
-        foreach ($tableConfig['columns'] as $colName => $columnDefinition) {
+        foreach ($tableConfig['columns'] as $columnName => $columnDefinition) {
             $publicColumn = [
-                'display_name'  => $columnDefinition['display_name'] ?? $colName,
+                'display_name'  => $columnDefinition['display_name'] ?? $columnName,
                 'type'          => $columnDefinition['type'] ?? 'text',
                 'show_in_grid'  => $columnDefinition['show_in_grid'] ?? true,
                 'show_in_edit'  => $columnDefinition['show_in_edit'] ?? true,
@@ -114,7 +114,7 @@ final class SchemaController
                 $publicColumn['enum_colors'] = $columnDefinition['enum_colors'];
             }
 
-            $publicColumns[$colName] = $publicColumn;
+            $publicColumns[$columnName] = $publicColumn;
         }
 
         return $publicColumns;

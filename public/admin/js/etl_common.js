@@ -7,15 +7,15 @@ import { apiFetch } from '../../assets/js/util/api.js';
 import { mkTable, mkThead, td, tdStatus, tdError } from './ui.js';
 
 export function mkStatus() {
-    const el = document.createElement('p');
-    el.style.cssText = 'margin-top:10px; display:none;';
-    return el;
+    const element = document.createElement('p');
+    element.style.cssText = 'margin-top:10px; display:none;';
+    return element;
 }
 
-export function showStatus(el, msg, ok) {
-    el.textContent = msg;
-    el.style.color = ok ? 'var(--ok)' : 'var(--error)';
-    el.style.display = '';
+export function showStatus(element, message, ok) {
+    element.textContent = message;
+    element.style.color = ok ? 'var(--ok)' : 'var(--error)';
+    element.style.display = '';
 }
 
 export function fg(label, node) {
@@ -40,13 +40,13 @@ export function checkbox(labelText, checked, onChange) {
     box.className = 'adm-check';
     box.checked = checked;
     box.onchange = () => onChange(box.checked);
-    const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
-    lbl.append(box, document.createTextNode(labelText));
-    return { input: box, label: lbl };
+    const label = document.createElement('label');
+    label.style.cssText = 'display:flex; align-items:center; gap:8px;';
+    label.append(box, document.createTextNode(labelText));
+    return { input: box, label: label };
 }
 
-export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onDelete, confirmMsg }) {
+export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onDelete, confirmMsg: confirmMessage }) {
     const card = document.createElement('div');
     card.className = 'column-block collapsed';
 
@@ -66,7 +66,7 @@ export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onD
     del.textContent = '✕';
     del.onclick = (e) => {
         e.stopPropagation();
-        if (confirmMsg && !confirm(confirmMsg)) return;
+        if (confirmMessage && !confirm(confirmMessage)) return;
         onDelete();
     };
     hdr.append(chevron, title, del);
@@ -79,13 +79,13 @@ export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onD
 }
 
 export function buildHistoryTable(headers, rows, rowFn) {
-    const tbl = mkTable();
-    mkThead(tbl, headers);
+    const table = mkTable();
+    mkThead(table, headers);
 
     const statusCell = tdStatus;
     const errorCell  = tdError;
 
-    const tbody = tbl.createTBody();
+    const tbody = table.createTBody();
     rows.forEach(r => {
         const tr = tbody.insertRow();
         rowFn(r, { td, statusCell, errorCell }).forEach(cell => tr.appendChild(cell));
@@ -93,17 +93,17 @@ export function buildHistoryTable(headers, rows, rowFn) {
 
     const wrap = document.createElement('div');
     wrap.style.overflowX = 'auto';
-    wrap.appendChild(tbl);
+    wrap.appendChild(table);
     return wrap;
 }
 
 export async function persistConfig(action, payload) {
     try {
-        const res  = await apiFetch('api.php?action=' + action, {
+        const result  = await apiFetch('api.php?action=' + action, {
             method: 'POST',
             body: JSON.stringify(payload),
         });
-        const data = await res.json();
+        const data = await result.json();
         if (data.status === 'success') {
             return { ok: true, version: data.version };
         }
@@ -117,11 +117,11 @@ export async function runCronAction(action, body, out) {
     out.style.display = '';
     out.textContent = 'Running…';
     try {
-        const res  = await apiFetch('api.php?action=' + action, {
+        const result  = await apiFetch('api.php?action=' + action, {
             method: 'POST',
             body: JSON.stringify(body),
         });
-        const data = await res.json();
+        const data = await result.json();
         out.textContent = data.output || data.error || 'No output.';
     } catch (_) {
         out.textContent = 'Network error.';

@@ -10,14 +10,14 @@ const I18n = (() => {
     async function load() {
         _locale = document.documentElement.lang || 'en';
         try {
-            const res = await fetch('/api.php?action=i18n_bundle', {
+            const result = await fetch('/api.php?action=i18n_bundle', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            if (res.ok) {
-                _bundle = await res.json();
+            if (result.ok) {
+                _bundle = await result.json();
             }
-        } catch (err) {
-            console.warn('i18n bundle load failed', err);
+        } catch (error) {
+            console.warn('i18n bundle load failed', error);
         }
     }
 

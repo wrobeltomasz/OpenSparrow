@@ -5,7 +5,7 @@
 
 const BASE = 'http://localhost:8080';
 
-function openAnonTab() {
+function openAnonymizationTab() {
   cy.visit(`${BASE}/admin/index.php`);
   cy.get('header.admin-header', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
 
@@ -22,7 +22,7 @@ function openAnonTab() {
   cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.long }).should('contain.text', 'Data Anonymization');
 }
 
-function anonTab(label) {
+function anonymizationTab(label) {
   return cy.contains('#workspace .item-btn', label).click();
 }
 
@@ -33,7 +33,7 @@ describe('OpenSparrow – Admin Anonymization', () => {
 
   beforeEach(() => {
     loginAsAdmin();
-    openAnonTab();
+    openAnonymizationTab();
   });
 
   it('shows all five Anonymization tabs', () => {
@@ -43,36 +43,36 @@ describe('OpenSparrow – Admin Anonymization', () => {
   });
 
   it('Rules tab: shows empty state when no rules configured', () => {
-    anonTab('Rules');
+    anonymizationTab('Rules');
     cy.get('#workspace').should('contain.text', 'No rules configured yet');
   });
 
   it('Rules tab: Add Rule form validates before submitting', () => {
-    anonTab('Rules');
+    anonymizationTab('Rules');
     cy.contains('#workspace button:visible', '+ Add Rule').click();
     cy.get('#workspace').should('contain.text', 'Select a table and a date/timestamp column.');
   });
 
   it('Rules tab: Preview (dry run) reports output or an error', () => {
-    anonTab('Rules');
+    anonymizationTab('Rules');
     cy.contains('#workspace button:visible', 'Preview (dry run)').click();
     cy.get('#workspace pre:visible', { timeout: CypressHelpers.TIMEOUTS.long }).should('be.visible');
   });
 
   it('Schedule tab: toggles enabled + frequency and saves', () => {
-    anonTab('Schedule');
+    anonymizationTab('Schedule');
     cy.get('#anon-enabled').click();
     cy.get('#anon-frequency').select('weekly');
     cy.contains('#workspace button:visible', 'Save Schedule Settings').click();
     cy.get('#workspace p:visible').should('contain.text', 'saved');
 
-    openAnonTab();
-    anonTab('Schedule');
+    openAnonymizationTab();
+    anonymizationTab('Schedule');
     cy.get('#anon-frequency').should('have.value', 'weekly');
   });
 
   it('Schedule tab: shows the cron command hint and guide blocks', () => {
-    anonTab('Schedule');
+    anonymizationTab('Schedule');
     cy.get('#workspace').should('contain.text', 'cron_anonymization.php');
     cy.get('#workspace').should('contain.text', 'crontab');
     cy.get('#workspace').should('contain.text', 'Task Scheduler');
@@ -80,13 +80,13 @@ describe('OpenSparrow – Admin Anonymization', () => {
   });
 
   it('Schedule tab: Run Now reports output or an error', () => {
-    anonTab('Schedule');
+    anonymizationTab('Schedule');
     cy.contains('#workspace button:visible', 'Run Now').click();
     cy.get('#workspace pre:visible', { timeout: CypressHelpers.TIMEOUTS.long }).should('be.visible');
   });
 
   it('Suggestions tab: Scan Schema surfaces matches or an empty-state message', () => {
-    anonTab('Suggestions');
+    anonymizationTab('Suggestions');
     cy.contains('#workspace button:visible', 'Scan Schema').click();
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.long }).should($el => {
       const text = $el.text();
@@ -98,18 +98,18 @@ describe('OpenSparrow – Admin Anonymization', () => {
   });
 
   it('Dictionary tab: saves keyword list and persists after reload', () => {
-    anonTab('Dictionary');
+    anonymizationTab('Dictionary');
     cy.get('#workspace textarea:visible').clear().type('pesel, nip, email, cypress_keyword');
     cy.contains('#workspace button:visible', 'Save Dictionary').click();
     cy.get('#workspace p:visible').should('contain.text', 'saved');
 
-    openAnonTab();
-    anonTab('Dictionary');
+    openAnonymizationTab();
+    anonymizationTab('Dictionary');
     cy.get('#workspace textarea:visible').should('contain.value', 'cypress_keyword');
   });
 
   it('Dictionary tab: Purge Old Logs asks for confirmation', () => {
-    anonTab('Dictionary');
+    anonymizationTab('Dictionary');
     cy.window().then(win => cy.stub(win, 'confirm').returns(false));
     cy.contains('#workspace button:visible', 'Purge Old Logs').click();
 
@@ -117,7 +117,7 @@ describe('OpenSparrow – Admin Anonymization', () => {
   });
 
   it('History tab: Load History shows empty state or note when no runs exist', () => {
-    anonTab('History');
+    anonymizationTab('History');
     cy.contains('#workspace button:visible', 'Load History').click();
     cy.get('#workspace', { timeout: CypressHelpers.TIMEOUTS.long }).should($el => {
       const text = $el.text();

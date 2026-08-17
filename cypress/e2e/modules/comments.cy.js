@@ -10,8 +10,8 @@ describe('OpenSparrow – Comments: Tab Structure', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
         .find('[data-cy=row-edit]')
@@ -68,9 +68,9 @@ describe('OpenSparrow – Comments: Tab Structure', () => {
         cy.wrap($btn).click();
         cy.get('#c-panel .c-thread', { timeout: CypressHelpers.TIMEOUTS.medium })
           .should($thread => {
-            const hasMsgs  = $thread.find('.c-msg').length > 0;
+            const hasMessages  = $thread.find('.c-msg').length > 0;
             const hasEmpty = $thread.find('.c-empty').length > 0;
-            expect(hasMsgs || hasEmpty, 'thread should have messages or empty state').to.be.true;
+            expect(hasMessages || hasEmpty, 'thread should have messages or empty state').to.be.true;
           });
       });
     });
@@ -100,8 +100,8 @@ describe('OpenSparrow – Comments: Add Comment', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
         .find('[data-cy=row-edit]')
@@ -140,8 +140,8 @@ describe('OpenSparrow – Comments: Add Comment', () => {
       if (!url.includes('edit.php')) return;
       cy.get('#c-panel', { timeout: CypressHelpers.TIMEOUTS.medium }).then($panel => {
         if ($panel.find('.c-input').length === 0) return;
-        const msg = `cypress-${Date.now()}`;
-        cy.get('.c-input').type(msg);
+        const message = `cypress-${Date.now()}`;
+        cy.get('.c-input').type(message);
         cy.get('.c-send-btn').click();
         cy.get('#c-panel .c-thread .c-msg', { timeout: CypressHelpers.TIMEOUTS.long })
           .should('have.length.gte', 1);
@@ -167,8 +167,8 @@ describe('OpenSparrow – Comments: Delete Comment', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
         .find('[data-cy=row-edit]')
@@ -273,8 +273,8 @@ describe('OpenSparrow – Comments: My Comments panel', () => {
   });
 
   it('a listed comment links to its record comment tab', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
         .find('[data-cy=row-edit]')
@@ -307,8 +307,8 @@ describe('OpenSparrow – Comments: API Integration', () => {
     cy.intercept('GET', '**/api/comments.php**').as('commentsFetch');
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
         .find('[data-cy=row-edit]')
@@ -327,8 +327,8 @@ describe('OpenSparrow – Comments: API Integration', () => {
     cy.intercept('POST', '**/api/comments.php**').as('commentPost');
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
         .find('[data-cy=row-edit]')

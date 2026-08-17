@@ -49,14 +49,14 @@ final readonly class TableConfig
             ?? throw new \InvalidArgumentException("Unknown column: {$name}");
     }
 
-    public function hasForeignKey(string $colName): bool
+    public function hasForeignKey(string $columnName): bool
     {
-        return isset($this->foreignKeys[$colName]);
+        return isset($this->foreignKeys[$columnName]);
     }
 
-    public function foreignKey(string $colName): array
+    public function foreignKey(string $columnName): array
     {
-        return $this->foreignKeys[$colName]
-            ?? throw new \InvalidArgumentException("No FK for column: {$colName}");
+        return $this->foreignKeys[$columnName]
+            ?? throw new \InvalidArgumentException("No FK for column: {$columnName}");
     }
 }

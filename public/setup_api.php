@@ -229,16 +229,16 @@ if ($action === 'init_database') {
             }
         }
 
-        $tmpPassword    = bin2hex(random_bytes(12));
+        $temporaryPassword    = bin2hex(random_bytes(12));
         $firstAdminSalt = bin2hex(random_bytes(32));
 
         $argonOptions      = ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1];
-        $firstAdminHash = password_hash($firstAdminSalt . $tmpPassword, PASSWORD_ARGON2ID, $argonOptions);
+        $firstAdminHash = password_hash($firstAdminSalt . $temporaryPassword, PASSWORD_ARGON2ID, $argonOptions);
         error_log(
             '[OpenSparrow] First-run admin account created. '
                 . 'Change the password shown in the setup wizard immediately after login.'
         );
-        $resAdmin = @pg_query_params(
+        $adminResult = @pg_query_params(
             $conn,
             "INSERT INTO $usersTable (username, password_hash, salt, password_algo, password_params, is_active, role) "
                 . "SELECT 'admin', \$1, \$2, \$3, \$4, true, 'admin' "
@@ -246,12 +246,12 @@ if ($action === 'init_database') {
             [$firstAdminHash, $firstAdminSalt, 'argon2id', json_encode($argonOptions)]
         );
 
-        if (!$resAdmin) {
+        if (!$adminResult) {
             error_log('setup seed admin error: ' . pg_last_error($conn));
             throw new Exception('Failed to create admin account. Check database permissions.');
         }
 
-        $adminId = pg_num_rows($resAdmin) > 0 ? (int) pg_fetch_result($resAdmin, 0, 'id') : null;
+        $adminId = pg_num_rows($adminResult) > 0 ? (int) pg_fetch_result($adminResult, 0, 'id') : null;
 
         pg_close($conn);
 
@@ -265,10 +265,10 @@ if ($action === 'init_database') {
         ];
 
         $configJson = json_encode($configData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        $configDir  = __DIR__ . '/../config';
-        $configPath = $configDir . '/database.json';
+        $configDirectory  = __DIR__ . '/../config';
+        $configPath = $configDirectory . '/database.json';
 
-        if (!is_dir($configDir) && !@mkdir($configDir, 0755, true)) {
+        if (!is_dir($configDirectory) && !@mkdir($configDirectory, 0755, true)) {
             throw new Exception('Failed to create config directory.');
         }
 
@@ -324,7 +324,7 @@ if ($action === 'init_database') {
                     . ' no admin account was created and no password was set.'
                     . ' Sign in with an existing account.',
             'admin_user'      => $adminId !== null ? 'admin' : null,
-            'admin_password'  => $adminId !== null ? $tmpPassword : null,
+            'admin_password'  => $adminId !== null ? $temporaryPassword : null,
             'demo_installed'  => $demoInstalled,
             'demo_error'      => $demoError,
         ]);

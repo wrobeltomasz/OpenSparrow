@@ -9,18 +9,18 @@ import { getPageRows, getPageState } from '../pagination.js';
 export const MAX_CONTEXT_ROWS = 50;
 export const MAX_CONTEXT_COLS = 12;
 
-function columnRank(col, colCfg, isFk) {
-    if (col.toLowerCase() === 'id') return 0;
-    if (colCfg.required) return 1;
-    if (isFk || (colCfg.type || '').toLowerCase() === 'enum') return 2;
-    const type = (colCfg.type || '').toLowerCase();
+function columnRank(column, columnConfig, isFk) {
+    if (column.toLowerCase() === 'id') return 0;
+    if (columnConfig.required) return 1;
+    if (isFk || (columnConfig.type || '').toLowerCase() === 'enum') return 2;
+    const type = (columnConfig.type || '').toLowerCase();
     if (type === 'virtual') return 5;
     if (type.includes('text') && !type.includes('varchar')) return 4;
     return 3;
 }
 
-function formatValue(row, col) {
-    const raw = row[col + '__display'] ?? row[col];
+function formatValue(row, column) {
+    const raw = row[column + '__display'] ?? row[column];
     if (raw === null || raw === undefined) return '';
     if (typeof raw === 'boolean') return raw ? 'true' : 'false';
     if (typeof raw === 'object') return JSON.stringify(raw);
@@ -34,15 +34,15 @@ export function buildGridContext() {
     const pageRows = getPageRows();
     if (pageRows.length === 0) return '';
 
-    const tableCfg = window.schema?.tables?.[currentTable] || {};
-    const colCfgs  = tableCfg.columns || {};
-    const fks      = tableCfg.foreign_keys || {};
+    const tableConfig = window.schema?.tables?.[currentTable] || {};
+    const columnCfgs  = tableConfig.columns || {};
+    const fks      = tableConfig.foreign_keys || {};
 
     let columns  = displayedColumns.slice();
-    const hiddenCols = Math.max(0, columns.length - MAX_CONTEXT_COLS);
-    if (hiddenCols > 0) {
+    const hiddenColumns = Math.max(0, columns.length - MAX_CONTEXT_COLS);
+    if (hiddenColumns > 0) {
         columns = columns
-            .map((col, pos) => ({ col, pos, rank: columnRank(col, colCfgs[col] || {}, !!fks[col]) }))
+            .map((column, position) => ({ col: column, pos: position, rank: columnRank(column, columnCfgs[column] || {}, !!fks[column]) }))
             .sort((a, b) => (a.rank - b.rank) || (a.pos - b.pos))
             .slice(0, MAX_CONTEXT_COLS)
             .sort((a, b) => a.pos - b.pos)
@@ -80,9 +80,9 @@ export function buildGridContext() {
 
     let text = header + '\n' + columns.join(' | ') + '\n';
     rows.forEach(row => {
-        text += columns.map(col => formatValue(row, col)).join(' | ') + '\n';
+        text += columns.map(column => formatValue(row, column)).join(' | ') + '\n';
     });
     if (hiddenRows > 0) text += `...(${hiddenRows} more rows on this page not shown)\n`;
-    if (hiddenCols > 0) text += `...(${hiddenCols} more columns not shown)\n`;
+    if (hiddenColumns > 0) text += `...(${hiddenColumns} more columns not shown)\n`;
     return text;
 }

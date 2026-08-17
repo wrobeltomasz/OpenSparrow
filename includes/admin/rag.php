@@ -55,11 +55,11 @@ if ($action === 'rag_upload') {
         }
 
         $uploadedName = (string) ($_FILES['file']['name'] ?? '');
-        $tmpPath      = (string) ($_FILES['file']['tmp_name'] ?? '');
+        $temporaryPath      = (string) ($_FILES['file']['tmp_name'] ?? '');
         $fileSize     = (int)   ($_FILES['file']['size'] ?? 0);
 
-        $ext = strtolower(pathinfo($uploadedName, PATHINFO_EXTENSION));
-        if ($ext !== 'txt') {
+        $extension = strtolower(pathinfo($uploadedName, PATHINFO_EXTENSION));
+        if ($extension !== 'txt') {
             throw new AdminApiMessage('Only .txt files are accepted.');
         }
 
@@ -71,15 +71,15 @@ if ($action === 'rag_upload') {
         $tags = array_values(array_filter(array_map('trim', $tags), fn($tag) => $tag !== ''));
 
         require_once __DIR__ . '/../../includes/rag_helpers.php';
-        $ragCfg     = rag_config();
-        $maxMb      = (int) ($ragCfg['max_file_size_mb'] ?? 10);
+        $ragConfig     = rag_config();
+        $maxMb      = (int) ($ragConfig['max_file_size_mb'] ?? 10);
         $maxBytes   = $maxMb * 1024 * 1024;
 
         if ($fileSize > $maxBytes) {
             throw new AdminApiMessage("File too large. Maximum size is {$maxMb} MB.");
         }
 
-        $content = file_get_contents($tmpPath);
+        $content = file_get_contents($temporaryPath);
         if ($content === false) {
             throw new AdminApiMessage('Could not read uploaded file.');
         }
@@ -108,8 +108,8 @@ if ($action === 'rag_upload') {
         }
         $row    = pg_fetch_assoc($queryResult);
         $fileId = (int) $row['id'];
-        if ((bool) ($ragCfg['use_chunks'] ?? true)) {
-            rag_store_chunks($conn, $fileId, $content, $ragCfg);
+        if ((bool) ($ragConfig['use_chunks'] ?? true)) {
+            rag_store_chunks($conn, $fileId, $content, $ragConfig);
         }
         echo json_encode(['status' => 'success', 'id' => $fileId]);
     } catch (ControlFlowException $signal) {
@@ -164,8 +164,8 @@ if ($action === 'rag_rechunk') {
         if (!$row) {
             throw new AdminApiMessage('Document not found.');
         }
-        $cfg    = rag_config();
-        $stored = rag_store_chunks($conn, $id, (string) $row['content'], $cfg);
+        $config    = rag_config();
+        $stored = rag_store_chunks($conn, $id, (string) $row['content'], $config);
         echo json_encode(['status' => 'success', 'chunks' => $stored]);
     } catch (ControlFlowException $signal) {
         throw $signal;
@@ -182,7 +182,7 @@ if ($action === 'rag_rechunk_all') {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         $conn = db_connect();
         $ragFilesTable = sys_table('rag_files');
-        $cfg  = rag_config();
+        $config  = rag_config();
 
         $queryResult = @pg_query($conn, "SELECT id, content FROM {$ragFilesTable} ORDER BY id ASC");
         if (!$queryResult) {
@@ -191,7 +191,7 @@ if ($action === 'rag_rechunk_all') {
 
         $processed = 0;
         while ($row = pg_fetch_assoc($queryResult)) {
-            rag_store_chunks($conn, (int) $row['id'], (string) $row['content'], $cfg);
+            rag_store_chunks($conn, (int) $row['id'], (string) $row['content'], $config);
             $processed++;
         }
 
@@ -207,12 +207,12 @@ if ($action === 'rag_rechunk_all') {
 if ($action === 'rag_settings') {
     try {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
-        $cfg = rag_config();
-        unset($cfg['__cached']);
+        $config = rag_config();
+        unset($config['__cached']);
 
-        $cfg['ollama_api_key_configured'] = !empty($cfg['ollama_api_key_enc']);
-        unset($cfg['ollama_api_key_enc']);
-        echo json_encode(['status' => 'success', 'settings' => $cfg]);
+        $config['ollama_api_key_configured'] = !empty($config['ollama_api_key_enc']);
+        unset($config['ollama_api_key_enc']);
+        echo json_encode(['status' => 'success', 'settings' => $config]);
     } catch (ControlFlowException $signal) {
         throw $signal;
     } catch (Throwable $exception) {
@@ -249,9 +249,9 @@ if ($action === 'rag_settings_save') {
 
         require_once __DIR__ . '/../config_store.php';
 
-        $existingCfg = config_get('rag') ?? [];
+        $existingConfig = config_get('rag') ?? [];
 
-        $cfg = array_merge($existingCfg, [
+        $config = array_merge($existingConfig, [
             'ollama_url'           => $ollamaUrl,
             'ollama_model'         => $model,
             'max_context_files'    => $maxContextFiles,
@@ -266,13 +266,13 @@ if ($action === 'rag_settings_save') {
 
         require_once __DIR__ . '/../crypto.php';
         if ($clearApiKey) {
-            unset($cfg['ollama_api_key_enc']);
+            unset($config['ollama_api_key_enc']);
         } elseif ($apiKey !== '') {
-            $cfg['ollama_api_key_enc'] = secret_encrypt($apiKey);
+            $config['ollama_api_key_enc'] = secret_encrypt($apiKey);
         }
 
         $userId = admin_user_id();
-        $result = config_save('rag', $cfg, null, $userId);
+        $result = config_save('rag', $config, null, $userId);
         if ($result['status'] !== 'ok') {
             throw new AdminApiMessage($result['error'] ?? 'Could not save RAG configuration.');
         }
@@ -291,12 +291,12 @@ if ($action === 'rag_aggregate_view_list' && os_request()->method() === 'GET') {
         require_once __DIR__ . '/../config_store.php';
         $conn   = db_connect();
         $schema = config_get('schema') ?? [];
-        $cfg    = config_get('rag') ?? [];
-        $views  = is_array($cfg['aggregate_views'] ?? null) ? $cfg['aggregate_views'] : [];
+        $config    = config_get('rag') ?? [];
+        $views  = is_array($config['aggregate_views'] ?? null) ? $config['aggregate_views'] : [];
 
         $tables = [];
-        foreach (($schema['tables'] ?? []) as $name => $tableCfg) {
-            if (empty($tableCfg['owner_restricted'])) {
+        foreach (($schema['tables'] ?? []) as $name => $tableConfig) {
+            if (empty($tableConfig['owner_restricted'])) {
                 $tables[] = $name;
             }
         }
@@ -354,16 +354,16 @@ if ($action === 'rag_aggregate_view_save') {
         }
 
         $schema    = config_get('schema') ?? [];
-        $tableCfg  = $schema['tables'][$table] ?? null;
-        if ($tableCfg === null) {
+        $tableConfig  = $schema['tables'][$table] ?? null;
+        if ($tableConfig === null) {
             throw new AdminApiMessage('Unknown table.');
         }
-        if (!empty($tableCfg['owner_restricted'])) {
+        if (!empty($tableConfig['owner_restricted'])) {
             throw new AdminApiMessage('Cannot attach an aggregate view to an owner-restricted table.');
         }
 
-        $existingCfg = config_get('rag') ?? [];
-        $views       = is_array($existingCfg['aggregate_views'] ?? null) ? $existingCfg['aggregate_views'] : [];
+        $existingConfig = config_get('rag') ?? [];
+        $views       = is_array($existingConfig['aggregate_views'] ?? null) ? $existingConfig['aggregate_views'] : [];
 
         if ($view === '') {
             unset($views[$table]);
@@ -389,9 +389,9 @@ if ($action === 'rag_aggregate_view_save') {
             $views[$table] = $viewReference['schema'] . '.' . $viewReference['view'];
         }
 
-        $cfg    = array_merge($existingCfg, ['aggregate_views' => $views]);
+        $config    = array_merge($existingConfig, ['aggregate_views' => $views]);
         $userId = admin_user_id();
-        $result = config_save('rag', $cfg, null, $userId);
+        $result = config_save('rag', $config, null, $userId);
         if ($result['status'] !== 'ok') {
             throw new AdminApiMessage($result['error'] ?? 'Could not save the aggregate view mapping.');
         }
@@ -420,9 +420,9 @@ if ($action === 'rag_test_query') {
             throw new AdminApiMessage('Query is required.');
         }
 
-        $cfg   = rag_config();
+        $config   = rag_config();
         $conn  = db_connect();
-        $limit = (int) ($cfg['max_context_files'] ?? 3);
+        $limit = (int) ($config['max_context_files'] ?? 3);
         $files = rag_retrieve($conn, $query, $tags, $limit);
         $prompt = rag_build_prompt($query, $files, '', $language);
 
@@ -436,12 +436,12 @@ if ($action === 'rag_test_query') {
         } else {
             require_once __DIR__ . '/../crypto.php';
             $ollamaResult = rag_call_ollama(
-                (string) $cfg['ollama_url'],
-                (string) $cfg['ollama_model'],
+                (string) $config['ollama_url'],
+                (string) $config['ollama_model'],
                 $prompt,
-                (int) ($cfg['ollama_timeout'] ?? 120),
-                (bool) ($cfg['ollama_ssl_verify'] ?? true),
-                secret_decrypt((string) ($cfg['ollama_api_key_enc'] ?? ''))
+                (int) ($config['ollama_timeout'] ?? 120),
+                (bool) ($config['ollama_ssl_verify'] ?? true),
+                secret_decrypt((string) ($config['ollama_api_key_enc'] ?? ''))
             );
         }
 
@@ -469,13 +469,13 @@ if ($action === 'rag_ollama_check') {
         require_once __DIR__ . '/../../includes/rag_helpers.php';
         require_once __DIR__ . '/../crypto.php';
         $body      = json_decode(file_get_contents('php://input'), true) ?? [];
-        $cfg       = rag_config();
-        $ollamaUrl = trim((string) ($body['ollama_url'] ?? $cfg['ollama_url'] ?? 'http://localhost:11434'));
+        $config       = rag_config();
+        $ollamaUrl = trim((string) ($body['ollama_url'] ?? $config['ollama_url'] ?? 'http://localhost:11434'));
         $sslVerify = isset($body['ssl_verify'])
             ? (bool) $body['ssl_verify']
-            : (bool) ($cfg['ollama_ssl_verify'] ?? true);
-        $apiKey    = secret_decrypt((string) ($cfg['ollama_api_key_enc'] ?? ''));
-        $authHeaders = ($apiKey !== null && $apiKey !== '') ? ['Authorization: Bearer ' . $apiKey] : [];
+            : (bool) ($config['ollama_ssl_verify'] ?? true);
+        $apiKey    = secret_decrypt((string) ($config['ollama_api_key_enc'] ?? ''));
+        $authenticationHeaders = ($apiKey !== null && $apiKey !== '') ? ['Authorization: Bearer ' . $apiKey] : [];
 
         if ($ollamaUrl === '') {
             throw new AdminApiMessage('ollama_url is required.');
@@ -495,7 +495,7 @@ if ($action === 'rag_ollama_check') {
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_SSL_VERIFYPEER => $sslVerify,
             CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
-            CURLOPT_HTTPHEADER     => $authHeaders,
+            CURLOPT_HTTPHEADER     => $authenticationHeaders,
         ]);
         $response = curl_exec($curlHandle);
         $httpCode = (int) curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
@@ -532,7 +532,7 @@ if ($action === 'rag_ollama_check') {
                 CURLOPT_CONNECTTIMEOUT => 5,
                 CURLOPT_SSL_VERIFYPEER => $sslVerify,
                 CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
-                CURLOPT_HTTPHEADER     => $authHeaders,
+                CURLOPT_HTTPHEADER     => $authenticationHeaders,
             ]);
             $versionResponse = curl_exec($versionCurlHandle);
             curl_close($versionCurlHandle);

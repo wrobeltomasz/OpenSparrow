@@ -119,10 +119,10 @@ Cypress.Commands.add('csrfToken', () => {
 
 const LEAK_PATTERN = /SQLSTATE|Fatal error|Warning: |Stack trace|pg_query|\/var\/www|[A-Za-z]:\\\\|\.php on line|\.php:\d+/;
 
-Cypress.Commands.add('expectDenied', (res, codes, label = '') => {
+Cypress.Commands.add('expectDenied', (result, codes, label = '') => {
   const prefix = label ? `${label}: ` : '';
-  expect(codes, `${prefix}expected status`).to.include(res.status);
-  const body = typeof res.body === 'string' ? res.body : JSON.stringify(res.body || '');
+  expect(codes, `${prefix}expected status`).to.include(result.status);
+  const body = typeof result.body === 'string' ? result.body : JSON.stringify(result.body || '');
   expect(body, `${prefix}error body must not leak internals`).to.not.match(LEAK_PATTERN);
 });
 
@@ -136,15 +136,15 @@ Cypress.Commands.add('probe', (options) => {
 });
 
 function waitForGridOrEmpty({ timeout = TIMEOUTS.long } = {}) {
-  const gridSel  = '#grid, [data-cy=grid], table[id*="grid"], .datagrid, .grid-wrapper';
-  const emptySel = '.no-data, .empty-state, .grid-empty, .no-results, [data-cy=empty-state]';
+  const gridSelect  = '#grid, [data-cy=grid], table[id*="grid"], .datagrid, .grid-wrapper';
+  const emptySelect = '.no-data, .empty-state, .grid-empty, .no-results, [data-cy=empty-state]';
 
   return cy.document({ timeout }).then(doc => {
     const deadline = Date.now() + timeout;
 
     const check = () => {
-      const grid  = doc.querySelector(gridSel);
-      const empty = doc.querySelector(emptySel);
+      const grid  = doc.querySelector(gridSelect);
+      const empty = doc.querySelector(emptySelect);
 
       if (grid) {
         return cy.wrap(grid).should('exist').then(() => ({ type: 'grid', element: grid }));
@@ -180,36 +180,36 @@ function waitForActions({ timeout = TIMEOUTS.long } = {}) {
   });
 }
 
-function clickAddIfPresent(tableParam = null) {
-  const addSel    = '#addRow, [data-cy=add], [data-action="add"], .btn-add';
-  const mobileSel = '#mobileActions';
+function clickAddIfPresent(tableParameter = null) {
+  const addSelect    = '#addRow, [data-cy=add], [data-action="add"], .btn-add';
+  const mobileSelect = '#mobileActions';
 
   return cy.get('body').then($body => {
-    if ($body.find(addSel).length > 0) {
+    if ($body.find(addSelect).length > 0) {
       return cy
-        .get(addSel)
+        .get(addSelect)
         .first()
         .should('be.visible')
         .and('not.be.disabled')
         .scrollIntoView()
         .click()
         .then(() => {
-          if (tableParam) {
+          if (tableParameter) {
             cy.url({ timeout: TIMEOUTS.long }).should('include', 'create.php');
           }
         });
     }
 
-    if ($body.find(mobileSel).length > 0) {
+    if ($body.find(mobileSelect).length > 0) {
       return cy
-        .get(mobileSel)
-        .select((i, el) => {
-          const opts  = Array.from(el.options);
-          const match = opts.find(o => /add/i.test(o.value) || /add/i.test(o.text));
+        .get(mobileSelect)
+        .select((index, element) => {
+          const options  = Array.from(element.options);
+          const match = options.find(option => /add/i.test(option.value) || /add/i.test(option.text));
           return match ? match.value : null;
         })
         .then(() => {
-          if (tableParam) {
+          if (tableParameter) {
             cy.url({ timeout: TIMEOUTS.long }).should('include', 'create.php');
           }
         });
@@ -220,13 +220,13 @@ function clickAddIfPresent(tableParam = null) {
 }
 
 function waitForPagination({ timeout = TIMEOUTS.medium } = {}) {
-  const pagSel = '#pagination, [data-cy=pagination], .pagination, [data-testid="pagination"]';
+  const pagSelect = '#pagination, [data-cy=pagination], .pagination, [data-testid="pagination"]';
 
   return cy.document({ timeout }).then(doc => {
     const deadline = Date.now() + timeout;
 
     const check = () => {
-      const pag = doc.querySelector(pagSel);
+      const pag = doc.querySelector(pagSelect);
       if (pag) {
         return cy.wrap(pag).scrollIntoView().should('exist').then(() => true);
       }

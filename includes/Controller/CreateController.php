@@ -94,21 +94,21 @@ final class CreateController
         }
         os_require_table_access($table);
 
-        $tableCfg   = $this->schemas->table($table);
+        $tableConfig   = $this->schemas->table($table);
         $rawSchema  = $this->schemas->raw();
         $m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
         $error      = '';
 
         if ($this->request->isPost()) {
-            $error = $this->save($tableCfg, $table, $m2mConfigs, $rawSchema);
+            $error = $this->save($tableConfig, $table, $m2mConfigs, $rawSchema);
         }
 
-        [$prefilled, $locked] = $this->prefilledValues($tableCfg);
+        [$prefilled, $locked] = $this->prefilledValues($tableConfig);
 
-        $formFields = $this->formFields($tableCfg, $rawSchema, $prefilled, $locked, $isReadOnly);
+        $formFields = $this->formFields($tableConfig, $rawSchema, $prefilled, $locked, $isReadOnly);
         $m2mGroups  = $this->m2mGroups($m2mConfigs, $rawSchema, $isReadOnly);
 
-        $formHeading   = t('form.add_new_record', ['table' => $tableCfg->displayName]);
+        $formHeading   = t('form.add_new_record', ['table' => $tableConfig->displayName]);
         $formError     = $error;
         $formCsrfToken = $this->csrf->token();
         $cancelUrl     = 'index.php?table=' . urlencode($table);
@@ -117,7 +117,7 @@ final class CreateController
             'cancel' => t('common.cancel'),
         ];
 
-        $pageTitle = 'OpenSparrow | Add Record - ' . $tableCfg->displayName;
+        $pageTitle = 'OpenSparrow | Add Record - ' . $tableConfig->displayName;
         ob_start();
         include __DIR__ . '/../../templates/create.php';
         $pageContent = ob_get_clean();
@@ -128,7 +128,7 @@ final class CreateController
     }
 
     private function save(
-        TableConfig $tableCfg,
+        TableConfig $tableConfig,
         string $table,
         array $m2mConfigs,
         array $rawSchema
@@ -138,15 +138,15 @@ final class CreateController
         }
 
         try {
-            $data   = $this->mapper->fromPost($tableCfg, $this->request->postAll());
-            $newId  = $this->records->insert($tableCfg, $data);
+            $data   = $this->mapper->fromPost($tableConfig, $this->request->postAll());
+            $newId  = $this->records->insert($tableConfig, $data);
             $userId = $this->session->userId();
-            $logId  = $this->audit->log($userId, 'INSERT', $tableCfg->name, (int) $newId);
+            $logId  = $this->audit->log($userId, 'INSERT', $tableConfig->name, (int) $newId);
             if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-                $this->snapshots->capture($tableCfg->schema, $tableCfg->name, (int) $newId, $logId);
+                $this->snapshots->capture($tableConfig->schema, $tableConfig->name, (int) $newId, $logId);
             }
-            $this->ownership->assign($tableCfg->name, (int) $newId, $userId, $userId);
-            $this->automations->evaluate($tableCfg->schema, $tableCfg->name, (int) $newId, 'create', $userId);
+            $this->ownership->assign($tableConfig->name, (int) $newId, $userId, $userId);
+            $this->automations->evaluate($tableConfig->schema, $tableConfig->name, (int) $newId, 'create', $userId);
             foreach ($m2mConfigs as $m2mIndex => $m2mConfig) {
                 $selected = array_values(array_filter(
                     (array) $this->request->post('m2m_' . $m2mIndex, []),
@@ -164,12 +164,12 @@ final class CreateController
         }
     }
 
-    private function prefilledValues(TableConfig $tableCfg): array
+    private function prefilledValues(TableConfig $tableConfig): array
     {
         $queryValues = $this->request->queryAll();
         $prefilled   = [];
         $locked      = [];
-        foreach ($tableCfg->writableColumns() as $column) {
+        foreach ($tableConfig->writableColumns() as $column) {
             if (isset($queryValues[$column->name])) {
                 $prefilled[$column->name] = (string) $queryValues[$column->name];
                 $locked[$column->name]    = true;
@@ -180,29 +180,29 @@ final class CreateController
     }
 
     private function formFields(
-        TableConfig $tableCfg,
+        TableConfig $tableConfig,
         array $rawSchema,
         array $prefilled,
         array $locked,
         bool $isReadOnly
     ): array {
         $fkOptions = [];
-        foreach ($tableCfg->foreignKeys as $colName => $foreignKeyConfig) {
-            $fkOptions[$colName] = $this->fkLoader->load($foreignKeyConfig, $rawSchema);
+        foreach ($tableConfig->foreignKeys as $columnName => $foreignKeyConfig) {
+            $fkOptions[$columnName] = $this->fkLoader->load($foreignKeyConfig, $rawSchema);
         }
 
         $renderContext = new RenderContext($isReadOnly, $fkOptions, $prefilled, $locked);
 
         $formFields = [];
-        foreach ($tableCfg->visibleColumns() as $column) {
-            if ($column->name === $tableCfg->primaryKey || $column->readonly) {
+        foreach ($tableConfig->visibleColumns() as $column) {
+            if ($column->name === $tableConfig->primaryKey || $column->readonly) {
                 continue;
             }
             $isColumnReadOnly = $isReadOnly || ($locked[$column->name] ?? false);
             $formFields[] = [
                 'label'    => $column->displayName,
                 'required' => $column->notNull && !$isColumnReadOnly,
-                'html'     => $this->fieldRegistry->for($column, $tableCfg->hasForeignKey($column->name))
+                'html'     => $this->fieldRegistry->for($column, $tableConfig->hasForeignKey($column->name))
                     ->render($column, null, $renderContext),
             ];
         }

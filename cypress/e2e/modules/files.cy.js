@@ -209,14 +209,14 @@ describe('OpenSparrow – Files: Upload Form', () => {
         Cypress.log({ message: 'No file relations configured — table select disabled, skipping' });
         return;
       }
-      const opts = $sel.find('option').toArray().filter(o => o.value !== '');
-      if (opts.length === 0) {
+      const options = $sel.find('option').toArray().filter(o => o.value !== '');
+      if (options.length === 0) {
         Cypress.log({ message: 'No relation tables available — skipping' });
         return;
       }
 
       cy.intercept('GET', '**/api/files.php?action=get_related_records*').as('relRecords');
-      cy.wrap($sel).select(opts[0].value);
+      cy.wrap($sel).select(options[0].value);
       cy.wait('@relRecords', { timeout: CypressHelpers.TIMEOUTS.long }).then(({ response }) => {
         const body = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
         if (body && body.success && body.records) {

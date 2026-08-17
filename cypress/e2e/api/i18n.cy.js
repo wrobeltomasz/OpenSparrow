@@ -25,8 +25,8 @@ describe('OpenSparrow – i18n: Bundle API', () => {
       method: 'GET',
       url: `${BASE}/api.php?action=i18n_bundle`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      const body = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }).then(result => {
+      const body = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
       expect(body).to.be.an('object');
       expect(Object.keys(body).length).to.be.greaterThan(0);
     });
@@ -38,8 +38,8 @@ describe('OpenSparrow – i18n: Bundle API', () => {
       method: 'GET',
       url: `${BASE}/api.php?action=i18n_bundle`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      const body = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }).then(result => {
+      const body = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
 
       expect(body).to.include.keys('common.save', 'common.cancel', 'common.delete');
     });
@@ -51,8 +51,8 @@ describe('OpenSparrow – i18n: Bundle API', () => {
       method: 'GET',
       url: `${BASE}/api.php?action=i18n_bundle&lang=en`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      const body = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }).then(result => {
+      const body = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
       expect(body['common.save']).to.eq('Save');
     });
   });
@@ -63,14 +63,14 @@ describe('OpenSparrow – i18n: Bundle API', () => {
       method: 'GET',
       url: `${BASE}/api.php?action=i18n_bundle&lang=pl`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(plRes => {
+    }).then(plResult => {
       cy.request({
         method: 'GET',
         url: `${BASE}/api.php?action=i18n_bundle&lang=en`,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      }).then(enRes => {
-        const plBody = typeof plRes.body === 'string' ? JSON.parse(plRes.body) : plRes.body;
-        const enBody = typeof enRes.body === 'string' ? JSON.parse(enRes.body) : enRes.body;
+      }).then(enResult => {
+        const plBody = typeof plResult.body === 'string' ? JSON.parse(plResult.body) : plResult.body;
+        const enBody = typeof enResult.body === 'string' ? JSON.parse(enResult.body) : enResult.body;
 
         expect(plBody).to.be.an('object');
         expect(enBody).to.be.an('object');
@@ -212,9 +212,9 @@ describe('OpenSparrow – i18n: Admin Settings Panel', () => {
     cy.request({
       method: 'GET',
       url: `${BASE}/admin/api.php?action=get_language_setting`,
-    }).then(res => {
-      expect(res.status).to.eq(200);
-      const body = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }).then(result => {
+      expect(result.status).to.eq(200);
+      const body = typeof result.body === 'string' ? JSON.parse(result.body) : result.body;
       expect(body).to.have.property('default_language').that.is.a('string');
       expect(body).to.have.property('available_languages').that.is.an('array').with.length.gte(1);
     });

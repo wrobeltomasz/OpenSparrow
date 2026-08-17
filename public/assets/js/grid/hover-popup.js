@@ -4,37 +4,37 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 export function createHoverPopup({ className, width, verticalThreshold, hideDelay = 150 }) {
-    const el = document.createElement('div');
-    el.className = className;
-    el.hidden = true;
-    document.body.appendChild(el);
+    const element = document.createElement('div');
+    element.className = className;
+    element.hidden = true;
+    document.body.appendChild(element);
 
     let hideTimer = null;
-    el.addEventListener('mouseenter', () => clearTimeout(hideTimer));
-    el.addEventListener('mouseleave', () => { el.hidden = true; });
+    element.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+    element.addEventListener('mouseleave', () => { element.hidden = true; });
 
     function position(anchor) {
         const rect = anchor.getBoundingClientRect();
         const left = Math.min(Math.max(8, rect.left), window.innerWidth - width);
-        el.style.left = `${left}px`;
+        element.style.left = `${left}px`;
         if (window.innerHeight - rect.bottom >= verticalThreshold || rect.top < verticalThreshold) {
-            el.style.top = `${rect.bottom + 6}px`;
-            el.style.bottom = '';
+            element.style.top = `${rect.bottom + 6}px`;
+            element.style.bottom = '';
         } else {
-            el.style.top = '';
-            el.style.bottom = `${window.innerHeight - rect.top + 6}px`;
+            element.style.top = '';
+            element.style.bottom = `${window.innerHeight - rect.top + 6}px`;
         }
     }
 
     function show(anchor) {
         clearTimeout(hideTimer);
         position(anchor);
-        el.hidden = false;
+        element.hidden = false;
     }
 
     function scheduleHide() {
-        hideTimer = setTimeout(() => { el.hidden = true; }, hideDelay);
+        hideTimer = setTimeout(() => { element.hidden = true; }, hideDelay);
     }
 
-    return { el, show, scheduleHide };
+    return { el: element, show, scheduleHide };
 }

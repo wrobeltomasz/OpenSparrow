@@ -84,14 +84,14 @@ final class PrintController
             return [];
         }
         $output = [];
-        foreach (($decoded['views'] ?? []) as $name => $cfg) {
-            if (!is_array($cfg) || ($cfg['source'] ?? 'postgres') !== 'postgres') {
+        foreach (($decoded['views'] ?? []) as $name => $config) {
+            if (!is_array($config) || ($config['source'] ?? 'postgres') !== 'postgres') {
                 continue;
             }
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', (string) $name)) {
                 continue;
             }
-            $output[(string) $name] = $cfg;
+            $output[(string) $name] = $config;
         }
         return $output;
     }
@@ -117,8 +117,8 @@ final class PrintController
             return null;
         }
 
-        $params = $this->sanitizeParams($template, $availableViews);
-        if ($params === null) {
+        $parameters = $this->sanitizeParams($template, $availableViews);
+        if ($parameters === null) {
             return null;
         }
 
@@ -130,7 +130,7 @@ final class PrintController
             'hidden'       => !empty($template['hidden']),
             'view'         => $view,
             'blocks'       => $blocks,
-            'params'       => $params,
+            'params'       => $parameters,
         ];
     }
 
@@ -188,14 +188,14 @@ final class PrintController
 
     private function sanitizeParams(array $template, array $availableViews): ?array
     {
-        $params    = [];
-        $paramKeys = [];
+        $parameters    = [];
+        $parameterKeys = [];
         foreach (array_slice((array) ($template['params'] ?? []), 0, 20) as $parameter) {
             if (!is_array($parameter)) {
                 return null;
             }
             $key = (string) ($parameter['key'] ?? '');
-            if (!preg_match('/^[a-zA-Z0-9_]{1,64}$/', $key) || in_array($key, $paramKeys, true)) {
+            if (!preg_match('/^[a-zA-Z0-9_]{1,64}$/', $key) || in_array($key, $parameterKeys, true)) {
                 return null;
             }
             $column = (string) ($parameter['column'] ?? '');
@@ -203,7 +203,7 @@ final class PrintController
                 return null;
             }
 
-            $paramKeys[] = $key;
+            $parameterKeys[] = $key;
             $entry       = [
                 'key'      => $key,
                 'label'    => mb_substr((string) ($parameter['label'] ?? ''), 0, 120),
@@ -226,17 +226,17 @@ final class PrintController
                 $entry['label_column'] = $labelColumn;
             }
 
-            $params[] = $entry;
+            $parameters[] = $entry;
         }
 
-        return $params;
+        return $parameters;
     }
 
     private function listPrints(): void
     {
         $result = [];
-        foreach ($this->prints as $name => $cfg) {
-            if (!empty($cfg['hidden'])) {
+        foreach ($this->prints as $name => $config) {
+            if (!empty($config['hidden'])) {
                 continue;
             }
 
@@ -245,10 +245,10 @@ final class PrintController
             }
             $result[] = [
                 'name'         => $name,
-                'display_name' => $cfg['display_name'] ?? $name,
-                'description'  => $cfg['description'] ?? '',
-                'icon'         => $cfg['icon'] ?? '',
-                'menu_name'    => $cfg['menu_name'] ?? ($cfg['display_name'] ?? $name),
+                'display_name' => $config['display_name'] ?? $name,
+                'description'  => $config['description'] ?? '',
+                'icon'         => $config['icon'] ?? '',
+                'menu_name'    => $config['menu_name'] ?? ($config['display_name'] ?? $name),
             ];
         }
         throw ResponseException::encoded(['status' => 'ok', 'prints' => $result]);
@@ -302,20 +302,20 @@ final class PrintController
         }
         require_print_access((string) $printName);
 
-        $cfg           = $this->prints[$printName];
+        $config           = $this->prints[$printName];
         $views         = $this->availableViews();
-        $viewName      = (string) ($cfg['view'] ?? '');
-        $parameterDefinitions     = $cfg['params'] ?? [];
+        $viewName      = (string) ($config['view'] ?? '');
+        $parameterDefinitions     = $config['params'] ?? [];
         $rows          = [];
         $viewColumns      = [];
-        $appliedParams = [];
+        $appliedParameters = [];
 
         if ($viewName !== '' && isset($views[$viewName])) {
             $conn       = $this->context->connection();
             $schemaName = $views[$viewName]['schema'] ?? sys_schema();
 
             $where           = [];
-            $queryParams     = [];
+            $sqlParameters     = [];
             $queryParameters = $request->queryAll();
             foreach ($parameterDefinitions as $parameterDefinition) {
                 $key = (string) ($parameterDefinition['key'] ?? '');
@@ -323,9 +323,9 @@ final class PrintController
                 if ($value === '' || $value === null) {
                     continue;
                 }
-                $queryParams[]        = $value;
-                $where[]              = pg_ident($parameterDefinition['column']) . ' = $' . count($queryParams);
-                $appliedParams[$key]  = $value;
+                $sqlParameters[]        = $value;
+                $where[]              = pg_ident($parameterDefinition['column']) . ' = $' . count($sqlParameters);
+                $appliedParameters[$key]  = $value;
             }
 
             $sql = sprintf('SELECT * FROM %s.%s', pg_ident($schemaName), pg_ident($viewName));
@@ -334,7 +334,7 @@ final class PrintController
             }
             $sql .= ' LIMIT 1000';
 
-            $queryResult = @pg_query_params($conn, $sql, $queryParams);
+            $queryResult = @pg_query_params($conn, $sql, $sqlParameters);
             if (!$queryResult) {
                 error_log('[api_print][data] ' . pg_last_error($conn));
                 throw new ServerErrorException('Database error');
@@ -347,14 +347,14 @@ final class PrintController
         echo json_encode([
             'status'         => 'ok',
             'print'          => $printName,
-            'display_name'   => $cfg['display_name'] ?? $printName,
-            'icon'           => $cfg['icon'] ?? '',
+            'display_name'   => $config['display_name'] ?? $printName,
+            'icon'           => $config['icon'] ?? '',
             'view'           => $viewName,
-            'blocks'         => $cfg['blocks'] ?? [],
+            'blocks'         => $config['blocks'] ?? [],
             'rows'           => $rows,
             'columns'        => $viewColumns,
             'params'         => $parameterDefinitions,
-            'applied_params' => (object) $appliedParams,
+            'applied_params' => (object) $appliedParameters,
         ]);
         throw ResponseException::sent();
     }
@@ -363,48 +363,48 @@ final class PrintController
     {
         $request   = $this->context->request();
         $printName = $request->query('print');
-        $paramKey  = $request->query('key');
+        $parameterKey  = $request->query('key');
         if (!isset($this->prints[$printName])) {
             throw new NotFoundException('Print template not found');
         }
         require_print_access((string) $printName);
 
-        $cfg   = $this->prints[$printName];
+        $config   = $this->prints[$printName];
         $views = $this->availableViews();
-        $param = null;
-        foreach (($cfg['params'] ?? []) as $parameterDefinition) {
-            if (($parameterDefinition['key'] ?? '') === $paramKey) {
-                $param = $parameterDefinition;
+        $parameter = null;
+        foreach (($config['params'] ?? []) as $parameterDefinition) {
+            if (($parameterDefinition['key'] ?? '') === $parameterKey) {
+                $parameter = $parameterDefinition;
                 break;
             }
         }
-        if ($param === null) {
+        if ($parameter === null) {
             throw new NotFoundException('Parameter not found');
         }
 
         $conn = $this->context->connection();
 
-        if (!empty($param['source_view']) && isset($views[$param['source_view']])) {
-            $srcView    = $param['source_view'];
-            $schemaName = $views[$srcView]['schema'] ?? sys_schema();
-            $valueColumnIdentifier = pg_ident($param['value_column']);
-            $labelColumnIdentifier = pg_ident($param['label_column']);
+        if (!empty($parameter['source_view']) && isset($views[$parameter['source_view']])) {
+            $sourceView    = $parameter['source_view'];
+            $schemaName = $views[$sourceView]['schema'] ?? sys_schema();
+            $valueColumnIdentifier = pg_ident($parameter['value_column']);
+            $labelColumnIdentifier = pg_ident($parameter['label_column']);
             $sql        = sprintf(
                 'SELECT DISTINCT %s AS value, %s AS label FROM %s.%s WHERE %s IS NOT NULL ORDER BY %s LIMIT 500',
                 $valueColumnIdentifier,
                 $labelColumnIdentifier,
                 pg_ident($schemaName),
-                pg_ident($srcView),
+                pg_ident($sourceView),
                 $valueColumnIdentifier,
                 $labelColumnIdentifier
             );
         } else {
-            $viewName = (string) ($cfg['view'] ?? '');
+            $viewName = (string) ($config['view'] ?? '');
             if ($viewName === '' || !isset($views[$viewName])) {
                 throw ResponseException::encoded(['status' => 'ok', 'options' => []]);
             }
             $schemaName = $views[$viewName]['schema'] ?? sys_schema();
-            $columnIdentifier   = pg_ident($param['column']);
+            $columnIdentifier   = pg_ident($parameter['column']);
             $sql        = sprintf(
                 'SELECT DISTINCT %s AS value, %s AS label FROM %s.%s WHERE %s IS NOT NULL ORDER BY %s LIMIT 500',
                 $columnIdentifier,

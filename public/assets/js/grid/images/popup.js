@@ -48,11 +48,11 @@ function renderPopup(entry, label) {
         link.rel = 'noopener';
         link.title = item.name || '';
 
-        const img = document.createElement('img');
-        img.loading = 'lazy';
-        img.src = thumbUrl(item.uuid);
-        img.alt = item.name || '';
-        link.appendChild(img);
+        const image = document.createElement('img');
+        image.loading = 'lazy';
+        image.src = thumbUrl(item.uuid);
+        image.alt = item.name || '';
+        link.appendChild(image);
         grid.appendChild(link);
     }
 

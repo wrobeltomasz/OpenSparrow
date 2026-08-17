@@ -112,14 +112,14 @@ final class CommentsController
 
         require_once __DIR__ . '/../../config_store.php';
         $schema         = config_get('schema') ?? [];
-        $userRecordsCfg = config_get('user_records') ?? [];
-        $configuredColumns = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
+        $userRecordsConfig = config_get('user_records') ?? [];
+        $configuredColumns = is_array($userRecordsConfig['columns'] ?? null) ? $userRecordsConfig['columns'] : [];
 
         $resolved = [];
         foreach ($idsBy as $tableName => $ids) {
-            $tableCfg = $schema['tables'][$tableName] ?? null;
+            $tableConfig = $schema['tables'][$tableName] ?? null;
 
-            if ($tableCfg === null || !empty($tableCfg['hidden'])) {
+            if ($tableConfig === null || !empty($tableConfig['hidden'])) {
                 continue;
             }
 
@@ -129,8 +129,8 @@ final class CommentsController
 
             $rowsSql = sprintf(
                 'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',
-                record_label_sql($tableCfg, $configuredColumns[$tableName] ?? []),
-                pg_ident($tableCfg['schema'] ?? 'public'),
+                record_label_sql($tableConfig, $configuredColumns[$tableName] ?? []),
+                pg_ident($tableConfig['schema'] ?? 'public'),
                 pg_ident($tableName)
             );
 
@@ -153,7 +153,7 @@ final class CommentsController
             }
 
             $resolved[$tableName] = [
-                'display' => to_display_name($tableCfg),
+                'display' => to_display_name($tableConfig),
                 'labels'  => $labels,
             ];
         }
@@ -285,14 +285,14 @@ final class CommentsController
             ', ',
             array_map(fn($placeholderIndex) => '$' . ($placeholderIndex + 2), array_keys($ids))
         );
-        $params       = array_merge([$relatedTable], $ids);
+        $parameters       = array_merge([$relatedTable], $ids);
         $sql = "
         SELECT related_id, COUNT(*) AS cnt
         FROM " . sys_table('comments') . "
         WHERE related_table = \$1 AND related_id IN ($placeholders) AND deleted_at IS NULL
         GROUP BY related_id
     ";
-        $result = pg_query_params($this->conn, $sql, $params);
+        $result = pg_query_params($this->conn, $sql, $parameters);
         if (!$result) {
             error_log('api_comments comments_action_counts failed: ' . pg_last_error($this->conn));
             jsonError('Database error.', 500);

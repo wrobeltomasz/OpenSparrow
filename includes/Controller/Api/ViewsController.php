@@ -75,8 +75,8 @@ final class ViewsController
     private function listViews(): void
     {
         $result = [];
-        foreach ($this->views as $name => $cfg) {
-            if (!empty($cfg['hidden'])) {
+        foreach ($this->views as $name => $config) {
+            if (!empty($config['hidden'])) {
                 continue;
             }
 
@@ -85,10 +85,10 @@ final class ViewsController
             }
             $result[] = [
                 'name'         => $name,
-                'display_name' => $cfg['display_name'] ?? $name,
-                'description'  => $cfg['description'] ?? '',
-                'icon'         => $cfg['icon'] ?? '',
-                'menu_name'    => $cfg['menu_name'] ?? ($cfg['display_name'] ?? $name),
+                'display_name' => $config['display_name'] ?? $name,
+                'description'  => $config['description'] ?? '',
+                'icon'         => $config['icon'] ?? '',
+                'menu_name'    => $config['menu_name'] ?? ($config['display_name'] ?? $name),
             ];
         }
         throw ResponseException::encoded(['status' => 'ok', 'views' => $result]);
@@ -103,32 +103,32 @@ final class ViewsController
         }
         require_view_access((string) $viewName);
 
-        $cfg        = $this->views[$viewName];
+        $config        = $this->views[$viewName];
         $conn       = $this->context->connection();
-        $schemaName = $cfg['schema'] ?? sys_schema();
+        $schemaName = $config['schema'] ?? sys_schema();
         $level      = max(0, (int) $request->query('level', '0'));
         $filterColumn  = $request->query('filter_col');
         $filterValue  = $request->queryAll()['filter_val'] ?? null;
 
-        $drillLevels = $cfg['drill_down']['levels'] ?? [];
+        $drillLevels = $config['drill_down']['levels'] ?? [];
         $groupBy     = null;
         if (!empty($drillLevels) && isset($drillLevels[$level])) {
             $groupBy = $drillLevels[$level]['group_by'] ?? null;
         }
 
-        $params      = [];
+        $parameters      = [];
         $whereClause = '';
 
         if ($filterColumn !== '' && $filterValue !== null) {
             if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $filterColumn)) {
                 throw new BadRequestException('Invalid filter column');
             }
-            $params[]    = $filterValue;
+            $parameters[]    = $filterValue;
             $whereClause = 'WHERE ' . pg_ident($filterColumn) . ' = $1';
         }
 
         if ($groupBy !== null) {
-            $sql = $this->groupedSql($cfg, $groupBy, $schemaName, (string) $viewName, $whereClause);
+            $sql = $this->groupedSql($config, $groupBy, $schemaName, (string) $viewName, $whereClause);
         } else {
             $sql = sprintf(
                 'SELECT * FROM %s.%s %s LIMIT 1000',
@@ -138,7 +138,7 @@ final class ViewsController
             );
         }
 
-        $queryResult = @pg_query_params($conn, $sql, $params);
+        $queryResult = @pg_query_params($conn, $sql, $parameters);
         if (!$queryResult) {
             error_log('[api_views][data] ' . pg_last_error($conn));
             throw new ServerErrorException('Database error');
@@ -150,40 +150,40 @@ final class ViewsController
         echo json_encode([
             'status'       => 'ok',
             'view'         => $viewName,
-            'display_name' => $cfg['display_name'] ?? $viewName,
+            'display_name' => $config['display_name'] ?? $viewName,
             'level'        => $level,
             'max_level'    => max(0, count($drillLevels) - 1),
             'group_by'     => $groupBy,
-            'drill_enabled' => !empty($cfg['drill_down']['enabled']),
+            'drill_enabled' => !empty($config['drill_down']['enabled']),
             'rows'         => $rows,
-            'columns'      => $cfg['columns'] ?? [],
-            'drill_down'   => $cfg['drill_down'] ?? ['enabled' => false, 'levels' => []],
-            'group_rows'   => $cfg['group_rows'] ?? '',
-            'icon'         => $cfg['icon'] ?? '',
+            'columns'      => $config['columns'] ?? [],
+            'drill_down'   => $config['drill_down'] ?? ['enabled' => false, 'levels' => []],
+            'group_rows'   => $config['group_rows'] ?? '',
+            'icon'         => $config['icon'] ?? '',
         ]);
         throw ResponseException::sent();
     }
 
     private function groupedSql(
-        array $cfg,
+        array $config,
         string $groupBy,
         string $schemaName,
         string $viewName,
         string $whereClause
     ): string {
-        $columnsCfg  = $cfg['columns'] ?? [];
+        $columnsConfig  = $config['columns'] ?? [];
         $aggParts = [];
-        foreach ($columnsCfg as $colName => $colCfg) {
-            if ($colName === $groupBy) {
+        foreach ($columnsConfig as $columnName => $columnConfig) {
+            if ($columnName === $groupBy) {
                 continue;
             }
-            $aggregate = strtolower($colCfg['aggregate'] ?? '');
+            $aggregate = strtolower($columnConfig['aggregate'] ?? '');
             if ($aggregate === 'count') {
-                $aggParts[] = 'COUNT(*) AS ' . pg_ident($colName);
+                $aggParts[] = 'COUNT(*) AS ' . pg_ident($columnName);
             } elseif ($aggregate === 'sum') {
-                $aggParts[] = 'SUM(' . pg_ident($colName) . ') AS ' . pg_ident($colName);
+                $aggParts[] = 'SUM(' . pg_ident($columnName) . ') AS ' . pg_ident($columnName);
             } elseif ($aggregate === 'avg') {
-                $aggParts[] = 'ROUND(AVG(' . pg_ident($colName) . ')::numeric, 2) AS ' . pg_ident($colName);
+                $aggParts[] = 'ROUND(AVG(' . pg_ident($columnName) . ')::numeric, 2) AS ' . pg_ident($columnName);
             }
         }
 
@@ -282,7 +282,7 @@ final class ViewsController
 
     private function viewColumns(\PgSql\Connection $conn, string $schemaName, string $viewName): array
     {
-        $colSql = 'SELECT a.attname AS column_name, '
+        $columnSql = 'SELECT a.attname AS column_name, '
             . 'pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type '
             . 'FROM pg_catalog.pg_attribute a '
             . 'JOIN pg_catalog.pg_class c ON c.oid = a.attrelid '
@@ -290,7 +290,7 @@ final class ViewsController
             . 'WHERE n.nspname = $1 AND c.relname = $2 '
             . 'AND a.attnum > 0 AND NOT a.attisdropped '
             . 'ORDER BY a.attnum';
-        $columnsResult = @pg_query_params($conn, $colSql, [$schemaName, $viewName]);
+        $columnsResult = @pg_query_params($conn, $columnSql, [$schemaName, $viewName]);
         $columns   = [];
         if ($columnsResult) {
             while ($column = pg_fetch_assoc($columnsResult)) {

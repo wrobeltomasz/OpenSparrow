@@ -14,20 +14,20 @@ export function renderBars(widget, orientation) {
         return p;
     }
 
-    const maxVal = Math.max(...data.map(d => parseFloat(d.value)));
-    const groupCol = widget.query?.group_column;
+    const maxValue = Math.max(...data.map(d => parseFloat(d.value)));
+    const groupColumn = widget.query?.group_column;
     const columnType = widget.column_type;
     const wrapper = orientation === 'horizontal'
         ? createHorizontalWrapper()
         : createVerticalWrapper();
 
     data.forEach(row => {
-        const percent = maxVal > 0 ? (row.value / maxVal) * 100 : 0;
-        const el = orientation === 'horizontal'
+        const percent = maxValue > 0 ? (row.value / maxValue) * 100 : 0;
+        const element = orientation === 'horizontal'
             ? buildHorizontalBar(row, percent, widget.color, columnType)
             : buildVerticalBar(row, percent, widget.color, columnType);
-        applyDrillDown(el, widget.table, groupCol, row.label);
-        wrapper.appendChild(el);
+        applyDrillDown(element, widget.table, groupColumn, row.label);
+        wrapper.appendChild(element);
     });
 
     return wrapper;
@@ -46,8 +46,8 @@ function createVerticalWrapper() {
 }
 
 function buildHorizontalBar(row, percent, color, columnType) {
-    const rowEl = document.createElement('div');
-    rowEl.className = 'bar-row';
+    const rowElement = document.createElement('div');
+    rowElement.className = 'bar-row';
 
     const label = document.createElement('div');
     label.className = 'bar-label';
@@ -62,22 +62,22 @@ function buildHorizontalBar(row, percent, color, columnType) {
     if (color) bar.style.backgroundColor = color;
     setTimeout(() => { bar.style.width = `${percent}%`; }, 50);
 
-    const val = document.createElement('div');
-    val.className = 'bar-value';
-    val.textContent = row.value;
+    const value = document.createElement('div');
+    value.className = 'bar-value';
+    value.textContent = row.value;
 
     track.appendChild(bar);
-    rowEl.append(label, track, val);
-    return rowEl;
+    rowElement.append(label, track, value);
+    return rowElement;
 }
 
 function buildVerticalBar(row, percent, color, columnType) {
-    const colEl = document.createElement('div');
-    colEl.className = 'dash-vbar-col';
+    const columnElement = document.createElement('div');
+    columnElement.className = 'dash-vbar-col';
 
-    const val = document.createElement('div');
-    val.className = 'dash-vbar-value';
-    val.textContent = row.value;
+    const value = document.createElement('div');
+    value.className = 'dash-vbar-value';
+    value.textContent = row.value;
 
     const track = document.createElement('div');
     track.className = 'dash-vbar-track';
@@ -93,6 +93,6 @@ function buildVerticalBar(row, percent, color, columnType) {
     label.textContent = displayLabel;
 
     track.appendChild(bar);
-    colEl.append(val, track, label);
-    return colEl;
+    columnElement.append(value, track, label);
+    return columnElement;
 }

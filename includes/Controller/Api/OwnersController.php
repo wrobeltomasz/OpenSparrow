@@ -168,9 +168,9 @@ final class OwnersController
         }
 
         require_once __DIR__ . '/../../config_store.php';
-        $userRecordsCfg  = config_get('user_records') ?? [];
-        $configuredColumns  = is_array($userRecordsCfg['columns'] ?? null) ? $userRecordsCfg['columns'] : [];
-        $limit           = (int)($userRecordsCfg['limit'] ?? 20);
+        $userRecordsConfig  = config_get('user_records') ?? [];
+        $configuredColumns  = is_array($userRecordsConfig['columns'] ?? null) ? $userRecordsConfig['columns'] : [];
+        $limit           = (int)($userRecordsConfig['limit'] ?? 20);
 
         $byTable    = [];
         $assignedAt = [];
@@ -188,9 +188,9 @@ final class OwnersController
 
         $records = [];
         foreach ($byTable as $tableName => $ids) {
-            $tableCfg = $schema['tables'][$tableName] ?? null;
+            $tableConfig = $schema['tables'][$tableName] ?? null;
 
-            if ($tableCfg === null || !empty($tableCfg['hidden'])) {
+            if ($tableConfig === null || !empty($tableConfig['hidden'])) {
                 continue;
             }
 
@@ -198,9 +198,9 @@ final class OwnersController
                 continue;
             }
 
-            $pgSchema = $tableCfg['schema'] ?? 'public';
+            $pgSchema = $tableConfig['schema'] ?? 'public';
             $rowIdsArray = '{' . implode(',', $ids) . '}';
-            $labelSql = record_label_sql($tableCfg, $configuredColumns[$tableName] ?? []);
+            $labelSql = record_label_sql($tableConfig, $configuredColumns[$tableName] ?? []);
 
             $rowsSql = sprintf(
                 'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',
@@ -215,7 +215,7 @@ final class OwnersController
                 continue;
             }
 
-            $tableDisplay = to_display_name($tableCfg);
+            $tableDisplay = to_display_name($tableConfig);
             while ($row = pg_fetch_assoc($rowsResult)) {
                 $recordId = (int)$row['id'];
                 $label    = trim((string)($row['label'] ?? ''));

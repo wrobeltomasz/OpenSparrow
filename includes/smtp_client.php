@@ -8,12 +8,12 @@
 declare(strict_types=1);
 
 if (!function_exists('smtp_read_response')) {
-    function smtp_read_response($sock): array
+    function smtp_read_response($socket): array
     {
         $code = null;
         $lines = [];
-        while (!feof($sock)) {
-            $line = fgets($sock, 1024);
+        while (!feof($socket)) {
+            $line = fgets($socket, 1024);
             if ($line === false) {
                 break;
             }
@@ -28,10 +28,10 @@ if (!function_exists('smtp_read_response')) {
 }
 
 if (!function_exists('smtp_command')) {
-    function smtp_command($sock, string $command, int $expectCode): array
+    function smtp_command($socket, string $command, int $expectCode): array
     {
-        fwrite($sock, $command . "\r\n");
-        $response = smtp_read_response($sock);
+        fwrite($socket, $command . "\r\n");
+        $response = smtp_read_response($socket);
         if ($response['code'] !== $expectCode) {
             return ['ok' => false, 'error' => 'Unexpected response to "' . $command . '": ' . $response['text']];
         }
@@ -40,90 +40,90 @@ if (!function_exists('smtp_command')) {
 }
 
 if (!function_exists('smtp_connect_and_auth')) {
-    function smtp_connect_and_auth(array $cfg): array
+    function smtp_connect_and_auth(array $config): array
     {
-        $host       = (string) ($cfg['host'] ?? '');
-        $port       = (int) ($cfg['port'] ?? 587);
-        $encryption = (string) ($cfg['encryption'] ?? 'tls');
-        $username   = (string) ($cfg['username'] ?? '');
-        $password   = (string) ($cfg['password'] ?? '');
-        $timeout    = (int) ($cfg['timeout'] ?? 10);
+        $host       = (string) ($config['host'] ?? '');
+        $port       = (int) ($config['port'] ?? 587);
+        $encryption = (string) ($config['encryption'] ?? 'tls');
+        $username   = (string) ($config['username'] ?? '');
+        $password   = (string) ($config['password'] ?? '');
+        $timeout    = (int) ($config['timeout'] ?? 10);
 
         if ($host === '') {
             return ['ok' => false, 'sock' => null, 'error' => 'SMTP host is not configured.'];
         }
 
         $scheme = $encryption === 'ssl' ? 'ssl://' : 'tcp://';
-        $sock = @stream_socket_client(
+        $socket = @stream_socket_client(
             $scheme . $host . ':' . $port,
             $errno,
             $errstr,
             $timeout,
             STREAM_CLIENT_CONNECT
         );
-        if ($sock === false) {
+        if ($socket === false) {
             return ['ok' => false, 'sock' => null, 'error' => "Connection failed: $errstr ($errno)"];
         }
-        stream_set_timeout($sock, $timeout);
+        stream_set_timeout($socket, $timeout);
 
-        $greeting = smtp_read_response($sock);
+        $greeting = smtp_read_response($socket);
         if ($greeting['code'] !== 220) {
-            fclose($sock);
+            fclose($socket);
             return ['ok' => false, 'sock' => null, 'error' => 'No SMTP greeting: ' . $greeting['text']];
         }
 
         $heloDomain = 'localhost';
-        $ehlo = smtp_command($sock, 'EHLO ' . $heloDomain, 250);
+        $ehlo = smtp_command($socket, 'EHLO ' . $heloDomain, 250);
         if (!$ehlo['ok']) {
-            fclose($sock);
+            fclose($socket);
             return ['ok' => false, 'sock' => null, 'error' => $ehlo['error']];
         }
 
         if ($encryption === 'tls') {
-            $starttls = smtp_command($sock, 'STARTTLS', 220);
+            $starttls = smtp_command($socket, 'STARTTLS', 220);
             if (!$starttls['ok']) {
-                fclose($sock);
+                fclose($socket);
                 return ['ok' => false, 'sock' => null, 'error' => $starttls['error']];
             }
             $cryptoMethod = STREAM_CRYPTO_METHOD_TLS_CLIENT;
-            if (!@stream_socket_enable_crypto($sock, true, $cryptoMethod)) {
-                fclose($sock);
+            if (!@stream_socket_enable_crypto($socket, true, $cryptoMethod)) {
+                fclose($socket);
                 return ['ok' => false, 'sock' => null, 'error' => 'TLS negotiation (STARTTLS) failed.'];
             }
 
-            $ehlo = smtp_command($sock, 'EHLO ' . $heloDomain, 250);
+            $ehlo = smtp_command($socket, 'EHLO ' . $heloDomain, 250);
             if (!$ehlo['ok']) {
-                fclose($sock);
+                fclose($socket);
                 return ['ok' => false, 'sock' => null, 'error' => $ehlo['error']];
             }
         }
 
         if ($username !== '') {
-            $auth = smtp_command($sock, 'AUTH LOGIN', 334);
-            if (!$auth['ok']) {
-                fclose($sock);
-                return ['ok' => false, 'sock' => null, 'error' => $auth['error']];
+            $authentication = smtp_command($socket, 'AUTH LOGIN', 334);
+            if (!$authentication['ok']) {
+                fclose($socket);
+                return ['ok' => false, 'sock' => null, 'error' => $authentication['error']];
             }
-            $authUser = smtp_command($sock, base64_encode($username), 334);
-            if (!$authUser['ok']) {
-                fclose($sock);
+            $authenticationUser = smtp_command($socket, base64_encode($username), 334);
+            if (!$authenticationUser['ok']) {
+                fclose($socket);
                 return ['ok' => false, 'sock' => null, 'error' => 'SMTP server rejected the username.'];
             }
-            $authPass = smtp_command($sock, base64_encode($password), 235);
-            if (!$authPass['ok']) {
-                fclose($sock);
+            $authenticationPass = smtp_command($socket, base64_encode($password), 235);
+            if (!$authenticationPass['ok']) {
+                fclose($socket);
                 return ['ok' => false, 'sock' => null, 'error' => 'SMTP server rejected the password.'];
             }
         }
 
-        return ['ok' => true, 'sock' => $sock, 'error' => null];
+        return ['ok' => true, 'sock' => $socket, 'error' => null];
     }
 }
 
 if (!function_exists('smtp_test_connection')) {
-    function smtp_test_connection(array $cfg): array
+    function smtp_test_connection(array $config): array
     {
-        $conn = smtp_connect_and_auth($cfg);
+        $conn = smtp_connect_and_auth($config);
         if (!$conn['ok']) {
             return ['ok' => false, 'error' => $conn['error']];
         }
@@ -134,35 +134,35 @@ if (!function_exists('smtp_test_connection')) {
 }
 
 if (!function_exists('smtp_send')) {
-    function smtp_send(array $cfg, string $to, string $subject, string $body): array
+    function smtp_send(array $config, string $recipient, string $subject, string $body): array
     {
-        $from = (string) ($cfg['from'] ?? '');
+        $from = (string) ($config['from'] ?? '');
         if ($from === '' || !filter_var($from, FILTER_VALIDATE_EMAIL)) {
             return ['ok' => false, 'error' => 'Invalid or missing From address.'];
         }
-        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             return ['ok' => false, 'error' => 'Invalid recipient address.'];
         }
 
-        $conn = smtp_connect_and_auth($cfg);
+        $conn = smtp_connect_and_auth($config);
         if (!$conn['ok']) {
             return ['ok' => false, 'error' => $conn['error']];
         }
-        $sock = $conn['sock'];
+        $socket = $conn['sock'];
 
-        $mailFrom = smtp_command($sock, 'MAIL FROM:<' . $from . '>', 250);
+        $mailFrom = smtp_command($socket, 'MAIL FROM:<' . $from . '>', 250);
         if (!$mailFrom['ok']) {
-            fclose($sock);
+            fclose($socket);
             return ['ok' => false, 'error' => $mailFrom['error']];
         }
-        $rcptTo = smtp_command($sock, 'RCPT TO:<' . $to . '>', 250);
+        $rcptTo = smtp_command($socket, 'RCPT TO:<' . $recipient . '>', 250);
         if (!$rcptTo['ok']) {
-            fclose($sock);
+            fclose($socket);
             return ['ok' => false, 'error' => $rcptTo['error']];
         }
-        $data = smtp_command($sock, 'DATA', 354);
+        $data = smtp_command($socket, 'DATA', 354);
         if (!$data['ok']) {
-            fclose($sock);
+            fclose($socket);
             return ['ok' => false, 'error' => $data['error']];
         }
 
@@ -172,22 +172,22 @@ if (!function_exists('smtp_send')) {
 
         $headerSafe = static fn(string $headerValue): string => str_replace(["\r", "\n"], ' ', $headerValue);
         $headers = 'From: ' . $headerSafe($from) . "\r\n"
-            . 'To: ' . $headerSafe($to) . "\r\n"
+            . 'To: ' . $headerSafe($recipient) . "\r\n"
             . 'Subject: =?UTF-8?B?' . base64_encode($headerSafe($subject)) . "?=\r\n"
             . "MIME-Version: 1.0\r\n"
             . "Content-Type: text/plain; charset=UTF-8\r\n"
             . "Content-Transfer-Encoding: 8bit\r\n"
             . "\r\n";
 
-        fwrite($sock, $headers . $bodyStuffed . "\r\n.\r\n");
-        $sent = smtp_read_response($sock);
+        fwrite($socket, $headers . $bodyStuffed . "\r\n.\r\n");
+        $sent = smtp_read_response($socket);
         if ($sent['code'] !== 250) {
-            fclose($sock);
+            fclose($socket);
             return ['ok' => false, 'error' => 'Server rejected message: ' . $sent['text']];
         }
 
-        smtp_command($sock, 'QUIT', 221);
-        fclose($sock);
+        smtp_command($socket, 'QUIT', 221);
+        fclose($socket);
         return ['ok' => true, 'error' => null];
     }
 }

@@ -28,9 +28,9 @@ final class UpdateMapperTest extends TestCase
             {
                 return true;
             }
-            public function bind(string $colName, array $postData): BoundValue
+            public function bind(string $columnName, array $postData): BoundValue
             {
-                return new BoundValue($postData[$colName] ?? null);
+                return new BoundValue($postData[$columnName] ?? null);
             }
             public function render(ColumnConfig $column, mixed $currentValue, RenderContext $context): string
             {
@@ -83,7 +83,7 @@ final class UpdateMapperTest extends TestCase
                 $this->seenFk[$column->name] = $hasFk;
                 return true;
             }
-            public function bind(string $colName, array $postData): BoundValue
+            public function bind(string $columnName, array $postData): BoundValue
             {
                 return new BoundValue(null);
             }

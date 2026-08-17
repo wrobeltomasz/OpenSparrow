@@ -5,11 +5,11 @@
 
 import { state, reorderColumns } from '../state.js';
 
-export function initColumnDnD(th, col, onReorder) {
+export function initColumnDnD(th, column, onReorder) {
     th.draggable = true;
 
     th.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('text/plain', col);
+        e.dataTransfer.setData('text/plain', column);
         e.dataTransfer.effectAllowed = 'move';
         setTimeout(() => th.classList.add('dragging'), 0);
     });
@@ -27,11 +27,11 @@ export function initColumnDnD(th, col, onReorder) {
     th.addEventListener('drop', e => {
         e.preventDefault();
         th.classList.remove('drag-over');
-        const draggedCol = e.dataTransfer.getData('text/plain');
-        if (!draggedCol || draggedCol === col) return;
+        const draggedColumn = e.dataTransfer.getData('text/plain');
+        if (!draggedColumn || draggedColumn === column) return;
 
-        const fromIndex = state.displayedColumns.indexOf(draggedCol);
-        const toIndex = state.displayedColumns.indexOf(col);
+        const fromIndex = state.displayedColumns.indexOf(draggedColumn);
+        const toIndex = state.displayedColumns.indexOf(column);
         if (fromIndex > -1 && toIndex > -1) {
             state.displayedColumns = reorderColumns(state.displayedColumns, fromIndex, toIndex);
             onReorder();

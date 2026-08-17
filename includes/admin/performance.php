@@ -16,24 +16,24 @@ if ($action === 'performance_check') {
         $conn = db_connect();
 
         require_once __DIR__ . '/../config_store.php';
-        $schemaCfg    = config_get('schema') ?? [];
-        $dashCfg      = config_get('dashboard') ?? [];
-        $tables       = $schemaCfg['tables'] ?? [];
-        $widgets      = $dashCfg['widgets']  ?? [];
+        $schemaConfig    = config_get('schema') ?? [];
+        $dashConfig      = config_get('dashboard') ?? [];
+        $tables       = $schemaConfig['tables'] ?? [];
+        $widgets      = $dashConfig['widgets']  ?? [];
 
         $needed = [];
 
-        foreach ($tables as $tableName => $tableCfg) {
-            $pgSchema = $tableCfg['schema'] ?? 'app';
+        foreach ($tables as $tableName => $tableConfig) {
+            $pgSchema = $tableConfig['schema'] ?? 'app';
 
-            foreach (($tableCfg['foreign_keys'] ?? []) as $fkColumn => $foreignKeyDefinition) {
+            foreach (($tableConfig['foreign_keys'] ?? []) as $fkColumn => $foreignKeyDefinition) {
                 if (!is_string($fkColumn)) {
                     continue;
                 }
                 $needed[$pgSchema][$tableName][$fkColumn][] = 'Foreign key column';
             }
 
-            foreach (($tableCfg['subtables'] ?? []) as $subtable) {
+            foreach (($tableConfig['subtables'] ?? []) as $subtable) {
                 $child   = $subtable['table']       ?? '';
                 $fkColumn   = $subtable['foreign_key'] ?? '';
                 if ($child === '' || $fkColumn === '') {
@@ -43,7 +43,7 @@ if ($action === 'performance_check') {
                 $needed[$childSchema][$child][$fkColumn][] = "Subtable join from {$tableName}";
             }
 
-            foreach (($tableCfg['default_sort'] ?? []) as $rule) {
+            foreach (($tableConfig['default_sort'] ?? []) as $rule) {
                 $column = $rule['column'] ?? '';
                 if ($column !== '' && $column !== 'id') {
                     $needed[$pgSchema][$tableName][$column][] = 'Default sort column';
@@ -60,8 +60,8 @@ if ($action === 'performance_check') {
             $widgetTitle  = $widget['title'] ?? ($widget['id'] ?? 'widget');
             $query   = $widget['query'] ?? [];
 
-            foreach (($query['conditions'] ?? []) as $cond) {
-                $column = $cond['col'] ?? '';
+            foreach (($query['conditions'] ?? []) as $condition) {
+                $column = $condition['col'] ?? '';
                 if ($column !== '' && $column !== 'id') {
                     $needed[$widgetSchema][$widgetTable][$column][] = "Widget filter: \"{$widgetTitle}\"";
                 }
@@ -199,12 +199,12 @@ if ($action === 'performance_table_stats') {
         $conn = db_connect();
 
         require_once __DIR__ . '/../config_store.php';
-        $schemaCfg  = config_get('schema') ?? [];
-        $tables     = $schemaCfg['tables'] ?? [];
+        $schemaConfig  = config_get('schema') ?? [];
+        $tables     = $schemaConfig['tables'] ?? [];
 
         $tracked = [];
-        foreach ($tables as $tableName => $cfg) {
-            $tracked[] = [$cfg['schema'] ?? 'app', $tableName];
+        foreach ($tables as $tableName => $config) {
+            $tracked[] = [$config['schema'] ?? 'app', $tableName];
         }
 
         if (empty($tracked)) {
@@ -305,7 +305,7 @@ if ($action === 'performance_db_health') {
         if (!$databaseResult) {
             admin_db_fail($conn, 'db_health_stat');
         }
-        $databaseStats = pg_fetch_assoc($databaseResult);
+        $databaseStatistics = pg_fetch_assoc($databaseResult);
 
         $maxConnectionsResult = @pg_query($conn, "SELECT setting FROM pg_settings WHERE name = 'max_connections'");
         $maxConnections = $maxConnectionsResult ? (int)(pg_fetch_row($maxConnectionsResult)[0] ?? 100) : 100;
@@ -318,7 +318,7 @@ if ($action === 'performance_db_health') {
 
         echo json_encode([
             'status'       => 'success',
-            'db'           => $databaseStats,
+            'db'           => $databaseStatistics,
             'max_conn'     => $maxConnections,
             'active_conn'  => $activeConnections,
             'pg_version'   => $version,
@@ -380,16 +380,16 @@ if ($action === 'performance_schema_warnings') {
         $conn = db_connect();
 
         require_once __DIR__ . '/../config_store.php';
-        $schemaCfg   = config_get('schema') ?? [];
-        $dashCfg     = config_get('dashboard') ?? [];
-        $tables      = $schemaCfg['tables'] ?? [];
-        $widgets     = $dashCfg['widgets']  ?? [];
+        $schemaConfig   = config_get('schema') ?? [];
+        $dashConfig     = config_get('dashboard') ?? [];
+        $tables      = $schemaConfig['tables'] ?? [];
+        $widgets     = $dashConfig['widgets']  ?? [];
 
         $warnings = [];
 
         $rowCounts = [];
-        foreach ($tables as $tableName => $cfg) {
-            $pgSchema = $cfg['schema'] ?? 'app';
+        foreach ($tables as $tableName => $config) {
+            $pgSchema = $config['schema'] ?? 'app';
             $countResult = @pg_query_params(
                 $conn,
                 "SELECT c.reltuples::bigint FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace"
@@ -401,24 +401,24 @@ if ($action === 'performance_schema_warnings') {
             }
         }
 
-        foreach ($tables as $tableName => $cfg) {
-            $tableColumns     = $cfg['columns'] ?? [];
-            $colCount = count($tableColumns);
+        foreach ($tables as $tableName => $config) {
+            $tableColumns     = $config['columns'] ?? [];
+            $columnCount = count($tableColumns);
             $estRows  = $rowCounts[$tableName] ?? 0;
-            $display  = $cfg['display_name'] ?? $tableName;
+            $display  = $config['display_name'] ?? $tableName;
 
-            if ($colCount > 20) {
+            if ($columnCount > 20) {
                 $warnings[] = [
                     'severity' => 'medium',
                     'category' => 'Schema complexity',
                     'table'    => $tableName,
                     'display'  => $display,
-                    'message'  => "{$colCount} columns defined — consider splitting or hiding non-essential"
+                    'message'  => "{$columnCount} columns defined — consider splitting or hiding non-essential"
                         . " columns (show_in_grid: false).",
                 ];
             }
 
-            if ($estRows > 5000 && empty($cfg['initial_limit'])) {
+            if ($estRows > 5000 && empty($config['initial_limit'])) {
                 $warnings[] = [
                     'severity' => 'high',
                     'category' => 'Load performance',
@@ -430,7 +430,7 @@ if ($action === 'performance_schema_warnings') {
                 ];
             }
 
-            if ($estRows > 1000 && empty($cfg['default_sort'])) {
+            if ($estRows > 1000 && empty($config['default_sort'])) {
                 $warnings[] = [
                     'severity' => 'low',
                     'category' => 'UX / sort',
@@ -442,7 +442,7 @@ if ($action === 'performance_schema_warnings') {
                 ];
             }
 
-            foreach (($cfg['subtables'] ?? []) as $subtable) {
+            foreach (($config['subtables'] ?? []) as $subtable) {
                 if (empty($subtable['columns_to_show'])) {
                     $warnings[] = [
                         'severity' => 'medium',

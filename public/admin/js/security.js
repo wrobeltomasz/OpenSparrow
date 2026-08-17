@@ -3,9 +3,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-export function renderSecurityEditor(key, itemData, isArray, ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = `
+export function renderSecurityEditor(key, itemData, isArray, context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = `
         <h3>Security Settings</h3>
         <p style="color:var(--muted);  max-width:480px;">
             To change your password or another user's password, go to

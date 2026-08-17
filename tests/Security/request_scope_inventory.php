@@ -18,7 +18,7 @@ return [
     ],
     'includes/frontapi/board.php' => [
         '_GET.board' => ['scoped', 'The read route resolves ?board= against filter_by_user_access(boards, ...) and falls back to the first board of that filtered list, so an out-of-scope or unmatched id can never select a board the user was not granted. The table the resolved board is bound to is checked separately with user_can_access_table(), and an out-of-scope binding is blanked rather than named.'],
-        'body.board' => ['scoped', 'move_card resolves the board id against filter_by_user_access(boards, ...); an unmatched id leaves $boardCfg empty and the request is rejected as an invalid board table. The record table itself was already gated by the write preamble in public/api.php — the board is a separate grant, which is why both apply.'],
+        'body.board' => ['scoped', 'move_card resolves the board id against filter_by_user_access(boards, ...); an unmatched id leaves $boardConfig empty and the request is rejected as an invalid board table. The record table itself was already gated by the write preamble in public/api.php — the board is a separate grant, which is why both apply.'],
     ],
     'includes/frontapi/workflow_procedure.php' => [
         'body.workflow_id' => ['gated', 'Calls require_access(workflows, ...) before looking the procedure up, then workflow_tables_in_scope() on the resolved entry. Both halves are needed: without the first the scope would be cosmetic (a direct POST would fire the procedure of a workflow hidden from the menu and the list), and without the second a workflow granted to someone whose tables do not cover its steps would still run against those tables.'],

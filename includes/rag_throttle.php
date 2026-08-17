@@ -11,13 +11,13 @@ require_once __DIR__ . '/config.php';
 
 function rag_throttle_dir(): string
 {
-    $dir = __DIR__ . '/../storage/ratelimit';
-    os_ensure_directory($dir, 0775);
+    $directory = __DIR__ . '/../storage/ratelimit';
+    os_ensure_directory($directory, 0775);
     os_write_guard_file(
-        $dir . '/.htaccess',
+        $directory . '/.htaccess',
         "# Deny all direct web access to throttle state.\nDeny from all\n"
     );
-    return $dir;
+    return $directory;
 }
 
 function rag_rate_limit_ok(int $userId, int $maxPerMinute): bool
@@ -61,9 +61,9 @@ function rag_semaphore_acquire(int $maxConcurrent)
     if ($maxConcurrent <= 0) {
         return null;
     }
-    $dir = rag_throttle_dir();
+    $directory = rag_throttle_dir();
     for ($slotIndex = 0; $slotIndex < $maxConcurrent; $slotIndex++) {
-        $fileHandle = @fopen($dir . '/sem_' . $slotIndex . '.lock', 'c');
+        $fileHandle = @fopen($directory . '/sem_' . $slotIndex . '.lock', 'c');
         if ($fileHandle === false) {
             continue;
         }

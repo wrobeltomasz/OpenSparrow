@@ -25,15 +25,15 @@ export function fullUrl(uuid) {
 }
 
 export async function loadImageColumn(pageRows, schema) {
-    const cfg = schema.tables[state.currentTable]?.images;
-    if (!cfg?.enabled || !cfg.show_in_grid || !pageRows.length) return;
+    const config = schema.tables[state.currentTable]?.images;
+    if (!config?.enabled || !config.show_in_grid || !pageRows.length) return;
 
     const ids = pageRows.map(r => r['id']).filter(Boolean).join(',');
     if (!ids) return;
 
     try {
-        const res  = await fetch(`api.php?api=image_rows&table=${encodeURIComponent(state.currentTable)}&ids=${ids}`);
-        const json = await res.json();
+        const result  = await fetch(`api.php?api=image_rows&table=${encodeURIComponent(state.currentTable)}&ids=${ids}`);
+        const json = await result.json();
         const data = json.data || {};
 
         for (const [rowId, entry] of Object.entries(data)) {
@@ -46,8 +46,8 @@ export async function loadImageColumn(pageRows, schema) {
             if (!td) continue;
             renderThumb(td, store.get(`${state.currentTable}:${rid}`));
         }
-    } catch (err) {
-        debugLog('image column load failed', err);
+    } catch (error) {
+        debugLog('image column load failed', error);
     }
 }
 
@@ -59,12 +59,12 @@ function renderThumb(td, entry) {
     wrap.className = 'img-cell';
 
     const first = entry.items[0];
-    const img = document.createElement('img');
-    img.className = 'img-thumb';
-    img.loading = 'lazy';
-    img.src = thumbUrl(first.uuid);
-    img.alt = first.name || '';
-    wrap.appendChild(img);
+    const image = document.createElement('img');
+    image.className = 'img-thumb';
+    image.loading = 'lazy';
+    image.src = thumbUrl(first.uuid);
+    image.alt = first.name || '';
+    wrap.appendChild(image);
 
     const extra = (entry.total || entry.items.length) - 1;
     if (extra > 0) {

@@ -31,11 +31,11 @@ function clickstats_retention_days(mixed $rawDays): int
 
 function clickstats_settings(int $absentTtl = 0): array
 {
-    $cfg = config_get('clickstats', $absentTtl) ?? [];
+    $config = config_get('clickstats', $absentTtl) ?? [];
     return [
-        'enabled'        => !empty($cfg['enabled']),
-        'track_records'  => $cfg['track_records'] ?? true,
-        'retention_days' => clickstats_retention_days($cfg['retention_days'] ?? null),
+        'enabled'        => !empty($config['enabled']),
+        'track_records'  => $config['track_records'] ?? true,
+        'retention_days' => clickstats_retention_days($config['retention_days'] ?? null),
     ];
 }
 

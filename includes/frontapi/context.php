@@ -37,7 +37,7 @@ final class FrontApiWriteContext
         public readonly int $userId,
         public readonly array $body,
         public readonly string $table,
-        public readonly array $tableCfg,
+        public readonly array $tableConfig,
         public readonly string $schemaName,
         public readonly string $idColumn,
     ) {
@@ -47,7 +47,7 @@ final class FrontApiWriteContext
         FrontApiContext $apiContext,
         array $body,
         string $table,
-        array $tableCfg,
+        array $tableConfig,
         string $schemaName,
         string $idColumn,
     ): self {
@@ -58,7 +58,7 @@ final class FrontApiWriteContext
             $apiContext->userId,
             $body,
             $table,
-            $tableCfg,
+            $tableConfig,
             $schemaName,
             $idColumn,
         );

@@ -13,10 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkNotifications() {
         try {
-            const res  = await fetch('api/notifications.php?action=get_count', {
+            const result  = await fetch('api/notifications.php?action=get_count', {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            const data = await res.json();
+            const data = await result.json();
             if (badge) {
                 if (data.count > 0) {
                     badge.style.display = 'block';

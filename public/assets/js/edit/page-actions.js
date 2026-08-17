@@ -10,14 +10,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function activateTab(tabId) {
         tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
         tabPanels.forEach(p => p.classList.remove('active'));
-        const btn   = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        const button   = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
         const panel = document.getElementById(tabId);
-        if (btn)   { btn.classList.add('active');   btn.setAttribute('aria-selected', 'true'); }
+        if (button)   { button.classList.add('active');   button.setAttribute('aria-selected', 'true'); }
         if (panel) { panel.classList.add('active'); }
     }
 
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    tabBtns.forEach(button => {
+        button.addEventListener('click', () => activateTab(button.dataset.tab));
     });
 
     const hash = window.location.hash.slice(1);
@@ -25,22 +25,22 @@ document.addEventListener('DOMContentLoaded', function() {
         activateTab(hash);
     }
 
-    document.querySelectorAll('[data-save-action]').forEach(btn => {
-        btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-save-action]').forEach(button => {
+        button.addEventListener('click', () => {
             const sa = document.getElementById('saveAction');
-            if (sa) { sa.value = btn.dataset.saveAction; }
+            if (sa) { sa.value = button.dataset.saveAction; }
         });
     });
 
-    const btnDelete = document.getElementById('btnDeleteRecord');
-    if (btnDelete) {
-        btnDelete.addEventListener('click', async () => {
+    const buttonDelete = document.getElementById('btnDeleteRecord');
+    if (buttonDelete) {
+        buttonDelete.addEventListener('click', async () => {
             if (!window.confirm(window.IMAGE_TEXT.confirm_delete_record)) {
                 return;
             }
-            btnDelete.disabled = true;
+            buttonDelete.disabled = true;
             try {
-                const res = await fetch('index.php?api=delete', {
+                const result = await fetch('index.php?api=delete', {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -49,29 +49,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ table: window.EDIT_TABLE, id: window.EDIT_ID })
                 });
                 let payload = null;
-                try { payload = await res.json(); } catch (e) {}
-                if (!res.ok || (payload && payload.error)) {
-                    window.alert((payload && payload.error) || ('Delete failed (' + res.status + ')'));
-                    btnDelete.disabled = false;
+                try { payload = await result.json(); } catch (e) {}
+                if (!result.ok || (payload && payload.error)) {
+                    window.alert((payload && payload.error) || ('Delete failed (' + result.status + ')'));
+                    buttonDelete.disabled = false;
                     return;
                 }
                 window.location.href = 'index.php?table=' + encodeURIComponent(window.EDIT_TABLE);
-            } catch (err) {
+            } catch (error) {
                 window.alert('Network error during delete.');
-                btnDelete.disabled = false;
+                buttonDelete.disabled = false;
             }
         });
     }
 
-    const btnImgUpload = document.getElementById('btnImageUpload');
-    if (btnImgUpload) {
-        btnImgUpload.addEventListener('click', async () => {
+    const buttonImageUpload = document.getElementById('btnImageUpload');
+    if (buttonImageUpload) {
+        buttonImageUpload.addEventListener('click', async () => {
             const input    = document.getElementById('imageInput');
-            const statusEl = document.getElementById('imageUploadStatus');
+            const statusElement = document.getElementById('imageUploadStatus');
 
             if (!input.files || !input.files.length) {
-                statusEl.textContent = window.IMAGE_TEXT.select_first;
-                statusEl.style.color = 'var(--error)';
+                statusElement.textContent = window.IMAGE_TEXT.select_first;
+                statusElement.style.color = 'var(--error)';
                 return;
             }
 
@@ -83,61 +83,61 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('related_id',    window.EDIT_ID);
             formData.append('related_field', '__image');
 
-            statusEl.textContent = 'Uploading...';
-            statusEl.style.color = 'var(--text)';
-            btnImgUpload.disabled = true;
+            statusElement.textContent = 'Uploading...';
+            statusElement.style.color = 'var(--text)';
+            buttonImageUpload.disabled = true;
 
             try {
-                const res  = await fetch('api/files.php', { method: 'POST', body: formData });
-                const data = await res.json();
+                const result  = await fetch('api/files.php', { method: 'POST', body: formData });
+                const data = await result.json();
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    statusEl.textContent = 'Error: ' + (data.error || 'Upload failed');
-                    statusEl.style.color = 'var(--error)';
-                    btnImgUpload.disabled = false;
+                    statusElement.textContent = 'Error: ' + (data.error || 'Upload failed');
+                    statusElement.style.color = 'var(--error)';
+                    buttonImageUpload.disabled = false;
                 }
-            } catch (err) {
-                statusEl.textContent = 'Network error during upload.';
-                statusEl.style.color = 'var(--error)';
-                btnImgUpload.disabled = false;
+            } catch (error) {
+                statusElement.textContent = 'Network error during upload.';
+                statusElement.style.color = 'var(--error)';
+                buttonImageUpload.disabled = false;
             }
         });
     }
 
-    document.querySelectorAll('.img-delete-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
+    document.querySelectorAll('.img-delete-btn').forEach(button => {
+        button.addEventListener('click', async () => {
             if (!confirm(window.IMAGE_TEXT.confirm_delete)) return;
-            btn.disabled = true;
+            button.disabled = true;
             try {
-                const res = await fetch('api/files.php', {
+                const result = await fetch('api/files.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete', uuid: btn.dataset.uuid, csrf_token: window.CSRF_TOKEN }),
+                    body: JSON.stringify({ action: 'delete', uuid: button.dataset.uuid, csrf_token: window.CSRF_TOKEN }),
                 });
-                const data = await res.json();
+                const data = await result.json();
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    btn.disabled = false;
+                    button.disabled = false;
                 }
-            } catch (err) {
-                btn.disabled = false;
+            } catch (error) {
+                button.disabled = false;
             }
         });
     });
 
-    const btnUpload = document.getElementById('btnInlineUpload');
-    if (btnUpload) {
-        btnUpload.addEventListener('click', async () => {
+    const buttonUpload = document.getElementById('btnInlineUpload');
+    if (buttonUpload) {
+        buttonUpload.addEventListener('click', async () => {
             const fileInput  = document.getElementById('inlineFileInput');
             const nameInput  = document.getElementById('inlineFileName');
             const tagsInput  = document.getElementById('inlineFileTags');
-            const statusEl   = document.getElementById('inlineUploadStatus');
+            const statusElement   = document.getElementById('inlineUploadStatus');
 
             if (!fileInput.files || !fileInput.files.length) {
-                statusEl.textContent = 'Please select a file to upload.';
-                statusEl.style.color = 'var(--error)';
+                statusElement.textContent = 'Please select a file to upload.';
+                statusElement.style.color = 'var(--error)';
                 return;
             }
 
@@ -150,26 +150,26 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('related_table', window.EDIT_TABLE);
             formData.append('related_id',    window.EDIT_ID);
 
-            statusEl.textContent = 'Uploading...';
-            statusEl.style.color = 'var(--text)';
-            btnUpload.disabled   = true;
+            statusElement.textContent = 'Uploading...';
+            statusElement.style.color = 'var(--text)';
+            buttonUpload.disabled   = true;
 
             try {
-                const res  = await fetch('api/files.php', { method: 'POST', body: formData });
-                const data = await res.json();
+                const result  = await fetch('api/files.php', { method: 'POST', body: formData });
+                const data = await result.json();
                 if (data.success) {
-                    statusEl.textContent = 'Uploaded successfully! Refreshing...';
-                    statusEl.style.color = 'var(--ok)';
+                    statusElement.textContent = 'Uploaded successfully! Refreshing...';
+                    statusElement.style.color = 'var(--ok)';
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
-                    statusEl.textContent = 'Error: ' + (data.error || 'Upload failed');
-                    statusEl.style.color = 'var(--error)';
-                    btnUpload.disabled   = false;
+                    statusElement.textContent = 'Error: ' + (data.error || 'Upload failed');
+                    statusElement.style.color = 'var(--error)';
+                    buttonUpload.disabled   = false;
                 }
-            } catch (err) {
-                statusEl.textContent = 'Network error during upload.';
-                statusEl.style.color = 'var(--error)';
-                btnUpload.disabled   = false;
+            } catch (error) {
+                statusElement.textContent = 'Network error during upload.';
+                statusElement.style.color = 'var(--error)';
+                buttonUpload.disabled   = false;
             }
         });
     }

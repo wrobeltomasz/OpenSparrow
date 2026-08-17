@@ -12,13 +12,13 @@ const NRH = 21;
 const NMC = 9;
 const NPD = 8;
 
-export async function renderErdPage(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.innerHTML = '';
+export async function renderErdPage(context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.innerHTML = '';
 
     const wrap = document.createElement('div');
     wrap.style.cssText = 'display:flex;flex-direction:column;height:calc(100vh - 120px);min-height:480px;';
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     const tb = document.createElement('div');
     tb.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-shrink:0;';
@@ -36,79 +36,79 @@ export async function renderErdPage(ctx) {
     const right = document.createElement('div');
     right.style.cssText = 'margin-left:auto;display:flex;gap:10px;align-items:center;';
 
-    const statsEl = document.createElement('span');
-    statsEl.style.cssText = 'color:var(--muted);';
-    right.appendChild(statsEl);
+    const statisticsElement = document.createElement('span');
+    statisticsElement.style.cssText = 'color:var(--muted);';
+    right.appendChild(statisticsElement);
 
-    const searchEl = document.createElement('input');
-    searchEl.type = 'search';
-    searchEl.placeholder = 'Search tables…';
-    searchEl.className = 'adm-input w-160';
-    right.appendChild(searchEl);
+    const searchElement = document.createElement('input');
+    searchElement.type = 'search';
+    searchElement.placeholder = 'Search tables…';
+    searchElement.className = 'adm-input w-160';
+    right.appendChild(searchElement);
 
-    const hiddenLbl = document.createElement('label');
-    hiddenLbl.style.cssText = 'color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;';
-    const hiddenChk = document.createElement('input');
-    hiddenChk.type = 'checkbox';
-    hiddenLbl.appendChild(hiddenChk);
-    hiddenLbl.append(' Hidden tables');
-    right.appendChild(hiddenLbl);
+    const hiddenLabel = document.createElement('label');
+    hiddenLabel.style.cssText = 'color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;';
+    const hiddenCheckbox = document.createElement('input');
+    hiddenCheckbox.type = 'checkbox';
+    hiddenLabel.appendChild(hiddenCheckbox);
+    hiddenLabel.append(' Hidden tables');
+    right.appendChild(hiddenLabel);
 
-    const resetBtn = document.createElement('button');
-    resetBtn.textContent = '⤢ Fit View';
-    resetBtn.className = 'btn btn-secondary btn-sm';
-    right.appendChild(resetBtn);
+    const resetButton = document.createElement('button');
+    resetButton.textContent = '⤢ Fit View';
+    resetButton.className = 'btn btn-secondary btn-sm';
+    right.appendChild(resetButton);
 
-    const exportBtn = document.createElement('button');
-    exportBtn.textContent = '↓ PNG';
-    exportBtn.title = 'Export full diagram as PNG';
-    exportBtn.className = 'btn btn-secondary btn-sm';
-    right.appendChild(exportBtn);
+    const exportButton = document.createElement('button');
+    exportButton.textContent = '↓ PNG';
+    exportButton.title = 'Export full diagram as PNG';
+    exportButton.className = 'btn btn-secondary btn-sm';
+    right.appendChild(exportButton);
 
     tb.appendChild(right);
     wrap.appendChild(tb);
 
-    const loadEl = document.createElement('p');
-    loadEl.textContent = 'Loading schema…';
-    loadEl.style.cssText = 'color:var(--muted);';
-    wrap.appendChild(loadEl);
+    const loadElement = document.createElement('p');
+    loadElement.textContent = 'Loading schema…';
+    loadElement.style.cssText = 'color:var(--muted);';
+    wrap.appendChild(loadElement);
 
     let rawSchema;
     try {
         rawSchema = await getGlobalSchema();
         if (!rawSchema) throw new Error('schema unavailable');
     } catch {
-        loadEl.textContent = 'Failed to load schema.';
+        loadElement.textContent = 'Failed to load schema.';
         return;
     }
-    loadEl.remove();
+    loadElement.remove();
 
     const container = document.createElement('div');
     container.style.cssText = 'flex:1;position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);cursor:grab;';
     wrap.appendChild(container);
 
-    startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, searchEl, statsEl);
+    startDiagram(container, rawSchema, hiddenCheckbox, resetButton, exportButton, searchElement, statisticsElement);
 }
 
 function buildGraph(rawSchema, showHidden) {
     const tables = rawSchema.tables || {};
     const nodes = [], edges = [];
 
-    for (const [name, cfg] of Object.entries(tables)) {
-        if (!showHidden && cfg.hidden) continue;
-        const allCols = Object.entries(cfg.columns || {}).filter(([k]) => k !== 'id');
-        const shown = allCols.slice(0, NMC);
-        const extra = allCols.length - shown.length;
+    for (const [name, config] of Object.entries(tables)) {
+        if (!showHidden && config.hidden) continue;
+        const allColumns = Object.entries(config.columns || {}).filter(([k]) => k !== 'id');
+        const shown = allColumns.slice(0, NMC);
+        const extra = allColumns.length - shown.length;
         const rows  = Math.max(1, shown.length + (extra > 0 ? 1 : 0));
         nodes.push({
             id:     name,
-            label:  cfg.display_name || name,
-            schema: cfg.schema || 'public',
-            hidden: !!cfg.hidden,
+            label:  config.display_name || name,
+            schema: config.schema || 'public',
+            hidden: !!config.hidden,
             cols:   shown.map(([k, v]) => ({
                 name: k,
                 type: v.type || 'text',
-                isFk: !!(cfg.foreign_keys?.[k]),
+                isFk: !!(config.foreign_keys?.[k]),
             })),
             extra,
             w: NW,
@@ -119,18 +119,18 @@ function buildGraph(rawSchema, showHidden) {
 
     const nodeSet = new Set(nodes.map(n => n.id));
 
-    for (const [name, cfg] of Object.entries(tables)) {
+    for (const [name, config] of Object.entries(tables)) {
         if (!nodeSet.has(name)) continue;
-        for (const [col, fk] of Object.entries(cfg.foreign_keys || {})) {
+        for (const [column, fk] of Object.entries(config.foreign_keys || {})) {
             const tgt = fk.reference_table;
             if (tgt && nodeSet.has(tgt) && tgt !== name)
-                edges.push({ src: name, tgt, type: 'fk', label: col });
+                edges.push({ src: name, tgt, type: 'fk', label: column });
         }
-        for (const sub of (cfg.subtables || [])) {
+        for (const sub of (config.subtables || [])) {
             if (sub.table && nodeSet.has(sub.table))
                 edges.push({ src: name, tgt: sub.table, type: 'sub', label: sub.foreign_key || '' });
         }
-        for (const m2m of (cfg.many_to_many || [])) {
+        for (const m2m of (config.many_to_many || [])) {
             const tgt = m2m.other_table;
             if (tgt && nodeSet.has(tgt) && tgt !== name) {
                 const dup = edges.find(e => e.type === 'm2m' &&
@@ -145,11 +145,11 @@ function buildGraph(rawSchema, showHidden) {
 
 function layoutForce(nodes, edges) {
     if (!nodes.length) return;
-    const cols = Math.ceil(Math.sqrt(nodes.length));
+    const columns = Math.ceil(Math.sqrt(nodes.length));
     const sx = 290, sy = 310;
     nodes.forEach((n, i) => {
-        n.x  = (i % cols) * sx + sx / 2 + (Math.random() - 0.5) * 30;
-        n.y  = Math.floor(i / cols) * sy + sy / 2 + (Math.random() - 0.5) * 30;
+        n.x  = (i % columns) * sx + sx / 2 + (Math.random() - 0.5) * 30;
+        n.y  = Math.floor(i / columns) * sy + sy / 2 + (Math.random() - 0.5) * 30;
         n.vx = n.vy = 0;
     });
 
@@ -188,14 +188,14 @@ function layoutForce(nodes, edges) {
     nodes.forEach(n => { n.x -= mnX - 60; n.y -= mnY - 60; });
 }
 
-function svgEl(tag, attrs = {}) {
+function svgElement(tag, attrs = {}) {
     const e = document.createElementNS(NS, tag);
     for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
     return e;
 }
 
-function svgTxt(content, x, y, o = {}) {
-    const t = svgEl('text', {
+function svgText(content, x, y, o = {}) {
+    const t = svgElement('text', {
         x, y,
         'dominant-baseline': o.bl   || 'middle',
         'text-anchor':       o.ta   || 'start',
@@ -249,9 +249,9 @@ const HDR_COLOR = {
     nbr:    '#1F2A37',
 };
 
-function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
-    const defs = svg.querySelector('defs');
-    Array.from(defs.querySelectorAll('clipPath')).forEach(c => c.remove());
+function doRender(svg, gE, gN, nodes, edges, selectId, searchTerm) {
+    const definitions = svg.querySelector('defs');
+    Array.from(definitions.querySelectorAll('clipPath')).forEach(c => c.remove());
     gE.innerHTML = '';
     gN.innerHTML = '';
 
@@ -265,9 +265,9 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
                 n.label.toLowerCase().includes(term)
             ).map(n => n.id)
         );
-    } else if (selId) {
+    } else if (selectId) {
         linked = new Set(edges
-            .filter(e => e.src === selId || e.tgt === selId)
+            .filter(e => e.src === selectId || e.tgt === selectId)
             .flatMap(e => [e.src, e.tgt]));
     }
 
@@ -278,7 +278,7 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
         const dim = linked && !linked.has(e.src) && !linked.has(e.tgt);
         const p1  = borderPt(a, b.x, b.y), p2 = borderPt(b, a.x, a.y);
 
-        gE.appendChild(svgEl('path', {
+        gE.appendChild(svgElement('path', {
             d: bezierD(p1.x, p1.y, p2.x, p2.y),
             stroke: c.color, 'stroke-width': dim ? 1 : 2,
             fill: 'none', opacity: dim ? 0.1 : 0.85,
@@ -288,54 +288,54 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
 
         if (e.label && !dim) {
             const mx = (p1.x+p2.x)/2, my = (p1.y+p2.y)/2;
-            gE.appendChild(svgEl('rect', { x:mx-28, y:my-8, width:56, height:15, rx:3, fill:'#fff', opacity:0.88 }));
-            gE.appendChild(svgTxt(e.label, mx, my+1, { ta:'middle', sz:10, fill:c.color, max:16 }));
+            gE.appendChild(svgElement('rect', { x:mx-28, y:my-8, width:56, height:15, rx:3, fill:'#fff', opacity:0.88 }));
+            gE.appendChild(svgText(e.label, mx, my+1, { ta:'middle', sz:10, fill:c.color, max:16 }));
         }
     }
 
     for (const n of nodes) {
         const dim   = linked && !linked.has(n.id);
-        const isSel = n.id === selId;
-        const isNbr = linked && !isSel && linked.has(n.id);
-        const hdrC  = isSel ? HDR_COLOR.sel : isNbr ? HDR_COLOR.nbr
+        const isSelect = n.id === selectId;
+        const isNbr = linked && !isSelect && linked.has(n.id);
+        const hdrC  = isSelect ? HDR_COLOR.sel : isNbr ? HDR_COLOR.nbr
                     : n.hidden ? HDR_COLOR.hidden : HDR_COLOR.normal;
         const x = n.x - n.w/2, y = n.y - n.h/2;
 
-        const g = svgEl('g', { 'data-id': n.id, opacity: dim ? 0.2 : 1 });
+        const g = svgElement('g', { 'data-id': n.id, opacity: dim ? 0.2 : 1 });
         g.style.cursor = 'pointer';
 
-        g.appendChild(svgEl('rect', { x:x+3, y:y+3, width:n.w, height:n.h, rx:7, fill:'#00000016' }));
+        g.appendChild(svgElement('rect', { x:x+3, y:y+3, width:n.w, height:n.h, rx:7, fill:'#00000016' }));
 
-        g.appendChild(svgEl('rect', { x, y, width:n.w, height:n.h, rx:7,
-            fill: isSel ? '#F1F4F8' : '#fff',
-            stroke: isSel ? '#003366' : isNbr ? '#1F2A37' : '#D0DAE6',
-            'stroke-width': (isSel || isNbr) ? 2 : 1,
+        g.appendChild(svgElement('rect', { x, y, width:n.w, height:n.h, rx:7,
+            fill: isSelect ? '#F1F4F8' : '#fff',
+            stroke: isSelect ? '#003366' : isNbr ? '#1F2A37' : '#D0DAE6',
+            'stroke-width': (isSelect || isNbr) ? 2 : 1,
         }));
 
-        g.appendChild(svgEl('path', { d: topRoundedRect(x, y, n.w, NHD, 7), fill: hdrC }));
+        g.appendChild(svgElement('path', { d: topRoundedRect(x, y, n.w, NHD, 7), fill: hdrC }));
 
-        g.appendChild(svgTxt(n.label, x+n.w/2, y+NHD/2+1,
+        g.appendChild(svgText(n.label, x+n.w/2, y+NHD/2+1,
             { ta:'middle', fill:'#fff', weight:'600', sz:13, max:22 }));
 
         if (n.schema !== 'public') {
-            g.appendChild(svgTxt(n.schema, x+n.w-7, y+NHD/2+1,
+            g.appendChild(svgText(n.schema, x+n.w-7, y+NHD/2+1,
                 { ta:'end', fill:'rgba(255,255,255,.5)', sz:9, max:12 }));
         }
 
-        g.appendChild(svgEl('line', { x1:x, y1:y+NHD, x2:x+n.w, y2:y+NHD, stroke:'#D0DAE6', 'stroke-width':1 }));
+        g.appendChild(svgElement('line', { x1:x, y1:y+NHD, x2:x+n.w, y2:y+NHD, stroke:'#D0DAE6', 'stroke-width':1 }));
 
-        n.cols.forEach((col, ci) => {
+        n.cols.forEach((column, ci) => {
             const cy = y + NHD + ci*NRH + NRH/2 + 2;
-            if (col.isFk) g.appendChild(svgTxt('→', x+6, cy, { fill:'#6E767F', sz:10 }));
-            g.appendChild(svgTxt(col.name, col.isFk ? x+18 : x+8, cy,
+            if (column.isFk) g.appendChild(svgText('→', x+6, cy, { fill:'#6E767F', sz:10 }));
+            g.appendChild(svgText(column.name, column.isFk ? x+18 : x+8, cy,
                 { fill:'#1F2A37', sz:11, max:17 }));
-            g.appendChild(svgTxt(col.type, x+n.w-7, cy,
+            g.appendChild(svgText(column.type, x+n.w-7, cy,
                 { ta:'end', fill:'#6E767F', sz:10, max:10 }));
         });
 
         if (n.extra > 0) {
             const cy = y + NHD + n.cols.length*NRH + NRH/2 + 2;
-            g.appendChild(svgTxt(`+ ${n.extra} more`, x+n.w/2, cy,
+            g.appendChild(svgText(`+ ${n.extra} more`, x+n.w/2, cy,
                 { ta:'middle', fill:'#6E767F', sz:10 }));
         }
 
@@ -343,20 +343,20 @@ function doRender(svg, gE, gN, nodes, edges, selId, searchTerm) {
     }
 }
 
-function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, searchEl, statsEl) {
+function startDiagram(container, rawSchema, hiddenCheckbox, resetButton, exportButton, searchElement, statisticsElement) {
     const svg = document.createElementNS(NS, 'svg');
     svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;';
     container.appendChild(svg);
 
-    const defs = svgEl('defs');
+    const definitions = svgElement('defs');
     for (const [type, c] of Object.entries(EDGE_STYLE)) {
-        const mk   = svgEl('marker', { id:`mk-${type}`, markerWidth:8, markerHeight:8, refX:7, refY:3, orient:'auto' });
-        const poly = svgEl('polygon', { points:'0 0,8 3,0 6', fill:c.color });
-        mk.appendChild(poly); defs.appendChild(mk);
+        const mk   = svgElement('marker', { id:`mk-${type}`, markerWidth:8, markerHeight:8, refX:7, refY:3, orient:'auto' });
+        const poly = svgElement('polygon', { points:'0 0,8 3,0 6', fill:c.color });
+        mk.appendChild(poly); definitions.appendChild(mk);
     }
-    svg.appendChild(defs);
+    svg.appendChild(definitions);
 
-    const gAll = svgEl('g'), gE = svgEl('g'), gN = svgEl('g');
+    const gAll = svgElement('g'), gE = svgElement('g'), gN = svgElement('g');
     gAll.appendChild(gE); gAll.appendChild(gN); svg.appendChild(gAll);
 
     const leg = document.createElement('div');
@@ -370,15 +370,15 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
     container.appendChild(leg);
 
     let pan = { x: 40, y: 40 }, zoom = 1;
-    let selId = null, searchTerm = '', nodes = [], edges = [];
-    let panning = false, panStart = null, panOrig = null;
+    let selectId = null, searchTerm = '', nodes = [], edges = [];
+    let panning = false, panStart = null, panOrig: panOriginal = null;
     let dragId = null, dragMoved = false, dragClient = null;
 
     const applyXform = () =>
         gAll.setAttribute('transform', `translate(${pan.x},${pan.y}) scale(${zoom})`);
 
     function render() {
-        doRender(svg, gE, gN, nodes, edges, selId, searchTerm);
+        doRender(svg, gE, gN, nodes, edges, selectId, searchTerm);
         gN.querySelectorAll('[data-id]').forEach(g => {
             const nid = g.getAttribute('data-id');
             g.addEventListener('mousedown', ev => {
@@ -405,13 +405,13 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
     }
 
     function rebuild() {
-        ({ nodes, edges } = buildGraph(rawSchema, hiddenChk.checked));
-        selId = null;
+        ({ nodes, edges } = buildGraph(rawSchema, hiddenCheckbox.checked));
+        selectId = null;
         layoutForce(nodes, edges);
         const fk  = edges.filter(e => e.type==='fk').length;
         const sub = edges.filter(e => e.type==='sub').length;
         const m2m = edges.filter(e => e.type==='m2m').length;
-        statsEl.textContent = `${nodes.length} tables · ${fk} FK · ${sub} subtable · ${m2m} M2M`;
+        statisticsElement.textContent = `${nodes.length} tables · ${fk} FK · ${sub} subtable · ${m2m} M2M`;
         render();
         fitView();
     }
@@ -420,7 +420,7 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
         if (dragId) return;
         panning  = true;
         panStart = { x: ev.clientX, y: ev.clientY };
-        panOrig  = { ...pan };
+        panOriginal  = { ...pan };
         container.style.cursor = 'grabbing';
     });
 
@@ -437,14 +437,14 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
             return;
         }
         if (!panning) return;
-        pan.x = panOrig.x + (ev.clientX - panStart.x);
-        pan.y = panOrig.y + (ev.clientY - panStart.y);
+        pan.x = panOriginal.x + (ev.clientX - panStart.x);
+        pan.y = panOriginal.y + (ev.clientY - panStart.y);
         applyXform();
     });
 
     window.addEventListener('mouseup', () => {
         if (dragId && !dragMoved) {
-            selId = selId === dragId ? null : dragId;
+            selId: selectId = selectId === dragId ? null : dragId;
             render();
         }
         dragId = null; dragMoved = false; dragClient = null;
@@ -463,16 +463,16 @@ function startDiagram(container, rawSchema, hiddenChk, resetBtn, exportBtn, sear
         applyXform();
     }, { passive: false });
 
-    resetBtn.addEventListener('click', fitView);
-    hiddenChk.addEventListener('change', rebuild);
+    resetButton.addEventListener('click', fitView);
+    hiddenCheckbox.addEventListener('change', rebuild);
 
-    searchEl.addEventListener('input', () => {
-        searchTerm = searchEl.value.trim();
-        selId = null;
+    searchElement.addEventListener('input', () => {
+        searchTerm = searchElement.value.trim();
+        selectId = null;
         render();
     });
 
-    exportBtn.addEventListener('click', () => exportPng(svg, nodes));
+    exportButton.addEventListener('click', () => exportPng(svg, nodes));
 
     rebuild();
 }
@@ -494,18 +494,18 @@ function exportPng(svg, nodes) {
     const gAllClone = clone.querySelector('g');
     if (gAllClone) gAllClone.removeAttribute('transform');
 
-    const bg = document.createElementNS(NS, 'rect');
-    bg.setAttribute('x', String(mnX)); bg.setAttribute('y', String(mnY));
-    bg.setAttribute('width', String(vw)); bg.setAttribute('height', String(vh));
-    bg.setAttribute('fill', '#D0DAE6');
-    if (gAllClone) gAllClone.prepend(bg);
+    const background = document.createElementNS(NS, 'rect');
+    background.setAttribute('x', String(mnX)); background.setAttribute('y', String(mnY));
+    background.setAttribute('width', String(vw)); background.setAttribute('height', String(vh));
+    background.setAttribute('fill', '#D0DAE6');
+    if (gAllClone) gAllClone.prepend(background);
 
-    const svgStr  = new XMLSerializer().serializeToString(clone);
-    const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const svgString  = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
     const url     = URL.createObjectURL(svgBlob);
 
-    const img = new Image();
-    img.onload = () => {
+    const image = new Image();
+    image.onload = () => {
         const scale  = Math.min(2, 4000 / Math.max(vw, vh));
         const canvas = document.createElement('canvas');
         canvas.width  = Math.round(vw * scale);
@@ -514,7 +514,7 @@ function exportPng(svg, nodes) {
         c2.fillStyle = '#D0DAE6';
         c2.fillRect(0, 0, canvas.width, canvas.height);
         c2.scale(scale, scale);
-        c2.drawImage(img, 0, 0);
+        c2.drawImage(image, 0, 0);
         URL.revokeObjectURL(url);
         canvas.toBlob(blob => {
             const a = document.createElement('a');
@@ -524,6 +524,6 @@ function exportPng(svg, nodes) {
             setTimeout(() => URL.revokeObjectURL(a.href), 2000);
         }, 'image/png');
     };
-    img.onerror = () => URL.revokeObjectURL(url);
-    img.src = url;
+    image.onerror = () => URL.revokeObjectURL(url);
+    image.src = url;
 }

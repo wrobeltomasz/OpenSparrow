@@ -115,8 +115,8 @@ describe('OpenSparrow – DB row counts: companies', () => {
       cy.intercept('DELETE', /index\.php/).as('deleteReq');
       cy.visit(`${BASE}/index.php?table=${TABLE}`);
 
-      waitForGridOrEmpty().then(res => {
-        expect(res.type, 'grid rendered').to.eq('grid');
+      waitForGridOrEmpty().then(result => {
+        expect(result.type, 'grid rendered').to.eq('grid');
 
         cy.window().then(win => {
           cy.stub(win, 'confirm').returns(true);
@@ -242,8 +242,8 @@ describe('OpenSparrow – DB row counts: deals', () => {
         cy.get('select[name="stage"]').should('have.value', deal.stage);
         cy.get('input[name="expected_close"]').should('have.value', deal.expected_close);
 
-        cy.get('input[name="value"]').invoke('val').then(val => {
-          expect(parseFloat(val), 'deal value').to.eq(parseFloat(deal.value));
+        cy.get('input[name="value"]').invoke('val').then(value => {
+          expect(parseFloat(value), 'deal value').to.eq(parseFloat(deal.value));
         });
 
         deal.stakeholders.forEach(v => {
@@ -260,8 +260,8 @@ describe('OpenSparrow – DB row counts: deals', () => {
       cy.intercept('DELETE', /index\.php/).as('deleteReq');
       cy.visit(`${BASE}/index.php?table=${DEALS}`);
 
-      waitForGridOrEmpty().then(res => {
-        expect(res.type, 'grid rendered').to.eq('grid');
+      waitForGridOrEmpty().then(result => {
+        expect(result.type, 'grid rendered').to.eq('grid');
 
         cy.window().then(win => {
           cy.stub(win, 'confirm').returns(true);
@@ -361,8 +361,8 @@ describe('OpenSparrow – DB row counts: contacts', () => {
       cy.intercept('DELETE', /index\.php/).as('deleteReq');
       cy.visit(`${BASE}/index.php?table=${CONTACTS}`);
 
-      waitForGridOrEmpty().then(res => {
-        expect(res.type, 'grid rendered').to.eq('grid');
+      waitForGridOrEmpty().then(result => {
+        expect(result.type, 'grid rendered').to.eq('grid');
 
         cy.window().then(win => {
           cy.stub(win, 'confirm').returns(true);

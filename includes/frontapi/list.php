@@ -19,7 +19,7 @@ function frontapi_list(FrontApiContext $context): never
     $table = $_GET['table'] ?? '';
 
     try {
-        $tableCfg = safe_table($schema, $table);
+        $tableConfig = safe_table($schema, $table);
     } catch (\RuntimeException $exception) {
         throw new BadRequestException('Unknown table');
     }
@@ -28,8 +28,8 @@ function frontapi_list(FrontApiContext $context): never
         require_table_access($table);
     }
     $idColumn = id_column();
-    $schemaName = $tableCfg['schema'] ?? 'public';
-    $columns = column_list($tableCfg);
+    $schemaName = $tableConfig['schema'] ?? 'public';
+    $columns = column_list($tableConfig);
     $selectColumns = array_values(array_unique(array_merge([$idColumn], $columns)));
 
     if (defined('OS_FK_LABEL_COLUMNS')) {
@@ -42,9 +42,9 @@ function frontapi_list(FrontApiContext $context): never
     $filterFrom = $_GET['filter_from'] ?? '';
     $filterTo   = $_GET['filter_to'] ?? '';
     $whereSql = '';
-    $params = [];
+    $parameters = [];
     if ($filterColumn !== '' && ($filterValue !== '' || $filterFrom !== '' || $filterTo !== '')) {
-        $allowedFilterColumns = array_merge([$idColumn], array_keys($tableCfg['columns'] ?? []));
+        $allowedFilterColumns = array_merge([$idColumn], array_keys($tableConfig['columns'] ?? []));
 
         if (defined('OS_FK_LABEL_COLUMNS')) {
             $allowedFilterColumns = array_values(array_intersect($allowedFilterColumns, $selectColumns));
@@ -53,17 +53,17 @@ function frontapi_list(FrontApiContext $context): never
             if ($filterFrom !== '' || $filterTo !== '') {
                 $rangeClauses = [];
                 if ($filterFrom !== '') {
-                    $rangeClauses[] = sprintf('%s >= $%d', pg_ident($filterColumn), count($params) + 1);
-                    $params[] = $filterFrom;
+                    $rangeClauses[] = sprintf('%s >= $%d', pg_ident($filterColumn), count($parameters) + 1);
+                    $parameters[] = $filterFrom;
                 }
                 if ($filterTo !== '') {
-                    $rangeClauses[] = sprintf('%s < $%d', pg_ident($filterColumn), count($params) + 1);
-                    $params[] = $filterTo;
+                    $rangeClauses[] = sprintf('%s < $%d', pg_ident($filterColumn), count($parameters) + 1);
+                    $parameters[] = $filterTo;
                 }
                 $whereSql = ' WHERE ' . implode(' AND ', $rangeClauses);
             } else {
                 $whereSql = sprintf(' WHERE %s = $1', pg_ident($filterColumn));
-                $params[] = $filterValue;
+                $parameters[] = $filterValue;
             }
         }
     }
@@ -71,36 +71,36 @@ function frontapi_list(FrontApiContext $context): never
     $search = trim($_GET['search'] ?? '');
     if ($search !== '') {
         $likeValue  = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
-        $parameterNumber = count($params) + 1;
+        $parameterNumber = count($parameters) + 1;
         $searchClauses = array_map(
             fn($column) => sprintf('%s::text ILIKE $%d', pg_ident($column), $parameterNumber),
             $selectColumns
         );
         $whereSql .= ($whereSql !== '' ? ' AND ' : ' WHERE ') . '(' . implode(' OR ', $searchClauses) . ')';
-        $params[]  = $likeValue;
+        $parameters[]  = $likeValue;
     }
 
-    if (!empty($tableCfg['owner_restricted'])) {
+    if (!empty($tableConfig['owner_restricted'])) {
         $ownerSql = owner_restriction_sql(
             '_t.' . pg_ident($idColumn),
-            count($params) + 1,
-            count($params) + 2
+            count($parameters) + 1,
+            count($parameters) + 2
         );
-        $params[] = $table;
-        $params[] = $context->userId;
+        $parameters[] = $table;
+        $parameters[] = $context->userId;
         $whereSql .= ($whereSql === '' ? ' WHERE TRUE' : '') . $ownerSql;
     }
 
     $offset = max(0, (int)($_GET['offset'] ?? 0));
 
-    $defaultSort  = $tableCfg['default_sort'] ?? [];
+    $defaultSort  = $tableConfig['default_sort'] ?? [];
     $orderClauses = [];
     if (is_array($defaultSort)) {
         foreach ($defaultSort as $rule) {
             $columnName = $rule['column'] ?? '';
-            $dir = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
-            if ($columnName !== '' && (isset($tableCfg['columns'][$columnName]) || $columnName === $idColumn)) {
-                $orderClauses[] = pg_ident($columnName) . ' ' . $dir;
+            $directory = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+            if ($columnName !== '' && (isset($tableConfig['columns'][$columnName]) || $columnName === $idColumn)) {
+                $orderClauses[] = pg_ident($columnName) . ' ' . $directory;
             }
         }
     }
@@ -108,7 +108,7 @@ function frontapi_list(FrontApiContext $context): never
         $orderClauses[] = pg_ident($idColumn) . ' DESC';
     }
 
-    $initialLimit = (int)($tableCfg['initial_limit'] ?? 0);
+    $initialLimit = (int)($tableConfig['initial_limit'] ?? 0);
     $rowCap       = $initialLimit > 0 ? $initialLimit : MAX_LIST_ROWS;
 
     $sql = sprintf(
@@ -121,7 +121,7 @@ function frontapi_list(FrontApiContext $context): never
         $rowCap,
         $offset
     );
-    $result = @pg_query_params($conn, $sql, $params);
+    $result = @pg_query_params($conn, $sql, $parameters);
     if (!$result) {
         error_log('[api][list] ' . pg_last_error($conn));
         throw new ServerErrorException('Database error');
@@ -137,7 +137,7 @@ function frontapi_list(FrontApiContext $context): never
         $rows[] = $row;
     }
     pg_free_result($result);
-    $rows = map_fk_display($schema, $tableCfg, $rows, $conn);
+    $rows = map_fk_display($schema, $tableConfig, $rows, $conn);
     $rowCount = count($rows);
     echo json_encode([
         'columns'   => $selectColumns,
@@ -146,7 +146,7 @@ function frontapi_list(FrontApiContext $context): never
         'total'     => $dbTotal,
         'table'     => [
             'name'         => $table,
-            'display_name' => to_display_name($tableCfg),
+            'display_name' => to_display_name($tableConfig),
         ],
     ]);
     throw ResponseException::sent();
@@ -159,12 +159,12 @@ function frontapi_subtable_counts(FrontApiContext $context): never
 
     $table = $_GET['table'] ?? '';
     try {
-        $tableCfg = safe_table($schema, $table);
+        $tableConfig = safe_table($schema, $table);
     } catch (\RuntimeException $exception) {
         throw new BadRequestException('Unknown table');
     }
     require_table_access($table);
-    $subtables = $tableCfg['subtables'] ?? [];
+    $subtables = $tableConfig['subtables'] ?? [];
 
     if (empty($subtables)) {
         throw ResponseException::encoded(['success' => true, 'counts' => (object)[]]);
@@ -180,7 +180,7 @@ function frontapi_subtable_counts(FrontApiContext $context): never
         throw ResponseException::encoded(['success' => true, 'counts' => (object)[]]);
     }
 
-    $ids = filter_visible_ids($conn, $tableCfg, $table, $ids, $context->userId);
+    $ids = filter_visible_ids($conn, $tableConfig, $table, $ids, $context->userId);
     if (empty($ids)) {
         throw ResponseException::encoded(['success' => true, 'counts' => (object)[]]);
     }
@@ -188,25 +188,25 @@ function frontapi_subtable_counts(FrontApiContext $context): never
     $idColumn  = id_column();
     $counts = array_fill_keys(array_map('strval', $ids), 0);
 
-    foreach ($subtables as $subtable) {
-        $subTable = $subtable['table'] ?? '';
-        $fkColumn    = $subtable['foreign_key'] ?? '';
-        if ($subTable === '' || $fkColumn === '') {
+    foreach ($subtables as $subtableDefinition) {
+        $subtableName = $subtableDefinition['table'] ?? '';
+        $fkColumn    = $subtableDefinition['foreign_key'] ?? '';
+        if ($subtableName === '' || $fkColumn === '') {
             continue;
         }
-        if (!isset($schema['tables'][$subTable])) {
+        if (!isset($schema['tables'][$subtableName])) {
             continue;
         }
 
-        if (!user_can_access_table($subTable)) {
+        if (!user_can_access_table($subtableName)) {
             continue;
         }
-        $subCfg  = $schema['tables'][$subTable];
-        $allowed = array_merge([$idColumn], array_keys($subCfg['columns'] ?? []));
+        $subtableConfig  = $schema['tables'][$subtableName];
+        $allowed = array_merge([$idColumn], array_keys($subtableConfig['columns'] ?? []));
         if (!in_array($fkColumn, $allowed, true)) {
             continue;
         }
-        $subSchema    = $subCfg['schema'] ?? 'public';
+        $subtableSchema    = $subtableConfig['schema'] ?? 'public';
         $placeholders = implode(',', array_map(
             fn($placeholderIndex) => '$' . ($placeholderIndex + 1),
             range(0, count($ids) - 1)
@@ -214,8 +214,8 @@ function frontapi_subtable_counts(FrontApiContext $context): never
         $sql = sprintf(
             'SELECT %s AS fk_val, COUNT(*) AS cnt FROM %s.%s WHERE %s IN (%s) GROUP BY %s',
             pg_ident($fkColumn),
-            pg_ident($subSchema),
-            pg_ident($subTable),
+            pg_ident($subtableSchema),
+            pg_ident($subtableName),
             pg_ident($fkColumn),
             $placeholders,
             pg_ident($fkColumn)

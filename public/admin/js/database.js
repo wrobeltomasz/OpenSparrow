@@ -12,8 +12,8 @@ export async function renderDatabaseSection(panel) {
 
     let dbConfig;
     try {
-        const res = await apiFetch('api.php?action=get&file=database');
-        dbConfig = await res.json();
+        const result = await apiFetch('api.php?action=get&file=database');
+        dbConfig = await result.json();
         if (!dbConfig.host) dbConfig = { host: 'localhost', port: '5432', dbname: '', user: 'postgres', password: '' };
     } catch (e) {
         panel.innerHTML = '<h3 style="color:var(--error);">Error loading database settings. Check server logs.</h3>';
@@ -26,10 +26,10 @@ export async function renderDatabaseSection(panel) {
     h3.textContent = 'PostgreSQL Connection Settings';
     panel.appendChild(h3);
 
-    const desc = document.createElement('p');
-    desc.style.cssText = 'color:var(--muted); margin-bottom: 20px;';
-    desc.innerHTML = 'Configure your database connection. <strong>Click "Save configuration" before testing!</strong>';
-    panel.appendChild(desc);
+    const description = document.createElement('p');
+    description.style.cssText = 'color:var(--muted); margin-bottom: 20px;';
+    description.innerHTML = 'Configure your database connection. <strong>Click "Save configuration" before testing!</strong>';
+    panel.appendChild(description);
 
     panel.appendChild(createTextInput('host', 'DB Host (e.g. localhost or IP)', dbConfig.host || 'localhost', v => dbConfig.host = v));
     panel.appendChild(createTextInput('port', 'DB Port (default 5432)', dbConfig.port || '5432', v => dbConfig.port = v));
@@ -41,21 +41,21 @@ export async function renderDatabaseSection(panel) {
     const saveRow = document.createElement('div');
     saveRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-top:20px;';
 
-    const saveBtn = document.createElement('button');
-    saveBtn.type = 'button';
-    saveBtn.textContent = 'Save configuration';
-    saveBtn.className = 'btn btn-success';
+    const saveButton = document.createElement('button');
+    saveButton.type = 'button';
+    saveButton.textContent = 'Save configuration';
+    saveButton.className = 'btn btn-success';
 
     const pillAnchor = document.createElement('span');
 
-    saveBtn.addEventListener('click', async () => {
-        saveBtn.disabled = true;
+    saveButton.addEventListener('click', async () => {
+        saveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=save&file=database', {
+            const result = await apiFetch('api.php?action=save&file=database', {
                 method: 'POST',
                 body: JSON.stringify(dbConfig),
             });
-            const result = await res.json();
+            const result = await result.json();
             if (result.status === 'success') {
                 showStatusPill(pillAnchor, 'Database settings saved.', 'success');
             } else {
@@ -64,46 +64,46 @@ export async function renderDatabaseSection(panel) {
         } catch (e) {
             showStatusPill(pillAnchor, 'Request failed.', 'error');
         }
-        saveBtn.disabled = false;
+        saveButton.disabled = false;
     });
 
-    saveRow.appendChild(saveBtn);
+    saveRow.appendChild(saveButton);
     saveRow.appendChild(pillAnchor);
     panel.appendChild(saveRow);
 
-    const testBtn = document.createElement('button');
-    testBtn.type = 'button';
-    testBtn.textContent = 'Test Saved Connection';
-    testBtn.className = 'btn btn-primary';
-    testBtn.style.marginTop = '12px';
+    const testButton = document.createElement('button');
+    testButton.type = 'button';
+    testButton.textContent = 'Test Saved Connection';
+    testButton.className = 'btn btn-primary';
+    testButton.style.marginTop = '12px';
 
-    testBtn.onclick = async () => {
-        testBtn.textContent = 'Testing...';
-        testBtn.style.opacity = '0.7';
+    testButton.onclick = async () => {
+        testButton.textContent = 'Testing...';
+        testButton.style.opacity = '0.7';
 
         try {
-            const res = await apiFetch('api.php?action=health');
-            const data = await res.json();
+            const result = await apiFetch('api.php?action=health');
+            const data = await result.json();
 
             if (data.db_connected) {
-                showStatusPill(testBtn, 'Connected to the database.', 'success');
-                testBtn.style.background = 'var(--ok)';
+                showStatusPill(testButton, 'Connected to the database.', 'success');
+                testButton.style.background = 'var(--ok)';
             } else {
                 showStatusPill(
-                    testBtn,
+                    testButton,
                     'Connection failed: ' + (data.db_error || 'unknown error')
                     + ' — save the configuration before testing.',
                     'error'
                 );
-                testBtn.style.background = 'var(--error)';
+                testButton.style.background = 'var(--error)';
             }
         } catch (e) {
-            showStatusPill(testBtn, 'Cannot reach the server.', 'error');
+            showStatusPill(testButton, 'Cannot reach the server.', 'error');
         }
 
-        testBtn.textContent = 'Test Saved Connection';
-        testBtn.style.opacity = '1';
+        testButton.textContent = 'Test Saved Connection';
+        testButton.style.opacity = '1';
     };
 
-    panel.appendChild(testBtn);
+    panel.appendChild(testButton);
 }

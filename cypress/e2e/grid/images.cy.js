@@ -58,9 +58,9 @@ describe('OpenSparrow – Images: batch API contract', () => {
     cy.request({
       url: `${BASE}/api.php?api=image_rows&table=nonexistent_table&ids=1,2,3`,
       failOnStatusCode: false,
-    }).then(res => {
-      expect(res.status).to.eq(200);
-      expect(res.body).to.have.property('data');
+    }).then(result => {
+      expect(result.status).to.eq(200);
+      expect(result.body).to.have.property('data');
     });
   });
 
@@ -68,9 +68,9 @@ describe('OpenSparrow – Images: batch API contract', () => {
     cy.request({
       url: `${BASE}/api.php?api=image_rows&table=nonexistent_table&ids=abc,';DROP`,
       failOnStatusCode: false,
-    }).then(res => {
-      expect(res.status).to.eq(200);
-      expect(res.body.data).to.deep.eq({});
+    }).then(result => {
+      expect(result.status).to.eq(200);
+      expect(result.body.data).to.deep.eq({});
     });
   });
 
@@ -79,8 +79,8 @@ describe('OpenSparrow – Images: batch API contract', () => {
     cy.request({
       url: `${BASE}/api.php?api=image_rows&table=nonexistent_table&ids=1`,
       failOnStatusCode: false,
-    }).then(res => {
-      expect(res.status).to.be.oneOf([401, 403]);
+    }).then(result => {
+      expect(result.status).to.be.oneOf([401, 403]);
     });
   });
 });

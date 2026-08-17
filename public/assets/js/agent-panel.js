@@ -13,12 +13,12 @@ const t    = (k, v) => I18n.t(k, v);
 const MAX_CONTEXT_ROWS = 50;
 const MAX_CONTEXT_COLS = 12;
 
-function fmtTime() {
+function formatTime() {
     return new Date().toTimeString().slice(0, 8);
 }
 
-let panelEl, overlayEl, tagsEl, convEl, queryEl, sendBtn, stopBtn, clearBtn;
-let contextBarEl, gridOptEl, fabEl;
+let panelElement, overlayElement, tagsElement, convElement, queryElement, sendButton, stopButton, clearButton;
+let contextBarElement, gridOptionElement, fabElement;
 let tagsLoaded = false;
 let currentAbortController = null;
 let abortedByUser = false;
@@ -26,118 +26,118 @@ let abortedByUser = false;
 let lastTurn = null;
 
 function buildPanel() {
-    overlayEl           = document.createElement('div');
-    overlayEl.className = 'ag-overlay';
-    overlayEl.id        = 'agOverlay';
-    document.body.appendChild(overlayEl);
+    overlayEl: overlayElement           = document.createElement('div');
+    overlayElement.className = 'ag-overlay';
+    overlayElement.id        = 'agOverlay';
+    document.body.appendChild(overlayElement);
 
-    panelEl = document.createElement('div');
-    panelEl.className = 'ag-panel';
-    panelEl.id        = 'agPanel';
-    panelEl.setAttribute('role', 'dialog');
-    panelEl.setAttribute('aria-label', t('agent.title'));
-    panelEl.setAttribute('aria-modal', 'true');
+    panelElement = document.createElement('div');
+    panelElement.className = 'ag-panel';
+    panelElement.id        = 'agPanel';
+    panelElement.setAttribute('role', 'dialog');
+    panelElement.setAttribute('aria-label', t('agent.title'));
+    panelElement.setAttribute('aria-modal', 'true');
 
     const header  = document.createElement('div');
     header.className = 'ag-header';
-    const titleEl = document.createElement('span');
-    titleEl.className   = 'ag-title';
-    titleEl.textContent = t('agent.title');
-    const closeBtn  = document.createElement('button');
-    closeBtn.className  = 'ag-close';
-    closeBtn.setAttribute('aria-label', t('agent.close'));
-    closeBtn.textContent = '×';
-    header.appendChild(titleEl);
-    header.appendChild(closeBtn);
+    const titleElement = document.createElement('span');
+    titleElement.className   = 'ag-title';
+    titleElement.textContent = t('agent.title');
+    const closeButton  = document.createElement('button');
+    closeButton.className  = 'ag-close';
+    closeButton.setAttribute('aria-label', t('agent.close'));
+    closeButton.textContent = '×';
+    header.appendChild(titleElement);
+    header.appendChild(closeButton);
 
-    contextBarEl           = document.createElement('div');
-    contextBarEl.className = 'ag-context-bar';
-    contextBarEl.id        = 'agContextBar';
-    contextBarEl.hidden    = true;
+    contextBarElement           = document.createElement('div');
+    contextBarElement.className = 'ag-context-bar';
+    contextBarElement.id        = 'agContextBar';
+    contextBarElement.hidden    = true;
 
-    gridOptEl           = document.createElement('div');
-    gridOptEl.className = 'ag-grid-opt';
-    gridOptEl.id        = 'agGridOpt';
-    gridOptEl.hidden    = true;
+    gridOptionElement           = document.createElement('div');
+    gridOptionElement.className = 'ag-grid-opt';
+    gridOptionElement.id        = 'agGridOpt';
+    gridOptionElement.hidden    = true;
 
-    tagsEl           = document.createElement('div');
-    tagsEl.className = 'ag-tags';
-    tagsEl.id        = 'agTags';
+    tagsElement           = document.createElement('div');
+    tagsElement.className = 'ag-tags';
+    tagsElement.id        = 'agTags';
 
-    convEl = document.createElement('div');
-    convEl.className = 'ag-conversation';
-    convEl.id        = 'agConv';
-    convEl.setAttribute('role', 'log');
-    convEl.setAttribute('aria-live', 'polite');
+    convElement = document.createElement('div');
+    convElement.className = 'ag-conversation';
+    convElement.id        = 'agConv';
+    convElement.setAttribute('role', 'log');
+    convElement.setAttribute('aria-live', 'polite');
 
     const inputArea      = document.createElement('div');
     inputArea.className  = 'ag-input-area';
-    queryEl              = document.createElement('textarea');
-    queryEl.className    = 'ag-textarea';
-    queryEl.id           = 'agQuery';
-    queryEl.rows         = 2;
-    queryEl.maxLength    = 2000;
-    queryEl.placeholder  = t('agent.placeholder');
-    queryEl.setAttribute('aria-label', t('agent.title'));
+    queryElement              = document.createElement('textarea');
+    queryElement.className    = 'ag-textarea';
+    queryElement.id           = 'agQuery';
+    queryElement.rows         = 2;
+    queryElement.maxLength    = 2000;
+    queryElement.placeholder  = t('agent.placeholder');
+    queryElement.setAttribute('aria-label', t('agent.title'));
     const actions       = document.createElement('div');
     actions.className   = 'ag-actions';
-    clearBtn            = document.createElement('button');
-    clearBtn.className  = 'btn btn-secondary ag-clear-btn';
-    clearBtn.type       = 'button';
-    clearBtn.textContent = t('agent.clear');
-    sendBtn             = document.createElement('button');
-    sendBtn.className   = 'btn btn-primary ag-send-btn';
-    sendBtn.type        = 'button';
-    sendBtn.textContent = t('agent.send');
-    stopBtn             = document.createElement('button');
-    stopBtn.className   = 'btn btn-danger';
-    stopBtn.type        = 'button';
-    stopBtn.disabled    = true;
-    stopBtn.textContent = t('agent.stop');
-    actions.appendChild(clearBtn);
-    actions.appendChild(stopBtn);
-    actions.appendChild(sendBtn);
-    inputArea.appendChild(queryEl);
+    clearButton            = document.createElement('button');
+    clearButton.className  = 'btn btn-secondary ag-clear-btn';
+    clearButton.type       = 'button';
+    clearButton.textContent = t('agent.clear');
+    sendButton             = document.createElement('button');
+    sendButton.className   = 'btn btn-primary ag-send-btn';
+    sendButton.type        = 'button';
+    sendButton.textContent = t('agent.send');
+    stopButton             = document.createElement('button');
+    stopButton.className   = 'btn btn-danger';
+    stopButton.type        = 'button';
+    stopButton.disabled    = true;
+    stopButton.textContent = t('agent.stop');
+    actions.appendChild(clearButton);
+    actions.appendChild(stopButton);
+    actions.appendChild(sendButton);
+    inputArea.appendChild(queryElement);
     inputArea.appendChild(actions);
 
-    panelEl.appendChild(header);
-    panelEl.appendChild(contextBarEl);
-    panelEl.appendChild(gridOptEl);
-    panelEl.appendChild(tagsEl);
-    panelEl.appendChild(convEl);
-    panelEl.appendChild(inputArea);
-    document.body.appendChild(panelEl);
+    panelElement.appendChild(header);
+    panelElement.appendChild(contextBarElement);
+    panelElement.appendChild(gridOptionElement);
+    panelElement.appendChild(tagsElement);
+    panelElement.appendChild(convElement);
+    panelElement.appendChild(inputArea);
+    document.body.appendChild(panelElement);
 
-    closeBtn.addEventListener('click', closePanel);
-    overlayEl.addEventListener('click', closePanel);
-    sendBtn.addEventListener('click', sendQuery);
-    stopBtn.addEventListener('click', () => { abortedByUser = true; currentAbortController?.abort(); });
-    clearBtn.addEventListener('click', () => { convEl.innerHTML = ''; lastTurn = null; });
-    queryEl.addEventListener('keydown', e => {
+    closeButton.addEventListener('click', closePanel);
+    overlayElement.addEventListener('click', closePanel);
+    sendButton.addEventListener('click', sendQuery);
+    stopButton.addEventListener('click', () => { abortedByUser = true; currentAbortController?.abort(); });
+    clearButton.addEventListener('click', () => { convElement.innerHTML = ''; lastTurn = null; });
+    queryElement.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendQuery();
         }
     });
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && panelEl.classList.contains('active')) closePanel();
+        if (e.key === 'Escape' && panelElement.classList.contains('active')) closePanel();
     });
 }
 
 function openPanel() {
-    panelEl.classList.add('active');
-    overlayEl.classList.add('active');
-    if (fabEl) fabEl.hidden = true;
+    panelElement.classList.add('active');
+    overlayElement.classList.add('active');
+    if (fabElement) fabElement.hidden = true;
     updateContextBar();
     renderGridDataOption();
     if (!tagsLoaded) loadTags();
-    queryEl.focus();
+    queryElement.focus();
 }
 
 function closePanel() {
-    panelEl.classList.remove('active');
-    overlayEl.classList.remove('active');
-    if (fabEl) fabEl.hidden = false;
+    panelElement.classList.remove('active');
+    overlayElement.classList.remove('active');
+    if (fabElement) fabElement.hidden = false;
 }
 
 function pageTableName() {
@@ -145,7 +145,7 @@ function pageTableName() {
         const live = window.CURRENT_GRID_TABLE();
         if (live) return live;
     }
-    const fromUrl = new URLSearchParams(window.location.search).get('table');
+    const fromUrl = new URLSearchParameters(window.location.search).get('table');
     if (fromUrl) return fromUrl;
 
     return window.CURRENT_VIEW?.name ?? '';
@@ -163,11 +163,11 @@ function pageTableDisplayName() {
 function updateContextBar() {
     const displayName = pageTableDisplayName();
     if (!displayName) {
-        contextBarEl.hidden = true;
+        contextBarElement.hidden = true;
         return;
     }
-    contextBarEl.hidden = false;
-    contextBarEl.innerHTML = '';
+    contextBarElement.hidden = false;
+    contextBarElement.innerHTML = '';
     const icon = document.createElement('img');
     icon.src    = 'assets/icons/grid_on.png';
     icon.alt    = '';
@@ -176,25 +176,25 @@ function updateContextBar() {
     icon.style.cssText = 'vertical-align:middle; opacity:0.7; flex-shrink:0;';
     const label = document.createElement('span');
     label.textContent = t('agent.context_table', { table: displayName });
-    contextBarEl.appendChild(icon);
-    contextBarEl.appendChild(label);
+    contextBarElement.appendChild(icon);
+    contextBarElement.appendChild(label);
 }
 
 function buildFab() {
     if (!window.CHAT_BUBBLE_ENABLED) return;
-    fabEl           = document.createElement('button');
-    fabEl.id        = 'agFab';
-    fabEl.className = 'ag-fab';
-    fabEl.type      = 'button';
-    fabEl.setAttribute('aria-label', t('agent.title'));
-    const img   = document.createElement('img');
-    img.src     = 'assets/icons/comment.png';
-    img.alt     = '';
-    img.width   = 24;
-    img.height  = 24;
-    fabEl.appendChild(img);
-    fabEl.addEventListener('click', openPanel);
-    document.body.appendChild(fabEl);
+    fabElement           = document.createElement('button');
+    fabElement.id        = 'agFab';
+    fabElement.className = 'ag-fab';
+    fabElement.type      = 'button';
+    fabElement.setAttribute('aria-label', t('agent.title'));
+    const image   = document.createElement('img');
+    image.src     = 'assets/icons/comment.png';
+    image.alt     = '';
+    image.width   = 24;
+    image.height  = 24;
+    fabElement.appendChild(image);
+    fabElement.addEventListener('click', openPanel);
+    document.body.appendChild(fabElement);
 }
 
 function readGridContext() {
@@ -202,8 +202,8 @@ function readGridContext() {
         try {
             const text = window.CURRENT_GRID_CONTEXT();
             if (text) return text;
-        } catch (err) {
-            console.error('Grid context provider failed, falling back to DOM:', err);
+        } catch (error) {
+            console.error('Grid context provider failed, falling back to DOM:', error);
         }
     }
     return readGridContextFromDom();
@@ -215,26 +215,26 @@ function readGridContextFromDom() {
     const tableName = pageTableName();
 
     const allThs       = Array.from(table.querySelectorAll('thead th'));
-    let   headerEls    = allThs.filter(th => th.dataset.col);
-    if (headerEls.length === 0) return '';
+    let   headerElements    = allThs.filter(th => th.dataset.col);
+    if (headerElements.length === 0) return '';
 
-    const totalCols = headerEls.length;
-    if (headerEls.length > MAX_CONTEXT_COLS) {
-        const idEls   = headerEls.filter(th => th.dataset.col.toLowerCase() === 'id');
-        const restEls = headerEls.filter(th => th.dataset.col.toLowerCase() !== 'id');
-        headerEls     = idEls.concat(restEls).slice(0, MAX_CONTEXT_COLS);
+    const totalColumns = headerElements.length;
+    if (headerElements.length > MAX_CONTEXT_COLS) {
+        const idElements   = headerElements.filter(th => th.dataset.col.toLowerCase() === 'id');
+        const restElements = headerElements.filter(th => th.dataset.col.toLowerCase() !== 'id');
+        headerElements     = idElements.concat(restElements).slice(0, MAX_CONTEXT_COLS);
 
-        headerEls.sort((a, b) => allThs.indexOf(a) - allThs.indexOf(b));
+        headerElements.sort((a, b) => allThs.indexOf(a) - allThs.indexOf(b));
     }
 
-    const headers    = headerEls.map(th => th.dataset.col);
-    const colIndexes = headerEls.map(th => allThs.indexOf(th));
+    const headers    = headerElements.map(th => th.dataset.col);
+    const columnIndexes = headerElements.map(th => allThs.indexOf(th));
 
     const allRows = [];
 
     table.querySelectorAll('tbody tr:not(.vw-group-header):not(.vw-group-subtotal)').forEach(tr => {
         const allTds  = Array.from(tr.querySelectorAll('td'));
-        const cells   = colIndexes.map(i => (allTds[i]?.textContent.trim() ?? '').replace(/\s+/g, ' '));
+        const cells   = columnIndexes.map(i => (allTds[i]?.textContent.trim() ?? '').replace(/\s+/g, ' '));
         if (cells.some(c => c !== '')) allRows.push(cells);
     });
 
@@ -242,7 +242,7 @@ function readGridContextFromDom() {
 
     const rows        = allRows.slice(0, MAX_CONTEXT_ROWS);
     const hiddenRows  = allRows.length - rows.length;
-    const hiddenCols  = totalCols - headers.length;
+    const hiddenColumns  = totalColumns - headers.length;
 
     let text = hiddenRows === 0
         ? `table: ${tableName} — COMPLETE SET: all ${allRows.length} row(s) of this report are`
@@ -253,88 +253,88 @@ function readGridContextFromDom() {
     if (hiddenRows > 0) {
         text += `...(${hiddenRows} more rows not shown — do not compute totals or counts over the whole set)\n`;
     }
-    if (hiddenCols > 0) text += `...(${hiddenCols} more columns not shown)\n`;
+    if (hiddenColumns > 0) text += `...(${hiddenColumns} more columns not shown)\n`;
     return text;
 }
 
 async function loadTags() {
     try {
-        const res  = await fetch(API + '?action=tags');
-        const data = await res.json();
+        const result  = await fetch(API + '?action=tags');
+        const data = await result.json();
         renderTags(data.tags ?? []);
         tagsLoaded = true;
     } catch {
-        const msg        = document.createElement('span');
-        msg.className    = 'ag-tag-empty';
-        msg.textContent  = t('agent.tags_error');
-        tagsEl.innerHTML = '';
-        tagsEl.appendChild(msg);
+        const message        = document.createElement('span');
+        message.className    = 'ag-tag-empty';
+        message.textContent  = t('agent.tags_error');
+        tagsElement.innerHTML = '';
+        tagsElement.appendChild(message);
     }
 }
 
 function renderTags(tags) {
-    tagsEl.innerHTML = '';
+    tagsElement.innerHTML = '';
     if (tags.length === 0) {
-        const msg       = document.createElement('span');
-        msg.className   = 'ag-tag-empty';
-        msg.textContent = t('agent.no_tags');
-        tagsEl.appendChild(msg);
+        const message       = document.createElement('span');
+        message.className   = 'ag-tag-empty';
+        message.textContent = t('agent.no_tags');
+        tagsElement.appendChild(message);
         return;
     }
 
     tags.forEach(tag => {
         const label     = document.createElement('label');
         label.className = 'ag-tag-item';
-        const cb        = document.createElement('input');
-        cb.type         = 'checkbox';
-        cb.value        = tag;
-        label.appendChild(cb);
+        const callback        = document.createElement('input');
+        callback.type         = 'checkbox';
+        callback.value        = tag;
+        label.appendChild(callback);
         label.appendChild(document.createTextNode(' ' + tag));
-        tagsEl.appendChild(label);
+        tagsElement.appendChild(label);
     });
 }
 
 function selectedTags() {
-    return Array.from(tagsEl.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+    return Array.from(tagsElement.querySelectorAll('input[type=checkbox]:checked')).map(callback => callback.value);
 }
 
 function renderGridDataOption() {
     if (readGridContext() === '') {
-        gridOptEl.hidden    = true;
-        gridOptEl.innerHTML = '';
+        gridOptionElement.hidden    = true;
+        gridOptionElement.innerHTML = '';
         return;
     }
-    const prevChecked = gridOptEl.querySelector('#agGridDataCb')?.checked ?? false;
-    gridOptEl.innerHTML = '';
-    gridOptEl.hidden    = false;
+    const previousChecked = gridOptionElement.querySelector('#agGridDataCb')?.checked ?? false;
+    gridOptionElement.innerHTML = '';
+    gridOptionElement.hidden    = false;
 
     const label     = document.createElement('label');
     label.className = 'ag-tag-item';
-    const cb        = document.createElement('input');
-    cb.type         = 'checkbox';
-    cb.id           = 'agGridDataCb';
-    cb.checked      = prevChecked;
-    label.appendChild(cb);
+    const callback        = document.createElement('input');
+    callback.type         = 'checkbox';
+    callback.id           = 'agGridDataCb';
+    callback.checked      = previousChecked;
+    label.appendChild(callback);
     label.appendChild(document.createTextNode(' ' + t('agent.use_grid_data')));
-    gridOptEl.appendChild(label);
+    gridOptionElement.appendChild(label);
 }
 
 function gridDataSelected() {
-    return gridOptEl.querySelector('#agGridDataCb')?.checked ?? false;
+    return gridOptionElement.querySelector('#agGridDataCb')?.checked ?? false;
 }
 
-function appendUserMsg(text) {
+function appendUserMessage(text) {
     const wrap      = document.createElement('div');
     wrap.className  = 'ag-msg ag-msg-user';
     const bubble    = document.createElement('div');
     bubble.className   = 'ag-msg-bubble';
     bubble.textContent = text;
-    const ts           = document.createElement('div');
-    ts.className       = 'ag-msg-time';
-    ts.textContent     = fmtTime();
+    const timestamp           = document.createElement('div');
+    timestamp.className       = 'ag-msg-time';
+    timestamp.textContent     = formatTime();
     wrap.appendChild(bubble);
-    wrap.appendChild(ts);
-    convEl.appendChild(wrap);
+    wrap.appendChild(timestamp);
+    convElement.appendChild(wrap);
     scrollDown();
     return wrap;
 }
@@ -346,7 +346,7 @@ function appendThinking() {
     thinking.className   = 'ag-msg-thinking';
     thinking.textContent = t('agent.thinking');
     wrap.appendChild(thinking);
-    convEl.appendChild(wrap);
+    convElement.appendChild(wrap);
     scrollDown();
     return wrap;
 }
@@ -354,11 +354,11 @@ function appendThinking() {
 function appendNotice(text) {
     const wrap     = document.createElement('div');
     wrap.className = 'ag-msg ag-msg-assistant';
-    const el       = document.createElement('div');
-    el.className   = 'ag-msg-warning';
-    el.textContent = text;
-    wrap.appendChild(el);
-    convEl.appendChild(wrap);
+    const element       = document.createElement('div');
+    element.className   = 'ag-msg-warning';
+    element.textContent = text;
+    wrap.appendChild(element);
+    convElement.appendChild(wrap);
     scrollDown();
 }
 
@@ -382,15 +382,15 @@ function replaceWithAnswer(wrap, answer, sources, tagFallback, suggestions) {
     wrap.appendChild(bubble);
 
     if (sources && sources.length > 0) {
-        const srcRow     = document.createElement('div');
-        srcRow.className = 'ag-msg-sources';
-        sources.forEach(src => {
+        const sourceRow     = document.createElement('div');
+        sourceRow.className = 'ag-msg-sources';
+        sources.forEach(source => {
             const chip       = document.createElement('span');
             chip.className   = 'ag-source-chip';
-            chip.textContent = src.filename;
-            srcRow.appendChild(chip);
+            chip.textContent = source.filename;
+            sourceRow.appendChild(chip);
         });
-        wrap.appendChild(srcRow);
+        wrap.appendChild(sourceRow);
     }
 
     if (suggestions && suggestions.length > 0) {
@@ -402,7 +402,7 @@ function replaceWithAnswer(wrap, answer, sources, tagFallback, suggestions) {
             chip.className   = 'ag-suggestion-chip';
             chip.textContent = q;
             chip.addEventListener('click', () => {
-                queryEl.value = q;
+                queryElement.value = q;
                 sendQuery();
             });
             suggRow.appendChild(chip);
@@ -410,29 +410,29 @@ function replaceWithAnswer(wrap, answer, sources, tagFallback, suggestions) {
         wrap.appendChild(suggRow);
     }
 
-    const ts       = document.createElement('div');
-    ts.className   = 'ag-msg-time';
-    ts.textContent = fmtTime();
-    wrap.appendChild(ts);
+    const timestamp       = document.createElement('div');
+    timestamp.className   = 'ag-msg-time';
+    timestamp.textContent = formatTime();
+    wrap.appendChild(timestamp);
 
     scrollDown();
 }
 
-function replaceWithError(wrap, msg) {
+function replaceWithError(wrap, message) {
     wrap.innerHTML = '';
-    const el       = document.createElement('div');
-    el.className   = 'ag-msg-error';
-    el.textContent = I18n.t('agent.error_prefix', { msg });
-    wrap.appendChild(el);
+    const element       = document.createElement('div');
+    element.className   = 'ag-msg-error';
+    element.textContent = I18n.t('agent.error_prefix', { msg: message });
+    wrap.appendChild(element);
     scrollDown();
 }
 
 function scrollDown() {
-    convEl.scrollTop = convEl.scrollHeight;
+    convElement.scrollTop = convElement.scrollHeight;
 }
 
 async function sendQuery() {
-    const query = queryEl.value.trim();
+    const query = queryElement.value.trim();
     if (!query) return;
 
     const tags        = selectedTags();
@@ -445,15 +445,15 @@ async function sendQuery() {
 
     currentAbortController = new AbortController();
     abortedByUser          = false;
-    sendBtn.disabled       = true;
-    stopBtn.disabled       = false;
-    queryEl.disabled       = true;
-    appendUserMsg(query);
-    queryEl.value = '';
+    sendButton.disabled       = true;
+    stopButton.disabled       = false;
+    queryElement.disabled       = true;
+    appendUserMessage(query);
+    queryElement.value = '';
     const thinkWrap = appendThinking();
 
     try {
-        const res  = await apiFetch(API + '?action=query', {
+        const result  = await apiFetch(API + '?action=query', {
             method:  'POST',
             body: {
                 query, tags,
@@ -472,13 +472,13 @@ async function sendQuery() {
 
         let data;
         try {
-            data = await res.json();
+            data = await result.json();
         } catch {
             replaceWithError(thinkWrap, 'The server timed out or returned an unexpected response. Please try again.');
             return;
         }
 
-        if (!res.ok || data.error) {
+        if (!result.ok || data.error) {
             replaceWithError(thinkWrap, data.error ?? 'Request failed.');
         } else {
             replaceWithAnswer(thinkWrap, data.answer, data.sources ?? [], data.tag_fallback ?? false, data.suggestions ?? []);
@@ -486,22 +486,22 @@ async function sendQuery() {
             const answer = String(data.answer ?? '').trim();
             lastTurn = (answer === '' || data.no_answer) ? null : { query, answer };
         }
-    } catch (err) {
-        if (err.name === 'AbortError') {
+    } catch (error) {
+        if (error.name === 'AbortError') {
             if (abortedByUser) {
                 replaceWithError(thinkWrap, 'Query cancelled.');
             } else {
                 replaceWithError(thinkWrap, 'The request timed out. The AI model may be busy — please try again.');
             }
         } else {
-            replaceWithError(thinkWrap, err.message || 'Network error.');
+            replaceWithError(thinkWrap, error.message || 'Network error.');
         }
     } finally {
         currentAbortController = null;
-        sendBtn.disabled       = false;
-        stopBtn.disabled       = true;
-        queryEl.disabled       = false;
-        queryEl.focus();
+        sendButton.disabled       = false;
+        stopButton.disabled       = true;
+        queryElement.disabled       = false;
+        queryElement.focus();
     }
 }
 

@@ -61,15 +61,15 @@ $relatedId    = $row['related_id'] ?? null;
 if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
     require_once __DIR__ . '/../includes/config_store.php';
     $schema   = config_get('schema');
-    $tableCfg = $schema['tables'][$relatedTable] ?? null;
-    if (is_array($tableCfg)) {
+    $tableConfig = $schema['tables'][$relatedTable] ?? null;
+    if (is_array($tableConfig)) {
         $userId  = (int) $_SESSION['user_id'];
         $role = $_SESSION['role'] ?? '';
 
         if (!user_can_access_table((string) $relatedTable)) {
             throw new NotFoundException('File not found in database');
         }
-        if (!can_access_record($conn, $tableCfg, $relatedTable, (int) $relatedId, $userId, $role)) {
+        if (!can_access_record($conn, $tableConfig, $relatedTable, (int) $relatedId, $userId, $role)) {
             throw new NotFoundException('File not found in database');
         }
     }
@@ -135,23 +135,23 @@ function serveThumbnail(string $path, string $mime): void
         return;
     }
 
-    $maxW = THUMBNAIL_MAX_WIDTH;
-    $origW = imagesx($source);
-    $origH = imagesy($source);
+    $maxWidth = THUMBNAIL_MAX_WIDTH;
+    $originalWidth = imagesx($source);
+    $originalHeight = imagesy($source);
 
-    if ($origW <= $maxW) {
+    if ($originalWidth <= $maxWidth) {
         $thumb = $source;
     } else {
-        $ratio = $maxW / $origW;
-        $newH  = (int) round($origH * $ratio);
-        $thumb = imagecreatetruecolor($maxW, $newH);
+        $ratio = $maxWidth / $originalWidth;
+        $newH  = (int) round($originalHeight * $ratio);
+        $thumb = imagecreatetruecolor($maxWidth, $newH);
 
         if ($mime === 'image/png') {
             imagealphablending($thumb, false);
             imagesavealpha($thumb, true);
         }
 
-        imagecopyresampled($thumb, $source, 0, 0, 0, 0, $maxW, $newH, $origW, $origH);
+        imagecopyresampled($thumb, $source, 0, 0, 0, 0, $maxWidth, $newH, $originalWidth, $originalHeight);
     }
 
     header('Content-Type: ' . $mime);

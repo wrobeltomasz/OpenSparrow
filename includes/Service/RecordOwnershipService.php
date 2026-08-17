@@ -19,12 +19,12 @@ final class RecordOwnershipService
     {
     }
 
-    public static function isRestricted(array $tableCfg): bool
+    public static function isRestricted(array $tableConfig): bool
     {
-        return !empty($tableCfg['owner_restricted']);
+        return !empty($tableConfig['owner_restricted']);
     }
 
-    public static function restrictionSql(string $idExpression, int $tableParam, int $ownerParam): string
+    public static function restrictionSql(string $idExpression, int $tableParameter, int $ownerParameter): string
     {
         if (!str_contains($idExpression, '.')) {
             throw new InvalidArgumentException(
@@ -34,8 +34,8 @@ final class RecordOwnershipService
         }
         $ownersTable = \sys_table('record_owners');
         return " AND NOT EXISTS (SELECT 1 FROM {$ownersTable} ro"
-            . " WHERE ro.table_name = \${$tableParam} AND ro.record_id = {$idExpression}"
-            . " AND ro.is_current = true AND ro.owner_id != \${$ownerParam})";
+            . " WHERE ro.table_name = \${$tableParameter} AND ro.record_id = {$idExpression}"
+            . " AND ro.is_current = true AND ro.owner_id != \${$ownerParameter})";
     }
 
     public function ownerId(string $table, int $recordId): ?int
@@ -54,9 +54,9 @@ final class RecordOwnershipService
         return $row['owner_id'] !== null ? (int) $row['owner_id'] : null;
     }
 
-    public function canAccess(array $tableCfg, string $table, int $recordId, int $userId, string $role = ''): bool
+    public function canAccess(array $tableConfig, string $table, int $recordId, int $userId, string $role = ''): bool
     {
-        if (!self::isRestricted($tableCfg)) {
+        if (!self::isRestricted($tableConfig)) {
             return true;
         }
         if ($role === UserRole::Admin->value) {
@@ -66,10 +66,10 @@ final class RecordOwnershipService
         return $ownerId === null || $ownerId === $userId;
     }
 
-    public function filterVisibleIds(array $tableCfg, string $table, array $ids, int $userId): array
+    public function filterVisibleIds(array $tableConfig, string $table, array $ids, int $userId): array
     {
         $ids = array_values(array_unique(array_map('intval', $ids)));
-        if (!self::isRestricted($tableCfg) || $ids === []) {
+        if (!self::isRestricted($tableConfig) || $ids === []) {
             return $ids;
         }
 

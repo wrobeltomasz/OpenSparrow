@@ -32,8 +32,8 @@ function etl_run_single_job(
     }
     $jobName = (string)($job['name'] ?? $jobId);
 
-    $connCfg = etl_resolve_source((array)($config['sources'] ?? []), (string)($job['source_id'] ?? ''));
-    if ($connCfg === null) {
+    $connConfig = etl_resolve_source((array)($config['sources'] ?? []), (string)($job['source_id'] ?? ''));
+    if ($connConfig === null) {
         etl_cli_log("[etl] Job '{$jobName}' has no valid source configured.");
         return false;
     }
@@ -56,14 +56,14 @@ function etl_run_single_job(
         }
     }
 
-    $prevWatermark = $job['last_watermark'] ?? ($job['incremental_initial_value'] ?? null);
-    $watermarkParam       = $prevWatermark !== null ? (string)$prevWatermark : null;
-    $result        = etl_run_job($conn, $job, $connCfg, $dryRun, $watermarkParam);
+    $previousWatermark = $job['last_watermark'] ?? ($job['incremental_initial_value'] ?? null);
+    $watermarkParameter       = $previousWatermark !== null ? (string)$previousWatermark : null;
+    $result        = etl_run_job($conn, $job, $connConfig, $dryRun, $watermarkParameter);
 
     if ($result['status'] === 'success') {
         etl_cli_log("[etl]   read {$result['rows_read']}, written {$result['rows_written']}.");
-        $prevWm           = $job['last_watermark'] ?? null;
-        $watermarkChanged = $result['new_watermark'] !== null && $result['new_watermark'] !== $prevWm;
+        $previousWatermark           = $job['last_watermark'] ?? null;
+        $watermarkChanged = $result['new_watermark'] !== null && $result['new_watermark'] !== $previousWatermark;
         if (!$dryRun && $watermarkChanged) {
             etl_persist_watermark($jobId, $result['new_watermark'], 'etl:' . $jobName);
         }
@@ -202,15 +202,15 @@ function cron_etl_main(array $argv): int
             while ($queue !== [] && count($running) < ETL_MAX_PARALLEL_JOBS) {
                 $jobId = array_shift($queue);
                 $command   = [PHP_BINARY, $cronScript, '_run', $jobId, $triggeredBy];
-                $proc  = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
-                if ($proc === false) {
+                $process  = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+                if ($process === false) {
                     etl_cli_log("[etl]   Failed to spawn worker for job '{$jobId}'.");
                     $anyError = true;
                     continue;
                 }
                 stream_set_blocking($pipes[1], false);
                 stream_set_blocking($pipes[2], false);
-                $running[$jobId] = ['proc' => $proc, 'pipes' => $pipes];
+                $running[$jobId] = ['proc' => $process, 'pipes' => $pipes];
             }
 
             foreach ($running as $jobId => $entry) {

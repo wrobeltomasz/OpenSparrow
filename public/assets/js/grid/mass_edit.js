@@ -21,41 +21,41 @@ let lastPreviewPayload = null;
 
 const SKIP_TYPES = new Set(['virtual', 'file', 'm2m']);
 
-function isEditableCol(name, cfg) {
+function isEditableColumn(name, config) {
     if (name === 'id') return false;
-    return !SKIP_TYPES.has((cfg.type ?? '').toLowerCase().split('(')[0].trim());
+    return !SKIP_TYPES.has((config.type ?? '').toLowerCase().split('(')[0].trim());
 }
 
 async function postMassEditJson(url, body) {
-    const res = await apiFetch(url, {
+    const result = await apiFetch(url, {
         method: 'POST',
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
         body,
     });
-    return res.json();
+    return result.json();
 }
 
-function makeField(className, labelText, forId, controlEl) {
+function makeField(className, labelText, forId, controlElement) {
     const field = document.createElement('div');
     field.className = className;
     const label = document.createElement('label');
     label.htmlFor = forId;
     label.textContent = labelText;
     field.appendChild(label);
-    if (controlEl) field.appendChild(controlEl);
+    if (controlElement) field.appendChild(controlElement);
     return field;
 }
 
-function makeColPickerQuickBtn(label, checked, body, panelInstance) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'me-col-picker-quick-btn';
-    btn.textContent = label;
-    btn.addEventListener('click', () => {
-        body.querySelectorAll('.me-col-picker-cb').forEach(cb => { cb.checked = checked; });
+function makeColumnPickerQuickButton(label, checked, body, panelInstance) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'me-col-picker-quick-btn';
+    button.textContent = label;
+    button.addEventListener('click', () => {
+        body.querySelectorAll('.me-col-picker-cb').forEach(callback => { callback.checked = checked; });
         panelInstance.setApplyDisabled(!checked);
     });
-    return btn;
+    return button;
 }
 
 function getBar() {
@@ -65,50 +65,50 @@ function getBar() {
     bar.className = 'me-bar';
     bar.id = 'me-bar';
 
-    const countEl = document.createElement('span');
-    countEl.className = 'me-bar-count';
-    countEl.id = 'me-bar-count';
+    const countElement = document.createElement('span');
+    countElement.className = 'me-bar-count';
+    countElement.id = 'me-bar-count';
 
     const actions = document.createElement('div');
     actions.className = 'me-bar-actions';
 
-    const editBtn = document.createElement('button');
-    editBtn.className = 'me-bar-edit-btn';
-    editBtn.textContent = I18n.t('mass_edit.edit_fields');
-    editBtn.addEventListener('click', openPanel);
+    const editButton = document.createElement('button');
+    editButton.className = 'me-bar-edit-btn';
+    editButton.textContent = I18n.t('mass_edit.edit_fields');
+    editButton.addEventListener('click', openPanel);
 
-    const exportBtn = document.createElement('button');
-    exportBtn.className = 'me-bar-export-btn';
-    exportBtn.textContent = I18n.t('mass_edit.export_btn');
-    exportBtn.addEventListener('click', openExportPanel);
+    const exportButton = document.createElement('button');
+    exportButton.className = 'me-bar-export-btn';
+    exportButton.textContent = I18n.t('mass_edit.export_btn');
+    exportButton.addEventListener('click', openExportPanel);
 
-    const ownerBtn = document.createElement('button');
-    ownerBtn.className = 'me-bar-owner-btn';
-    ownerBtn.textContent = I18n.t('mass_owner.btn');
-    ownerBtn.addEventListener('click', openOwnerPanel);
+    const ownerButton = document.createElement('button');
+    ownerButton.className = 'me-bar-owner-btn';
+    ownerButton.textContent = I18n.t('mass_owner.btn');
+    ownerButton.addEventListener('click', openOwnerPanel);
 
-    const dupBtn = document.createElement('button');
-    dupBtn.className = 'me-bar-dup-btn';
-    dupBtn.textContent = I18n.t('mass_duplicate.duplicate_btn');
-    dupBtn.addEventListener('click', massDuplicateSelected);
+    const dupButton = document.createElement('button');
+    dupButton.className = 'me-bar-dup-btn';
+    dupButton.textContent = I18n.t('mass_duplicate.duplicate_btn');
+    dupButton.addEventListener('click', massDuplicateSelected);
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'me-bar-delete-btn';
-    deleteBtn.textContent = I18n.t('mass_delete.delete_btn');
-    deleteBtn.addEventListener('click', massDeleteSelected);
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'me-bar-delete-btn';
+    deleteButton.textContent = I18n.t('mass_delete.delete_btn');
+    deleteButton.addEventListener('click', massDeleteSelected);
 
-    const clearBtn = document.createElement('button');
-    clearBtn.className = 'me-bar-clear-btn';
-    clearBtn.textContent = I18n.t('mass_edit.deselect_all');
-    clearBtn.addEventListener('click', deselectAll);
+    const clearButton = document.createElement('button');
+    clearButton.className = 'me-bar-clear-btn';
+    clearButton.textContent = I18n.t('mass_edit.deselect_all');
+    clearButton.addEventListener('click', deselectAll);
 
-    actions.appendChild(editBtn);
-    actions.appendChild(exportBtn);
-    actions.appendChild(ownerBtn);
-    actions.appendChild(dupBtn);
-    actions.appendChild(deleteBtn);
-    actions.appendChild(clearBtn);
-    bar.appendChild(countEl);
+    actions.appendChild(editButton);
+    actions.appendChild(exportButton);
+    actions.appendChild(ownerButton);
+    actions.appendChild(dupButton);
+    actions.appendChild(deleteButton);
+    actions.appendChild(clearButton);
+    bar.appendChild(countElement);
     bar.appendChild(actions);
 
     document.body.appendChild(bar);
@@ -117,8 +117,8 @@ function getBar() {
 
 function deselectAll() {
     clearSelection();
-    document.querySelectorAll('.row-select-cb').forEach(cb => { cb.checked = false; });
-    document.querySelectorAll('.th-select input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('.row-select-cb').forEach(callback => { callback.checked = false; });
+    document.querySelectorAll('.th-select input[type="checkbox"]').forEach(callback => { callback.checked = false; });
     document.dispatchEvent(new CustomEvent('selectionChanged'));
 }
 
@@ -154,10 +154,10 @@ async function massDuplicateSelected() {
     }
 
     if (data.error) {
-        const msg = data.is_unique
+        const message = data.is_unique
             ? I18n.t('mass_duplicate.error_unique')
             : data.error;
-        showToast(msg, 'error');
+        showToast(message, 'error');
         return;
     }
 
@@ -193,14 +193,14 @@ async function massDeleteSelected() {
     reloadGrid();
 }
 
-async function buildValueInput(colCfg, colName = '') {
+async function buildValueInput(columnConfig, columnName = '') {
     const fks = window.schema?.tables?.[state.currentTable]?.foreign_keys ?? {};
-    if (colName && fks[colName]) {
-        const fkCfg   = fks[colName];
-        const dispCols = Array.isArray(fkCfg.display_column)
-            ? fkCfg.display_column
-            : [fkCfg.display_column || 'id'];
-        const cacheKey = `${state.currentTable}_${colName}`;
+    if (columnName && fks[columnName]) {
+        const fkConfig   = fks[columnName];
+        const dispColumns = Array.isArray(fkConfig.display_column)
+            ? fkConfig.display_column
+            : [fkConfig.display_column || 'id'];
+        const cacheKey = `${state.currentTable}_${columnName}`;
 
         const sel = document.createElement('select');
         sel.id = 'me-value';
@@ -209,51 +209,51 @@ async function buildValueInput(colCfg, colName = '') {
         blank.textContent = I18n.t('mass_edit.select_fk_placeholder');
         sel.appendChild(blank);
 
-        let refData = [];
+        let referenceData = [];
         if (state.fkCache.has(cacheKey)) {
-            refData = await state.fkCache.get(cacheKey);
+            refData: referenceData = await state.fkCache.get(cacheKey);
         } else {
             try {
-                const res = await fetch(
-                    `api/fk.php?table=${encodeURIComponent(state.currentTable)}&col=${encodeURIComponent(colName)}`,
+                const result = await fetch(
+                    `api/fk.php?table=${encodeURIComponent(state.currentTable)}&col=${encodeURIComponent(columnName)}`,
                     { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
                 );
-                const json = await res.json();
-                refData = json.rows ?? [];
+                const json = await result.json();
+                referenceData = json.rows ?? [];
             } catch {  }
         }
 
-        refData.forEach(r => {
-            const dv  = dispCols.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || String(r.id);
-            const opt = document.createElement('option');
-            opt.value       = String(r.id);
-            opt.textContent = dv;
-            sel.appendChild(opt);
+        referenceData.forEach(r => {
+            const dv  = dispColumns.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || String(r.id);
+            const option = document.createElement('option');
+            option.value       = String(r.id);
+            option.textContent = dv;
+            sel.appendChild(option);
         });
 
         return sel;
     }
 
-    const type = (colCfg.type ?? '').toLowerCase().split('(')[0].trim();
+    const type = (columnConfig.type ?? '').toLowerCase().split('(')[0].trim();
 
     if (type === 'boolean' || type === 'bool') {
         const sel = document.createElement('select');
         sel.id = 'me-value';
         [['true', I18n.t('common.yes')], ['false', I18n.t('common.no')]].forEach(([v, l]) => {
-            const opt = document.createElement('option');
-            opt.value = v; opt.textContent = l;
-            sel.appendChild(opt);
+            const option = document.createElement('option');
+            option.value = v; option.textContent = l;
+            sel.appendChild(option);
         });
         return sel;
     }
 
-    if (type === 'enum' && Array.isArray(colCfg.options)) {
+    if (type === 'enum' && Array.isArray(columnConfig.options)) {
         const sel = document.createElement('select');
         sel.id = 'me-value';
-        colCfg.options.forEach(o => {
-            const opt = document.createElement('option');
-            opt.value = o; opt.textContent = o;
-            sel.appendChild(opt);
+        columnConfig.options.forEach(o => {
+            const option = document.createElement('option');
+            option.value = o; option.textContent = o;
+            sel.appendChild(option);
         });
         return sel;
     }
@@ -262,26 +262,26 @@ async function buildValueInput(colCfg, colName = '') {
         'serial', 'bigserial', 'numeric', 'decimal', 'float', 'float4',
         'float8', 'real', 'double', 'money'];
     if (NUMERIC_PREFIXES.some(p => type.startsWith(p))) {
-        const inp = document.createElement('input');
-        inp.type = 'number'; inp.id = 'me-value';
-        inp.placeholder = I18n.t('mass_edit.value_placeholder');
-        return inp;
+        const input = document.createElement('input');
+        input.type = 'number'; input.id = 'me-value';
+        input.placeholder = I18n.t('mass_edit.value_placeholder');
+        return input;
     }
 
     if (type === 'date') {
-        const inp = document.createElement('input');
-        inp.type = 'date'; inp.id = 'me-value'; return inp;
+        const input = document.createElement('input');
+        input.type = 'date'; input.id = 'me-value'; return input;
     }
 
     if (type.startsWith('timestamp')) {
-        const inp = document.createElement('input');
-        inp.type = 'datetime-local'; inp.id = 'me-value'; return inp;
+        const input = document.createElement('input');
+        input.type = 'datetime-local'; input.id = 'me-value'; return input;
     }
 
-    const inp = document.createElement('input');
-    inp.type = 'text'; inp.id = 'me-value';
-    inp.placeholder = I18n.t('mass_edit.value_placeholder');
-    return inp;
+    const input = document.createElement('input');
+    input.type = 'text'; input.id = 'me-value';
+    input.placeholder = I18n.t('mass_edit.value_placeholder');
+    return input;
 }
 
 function clearPreviewUI(panelInstance) {
@@ -294,13 +294,13 @@ function clearPreviewUI(panelInstance) {
 }
 
 async function rebuildValueInput(panelInstance) {
-    const colSel = panelInstance.bodyEl.querySelector('#me-column');
-    if (!colSel) return;
-    const cols = window.schema?.tables?.[state.currentTable]?.columns ?? {};
+    const columnSelect = panelInstance.bodyEl.querySelector('#me-column');
+    if (!columnSelect) return;
+    const columns = window.schema?.tables?.[state.currentTable]?.columns ?? {};
     const old  = panelInstance.bodyEl.querySelector('#me-value');
     if (old) old.remove();
-    const valField = panelInstance.bodyEl.querySelector('.me-val-field');
-    if (valField) valField.appendChild(await buildValueInput(cols[colSel.value] ?? {}, colSel.value));
+    const valueField = panelInstance.bodyEl.querySelector('.me-val-field');
+    if (valueField) valueField.appendChild(await buildValueInput(columns[columnSelect.value] ?? {}, columnSelect.value));
     clearPreviewUI(panelInstance);
 }
 
@@ -314,55 +314,55 @@ async function buildMassEditBody(panelInstance) {
 
     if (!table || !window.schema?.tables?.[table]) return;
 
-    const cols  = window.schema.tables[table].columns ?? {};
+    const columns  = window.schema.tables[table].columns ?? {};
     const count = state.selectedIds.size;
 
-    const scopeEl = document.createElement('p');
-    scopeEl.className = 'me-scope-info';
-    scopeEl.textContent = I18n.t('mass_edit.scope_info').replace('{n}', count);
-    body.appendChild(scopeEl);
+    const scopeElement = document.createElement('p');
+    scopeElement.className = 'me-scope-info';
+    scopeElement.textContent = I18n.t('mass_edit.scope_info').replace('{n}', count);
+    body.appendChild(scopeElement);
 
-    const colSel = document.createElement('select');
-    colSel.id = 'me-column';
+    const columnSelect = document.createElement('select');
+    columnSelect.id = 'me-column';
 
     let firstKey = null;
-    for (const [name, cfg] of Object.entries(cols)) {
-        if (!isEditableCol(name, cfg)) continue;
-        const opt = document.createElement('option');
-        opt.value = name; opt.textContent = cfg.display_name ?? name;
-        colSel.appendChild(opt);
+    for (const [name, config] of Object.entries(columns)) {
+        if (!isEditableColumn(name, config)) continue;
+        const option = document.createElement('option');
+        option.value = name; option.textContent = config.display_name ?? name;
+        columnSelect.appendChild(option);
         if (!firstKey) firstKey = name;
     }
-    body.appendChild(makeField('bp-field', I18n.t('mass_edit.column'), 'me-column', colSel));
+    body.appendChild(makeField('bp-field', I18n.t('mass_edit.column'), 'me-column', columnSelect));
 
-    const valField = makeField('bp-field me-val-field', I18n.t('mass_edit.new_value'), 'me-value', null);
-    if (firstKey) valField.appendChild(await buildValueInput(cols[firstKey] ?? {}, firstKey));
-    body.appendChild(valField);
+    const valueField = makeField('bp-field me-val-field', I18n.t('mass_edit.new_value'), 'me-value', null);
+    if (firstKey) valueField.appendChild(await buildValueInput(columns[firstKey] ?? {}, firstKey));
+    body.appendChild(valueField);
 
     const nullRow = document.createElement('label');
     nullRow.className = 'me-null-row';
-    const nullCb = document.createElement('input');
-    nullCb.type = 'checkbox'; nullCb.id = 'me-set-null';
+    const nullCallback = document.createElement('input');
+    nullCallback.type = 'checkbox'; nullCallback.id = 'me-set-null';
     const nullSpan = document.createElement('span');
     nullSpan.textContent = I18n.t('mass_edit.set_null');
-    nullRow.appendChild(nullCb); nullRow.appendChild(nullSpan);
+    nullRow.appendChild(nullCallback); nullRow.appendChild(nullSpan);
     body.appendChild(nullRow);
 
-    const previewBtn = document.createElement('button');
-    previewBtn.className = 'me-preview-btn';
-    previewBtn.id = 'me-preview-btn';
-    previewBtn.textContent = I18n.t('mass_edit.preview');
-    previewBtn.addEventListener('click', () => runPreview(panelInstance));
-    body.appendChild(previewBtn);
+    const previewButton = document.createElement('button');
+    previewButton.className = 'me-preview-btn';
+    previewButton.id = 'me-preview-btn';
+    previewButton.textContent = I18n.t('mass_edit.preview');
+    previewButton.addEventListener('click', () => runPreview(panelInstance));
+    body.appendChild(previewButton);
 
     const previewArea = document.createElement('div');
     previewArea.className = 'me-preview-area';
     body.appendChild(previewArea);
 
-    colSel.addEventListener('change', () => rebuildValueInput(panelInstance));
-    nullCb.addEventListener('change', () => {
-        const valEl = body.querySelector('#me-value');
-        if (valEl) valEl.disabled = nullCb.checked;
+    columnSelect.addEventListener('change', () => rebuildValueInput(panelInstance));
+    nullCallback.addEventListener('change', () => {
+        const valueElement = body.querySelector('#me-value');
+        if (valueElement) valueElement.disabled = nullCallback.checked;
         clearPreviewUI(panelInstance);
     });
     body.addEventListener('input', e => {
@@ -377,10 +377,10 @@ async function runPreview(panelInstance) {
     const payload = getPayload(panelInstance);
     if (!payload) return;
 
-    const previewBtn  = panelInstance.bodyEl.querySelector('#me-preview-btn');
+    const previewButton  = panelInstance.bodyEl.querySelector('#me-preview-btn');
     const previewArea = panelInstance.bodyEl.querySelector('.me-preview-area');
 
-    previewBtn.disabled = true;
+    previewButton.disabled = true;
     previewLoaded       = false;
     panelInstance.setApplyDisabled(true);
     panelInstance.setStatus(I18n.t('common.loading'), false);
@@ -391,11 +391,11 @@ async function runPreview(panelInstance) {
         data = await postMassEditJson('api/mass_edit.php?action=mass_edit_preview', payload);
     } catch {
         panelInstance.setStatus(I18n.t('common.error_generic'), true);
-        previewBtn.disabled = false;
+        previewButton.disabled = false;
         return;
     }
 
-    previewBtn.disabled = false;
+    previewButton.disabled = false;
 
     if (data.error) {
         panelInstance.setStatus(data.error, true);
@@ -403,13 +403,13 @@ async function runPreview(panelInstance) {
     }
 
     const count  = data.count ?? 0;
-    const newVal = payload.value === null ? '(null)' : String(payload.value);
+    const newValue = payload.value === null ? '(null)' : String(payload.value);
     panelInstance.setStatus(I18n.t('mass_edit.preview_count').replace('{n}', count), false);
 
     const rows = data.rows ?? [];
     if (rows.length > 0) {
-        const tbl = document.createElement('table');
-        tbl.className = 'bp-preview-table';
+        const table = document.createElement('table');
+        table.className = 'bp-preview-table';
 
         const thead = document.createElement('thead');
         const hr    = document.createElement('tr');
@@ -421,20 +421,20 @@ async function runPreview(panelInstance) {
             const th = document.createElement('th');
             th.textContent = h; hr.appendChild(th);
         });
-        thead.appendChild(hr); tbl.appendChild(thead);
+        thead.appendChild(hr); table.appendChild(thead);
 
         const tbody = document.createElement('tbody');
         for (const row of rows) {
             const tr = document.createElement('tr');
             const tdId  = document.createElement('td'); tdId.textContent  = String(row.id);
             const tdOld = document.createElement('td'); tdOld.textContent = String(row.current ?? '');
-            const tdNew = document.createElement('td'); tdNew.textContent = newVal;
+            const tdNew = document.createElement('td'); tdNew.textContent = newValue;
             tdNew.className = 'me-new-val';
             tr.appendChild(tdId); tr.appendChild(tdOld); tr.appendChild(tdNew);
             tbody.appendChild(tr);
         }
-        tbl.appendChild(tbody);
-        previewArea.appendChild(tbl);
+        table.appendChild(tbody);
+        previewArea.appendChild(table);
     }
 
     previewLoaded      = true;
@@ -444,19 +444,19 @@ async function runPreview(panelInstance) {
 
 function getPayload(panelInstance) {
     const body   = panelInstance.bodyEl;
-    const colSel = body.querySelector('#me-column');
-    const valEl  = body.querySelector('#me-value');
-    const nullCb = body.querySelector('#me-set-null');
+    const columnSelect = body.querySelector('#me-column');
+    const valueElement  = body.querySelector('#me-value');
+    const nullCallback = body.querySelector('#me-set-null');
 
-    if (!colSel) return null;
+    if (!columnSelect) return null;
 
-    const value = nullCb?.checked
+    const value = nullCallback?.checked
         ? null
-        : (valEl ? (valEl.value === '' ? null : valEl.value) : null);
+        : (valueElement ? (valueElement.value === '' ? null : valueElement.value) : null);
 
     return {
         table:   state.currentTable,
-        column:  colSel.value,
+        column:  columnSelect.value,
         value,
         row_ids: Array.from(state.selectedIds),
     };
@@ -540,37 +540,37 @@ function buildExportBody(panelInstance) {
     panelInstance.setApplyDisabled(false);
 
     const { displayedColumns } = getState();
-    const schemaCols = window.schema?.tables?.[state.currentTable]?.columns ?? {};
+    const schemaColumns = window.schema?.tables?.[state.currentTable]?.columns ?? {};
 
-    const info = document.createElement('p');
-    info.className = 'me-scope-info';
-    info.textContent = I18n.t('mass_edit.export_rows').replace('{n}', state.selectedIds.size);
-    body.appendChild(info);
+    const information = document.createElement('p');
+    information.className = 'me-scope-info';
+    information.textContent = I18n.t('mass_edit.export_rows').replace('{n}', state.selectedIds.size);
+    body.appendChild(information);
 
     const quickRow = document.createElement('div');
     quickRow.className = 'me-col-picker-quick';
-    quickRow.appendChild(makeColPickerQuickBtn(I18n.t('mass_edit.export_select_all'), true, body, panelInstance));
-    quickRow.appendChild(makeColPickerQuickBtn(I18n.t('mass_edit.export_select_none'), false, body, panelInstance));
+    quickRow.appendChild(makeColumnPickerQuickButton(I18n.t('mass_edit.export_select_all'), true, body, panelInstance));
+    quickRow.appendChild(makeColumnPickerQuickButton(I18n.t('mass_edit.export_select_none'), false, body, panelInstance));
     body.appendChild(quickRow);
 
     const list = document.createElement('div');
     list.className = 'me-col-picker-list';
 
-    displayedColumns.forEach(col => {
+    displayedColumns.forEach(column => {
         const item = document.createElement('label');
         item.className = 'me-col-picker-item';
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.className = 'me-col-picker-cb';
-        cb.value = col;
-        cb.checked = true;
-        cb.addEventListener('change', () => {
+        const callback = document.createElement('input');
+        callback.type = 'checkbox';
+        callback.className = 'me-col-picker-cb';
+        callback.value = column;
+        callback.checked = true;
+        callback.addEventListener('change', () => {
             const any = Array.from(body.querySelectorAll('.me-col-picker-cb')).some(c => c.checked);
             panelInstance.setApplyDisabled(!any);
         });
         const span = document.createElement('span');
-        span.textContent = schemaCols[col]?.display_name ?? col;
-        item.appendChild(cb);
+        span.textContent = schemaColumns[column]?.display_name ?? column;
+        item.appendChild(callback);
         item.appendChild(span);
         list.appendChild(item);
     });
@@ -580,20 +580,20 @@ function buildExportBody(panelInstance) {
 
 function applyExport(panelInstance) {
     const body = panelInstance.bodyEl;
-    const checkedCols = Array.from(body.querySelectorAll('.me-col-picker-cb:checked'))
-        .map(cb => cb.value);
+    const checkedColumns = Array.from(body.querySelectorAll('.me-col-picker-cb:checked'))
+        .map(callback => callback.value);
 
-    if (checkedCols.length === 0) {
+    if (checkedColumns.length === 0) {
         panelInstance.setStatus(I18n.t('mass_edit.export_none_selected'), true);
         return;
     }
 
     const { filteredData } = getState();
     const rows        = filteredData.filter(r => state.selectedIds.has(r.id));
-    const schemaCols  = window.schema?.tables?.[state.currentTable]?.columns ?? {};
-    const header      = checkedCols.map(c => JSON.stringify(schemaCols[c]?.display_name ?? c)).join(',');
+    const schemaColumns  = window.schema?.tables?.[state.currentTable]?.columns ?? {};
+    const header      = checkedColumns.map(c => JSON.stringify(schemaColumns[c]?.display_name ?? c)).join(',');
     const lines       = rows.map(r =>
-        checkedCols.map(c => JSON.stringify(r[c] ?? '')).join(',')
+        checkedColumns.map(c => JSON.stringify(r[c] ?? '')).join(',')
     );
     const csv  = [header, ...lines].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -625,10 +625,10 @@ async function buildOwnerBody(panelInstance) {
     body.innerHTML = '';
     panelInstance.setApplyDisabled(true);
 
-    const scopeEl = document.createElement('p');
-    scopeEl.className = 'me-scope-info';
-    scopeEl.textContent = I18n.t('mass_owner.scope_info').replace('{n}', state.selectedIds.size);
-    body.appendChild(scopeEl);
+    const scopeElement = document.createElement('p');
+    scopeElement.className = 'me-scope-info';
+    scopeElement.textContent = I18n.t('mass_owner.scope_info').replace('{n}', state.selectedIds.size);
+    body.appendChild(scopeElement);
 
     const sel = document.createElement('select');
     sel.id = 'me-owner-sel';
@@ -641,15 +641,15 @@ async function buildOwnerBody(panelInstance) {
     panelInstance.setStatus(I18n.t('common.loading'), false);
 
     try {
-        const res  = await fetch('api/owners.php?action=editors', {
+        const result  = await fetch('api/owners.php?action=editors', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         });
-        const data = await res.json();
+        const data = await result.json();
         (data.users ?? []).forEach(u => {
-            const opt       = document.createElement('option');
-            opt.value       = String(u.id);
-            opt.textContent = u.username;
-            sel.appendChild(opt);
+            const option       = document.createElement('option');
+            option.value       = String(u.id);
+            option.textContent = u.username;
+            sel.appendChild(option);
         });
         panelInstance.clearStatus();
     } catch {
@@ -674,7 +674,7 @@ async function applyMassOwner(panelInstance) {
 
     let data;
     try {
-        const res = await apiFetch('api/owners.php', {
+        const result = await apiFetch('api/owners.php', {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: {
@@ -685,7 +685,7 @@ async function applyMassOwner(panelInstance) {
                 csrf_token: getCsrfToken(),
             },
         });
-        data = await res.json();
+        data = await result.json();
     } catch {
         panelInstance.setStatus(I18n.t('common.error_generic'), true);
         panelInstance.setApplyDisabled(false);

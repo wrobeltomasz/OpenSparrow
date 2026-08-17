@@ -38,11 +38,11 @@ describe('Security – SQL injection resistance', () => {
     cy.probe({
       url: `/api.php?api=schema&table=${TABLE}`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      expect(res.status, 'schema readable').to.eq(200);
-      const schema = asJson(res.body);
-      const cfg = schema.tables ? schema.tables[TABLE] : schema;
-      const columns = cfg.columns || {};
+    }).then(result => {
+      expect(result.status, 'schema readable').to.eq(200);
+      const schema = asJson(result.body);
+      const config = schema.tables ? schema.tables[TABLE] : schema;
+      const columns = config.columns || {};
       textColumn = Object.keys(columns).find(c => {
         const type = String(columns[c].type || '').toLowerCase();
         return c !== 'id' && (type === '' || type.includes('text') || type.includes('char'));
@@ -53,9 +53,9 @@ describe('Security – SQL injection resistance', () => {
     cy.probe({
       url: `/api.php?api=list&table=${TABLE}`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      expect(res.status).to.eq(200);
-      cleanCount = rowsOf(asJson(res.body)).length;
+    }).then(result => {
+      expect(result.status).to.eq(200);
+      cleanCount = rowsOf(asJson(result.body)).length;
       cy.task('log', `[security] baseline row count for ${TABLE}: ${cleanCount}`);
     });
   });
@@ -65,11 +65,11 @@ describe('Security – SQL injection resistance', () => {
       cy.probe({
         url: `/api.php?api=list&table=${TABLE}&search=${encodeURIComponent(payload)}`,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      }).then(res => {
-        expect(res.status, 'no server error').to.eq(200);
-        expect(JSON.stringify(res.body), 'no database internals leaked')
+      }).then(result => {
+        expect(result.status, 'no server error').to.eq(200);
+        expect(JSON.stringify(result.body), 'no database internals leaked')
           .to.not.match(/SQLSTATE|pg_query|syntax error at or near/i);
-        const rows = rowsOf(asJson(res.body));
+        const rows = rowsOf(asJson(result.body));
 
         expect(rows.length, 'payload treated as a literal search term')
           .to.be.at.most(cleanCount);
@@ -80,10 +80,10 @@ describe('Security – SQL injection resistance', () => {
       cy.probe({
         url: `/api.php?api=list&table=${TABLE}&filter_col=${textColumn}&filter_val=${encodeURIComponent(payload)}`,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      }).then(res => {
-        expect(res.status).to.eq(200);
-        expect(JSON.stringify(res.body)).to.not.match(/SQLSTATE|pg_query/i);
-        expect(rowsOf(asJson(res.body)).length, 'equality filter matches nothing').to.eq(0);
+      }).then(result => {
+        expect(result.status).to.eq(200);
+        expect(JSON.stringify(result.body)).to.not.match(/SQLSTATE|pg_query/i);
+        expect(rowsOf(asJson(result.body)).length, 'equality filter matches nothing').to.eq(0);
       });
     });
   });
@@ -92,8 +92,8 @@ describe('Security – SQL injection resistance', () => {
     cy.probe({
       url: '/api.php?api=list&table=spw_users',
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      cy.expectDenied(res, [400, 403, 404], 'spw_users via grid API');
+    }).then(result => {
+      cy.expectDenied(result, [400, 403, 404], 'spw_users via grid API');
     });
   });
 
@@ -101,9 +101,9 @@ describe('Security – SQL injection resistance', () => {
     cy.probe({
       url: `/api.php?api=list&table=${TABLE}&filter_col=${encodeURIComponent("id) OR (1=1")}&filter_val=x`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      expect(res.status, 'no server error').to.eq(200);
-      expect(JSON.stringify(res.body)).to.not.match(/SQLSTATE|syntax error/i);
+    }).then(result => {
+      expect(result.status, 'no server error').to.eq(200);
+      expect(JSON.stringify(result.body)).to.not.match(/SQLSTATE|syntax error/i);
     });
   });
 
@@ -111,9 +111,9 @@ describe('Security – SQL injection resistance', () => {
     cy.probe({
       url: `/api.php?api=list&table=${TABLE}&offset=${encodeURIComponent('0; DROP TABLE spw_users')}`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      expect(res.status).to.eq(200);
-      expect(JSON.stringify(res.body)).to.not.match(/SQLSTATE|syntax error/i);
+    }).then(result => {
+      expect(result.status).to.eq(200);
+      expect(JSON.stringify(result.body)).to.not.match(/SQLSTATE|syntax error/i);
     });
   });
 
@@ -122,8 +122,8 @@ describe('Security – SQL injection resistance', () => {
     cy.probe({
       url: `/api.php?api=list&table=${TABLE}`,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    }).then(res => {
-      expect(rowsOf(asJson(res.body)).length, 'clean query still returns the baseline')
+    }).then(result => {
+      expect(rowsOf(asJson(result.body)).length, 'clean query still returns the baseline')
         .to.eq(cleanCount);
     });
   });
@@ -146,11 +146,11 @@ describe('Security – stored XSS', () => {
       cy.probe({
         url: `/api.php?api=schema&table=${TABLE}`,
         headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      }).then(schemaRes => {
-        const schema = asJson(schemaRes.body);
-        const cfg = schema.tables ? schema.tables[TABLE] : schema;
-        const columns = cfg.columns || {};
-        const col = Object.keys(columns).find(c => {
+      }).then(schemaResult => {
+        const schema = asJson(schemaResult.body);
+        const config = schema.tables ? schema.tables[TABLE] : schema;
+        const columns = config.columns || {};
+        const column = Object.keys(columns).find(c => {
           const type = String(columns[c].type || '').toLowerCase();
           return c !== 'id' && (type === '' || type.includes('text') || type.includes('char'));
         });
@@ -159,10 +159,10 @@ describe('Security – stored XSS', () => {
           url: '/api.php',
           method: 'POST',
           headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': token },
-          body: { table: TABLE, data: { [col]: PAYLOAD } },
-        }).then(res => {
-          expect(res.status, 'record created for the render test').to.be.oneOf([200, 201]);
-          const newId = asJson(res.body).id;
+          body: { table: TABLE, data: { [column]: PAYLOAD } },
+        }).then(result => {
+          expect(result.status, 'record created for the render test').to.be.oneOf([200, 201]);
+          const newId = asJson(result.body).id;
           expect(newId, 'new record id returned').to.not.be.oneOf([null, undefined]);
 
           cy.visit(`/edit.php?table=${TABLE}&id=${newId}`);
@@ -207,9 +207,9 @@ describe('Security – path traversal', () => {
     '/etc/passwd',
   ].forEach(payload => {
     it(`file_download.php refuses uuid=${payload}`, () => {
-      cy.probe({ url: `/file_download.php?uuid=${payload}` }).then(res => {
-        cy.expectDenied(res, [400, 404], `uuid=${payload}`);
-        expect(String(res.body), 'no file contents returned')
+      cy.probe({ url: `/file_download.php?uuid=${payload}` }).then(result => {
+        cy.expectDenied(result, [400, 404], `uuid=${payload}`);
+        expect(String(result.body), 'no file contents returned')
           .to.not.match(/DB_HOST|password|<\?php/i);
       });
     });
@@ -219,8 +219,8 @@ describe('Security – path traversal', () => {
     cy.clearCookies();
     ['/config/database.json', '/includes/config.php', '/../includes/config.php', '/.env', '/.git/config']
       .forEach(path => {
-        cy.probe({ url: path }).then(res => {
-          expect(res.status, `${path} must not be served`).to.not.eq(200);
+        cy.probe({ url: path }).then(result => {
+          expect(result.status, `${path} must not be served`).to.not.eq(200);
         });
       });
   });

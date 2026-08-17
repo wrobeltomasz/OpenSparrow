@@ -23,9 +23,9 @@ function safe_table(array $schema, string $table): array
     return $schema['tables'][$table];
 }
 
-function column_list(array $tableCfg): array
+function column_list(array $tableConfig): array
 {
-    $columns = $tableCfg['columns'] ?? [];
+    $columns = $tableConfig['columns'] ?? [];
 
     return array_keys(array_filter($columns, fn($column) => ($column['type'] ?? '') !== 'virtual'));
 }
@@ -40,18 +40,18 @@ function pg_ident(string $name): string
     return '"' . str_replace('"', '""', $name) . '"';
 }
 
-function to_display_name(array $tableCfg): string
+function to_display_name(array $tableConfig): string
 {
-    return $tableCfg['display_name'] ?? ($tableCfg['name'] ?? 'Unknown');
+    return $tableConfig['display_name'] ?? ($tableConfig['name'] ?? 'Unknown');
 }
 
-function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Connection $conn): array
+function map_fk_display(array $schema, array $tableConfig, array $rows, \PgSql\Connection $conn): array
 {
-    if (empty($rows) || !isset($tableCfg['foreign_keys'])) {
+    if (empty($rows) || !isset($tableConfig['foreign_keys'])) {
         return $rows;
     }
 
-    foreach ($tableCfg['foreign_keys'] as $fkColumn => $foreignKeyConfig) {
+    foreach ($tableConfig['foreign_keys'] as $fkColumn => $foreignKeyConfig) {
         $fkValues = [];
         foreach ($rows as $row) {
             if (isset($row[$fkColumn]) && $row[$fkColumn] !== '' && $row[$fkColumn] !== null) {
@@ -63,29 +63,29 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
             continue;
         }
 
-        $refName = is_array($foreignKeyConfig) ? (string) ($foreignKeyConfig['reference_table'] ?? '') : '';
+        $referencedName = is_array($foreignKeyConfig) ? (string) ($foreignKeyConfig['reference_table'] ?? '') : '';
         try {
-            $refTable = safe_table($schema, $refName);
+            $referencedTable = safe_table($schema, $referencedName);
         } catch (\RuntimeException $exception) {
             error_log(sprintf(
                 '[map_fk_display] dangling foreign key %s -> %s: reference table not in schema config',
                 (string) $fkColumn,
-                $refName === '' ? '(missing reference_table)' : $refName
+                $referencedName === '' ? '(missing reference_table)' : $referencedName
             ));
             continue;
         }
-        $refSchema = $refTable['schema'] ?? 'public';
-        $refColId  = $foreignKeyConfig['reference_column'] ?? 'id';
+        $referencedSchema = $referencedTable['schema'] ?? 'public';
+        $referencedColumnId  = $foreignKeyConfig['reference_column'] ?? 'id';
 
-        $refDispRaw = $foreignKeyConfig['display_column'] ?? [$refColId];
-        if (!is_array($refDispRaw)) {
-            $refDispRaw = [$refDispRaw];
+        $referencedDisplayRaw = $foreignKeyConfig['display_column'] ?? [$referencedColumnId];
+        if (!is_array($referencedDisplayRaw)) {
+            $referencedDisplayRaw = [$referencedDisplayRaw];
         }
-        if (empty($refDispRaw)) {
-            $refDispRaw = [$refColId];
+        if (empty($referencedDisplayRaw)) {
+            $referencedDisplayRaw = [$referencedColumnId];
         }
 
-        $escapedDisplayColumns = array_map(pg_ident(...), $refDispRaw);
+        $escapedDisplayColumns = array_map(pg_ident(...), $referencedDisplayRaw);
         if (count($escapedDisplayColumns) > 1) {
             $displaySql = "CONCAT_WS(' - ', " . implode(', ', $escapedDisplayColumns) . ")";
         } else {
@@ -97,11 +97,11 @@ function map_fk_display(array $schema, array $tableCfg, array $rows, \PgSql\Conn
 
         $sql = sprintf(
             'SELECT %s AS id, %s AS disp FROM %s.%s WHERE %s IN (%s)',
-            pg_ident($refColId),
+            pg_ident($referencedColumnId),
             $displaySql,
-            pg_ident($refSchema),
-            pg_ident($refName),
-            pg_ident($refColId),
+            pg_ident($referencedSchema),
+            pg_ident($referencedName),
+            pg_ident($referencedColumnId),
             $inClause
         );
 
@@ -179,41 +179,41 @@ function get_record_owner_id(\PgSql\Connection $conn, string $table, int $record
 
 function can_access_record(
     \PgSql\Connection $conn,
-    array $tableCfg,
+    array $tableConfig,
     string $table,
     int $recordId,
     int $userId,
     string $role = ''
 ): bool {
-    return (new RecordOwnershipService($conn))->canAccess($tableCfg, $table, $recordId, $userId, $role);
+    return (new RecordOwnershipService($conn))->canAccess($tableConfig, $table, $recordId, $userId, $role);
 }
 
 function check_record_ownership(
     \PgSql\Connection $conn,
-    array $tableCfg,
+    array $tableConfig,
     string $table,
     int $recordId,
     int $userId,
     string $message = 'Forbidden'
 ): void {
-    if (!can_access_record($conn, $tableCfg, $table, $recordId, $userId)) {
+    if (!can_access_record($conn, $tableConfig, $table, $recordId, $userId)) {
         throw new ForbiddenException($message, ['error' => $message]);
     }
 }
 
-function owner_restriction_sql(string $idExpr, int $tableParam, int $ownerParam): string
+function owner_restriction_sql(string $idExpr, int $tableParameter, int $ownerParameter): string
 {
-    return RecordOwnershipService::restrictionSql($idExpr, $tableParam, $ownerParam);
+    return RecordOwnershipService::restrictionSql($idExpr, $tableParameter, $ownerParameter);
 }
 
 function filter_visible_ids(
     \PgSql\Connection $conn,
-    array $tableCfg,
+    array $tableConfig,
     string $table,
     array $ids,
     int $userId
 ): array {
-    return (new RecordOwnershipService($conn))->filterVisibleIds($tableCfg, $table, $ids, $userId);
+    return (new RecordOwnershipService($conn))->filterVisibleIds($tableConfig, $table, $ids, $userId);
 }
 
 function set_record_owner(\PgSql\Connection $conn, string $table, int $recordId, int $ownerId, int $changedBy): void
@@ -226,9 +226,9 @@ function snapshot_record(\PgSql\Connection $conn, string $schemaName, string $ta
     (new RecordSnapshotService($conn))->capture($schemaName, $table, $recordId, $logId);
 }
 
-function record_label_columns(array $tableCfg, array $configured): array
+function record_label_columns(array $tableConfig, array $configured): array
 {
-    $columns = $tableCfg['columns'] ?? [];
+    $columns = $tableConfig['columns'] ?? [];
 
     if (!empty($configured)) {
         $valid = array_values(array_filter(
@@ -243,23 +243,23 @@ function record_label_columns(array $tableCfg, array $configured): array
     }
 
     $firstGridColumn = null;
-    foreach ($columns as $colName => $colCfg) {
-        if (empty($colCfg['show_in_grid'])) {
+    foreach ($columns as $columnName => $columnConfig) {
+        if (empty($columnConfig['show_in_grid'])) {
             continue;
         }
         if ($firstGridColumn === null) {
-            $firstGridColumn = $colName;
+            $firstGridColumn = $columnName;
         }
-        if (($colCfg['type'] ?? '') === 'text') {
-            return [$colName];
+        if (($columnConfig['type'] ?? '') === 'text') {
+            return [$columnName];
         }
     }
     return [$firstGridColumn ?? 'id'];
 }
 
-function record_label_sql(array $tableCfg, array $configured): string
+function record_label_sql(array $tableConfig, array $configured): string
 {
-    $columns = array_map('pg_ident', record_label_columns($tableCfg, $configured));
+    $columns = array_map('pg_ident', record_label_columns($tableConfig, $configured));
 
     return count($columns) > 1
         ? "CONCAT_WS(' - ', " . implode(', ', $columns) . ')'
@@ -300,9 +300,9 @@ function require_not_demo(string $message = 'Action disabled in Demo Mode.', int
     throw HttpException::fromStatus($code, $message, ['status' => 'error', 'error' => $message]);
 }
 
-function validate_column_regexp(array $colCfg, mixed $inputValue): ?string
+function validate_column_regexp(array $columnConfig, mixed $inputValue): ?string
 {
-    $pattern = $colCfg['validation_regexp'] ?? '';
+    $pattern = $columnConfig['validation_regexp'] ?? '';
     if (!is_string($pattern) || $pattern === '' || $inputValue === null || $inputValue === '') {
         return null;
     }
@@ -312,7 +312,7 @@ function validate_column_regexp(array $colCfg, mixed $inputValue): ?string
         error_log('[validate_column_regexp] invalid validation_regexp in schema.json: ' . $pattern);
         return null;
     }
-    return $result === 1 ? null : (string) ($colCfg['validation_message'] ?? 'Invalid format');
+    return $result === 1 ? null : (string) ($columnConfig['validation_message'] ?? 'Invalid format');
 }
 
 function validatedTable(string $table, string $field = 'table'): string
@@ -375,17 +375,17 @@ function access_scope_items(string $scope, bool $includeHidden = false): array
     }
 
     $output = [];
-    foreach ($items as $key => $cfg) {
-        if (!is_array($cfg) || (!$includeHidden && !empty($cfg['hidden']))) {
+    foreach ($items as $key => $config) {
+        if (!is_array($config) || (!$includeHidden && !empty($config['hidden']))) {
             continue;
         }
 
-        $name = $definition['id'] === null ? (string) $key : (string) ($cfg[$definition['id']] ?? '');
+        $name = $definition['id'] === null ? (string) $key : (string) ($config[$definition['id']] ?? '');
         if ($name === '') {
             continue;
         }
 
-        $label      = $cfg[$definition['label']] ?? null;
+        $label      = $config[$definition['label']] ?? null;
         $output[$name] = is_string($label) && $label !== '' ? $label : $name;
     }
     return $output;
@@ -409,8 +409,8 @@ function user_allowed_items(string $scope, ?int $userId = null): ?array
 
     if (!array_key_exists($userId, $cache)) {
         require_once __DIR__ . '/config_store.php';
-        $cfg   = config_get('user_table_access');
-        $entry = $cfg['users'][(string) $userId] ?? null;
+        $config   = config_get('user_table_access');
+        $entry = $config['users'][(string) $userId] ?? null;
 
         if (is_array($entry) && array_is_list($entry)) {
             $entry = ['tables' => $entry];
@@ -475,16 +475,16 @@ function os_request_scope_violation(array $body = [], array $overrides = []): ?a
     $query   = $request->queryAll();
     $post    = $request->postAll();
 
-    foreach (OS_REQUEST_SCOPE_PARAMS as $param => $scope) {
-        if (($overrides[$param] ?? true) === false) {
+    foreach (OS_REQUEST_SCOPE_PARAMS as $parameter => $scope) {
+        if (($overrides[$parameter] ?? true) === false) {
             continue;
         }
 
-        if ($param === 'table' && defined('OS_TABLE_ACCESS_DELEGATED')) {
+        if ($parameter === 'table' && defined('OS_TABLE_ACCESS_DELEGATED')) {
             continue;
         }
 
-        foreach ([$query[$param] ?? null, $post[$param] ?? null, $body[$param] ?? null] as $value) {
+        foreach ([$query[$parameter] ?? null, $post[$parameter] ?? null, $body[$parameter] ?? null] as $value) {
             foreach (is_array($value) ? $value : [$value] as $name) {
                 if (!is_string($name) || $name === '') {
                     continue;

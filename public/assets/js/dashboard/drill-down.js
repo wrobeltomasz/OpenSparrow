@@ -10,18 +10,18 @@ export function firstEqCondition(conditions) {
     return conditions.find(c => c.op === '=' && c.col && c.val !== undefined && c.val !== null) ?? null;
 }
 
-export function applyDrillDown(element, table, filterCol = null, filterVal = null, range = null) {
+export function applyDrillDown(element, table, filterColumn = null, filterValue = null, range = null) {
     element.style.cursor = 'pointer';
     element.title = I18n.t('dashboard.click_details');
     element.addEventListener('click', () => {
         let url = `index.php?table=${encodeURIComponent(table)}`;
-        if (filterCol && range && (range.from || range.to)) {
-            url += `&filter_col=${encodeURIComponent(filterCol)}`;
+        if (filterColumn && range && (range.from || range.to)) {
+            url += `&filter_col=${encodeURIComponent(filterColumn)}`;
             if (range.from) url += `&filter_from=${encodeURIComponent(range.from)}`;
             if (range.to) url += `&filter_to=${encodeURIComponent(range.to)}`;
-        } else if (filterCol) {
-            const val = filterVal !== null && filterVal !== undefined ? filterVal : '';
-            url += `&filter_col=${encodeURIComponent(filterCol)}&filter_val=${encodeURIComponent(val)}`;
+        } else if (filterColumn) {
+            const value = filterValue !== null && filterValue !== undefined ? filterValue : '';
+            url += `&filter_col=${encodeURIComponent(filterColumn)}&filter_val=${encodeURIComponent(value)}`;
         }
         window.location.href = url;
     });

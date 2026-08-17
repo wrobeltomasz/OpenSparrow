@@ -14,14 +14,14 @@ let flowsConfig  = null;
 let flowsVersion = 0;
 let jobsForPicker = [];
 
-async function saveFlowsConfig(statusEl) {
+async function saveFlowsConfig(statusElement) {
     const result = await persistConfig('etl_flow_save', { ...flowsConfig, version: flowsVersion });
     if (result.ok) {
         flowsVersion = result.version;
-        if (statusEl) showStatus(statusEl, 'Configuration saved.', true);
+        if (statusElement) showStatus(statusElement, 'Configuration saved.', true);
         return true;
     }
-    if (statusEl) showStatus(statusEl, result.error, false);
+    if (statusElement) showStatus(statusElement, result.error, false);
     return false;
 }
 
@@ -32,7 +32,7 @@ function buildTile(text, cls) {
     return tile;
 }
 
-function buildJobTile(flow, stepIdx, redraw) {
+function buildJobTile(flow, stepIndex, redraw) {
     const tile = document.createElement('div');
     tile.className = 'flow-tile flow-tile-job';
 
@@ -46,10 +46,10 @@ function buildJobTile(flow, stepIdx, redraw) {
     jobsForPicker.forEach((job) => {
         const o = document.createElement('option');
         o.value = job.id; o.textContent = job.name;
-        if (flow.steps[stepIdx] === job.id) o.selected = true;
+        if (flow.steps[stepIndex] === job.id) o.selected = true;
         select.appendChild(o);
     });
-    select.onchange = () => { flow.steps[stepIdx] = select.value; };
+    select.onchange = () => { flow.steps[stepIndex] = select.value; };
 
     const btns = document.createElement('div');
     btns.className = 'flow-tile-btns';
@@ -59,9 +59,9 @@ function buildJobTile(flow, stepIdx, redraw) {
     up.className = 'icon-btn';
     up.title = 'Move earlier';
     up.textContent = '↑';
-    up.disabled = stepIdx === 0;
+    up.disabled = stepIndex === 0;
     up.onclick = () => {
-        [flow.steps[stepIdx - 1], flow.steps[stepIdx]] = [flow.steps[stepIdx], flow.steps[stepIdx - 1]];
+        [flow.steps[stepIndex - 1], flow.steps[stepIndex]] = [flow.steps[stepIndex], flow.steps[stepIndex - 1]];
         redraw();
     };
 
@@ -70,9 +70,9 @@ function buildJobTile(flow, stepIdx, redraw) {
     down.className = 'icon-btn';
     down.title = 'Move later';
     down.textContent = '↓';
-    down.disabled = stepIdx === flow.steps.length - 1;
+    down.disabled = stepIndex === flow.steps.length - 1;
     down.onclick = () => {
-        [flow.steps[stepIdx + 1], flow.steps[stepIdx]] = [flow.steps[stepIdx], flow.steps[stepIdx + 1]];
+        [flow.steps[stepIndex + 1], flow.steps[stepIndex]] = [flow.steps[stepIndex], flow.steps[stepIndex + 1]];
         redraw();
     };
 
@@ -82,7 +82,7 @@ function buildJobTile(flow, stepIdx, redraw) {
     remove.title = 'Remove step';
     remove.textContent = '✕';
     remove.onclick = () => {
-        flow.steps.splice(stepIdx, 1);
+        flow.steps.splice(stepIndex, 1);
         redraw();
     };
 
@@ -96,17 +96,17 @@ function buildTileRow(flow, redraw) {
     row.className = 'flow-tile-row';
 
     row.appendChild(buildTile('Start', 'flow-tile-start'));
-    flow.steps.forEach((_, stepIdx) => row.appendChild(buildJobTile(flow, stepIdx, redraw)));
+    flow.steps.forEach((_, stepIndex) => row.appendChild(buildJobTile(flow, stepIndex, redraw)));
 
-    const addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.className = 'flow-tile flow-tile-add';
-    addBtn.textContent = '+ Add step';
-    addBtn.onclick = () => {
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.className = 'flow-tile flow-tile-add';
+    addButton.textContent = '+ Add step';
+    addButton.onclick = () => {
         flow.steps.push((jobsForPicker[0] || {}).id || '');
         redraw();
     };
-    row.appendChild(addBtn);
+    row.appendChild(addButton);
 
     row.appendChild(buildTile('End', 'flow-tile-end'));
     return row;
@@ -126,12 +126,12 @@ function buildFlowHistory(rows) {
     );
 }
 
-function buildFlowCard(flow, idx, redraw, status) {
+function buildFlowCard(flow, index, redraw, status) {
     const { card, body, title } = buildCollapsibleCard({
         titleText: flow.name,
         placeholder: '(unnamed flow)',
         confirmMsg: `Delete flow "${flow.name}"?`,
-        onDelete: () => { flowsConfig.flows.splice(idx, 1); redraw(); },
+        onDelete: () => { flowsConfig.flows.splice(index, 1); redraw(); },
     });
 
     const name = input(flow.name);
@@ -152,10 +152,10 @@ function buildFlowCard(flow, idx, redraw, status) {
     out.className = 'adm-input';
     out.style.cssText = 'white-space:pre-wrap; max-height:220px; overflow:auto; display:none;';
 
-    const btnRun = document.createElement('button');
-    btnRun.className = 'btn btn-success';
-    btnRun.textContent = 'Run now';
-    btnRun.onclick = async () => {
+    const buttonRun = document.createElement('button');
+    buttonRun.className = 'btn btn-success';
+    buttonRun.textContent = 'Run now';
+    buttonRun.onclick = async () => {
         if (!(await saveFlowsConfig(status))) return;
         await runCronAction('run_etl_flow', { flow_id: flow.id }, out);
     };
@@ -165,8 +165,8 @@ function buildFlowCard(flow, idx, redraw, status) {
     async function loadHistory() {
         histWrap.textContent = 'Loading history…';
         try {
-            const res  = await apiFetch('api.php?action=etl_flow_log&flow_id=' + encodeURIComponent(flow.id));
-            const data = await res.json();
+            const result  = await apiFetch('api.php?action=etl_flow_log&flow_id=' + encodeURIComponent(flow.id));
+            const data = await result.json();
             if (data.status !== 'success') { histWrap.textContent = data.error || 'Failed to load history.'; return; }
             if (data.note && (!data.rows || data.rows.length === 0)) { histWrap.textContent = data.note; return; }
             if (!data.rows || data.rows.length === 0) { histWrap.textContent = 'No runs yet.'; return; }
@@ -176,10 +176,10 @@ function buildFlowCard(flow, idx, redraw, status) {
     }
     if (flow.id) loadHistory();
 
-    const btnBar = document.createElement('div');
-    btnBar.style.marginTop = '10px';
-    btnBar.append(btnRun);
-    body.append(btnBar, out, histWrap);
+    const buttonBar = document.createElement('div');
+    buttonBar.style.marginTop = '10px';
+    buttonBar.append(buttonRun);
+    body.append(buttonBar, out, histWrap);
 
     return card;
 }
@@ -188,8 +188,8 @@ export async function renderFlowsTab(panel) {
     panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading flows…</p>';
 
     try {
-        const res  = await apiFetch('api.php?action=etl_flow_load');
-        const data = await res.json();
+        const result  = await apiFetch('api.php?action=etl_flow_load');
+        const data = await result.json();
         if (data.status !== 'success') {
             panel.innerHTML = `<p style="color:var(--error); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
             return;
@@ -216,13 +216,13 @@ export async function renderFlowsTab(panel) {
 
     function redraw() {
         list.innerHTML = '';
-        flowsConfig.flows.forEach((flow, idx) => list.appendChild(buildFlowCard(flow, idx, redraw, status)));
+        flowsConfig.flows.forEach((flow, index) => list.appendChild(buildFlowCard(flow, index, redraw, status)));
     }
 
-    const btnAdd = document.createElement('button');
-    btnAdd.className = 'btn btn-success';
-    btnAdd.textContent = '+ Add flow';
-    btnAdd.onclick = () => {
+    const buttonAdd = document.createElement('button');
+    buttonAdd.className = 'btn btn-success';
+    buttonAdd.textContent = '+ Add flow';
+    buttonAdd.onclick = () => {
         flowsConfig.flows.push({
             id: '', name: 'New flow', enabled: true, steps: [],
             last_run_status: null, last_run_at: null,
@@ -230,15 +230,15 @@ export async function renderFlowsTab(panel) {
         redraw();
     };
 
-    const btnSave = document.createElement('button');
-    btnSave.className = 'btn';
-    btnSave.textContent = 'Save configuration';
-    btnSave.style.marginLeft = '8px';
-    btnSave.onclick = () => saveFlowsConfig(status);
+    const buttonSave = document.createElement('button');
+    buttonSave.className = 'btn';
+    buttonSave.textContent = 'Save configuration';
+    buttonSave.style.marginLeft = '8px';
+    buttonSave.onclick = () => saveFlowsConfig(status);
 
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
-    bar.append(btnAdd, btnSave);
+    bar.append(buttonAdd, buttonSave);
     panel.append(bar, status, list);
     redraw();
 }

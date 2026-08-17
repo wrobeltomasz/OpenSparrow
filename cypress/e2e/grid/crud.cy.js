@@ -112,8 +112,8 @@ describe('OpenSparrow – Edit Record Flow', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
           .find('[data-cy=row-edit]')
@@ -221,8 +221,8 @@ describe('OpenSparrow – Delete Record', () => {
 
   it('displays Delete button in grid row actions', () => {
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
           .find('[data-cy=row-delete]')
@@ -237,8 +237,8 @@ describe('OpenSparrow – Delete Record', () => {
 
   it('shows delete button exists in grid row', () => {
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
           .find('[data-cy=row-delete]')
@@ -295,8 +295,8 @@ describe('OpenSparrow – Subtables (if present)', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type === 'grid') {
+    waitForGridOrEmpty().then(result => {
+      if (result.type === 'grid') {
         cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
           .first()
           .find('[data-cy=row-edit]')
@@ -353,8 +353,8 @@ describe('OpenSparrow – Create Record: Actual Save', () => {
         return;
       }
 
-      const uniqueVal = `cypress-test-${Date.now()}`;
-      cy.wrap($inputs).first().clear().type(uniqueVal);
+      const uniqueValue = `cypress-test-${Date.now()}`;
+      cy.wrap($inputs).first().clear().type(uniqueValue);
       cy.get('button[type="submit"].btn-save').click();
 
       cy.url({ timeout: CypressHelpers.TIMEOUTS.long }).then(url => {
@@ -390,8 +390,8 @@ describe('OpenSparrow – Edit Record: Actual Save', () => {
   beforeEach(() => {
     loginAsTestUser();
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('[data-cy=grid] tbody tr, #grid tbody tr')
         .first()
         .find('[data-cy=row-edit]')
@@ -414,9 +414,9 @@ describe('OpenSparrow – Edit Record: Actual Save', () => {
 
         const uniqueSuffix = ` (edited ${Date.now()})`;
         cy.wrap($inputs).first().then($inp => {
-          const originalVal = $inp.val();
-          const newVal = String(originalVal).slice(0, 50) + ' cy';
-          cy.wrap($inp).clear().type(newVal);
+          const originalValue = $inp.val();
+          const newValue = String(originalValue).slice(0, 50) + ' cy';
+          cy.wrap($inp).clear().type(newValue);
         });
 
         cy.get('button.btn-save[type="submit"], button[onclick*="saveAction"]')
@@ -464,8 +464,8 @@ describe('OpenSparrow – Delete Record: Actual Flow', () => {
   });
 
   it('cancelling delete confirm keeps record in grid', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid tbody tr').its('length').then(rowsBefore => {
         cy.window().then(win => {
@@ -487,8 +487,8 @@ describe('OpenSparrow – Delete Record: Actual Flow', () => {
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
     cy.intercept('DELETE', /index\.php/).as('deleteReq');
 
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('#grid tbody tr').its('length').then(rowsBefore => {
         if (rowsBefore < 1) {
@@ -528,8 +528,8 @@ describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
   it('clicking Duplicate fires POST to duplicate endpoint', () => {
     cy.intercept('POST', /index\.php.*duplicate|api.*duplicate/).as('dupReq');
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
         .find('[data-cy=row-duplicate]')
@@ -546,8 +546,8 @@ describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
 
   it('duplicate does not decrease row count', () => {
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr').its('length').then(rowsBefore => {
         cy.get('#grid tbody tr')
           .first()
@@ -563,15 +563,15 @@ describe('OpenSparrow – Duplicate Record: Actual Flow', () => {
   });
 
   it('duplicate adds a row on success (no unique constraint)', () => {
-    cy.intercept('POST', /index\.php.*duplicate|api.*duplicate/, req => {
-      req.continue(res => {
-        res.body = res.body;
+    cy.intercept('POST', /index\.php.*duplicate|api.*duplicate/, request => {
+      request.continue(result => {
+        result.body = result.body;
       });
     }).as('dupCheck');
 
     cy.visit(`${BASE}/index.php?table=${TEST_TABLE}`);
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr').its('length').then(rowsBefore => {
         cy.get('#grid tbody tr')
           .first()
@@ -615,8 +615,8 @@ describe('OpenSparrow – Role-Based UI', () => {
   });
 
   it('editor role: contenteditable cells are present', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
 
       cy.get('[contenteditable="true"]').should('have.length.gte', 1);
     });
@@ -631,8 +631,8 @@ describe('OpenSparrow – Role-Based UI', () => {
   });
 
   it('History tab shows audit entries or empty state on edit.php', () => {
-    waitForGridOrEmpty().then(res => {
-      if (res.type !== 'grid') return;
+    waitForGridOrEmpty().then(result => {
+      if (result.type !== 'grid') return;
       cy.get('#grid tbody tr')
         .first()
         .find('[data-cy=row-edit]')

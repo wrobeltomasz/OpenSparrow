@@ -25,15 +25,15 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
     }
 
     #[\Override]
-    public function find(TableConfig $cfg, string|int $id): ?array
+    public function find(TableConfig $config, string|int $id): ?array
     {
-        $columns       = array_unique(array_merge([$cfg->primaryKey], array_keys($cfg->dbColumns())));
+        $columns       = array_unique(array_merge([$config->primaryKey], array_keys($config->dbColumns())));
         $selectList = implode(', ', array_map([Identifier::class, 'quote'], $columns));
         $sql        = sprintf(
             'SELECT %s FROM %s WHERE %s = $1',
             $selectList,
-            Identifier::quoteQualified($cfg->schema, $cfg->name),
-            Identifier::quote($cfg->primaryKey)
+            Identifier::quoteQualified($config->schema, $config->name),
+            Identifier::quote($config->primaryKey)
         );
         $queryResult = $this->conn->execute($sql, [(string)$id]);
         $row = pg_fetch_assoc($queryResult);
@@ -41,88 +41,88 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
     }
 
     #[\Override]
-    public function update(TableConfig $cfg, string|int $id, RecordData $data): void
+    public function update(TableConfig $config, string|int $id, RecordData $data): void
     {
         if ($data->isEmpty()) {
             return;
         }
         $updates = [];
-        $params  = [];
+        $parameters  = [];
         $placeholderIndex       = 1;
         foreach ($data->bindings as $binding) {
             $updates[] = Identifier::quote($binding['col']) . ' = ' . $binding['bound']->placeholder($placeholderIndex);
-            $params[]  = $binding['bound']->value;
+            $parameters[]  = $binding['bound']->value;
             $placeholderIndex++;
         }
-        $params[] = (string)$id;
+        $parameters[] = (string)$id;
         $sql = sprintf(
             'UPDATE %s SET %s WHERE %s = $%d',
-            Identifier::quoteQualified($cfg->schema, $cfg->name),
+            Identifier::quoteQualified($config->schema, $config->name),
             implode(', ', $updates),
-            Identifier::quote($cfg->primaryKey),
+            Identifier::quote($config->primaryKey),
             $placeholderIndex
         );
-        $this->conn->execute($sql, $params);
+        $this->conn->execute($sql, $parameters);
     }
 
     #[\Override]
-    public function insert(TableConfig $cfg, RecordData $data): string|int
+    public function insert(TableConfig $config, RecordData $data): string|int
     {
         if ($data->isEmpty()) {
             $sql = sprintf(
                 'INSERT INTO %s DEFAULT VALUES RETURNING %s',
-                Identifier::quoteQualified($cfg->schema, $cfg->name),
-                Identifier::quote($cfg->primaryKey)
+                Identifier::quoteQualified($config->schema, $config->name),
+                Identifier::quote($config->primaryKey)
             );
             $queryResult = $this->conn->exec($sql);
         } else {
             $columns   = [];
             $placeholders     = [];
-            $params = [];
+            $parameters = [];
             $placeholderIndex      = 1;
             foreach ($data->bindings as $binding) {
                 $columns[]   = Identifier::quote($binding['col']);
                 $placeholders[]     = $binding['bound']->placeholder($placeholderIndex);
-                $params[] = $binding['bound']->value;
+                $parameters[] = $binding['bound']->value;
                 $placeholderIndex++;
             }
             $sql = sprintf(
                 'INSERT INTO %s (%s) VALUES (%s) RETURNING %s',
-                Identifier::quoteQualified($cfg->schema, $cfg->name),
+                Identifier::quoteQualified($config->schema, $config->name),
                 implode(', ', $columns),
                 implode(', ', $placeholders),
-                Identifier::quote($cfg->primaryKey)
+                Identifier::quote($config->primaryKey)
             );
-            $queryResult = $this->conn->execute($sql, $params);
+            $queryResult = $this->conn->execute($sql, $parameters);
         }
         $row = pg_fetch_assoc($queryResult);
         if ($row === false) {
             throw new \RuntimeException('INSERT returned no row.');
         }
-        return $row[$cfg->primaryKey];
+        return $row[$config->primaryKey];
     }
 
     #[\Override]
-    public function subtables(TableConfig $cfg, string|int $parentId): array
+    public function subtables(TableConfig $config, string|int $parentId): array
     {
         $result    = [];
         $rawSchema = $this->schemas->raw();
 
-        foreach ($cfg->subtables as $subtable) {
+        foreach ($config->subtables as $subtable) {
             $subtableName = $subtable['table'];
             if (!$this->schemas->hasTable($subtableName)) {
                 continue;
             }
-            $subtableCfg = $this->schemas->table($subtableName);
+            $subtableConfig = $this->schemas->table($subtableName);
             $foreignKey       = $subtable['foreign_key'];
 
-            $selectColumns    = array_unique(array_merge(['id'], array_keys($subtableCfg->dbColumns())));
+            $selectColumns    = array_unique(array_merge(['id'], array_keys($subtableConfig->dbColumns())));
             $selectColumnsSql = implode(', ', array_map([Identifier::class, 'quote'], $selectColumns));
 
             $sql = sprintf(
                 'SELECT %s FROM %s WHERE %s = $1 ORDER BY id DESC',
                 $selectColumnsSql,
-                Identifier::quoteQualified($subtableCfg->schema, $subtableName),
+                Identifier::quoteQualified($subtableConfig->schema, $subtableName),
                 Identifier::quote($foreignKey)
             );
 
@@ -133,12 +133,12 @@ final readonly class PgRecordRepository implements RecordRepositoryInterface
             }
             pg_free_result($subtableResult);
 
-            $rows = $this->fkLoader->expandDisplay($subtableCfg, $rows, $rawSchema);
+            $rows = $this->fkLoader->expandDisplay($subtableConfig, $rows, $rawSchema);
 
             $result[] = [
                 'config' => $subtable,
                 'rows'   => $rows,
-                'schema' => $subtableCfg,
+                'schema' => $subtableConfig,
             ];
         }
         return $result;

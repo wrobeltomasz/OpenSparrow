@@ -116,15 +116,15 @@ final class EditController
 
         os_require_table_access($table);
 
-        $tableCfg   = $this->schemas->table($table);
+        $tableConfig   = $this->schemas->table($table);
         $rawSchema  = $this->schemas->raw();
         $m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
-        $imagesCfg  = ImageService::config($rawSchema, $table);
+        $imagesConfig  = ImageService::config($rawSchema, $table);
         $error      = '';
 
-        $rawTableCfg = $rawSchema['tables'][$table] ?? [];
+        $rawTableConfig = $rawSchema['tables'][$table] ?? [];
         $canAccess   = $this->ownership->canAccess(
-            $rawTableCfg,
+            $rawTableConfig,
             $table,
             $id,
             $this->session->userId(),
@@ -135,33 +135,33 @@ final class EditController
         }
 
         if ($this->request->isPost()) {
-            $error = $this->save($tableCfg, $table, $id, $m2mConfigs, $rawSchema);
+            $error = $this->save($tableConfig, $table, $id, $m2mConfigs, $rawSchema);
         }
 
-        $row = $this->records->find($tableCfg, $id);
+        $row = $this->records->find($tableConfig, $id);
         if ($row === null) {
             throw new NotFoundException('Record not found.');
         }
 
         $subtablesData = array_values(array_filter(
-            $this->records->subtables($tableCfg, $id),
+            $this->records->subtables($tableConfig, $id),
             static fn(array $subtableData): bool
                 => user_can_access_table((string) ($subtableData['config']['table'] ?? ''))
         ));
 
-        $formFields     = $this->formFields($tableCfg, $rawSchema, $row, $isReadOnly);
+        $formFields     = $this->formFields($tableConfig, $rawSchema, $row, $isReadOnly);
         $m2mGroups      = $this->m2mGroups($m2mConfigs, $rawSchema, $id, $isReadOnly);
         $subtablePanels = $this->subtablePanels($subtablesData, $id);
-        $imagesPanel    = $this->imagesPanel($imagesCfg, $table, $id, $isReadOnly);
-        $filesPanel     = $this->filesPanel($tableCfg->name, $id);
+        $imagesPanel    = $this->imagesPanel($imagesConfig, $table, $id, $isReadOnly);
+        $filesPanel     = $this->filesPanel($tableConfig->name, $id);
         $historyPanel   = $this->historyPanel();
-        $tabs           = $this->tabs($tableCfg, $subtablePanels, $imagesPanel);
+        $tabs           = $this->tabs($tableConfig, $subtablePanels, $imagesPanel);
 
-        $formHeading   = t('form.edit_record', ['table' => $tableCfg->displayName]);
+        $formHeading   = t('form.edit_record', ['table' => $tableConfig->displayName]);
         $formSaved     = $this->request->query('saved') === '1';
         $formError     = $error;
         $formCsrfToken = $this->csrf->token();
-        $formRecordId  = $row[$tableCfg->primaryKey] ?? null;
+        $formRecordId  = $row[$tableConfig->primaryKey] ?? null;
         $cancelUrl     = 'index.php?table=' . urlencode($table);
         $formLabels    = [
             'saved'    => t('form.saved_ok'),
@@ -172,17 +172,17 @@ final class EditController
             'delete'   => t('common.delete'),
         ];
 
-        $pageTitle = 'OpenSparrow | Edit Record - ' . $tableCfg->displayName;
+        $pageTitle = 'OpenSparrow | Edit Record - ' . $tableConfig->displayName;
         ob_start();
         include __DIR__ . '/../../templates/edit.php';
         $pageContent = ob_get_clean();
 
-        $extraScripts = $this->extraScripts($tableCfg, $id, $cspNonce);
+        $extraScripts = $this->extraScripts($tableConfig, $id, $cspNonce);
         include __DIR__ . '/../../templates/layout.php';
     }
 
     private function save(
-        TableConfig $tableCfg,
+        TableConfig $tableConfig,
         string $table,
         int $id,
         array $m2mConfigs,
@@ -193,17 +193,17 @@ final class EditController
         }
 
         try {
-            $data = $this->mapper->fromPost($tableCfg, $this->request->postAll());
+            $data = $this->mapper->fromPost($tableConfig, $this->request->postAll());
 
-            $oldRecord = $this->automations->captureOldRecord($tableCfg->schema, $tableCfg->name, $id);
-            $this->records->update($tableCfg, $id, $data);
-            $logId = $this->audit->log($this->session->userId(), 'UPDATE', $tableCfg->name, $id);
+            $oldRecord = $this->automations->captureOldRecord($tableConfig->schema, $tableConfig->name, $id);
+            $this->records->update($tableConfig, $id, $data);
+            $logId = $this->audit->log($this->session->userId(), 'UPDATE', $tableConfig->name, $id);
             if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
-                $this->snapshots->capture($tableCfg->schema, $tableCfg->name, $id, $logId);
+                $this->snapshots->capture($tableConfig->schema, $tableConfig->name, $id, $logId);
             }
             $this->automations->evaluate(
-                $tableCfg->schema,
-                $tableCfg->name,
+                $tableConfig->schema,
+                $tableConfig->name,
                 $id,
                 'update',
                 $this->session->userId(),
@@ -230,28 +230,28 @@ final class EditController
     }
 
     private function formFields(
-        TableConfig $tableCfg,
+        TableConfig $tableConfig,
         array $rawSchema,
         array $row,
         bool $isReadOnly
     ): array {
         $fkOptions = [];
-        foreach ($tableCfg->foreignKeys as $colName => $foreignKeyConfig) {
-            $fkOptions[$colName] = $this->fkLoader->load($foreignKeyConfig, $rawSchema);
+        foreach ($tableConfig->foreignKeys as $columnName => $foreignKeyConfig) {
+            $fkOptions[$columnName] = $this->fkLoader->load($foreignKeyConfig, $rawSchema);
         }
 
         $renderContext = new RenderContext($isReadOnly, $fkOptions);
 
         $formFields = [];
-        foreach ($tableCfg->visibleColumns() as $column) {
-            if ($column->name === $tableCfg->primaryKey) {
+        foreach ($tableConfig->visibleColumns() as $column) {
+            if ($column->name === $tableConfig->primaryKey) {
                 continue;
             }
             $isColumnReadOnly = $column->readonly || $isReadOnly;
             $formFields[] = [
                 'label'    => $column->displayName,
                 'required' => $column->notNull && !$isColumnReadOnly,
-                'html'     => $this->fieldRegistry->for($column, $tableCfg->hasForeignKey($column->name))
+                'html'     => $this->fieldRegistry->for($column, $tableConfig->hasForeignKey($column->name))
                     ->render($column, $row[$column->name] ?? '', $renderContext),
             ];
         }
@@ -286,11 +286,11 @@ final class EditController
                 ?? ($subtableData['schema']->displayName ?? $subtableName);
 
             $subtableColumnsMap = [];
-            foreach ($subtableData['schema']->columns as $subtableColName => $subtableColCfg) {
-                $subtableColumnsMap[$subtableColName] = [
-                    'display_name' => $subtableColCfg->displayName,
-                    'type'         => $subtableColCfg->type,
-                    'enum_colors'  => $subtableColCfg->enumColors,
+            foreach ($subtableData['schema']->columns as $subtableColumnName => $subtableColumnConfig) {
+                $subtableColumnsMap[$subtableColumnName] = [
+                    'display_name' => $subtableColumnConfig->displayName,
+                    'type'         => $subtableColumnConfig->type,
+                    'enum_colors'  => $subtableColumnConfig->enumColors,
                 ];
             }
 
@@ -333,9 +333,9 @@ final class EditController
         return $subtablePanels;
     }
 
-    private function imagesPanel(?array $imagesCfg, string $table, int $id, bool $isReadOnly): ?array
+    private function imagesPanel(?array $imagesConfig, string $table, int $id, bool $isReadOnly): ?array
     {
-        if (!$imagesCfg) {
+        if (!$imagesConfig) {
             return null;
         }
 
@@ -352,13 +352,13 @@ final class EditController
         }
 
         return [
-            'label'       => $imagesCfg['label'] ?: t('images.label'),
+            'label'       => $imagesConfig['label'] ?: t('images.label'),
             'countText'   => t('images.count', [
                 'n'   => count($galleryImages),
-                'max' => $imagesCfg['max_per_record'],
+                'max' => $imagesConfig['max_per_record'],
             ]),
             'items'       => $imageItems,
-            'canUpload'   => !$isReadOnly && count($galleryImages) < $imagesCfg['max_per_record'],
+            'canUpload'   => !$isReadOnly && count($galleryImages) < $imagesConfig['max_per_record'],
             'deleteLabel' => t('images.delete'),
             'uploadLabel' => t('images.upload'),
             'emptyText'   => t('images.empty'),
@@ -418,12 +418,12 @@ final class EditController
         ];
     }
 
-    private function tabs(TableConfig $tableCfg, array $subtablePanels, ?array $imagesPanel): array
+    private function tabs(TableConfig $tableConfig, array $subtablePanels, ?array $imagesPanel): array
     {
         $tabs = [[
             'id'    => 'tab-details',
-            'label' => $tableCfg->displayName,
-            'icon'  => $tableCfg->icon ?: '',
+            'label' => $tableConfig->displayName,
+            'icon'  => $tableConfig->icon ?: '',
         ]];
         foreach ($subtablePanels as $panel) {
             $tabs[] = ['id' => $panel['id'], 'label' => $panel['label'], 'icon' => $panel['icon']];
@@ -438,11 +438,11 @@ final class EditController
         return $tabs;
     }
 
-    private function extraScripts(TableConfig $tableCfg, int $id, string $cspNonce): string
+    private function extraScripts(TableConfig $tableConfig, int $id, string $cspNonce): string
     {
         $globals = os_inline_globals([
             'CSRF_TOKEN'      => $this->csrf->token(),
-            'EDIT_TABLE'      => $tableCfg->name,
+            'EDIT_TABLE'      => $tableConfig->name,
             'EDIT_ID'         => $id,
             'CURRENT_USER_ID' => $this->session->userId(),
             'USER_ROLE'       => $this->session->role(),

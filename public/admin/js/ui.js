@@ -17,11 +17,11 @@ export const helpTexts = {
     validation_message: "Custom error message displayed when the input does not match the RegExp pattern."
 };
 
-export function moveArrayItem(arr, index, direction) {
+export function moveArrayItem(array, index, direction) {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= arr.length) return false;
-    const item = arr.splice(index, 1)[0];
-    arr.splice(newIndex, 0, item);
+    if (newIndex < 0 || newIndex >= array.length) return false;
+    const item = array.splice(index, 1)[0];
+    array.splice(newIndex, 0, item);
     return true;
 }
 
@@ -32,13 +32,13 @@ export function moveObjectKey(obj, key, direction) {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= keys.length) return obj;
 
-    const temp = keys[newIndex];
+    const temporary = keys[newIndex];
     keys[newIndex] = keys[index];
-    keys[index] = temp;
+    keys[index] = temporary;
 
-    const newObj = {};
-    keys.forEach(k => newObj[k] = obj[k]);
-    return newObj;
+    const newObject = {};
+    keys.forEach(k => newObject[k] = obj[k]);
+    return newObject;
 }
 
 export function createTextInput(key, labelText, value, onChange) {
@@ -132,23 +132,23 @@ export function createIconPicker(key, labelText, value, onChange) {
     input.classList.add('flex-1');
     input.addEventListener('input', (e) => onChange(e.target.value));
 
-    const btn = document.createElement('button');
-    btn.textContent = 'Browse';
-    btn.type = 'button';
-    btn.className = 'btn btn-secondary btn-sm';
-    btn.onclick = async () => {
+    const button = document.createElement('button');
+    button.textContent = 'Browse';
+    button.type = 'button';
+    button.className = 'btn btn-secondary btn-sm';
+    button.onclick = async () => {
         const modal = document.createElement('div');
         modal.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:10000;`;
 
         const content = document.createElement('div');
         content.style.cssText = `background:#fff; padding:20px; border-radius:8px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);`;
 
-        const closeBtn = document.createElement('button');
-        closeBtn.textContent = 'Close';
-        closeBtn.className = 'btn btn-danger btn-xs';
-        closeBtn.style.cssText = 'position:absolute; top:15px; right:15px;';
-        closeBtn.onclick = () => modal.remove();
-        content.appendChild(closeBtn);
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        closeButton.className = 'btn btn-danger btn-xs';
+        closeButton.style.cssText = 'position:absolute; top:15px; right:15px;';
+        closeButton.onclick = () => modal.remove();
+        content.appendChild(closeButton);
 
         content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:var(--muted); ">Icons are loaded from <code>assets/icons/</code>.</p>';
 
@@ -156,28 +156,28 @@ export function createIconPicker(key, labelText, value, onChange) {
         grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;
 
         try {
-            const res = await apiFetch('api.php?action=list_icons');
-            const data = await res.json();
+            const result = await apiFetch('api.php?action=list_icons');
+            const data = await result.json();
             if (data.status === 'success' && data.icons.length > 0) {
                 data.icons.forEach(iconPath => {
-                    const imgBox = document.createElement('div');
-                    imgBox.style.cssText = `cursor:pointer; text-align:center; padding:10px; border:1px solid var(--border); border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center; height: 70px;`;
-                    imgBox.onmouseover = () => { imgBox.style.borderColor = 'var(--muted)'; imgBox.style.background = 'var(--accent-mid)'; };
-                    imgBox.onmouseout = () => { imgBox.style.borderColor = 'var(--accent-mid)'; imgBox.style.background = 'transparent'; };
+                    const imageBox = document.createElement('div');
+                    imageBox.style.cssText = `cursor:pointer; text-align:center; padding:10px; border:1px solid var(--border); border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center; height: 70px;`;
+                    imageBox.onmouseover = () => { imageBox.style.borderColor = 'var(--muted)'; imageBox.style.background = 'var(--accent-mid)'; };
+                    imageBox.onmouseout = () => { imageBox.style.borderColor = 'var(--accent-mid)'; imageBox.style.background = 'transparent'; };
 
-                    const img = document.createElement('img');
-                    img.src = '../' + iconPath;
-                    img.style.maxWidth = '100%';
-                    img.style.maxHeight = '100%';
-                    img.style.objectFit = 'contain';
+                    const image = document.createElement('img');
+                    image.src = '../' + iconPath;
+                    image.style.maxWidth = '100%';
+                    image.style.maxHeight = '100%';
+                    image.style.objectFit = 'contain';
 
-                    imgBox.appendChild(img);
-                    imgBox.onclick = () => {
+                    imageBox.appendChild(image);
+                    imageBox.onclick = () => {
                         input.value = iconPath;
                         onChange(iconPath);
                         modal.remove();
                     };
-                    grid.appendChild(imgBox);
+                    grid.appendChild(imageBox);
                 });
             } else {
                 grid.innerHTML = '<p style="grid-column: 1 / -1; color:var(--muted);">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
@@ -192,7 +192,7 @@ export function createIconPicker(key, labelText, value, onChange) {
     };
 
     inputGroup.appendChild(input);
-    inputGroup.appendChild(btn);
+    inputGroup.appendChild(button);
     wrapper.appendChild(inputGroup);
 
     if (helpTexts[key]) {
@@ -211,11 +211,11 @@ export function createSelectInput(key, labelText, options, value, onChange) {
     label.textContent = labelText;
     wrapper.appendChild(label);
     const select = document.createElement('select');
-    options.forEach(opt => {
+    options.forEach(option => {
         const o = document.createElement('option');
-        o.value = opt.value;
-        o.textContent = opt.label;
-        if (opt.value === value) o.selected = true;
+        o.value = option.value;
+        o.textContent = option.label;
+        if (option.value === value) o.selected = true;
         select.appendChild(o);
     });
     select.addEventListener('change', (e) => onChange(e.target.value));
@@ -272,46 +272,46 @@ export function createMenuPreview() {
     item.className = 'menu-preview-item';
     item.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--accent-dark); color:var(--accent-light); border-radius:6px;  min-width:220px; max-width:320px; transition:opacity .15s;';
 
-    const iconEl = document.createElement('span');
-    iconEl.style.cssText = 'width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;';
+    const iconElement = document.createElement('span');
+    iconElement.style.cssText = 'width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;';
 
-    const nameEl = document.createElement('span');
-    nameEl.style.cssText = 'flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
+    const nameElement = document.createElement('span');
+    nameElement.style.cssText = 'flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
 
-    const badgeEl = document.createElement('span');
-    badgeEl.textContent = 'HIDDEN';
-    badgeEl.style.cssText = ' background:var(--error); color:#fff; padding:2px 6px; border-radius:3px; display:none; ';
+    const badgeElement = document.createElement('span');
+    badgeElement.textContent = 'HIDDEN';
+    badgeElement.style.cssText = ' background:var(--error); color:#fff; padding:2px 6px; border-radius:3px; display:none; ';
 
-    item.appendChild(iconEl);
-    item.appendChild(nameEl);
-    item.appendChild(badgeEl);
+    item.appendChild(iconElement);
+    item.appendChild(nameElement);
+    item.appendChild(badgeElement);
     wrapper.appendChild(item);
 
     const update = ({ name, icon, hidden }) => {
-        nameEl.textContent = name || '';
-        iconEl.innerHTML = '';
+        nameElement.textContent = name || '';
+        iconElement.innerHTML = '';
         if (icon) {
             const looksLikePath = icon.includes('/') || icon.includes('.');
             if (looksLikePath) {
-                const img = document.createElement('img');
-                img.src = '../' + icon;
-                img.alt = '';
-                img.style.cssText = 'max-width:20px; max-height:20px; filter:brightness(0) invert(1);';
-                img.onerror = () => { iconEl.innerHTML = ''; iconEl.textContent = '?'; };
-                iconEl.appendChild(img);
+                const image = document.createElement('img');
+                image.src = '../' + icon;
+                image.alt = '';
+                image.style.cssText = 'max-width:20px; max-height:20px; filter:brightness(0) invert(1);';
+                image.onerror = () => { iconElement.innerHTML = ''; iconElement.textContent = '?'; };
+                iconElement.appendChild(image);
             } else {
-                iconEl.textContent = icon;
+                iconElement.textContent = icon;
             }
         }
         item.style.opacity = hidden ? '0.4' : '1';
-        badgeEl.style.display = hidden ? 'inline-block' : 'none';
+        badgeElement.style.display = hidden ? 'inline-block' : 'none';
     };
 
     return { el: wrapper, update };
 }
 
-export function renderGlobalSettings(ctx, options = {}) {
-    const { workspaceEl, currentConfig } = ctx;
+export function renderGlobalSettings(context, options = {}) {
+    const { workspaceEl: workspaceElement, currentConfig } = context;
     const {
         title = 'Global Settings',
         defaultMenuName = '',
@@ -319,31 +319,31 @@ export function renderGlobalSettings(ctx, options = {}) {
         onAfter,
     } = options;
 
-    workspaceEl.innerHTML = '';
+    workspaceElement.innerHTML = '';
     const heading = document.createElement('h3');
     heading.textContent = title;
-    workspaceEl.appendChild(heading);
+    workspaceElement.appendChild(heading);
 
-    workspaceEl.appendChild(createTextInput('menu_name', 'Menu Display Name',
+    workspaceElement.appendChild(createTextInput('menu_name', 'Menu Display Name',
         currentConfig.menu_name || defaultMenuName, v => {
             currentConfig.menu_name = v;
         }));
 
-    workspaceEl.appendChild(createIconPicker('menu_icon', 'Menu Icon',
+    workspaceElement.appendChild(createIconPicker('menu_icon', 'Menu Icon',
         currentConfig.menu_icon || '', v => {
             if (v && v.trim() !== '') currentConfig.menu_icon = v;
             else delete currentConfig.menu_icon;
         }));
 
     if (includeHidden) {
-        workspaceEl.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
+        workspaceElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
             currentConfig.hidden, v => {
                 if (v) currentConfig.hidden = true;
                 else delete currentConfig.hidden;
             }, false));
     }
 
-    if (typeof onAfter === 'function') onAfter(ctx);
+    if (typeof onAfter === 'function') onAfter(context);
 }
 
 export function createFullMenuPreview(config) {
@@ -373,17 +373,17 @@ export function createFullMenuPreview(config) {
 
     function buildIcon(icon) {
         if (!icon) {
-            const img = document.createElement('img');
-            img.src = '../assets/icons/database.png';
-            img.alt = '';
-            return img;
+            const image = document.createElement('img');
+            image.src = '../assets/icons/database.png';
+            image.alt = '';
+            return image;
         }
         if (icon.includes('/') || icon.includes('.')) {
-            const img = document.createElement('img');
-            img.src = '../' + icon;
-            img.alt = '';
-            img.onerror = () => img.remove();
-            return img;
+            const image = document.createElement('img');
+            image.src = '../' + icon;
+            image.alt = '';
+            image.onerror = () => image.remove();
+            return image;
         }
         const span = document.createElement('span');
         span.className = 'menu-icon-span';
@@ -455,9 +455,9 @@ export function createFullMenuPreview(config) {
                 ? { ...p, children: [...(p.children || []), { ...dragged, children: [] }] }
                 : p);
         } else {
-            const topIdx = items.findIndex(i => i.key === targetKey);
-            if (topIdx !== -1) {
-                const at = zone === 'before' ? topIdx : topIdx + 1;
+            const topIndex = items.findIndex(i => i.key === targetKey);
+            if (topIndex !== -1) {
+                const at = zone === 'before' ? topIndex : topIndex + 1;
                 items.splice(at, 0, dragged);
             } else {
                 items = items.map(p => {
@@ -609,8 +609,8 @@ export function createFullMenuPreview(config) {
         wrap.appendChild(nav);
     }
 
-    function update(cfg) {
-        if (!cfg) {
+    function update(config) {
+        if (!config) {
             wrap.innerHTML = '';
             const p = document.createElement('p');
             p.className = 'menu-preview-info';
@@ -618,7 +618,7 @@ export function createFullMenuPreview(config) {
             wrap.appendChild(p);
             return;
         }
-        state = { items: (cfg.items || []).map(i => ({ ...i, children: i.children || [] })) };
+        state = { items: (config.items || []).map(i => ({ ...i, children: i.children || [] })) };
         rebuildDOM();
     }
 
@@ -645,30 +645,30 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
         empty.textContent = 'No options available';
         container.appendChild(empty);
     } else {
-        options.forEach(opt => {
-            const lbl = document.createElement('label');
+        options.forEach(option => {
+            const label = document.createElement('label');
 
             const chk = document.createElement('input');
             chk.type = 'checkbox';
-            chk.value = opt.value;
-            const optValNum = Number(opt.value);
-            chk.checked = safeValues.includes(opt.value) || safeValues.includes(String(opt.value)) || safeValues.includes(optValNum);
+            chk.value = option.value;
+            const optionValueNumber = Number(option.value);
+            chk.checked = safeValues.includes(option.value) || safeValues.includes(String(option.value)) || safeValues.includes(optionValueNumber);
 
             chk.addEventListener('change', () => {
                 let current = [...safeValues];
                 if (chk.checked) {
-                    if (!current.includes(optValNum)) current.push(optValNum);
+                    if (!current.includes(optionValueNumber)) current.push(optionValueNumber);
                 } else {
-                    current = current.filter(v => Number(v) !== optValNum);
+                    current = current.filter(v => Number(v) !== optionValueNumber);
                 }
                 safeValues.length = 0;
                 safeValues.push(...current);
                 onChange([...safeValues]);
             });
 
-            lbl.appendChild(chk);
-            lbl.appendChild(document.createTextNode(opt.label));
-            container.appendChild(lbl);
+            label.appendChild(chk);
+            label.appendChild(document.createTextNode(option.label));
+            container.appendChild(label);
         });
     }
 
@@ -692,19 +692,19 @@ export function buildInnerTabs(container, tabs) {
     const btns   = [];
 
     tabs.forEach(({ label, icon }) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'item-btn';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'item-btn';
         if (icon) {
-            const img = document.createElement('img');
-            img.src = '../assets/icons/' + icon;
-            img.alt = '';
-            img.style.cssText = 'width:15px;height:15px;opacity:.6;';
-            btn.appendChild(img);
+            const image = document.createElement('img');
+            image.src = '../assets/icons/' + icon;
+            image.alt = '';
+            image.style.cssText = 'width:15px;height:15px;opacity:.6;';
+            button.appendChild(image);
         }
-        btn.appendChild(document.createTextNode(label));
-        bar.appendChild(btn);
-        btns.push(btn);
+        button.appendChild(document.createTextNode(label));
+        bar.appendChild(button);
+        btns.push(button);
 
         const panel = document.createElement('div');
         panel.style.display = 'none';
@@ -718,7 +718,7 @@ export function buildInnerTabs(container, tabs) {
         panels.forEach((p, j) => { p.style.display = j === i ? '' : 'none'; });
         btns.forEach((b, j) => b.classList.toggle('active', j === i));
     }
-    btns.forEach((btn, i) => btn.addEventListener('click', () => activate(i)));
+    btns.forEach((button, i) => button.addEventListener('click', () => activate(i)));
     activate(0);
 
     return panels;
@@ -750,9 +750,9 @@ export function mkTable() {
     return el('table', 'adm-tbl');
 }
 
-export function mkThead(table, cols) {
+export function mkThead(table, columns) {
     const tr = table.createTHead().insertRow();
-    cols.forEach(h => tr.appendChild(el('th', 'adm-th', h)));
+    columns.forEach(h => tr.appendChild(el('th', 'adm-th', h)));
     return tr;
 }
 
@@ -817,13 +817,13 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
     const body = el('div');
     box.appendChild(body);
 
-    const msgEl = el('p', 'adm-modal-msg');
-    box.appendChild(msgEl);
+    const messageElement = el('p', 'adm-modal-msg');
+    box.appendChild(messageElement);
 
     const actions   = el('div', 'adm-modal-actions');
-    const cancelBtn = el('button', 'btn btn-secondary', 'Cancel');
-    const saveBtn   = el('button', 'btn btn-primary', saveLabel);
-    actions.append(cancelBtn, saveBtn);
+    const cancelButton = el('button', 'btn btn-secondary', 'Cancel');
+    const saveButton   = el('button', 'btn btn-primary', saveLabel);
+    actions.append(cancelButton, saveButton);
     box.appendChild(actions);
 
     overlay.appendChild(box);
@@ -868,8 +868,8 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
     }
     document.addEventListener('keydown', onKey);
 
-    cancelBtn.addEventListener('click', close);
+    cancelButton.addEventListener('click', close);
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 
-    return { overlay, box, body, msgEl, actions, cancelBtn, saveBtn, close };
+    return { overlay, box, body, msgEl: messageElement, actions, cancelBtn: cancelButton, saveBtn: saveButton, close };
 }

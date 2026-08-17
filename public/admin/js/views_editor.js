@@ -7,9 +7,9 @@ import { markDirty } from './app.js';
 import { createIconPicker, createTextInput, createCheckbox } from './ui.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
-export function renderViewsEditor(ctx) {
-    const { workspaceEl, currentConfig } = ctx;
-    workspaceEl.innerHTML = '';
+export function renderViewsEditor(context) {
+    const { workspaceEl: workspaceElement, currentConfig } = context;
+    workspaceElement.innerHTML = '';
 
     if (!currentConfig.views || typeof currentConfig.views !== 'object' || Array.isArray(currentConfig.views)) {
         currentConfig.views = {};
@@ -41,11 +41,11 @@ export function renderViewsEditor(ctx) {
         t.className = 'item-btn';
     });
     function tabIcon(name) {
-        const img = document.createElement('img');
-        img.src = '../assets/icons/' + name;
-        img.alt = '';
-        img.style.cssText = 'width:15px;height:15px;opacity:.6;';
-        return img;
+        const image = document.createElement('img');
+        image.src = '../assets/icons/' + name;
+        image.alt = '';
+        image.style.cssText = 'width:15px;height:15px;opacity:.6;';
+        return image;
     }
     pgTab.append(tabIcon('table_chart_view.png'), document.createTextNode('PostgreSQL Views'));
     schemasTab.append(tabIcon('database.png'), document.createTextNode('Schemas'));
@@ -66,13 +66,13 @@ export function renderViewsEditor(ctx) {
         pgTab.classList.toggle('active', currentSource === 'postgres');
         schemasTab.classList.toggle('active', currentSource === 'schemas');
         settingsTab.classList.toggle('active', currentSource === 'settings');
-        syncBtn.style.display = currentSource === 'postgres' ? '' : 'none';
-        syncBtn.textContent   = '↻ Sync PostgreSQL Views';
+        syncButton.style.display = currentSource === 'postgres' ? '' : 'none';
+        syncButton.textContent   = '↻ Sync PostgreSQL Views';
     }
 
-    function switchSource(src) {
-        if (currentSource === src) return;
-        currentSource = src;
+    function switchSource(source) {
+        if (currentSource === source) return;
+        currentSource = source;
         updateTabUi();
         renderList();
     }
@@ -80,38 +80,38 @@ export function renderViewsEditor(ctx) {
     schemasTab.addEventListener('click', () => switchSource('schemas'));
     settingsTab.addEventListener('click', () => switchSource('settings'));
 
-    const statusEl = document.createElement('div');
-    statusEl.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px;';
-    wrap.appendChild(statusEl);
+    const statusElement = document.createElement('div');
+    statusElement.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px;';
+    wrap.appendChild(statusElement);
 
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
-    const syncBtn = document.createElement('button');
-    syncBtn.className = 'btn btn-success';
-    bar.appendChild(syncBtn);
+    const syncButton = document.createElement('button');
+    syncButton.className = 'btn btn-success';
+    bar.appendChild(syncButton);
     wrap.appendChild(bar);
 
-    const listEl = document.createElement('div');
-    wrap.appendChild(listEl);
+    const listElement = document.createElement('div');
+    wrap.appendChild(listElement);
 
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
-    function setStatus(msg, type = 'info') {
+    function setStatus(message, type = 'info') {
         const styles = {
             info:  'background:var(--accent-light); color:var(--accent-dark);',
             ok:    'background:var(--ok-light); color:var(--ok);',
             error: 'background:var(--error-light); color:var(--error);',
         };
-        statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
-        statusEl.textContent = msg;
+        statusElement.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
+        statusElement.textContent = message;
     }
 
     async function syncFromDb() {
         const label = 'PostgreSQL';
         setStatus(`Syncing ${label} views…`, 'info');
         try {
-            const res  = await apiFetch('../api/views.php?action=sync');
-            const data = await res.json();
+            const result  = await apiFetch('../api/views.php?action=sync');
+            const data = await result.json();
             if (data.status !== 'ok') { setStatus('Sync failed: ' + (data.error ?? 'unknown'), 'error'); return; }
             const synced      = data.db_views ?? [];
             const viewSchemas = data.view_schemas ?? {};
@@ -121,9 +121,9 @@ export function renderViewsEditor(ctx) {
             synced.forEach(vName => {
                 const vSchema = viewSchemas[vName];
                 if (!views[vName]) {
-                    const cols = {};
-                    Object.keys(dbColumns[vName] ?? {}).forEach(c => { cols[c] = { display_name: c, color_rules: [] }; });
-                    views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/table_chart_view.png', hidden: false, source: currentSource, columns: cols, drill_down: { enabled: false, levels: [] } };
+                    const columns = {};
+                    Object.keys(dbColumns[vName] ?? {}).forEach(c => { columns[c] = { display_name: c, color_rules: [] }; });
+                    views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/table_chart_view.png', hidden: false, source: currentSource, columns: columns, drill_down: { enabled: false, levels: [] } };
                 } else {
                     views[vName].source = currentSource;
                     Object.keys(dbColumns[vName] ?? {}).forEach(c => {
@@ -146,12 +146,12 @@ export function renderViewsEditor(ctx) {
         }
     }
 
-    function viewNamesForSource(src) {
-        return Object.keys(views).filter(v => (views[v].source || 'postgres') === src);
+    function viewNamesForSource(source) {
+        return Object.keys(views).filter(v => (views[v].source || 'postgres') === source);
     }
 
     function renderList() {
-        listEl.innerHTML = '';
+        listElement.innerHTML = '';
         if (currentSource === 'schemas') {
             renderSchemasPanel();
             return;
@@ -162,27 +162,27 @@ export function renderViewsEditor(ctx) {
         }
         const names = viewNamesForSource(currentSource);
         if (names.length === 0) {
-            listEl.innerHTML = '';
+            listElement.innerHTML = '';
             const empty = document.createElement('p');
             empty.style.cssText = 'text-align:center; padding:32px;';
-            empty.textContent = `No PostgreSQL views found. Click "${syncBtn.textContent}" to discover views.`;
-            listEl.appendChild(empty);
+            empty.textContent = `No PostgreSQL views found. Click "${syncButton.textContent}" to discover views.`;
+            listElement.appendChild(empty);
             return;
         }
-        names.forEach(vName => listEl.appendChild(buildViewCard(vName, views[vName] ?? {})));
+        names.forEach(vName => listElement.appendChild(buildViewCard(vName, views[vName] ?? {})));
     }
 
     async function renderSchemasPanel() {
-        listEl.innerHTML = '<p style=" padding:16px;">Loading schemas…</p>';
+        listElement.innerHTML = '<p style=" padding:16px;">Loading schemas…</p>';
         try {
-            const res  = await apiFetch('../api/views.php?action=schemas');
-            const data = await res.json();
+            const result  = await apiFetch('../api/views.php?action=schemas');
+            const data = await result.json();
             if (data.status !== 'ok') {
-                listEl.innerHTML = '';
-                const err = document.createElement('p');
-                err.style.cssText = 'color:var(--error); padding:16px;';
-                err.textContent = 'Failed to load schemas: ' + (data.error ?? 'unknown');
-                listEl.appendChild(err);
+                listElement.innerHTML = '';
+                const error = document.createElement('p');
+                error.style.cssText = 'color:var(--error); padding:16px;';
+                error.textContent = 'Failed to load schemas: ' + (data.error ?? 'unknown');
+                listElement.appendChild(error);
                 return;
             }
 
@@ -190,11 +190,11 @@ export function renderViewsEditor(ctx) {
                 currentConfig.schemas = [...(data.selected ?? [])];
             }
 
-            listEl.innerHTML = '';
+            listElement.innerHTML = '';
             const intro = document.createElement('p');
             intro.style.cssText = '  margin:0 0 14px;';
             intro.textContent = 'Select which PostgreSQL schemas "↻ Sync PostgreSQL Views" searches for views. Unchecked schemas are skipped.';
-            listEl.appendChild(intro);
+            listElement.appendChild(intro);
 
             const list = document.createElement('div');
             list.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
@@ -202,11 +202,11 @@ export function renderViewsEditor(ctx) {
                 const row = document.createElement('label');
                 row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 12px; border:1px solid var(--border-light); border-radius:var(--radius); cursor:pointer;';
 
-                const cb = document.createElement('input');
-                cb.type    = 'checkbox';
-                cb.checked = currentConfig.schemas.includes(schemaName);
-                cb.addEventListener('change', () => {
-                    if (cb.checked) {
+                const callback = document.createElement('input');
+                callback.type    = 'checkbox';
+                callback.checked = currentConfig.schemas.includes(schemaName);
+                callback.addEventListener('change', () => {
+                    if (callback.checked) {
                         if (!currentConfig.schemas.includes(schemaName)) currentConfig.schemas.push(schemaName);
                     } else {
                         currentConfig.schemas = currentConfig.schemas.filter(s => s !== schemaName);
@@ -217,42 +217,42 @@ export function renderViewsEditor(ctx) {
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = schemaName;
 
-                row.appendChild(cb);
+                row.appendChild(callback);
                 row.appendChild(nameSpan);
                 list.appendChild(row);
             });
-            listEl.appendChild(list);
+            listElement.appendChild(list);
         } catch (_) {
-            listEl.innerHTML = '<p style="color:var(--error); padding:16px;">Network error while loading schemas.</p>';
+            listElement.innerHTML = '<p style="color:var(--error); padding:16px;">Network error while loading schemas.</p>';
         }
     }
 
     function renderSettingsPanel() {
         const heading = document.createElement('h3');
         heading.textContent = 'Views Global Settings';
-        listEl.appendChild(heading);
+        listElement.appendChild(heading);
 
-        listEl.appendChild(createTextInput('menu_name', 'Menu Display Name',
+        listElement.appendChild(createTextInput('menu_name', 'Menu Display Name',
             currentConfig.menu_name || 'Views', v => { currentConfig.menu_name = v; }));
 
-        listEl.appendChild(createIconPicker('menu_icon', 'Menu Icon',
+        listElement.appendChild(createIconPicker('menu_icon', 'Menu Icon',
             currentConfig.menu_icon || '', v => {
                 if (v && v.trim() !== '') currentConfig.menu_icon = v;
                 else delete currentConfig.menu_icon;
             }));
 
-        listEl.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
+        listElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
             currentConfig.hidden, v => {
                 if (v) currentConfig.hidden = true;
                 else delete currentConfig.hidden;
             }, false));
     }
 
-    function buildViewCard(vName, cfg) {
+    function buildViewCard(vName, config) {
         const card = document.createElement('div');
         card.className = 'column-block collapsed';
         card.dataset.view = vName;
-        if (cfg.hidden) card.style.opacity = '0.6';
+        if (config.hidden) card.style.opacity = '0.6';
 
         const cardHdr = document.createElement('div');
         cardHdr.className = 'block-header';
@@ -263,13 +263,13 @@ export function renderViewsEditor(ctx) {
 
         const nameSpan = document.createElement('strong');
         nameSpan.className = 'block-title';
-        nameSpan.textContent = cfg.display_name ?? vName;
+        nameSpan.textContent = config.display_name ?? vName;
         const dbSpan = document.createElement('span');
         dbSpan.className = 'block-key';
         dbSpan.textContent = ` (${vName})`;
         nameSpan.appendChild(dbSpan);
 
-        if (cfg.materialized) {
+        if (config.materialized) {
             const matBadge = document.createElement('span');
             matBadge.className = 'adm-badge adm-badge-muted';
             matBadge.style.marginLeft = '8px';
@@ -280,25 +280,25 @@ export function renderViewsEditor(ctx) {
 
         const visibleLabel = document.createElement('label');
         visibleLabel.className = 'block-vis';
-        const visibleChk = document.createElement('input');
-        visibleChk.type    = 'checkbox';
-        visibleChk.checked = !cfg.hidden;
-        visibleChk.className = 'adm-check';
-        visibleChk.addEventListener('change', e => {
+        const visibleCheckbox = document.createElement('input');
+        visibleCheckbox.type    = 'checkbox';
+        visibleCheckbox.checked = !config.hidden;
+        visibleCheckbox.className = 'adm-check';
+        visibleCheckbox.addEventListener('change', e => {
             views[vName].hidden = !e.target.checked;
             card.style.opacity = views[vName].hidden ? '0.6' : '1';
         });
-        visibleLabel.appendChild(visibleChk);
+        visibleLabel.appendChild(visibleCheckbox);
         visibleLabel.appendChild(document.createTextNode('Visible'));
 
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.title = 'Delete';
-        delBtn.textContent = '✕';
-        delBtn.className = 'icon-btn icon-btn-danger';
-        delBtn.addEventListener('click', (e) => {
+        const delButton = document.createElement('button');
+        delButton.type = 'button';
+        delButton.title = 'Delete';
+        delButton.textContent = '✕';
+        delButton.className = 'icon-btn icon-btn-danger';
+        delButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (!confirm(`Remove view "${cfg.display_name ?? vName}" from the configuration? It reappears on the next sync if it still exists in the database.`)) return;
+            if (!confirm(`Remove view "${config.display_name ?? vName}" from the configuration? It reappears on the next sync if it still exists in the database.`)) return;
             delete views[vName];
             markDirty();
             renderList();
@@ -307,12 +307,12 @@ export function renderViewsEditor(ctx) {
         cardHdr.appendChild(chevron);
         cardHdr.appendChild(nameSpan);
         cardHdr.appendChild(visibleLabel);
-        cardHdr.appendChild(delBtn);
+        cardHdr.appendChild(delButton);
         card.appendChild(cardHdr);
 
         const body = document.createElement('div');
         body.className = 'block-body';
-        body.appendChild(buildCardBody(vName, cfg));
+        body.appendChild(buildCardBody(vName, config));
         card.appendChild(body);
 
         cardHdr.addEventListener('click', (e) => {
@@ -323,26 +323,26 @@ export function renderViewsEditor(ctx) {
         return card;
     }
 
-    function buildCardBody(vName, cfg) {
+    function buildCardBody(vName, config) {
         const frag = document.createDocumentFragment();
 
         const genHdr = document.createElement('h4');
         genHdr.textContent = 'General';
         frag.appendChild(genHdr);
 
-        frag.appendChild(fg('Display name', 'text', cfg.display_name ?? vName, v => { views[vName].display_name = v; }));
-        frag.appendChild(fg('Menu name',    'text', cfg.menu_name    ?? vName, v => { views[vName].menu_name    = v; }));
-        frag.appendChild(fgArea('Description', cfg.description ?? '', v => { views[vName].description = v; }));
-        frag.appendChild(createIconPicker('icon', 'Icon', cfg.icon ?? 'assets/icons/table_chart_view.png', v => { views[vName].icon = v; markDirty(); }));
+        frag.appendChild(fg('Display name', 'text', config.display_name ?? vName, v => { views[vName].display_name = v; }));
+        frag.appendChild(fg('Menu name',    'text', config.menu_name    ?? vName, v => { views[vName].menu_name    = v; }));
+        frag.appendChild(fgArea('Description', config.description ?? '', v => { views[vName].description = v; }));
+        frag.appendChild(createIconPicker('icon', 'Icon', config.icon ?? 'assets/icons/table_chart_view.png', v => { views[vName].icon = v; markDirty(); }));
 
         const divider1 = document.createElement('hr');
         divider1.style.cssText = 'border:none; border-top:1px solid var(--border-light); margin:20px 0;';
         frag.appendChild(divider1);
 
-        const colHdr = document.createElement('h4');
-        colHdr.textContent = 'Columns';
-        frag.appendChild(colHdr);
-        frag.appendChild(buildColumnsEditor(vName, cfg.columns ?? {}));
+        const columnHdr = document.createElement('h4');
+        columnHdr.textContent = 'Columns';
+        frag.appendChild(columnHdr);
+        frag.appendChild(buildColumnsEditor(vName, config.columns ?? {}));
 
         const divider2 = document.createElement('hr');
         divider2.style.cssText = 'border:none; border-top:1px solid var(--border-light); margin:20px 0;';
@@ -351,7 +351,7 @@ export function renderViewsEditor(ctx) {
         const drillHdr = document.createElement('h4');
         drillHdr.textContent = 'Drill-down';
         frag.appendChild(drillHdr);
-        frag.appendChild(buildDrillEditor(vName, cfg));
+        frag.appendChild(buildDrillEditor(vName, config));
 
         return frag;
     }
@@ -359,22 +359,22 @@ export function renderViewsEditor(ctx) {
     function fg(label, type, value, onChange) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
-        const lbl = document.createElement('label');
-        lbl.textContent = label;
-        grp.appendChild(lbl);
-        const inp = document.createElement('input');
-        inp.type = type; inp.value = value ?? '';
-        inp.addEventListener('input', () => onChange(inp.value));
-        grp.appendChild(inp);
+        const label = document.createElement('label');
+        label.textContent = label;
+        grp.appendChild(label);
+        const input = document.createElement('input');
+        input.type = type; input.value = value ?? '';
+        input.addEventListener('input', () => onChange(input.value));
+        grp.appendChild(input);
         return grp;
     }
 
     function fgArea(label, value, onChange) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
-        const lbl = document.createElement('label');
-        lbl.textContent = label;
-        grp.appendChild(lbl);
+        const label = document.createElement('label');
+        label.textContent = label;
+        grp.appendChild(label);
         const ta = document.createElement('textarea');
         ta.rows = 3; ta.style.resize = 'vertical';
         ta.value = value ?? '';
@@ -383,233 +383,233 @@ export function renderViewsEditor(ctx) {
         return grp;
     }
 
-    function buildColumnsEditor(vName, colsCfg) {
+    function buildColumnsEditor(vName, columnsConfig) {
         const wrap = document.createElement('div');
 
-        const dbCols  = Object.keys(dbColumns[vName] ?? {});
-        const allCols = dbCols.length > 0 ? dbCols : Object.keys(colsCfg);
+        const dbColumns  = Object.keys(dbColumns[vName] ?? {});
+        const allColumns = dbColumns.length > 0 ? dbColumns : Object.keys(columnsConfig);
 
-        if (allCols.length === 0) {
+        if (allColumns.length === 0) {
             wrap.innerHTML = '<p style=" ">Sync from DB to see columns.</p>';
             return wrap;
         }
 
-        allCols.forEach(colName => {
-            const colCfg = colsCfg[colName] ?? { display_name: colName, color_rules: [] };
+        allColumns.forEach(columnName => {
+            const columnConfig = columnsConfig[columnName] ?? { display_name: columnName, color_rules: [] };
             if (!views[vName].columns) views[vName].columns = {};
-            if (!views[vName].columns[colName]) views[vName].columns[colName] = { display_name: colName, color_rules: [] };
+            if (!views[vName].columns[columnName]) views[vName].columns[columnName] = { display_name: columnName, color_rules: [] };
 
-            const colBlock = document.createElement('div');
-            colBlock.className = 'subtable-block';
+            const columnBlock = document.createElement('div');
+            columnBlock.className = 'subtable-block';
 
-            const colHdr = document.createElement('h4');
-            colHdr.style.cssText = 'display:flex; align-items:center; gap:8px;';
-            const colNameSpan = document.createElement('span');
-            colNameSpan.textContent = colName;
-            colHdr.appendChild(colNameSpan);
-            const dtype = dbColumns[vName]?.[colName]?.data_type ?? '';
+            const columnHdr = document.createElement('h4');
+            columnHdr.style.cssText = 'display:flex; align-items:center; gap:8px;';
+            const columnNameSpan = document.createElement('span');
+            columnNameSpan.textContent = columnName;
+            columnHdr.appendChild(columnNameSpan);
+            const dtype = dbColumns[vName]?.[columnName]?.data_type ?? '';
             if (dtype) {
                 const badge = document.createElement('span');
                 badge.textContent = dtype;
                 badge.style.cssText = ' font-weight:400;  background:var(--border-light); padding:1px 6px; border-radius:10px;';
-                colHdr.appendChild(badge);
+                columnHdr.appendChild(badge);
             }
-            colBlock.appendChild(colHdr);
+            columnBlock.appendChild(columnHdr);
 
-            colBlock.appendChild(fg('Display name', 'text', colCfg.display_name ?? colName, v => {
-                views[vName].columns[colName].display_name = v;
+            columnBlock.appendChild(fg('Display name', 'text', columnConfig.display_name ?? columnName, v => {
+                views[vName].columns[columnName].display_name = v;
             }));
 
-            const summaryGrp = document.createElement('div');
-            summaryGrp.className = 'form-group';
-            const summaryLbl = document.createElement('label');
-            summaryLbl.textContent = 'Summary';
-            summaryGrp.appendChild(summaryLbl);
-            const summarySel = document.createElement('select');
+            const summaryGroup = document.createElement('div');
+            summaryGroup.className = 'form-group';
+            const summaryLabel = document.createElement('label');
+            summaryLabel.textContent = 'Summary';
+            summaryGroup.appendChild(summaryLabel);
+            const summarySelect = document.createElement('select');
             ['none', 'sum', 'avg', 'count', 'min', 'max'].forEach(fn => {
-                const opt = document.createElement('option');
-                opt.value = fn;
-                opt.textContent = fn === 'none' ? 'None' : fn.toUpperCase();
-                if ((colCfg.summary ?? 'none') === fn) opt.selected = true;
-                summarySel.appendChild(opt);
+                const option = document.createElement('option');
+                option.value = fn;
+                option.textContent = fn === 'none' ? 'None' : fn.toUpperCase();
+                if ((columnConfig.summary ?? 'none') === fn) option.selected = true;
+                summarySelect.appendChild(option);
             });
-            summarySel.addEventListener('change', () => {
-                const v = summarySel.value;
+            summarySelect.addEventListener('change', () => {
+                const v = summarySelect.value;
                 if (v === 'none') {
-                    delete views[vName].columns[colName].summary;
-                    delete views[vName].columns[colName].summary_if;
-                    syncCondUi();
+                    delete views[vName].columns[columnName].summary;
+                    delete views[vName].columns[columnName].summary_if;
+                    syncConditionUi();
                 } else {
-                    views[vName].columns[colName].summary = v;
+                    views[vName].columns[columnName].summary = v;
                 }
-                condGrp.style.display = v === 'none' ? 'none' : 'block';
+                conditionGroup.style.display = v === 'none' ? 'none' : 'block';
                 markDirty();
             });
-            summaryGrp.appendChild(summarySel);
-            colBlock.appendChild(summaryGrp);
+            summaryGroup.appendChild(summarySelect);
+            columnBlock.appendChild(summaryGroup);
 
-            const condGrp = document.createElement('div');
-            condGrp.className = 'form-group';
-            condGrp.style.display = (colCfg.summary ?? 'none') === 'none' ? 'none' : 'block';
-            const condLbl = document.createElement('label');
-            condLbl.textContent = 'Summary condition (SUMIF / COUNTIF)';
-            condGrp.appendChild(condLbl);
+            const conditionGroup = document.createElement('div');
+            conditionGroup.className = 'form-group';
+            conditionGroup.style.display = (columnConfig.summary ?? 'none') === 'none' ? 'none' : 'block';
+            const conditionLabel = document.createElement('label');
+            conditionLabel.textContent = 'Summary condition (SUMIF / COUNTIF)';
+            conditionGroup.appendChild(conditionLabel);
 
-            const condRow = document.createElement('div');
-            condRow.style.cssText = 'display:flex; align-items:center; gap:8px;';
+            const conditionRow = document.createElement('div');
+            conditionRow.style.cssText = 'display:flex; align-items:center; gap:8px;';
 
-            const condColSel = document.createElement('select');
-            condColSel.className = 'adm-input';
-            condColSel.style.flex = '1';
-            const condNone = document.createElement('option');
-            condNone.value = '';
-            condNone.textContent = '— no condition —';
-            condColSel.appendChild(condNone);
-            allCols.forEach(c => {
+            const conditionColumnSelect = document.createElement('select');
+            conditionColumnSelect.className = 'adm-input';
+            conditionColumnSelect.style.flex = '1';
+            const conditionNone = document.createElement('option');
+            conditionNone.value = '';
+            conditionNone.textContent = '— no condition —';
+            conditionColumnSelect.appendChild(conditionNone);
+            allColumns.forEach(c => {
                 const o = document.createElement('option');
                 o.value = c;
                 o.textContent = c;
-                if (colCfg.summary_if?.column === c) o.selected = true;
-                condColSel.appendChild(o);
+                if (columnConfig.summary_if?.column === c) o.selected = true;
+                conditionColumnSelect.appendChild(o);
             });
 
-            const condOpSel = document.createElement('select');
-            condOpSel.className = 'adm-input w-110';
+            const conditionOpSelect = document.createElement('select');
+            conditionOpSelect.className = 'adm-input w-110';
             ['==', '!=', '>', '>=', '<', '<=', 'contains'].forEach(op => {
                 const o = document.createElement('option');
                 o.value = op;
                 o.textContent = op;
-                if ((colCfg.summary_if?.op ?? '==') === op) o.selected = true;
-                condOpSel.appendChild(o);
+                if ((columnConfig.summary_if?.op ?? '==') === op) o.selected = true;
+                conditionOpSelect.appendChild(o);
             });
 
-            const condValInp = document.createElement('input');
-            condValInp.type        = 'text';
-            condValInp.className   = 'adm-input';
-            condValInp.style.flex  = '1';
-            condValInp.placeholder = 'Value';
-            condValInp.value       = colCfg.summary_if?.value ?? '';
+            const conditionValueInput = document.createElement('input');
+            conditionValueInput.type        = 'text';
+            conditionValueInput.className   = 'adm-input';
+            conditionValueInput.style.flex  = '1';
+            conditionValueInput.placeholder = 'Value';
+            conditionValueInput.value       = columnConfig.summary_if?.value ?? '';
 
-            function syncCondUi() {
-                const active = condColSel.value !== '';
-                condOpSel.disabled  = !active;
-                condValInp.disabled = !active;
-                if (!views[vName].columns[colName].summary_if) {
-                    condColSel.value = '';
-                    condOpSel.disabled  = true;
-                    condValInp.disabled = true;
+            function syncConditionUi() {
+                const active = conditionColumnSelect.value !== '';
+                conditionOpSelect.disabled  = !active;
+                conditionValueInput.disabled = !active;
+                if (!views[vName].columns[columnName].summary_if) {
+                    conditionColumnSelect.value = '';
+                    conditionOpSelect.disabled  = true;
+                    conditionValueInput.disabled = true;
                 }
             }
 
-            function updateCond() {
-                if (condColSel.value === '') {
-                    delete views[vName].columns[colName].summary_if;
+            function updateCondition() {
+                if (conditionColumnSelect.value === '') {
+                    delete views[vName].columns[columnName].summary_if;
                 } else {
-                    views[vName].columns[colName].summary_if = {
-                        column: condColSel.value,
-                        op:     condOpSel.value,
-                        value:  condValInp.value,
+                    views[vName].columns[columnName].summary_if = {
+                        column: conditionColumnSelect.value,
+                        op:     conditionOpSelect.value,
+                        value:  conditionValueInput.value,
                     };
                 }
-                syncCondUi();
+                syncConditionUi();
                 markDirty();
             }
-            condColSel.addEventListener('change', updateCond);
-            condOpSel.addEventListener('change', updateCond);
-            condValInp.addEventListener('input', updateCond);
-            syncCondUi();
+            conditionColumnSelect.addEventListener('change', updateCondition);
+            conditionOpSelect.addEventListener('change', updateCondition);
+            conditionValueInput.addEventListener('input', updateCondition);
+            syncConditionUi();
 
-            condRow.appendChild(condColSel);
-            condRow.appendChild(condOpSel);
-            condRow.appendChild(condValInp);
-            condGrp.appendChild(condRow);
-            colBlock.appendChild(condGrp);
+            conditionRow.appendChild(conditionColumnSelect);
+            conditionRow.appendChild(conditionOpSelect);
+            conditionRow.appendChild(conditionValueInput);
+            conditionGroup.appendChild(conditionRow);
+            columnBlock.appendChild(conditionGroup);
 
             const rulesLabel = document.createElement('label');
             rulesLabel.textContent = 'Color rules';
             rulesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
-            colBlock.appendChild(rulesLabel);
+            columnBlock.appendChild(rulesLabel);
 
             const rulesList = document.createElement('div');
             rulesList.style.cssText = 'display:flex; flex-direction:column; gap:6px; margin-bottom:10px;';
-            colBlock.appendChild(rulesList);
+            columnBlock.appendChild(rulesList);
 
-            const rules = Array.isArray(colCfg.color_rules) ? colCfg.color_rules : [];
-            views[vName].columns[colName].color_rules = rules;
+            const rules = Array.isArray(columnConfig.color_rules) ? columnConfig.color_rules : [];
+            views[vName].columns[columnName].color_rules = rules;
 
             function renderRules() {
                 rulesList.innerHTML = '';
-                rules.forEach((rule, idx) => rulesList.appendChild(buildRuleRow(rule, idx, rules, renderRules)));
+                rules.forEach((rule, index) => rulesList.appendChild(buildRuleRow(rule, index, rules, renderRules)));
             }
             renderRules();
 
-            const addRuleBtn = document.createElement('button');
-            addRuleBtn.className   = 'btn btn-success btn-sm';
-            addRuleBtn.textContent = '+ Add color rule';
-            addRuleBtn.addEventListener('click', () => {
+            const addRuleButton = document.createElement('button');
+            addRuleButton.className   = 'btn btn-success btn-sm';
+            addRuleButton.textContent = '+ Add color rule';
+            addRuleButton.addEventListener('click', () => {
                 rules.push({ op: '>', value: 0, color: '#AB0000' });
                 renderRules();
                 markDirty();
             });
-            colBlock.appendChild(addRuleBtn);
+            columnBlock.appendChild(addRuleButton);
 
-            wrap.appendChild(colBlock);
+            wrap.appendChild(columnBlock);
         });
 
         return wrap;
     }
 
-    function buildRuleRow(rule, idx, rules, onUpdate) {
+    function buildRuleRow(rule, index, rules, onUpdate) {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex; align-items:center; gap:8px;';
 
-        const opSel = document.createElement('select');
-        opSel.className = 'adm-input w-64';
+        const opSelect = document.createElement('select');
+        opSelect.className = 'adm-input w-64';
         ['>', '>=', '<', '<=', '=='].forEach(op => {
             const o = document.createElement('option');
             o.value = op; o.textContent = op;
             if (rule.op === op) o.selected = true;
-            opSel.appendChild(o);
+            opSelect.appendChild(o);
         });
-        opSel.addEventListener('change', () => { rules[idx].op = opSel.value; });
+        opSelect.addEventListener('change', () => { rules[index].op = opSelect.value; });
 
-        const valInp = document.createElement('input');
-        valInp.type  = 'number';
-        valInp.className = 'adm-input w-100';
-        valInp.value = rule.value ?? 0;
-        valInp.addEventListener('input', () => { rules[idx].value = parseFloat(valInp.value) || 0; });
+        const valueInput = document.createElement('input');
+        valueInput.type  = 'number';
+        valueInput.className = 'adm-input w-100';
+        valueInput.value = rule.value ?? 0;
+        valueInput.addEventListener('input', () => { rules[index].value = parseFloat(valueInput.value) || 0; });
 
-        const colorInp = document.createElement('input');
-        colorInp.type  = 'color';
-        colorInp.className = 'adm-color';
-        colorInp.value = rule.color ?? '#AB0000';
-        colorInp.addEventListener('input', () => { rules[idx].color = colorInp.value; });
+        const colorInput = document.createElement('input');
+        colorInput.type  = 'color';
+        colorInput.className = 'adm-color';
+        colorInput.value = rule.color ?? '#AB0000';
+        colorInput.addEventListener('input', () => { rules[index].color = colorInput.value; });
 
-        const delBtn = document.createElement('button');
-        delBtn.className   = 'btn btn-danger btn-xs';
-        delBtn.textContent = '✕ Remove';
-        delBtn.addEventListener('click', () => { rules.splice(idx, 1); onUpdate(); markDirty(); });
+        const delButton = document.createElement('button');
+        delButton.className   = 'btn btn-danger btn-xs';
+        delButton.textContent = '✕ Remove';
+        delButton.addEventListener('click', () => { rules.splice(index, 1); onUpdate(); markDirty(); });
 
-        row.appendChild(opSel); row.appendChild(valInp); row.appendChild(colorInp); row.appendChild(delBtn);
+        row.appendChild(opSelect); row.appendChild(valueInput); row.appendChild(colorInput); row.appendChild(delButton);
         return row;
     }
 
-    function buildDrillEditor(vName, cfg) {
+    function buildDrillEditor(vName, config) {
         const wrap = document.createElement('div');
-        const dd   = cfg.drill_down ?? { enabled: false, levels: [] };
+        const dd   = config.drill_down ?? { enabled: false, levels: [] };
         views[vName].drill_down = dd;
 
-        const enableGrp = document.createElement('div');
-        enableGrp.className = 'form-group';
-        const enableLbl = document.createElement('label');
-        enableLbl.textContent = 'Enable drill-down';
-        enableGrp.appendChild(enableLbl);
-        const enableChk = document.createElement('input');
-        enableChk.type    = 'checkbox';
-        enableChk.checked = !!dd.enabled;
-        enableChk.addEventListener('change', () => { views[vName].drill_down.enabled = enableChk.checked; });
-        enableGrp.appendChild(enableChk);
-        wrap.appendChild(enableGrp);
+        const enableGroup = document.createElement('div');
+        enableGroup.className = 'form-group';
+        const enableLabel = document.createElement('label');
+        enableLabel.textContent = 'Enable drill-down';
+        enableGroup.appendChild(enableLabel);
+        const enableCheckbox = document.createElement('input');
+        enableCheckbox.type    = 'checkbox';
+        enableCheckbox.checked = !!dd.enabled;
+        enableCheckbox.addEventListener('change', () => { views[vName].drill_down.enabled = enableCheckbox.checked; });
+        enableGroup.appendChild(enableCheckbox);
+        wrap.appendChild(enableGroup);
 
         const levelsLabel = document.createElement('label');
         levelsLabel.textContent = 'Levels (ordered)';
@@ -620,63 +620,63 @@ export function renderViewsEditor(ctx) {
         levelsList.style.cssText = 'display:flex; flex-direction:column; gap:8px; margin-bottom:12px;';
         wrap.appendChild(levelsList);
 
-        const dbCols  = Object.keys(dbColumns[vName] ?? {});
-        const allCols = dbCols.length > 0 ? dbCols : Object.keys(views[vName].columns ?? {});
+        const dbColumns  = Object.keys(dbColumns[vName] ?? {});
+        const allColumns = dbColumns.length > 0 ? dbColumns : Object.keys(views[vName].columns ?? {});
 
         function renderLevels() {
             levelsList.innerHTML = '';
-            (dd.levels ?? []).forEach((lvl, idx) => {
-                const lvlRow = document.createElement('div');
-                lvlRow.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg); border:1px solid var(--border-light); border-radius:var(--radius);';
+            (dd.levels ?? []).forEach((lvl, index) => {
+                const levelRow = document.createElement('div');
+                levelRow.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg); border:1px solid var(--border-light); border-radius:var(--radius);';
 
-                const idxSpan = document.createElement('span');
-                idxSpan.style.cssText = '  min-width:52px;';
-                idxSpan.textContent = `Level ${idx}:`;
+                const indexSpan = document.createElement('span');
+                indexSpan.style.cssText = '  min-width:52px;';
+                indexSpan.textContent = `Level ${index}:`;
 
-                const gbSel = document.createElement('select');
-                gbSel.className = 'adm-input';
-                gbSel.style.flex = '1';
-                allCols.forEach(c => {
+                const gbSelect = document.createElement('select');
+                gbSelect.className = 'adm-input';
+                gbSelect.style.flex = '1';
+                allColumns.forEach(c => {
                     const o = document.createElement('option');
                     o.value = c; o.textContent = c;
                     if (lvl.group_by === c) o.selected = true;
-                    gbSel.appendChild(o);
+                    gbSelect.appendChild(o);
                 });
-                gbSel.addEventListener('change', () => { dd.levels[idx].group_by = gbSel.value; });
+                gbSelect.addEventListener('change', () => { dd.levels[index].group_by = gbSelect.value; });
 
-                const labelInp = document.createElement('input');
-                labelInp.type        = 'text';
-                labelInp.placeholder = 'Label (optional)';
-                labelInp.value       = lvl.label ?? '';
-                labelInp.className = 'adm-input';
-                labelInp.style.flex = '1';
-                labelInp.addEventListener('input', () => { dd.levels[idx].label = labelInp.value; });
+                const labelInput = document.createElement('input');
+                labelInput.type        = 'text';
+                labelInput.placeholder = 'Label (optional)';
+                labelInput.value       = lvl.label ?? '';
+                labelInput.className = 'adm-input';
+                labelInput.style.flex = '1';
+                labelInput.addEventListener('input', () => { dd.levels[index].label = labelInput.value; });
 
-                const delBtn = document.createElement('button');
-                delBtn.className   = 'btn btn-danger btn-xs';
-                delBtn.textContent = '✕';
-                delBtn.addEventListener('click', () => { dd.levels.splice(idx, 1); renderLevels(); markDirty(); });
+                const delButton = document.createElement('button');
+                delButton.className   = 'btn btn-danger btn-xs';
+                delButton.textContent = '✕';
+                delButton.addEventListener('click', () => { dd.levels.splice(index, 1); renderLevels(); markDirty(); });
 
-                lvlRow.appendChild(idxSpan); lvlRow.appendChild(gbSel); lvlRow.appendChild(labelInp); lvlRow.appendChild(delBtn);
-                levelsList.appendChild(lvlRow);
+                levelRow.appendChild(indexSpan); levelRow.appendChild(gbSelect); levelRow.appendChild(labelInput); levelRow.appendChild(delButton);
+                levelsList.appendChild(levelRow);
             });
         }
         renderLevels();
 
-        const addLvlBtn = document.createElement('button');
-        addLvlBtn.className   = 'btn btn-success btn-sm';
-        addLvlBtn.textContent = '+ Add level';
-        addLvlBtn.addEventListener('click', () => {
+        const addLevelButton = document.createElement('button');
+        addLevelButton.className   = 'btn btn-success btn-sm';
+        addLevelButton.textContent = '+ Add level';
+        addLevelButton.addEventListener('click', () => {
             if (!dd.levels) dd.levels = [];
-            dd.levels.push({ group_by: allCols[0] ?? '', label: '' });
+            dd.levels.push({ group_by: allColumns[0] ?? '', label: '' });
             renderLevels();
             markDirty();
         });
-        wrap.appendChild(addLvlBtn);
+        wrap.appendChild(addLevelButton);
         return wrap;
     }
 
-    syncBtn.addEventListener('click', syncFromDb);
+    syncButton.addEventListener('click', syncFromDb);
 
     Object.keys(views).forEach(v => {
         dbColumns[v] = {};

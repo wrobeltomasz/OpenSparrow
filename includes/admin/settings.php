@@ -13,16 +13,16 @@ use App\Exception\ResponseException;
 if ($action === 'list_icons') {
     $icons = [];
 
-    $dirsToScan = [
+    $directoriesToScan = [
         'assets/icons' => __DIR__ . '/../../public/assets/icons',
     ];
-    foreach ($dirsToScan as $prefix => $dirPath) {
-        if (is_dir($dirPath)) {
-            $files = scandir($dirPath);
+    foreach ($directoriesToScan as $prefix => $directoryPath) {
+        if (is_dir($directoryPath)) {
+            $files = scandir($directoryPath);
             foreach ($files as $iconFile) {
                 if ($iconFile !== '.' && $iconFile !== '..') {
-                    $ext = strtolower(pathinfo($iconFile, PATHINFO_EXTENSION));
-                    if (in_array($ext, ['png', 'jpg', 'jpeg', 'svg', 'gif'])) {
+                    $extension = strtolower(pathinfo($iconFile, PATHINFO_EXTENSION));
+                    if (in_array($extension, ['png', 'jpg', 'jpeg', 'svg', 'gif'])) {
                         $icons[] = $prefix . '/' . $iconFile;
                     }
                 }
@@ -33,11 +33,11 @@ if ($action === 'list_icons') {
 }
 
 if ($action === 'get_snapshot_setting') {
-    $envValue = getenv('RECORD_SNAPSHOTS_ENABLED');
-    $lockedByEnv = ($envValue !== false && $envValue !== '');
+    $environmentValue = getenv('RECORD_SNAPSHOTS_ENABLED');
+    $lockedByEnvironment = ($environmentValue !== false && $environmentValue !== '');
     $enabled = false;
-    if ($lockedByEnv) {
-        $enabled = ($envValue === 'true');
+    if ($lockedByEnvironment) {
+        $enabled = ($environmentValue === 'true');
     } else {
         $settings = admin_read_settings();
         $enabled = (bool) ($settings['record_snapshots_enabled'] ?? false);
@@ -59,7 +59,7 @@ if ($action === 'get_snapshot_setting') {
 
     echo json_encode([
         'enabled'        => $enabled,
-        'locked_by_env'  => $lockedByEnv,
+        'locked_by_env'  => $lockedByEnvironment,
         'table_exists'   => $tableExists,
         'snapshot_count' => $snapshotCount,
     ]);
@@ -68,8 +68,8 @@ if ($action === 'get_snapshot_setting') {
 
 if ($action === 'set_snapshot_setting') {
     require_not_demo();
-    $envValue = getenv('RECORD_SNAPSHOTS_ENABLED');
-    if ($envValue !== false && $envValue !== '') {
+    $environmentValue = getenv('RECORD_SNAPSHOTS_ENABLED');
+    if ($environmentValue !== false && $environmentValue !== '') {
         echo json_encode([
             'status' => 'error',
             'error'  => 'Controlled by RECORD_SNAPSHOTS_ENABLED environment variable — cannot override'
@@ -86,14 +86,14 @@ if ($action === 'set_snapshot_setting') {
 }
 
 if ($action === 'get_automation_email_setting') {
-    $envValue = getenv('AUTOMATION_EMAIL_FROM');
-    $lockedByEnv = ($envValue !== false && $envValue !== '');
+    $environmentValue = getenv('AUTOMATION_EMAIL_FROM');
+    $lockedByEnvironment = ($environmentValue !== false && $environmentValue !== '');
     $settings = admin_read_settings();
-    $from = $lockedByEnv ? $envValue : (string) ($settings['automation_email_from'] ?? '');
+    $from = $lockedByEnvironment ? $environmentValue : (string) ($settings['automation_email_from'] ?? '');
 
     echo json_encode([
         'from'                    => $from,
-        'locked_by_env'           => $lockedByEnv,
+        'locked_by_env'           => $lockedByEnvironment,
         'smtp_enabled'            => (bool) ($settings['smtp_enabled'] ?? false),
         'smtp_host'               => (string) ($settings['smtp_host'] ?? ''),
         'smtp_port'               => (int) ($settings['smtp_port'] ?? 587),
@@ -106,8 +106,8 @@ if ($action === 'get_automation_email_setting') {
 
 if ($action === 'set_automation_email_setting') {
     require_not_demo();
-    $envValue = getenv('AUTOMATION_EMAIL_FROM');
-    $lockedByEnv = ($envValue !== false && $envValue !== '');
+    $environmentValue = getenv('AUTOMATION_EMAIL_FROM');
+    $lockedByEnvironment = ($environmentValue !== false && $environmentValue !== '');
 
     $body = json_decode(file_get_contents('php://input'), true) ?? [];
     $from = trim((string) ($body['from'] ?? ''));
@@ -131,7 +131,7 @@ if ($action === 'set_automation_email_setting') {
     }
 
     $settings = admin_read_settings();
-    if (!$lockedByEnv) {
+    if (!$lockedByEnvironment) {
         $settings['automation_email_from'] = $from;
     }
     $settings['smtp_enabled']    = $smtpEnabled;
@@ -163,7 +163,7 @@ if ($action === 'test_smtp_connection') {
         ? (string) $body['smtp_password']
         : (string) (secret_decrypt((string) ($settings['smtp_password_enc'] ?? '')) ?? '');
 
-    $cfg = [
+    $config = [
         'host'       => trim((string) ($body['smtp_host'] ?? '')),
         'port'       => (int) ($body['smtp_port'] ?? 587),
         'encryption' => (string) ($body['smtp_encryption'] ?? 'tls'),
@@ -172,7 +172,7 @@ if ($action === 'test_smtp_connection') {
         'timeout'    => 10,
     ];
 
-    $result = smtp_test_connection($cfg);
+    $result = smtp_test_connection($config);
     echo json_encode($result['ok']
         ? ['status' => 'success']
         : ['status' => 'error', 'error' => $result['error']]);
@@ -184,9 +184,9 @@ if ($action === 'get_language_setting') {
 
     $defaultLanguage = is_string($settings['default_language'] ?? null) ? $settings['default_language'] : 'en';
 
-    $langDir    = __DIR__ . '/../../languages/';
+    $langDirectory    = __DIR__ . '/../../languages/';
     $allLocales = [];
-    foreach (glob($langDir . '*.json') ?: [] as $languageFile) {
+    foreach (glob($langDirectory . '*.json') ?: [] as $languageFile) {
         $code = basename($languageFile, '.json');
         $data = json_decode((string)@file_get_contents($languageFile), true) ?? [];
         $allLocales[] = [
@@ -211,10 +211,10 @@ if ($action === 'set_language_setting') {
         ? (string)$body['default_language']
         : 'en';
 
-    $langDir      = __DIR__ . '/../../languages/';
+    $langDirectory      = __DIR__ . '/../../languages/';
     $installed    = array_map(
         static fn(string $languageFile): string => basename($languageFile, '.json'),
-        glob($langDir . '*.json') ?: []
+        glob($langDirectory . '*.json') ?: []
     );
     if (!in_array($defaultLang, $installed, true)) {
         admin_err('Default language must be an installed language.');
@@ -320,16 +320,16 @@ if ($action === 'upload_logo') {
         admin_err('Only PNG, JPEG or WEBP images are allowed.');
     }
 
-    $uploadDir = __DIR__ . '/../../public/assets/img/uploads';
-    os_ensure_directory($uploadDir, 0755);
+    $uploadDirectory = __DIR__ . '/../../public/assets/img/uploads';
+    os_ensure_directory($uploadDirectory, 0755);
     os_write_guard_file(
-        $uploadDir . '/.htaccess',
+        $uploadDirectory . '/.htaccess',
         "<FilesMatch \"\\.(php\\d?|phtml|pl|py|cgi|sh)$\">\n    Require all denied\n</FilesMatch>\n"
     );
 
-    $ext         = $allowedMimes[$mimeType];
-    $filename    = 'logo-' . bin2hex(random_bytes(8)) . '.' . $ext;
-    $destination = $uploadDir . '/' . $filename;
+    $extension         = $allowedMimes[$mimeType];
+    $filename    = 'logo-' . bin2hex(random_bytes(8)) . '.' . $extension;
+    $destination = $uploadDirectory . '/' . $filename;
     if (!move_uploaded_file($upload['tmp_name'], $destination)) {
         admin_err('Failed to save the uploaded file.');
     }
@@ -337,10 +337,10 @@ if ($action === 'upload_logo') {
     $settings     = admin_read_settings();
 
     $oldPath   = $settings['custom_logo_path'] ?? null;
-    $uploadDirReal = realpath($uploadDir) ?: '';
-    if (is_string($oldPath) && $oldPath !== '' && $uploadDirReal !== '') {
+    $uploadDirectoryReal = realpath($uploadDirectory) ?: '';
+    if (is_string($oldPath) && $oldPath !== '' && $uploadDirectoryReal !== '') {
         $oldReal = realpath(__DIR__ . '/../../public/' . ltrim($oldPath, '/'));
-        if ($oldReal !== false && str_starts_with($oldReal, $uploadDirReal)) {
+        if ($oldReal !== false && str_starts_with($oldReal, $uploadDirectoryReal)) {
             @unlink($oldReal);
         }
     }
@@ -360,9 +360,9 @@ if ($action === 'remove_logo') {
     $oldPath      = $settings['custom_logo_path'] ?? null;
 
     if (is_string($oldPath) && $oldPath !== '') {
-        $uploadDirReal = realpath(__DIR__ . '/../../public/assets/img/uploads') ?: '';
+        $uploadDirectoryReal = realpath(__DIR__ . '/../../public/assets/img/uploads') ?: '';
         $oldReal       = realpath(__DIR__ . '/../../public/' . ltrim($oldPath, '/'));
-        if ($uploadDirReal !== '' && $oldReal !== false && str_starts_with($oldReal, $uploadDirReal)) {
+        if ($uploadDirectoryReal !== '' && $oldReal !== false && str_starts_with($oldReal, $uploadDirectoryReal)) {
             @unlink($oldReal);
         }
     }

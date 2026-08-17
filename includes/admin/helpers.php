@@ -211,7 +211,7 @@ function admin_run_cron_script(
     string $absScriptPath,
     string $notFoundMessage,
     string $itemId = '',
-    array $extraArgs = []
+    array $extraArguments = []
 ): never {
     $cronScript = realpath($absScriptPath);
     if ($cronScript === false || !is_readable($cronScript)) {
@@ -221,20 +221,20 @@ function admin_run_cron_script(
         admin_err('exec() is disabled on this server.');
     }
 
-    $args = 'admin';
+    $arguments = 'admin';
     if ($itemId !== '') {
         if (!preg_match('/^[A-Za-z0-9_-]+$/', $itemId)) {
             admin_err('Invalid item id.');
         }
-        $args .= ' ' . escapeshellarg($itemId);
+        $arguments .= ' ' . escapeshellarg($itemId);
     }
-    foreach ($extraArgs as $extra) {
-        $args .= ' ' . escapeshellarg((string) $extra);
+    foreach ($extraArguments as $extra) {
+        $arguments .= ' ' . escapeshellarg((string) $extra);
     }
 
     $lines = [];
     $code  = 0;
-    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' ' . $args . ' 2>&1', $lines, $code);
+    exec(PHP_BINARY . ' ' . escapeshellarg($cronScript) . ' ' . $arguments . ' 2>&1', $lines, $code);
     echo json_encode([
         'status'    => $code === 0 ? 'success' : 'error',
         'output'    => implode("\n", $lines),

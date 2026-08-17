@@ -119,14 +119,14 @@ final class NotesController
 
         require_once __DIR__ . '/../../config_store.php';
         $schema   = config_get('schema') ?? [];
-        $tableCfg = $schema['tables'][$table];
-        $pgSchema = $tableCfg['schema'] ?? 'public';
+        $tableConfig = $schema['tables'][$table];
+        $pgSchema = $tableConfig['schema'] ?? 'public';
 
-        $userRecordsCfg = config_get('user_records') ?? [];
-        $configuredColumns = is_array($userRecordsCfg['columns'][$table] ?? null)
-            ? $userRecordsCfg['columns'][$table]
+        $userRecordsConfig = config_get('user_records') ?? [];
+        $configuredColumns = is_array($userRecordsConfig['columns'][$table] ?? null)
+            ? $userRecordsConfig['columns'][$table]
             : [];
-        $labelSql       = record_label_sql($tableCfg, $configuredColumns);
+        $labelSql       = record_label_sql($tableConfig, $configuredColumns);
 
         $sql = sprintf(
             'SELECT id, %s AS label FROM %s.%s ORDER BY id DESC LIMIT %d',

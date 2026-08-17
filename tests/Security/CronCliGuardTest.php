@@ -102,8 +102,8 @@ final class CronCliGuardTest extends TestCase
             $source = self::code($path);
 
             $guardOffset = null;
-            if (preg_match('/php_sapi_name\(\)\s*!==\s*[\'"]cli[\'"]/', $source, $m, PREG_OFFSET_CAPTURE) === 1) {
-                $guardOffset = $m[0][1];
+            if (preg_match('/php_sapi_name\(\)\s*!==\s*[\'"]cli[\'"]/', $source, $matches, PREG_OFFSET_CAPTURE) === 1) {
+                $guardOffset = $matches[0][1];
             } elseif (($callOffset = strpos($source, self::BOOT_CALL)) !== false) {
                 $guardOffset = $callOffset;
             }

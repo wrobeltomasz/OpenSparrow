@@ -6,8 +6,8 @@
 const SEED_TOKEN = 'cypress-dev-seed';
 
 function loginPageToken() {
-  return cy.probe({ url: '/login.php' }).then(res => {
-    const match = /name="csrf_token"\s+value="([^"]+)"/.exec(res.body);
+  return cy.probe({ url: '/login.php' }).then(result => {
+    const match = /name="csrf_token"\s+value="([^"]+)"/.exec(result.body);
     expect(match, 'csrf_token hidden field present on login.php').to.not.be.null;
     return match[1];
   });
@@ -39,8 +39,8 @@ describe('Security – session cookie flags', () => {
 
   it('the session cookie is HttpOnly and SameSite-constrained', () => {
     cy.clearCookies();
-    cy.probe({ url: '/login.php' }).then(res => {
-      const raw = [].concat(res.headers['set-cookie'] || []).find(c => /^PHPSESSID=/.test(c));
+    cy.probe({ url: '/login.php' }).then(result => {
+      const raw = [].concat(result.headers['set-cookie'] || []).find(c => /^PHPSESSID=/.test(c));
       expect(raw, 'Set-Cookie for PHPSESSID').to.be.a('string');
 
       expect(raw, 'HttpOnly flag').to.match(/;\s*HttpOnly/i);
@@ -55,8 +55,8 @@ describe('Security – session cookie flags', () => {
     cy.probe({ url: '/login.php' });
     cy.getCookie('PHPSESSID').then(pre => {
       expect(pre, 'pre-login session cookie').to.not.be.null;
-      submitLogin('test', 'test').then(res => {
-        expect(res.status, 'login redirects on success').to.be.oneOf([302, 303]);
+      submitLogin('test', 'test').then(result => {
+        expect(result.status, 'login redirects on success').to.be.oneOf([302, 303]);
         cy.getCookie('PHPSESSID').then(post => {
           expect(post.value, 'session id must change across login').to.not.eq(pre.value);
         });
@@ -74,9 +74,9 @@ describe('Security – session cookie flags', () => {
       cy.probe({
         url: '/dashboard.php',
         headers: { Cookie: `PHPSESSID=${cookie.value}` },
-      }).then(res => {
-        expect(res.status, 'destroyed session must not authorise').to.be.oneOf([302, 303]);
-        expect(res.headers.location).to.match(/login\.php/);
+      }).then(result => {
+        expect(result.status, 'destroyed session must not authorise').to.be.oneOf([302, 303]);
+        expect(result.headers.location).to.match(/login\.php/);
       });
     });
   });
@@ -97,17 +97,17 @@ describe('Security – login hardening', () => {
       method: 'POST',
       form: true,
       body: { username: 'test', password: 'test' },
-    }).then(res => cy.expectDenied(res, [403], 'login without token'));
+    }).then(result => cy.expectDenied(result, [403], 'login without token'));
   });
 
   it('an unknown user and a wrong password are indistinguishable', () => {
     let unknownBody;
-    submitLogin('cypress-nosuchuser', 'whatever').then(res => {
-      unknownBody = /class="[^"]*error[^"]*"[^>]*>([^<]*)</i.exec(res.body);
+    submitLogin('cypress-nosuchuser', 'whatever').then(result => {
+      unknownBody = /class="[^"]*error[^"]*"[^>]*>([^<]*)</i.exec(result.body);
       expect(unknownBody, 'error message rendered for unknown user').to.not.be.null;
       return submitLogin('test', 'definitely-wrong-password');
-    }).then(res => {
-      const wrongPass = /class="[^"]*error[^"]*"[^>]*>([^<]*)</i.exec(res.body);
+    }).then(result => {
+      const wrongPass = /class="[^"]*error[^"]*"[^>]*>([^<]*)</i.exec(result.body);
       expect(wrongPass, 'error message rendered for wrong password').to.not.be.null;
       expect(wrongPass[1].trim(), 'identical message for both failures')
         .to.eq(unknownBody[1].trim());
@@ -117,10 +117,10 @@ describe('Security – login hardening', () => {
   });
 
   it('a malformed username yields the generic credential error, not a validation hint', () => {
-    submitLogin("' OR 1=1 --", 'x').then(res => {
-      expect(res.status, 'no server error on a hostile username').to.eq(200);
-      expect(res.body, 'no internals leaked').to.not.match(/SQLSTATE|pg_query|Fatal error/);
-      expect(res.body, 'generic credential error').to.match(/Invalid credentials/i);
+    submitLogin("' OR 1=1 --", 'x').then(result => {
+      expect(result.status, 'no server error on a hostile username').to.eq(200);
+      expect(result.body, 'no internals leaked').to.not.match(/SQLSTATE|pg_query|Fatal error/);
+      expect(result.body, 'generic credential error').to.match(/Invalid credentials/i);
     });
   });
 
@@ -130,8 +130,8 @@ describe('Security – login hardening', () => {
 
     Cypress._.times(6, () => submitLogin(victim, 'wrong-password'));
 
-    submitLogin(victim, 'wrong-password').then(res => {
-      expect(res.body, 'throttle message').to.match(/Too many failed attempts/i);
+    submitLogin(victim, 'wrong-password').then(result => {
+      expect(result.body, 'throttle message').to.match(/Too many failed attempts/i);
     });
 
     seedRequest('login_reset');
@@ -150,8 +150,8 @@ describe('Security – known gaps (documented, not yet fixed)', () => {
   it('KNOWN: GET /logout.php logs the user out without a CSRF token', () => {
     cy.clearCookies();
     submitLogin('test', 'test');
-    cy.probe({ url: '/logout.php' }).then(res => {
-      expect(res.status, 'logout still answers to a bare GET').to.be.oneOf([302, 303]);
+    cy.probe({ url: '/logout.php' }).then(result => {
+      expect(result.status, 'logout still answers to a bare GET').to.be.oneOf([302, 303]);
     });
     cy.probe({ url: '/dashboard.php' }).its('status').should('be.oneOf', [302, 303]);
   });

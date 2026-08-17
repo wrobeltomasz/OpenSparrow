@@ -6,8 +6,8 @@
 import { createTextInput, createSelectInput, createColorInput, createIconPicker, createMultiSelect } from './ui.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
-export function renderCalendarEditor(key, itemData, isArray, ctx) {
-    const { workspaceEl, getTableOptions, getColumnOptionsForTable, renderEditor } = ctx;
+export function renderCalendarEditor(key, itemData, isArray, context) {
+    const { workspaceEl: workspaceElement, getTableOptions, getColumnOptionsForTable, renderEditor } = context;
 
     if (itemData.date_field !== undefined) { itemData.date_column = itemData.date_field; delete itemData.date_field; }
     if (itemData.title_field !== undefined) { itemData.title_column = itemData.title_field; delete itemData.title_field; }
@@ -20,7 +20,7 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
 
     const columnOptions = getColumnOptionsForTable(itemData.table);
 
-    workspaceEl.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), itemData.table, v => {
+    workspaceElement.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), itemData.table, v => {
         itemData.table = v;
         itemData.date_column = "";
         itemData.title_column = "";
@@ -28,11 +28,11 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
         renderEditor(key, itemData, isArray);
     }));
 
-    workspaceEl.appendChild(createSelectInput('date_column', 'Date Column Name', columnOptions, itemData.date_column, v => itemData.date_column = v));
-    workspaceEl.appendChild(createSelectInput('title_column', 'Title Column Name', columnOptions, itemData.title_column, v => itemData.title_column = v));
+    workspaceElement.appendChild(createSelectInput('date_column', 'Date Column Name', columnOptions, itemData.date_column, v => itemData.date_column = v));
+    workspaceElement.appendChild(createSelectInput('title_column', 'Title Column Name', columnOptions, itemData.title_column, v => itemData.title_column = v));
 
     const subtitleOptions = columnOptions.map(o => (o.value === '' ? { value: '', label: '(None)' } : o));
-    workspaceEl.appendChild(createSelectInput('subtitle_column', 'Subtitle Column Name', subtitleOptions, itemData.subtitle_column || '', v => {
+    workspaceElement.appendChild(createSelectInput('subtitle_column', 'Subtitle Column Name', subtitleOptions, itemData.subtitle_column || '', v => {
         if (v && v.trim() !== '') {
             itemData.subtitle_column = v;
         } else {
@@ -40,7 +40,7 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
         }
     }));
 
-    workspaceEl.appendChild(createIconPicker('icon', 'Event Icon', itemData.icon || '', v => {
+    workspaceElement.appendChild(createIconPicker('icon', 'Event Icon', itemData.icon || '', v => {
         if (v && v.trim() !== '') {
             itemData.icon = v;
         } else {
@@ -48,15 +48,15 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
         }
     }));
 
-    workspaceEl.appendChild(createColorInput('color', 'Event Color', itemData.color || '#6E767F', v => itemData.color = v));
-    workspaceEl.appendChild(createTextInput('notify_before_days', 'Notify Before (Days)', itemData.notify_before_days, v => itemData.notify_before_days = parseInt(v) || 0));
+    workspaceElement.appendChild(createColorInput('color', 'Event Color', itemData.color || '#6E767F', v => itemData.color = v));
+    workspaceElement.appendChild(createTextInput('notify_before_days', 'Notify Before (Days)', itemData.notify_before_days, v => itemData.notify_before_days = parseInt(v) || 0));
 
     const usersWrapper = document.createElement('div');
     usersWrapper.innerHTML = '<p style="color:var(--muted); ">Loading active users...</p>';
-    workspaceEl.appendChild(usersWrapper);
+    workspaceElement.appendChild(usersWrapper);
 
     apiFetch('api.php?action=users_list')
-        .then(res => res.json())
+        .then(result => result.json())
         .then(data => {
             usersWrapper.innerHTML = '';
             if (data.status === 'success') {
@@ -72,15 +72,15 @@ export function renderCalendarEditor(key, itemData, isArray, ctx) {
                     v => itemData.notified_users = v
                 ));
             } else {
-                const errP = document.createElement('p');
-                errP.style.cssText = 'color:var(--error);';
-                errP.textContent = `Error loading users: ${data.error}`;
-                usersWrapper.appendChild(errP);
+                const errorP = document.createElement('p');
+                errorP.style.cssText = 'color:var(--error);';
+                errorP.textContent = `Error loading users: ${data.error}`;
+                usersWrapper.appendChild(errorP);
             }
         })
         .catch(() => {
             usersWrapper.innerHTML = '<p style="color:var(--error); ">Network error while fetching users.</p>';
         });
 
-    workspaceEl.appendChild(createTextInput('url_template', 'URL Template', itemData.url_template, v => itemData.url_template = v));
+    workspaceElement.appendChild(createTextInput('url_template', 'URL Template', itemData.url_template, v => itemData.url_template = v));
 }

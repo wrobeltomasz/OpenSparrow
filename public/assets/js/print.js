@@ -6,22 +6,22 @@
 import { I18n } from './i18n.js';
 import { apiJson as apiFetch } from './util/api.js';
 
-const containerEl = document.getElementById('printContainer');
+const containerElement = document.getElementById('printContainer');
 
 function substitute(text, row) {
     return String(text ?? '').replace(/\{([a-zA-Z_][a-zA-Z0-9_ ]*)\}/g, (match, key) =>
         row && Object.prototype.hasOwnProperty.call(row, key) ? String(row[key] ?? '') : match);
 }
 
-function readParamsFromLocation() {
+function readParametersFromLocation() {
     const values = {};
-    new URLSearchParams(window.location.search).forEach((val, key) => {
-        if (key.startsWith('p_') && val !== '') values[key.slice(2)] = val;
+    new URLSearchParameters(window.location.search).forEach((value, key) => {
+        if (key.startsWith('p_') && value !== '') values[key.slice(2)] = value;
     });
     return values;
 }
 
-function buildParamsQuery(values) {
+function buildParametersQuery(values) {
     return Object.entries(values)
         .filter(([, v]) => v !== '' && v != null)
         .map(([k, v]) => `p_${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
@@ -29,12 +29,12 @@ function buildParamsQuery(values) {
 }
 
 function updateUrl(printName, values) {
-    const qs  = buildParamsQuery(values);
+    const qs  = buildParametersQuery(values);
     const url = `print.php?print=${encodeURIComponent(printName)}${qs ? `&${qs}` : ''}`;
     window.history.replaceState(null, '', url);
 }
 
-async function fetchParamOptions(printName, key) {
+async function fetchParameterOptions(printName, key) {
     try {
         const data = await apiFetch(
             `api/print.php?action=param_options&print=${encodeURIComponent(printName)}&key=${encodeURIComponent(key)}`
@@ -48,25 +48,25 @@ async function fetchParamOptions(printName, key) {
 let currentPrintName = null;
 
 function initClearFilters() {
-    const btn = document.getElementById('clearFilters');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
+    const button = document.getElementById('clearFilters');
+    if (!button) return;
+    button.addEventListener('click', () => {
         if (currentPrintName) loadPrint(currentPrintName, {});
     });
 }
 
-async function renderParamsBar(printName, paramDefs, currentValues) {
+async function renderParametersBar(printName, parameterDefs, currentValues) {
     const bar = document.getElementById('printFilters');
-    const clearBtn = document.getElementById('clearFilters');
+    const clearButton = document.getElementById('clearFilters');
     if (!bar) return;
     bar.replaceChildren();
 
-    if (!Array.isArray(paramDefs) || paramDefs.length === 0) {
-        if (clearBtn) clearBtn.hidden = true;
+    if (!Array.isArray(parameterDefs) || parameterDefs.length === 0) {
+        if (clearButton) clearButton.hidden = true;
         return;
     }
 
-    for (const def of paramDefs) {
+    for (const def of parameterDefs) {
         const select = document.createElement('select');
         select.id = `printParam_${def.key}`;
 
@@ -76,18 +76,18 @@ async function renderParamsBar(printName, paramDefs, currentValues) {
         label.textContent = def.label || def.key;
 
         if (!def.required) {
-            const optAll = document.createElement('option');
-            optAll.value = '';
-            optAll.textContent = I18n.t('print.params_all');
-            select.appendChild(optAll);
+            const optionAll = document.createElement('option');
+            optionAll.value = '';
+            optionAll.textContent = I18n.t('print.params_all');
+            select.appendChild(optionAll);
         }
 
-        const options = await fetchParamOptions(printName, def.key);
-        options.forEach(opt => {
+        const options = await fetchParameterOptions(printName, def.key);
+        options.forEach(option => {
             const o = document.createElement('option');
-            o.value = opt.value ?? '';
-            o.textContent = opt.label ?? opt.value ?? '';
-            if (String(currentValues[def.key] ?? '') === String(opt.value ?? '')) o.selected = true;
+            o.value = option.value ?? '';
+            o.textContent = option.label ?? option.value ?? '';
+            if (String(currentValues[def.key] ?? '') === String(option.value ?? '')) o.selected = true;
             select.appendChild(o);
         });
 
@@ -99,15 +99,15 @@ async function renderParamsBar(printName, paramDefs, currentValues) {
         bar.appendChild(select);
     }
 
-    if (clearBtn) clearBtn.hidden = Object.values(currentValues).every(v => !v);
+    if (clearButton) clearButton.hidden = Object.values(currentValues).every(v => !v);
 }
 
 function showError(message) {
-    containerEl.replaceChildren();
-    const err = document.createElement('div');
-    err.className = 'pr-error';
-    err.textContent = I18n.t('print.error', { message });
-    containerEl.appendChild(err);
+    containerElement.replaceChildren();
+    const error = document.createElement('div');
+    error.className = 'pr-error';
+    error.textContent = I18n.t('print.error', { message });
+    containerElement.appendChild(error);
 }
 
 function renderBlock(block, rows, columns) {
@@ -129,12 +129,12 @@ function renderBlock(block, rows, columns) {
     }
 
     if (block.type === 'table') {
-        const cols = (Array.isArray(block.columns) && block.columns.length > 0
+        const columns = (Array.isArray(block.columns) && block.columns.length > 0
             ? block.columns
             : Object.keys(rows[0] ?? {})
         ).map(c => (typeof c === 'string' ? { name: c } : c));
 
-        if (cols.length === 0 || rows.length === 0) {
+        if (columns.length === 0 || rows.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'pr-block-empty';
             empty.textContent = I18n.t('print.no_data');
@@ -146,10 +146,10 @@ function renderBlock(block, rows, columns) {
 
         const thead = document.createElement('thead');
         const headTr = document.createElement('tr');
-        cols.forEach(col => {
+        columns.forEach(column => {
             const th = document.createElement('th');
-            th.textContent = columns[col.name]?.display_name ?? col.name;
-            if (col.width) th.style.width = `${col.width}%`;
+            th.textContent = columns[column.name]?.display_name ?? column.name;
+            if (column.width) th.style.width = `${column.width}%`;
 
             headTr.appendChild(th);
         });
@@ -159,10 +159,10 @@ function renderBlock(block, rows, columns) {
         const tbody = document.createElement('tbody');
         rows.forEach(row => {
             const tr = document.createElement('tr');
-            cols.forEach(col => {
+            columns.forEach(column => {
                 const td = document.createElement('td');
-                td.textContent = row[col.name] ?? '';
-                if (col.align && col.align !== 'left') td.style.textAlign = col.align;
+                td.textContent = row[column.name] ?? '';
+                if (column.align && column.align !== 'left') td.style.textAlign = column.align;
                 tr.appendChild(td);
             });
             tbody.appendChild(tr);
@@ -189,26 +189,26 @@ function paginateSheet(sheet) {
         if (block.tagName === 'TABLE') {
             const thead       = block.querySelector('thead');
             const theadHeight = thead ? thead.getBoundingClientRect().height : 0;
-            const rowsEls     = Array.from(block.querySelectorAll('tbody > tr'));
-            let curTbody = null;
+            const rowsElements     = Array.from(block.querySelectorAll('tbody > tr'));
+            let currentTbody = null;
 
             const startChunk = () => {
                 const chunk = block.cloneNode(false);
                 if (thead) chunk.appendChild(thead.cloneNode(true));
-                curTbody = document.createElement('tbody');
-                chunk.appendChild(curTbody);
+                currentTbody = document.createElement('tbody');
+                chunk.appendChild(currentTbody);
                 pages[pages.length - 1].push(chunk);
                 heightUsed += theadHeight;
             };
 
             startChunk();
-            rowsEls.forEach(tr => {
+            rowsElements.forEach(tr => {
                 const rowHeight = tr.getBoundingClientRect().height;
-                if (heightUsed + rowHeight > PAGE_CONTENT_HEIGHT_PX && curTbody.children.length > 0) {
+                if (heightUsed + rowHeight > PAGE_CONTENT_HEIGHT_PX && currentTbody.children.length > 0) {
                     newPage();
                     startChunk();
                 }
-                curTbody.appendChild(tr.cloneNode(true));
+                currentTbody.appendChild(tr.cloneNode(true));
                 heightUsed += rowHeight;
             });
         } else {
@@ -223,38 +223,38 @@ function paginateSheet(sheet) {
 
     sheet.replaceChildren();
     pages.forEach((nodes, i) => {
-        const pageEl = document.createElement('div');
-        pageEl.className = 'pr-page';
-        nodes.forEach(n => pageEl.appendChild(n));
+        const pageElement = document.createElement('div');
+        pageElement.className = 'pr-page';
+        nodes.forEach(n => pageElement.appendChild(n));
 
         const footer = document.createElement('div');
         footer.className = 'pr-page-footer';
         footer.textContent = I18n.t('print.page_of', { current: i + 1, total: pages.length });
-        pageEl.appendChild(footer);
+        pageElement.appendChild(footer);
 
-        sheet.appendChild(pageEl);
+        sheet.appendChild(pageElement);
     });
 }
 
-async function loadPrint(printName, paramValues = {}) {
+async function loadPrint(printName, parameterValues = {}) {
     currentPrintName = printName;
-    const loadEl = document.createElement('div');
-    loadEl.className = 'pr-loading';
-    loadEl.textContent = I18n.t('common.loading');
-    containerEl.replaceChildren(loadEl);
+    const loadElement = document.createElement('div');
+    loadElement.className = 'pr-loading';
+    loadElement.textContent = I18n.t('common.loading');
+    containerElement.replaceChildren(loadElement);
 
     let data;
     try {
-        const qs = buildParamsQuery(paramValues);
+        const qs = buildParametersQuery(parameterValues);
         data = await apiFetch(`api/print.php?action=data&print=${encodeURIComponent(printName)}${qs ? `&${qs}` : ''}`);
-    } catch (err) {
-        showError(err.message);
+    } catch (error) {
+        showError(error.message);
         return;
     }
 
-    containerEl.replaceChildren();
+    containerElement.replaceChildren();
     updateUrl(printName, data.applied_params ?? {});
-    await renderParamsBar(printName, data.params ?? [], data.applied_params ?? {});
+    await renderParametersBar(printName, data.params ?? [], data.applied_params ?? {});
 
     const toolbar = document.createElement('div');
     toolbar.className = 'pr-toolbar';
@@ -264,14 +264,14 @@ async function loadPrint(printName, paramValues = {}) {
     title.textContent = data.display_name ?? printName;
     toolbar.appendChild(title);
 
-    const printBtn = document.createElement('button');
-    printBtn.id = 'printPage';
-    printBtn.className = 'pr-print-btn';
-    printBtn.textContent = I18n.t('print.print_button');
-    printBtn.addEventListener('click', () => window.print());
-    toolbar.appendChild(printBtn);
+    const printButton = document.createElement('button');
+    printButton.id = 'printPage';
+    printButton.className = 'pr-print-btn';
+    printButton.textContent = I18n.t('print.print_button');
+    printButton.addEventListener('click', () => window.print());
+    toolbar.appendChild(printButton);
 
-    containerEl.appendChild(toolbar);
+    containerElement.appendChild(toolbar);
 
     const sheet = document.createElement('div');
     sheet.id = 'printSheet';
@@ -280,8 +280,8 @@ async function loadPrint(printName, paramValues = {}) {
     const rows    = Array.isArray(data.rows) ? data.rows : [];
     const columns = data.columns ?? {};
     (data.blocks ?? []).forEach(block => {
-        const el = renderBlock(block, rows, columns);
-        if (el) sheet.appendChild(el);
+        const element = renderBlock(block, rows, columns);
+        if (element) sheet.appendChild(element);
     });
 
     if (sheet.childNodes.length === 0) {
@@ -291,32 +291,32 @@ async function loadPrint(printName, paramValues = {}) {
         sheet.appendChild(empty);
     }
 
-    containerEl.appendChild(sheet);
+    containerElement.appendChild(sheet);
 
     paginateSheet(sheet);
 }
 
 async function loadSelector() {
-    const loadEl = document.createElement('div');
-    loadEl.className = 'pr-loading';
-    loadEl.textContent = I18n.t('print.loading');
-    containerEl.replaceChildren(loadEl);
+    const loadElement = document.createElement('div');
+    loadElement.className = 'pr-loading';
+    loadElement.textContent = I18n.t('print.loading');
+    containerElement.replaceChildren(loadElement);
 
     let data;
     try {
         data = await apiFetch('api/print.php?action=list');
-    } catch (err) {
-        showError(err.message);
+    } catch (error) {
+        showError(error.message);
         return;
     }
 
-    containerEl.replaceChildren();
+    containerElement.replaceChildren();
 
     if (!data.prints || data.prints.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'pr-empty';
         empty.textContent = I18n.t('print.empty');
-        containerEl.appendChild(empty);
+        containerElement.appendChild(empty);
         return;
     }
 
@@ -333,10 +333,10 @@ async function loadSelector() {
         const iconWrap = document.createElement('div');
         iconWrap.className = 'pr-card-icon';
         if (p.icon) {
-            const img = document.createElement('img');
-            img.src = p.icon;
-            img.alt = '';
-            iconWrap.appendChild(img);
+            const image = document.createElement('img');
+            image.src = p.icon;
+            image.alt = '';
+            iconWrap.appendChild(image);
         } else {
             const dot = document.createElement('div');
             dot.className = 'pr-card-icon-dot';
@@ -349,9 +349,9 @@ async function loadSelector() {
         cardTitle.textContent = p.display_name ?? p.name;
         header.appendChild(cardTitle);
 
-        const desc = document.createElement('p');
-        desc.className = 'pr-card-desc';
-        desc.textContent = p.description || '';
+        const description = document.createElement('p');
+        description.className = 'pr-card-desc';
+        description.textContent = p.description || '';
 
         const footer = document.createElement('div');
         footer.className = 'pr-card-footer';
@@ -361,7 +361,7 @@ async function loadSelector() {
         footer.appendChild(openLink);
 
         card.appendChild(header);
-        card.appendChild(desc);
+        card.appendChild(description);
         card.appendChild(footer);
         card.addEventListener('click', () => {
             window.location.href = `print.php?print=${encodeURIComponent(p.name)}`;
@@ -369,7 +369,7 @@ async function loadSelector() {
         grid.appendChild(card);
     });
 
-    containerEl.appendChild(grid);
+    containerElement.appendChild(grid);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initClearFilters();
     const initial = window.PRINT_INITIAL;
     if (initial) {
-        loadPrint(initial, readParamsFromLocation());
+        loadPrint(initial, readParametersFromLocation());
     } else {
         loadSelector();
     }

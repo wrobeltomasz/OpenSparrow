@@ -67,8 +67,8 @@ function cron_notifications_main(array $argv): int
 
     print_log("Loaded calendar configuration. Number of sources: " . count($config['sources']) . "<br>");
 
-    $schemaCfg    = config_get('schema') ?? [];
-    $schemaTables = is_array($schemaCfg['tables'] ?? null) ? $schemaCfg['tables'] : [];
+    $schemaConfig    = config_get('schema') ?? [];
+    $schemaTables = is_array($schemaConfig['tables'] ?? null) ? $schemaConfig['tables'] : [];
 
     $cronLogTable = sys_table('users_notifications_log');
 
@@ -209,8 +209,8 @@ function cron_notifications_main(array $argv): int
             ";
 
             $noteDay = $note['reminder_day'] ?: $today;
-            $noteParams = [$noteUserId, $noteTitle, $noteLink, (int)$note['id'], $noteDay];
-            $noteInsertResult = pg_query_params($conn, $noteInsertSql, $noteParams);
+            $noteParameters = [$noteUserId, $noteTitle, $noteLink, (int)$note['id'], $noteDay];
+            $noteInsertResult = pg_query_params($conn, $noteInsertSql, $noteParameters);
             if ($noteInsertResult && pg_affected_rows($noteInsertResult) > 0) {
                 print_log("&nbsp;&nbsp; Added reminder for user ID $noteUserId (Note ID: " . (int)$note['id'] . ")");
                 $insertedCount++;

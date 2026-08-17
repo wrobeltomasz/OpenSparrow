@@ -6,12 +6,12 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createIconPicker, buildInnerTabs } from './ui.js';
 
-export function renderPrintEditor(ctx) {
-    const { workspaceEl, setSaveHandler } = ctx;
-    workspaceEl.innerHTML = '';
+export function renderPrintEditor(context) {
+    const { workspaceEl: workspaceElement, setSaveHandler } = context;
+    workspaceElement.innerHTML = '';
 
     let prints      = {};
-    let cfgVersion  = 0;
+    let configVersion  = 0;
     let dbViews     = [];
     let viewColumns = {};
 
@@ -21,11 +21,11 @@ export function renderPrintEditor(ctx) {
     const hdrTitle = document.createElement('h2');
     hdrTitle.className = 'admin-page-title';
     hdrTitle.textContent = 'Printouts';
-    const hdrDesc = document.createElement('p');
-    hdrDesc.className = 'admin-page-desc';
-    hdrDesc.textContent = 'Build printable report templates from simple blocks (header, text, table). Each template is bound to a PostgreSQL view from the Views module; its columns become the available {variables}. Optional parameters let users filter the report (e.g. by employee) before printing.';
+    const hdrDescription = document.createElement('p');
+    hdrDescription.className = 'admin-page-desc';
+    hdrDescription.textContent = 'Build printable report templates from simple blocks (header, text, table). Each template is bound to a PostgreSQL view from the Views module; its columns become the available {variables}. Optional parameters let users filter the report (e.g. by employee) before printing.';
     wrap.appendChild(hdrTitle);
-    wrap.appendChild(hdrDesc);
+    wrap.appendChild(hdrDescription);
 
     const [listPanel, globalPanel] = buildInnerTabs(wrap, [
         { label: 'All Printouts', icon: 'picture_as_pdf.png' },
@@ -34,64 +34,64 @@ export function renderPrintEditor(ctx) {
 
     const globalHeading = document.createElement('h3');
     globalHeading.textContent = 'Global Settings';
-    const globalDesc = document.createElement('p');
-    globalDesc.style.cssText = '  margin:0;';
-    globalDesc.textContent = 'Printouts have no module-wide settings yet — each template configures its own view, parameters and blocks below. Use "All Printouts" to add and edit templates.';
+    const globalDescription = document.createElement('p');
+    globalDescription.style.cssText = '  margin:0;';
+    globalDescription.textContent = 'Printouts have no module-wide settings yet — each template configures its own view, parameters and blocks below. Use "All Printouts" to add and edit templates.';
     globalPanel.appendChild(globalHeading);
-    globalPanel.appendChild(globalDesc);
+    globalPanel.appendChild(globalDescription);
 
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
-    const addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.className = 'btn btn-success';
-    addBtn.textContent = '+ Add printout';
-    bar.appendChild(addBtn);
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.className = 'btn btn-success';
+    addButton.textContent = '+ Add printout';
+    bar.appendChild(addButton);
     listPanel.appendChild(bar);
 
     setSaveHandler(async () => {
-        const res = await apiFetch('../api/print.php?action=save', {
+        const result = await apiFetch('../api/print.php?action=save', {
             method: 'POST',
-            body: JSON.stringify({ prints, version: cfgVersion }),
+            body: JSON.stringify({ prints, version: configVersion }),
         });
-        const data = await res.json();
+        const data = await result.json();
         if (data.status === 'ok') {
-            cfgVersion = data.version ?? cfgVersion + 1;
+            cfgVersion: configVersion = data.version ?? configVersion + 1;
             setStatus('Printouts saved.', 'ok');
             return { status: 'success', message: 'Printouts saved' };
         }
-        if (res.status === 409) {
+        if (result.status === 409) {
             setStatus('Save rejected: configuration was changed by someone else. Reload the page and re-apply your edits.', 'error');
         }
         return { status: 'error', error: data.error ?? 'unknown' };
     });
 
-    const statusEl = document.createElement('div');
-    statusEl.style.cssText = 'display:none;';
-    listPanel.appendChild(statusEl);
+    const statusElement = document.createElement('div');
+    statusElement.style.cssText = 'display:none;';
+    listPanel.appendChild(statusElement);
 
-    const listEl = document.createElement('div');
-    listEl.style.cssText = 'display:flex; flex-direction:column; gap:16px;';
-    listPanel.appendChild(listEl);
+    const listElement = document.createElement('div');
+    listElement.style.cssText = 'display:flex; flex-direction:column; gap:16px;';
+    listPanel.appendChild(listElement);
 
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
-    function setStatus(msg, type = 'info') {
+    function setStatus(message, type = 'info') {
         const styles = {
             info:  'background:var(--accent-light); color:var(--accent-dark);',
             ok:    'background:var(--ok-light); color:var(--ok);',
             error: 'background:var(--error-light); color:var(--error);',
         };
-        statusEl.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
-        statusEl.textContent = msg;
+        statusElement.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
+        statusElement.textContent = message;
     }
 
     async function fetchColumns(viewName) {
         if (!viewName) return [];
         if (viewColumns[viewName]) return viewColumns[viewName];
         try {
-            const res  = await apiFetch('../api/print.php?action=columns&view=' + encodeURIComponent(viewName));
-            const data = await res.json();
+            const result  = await apiFetch('../api/print.php?action=columns&view=' + encodeURIComponent(viewName));
+            const data = await result.json();
             if (data.status !== 'ok') return [];
             viewColumns[viewName] = data.columns ?? [];
             return viewColumns[viewName];
@@ -103,23 +103,23 @@ export function renderPrintEditor(ctx) {
     function fg(label, value, onChange) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
-        const lbl = document.createElement('label');
-        lbl.textContent = label;
-        grp.appendChild(lbl);
-        const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.value = value ?? '';
-        inp.addEventListener('input', () => onChange(inp.value));
-        grp.appendChild(inp);
+        const label = document.createElement('label');
+        label.textContent = label;
+        grp.appendChild(label);
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = value ?? '';
+        input.addEventListener('input', () => onChange(input.value));
+        grp.appendChild(input);
         return grp;
     }
 
     function fgArea(label, value, onChange, rows = 3) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
-        const lbl = document.createElement('label');
-        lbl.textContent = label;
-        grp.appendChild(lbl);
+        const label = document.createElement('label');
+        label.textContent = label;
+        grp.appendChild(label);
         const ta = document.createElement('textarea');
         ta.rows = rows;
         ta.style.resize = 'vertical';
@@ -129,31 +129,31 @@ export function renderPrintEditor(ctx) {
         return grp;
     }
 
-    function buildVariablesRow(cols) {
+    function buildVariablesRow(columns) {
         const box = document.createElement('div');
         box.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;';
-        if (cols.length === 0) {
+        if (columns.length === 0) {
             const none = document.createElement('span');
             none.style.cssText = ' ';
             none.textContent = 'Select a view to load its variables.';
             box.appendChild(none);
             return box;
         }
-        cols.forEach(col => {
+        columns.forEach(column => {
             const badge = document.createElement('span');
             badge.style.cssText = ' font-family:var(--font-mono); color:var(--accent-dark); background:var(--accent-light); padding:2px 8px; border-radius:10px;';
-            badge.textContent = `{${col.name}}`;
-            badge.title = col.data_type || '';
+            badge.textContent = `{${column.name}}`;
+            badge.title = column.data_type || '';
             box.appendChild(badge);
         });
         return box;
     }
 
-    function buildPrintCard(pName, cfg) {
+    function buildPrintCard(pName, config) {
         const card = document.createElement('div');
         card.className = 'column-block collapsed';
         card.dataset.print = pName;
-        if (cfg.hidden) card.style.opacity = '0.6';
+        if (config.hidden) card.style.opacity = '0.6';
 
         const cardHdr = document.createElement('div');
         cardHdr.className = 'block-header';
@@ -164,7 +164,7 @@ export function renderPrintEditor(ctx) {
 
         const nameSpan = document.createElement('strong');
         nameSpan.className = 'block-title';
-        nameSpan.textContent = cfg.display_name || pName;
+        nameSpan.textContent = config.display_name || pName;
         const keySpan = document.createElement('span');
         keySpan.className = 'block-key';
         keySpan.textContent = ` (${pName})`;
@@ -172,23 +172,23 @@ export function renderPrintEditor(ctx) {
 
         const visibleLabel = document.createElement('label');
         visibleLabel.className = 'block-vis';
-        const visibleChk = document.createElement('input');
-        visibleChk.type = 'checkbox';
-        visibleChk.checked = !cfg.hidden;
-        visibleChk.className = 'adm-check';
-        visibleChk.addEventListener('change', e => {
+        const visibleCheckbox = document.createElement('input');
+        visibleCheckbox.type = 'checkbox';
+        visibleCheckbox.checked = !config.hidden;
+        visibleCheckbox.className = 'adm-check';
+        visibleCheckbox.addEventListener('change', e => {
             prints[pName].hidden = !e.target.checked;
             card.style.opacity = prints[pName].hidden ? '0.6' : '1';
         });
-        visibleLabel.appendChild(visibleChk);
+        visibleLabel.appendChild(visibleCheckbox);
         visibleLabel.appendChild(document.createTextNode('Visible'));
 
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.className = 'icon-btn icon-btn-danger';
-        delBtn.title = 'Delete';
-        delBtn.textContent = '✕';
-        delBtn.addEventListener('click', (e) => {
+        const delButton = document.createElement('button');
+        delButton.type = 'button';
+        delButton.className = 'icon-btn icon-btn-danger';
+        delButton.title = 'Delete';
+        delButton.textContent = '✕';
+        delButton.addEventListener('click', (e) => {
             e.stopPropagation();
             if (!confirm(`Delete printout "${pName}"?`)) return;
             delete prints[pName];
@@ -198,7 +198,7 @@ export function renderPrintEditor(ctx) {
         cardHdr.appendChild(chevron);
         cardHdr.appendChild(nameSpan);
         cardHdr.appendChild(visibleLabel);
-        cardHdr.appendChild(delBtn);
+        cardHdr.appendChild(delButton);
         card.appendChild(cardHdr);
 
         const body = document.createElement('div');
@@ -212,78 +212,78 @@ export function renderPrintEditor(ctx) {
             card.classList.toggle('collapsed');
             if (willOpen && !rendered) {
                 rendered = true;
-                await buildCardBody(pName, cfg, body, nameSpan);
+                await buildCardBody(pName, config, body, nameSpan);
             }
         });
 
         return card;
     }
 
-    async function buildCardBody(pName, cfg, body, nameSpan) {
+    async function buildCardBody(pName, config, body, nameSpan) {
         body.innerHTML = '';
 
         const genHdr = document.createElement('h4');
         genHdr.textContent = 'General';
         body.appendChild(genHdr);
 
-        body.appendChild(fg('Display name', cfg.display_name ?? pName, v => {
+        body.appendChild(fg('Display name', config.display_name ?? pName, v => {
             prints[pName].display_name = v;
 
             nameSpan.firstChild.nodeValue = v || pName;
         }));
-        body.appendChild(fg('Menu name', cfg.menu_name ?? pName, v => { prints[pName].menu_name = v; }));
-        body.appendChild(fgArea('Description', cfg.description ?? '', v => { prints[pName].description = v; }));
-        body.appendChild(createIconPicker('icon', 'Icon', cfg.icon || 'assets/icons/picture_as_pdf.png', v => { prints[pName].icon = v; }));
+        body.appendChild(fg('Menu name', config.menu_name ?? pName, v => { prints[pName].menu_name = v; }));
+        body.appendChild(fgArea('Description', config.description ?? '', v => { prints[pName].description = v; }));
+        body.appendChild(createIconPicker('icon', 'Icon', config.icon || 'assets/icons/picture_as_pdf.png', v => { prints[pName].icon = v; }));
 
-        const srcHdr = document.createElement('h4');
-        srcHdr.textContent = 'Data source (PostgreSQL view)';
-        body.appendChild(srcHdr);
+        const sourceHdr = document.createElement('h4');
+        sourceHdr.textContent = 'Data source (PostgreSQL view)';
+        body.appendChild(sourceHdr);
 
-        const viewGrp = document.createElement('div');
-        viewGrp.className = 'form-group';
-        const viewLbl = document.createElement('label');
-        viewLbl.textContent = 'SQL view (from the Views module)';
-        viewGrp.appendChild(viewLbl);
-        const viewSel = document.createElement('select');
-        const optNone = document.createElement('option');
-        optNone.value = '';
-        optNone.textContent = '— select view —';
-        viewSel.appendChild(optNone);
+        const viewGroup = document.createElement('div');
+        viewGroup.className = 'form-group';
+        const viewLabel = document.createElement('label');
+        viewLabel.textContent = 'SQL view (from the Views module)';
+        viewGroup.appendChild(viewLabel);
+        const viewSelect = document.createElement('select');
+        const optionNone = document.createElement('option');
+        optionNone.value = '';
+        optionNone.textContent = '— select view —';
+        viewSelect.appendChild(optionNone);
         dbViews.forEach(v => {
             const o = document.createElement('option');
             o.value = v;
             o.textContent = v;
-            if ((cfg.view ?? '') === v) o.selected = true;
-            viewSel.appendChild(o);
+            if ((config.view ?? '') === v) o.selected = true;
+            viewSelect.appendChild(o);
         });
-        viewGrp.appendChild(viewSel);
-        body.appendChild(viewGrp);
+        viewGroup.appendChild(viewSelect);
+        body.appendChild(viewGroup);
 
-        const varsLbl = document.createElement('label');
-        varsLbl.textContent = 'Available variables (columns of the view)';
-        varsLbl.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
-        body.appendChild(varsLbl);
+        const variablesLabel = document.createElement('label');
+        variablesLabel.textContent = 'Available variables (columns of the view)';
+        variablesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
+        body.appendChild(variablesLabel);
 
-        let varsRow = buildVariablesRow([]);
-        body.appendChild(varsRow);
+        let variablesRow = buildVariablesRow([]);
+        body.appendChild(variablesRow);
 
-        const paramsHdr = document.createElement('h4');
-        paramsHdr.textContent = 'Report parameters';
-        body.appendChild(paramsHdr);
+        const parametersHdr = document.createElement('h4');
+        parametersHdr.textContent = 'Report parameters';
+        body.appendChild(parametersHdr);
 
-        const paramsHint = document.createElement('p');
-        paramsHint.style.cssText = 'margin:0 0 10px;  ';
-        paramsHint.textContent = 'Optional filters shown above the report before it is generated '
+        const parametersHint = document.createElement('p');
+        parametersHint.style.cssText = 'margin:0 0 10px;  ';
+        parametersHint.textContent = 'Optional filters shown above the report before it is generated '
             + '(e.g. "pick an employee"). Leave the lookup view empty to offer distinct values of '
             + 'the filter column itself.';
-        body.appendChild(paramsHint);
+        body.appendChild(parametersHint);
 
-        const paramsList = document.createElement('div');
-        paramsList.style.cssText = 'display:flex; flex-direction:column; gap:10px; margin-bottom:12px;';
-        body.appendChild(paramsList);
+        const parametersList = document.createElement('div');
+        parametersList.style.cssText = 'display:flex; flex-direction:column; gap:10px; margin-bottom:12px;';
+        body.appendChild(parametersList);
 
         if (!Array.isArray(prints[pName].params)) prints[pName].params = [];
-        const params = prints[pName].params;
+        const parameters = prints[pName].params;
 
         const blkHdr = document.createElement('h4');
         blkHdr.textContent = 'Template blocks';
@@ -295,19 +295,19 @@ export function renderPrintEditor(ctx) {
 
         if (!Array.isArray(prints[pName].blocks)) prints[pName].blocks = [];
         const blocks = prints[pName].blocks;
-        let currentCols = [];
+        let currentColumns = [];
 
         async function refreshVariables() {
-            currentCols = await fetchColumns(viewSel.value);
-            const fresh = buildVariablesRow(currentCols);
-            varsRow.replaceWith(fresh);
-            varsRow = fresh;
+            currentCols: currentColumns = await fetchColumns(viewSelect.value);
+            const fresh = buildVariablesRow(currentColumns);
+            variablesRow.replaceWith(fresh);
+            variablesRow = fresh;
             renderBlocks();
-            renderParams();
+            renderParameters();
         }
 
-        viewSel.addEventListener('change', () => {
-            prints[pName].view = viewSel.value;
+        viewSelect.addEventListener('change', () => {
+            prints[pName].view = viewSelect.value;
             refreshVariables();
         });
 
@@ -320,10 +320,10 @@ export function renderPrintEditor(ctx) {
                 blocksList.appendChild(empty);
                 return;
             }
-            blocks.forEach((block, idx) => blocksList.appendChild(buildBlockRow(block, idx)));
+            blocks.forEach((block, index) => blocksList.appendChild(buildBlockRow(block, index)));
         }
 
-        function buildBlockRow(block, idx) {
+        function buildBlockRow(block, index) {
             const row = document.createElement('div');
             row.className = 'subtable-block';
 
@@ -332,86 +332,86 @@ export function renderPrintEditor(ctx) {
 
             const typeSpan = document.createElement('strong');
             typeSpan.style.cssText = ' color:var(--text); text-transform:capitalize;';
-            typeSpan.textContent = `${idx + 1}. ${block.type}`;
+            typeSpan.textContent = `${index + 1}. ${block.type}`;
             rowHdr.appendChild(typeSpan);
 
             const spacer = document.createElement('span');
             spacer.style.flex = '1';
             rowHdr.appendChild(spacer);
 
-            const upBtn = document.createElement('button');
-            upBtn.className = 'item-order-btn';
-            upBtn.textContent = '^';
-            upBtn.disabled = idx === 0;
-            upBtn.addEventListener('click', () => {
-                [blocks[idx - 1], blocks[idx]] = [blocks[idx], blocks[idx - 1]];
+            const upButton = document.createElement('button');
+            upButton.className = 'item-order-btn';
+            upButton.textContent = '^';
+            upButton.disabled = index === 0;
+            upButton.addEventListener('click', () => {
+                [blocks[index - 1], blocks[index]] = [blocks[index], blocks[index - 1]];
                 renderBlocks();
             });
-            const downBtn = document.createElement('button');
-            downBtn.className = 'item-order-btn';
-            downBtn.textContent = 'v';
-            downBtn.disabled = idx === blocks.length - 1;
-            downBtn.addEventListener('click', () => {
-                [blocks[idx + 1], blocks[idx]] = [blocks[idx], blocks[idx + 1]];
+            const downButton = document.createElement('button');
+            downButton.className = 'item-order-btn';
+            downButton.textContent = 'v';
+            downButton.disabled = index === blocks.length - 1;
+            downButton.addEventListener('click', () => {
+                [blocks[index + 1], blocks[index]] = [blocks[index], blocks[index + 1]];
                 renderBlocks();
             });
-            const rmBtn = document.createElement('button');
-            rmBtn.className = 'btn btn-danger btn-xs';
-            rmBtn.textContent = '✕';
-            rmBtn.addEventListener('click', () => {
-                blocks.splice(idx, 1);
+            const rmButton = document.createElement('button');
+            rmButton.className = 'btn btn-danger btn-xs';
+            rmButton.textContent = '✕';
+            rmButton.addEventListener('click', () => {
+                blocks.splice(index, 1);
                 renderBlocks();
             });
-            rowHdr.appendChild(upBtn);
-            rowHdr.appendChild(downBtn);
-            rowHdr.appendChild(rmBtn);
+            rowHdr.appendChild(upButton);
+            rowHdr.appendChild(downButton);
+            rowHdr.appendChild(rmButton);
             row.appendChild(rowHdr);
 
             if (block.type === 'header') {
-                const lvlGrp = document.createElement('div');
-                lvlGrp.className = 'form-group';
-                const lvlLbl = document.createElement('label');
-                lvlLbl.textContent = 'Level';
-                lvlGrp.appendChild(lvlLbl);
-                const lvlSel = document.createElement('select');
+                const levelGroup = document.createElement('div');
+                levelGroup.className = 'form-group';
+                const levelLabel = document.createElement('label');
+                levelLabel.textContent = 'Level';
+                levelGroup.appendChild(levelLabel);
+                const levelSelect = document.createElement('select');
                 [1, 2, 3].forEach(l => {
                     const o = document.createElement('option');
                     o.value = String(l);
                     o.textContent = `H${l}`;
                     if ((block.level ?? 1) === l) o.selected = true;
-                    lvlSel.appendChild(o);
+                    levelSelect.appendChild(o);
                 });
-                lvlSel.addEventListener('change', () => { block.level = parseInt(lvlSel.value, 10); });
-                lvlGrp.appendChild(lvlSel);
-                row.appendChild(lvlGrp);
+                levelSelect.addEventListener('change', () => { block.level = parseInt(levelSelect.value, 10); });
+                levelGroup.appendChild(levelSelect);
+                row.appendChild(levelGroup);
                 row.appendChild(fg('Text (supports {variables})', block.text ?? '', v => { block.text = v; }));
             } else if (block.type === 'text') {
                 row.appendChild(fgArea('Text (supports {variables}, values come from the first row)', block.text ?? '', v => { block.text = v; }, 4));
             } else if (block.type === 'table') {
-                const colsLbl = document.createElement('label');
-                colsLbl.textContent = 'Columns (all rows of the view are printed)';
-                colsLbl.style.cssText = 'display:block; margin-bottom:6px; font-weight:600;  color:var(--text);';
-                row.appendChild(colsLbl);
+                const columnsLabel = document.createElement('label');
+                columnsLabel.textContent = 'Columns (all rows of the view are printed)';
+                columnsLabel.style.cssText = 'display:block; margin-bottom:6px; font-weight:600;  color:var(--text);';
+                row.appendChild(columnsLabel);
 
-                const colsHint = document.createElement('p');
-                colsHint.style.cssText = 'margin:0 0 8px;  ';
-                colsHint.textContent = 'Width is a percentage of the table; leave blank to auto-size. Widths do not need to add up to 100. Alignment applies to data cells only — column headers are always centered.';
-                row.appendChild(colsHint);
+                const columnsHint = document.createElement('p');
+                columnsHint.style.cssText = 'margin:0 0 8px;  ';
+                columnsHint.textContent = 'Width is a percentage of the table; leave blank to auto-size. Widths do not need to add up to 100. Alignment applies to data cells only — column headers are always centered.';
+                row.appendChild(columnsHint);
 
                 if (!Array.isArray(block.columns)) block.columns = [];
 
                 block.columns = block.columns.map(c => (typeof c === 'string' ? { name: c, align: 'left' } : c));
 
-                const colsBox = document.createElement('div');
-                colsBox.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
-                if (currentCols.length === 0) {
+                const columnsBox = document.createElement('div');
+                columnsBox.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
+                if (currentColumns.length === 0) {
                     const none = document.createElement('span');
                     none.style.cssText = ' ';
                     none.textContent = 'Select a view first to choose columns (empty = all columns).';
-                    colsBox.appendChild(none);
+                    columnsBox.appendChild(none);
                 }
-                currentCols.forEach(col => {
-                    let entry = block.columns.find(c => c.name === col.name);
+                currentColumns.forEach(column => {
+                    let entry = block.columns.find(c => c.name === column.name);
 
                     const rowWrap = document.createElement('div');
                     rowWrap.style.cssText = 'display:flex; align-items:center; gap:10px;';
@@ -423,79 +423,79 @@ export function renderPrintEditor(ctx) {
                     chk.checked = !!entry;
                     chk.style.cssText = 'width:14px; height:14px; accent- cursor:pointer;';
                     lab.appendChild(chk);
-                    lab.appendChild(document.createTextNode(col.name));
+                    lab.appendChild(document.createTextNode(column.name));
                     rowWrap.appendChild(lab);
 
-                    const widthInp = document.createElement('input');
-                    widthInp.type = 'number';
-                    widthInp.min = '1';
-                    widthInp.max = '100';
-                    widthInp.placeholder = 'auto %';
-                    widthInp.className = 'adm-input w-80';
-                    widthInp.value = entry?.width ?? '';
-                    widthInp.disabled = !entry;
-                    rowWrap.appendChild(widthInp);
+                    const widthInput = document.createElement('input');
+                    widthInput.type = 'number';
+                    widthInput.min = '1';
+                    widthInput.max = '100';
+                    widthInput.placeholder = 'auto %';
+                    widthInput.className = 'adm-input w-80';
+                    widthInput.value = entry?.width ?? '';
+                    widthInput.disabled = !entry;
+                    rowWrap.appendChild(widthInput);
 
-                    const alignSel = document.createElement('select');
-                    alignSel.className = 'adm-input w-110';
+                    const alignSelect = document.createElement('select');
+                    alignSelect.className = 'adm-input w-110';
                     [['left', 'Left'], ['center', 'Center'], ['right', 'Right']].forEach(([v, l]) => {
                         const o = document.createElement('option');
                         o.value = v;
                         o.textContent = l;
                         if ((entry?.align ?? 'left') === v) o.selected = true;
-                        alignSel.appendChild(o);
+                        alignSelect.appendChild(o);
                     });
-                    alignSel.disabled = !entry;
-                    rowWrap.appendChild(alignSel);
+                    alignSelect.disabled = !entry;
+                    rowWrap.appendChild(alignSelect);
 
                     chk.addEventListener('change', () => {
                         if (chk.checked) {
-                            entry = { name: col.name, align: alignSel.value };
-                            const w = parseInt(widthInp.value, 10);
+                            entry = { name: column.name, align: alignSelect.value };
+                            const w = parseInt(widthInput.value, 10);
                             if (w >= 1 && w <= 100) entry.width = w;
                             block.columns.push(entry);
                         } else {
-                            block.columns = block.columns.filter(c => c.name !== col.name);
+                            block.columns = block.columns.filter(c => c.name !== column.name);
                             entry = null;
                         }
-                        widthInp.disabled = !entry;
-                        alignSel.disabled = !entry;
+                        widthInput.disabled = !entry;
+                        alignSelect.disabled = !entry;
                     });
-                    widthInp.addEventListener('input', () => {
+                    widthInput.addEventListener('input', () => {
                         if (!entry) return;
-                        const w = parseInt(widthInp.value, 10);
-                        if (widthInp.value === '') {
+                        const w = parseInt(widthInput.value, 10);
+                        if (widthInput.value === '') {
                             delete entry.width;
                         } else if (w >= 1 && w <= 100) {
                             entry.width = w;
                         }
                     });
-                    alignSel.addEventListener('change', () => {
+                    alignSelect.addEventListener('change', () => {
                         if (!entry) return;
-                        entry.align = alignSel.value;
+                        entry.align = alignSelect.value;
                     });
 
-                    colsBox.appendChild(rowWrap);
+                    columnsBox.appendChild(rowWrap);
                 });
-                row.appendChild(colsBox);
+                row.appendChild(columnsBox);
             }
 
             return row;
         }
 
-        function renderParams() {
-            paramsList.innerHTML = '';
-            if (params.length === 0) {
+        function renderParameters() {
+            parametersList.innerHTML = '';
+            if (parameters.length === 0) {
                 const empty = document.createElement('p');
                 empty.style.cssText = '  margin:0;';
                 empty.textContent = 'No parameters. Add one below to let users filter this report before printing.';
-                paramsList.appendChild(empty);
+                parametersList.appendChild(empty);
                 return;
             }
-            params.forEach((param, idx) => paramsList.appendChild(buildParamRow(param, idx)));
+            parameters.forEach((parameter, index) => parametersList.appendChild(buildParameterRow(parameter, index)));
         }
 
-        function buildParamRow(param, idx) {
+        function buildParameterRow(parameter, index) {
             const row = document.createElement('div');
             row.className = 'subtable-block';
 
@@ -504,172 +504,172 @@ export function renderPrintEditor(ctx) {
 
             const titleSpan = document.createElement('strong');
             titleSpan.style.cssText = ' color:var(--text);';
-            titleSpan.textContent = `${idx + 1}. ${param.label || param.key || 'parameter'}`;
+            titleSpan.textContent = `${index + 1}. ${parameter.label || parameter.key || 'parameter'}`;
             rowHdr.appendChild(titleSpan);
 
             const spacer = document.createElement('span');
             spacer.style.flex = '1';
             rowHdr.appendChild(spacer);
 
-            const upBtn = document.createElement('button');
-            upBtn.className = 'item-order-btn';
-            upBtn.textContent = '^';
-            upBtn.disabled = idx === 0;
-            upBtn.addEventListener('click', () => {
-                [params[idx - 1], params[idx]] = [params[idx], params[idx - 1]];
-                renderParams();
+            const upButton = document.createElement('button');
+            upButton.className = 'item-order-btn';
+            upButton.textContent = '^';
+            upButton.disabled = index === 0;
+            upButton.addEventListener('click', () => {
+                [parameters[index - 1], parameters[index]] = [parameters[index], parameters[index - 1]];
+                renderParameters();
             });
-            const downBtn = document.createElement('button');
-            downBtn.className = 'item-order-btn';
-            downBtn.textContent = 'v';
-            downBtn.disabled = idx === params.length - 1;
-            downBtn.addEventListener('click', () => {
-                [params[idx + 1], params[idx]] = [params[idx], params[idx + 1]];
-                renderParams();
+            const downButton = document.createElement('button');
+            downButton.className = 'item-order-btn';
+            downButton.textContent = 'v';
+            downButton.disabled = index === parameters.length - 1;
+            downButton.addEventListener('click', () => {
+                [parameters[index + 1], parameters[index]] = [parameters[index], parameters[index + 1]];
+                renderParameters();
             });
-            const rmBtn = document.createElement('button');
-            rmBtn.className = 'btn btn-danger btn-xs';
-            rmBtn.textContent = '✕';
-            rmBtn.addEventListener('click', () => {
-                params.splice(idx, 1);
-                renderParams();
+            const rmButton = document.createElement('button');
+            rmButton.className = 'btn btn-danger btn-xs';
+            rmButton.textContent = '✕';
+            rmButton.addEventListener('click', () => {
+                parameters.splice(index, 1);
+                renderParameters();
             });
-            rowHdr.appendChild(upBtn);
-            rowHdr.appendChild(downBtn);
-            rowHdr.appendChild(rmBtn);
+            rowHdr.appendChild(upButton);
+            rowHdr.appendChild(downButton);
+            rowHdr.appendChild(rmButton);
             row.appendChild(rowHdr);
 
-            row.appendChild(fg('Key (used as p_<key> in the report URL)', param.key ?? '', v => {
-                param.key = v.trim();
-                titleSpan.textContent = `${idx + 1}. ${param.label || param.key || 'parameter'}`;
+            row.appendChild(fg('Key (used as p_<key> in the report URL)', parameter.key ?? '', v => {
+                parameter.key = v.trim();
+                titleSpan.textContent = `${index + 1}. ${parameter.label || parameter.key || 'parameter'}`;
             }));
-            row.appendChild(fg('Label (shown to the user)', param.label ?? '', v => {
-                param.label = v;
-                titleSpan.textContent = `${idx + 1}. ${param.label || param.key || 'parameter'}`;
+            row.appendChild(fg('Label (shown to the user)', parameter.label ?? '', v => {
+                parameter.label = v;
+                titleSpan.textContent = `${index + 1}. ${parameter.label || parameter.key || 'parameter'}`;
             }));
 
-            const colGrp = document.createElement('div');
-            colGrp.className = 'form-group';
-            const colLbl = document.createElement('label');
-            colLbl.textContent = 'Filter column (in the report view above)';
-            colGrp.appendChild(colLbl);
-            const colSel = document.createElement('select');
-            const colNone = document.createElement('option');
-            colNone.value = '';
-            colNone.textContent = '— select column —';
-            colSel.appendChild(colNone);
-            currentCols.forEach(c => {
+            const columnGroup = document.createElement('div');
+            columnGroup.className = 'form-group';
+            const columnLabel = document.createElement('label');
+            columnLabel.textContent = 'Filter column (in the report view above)';
+            columnGroup.appendChild(columnLabel);
+            const columnSelect = document.createElement('select');
+            const columnNone = document.createElement('option');
+            columnNone.value = '';
+            columnNone.textContent = '— select column —';
+            columnSelect.appendChild(columnNone);
+            currentColumns.forEach(c => {
                 const o = document.createElement('option');
                 o.value = c.name;
                 o.textContent = c.name;
-                if ((param.column ?? '') === c.name) o.selected = true;
-                colSel.appendChild(o);
+                if ((parameter.column ?? '') === c.name) o.selected = true;
+                columnSelect.appendChild(o);
             });
-            colSel.addEventListener('change', () => { param.column = colSel.value; });
-            colGrp.appendChild(colSel);
-            row.appendChild(colGrp);
+            columnSelect.addEventListener('change', () => { parameter.column = columnSelect.value; });
+            columnGroup.appendChild(columnSelect);
+            row.appendChild(columnGroup);
 
-            const reqLabel = document.createElement('label');
-            reqLabel.style.cssText = 'display:flex; align-items:center; gap:6px;  '
+            const requestLabel = document.createElement('label');
+            requestLabel.style.cssText = 'display:flex; align-items:center; gap:6px;  '
                 + 'color:var(--text); cursor:pointer; font-weight:normal; margin-bottom:12px;';
-            const reqChk = document.createElement('input');
-            reqChk.type = 'checkbox';
-            reqChk.checked = !!param.required;
-            reqChk.style.cssText = 'width:14px; height:14px; accent- cursor:pointer;';
-            reqChk.addEventListener('change', () => { param.required = reqChk.checked; });
-            reqLabel.appendChild(reqChk);
-            reqLabel.appendChild(document.createTextNode('Required (hides the "— all —" option; user must pick a value)'));
-            row.appendChild(reqLabel);
+            const requestCheckbox = document.createElement('input');
+            requestCheckbox.type = 'checkbox';
+            requestCheckbox.checked = !!parameter.required;
+            requestCheckbox.style.cssText = 'width:14px; height:14px; accent- cursor:pointer;';
+            requestCheckbox.addEventListener('change', () => { parameter.required = requestCheckbox.checked; });
+            requestLabel.appendChild(requestCheckbox);
+            requestLabel.appendChild(document.createTextNode('Required (hides the "— all —" option; user must pick a value)'));
+            row.appendChild(requestLabel);
 
-            const srcGrp = document.createElement('div');
-            srcGrp.className = 'form-group';
-            const srcLbl = document.createElement('label');
-            srcLbl.textContent = 'Lookup view for dropdown options (optional)';
-            srcGrp.appendChild(srcLbl);
-            const srcSel = document.createElement('select');
-            const srcNone = document.createElement('option');
-            srcNone.value = '';
-            srcNone.textContent = '— use filter column values —';
-            srcSel.appendChild(srcNone);
+            const sourceGroup = document.createElement('div');
+            sourceGroup.className = 'form-group';
+            const sourceLabel = document.createElement('label');
+            sourceLabel.textContent = 'Lookup view for dropdown options (optional)';
+            sourceGroup.appendChild(sourceLabel);
+            const sourceSelect = document.createElement('select');
+            const sourceNone = document.createElement('option');
+            sourceNone.value = '';
+            sourceNone.textContent = '— use filter column values —';
+            sourceSelect.appendChild(sourceNone);
             dbViews.forEach(v => {
                 const o = document.createElement('option');
                 o.value = v;
                 o.textContent = v;
-                if ((param.source_view ?? '') === v) o.selected = true;
-                srcSel.appendChild(o);
+                if ((parameter.source_view ?? '') === v) o.selected = true;
+                sourceSelect.appendChild(o);
             });
-            srcGrp.appendChild(srcSel);
-            row.appendChild(srcGrp);
+            sourceGroup.appendChild(sourceSelect);
+            row.appendChild(sourceGroup);
 
-            const valGrp = document.createElement('div');
-            valGrp.className = 'form-group';
-            const valLbl = document.createElement('label');
-            valLbl.textContent = 'Value column (filtered on)';
-            valGrp.appendChild(valLbl);
-            const valSel = document.createElement('select');
-            valGrp.appendChild(valSel);
-            row.appendChild(valGrp);
+            const valueGroup = document.createElement('div');
+            valueGroup.className = 'form-group';
+            const valueLabel = document.createElement('label');
+            valueLabel.textContent = 'Value column (filtered on)';
+            valueGroup.appendChild(valueLabel);
+            const valueSelect = document.createElement('select');
+            valueGroup.appendChild(valueSelect);
+            row.appendChild(valueGroup);
 
-            const labGrp = document.createElement('div');
-            labGrp.className = 'form-group';
-            const labLbl = document.createElement('label');
-            labLbl.textContent = 'Label column (shown in the dropdown)';
-            labGrp.appendChild(labLbl);
-            const labSel = document.createElement('select');
-            labGrp.appendChild(labSel);
-            row.appendChild(labGrp);
+            const labGroup = document.createElement('div');
+            labGroup.className = 'form-group';
+            const labLabel = document.createElement('label');
+            labLabel.textContent = 'Label column (shown in the dropdown)';
+            labGroup.appendChild(labLabel);
+            const labSelect = document.createElement('select');
+            labGroup.appendChild(labSelect);
+            row.appendChild(labGroup);
 
             async function refreshSourceColumns() {
-                valSel.innerHTML = '';
-                labSel.innerHTML = '';
-                if (!srcSel.value) {
-                    valGrp.style.display = 'none';
-                    labGrp.style.display = 'none';
+                valueSelect.innerHTML = '';
+                labSelect.innerHTML = '';
+                if (!sourceSelect.value) {
+                    valueGroup.style.display = 'none';
+                    labGroup.style.display = 'none';
                     return;
                 }
-                valGrp.style.display = '';
-                labGrp.style.display = '';
-                const cols = await fetchColumns(srcSel.value);
-                cols.forEach(c => {
+                valueGroup.style.display = '';
+                labGroup.style.display = '';
+                const columns = await fetchColumns(sourceSelect.value);
+                columns.forEach(c => {
                     const ov = document.createElement('option');
                     ov.value = c.name;
                     ov.textContent = c.name;
-                    if ((param.value_column ?? '') === c.name) ov.selected = true;
-                    valSel.appendChild(ov);
+                    if ((parameter.value_column ?? '') === c.name) ov.selected = true;
+                    valueSelect.appendChild(ov);
 
                     const ol = document.createElement('option');
                     ol.value = c.name;
                     ol.textContent = c.name;
-                    if ((param.label_column ?? '') === c.name) ol.selected = true;
-                    labSel.appendChild(ol);
+                    if ((parameter.label_column ?? '') === c.name) ol.selected = true;
+                    labSelect.appendChild(ol);
                 });
             }
 
-            srcSel.addEventListener('change', () => {
-                param.source_view = srcSel.value;
-                if (!srcSel.value) {
-                    delete param.value_column;
-                    delete param.label_column;
+            sourceSelect.addEventListener('change', () => {
+                parameter.source_view = sourceSelect.value;
+                if (!sourceSelect.value) {
+                    delete parameter.value_column;
+                    delete parameter.label_column;
                 }
                 refreshSourceColumns();
             });
-            valSel.addEventListener('change', () => { param.value_column = valSel.value; });
-            labSel.addEventListener('change', () => { param.label_column = labSel.value; });
+            valueSelect.addEventListener('change', () => { parameter.value_column = valueSelect.value; });
+            labSelect.addEventListener('change', () => { parameter.label_column = labSelect.value; });
 
             refreshSourceColumns();
 
             return row;
         }
 
-        const addParamBtn = document.createElement('button');
-        addParamBtn.className = 'btn btn-success btn-sm';
-        addParamBtn.style.marginBottom = '20px';
-        addParamBtn.textContent = '+ Add parameter';
-        addParamBtn.addEventListener('click', () => {
-            params.push({ key: `param${params.length + 1}`, label: '', column: '', required: false });
-            renderParams();
+        const addParameterButton = document.createElement('button');
+        addParameterButton.className = 'btn btn-success btn-sm';
+        addParameterButton.style.marginBottom = '20px';
+        addParameterButton.textContent = '+ Add parameter';
+        addParameterButton.addEventListener('click', () => {
+            parameters.push({ key: `param${parameters.length + 1}`, label: '', column: '', required: false });
+            renderParameters();
         });
-        paramsList.after(addParamBtn);
+        parametersList.after(addParameterButton);
 
         const addRow = document.createElement('div');
         addRow.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap;';
@@ -693,19 +693,19 @@ export function renderPrintEditor(ctx) {
     }
 
     function renderList() {
-        listEl.innerHTML = '';
+        listElement.innerHTML = '';
         const names = Object.keys(prints);
         if (names.length === 0) {
             const empty = document.createElement('p');
             empty.style.cssText = ' text-align:center; padding:32px;';
             empty.textContent = 'No printouts yet. Click "+ Add printout" to create the first template.';
-            listEl.appendChild(empty);
+            listElement.appendChild(empty);
             return;
         }
-        names.forEach(pName => listEl.appendChild(buildPrintCard(pName, prints[pName] ?? {})));
+        names.forEach(pName => listElement.appendChild(buildPrintCard(pName, prints[pName] ?? {})));
     }
 
-    addBtn.addEventListener('click', () => {
+    addButton.addEventListener('click', () => {
         const raw = prompt('Internal key of the new printout (letters, digits, _ or -):', '');
         if (raw === null) return;
         const key = raw.trim();
@@ -733,14 +733,14 @@ export function renderPrintEditor(ctx) {
 
     (async () => {
         try {
-            const res  = await apiFetch('../api/print.php?action=config');
-            const data = await res.json();
+            const result  = await apiFetch('../api/print.php?action=config');
+            const data = await result.json();
             if (data.status !== 'ok') {
                 setStatus('Failed to load configuration: ' + (data.error ?? 'unknown'), 'error');
                 return;
             }
             prints     = data.config?.prints ?? {};
-            cfgVersion = data.version ?? 0;
+            configVersion = data.version ?? 0;
 
             if (!prints || typeof prints !== 'object' || Array.isArray(prints)) {
                 prints = {};

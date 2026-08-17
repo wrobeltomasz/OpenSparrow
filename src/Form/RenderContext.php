@@ -19,23 +19,23 @@ final readonly class RenderContext
     ) {
     }
 
-    public function fkOptionsFor(string $colName): array
+    public function fkOptionsFor(string $columnName): array
     {
-        return $this->fkOptions[$colName] ?? [];
+        return $this->fkOptions[$columnName] ?? [];
     }
 
-    public function isPrefilled(string $colName): bool
+    public function isPrefilled(string $columnName): bool
     {
-        return isset($this->prefilled[$colName]);
+        return isset($this->prefilled[$columnName]);
     }
 
-    public function prefilledValue(string $colName): string
+    public function prefilledValue(string $columnName): string
     {
-        return $this->prefilled[$colName] ?? '';
+        return $this->prefilled[$columnName] ?? '';
     }
 
-    public function isLocked(string $colName): bool
+    public function isLocked(string $columnName): bool
     {
-        return $this->readOnly || ($this->locked[$colName] ?? false);
+        return $this->readOnly || ($this->locked[$columnName] ?? false);
     }
 }

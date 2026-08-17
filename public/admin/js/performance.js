@@ -15,18 +15,18 @@ function severityBadge(sev) {
     return b;
 }
 
-function copyBtn(getText, label = 'Copy SQL', small = true) {
-    const btn = document.createElement('button');
-    btn.className = small ? 'btn btn-primary btn-xs' : 'btn btn-primary btn-sm';
-    btn.textContent = label;
-    btn.addEventListener('click', () => {
+function copyButton(getText, label = 'Copy SQL', small = true) {
+    const button = document.createElement('button');
+    button.className = small ? 'btn btn-primary btn-xs' : 'btn btn-primary btn-sm';
+    button.textContent = label;
+    button.addEventListener('click', () => {
         navigator.clipboard.writeText(getText()).then(() => {
-            const orig = btn.textContent;
-            btn.textContent = 'Copied!';
-            setTimeout(() => { btn.textContent = orig; }, 2000);
+            const original = button.textContent;
+            button.textContent = 'Copied!';
+            setTimeout(() => { button.textContent = original; }, 2000);
         });
     });
-    return btn;
+    return button;
 }
 
 function makeSection(title, description) {
@@ -40,18 +40,18 @@ function makeSection(title, description) {
     const h3 = document.createElement('h3');
     h3.textContent = title;
     h3.style.cssText = 'margin:0 0 4px; ';
-    const desc = document.createElement('p');
-    desc.textContent = description;
-    desc.style.cssText = 'margin:0;  ';
+    const description = document.createElement('p');
+    description.textContent = description;
+    description.style.cssText = 'margin:0;  ';
     hdrLeft.appendChild(h3);
-    hdrLeft.appendChild(desc);
+    hdrLeft.appendChild(description);
 
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-primary btn-sm';
-    btn.textContent = 'Scan';
+    const button = document.createElement('button');
+    button.className = 'btn btn-primary btn-sm';
+    button.textContent = 'Scan';
 
     hdr.appendChild(hdrLeft);
-    hdr.appendChild(btn);
+    hdr.appendChild(button);
     card.appendChild(hdr);
 
     const body = document.createElement('div');
@@ -63,7 +63,7 @@ function makeSection(title, description) {
     body.appendChild(placeholder);
     card.appendChild(body);
 
-    return { card, btn, body };
+    return { card, btn: button, body };
 }
 
 function setBodyLoading(body) {
@@ -74,19 +74,19 @@ function setBodyLoading(body) {
     body.appendChild(p);
 }
 
-function setBodyError(body, msg) {
+function setBodyError(body, message) {
     body.replaceChildren();
     const p = document.createElement('p');
     p.style.cssText = 'color:var(--error);  margin:0;';
-    p.textContent = msg;
+    p.textContent = message;
     body.appendChild(p);
 }
 
-function setBodyEmpty(body, msg) {
+function setBodyEmpty(body, message) {
     body.replaceChildren();
     const p = document.createElement('p');
     p.style.cssText = 'color:var(--ok); font-weight:600;  margin:0;';
-    p.textContent = '✓ ' + msg;
+    p.textContent = '✓ ' + message;
     body.appendChild(p);
 }
 
@@ -106,7 +106,7 @@ function renderIndexAdvisor(body, data) {
     sum.style.cssText = '';
     sum.textContent = `${suggestions.length} suggestion${suggestions.length !== 1 ? 's' : ''} · ${high} high priority`;
     row.appendChild(sum);
-    row.appendChild(copyBtn(() => suggestions.map(s => s.sql).join('\n'), 'Copy All SQL', false));
+    row.appendChild(copyButton(() => suggestions.map(s => s.sql).join('\n'), 'Copy All SQL', false));
     body.appendChild(row);
 
     const byTable = new Map();
@@ -125,7 +125,7 @@ function renderIndexAdvisor(body, data) {
         const ghText = document.createElement('span');
         ghText.textContent = tableKey;
         gh.appendChild(ghText);
-        gh.appendChild(copyBtn(() => rows.map(r => r.sql).join('\n'), 'Copy table SQL'));
+        gh.appendChild(copyButton(() => rows.map(r => r.sql).join('\n'), 'Copy table SQL'));
         grp.appendChild(gh);
 
         const t = mkTable();
@@ -143,7 +143,7 @@ function renderIndexAdvisor(body, data) {
             code.textContent = s.sql;
             codeTd.appendChild(code);
             tr.appendChild(codeTd);
-            tr.appendChild(tdEl(copyBtn(() => s.sql)));
+            tr.appendChild(tdEl(copyButton(() => s.sql)));
         });
         grp.appendChild(t);
         body.appendChild(grp);
@@ -164,7 +164,7 @@ function renderUnusedIndexes(body, data) {
     warn.textContent = `⚠ ${rows.length} unused index${rows.length !== 1 ? 'es' : ''} found. Unused indexes waste storage and slow down writes. Verify before dropping.`;
     body.appendChild(warn);
 
-    body.appendChild(copyBtn(() => rows.map(r => r.drop_sql).join('\n'), 'Copy All DROP SQL', false));
+    body.appendChild(copyButton(() => rows.map(r => r.drop_sql).join('\n'), 'Copy All DROP SQL', false));
 
     const t = mkTable();
     t.style.marginTop = '12px';
@@ -183,7 +183,7 @@ function renderUnusedIndexes(body, data) {
         code.textContent = r.drop_sql;
         codeTd.appendChild(code);
         tr.appendChild(codeTd);
-        tr.appendChild(tdEl(copyBtn(() => r.drop_sql)));
+        tr.appendChild(tdEl(copyButton(() => r.drop_sql)));
     });
     t.appendChild(tbody);
     body.appendChild(t);
@@ -234,7 +234,7 @@ function renderSlowQueries(body, data) {
     body.appendChild(t);
 }
 
-function renderTableStats(body, data) {
+function renderTableStatistics(body, data) {
     body.replaceChildren();
     const rows = data.rows || [];
 
@@ -251,21 +251,21 @@ function renderTableStats(body, data) {
         const deadPct = parseFloat(r.dead_pct);
         const bloatColor = deadPct > 20 ? 'var(--error)' : deadPct > 10 ? 'var(--muted)' : 'inherit';
         const seqScan = parseInt(r.seq_scan) || 0;
-        const idxScan = parseInt(r.idx_scan) || 0;
-        const scanColor = seqScan > 100 && seqScan > idxScan * 2 ? 'var(--muted)' : 'inherit';
+        const indexScan = parseInt(r.idx_scan) || 0;
+        const scanColor = seqScan > 100 && seqScan > indexScan * 2 ? 'var(--muted)' : 'inherit';
 
         tr.appendChild(td(r.tablename));
         tr.appendChild(td(Number(r.estimated_rows).toLocaleString()));
         tr.appendChild(td(Number(r.n_dead_tup).toLocaleString()));
         tr.appendChild(td(r.dead_pct + '%', `font-weight:600; color:${bloatColor};`));
         tr.appendChild(td(seqScan.toLocaleString(), `color:${scanColor};`));
-        tr.appendChild(td(idxScan.toLocaleString()));
+        tr.appendChild(td(indexScan.toLocaleString()));
         tr.appendChild(td(r.total_size));
         tr.appendChild(td(r.last_autovacuum || 'never'));
         tr.appendChild(td(r.last_autoanalyze || 'never'));
 
         const vacuumSql = `VACUUM ANALYZE "${r.schemaname}"."${r.tablename}";`;
-        tr.appendChild(tdEl(deadPct > 10 ? copyBtn(() => vacuumSql, 'VACUUM') : null));
+        tr.appendChild(tdEl(deadPct > 10 ? copyButton(() => vacuumSql, 'VACUUM') : null));
     });
     t.appendChild(tbody);
     body.appendChild(t);
@@ -363,41 +363,41 @@ function renderSchemaWarnings(body, data) {
     body.appendChild(t);
 }
 
-async function runSection(apiAction, renderFn, btn, body) {
-    btn.disabled = true;
-    btn.textContent = 'Scanning…';
+async function runSection(apiAction, renderFn, button, body) {
+    button.disabled = true;
+    button.textContent = 'Scanning…';
     setBodyLoading(body);
     try {
-        const res = await apiFetch(`api.php?action=${apiAction}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const result = await apiFetch(`api.php?action=${apiAction}`);
+        if (!result.ok) throw new Error(`HTTP ${result.status}`);
+        const data = await result.json();
         if (data.status === 'error') throw new Error(data.error || 'Server error');
         renderFn(body, data);
-    } catch (err) {
-        setBodyError(body, 'Error: ' + err.message);
+    } catch (error) {
+        setBodyError(body, 'Error: ' + error.message);
     } finally {
-        btn.disabled = false;
-        btn.textContent = 'Scan';
+        button.disabled = false;
+        button.textContent = 'Scan';
     }
 }
 
-export function renderPerformancePage(ctx) {
-    const { workspaceEl } = ctx;
-    workspaceEl.replaceChildren();
+export function renderPerformancePage(context) {
+    const { workspaceEl: workspaceElement } = context;
+    workspaceElement.replaceChildren();
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
-    workspaceEl.appendChild(wrap);
+    workspaceElement.appendChild(wrap);
 
     wrap.appendChild(createPageHeader('Performance', 'Scan for missing/unused indexes, slow queries, table bloat, database health, and schema configuration warnings.'));
 
     const topRow = document.createElement('div');
     topRow.style.cssText = 'display:flex; align-items:center; gap:14px; margin-bottom:20px;';
 
-    const btnAll = document.createElement('button');
-    btnAll.className = 'btn btn-primary';
-    btnAll.textContent = 'Run All';
-    topRow.appendChild(btnAll);
+    const buttonAll = document.createElement('button');
+    buttonAll.className = 'btn btn-primary';
+    buttonAll.textContent = 'Run All';
+    topRow.appendChild(buttonAll);
     wrap.appendChild(topRow);
 
     const sections = [
@@ -431,7 +431,7 @@ export function renderPerformancePage(ctx) {
             title:  '4. Table Statistics & Bloat',
             desc:   'Dead row ratio, seq vs index scans, last vacuum/analyze per table.',
             action: 'performance_table_stats',
-            render: renderTableStats,
+            render: renderTableStatistics,
         },
         {
             label:  'DB Health',
@@ -454,18 +454,18 @@ export function renderPerformancePage(ctx) {
     const panels = buildInnerTabs(wrap, sections);
 
     const built = sections.map((s, i) => {
-        const { card, btn, body } = makeSection(s.title, s.desc);
+        const { card, btn: button, body } = makeSection(s.title, s.desc);
         card.id = `perf-section-${i}`;
-        btn.addEventListener('click', () => runSection(s.action, s.render, btn, body));
+        button.addEventListener('click', () => runSection(s.action, s.render, button, body));
         panels[i].appendChild(card);
-        return { btn, body, ...s };
+        return { btn: button, body, ...s };
     });
 
-    btnAll.addEventListener('click', async () => {
-        btnAll.disabled = true;
-        btnAll.textContent = 'Running…';
+    buttonAll.addEventListener('click', async () => {
+        buttonAll.disabled = true;
+        buttonAll.textContent = 'Running…';
         await Promise.all(built.map(s => runSection(s.action, s.render, s.btn, s.body)));
-        btnAll.disabled = false;
-        btnAll.textContent = 'Run All';
+        buttonAll.disabled = false;
+        buttonAll.textContent = 'Run All';
     });
 }

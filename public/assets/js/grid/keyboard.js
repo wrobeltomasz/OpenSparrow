@@ -23,11 +23,11 @@ function matchShortcut(e, sc) {
 }
 
 function inEditContext() {
-    const el = document.activeElement;
-    if (!el) return false;
-    const tag = el.tagName;
+    const element = document.activeElement;
+    if (!element) return false;
+    const tag = element.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-    if (el.closest('[role="dialog"]') !== null && tag !== 'TD') return true;
+    if (element.closest('[role="dialog"]') !== null && tag !== 'TD') return true;
     return false;
 }
 
@@ -76,8 +76,8 @@ export const defaultShortcuts = {
 };
 
 export class GridKeyboard {
-    constructor(containerEl, customShortcuts = {}) {
-        this._container = containerEl;
+    constructor(containerElement, customShortcuts = {}) {
+        this._container = containerElement;
         this._sc        = this._mergeShortcuts(customShortcuts);
 
         this._grid      = [];
@@ -102,11 +102,11 @@ export class GridKeyboard {
         document.addEventListener('keydown', this._onKeyDown, true);
         document.addEventListener('keyup',   this._onKeyUp,   true);
         document.addEventListener('tableLoaded', this._onTableLoaded);
-        containerEl.addEventListener('click',   this._onClick);
-        containerEl.addEventListener('focusin', this._onFocusin);
+        containerElement.addEventListener('click',   this._onClick);
+        containerElement.addEventListener('focusin', this._onFocusin);
 
-        const helpBtn = document.getElementById('kgHelpBtn');
-        if (helpBtn) helpBtn.addEventListener('click', () => this._showHelp());
+        const helpButton = document.getElementById('kgHelpBtn');
+        if (helpButton) helpButton.addEventListener('click', () => this._showHelp());
 
         this._buildLiveRegion();
         this._refresh();
@@ -129,23 +129,23 @@ export class GridKeyboard {
     }
 
     _buildLiveRegion() {
-        let el = document.getElementById('kg-live-region');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'kg-live-region';
-            el.className = 'kg-live-region';
-            el.setAttribute('role', 'status');
-            el.setAttribute('aria-live', 'polite');
-            el.setAttribute('aria-atomic', 'true');
-            document.body.appendChild(el);
+        let element = document.getElementById('kg-live-region');
+        if (!element) {
+            el: element = document.createElement('div');
+            element.id = 'kg-live-region';
+            element.className = 'kg-live-region';
+            element.setAttribute('role', 'status');
+            element.setAttribute('aria-live', 'polite');
+            element.setAttribute('aria-atomic', 'true');
+            document.body.appendChild(element);
         }
-        this._liveRegion = el;
+        this._liveRegion = element;
     }
 
-    _announce(msg) {
+    _announce(message) {
         if (!this._liveRegion) return;
         this._liveRegion.textContent = '';
-        requestAnimationFrame(() => { this._liveRegion.textContent = msg; });
+        requestAnimationFrame(() => { this._liveRegion.textContent = message; });
     }
 
     _refresh() {
@@ -197,13 +197,13 @@ export class GridKeyboard {
         const row = this._grid[r];
         if (!row || c < 0 || c >= row.length) return;
 
-        const prev = this._focusRow >= 0 ? this._grid[this._focusRow]?.[this._focusCol] : null;
-        if (prev) {
-            prev.classList.remove('kg-focused');
-            prev.tabIndex = -1;
-            if (this._navModeEditable.has(prev)) {
-                prev.contentEditable = this._navModeEditable.get(prev);
-                this._navModeEditable.delete(prev);
+        const previous = this._focusRow >= 0 ? this._grid[this._focusRow]?.[this._focusCol] : null;
+        if (previous) {
+            previous.classList.remove('kg-focused');
+            previous.tabIndex = -1;
+            if (this._navModeEditable.has(previous)) {
+                previous.contentEditable = this._navModeEditable.get(previous);
+                this._navModeEditable.delete(previous);
             }
         }
 
@@ -221,9 +221,9 @@ export class GridKeyboard {
         cell.focus({ preventScroll: false });
 
         if (announce) {
-            const col  = cell.dataset.column || '';
+            const column  = cell.dataset.column || '';
             const text = cell.textContent.trim();
-            this._announce(col ? `${col}: ${text}` : text);
+            this._announce(column ? `${column}: ${text}` : text);
         }
     }
 
@@ -236,13 +236,13 @@ export class GridKeyboard {
             const c = this._grid[r].indexOf(td);
             if (c >= 0) {
                 if (this._focusRow !== r || this._focusCol !== c) {
-                    const prev = this._focusRow >= 0 ? this._grid[this._focusRow]?.[this._focusCol] : null;
-                    if (prev) {
-                        prev.classList.remove('kg-focused');
-                        prev.tabIndex = -1;
-                        if (this._navModeEditable.has(prev)) {
-                            prev.contentEditable = this._navModeEditable.get(prev);
-                            this._navModeEditable.delete(prev);
+                    const previous = this._focusRow >= 0 ? this._grid[this._focusRow]?.[this._focusCol] : null;
+                    if (previous) {
+                        previous.classList.remove('kg-focused');
+                        previous.tabIndex = -1;
+                        if (this._navModeEditable.has(previous)) {
+                            previous.contentEditable = this._navModeEditable.get(previous);
+                            this._navModeEditable.delete(previous);
                         }
                     }
                     this._focusRow = r;
@@ -406,8 +406,8 @@ export class GridKeyboard {
     }
 
     _pasteClipboard() {
-        const el = document.activeElement;
-        if (el?.isContentEditable) {
+        const element = document.activeElement;
+        if (element?.isContentEditable) {
             navigator.clipboard?.readText().then(t => document.execCommand('insertText', false, t)).catch(() => {});
         }
     }
@@ -417,11 +417,11 @@ export class GridKeyboard {
     }
 
     _openSearch() {
-        const searchEl = document.getElementById('globalSearch');
-        if (!searchEl) return;
-        searchEl.focus();
-        searchEl.select?.();
-        const term = searchEl.value.trim().toLowerCase();
+        const searchElement = document.getElementById('globalSearch');
+        if (!searchElement) return;
+        searchElement.focus();
+        searchElement.select?.();
+        const term = searchElement.value.trim().toLowerCase();
         if (term) this._highlightSearchMatches(term);
     }
 
@@ -452,16 +452,16 @@ export class GridKeyboard {
         document.body.appendChild(backdrop);
         this._backdropEl = backdrop;
 
-        const helpEl = document.createElement('div');
-        helpEl.className = 'kg-help-overlay';
-        helpEl.setAttribute('role', 'dialog');
-        helpEl.setAttribute('aria-modal', 'true');
-        helpEl.setAttribute('aria-label', I18n.t('shortcuts.help_title'));
+        const helpElement = document.createElement('div');
+        helpElement.className = 'kg-help-overlay';
+        helpElement.setAttribute('role', 'dialog');
+        helpElement.setAttribute('aria-modal', 'true');
+        helpElement.setAttribute('aria-label', I18n.t('shortcuts.help_title'));
 
         const title = document.createElement('h3');
         title.className = 'kg-help-title';
         title.textContent = I18n.t('shortcuts.help_title');
-        helpEl.appendChild(title);
+        helpElement.appendChild(title);
 
         const rows = [
             ['↑ ↓ ← →',                I18n.t('shortcuts.navigate')],
@@ -478,31 +478,31 @@ export class GridKeyboard {
             [`${mod} (2s)`,              I18n.t('shortcuts.help')],
         ];
 
-        const tbl = document.createElement('table');
-        tbl.className = 'kg-help-table';
-        for (const [key, desc] of rows) {
+        const table = document.createElement('table');
+        table.className = 'kg-help-table';
+        for (const [key, description] of rows) {
             const tr  = document.createElement('tr');
             const tdK = document.createElement('td');
             tdK.className = 'kg-help-key';
             tdK.textContent = key;
             const tdD = document.createElement('td');
-            tdD.textContent = desc;
+            tdD.textContent = description;
             tr.appendChild(tdK);
             tr.appendChild(tdD);
-            tbl.appendChild(tr);
+            table.appendChild(tr);
         }
-        helpEl.appendChild(tbl);
+        helpElement.appendChild(table);
 
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'kg-help-close';
-        closeBtn.textContent = '×';
-        closeBtn.setAttribute('aria-label', I18n.t('shortcuts.close_help'));
-        closeBtn.addEventListener('click', () => this._hideHelp());
-        helpEl.appendChild(closeBtn);
+        const closeButton = document.createElement('button');
+        closeButton.className = 'kg-help-close';
+        closeButton.textContent = '×';
+        closeButton.setAttribute('aria-label', I18n.t('shortcuts.close_help'));
+        closeButton.addEventListener('click', () => this._hideHelp());
+        helpElement.appendChild(closeButton);
 
-        document.body.appendChild(helpEl);
-        this._helpEl = helpEl;
-        closeBtn.focus();
+        document.body.appendChild(helpElement);
+        this._helpEl = helpElement;
+        closeButton.focus();
     }
 
     _hideHelp() {
@@ -614,7 +614,7 @@ export class GridKeyboard {
     }
 
     destroy() {
-        for (const [cell, val] of this._navModeEditable) cell.contentEditable = val;
+        for (const [cell, value] of this._navModeEditable) cell.contentEditable = value;
         document.removeEventListener('keydown', this._onKeyDown, true);
         document.removeEventListener('keyup',   this._onKeyUp,   true);
         document.removeEventListener('tableLoaded', this._onTableLoaded);

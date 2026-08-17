@@ -23,9 +23,9 @@ final class TimestampField implements FieldTypeInterface
     }
 
     #[\Override]
-    public function bind(string $colName, array $postData): BoundValue
+    public function bind(string $columnName, array $postData): BoundValue
     {
-        $value = $postData[$colName] ?? null;
+        $value = $postData[$columnName] ?? null;
         if ($value === '' || $value === null) {
             return new BoundValue(null);
         }

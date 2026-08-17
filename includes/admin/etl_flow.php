@@ -90,15 +90,15 @@ if ($action === 'etl_flow_save') {
             }
         }
 
-        $prev = $existingFlowsById[$id] ?? [];
+        $previous = $existingFlowsById[$id] ?? [];
         $flows[] = [
             'id'              => $id,
             'name'            => $name,
             'enabled'         => (bool)($flow['enabled'] ?? true),
             'steps'           => $steps,
 
-            'last_run_status' => $prev['last_run_status'] ?? null,
-            'last_run_at'     => $prev['last_run_at'] ?? null,
+            'last_run_status' => $previous['last_run_status'] ?? null,
+            'last_run_at'     => $previous['last_run_at'] ?? null,
         ];
     }
 
@@ -129,13 +129,13 @@ if ($action === 'etl_flow_log') {
                        started_at, finished_at,
                        EXTRACT(EPOCH FROM (COALESCE(finished_at, now()) - started_at)) AS duration_sec
                 FROM {$etlFlowRunLogTable}";
-        $params = [];
+        $parameters = [];
         if ($flowId !== '') {
             $sql      .= ' WHERE flow_id = $1';
-            $params[] = $flowId;
+            $parameters[] = $flowId;
         }
         $sql .= ' ORDER BY started_at DESC LIMIT 50';
-        $result = @pg_query_params($conn, $sql, $params);
+        $result = @pg_query_params($conn, $sql, $parameters);
         if (!$result) {
             admin_db_fail($conn, 'etl_flow_log');
         }

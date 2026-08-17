@@ -92,11 +92,16 @@ final class DataCleanupController
             $character = mb_substr($lower, $i, 1, 'UTF-8');
             if (isset($map[$character])) {
                 $lowerVariants = preg_split('//u', $map[$character], -1, PREG_SPLIT_NO_EMPTY);
-                $upperVariants = array_map(fn($char) => mb_strtoupper($char, 'UTF-8'), $lowerVariants);
+                $upperVariants = array_map(
+                    fn($lowerVariant) => mb_strtoupper($lowerVariant, 'UTF-8'),
+                    $lowerVariants
+                );
                 $all = array_unique(array_merge($lowerVariants, $upperVariants));
 
-                $escaped = implode('', array_map(function ($char) {
-                    return in_array($char, [']', '\\', '^', '-'], true) ? '\\' . $char : $char;
+                $escaped = implode('', array_map(function ($variantCharacter) {
+                    return in_array($variantCharacter, [']', '\\', '^', '-'], true)
+                        ? '\\' . $variantCharacter
+                        : $variantCharacter;
                 }, $all));
                 $result .= '[' . $escaped . ']';
             } else {
@@ -109,26 +114,26 @@ final class DataCleanupController
     private function validateInput(array $body): array
     {
         $tableName = $body['table']  ?? '';
-        $colName   = $body['column'] ?? '';
+        $columnName   = $body['column'] ?? '';
 
         try {
-            $tableCfg = safe_table($this->schema, $tableName);
+            $tableConfig = safe_table($this->schema, $tableName);
         } catch (RuntimeException $exception) {
             throw new BadRequestException('Unknown table');
         }
 
         require_table_access($tableName);
 
-        $columns = $tableCfg['columns'] ?? [];
-        if (!isset($columns[$colName]) || ($columns[$colName]['type'] ?? '') === 'virtual') {
+        $columns = $tableConfig['columns'] ?? [];
+        if (!isset($columns[$columnName]) || ($columns[$columnName]['type'] ?? '') === 'virtual') {
             throw new BadRequestException('Invalid column');
         }
 
-        $schemaName = $tableCfg['schema'] ?? 'public';
+        $schemaName = $tableConfig['schema'] ?? 'public';
         $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
-        $colSql     = pg_ident($colName);
+        $columnSql     = pg_ident($columnName);
 
-        return [$tableCfg, $schemaName, $tableName, $colSql, $qualifiedTable];
+        return [$tableConfig, $schemaName, $tableName, $columnSql, $qualifiedTable];
     }
 
     private function buildExpressions(
@@ -166,7 +171,7 @@ final class DataCleanupController
             throw ResponseException::encoded(['count' => 0, 'rows' => []]);
         }
 
-        [$tableCfg, , $tableName, $colSql, $qualifiedTable] = $this->validateInput($body);
+        [$tableConfig, , $tableName, $columnSql, $qualifiedTable] = $this->validateInput($body);
 
         [$pattern, $flags, $whereOp, $safeReplace] = $this->buildExpressions(
             $find,
@@ -176,10 +181,10 @@ final class DataCleanupController
             $ignoreAccents
         );
 
-        $whereSql   = "{$colSql} {$whereOp} \$1 AND {$colSql} IS NOT NULL";
-        $replaceExp = "regexp_replace({$colSql}, \$1, \$2, '{$flags}')";
+        $whereSql   = "{$columnSql} {$whereOp} \$1 AND {$columnSql} IS NOT NULL";
+        $replaceExp = "regexp_replace({$columnSql}, \$1, \$2, '{$flags}')";
 
-        if (!empty($tableCfg['owner_restricted'])) {
+        if (!empty($tableConfig['owner_restricted'])) {
             $userId      = $this->session->userId();
             $ownerCondition = owner_restriction_sql('_t.id', 2, 3);
             $ownerRow = owner_restriction_sql('_t.id', 3, 4);
@@ -197,7 +202,7 @@ final class DataCleanupController
 
             $rowResult = @pg_query_params(
                 $this->conn,
-                "SELECT _t.id, {$colSql} AS before_val, {$replaceExp} AS after_val
+                "SELECT _t.id, {$columnSql} AS before_val, {$replaceExp} AS after_val
              FROM {$qualifiedTable} AS _t
              WHERE {$whereSql}{$ownerRow}
              LIMIT 20",
@@ -217,7 +222,7 @@ final class DataCleanupController
 
             $rowResult = @pg_query_params(
                 $this->conn,
-                "SELECT id, {$colSql} AS before_val, {$replaceExp} AS after_val
+                "SELECT id, {$columnSql} AS before_val, {$replaceExp} AS after_val
              FROM {$qualifiedTable}
              WHERE {$whereSql}
              LIMIT 20",
@@ -252,7 +257,7 @@ final class DataCleanupController
             throw new BadRequestException('Find string required');
         }
 
-        [$tableCfg, , $tableName, $colSql, $qualifiedTable] = $this->validateInput($body);
+        [$tableConfig, , $tableName, $columnSql, $qualifiedTable] = $this->validateInput($body);
 
         [$pattern, $flags, $whereOp, $safeReplace] = $this->buildExpressions(
             $find,
@@ -262,23 +267,23 @@ final class DataCleanupController
             $ignoreAccents
         );
 
-        $whereSql   = "{$colSql} {$whereOp} \$1 AND {$colSql} IS NOT NULL";
-        $replaceExp = "regexp_replace({$colSql}, \$1, \$2, '{$flags}')";
+        $whereSql   = "{$columnSql} {$whereOp} \$1 AND {$columnSql} IS NOT NULL";
+        $replaceExp = "regexp_replace({$columnSql}, \$1, \$2, '{$flags}')";
 
         @pg_query($this->conn, 'BEGIN');
 
-        if (!empty($tableCfg['owner_restricted'])) {
+        if (!empty($tableConfig['owner_restricted'])) {
             $userId      = $this->session->userId();
             $ownerSql = owner_restriction_sql('_t.id', 3, 4);
             $queryResult = @pg_query_params(
                 $this->conn,
-                "UPDATE {$qualifiedTable} AS _t SET {$colSql} = {$replaceExp} WHERE {$whereSql}{$ownerSql}",
+                "UPDATE {$qualifiedTable} AS _t SET {$columnSql} = {$replaceExp} WHERE {$whereSql}{$ownerSql}",
                 [$pattern, $safeReplace, $tableName, $userId]
             );
         } else {
             $queryResult = @pg_query_params(
                 $this->conn,
-                "UPDATE {$qualifiedTable} SET {$colSql} = {$replaceExp} WHERE {$whereSql}",
+                "UPDATE {$qualifiedTable} SET {$columnSql} = {$replaceExp} WHERE {$whereSql}",
                 [$pattern, $safeReplace]
             );
         }

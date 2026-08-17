@@ -155,15 +155,15 @@ if ($action === 'users_add') {
         $newSalt = bin2hex(random_bytes(32));
         $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
         $columns    = 'username, password_hash, salt, password_algo, password_params, is_active, role';
-        $vals    = '$1, $2, $3, $4, $5, true, $6';
-        $params  = [$username, $hash, $newSalt, 'argon2id', json_encode(ARGON2_OPTIONS), $role];
+        $values    = '$1, $2, $3, $4, $5, true, $6';
+        $parameters  = [$username, $hash, $newSalt, 'argon2id', json_encode(ARGON2_OPTIONS), $role];
         if ($hasContact) {
             $columns  .= ', first_name, last_name, email, phone';
-            $vals  .= ', $7, $8, $9, $10';
-            $params = array_merge($params, $contact);
+            $values  .= ', $7, $8, $9, $10';
+            $parameters = array_merge($parameters, $contact);
         }
-        $sql = 'INSERT INTO ' . sys_table('users') . " ({$columns}) VALUES ({$vals}) RETURNING id";
-        $queryResult = @pg_query_params($conn, $sql, $params);
+        $sql = 'INSERT INTO ' . sys_table('users') . " ({$columns}) VALUES ({$values}) RETURNING id";
+        $queryResult = @pg_query_params($conn, $sql, $parameters);
         if (!$queryResult) {
             admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_add');
@@ -432,8 +432,8 @@ require_once __DIR__ . '/../api_helpers.php';
 
 function admin_user_table_access(): array
 {
-    $cfg = config_get('user_table_access') ?? [];
-    return is_array($cfg['users'] ?? null) ? $cfg['users'] : [];
+    $config = config_get('user_table_access') ?? [];
+    return is_array($config['users'] ?? null) ? $config['users'] : [];
 }
 
 function admin_user_access_entry(int $userId): array

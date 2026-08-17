@@ -7,41 +7,41 @@
 
 declare(strict_types=1);
 
-function dashboard_conditions_sql($conn, array $tableCfg, array $conditions): string
+function dashboard_conditions_sql($conn, array $tableConfig, array $conditions): string
 {
-    $condParts = [];
+    $conditionParts = [];
     $allowedOps = ['=', '!=', '<', '>', '<=', '>=', 'LIKE', 'ILIKE', 'IS NULL', 'IS NOT NULL'];
-    foreach ($conditions as $cond) {
-        $columnName = $cond['col'] ?? '';
-        $operator  = $cond['op']  ?? '=';
-        $value = (string)($cond['val'] ?? '');
-        if (!isset($tableCfg['columns'][$columnName])) {
+    foreach ($conditions as $condition) {
+        $columnName = $condition['col'] ?? '';
+        $operator  = $condition['op']  ?? '=';
+        $value = (string)($condition['val'] ?? '');
+        if (!isset($tableConfig['columns'][$columnName])) {
             continue;
         }
         if (!in_array($operator, $allowedOps, true)) {
             continue;
         }
-        $colSql = pg_ident($columnName);
-        $logic = strtoupper($cond['logic'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
+        $columnSql = pg_ident($columnName);
+        $logic = strtoupper($condition['logic'] ?? 'AND') === 'OR' ? 'OR' : 'AND';
         if ($operator === 'IS NULL' || $operator === 'IS NOT NULL') {
-            $condParts[] = [$colSql . ' ' . $operator, $logic];
+            $conditionParts[] = [$columnSql . ' ' . $operator, $logic];
         } else {
-            $condParts[] = [$colSql . ' ' . $operator . " '" . pg_escape_string($conn, $value) . "'", $logic];
+            $conditionParts[] = [$columnSql . ' ' . $operator . " '" . pg_escape_string($conn, $value) . "'", $logic];
         }
     }
-    if (empty($condParts)) {
+    if (empty($conditionParts)) {
         return '';
     }
-    $built = $condParts[0][0];
-    for ($i = 1; $i < count($condParts); $i++) {
-        $built .= ' ' . $condParts[$i][1] . ' ' . $condParts[$i][0];
+    $built = $conditionParts[0][0];
+    for ($i = 1; $i < count($conditionParts); $i++) {
+        $built .= ' ' . $conditionParts[$i][1] . ' ' . $conditionParts[$i][0];
     }
-    return count($condParts) > 1 ? '(' . $built . ')' : $built;
+    return count($conditionParts) > 1 ? '(' . $built . ')' : $built;
 }
 
 function dashboard_run_widget_query(
     $conn,
-    array $tableCfg,
+    array $tableConfig,
     string $schemaName,
     string $table,
     array $query,
@@ -53,7 +53,7 @@ function dashboard_run_widget_query(
 
     if ($queryType === 'count') {
         $columnName = $query['column'] ?? id_column();
-        if (isset($tableCfg['columns'][$columnName]) || $columnName === id_column()) {
+        if (isset($tableConfig['columns'][$columnName]) || $columnName === id_column()) {
             $sql = sprintf(
                 'SELECT COUNT(%s) AS count FROM %s.%s%s',
                 pg_ident($columnName),
@@ -72,7 +72,7 @@ function dashboard_run_widget_query(
         }
     } elseif ($queryType === 'sum') {
         $columnName = $query['column'] ?? '';
-        if (isset($tableCfg['columns'][$columnName])) {
+        if (isset($tableConfig['columns'][$columnName])) {
             $sql = sprintf(
                 'SELECT COALESCE(SUM(%s), 0) AS total FROM %s.%s%s',
                 pg_ident($columnName),
@@ -92,7 +92,7 @@ function dashboard_run_widget_query(
         }
     } elseif ($queryType === 'avg') {
         $columnName = $query['column'] ?? '';
-        if (isset($tableCfg['columns'][$columnName])) {
+        if (isset($tableConfig['columns'][$columnName])) {
             $sql = sprintf(
                 'SELECT COALESCE(AVG(%s), 0) AS total FROM %s.%s%s',
                 pg_ident($columnName),
@@ -116,7 +116,7 @@ function dashboard_run_widget_query(
         $aggType = strtoupper($query['agg_type'] ?? 'COUNT');
         $allowedAgg = ['COUNT', 'SUM', 'AVG', 'MAX', 'MIN'];
         $aggType = in_array($aggType, $allowedAgg, true) ? $aggType : 'COUNT';
-        if (isset($tableCfg['columns'][$groupColumn])) {
+        if (isset($tableConfig['columns'][$groupColumn])) {
             $sql = sprintf(
                 'SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY %s ORDER BY value DESC',
                 pg_ident($groupColumn),
@@ -136,7 +136,7 @@ function dashboard_run_widget_query(
                 }
                 pg_free_result($result);
                 $output['data'] = $data;
-                $output['column_type'] = $tableCfg['columns'][$groupColumn]['type'] ?? 'text';
+                $output['column_type'] = $tableConfig['columns'][$groupColumn]['type'] ?? 'text';
             } else {
                 $output['sql_error'] = 'Query failed.';
             }
@@ -150,7 +150,7 @@ function dashboard_run_widget_query(
         $granularity = strtolower($query['granularity'] ?? 'month');
         $allowedGran = ['day', 'week', 'month', 'year'];
         $granularity = in_array($granularity, $allowedGran, true) ? $granularity : 'month';
-        if (isset($tableCfg['columns'][$xAxisColumn])) {
+        if (isset($tableConfig['columns'][$xAxisColumn])) {
             $bucket = sprintf("DATE_TRUNC('%s', %s)", $granularity, pg_ident($xAxisColumn));
             $sql = sprintf(
                 'SELECT %s AS label, %s(%s) AS value FROM %s.%s%s GROUP BY 1 ORDER BY 1 ASC',
@@ -170,7 +170,7 @@ function dashboard_run_widget_query(
                 }
                 pg_free_result($result);
                 $output['data'] = $data;
-                $output['column_type'] = $tableCfg['columns'][$xAxisColumn]['type'] ?? 'text';
+                $output['column_type'] = $tableConfig['columns'][$xAxisColumn]['type'] ?? 'text';
             } else {
                 $output['sql_error'] = 'Query failed.';
             }
@@ -178,18 +178,18 @@ function dashboard_run_widget_query(
     } else {
         $limit = (int)($query['limit'] ?? 5);
         $orderBy = $query['order_by'] ?? id_column();
-        $dir = strtoupper($query['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
+        $directory = strtoupper($query['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
         $resolvedDisplayColumns = $displayColumns ?: [id_column()];
         $validColumns = array_filter(
             $resolvedDisplayColumns,
-            fn($column) => isset($tableCfg['columns'][$column]) || $column === id_column()
+            fn($column) => isset($tableConfig['columns'][$column]) || $column === id_column()
         );
         if (empty($validColumns)) {
             $validColumns = [id_column()];
         }
 
         $selectSql = implode(', ', array_map('pg_ident', $validColumns));
-        if (isset($tableCfg['columns'][$orderBy]) || $orderBy === id_column()) {
+        if (isset($tableConfig['columns'][$orderBy]) || $orderBy === id_column()) {
             $sql = sprintf(
                 'SELECT %s FROM %s.%s%s ORDER BY %s %s LIMIT %d',
                 $selectSql,
@@ -197,7 +197,7 @@ function dashboard_run_widget_query(
                 pg_ident($table),
                 $sqlWhere,
                 pg_ident($orderBy),
-                $dir,
+                $directory,
                 $limit
             );
             $result = @pg_query($conn, $sql);
@@ -208,11 +208,11 @@ function dashboard_run_widget_query(
                 }
                 pg_free_result($result);
                 $output['data'] = $data;
-                $colTypes = [];
+                $columnTypes = [];
                 foreach ($validColumns as $columnName) {
-                    $colTypes[$columnName] = $tableCfg['columns'][$columnName]['type'] ?? 'text';
+                    $columnTypes[$columnName] = $tableConfig['columns'][$columnName]['type'] ?? 'text';
                 }
-                $output['column_types'] = $colTypes;
+                $output['column_types'] = $columnTypes;
             } else {
                 $output['sql_error'] = 'Query failed.';
             }
