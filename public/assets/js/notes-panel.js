@@ -307,7 +307,7 @@ export async function openNotesPanel() {
     panel.open();
     panel.clearStatus();
     panel.setStatus(I18n.t('common.loading'));
-    panel.bodyEl.textContent = '';
+    panel.bodyElement.textContent = '';
 
     const tables = await loadTableOptions();
 
@@ -338,8 +338,8 @@ export async function openNotesPanel() {
         await reloadList();
     });
 
-    panel.bodyEl.appendChild(addForm);
-    panel.bodyEl.appendChild(listElement);
+    panel.bodyElement.appendChild(addForm);
+    panel.bodyElement.appendChild(listElement);
 
     try {
         await reloadList();

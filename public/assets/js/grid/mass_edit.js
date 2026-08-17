@@ -289,24 +289,24 @@ function clearPreviewUI(panelInstance) {
     lastPreviewPayload = null;
     panelInstance.setApplyDisabled(true);
     panelInstance.clearStatus();
-    const area = panelInstance.bodyEl.querySelector('.me-preview-area');
+    const area = panelInstance.bodyElement.querySelector('.me-preview-area');
     if (area) area.innerHTML = '';
 }
 
 async function rebuildValueInput(panelInstance) {
-    const columnSelect = panelInstance.bodyEl.querySelector('#me-column');
+    const columnSelect = panelInstance.bodyElement.querySelector('#me-column');
     if (!columnSelect) return;
     const cols = window.schema?.tables?.[state.currentTable]?.columns ?? {};
-    const previousInput  = panelInstance.bodyEl.querySelector('#me-value');
+    const previousInput  = panelInstance.bodyElement.querySelector('#me-value');
     if (previousInput) previousInput.remove();
-    const valueField = panelInstance.bodyEl.querySelector('.me-val-field');
+    const valueField = panelInstance.bodyElement.querySelector('.me-val-field');
     if (valueField) valueField.appendChild(await buildValueInput(cols[columnSelect.value] ?? {}, columnSelect.value));
     clearPreviewUI(panelInstance);
 }
 
 async function buildMassEditBody(panelInstance) {
     const table = state.currentTable;
-    const body  = panelInstance.bodyEl;
+    const body  = panelInstance.bodyElement;
     body.innerHTML = '';
     previewLoaded      = false;
     lastPreviewPayload = null;
@@ -377,8 +377,8 @@ async function runPreview(panelInstance) {
     const payload = getPayload(panelInstance);
     if (!payload) return;
 
-    const previewButton  = panelInstance.bodyEl.querySelector('#me-preview-btn');
-    const previewArea = panelInstance.bodyEl.querySelector('.me-preview-area');
+    const previewButton  = panelInstance.bodyElement.querySelector('#me-preview-btn');
+    const previewArea = panelInstance.bodyElement.querySelector('.me-preview-area');
 
     previewButton.disabled = true;
     previewLoaded       = false;
@@ -443,7 +443,7 @@ async function runPreview(panelInstance) {
 }
 
 function getPayload(panelInstance) {
-    const body   = panelInstance.bodyEl;
+    const body   = panelInstance.bodyElement;
     const columnSelect = body.querySelector('#me-column');
     const valueElement  = body.querySelector('#me-value');
     const nullCallback = body.querySelector('#me-set-null');
@@ -535,7 +535,7 @@ async function openPanel() {
 }
 
 function buildExportBody(panelInstance) {
-    const body = panelInstance.bodyEl;
+    const body = panelInstance.bodyElement;
     body.innerHTML = '';
     panelInstance.setApplyDisabled(false);
 
@@ -579,7 +579,7 @@ function buildExportBody(panelInstance) {
 }
 
 function applyExport(panelInstance) {
-    const body = panelInstance.bodyEl;
+    const body = panelInstance.bodyElement;
     const checkedColumns = Array.from(body.querySelectorAll('.me-col-picker-cb:checked'))
         .map(callback => callback.value);
 
@@ -621,7 +621,7 @@ function openExportPanel() {
 }
 
 async function buildOwnerBody(panelInstance) {
-    const body = panelInstance.bodyEl;
+    const body = panelInstance.bodyElement;
     body.innerHTML = '';
     panelInstance.setApplyDisabled(true);
 
@@ -660,7 +660,7 @@ async function buildOwnerBody(panelInstance) {
 }
 
 async function applyMassOwner(panelInstance) {
-    const selectElement = panelInstance.bodyEl.querySelector('#me-owner-sel');
+    const selectElement = panelInstance.bodyElement.querySelector('#me-owner-sel');
     if (!selectElement || selectElement.value === '') {
         panelInstance.setStatus(I18n.t('mass_owner.select_first'), true);
         return;

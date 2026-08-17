@@ -362,7 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function buildTagPanelBody(panelInstance) {
-        const body = panelInstance.bodyEl;
+        const body = panelInstance.bodyElement;
         body.innerHTML = '';
         panelInstance.setApplyDisabled(true);
 
@@ -387,7 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function applyMassTags(panelInstance) {
-        const input = panelInstance.bodyEl.querySelector('#fileBulkTagsInput');
+        const input = panelInstance.bodyElement.querySelector('#fileBulkTagsInput');
         const tags  = (input?.value || '').trim();
         if (!tags || selectedUuids.size === 0) return;
 
