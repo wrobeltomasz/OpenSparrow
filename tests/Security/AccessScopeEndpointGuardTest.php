@@ -18,6 +18,8 @@ final class AccessScopeEndpointGuardTest extends TestCase
     private const WORKFLOWS_MODULE = 'includes/frontapi/workflows.php';
     private const WF_PROC_MODULE  = 'includes/frontapi/workflow_procedure.php';
 
+    private const FILES_CONTROLLER = 'includes/Controller/Api/FilesController.php';
+
     private function code(string $relPath): string
     {
         $path = __DIR__ . '/../../' . $relPath;
@@ -126,7 +128,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testFileWriteGateCoversEveryAttachment(): void
     {
-        $source = $this->code('public/api/files.php');
+        $source = $this->code(self::FILES_CONTROLLER);
 
         $this->assertCodeHas(
             'function assertFileAccess(',
@@ -146,7 +148,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
 
     public function testFileListingIsFilteredByRecordOwnership(): void
     {
-        $source = $this->code('public/api/files.php');
+        $source = $this->code(self::FILES_CONTROLLER);
 
         $this->assertCodeHas(
             'ro.table_name = f.related_table AND ro.record_id = f.related_id',

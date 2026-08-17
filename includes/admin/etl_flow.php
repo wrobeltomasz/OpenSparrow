@@ -124,7 +124,7 @@ if ($action === 'etl_flow_log') {
         $conn    = admin_conn();
         $etlFlowRunLogTable = sys_table('etl_flow_run_log');
         admin_require_log_table($conn, $etlFlowRunLogTable);
-        $flowId = trim((string)($_GET['flow_id'] ?? ''));
+        $flowId = trim(os_request()->query('flow_id'));
         $sql = "SELECT id, flow_id, flow_name, triggered_by, status, failed_step_index, error_message,
                        started_at, finished_at,
                        EXTRACT(EPOCH FROM (COALESCE(finished_at, now()) - started_at)) AS duration_sec

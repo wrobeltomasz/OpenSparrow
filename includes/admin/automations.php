@@ -14,12 +14,12 @@ use App\Exception\ResponseException;
 require_once __DIR__ . '/../automations.php';
 require_once __DIR__ . '/../crypto.php';
 
-if ($action === 'automations_runs' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+if ($action === 'automations_runs' && os_request()->method() === 'GET') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn  = db_connect();
         $automationRunsTable = sys_table('automation_runs');
-        $ruleId = trim((string) ($_GET['rule_id'] ?? ''));
+        $ruleId = trim(os_request()->query('rule_id'));
 
         if ($ruleId !== '') {
             $result = @pg_query_params(
@@ -84,7 +84,7 @@ function auto_redact_secrets(array $rules): array
     return $rules;
 }
 
-if ($action === 'automations_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+if ($action === 'automations_list' && os_request()->method() === 'GET') {
     try {
         echo json_encode(['status' => 'success', 'automations' => auto_redact_secrets(auto_cfg_read())]);
     } catch (ControlFlowException $signal) {
@@ -95,7 +95,7 @@ if ($action === 'automations_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     throw ResponseException::sent();
 }
 
-if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($action === 'automations_save' && os_request()->method() === 'POST') {
     if (DEMO_MODE) {
         throw HttpException::fromStatus(
             403,
@@ -284,7 +284,7 @@ if ($action === 'automations_save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     throw ResponseException::sent();
 }
 
-if ($action === 'automations_delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($action === 'automations_delete' && os_request()->method() === 'POST') {
     if (DEMO_MODE) {
         throw HttpException::fromStatus(
             403,

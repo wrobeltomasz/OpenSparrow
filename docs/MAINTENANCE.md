@@ -53,7 +53,8 @@ concentrated in a few places listed below.
 
 - **`src/` (App\) layer: FROZEN (decided 2026-07-09)** — the OOP layer stays
   scoped to what it serves today: the form pages' object graph (`os_boot_app()`
-  in `includes/bootstrap.php` — create.php/edit.php) and PostgreSQL record
+  in `includes/bootstrap.php`, wired in `App\Service\AppContext` —
+  create.php/edit.php) and PostgreSQL record
   persistence (`PgRecordRepository`). It will not be
   extended to the rest of the codebase; **new backend code goes into the
   procedural `includes/` helper layer**. Six single-implementation interfaces
@@ -1016,7 +1017,8 @@ New classes, each taking the connection through the constructor:
 | `ServiceContainer` | lazily builds all of the above from one connection |
 | `Sql` | identifier quoting and `int[]` literals, previously open-coded per file |
 
-`os_boot_app()` returns the container under the `services` key.
+`os_boot_app()` returns an `App\Service\AppContext`, and the container is reachable
+on it as `services()`.
 
 `src/` stays **frozen**; this is why the layer lives in `includes/`. The
 namespace is still `App\Service\` because both autoloaders are prefix-mapped —
@@ -1253,8 +1255,8 @@ assertions.
 ### The rule
 
 Request input is read through `App\Http\PhpRequest`, never through `$_POST` or
-`$_GET` directly. Pages booted by `os_boot_app()` already receive it under the
-`request` key; everything else calls `os_request()`.
+`$_GET` directly. Pages booted by `os_boot_app()` reach it as
+`$context->request()`; everything else calls `os_request()`.
 
 ```php
 $selected = array_values(array_filter(
@@ -1346,20 +1348,542 @@ and `api.php` (178) were the same shape at smaller sizes. Everything in them ran
 include, so none of it could be reached from a test, and the only way to describe
 the flow was to read it top to bottom.
 
-Each is now a **controller class plus an entry point of roughly 25 lines**:
+Each is now a **controller class plus an entry point of roughly 15 lines**:
 
 ```php
 $pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
 
-['session' => $session, 'request' => $request, /* … */ 'services' => $services]
-    = os_boot_app();
-
-$controller = new EditController($session, $request, /* … */ $services);
-$controller->handle($request, $pageMeta);
+$controller = new EditController(os_boot_app());
+$controller->handle($pageMeta);
 ```
 
 The entry point owns nothing else: no business logic, no superglobals, no template
 includes. Everything else moved into `handle()`.
+
+### One constructor argument: `AppContext` (2026-08-16)
+
+The first cut of these controllers took the whole object graph apart in the entry
+point and passed it back one service at a time — a ten- and eleven-argument
+constructor, fed by a list-destructuring of `os_boot_app()` that `create.php` and
+`edit.php` each repeated with a slightly different key set. Adding a dependency
+meant editing three places, and the arguments were positional, so a reordered pair
+of same-shaped services would have type-checked.
+
+`os_boot_app()` now returns **`App\Service\AppContext`** (`includes/Service/AppContext.php`)
+and every page controller takes that one object. The context builds the graph in
+its constructor — exactly what `os_boot_app()` used to assemble, in the same order,
+so `db_connect()` still runs at boot — and exposes each dependency through a typed
+accessor (`session()`, `request()`, `csrf()`, `schemas()`, `fieldRegistry()`,
+`mapper()`, `records()`, `files()`, `audit()`, `fkLoader()`, `services()`,
+plus `connection()`/`database()` for the raw handles).
+
+Controllers unpack the accessors they need into `private readonly` properties in the
+constructor, so the body of the class is unchanged and still names concrete types —
+`AppContext` is a wiring seam, not a service locator to be passed further down.
+Nothing outside a constructor takes it, and nothing calls it at random from deep in
+a method.
+
+`handle()` lost its `PhpRequest` argument at the same time: the request was being
+injected into the constructor *and* handed back in on every call. The controller
+reads `$this->request`, and the private `save()`/`prefilledValues()` helpers dropped
+their pass-through `$request` parameter too.
+
+`ServiceContainer` is unchanged and still lazy — `AppContext` holds one and delegates.
+The two are different layers: the container builds connection-only domain services,
+the context is the whole request-scoped graph a page controller needs.
+
+### `AppContext` is lazy, and that is a guarantee, not an optimisation
+
+Every accessor memoises through `??=`, and **`db_connect()` appears exactly once in the
+class**, inside `connection()`. Everything connection-bound reaches the handle through
+that one accessor. Reading `session()`, `request()`, `csrf()`, `fieldRegistry()` or
+`mapper()` therefore opens no connection at all.
+
+This is what lets a controller answer 401/403 before the database is touched — the
+ordering `public/api.php` gets today from `os_api_bootstrap(['connect' => false])`, and
+the ordering six of the thirteen `public/api/*.php` endpoints depend on. `AppContextTest`
+pins all of it: nothing is built by the constructor, the session and CSRF paths leave
+every connection-bound property null, and the single `db_connect()` call site is asserted
+on the source text.
+
+For the page controllers the practical effect is nil: they unpack the accessors they need
+in their own constructor, so the connection opens one line later than it used to.
+
+### `ApiRequest`: the action envelope
+
+`os_api_action()` returned `['method', 'action', 'body']` and four endpoints
+(`comments`, `files`, `notes`, `owners`) each destructured it by hand — the same shape
+that made `os_boot_app()`'s array a maintenance cost. It now returns
+**`App\Service\ApiRequest`** (`includes/Service/ApiRequest.php`): a readonly value object
+with `method`, `action`, `body(key, default)`, `bodyAll()`, `isMethod()` and `isWrite()`.
+
+`body()` is deliberately named so that `RequestScopeInventoryTest`'s `ACCESSORS` list
+catches `->body('table')` as a `body().table` read. **A new request accessor that is not
+in that list is invisible to the scan**, which is the same failure mode as a file moved
+out of the glob: the guard stays green and stops guarding. Add the name to `ACCESSORS`
+in the same change that introduces the accessor.
+
+### API controllers read the request through `PhpRequest` (2026-08-16)
+
+The controllers moved in the two preceding stages still read `$_GET` and
+`$_SERVER['REQUEST_METHOD']` directly — the move preserved the bodies verbatim on purpose.
+46 of the 51 remaining request-superglobal reads now go through
+`$context->request()` (`App\Http\PhpRequest`): `query()`, `queryAll()`, `method()`.
+
+**`ApiRequest` is the wrong target here, and that is not a style preference.** Every one of
+these endpoints is called as `api/views.php?action=data`, `?action=mass_delete`,
+`?action=data_cleanup_apply` — **the action is in the query string, and never in the JSON
+body**. `os_api_action()` fills `action` from `$_GET` for GET but from `$body['action']` for
+POST, so `$_GET['action']` → `$this->api->action` would resolve to `''` on every POST and
+turn each of them into a 400. `$_GET['action']` becomes `$this->request->query('action')`.
+
+For the same reason the `php://input` decodes were **left alone**. `os_api_action()` only
+decodes a body when `Content-Type` contains `application/json`; a bare
+`file_get_contents('php://input')` decodes unconditionally. Swapping them makes behaviour
+depend on a header the caller controls — a wire change, not a read-shape change.
+
+**Where `query()` is not a faithful translation.** `query()` is
+`(string)($_GET[$key] ?? $default)`, so it collapses two distinctions the raw read keeps:
+absent vs. present-but-empty, and scalar vs. array. That is harmless where the value is
+compared or used as an array key, but not where it reaches SQL or a nullable branch. Three
+reads use `queryAll()` instead:
+
+- `ViewsController::viewData()` — `filter_val` is `null` when absent and becomes a
+  `pg_query_params` bind when present, so `?filter_val=` must still produce `WHERE col = ''`.
+- `PrintController::printData()` — `p_<key>` values are bound the same way.
+- `CommentsController::listComments()` — `limit` absent means "no limit", not "limit 0".
+
+The behaviour baseline is the only thing that proves this, so five scenarios were added
+that discriminate the collapsed cases (see the coverage note below).
+
+**Not converted, and why:** the five reads in `FilesController` that handle multipart
+uploads — `$_FILES`, `$_SERVER['CONTENT_LENGTH']`, `$_SERVER['CONTENT_TYPE']`.
+`PhpRequest` has no accessor for them and `src/` is frozen, so adding one is a separate
+decision. The 37 `$_SESSION` reads in these controllers are a different seam
+(`$context->session()`) and a separate stage.
+
+**Inventory keys move with the read shape.** Seven entries in
+`tests/Security/request_scope_inventory.php` changed from `_GET.x` to `query().x`
+(comments, files, notes, owners, print ×2, views). `RequestScopeInventoryTest` failed from
+**both** directions — undescribed new reads *and* stale entries describing reads that no
+longer exist — which is exactly what that test is for.
+
+### `os_query_string()`: an array-valued parameter is "absent", not a 500 (2026-08-16)
+
+`?table[]=x`, `?view[]=x`, `?print[]=x`, `?board[]=x` and `?workflow[]=x` each produced a
+**500**: the value reached `substr()` as an array and PHP 8 raises a `TypeError`. Nothing
+was exploitable — the exception handler returns a generic page — but a query string a user
+can type should not take the page down.
+
+`public/index.php` had *already* guarded its `table` read with
+`is_string(...) ? ... : ''`. The fix generalises that intent instead of inventing a new
+one, as `includes/bootstrap.php`:
+
+```php
+function os_query_string(string $key, string $default = ''): string
+{
+    $value = os_request()->queryAll()[$key] ?? $default;
+
+    return is_string($value) ? $value : $default;
+}
+```
+
+Now used by `index.php` (table, workflow), `views.php`, `print.php`, `board.php`,
+`file_download.php` (uuid) and `templates/menu.php` (all five). **An array is treated
+exactly like an absent parameter** — the baseline confirms all five array scenarios now
+render byte-identically to their no-parameter equivalents.
+
+**`PhpRequest::query()` was deliberately not changed instead.** It would be the tidier
+place, but `src/` is frozen, and more importantly `query()` has ~30 call sites across the
+controllers and admin whose current `(string)` behaviour was proved faithful stage by
+stage. Changing it would re-open all of them for a bug that lives on six pages.
+
+**The scanner needed a third pattern.** `RequestScopeInventoryTest` matched
+`$holder['key']` and `->accessor('key')`; a plain function call like
+`os_query_string('table')` is neither, so all ten reads would have gone invisible — the
+same failure the `HOLDERS` gap produced one commit earlier. A `HELPERS` list was added in
+the same change, and this time **the ten stale entries were matched by ten new ones**,
+which is the balance to check for. `testScannerStillMatchesTheShapesItClaimsTo` now covers
+both the helper and the `$queryParameters` holder.
+
+Blast radius, recorded against HEAD `26203eb`: **5 of 648 scenarios differ**, all five
+array cases, all `500 → 200`. Nothing else moved.
+
+### `cron/`: nothing to convert, one guard that was missing (2026-08-16)
+
+The last stage of the read refactor changed **no production code**, and that is the
+finding, not a shortfall.
+
+All four superglobal reads in `cron/` are `$_SERVER['argv']` — CLI arguments, not request
+input. `PhpRequest` has no accessor for argv and should not grow one: argv is not a
+request, and routing it through a request object would misrepresent where the data comes
+from. They stay raw.
+
+**The shared CLI prologue was deliberately not extracted.** `cron_etl.php` and
+`cron_etl_flow.php` call `etl_cli_boot()` (`includes/etl_cli.php`);
+`cron_anonymization.php` and `cron_notifications.php` hand-roll the same block. They look
+identical but are not — the hand-rolled pair also sets
+`@ini_set('zlib.output_compression', '0')`, which `etl_cli_boot()` does not. Extracting a
+shared helper would have to either add that to the ETL scripts or drop it from the other
+two; both are behaviour changes wearing a de-duplication costume. Same rule as the
+`data_cleanup` prologue in the API stage: **de-duplicate blocks that are byte-identical,
+leave blocks that differ and say why.**
+
+**What was actually missing: a guard test.** Every cron script refuses a non-CLI SAPI —
+
+```php
+if (php_sapi_name() !== 'cli') {
+    os_register_exception_handler('html');
+    throw new ForbiddenException('This script may only be run from the command line.');
+}
+```
+
+— and **nothing verified it**. `cron/` sits outside the `public/` docroot, so this is
+defence in depth against a docroot pointed at the repository root, which is exactly the
+kind of guard that gets deleted in a cleanup because nothing goes red.
+`tests/Security/CronCliGuardTest.php` now pins it: every `cron/*.php` either carries the
+check or delegates to `etl_cli_boot()`, the helper itself carries it and throws, and the
+guard is reached **before** any `db_connect()`. The directory-not-empty assertion is there
+so the whole thing cannot pass vacuously.
+
+It was proved red the way these tests have to be: a probe script whose guard was present
+only **inside a comment** made it fail, which also confirms the `token_get_all()`
+comment-stripping does its job.
+
+No baseline run for this stage — the harness speaks HTTP and these are CLI entry points,
+and with zero production changes a comparison would only be theatre.
+
+### Admin reads, and the one place that stays raw (2026-08-16)
+
+The admin modules stay procedural. Their query-string and session reads moved to
+`os_request()` / `admin_user_id()`, with one deliberate exception.
+
+**The security prologue of `public/admin/api.php` stays on raw superglobals.** Lines 25–36
+(login + admin-role gate), 47–54 (the CSRF check) and 78 (the `$postActions` POST-only
+gate) keep `$_SESSION` and `$_SERVER['REQUEST_METHOD']` verbatim. Two reasons, and the
+first is decisive:
+
+- `AdminApiGuardsTest::testCsrfIsValidatedOnEveryMutatingVerb` asserts the **source text**
+  matches `in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE']`. Converting
+  that line forces the regex to be rewritten, which means loosening a security guard to
+  accommodate a cosmetic change. The guard is worth more than the consistency.
+- Keeping the whole prologue in **one** idiom keeps it greppable. A half-converted
+  prologue is harder to audit than a fully raw one.
+
+`$_SERVER['HTTP_X_CSRF_TOKEN']` has no `PhpRequest` accessor anyway, and `src/` is frozen.
+
+**DRY: `admin_user_id()` had seven copies.** `includes/admin/helpers.php` already defines
+
+```php
+function admin_user_id(): ?int
+{
+    return isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+}
+```
+
+and `config_files.php` (×2), `m2m.php` (×2), `rag.php` (×2), `schema.php` and
+`api.php`'s `auto_cfg_write()` each inlined that exact expression instead of calling it.
+All eight now call the helper; `helpers.php` holds the only copy, and `AdminHelpersTest`
+already covers it including the absent-key → `null` case. The nullable return matters for
+the same reason as everywhere else: it feeds `config_save(..., $userId)` as the authorship
+column, where `null` is "unknown" and `0` would be a real id.
+
+**`queryAll()` again for `(int)` casts.** `(int) ($_GET['page'] ?? 1)` on `?page[]=2` casts
+the *array* — PHP makes that `1`. `query()` would produce `(int) "Array"` = `0`. The three
+`(int)`-cast reads (`clickstats` page, `cron` limit, `users` user_id) therefore use
+`queryAll()`. Reads that already cast with `(string)` are safe with `query()`, because the
+cast is what `query()` does anyway.
+
+**Baseline: admin had zero coverage before this.** `scenarios.php` did not touch
+`public/admin/api.php` or any module, so the first "identical" run proved nothing at all
+about this stage. 38 admin scenarios were added (now 212 × 3 = 636 recordings), including
+the two that matter most: `adm.save_rejects_get` → **405** proves the `$postActions` gate
+still fires, and `adm.save_no_csrf` → **403** proves the CSRF gate still fires.
+
+Honest limits on the new scenarios — they execute the reads but do not all discriminate:
+
+- `adm.clickstats_log*` all return the same 107 bytes: the clickstats flag is off in this
+  database and the table is empty, so `element`, `user` and `page` filter nothing.
+- `adm.cron_log_array_limit` cannot separate the two implementations: both `(int) [5]` and
+  `(int) "Array"` end up clamped to `1` by `max(1, …)`.
+- `adm.config_get*` return an empty 200 body — pre-existing, and the same on both sides.
+- Genuinely discriminating: `automations_runs` 6928 vs `automations_runs_rule` 43,
+  `cron_log` 1388 vs its array form 382, `etl_target_tables`, `etl_flow_log`.
+
+### FE pages read the query string through `os_request()` (2026-08-16)
+
+The FE pages stay procedural — they are 36–106 lines of labels and were deliberately left
+alone when the controllers were built. Only their query-string reads moved:
+`index.php`, `views.php`, `print.php`, `board.php`, `file_download.php` and
+`templates/menu.php` now take `os_request()->queryAll()` into a local
+`$queryParameters` and read it from there.
+
+**Why `queryAll()` and not `query()`.** `query()` casts to string, and every one of these
+sites does `substr($_GET[$key] ?? '', 0, 64)` or `trim(...)`. On an array-valued parameter
+(`?table[]=contacts`) the raw read hands `substr()` an array, which is a **`TypeError` →
+500**; `query()` would hand it the string `"Array"` and the page would render. Converting
+to `query()` therefore *silently removes a 500* on six pages. The baseline caught exactly
+that on `page.index_array_table` (HEAD 500, converted 200) and the conversion was redone
+with `queryAll()`. This is the rule in action: a refactor preserves odd behaviour and
+reports it, because otherwise a regression and a "fix" are indistinguishable.
+
+That 500 was then fixed **as its own commit** — see `os_query_string()` below.
+
+**The variable name is load-bearing.** `RequestScopeInventoryTest` matches
+`$holder['key']` against a fixed `HOLDERS` list, so a read parked in a differently named
+local is invisible to it. The first pass used `$queryParameters` and
+`public/index.php → _GET.table` — a **gated** read — simply vanished from the scan: the
+test reported ten stale entries but only nine new ones, so the count is the only thing
+that gave it away. `queryParameters` was added to `HOLDERS` in the same change. **Check
+the two lists balance**; a stale entry with no replacement means a read went dark, not
+that a read was removed.
+
+**Pre-existing bug, found by this stage and fixed in the commit after it.**
+`public/index.php` used to do
+
+```php
+$requestedTable = is_string($queryParameters['table'] ?? '') ? (string) $queryParameters['table'] : '';
+```
+
+When `table` is absent the condition is **true** — `''` is a string — so the true branch
+read the key again *without* `??` and PHP emitted `Undefined array key "table"`. Harmless
+to control flow (`$requestedTable` still ended up `''`) but it rendered into the page
+whenever `display_errors` is on, disclosing the absolute filesystem path of `index.php`.
+Note that `os_page_bootstrap()` does **not** set `display_errors = 0` — only
+`os_api_bootstrap()` does — so FE pages inherit it from `php.ini`, which is why the admin
+Health panel checks for it. It is now:
+
+```php
+$rawTable = $queryParameters['table'] ?? '';
+$requestedTable = is_string($rawTable) ? $rawTable : '';
+```
+
+one read instead of two, and no redundant cast. All three outcomes are unchanged: absent
+and array-valued both yield `''`, a string passes through. It was the only occurrence of
+the pattern in the repository.
+
+The fix was recorded against its own baseline (HEAD `18b82ff`), and the blast radius is
+worth keeping as the template for a behaviour-changing commit: **exactly 4 of 636
+scenarios differ**, all of them `page.index*` cases with no `table` parameter, and each
+diff is *byte-for-byte* the removed `<br />` + warning block and nothing else.
+`page.index_real_table`, `page.index_unknown_table` and — the one that mattered —
+`page.index_array_table` are all unchanged, so the array branch that still 500s in
+`menu.php` was not disturbed.
+
+**Deliberately skipped: `public/setup_api.php`.** Its single `$_GET['action']` read stays
+raw. The setup wizard does not include `bootstrap.php` — it runs before the app is
+configured, and `os_request()` lives in that file. Pulling the bootstrap into the wizard
+to save one read is the class of change that has broken fresh installs before. Same
+reasoning as `fk.php` in the API stage.
+
+**Not converted:** `$_SERVER['PHP_SELF']` (menu) and `$_SERVER['HTTP_USER_AGENT']`
+(login, setup) — `PhpRequest` has no accessor and `src/` is frozen. Session writes in
+`login.php`, `logout.php` and `setup_api.php` establish or destroy the session
+(`$_SESSION = []`, the post-authentication key set); they are the auth path, `SessionInterface`
+has no `clear()`, and routing them through it buys nothing.
+
+### Session reads go through `SessionInterface` (2026-08-16)
+
+The 37 `$_SESSION` reads left in the API controllers now go through
+`$context->session()`. `session()` builds a `PhpSession` and opens **no** database
+connection, so it is safe to resolve in a constructor — including `clickstats` and
+`schema`, which boot with `connect => false`.
+
+Controllers that unpack their dependencies hold `private readonly SessionInterface
+$session`; the four that keep `$this->context` (`print`, `views`, `rag`, `clickstats`)
+call `$this->context->session()` at the point of use, matching how they already reach
+`connection()` and `request()`.
+
+**`userId()` is not a drop-in for every `user_id` read.** It is
+`(int)($_SESSION['user_id'] ?? 0)`, so it returns **0** for a missing key. Three call
+sites — `FilesController::saveConfig()`, `PrintController::saveTemplates()`,
+`ViewsController::saveConfig()` — used `isset(...) ? (int) ... : null` and pass the result
+to `config_save(..., $userId)` as the *authorship* column, where `null` means "unknown"
+and `0` would be a real user id that does not exist. Those keep the distinction as
+`$session->has('user_id') ? $session->userId() : null`. Same for `role()`: it defaults to
+`viewer`, so the two sites that defaulted to `editor` and `''` use
+`get('role', 'editor')` / `get('role', '')` instead.
+
+`tests/Http/PhpSessionTest.php` pins exactly that: `has()`-guarded and raw `isset()` forms
+agree on every input, and an absent `user_id` is `null` in the nullable form while
+`userId()` is `0`. **The behaviour baseline cannot prove this** — see below — so the test
+is the only guard on it.
+
+**Baseline coverage limits for this change, do not overclaim:**
+
+- The three nullable-`userId` sites are **not exercised**. Every `save`/`save_config`
+  scenario fails validation with 400 before reaching `config_save`, and a successful
+  config save is a mutation the harness excludes by design.
+- `FilesController`'s owner-restriction parameter (`$params[] = $session->userId()`) is
+  **not exercised**: no table in this database sets `owner_restricted`, so the branch is
+  skipped. The `role !== 'admin'` test above it does run for both roles, but with an empty
+  result either way — so it executes without its effect being observable.
+- Covered and executing a real query: `comments.mine`, `owners.mine`, `files.list`.
+
+### API endpoints move to `includes/Controller/Api/` (from 2026-08-16)
+
+`public/api/*.php` is being converted one endpoint per commit. The shape is the page
+controllers' shape with one difference: an API controller takes **`AppContext` and
+`ApiRequest`** (two arguments), because the action envelope is not part of the object
+graph.
+
+```php
+os_api_bootstrap(['csrf' => 'manual']);
+
+$controller = new CommentsController(os_boot_app(), os_api_action());
+$controller->handle();
+```
+
+`os_api_bootstrap()` keeps doing what it did — session, headers, role gates, request-scope
+gating — and still runs **before** the controller exists. `handle()` only owns the
+dispatch map, which is the same `os_api_dispatch()` call the file used to make at top
+level; the former `foo_action_*()` functions became private methods.
+
+`$conn` comes from `$context->connection()` rather than `os_api_bootstrap()`'s return
+value. That is the same connection: `pg_connect()` hands back the existing one for an
+identical connection string, verified by comparing `pg_get_pid()` across two
+`db_connect()` calls, not assumed from the manual.
+
+**What deliberately does not change in this step**: `$_GET` and `$_SESSION` reads stay
+exactly as they were. Converting them to `$this->request` changes the *shape* the
+inventory keys encode (`_GET.related_table` → `query().related_table`) and is a separate
+pass, so that the move commit stays a move.
+
+Done so far (all 2026-08-16): `CommentsController`, `NotesController`, `OwnersController`,
+`FilesController` — Etap 1, the four endpoints that already had an action map — then
+`NotificationsController`, `SchemaController`, `RagController`, `ViewsController`,
+`DataCleanupController`, `MassEditController`, `PrintController` and
+`ClickstatsController`. Each inventory key
+moved from `public/api/<name>.php` to the controller path in the same commit, which the
+now-recursive scan picks up automatically — under the old flat glob the new subdirectory
+would have vanished from the guard.
+
+`NotesController` also absorbed what the endpoint kept at file scope: the `const`
+declarations `NOTE_BODY_MAX_LEN` / `NOTE_RECORD_PICKER_LIMIT` became class constants, and
+the three `validatedRelation()` / `validatedReminderDate()` / `validatedBody()` helpers
+became private methods. All five were global symbols with exactly one consumer, confirmed
+by grepping the whole tree before moving them; the interpolated limit in
+"Note exceeds maximum length of 4000 characters." is unchanged because the value is.
+
+`OwnersController` keeps the **ownership transfer open to editors** exactly as it was:
+`set` and `mass_set` call `requireWrite()` and validate the target user, and nothing
+checks who currently owns the record. That is the documented decision above, not an
+oversight the move was an opportunity to correct.
+
+`FilesController` is the one where the move needed real care, and where two things had to
+change on purpose:
+
+- **`__DIR__` moved three levels, not two.** The upload target was
+  `__DIR__ . '/../../' . $config['storage_path']` from `public/api/`, which is the repo
+  root; from `includes/Controller/Api/` the same directory is `'/../../../'`. Both were
+  resolved with `realpath()` and compared before the change was accepted — a silently
+  wrong upload directory is the kind of bug no test in this repo would have caught.
+- **Two SQL strings were split** across lines for the 120-character limit. The literal
+  comparison flagged both (correctly — the literals *did* change), so the concatenated
+  results were rebuilt in PHP and asserted identical to the originals rather than eyeballed.
+
+The 413 "File is too large" guard for oversized multipart bodies moved from file scope into
+the first statement of `handle()`. `os_api_action()` now runs before it instead of after;
+for an oversized upload PHP has already discarded `$_POST`/`$_FILES`, so the envelope comes
+back with an empty action and no side effect, and the 413 is still what the client sees.
+
+### Not every endpoint can adopt `os_api_dispatch()` — the wire format decides
+
+The plan for the nine `if`-chain endpoints was "normalise to an action map first, then move
+the code". `notifications.php` (the first of them, 2026-08-16) shows why that step is not
+automatic: it answers in a **different envelope** from the shared helpers.
+
+| | `notifications.php` | `jsonSuccess()` / `os_api_dispatch()` |
+| --- | --- | --- |
+| success | `{"status":"success","count":3}` | `{"count":3,"success":true}` |
+| unknown action | 400 `{"status":"error","message":"Invalid action"}` | 400 `{"success":false,"error":"Unknown action: x"}` |
+| failure | 500 `{"status":"error","message":"Internal server error"}` | same status, different keys |
+
+Adopting the shared dispatcher would therefore change three response bodies. The wire
+format is byte-preserved instead: `NotificationsController` keeps its own `if`-chain and its
+own `try`/`catch`, and the endpoint's `ResponseException::encoded()` / `::sent()` calls are
+carried over unchanged. `public/assets/js/notifications.js` happens to read only `data.count`
+and `data.notifications` and would have survived the change — that is luck, not licence.
+
+**Rule for the rest of Etap 2**: check the response envelope before normalising. Converting
+an endpoint to `os_api_dispatch()` is a wire-format change and needs to be its own decision,
+not a side effect of moving code into a class.
+
+### `ClickstatsController` — the three unusual things, all preserved
+
+Moved last and alone, because it is the endpoint with the most non-standard wiring, and all
+three pieces had to survive intact:
+
+- **CSRF from the body**, not a header — `navigator.sendBeacon` cannot set headers, so the
+  entry point boots with `csrf => 'manual'` and the controller calls
+  `os_require_csrf('body', $payload)` itself, *after* decoding the payload and *before*
+  `require_not_demo()`.
+- **`gate => false`** at boot, with the reason recorded in the scope inventory. The stored
+  table label is still checked with `user_can_access('tables', …)`, and a name outside the
+  scope becomes `NULL` rather than an error — statistics must never fail a request.
+- **The flag re-check**: `clickstats_settings()['enabled']` is consulted on every request and
+  answers 204 without writing when it is off, which is what makes the "off means absent"
+  guarantee hold for a page that was already open when the flag was switched.
+
+Moving the six file-scope `const` declarations into the class also closed a **latent name
+collision**: `includes/admin/clickstats.php` declares its own `CLICKSTATS_MAX_PAGE`, with the
+value 10000 and a completely different meaning (a pagination page number, not a label
+length). The two never met, because one is the public collector and the other an admin
+module, but a future include that pulled both into one request would have redefined a
+constant. They are now `self::MAX_PAGE` and the admin file's constant is untouched.
+
+**Baseline coverage limit**: the flag is off in this database, so every valid POST stops at
+the flag check with 204 and the INSERT path — budget window, per-event table access check,
+multi-row insert — is not exercised by the matrix. What *is* proven identical is the whole
+gate sequence (405 on GET and PUT, 403 without a body token, 401 for guests, 204 with the
+flag off). Turning the flag on to record the write path is a config change, so it was not
+done unasked.
+
+### `public/api/fk.php` stays procedural — it is a shim, not an endpoint
+
+`fk.php` has no actions and no handler. Its entire body is bootstrap-level work: gate the
+source table, narrow the label projection into `OS_FK_LABEL_COLUMNS`, set
+`OS_TABLE_ACCESS_DELEGATED`, **rewrite `$_GET['api']` and `$_GET['table']`**, then
+`require public/api.php` re-entrantly and stop.
+
+Wrapping that in a controller would produce a class whose one method mutates superglobals
+and includes another entry point — ceremony that makes the delegation harder to see, not
+easier, and it would move two `define()` calls that the required file depends on further
+from the `require` that consumes them. It is skipped deliberately, not overlooked.
+
+The honest precondition for converting it is a way to call the gateway's `list` route
+*directly* — `FrontApiController` reading its route from an argument instead of `$_GET` —
+at which point the `$_GET` rewriting disappears and the shim becomes a real caller. That is
+a change to the gateway, not to `fk.php`, and it is not part of this stage.
+
+This controller also takes **`AppContext` only**. It reads its action from the query string
+with a default of `get_count`, and `mark_read` decodes `php://input` itself, so `ApiRequest`
+would be an argument the class never consults.
+
+Two guard tests pinned `public/api/files.php` by path and had to move with it:
+`AccessScopeEndpointGuardTest::testFileWriteGateCoversEveryAttachment` /
+`testFileListingIsFilteredByRecordOwnership` (now `self::FILES_CONTROLLER`), and the
+`post().related_table` self-check in `RequestScopeInventoryTest`. The latter went **red**
+first, which is the behaviour that rule is meant to produce.
+
+**Proving a move is a move**: for each of the four controllers, the string literals were
+compared token-by-token against the pre-move file (`token_get_all`, `T_CONSTANT_ENCAPSED_STRING`
+and `T_ENCAPSED_AND_WHITESPACE`, sorted). The only differences are the ones the entry point
+took over — `'/../../includes/bootstrap.php'`, `'csrf'`, `'manual'` — plus
+`'/../../includes/config_store.php'` becoming `'/../../config_store.php'` for the new
+directory depth. Every SQL string, error message and log tag is byte-identical, which is
+what makes reformatted concatenations (needed for the 120-character limit) safe to claim
+as cosmetic. One local variable was renamed against that rule, deliberately:
+`$res2` → `$insertResult`, because the naming convention is binding for code being written
+and a two-line rename with no literal in it cannot change behaviour.
+
+**A known blind spot in the scanner, visible here**: `validatedRelation(array $source)`
+reads `$source['related_table']` from the POST body, and `$source` is not in the scanner's
+`HOLDERS` list, so that read has never appeared in the inventory — before or after the
+move. It *is* gated (the helper ends in `validatedTable()`), and the behaviour is
+unchanged, but the guard's coverage claim stops at the parameter name. Renaming a body
+array on the way into a helper hides the read; keep body parameters named `$body` in new
+code.
 
 ### The seam is `includes/Controller/`, not `src/`
 
@@ -1431,6 +1955,97 @@ to move in the same change:
 `RECORD_SNAPSHOTS_ENABLED` entries were re-pointed at the controllers. The count is
 unchanged — that is a relocation, not a new entry, and the ratchet still holds.
 
+**The glob itself was the residual hole** (closed 2026-08-16). `includes/Controller/*.php`
+does not match `includes/Controller/Api/*.php`, so the *next* file to move one directory
+deeper would have repeated the failure — silently, because every existing inventory entry
+keeps passing. `scannedFiles()` now walks `public/`, `includes/` and `templates/`
+recursively (`SCANNED_ROOTS`), which also pulled 33 previously unscanned files into the
+guard for the first time: `includes/Service/`, `includes/Exception/`,
+`templates/partials/`, `public/admin/templates/` and `public/admin/demo/`. None of them
+carried an unpinned read, so the widening cost nothing and the inventory is unchanged.
+
+`testScanDescendsIntoSubdirectories()` pins the recursion from both directions: something
+below each root must be scanned, and the deepest scanned path must be at least three
+levels down. Restoring the old glob list turns it red, together with the five nested
+representatives added to `testEveryRequestReachableDirectoryIsScanned()` — that was
+verified by reintroducing the old implementation, not assumed.
+
+### The behaviour baseline: `scripts/baseline/`
+
+A refactor of this size needs a way to say *nothing changed* that is stronger than
+reading the diff. `scripts/baseline/` records what the running application answers and
+compares two recordings:
+
+```bash
+sh scripts/baseline/export-head.sh /some/scratch/head   # optional second arg: a revision
+# serve the export on 8081 and the working copy on 8080, then:
+php scripts/baseline/record.php --base=http://127.0.0.1:8081 --out=before.json --seed=1
+php scripts/baseline/record.php --base=http://127.0.0.1:8080 --out=after.json
+php scripts/baseline/compare.php before.json after.json
+```
+
+`scenarios.php` holds the matrix — 216 cases × 3 roles (guest, editor, admin) = 648
+recordings covering every `public/api/*.php` endpoint, the `api.php` gateway routes and
+every page, each with its unknown-action, missing-parameter and unknown-table variants,
+plus happy paths against a real seeded table (`contacts`, id 1).
+`compare.php` exits non-zero on any difference in status, content type, `Location` or
+normalised body.
+
+Write scenarios cover the **guards**, not the mutations: no-CSRF (403), unknown table
+(400), empty body (400), bad record id (400), missing row (404). A successful insert or
+delete would make the two recordings differ by construction (new row id), so mutating
+happy paths stay Cypress's job. Two traps here, both found by recording and reading the
+output rather than trusting it:
+
+- The token has to go in the **request body**, not only the `X-CSRF-Token` header, or
+  every write scenario against a `csrf => 'manual'` endpoint records a 403 that proves
+  nothing — the exact "green but testing nothing" failure this file warns about elsewhere.
+- The admin role is redirected away from `files.php`, so the token has to be read from
+  `admin/index.php` for that role. `record.php` now **aborts with exit 5** when a
+  logged-in role yields no token, rather than recording a wall of meaningless 403s.
+
+**The export needs three untracked files, not one** — `export-head.sh` exists because
+getting this wrong produces a difference that looks exactly like a regression.
+`config/database.json` is the obvious one; `includes/.secret_key` and
+`includes/.secret_salt` are not, and they are gitignored, so `git archive` never carries
+them. Without them `config.php` derives a *different* `APP_ENCRYPTION_KEY` for the export,
+and every value that goes through `secret_decrypt()` comes back as garbage. Found
+2026-08-16 on the `rag` move: the export answered 500 "The assistant failed to answer"
+where the working copy answered 200, reproducibly, across four runs — and the cause was
+`Ollama error: Unauthorized` in the export's log, i.e. a mis-decrypted API key, not the
+refactor. Anything reading `ollama_api_key_enc`, SMTP credentials or ETL passwords is
+affected the same way.
+
+**The literal comparison counts values, not occurrences.** `array_diff()` over the sorted
+literal lists reports a string that disappeared entirely; it cannot see that four copies of
+`'No rows selected'` became one. So it validates *edits* to strings, not *de-duplication* of
+them — when a move also collapses repeated blocks, the baseline is what carries the proof.
+
+**A 200 is not proof the interesting code ran.** `data_cleanup.preview_real` was written
+against `contacts.name` — a column that does not exist there — so it returned 400 "Invalid
+column" and the whole regex/`regexp_replace`/owner-restriction path stayed untouched while
+the matrix still reported "identical". Pointing it at a real column (`contacts.last_name`,
+plus a whole-word case on `companies.name`) turned it into 116 matched rows with the
+rewritten values in the response. Read the recorded *bodies* of the cases you added, not
+only the diff verdict.
+
+**Scenarios must not depend on an external service.** The same investigation removed
+`rag.query_unknown_table` from the matrix: `require_table_access()` does not reject an
+*unconfigured* table for an unrestricted user, so the request ran all the way into a real
+Ollama call. That made the case slow, dependent on a model being up, and non-deterministic
+in its answer text — while proving nothing about the gate it was named after. The remaining
+`rag` cases stop at validation (400) and never leave the process.
+
+Two normalisations are not optional and were both found the hard way: the export carries
+LF while the working copy carries CRLF (`core.autocrlf`), and absolute paths leak into
+PHP warnings from two different directories. Both are folded out in `record.php` and the
+`volatile` list, along with per-session CSRF tokens in their four spellings.
+
+The harness was proven to *detect*, not just to agree: changing one `jsonError()` status
+from 400 to 404 in the recorded revision surfaced as 8 differing scenarios and exit 1.
+`scripts/` is already excluded from the release ZIP and the Docker image, so none of this
+ships.
+
 ### One behaviour did change
 
 In the old `edit.php`, the subtable loop reused `$row` as its inner loop variable and
@@ -1449,9 +2064,13 @@ the strip now prints the record id. Everything else is byte-identical.
   `file_download.php` run before or outside `os_boot_app()` — no container, and in
   the setup case no configured database — so they do not fit this shape.
 - `FrontApiController` still calls `db_connect()` itself rather than taking a
-  connection. `public/api.php` boots with `['connect' => false]` on purpose: the
-  admin and viewer blocks must answer **before** a connection is opened. Injecting
-  one would connect first and quietly undo that ordering.
+  connection, and it is the one controller that does **not** take `AppContext`.
+  `public/api.php` boots with `['connect' => false]` on purpose: the admin and
+  viewer blocks must answer **before** a connection is opened, and `AppContext`
+  connects in its constructor, so injecting it would connect first and quietly undo
+  that ordering. Its two arguments (session, request) are inside the limit anyway;
+  only the duplicated `handle($request)` parameter was dropped, the same way it was
+  in the page controllers.
 
 ### Verification
 

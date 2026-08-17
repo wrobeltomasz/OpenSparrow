@@ -162,7 +162,7 @@ if ($action === 'create_m2m') {
             'display_column' => $displayColumn,
         ];
 
-        $m2mUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $m2mUserId = admin_user_id();
         $m2mResult = config_save('schema', $schema, null, $m2mUserId);
         if ($m2mResult['status'] !== 'ok') {
             admin_err($m2mResult['error'] ?? 'Failed to save schema.');
@@ -225,7 +225,7 @@ if ($action === 'delete_m2m') {
             }
         }
 
-        $m2mUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $m2mUserId = admin_user_id();
         $m2mResult = config_save('schema', $schema, null, $m2mUserId);
         if ($m2mResult['status'] !== 'ok') {
             admin_err($m2mResult['error'] ?? 'Failed to save schema.');

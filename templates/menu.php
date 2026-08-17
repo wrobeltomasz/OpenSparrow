@@ -79,13 +79,14 @@ require_once __DIR__ . '/../includes/api_helpers.php';
 
 $tables       = filter_tables_for_user((config_get('schema') ?? [])['tables'] ?? []);
 
+$queryParameters = os_request()->queryAll();
 $currentPage  = basename($_SERVER['PHP_SELF']);
-$currentTable = substr($_GET['table'] ?? '', 0, 64);
-$currentView     = substr($_GET['view'] ?? '', 0, 64);
-$currentPrint    = substr($_GET['print'] ?? '', 0, 64);
-$currentBoard    = substr($_GET['board'] ?? '', 0, 64);
-$currentWorkflow = substr($_GET['workflow'] ?? '', 0, 64);
-$isWorkflows     = isset($_GET['workflows']);
+$currentTable = substr(os_query_string('table'), 0, 64);
+$currentView     = substr(os_query_string('view'), 0, 64);
+$currentPrint    = substr(os_query_string('print'), 0, 64);
+$currentBoard    = substr(os_query_string('board'), 0, 64);
+$currentWorkflow = substr(os_query_string('workflow'), 0, 64);
+$isWorkflows     = isset($queryParameters['workflows']);
 
 $dashCfg  = loadMenuConfig('dashboard', $includeDir);
 $calCfg   = loadMenuConfig('calendar', $includeDir);

@@ -371,7 +371,7 @@ if ($action === 'etl_target_tables') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn   = db_connect();
-        $schema = trim((string)($_GET['schema'] ?? ''));
+        $schema = trim(os_request()->query('schema'));
         if ($schema === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $schema)) {
             admin_err('Invalid schema.');
         }

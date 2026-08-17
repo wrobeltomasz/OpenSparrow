@@ -17,7 +17,6 @@ require_once __DIR__ . '/../includes/frontapi/context.php';
 
 os_api_bootstrap(['connect' => false]);
 
-$request    = os_request();
-$controller = new FrontApiController(new PhpSession(), $request);
+$controller = new FrontApiController(new PhpSession(), os_request());
 
-$controller->handle($request);
+$controller->handle();

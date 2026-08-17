@@ -26,8 +26,9 @@ if (empty($_SESSION['user_id'])) {
     throw new UnauthorizedException('Unauthorised');
 }
 
-$uuid  = trim($_GET['uuid'] ?? '');
-$thumb = !empty($_GET['thumb']);
+$queryParameters = os_request()->queryAll();
+$uuid  = trim(os_query_string('uuid'));
+$thumb = !empty($queryParameters['thumb']);
 if ($uuid === '') {
     throw new BadRequestException('Missing uuid');
 }

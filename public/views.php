@@ -12,7 +12,7 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 $page      = os_page_bootstrap(['csp' => 'unsafe-style']);
 $cspNonce  = $page['nonce'];
 $userRole  = $page['role'];
-$viewName  = substr($_GET['view'] ?? '', 0, 64);
+$viewName  = substr(os_query_string('view'), 0, 64);
 
 if ($viewName !== '') {
     os_require_access('views', $viewName);

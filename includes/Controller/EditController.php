@@ -26,12 +26,12 @@ use App\Http\SessionInterface;
 use App\Repository\FkOptionsLoader;
 use App\Repository\PgFileRepository;
 use App\Repository\RecordRepositoryInterface;
+use App\Service\AppContext;
 use App\Service\AutomationService;
 use App\Service\ImageService;
 use App\Service\M2MService;
 use App\Service\RecordOwnershipService;
 use App\Service\RecordSnapshotService;
-use App\Service\ServiceContainer;
 use App\Support\ByteFormatter;
 
 final class EditController
@@ -57,19 +57,40 @@ final class EditController
 
     private readonly AutomationService $automations;
 
-    public function __construct(
-        private readonly SessionInterface $session,
-        private readonly PhpRequest $request,
-        private readonly SessionCsrfTokenManager $csrf,
-        private readonly JsonSchemaRepository $schemas,
-        private readonly FieldTypeRegistry $fieldRegistry,
-        private readonly UpdateMapper $mapper,
-        private readonly RecordRepositoryInterface $records,
-        private readonly PgFileRepository $files,
-        private readonly DbAuditLogger $audit,
-        private readonly FkOptionsLoader $fkLoader,
-        private readonly ServiceContainer $services,
-    ) {
+    private readonly SessionInterface $session;
+
+    private readonly PhpRequest $request;
+
+    private readonly SessionCsrfTokenManager $csrf;
+
+    private readonly JsonSchemaRepository $schemas;
+
+    private readonly FieldTypeRegistry $fieldRegistry;
+
+    private readonly UpdateMapper $mapper;
+
+    private readonly RecordRepositoryInterface $records;
+
+    private readonly PgFileRepository $files;
+
+    private readonly DbAuditLogger $audit;
+
+    private readonly FkOptionsLoader $fkLoader;
+
+    public function __construct(AppContext $context)
+    {
+        $this->session       = $context->session();
+        $this->request       = $context->request();
+        $this->csrf          = $context->csrf();
+        $this->schemas       = $context->schemas();
+        $this->fieldRegistry = $context->fieldRegistry();
+        $this->mapper        = $context->mapper();
+        $this->records       = $context->records();
+        $this->files         = $context->files();
+        $this->audit         = $context->audit();
+        $this->fkLoader      = $context->fkLoader();
+
+        $services          = $context->services();
         $this->ownership   = $services->ownership();
         $this->snapshots   = $services->snapshots();
         $this->m2m         = $services->m2m();
@@ -77,17 +98,17 @@ final class EditController
         $this->automations = $services->automations();
     }
 
-    public function handle(PhpRequest $request, array $pageMeta): void
+    public function handle(array $pageMeta): void
     {
         $cspNonce   = (string) ($pageMeta['nonce'] ?? '');
         $isReadOnly = $this->session->role() !== 'editor';
 
-        if ($isReadOnly && $request->isPost()) {
+        if ($isReadOnly && $this->request->isPost()) {
             throw new ForbiddenException('Read-only access');
         }
 
-        $table = os_validated_table_name($request->query('table'));
-        $id    = os_validated_record_id($request->query('id'));
+        $table = os_validated_table_name($this->request->query('table'));
+        $id    = os_validated_record_id($this->request->query('id'));
 
         if (!$this->schemas->hasTable($table)) {
             throw new BadRequestException('Invalid table.');
@@ -113,8 +134,8 @@ final class EditController
             throw new NotFoundException('Record not found.');
         }
 
-        if ($request->isPost()) {
-            $error = $this->save($request, $tableCfg, $table, $id, $m2mConfigs, $rawSchema);
+        if ($this->request->isPost()) {
+            $error = $this->save($tableCfg, $table, $id, $m2mConfigs, $rawSchema);
         }
 
         $row = $this->records->find($tableCfg, $id);
@@ -137,7 +158,7 @@ final class EditController
         $tabs           = $this->tabs($tableCfg, $subtablePanels, $imagesPanel);
 
         $formHeading   = t('form.edit_record', ['table' => $tableCfg->displayName]);
-        $formSaved     = $request->query('saved') === '1';
+        $formSaved     = $this->request->query('saved') === '1';
         $formError     = $error;
         $formCsrfToken = $this->csrf->token();
         $formRecordId  = $row[$tableCfg->primaryKey] ?? null;
@@ -161,19 +182,18 @@ final class EditController
     }
 
     private function save(
-        PhpRequest $request,
         TableConfig $tableCfg,
         string $table,
         int $id,
         array $m2mConfigs,
         array $rawSchema
     ): string {
-        if (!$this->csrf->isValid((string) $request->post('csrf_token'))) {
+        if (!$this->csrf->isValid((string) $this->request->post('csrf_token'))) {
             throw new ForbiddenException('Invalid CSRF token.');
         }
 
         try {
-            $data = $this->mapper->fromPost($tableCfg, $request->postAll());
+            $data = $this->mapper->fromPost($tableCfg, $this->request->postAll());
 
             $oldRecord = $this->automations->captureOldRecord($tableCfg->schema, $tableCfg->name, $id);
             $this->records->update($tableCfg, $id, $data);
@@ -191,13 +211,13 @@ final class EditController
             );
             foreach ($m2mConfigs as $m2mIndex => $m2mConfig) {
                 $selected = array_values(array_filter(
-                    (array) $request->post('m2m_' . $m2mIndex, []),
+                    (array) $this->request->post('m2m_' . $m2mIndex, []),
                     'ctype_digit'
                 ));
                 $this->m2m->sync($m2mConfig, $id, $selected, $rawSchema);
             }
             throw new RedirectException(
-                ($request->post('_save_action') ?? 'exit') === 'stay'
+                ($this->request->post('_save_action') ?? 'exit') === 'stay'
                     ? 'edit.php?table=' . urlencode($table) . '&id=' . urlencode((string) $id) . '&saved=1'
                     : 'index.php?table=' . urlencode($table)
             );

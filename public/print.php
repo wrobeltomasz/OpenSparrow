@@ -11,7 +11,7 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 
 $page      = os_page_bootstrap();
 $cspNonce  = $page['nonce'];
-$printName = substr($_GET['print'] ?? '', 0, 64);
+$printName = substr(os_query_string('print'), 0, 64);
 
 if ($printName !== '') {
     os_require_access('prints', $printName);

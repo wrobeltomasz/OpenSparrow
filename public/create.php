@@ -13,21 +13,6 @@ use App\Controller\CreateController;
 
 $pageMeta = os_page_bootstrap(['csp' => 'unsafe-style', 'redirect_admin' => false]);
 
-['session' => $session, 'request' => $request, 'csrf' => $csrf, 'schemas' => $schemas,
- 'fieldRegistry' => $fieldRegistry, 'mapper' => $mapper, 'records' => $records,
- 'audit' => $audit, 'fkLoader' => $fkLoader, 'services' => $services] = os_boot_app();
+$controller = new CreateController(os_boot_app());
 
-$controller = new CreateController(
-    $session,
-    $request,
-    $csrf,
-    $schemas,
-    $fieldRegistry,
-    $mapper,
-    $records,
-    $audit,
-    $fkLoader,
-    $services
-);
-
-$controller->handle($request, $pageMeta);
+$controller->handle($pageMeta);

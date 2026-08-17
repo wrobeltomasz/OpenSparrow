@@ -7,51 +7,12 @@
 
 declare(strict_types=1);
 
-use App\Exception\ControlFlowException;
-use App\Exception\ResponseException;
-
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
-$conn = os_api_bootstrap();
+use App\Controller\Api\NotificationsController;
 
-$userId = (int)$_SESSION['user_id'];
-$action = $_GET['action'] ?? 'get_count';
+os_api_bootstrap();
 
-try {
-    if ($action === 'get_count') {
-        $sql = 'SELECT COUNT(*) FROM ' . sys_table('users_notifications') . ' WHERE user_id = $1 AND is_read = FALSE';
-        $result = pg_query_params($conn, $sql, [$userId]);
-        $count = pg_fetch_result($result, 0, 0);
-        throw ResponseException::encoded(['status' => 'success', 'count' => (int)$count]);
-    }
+$controller = new NotificationsController(os_boot_app());
 
-    if ($action === 'get_list') {
-        $sql = 'SELECT * FROM ' . sys_table('users_notifications')
-            . ' WHERE user_id = $1 ORDER BY is_read ASC, created_at DESC LIMIT ' . NOTIFICATIONS_DROPDOWN_LIMIT;
-        $result = pg_query_params($conn, $sql, [$userId]);
-        $notifications = pg_fetch_all($result) ?: [];
-        throw ResponseException::encoded(['status' => 'success', 'notifications' => $notifications]);
-    }
-
-    if ($action === 'mark_read') {
-        $data = json_decode(file_get_contents('php://input'), true);
-        $notifId = (int)($data['id'] ?? 0);
-        if ($notifId > 0) {
-            $sql = 'UPDATE ' . sys_table('users_notifications') . ' SET is_read = TRUE WHERE id = $1 AND user_id = $2';
-            pg_query_params($conn, $sql, [$notifId, $userId]);
-            echo json_encode(['status' => 'success']);
-        } else {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Invalid ID']);
-        }
-        throw ResponseException::sent();
-    }
-
-    http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
-} catch (ControlFlowException $signal) {
-    throw $signal;
-} catch (Throwable $exception) {
-    http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Internal server error']);
-}
+$controller->handle();

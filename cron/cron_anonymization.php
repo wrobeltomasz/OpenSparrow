@@ -296,4 +296,5 @@ function cron_anonymization_main(array $argv): int
     return 0;
 }
 
-exit(cron_anonymization_main((array) ($_SERVER['argv'] ?? [])));
+$argv = (array) ($_SERVER['argv'] ?? []);
+exit(cron_anonymization_main($argv));

@@ -35,8 +35,9 @@ if (($_SESSION['role'] ?? '') !== 'admin') {
     );
 }
 
-$action = $_GET['action'] ?? '';
-$file = $_GET['file'] ?? '';
+$queryParameters = os_request()->queryAll();
+$action = $queryParameters['action'] ?? '';
+$file = $queryParameters['file'] ?? '';
 $isDemoMode = DEMO_MODE;
 
 require_once __DIR__ . '/../../includes/admin_api_errors.php';
@@ -92,7 +93,7 @@ function auto_cfg_read(): array
 
 function auto_cfg_write(array $automations): void
 {
-    $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $userId = admin_user_id();
     $result = config_save('automations', ['automations' => array_values($automations)], null, $userId);
     if (($result['status'] ?? '') === 'conflict') {
         throw new AdminApiMessage('Config was modified by someone else — reload and retry.');

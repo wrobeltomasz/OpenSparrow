@@ -12,29 +12,14 @@ require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/page_helpers.php';
 require_once __DIR__ . '/../src/Security/UserRole.php';
 
-use App\Audit\DbAuditLogger;
 use App\Exception\ControlFlowException;
 use App\Exception\ForbiddenException;
 use App\Exception\RedirectException;
 use App\Exception\UnauthorizedException;
-use App\Csrf\SessionCsrfTokenManager;
-use App\Domain\Schema\JsonSchemaRepository;
-use App\Form\FieldTypeRegistry;
-use App\Form\Type\BooleanField;
-use App\Form\Type\DateField;
-use App\Form\Type\EnumField;
-use App\Form\Type\TimestampField;
-use App\Form\Type\ForeignKeyField;
-use App\Form\Type\TextField;
-use App\Form\UpdateMapper;
 use App\Http\PhpRequest;
-use App\Http\PhpSession;
-use App\Persistence\PgConnection;
-use App\Repository\FkOptionsLoader;
-use App\Repository\PgFileRepository;
-use App\Repository\PgRecordRepository;
 use App\Security\UserRole;
-use App\Service\ServiceContainer;
+use App\Service\ApiRequest;
+use App\Service\AppContext;
 
 function os_request(): PhpRequest
 {
@@ -44,6 +29,13 @@ function os_request(): PhpRequest
         $request = new PhpRequest();
     }
     return $request;
+}
+
+function os_query_string(string $key, string $default = ''): string
+{
+    $value = os_request()->queryAll()[$key] ?? $default;
+
+    return is_string($value) ? $value : $default;
 }
 
 function os_require_setup(): void
@@ -160,8 +152,10 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
     return ($options['connect'] ?? true) ? db_connect() : null;
 }
 
-function os_api_action(): array
+function os_api_action(): ApiRequest
 {
+    require_once __DIR__ . '/autoload.php';
+
     $method = $_SERVER['REQUEST_METHOD'];
     $action = '';
     $body   = [];
@@ -177,11 +171,11 @@ function os_api_action(): array
         }
     }
 
-    return [
-        'method' => $method,
-        'action' => (string) $action,
-        'body'   => is_array($body) ? $body : [],
-    ];
+    return new ApiRequest(
+        (string) $method,
+        (string) $action,
+        is_array($body) ? $body : []
+    );
 }
 
 function os_api_dispatch(
@@ -207,50 +201,14 @@ function os_api_dispatch(
     }
 }
 
-function os_boot_app(): array
+function os_boot_app(): AppContext
 {
     require_once __DIR__ . '/autoload.php';
     require_once __DIR__ . '/db.php';
     require_once __DIR__ . '/api_helpers.php';
     require_once __DIR__ . '/automations.php';
     require_once __DIR__ . '/images.php';
-
-    $session = new PhpSession();
-    $request = os_request();
-    $csrf    = new SessionCsrfTokenManager($session);
-
-    $pgConn   = db_connect();
-    $database       = new PgConnection($pgConn);
-    $services = new ServiceContainer($pgConn);
-
     require_once __DIR__ . '/config_store.php';
-    $schemas  = new JsonSchemaRepository(config_get('schema') ?? ['tables' => []]);
-    $fkLoader = new FkOptionsLoader($database);
 
-    $fieldRegistry = new FieldTypeRegistry([
-        new ForeignKeyField(),
-        new BooleanField(),
-        new EnumField(),
-        new TimestampField(),
-        new DateField(),
-        new TextField(),
-    ]);
-
-    $records = new PgRecordRepository($database, $schemas, $fkLoader);
-
-    return [
-        'session'       => $session,
-        'request'       => $request,
-        'csrf'          => $csrf,
-        'db'            => $database,
-        'conn'          => $pgConn,
-        'services'      => $services,
-        'schemas'       => $schemas,
-        'fkLoader'      => $fkLoader,
-        'fieldRegistry' => $fieldRegistry,
-        'mapper'        => new UpdateMapper($fieldRegistry),
-        'records'       => $records,
-        'files'         => new PgFileRepository($database),
-        'audit'         => new DbAuditLogger($database),
-    ];
+    return new AppContext();
 }

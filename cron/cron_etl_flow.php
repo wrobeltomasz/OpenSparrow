@@ -259,4 +259,5 @@ function cron_etl_flow_main(array $argv): int
     return $anyError ? 1 : 0;
 }
 
-exit(cron_etl_flow_main((array) ($_SERVER['argv'] ?? [])));
+$argv = (array) ($_SERVER['argv'] ?? []);
+exit(cron_etl_flow_main($argv));

@@ -222,7 +222,7 @@ if ($action === 'schema_add_table') {
         'icon'         => '',
     ];
 
-    $schemaUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $schemaUserId = admin_user_id();
     $schemaResult = config_save('schema', $schemaData, null, $schemaUserId);
     if ($schemaResult['status'] !== 'ok') {
         admin_err($schemaResult['error'] ?? 'Could not save schema.');

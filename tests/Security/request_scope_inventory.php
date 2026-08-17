@@ -23,45 +23,45 @@ return [
     'includes/frontapi/workflow_procedure.php' => [
         'body.workflow_id' => ['gated', 'Calls require_access(workflows, ...) before looking the procedure up, then workflow_tables_in_scope() on the resolved entry. Both halves are needed: without the first the scope would be cosmetic (a direct POST would fire the procedure of a workflow hidden from the menu and the list), and without the second a workflow granted to someone whose tables do not cover its steps would still run against those tables.'],
     ],
-    'public/api/clickstats.php' => [
+    'includes/Controller/Api/ClickstatsController.php' => [
         'input.table' => ['gated', 'Each buffered click may name the table that was in context. It is only ever written into spw_clickstats.table_name as a label - it selects nothing and reaches no identifier - but it is still checked with user_can_access(tables, ...) before being stored, so a user whose access is restricted cannot seed the admin-visible log with the names of tables they were never granted. A name outside the scope is stored as NULL rather than rejected: statistics must never fail a request. The check is not a validator: for an unrestricted user (user_allowed_items() returning null, the default) any string passes, so the value is truncated to the column width before it is stored and is treated as free text everywhere it is read back.'],
     ],
-    'public/api/comments.php' => [
-        '_GET.related_table'  => ['gated', 'Both read actions go through validatedTable(), which calls require_table_access() itself.'],
+    'includes/Controller/Api/CommentsController.php' => [
+        'query().related_table'  => ['gated', 'Both read actions go through validatedTable(), which calls require_table_access() itself. public/api/comments.php is now only the entry point: it boots the request and hands it to this controller.'],
         'body.related_table'  => ['gated', 'The add action goes through validatedTable() as well.'],
     ],
-    'public/api/data_cleanup.php' => [
-        'body.table' => ['gated', 'validateInput() calls require_table_access() right after the unknown-table check.'],
+    'includes/Controller/Api/DataCleanupController.php' => [
+        'body.table' => ['gated', 'validateInput() calls require_table_access() right after the unknown-table check. public/api/data_cleanup.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
-    'public/api/files.php' => [
-        '_GET.table'          => ['gated', 'files_action_get_related_records() calls require_table_access() on the requested table before resolving its relation config.'],
-        'post().related_table' => ['gated', 'files_action_upload() gates it once for both upload paths (gallery and plain attachment), so a file cannot be attached to a record in a table the uploader has no access to.'],
+    'includes/Controller/Api/FilesController.php' => [
+        'query().table'          => ['gated', 'getRelatedRecords() calls require_table_access() on the requested table before resolving its relation config. public/api/files.php is now only the entry point: it boots the request and hands it to this controller.'],
+        'post().related_table' => ['gated', 'upload() gates it once for both upload paths (gallery and plain attachment), so a file cannot be attached to a record in a table the uploader has no access to.'],
     ],
     'public/api/fk.php' => [
         '_GET.table' => ['gated', 'The request-supplied SOURCE table is gated. The reference table it resolves to is schema-supplied and deliberately exempt, or FK dropdowns inside permitted tables would break; the projection is narrowed to the key and label columns to keep that exemption to labels.'],
     ],
-    'public/api/mass_edit.php' => [
-        'body.table' => ['gated', 'All three actions (mass edit, mass duplicate, mass delete) call require_table_access() after the unknown-table check.'],
+    'includes/Controller/Api/MassEditController.php' => [
+        'body.table' => ['gated', 'All four actions (preview, mass edit, mass duplicate, mass delete) call require_table_access() after the unknown-table check: preview and apply through validateTableColumn(), duplicate and delete through validatedTable(). public/api/mass_edit.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
-    'public/api/notes.php' => [
-        '_GET.table' => ['gated', 'The note list for a record goes through validatedTable(), which calls require_table_access() itself, so notes attached to a table outside the scope are unreachable.'],
+    'includes/Controller/Api/NotesController.php' => [
+        'query().table' => ['gated', 'The note list for a record goes through validatedTable(), which calls require_table_access() itself, so notes attached to a table outside the scope are unreachable. public/api/notes.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
-    'public/api/owners.php' => [
-        '_GET.table'  => ['gated', 'Both read actions go through validatedTable(). Note that reassigning an owner is open to editors by design — that is a separate decision, documented in docs/MAINTENANCE.md, and not an access-scope hole.'],
+    'includes/Controller/Api/OwnersController.php' => [
+        'query().table'  => ['gated', 'Both read actions go through validatedTable(). Note that reassigning an owner is open to editors by design — that is a separate decision, documented in docs/MAINTENANCE.md, and not an access-scope hole. public/api/owners.php is now only the entry point: it boots the request and hands it to this controller.'],
         'body.table'  => ['gated', 'Both write actions go through validatedTable().'],
     ],
-    'public/api/print.php' => [
-        '_GET.print' => ['gated', 'The list action skips printouts outside the scope; the data and param_options actions call require_print_access(). The list filter alone would not be enough — hiding a menu entry is not a boundary.'],
-        '_GET.view'  => ['admin', 'The columns action is guarded by $role === admin: it serves the admin print-template editor, listing the live columns of a registered PostgreSQL view.'],
+    'includes/Controller/Api/PrintController.php' => [
+        'query().print' => ['gated', 'The list action skips printouts outside the scope; the data and param_options actions call require_print_access(). The list filter alone would not be enough — hiding a menu entry is not a boundary. public/api/print.php is now only the entry point: it boots the request and hands it to this controller.'],
+        'query().view'  => ['admin', 'The columns action is guarded by $role === admin: it serves the admin print-template editor, listing the live columns of a registered PostgreSQL view.'],
     ],
-    'public/api/rag.php' => [
-        'body.table' => ['gated', 'The query action calls require_table_access() when a table is given; the table drives the aggregate view fed into the model prompt, so without it the assistant would summarise rows the user cannot open.'],
+    'includes/Controller/Api/RagController.php' => [
+        'body.table' => ['gated', 'The query action calls require_table_access() when a table is given; the table drives the aggregate view fed into the model prompt, so without it the assistant would summarise rows the user cannot open. public/api/rag.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
-    'public/api/views.php' => [
-        '_GET.view' => ['gated', 'The list action skips views outside the scope; the data action calls require_view_access().'],
+    'includes/Controller/Api/ViewsController.php' => [
+        'query().view' => ['gated', 'The list action skips views outside the scope; the data action calls require_view_access(). public/api/views.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
     'public/board.php' => [
-        '_GET.board' => ['gated', 'os_require_access(boards, ...) redirects to the grid rather than rendering a shell whose data call comes back empty.'],
+        'os_query_string().board' => ['gated', 'os_require_access(boards, ...) redirects to the grid rather than rendering a shell whose data call comes back empty.'],
     ],
     'includes/Controller/CreateController.php' => [
         'query().table' => ['gated', 'os_require_table_access() runs right after the hasTable() check, before the form is built, so a table outside the scope never reaches the field rendering or the POST handler below it. public/create.php is now only the entry point: it boots the request and hands it to this controller.'],
@@ -70,21 +70,21 @@ return [
         'query().table' => ['gated', 'os_require_table_access() runs before the record lookup, so the table-level gate is applied ahead of the row-level ownership check. The subtable tabs are filtered separately in subtablePanels(), because a tab renders whole rows of the child table. public/edit.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
     'public/index.php' => [
-        '_GET.table'    => ['gated', 'os_require_table_access() redirects to the default grid instead of rendering a page whose every XHR would 403.'],
-        '_GET.workflow' => ['gated', 'os_require_access(workflows, ...) — the workflow wizard lives on this page rather than one of its own — followed by workflow_tables_in_scope() on the configured entry, so the page cannot render a shell that api=workflows refuses to fill. An id matching nothing configured falls through untouched.'],
+        'os_query_string().table'    => ['gated', 'os_require_table_access() redirects to the default grid instead of rendering a page whose every XHR would 403.'],
+        'os_query_string().workflow' => ['gated', 'os_require_access(workflows, ...) — the workflow wizard lives on this page rather than one of its own — followed by workflow_tables_in_scope() on the configured entry, so the page cannot render a shell that api=workflows refuses to fill. An id matching nothing configured falls through untouched.'],
     ],
     'public/print.php' => [
-        '_GET.print' => ['gated', 'os_require_access(prints, ...) redirects to the grid, so a stale bookmark or a hand-edited URL cannot render a print shell whose data call would 403.'],
+        'os_query_string().print' => ['gated', 'os_require_access(prints, ...) redirects to the grid, so a stale bookmark or a hand-edited URL cannot render a print shell whose data call would 403.'],
     ],
     'public/views.php' => [
-        '_GET.view' => ['gated', 'os_require_access(views, ...) redirects to the grid, so a stale bookmark or a hand-edited URL cannot render a view shell whose data call would 403.'],
+        'os_query_string().view' => ['gated', 'os_require_access(views, ...) redirects to the grid, so a stale bookmark or a hand-edited URL cannot render a view shell whose data call would 403.'],
     ],
     'templates/menu.php' => [
-        '_GET.table'    => ['none', 'Read only to mark the active menu entry, never to fetch anything. The items themselves come from filter_by_user_access(), so a name the user has no access to simply matches nothing and no entry lights up.'],
-        '_GET.view'     => ['none', 'Active-entry highlight only, and the view list itself is already filtered — an out-of-scope name matches no entry.'],
-        '_GET.print'    => ['none', 'Active-entry highlight only, and the printout list itself is already filtered — an out-of-scope name matches no entry.'],
-        '_GET.board'    => ['none', 'Active-entry highlight only, and the board list itself is already filtered — an out-of-scope id matches no entry.'],
-        '_GET.workflow' => ['none', 'Active-entry highlight only, and the workflow list itself is already filtered — an out-of-scope id matches no entry.'],
+        'os_query_string().table'    => ['none', 'Read only to mark the active menu entry, never to fetch anything. The items themselves come from filter_by_user_access(), so a name the user has no access to simply matches nothing and no entry lights up.'],
+        'os_query_string().view'     => ['none', 'Active-entry highlight only, and the view list itself is already filtered — an out-of-scope name matches no entry.'],
+        'os_query_string().print'    => ['none', 'Active-entry highlight only, and the printout list itself is already filtered — an out-of-scope name matches no entry.'],
+        'os_query_string().board'    => ['none', 'Active-entry highlight only, and the board list itself is already filtered — an out-of-scope id matches no entry.'],
+        'os_query_string().workflow' => ['none', 'Active-entry highlight only, and the workflow list itself is already filtered — an out-of-scope id matches no entry.'],
     ],
     'public/cypress_seed.php' => [
         'query().table' => ['none', 'Test-only endpoint, dead outside development: a hard APP_ENV === production guard returns 404 before anything else runs, and a shared-token check follows it. It seeds fixtures for the E2E suite and must be able to reach every table.'],

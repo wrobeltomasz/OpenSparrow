@@ -62,9 +62,9 @@ if ($action === 'clickstats_log') {
         $users = sys_table('users');
         admin_require_log_table($conn, $table);
 
-        $element = trim((string) ($_GET['element'] ?? ''));
-        $user    = trim((string) ($_GET['user'] ?? ''));
-        $page    = min(CLICKSTATS_MAX_PAGE, max(1, (int) ($_GET['page'] ?? 1)));
+        $element = trim(os_request()->query('element'));
+        $user    = trim(os_request()->query('user'));
+        $page    = min(CLICKSTATS_MAX_PAGE, max(1, (int) (os_request()->queryAll()['page'] ?? 1)));
 
         $where  = [];
         $params = [];

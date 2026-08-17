@@ -24,12 +24,12 @@ use App\Http\PhpRequest;
 use App\Http\SessionInterface;
 use App\Repository\FkOptionsLoader;
 use App\Repository\RecordRepositoryInterface;
+use App\Service\AppContext;
 use App\Service\AutomationService;
 use App\Service\ImageService;
 use App\Service\M2MService;
 use App\Service\RecordOwnershipService;
 use App\Service\RecordSnapshotService;
-use App\Service\ServiceContainer;
 
 final class CreateController
 {
@@ -41,34 +41,53 @@ final class CreateController
 
     private readonly AutomationService $automations;
 
-    public function __construct(
-        private readonly SessionInterface $session,
-        private readonly PhpRequest $request,
-        private readonly SessionCsrfTokenManager $csrf,
-        private readonly JsonSchemaRepository $schemas,
-        private readonly FieldTypeRegistry $fieldRegistry,
-        private readonly UpdateMapper $mapper,
-        private readonly RecordRepositoryInterface $records,
-        private readonly DbAuditLogger $audit,
-        private readonly FkOptionsLoader $fkLoader,
-        private readonly ServiceContainer $services,
-    ) {
+    private readonly SessionInterface $session;
+
+    private readonly PhpRequest $request;
+
+    private readonly SessionCsrfTokenManager $csrf;
+
+    private readonly JsonSchemaRepository $schemas;
+
+    private readonly FieldTypeRegistry $fieldRegistry;
+
+    private readonly UpdateMapper $mapper;
+
+    private readonly RecordRepositoryInterface $records;
+
+    private readonly DbAuditLogger $audit;
+
+    private readonly FkOptionsLoader $fkLoader;
+
+    public function __construct(AppContext $context)
+    {
+        $this->session       = $context->session();
+        $this->request       = $context->request();
+        $this->csrf          = $context->csrf();
+        $this->schemas       = $context->schemas();
+        $this->fieldRegistry = $context->fieldRegistry();
+        $this->mapper        = $context->mapper();
+        $this->records       = $context->records();
+        $this->audit         = $context->audit();
+        $this->fkLoader      = $context->fkLoader();
+
+        $services          = $context->services();
         $this->ownership   = $services->ownership();
         $this->snapshots   = $services->snapshots();
         $this->m2m         = $services->m2m();
         $this->automations = $services->automations();
     }
 
-    public function handle(PhpRequest $request, array $pageMeta): void
+    public function handle(array $pageMeta): void
     {
         $cspNonce   = (string) ($pageMeta['nonce'] ?? '');
         $isReadOnly = $this->session->role() !== 'editor';
 
-        if ($isReadOnly && $request->isPost()) {
+        if ($isReadOnly && $this->request->isPost()) {
             throw new ForbiddenException('Read-only access');
         }
 
-        $table = os_validated_table_name($request->query('table'));
+        $table = os_validated_table_name($this->request->query('table'));
 
         if (!$this->schemas->hasTable($table)) {
             throw new BadRequestException('Invalid table.');
@@ -80,11 +99,11 @@ final class CreateController
         $m2mConfigs = $rawSchema['tables'][$table]['many_to_many'] ?? [];
         $error      = '';
 
-        if ($request->isPost()) {
-            $error = $this->save($request, $tableCfg, $table, $m2mConfigs, $rawSchema);
+        if ($this->request->isPost()) {
+            $error = $this->save($tableCfg, $table, $m2mConfigs, $rawSchema);
         }
 
-        [$prefilled, $locked] = $this->prefilledValues($request, $tableCfg);
+        [$prefilled, $locked] = $this->prefilledValues($tableCfg);
 
         $formFields = $this->formFields($tableCfg, $rawSchema, $prefilled, $locked, $isReadOnly);
         $m2mGroups  = $this->m2mGroups($m2mConfigs, $rawSchema, $isReadOnly);
@@ -109,18 +128,17 @@ final class CreateController
     }
 
     private function save(
-        PhpRequest $request,
         TableConfig $tableCfg,
         string $table,
         array $m2mConfigs,
         array $rawSchema
     ): string {
-        if (!$this->csrf->isValid((string) $request->post('csrf_token'))) {
+        if (!$this->csrf->isValid((string) $this->request->post('csrf_token'))) {
             throw new ForbiddenException('Invalid CSRF token.');
         }
 
         try {
-            $data   = $this->mapper->fromPost($tableCfg, $request->postAll());
+            $data   = $this->mapper->fromPost($tableCfg, $this->request->postAll());
             $newId  = $this->records->insert($tableCfg, $data);
             $userId = $this->session->userId();
             $logId  = $this->audit->log($userId, 'INSERT', $tableCfg->name, (int) $newId);
@@ -131,7 +149,7 @@ final class CreateController
             $this->automations->evaluate($tableCfg->schema, $tableCfg->name, (int) $newId, 'create', $userId);
             foreach ($m2mConfigs as $m2mIndex => $m2mConfig) {
                 $selected = array_values(array_filter(
-                    (array) $request->post('m2m_' . $m2mIndex, []),
+                    (array) $this->request->post('m2m_' . $m2mIndex, []),
                     'ctype_digit'
                 ));
                 $this->m2m->sync($m2mConfig, (int) $newId, $selected, $rawSchema);
@@ -146,9 +164,9 @@ final class CreateController
         }
     }
 
-    private function prefilledValues(PhpRequest $request, TableConfig $tableCfg): array
+    private function prefilledValues(TableConfig $tableCfg): array
     {
-        $queryValues = $request->queryAll();
+        $queryValues = $this->request->queryAll();
         $prefilled   = [];
         $locked      = [];
         foreach ($tableCfg->writableColumns() as $column) {

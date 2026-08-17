@@ -12,7 +12,7 @@ use App\Exception\ResponseException;
 
 const USER_ROLES = ['admin', 'editor', 'viewer'];
 
-$adminActorId = (int) ($_SESSION['user_id'] ?? 0);
+$adminActorId = admin_user_id() ?? 0;
 
 function admin_user_policy(): array
 {
@@ -474,7 +474,7 @@ function admin_hidden_children_map(array $tables): array
 }
 
 if ($action === 'user_tables_get') {
-    $userId = (int) ($_GET['user_id'] ?? 0);
+    $userId = (int) (os_request()->queryAll()['user_id'] ?? 0);
     if ($userId <= 0) {
         admin_err('Invalid user ID.');
     }

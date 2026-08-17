@@ -16,7 +16,7 @@ if ($action === 'cron_log') {
     admin_try(static function (): void {
         $conn = admin_conn();
         $notificationsLogTable = sys_table('users_notifications_log');
-        $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
+        $limit = min(100, max(1, (int) (os_request()->queryAll()['limit'] ?? 50)));
         $result = @pg_query($conn, "
             SELECT id,
                    TO_CHAR(started_at,  'YYYY-MM-DD HH24:MI:SS') AS started_at,

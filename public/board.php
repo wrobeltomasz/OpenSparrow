@@ -11,7 +11,7 @@ $page      = os_page_bootstrap(['csp' => 'no-connect']);
 $cspNonce  = $page['nonce'];
 $userRole  = $page['role'];
 $userCaps  = $page['caps'];
-$boardId   = substr($_GET['board'] ?? '', 0, 64);
+$boardId   = substr(os_query_string('board'), 0, 64);
 
 if ($boardId !== '') {
     os_require_access('boards', $boardId);

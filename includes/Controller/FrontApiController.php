@@ -41,17 +41,17 @@ final class FrontApiController
     ) {
     }
 
-    public function handle(PhpRequest $request): void
+    public function handle(): void
     {
         $osFrontApiHandler = static function (string $module, string $function): callable {
             require_once __DIR__ . '/../frontapi/' . $module . '.php';
             return $function;
         };
 
-        $method = $request->method();
+        $method = $this->request->method();
         $role   = UserRole::fromSession();
 
-        $profileAction = $request->query('action');
+        $profileAction = $this->request->query('action');
         if (in_array($profileAction, ['update_avatar', 'change_password'], true)) {
             $handler = $osFrontApiHandler('profile', 'frontapi_profile');
             $handler(db_connect(), $method, $profileAction, $this->session->userId());
@@ -95,7 +95,7 @@ final class FrontApiController
         );
 
         try {
-            $apiAction = $request->query('api');
+            $apiAction = $this->request->query('api');
 
             if ($method === 'GET' && $apiAction === 'schema') {
                 throw ResponseException::raw((string) $schemaJson);

@@ -13,18 +13,18 @@ use App\Exception\ResponseException;
 $page     = os_page_bootstrap(['csp' => 'unsafe-style', 'setup_check' => true]);
 $cspNonce = $page['nonce'];
 $userRole = $page['role'];
-
-if (isset($_GET['api'])) {
+$queryParameters = os_request()->queryAll();
+if (isset($queryParameters['api'])) {
     require __DIR__ . '/api.php';
     throw ResponseException::sent();
 }
 
-$requestedTable = is_string($_GET['table'] ?? '') ? (string) $_GET['table'] : '';
+$requestedTable = os_query_string('table');
 if ($requestedTable !== '') {
     os_require_table_access(os_validated_table_name($requestedTable));
 }
 
-$requestedWorkflow = substr($_GET['workflow'] ?? '', 0, 64);
+$requestedWorkflow = substr(os_query_string('workflow'), 0, 64);
 if ($requestedWorkflow !== '') {
     os_require_access('workflows', $requestedWorkflow);
 

@@ -17,11 +17,17 @@ final class RequestScopeInventoryTest extends TestCase
         'table', 'related_table', 'view', 'print', 'board', 'workflow', 'workflow_id',
     ];
 
-    private const HOLDERS = ['_GET', '_POST', '_REQUEST', 'body', 'data', 'input', 'payload'];
+    private const HOLDERS = [
+        '_GET', '_POST', '_REQUEST', 'body', 'data', 'input', 'payload', 'queryParameters',
+    ];
 
-    private const ACCESSORS = ['query', 'post', 'input', 'get'];
+    private const ACCESSORS = ['query', 'post', 'input', 'get', 'body'];
+
+    private const HELPERS = ['os_query_string'];
 
     private const DECISIONS = ['gated', 'scoped', 'admin', 'none'];
+
+    private const SCANNED_ROOTS = ['public', 'includes', 'templates'];
 
     private const GATE_CALLS = [
         'require_access(', 'require_table_access(', 'require_view_access(',
@@ -44,15 +50,19 @@ final class RequestScopeInventoryTest extends TestCase
 
     private function scannedFiles(): array
     {
-        $globs = [
-            'public/*.php', 'public/api/*.php', 'public/admin/*.php',
-            'includes/*.php', 'includes/admin/*.php', 'includes/frontapi/*.php',
-            'includes/Controller/*.php', 'templates/*.php',
-        ];
         $files = [];
-        foreach ($globs as $glob) {
-            foreach (glob(self::$root . '/' . $glob) ?: [] as $path) {
-                $files[] = str_replace('\\', '/', substr($path, strlen(self::$root) + 1));
+        foreach (self::SCANNED_ROOTS as $directory) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator(
+                    self::$root . '/' . $directory,
+                    \FilesystemIterator::SKIP_DOTS
+                )
+            );
+            foreach ($iterator as $path => $file) {
+                if ($file->getExtension() !== 'php') {
+                    continue;
+                }
+                $files[] = str_replace('\\', '/', substr((string) $path, strlen(self::$root) + 1));
             }
         }
         sort($files);
@@ -94,6 +104,14 @@ final class RequestScopeInventoryTest extends TestCase
                     . '\s*\(\s*[\'"]' . $quoted . '[\'"]/';
                 if (preg_match($pattern, $source) === 1) {
                     $found[] = $accessor . '().' . $key;
+                }
+            }
+
+            foreach (self::HELPERS as $helper) {
+                $pattern = '/\b' . preg_quote($helper, '/')
+                    . '\s*\(\s*[\'"]' . $quoted . '[\'"]/';
+                if (preg_match($pattern, $source) === 1) {
+                    $found[] = $helper . '().' . $key;
                 }
             }
         }
@@ -215,7 +233,22 @@ final class RequestScopeInventoryTest extends TestCase
         $shapes = $this->scanSource(
             '<?php $a = $_GET["table"]; $b = $_POST["related_table"]; $c = $body["view"];'
             . ' $d = $request->query("table"); $e = os_request()->post("board");'
+            . ' $f = $apiRequest->body("related_table");'
+            . ' $g = os_query_string("print"); $h = $queryParameters["workflow"];'
         );
+        $this->assertContains(
+            'os_query_string().print',
+            $shapes,
+            'Scanner missed an os_query_string() read. A helper that resolves a request-supplied '
+            . 'name must be listed in HELPERS, or every call to it is invisible to this guard.'
+        );
+        $this->assertContains(
+            'queryParameters.workflow',
+            $shapes,
+            'Scanner missed a $queryParameters read. A local that holds queryAll() must be listed '
+            . 'in HOLDERS.'
+        );
+        $this->assertContains('body().related_table', $shapes, 'Scanner missed an ApiRequest->body() read.');
         $this->assertContains('_GET.table', $shapes, 'Scanner missed a $_GET read.');
         $this->assertContains('_POST.related_table', $shapes, 'Scanner missed a $_POST read.');
         $this->assertContains('body.view', $shapes, 'Scanner missed a $body read.');
@@ -224,10 +257,14 @@ final class RequestScopeInventoryTest extends TestCase
 
         $scan = $this->scan();
         $this->assertContains('_GET.table', $scan['public/api/fk.php'] ?? [], 'Scanner missed a $_GET read.');
-        $this->assertContains('body.table', $scan['public/api/mass_edit.php'] ?? [], 'Scanner missed a $body read.');
+        $this->assertContains(
+            'body.table',
+            $scan['includes/Controller/Api/MassEditController.php'] ?? [],
+            'Scanner missed a $body read.'
+        );
         $this->assertContains(
             'post().related_table',
-            $scan['public/api/files.php'] ?? [],
+            $scan['includes/Controller/Api/FilesController.php'] ?? [],
             'Scanner missed a $request->post() read.'
         );
 
@@ -252,6 +289,11 @@ final class RequestScopeInventoryTest extends TestCase
             'includes/api_helpers.php'    => 'the shared backend helpers',
             'includes/admin/schema.php'   => 'the admin API modules',
             'templates/menu.php'          => 'the FE templates',
+            'includes/Controller/EditController.php' => 'the page controllers',
+            'includes/Service/AppContext.php'        => 'the service layer',
+            'templates/partials/subtables.php'       => 'the FE template partials',
+            'public/admin/templates/nav.php'         => 'the admin templates',
+            'public/admin/demo/seed.php'             => 'the demo installer',
         ];
         foreach ($expected as $file => $what) {
             $this->assertContains(
@@ -261,5 +303,35 @@ final class RequestScopeInventoryTest extends TestCase
                 . "table/view/print/board/workflow name without this test noticing."
             );
         }
+    }
+
+    public function testScanDescendsIntoSubdirectories(): void
+    {
+        $files = $this->scannedFiles();
+
+        foreach (self::SCANNED_ROOTS as $directory) {
+            $nested = array_filter(
+                $files,
+                static fn(string $file): bool => str_starts_with($file, $directory . '/')
+                    && substr_count($file, '/') >= 2
+            );
+
+            $this->assertNotEmpty(
+                $nested,
+                "Nothing below {$directory}/*/ is scanned. The scan is not recursive, so moving "
+                . "a file one directory deeper silently removes it from this guard while every "
+                . "existing inventory entry keeps passing."
+            );
+        }
+
+        $deepest = 0;
+        foreach ($files as $file) {
+            $deepest = max($deepest, substr_count($file, '/'));
+        }
+        $this->assertGreaterThanOrEqual(
+            3,
+            $deepest,
+            'The scan stops before the deepest request-reachable directory in the tree.'
+        );
     }
 }

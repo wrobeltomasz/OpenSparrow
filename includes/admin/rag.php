@@ -95,7 +95,7 @@ if ($action === 'rag_upload') {
 
         $tagLiteral  = php_array_to_pg_text($tags);
         $filename    = basename($uploadedName);
-        $uploadedBy  = (int) ($_SESSION['user_id'] ?? 0);
+        $uploadedBy  = admin_user_id() ?? 0;
 
         $queryResult = @pg_query_params(
             $conn,
@@ -271,7 +271,7 @@ if ($action === 'rag_settings_save') {
             $cfg['ollama_api_key_enc'] = secret_encrypt($apiKey);
         }
 
-        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $userId = admin_user_id();
         $result = config_save('rag', $cfg, null, $userId);
         if ($result['status'] !== 'ok') {
             throw new AdminApiMessage($result['error'] ?? 'Could not save RAG configuration.');
@@ -285,7 +285,7 @@ if ($action === 'rag_settings_save') {
     throw ResponseException::sent();
 }
 
-if ($action === 'rag_aggregate_view_list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+if ($action === 'rag_aggregate_view_list' && os_request()->method() === 'GET') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         require_once __DIR__ . '/../config_store.php';
@@ -390,7 +390,7 @@ if ($action === 'rag_aggregate_view_save') {
         }
 
         $cfg    = array_merge($existingCfg, ['aggregate_views' => $views]);
-        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $userId = admin_user_id();
         $result = config_save('rag', $cfg, null, $userId);
         if ($result['status'] !== 'ok') {
             throw new AdminApiMessage($result['error'] ?? 'Could not save the aggregate view mapping.');
@@ -551,7 +551,7 @@ if ($action === 'rag_ollama_check') {
     throw ResponseException::sent();
 }
 
-if ($action === 'rag_stats' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+if ($action === 'rag_stats' && os_request()->method() === 'GET') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn             = db_connect();

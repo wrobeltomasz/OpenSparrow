@@ -23,7 +23,7 @@ $menuSanitizeIcon = static function (string $icon): string {
     return '';
 };
 
-if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+if ($action === 'menu_config' && os_request()->method() === 'GET') {
     $catalog = [];
 
     require_once __DIR__ . '/../config_store.php';
@@ -103,7 +103,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     throw ResponseException::encoded(['items' => $items]);
 }
 
-if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($action === 'menu_config' && os_request()->method() === 'POST') {
     require_not_demo('Demo mode — writes disabled.');
 
     $body = json_decode(file_get_contents('php://input'), true);
@@ -137,7 +137,7 @@ if ($action === 'menu_config' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $sanitized[] = ['key' => $key, 'children' => $children];
     }
 
-    $menuUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+    $menuUserId = admin_user_id();
     $menuResult = config_save('menu', ['items' => $sanitized], null, $menuUserId);
     if ($menuResult['status'] !== 'ok') {
         http_response_code(500);
@@ -195,7 +195,7 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
         }
         require_once __DIR__ . '/../config_store.php';
 
-        $userId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+        $userId = admin_user_id();
         $result = config_save($file, $parsedData, null, $userId);
         if ($result['status'] !== 'ok') {
             admin_err($result['error'] ?? 'Save failed');
