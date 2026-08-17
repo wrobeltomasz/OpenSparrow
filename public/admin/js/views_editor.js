@@ -70,9 +70,9 @@ export function renderViewsEditor(context) {
         syncButton.textContent   = '↻ Sync PostgreSQL Views';
     }
 
-    function switchSource(source) {
-        if (currentSource === source) return;
-        currentSource = source;
+    function switchSource(src) {
+        if (currentSource === src) return;
+        currentSource = src;
         updateTabUi();
         renderList();
     }
@@ -121,9 +121,9 @@ export function renderViewsEditor(context) {
             synced.forEach(vName => {
                 const vSchema = viewSchemas[vName];
                 if (!views[vName]) {
-                    const columns = {};
-                    Object.keys(dbColumns[vName] ?? {}).forEach(c => { columns[c] = { display_name: c, color_rules: [] }; });
-                    views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/table_chart_view.png', hidden: false, source: currentSource, columns: columns, drill_down: { enabled: false, levels: [] } };
+                    const cols = {};
+                    Object.keys(dbColumns[vName] ?? {}).forEach(c => { cols[c] = { display_name: c, color_rules: [] }; });
+                    views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/table_chart_view.png', hidden: false, source: currentSource, columns: cols, drill_down: { enabled: false, levels: [] } };
                 } else {
                     views[vName].source = currentSource;
                     Object.keys(dbColumns[vName] ?? {}).forEach(c => {
@@ -146,8 +146,8 @@ export function renderViewsEditor(context) {
         }
     }
 
-    function viewNamesForSource(source) {
-        return Object.keys(views).filter(v => (views[v].source || 'postgres') === source);
+    function viewNamesForSource(src) {
+        return Object.keys(views).filter(v => (views[v].source || 'postgres') === src);
     }
 
     function renderList() {
@@ -179,10 +179,10 @@ export function renderViewsEditor(context) {
             const data = await result.json();
             if (data.status !== 'ok') {
                 listElement.innerHTML = '';
-                const error = document.createElement('p');
-                error.style.cssText = 'color:var(--error); padding:16px;';
-                error.textContent = 'Failed to load schemas: ' + (data.error ?? 'unknown');
-                listElement.appendChild(error);
+                const err = document.createElement('p');
+                err.style.cssText = 'color:var(--error); padding:16px;';
+                err.textContent = 'Failed to load schemas: ' + (data.error ?? 'unknown');
+                listElement.appendChild(err);
                 return;
             }
 
@@ -359,9 +359,9 @@ export function renderViewsEditor(context) {
     function fg(label, type, value, onChange) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
-        const label = document.createElement('label');
-        label.textContent = label;
-        grp.appendChild(label);
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+        grp.appendChild(lbl);
         const input = document.createElement('input');
         input.type = type; input.value = value ?? '';
         input.addEventListener('input', () => onChange(input.value));
@@ -372,9 +372,9 @@ export function renderViewsEditor(context) {
     function fgArea(label, value, onChange) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
-        const label = document.createElement('label');
-        label.textContent = label;
-        grp.appendChild(label);
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+        grp.appendChild(lbl);
         const ta = document.createElement('textarea');
         ta.rows = 3; ta.style.resize = 'vertical';
         ta.value = value ?? '';
@@ -386,8 +386,8 @@ export function renderViewsEditor(context) {
     function buildColumnsEditor(vName, columnsConfig) {
         const wrap = document.createElement('div');
 
-        const dbColumns  = Object.keys(dbColumns[vName] ?? {});
-        const allColumns = dbColumns.length > 0 ? dbColumns : Object.keys(columnsConfig);
+        const dbCols  = Object.keys(dbColumns[vName] ?? {});
+        const allColumns = dbCols.length > 0 ? dbCols : Object.keys(columnsConfig);
 
         if (allColumns.length === 0) {
             wrap.innerHTML = '<p style=" ">Sync from DB to see columns.</p>';
@@ -620,8 +620,8 @@ export function renderViewsEditor(context) {
         levelsList.style.cssText = 'display:flex; flex-direction:column; gap:8px; margin-bottom:12px;';
         wrap.appendChild(levelsList);
 
-        const dbColumns  = Object.keys(dbColumns[vName] ?? {});
-        const allColumns = dbColumns.length > 0 ? dbColumns : Object.keys(views[vName].columns ?? {});
+        const dbCols  = Object.keys(dbColumns[vName] ?? {});
+        const allColumns = dbCols.length > 0 ? dbCols : Object.keys(views[vName].columns ?? {});
 
         function renderLevels() {
             levelsList.innerHTML = '';

@@ -21,8 +21,8 @@ function mkStatusElement() {
     return element;
 }
 
-function showStatus(element, message, ok) {
-    element.textContent = message;
+function showStatus(element, msg, ok) {
+    element.textContent = msg;
     element.style.color = ok ? 'var(--ok)' : 'var(--error)';
     element.style.display = '';
 }
@@ -36,7 +36,7 @@ async function saveConfig(partial, statusElement) {
         });
         const data = await result.json();
         if (data.status === 'success') {
-            anonVersion: anonymizationVersion = data.version ?? anonymizationVersion + 1;
+            anonymizationVersion = data.version ?? anonymizationVersion + 1;
             if (statusElement) showStatus(statusElement, 'Configuration saved.', true);
         } else {
             if (statusElement) showStatus(statusElement, 'Error: ' + (data.error || 'unknown'), false);
@@ -70,11 +70,11 @@ function buildRulesTab(context) {
         const rules = anonymizationConfig.rules || [];
 
         if (rules.length > 0) {
-            const table = document.createElement('table');
-            table.className = 'adm-tbl';
-            table.style.marginBottom = '20px';
+            const tbl = document.createElement('table');
+            tbl.className = 'adm-tbl';
+            tbl.style.marginBottom = '20px';
 
-            const thead = table.createTHead();
+            const thead = tbl.createTHead();
             const hr    = thead.insertRow();
             ['Table', 'Date Column', 'Older Than', 'PII Column', 'Replacement', ''].forEach(h => {
                 const th = document.createElement('th');
@@ -83,7 +83,7 @@ function buildRulesTab(context) {
                 hr.appendChild(th);
             });
 
-            const tbody = table.createTBody();
+            const tbody = tbl.createTBody();
             rules.forEach((rule, index) => {
                 const tr = tbody.insertRow();
 
@@ -131,7 +131,7 @@ function buildRulesTab(context) {
                 tr.appendChild(tdAct);
             });
 
-            body.appendChild(table);
+            body.appendChild(tbl);
             buildPreviewBlock(body);
         } else {
             const empty = document.createElement('p');
@@ -206,12 +206,12 @@ function buildAddForm(container, tableOptions, onAdded) {
     function mkField(labelText, element, width) {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'display:flex; flex-direction:column; gap:4px;';
-        const label = document.createElement('label');
-        label.textContent = labelText;
-        label.style.cssText = ' ';
+        const lbl = document.createElement('label');
+        lbl.textContent = labelText;
+        lbl.style.cssText = ' ';
         element.className = 'adm-input';
         if (width) element.style.width = width;
-        wrap.append(label, element);
+        wrap.append(lbl, element);
         return wrap;
     }
 
@@ -239,8 +239,8 @@ function buildAddForm(container, tableOptions, onAdded) {
         columnSelect.innerHTML     = '';
         dateColumnSelect.innerHTML = '';
 
-        const table = tableSelect.value;
-        if (!table) {
+        const tbl = tableSelect.value;
+        if (!tbl) {
             [columnSelect, dateColumnSelect].forEach(sel => {
                 const o = document.createElement('option');
                 o.value = ''; o.textContent = '-- Select --';
@@ -249,7 +249,7 @@ function buildAddForm(container, tableOptions, onAdded) {
             return;
         }
 
-        const allOptions = window._anonColOptions ? window._anonColOptions(table) : [];
+        const allOptions = window._anonColOptions ? window._anonColOptions(tbl) : [];
         if (allOptions.length === 0) {
             const o = document.createElement('option');
             o.value = ''; o.textContent = '-- No columns --';
@@ -264,7 +264,7 @@ function buildAddForm(container, tableOptions, onAdded) {
 
         try {
             const schema   = await getSchema();
-            const tDef     = (schema.tables || {})[table] || {};
+            const tDef     = (schema.tables || {})[tbl] || {};
             const dateOptions = Object.entries(tDef.columns || {})
                 .filter(([, def]) => isDateType(def.type))
                 .map(([name, def]) => ({ value: name, label: def.display_name || name }));
@@ -515,19 +515,19 @@ function buildSuggestionsTab() {
             const keywords = (anonymizationConfig.dictionary || []).map(w => w.toLowerCase().trim()).filter(Boolean);
 
             if (keywords.length === 0) {
-                const message = document.createElement('p');
-                message.textContent = 'Dictionary is empty. Add keywords in the Dictionary tab first.';
-                container.appendChild(message);
+                const msg = document.createElement('p');
+                msg.textContent = 'Dictionary is empty. Add keywords in the Dictionary tab first.';
+                container.appendChild(msg);
                 return;
             }
 
             const matches = [];
             for (const tableName in tables) {
                 const tDef   = tables[tableName];
-                const columns   = tDef.columns || {};
-                for (const columnName in columns) {
+                const cols   = tDef.columns || {};
+                for (const columnName in cols) {
                     const haystack = columnName.toLowerCase();
-                    const dispName = (columns[columnName].display_name || '').toLowerCase();
+                    const dispName = (cols[columnName].display_name || '').toLowerCase();
                     const matched  = keywords.filter(kw => haystack.includes(kw) || dispName.includes(kw));
                     if (matched.length > 0) {
                         matches.push({ table: tableName, column: columnName, keywords: matched });
@@ -536,9 +536,9 @@ function buildSuggestionsTab() {
             }
 
             if (matches.length === 0) {
-                const message = document.createElement('p');
-                message.textContent = 'No columns matched the current dictionary keywords.';
-                container.appendChild(message);
+                const msg = document.createElement('p');
+                msg.textContent = 'No columns matched the current dictionary keywords.';
+                container.appendChild(msg);
                 return;
             }
 
@@ -547,9 +547,9 @@ function buildSuggestionsTab() {
             count.style.cssText = '  margin-bottom:12px;';
             container.appendChild(count);
 
-            const table   = document.createElement('table');
-            table.className = 'adm-tbl';
-            const thead = table.createTHead();
+            const tbl   = document.createElement('table');
+            tbl.className = 'adm-tbl';
+            const thead = tbl.createTHead();
             const hr    = thead.insertRow();
             ['Table', 'Column', 'Matched Keywords', ''].forEach(h => {
                 const th = document.createElement('th');
@@ -557,7 +557,7 @@ function buildSuggestionsTab() {
                 th.textContent = h;
                 hr.appendChild(th);
             });
-            const tbody = table.createTBody();
+            const tbody = tbl.createTBody();
 
             matches.forEach(({ table, column, keywords: kws }) => {
                 const tr = tbody.insertRow();
@@ -630,16 +630,16 @@ function buildSuggestionsTab() {
                             dateColumnSelect.appendChild(o);
                         }
 
-                        const daysInput = document.createElement('input');
-                        daysInput.type      = 'number';
-                        daysInput.min       = '1';
-                        daysInput.value     = '365';
-                        daysInput.className = 'adm-input w-90';
+                        const daysInp = document.createElement('input');
+                        daysInp.type      = 'number';
+                        daysInp.min       = '1';
+                        daysInp.value     = '365';
+                        daysInp.className = 'adm-input w-90';
 
-                        const replInput = document.createElement('input');
-                        replInput.type      = 'text';
-                        replInput.value     = '***ANONYMIZED***';
-                        replInput.className = 'adm-input';
+                        const replInp = document.createElement('input');
+                        replInp.type      = 'text';
+                        replInp.value     = '***ANONYMIZED***';
+                        replInp.className = 'adm-input';
 
                         const formSt = document.createElement('p');
                         formSt.style.cssText = 'margin:2px 0;  display:none;';
@@ -662,8 +662,8 @@ function buildSuggestionsTab() {
 
                         saveButton.addEventListener('click', async () => {
                             const dc   = dateColumnSelect.value.trim();
-                            const days = parseInt(daysInput.value, 10);
-                            const repl = replInput.value;
+                            const days = parseInt(daysInp.value, 10);
+                            const repl = replInp.value;
                             if (!dc) {
                                 formSt.textContent = 'Select a date column.';
                                 formSt.style.color = 'var(--error)';
@@ -690,8 +690,8 @@ function buildSuggestionsTab() {
                         buttonRow.append(saveButton, cancelButton);
                         form.append(
                             fLabel('Date column:'), dateColumnSelect,
-                            fLabel('Older than (days):'), daysInput,
-                            fLabel('Replacement:'), replInput,
+                            fLabel('Older than (days):'), daysInp,
+                            fLabel('Replacement:'), replInp,
                             formSt, buttonRow
                         );
                         tdA.appendChild(form);
@@ -701,12 +701,12 @@ function buildSuggestionsTab() {
                 tr.appendChild(tdA);
             });
 
-            container.appendChild(table);
+            container.appendChild(tbl);
         } catch (e) {
-            const message = document.createElement('p');
-            message.textContent = 'Failed to load schema: ' + e.message;
-            message.style.color = 'var(--error)';
-            container.appendChild(message);
+            const msg = document.createElement('p');
+            msg.textContent = 'Failed to load schema: ' + e.message;
+            msg.style.color = 'var(--error)';
+            container.appendChild(msg);
         } finally {
             scanButton.disabled    = false;
             scanButton.textContent = 'Scan Schema';
@@ -927,9 +927,9 @@ function buildHistorySection() {
                 return;
             }
             const headers = ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Rules', 'Rows Anonymized', 'Report', 'Error'];
-            const table = mkTable();
-            mkThead(table, headers);
-            const tbody = table.createTBody();
+            const tbl = mkTable();
+            mkThead(tbl, headers);
+            const tbody = tbl.createTBody();
             data.rows.forEach(r => {
                 const tr = tbody.insertRow();
                 const tdSt = tdStatus(r.status);
@@ -946,7 +946,7 @@ function buildHistorySection() {
                     td(r.error_message, 'color:var(--error); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
                 );
             });
-            container.appendChild(table);
+            container.appendChild(tbl);
         } catch (e) {
             container.textContent = 'Request failed: ' + e.message;
         }

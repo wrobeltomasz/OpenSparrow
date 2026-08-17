@@ -73,7 +73,7 @@ export function showStatusPill(anchor, message, variant = 'success') {
         success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--ok)' },
         error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
         info:    { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--border)' },
-    }[variant] || { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--border)' };
+    }[variant] || { background: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--border)' };
     pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px;  font-weight:600; transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
 
@@ -130,11 +130,11 @@ let globalSchemaPromise = null;
 
 async function fetchGlobalSchema() {
     try {
-        const result = await apiFetch('api.php?action=get&file=schema');
-        if (!result.ok) throw new Error(`HTTP ${result.status}`);
-        globalSchemaObject = await result.json();
+        const res = await apiFetch('api.php?action=get&file=schema');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        globalSchemaObject = await res.json();
     } catch (e) {
-        globalSchemaObj: globalSchemaObject = null;
+        globalSchemaObject = null;
         console.warn('Could not load global schema', e);
         showStatusPill(document.getElementById('workspace'), 'Could not load the schema — table and column lists will be empty.', 'error');
     }
@@ -151,15 +151,15 @@ export function getGlobalSchema({ force = false } = {}) {
 }
 
 export function invalidateGlobalSchema() {
-    globalSchemaObj: globalSchemaObject    = null;
+    globalSchemaObject    = null;
     globalSchemaPromise = null;
 }
 
 export async function getSchemaTables() {
     const schema = await getGlobalSchema();
     return Object.entries(schema?.tables ?? {})
-        .filter(([, config]) => !config?.hidden)
-        .map(([name, config]) => ({ name, label: config.display_name || name, columns: config.columns ?? {} }))
+        .filter(([, cfg]) => !cfg?.hidden)
+        .map(([name, cfg]) => ({ name, label: cfg.display_name || name, columns: cfg.columns ?? {} }))
         .sort((a, b) => a.label.localeCompare(b.label));
 }
 
@@ -174,19 +174,19 @@ function getTableOptions() {
 function getColumnOptionsForTable(tableName) {
     const options = [{ value: '', label: '-- Select Column --' }];
     if (tableName && globalSchemaObject && globalSchemaObject.tables[tableName] && globalSchemaObject.tables[tableName].columns) {
-        const columns = globalSchemaObject.tables[tableName].columns;
-        for (const c in columns) options.push({ value: c, label: columns[c].display_name || c });
+        const cols = globalSchemaObject.tables[tableName].columns;
+        for (const c in cols) options.push({ value: c, label: cols[c].display_name || c });
     }
     return options;
 }
 
 function getEnumColumnsForTable(tableName) {
     const options = [];
-    const columns = globalSchemaObject?.tables?.[tableName]?.columns;
-    if (columns) {
-        for (const c in columns) {
-            if ((columns[c].type || '').toLowerCase() === 'enum') {
-                options.push({ value: c, label: columns[c].display_name || c });
+    const cols = globalSchemaObject?.tables?.[tableName]?.columns;
+    if (cols) {
+        for (const c in cols) {
+            if ((cols[c].type || '').toLowerCase() === 'enum') {
+                options.push({ value: c, label: cols[c].display_name || c });
             }
         }
     }
@@ -286,7 +286,7 @@ async function loadConfigFile(fileName) {
         }
 
         markClean();
-    } catch (error) {
+    } catch (err) {
         showStatusPill(buttonSave, `Failed to load ${fileName}.json`, 'error');
     }
 }
@@ -615,7 +615,7 @@ function renderItemCards() {
                     renderItemCards();
                     setTimeout(() => renderSidebar(), 900);
                 },
-                (error) => showStatusPill(buttonSync, error, 'error'));
+                (err) => showStatusPill(buttonSync, err, 'error'));
         };
         bar.appendChild(buttonSync);
     } else {
@@ -651,8 +651,8 @@ function renderItemCards() {
             list.appendChild(empty);
             return;
         }
-        freshKeys.forEach((k, index) =>
-            list.appendChild(buildItemCard(k, fresh[k], index, freshKeys.length, isArray, fresh, redraw))
+        freshKeys.forEach((k, idx) =>
+            list.appendChild(buildItemCard(k, fresh[k], idx, freshKeys.length, isArray, fresh, redraw))
         );
     }
 
@@ -823,16 +823,16 @@ function renderMenuPreview(context) {
         const preview = createFullMenuPreview(null);
         workspaceElement.appendChild(preview.el);
         try {
-            const result = await apiFetch('api.php?action=menu_config');
-            if (!result.ok) throw new Error('HTTP ' + result.status);
-            const data = await result.json();
+            const res = await apiFetch('api.php?action=menu_config');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
             preview.update(data);
-        } catch (error) {
+        } catch (err) {
             preview.el.remove();
-            const message = document.createElement('p');
-            message.style.color = 'var(--error)';
-            message.textContent = 'Failed to load menu config: ' + escHtml(error.message);
-            workspaceElement.appendChild(message);
+            const msg = document.createElement('p');
+            msg.style.color = 'var(--error)';
+            msg.textContent = 'Failed to load menu config: ' + escHtml(err.message);
+            workspaceElement.appendChild(msg);
         }
     })();
 }
@@ -844,14 +844,14 @@ function loadAndRender(loader, context, invoke = null) {
             if (workspaceElement._renderId !== myId) return undefined;
             return invoke ? invoke(fn) : fn(context);
         },
-        (error) => {
+        (err) => {
             if (workspaceElement._renderId !== myId) return undefined;
-            console.error('Could not load tab module', error);
+            console.error('Could not load tab module', err);
             workspaceElement.innerHTML = '';
-            const message = document.createElement('p');
-            message.className = 'admin-error';
-            message.textContent = 'Could not load this section. Check your connection and reload the page.';
-            workspaceElement.appendChild(message);
+            const msg = document.createElement('p');
+            msg.className = 'admin-error';
+            msg.textContent = 'Could not load this section. Check your connection and reload the page.';
+            workspaceElement.appendChild(msg);
             return undefined;
         }
     );
@@ -879,10 +879,10 @@ function renderEditor(key, itemData, isArray) {
     }
     if (currentFile === 'automations') {
         if (key === 'LAYOUT') {
-            const message = document.createElement('p');
-            message.style.cssText = ' padding:20px;';
-            message.textContent = 'Automations have no global configuration settings.';
-            workspaceElement.appendChild(message);
+            const msg = document.createElement('p');
+            msg.style.cssText = ' padding:20px;';
+            msg.textContent = 'Automations have no global configuration settings.';
+            workspaceElement.appendChild(msg);
             return;
         }
 
@@ -966,8 +966,8 @@ function renderEditor(key, itemData, isArray) {
 
 (async () => {
     try {
-        const result  = await apiFetch('api_migrations.php?action=scan');
-        const data = await result.json();
+        const res  = await apiFetch('api_migrations.php?action=scan');
+        const data = await res.json();
         if (data.status !== 'success') return;
         const pending = (data.versions || []).filter(v => v.status === 'pending');
         if (pending.length === 0) return;
@@ -1043,9 +1043,9 @@ buttonSave.addEventListener('click', async () => {
         if (!currentConfig) return;
 
         if (currentFile === 'workflows') {
-            const error = validateWorkflowsConfig(currentConfig);
-            if (error) {
-                showStatusPill(buttonSave, error, 'error');
+            const err = validateWorkflowsConfig(currentConfig);
+            if (err) {
+                showStatusPill(buttonSave, err, 'error');
                 return;
             }
         }
@@ -1065,7 +1065,7 @@ buttonSave.addEventListener('click', async () => {
             } else {
                 showStatusPill(buttonSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
             }
-        } catch (error) {
+        } catch (err) {
             showStatusPill(buttonSave, 'Failed to save changes.', 'error');
         }
     } finally {

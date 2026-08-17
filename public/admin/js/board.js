@@ -29,8 +29,8 @@ function createColumnMultiSelect(labelText, options, selectedValues, onChange) {
         container.innerHTML = '<span style=" ">No columns available</span>';
     } else {
         options.forEach(option => {
-            const label = document.createElement('label');
-            label.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
+            const lbl = document.createElement('label');
+            lbl.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
 
             const chk = document.createElement('input');
             chk.type = 'checkbox';
@@ -44,9 +44,9 @@ function createColumnMultiSelect(labelText, options, selectedValues, onChange) {
                 onChange([...selected]);
             });
 
-            label.appendChild(chk);
-            label.appendChild(document.createTextNode(option.label));
-            container.appendChild(label);
+            lbl.appendChild(chk);
+            lbl.appendChild(document.createTextNode(option.label));
+            container.appendChild(lbl);
         });
     }
 
@@ -100,10 +100,10 @@ export function renderBoardEditor(key, itemData, isArray, context) {
             if (meta && (meta.type || '').toLowerCase() === 'enum' && Array.isArray(meta.options)) {
                 const previewWrap = document.createElement('div');
                 previewWrap.style.cssText = 'margin:-4px 0 18px;';
-                const label = document.createElement('label');
-                label.style.cssText = 'display:block; font-weight:600; margin-bottom:6px; color:var(--text);';
-                label.textContent = 'Lane preview';
-                previewWrap.appendChild(label);
+                const lbl = document.createElement('label');
+                lbl.style.cssText = 'display:block; font-weight:600; margin-bottom:6px; color:var(--text);';
+                lbl.textContent = 'Lane preview';
+                previewWrap.appendChild(lbl);
 
                 const chips = document.createElement('div');
                 chips.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px;';

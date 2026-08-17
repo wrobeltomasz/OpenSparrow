@@ -36,14 +36,14 @@ async function renderUserAccess(panel) {
 
     let users;
     try {
-        const result  = await apiFetch('api.php?action=users_list');
-        const data = await result.json();
+        const res  = await apiFetch('api.php?action=users_list');
+        const data = await res.json();
         if (data.status !== 'success') {
             panel.innerHTML = `<p class="help-text">${escHtml(data.error || 'Failed to load users.')}</p>`;
             return;
         }
         users = data.users.filter(u => u.role !== 'admin');
-    } catch (error) {
+    } catch (err) {
         panel.innerHTML = '<p class="help-text">Network error while loading users.</p>';
         return;
     }
@@ -166,9 +166,9 @@ async function loadUserAccess(listElement, userId) {
 
     let data;
     try {
-        const result = await apiFetch(`api.php?action=user_tables_get&user_id=${encodeURIComponent(userId)}`);
-        data = await result.json();
-    } catch (error) {
+        const res = await apiFetch(`api.php?action=user_tables_get&user_id=${encodeURIComponent(userId)}`);
+        data = await res.json();
+    } catch (err) {
         listElement.innerHTML = '<p class="help-text">Network error while loading access.</p>';
         return;
     }
@@ -200,17 +200,17 @@ async function loadUserAccess(listElement, userId) {
         const payload = { user_id: parseInt(userId, 10) };
         scopes.forEach(scope => { payload[scope.key] = readers[scope.key](); });
         try {
-            const result = await apiFetch('api.php?action=user_tables_save', {
+            const res = await apiFetch('api.php?action=user_tables_save', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            const out = await result.json();
+            const out = await res.json();
             if (out.status === 'success') {
                 showStatusPill(saveElement, 'Access saved.', 'success');
             } else {
                 showStatusPill(saveElement, out.error || 'Save failed.', 'error');
             }
-        } catch (error) {
+        } catch (err) {
             showStatusPill(saveElement, 'Network error.', 'error');
         }
     });
@@ -371,7 +371,7 @@ async function renderManageUsers(panel, context) {
                     } else {
                         showStatusPill(e.target, resultData.error || 'Update failed.', 'error');
                     }
-                } catch (error) {
+                } catch (err) {
                     showStatusPill(e.target, 'Network error.', 'error');
                 }
             });
@@ -393,7 +393,7 @@ async function renderManageUsers(panel, context) {
                         showStatusPill(e.target, resultData.error || 'Role change failed.', 'error');
                         renderManageUsers(panel, context);
                     }
-                } catch (error) {
+                } catch (err) {
                     showStatusPill(e.target, 'Network error.', 'error');
                     renderManageUsers(panel, context);
                 }
@@ -449,39 +449,39 @@ async function renderManageUsers(panel, context) {
                 (box.querySelector('#cpw-current') ?? newInput).focus();
 
                 saveButton.addEventListener('click', async () => {
-                    const password     = newInput.value;
+                    const pwd     = newInput.value;
                     const confirm = box.querySelector('#cpw-confirm').value;
                     if (isSelf && !box.querySelector('#cpw-current').value) {
                         messageElement.style.color = 'var(--error)';
                         messageElement.textContent = 'Current password is required.';
                         return;
                     }
-                    if (password.length < minPasswordLength) {
+                    if (pwd.length < minPasswordLength) {
                         messageElement.style.color = 'var(--error)';
                         messageElement.textContent = `Password must be at least ${minPasswordLength} characters.`;
                         return;
                     }
-                    if (password !== confirm) {
+                    if (pwd !== confirm) {
                         messageElement.style.color = 'var(--error)';
                         messageElement.textContent = 'Passwords do not match.';
                         return;
                     }
                     messageElement.textContent = 'Saving…';
                     try {
-                        let result, data;
+                        let res, data;
                         if (isSelf) {
-                            res: result  = await apiFetch('../api.php?action=change_password', {
+                            res  = await apiFetch('../api.php?action=change_password', {
                                 method: 'POST',
-                                body: JSON.stringify({ current_password: box.querySelector('#cpw-current').value, new_password: password }),
+                                body: JSON.stringify({ current_password: box.querySelector('#cpw-current').value, new_password: pwd }),
                             });
-                            data = await result.json();
+                            data = await res.json();
                             if (data.ok) { close(); return; }
                         } else {
-                            res: result  = await apiFetch('api.php?action=users_change_password', {
+                            res  = await apiFetch('api.php?action=users_change_password', {
                                 method: 'POST',
-                                body: JSON.stringify({ id, password: password }),
+                                body: JSON.stringify({ id, password: pwd }),
                             });
-                            data = await result.json();
+                            data = await res.json();
                             if (data.status === 'success') { close(); return; }
                         }
                         messageElement.style.color = 'var(--error)';
@@ -534,11 +534,11 @@ async function renderManageUsers(panel, context) {
                     const payload = { id };
                     fields.forEach(f => { payload[f.key] = inputs[f.key].value; });
                     try {
-                        const result = await apiFetch('api.php?action=users_update_contact', {
+                        const res = await apiFetch('api.php?action=users_update_contact', {
                             method: 'POST',
                             body: JSON.stringify(payload),
                         });
-                        const resultData = await result.json();
+                        const resultData = await res.json();
                         if (resultData.status === 'success') {
                             close();
                             renderManageUsers(panel, context);
@@ -558,16 +558,16 @@ async function renderManageUsers(panel, context) {
         const strengthFill = panel.querySelector('#passwordStrengthFill');
         const strengthLabel = panel.querySelector('#passwordStrengthLabel');
 
-        function evaluatePassword(password) {
+        function evaluatePassword(pwd) {
             let score = 0;
-            if (password.length >= 6) score++;
-            if (password.length >= 8) score++;
-            if (password.length >= 10) score++;
-            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-            if (/\d/.test(password)) score++;
-            if (/[^a-zA-Z0-9]/.test(password)) score++;
+            if (pwd.length >= 6) score++;
+            if (pwd.length >= 8) score++;
+            if (pwd.length >= 10) score++;
+            if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+            if (/\d/.test(pwd)) score++;
+            if (/[^a-zA-Z0-9]/.test(pwd)) score++;
 
-            if (password.length < minPasswordLength) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--error)' };
+            if (pwd.length < minPasswordLength) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--error)' };
             if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: 'var(--error)' };
             if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: 'var(--warn)' };
             if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: 'var(--muted)' };
@@ -575,13 +575,13 @@ async function renderManageUsers(panel, context) {
         }
 
         passwordInput.addEventListener('input', () => {
-            const password = passwordInput.value;
-            if (!password) {
+            const pwd = passwordInput.value;
+            if (!pwd) {
                 strengthFill.style.width = '0%';
                 strengthLabel.textContent = '';
                 return;
             }
-            const result = evaluatePassword(password);
+            const result = evaluatePassword(pwd);
             strengthFill.style.width = result.percent + '%';
             strengthFill.style.background = result.color;
             strengthLabel.textContent = result.label;
@@ -618,7 +618,7 @@ async function renderManageUsers(panel, context) {
                 } else {
                     showStatusPill(addButton, resultData.error || 'Could not create the user.', 'error');
                 }
-            } catch (error) {
+            } catch (err) {
                 showStatusPill(addButton, 'Network error.', 'error');
             }
         });
@@ -631,8 +631,8 @@ async function renderUserStatistics(panel) {
     panel.innerHTML = `<p>Loading statistics...</p>`;
 
     try {
-        const result = await apiFetch('api.php?action=users_stats');
-        const data = await result.json();
+        const res = await apiFetch('api.php?action=users_stats');
+        const data = await res.json();
 
         if (data.status !== 'success') {
             panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
@@ -709,8 +709,8 @@ async function renderUserSettings(panel, context) {
     panel.innerHTML = `<p>Loading settings...</p>`;
 
     try {
-        const result = await apiFetch('api.php?action=user_policy_get');
-        const data = await result.json();
+        const res = await apiFetch('api.php?action=user_policy_get');
+        const data = await res.json();
 
         if (data.status !== 'success') {
             panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
@@ -755,7 +755,7 @@ async function renderUserSettings(panel, context) {
                 } else {
                     showStatusPill(saveButton, resultData.error || 'Save failed.', 'error');
                 }
-            } catch (error) {
+            } catch (err) {
                 showStatusPill(saveButton, 'Network error.', 'error');
             }
         });

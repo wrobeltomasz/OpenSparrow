@@ -140,8 +140,8 @@ describe('OpenSparrow – Comments: Add Comment', () => {
       if (!url.includes('edit.php')) return;
       cy.get('#c-panel', { timeout: CypressHelpers.TIMEOUTS.medium }).then($panel => {
         if ($panel.find('.c-input').length === 0) return;
-        const message = `cypress-${Date.now()}`;
-        cy.get('.c-input').type(message);
+        const msg = `cypress-${Date.now()}`;
+        cy.get('.c-input').type(msg);
         cy.get('.c-send-btn').click();
         cy.get('#c-panel .c-thread .c-msg', { timeout: CypressHelpers.TIMEOUTS.long })
           .should('have.length.gte', 1);

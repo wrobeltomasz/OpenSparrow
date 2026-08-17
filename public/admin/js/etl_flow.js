@@ -165,8 +165,8 @@ function buildFlowCard(flow, index, redraw, status) {
     async function loadHistory() {
         histWrap.textContent = 'Loading history…';
         try {
-            const result  = await apiFetch('api.php?action=etl_flow_log&flow_id=' + encodeURIComponent(flow.id));
-            const data = await result.json();
+            const res  = await apiFetch('api.php?action=etl_flow_log&flow_id=' + encodeURIComponent(flow.id));
+            const data = await res.json();
             if (data.status !== 'success') { histWrap.textContent = data.error || 'Failed to load history.'; return; }
             if (data.note && (!data.rows || data.rows.length === 0)) { histWrap.textContent = data.note; return; }
             if (!data.rows || data.rows.length === 0) { histWrap.textContent = 'No runs yet.'; return; }
@@ -188,8 +188,8 @@ export async function renderFlowsTab(panel) {
     panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading flows…</p>';
 
     try {
-        const result  = await apiFetch('api.php?action=etl_flow_load');
-        const data = await result.json();
+        const res  = await apiFetch('api.php?action=etl_flow_load');
+        const data = await res.json();
         if (data.status !== 'success') {
             panel.innerHTML = `<p style="color:var(--error); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
             return;

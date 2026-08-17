@@ -80,9 +80,9 @@ async function loadHistory() {
                 row.username       || '—',
                 row.changed_by_name || '—',
                 row.changed_at ? new Date(row.changed_at).toLocaleString() : '—',
-            ].forEach(value => {
+            ].forEach(val => {
                 const td = tr.insertCell();
-                td.textContent = value;
+                td.textContent = val;
                 td.style.padding = '8px 10px';
             });
         });

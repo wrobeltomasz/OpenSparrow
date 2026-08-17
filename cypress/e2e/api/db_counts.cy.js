@@ -242,8 +242,8 @@ describe('OpenSparrow – DB row counts: deals', () => {
         cy.get('select[name="stage"]').should('have.value', deal.stage);
         cy.get('input[name="expected_close"]').should('have.value', deal.expected_close);
 
-        cy.get('input[name="value"]').invoke('val').then(value => {
-          expect(parseFloat(value), 'deal value').to.eq(parseFloat(deal.value));
+        cy.get('input[name="value"]').invoke('val').then(val => {
+          expect(parseFloat(val), 'deal value').to.eq(parseFloat(deal.value));
         });
 
         deal.stakeholders.forEach(v => {

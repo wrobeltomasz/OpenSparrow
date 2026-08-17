@@ -230,7 +230,7 @@ function renderVersionCard(v, container) {
                 callback.title = 'Informational only — no action taken';
             }
 
-            const label = document.createElement('span');
+            const lbl = document.createElement('span');
             const typeTag = a.type === 'file_deprecated'
                 ? '<span style=" ">[info]</span> '
                 : '';
@@ -239,9 +239,9 @@ function renderVersionCard(v, container) {
                 : (a.type === 'config_key_remove' && !a.present)
                     ? ' <span style=" ">(key not found — will skip)</span>'
                     : '';
-            label.innerHTML = typeTag + escHtml(a.label) + existTag;
+            lbl.innerHTML = typeTag + escHtml(a.label) + existTag;
 
-            row.append(callback, label);
+            row.append(callback, lbl);
             card.appendChild(row);
         });
     } else if (isPending && v.actions.length === 0) {

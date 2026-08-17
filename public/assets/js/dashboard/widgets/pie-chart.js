@@ -28,9 +28,9 @@ function renderPieChart(widget) {
     let currentAngle = 0;
 
     data.forEach((row, index) => {
-        const value = parseFloat(row.value);
-        const percent = (value / total) * 100;
-        const deg = (value / total) * 360;
+        const val = parseFloat(row.value);
+        const percent = (val / total) * 100;
+        const deg = (val / total) * 360;
         const color = COLORS[index % COLORS.length];
         conicStops.push(`${color} ${currentAngle}deg ${currentAngle + deg}deg`);
         currentAngle += deg;
@@ -43,10 +43,10 @@ function renderPieChart(widget) {
         box.style.backgroundColor = color;
 
         const displayLabel = formatCellValue(row.label || 'None', columnType);
-        const label = document.createElement('span');
-        label.textContent = `${displayLabel} - ${value} (${percent.toFixed(1)}%)`;
+        const lbl = document.createElement('span');
+        lbl.textContent = `${displayLabel} - ${val} (${percent.toFixed(1)}%)`;
 
-        item.append(box, label);
+        item.append(box, lbl);
         applyDrillDown(item, widget.table, groupColumn, row.label);
         legend.appendChild(item);
     });

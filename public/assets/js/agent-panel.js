@@ -26,7 +26,7 @@ let abortedByUser = false;
 let lastTurn = null;
 
 function buildPanel() {
-    overlayEl: overlayElement           = document.createElement('div');
+    overlayElement           = document.createElement('div');
     overlayElement.className = 'ag-overlay';
     overlayElement.id        = 'agOverlay';
     document.body.appendChild(overlayElement);
@@ -202,8 +202,8 @@ function readGridContext() {
         try {
             const text = window.CURRENT_GRID_CONTEXT();
             if (text) return text;
-        } catch (error) {
-            console.error('Grid context provider failed, falling back to DOM:', error);
+        } catch (err) {
+            console.error('Grid context provider failed, falling back to DOM:', err);
         }
     }
     return readGridContextFromDom();
@@ -264,21 +264,21 @@ async function loadTags() {
         renderTags(data.tags ?? []);
         tagsLoaded = true;
     } catch {
-        const message        = document.createElement('span');
-        message.className    = 'ag-tag-empty';
-        message.textContent  = t('agent.tags_error');
+        const msg        = document.createElement('span');
+        msg.className    = 'ag-tag-empty';
+        msg.textContent  = t('agent.tags_error');
         tagsElement.innerHTML = '';
-        tagsElement.appendChild(message);
+        tagsElement.appendChild(msg);
     }
 }
 
 function renderTags(tags) {
     tagsElement.innerHTML = '';
     if (tags.length === 0) {
-        const message       = document.createElement('span');
-        message.className   = 'ag-tag-empty';
-        message.textContent = t('agent.no_tags');
-        tagsElement.appendChild(message);
+        const msg       = document.createElement('span');
+        msg.className   = 'ag-tag-empty';
+        msg.textContent = t('agent.no_tags');
+        tagsElement.appendChild(msg);
         return;
     }
 
@@ -418,7 +418,7 @@ function replaceWithAnswer(wrap, answer, sources, tagFallback, suggestions) {
     scrollDown();
 }
 
-function replaceWithError(wrap, message) {
+function replaceWithError(wrap, msg) {
     wrap.innerHTML = '';
     const element       = document.createElement('div');
     element.className   = 'ag-msg-error';
@@ -486,15 +486,15 @@ async function sendQuery() {
             const answer = String(data.answer ?? '').trim();
             lastTurn = (answer === '' || data.no_answer) ? null : { query, answer };
         }
-    } catch (error) {
-        if (error.name === 'AbortError') {
+    } catch (err) {
+        if (err.name === 'AbortError') {
             if (abortedByUser) {
                 replaceWithError(thinkWrap, 'Query cancelled.');
             } else {
                 replaceWithError(thinkWrap, 'The request timed out. The AI model may be busy — please try again.');
             }
         } else {
-            replaceWithError(thinkWrap, error.message || 'Network error.');
+            replaceWithError(thinkWrap, err.message || 'Network error.');
         }
     } finally {
         currentAbortController = null;

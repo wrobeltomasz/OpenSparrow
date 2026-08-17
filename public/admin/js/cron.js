@@ -38,10 +38,10 @@ function buildManualRunSection() {
         output.style.color = '';
 
         try {
-            const result = await apiFetch('api.php?action=run_cron_notifications', {
+            const res = await apiFetch('api.php?action=run_cron_notifications', {
                 method: 'POST',
             });
-            const data = await result.json();
+            const data = await res.json();
             if (data.status === 'success') {
                 output.innerHTML = data.output || '(no output)';
             } else {
@@ -77,8 +77,8 @@ function buildRunHistorySection() {
         container.textContent = '';
 
         try {
-            const result = await apiFetch('api.php?action=cron_log');
-            const data = await result.json();
+            const res = await apiFetch('api.php?action=cron_log');
+            const data = await res.json();
 
             if (data.status !== 'success') {
                 container.textContent = 'Error: ' + (data.error || 'unknown');
@@ -137,8 +137,8 @@ function buildStatisticsSection() {
         container.textContent = '';
 
         try {
-            const result = await apiFetch('api.php?action=cron_stats');
-            const data = await result.json();
+            const res = await apiFetch('api.php?action=cron_stats');
+            const data = await res.json();
 
             if (data.status !== 'success') {
                 container.textContent = 'Error: ' + (data.error || 'unknown');
@@ -157,16 +157,16 @@ function buildStatisticsSection() {
                 ['Due Today (unread)',  t.due_today ?? '—', 'var(--warn)'],
                 ['Upcoming Unread',     t.upcoming_unread ?? '—', 'var(--muted)'],
             ];
-            kpis.forEach(([label, value, color]) => {
+            kpis.forEach(([label, val, color]) => {
                 const kpi = document.createElement('div');
                 kpi.style.cssText = `padding:14px 16px; border-left:4px solid ${color}; background:#fff; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.07);`;
                 const number = document.createElement('div');
-                number.textContent = value;
+                number.textContent = val;
                 number.style.cssText = ` font-weight:700; color:${color};`;
-                const label = document.createElement('div');
-                label.textContent = label;
-                label.style.cssText = '  margin-top:2px;';
-                kpi.append(number, label);
+                const lbl = document.createElement('div');
+                lbl.textContent = label;
+                lbl.style.cssText = '  margin-top:2px;';
+                kpi.append(number, lbl);
                 kpiGrid.appendChild(kpi);
             });
             container.appendChild(kpiGrid);
@@ -322,11 +322,11 @@ function buildCleanupSection() {
         result.style.display = 'none';
 
         try {
-            const result = await apiFetch('api.php?action=cron_purge_log', {
+            const res = await apiFetch('api.php?action=cron_purge_log', {
                 method: 'POST',
                 body: JSON.stringify({ days })
             });
-            const data = await result.json();
+            const data = await res.json();
             if (data.status === 'success') {
                 result.textContent = `Deleted ${data.deleted} log row(s).`;
                 result.style.color = 'var(--ok)';
@@ -352,11 +352,11 @@ function buildCleanupSection() {
 function cronField(labelText, inputElement) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-bottom:14px;';
-    const label = document.createElement('label');
-    label.textContent = labelText;
-    label.className = 'adm-field-label';
-    if (inputElement.id) label.htmlFor = inputElement.id;
-    wrap.append(label, inputElement);
+    const lbl = document.createElement('label');
+    lbl.textContent = labelText;
+    lbl.className = 'adm-field-label';
+    if (inputElement.id) lbl.htmlFor = inputElement.id;
+    wrap.append(lbl, inputElement);
     return wrap;
 }
 
@@ -409,9 +409,9 @@ function buildEmailSection() {
     const encSelect = document.createElement('select');
     encSelect.id = 'cron-smtp-encryption';
     encSelect.className = 'adm-input w-full';
-    [['tls', 'STARTTLS (587)'], ['ssl', 'SSL/TLS (465)'], ['none', 'None']].forEach(([value, text]) => {
+    [['tls', 'STARTTLS (587)'], ['ssl', 'SSL/TLS (465)'], ['none', 'None']].forEach(([val, text]) => {
         const option = document.createElement('option');
-        option.value = value;
+        option.value = val;
         option.textContent = text;
         encSelect.appendChild(option);
     });
@@ -485,8 +485,8 @@ function buildEmailSection() {
 
     async function load() {
         try {
-            const result = await apiFetch('api.php?action=get_automation_email_setting');
-            const data = await result.json();
+            const res = await apiFetch('api.php?action=get_automation_email_setting');
+            const data = await res.json();
             fromInput.value = data.from || '';
             if (data.locked_by_env) {
                 fromInput.disabled = true;
@@ -528,11 +528,11 @@ function buildEmailSection() {
         result.style.display = 'none';
 
         try {
-            const result = await apiFetch('api.php?action=set_automation_email_setting', {
+            const res = await apiFetch('api.php?action=set_automation_email_setting', {
                 method: 'POST',
                 body: JSON.stringify(buildPayload())
             });
-            const data = await result.json();
+            const data = await res.json();
             if (data.status === 'success') {
                 result.textContent = 'Saved.';
                 result.style.color = 'var(--ok)';
@@ -559,7 +559,7 @@ function buildEmailSection() {
         result.style.display = 'none';
 
         try {
-            const result = await apiFetch('api.php?action=test_smtp_connection', {
+            const res = await apiFetch('api.php?action=test_smtp_connection', {
                 method: 'POST',
                 body: JSON.stringify({
                     smtp_host: hostInput.value.trim(),
@@ -569,7 +569,7 @@ function buildEmailSection() {
                     smtp_password: passInput.value,
                 })
             });
-            const data = await result.json();
+            const data = await res.json();
             if (data.status === 'success') {
                 result.textContent = 'Connection successful.';
                 result.style.color = 'var(--ok)';

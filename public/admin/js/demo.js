@@ -59,7 +59,7 @@ function apiPost(action, body) {
 function statusMessage(container, type, text) {
     let element = container.querySelector('.demo-status-msg');
     if (!element) {
-        el: element = document.createElement('p');
+        element = document.createElement('p');
         element.className = 'demo-status-msg';
         container.appendChild(element);
     }
@@ -80,10 +80,10 @@ export function renderDemoPage({ workspaceEl: workspaceElement }) {
             }
         } catch (e) {
             workspaceElement.innerHTML = '';
-            const error = document.createElement('p');
-            error.className = 'admin-error';
-            error.textContent = 'Error: ' + e.message;
-            workspaceElement.appendChild(error);
+            const err = document.createElement('p');
+            err.className = 'admin-error';
+            err.textContent = 'Error: ' + e.message;
+            workspaceElement.appendChild(err);
         }
     })();
 }
@@ -101,13 +101,13 @@ function buildInstallOption({ id, label, help, checked = true }) {
     chk.className = 'adm-check';
     chk.checked   = checked;
 
-    const label = document.createElement('label');
-    label.htmlFor     = id;
-    label.textContent = label;
-    label.className   = 'adm-field-label';
-    label.style.cursor = 'pointer';
+    const lbl = document.createElement('label');
+    lbl.htmlFor     = id;
+    lbl.textContent = label;
+    lbl.className   = 'adm-field-label';
+    lbl.style.cursor = 'pointer';
 
-    row.append(chk, label);
+    row.append(chk, lbl);
 
     const helpElement = document.createElement('div');
     helpElement.className   = 'help-text';
@@ -313,9 +313,9 @@ function renderInstalled(workspaceElement, meta) {
     warn.className   = 'demo-warning demo-warning-danger';
     warn.textContent = `Uninstalling will DROP SCHEMA ${meta.schema} CASCADE (all data lost) and remove demo entries from the app configuration — menu, dashboard, calendar, board, workflows, views, printouts, automations, anonymization, files and RAG documents — along with the demo users and their comments, notes, notifications and seeded audit history. Audit entries and record snapshots you created yourself are kept. This cannot be undone.`;
 
-    const label = document.createElement('label');
-    label.textContent = 'Type CONFIRM to uninstall:';
-    label.style.cssText = 'display:block;font-weight:600;margin-top:16px;';
+    const lbl = document.createElement('label');
+    lbl.textContent = 'Type CONFIRM to uninstall:';
+    lbl.style.cssText = 'display:block;font-weight:600;margin-top:16px;';
 
     const confirmInput = document.createElement('input');
     confirmInput.type        = 'text';
@@ -353,7 +353,7 @@ function renderInstalled(workspaceElement, meta) {
     });
 
     uninstallWrap.appendChild(warn);
-    uninstallWrap.appendChild(label);
+    uninstallWrap.appendChild(lbl);
     uninstallWrap.appendChild(confirmInput);
     uninstallWrap.appendChild(uninstallButton);
     workspaceElement.appendChild(uninstallWrap);

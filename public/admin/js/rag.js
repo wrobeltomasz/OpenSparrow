@@ -35,7 +35,7 @@ function ragCard(title, description) {
     return { card, body };
 }
 
-function ragStatusPill(anchor, message, type = 'success') {
+function ragStatusPill(anchor, msg, type = 'success') {
     const previous = anchor.parentNode?.querySelector('.rag-status-pill');
     if (previous) previous.remove();
     const colors = {
@@ -45,7 +45,7 @@ function ragStatusPill(anchor, message, type = 'success') {
     }[type] ?? { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' };
     const pill = document.createElement('span');
     pill.className = 'rag-status-pill';
-    pill.textContent = message;
+    pill.textContent = msg;
     pill.style.cssText = `display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:4px 10px;`
         + `background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`
         + `border-radius:999px;font-weight:600;transition:opacity .3s;`;
@@ -73,15 +73,15 @@ function ragParseTags(pgArray) {
     const inner = pgArray.replace(/^\{|\}$/g, '');
     if (!inner) return [];
     const result = [];
-    let current = '';
+    let cur = '';
     let inQuote = false;
     for (let i = 0; i < inner.length; i++) {
         const c = inner[i];
         if (c === '"') { inQuote = !inQuote; }
-        else if (c === ',' && !inQuote) { result.push(current); current = ''; }
-        else { current += c; }
+        else if (c === ',' && !inQuote) { result.push(cur); cur = ''; }
+        else { cur += c; }
     }
-    if (current !== '') result.push(current);
+    if (cur !== '') result.push(cur);
     return result;
 }
 
@@ -144,16 +144,16 @@ function ragBuildDocumentsTab(panel) {
 
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
-        const label = document.createElement('label');
-        label.htmlFor = id;
-        label.textContent = label;
-        label.className = 'adm-field-label';
+        const lbl = document.createElement('label');
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+        lbl.className = 'adm-field-label';
         const input = document.createElement('input');
         input.type = 'text';
         input.id = id;
         input.placeholder = placeholder;
         input.className = 'adm-input w-full';
-        group.appendChild(label);
+        group.appendChild(lbl);
         group.appendChild(input);
         return { group, inp: input };
     }
@@ -191,8 +191,8 @@ function ragBuildDocumentsTab(panel) {
 
     (async () => {
         try {
-            const result  = await apiFetch('api.php?action=get_language_setting');
-            const data = await result.json();
+            const res  = await apiFetch('api.php?action=get_language_setting');
+            const data = await res.json();
             (data.available_languages ?? []).forEach(code => {
                 const option = document.createElement('option');
                 option.value       = code;
@@ -325,11 +325,11 @@ function ragBuildDocumentsTab(panel) {
         if (!confirm('Re-chunk all documents from scratch? Existing chunks will be replaced.')) return;
         rechunkAllButton.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=rag_rechunk_all', {
+            const res = await apiFetch('api.php?action=rag_rechunk_all', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
-            const data = await result.json();
+            const data = await res.json();
             if (data.status === 'success') {
                 ragStatusPill(rechunkAllButton, `Re-chunked ${data.processed} doc${data.processed !== 1 ? 's' : ''}.`, 'success');
                 await loadFiles();
@@ -349,8 +349,8 @@ function ragBuildDocumentsTab(panel) {
 
     async function loadFiles() {
         try {
-            const result  = await apiFetch('api.php?action=rag_list');
-            const data = await result.json();
+            const res  = await apiFetch('api.php?action=rag_list');
+            const data = await res.json();
             if (data.status === 'error') {
                 tbody.innerHTML = '';
                 const row = tbody.insertRow();
@@ -498,11 +498,11 @@ function ragBuildDocumentsTab(panel) {
         formData.append('tags', JSON.stringify(tags));
 
         try {
-            const result  = await apiFetch('api.php?action=rag_upload', {
+            const res  = await apiFetch('api.php?action=rag_upload', {
                 method: 'POST',
                 body: formData,
             });
-            const data = await result.json();
+            const data = await res.json();
             if (data.status === 'success') {
                 ragStatusPill(uploadButton, 'Uploaded.', 'success');
                 fileInput.value = '';
@@ -719,16 +719,16 @@ function ragBuildSettingsTab(panel) {
 
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
-        const label = document.createElement('label');
-        label.htmlFor = id;
-        label.textContent = label;
-        label.className = 'adm-field-label';
+        const lbl = document.createElement('label');
+        lbl.htmlFor = id;
+        lbl.textContent = label;
+        lbl.className = 'adm-field-label';
         const input = document.createElement('input');
         input.type = 'text';
         input.id = id;
         input.placeholder = placeholder;
         input.className = 'adm-input w-full';
-        group.appendChild(label);
+        group.appendChild(lbl);
         group.appendChild(input);
         return { group, inp: input };
     }
@@ -832,10 +832,10 @@ function ragBuildSettingsTab(panel) {
             return;
         }
 
-        const table = document.createElement('table');
-        table.className = 'adm-tbl';
+        const tbl = document.createElement('table');
+        tbl.className = 'adm-tbl';
 
-        const thead = table.createTHead();
+        const thead = tbl.createTHead();
         const hr    = thead.insertRow();
         ['Model name', 'Size', 'Modified'].forEach(column => {
             const th = document.createElement('th');
@@ -844,7 +844,7 @@ function ragBuildSettingsTab(panel) {
             hr.appendChild(th);
         });
 
-        const tbody = table.createTBody();
+        const tbody = tbl.createTBody();
         models.forEach(m => {
             const row = tbody.insertRow();
             const tdStyle = 'padding:8px 10px;border-bottom:1px solid var(--border);';
@@ -875,8 +875,8 @@ function ragBuildSettingsTab(panel) {
             });
         });
 
-        table.appendChild(tbody);
-        modelsTable.appendChild(table);
+        tbl.appendChild(tbody);
+        modelsTable.appendChild(tbl);
     }
 
     async function doCheck() {
@@ -890,11 +890,11 @@ function ragBuildSettingsTab(panel) {
         statusLine.textContent   = 'Connecting to ' + url + '…';
 
         try {
-            const result  = await apiFetch('api.php?action=rag_ollama_check', {
+            const res  = await apiFetch('api.php?action=rag_ollama_check', {
                 method: 'POST',
                 body: JSON.stringify({ ollama_url: url, ssl_verify: sslCheckbox.checked }),
             });
-            const data = await result.json();
+            const data = await res.json();
 
             if (data.status === 'success') {
                 const n = (data.models ?? []).length;
@@ -924,8 +924,8 @@ function ragBuildSettingsTab(panel) {
 
     (async () => {
         try {
-            const result  = await apiFetch('api.php?action=rag_settings');
-            const data = await result.json();
+            const res  = await apiFetch('api.php?action=rag_settings');
+            const data = await res.json();
             if (data.status === 'success' && data.settings) {
                 const s = data.settings;
                 if (s.ollama_url)        urlInput.value         = s.ollama_url;
@@ -978,11 +978,11 @@ function ragBuildSettingsTab(panel) {
             return;
         }
         try {
-            const result  = await apiFetch('api.php?action=rag_settings_save', {
+            const res  = await apiFetch('api.php?action=rag_settings_save', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            const data = await result.json();
+            const data = await res.json();
             ragStatusPill(saveButton, data.status === 'success' ? 'Saved.' : (data.error ?? 'Error.'), data.status === 'success' ? 'success' : 'error');
             if (data.status === 'success') {
                 apiKeyInput.value = '';
@@ -1068,8 +1068,8 @@ function ragBuildAggregateViewsCard(panel) {
 
     async function loadAndRender() {
         try {
-            const result  = await apiFetch('api.php?action=rag_aggregate_view_list');
-            const data = await result.json();
+            const res  = await apiFetch('api.php?action=rag_aggregate_view_list');
+            const data = await res.json();
             if (data.status !== 'success') {
                 ragStatusPill(addButton, data.error ?? 'Failed to load aggregate views.', 'error');
                 return;
@@ -1150,11 +1150,11 @@ function ragBuildAggregateViewsCard(panel) {
     async function saveMapping(tableName, viewName, anchorButton) {
         anchorButton.disabled = true;
         try {
-            const result  = await apiFetch('api.php?action=rag_aggregate_view_save', {
+            const res  = await apiFetch('api.php?action=rag_aggregate_view_save', {
                 method: 'POST',
                 body: JSON.stringify({ table: tableName, view: viewName }),
             });
-            const data = await result.json();
+            const data = await res.json();
             if (data.status === 'success') {
                 ragStatusPill(anchorButton, viewName ? 'Attached.' : 'Removed.', 'success');
                 viewInput.value = '';
@@ -1201,23 +1201,23 @@ function ragBuildTestTab(panel) {
 
     (async () => {
         try {
-            const result  = await apiFetch('../api/rag.php?action=tags');
-            const data = await result.json();
+            const res  = await apiFetch('../api/rag.php?action=tags');
+            const data = await res.json();
             tagChips.innerHTML = '';
             const tags = data.tags ?? [];
             if (tags.length === 0) {
                 tagChips.innerHTML = '<span style="font-style:italic;">No tags yet.</span>';
             } else {
                 tags.forEach(tag => {
-                    const label = document.createElement('label');
-                    label.style.cssText = 'display:flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;background:#fff;';
+                    const lbl = document.createElement('label');
+                    lbl.style.cssText = 'display:flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;background:#fff;';
                     const callback = document.createElement('input');
                     callback.type  = 'checkbox';
                     callback.value = tag;
                     callback.style.accentColor = 'var(--accent)';
-                    label.appendChild(callback);
-                    label.appendChild(document.createTextNode(tag));
-                    tagChips.appendChild(label);
+                    lbl.appendChild(callback);
+                    lbl.appendChild(document.createTextNode(tag));
+                    tagChips.appendChild(lbl);
                 });
             }
         } catch (_) {
@@ -1242,8 +1242,8 @@ function ragBuildTestTab(panel) {
 
     (async () => {
         try {
-            const result  = await apiFetch('api.php?action=get_language_setting');
-            const data = await result.json();
+            const res  = await apiFetch('api.php?action=get_language_setting');
+            const data = await res.json();
             const available = data.available_languages ?? [];
             const current   = document.documentElement.lang || '';
             available.forEach(code => {
@@ -1333,14 +1333,14 @@ function ragBuildTestTab(panel) {
         sourcesRow.innerHTML     = '';
 
         try {
-            const result  = await apiFetch('api.php?action=rag_test_query', {
+            const res  = await apiFetch('api.php?action=rag_test_query', {
                 method: 'POST',
                 body: JSON.stringify({ query: q, tags, language, return_prompt: true }),
                 signal: testAbortCtrl.signal,
             });
             let data;
             try {
-                data = await result.json();
+                data = await res.json();
             } catch {
                 answerBox.textContent = 'The server timed out or returned an unexpected response. Please try again.';
                 answerBox.style.color = 'var(--error)';
@@ -1432,9 +1432,9 @@ function ragBuildStatisticsTab(panel) {
     tableWrap.style.cssText = 'overflow-x:auto;';
     recentBody.appendChild(tableWrap);
 
-    const table   = document.createElement('table');
-    table.className = 'adm-tbl';
-    const thead = table.createTHead();
+    const tbl   = document.createElement('table');
+    tbl.className = 'adm-tbl';
+    const thead = tbl.createTHead();
     const hr    = thead.insertRow();
     ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)', 'Sources'].forEach(column => {
         const th = document.createElement('th');
@@ -1442,9 +1442,9 @@ function ragBuildStatisticsTab(panel) {
         th.className = 'adm-th adm-th-sm';
         hr.appendChild(th);
     });
-    const tbody = table.createTBody();
-    table.appendChild(tbody);
-    tableWrap.appendChild(table);
+    const tbody = tbl.createTBody();
+    tbl.appendChild(tbody);
+    tableWrap.appendChild(tbl);
 
     const refreshButton = document.createElement('button');
     refreshButton.type = 'button';
@@ -1456,8 +1456,8 @@ function ragBuildStatisticsTab(panel) {
     async function load() {
         refreshButton.disabled = true;
         try {
-            const result  = await apiFetch('api.php?action=rag_stats');
-            const data = await result.json();
+            const res  = await apiFetch('api.php?action=rag_stats');
+            const data = await res.json();
             if (data.status !== 'success') {
                 throw new Error(data.error ?? 'Load failed.');
             }

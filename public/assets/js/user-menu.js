@@ -107,8 +107,8 @@ async function saveAvatar(overlay, avatarId) {
         showToast(I18n.t('header.avatar_updated'), 'success');
         closeModal(overlay);
         updateHeaderAvatar(avatarId);
-    } catch (error) {
-        showToast(error.message, 'error');
+    } catch (err) {
+        showToast(err.message, 'error');
         if (saveButton) saveButton.disabled = false;
     }
 }
@@ -191,8 +191,8 @@ function buildPasswordModal() {
             if (!result.ok || !data.ok) throw new Error(data.error ?? I18n.t('auth.error_changing_password'));
             showToast(I18n.t('auth.password_changed'), 'success');
             closeModal(overlay);
-        } catch (error) {
-            errorElement.textContent = error.message;
+        } catch (err) {
+            errorElement.textContent = err.message;
             errorElement.classList.add('visible');
             submit.disabled = false;
         }
@@ -280,8 +280,8 @@ async function openMyRecordsPanel() {
 
         myRecordsPanel.clearStatus();
         renderMyRecords(myRecordsPanel.bodyEl, data.records ?? []);
-    } catch (error) {
-        myRecordsPanel.setStatus(error.message, true);
+    } catch (err) {
+        myRecordsPanel.setStatus(err.message, true);
     }
 }
 
@@ -357,8 +357,8 @@ async function openMyCommentsPanel() {
 
         myCommentsPanel.clearStatus();
         renderMyComments(myCommentsPanel.bodyEl, data.comments ?? []);
-    } catch (error) {
-        myCommentsPanel.setStatus(error.message, true);
+    } catch (err) {
+        myCommentsPanel.setStatus(err.message, true);
     }
 }
 

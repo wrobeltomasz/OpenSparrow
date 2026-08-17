@@ -26,8 +26,8 @@ function procedureKey(proc) {
 }
 
 function procedureLabel(proc) {
-    const arguments = (proc.params || []).map(p => `${p.name} ${p.type}`).join(', ');
-    return `${procedureKey(proc)}(${arguments})`;
+    const argumentList = (proc.params || []).map(p => `${p.name} ${p.type}`).join(', ');
+    return `${procedureKey(proc)}(${argumentList})`;
 }
 
 export function renderWorkflowsEditor(key, itemData, isArray, context) {

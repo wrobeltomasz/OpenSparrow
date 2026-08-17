@@ -12,7 +12,7 @@ const TOOLTIP_STYLE = 'position:absolute;display:none;background:#fff;border:1px
 export function getRecordTooltip() {
     let element = document.getElementById(TOOLTIP_ID);
     if (!element) {
-        el: element = document.createElement('div');
+        element = document.createElement('div');
         element.id = TOOLTIP_ID;
         element.style.cssText = TOOLTIP_STYLE;
         document.body.appendChild(element);
@@ -33,14 +33,14 @@ export function rowsFromRecord(rowData = {}, columns = {}) {
     for (const key of keys) {
         if (key === 'id') continue;
         if (key.endsWith('__display')) continue;
-        const value = rowData[key + '__display'] ?? rowData[key];
-        if (value === null || value === undefined || value === '') continue;
+        const val = rowData[key + '__display'] ?? rowData[key];
+        if (val === null || val === undefined || val === '') continue;
         const columnConfig = columns[key] || {};
         const label = columnConfig.display_name || key;
         const color = (columnConfig.type || '').toLowerCase() === 'enum'
-            ? (columnConfig.enum_colors?.[String(value)] ?? null)
+            ? (columnConfig.enum_colors?.[String(val)] ?? null)
             : null;
-        rows.push({ label, value: String(value), color });
+        rows.push({ label, value: String(val), color });
     }
     return rows;
 }
@@ -88,7 +88,7 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
     const rect = anchor.getBoundingClientRect();
     let topPosition = rect.bottom + window.scrollY + 5;
     if (topPosition + element.offsetHeight > window.innerHeight + window.scrollY) {
-        topPos: topPosition = rect.top + window.scrollY - element.offsetHeight - 5;
+        topPosition = rect.top + window.scrollY - element.offsetHeight - 5;
     }
     element.style.left = (rect.left + window.scrollX) + 'px';
     element.style.top = topPosition + 'px';

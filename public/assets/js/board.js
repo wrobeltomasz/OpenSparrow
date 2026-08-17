@@ -130,8 +130,8 @@ async function fetchSchema() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         if (result.ok) appSchema = await result.json();
-    } catch (error) {
-        console.error('Failed to load schema for board', error);
+    } catch (err) {
+        console.error('Failed to load schema for board', err);
     }
 }
 
@@ -145,8 +145,8 @@ async function fetchBoard() {
             board = await result.json();
             cards = Array.isArray(board.cards) ? board.cards.map(c => ({ ...c })) : [];
         }
-    } catch (error) {
-        console.error('Failed to load board', error);
+    } catch (err) {
+        console.error('Failed to load board', err);
     }
 }
 
@@ -366,9 +366,9 @@ async function moveCard(id, newStatus, oldStatus) {
             render();
             console.error('Failed to move card:', data.error ?? result.status);
         }
-    } catch (error) {
+    } catch (err) {
         card.status = oldStatus;
         render();
-        console.error('Network error during card move:', error);
+        console.error('Network error during card move:', err);
     }
 }

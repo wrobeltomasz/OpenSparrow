@@ -95,13 +95,13 @@ export async function renderSettingsPage(context) {
     saveButton.addEventListener('click', async () => {
         saveButton.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=set_language_setting', {
+            const res = await apiFetch('api.php?action=set_language_setting', {
                 method: 'POST',
                 body: JSON.stringify({
                     default_language: defSelect.value,
                 }),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 showStatusPill(pillAnchor, 'Language settings saved.', 'success');
             } else {
@@ -157,11 +157,11 @@ export async function renderSettingsPage(context) {
     bubbleSaveButton.addEventListener('click', async () => {
         bubbleSaveButton.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=set_chat_bubble_setting', {
+            const res = await apiFetch('api.php?action=set_chat_bubble_setting', {
                 method: 'POST',
                 body: JSON.stringify({ chat_bubble_enabled: toggleCallback.checked }),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 showStatusPill(bubblePillAnchor, 'Saved. Reload the app to see the change.', 'success');
             } else {
@@ -228,11 +228,11 @@ export async function renderSettingsPage(context) {
         }
         appNameSaveButton.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=set_app_name', {
+            const res = await apiFetch('api.php?action=set_app_name', {
                 method: 'POST',
                 body: JSON.stringify({ app_name: chosenName }),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 showStatusPill(appNamePillAnchor, 'Saved.', 'success');
             } else {
@@ -272,11 +272,11 @@ export async function renderSettingsPage(context) {
     logoEnabledSaveButton.addEventListener('click', async () => {
         logoEnabledSaveButton.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=set_logo_enabled', {
+            const res = await apiFetch('api.php?action=set_logo_enabled', {
                 method: 'POST',
                 body: JSON.stringify({ logo_enabled: logoEnabledCallback.checked }),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 showStatusPill(logoEnabledPillAnchor, 'Saved. Reload the app to see the change.', 'success');
             } else {
@@ -328,11 +328,11 @@ export async function renderSettingsPage(context) {
 
         logoUploadButton.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=upload_logo', {
+            const res = await apiFetch('api.php?action=upload_logo', {
                 method: 'POST',
                 body: formData,
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 logoPreview.src = result.logo_path + '?t=' + Date.now();
                 logoPreview.style.display = 'block';
@@ -352,11 +352,11 @@ export async function renderSettingsPage(context) {
     logoRemoveButton.addEventListener('click', async () => {
         logoRemoveButton.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=remove_logo', {
+            const res = await apiFetch('api.php?action=remove_logo', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 logoPreview.style.display = 'none';
                 logoRemoveButton.style.display = 'none';

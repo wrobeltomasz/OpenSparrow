@@ -192,11 +192,11 @@ function handleColumnFilterChange() {
         } else {
             const uniqueValues = new Map();
             fullData.forEach(row => {
-                const value = row[column];
-                if (value !== null && value !== undefined && value !== '') {
-                    const label = row[column + '__display'] ?? value;
-                    if (!uniqueValues.has(value)) {
-                        uniqueValues.set(value, label);
+                const val = row[column];
+                if (val !== null && val !== undefined && val !== '') {
+                    const label = row[column + '__display'] ?? val;
+                    if (!uniqueValues.has(val)) {
+                        uniqueValues.set(val, label);
                     }
                 }
             });
@@ -318,7 +318,7 @@ function renderFilterPills() {
     for (const [column, filter] of Object.entries(activeFilters.columns)) {
         let columnName = column;
         if (currentTable && window.schema.tables[currentTable]?.columns[column]?.display_name) {
-            colName: columnName = window.schema.tables[currentTable].columns[column].display_name;
+            columnName = window.schema.tables[currentTable].columns[column].display_name;
         }
 
         let label = '';

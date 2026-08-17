@@ -204,8 +204,8 @@ function clickAddIfPresent(tableParameter = null) {
       return cy
         .get(mobileSelect)
         .select((index, element) => {
-          const options  = Array.from(element.options);
-          const match = options.find(option => /add/i.test(option.value) || /add/i.test(option.text));
+          const selectOptions = Array.from(element.options);
+          const match = selectOptions.find(option => /add/i.test(option.value) || /add/i.test(option.text));
           return match ? match.value : null;
         })
         .then(() => {

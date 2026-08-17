@@ -40,11 +40,11 @@ function makeSection(title, description) {
     const h3 = document.createElement('h3');
     h3.textContent = title;
     h3.style.cssText = 'margin:0 0 4px; ';
-    const description = document.createElement('p');
-    description.textContent = description;
-    description.style.cssText = 'margin:0;  ';
+    const desc = document.createElement('p');
+    desc.textContent = description;
+    desc.style.cssText = 'margin:0;  ';
     hdrLeft.appendChild(h3);
-    hdrLeft.appendChild(description);
+    hdrLeft.appendChild(desc);
 
     const button = document.createElement('button');
     button.className = 'btn btn-primary btn-sm';
@@ -74,19 +74,19 @@ function setBodyLoading(body) {
     body.appendChild(p);
 }
 
-function setBodyError(body, message) {
+function setBodyError(body, msg) {
     body.replaceChildren();
     const p = document.createElement('p');
     p.style.cssText = 'color:var(--error);  margin:0;';
-    p.textContent = message;
+    p.textContent = msg;
     body.appendChild(p);
 }
 
-function setBodyEmpty(body, message) {
+function setBodyEmpty(body, msg) {
     body.replaceChildren();
     const p = document.createElement('p');
     p.style.cssText = 'color:var(--ok); font-weight:600;  margin:0;';
-    p.textContent = '✓ ' + message;
+    p.textContent = '✓ ' + msg;
     body.appendChild(p);
 }
 
@@ -373,8 +373,8 @@ async function runSection(apiAction, renderFn, button, body) {
         const data = await result.json();
         if (data.status === 'error') throw new Error(data.error || 'Server error');
         renderFn(body, data);
-    } catch (error) {
-        setBodyError(body, 'Error: ' + error.message);
+    } catch (err) {
+        setBodyError(body, 'Error: ' + err.message);
     } finally {
         button.disabled = false;
         button.textContent = 'Scan';

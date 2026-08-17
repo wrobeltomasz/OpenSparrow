@@ -59,10 +59,10 @@ export function resetFiltersState() {
 
 export function sortRows(rows, sortState) {
     if (!sortState.column) return rows;
-    const column = sortState.column;
+    const col = sortState.column;
     return [...rows].sort((a, b) => {
-        const valueA = a[column + '__display'] ?? a[column] ?? '';
-        const valueB = b[column + '__display'] ?? b[column] ?? '';
+        const valueA = a[col + '__display'] ?? a[col] ?? '';
+        const valueB = b[col + '__display'] ?? b[col] ?? '';
         const isNumberA = !isNaN(valueA) && valueA !== '';
         const isNumberB = !isNaN(valueB) && valueB !== '';
         if (isNumberA && isNumberB) {

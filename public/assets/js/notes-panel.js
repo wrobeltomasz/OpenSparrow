@@ -153,7 +153,7 @@ function buildForm(tables, onSubmit, initial = null) {
                 recordSelect.value = String(preselectId);
             }
             recordSelect.disabled = false;
-        } catch (error) {
+        } catch (err) {
             setRecordPlaceholder(I18n.t('notes.load_error'));
         }
     }
@@ -211,8 +211,8 @@ function buildForm(tables, onSubmit, initial = null) {
                 related_id: tableSelect.value ? recordSelect.value : '',
                 reminder_date: dateInput.value,
             });
-        } catch (error) {
-            alert(error.message);
+        } catch (err) {
+            alert(err.message);
         } finally {
             saveButton.disabled = false;
         }
@@ -274,8 +274,8 @@ function buildNoteRow(note, tables, { onSave, onDelete }) {
             try {
                 await onDelete(note.id);
                 row.remove();
-            } catch (error) {
-                alert(error.message);
+            } catch (err) {
+                alert(err.message);
             }
         });
 
@@ -344,7 +344,7 @@ export async function openNotesPanel() {
     try {
         await reloadList();
         panel.clearStatus();
-    } catch (error) {
-        panel.setStatus(error.message, true);
+    } catch (err) {
+        panel.setStatus(err.message, true);
     }
 }

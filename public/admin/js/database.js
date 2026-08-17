@@ -12,8 +12,8 @@ export async function renderDatabaseSection(panel) {
 
     let dbConfig;
     try {
-        const result = await apiFetch('api.php?action=get&file=database');
-        dbConfig = await result.json();
+        const res = await apiFetch('api.php?action=get&file=database');
+        dbConfig = await res.json();
         if (!dbConfig.host) dbConfig = { host: 'localhost', port: '5432', dbname: '', user: 'postgres', password: '' };
     } catch (e) {
         panel.innerHTML = '<h3 style="color:var(--error);">Error loading database settings. Check server logs.</h3>';
@@ -51,11 +51,11 @@ export async function renderDatabaseSection(panel) {
     saveButton.addEventListener('click', async () => {
         saveButton.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=save&file=database', {
+            const res = await apiFetch('api.php?action=save&file=database', {
                 method: 'POST',
                 body: JSON.stringify(dbConfig),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 showStatusPill(pillAnchor, 'Database settings saved.', 'success');
             } else {
@@ -82,8 +82,8 @@ export async function renderDatabaseSection(panel) {
         testButton.style.opacity = '0.7';
 
         try {
-            const result = await apiFetch('api.php?action=health');
-            const data = await result.json();
+            const res = await apiFetch('api.php?action=health');
+            const data = await res.json();
 
             if (data.db_connected) {
                 showStatusPill(testButton, 'Connected to the database.', 'success');

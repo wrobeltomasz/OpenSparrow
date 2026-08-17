@@ -62,12 +62,12 @@ function buildHorizontalBar(row, percent, color, columnType) {
     if (color) bar.style.backgroundColor = color;
     setTimeout(() => { bar.style.width = `${percent}%`; }, 50);
 
-    const value = document.createElement('div');
-    value.className = 'bar-value';
-    value.textContent = row.value;
+    const val = document.createElement('div');
+    val.className = 'bar-value';
+    val.textContent = row.value;
 
     track.appendChild(bar);
-    rowElement.append(label, track, value);
+    rowElement.append(label, track, val);
     return rowElement;
 }
 
@@ -75,9 +75,9 @@ function buildVerticalBar(row, percent, color, columnType) {
     const columnElement = document.createElement('div');
     columnElement.className = 'dash-vbar-col';
 
-    const value = document.createElement('div');
-    value.className = 'dash-vbar-value';
-    value.textContent = row.value;
+    const val = document.createElement('div');
+    val.className = 'dash-vbar-value';
+    val.textContent = row.value;
 
     const track = document.createElement('div');
     track.className = 'dash-vbar-track';
@@ -93,6 +93,6 @@ function buildVerticalBar(row, percent, color, columnType) {
     label.textContent = displayLabel;
 
     track.appendChild(bar);
-    columnElement.append(value, track, label);
+    columnElement.append(val, track, label);
     return columnElement;
 }

@@ -15,8 +15,8 @@ function substitute(text, row) {
 
 function readParametersFromLocation() {
     const values = {};
-    new URLSearchParameters(window.location.search).forEach((value, key) => {
-        if (key.startsWith('p_') && value !== '') values[key.slice(2)] = value;
+    new URLSearchParameters(window.location.search).forEach((val, key) => {
+        if (key.startsWith('p_') && val !== '') values[key.slice(2)] = val;
     });
     return values;
 }
@@ -129,12 +129,12 @@ function renderBlock(block, rows, columns) {
     }
 
     if (block.type === 'table') {
-        const columns = (Array.isArray(block.columns) && block.columns.length > 0
+        const cols = (Array.isArray(block.columns) && block.columns.length > 0
             ? block.columns
             : Object.keys(rows[0] ?? {})
         ).map(c => (typeof c === 'string' ? { name: c } : c));
 
-        if (columns.length === 0 || rows.length === 0) {
+        if (cols.length === 0 || rows.length === 0) {
             const empty = document.createElement('p');
             empty.className = 'pr-block-empty';
             empty.textContent = I18n.t('print.no_data');
@@ -146,7 +146,7 @@ function renderBlock(block, rows, columns) {
 
         const thead = document.createElement('thead');
         const headTr = document.createElement('tr');
-        columns.forEach(column => {
+        cols.forEach(column => {
             const th = document.createElement('th');
             th.textContent = columns[column.name]?.display_name ?? column.name;
             if (column.width) th.style.width = `${column.width}%`;
@@ -159,7 +159,7 @@ function renderBlock(block, rows, columns) {
         const tbody = document.createElement('tbody');
         rows.forEach(row => {
             const tr = document.createElement('tr');
-            columns.forEach(column => {
+            cols.forEach(column => {
                 const td = document.createElement('td');
                 td.textContent = row[column.name] ?? '';
                 if (column.align && column.align !== 'left') td.style.textAlign = column.align;
@@ -349,9 +349,9 @@ async function loadSelector() {
         cardTitle.textContent = p.display_name ?? p.name;
         header.appendChild(cardTitle);
 
-        const description = document.createElement('p');
-        description.className = 'pr-card-desc';
-        description.textContent = p.description || '';
+        const desc = document.createElement('p');
+        desc.className = 'pr-card-desc';
+        desc.textContent = p.description || '';
 
         const footer = document.createElement('div');
         footer.className = 'pr-card-footer';
@@ -361,7 +361,7 @@ async function loadSelector() {
         footer.appendChild(openLink);
 
         card.appendChild(header);
-        card.appendChild(description);
+        card.appendChild(desc);
         card.appendChild(footer);
         card.addEventListener('click', () => {
             window.location.href = `print.php?print=${encodeURIComponent(p.name)}`;

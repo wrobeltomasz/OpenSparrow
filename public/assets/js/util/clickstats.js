@@ -78,8 +78,8 @@ function schedule() {
     timer = setTimeout(flush, FLUSH_MS);
 }
 
-document.addEventListener('click', (e) => {
-    const element = findTarget(e.target);
+document.addEventListener('click', (event) => {
+    const element = findTarget(event.target);
     if (!element) return;
     if (buffer.length >= MAX_BUFFER) return;
 

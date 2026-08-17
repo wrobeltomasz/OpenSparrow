@@ -56,7 +56,7 @@ export function renderPrintEditor(context) {
         });
         const data = await result.json();
         if (data.status === 'ok') {
-            cfgVersion: configVersion = data.version ?? configVersion + 1;
+            configVersion = data.version ?? configVersion + 1;
             setStatus('Printouts saved.', 'ok');
             return { status: 'success', message: 'Printouts saved' };
         }
@@ -76,14 +76,14 @@ export function renderPrintEditor(context) {
 
     workspaceElement.appendChild(wrap);
 
-    function setStatus(message, type = 'info') {
+    function setStatus(msg, type = 'info') {
         const styles = {
             info:  'background:var(--accent-light); color:var(--accent-dark);',
             ok:    'background:var(--ok-light); color:var(--ok);',
             error: 'background:var(--error-light); color:var(--error);',
         };
         statusElement.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
-        statusElement.textContent = message;
+        statusElement.textContent = msg;
     }
 
     async function fetchColumns(viewName) {
@@ -103,9 +103,9 @@ export function renderPrintEditor(context) {
     function fg(label, value, onChange) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
-        const label = document.createElement('label');
-        label.textContent = label;
-        grp.appendChild(label);
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+        grp.appendChild(lbl);
         const input = document.createElement('input');
         input.type = 'text';
         input.value = value ?? '';
@@ -117,9 +117,9 @@ export function renderPrintEditor(context) {
     function fgArea(label, value, onChange, rows = 3) {
         const grp = document.createElement('div');
         grp.className = 'form-group';
-        const label = document.createElement('label');
-        label.textContent = label;
-        grp.appendChild(label);
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+        grp.appendChild(lbl);
         const ta = document.createElement('textarea');
         ta.rows = rows;
         ta.style.resize = 'vertical';
@@ -129,31 +129,31 @@ export function renderPrintEditor(context) {
         return grp;
     }
 
-    function buildVariablesRow(columns) {
+    function buildVariablesRow(cols) {
         const box = document.createElement('div');
         box.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;';
-        if (columns.length === 0) {
+        if (cols.length === 0) {
             const none = document.createElement('span');
             none.style.cssText = ' ';
             none.textContent = 'Select a view to load its variables.';
             box.appendChild(none);
             return box;
         }
-        columns.forEach(column => {
+        cols.forEach(col => {
             const badge = document.createElement('span');
             badge.style.cssText = ' font-family:var(--font-mono); color:var(--accent-dark); background:var(--accent-light); padding:2px 8px; border-radius:10px;';
-            badge.textContent = `{${column.name}}`;
-            badge.title = column.data_type || '';
+            badge.textContent = `{${col.name}}`;
+            badge.title = col.data_type || '';
             box.appendChild(badge);
         });
         return box;
     }
 
-    function buildPrintCard(pName, config) {
+    function buildPrintCard(pName, cfg) {
         const card = document.createElement('div');
         card.className = 'column-block collapsed';
         card.dataset.print = pName;
-        if (config.hidden) card.style.opacity = '0.6';
+        if (cfg.hidden) card.style.opacity = '0.6';
 
         const cardHdr = document.createElement('div');
         cardHdr.className = 'block-header';
@@ -164,7 +164,7 @@ export function renderPrintEditor(context) {
 
         const nameSpan = document.createElement('strong');
         nameSpan.className = 'block-title';
-        nameSpan.textContent = config.display_name || pName;
+        nameSpan.textContent = cfg.display_name || pName;
         const keySpan = document.createElement('span');
         keySpan.className = 'block-key';
         keySpan.textContent = ` (${pName})`;
@@ -174,7 +174,7 @@ export function renderPrintEditor(context) {
         visibleLabel.className = 'block-vis';
         const visibleCheckbox = document.createElement('input');
         visibleCheckbox.type = 'checkbox';
-        visibleCheckbox.checked = !config.hidden;
+        visibleCheckbox.checked = !cfg.hidden;
         visibleCheckbox.className = 'adm-check';
         visibleCheckbox.addEventListener('change', e => {
             prints[pName].hidden = !e.target.checked;
@@ -212,28 +212,28 @@ export function renderPrintEditor(context) {
             card.classList.toggle('collapsed');
             if (willOpen && !rendered) {
                 rendered = true;
-                await buildCardBody(pName, config, body, nameSpan);
+                await buildCardBody(pName, cfg, body, nameSpan);
             }
         });
 
         return card;
     }
 
-    async function buildCardBody(pName, config, body, nameSpan) {
+    async function buildCardBody(pName, cfg, body, nameSpan) {
         body.innerHTML = '';
 
         const genHdr = document.createElement('h4');
         genHdr.textContent = 'General';
         body.appendChild(genHdr);
 
-        body.appendChild(fg('Display name', config.display_name ?? pName, v => {
+        body.appendChild(fg('Display name', cfg.display_name ?? pName, v => {
             prints[pName].display_name = v;
 
             nameSpan.firstChild.nodeValue = v || pName;
         }));
-        body.appendChild(fg('Menu name', config.menu_name ?? pName, v => { prints[pName].menu_name = v; }));
-        body.appendChild(fgArea('Description', config.description ?? '', v => { prints[pName].description = v; }));
-        body.appendChild(createIconPicker('icon', 'Icon', config.icon || 'assets/icons/picture_as_pdf.png', v => { prints[pName].icon = v; }));
+        body.appendChild(fg('Menu name', cfg.menu_name ?? pName, v => { prints[pName].menu_name = v; }));
+        body.appendChild(fgArea('Description', cfg.description ?? '', v => { prints[pName].description = v; }));
+        body.appendChild(createIconPicker('icon', 'Icon', cfg.icon || 'assets/icons/picture_as_pdf.png', v => { prints[pName].icon = v; }));
 
         const sourceHdr = document.createElement('h4');
         sourceHdr.textContent = 'Data source (PostgreSQL view)';
@@ -253,7 +253,7 @@ export function renderPrintEditor(context) {
             const o = document.createElement('option');
             o.value = v;
             o.textContent = v;
-            if ((config.view ?? '') === v) o.selected = true;
+            if ((cfg.view ?? '') === v) o.selected = true;
             viewSelect.appendChild(o);
         });
         viewGroup.appendChild(viewSelect);
@@ -298,7 +298,7 @@ export function renderPrintEditor(context) {
         let currentColumns = [];
 
         async function refreshVariables() {
-            currentCols: currentColumns = await fetchColumns(viewSelect.value);
+            currentColumns = await fetchColumns(viewSelect.value);
             const fresh = buildVariablesRow(currentColumns);
             variablesRow.replaceWith(fresh);
             variablesRow = fresh;
@@ -410,8 +410,8 @@ export function renderPrintEditor(context) {
                     none.textContent = 'Select a view first to choose columns (empty = all columns).';
                     columnsBox.appendChild(none);
                 }
-                currentColumns.forEach(column => {
-                    let entry = block.columns.find(c => c.name === column.name);
+                currentColumns.forEach(col => {
+                    let entry = block.columns.find(c => c.name === col.name);
 
                     const rowWrap = document.createElement('div');
                     rowWrap.style.cssText = 'display:flex; align-items:center; gap:10px;';
@@ -423,7 +423,7 @@ export function renderPrintEditor(context) {
                     chk.checked = !!entry;
                     chk.style.cssText = 'width:14px; height:14px; accent- cursor:pointer;';
                     lab.appendChild(chk);
-                    lab.appendChild(document.createTextNode(column.name));
+                    lab.appendChild(document.createTextNode(col.name));
                     rowWrap.appendChild(lab);
 
                     const widthInput = document.createElement('input');
@@ -450,12 +450,12 @@ export function renderPrintEditor(context) {
 
                     chk.addEventListener('change', () => {
                         if (chk.checked) {
-                            entry = { name: column.name, align: alignSelect.value };
+                            entry = { name: col.name, align: alignSelect.value };
                             const w = parseInt(widthInput.value, 10);
                             if (w >= 1 && w <= 100) entry.width = w;
                             block.columns.push(entry);
                         } else {
-                            block.columns = block.columns.filter(c => c.name !== column.name);
+                            block.columns = block.columns.filter(c => c.name !== col.name);
                             entry = null;
                         }
                         widthInput.disabled = !entry;
@@ -629,8 +629,8 @@ export function renderPrintEditor(context) {
                 }
                 valueGroup.style.display = '';
                 labGroup.style.display = '';
-                const columns = await fetchColumns(sourceSelect.value);
-                columns.forEach(c => {
+                const cols = await fetchColumns(sourceSelect.value);
+                cols.forEach(c => {
                     const ov = document.createElement('option');
                     ov.value = c.name;
                     ov.textContent = c.name;

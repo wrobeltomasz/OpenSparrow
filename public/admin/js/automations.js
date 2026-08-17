@@ -94,7 +94,7 @@ function autoDefaultAction(type, tableOptions) {
 
 function autoIsWebhookRule(rule) {
     const actions = typeof rule.actions === 'string' ? safeParse(rule.actions, []) : (rule.actions ?? []);
-    return Array.isArray(actions) && actions.some(a => a && a.type === 'webhook');
+    return Array.isArray(actions) && actions.some(automationAction => automationAction && automationAction.type === 'webhook');
 }
 
 function safeParse(text, fallback) {
@@ -102,25 +102,25 @@ function safeParse(text, fallback) {
 }
 
 function makeSelect(options, current, onChange, className = '') {
-    const sel = document.createElement('select');
-    if (className) sel.className = className;
+    const selectElement = document.createElement('select');
+    if (className) selectElement.className = className;
     options.forEach(option => {
-        const o   = document.createElement('option');
+        const optionElement   = document.createElement('option');
         o.value   = option.value;
         o.text    = option.label;
         if (option.value === current) o.selected = true;
-        sel.appendChild(o);
+        selectElement.appendChild(o);
     });
-    sel.addEventListener('change', () => onChange(sel.value));
-    return sel;
+    selectElement.addEventListener('change', () => onChange(selectElement.value));
+    return selectElement;
 }
 
 function autoField(label, control, help) {
     const wrap = document.createElement('div');
     wrap.className = 'form-group';
-    const label = document.createElement('label');
-    label.textContent = label;
-    wrap.appendChild(label);
+    const labelElement = document.createElement('label');
+    labelElement.textContent = label;
+    wrap.appendChild(labelElement);
     wrap.appendChild(control);
     if (help) {
         const hint = document.createElement('span');
@@ -132,13 +132,13 @@ function autoField(label, control, help) {
 }
 
 function autoTextField(label, placeholder, value, onInput, help, type = 'text') {
-    const input = document.createElement('input');
-    input.type        = type;
-    input.placeholder = placeholder;
-    input.value       = value || '';
-    input.addEventListener('input', () => onInput(input.value));
-    const field = autoField(label, input, help);
-    return { field, input: input };
+    const inputElement = document.createElement('input');
+    inputElement.type        = type;
+    inputElement.placeholder = placeholder;
+    inputElement.value       = value || '';
+    inputElement.addEventListener('input', () => onInput(inputElement.value));
+    const field = autoField(label, inputElement, help);
+    return { field, input: inputElement };
 }
 
 function autoSelectField(label, options, current, onChange, help) {
@@ -148,10 +148,10 @@ function autoSelectField(label, options, current, onChange, help) {
 function autoSectionElement(title) {
     const element = document.createElement('div');
     element.className = 'auto-section';
-    const label = document.createElement('div');
-    label.className   = 'auto-section-title';
-    label.textContent = title;
-    element.appendChild(label);
+    const labelElement = document.createElement('div');
+    labelElement.className   = 'auto-section-title';
+    labelElement.textContent = title;
+    element.appendChild(labelElement);
     return element;
 }
 
@@ -208,7 +208,7 @@ function buildConditionsSection(parsed, getColumns) {
         const typeToggle = makeSelect(
             [{ value: 'AND', label: 'AND' }, { value: 'OR', label: 'OR' }],
             group.type || 'AND',
-            (v) => { group.type = v; }
+            (fieldValue) => { group.type = fieldValue; }
         );
 
         groupHdr.appendChild(matchLabel);
@@ -240,8 +240,8 @@ function buildConditionsSection(parsed, getColumns) {
                     const row = document.createElement('div');
                     row.className = 'auto-row';
 
-                    const columns   = getColumns(parsed.trigger_table);
-                    const fieldSelect = makeSelect(columns, item.field, (v) => { item.field = v; });
+                    const cols   = getColumns(parsed.trigger_table);
+                    const fieldSelect = makeSelect(cols, item.field, (fieldValue) => { item.field = fieldValue; });
 
                     const valueInput = document.createElement('input');
                     valueInput.type        = 'text';
@@ -253,8 +253,8 @@ function buildConditionsSection(parsed, getColumns) {
                         valueInput.disabled = AUTO_OPS_NO_VALUE.includes(item.operator);
                     };
 
-                    const opSelect = makeSelect(AUTO_OPS, item.operator, (v) => {
-                        item.operator = v;
+                    const opSelect = makeSelect(AUTO_OPS, item.operator, (fieldValue) => {
+                        item.operator = fieldValue;
                         syncValueInput();
                     }, 'auto-row-op');
                     syncValueInput();
@@ -326,12 +326,12 @@ function buildActionsSection(parsed, tableOptions, getColumns, users, mode) {
             actHdr.className = 'auto-action-header';
 
             if (allowed.length > 1 || !allowed.includes(aType)) {
-                const options = allowed.map(t => ({ value: t, label: AUTO_ACTION_LABELS[t] }));
+                const options = allowed.map(actionType => ({ value: actionType, label: AUTO_ACTION_LABELS[actionType] }));
                 if (!allowed.includes(aType)) {
                     options.unshift({ value: aType, label: AUTO_ACTION_LABELS[aType] ?? aType });
                 }
-                actHdr.appendChild(makeSelect(options, aType, (v) => {
-                    parsed.actions[i] = autoDefaultAction(v, tableOptions);
+                actHdr.appendChild(makeSelect(options, aType, (fieldValue) => {
+                    parsed.actions[i] = autoDefaultAction(fieldValue, tableOptions);
                     renderActRows();
                 }));
             } else {
@@ -388,7 +388,7 @@ function renderSetMap(bodyElement, action, getTable, getColumns, valuePlaceholde
 
     function renderSetRows() {
         setRows.innerHTML = '';
-        Object.entries(action.set ?? {}).forEach(([column, value]) => {
+        Object.entries(action.set ?? {}).forEach(([column, val]) => {
             const row = document.createElement('div');
             row.className = 'auto-row';
 
@@ -407,7 +407,7 @@ function renderSetMap(bodyElement, action, getTable, getColumns, valuePlaceholde
             valueInput.type        = 'text';
             valueInput.className   = 'auto-row-wide';
             valueInput.placeholder = valuePlaceholder;
-            valueInput.value       = value || '';
+            valueInput.value       = val || '';
             valueInput.addEventListener('input', () => { action.set[column] = valueInput.value; });
 
             row.appendChild(fieldSelect);
@@ -445,7 +445,7 @@ function renderNotifyBody(bodyElement, action, users) {
 
     const allOptions = [
         { id: '{{ current_user.id }}', label: 'Current user ({{ current_user.id }})' },
-        ...users.map(u => ({
+        ...users.map(user => ({
             id:    String(u.id),
             label: u.username + (u.is_active === false || u.is_active === 'f' ? ' [inactive]' : ''),
         })),
@@ -469,23 +469,23 @@ function renderNotifyBody(bodyElement, action, users) {
             chipsElement.appendChild(empty);
             return;
         }
-        action.user_ids.forEach((uid, i) => {
-            const option = allOptions.find(o => o.id === String(uid)) ?? { label: String(uid) };
+        action.user_ids.forEach((userId, i) => {
+            const option = allOptions.find(candidate => candidate.id === String(userId)) ?? { label: String(userId) };
             const chip = document.createElement('span');
             chip.className = 'auto-chip';
-            const text = document.createElement('span');
-            text.textContent = option.label;
-            const rm = document.createElement('button');
-            rm.type        = 'button';
-            rm.className   = 'auto-chip-remove';
-            rm.textContent = '×';
-            rm.addEventListener('click', () => {
+            const textSpan = document.createElement('span');
+            textSpan.textContent = option.label;
+            const removeButton = document.createElement('button');
+            removeButton.type        = 'button';
+            removeButton.className   = 'auto-chip-remove';
+            removeButton.textContent = '×';
+            removeButton.addEventListener('click', () => {
                 action.user_ids.splice(i, 1);
                 renderChips();
                 renderList();
             });
-            chip.appendChild(text);
-            chip.appendChild(rm);
+            chip.appendChild(textSpan);
+            chip.appendChild(removeButton);
             chipsElement.appendChild(chip);
         });
     }
@@ -493,7 +493,7 @@ function renderNotifyBody(bodyElement, action, users) {
     function renderList() {
         listElement.innerHTML = '';
         allOptions.forEach(option => {
-            const isSelected = action.user_ids.some(u => String(u) === option.id);
+            const isSelected = action.user_ids.some(existingId => String(existingId) === option.id);
             const row = document.createElement('label');
             row.className = 'auto-picker-row' + (isSelected ? ' selected' : '');
 
@@ -502,23 +502,23 @@ function renderNotifyBody(bodyElement, action, users) {
             callback.checked = isSelected;
             callback.addEventListener('change', () => {
                 if (callback.checked) {
-                    if (!action.user_ids.some(u => String(u) === option.id)) {
+                    if (!action.user_ids.some(existingId => String(existingId) === option.id)) {
                         action.user_ids.push(
                             option.id === '{{ current_user.id }}' ? option.id : parseInt(option.id, 10)
                         );
                     }
                 } else {
-                    action.user_ids = action.user_ids.filter(u => String(u) !== option.id);
+                    action.user_ids = action.user_ids.filter(existingId => String(existingId) !== option.id);
                 }
                 renderChips();
                 renderList();
             });
 
-            const label = document.createElement('span');
-            label.textContent = option.label;
+            const labelElement = document.createElement('span');
+            labelElement.textContent = option.label;
 
             row.appendChild(callback);
-            row.appendChild(label);
+            row.appendChild(labelElement);
             listElement.appendChild(row);
         });
     }
@@ -530,14 +530,14 @@ function renderNotifyBody(bodyElement, action, users) {
         'Title',
         'e.g. New lead: {{ record.name }}',
         action.title,
-        (v) => { action.title = v; }
+        (fieldValue) => { action.title = fieldValue; }
     ).field);
 
     bodyElement.appendChild(autoTextField(
         'Link',
         'e.g. /edit.php?table=leads&id={{ record.id }}',
         action.link,
-        (v) => { action.link = v; }
+        (fieldValue) => { action.link = fieldValue; }
     ).field);
 }
 
@@ -547,8 +547,8 @@ function renderCreateRecordBody(bodyElement, action, tableOptions, getColumns) {
     }
 
     let refreshRows = () => {};
-    bodyElement.appendChild(autoSelectField('Into table', tableOptions, action.target_table ?? '', (v) => {
-        action.target_table = v;
+    bodyElement.appendChild(autoSelectField('Into table', tableOptions, action.target_table ?? '', (fieldValue) => {
+        action.target_table = fieldValue;
         refreshRows();
     }));
 
@@ -561,29 +561,29 @@ function renderCreateRecordBody(bodyElement, action, tableOptions, getColumns) {
     );
 }
 
-function autoMapEditor(bodyElement, map, options) {
-    bodyElement.appendChild(autoSubTitle(options.label));
+function autoMapEditor(bodyElement, map, opts) {
+    bodyElement.appendChild(autoSubTitle(opts.label));
 
     const mapRows = document.createElement('div');
     bodyElement.appendChild(mapRows);
 
-    bodyElement.appendChild(autoAddButton(options.addLabel, () => {
-        let key = options.newKey;
-        let n = 1;
-        while (map[key] !== undefined) { key = options.newKey + '_' + (++n); }
+    bodyElement.appendChild(autoAddButton(opts.addLabel, () => {
+        let key = opts.newKey;
+        let suffixCounter = 1;
+        while (map[key] !== undefined) { key = opts.newKey + '_' + (++suffixCounter); }
         map[key] = '';
         renderRows();
     }));
 
     function renderRows() {
         mapRows.innerHTML = '';
-        Object.entries(map).forEach(([key, value]) => {
+        Object.entries(map).forEach(([key, val]) => {
             const row = document.createElement('div');
             row.className = 'auto-row';
 
             const keyInput = document.createElement('input');
             keyInput.type        = 'text';
-            keyInput.placeholder = options.keyPlaceholder;
+            keyInput.placeholder = opts.keyPlaceholder;
             keyInput.value       = key;
             keyInput.addEventListener('change', () => {
                 const newKey = keyInput.value.trim();
@@ -594,8 +594,8 @@ function autoMapEditor(bodyElement, map, options) {
                     reason = 'Name cannot be empty.';
                 } else if (map[newKey] !== undefined) {
                     reason = `"${newKey}" is already used.`;
-                } else if (options.validateKey && !options.validateKey(newKey)) {
-                    reason = options.invalidKeyHint ?? `"${newKey}" is not a valid name.`;
+                } else if (opts.validateKey && !opts.validateKey(newKey)) {
+                    reason = opts.invalidKeyHint ?? `"${newKey}" is not a valid name.`;
                 }
                 if (reason) {
                     keyInput.value = key;
@@ -606,7 +606,7 @@ function autoMapEditor(bodyElement, map, options) {
                 delete map[key];
                 map[newKey] = oldValue;
 
-                if (options.configuredValues) delete options.configuredValues[key];
+                if (opts.configuredValues) delete opts.configuredValues[key];
                 renderRows();
             });
 
@@ -614,12 +614,12 @@ function autoMapEditor(bodyElement, map, options) {
             equals.className   = 'auto-row-eq';
             equals.textContent = '=';
 
-            const isStored = Boolean(options.configuredValues?.[key]);
+            const isStored = Boolean(opts.configuredValues?.[key]);
             const valueInput = document.createElement('input');
             valueInput.type        = 'text';
             valueInput.className   = 'auto-row-wide';
-            valueInput.placeholder = isStored ? 'saved — type a new value to replace it' : options.valuePlaceholder;
-            valueInput.value       = value || '';
+            valueInput.placeholder = isStored ? 'saved — type a new value to replace it' : opts.valuePlaceholder;
+            valueInput.value       = val || '';
             valueInput.addEventListener('input', () => { map[key] = valueInput.value; });
 
             row.appendChild(keyInput);
@@ -627,7 +627,7 @@ function autoMapEditor(bodyElement, map, options) {
             row.appendChild(valueInput);
             row.appendChild(autoRemoveButton(() => {
                 delete map[key];
-                if (options.configuredValues) delete options.configuredValues[key];
+                if (opts.configuredValues) delete opts.configuredValues[key];
                 renderRows();
             }));
             mapRows.appendChild(row);
@@ -650,8 +650,8 @@ function renderWebhookBody(bodyElement, action) {
 
     const requestRow = document.createElement('div');
     requestRow.className = 'auto-form-row';
-    const methodField = autoSelectField('Method', AUTO_WEBHOOK_METHODS, action.method, (v) => {
-        action.method = v;
+    const methodField = autoSelectField('Method', AUTO_WEBHOOK_METHODS, action.method, (fieldValue) => {
+        action.method = fieldValue;
     });
     methodField.classList.add('auto-form-narrow');
     requestRow.appendChild(methodField);
@@ -659,7 +659,7 @@ function renderWebhookBody(bodyElement, action) {
         'Endpoint URL',
         'https://n8n.example.com/webhook/opensparrow',
         action.url,
-        (v) => { action.url = v; },
+        (fieldValue) => { action.url = fieldValue; },
         null,
         'url'
     );
@@ -672,7 +672,7 @@ function renderWebhookBody(bodyElement, action) {
             ? 'a secret is saved — type a new one to replace it'
             : 'optional',
         '',
-        (v) => { action.secret = v; if (v) action.secret_clear = false; },
+        (fieldValue) => { action.secret = fieldValue; if (fieldValue) action.secret_clear = false; },
         'Adds an X-Sparrow-Signature header (HMAC SHA-256 of the JSON body).'
     );
     if (action.secret_configured) {
@@ -690,7 +690,7 @@ function renderWebhookBody(bodyElement, action) {
         'On failure',
         AUTO_WEBHOOK_RETRIES,
         String(action.retries ?? 0),
-        (v) => { action.retries = parseInt(v, 10); },
+        (fieldValue) => { action.retries = parseInt(fieldValue, 10); },
         'Retries apply only to timeouts and 5xx/429 responses. A 4xx is never repeated.'
     ));
 
@@ -726,7 +726,7 @@ function renderWebhookBody(bodyElement, action) {
 function renderEmailBody(bodyElement, action) {
     if (!Array.isArray(action.recipients)) {
         action.recipients = typeof action.recipients === 'string' && action.recipients !== ''
-            ? action.recipients.split(',').map(s => s.trim()).filter(Boolean)
+            ? action.recipients.split(',').map(recipient => recipient.trim()).filter(Boolean)
             : [];
     }
 
@@ -734,7 +734,7 @@ function renderEmailBody(bodyElement, action) {
         'Recipients',
         'e.g. sales@example.com, {{ record.email }}',
         action.recipients.join(', '),
-        (v) => { action.recipients = v.split(',').map(s => s.trim()).filter(Boolean); },
+        (fieldValue) => { action.recipients = fieldValue.split(',').map(recipient => recipient.trim()).filter(Boolean); },
         'Comma-separated. Literal addresses or templates like {{ record.email }}.'
     ).field);
 
@@ -742,7 +742,7 @@ function renderEmailBody(bodyElement, action) {
         'Subject',
         'e.g. New lead: {{ record.name }}',
         action.subject,
-        (v) => { action.subject = v; }
+        (fieldValue) => { action.subject = fieldValue; }
     ).field);
 
     const bodyTa = document.createElement('textarea');
@@ -776,19 +776,19 @@ export async function renderAutomationsPage(context, mode = 'record') {
 
     let schemaObject = {};
     try {
-        schemaObj: schemaObject = (await getGlobalSchema())?.tables ?? {};
+        schemaObject = (await getGlobalSchema())?.tables ?? {};
     } catch (_) {}
 
     let users = [];
     try {
-        const ur = await apiFetch('api.php?action=users_list');
-        const ud = await ur.json();
-        users = ud.users ?? [];
+        const usersResponse = await apiFetch('api.php?action=users_list');
+        const usersData = await usersResponse.json();
+        users = usersData.users ?? [];
     } catch (_) {}
 
-    const tableOptions = Object.keys(schemaObject).map(k => ({
-        value: k,
-        label: schemaObject[k].display_name || k,
+    const tableOptions = Object.keys(schemaObject).map(schemaTableName => ({
+        value: schemaTableName,
+        label: schemaObject[schemaTableName].display_name || schemaTableName,
     }));
 
     function getColumns(tableName) {
@@ -835,8 +835,8 @@ function buildAutomationsTab(panel, mode, shared) {
 
         let rules = [];
         try {
-            const r    = await apiFetch('api.php?action=automations_list');
-            const data = await r.json();
+            const response    = await apiFetch('api.php?action=automations_list');
+            const data = await response.json();
             rules = (data.automations ?? []).filter(rule => autoIsWebhookRule(rule) === isN8n);
         } catch (_) {
             rules = [];
@@ -858,8 +858,8 @@ function buildAutomationsTab(panel, mode, shared) {
             const card = document.createElement('div');
             card.className = 'column-block collapsed';
 
-            const hdr = document.createElement('div');
-            hdr.className = 'block-header';
+            const header = document.createElement('div');
+            header.className = 'block-header';
 
             const chevron = document.createElement('span');
             chevron.className   = 'block-chevron';
@@ -911,14 +911,14 @@ function buildAutomationsTab(panel, mode, shared) {
             buttonDel.className   = 'icon-btn icon-btn-danger';
             buttonDel.addEventListener('click', e => { e.stopPropagation(); deleteRule(rule.id, buttonDel); });
 
-            hdr.appendChild(chevron);
-            hdr.appendChild(nameSpan);
-            hdr.appendChild(tableMeta);
-            hdr.appendChild(badge);
-            hdr.appendChild(buttonDup);
-            hdr.appendChild(buttonHist);
-            hdr.appendChild(buttonDel);
-            card.appendChild(hdr);
+            header.appendChild(chevron);
+            header.appendChild(nameSpan);
+            header.appendChild(tableMeta);
+            header.appendChild(badge);
+            header.appendChild(buttonDup);
+            header.appendChild(buttonHist);
+            header.appendChild(buttonDel);
+            card.appendChild(header);
 
             const body = document.createElement('div');
             body.className = 'block-body';
@@ -940,7 +940,7 @@ function buildAutomationsTab(panel, mode, shared) {
                 }
             }
 
-            hdr.addEventListener('click', e => {
+            header.addEventListener('click', e => {
                 if (e.target.closest('button, input, label')) return;
                 if (card.classList.contains('collapsed')) openCard();
                 else card.classList.add('collapsed');
@@ -989,8 +989,8 @@ function buildAutomationsTab(panel, mode, shared) {
         cardBody.appendChild(loading);
 
         try {
-            const r    = await apiFetch('api.php?action=automations_runs&rule_id=' + encodeURIComponent(rule.id));
-            const data = await r.json();
+            const response    = await apiFetch('api.php?action=automations_runs&rule_id=' + encodeURIComponent(rule.id));
+            const data = await response.json();
             loading.remove();
 
             const runs = data.runs ?? [];
@@ -1066,11 +1066,11 @@ function buildAutomationsTab(panel, mode, shared) {
 
     async function saveRulePayload(payload, anchorElement) {
         try {
-            const r    = await apiFetch('api.php?action=automations_save', {
+            const response    = await apiFetch('api.php?action=automations_save', {
                 method: 'POST',
                 body:   JSON.stringify(payload),
             });
-            const data = await r.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 await loadList();
             } else {
@@ -1084,11 +1084,11 @@ function buildAutomationsTab(panel, mode, shared) {
     async function deleteRule(id, button) {
         if (!confirm('Delete this automation?')) return;
         try {
-            const r    = await apiFetch('api.php?action=automations_delete', {
+            const response    = await apiFetch('api.php?action=automations_delete', {
                 method: 'POST',
                 body:   JSON.stringify({ id }),
             });
-            const data = await r.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 autoStatusPill(button, 'Deleted', 'success');
                 await loadList();
@@ -1133,7 +1133,7 @@ function buildAutomationsTab(panel, mode, shared) {
             'Name',
             isN8n ? 'e.g. Push new leads to n8n' : 'e.g. Assign owner after lead creation',
             parsed.name,
-            (v) => { parsed.name = v; }
+            (fieldValue) => { parsed.name = fieldValue; }
         ).field);
 
         let conditionSectionReference = null;
@@ -1141,13 +1141,13 @@ function buildAutomationsTab(panel, mode, shared) {
 
         const triggerRow = document.createElement('div');
         triggerRow.className = 'auto-form-row';
-        triggerRow.appendChild(autoSelectField('Trigger table', tableOptions, parsed.trigger_table, (v) => {
-            parsed.trigger_table = v;
+        triggerRow.appendChild(autoSelectField('Trigger table', tableOptions, parsed.trigger_table, (fieldValue) => {
+            parsed.trigger_table = fieldValue;
             if (conditionSectionReference) conditionSectionReference.refresh();
             if (actSectionReference)  actSectionReference.refresh();
         }));
-        triggerRow.appendChild(autoSelectField('Trigger event', AUTO_EVENTS, parsed.trigger_event, (v) => {
-            parsed.trigger_event = v;
+        triggerRow.appendChild(autoSelectField('Trigger event', AUTO_EVENTS, parsed.trigger_event, (fieldValue) => {
+            parsed.trigger_event = fieldValue;
         }));
         general.appendChild(triggerRow);
 
@@ -1198,11 +1198,11 @@ function buildAutomationsTab(panel, mode, shared) {
                 actions:       parsed.actions,
             };
             try {
-                const r    = await apiFetch('api.php?action=automations_save', {
+                const response    = await apiFetch('api.php?action=automations_save', {
                     method: 'POST',
                     body:   JSON.stringify(payload),
                 });
-                const data = await r.json();
+                const data = await response.json();
                 if (data.status === 'success') { await onSaved(); }
                 else { autoStatusPill(buttonSave, data.error || 'Save failed', 'error'); }
             } catch (_) { autoStatusPill(buttonSave, 'Request failed', 'error'); }

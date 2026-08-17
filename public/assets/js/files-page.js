@@ -65,11 +65,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     sortHeaders.forEach(th => {
         th.addEventListener('click', () => {
-            const column = th.dataset.sort;
-            if (sortState.column === column) {
+            const col = th.dataset.sort;
+            if (sortState.column === col) {
                 sortState.asc = !sortState.asc;
             } else {
-                sortState = { column: column, asc: true };
+                sortState = { column: col, asc: true };
             }
             currentPage = 1;
             updateSortIndicators();
@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 alert(T.delete_error.replace('{error}', data.error || T.unknown));
             }
-        } catch (error) {
+        } catch (err) {
             alert(T.network_error);
         }
     });
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return null;
             }
             return data.file;
-        } catch (error) {
+        } catch (err) {
             showToast(T.network_error, 'error');
             return null;
         }
@@ -345,7 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 showToast(T.delete_error.replace('{error}', data.error || T.unknown), 'error');
             }
-        } catch (error) {
+        } catch (err) {
             showToast(T.network_error, 'error');
         }
     }
@@ -409,7 +409,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 panelInstance.setStatus(T.error_generic.replace('{error}', data.error || T.failed), true);
                 panelInstance.setApplyDisabled(false);
             }
-        } catch (error) {
+        } catch (err) {
             panelInstance.setStatus(T.network_error, true);
             panelInstance.setApplyDisabled(false);
         }
@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 recordSelect.disabled = true;
                 tableSelect.innerHTML = '<option value="">-- No relations active --</option>';
             }
-        } catch (error) {
+        } catch (err) {
             tableSelect.innerHTML = '<option value="">-- Network error --</option>';
         }
     }
@@ -460,7 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 recordSelect.innerHTML = '<option value="">-- Load error --</option>';
             }
-        } catch (error) {
+        } catch (err) {
             recordSelect.innerHTML = '<option value="">-- Network error --</option>';
         }
     }
@@ -510,7 +510,7 @@ document.addEventListener("DOMContentLoaded", () => {
             renderTable(data.files);
             renderPagination(data.total_pages, data.total_count);
             syncSelectionUI();
-        } catch (error) {
+        } catch (err) {
             tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-error">${escHtml(T.network_error)}</td></tr>`;
         }
     }
@@ -670,7 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 setUploadStatus('Error: ' + (data.error || 'Failed'), 'error');
             }
-        } catch (error) {
+        } catch (err) {
             setUploadStatus('Network error during upload.', 'error');
         }
     }

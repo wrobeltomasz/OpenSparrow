@@ -264,15 +264,15 @@ export async function renderCsvImportPage(context) {
         radio.value   = value;
         radio.checked = value === 'copy' ? savedCopy : !savedCopy;
         radio.style.cssText = 'margin-top:3px;flex-shrink:0;width:15px;height:15px;cursor:pointer;';
-        const text = document.createElement('div');
+        const textElement = document.createElement('div');
         const strong = document.createElement('strong');
         strong.style.cssText = 'display:block;margin-bottom:2px;';
         strong.textContent = labelText;
         const small = document.createElement('span');
         small.style.cssText = 'color:var(--muted);';
         small.textContent = descriptionText;
-        text.append(strong, small);
-        row.append(radio, text);
+        textElement.append(strong, small);
+        row.append(radio, textElement);
         modeCard.body.appendChild(row);
         return radio;
     }
@@ -364,13 +364,13 @@ export async function renderCsvImportPage(context) {
     limitsCard.body.appendChild(limitsGrid);
 
     function addLimitRow(label, value, note) {
-        const label = document.createElement('span');
-        label.style.cssText = 'color:var(--muted);font-weight:600;white-space:nowrap;';
-        label.textContent = label;
-        const value = document.createElement('span');
-        value.style.cssText = 'font-family:var(--font-mono);color:var(--text);';
-        value.textContent = value + (note ? ' — ' + note : '');
-        limitsGrid.append(label, value);
+        const labelElement = document.createElement('span');
+        labelElement.style.cssText = 'color:var(--muted);font-weight:600;white-space:nowrap;';
+        labelElement.textContent = label;
+        const valueElement = document.createElement('span');
+        valueElement.style.cssText = 'font-family:var(--font-mono);color:var(--text);';
+        valueElement.textContent = value + (note ? ' — ' + note : '');
+        limitsGrid.append(labelElement, valueElement);
     }
 
     try {
@@ -383,10 +383,10 @@ export async function renderCsvImportPage(context) {
             addLimitRow('Batch size (normal mode)', configData.batch_size + ' rows/INSERT', 'CSV_BATCH_SIZE in api_csv_import.php');
         }
     } catch (_) {
-        const error = document.createElement('p');
-        error.style.cssText = 'color:var(--error);';
-        error.textContent = 'Could not load server limits.';
-        limitsCard.body.appendChild(error);
+        const errorElement = document.createElement('p');
+        errorElement.style.cssText = 'color:var(--error);';
+        errorElement.textContent = 'Could not load server limits.';
+        limitsCard.body.appendChild(errorElement);
     }
 
     const histTitle = document.createElement('h3');
@@ -417,17 +417,17 @@ export async function renderCsvImportPage(context) {
         fileInput.click();
     });
 
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
+    dropZone.addEventListener('dragover', (event) => {
+        event.preventDefault();
         dropZone.style.borderColor = 'var(--muted)';
         dropZone.style.background  = 'var(--accent-mid)';
     });
     dropZone.addEventListener('dragleave', () => resetDropZone());
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
+    dropZone.addEventListener('drop', (event) => {
+        event.preventDefault();
         resetDropZone();
-        const f = e.dataTransfer.files[0];
-        if (f) handleUpload(f);
+        const droppedFile = event.dataTransfer.files[0];
+        if (droppedFile) handleUpload(droppedFile);
     });
 
     fileInput.addEventListener('change', () => {
@@ -530,11 +530,11 @@ export async function renderCsvImportPage(context) {
         if (schemaSelect.dataset.loaded === '1') return;
         schemaSelect.dataset.loaded = '1';
         try {
-            const result  = await apiFetch('api_csv_import.php?action=csv_schemas');
-            const data = await result.json();
+            const response  = await apiFetch('api_csv_import.php?action=csv_schemas');
+            const data = await response.json();
             if (data.status === 'success' && Array.isArray(data.schemas) && data.schemas.length) {
                 schemaSelect.innerHTML = '';
-                data.schemas.forEach(s => appendOption(schemaSelect, s, s));
+                data.schemas.forEach(schemaName => appendOption(schemaSelect, schemaName, schemaName));
                 for (const option of schemaSelect.options) {
                     if (option.value === 'public') { option.selected = true; break; }
                 }
@@ -572,8 +572,8 @@ export async function renderCsvImportPage(context) {
 
                 renderMapping();
                 card2.el.style.display = 'block';
-            } catch (e) {
-                uploadMessage.textContent = 'Preview failed: ' + escHtml(e.message);
+            } catch (event) {
+                uploadMessage.textContent = 'Preview failed: ' + escHtml(event.message);
                 uploadMessage.style.color = 'var(--error)';
                 uploadHint.textContent = 'Try again.';
             }
@@ -587,11 +587,11 @@ export async function renderCsvImportPage(context) {
         formData.append('csv_encoding', csvEncoding);
 
         try {
-            const result  = await apiFetch('api_csv_import.php?action=csv_import_upload', {
+            const response  = await apiFetch('api_csv_import.php?action=csv_import_upload', {
                 method: 'POST',
                 body: formData,
             });
-            const data = await result.json();
+            const data = await response.json();
             if (data.status !== 'success') throw new Error(data.error || 'Upload failed');
 
             csvHeaders  = data.headers;
@@ -606,8 +606,8 @@ export async function renderCsvImportPage(context) {
 
             renderMapping();
             card2.el.style.display = 'block';
-        } catch (e) {
-            uploadMessage.textContent  = 'Upload failed: ' + escHtml(e.message);
+        } catch (event) {
+            uploadMessage.textContent  = 'Upload failed: ' + escHtml(event.message);
             uploadMessage.style.color  = 'var(--error)';
             uploadHint.textContent = 'Try again.';
         }
@@ -634,10 +634,10 @@ export async function renderCsvImportPage(context) {
             note.textContent = `Rename ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to database column names. The table will be created with an auto-increment id column plus these columns.`;
             mappingContainer.appendChild(note);
 
-            const table = document.createElement('table');
-            table.className = 'adm-tbl';
+            const tableElement = document.createElement('table');
+            tableElement.className = 'adm-tbl';
 
-            const thead = table.createTHead();
+            const thead = tableElement.createTHead();
             const hrow  = thead.insertRow();
             for (const h of ['CSV Header', 'Sample values', 'DB column name', 'Type']) {
                 const th = document.createElement('th');
@@ -646,51 +646,51 @@ export async function renderCsvImportPage(context) {
                 hrow.appendChild(th);
             }
 
-            const tbody = table.createTBody();
-            csvHeaders.forEach((hdr, index) => {
-                const defaultColumnName = hdr.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || ('col_' + index);
+            const tbody = tableElement.createTBody();
+            csvHeaders.forEach((headerName, index) => {
+                const defaultColumnName = headerName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || ('col_' + index);
 
                 const tr = tbody.insertRow();
-                tr.dataset.csvHeader = hdr;
+                tr.dataset.csvHeader = headerName;
 
-                const tdH = document.createElement('td');
-                tdH.className = 'adm-td mono';
-                tdH.style.cssText = 'white-space:nowrap;';
-                tdH.textContent = hdr;
+                const headerCell = document.createElement('td');
+                headerCell.className = 'adm-td mono';
+                headerCell.style.cssText = 'white-space:nowrap;';
+                headerCell.textContent = headerName;
 
-                const tdS = document.createElement('td');
-                tdS.className = 'adm-td';
-                tdS.style.cssText = 'color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-                const samples = csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== '').slice(0, 3);
-                tdS.textContent = samples.length ? samples.join(', ') : '(empty)';
-                tdS.title = samples.join(' | ');
+                const sampleCell = document.createElement('td');
+                sampleCell.className = 'adm-td';
+                sampleCell.style.cssText = 'color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                const samples = csvPreview.map(previewRow => previewRow[headerName]).filter(sampleValue => sampleValue !== null && sampleValue !== '').slice(0, 3);
+                sampleCell.textContent = samples.length ? samples.join(', ') : '(empty)';
+                sampleCell.title = samples.join(' | ');
 
-                const tdN = document.createElement('td');
-                tdN.className = 'adm-td';
-                const nameInput = document.createElement('input');
-                nameInput.type  = 'text';
-                nameInput.value = defaultColumnName;
-                nameInput.className = 'col-name-input adm-input w-full mono';
-                nameInput.addEventListener('input', () => {
-                    nameInput.value = nameInput.value.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                const nullCell = document.createElement('td');
+                nullCell.className = 'adm-td';
+                const nameInp = document.createElement('input');
+                nameInp.type  = 'text';
+                nameInp.value = defaultColumnName;
+                nameInp.className = 'col-name-input adm-input w-full mono';
+                nameInp.addEventListener('input', () => {
+                    nameInp.value = nameInp.value.toLowerCase().replace(/[^a-z0-9_]/g, '_');
                 });
-                tdN.appendChild(nameInput);
+                nullCell.appendChild(nameInp);
 
-                const tdT = document.createElement('td');
-                tdT.className = 'adm-td';
+                const typeCell = document.createElement('td');
+                typeCell.className = 'adm-td';
                 const typeSelect = document.createElement('select');
                 typeSelect.className = 'col-type-select adm-input w-full';
-                const guessedType = guessColumnType(csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== ''));
+                const guessedType = guessColumnType(csvPreview.map(previewRow => previewRow[headerName]).filter(sampleValue => sampleValue !== null && sampleValue !== ''));
                 typeOptions.forEach(({ value, label }) => {
                     const option = appendOption(typeSelect, value, label);
                     if (value === guessedType) option.selected = true;
                 });
-                tdT.appendChild(typeSelect);
+                typeCell.appendChild(typeSelect);
 
-                tr.append(tdH, tdS, tdN, tdT);
+                tr.append(headerCell, sampleCell, nullCell, typeCell);
             });
 
-            mappingContainer.appendChild(table);
+            mappingContainer.appendChild(tableElement);
             return;
         }
 
@@ -701,10 +701,10 @@ export async function renderCsvImportPage(context) {
         note.textContent   = `Map ${csvHeaders.length} CSV column${csvHeaders.length !== 1 ? 's' : ''} to "${escHtml(selectedTable)}" columns. Leave "— Skip —" to ignore a CSV column.`;
         mappingContainer.appendChild(note);
 
-        const table   = document.createElement('table');
-        table.className = 'adm-tbl';
+        const tableElement   = document.createElement('table');
+        tableElement.className = 'adm-tbl';
 
-        const thead = table.createTHead();
+        const thead = tableElement.createTHead();
         const hrow  = thead.insertRow();
         for (const h of ['CSV Header', 'Sample values', 'Target column']) {
             const th = document.createElement('th');
@@ -713,41 +713,41 @@ export async function renderCsvImportPage(context) {
             hrow.appendChild(th);
         }
 
-        const tbody   = table.createTBody();
-        const dbColumns  = Object.keys(tableColumns).filter(c => (tableColumns[c]?.type ?? '') !== 'virtual');
+        const tbody   = tableElement.createTBody();
+        const dbColumns  = Object.keys(tableColumns).filter(columnName => (tableColumns[columnName]?.type ?? '') !== 'virtual');
 
-        csvHeaders.forEach((hdr) => {
+        csvHeaders.forEach((headerName) => {
             const tr = tbody.insertRow();
 
-            const tdH = document.createElement('td');
-            tdH.className = 'adm-td mono';
-            tdH.style.cssText = 'white-space:nowrap;';
-            tdH.textContent = hdr;
+            const headerCell = document.createElement('td');
+            headerCell.className = 'adm-td mono';
+            headerCell.style.cssText = 'white-space:nowrap;';
+            headerCell.textContent = headerName;
 
-            const tdS = document.createElement('td');
-            tdS.className = 'adm-td';
-            tdS.style.cssText = 'color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-            const samples = csvPreview.map(r => r[hdr]).filter(v => v !== null && v !== '').slice(0, 3);
-            tdS.textContent = samples.length ? samples.join(', ') : '(empty)';
-            tdS.title       = samples.join(' | ');
+            const sampleCell = document.createElement('td');
+            sampleCell.className = 'adm-td';
+            sampleCell.style.cssText = 'color:var(--muted);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            const samples = csvPreview.map(previewRow => previewRow[headerName]).filter(sampleValue => sampleValue !== null && sampleValue !== '').slice(0, 3);
+            sampleCell.textContent = samples.length ? samples.join(', ') : '(empty)';
+            sampleCell.title       = samples.join(' | ');
 
-            const tdC  = document.createElement('td');
-            tdC.className = 'adm-td';
-            const sel  = document.createElement('select');
-            sel.dataset.header = hdr;
-            sel.className = 'adm-input w-full';
-            appendOption(sel, '', '— Skip —');
+            const columnCell  = document.createElement('td');
+            columnCell.className = 'adm-td';
+            const selectElement  = document.createElement('select');
+            selectElement.dataset.header = headerName;
+            selectElement.className = 'adm-input w-full';
+            appendOption(selectElement, '', '— Skip —');
             dbColumns.forEach(column => {
                 const config = tableColumns[column] || {};
-                const option = appendOption(sel, column, (config.display_name || column) + ' (' + (config.type || 'text') + ')');
-                if (column.toLowerCase() === hdr.toLowerCase()) option.selected = true;
+                const option = appendOption(selectElement, column, (config.display_name || column) + ' (' + (config.type || 'text') + ')');
+                if (column.toLowerCase() === headerName.toLowerCase()) option.selected = true;
             });
-            tdC.appendChild(sel);
+            columnCell.appendChild(selectElement);
 
-            tr.append(tdH, tdS, tdC);
+            tr.append(headerCell, sampleCell, columnCell);
         });
 
-        mappingContainer.appendChild(table);
+        mappingContainer.appendChild(tableElement);
         rebuildConflictOptions();
         validateConflict();
     }
@@ -755,7 +755,7 @@ export async function renderCsvImportPage(context) {
     function rebuildConflictOptions() {
         const previous = conflictSelect.value;
         while (conflictSelect.options.length > 1) conflictSelect.remove(1);
-        const dbColumns = Object.keys(tableColumns).filter(c => (tableColumns[c]?.type ?? '') !== 'virtual');
+        const dbColumns = Object.keys(tableColumns).filter(columnName => (tableColumns[columnName]?.type ?? '') !== 'virtual');
         dbColumns.forEach(column => appendOption(conflictSelect, column, tableColumns[column]?.display_name || column));
         if (previous) {
             for (let i = 0; i < conflictSelect.options.length; i++) {
@@ -769,7 +769,7 @@ export async function renderCsvImportPage(context) {
         const column = conflictSelect.value;
         if (!column) { conflictWarn.style.display = 'none'; return; }
         const mapped = Array.from(mappingContainer.querySelectorAll('select[data-header]'))
-            .some(s => s.value === column);
+            .some(mappingSelect => mappingSelect.value === column);
         if (!mapped) {
             conflictWarn.textContent = `⚠ Column "${column}" is not mapped above. Map a CSV header to "${column}" or set conflict handling to "None".`;
             conflictWarn.style.display = 'block';
@@ -779,11 +779,11 @@ export async function renderCsvImportPage(context) {
     }
 
     function getMapping() {
-        const m = {};
-        mappingContainer.querySelectorAll('select[data-header]').forEach(s => {
-            m[s.dataset.header] = s.value || null;
+        const mappingResult = {};
+        mappingContainer.querySelectorAll('select[data-header]').forEach(mappingSelect => {
+            mappingResult[mappingSelect.dataset.header] = mappingSelect.value || null;
         });
-        return m;
+        return mappingResult;
     }
 
     async function executeImport() {
@@ -792,7 +792,7 @@ export async function renderCsvImportPage(context) {
             return;
         }
         const mapping = getMapping();
-        if (!Object.values(mapping).some(v => v !== null && v !== '')) {
+        if (!Object.values(mapping).some(sampleValue => sampleValue !== null && sampleValue !== '')) {
             showBanner(execStatus, 'Map at least one CSV column to a database column.', 'error');
             return;
         }
@@ -803,7 +803,7 @@ export async function renderCsvImportPage(context) {
         resultArea.innerHTML = '';
 
         try {
-            const result = await apiFetch('api_csv_import.php?action=csv_import_execute', {
+            const response = await apiFetch('api_csv_import.php?action=csv_import_execute', {
                 method: 'POST',
                 body: JSON.stringify({
                     tmp_name:        csvTemporaryName,
@@ -816,14 +816,14 @@ export async function renderCsvImportPage(context) {
                     encoding:        csvEncoding,
                 }),
             });
-            const data = await result.json();
+            const data = await response.json();
             if (data.status !== 'success') throw new Error(data.error || 'Import failed');
 
             renderResult(data);
             resetUploadZone();
             loadHistory();
-        } catch (e) {
-            showBanner(execStatus, 'Import error: ' + escHtml(e.message), 'error');
+        } catch (event) {
+            showBanner(execStatus, 'Import error: ' + escHtml(event.message), 'error');
         } finally {
             execButton.disabled    = false;
             execButton.textContent = 'Execute Import';
@@ -911,8 +911,8 @@ export async function renderCsvImportPage(context) {
             renderResult(impData);
             resetUploadZone();
             loadHistory();
-        } catch (e) {
-            showBanner(execStatus, 'Error: ' + escHtml(e.message), 'error');
+        } catch (event) {
+            showBanner(execStatus, 'Error: ' + escHtml(event.message), 'error');
         } finally {
             execButton.disabled    = false;
             execButton.textContent = 'Create Table & Import';
@@ -920,16 +920,16 @@ export async function renderCsvImportPage(context) {
     }
 
     function renderResult(data) {
-        const ok  = data.skipped_rows === 0;
-        const background  = ok ? 'var(--ok-light)' : 'var(--warn-light)';
-        const bdr = ok ? 'var(--ok)'              : 'var(--warn)';
+        const hasNoSkippedRows  = data.skipped_rows === 0;
+        const backgroundColor  = hasNoSkippedRows ? 'var(--ok-light)' : 'var(--warn-light)';
+        const borderStyle = hasNoSkippedRows ? 'var(--ok)'              : 'var(--warn)';
 
         const resultElement = document.createElement('div');
-        resultElement.style.cssText = `padding:18px 20px;border-radius:8px;background:${background};border:1px solid ${bdr};margin-bottom:8px;`;
+        resultElement.style.cssText = `padding:18px 20px;border-radius:8px;background:${backgroundColor};border:1px solid ${borderStyle};margin-bottom:8px;`;
 
         const title = document.createElement('div');
-        title.style.cssText = `font-weight:700;margin-bottom:8px;color:${ok ? 'var(--ok)' : 'var(--muted)'};`;
-        title.textContent = ok
+        title.style.cssText = `font-weight:700;margin-bottom:8px;color:${hasNoSkippedRows ? 'var(--ok)' : 'var(--muted)'};`;
+        title.textContent = hasNoSkippedRows
             ? `✓ Import complete`
             : `⚠ Import finished with issues`;
 
@@ -937,23 +937,23 @@ export async function renderCsvImportPage(context) {
         statistics.style.cssText = 'display:flex;gap:20px;flex-wrap:wrap;margin-bottom:4px;';
 
         const statistic = (label, value, accent) => {
-            const s = document.createElement('span');
-            s.style.cssText = `color:${accent ? 'var(--ok)' : 'var(--muted)'};`;
+            const statisticSpan = document.createElement('span');
+            statisticSpan.style.cssText = `color:${accent ? 'var(--ok)' : 'var(--muted)'};`;
             const strong = document.createElement('strong');
             strong.textContent = value;
-            s.append(strong, ' ' + label);
-            return s;
+            statisticSpan.append(strong, ' ' + label);
+            return statisticSpan;
         };
 
         statistics.append(
-            statistic('rows imported', data.imported_rows.toLocaleString(), ok),
+            statistic('rows imported', data.imported_rows.toLocaleString(), hasNoSkippedRows),
             statistic('skipped',       data.skipped_rows.toLocaleString(),  false),
         );
 
         if (typeof data.elapsed_seconds === 'number') {
             const secs = data.elapsed_seconds;
-            const dur  = secs < 60 ? secs.toFixed(1) + ' s' : Math.floor(secs / 60) + ' m ' + (secs % 60).toFixed(0) + ' s';
-            statistics.append(statistic('duration', dur, false));
+            const duration  = secs < 60 ? secs.toFixed(1) + ' s' : Math.floor(secs / 60) + ' m ' + (secs % 60).toFixed(0) + ' s';
+            statistics.append(statistic('duration', duration, false));
         }
 
         resultElement.append(title, statistics);
@@ -963,8 +963,8 @@ export async function renderCsvImportPage(context) {
             logLink.href  = '#';
             logLink.style.cssText = 'display:inline-block;margin-top:8px;color:var(--muted);';
             logLink.textContent = 'View skipped row details ↓';
-            logLink.addEventListener('click', async (e) => {
-                e.preventDefault();
+            logLink.addEventListener('click', async (event) => {
+                event.preventDefault();
                 logLink.remove();
                 await appendRowLog(data.import_id, resultElement);
             });
@@ -977,8 +977,8 @@ export async function renderCsvImportPage(context) {
 
     async function appendRowLog(importId, container) {
         try {
-            const result  = await apiFetch(`api_csv_import.php?action=csv_import_log&id=${importId}`);
-            const data = await result.json();
+            const response  = await apiFetch(`api_csv_import.php?action=csv_import_log&id=${importId}`);
+            const data = await response.json();
             if (data.status !== 'success' || !data.rows.length) {
                 const note = document.createElement('p');
                 note.style.cssText = 'color:var(--muted);margin-top:8px;';
@@ -994,10 +994,10 @@ export async function renderCsvImportPage(context) {
         const wrapElement = document.createElement('div');
         wrapElement.style.cssText = 'margin-top:12px;max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:4px;';
 
-        const table = document.createElement('table');
-        table.className = 'adm-tbl';
+        const tableElement = document.createElement('table');
+        tableElement.className = 'adm-tbl';
 
-        const thead = table.createTHead();
+        const thead = tableElement.createTHead();
         const hrow  = thead.insertRow();
         for (const h of ['Row #', 'Error', 'Raw data (JSON)']) {
             const th = document.createElement('th');
@@ -1006,39 +1006,39 @@ export async function renderCsvImportPage(context) {
             hrow.appendChild(th);
         }
 
-        const tbody = table.createTBody();
+        const tbody = tableElement.createTBody();
         rows.forEach((row) => {
             const tr = tbody.insertRow();
 
-            const tdN = td(String(row.row_number), 'white-space:nowrap;');
-            const tdE = td(row.error_message || '', 'color:var(--error);');
-            const tdR = td(row.raw_data || '', 'font-family:var(--font-mono);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
-            tdN.className = 'adm-td adm-td-sm';
-            tdE.className = 'adm-td adm-td-sm';
-            tdR.className = 'adm-td adm-td-sm';
-            tdR.title = row.raw_data || '';
+            const nullCell = td(String(row.row_number), 'white-space:nowrap;');
+            const errorCell = td(row.error_message || '', 'color:var(--error);');
+            const rowCell = td(row.raw_data || '', 'font-family:var(--font-mono);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;');
+            nullCell.className = 'adm-td adm-td-sm';
+            errorCell.className = 'adm-td adm-td-sm';
+            rowCell.className = 'adm-td adm-td-sm';
+            rowCell.title = row.raw_data || '';
 
-            tr.append(tdN, tdE, tdR);
+            tr.append(nullCell, errorCell, rowCell);
         });
-        wrapElement.appendChild(table);
+        wrapElement.appendChild(tableElement);
         return wrapElement;
     }
 
     async function loadHistory() {
         histContainer.innerHTML = '<p style="color:var(--muted);padding:4px 0;">Loading…</p>';
         try {
-            const result  = await apiFetch('api_csv_import.php?action=csv_import_history');
-            const data = await result.json();
+            const response  = await apiFetch('api_csv_import.php?action=csv_import_history');
+            const data = await response.json();
 
             if (data.status !== 'success' || !data.imports.length) {
                 histContainer.innerHTML = '<p style="color:var(--muted);">No imports yet.</p>';
                 return;
             }
 
-            const table = document.createElement('table');
-            table.className = 'adm-tbl';
+            const tableElement = document.createElement('table');
+            tableElement.className = 'adm-tbl';
 
-            const thead = table.createTHead();
+            const thead = tableElement.createTHead();
             const hrow  = thead.insertRow();
             for (const h of ['#', 'File', 'Table', 'Status', 'Imported', 'Skipped', 'By', 'Started', 'Duration']) {
                 const th = document.createElement('th');
@@ -1047,12 +1047,12 @@ export async function renderCsvImportPage(context) {
                 hrow.appendChild(th);
             }
 
-            const tbody = table.createTBody();
+            const tbody = tableElement.createTBody();
             const clsMap = { done: 'ok', failed: 'danger', running: 'warn' };
             data.imports.forEach((row) => {
                 const tr = tbody.insertRow();
 
-                for (const [value, style] of [
+                for (const [valueElement, style] of [
                     [row.id,                        'white-space:nowrap;'],
                     [row.filename,                  'max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'],
                     [row.target_table,              ''],
@@ -1066,13 +1066,13 @@ export async function renderCsvImportPage(context) {
                     const cell = document.createElement('td');
                     cell.className = 'adm-td';
                     if (style) cell.style.cssText = style;
-                    if (value === null) {
+                    if (valueElement === null) {
                         const badge = document.createElement('span');
                         badge.className = 'adm-badge adm-badge-' + (clsMap[row.status] || 'muted');
                         badge.textContent = row.status;
                         cell.appendChild(badge);
                     } else {
-                        cell.textContent = String(value);
+                        cell.textContent = String(valueElement);
                     }
                     tr.appendChild(cell);
                 }
@@ -1105,7 +1105,7 @@ export async function renderCsvImportPage(context) {
             });
 
             histContainer.innerHTML = '';
-            histContainer.appendChild(table);
+            histContainer.appendChild(tableElement);
         } catch (_) {
             histContainer.innerHTML = '<p style="color:var(--error);">Failed to load history.</p>';
         }
@@ -1139,25 +1139,25 @@ export async function renderCsvImportPage(context) {
         setTimeout(() => { element.textContent = original; element.style.color = originalC; }, 2200);
     }
 
-    function showBanner(container, message, type) {
+    function showBanner(container, msg, type) {
         const colors = {
             success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--ok)' },
             error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
         }[type] ?? { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' };
-        const div = document.createElement('div');
-        div.style.cssText = `padding:10px 14px;border-radius:6px;background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`;
-        div.textContent = message;
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `padding:10px 14px;border-radius:6px;background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`;
+        wrapper.textContent = msg;
         container.innerHTML = '';
-        container.appendChild(div);
+        container.appendChild(wrapper);
     }
 }
 
 function loadCSVPreviewLocal(file, delimiter = ',', encoding = 'UTF-8') {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = (event) => {
             try {
-                let text = e.target.result;
+                let text = event.target.result;
                 if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
                 const lines = text.split(/\r?\n/);
                 const rawHeaders = parseCsvLine(lines[0] || '', delimiter);
@@ -1166,14 +1166,14 @@ function loadCSVPreviewLocal(file, delimiter = ',', encoding = 'UTF-8') {
                 const preview = [];
                 for (let i = 1; i <= 5 && i < lines.length; i++) {
                     if (!lines[i].trim()) continue;
-                    const values = parseCsvLine(lines[i], delimiter);
+                    const vals = parseCsvLine(lines[i], delimiter);
                     const row = {};
-                    headers.forEach((h, j) => { row[h] = values[j] ?? ''; });
+                    headers.forEach((h, j) => { row[h] = vals[j] ?? ''; });
                     preview.push(row);
                 }
                 resolve({ headers, preview });
-            } catch (error) {
-                reject(error);
+            } catch (errorElement) {
+                reject(errorElement);
             }
         };
         reader.onerror = () => reject(new Error('Failed to read file.'));
@@ -1186,9 +1186,9 @@ function formatDuration(startedAt, finishedAt) {
     const secs = Math.round((new Date(finishedAt) - new Date(startedAt)) / 1000);
     if (isNaN(secs) || secs < 0) return '—';
     if (secs < 60) return secs + 's';
-    const m = Math.floor(secs / 60);
+    const mappingResult = Math.floor(secs / 60);
     const s = secs % 60;
-    return s > 0 ? `${m}m ${s}s` : `${m}m`;
+    return s > 0 ? `${mappingResult}m ${s}s` : `${mappingResult}m`;
 }
 
 function parseCsvLine(line, delimiter = ',') {
@@ -1196,21 +1196,21 @@ function parseCsvLine(line, delimiter = ',') {
     let current = '';
     let inQ = false;
     for (let i = 0; i < line.length; i++) {
-        const c = line[i];
+        const columnName = line[i];
         if (inQ) {
-            if (c === '"') {
+            if (columnName === '"') {
                 if (line[i + 1] === '"') { current += '"'; i++; }
                 else inQ = false;
             } else {
-                current += c;
+                current += columnName;
             }
-        } else if (c === '"') {
+        } else if (columnName === '"') {
             inQ = true;
         } else if (line.startsWith(delimiter, i)) {
             fields.push(current); current = '';
             i += delimiter.length - 1;
         } else {
-            current += c;
+            current += columnName;
         }
     }
     fields.push(current);
@@ -1218,13 +1218,13 @@ function parseCsvLine(line, delimiter = ',') {
 }
 
 function guessColumnType(samples) {
-    const nonEmpty = samples.filter(v => v !== null && v !== '');
+    const nonEmpty = samples.filter(sampleValue => sampleValue !== null && sampleValue !== '');
     if (!nonEmpty.length) return 'varchar(255)';
 
-    if (nonEmpty.some(v => v.length > 200 || ((v[0] === '{' || v[0] === '[') && v.length > 5))) return 'text';
+    if (nonEmpty.some(sampleValue => sampleValue.length > 200 || ((sampleValue[0] === '{' || sampleValue[0] === '[') && sampleValue.length > 5))) return 'text';
 
-    if (nonEmpty.every(v => /^\d{4}-\d{2}-\d{2}$/.test(v))) return 'date';
-    if (nonEmpty.every(v => /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(v))) return 'timestamp';
+    if (nonEmpty.every(sampleValue => /^\d{4}-\d{2}-\d{2}$/.test(sampleValue))) return 'date';
+    if (nonEmpty.every(sampleValue => /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(sampleValue))) return 'timestamp';
 
     return 'varchar(255)';
 }
@@ -1281,14 +1281,14 @@ function buildCard(title) {
     const element = document.createElement('div');
     element.className = 'adm-sec-card';
 
-    const hdr = document.createElement('div');
-    hdr.className = 'adm-sec-hdr';
-    hdr.style.display = 'block';
+    const headerName = document.createElement('div');
+    headerName.className = 'adm-sec-hdr';
+    headerName.style.display = 'block';
     const h = document.createElement('h3');
     h.style.margin = '0';
     h.textContent = title;
-    hdr.appendChild(h);
-    element.appendChild(hdr);
+    headerName.appendChild(h);
+    element.appendChild(headerName);
 
     const body = document.createElement('div');
     body.className = 'adm-sec-body';
@@ -1298,16 +1298,16 @@ function buildCard(title) {
 }
 
 function buildRow() {
-    const div = document.createElement('div');
-    div.style.cssText = 'display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;';
-    return div;
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;';
+    return wrapper;
 }
 
 function buildLabel(text) {
-    const label = document.createElement('label');
-    label.style.cssText = 'font-weight:600;color:var(--muted);';
-    label.textContent = text;
-    return label;
+    const labelElement = document.createElement('label');
+    labelElement.style.cssText = 'font-weight:600;color:var(--muted);';
+    labelElement.textContent = text;
+    return labelElement;
 }
 
 function appendOption(select, value, label) {

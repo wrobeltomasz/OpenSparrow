@@ -29,7 +29,7 @@ export function setupPagination(schema) {
     let paginationElement = document.getElementById('pagination');
 
     if (!paginationElement) {
-        paginationEl: paginationElement = document.createElement('div');
+        paginationElement = document.createElement('div');
         paginationElement.id = 'pagination';
         paginationElement.className = 'pagination';
 
@@ -166,7 +166,7 @@ function renderPaginationInformation(filteredData) {
     let informationElement = document.getElementById('pagination-info');
 
     if (!informationElement) {
-        infoEl: informationElement = document.createElement('span');
+        informationElement = document.createElement('span');
         informationElement.id = 'pagination-info';
         informationElement.style.cssText = 'font-size:13px; color:var(--muted); white-space:nowrap; margin-right:8px;';
         const paginationElement = document.getElementById('pagination');

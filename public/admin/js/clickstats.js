@@ -18,8 +18,8 @@ export async function renderClickstatsPage(context) {
 
     let data;
     try {
-        const result = await apiFetch('api.php?action=clickstats_load');
-        data = await result.json();
+        const res = await apiFetch('api.php?action=clickstats_load');
+        data = await res.json();
     } catch (e) {
         if (workspaceElement._renderId !== myId) return;
         workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading click statistics. Check server logs.</h3>';
@@ -137,7 +137,7 @@ function renderSettings(panel, state) {
         }
         button.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=clickstats_save', {
+            const res = await apiFetch('api.php?action=clickstats_save', {
                 method: 'POST',
                 body: JSON.stringify({
                     enabled: enabled.input.checked,
@@ -146,7 +146,7 @@ function renderSettings(panel, state) {
                     version: state.version,
                 }),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 state.config.enabled = enabled.input.checked;
                 state.config.track_records = records.input.checked;
@@ -175,9 +175,9 @@ function checkboxRow(title, description, checked) {
 
     const label = el('div');
     label.appendChild(el('strong', '', title)).style.display = 'block';
-    const description = el('span', '', description);
-    description.style.color = 'var(--muted)';
-    label.appendChild(description);
+    const desc = el('span', '', description);
+    desc.style.color = 'var(--muted)';
+    label.appendChild(desc);
 
     row.appendChild(input);
     row.appendChild(label);
@@ -247,8 +247,8 @@ function renderLog(panel, state) {
 
         let data;
         try {
-            const result = await apiFetch('api.php?' + parameters.toString());
-            data = await result.json();
+            const res = await apiFetch('api.php?' + parameters.toString());
+            data = await res.json();
         } catch (e) {
             rowsHost.innerHTML = '<p style="color:var(--error);">Request failed.</p>';
             return;
@@ -295,11 +295,11 @@ function renderLog(panel, state) {
     async function purge(button, pill, payload) {
         button.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=clickstats_purge_log', {
+            const res = await apiFetch('api.php?action=clickstats_purge_log', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 showStatusPill(pill, result.note || `Deleted ${result.deleted ?? 0} row(s)`, 'success');
                 state.page = 1;

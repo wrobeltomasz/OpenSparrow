@@ -139,8 +139,8 @@ async function runPreview() {
 
     const rows = data.rows ?? [];
     if (rows.length > 0) {
-        const table = document.createElement('table');
-        table.className = 'dc-preview-table';
+        const tbl = document.createElement('table');
+        tbl.className = 'dc-preview-table';
 
         const thead = document.createElement('thead');
         const hr    = document.createElement('tr');
@@ -150,7 +150,7 @@ async function runPreview() {
             hr.appendChild(th);
         });
         thead.appendChild(hr);
-        table.appendChild(thead);
+        tbl.appendChild(thead);
 
         const tbody = document.createElement('tbody');
         for (const row of rows) {
@@ -167,8 +167,8 @@ async function runPreview() {
             tr.appendChild(tdA);
             tbody.appendChild(tr);
         }
-        table.appendChild(tbody);
-        panel.querySelector('#dc-preview-area').appendChild(table);
+        tbl.appendChild(tbody);
+        panel.querySelector('#dc-preview-area').appendChild(tbl);
     }
 
     updateApplyButton();
@@ -221,9 +221,9 @@ function populateColumns() {
     sel.innerHTML = '';
     if (!table || !window.schema?.tables?.[table]) return;
 
-    const columns = window.schema.tables[table].columns ?? {};
+    const cols = window.schema.tables[table].columns ?? {};
     let first = true;
-    for (const [name, config] of Object.entries(columns)) {
+    for (const [name, config] of Object.entries(cols)) {
         if (!isTextColumn(config)) continue;
         const option = document.createElement('option');
         option.value       = name;

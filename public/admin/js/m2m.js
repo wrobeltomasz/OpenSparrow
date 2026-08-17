@@ -16,18 +16,18 @@ export async function renderM2mPage(context) {
     let tables = [];
     let relationships = [];
     try {
-        const result = await apiFetch('api.php?action=list_m2m', {
+        const res = await apiFetch('api.php?action=list_m2m', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        const data = await result.json();
+        const data = await res.json();
         if (myGen !== _renderGen) return;
         tables        = data.tables        || [];
         relationships = data.relationships || [];
     } catch {
-        const error = document.createElement('p');
-        error.style.color = 'red';
-        error.textContent = 'Failed to load schema data.';
-        workspaceElement.appendChild(error);
+        const err = document.createElement('p');
+        err.style.color = 'red';
+        err.textContent = 'Failed to load schema data.';
+        workspaceElement.appendChild(err);
         return;
     }
 
@@ -61,9 +61,9 @@ export async function renderM2mPage(context) {
     function makeTableSelect(labelText) {
         const wrap = document.createElement('div');
         wrap.className = 'flex-1';
-        const label = document.createElement('label');
-        label.className = 'adm-field-label';
-        label.textContent = labelText;
+        const lbl = document.createElement('label');
+        lbl.className = 'adm-field-label';
+        lbl.textContent = labelText;
         const sel = document.createElement('select');
         sel.className = 'adm-input w-full';
         const blank = document.createElement('option');
@@ -76,7 +76,7 @@ export async function renderM2mPage(context) {
             option.textContent = t.display_name ? `${t.display_name} (${t.name})` : t.name;
             sel.appendChild(option);
         });
-        wrap.append(label, sel);
+        wrap.append(lbl, sel);
         return { wrap, sel };
     }
 
@@ -93,9 +93,9 @@ export async function renderM2mPage(context) {
 
     function makeField(labelText, placeholder, hint) {
         const wrap = document.createElement('div');
-        const label = document.createElement('label');
-        label.className = 'adm-field-label';
-        label.textContent = labelText;
+        const lbl = document.createElement('label');
+        lbl.className = 'adm-field-label';
+        lbl.textContent = labelText;
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = placeholder;
@@ -104,9 +104,9 @@ export async function renderM2mPage(context) {
             const h = document.createElement('div');
             h.style.cssText = '  margin-top:4px;';
             h.textContent = hint;
-            wrap.append(label, input, h);
+            wrap.append(lbl, input, h);
         } else {
-            wrap.append(label, input);
+            wrap.append(lbl, input);
         }
         return { wrap, inp: input };
     }
@@ -180,12 +180,12 @@ export async function renderM2mPage(context) {
         buttonCreate.textContent = 'Creating…';
 
         try {
-            const result = await apiFetch('api.php?action=create_m2m', {
+            const res = await apiFetch('api.php?action=create_m2m', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: JSON.stringify({ table_a: tableA, table_b: tableB, junction_table: junctionTable, self_fk: selfFk, other_fk: otherFk, label, display_column: displayColumn })
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 showStatusPill(buttonCreate, 'Relationship created!', 'success');
                 setTimeout(() => renderM2mPage(context), 900);
@@ -253,12 +253,12 @@ export async function renderM2mPage(context) {
             buttonDel.disabled = true;
 
             try {
-                const result = await apiFetch('api.php?action=delete_m2m', {
+                const res = await apiFetch('api.php?action=delete_m2m', {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: JSON.stringify({ table_a: rel.table_a, m2m_index: rel.m2m_index, junction_table: rel.junction_table, drop_table: alsoDropTable })
                 });
-                const result = await result.json();
+                const result = await res.json();
                 if (result.status === 'success') {
                     card.style.opacity = '0.4';
                     setTimeout(() => card.remove(), 300);

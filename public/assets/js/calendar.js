@@ -58,9 +58,9 @@ let searchTerm = '';
 function eventMatchesSearch(ev) {
     if (!searchTerm) return true;
     const parts = [ev.title, String(ev.id)];
-    for (const [key, value] of Object.entries(ev.rowData || {})) {
-        if (key.endsWith('__display') || value === null || value === undefined) continue;
-        parts.push(String(ev.rowData[key + '__display'] ?? value));
+    for (const [key, val] of Object.entries(ev.rowData || {})) {
+        if (key.endsWith('__display') || val === null || val === undefined) continue;
+        parts.push(String(ev.rowData[key + '__display'] ?? val));
     }
     return parts.join(' ').toLowerCase().includes(searchTerm);
 }
@@ -171,8 +171,8 @@ async function fetchSchema() {
         } else {
             console.error('Failed to load secure schema');
         }
-    } catch (error) {
-        console.error('Failed to fetch schema in calendar', error);
+    } catch (err) {
+        console.error('Failed to fetch schema in calendar', err);
     }
 }
 
@@ -185,8 +185,8 @@ async function fetchEvents(year, month) {
             const data = await result.json();
             eventsData = data.events || [];
         }
-    } catch (error) {
-        console.error('Failed to load calendar events', error);
+    } catch (err) {
+        console.error('Failed to load calendar events', err);
     }
 }
 
@@ -313,12 +313,12 @@ function renderCalendar() {
                     }
                     console.error('Failed to move event:', data.error ?? result.status);
                 }
-            } catch (error) {
+            } catch (err) {
                 if (eventIndex !== -1) {
                     eventsData[eventIndex].date = originalDate;
                     renderCalendar();
                 }
-                console.error('Network error during event move:', error);
+                console.error('Network error during event move:', err);
             }
         });
 
@@ -425,10 +425,10 @@ async function deleteEvent(ev) {
             renderCalendar();
             console.error('Failed to delete event:', data.error ?? result.status);
         }
-    } catch (error) {
+    } catch (err) {
         eventsData.splice(eventIndex, 0, removed);
         renderCalendar();
-        console.error('Network error during event delete:', error);
+        console.error('Network error during event delete:', err);
     }
 }
 
@@ -494,7 +494,7 @@ function openAddEventModal(dateString) {
     actions.appendChild(cancelButton);
 
     if (sources.length > 0) {
-        confirmBtn: confirmButton = document.createElement('button');
+        confirmButton = document.createElement('button');
         confirmButton.type = 'button';
         confirmButton.className = 'btn-save';
         confirmButton.textContent = t('common.add');

@@ -260,8 +260,8 @@ async function init() {
                 knownIds.add(String(comment.id));
                 thread.appendChild(buildMessage(comment));
                 thread.scrollTop = thread.scrollHeight;
-            } catch (error) {
-                alert(error.message);
+            } catch (err) {
+                alert(err.message);
             } finally {
                 sendButton.disabled = false;
                 textarea.focus();
@@ -271,7 +271,7 @@ async function init() {
 
     fetchComments()
         .then(comments => renderComments(thread, comments))
-        .catch(error => console.error('Comments load failed:', error));
+        .catch(err => console.error('Comments load failed:', err));
 
     let pollTimer = null;
 

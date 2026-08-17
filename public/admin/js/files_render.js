@@ -204,9 +204,9 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     const updateColumns = () => {
         col1Select.innerHTML = '<option value="">-- None --</option>';
         col2Select.innerHTML = '<option value="">-- None --</option>';
-        const table = tableSelect.value;
-        if (table && _state.getColumnOptionsForTable) {
-            const columns = _state.getColumnOptionsForTable(table);
+        const tbl = tableSelect.value;
+        if (tbl && _state.getColumnOptionsForTable) {
+            const columns = _state.getColumnOptionsForTable(tbl);
             columns.forEach(column => {
                 col1Select.innerHTML += `<option value="${escHtml(column.value)}" ${data.col1 === column.value ? 'selected' : ''}>${escHtml(column.label)}</option>`;
                 col2Select.innerHTML += `<option value="${escHtml(column.value)}" ${data.col2 === column.value ? 'selected' : ''}>${escHtml(column.label)}</option>`;
@@ -221,7 +221,7 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     list.appendChild(row);
 }
 
-function fillConfigForm(config) {
+function fillConfigForm(cfg) {
     const maxElement  = document.getElementById('f-max-size');
     const pathElement = document.getElementById('f-storage-path');
     const extensionsElement = document.getElementById('f-allowed-exts');
@@ -229,20 +229,20 @@ function fillConfigForm(config) {
 
     if (!maxElement) return;
 
-    maxElement.value  = config.max_file_size_mb;
-    pathElement.value = config.storage_path;
-    extensionsElement.value = (config.allowed_extensions || []).join(', ');
+    maxElement.value  = cfg.max_file_size_mb;
+    pathElement.value = cfg.storage_path;
+    extensionsElement.value = (cfg.allowed_extensions || []).join(', ');
 
     typesElement.innerHTML = ALL_TYPES.map(t => `
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:normal">
-            <input type="checkbox" value="${t}" ${(config.allowed_types || []).includes(t) ? 'checked' : ''}>
+            <input type="checkbox" value="${t}" ${(cfg.allowed_types || []).includes(t) ? 'checked' : ''}>
             <span style="font-weight:bold;color:var(--muted)">${TYPE_ICONS[t]}</span> ${cap(t)}
         </label>
     `).join('');
 
     const list = document.getElementById('f-relations-list');
     list.innerHTML = '';
-    const relations = config.relations || [];
+    const relations = cfg.relations || [];
     relations.forEach(r => addRelationRow(r));
 }
 

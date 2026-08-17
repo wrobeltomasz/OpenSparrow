@@ -131,7 +131,7 @@ export class GridKeyboard {
     _buildLiveRegion() {
         let element = document.getElementById('kg-live-region');
         if (!element) {
-            el: element = document.createElement('div');
+            element = document.createElement('div');
             element.id = 'kg-live-region';
             element.className = 'kg-live-region';
             element.setAttribute('role', 'status');
@@ -221,9 +221,9 @@ export class GridKeyboard {
         cell.focus({ preventScroll: false });
 
         if (announce) {
-            const column  = cell.dataset.column || '';
+            const col  = cell.dataset.column || '';
             const text = cell.textContent.trim();
-            this._announce(column ? `${column}: ${text}` : text);
+            this._announce(col ? `${col}: ${text}` : text);
         }
     }
 
@@ -478,8 +478,8 @@ export class GridKeyboard {
             [`${mod} (2s)`,              I18n.t('shortcuts.help')],
         ];
 
-        const table = document.createElement('table');
-        table.className = 'kg-help-table';
+        const tbl = document.createElement('table');
+        tbl.className = 'kg-help-table';
         for (const [key, description] of rows) {
             const tr  = document.createElement('tr');
             const tdK = document.createElement('td');
@@ -489,9 +489,9 @@ export class GridKeyboard {
             tdD.textContent = description;
             tr.appendChild(tdK);
             tr.appendChild(tdD);
-            table.appendChild(tr);
+            tbl.appendChild(tr);
         }
-        helpElement.appendChild(table);
+        helpElement.appendChild(tbl);
 
         const closeButton = document.createElement('button');
         closeButton.className = 'kg-help-close';
@@ -614,7 +614,7 @@ export class GridKeyboard {
     }
 
     destroy() {
-        for (const [cell, value] of this._navModeEditable) cell.contentEditable = value;
+        for (const [cell, val] of this._navModeEditable) cell.contentEditable = val;
         document.removeEventListener('keydown', this._onKeyDown, true);
         document.removeEventListener('keyup',   this._onKeyUp,   true);
         document.removeEventListener('tableLoaded', this._onTableLoaded);

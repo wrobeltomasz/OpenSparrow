@@ -94,36 +94,36 @@ if (clearFiltersElement && searchElement) {
     });
 }
 
-function detectColumnType(column) {
-    const values = _curRows.map(r => r[column]).filter(v => v !== null && v !== undefined && v !== '');
-    if (values.length === 0) return 'dict';
+function detectColumnType(col) {
+    const vals = _curRows.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '');
+    if (vals.length === 0) return 'dict';
     const boolSet = new Set(['true', 'false', 't', 'f']);
-    if (values.every(v => typeof v === 'boolean' || boolSet.has(String(v).toLowerCase()))) return 'bool';
-    if (values.every(v => !isNaN(parseFloat(v)) && isFinite(v))) return 'number';
-    if (values.every(v => /^\d{4}-\d{2}-\d{2}/.test(String(v)))) return 'date';
+    if (vals.every(v => typeof v === 'boolean' || boolSet.has(String(v).toLowerCase()))) return 'bool';
+    if (vals.every(v => !isNaN(parseFloat(v)) && isFinite(v))) return 'number';
+    if (vals.every(v => /^\d{4}-\d{2}-\d{2}/.test(String(v)))) return 'date';
     return 'dict';
 }
 
-function columnDisplayName(column) {
-    return _curColumns[column]?.display_name ?? column;
+function columnDisplayName(col) {
+    return _curColumns[col]?.display_name ?? col;
 }
 
-function updateColumnFilterState(column, type, data) {
+function updateColumnFilterState(col, type, data) {
     if (!data || data.empty) {
-        delete columnFilters[column];
+        delete columnFilters[col];
     } else {
-        columnFilters[column] = { type, ...data };
+        columnFilters[col] = { type, ...data };
     }
 }
 
 function handleColumnFilterChange() {
     if (!filterBarElement) return;
     filterBarElement.replaceChildren();
-    const column = columnFilterElement ? columnFilterElement.value : '';
-    if (!column) return;
+    const col = columnFilterElement ? columnFilterElement.value : '';
+    if (!col) return;
 
-    const type     = detectColumnType(column);
-    const existing = columnFilters[column] || {};
+    const type     = detectColumnType(col);
+    const existing = columnFilters[col] || {};
     const apply    = () => { if (_applyFilters) _applyFilters(); };
 
     if (type === 'dict') {
@@ -132,23 +132,23 @@ function handleColumnFilterChange() {
 
         const optionAll = document.createElement('option');
         optionAll.value = '';
-        optionAll.textContent = `${columnDisplayName(column)}: ${I18n.t('filter.all')}`;
+        optionAll.textContent = `${columnDisplayName(col)}: ${I18n.t('filter.all')}`;
         select.appendChild(optionAll);
 
         const uniqueValues = [...new Set(
-            _curRows.map(r => r[column]).filter(v => v !== null && v !== undefined && v !== '')
+            _curRows.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '')
         )].sort();
-        uniqueValues.forEach(value => {
+        uniqueValues.forEach(val => {
             const o = document.createElement('option');
-            o.value = String(value);
-            o.textContent = String(value);
-            if (existing.val !== undefined && String(existing.val) === String(value)) o.selected = true;
+            o.value = String(val);
+            o.textContent = String(val);
+            if (existing.val !== undefined && String(existing.val) === String(val)) o.selected = true;
             select.appendChild(o);
         });
 
         select.addEventListener('change', () => {
             const selectedText = select.options[select.selectedIndex].text;
-            updateColumnFilterState(column, 'dict', { val: select.value, label: selectedText, empty: select.value === '' });
+            updateColumnFilterState(col, 'dict', { val: select.value, label: selectedText, empty: select.value === '' });
             apply();
         });
         filterBarElement.appendChild(select);
@@ -171,7 +171,7 @@ function handleColumnFilterChange() {
         if (existing.to) inputTo.value = existing.to;
 
         const updateDateState = () => {
-            updateColumnFilterState(column, 'date', {
+            updateColumnFilterState(col, 'date', {
                 from: inputFrom.value,
                 to: inputTo.value,
                 empty: !inputFrom.value && !inputTo.value,
@@ -205,7 +205,7 @@ function handleColumnFilterChange() {
         if (existing.max !== undefined) inputMax.value = existing.max;
 
         const updateNumberState = () => {
-            updateColumnFilterState(column, 'number', {
+            updateColumnFilterState(col, 'number', {
                 min: inputMin.value,
                 max: inputMax.value,
                 empty: inputMin.value === '' && inputMax.value === '',
@@ -240,7 +240,7 @@ function handleColumnFilterChange() {
 
         select.addEventListener('change', () => {
             const selectedText = select.options[select.selectedIndex].text;
-            updateColumnFilterState(column, 'bool', { val: select.value, label: selectedText, empty: select.value === '' });
+            updateColumnFilterState(col, 'bool', { val: select.value, label: selectedText, empty: select.value === '' });
             apply();
         });
         filterBarElement.appendChild(select);
@@ -264,10 +264,10 @@ function populateGroupBy(allKeys) {
     defaultOption.value = '';
     defaultOption.textContent = I18n.t('views.group_by');
     groupByElement.appendChild(defaultOption);
-    allKeys.forEach(column => {
+    allKeys.forEach(col => {
         const option = document.createElement('option');
-        option.value = column;
-        option.textContent = columnDisplayName(column);
+        option.value = col;
+        option.textContent = columnDisplayName(col);
         groupByElement.appendChild(option);
     });
     groupByElement.value  = viewGroupBy;
@@ -308,8 +308,8 @@ function renderFilterPills() {
         });
     }
 
-    for (const [column, filter] of Object.entries(columnFilters)) {
-        const columnName = columnDisplayName(column);
+    for (const [col, filter] of Object.entries(columnFilters)) {
+        const columnName = columnDisplayName(col);
         let label = '';
         if (filter.type === 'dict' || filter.type === 'bool') {
             label = `${columnName}: ${filter.label}`;
@@ -325,8 +325,8 @@ function renderFilterPills() {
 
         if (label) {
             createPill(label, () => {
-                delete columnFilters[column];
-                if (columnFilterElement && columnFilterElement.value === column) {
+                delete columnFilters[col];
+                if (columnFilterElement && columnFilterElement.value === col) {
                     if (filterBarElement) filterBarElement.replaceChildren();
                     columnFilterElement.value = '';
                 }
@@ -338,20 +338,20 @@ function renderFilterPills() {
 }
 
 function rowPassesColumnFilters(row) {
-    for (const [column, filter] of Object.entries(columnFilters)) {
+    for (const [col, filter] of Object.entries(columnFilters)) {
         if (filter.type === 'dict') {
-            if (String(row[column]) !== String(filter.val)) return false;
+            if (String(row[col]) !== String(filter.val)) return false;
         } else if (filter.type === 'bool') {
-            const rowBool = (row[column] === true || row[column] === 't' || row[column] === 'true' || row[column] === 1);
+            const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
             if (rowBool !== (filter.val === 'true')) return false;
         } else if (filter.type === 'date') {
-            const rowDateString = String(row[column] || '').substring(0, 10);
+            const rowDateString = String(row[col] || '').substring(0, 10);
             if (!rowDateString) return false;
             const rowTime = new Date(rowDateString).getTime();
             if (filter.from && rowTime < new Date(filter.from).getTime()) return false;
             if (filter.to && rowTime > new Date(filter.to).getTime()) return false;
         } else if (filter.type === 'number') {
-            const rowNumber = Number(row[column]);
+            const rowNumber = Number(row[col]);
             if (isNaN(rowNumber)) return false;
             if (filter.min !== '' && rowNumber < Number(filter.min)) return false;
             if (filter.max !== '' && rowNumber > Number(filter.max)) return false;
@@ -367,10 +367,10 @@ function populateColumnFilter(allKeys) {
     defaultOption.value = '';
     defaultOption.textContent = I18n.t('grid.select_column');
     columnFilterElement.appendChild(defaultOption);
-    allKeys.forEach(column => {
+    allKeys.forEach(col => {
         const option = document.createElement('option');
-        option.value = column;
-        option.textContent = columnDisplayName(column);
+        option.value = col;
+        option.textContent = columnDisplayName(col);
         columnFilterElement.appendChild(option);
     });
     columnFilterElement.hidden = false;
@@ -469,10 +469,10 @@ function renderView(data) {
         headerRow.childNodes.forEach(th => {
             if (th.nodeType !== Node.ELEMENT_NODE) return;
             const k       = th.dataset.col;
-            const label     = columns[k]?.display_name ?? k;
+            const lbl     = columns[k]?.display_name ?? k;
             const ind     = viewSortState.column === k ? (viewSortState.asc ? ' ↑' : ' ↓') : '';
             const thLabel = th.querySelector('.th-label');
-            if (thLabel) thLabel.textContent = label + ind;
+            if (thLabel) thLabel.textContent = lbl + ind;
         });
     }
 
@@ -631,19 +631,19 @@ function renderView(data) {
 
             allKeys.forEach(key => {
                 const td     = document.createElement('td');
-                const rawValue = row[key];
+                const rawVal = row[key];
                 const columnConfig = columns[key];
                 const rules  = columnConfig?.color_rules ?? [];
-                const color  = applyColorRules(rawValue, rules);
+                const color  = applyColorRules(rawVal, rules);
 
                 if (color) {
                     const chip = document.createElement('span');
                     chip.className        = 'vw-value-chip';
                     chip.style.background = color;
-                    chip.textContent      = rawValue ?? '';
+                    chip.textContent      = rawVal ?? '';
                     td.appendChild(chip);
                 } else {
-                    td.textContent = rawValue ?? '';
+                    td.textContent = rawVal ?? '';
                 }
                 tr.appendChild(td);
             });
@@ -825,18 +825,18 @@ function buildLevelTable(data) {
 
         keys.forEach(key => {
             const td     = document.createElement('td');
-            const rawValue = row[key];
+            const rawVal = row[key];
             const rules  = columns[key]?.color_rules ?? [];
-            const color  = applyColorRules(rawValue, rules);
+            const color  = applyColorRules(rawVal, rules);
 
             if (color) {
                 const chip = document.createElement('span');
                 chip.className        = 'vw-value-chip';
                 chip.style.background = color;
-                chip.textContent      = rawValue ?? '';
+                chip.textContent      = rawVal ?? '';
                 td.appendChild(chip);
             } else {
-                td.textContent = rawValue ?? '';
+                td.textContent = rawVal ?? '';
             }
             tr.appendChild(td);
         });

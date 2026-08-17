@@ -44,10 +44,10 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         headRow.appendChild(th);
     }
 
-    for (const column of state.displayedColumns) {
+    for (const col of state.displayedColumns) {
         const th = document.createElement('th');
-        const columnConfig = schema.tables[state.currentTable].columns[column] || {};
-        th.dataset.col = column;
+        const columnConfig = schema.tables[state.currentTable].columns[col] || {};
+        th.dataset.col = col;
 
         const thLabel = document.createElement('span');
         thLabel.className = 'th-label';
@@ -62,8 +62,8 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
             thLabel.appendChild(badge);
         }
 
-        let labelText = columnConfig.display_name || column;
-        if (state.sortState.column === column) {
+        let labelText = columnConfig.display_name || col;
+        if (state.sortState.column === col) {
             labelText += state.sortState.asc ? ' ↑' : ' ↓';
         }
         thLabel.appendChild(document.createTextNode(labelText));
@@ -72,12 +72,12 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         th.style.cursor = 'pointer';
         th.addEventListener('click', e => {
             if (e.target.classList.contains('col-resizer')) return;
-            toggleSortState(column);
+            toggleSortState(col);
             onRerender();
         });
 
         initColumnResize(th);
-        initColumnDnD(th, column, onRerender);
+        initColumnDnD(th, col, onRerender);
         headRow.appendChild(th);
     }
 

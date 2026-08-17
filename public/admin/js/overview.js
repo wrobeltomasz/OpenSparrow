@@ -82,10 +82,10 @@ function ovStatusRow(label, isOk, detail) {
     badge.textContent = isOk ? 'OK' : 'WARN';
     row.appendChild(badge);
 
-    const label = document.createElement('span');
-    label.className = 'ov-status-label';
-    label.textContent = label;
-    row.appendChild(label);
+    const lbl = document.createElement('span');
+    lbl.className = 'ov-status-label';
+    lbl.textContent = label;
+    row.appendChild(lbl);
 
     if (detail) {
         const det = document.createElement('span');
@@ -181,10 +181,10 @@ export async function renderOverviewPage(context) {
     workspaceElement.innerHTML = '';
 
     if (data.status === 'error') {
-        const error = document.createElement('p');
-        error.style.color = 'var(--error)';
-        error.textContent = 'Error: ' + escHtml(data.error ?? 'Unknown error');
-        workspaceElement.appendChild(error);
+        const err = document.createElement('p');
+        err.style.color = 'var(--error)';
+        err.textContent = 'Error: ' + escHtml(data.error ?? 'Unknown error');
+        workspaceElement.appendChild(err);
         return;
     }
 

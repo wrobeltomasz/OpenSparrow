@@ -40,10 +40,10 @@ export function checkbox(labelText, checked, onChange) {
     box.className = 'adm-check';
     box.checked = checked;
     box.onchange = () => onChange(box.checked);
-    const label = document.createElement('label');
-    label.style.cssText = 'display:flex; align-items:center; gap:8px;';
-    label.append(box, document.createTextNode(labelText));
-    return { input: box, label: label };
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
+    lbl.append(box, document.createTextNode(labelText));
+    return { input: box, label: lbl };
 }
 
 export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onDelete, confirmMsg: confirmMessage }) {

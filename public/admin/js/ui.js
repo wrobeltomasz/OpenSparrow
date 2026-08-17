@@ -37,7 +37,7 @@ export function moveObjectKey(obj, key, direction) {
     keys[index] = temporary;
 
     const newObject = {};
-    keys.forEach(k => newObject[k] = obj[k]);
+    keys.forEach(key => newObject[key] = obj[key]);
     return newObject;
 }
 
@@ -50,7 +50,7 @@ export function createTextInput(key, labelText, value, onChange) {
     const input = document.createElement('input');
     input.type = 'text';
     input.value = value || '';
-    input.addEventListener('input', (e) => onChange(e.target.value));
+    input.addEventListener('input', (event) => onChange(event.target.value));
     wrapper.appendChild(input);
     if (helpTexts[key]) {
         const help = document.createElement('span');
@@ -70,7 +70,7 @@ export function createNumberInput(key, labelText, value, onChange) {
     const input = document.createElement('input');
     input.type = 'number';
     input.value = (value === undefined || value === null) ? '' : value;
-    input.addEventListener('input', (e) => onChange(e.target.value));
+    input.addEventListener('input', (event) => onChange(event.target.value));
     wrapper.appendChild(input);
     if (helpTexts[key]) {
         const help = document.createElement('span');
@@ -87,10 +87,10 @@ export function createTextarea(key, labelText, value, onChange) {
     const label = document.createElement('label');
     label.textContent = labelText;
     wrapper.appendChild(label);
-    const ta = document.createElement('textarea');
-    ta.value = value || '';
-    ta.addEventListener('input', (e) => onChange(e.target.value));
-    wrapper.appendChild(ta);
+    const textarea = document.createElement('textarea');
+    textarea.value = value || '';
+    textarea.addEventListener('input', (event) => onChange(event.target.value));
+    wrapper.appendChild(textarea);
     if (helpTexts[key]) {
         const help = document.createElement('span');
         help.className = 'help-text';
@@ -110,7 +110,7 @@ export function createDatalistInput(key, labelText, listId, value, onChange) {
     input.type = 'text';
     input.setAttribute('list', listId);
     input.value = value || '';
-    input.addEventListener('input', (e) => onChange(e.target.value));
+    input.addEventListener('input', (event) => onChange(event.target.value));
     wrapper.appendChild(input);
     return wrapper;
 }
@@ -130,7 +130,7 @@ export function createIconPicker(key, labelText, value, onChange) {
     input.type = 'text';
     input.value = value || '';
     input.classList.add('flex-1');
-    input.addEventListener('input', (e) => onChange(e.target.value));
+    input.addEventListener('input', (event) => onChange(event.target.value));
 
     const button = document.createElement('button');
     button.textContent = 'Browse';
@@ -182,7 +182,7 @@ export function createIconPicker(key, labelText, value, onChange) {
             } else {
                 grid.innerHTML = '<p style="grid-column: 1 / -1; color:var(--muted);">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
             }
-        } catch(e) {
+        } catch(event) {
             grid.innerHTML = '<p style="color:var(--error); grid-column: 1 / -1;">An error occurred while loading icons.</p>';
         }
 
@@ -212,13 +212,13 @@ export function createSelectInput(key, labelText, options, value, onChange) {
     wrapper.appendChild(label);
     const select = document.createElement('select');
     options.forEach(option => {
-        const o = document.createElement('option');
-        o.value = option.value;
-        o.textContent = option.label;
-        if (option.value === value) o.selected = true;
-        select.appendChild(o);
+        const optionElement = document.createElement('option');
+        optionElement.value = option.value;
+        optionElement.textContent = option.label;
+        if (option.value === value) optionElement.selected = true;
+        select.appendChild(optionElement);
     });
-    select.addEventListener('change', (e) => onChange(e.target.value));
+    select.addEventListener('change', (event) => onChange(event.target.value));
     wrapper.appendChild(select);
     return wrapper;
 }
@@ -232,7 +232,7 @@ export function createColorInput(key, labelText, value, onChange) {
     const input = document.createElement('input');
     input.type = 'color';
     input.value = value || '#6E767F';
-    input.addEventListener('input', (e) => onChange(e.target.value));
+    input.addEventListener('input', (event) => onChange(event.target.value));
     wrapper.appendChild(input);
     return wrapper;
 }
@@ -245,7 +245,7 @@ export function createCheckbox(key, labelText, value, onChange, defaultValue = t
     input.type = 'checkbox';
     input.checked = (value !== undefined && value !== null) ? value : defaultValue;
     if (value === undefined || value === null) onChange(defaultValue);
-    input.addEventListener('change', (e) => onChange(e.target.checked));
+    input.addEventListener('change', (event) => onChange(event.target.checked));
 
     const label = document.createElement('label');
     label.textContent = labelText;
@@ -325,20 +325,20 @@ export function renderGlobalSettings(context, options = {}) {
     workspaceElement.appendChild(heading);
 
     workspaceElement.appendChild(createTextInput('menu_name', 'Menu Display Name',
-        currentConfig.menu_name || defaultMenuName, v => {
-            currentConfig.menu_name = v;
+        currentConfig.menu_name || defaultMenuName, value => {
+            currentConfig.menu_name = value;
         }));
 
     workspaceElement.appendChild(createIconPicker('menu_icon', 'Menu Icon',
-        currentConfig.menu_icon || '', v => {
-            if (v && v.trim() !== '') currentConfig.menu_icon = v;
+        currentConfig.menu_icon || '', value => {
+            if (value && value.trim() !== '') currentConfig.menu_icon = value;
             else delete currentConfig.menu_icon;
         }));
 
     if (includeHidden) {
         workspaceElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
-            currentConfig.hidden, v => {
-                if (v) currentConfig.hidden = true;
+            currentConfig.hidden, value => {
+                if (value) currentConfig.hidden = true;
                 else delete currentConfig.hidden;
             }, false));
     }
@@ -357,9 +357,11 @@ export function createFullMenuPreview(config) {
         clearTimeout(saveTimer);
         saveTimer = setTimeout(async () => {
             const payload = {
-                items: state.items.map(it => ({
-                    type: it.type, key: it.key,
-                    children: (it.children || []).map(c => ({ type: c.type, key: c.key, children: [] })),
+                items: state.items.map(menuItem => ({
+                    type: menuItem.type, key: menuItem.key,
+                    children: (menuItem.children || []).map(child => ({
+                        type: child.type, key: child.key, children: [],
+                    })),
                 })),
             };
             try {
@@ -392,53 +394,54 @@ export function createFullMenuPreview(config) {
     }
 
     function buildLink(item) {
-        const a = document.createElement('a');
-        a.href = '#';
-        a.className = 'custom-nav-link' + (item.hidden ? ' preview-hidden' : '');
-        a.addEventListener('click', e => e.preventDefault());
-        a.appendChild(buildIcon(item.icon));
-        const ns = document.createElement('span');
-        ns.className = 'menu-text';
-        ns.textContent = item.name || item.key;
-        a.appendChild(ns);
+        const link = document.createElement('a');
+        link.href = '#';
+        link.className = 'custom-nav-link' + (item.hidden ? ' preview-hidden' : '');
+        link.addEventListener('click', event => event.preventDefault());
+        link.appendChild(buildIcon(item.icon));
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'menu-text';
+        nameSpan.textContent = item.name || item.key;
+        link.appendChild(nameSpan);
         if (item.hidden) {
-            const b = document.createElement('span');
-            b.className = 'menu-preview-badge';
-            b.textContent = 'HIDDEN';
-            a.appendChild(b);
+            const badge = document.createElement('span');
+            badge.className = 'menu-preview-badge';
+            badge.textContent = 'HIDDEN';
+            link.appendChild(badge);
         }
-        return a;
+        return link;
     }
 
     let dragKey = null;
     let dragParent = null;
 
     function clearIndicators() {
-        wrap.querySelectorAll('.menu-drop-line').forEach(el => el.remove());
-        wrap.querySelectorAll('.dnd-nest-target').forEach(el => el.classList.remove('dnd-nest-target'));
+        wrap.querySelectorAll('.menu-drop-line').forEach(node => node.remove());
+        wrap.querySelectorAll('.dnd-nest-target')
+            .forEach(node => node.classList.remove('dnd-nest-target'));
     }
 
-    function hitZone(e, li, allowNest) {
-        const r = li.getBoundingClientRect();
-        const pct = (e.clientY - r.top) / r.height;
-        if (allowNest && pct > 0.28 && pct < 0.72) return 'nest';
-        return pct < 0.5 ? 'before' : 'after';
+    function hitZone(event, li, allowNest) {
+        const rect = li.getBoundingClientRect();
+        const percent = (event.clientY - rect.top) / rect.height;
+        if (allowNest && percent > 0.28 && percent < 0.72) return 'nest';
+        return percent < 0.5 ? 'before' : 'after';
     }
 
     function removeDragged(items) {
         if (dragParent === null) {
-            return items.filter(i => i.key !== dragKey);
+            return items.filter(item => item.key !== dragKey);
         }
-        return items.map(p => p.key === dragParent
-            ? { ...p, children: p.children.filter(c => c.key !== dragKey) }
-            : p);
+        return items.map(parent => parent.key === dragParent
+            ? { ...p, children: parent.children.filter(child => child.key !== dragKey) }
+            : parent);
     }
 
     function findItem(items) {
-        if (dragParent === null) return items.find(i => i.key === dragKey) || null;
-        for (const p of items) {
-            const c = (p.children || []).find(c => c.key === dragKey);
-            if (c) return c;
+        if (dragParent === null) return items.find(item => item.key === dragKey) || null;
+        for (const parent of items) {
+            const found = (parent.children || []).find(child => child.key === dragKey);
+            if (found) return found;
         }
         return null;
     }
@@ -451,21 +454,21 @@ export function createFullMenuPreview(config) {
         let items = removeDragged(state.items);
 
         if (zone === 'nest') {
-            items = items.map(p => p.key === targetKey
-                ? { ...p, children: [...(p.children || []), { ...dragged, children: [] }] }
-                : p);
+            items = items.map(parent => parent.key === targetKey
+                ? { ...p, children: [...(parent.children || []), { ...dragged, children: [] }] }
+                : parent);
         } else {
-            const topIndex = items.findIndex(i => i.key === targetKey);
+            const topIndex = items.findIndex(item => item.key === targetKey);
             if (topIndex !== -1) {
-                const at = zone === 'before' ? topIndex : topIndex + 1;
-                items.splice(at, 0, dragged);
+                const insertAt = zone === 'before' ? topIndex : topIndex + 1;
+                items.splice(insertAt, 0, dragged);
             } else {
-                items = items.map(p => {
-                    const ci = p.children.findIndex(c => c.key === targetKey);
-                    if (ci === -1) return p;
-                    const nc = [...p.children];
-                    nc.splice(zone === 'before' ? ci : ci + 1, 0, { ...dragged, children: [] });
-                    return { ...p, children: nc };
+                items = items.map(parent => {
+                    const childIndex = parent.children.findIndex(child => child.key === targetKey);
+                    if (childIndex === -1) return parent;
+                    const newChildren = [...p.children];
+                    newChildren.splice(zone === 'before' ? childIndex : childIndex + 1, 0, { ...dragged, children: [] });
+                    return { ...p, children: newChildren };
                 });
             }
         }
@@ -478,13 +481,13 @@ export function createFullMenuPreview(config) {
     function wireDrag(li, key, parentKey) {
         li.draggable = true;
 
-        li.addEventListener('dragstart', e => {
+        li.addEventListener('dragstart', event => {
             dragKey = key;
             dragParent = parentKey;
-            e.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.effectAllowed = 'move';
 
             requestAnimationFrame(() => li.classList.add('dnd-dragging'));
-            e.stopPropagation();
+            event.stopPropagation();
         });
 
         li.addEventListener('dragend', () => {
@@ -494,20 +497,20 @@ export function createFullMenuPreview(config) {
             clearIndicators();
         });
 
-        li.addEventListener('dragover', e => {
+        li.addEventListener('dragover', event => {
             if (!dragKey || dragKey === key) return;
-            e.preventDefault();
-            e.stopPropagation();
-            e.dataTransfer.dropEffect = 'move';
+            event.preventDefault();
+            event.stopPropagation();
+            event.dataTransfer.dropEffect = 'move';
             clearIndicators();
 
-            const targetItem = state.items.find(i => i.key === key);
+            const targetItem = state.items.find(item => item.key === key);
             const allowNest = parentKey === null &&
                               dragParent === null &&
                               !!targetItem &&
                               (targetItem.children || []).length === 0;
 
-            const zone = hitZone(e, li, allowNest);
+            const zone = hitZone(event, li, allowNest);
 
             if (zone === 'nest') {
                 li.classList.add('dnd-nest-target');
@@ -518,22 +521,22 @@ export function createFullMenuPreview(config) {
             }
         });
 
-        li.addEventListener('dragleave', e => {
-            if (!li.contains(e.relatedTarget)) clearIndicators();
+        li.addEventListener('dragleave', event => {
+            if (!li.contains(event.relatedTarget)) clearIndicators();
         });
 
-        li.addEventListener('drop', e => {
-            e.preventDefault();
-            e.stopPropagation();
+        li.addEventListener('drop', event => {
+            event.preventDefault();
+            event.stopPropagation();
             if (!dragKey || dragKey === key) return;
 
-            const targetItem = state.items.find(i => i.key === key);
+            const targetItem = state.items.find(item => item.key === key);
             const allowNest = parentKey === null &&
                               dragParent === null &&
                               !!targetItem &&
                               (targetItem.children || []).length === 0;
 
-            const zone = hitZone(e, li, allowNest);
+            const zone = hitZone(event, li, allowNest);
             applyDrop(key, zone);
         });
     }
@@ -543,10 +546,10 @@ export function createFullMenuPreview(config) {
 
         const items = state.items;
         if (!items.length) {
-            const p = document.createElement('p');
-            p.className = 'menu-preview-info';
-            p.textContent = 'No menu items configured.';
-            wrap.appendChild(p);
+            const paragraph = document.createElement('p');
+            paragraph.className = 'menu-preview-info';
+            paragraph.textContent = 'No menu items configured.';
+            wrap.appendChild(paragraph);
             return;
         }
 
@@ -569,15 +572,15 @@ export function createFullMenuPreview(config) {
                 const summary = document.createElement('summary');
                 summary.className = 'custom-nav-link' + (item.hidden ? ' preview-hidden' : '');
                 summary.appendChild(buildIcon(item.icon));
-                const ns = document.createElement('span');
-                ns.className = 'menu-text';
-                ns.textContent = item.name || item.key;
-                summary.appendChild(ns);
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'menu-text';
+                nameSpan.textContent = item.name || item.key;
+                summary.appendChild(nameSpan);
                 if (item.hidden) {
-                    const b = document.createElement('span');
-                    b.className = 'menu-preview-badge';
-                    b.textContent = 'HIDDEN';
-                    summary.appendChild(b);
+                    const badge = document.createElement('span');
+                    badge.className = 'menu-preview-badge';
+                    badge.textContent = 'HIDDEN';
+                    summary.appendChild(badge);
                 }
                 const arrow = document.createElement('span');
                 arrow.className = 'menu-arrow';
@@ -588,12 +591,12 @@ export function createFullMenuPreview(config) {
                 const subUl = document.createElement('ul');
                 subUl.className = 'menu-submenu';
                 children.forEach(child => {
-                    const cli = document.createElement('li');
-                    cli.dataset.key = child.key;
-                    cli.className = 'menu-dnd-item menu-dnd-child';
-                    cli.appendChild(buildLink(child));
-                    wireDrag(cli, child.key, item.key);
-                    subUl.appendChild(cli);
+                    const childListItem = document.createElement('li');
+                    childListItem.dataset.key = child.key;
+                    childListItem.className = 'menu-dnd-item menu-dnd-child';
+                    childListItem.appendChild(buildLink(child));
+                    wireDrag(childListItem, child.key, item.key);
+                    subUl.appendChild(childListItem);
                 });
                 details.appendChild(subUl);
                 li.appendChild(details);
@@ -609,16 +612,16 @@ export function createFullMenuPreview(config) {
         wrap.appendChild(nav);
     }
 
-    function update(config) {
-        if (!config) {
+    function update(cfg) {
+        if (!cfg) {
             wrap.innerHTML = '';
-            const p = document.createElement('p');
-            p.className = 'menu-preview-info';
-            p.textContent = 'Loading…';
-            wrap.appendChild(p);
+            const paragraph = document.createElement('p');
+            paragraph.className = 'menu-preview-info';
+            paragraph.textContent = 'Loading…';
+            wrap.appendChild(paragraph);
             return;
         }
-        state = { items: (config.items || []).map(i => ({ ...i, children: i.children || [] })) };
+        state = { items: (cfg.items || []).map(item => ({ ...i, children: item.children || [] })) };
         rebuildDOM();
     }
 
@@ -646,29 +649,29 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
         container.appendChild(empty);
     } else {
         options.forEach(option => {
-            const label = document.createElement('label');
+            const labelElement = document.createElement('label');
 
-            const chk = document.createElement('input');
-            chk.type = 'checkbox';
-            chk.value = option.value;
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = option.value;
             const optionValueNumber = Number(option.value);
-            chk.checked = safeValues.includes(option.value) || safeValues.includes(String(option.value)) || safeValues.includes(optionValueNumber);
+            checkbox.checked = safeValues.includes(option.value) || safeValues.includes(String(option.value)) || safeValues.includes(optionValueNumber);
 
-            chk.addEventListener('change', () => {
+            checkbox.addEventListener('change', () => {
                 let current = [...safeValues];
-                if (chk.checked) {
+                if (checkbox.checked) {
                     if (!current.includes(optionValueNumber)) current.push(optionValueNumber);
                 } else {
-                    current = current.filter(v => Number(v) !== optionValueNumber);
+                    current = current.filter(entry => Number(entry) !== optionValueNumber);
                 }
                 safeValues.length = 0;
                 safeValues.push(...current);
                 onChange([...safeValues]);
             });
 
-            label.appendChild(chk);
-            label.appendChild(document.createTextNode(option.label));
-            container.appendChild(label);
+            labelElement.appendChild(checkbox);
+            labelElement.appendChild(document.createTextNode(option.label));
+            container.appendChild(labelElement);
         });
     }
 
@@ -714,11 +717,13 @@ export function buildInnerTabs(container, tabs) {
 
     container.insertBefore(bar, container.firstChild);
 
-    function activate(i) {
-        panels.forEach((p, j) => { p.style.display = j === i ? '' : 'none'; });
-        btns.forEach((b, j) => b.classList.toggle('active', j === i));
+    function activate(activeIndex) {
+        panels.forEach((panel, index) => {
+            panel.style.display = index === activeIndex ? '' : 'none';
+        });
+        btns.forEach((button, index) => button.classList.toggle('active', index === activeIndex));
     }
-    btns.forEach((button, i) => button.addEventListener('click', () => activate(i)));
+    btns.forEach((button, index) => button.addEventListener('click', () => activate(index)));
     activate(0);
 
     return panels;
@@ -726,15 +731,15 @@ export function buildInnerTabs(container, tabs) {
 
 export function createPageHeader(title, description) {
     const frag = document.createDocumentFragment();
-    const h = document.createElement('h2');
-    h.className = 'admin-page-title';
-    h.textContent = title;
-    frag.appendChild(h);
+    const heading = document.createElement('h2');
+    heading.className = 'admin-page-title';
+    heading.textContent = title;
+    frag.appendChild(heading);
     if (description) {
-        const p = document.createElement('p');
-        p.className = 'admin-page-desc';
-        p.innerHTML = description;
-        frag.appendChild(p);
+        const paragraph = document.createElement('p');
+        paragraph.className = 'admin-page-desc';
+        paragraph.innerHTML = description;
+        frag.appendChild(paragraph);
     }
     return frag;
 }
@@ -752,7 +757,7 @@ export function mkTable() {
 
 export function mkThead(table, columns) {
     const tr = table.createTHead().insertRow();
-    columns.forEach(h => tr.appendChild(el('th', 'adm-th', h)));
+    columns.forEach(columnLabel => tr.appendChild(el('th', 'adm-th', columnLabel)));
     return tr;
 }
 
@@ -786,13 +791,13 @@ export function buildSectionCard(title, description = '', id = '') {
     const card = el('div', 'adm-sec-card');
     if (id) card.id = id;
 
-    const hdr = el('div', 'adm-sec-hdr');
-    hdr.style.display = 'block';
-    hdr.appendChild(el('h3', '', title)).style.cssText = 'margin:0 0 4px;';
+    const header = el('div', 'adm-sec-hdr');
+    header.style.display = 'block';
+    header.appendChild(el('h3', '', title)).style.cssText = 'margin:0 0 4px;';
     if (description) {
-        hdr.appendChild(el('p', 'c-muted', description)).style.cssText = 'margin:0;';
+        header.appendChild(el('p', 'c-muted', description)).style.cssText = 'margin:0;';
     }
-    card.appendChild(hdr);
+    card.appendChild(header);
 
     const body = el('div', 'adm-sec-body');
     card.appendChild(body);
@@ -835,12 +840,12 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
         'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
     )];
 
-    const onKey = (e) => {
-        if (e.key === 'Escape') {
+    const onKey = (event) => {
+        if (event.key === 'Escape') {
             close();
             return;
         }
-        if (e.key !== 'Tab') {
+        if (event.key !== 'Tab') {
             return;
         }
         const items = focusables();
@@ -851,11 +856,11 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
         const first  = items[0];
         const last   = items[items.length - 1];
         const active = document.activeElement;
-        if (e.shiftKey && (active === first || !box.contains(active))) {
-            e.preventDefault();
+        if (event.shiftKey && (active === first || !box.contains(active))) {
+            event.preventDefault();
             last.focus();
-        } else if (!e.shiftKey && (active === last || !box.contains(active))) {
-            e.preventDefault();
+        } else if (!event.shiftKey && (active === last || !box.contains(active))) {
+            event.preventDefault();
             first.focus();
         }
     };
@@ -869,7 +874,7 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
     document.addEventListener('keydown', onKey);
 
     cancelButton.addEventListener('click', close);
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
 
     return { overlay, box, body, msgEl: messageElement, actions, cancelBtn: cancelButton, saveBtn: saveButton, close };
 }

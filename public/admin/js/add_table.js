@@ -144,11 +144,11 @@ export function renderAddTableEditor(context) {
         const textWrap = document.createElement('span');
         const strong = document.createElement('strong');
         strong.textContent = labelText;
-        const description = document.createElement('span');
-        description.style.cssText = 'display:block;margin-top:2px;';
-        description.textContent = description;
+        const desc = document.createElement('span');
+        desc.style.cssText = 'display:block;margin-top:2px;';
+        desc.textContent = description;
         textWrap.appendChild(strong);
-        textWrap.appendChild(description);
+        textWrap.appendChild(desc);
         row.appendChild(callback);
         row.appendChild(textWrap);
         return row;
@@ -180,7 +180,7 @@ export function renderAddTableEditor(context) {
         idRow.innerHTML = '<strong style="min-width:80px;">id</strong><span style="">serial PRIMARY KEY — added automatically</span>';
         columnsWrap.appendChild(idRow);
 
-        state.columns.forEach((column, index) => {
+        state.columns.forEach((col, index) => {
             const block = document.createElement('div');
             block.className = 'column-block';
             block.style.borderLeft = '4px solid var(--accent)';
@@ -189,7 +189,7 @@ export function renderAddTableEditor(context) {
             blockHead.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;';
             const columnNumber = document.createElement('h4');
             columnNumber.style.margin = '0';
-            columnNumber.textContent = column.name ? `Column: ${column.name}` : `Column ${index + 1}`;
+            columnNumber.textContent = col.name ? `Column: ${col.name}` : `Column ${index + 1}`;
             const removeButton = document.createElement('button');
             removeButton.textContent = 'Remove';
             removeButton.className = 'btn btn-secondary btn-sm';
@@ -201,13 +201,13 @@ export function renderAddTableEditor(context) {
             appendField(block, 'Column Name', () => {
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.value = column.name;
+                input.value = col.name;
                 input.placeholder = 'e.g. email';
                 input.style.maxWidth = '280px';
                 input.addEventListener('input', () => {
-                    column.name = input.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                    input.value = column.name;
-                    columnNumber.textContent = column.name ? `Column: ${column.name}` : `Column ${index + 1}`;
+                    col.name = input.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    input.value = col.name;
+                    columnNumber.textContent = col.name ? `Column: ${col.name}` : `Column ${index + 1}`;
                 });
                 return input;
             });
@@ -218,10 +218,10 @@ export function renderAddTableEditor(context) {
                 COLUMN_TYPES.forEach(({ value, label }) => {
                     const option = document.createElement('option');
                     option.value = value; option.textContent = label;
-                    if (value === column.type) option.selected = true;
+                    if (value === col.type) option.selected = true;
                     sel.appendChild(option);
                 });
-                sel.addEventListener('change', () => { column.type = sel.value; });
+                sel.addEventListener('change', () => { col.type = sel.value; });
                 return sel;
             });
 
@@ -230,23 +230,23 @@ export function renderAddTableEditor(context) {
                 wrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
                 const callback = document.createElement('input');
                 callback.type = 'checkbox';
-                callback.checked = !!column.not_null;
-                callback.addEventListener('change', () => { column.not_null = callback.checked; });
-                const label = document.createElement('span');
-                label.style.cssText = '';
-                label.textContent = 'Requires a Default value if the table already has rows.';
+                callback.checked = !!col.not_null;
+                callback.addEventListener('change', () => { col.not_null = callback.checked; });
+                const lbl = document.createElement('span');
+                lbl.style.cssText = '';
+                lbl.textContent = 'Requires a Default value if the table already has rows.';
                 wrap.appendChild(callback);
-                wrap.appendChild(label);
+                wrap.appendChild(lbl);
                 return wrap;
             });
 
             appendField(block, 'Default', () => {
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.value = column.default || '';
+                input.value = col.default || '';
                 input.placeholder = 'e.g. 0, now(), true, \'active\'';
                 input.style.maxWidth = '280px';
-                input.addEventListener('input', () => { column.default = input.value; });
+                input.addEventListener('input', () => { col.default = input.value; });
                 return input;
             }, 'Expressions: now(), current_timestamp, true, false, null. Numbers and quoted strings also accepted.');
 
@@ -261,19 +261,19 @@ export function renderAddTableEditor(context) {
                 ].forEach(({ value, label }) => {
                     const option = document.createElement('option');
                     option.value = value; option.textContent = label;
-                    if (value === (column.index || '')) option.selected = true;
+                    if (value === (col.index || '')) option.selected = true;
                     sel.appendChild(option);
                 });
-                sel.addEventListener('change', () => { column.index = sel.value; });
+                sel.addEventListener('change', () => { col.index = sel.value; });
                 return sel;
             });
 
             appendField(block, 'Comment', () => {
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.value = column.comment || '';
+                input.value = col.comment || '';
                 input.placeholder = 'Optional — stored as COMMENT ON COLUMN';
-                input.addEventListener('input', () => { column.comment = input.value; });
+                input.addEventListener('input', () => { col.comment = input.value; });
                 return input;
             });
 
@@ -287,7 +287,7 @@ export function renderAddTableEditor(context) {
                 tableOptions.forEach(({ value, label }) => {
                     const option = document.createElement('option');
                     option.value = value; option.textContent = label;
-                    if (value === (column.fk_table || '')) option.selected = true;
+                    if (value === (col.fk_table || '')) option.selected = true;
                     fkTableSelect.appendChild(option);
                 });
 
@@ -300,18 +300,18 @@ export function renderAddTableEditor(context) {
                     options.forEach(({ value, label }) => {
                         const option = document.createElement('option');
                         option.value = value; option.textContent = label;
-                        if (value === (column.fk_column || '')) option.selected = true;
+                        if (value === (col.fk_column || '')) option.selected = true;
                         fkColumnSelect.appendChild(option);
                     });
                 }
-                populateFkColumns(column.fk_table || '');
+                populateFkColumns(col.fk_table || '');
 
                 fkTableSelect.addEventListener('change', () => {
-                    column.fk_table = fkTableSelect.value;
-                    column.fk_column = '';
-                    populateFkColumns(column.fk_table);
+                    col.fk_table = fkTableSelect.value;
+                    col.fk_column = '';
+                    populateFkColumns(col.fk_table);
                 });
-                fkColumnSelect.addEventListener('change', () => { column.fk_column = fkColumnSelect.value; });
+                fkColumnSelect.addEventListener('change', () => { col.fk_column = fkColumnSelect.value; });
 
                 row.appendChild(fkTableSelect);
                 row.appendChild(fkColumnSelect);
@@ -392,17 +392,17 @@ export function renderAddTableEditor(context) {
                 return;
             }
 
-            for (const column of buildAllColumns(state)) {
-                const payload = { schema: state.schema, table: state.tableName, column: column.name, type: column.type };
-                if (column.not_null)                    payload.not_null  = true;
-                if (column.default)                     payload.default   = column.default;
-                if (column.index)                       payload.index     = column.index;
-                if (column.comment)                     payload.comment   = column.comment;
-                if (column.fk_table && column.fk_column) { payload.fk_table = column.fk_table; payload.fk_column = column.fk_column; }
+            for (const col of buildAllColumns(state)) {
+                const payload = { schema: state.schema, table: state.tableName, column: col.name, type: col.type };
+                if (col.not_null)                    payload.not_null  = true;
+                if (col.default)                     payload.default   = col.default;
+                if (col.index)                       payload.index     = col.index;
+                if (col.comment)                     payload.comment   = col.comment;
+                if (col.fk_table && col.fk_column) { payload.fk_table = col.fk_table; payload.fk_column = col.fk_column; }
 
                 const columnData = await post('add_column', payload);
                 if (columnData.status !== 'success') {
-                    showStatusPill(statusAnchor, `Table created but column "${column.name}" failed: ${columnData.error}`, 'error');
+                    showStatusPill(statusAnchor, `Table created but column "${col.name}" failed: ${columnData.error}`, 'error');
                     return;
                 }
             }
@@ -412,14 +412,14 @@ export function renderAddTableEditor(context) {
                     table:        state.tableName,
                     schema:       state.schema,
                     display_name: state.displayName || state.tableName,
-                    columns:      buildAllColumns(state).map(column => ({
-                        name:        column.name,
-                        type:        column.type,
-                        not_null:    column.not_null || false,
-                        display_name: column.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-                        description: column.comment || '',
-                        fk_table:    column.fk_table  || '',
-                        fk_column:   column.fk_column || '',
+                    columns:      buildAllColumns(state).map(col => ({
+                        name:        col.name,
+                        type:        col.type,
+                        not_null:    col.not_null || false,
+                        display_name: col.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+                        description: col.comment || '',
+                        fk_table:    col.fk_table  || '',
+                        fk_column:   col.fk_column || '',
                     })),
                 });
                 if (regData.status !== 'success') {
@@ -439,8 +439,8 @@ export function renderAddTableEditor(context) {
             displayNameInput.value = '';
             schemaInput.value = state.schema;
             renderColumns();
-        } catch (error) {
-            showStatusPill(statusAnchor, 'Network error: ' + error.message, 'error');
+        } catch (err) {
+            showStatusPill(statusAnchor, 'Network error: ' + err.message, 'error');
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = 'Create Table';
@@ -451,9 +451,9 @@ export function renderAddTableEditor(context) {
 function appendField(parent, labelText, buildControl, hintText) {
     const grp = document.createElement('div');
     grp.className = 'form-group';
-    const label = document.createElement('label');
-    label.textContent = labelText;
-    grp.appendChild(label);
+    const lbl = document.createElement('label');
+    lbl.textContent = labelText;
+    grp.appendChild(lbl);
     grp.appendChild(buildControl());
     if (hintText) {
         const hint = document.createElement('span');

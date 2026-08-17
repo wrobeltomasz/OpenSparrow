@@ -16,8 +16,8 @@ export async function renderAuditEditor(context) {
 
     let data;
     try {
-        const result = await apiFetch('api.php?action=get_snapshot_setting');
-        data = await result.json();
+        const res = await apiFetch('api.php?action=get_snapshot_setting');
+        data = await res.json();
     } catch (e) {
         if (workspaceElement._renderId !== myId) return;
         workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading audit settings. Check server logs.</h3>';
@@ -141,11 +141,11 @@ export async function renderAuditEditor(context) {
         const newValue = switchInput.checked;
         switchInput.disabled = true;
         try {
-            const result = await apiFetch('api.php?action=set_snapshot_setting', {
+            const res = await apiFetch('api.php?action=set_snapshot_setting', {
                 method: 'POST',
                 body: JSON.stringify({ enabled: newValue }),
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 enabled = newValue;
                 switchSlider.style.background = newValue ? 'var(--accent)' : 'var(--border)';

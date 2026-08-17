@@ -147,10 +147,10 @@ async function loadDashboardData(container, dateFilter, targetWidget) {
     } catch (error) {
         console.error('Error loading dashboard:', error);
         container.replaceChildren();
-        const error = document.createElement('p');
-        error.className = 'dash-error';
-        error.textContent = I18n.t('dashboard.error_load');
-        container.appendChild(error);
+        const err = document.createElement('p');
+        err.className = 'dash-error';
+        err.textContent = I18n.t('dashboard.error_load');
+        container.appendChild(err);
     }
 }
 

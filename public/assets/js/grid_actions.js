@@ -111,8 +111,8 @@ async function performUpdate(element, table, id, column, value) {
         document.getElementById('addRow')
       );
     }
-  } catch (error) {
-    console.error("Network error during update", error);
+  } catch (err) {
+    console.error("Network error during update", err);
     markCell(td, false);
   }
 }
@@ -143,16 +143,16 @@ export function onCellBlur(e) {
       try {
           const regex = new RegExp(pattern);
           if (!regex.test(String(value))) {
-              const message = element.dataset.message || 'Invalid input format';
-              showToast(message, 'error');
+              const msg = element.dataset.message || 'Invalid input format';
+              showToast(msg, 'error');
 
               if (element.isContentEditable) element.textContent = original ?? '';
               else element.value = original ?? '';
 
               return;
           }
-      } catch (error) {
-          console.error("Invalid regex pattern provided from schema", error);
+      } catch (err) {
+          console.error("Invalid regex pattern provided from schema", err);
       }
   }
 
@@ -185,8 +185,8 @@ export async function deleteRow(id) {
 
     debugLog("Delete success", { id });
     return payload;
-  } catch (error) {
-    console.error("Network error during delete", error);
+  } catch (err) {
+    console.error("Network error during delete", err);
   }
 }
 
@@ -205,8 +205,8 @@ export async function duplicateRow(id) {
 
     debugLog("Duplicate success", { id, newId: payload?.id });
     return payload;
-  } catch (error) {
-    console.error("Network error during duplicate", error);
+  } catch (err) {
+    console.error("Network error during duplicate", err);
   }
 }
 
@@ -229,7 +229,7 @@ export async function addRow() {
 
     debugLog("Insert success", payload || { ok: true });
     return payload;
-  } catch (error) {
-    console.error("Network error during insert", error);
+  } catch (err) {
+    console.error("Network error during insert", err);
   }
 }

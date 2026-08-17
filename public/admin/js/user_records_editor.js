@@ -92,7 +92,7 @@ function buildTableBlock(tableName, tableConfig, currentConfig) {
     const bodyDiv = document.createElement('div');
     bodyDiv.className = 'block-body';
 
-    const columns = Object.keys(tableConfig.columns || {})
+    const cols = Object.keys(tableConfig.columns || {})
         .filter((c) => (tableConfig.columns[c].type || '') !== 'virtual');
 
     const grp = document.createElement('div');
@@ -101,10 +101,10 @@ function buildTableBlock(tableName, tableConfig, currentConfig) {
     label.textContent = 'Label columns';
     grp.appendChild(label);
     grp.appendChild(createColumnMultiSelect(
-        columns.map((c) => ({ value: c, label: tableConfig.columns[c].display_name || c })),
+        cols.map((c) => ({ value: c, label: tableConfig.columns[c].display_name || c })),
         currentConfig.columns[tableName] || [],
-        (value) => {
-            if (value.length) currentConfig.columns[tableName] = value;
+        (val) => {
+            if (val.length) currentConfig.columns[tableName] = val;
             else delete currentConfig.columns[tableName];
             markDirty();
         }
@@ -128,8 +128,8 @@ function createColumnMultiSelect(options, selectedValues, onChange) {
     }
 
     options.forEach((option) => {
-        const label = document.createElement('label');
-        label.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
 
         const chk = document.createElement('input');
         chk.type = 'checkbox';
@@ -143,9 +143,9 @@ function createColumnMultiSelect(options, selectedValues, onChange) {
             onChange([...selected]);
         });
 
-        label.appendChild(chk);
-        label.appendChild(document.createTextNode(option.label));
-        container.appendChild(label);
+        lbl.appendChild(chk);
+        lbl.appendChild(document.createTextNode(option.label));
+        container.appendChild(lbl);
     });
 
     return container;

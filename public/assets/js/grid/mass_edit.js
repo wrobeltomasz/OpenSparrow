@@ -211,7 +211,7 @@ async function buildValueInput(columnConfig, columnName = '') {
 
         let referenceData = [];
         if (state.fkCache.has(cacheKey)) {
-            refData: referenceData = await state.fkCache.get(cacheKey);
+            referenceData = await state.fkCache.get(cacheKey);
         } else {
             try {
                 const result = await fetch(
@@ -296,11 +296,11 @@ function clearPreviewUI(panelInstance) {
 async function rebuildValueInput(panelInstance) {
     const columnSelect = panelInstance.bodyEl.querySelector('#me-column');
     if (!columnSelect) return;
-    const columns = window.schema?.tables?.[state.currentTable]?.columns ?? {};
+    const cols = window.schema?.tables?.[state.currentTable]?.columns ?? {};
     const old  = panelInstance.bodyEl.querySelector('#me-value');
     if (old) old.remove();
     const valueField = panelInstance.bodyEl.querySelector('.me-val-field');
-    if (valueField) valueField.appendChild(await buildValueInput(columns[columnSelect.value] ?? {}, columnSelect.value));
+    if (valueField) valueField.appendChild(await buildValueInput(cols[columnSelect.value] ?? {}, columnSelect.value));
     clearPreviewUI(panelInstance);
 }
 
@@ -314,7 +314,7 @@ async function buildMassEditBody(panelInstance) {
 
     if (!table || !window.schema?.tables?.[table]) return;
 
-    const columns  = window.schema.tables[table].columns ?? {};
+    const cols  = window.schema.tables[table].columns ?? {};
     const count = state.selectedIds.size;
 
     const scopeElement = document.createElement('p');
@@ -326,7 +326,7 @@ async function buildMassEditBody(panelInstance) {
     columnSelect.id = 'me-column';
 
     let firstKey = null;
-    for (const [name, config] of Object.entries(columns)) {
+    for (const [name, config] of Object.entries(cols)) {
         if (!isEditableColumn(name, config)) continue;
         const option = document.createElement('option');
         option.value = name; option.textContent = config.display_name ?? name;
@@ -336,7 +336,7 @@ async function buildMassEditBody(panelInstance) {
     body.appendChild(makeField('bp-field', I18n.t('mass_edit.column'), 'me-column', columnSelect));
 
     const valueField = makeField('bp-field me-val-field', I18n.t('mass_edit.new_value'), 'me-value', null);
-    if (firstKey) valueField.appendChild(await buildValueInput(columns[firstKey] ?? {}, firstKey));
+    if (firstKey) valueField.appendChild(await buildValueInput(cols[firstKey] ?? {}, firstKey));
     body.appendChild(valueField);
 
     const nullRow = document.createElement('label');
@@ -408,8 +408,8 @@ async function runPreview(panelInstance) {
 
     const rows = data.rows ?? [];
     if (rows.length > 0) {
-        const table = document.createElement('table');
-        table.className = 'bp-preview-table';
+        const tbl = document.createElement('table');
+        tbl.className = 'bp-preview-table';
 
         const thead = document.createElement('thead');
         const hr    = document.createElement('tr');
@@ -421,7 +421,7 @@ async function runPreview(panelInstance) {
             const th = document.createElement('th');
             th.textContent = h; hr.appendChild(th);
         });
-        thead.appendChild(hr); table.appendChild(thead);
+        thead.appendChild(hr); tbl.appendChild(thead);
 
         const tbody = document.createElement('tbody');
         for (const row of rows) {
@@ -433,8 +433,8 @@ async function runPreview(panelInstance) {
             tr.appendChild(tdId); tr.appendChild(tdOld); tr.appendChild(tdNew);
             tbody.appendChild(tr);
         }
-        table.appendChild(tbody);
-        previewArea.appendChild(table);
+        tbl.appendChild(tbody);
+        previewArea.appendChild(tbl);
     }
 
     previewLoaded      = true;
@@ -556,20 +556,20 @@ function buildExportBody(panelInstance) {
     const list = document.createElement('div');
     list.className = 'me-col-picker-list';
 
-    displayedColumns.forEach(column => {
+    displayedColumns.forEach(col => {
         const item = document.createElement('label');
         item.className = 'me-col-picker-item';
         const callback = document.createElement('input');
         callback.type = 'checkbox';
         callback.className = 'me-col-picker-cb';
-        callback.value = column;
+        callback.value = col;
         callback.checked = true;
         callback.addEventListener('change', () => {
             const any = Array.from(body.querySelectorAll('.me-col-picker-cb')).some(c => c.checked);
             panelInstance.setApplyDisabled(!any);
         });
         const span = document.createElement('span');
-        span.textContent = schemaColumns[column]?.display_name ?? column;
+        span.textContent = schemaColumns[col]?.display_name ?? col;
         item.appendChild(callback);
         item.appendChild(span);
         list.appendChild(item);

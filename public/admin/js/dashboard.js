@@ -33,9 +33,9 @@ function renderConditionsBuilder(q, columnOptions) {
     const wrap = document.createElement('div');
     wrap.className = 'form-group';
 
-    const label = document.createElement('label');
-    label.textContent = 'Filter Conditions (WHERE)';
-    wrap.appendChild(label);
+    const lbl = document.createElement('label');
+    lbl.textContent = 'Filter Conditions (WHERE)';
+    wrap.appendChild(lbl);
 
     const list = document.createElement('div');
     list.className = 'dash-cond-list';
@@ -157,7 +157,7 @@ function renderCalculateButton(itemData) {
         out.textContent = 'Please wait…';
 
         try {
-            const result = await apiFetch('api.php?action=dashboard_calculate', {
+            const res = await apiFetch('api.php?action=dashboard_calculate', {
                 method: 'POST',
                 body: {
                     table: itemData.table,
@@ -165,7 +165,7 @@ function renderCalculateButton(itemData) {
                     display_columns: itemData.display_columns || [],
                 },
             });
-            const result = await result.json();
+            const result = await res.json();
             if (result.status === 'success') {
                 out.classList.remove('c-error');
                 out.textContent = JSON.stringify(result.data, null, 2);
@@ -225,9 +225,9 @@ function renderPreviewInto(container, widget) {
     container.appendChild(hdr);
 
     if (!widget.type) {
-        const placeholder = document.createElement('p');
-        placeholder.textContent = 'Select a widget type to preview.';
-        container.appendChild(placeholder);
+        const ph = document.createElement('p');
+        ph.textContent = 'Select a widget type to preview.';
+        container.appendChild(ph);
         return;
     }
 

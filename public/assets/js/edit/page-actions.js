@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 window.location.href = 'index.php?table=' + encodeURIComponent(window.EDIT_TABLE);
-            } catch (error) {
+            } catch (err) {
                 window.alert('Network error during delete.');
                 buttonDelete.disabled = false;
             }
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusElement.style.color = 'var(--error)';
                     buttonImageUpload.disabled = false;
                 }
-            } catch (error) {
+            } catch (err) {
                 statusElement.textContent = 'Network error during upload.';
                 statusElement.style.color = 'var(--error)';
                 buttonImageUpload.disabled = false;
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     button.disabled = false;
                 }
-            } catch (error) {
+            } catch (err) {
                 button.disabled = false;
             }
         });
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusElement.style.color = 'var(--error)';
                     buttonUpload.disabled   = false;
                 }
-            } catch (error) {
+            } catch (err) {
                 statusElement.textContent = 'Network error during upload.';
                 statusElement.style.color = 'var(--error)';
                 buttonUpload.disabled   = false;
